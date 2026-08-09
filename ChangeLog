@@ -2175,6 +2175,18 @@
 		own SQLMoreResults() walk is exhausted; verified live against a
 		real mssql backend with output-bind procedures returning two
 		and three result sets (#9198)
+	fixed the c++ client api - sqlrcursor::nextResultSet() only read back
+		a bool from the server and never refreshed its cached column
+		metadata or row buffers, so odbc's SQLMoreResults(), phppdo's
+		getMoreResults() and sqlrsh's result set loop all walked past
+		the first result set of a multi-result-set query while still
+		showing its stale header and data; the sqlrclient wire protocol
+		(bumped to version 3) now sends the new result set's column
+		metadata and rows along with the "next result set available"
+		reply, and nextResultSet() parses them the same way the initial
+		query response is parsed; verified live against a real mssql
+		backend with two- and three-result-set batch queries via sqlrsh
+		(#9197)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

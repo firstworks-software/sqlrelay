@@ -7380,7 +7380,18 @@ bool sqlrcursor::nextResultSet() {
 			 "A network error may have occurred.");
 		return false;
 	}
-	return resultbool;
+	if (!resultbool) {
+		return false;
+	}
+
+	// the new result set has its own column metadata and rows;
+	// clear the previous result set's cached ones and fetch the
+	// new ones instead of continuing to report stale data
+	clearVariables();
+	clearResultSet();
+	pvt->_cached=false;
+	pvt->_endofresultset=false;
+	return processInitialResultSet();
 }
 
 void sqlrcursor::closeResultSet() {

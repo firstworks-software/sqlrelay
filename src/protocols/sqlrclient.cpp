@@ -2162,9 +2162,38 @@ bool sqlrprotocol_sqlrclient::nextResultSetCommand(sqlrservercursor *cursor) {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 		clientsock->write(nextresultsetavailable);
-		clientsock->flushWriteBuffer(-1,-1);
-		if (nextresultsetavailable) {
+		if (!nextresultsetavailable) {
+			clientsock->flushWriteBuffer(-1,-1);
+		} else {
 			cont->incrementNextResultSetAvailableCount();
+
+			// protocol version 2 clients only expect the bool
+			// above; don't send anything past it or they'll
+			// desync trying to parse it as the next command's
+			// response
+			if (protocolversion<3) {
+				clientsock->flushWriteBuffer(-1,-1);
+				cont->incrementNextResultSetCount();
+				debugWrite("success");
+				debugEnd();
+				return true;
+			}
+
+			// the new result set has its own column metadata
+			// and rows; send them now so the client can refresh
+			// its cached header/data instead of continuing to
+			// show the previous result set's
+			clientsock->flushWriteBuffer(-1,-1);
+			if (!getSkipAndFetch(true,cursor)) {
+				debugWrite("failed to get skip and fetch");
+				debugEnd();
+				return false;
+			}
+			clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+			clientsock->write(cont->getId(cursor));
+			clientsock->write((uint16_t)NO_SUSPENDED_RESULT_SET);
+			returnResultSetHeader(cursor);
+			returnResultSetData(cursor,false,false);
 		}
 		cont->incrementNextResultSetCount();
 		debugWrite("success");

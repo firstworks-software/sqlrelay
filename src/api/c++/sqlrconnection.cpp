@@ -1071,12 +1071,12 @@ void sqlrconnection::protocol() {
 
 	if (pvt->_debug) {
 		debugPreStart();
-		debugPrint("Protocol : sqlrclient version 2\n");
+		debugPrint("Protocol : sqlrclient version 3\n");
 		debugPreEnd();
 	}
 
 	pvt->_cs->write((uint16_t)SQLRCLIENT_PROTOCOL_VERSION);
-	pvt->_cs->write((uint16_t)2);
+	pvt->_cs->write((uint16_t)3);
 }
 
 void sqlrconnection::auth() {
