@@ -2237,6 +2237,9 @@
 	updated the oracle userlist auth module to offer O5LOGON at
 		runtime based on tls::isSupported() instead of a
 		compile-time check on RUDIMENTS_HAS_SSL (#9224)
+	fixed the tds protocol module's login7 typeflags decode -
+		freadonlyintent read bit 3 (inside fsqltype's own field)
+		instead of bit 5 per MS-TDS 2.2.6.4 (#9195)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

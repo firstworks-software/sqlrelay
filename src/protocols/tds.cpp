@@ -2811,7 +2811,7 @@ bool sqlrprotocol_tds::tds7Login() {
 
 	fsqltype=(typeflags&(0x0F));
 	foledb=(typeflags&(0x01<<4))>>4;
-	freadonlyintent=(typeflags&(0x01<<3))>>3;
+	freadonlyintent=(typeflags&(0x01<<5))>>5;
 
 	fchangepassword=(optionflags3&(0x01));
 	fsendyukonbinaryxml=(optionflags3&(0x01<<1))>>1;
