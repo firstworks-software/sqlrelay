@@ -2067,6 +2067,7 @@ bool sqlrprotocol_postgresql::bind() {
 	uint16_t	paramvaluecount;
 	readBE(rp,&paramvaluecount,&rp);
 	if (paramvaluecount>maxbindcount) {
+		delete[] paramformatcodes;
 		return sendTooManyBindsError();
 	}
 	// debug
@@ -2104,6 +2105,7 @@ bool sqlrprotocol_postgresql::bind() {
 			debugWrite("format: binary");
 			if (!bindBinaryParameter(rp,oids[i],
 						paramsize,bindpool,bv,&rp)) {
+				delete[] paramformatcodes;
 				return false;
 			}
 		}

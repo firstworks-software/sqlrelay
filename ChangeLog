@@ -1777,6 +1777,11 @@
 		CSPRNGs; rudiments now has csprng (#9211), so the module gets
 		those bytes from that instead, and no longer includes any
 		openssl header (#9099)
+	fixed the postgresql protocol module - bind() leaked the
+		paramformatcodes array on two early returns that ran between
+		its allocation and its only delete[], one reachable by any
+		authenticated client sending a Bind message with more param
+		values than maxbindcount (#9044)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
