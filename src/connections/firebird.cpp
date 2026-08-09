@@ -987,6 +987,11 @@ void firebirdconnection::deleteCursor(sqlrservercursor *curs) {
 }
 
 void firebirdconnection::logOut() {
+
+	// close all result sets, and any lobs they still have open, while
+	// the attachment is still live
+	cont->closeAllResultSets();
+
 	isc_detach_database(error,&db);
 }
 
@@ -2401,6 +2406,14 @@ void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 		for (int32_t i=0; i<columncount; i++) {
 			field[i].textbuffer=new char[
 					conn->cont->getMaxFieldSize()+1];
+			// sqlrtype/blobisopen are otherwise left
+			// uninitialized until describeResultSet() runs;
+			// init them here so closeResultSet() can safely
+			// scan for open lobs even on a slot it hasn't
+			// described yet (e.g. buffers preallocated by
+			// maxcolumncount, ahead of any query)
+			field[i].sqlrtype=UNKNOWN_DATATYPE;
+			field[i].blobisopen=false;
 		}
 		fieldcount=columncount;
 	}
@@ -3907,14 +3920,21 @@ void firebirdcursor::closeLobField(uint32_t col) {
 	}
 }
 
-// The result set buffers are deliberately left alone here.  The controller
-// caches the column names it got from this cursor, which for firebird are
+// The result set buffers are deliberately left alone here, though any lob
+// left open by an abandoned fetch is closed below.  The controller caches
+// the column names it got from this cursor, which for firebird are
 // pointers into outsqldabuffer, and doesn't refresh them when a query is
 // re-executed without being re-prepared.  Freeing the buffers here would
 // leave those pointers dangling.  describeResultSet() grows them when a
 // query needs more columns, so nothing is held beyond the widest result set
 // this cursor has returned.
 void firebirdcursor::closeResultSet() {
+
+	// close any lobs that were left open by an abandoned fetch
+	for (int32_t i=0; i<fieldcount; i++) {
+		closeLobField(i);
+	}
+
 	outbindcount=0;
 	resultsetdescribed=false;
 	if (stmt) {
