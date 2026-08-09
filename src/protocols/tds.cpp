@@ -1217,6 +1217,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint32_t handle,
 					bool resultset,
 					bool nometadata);
+		bool	backendCursorExecute(uint32_t handle,
+						bool nometadata);
 		bool	executeSql(bool nometadata);
 		bool	prepare(bool prepexec, bool rpcsyntax, bool nometadata);
 		bool	execute(bool nometadata);
@@ -8042,6 +8044,78 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 	return true;
 }
 
+bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
+						bool nometadata) {
+
+	// Same idea as backendHandleProc(), for sp_cursorexecute against a
+	// prepared-statement handle the backend minted itself.  Unlike
+	// sp_execute/sp_unprepare, sp_cursorexecute has output parameters of
+	// its own - the cursor handle, scrollopt, ccopt and rowcount - so
+	// they have to go through the normal in/out bind machinery
+	// (bindParams()/returnValues(), the same generic mechanism
+	// namedProc() uses for an arbitrary proc's output parameters).
+	//
+	// That also means this can't reuse backendHandleProc()'s plain
+	// "exec procname handle,values..." query text: on the odbc
+	// connection module, a plain EXEC batch never reports a stored
+	// proc's output parameters back to the driver, only the ODBC/JDBC
+	// "{call proc(...)}" escape does (freetds accepts either form - see
+	// freetdscursor::prepareQuery()).  So every parameter, including the
+	// handle itself, rides as an ordinary bind, the same shape
+	// namedProc() already uses for a generic proc call.
+	//
+	// The result set (if any) is sent in full here too, rather than left
+	// for a later sp_cursorfetch: the backend's own returned cursor id
+	// is a raw backend cursor, not one sqlrelay tracks a sqlrservercursor
+	// under, so there's no way to fetch from it afterward yet (#9204).
+
+	debugWrite("prepared handle: %d",handle);
+
+	// get an available cursor
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		return sendNoCursorAvailableError();
+	}
+
+	// build the query, naming a bind variable per parameter, including
+	// the handle itself
+	stringbuffer	query;
+	query.append("{call sp_cursorexecute(");
+	for (uint16_t i=0; i<rpcparamcount && i<maxbindcount; i++) {
+		if (i) {
+			query.append(',');
+		}
+		query.append(bindvarnames[i]);
+	}
+	query.append(")}");
+
+	debugWrite("query: %s",query.getString());
+
+	// run the query
+	bool	success=cont->prepareQuery(cursor,
+					query.getString(),query.getSize(),
+					true,true,true,true);
+	if (success) {
+		bindParams(cursor,0);
+		success=cont->executeQuery(cursor,true,true,true,true);
+	}
+
+	// build the response.  A bad handle gets the backend's own error -
+	// sql server error 8179 - rather than one synthesized here.
+	if (success) {
+		rpcResultSet(cursor,nometadata,0);
+		returnStatus(RPC_STATUS_SUCCESS);
+		returnValues(cursor);
+	} else {
+		rpcError(cursor);
+	}
+
+	// release the cursor
+	cont->release(cursor);
+
+	return true;
+}
+
 bool sqlrprotocol_tds::executeSql(bool nometadata) {
 
 	// sp_executesql @stmt, [@params, [values...]]
@@ -8923,6 +8997,11 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
+		// a handle below the base is the backend's own, from an
+		// sp_prepare inside a raw batch - run it there
+		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			return backendCursorExecute(handle,nometadata);
+		}
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);
@@ -9049,6 +9128,13 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
+		// a handle below the base is the backend's own, from an
+		// sp_prepare inside a raw batch - unprepare it there.
+		// Nothing to track afterward, since it was never one of ours.
+		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			return backendHandleProc("sp_cursorunprepare",handle,
+							false,false);
+		}
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);

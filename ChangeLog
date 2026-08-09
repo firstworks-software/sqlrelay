@@ -2240,6 +2240,12 @@
 	fixed the tds protocol module's login7 typeflags decode -
 		freadonlyintent read bit 3 (inside fsqltype's own field)
 		instead of bit 5 per MS-TDS 2.2.6.4 (#9195)
+	fixed the tds protocol module's cursorExecute() and
+		cursorUnprepare() to recognize a backend-owned prepared-
+		statement handle (one minted by the backend's own exec
+		sp_prepare inside a raw batch) and forward the call there,
+		instead of rejecting it with RPC_NO_SUCH_STMT - the same
+		class of bug #9202 fixed for execute()/unprepare() (#9203)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
