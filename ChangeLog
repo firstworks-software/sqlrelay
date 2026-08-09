@@ -1904,6 +1904,13 @@
 		and about two dozen others); also replaced a "LONGNVARCHAR"
 		case, which matched no datatypestring[] entry, with "NTEXT",
 		which is the entry that type actually uses (#9089)
+	fixed datatypes.h's isFloatTypeChar(), isNumberTypeChar(), and
+		isBinaryTypeChar() - they still compared against the pre-2007
+		postgresql array type spellings (e.g. "_MONEY"), which a 2007
+		rename replaced in datatypestring[] with "MONEY_ARRAY"-style
+		spellings; the old spellings are still reachable under
+		typemangling=2, so the *_ARRAY spellings were added alongside
+		them rather than replacing them (#9076)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -475,7 +475,8 @@ static bool isFloatTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"DOUBLE PRECISION") ||
 		!charstring::compareIgnoringCase(type,"FLOAT4") ||
 		!charstring::compareIgnoringCase(type,"FLOAT8") ||
-		!charstring::compareIgnoringCase(type,"_NUMERIC"));
+		!charstring::compareIgnoringCase(type,"_NUMERIC") ||
+		!charstring::compareIgnoringCase(type,"NUMERIC_ARRAY"));
 }
 #endif
 
@@ -555,18 +556,30 @@ static bool isNumberTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"FLOAT8") ||
 		!charstring::compareIgnoringCase(type,"TINTERVAL") ||
 		!charstring::compareIgnoringCase(type,"_MONEY") ||
+		!charstring::compareIgnoringCase(type,"MONEY_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_INT2") ||
+		!charstring::compareIgnoringCase(type,"INT2_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_INT4") ||
+		!charstring::compareIgnoringCase(type,"INT4_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_oid") ||
+		!charstring::compareIgnoringCase(type,"OID_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_TID") ||
+		!charstring::compareIgnoringCase(type,"TID_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_XID") ||
+		!charstring::compareIgnoringCase(type,"XID_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_CID") ||
+		!charstring::compareIgnoringCase(type,"CID_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_INT8") ||
+		!charstring::compareIgnoringCase(type,"INT8_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_FLOAT4") ||
+		!charstring::compareIgnoringCase(type,"FLOAT4_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_FLOAT8") ||
+		!charstring::compareIgnoringCase(type,"FLOAT8_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"_TINTERVAL") ||
+		!charstring::compareIgnoringCase(type,"TINTERVAL_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"INTERVAL") ||
 		!charstring::compareIgnoringCase(type,"_INTERVAL") ||
+		!charstring::compareIgnoringCase(type,"INTERVAL_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"NUMERIC"));
 }
 #endif
@@ -736,9 +749,11 @@ static bool isBinaryTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"LONGVARGRAPHIC") ||
 		!charstring::compareIgnoringCase(type,"OID") ||
 		!charstring::compareIgnoringCase(type,"_OID") ||
+		!charstring::compareIgnoringCase(type,"OID_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"OIDVECTOR") ||
 		!charstring::compareIgnoringCase(type,"BYTEA") ||
 		!charstring::compareIgnoringCase(type,"_BYTEA") ||
+		!charstring::compareIgnoringCase(type,"BYTEA_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"TIMESTAMP") ||
 		!charstring::compareIgnoringCase(type,"DATE") ||
 		!charstring::compareIgnoringCase(type,"TIME") ||
