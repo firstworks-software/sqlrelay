@@ -1298,6 +1298,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	rpcNumberedError(uint32_t number,
 					const char *msgtext);
 		bool	rpcInvalidColumnError(uint16_t param);
+		bool	rpcUnnumberedError(byte_t state,
+					byte_t errclass,
+					const char *msgtext);
+		bool	rpcUnimplementedFeatureError();
+		bool	rpcQueryTooLargeError(size_t querysize);
+		bool	rpcNoCursorAvailableError();
 		bool	rpcParamTypeError(const char *procname,
 					const char *param);
 		bool	rpcUnsupportedTypeError(byte_t tdstype);
@@ -1315,6 +1321,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						sqlrservercursor *> *handles,
 					dictionary<uint32_t,
 						sqlrservercursor *> *other);
+		void	releaseCursorHandles(sqlrservercursor *cursor);
+		void	evictOldestHandle(sqlrservercursor *keep);
+		sqlrservercursor	*availableCursor(
+					sqlrservercursor *keep=NULL);
 
 		// converts odbc {call p(?,?)} syntax to exec p ?,?
 		char	*callSyntaxToExec(const char *stmt);
@@ -1360,6 +1370,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint32_t linenumber);
 		bool	sendUnimplementedFeatureError();
 		bool	sendTdsProtocolError();
+		void	queryTooLargeMessage(size_t querysize,
+					stringbuffer *err);
 		bool	sendQueryTooLargeError(size_t querysize);
 		bool	sendNoCursorAvailableError();
 		bool	sendLoginRequiredError();
@@ -1481,6 +1493,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		dictionary<uint32_t, sqlrservercursor *>	stmthandles;
 		dictionary<uint32_t, sqlrservercursor *>	cursorhandles;
 		uint32_t					nexthandle;
+
+		// the cursor that the request being processed got from the
+		// pool, so that an attention that abandons the request can
+		// put it back
+		sqlrservercursor				*pendingcursor;
 
 		// matches a trailing "for update [of col,...]" clause in a
 		// cursor-declare statement, so it can be stripped before the
@@ -1626,6 +1643,7 @@ void sqlrprotocol_tds::init() {
 	// handle 0 is invalid; start above SQLRELAY_HANDLE_BASE to stay
 	// disjoint from real-backend-issued handles (see newHandle())
 	nexthandle=SQLRELAY_HANDLE_BASE;
+	pendingcursor=NULL;
 
 	rpcparamcount=0;
 	rpcfailed=false;
@@ -1650,6 +1668,7 @@ void sqlrprotocol_tds::free() {
 	// just have to forget about them
 	stmthandles.clear();
 	cursorhandles.clear();
+	pendingcursor=NULL;
 	executeflag.clear();
 	releaseAllPositionRows();
 }
@@ -1994,6 +2013,10 @@ bool sqlrprotocol_tds::sendPacket() {
 
 	} while (remaining);
 
+	// a response only goes out once - leaving it behind risks sending
+	// it again if something appends to the buffer afterward
+	resppacket.clear();
+
 	return true;
 }
 
@@ -2328,6 +2351,13 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				loop=sendUnimplementedFeatureError();
 				break;
 		}
+
+		// the request is done and its response has been sent, so
+		// there's nothing left for an attention to cancel.  a cursor
+		// the request meant to leave open is still in its handle
+		// dictionary, and an sp_unprepare or sp_cursorclose is what
+		// releases it now.
+		pendingcursor=NULL;
 
 	} while (loop);
 
@@ -3556,6 +3586,19 @@ bool sqlrprotocol_tds::attention() {
 	// there's nothing to interrupt.  MS-TDS 2.2.1.6 says to acknowledge
 	// it with a done that has the attention bit set, either way.
 
+	// The client is walking away from the request though, and won't
+	// send the sp_unprepare or sp_cursorclose that would have released
+	// the cursor it left open, so put that cursor back here.  The
+	// protocol doesn't say which handle the attention is for, so it's
+	// the request's own cursor that gets released, and only if it's
+	// still one of the handles this module handed out.
+	if (pendingcursor &&
+		(handlesContain(&stmthandles,pendingcursor) ||
+		handlesContain(&cursorhandles,pendingcursor))) {
+		releaseCursorHandles(pendingcursor);
+	}
+	pendingcursor=NULL;
+
 	resppacket.clear();
 	done(DONE_FINAL|DONE_ATTN,0,0);
 	return sendPacket();
@@ -3588,7 +3631,7 @@ bool sqlrprotocol_tds::sspi() {
 bool sqlrprotocol_tds::sqlBatch() {
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
 		return sendNoCursorAvailableError();
 	}
@@ -6187,7 +6230,7 @@ bool sqlrprotocol_tds::bulkLoad() {
 	}
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
 		debugEnd();
 		return sendNoCursorAvailableError();
@@ -7887,6 +7930,99 @@ void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
 	handles->clear();
 }
 
+void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
+
+	if (!cursor) {
+		return;
+	}
+
+	// a cursor can be referred to by a prepared statement handle and a
+	// cursor handle at the same time, so drop every handle that refers
+	// to it before releasing it.  the keys are collected first, since
+	// removing one invalidates the key list.
+	dictionary<uint32_t, sqlrservercursor *>	*handles[2];
+	handles[0]=&stmthandles;
+	handles[1]=&cursorhandles;
+	for (uint16_t i=0; i<2; i++) {
+		linkedlist<uint32_t>	deadkeys;
+		linkedlist<uint32_t>	*keys=handles[i]->getKeys();
+		for (listnode<uint32_t> *node=keys->getFirst();
+						node; node=node->getNext()) {
+			sqlrservercursor	*c=NULL;
+			if (handles[i]->getValue(node->getValue(),&c) &&
+								c==cursor) {
+				deadkeys.append(node->getValue());
+			}
+		}
+		for (listnode<uint32_t> *node=deadkeys.getFirst();
+						node; node=node->getNext()) {
+			handles[i]->remove(node->getValue());
+		}
+	}
+
+	if (pendingcursor==cursor) {
+		pendingcursor=NULL;
+	}
+
+	executeflag.remove(cursor);
+	releasePositionRows(cursor);
+	cont->release(cursor);
+}
+
+void sqlrprotocol_tds::evictOldestHandle(sqlrservercursor *keep) {
+
+	// the dictionaries track insertion order, so the first key is the
+	// oldest handle.  cursor handles are evicted before prepared
+	// statement handles, since an abandoned cursor is the more likely
+	// leak, but either way releaseCursorHandles() drops both kinds of
+	// handle to the cursor it picks.  keep is the cursor the request
+	// that needs another one is itself working from - evicting that
+	// would release the rows it's reading and hand the cursor right
+	// back to it.
+	dictionary<uint32_t, sqlrservercursor *>	*handles[2];
+	handles[0]=&cursorhandles;
+	handles[1]=&stmthandles;
+	for (uint16_t i=0; i<2; i++) {
+		for (listnode<uint32_t>
+			*node=handles[i]->getKeys()->getFirst();
+			node; node=node->getNext()) {
+			sqlrservercursor	*cursor=NULL;
+			if (!handles[i]->getValue(node->getValue(),&cursor) ||
+								!cursor) {
+				handles[i]->remove(node->getValue());
+				return;
+			}
+			if (cursor!=keep) {
+				releaseCursorHandles(cursor);
+				return;
+			}
+		}
+	}
+}
+
+sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
+
+	sqlrservercursor	*cursor=cont->getCursor();
+
+	// A client can walk off and leave a prepared statement or cursor
+	// handle open - no sp_unprepare, no sp_cursorclose - and each one
+	// holds a cursor forever.  Enough of those and the pool runs dry
+	// and every request after that fails.  Evict the oldest handle and
+	// try once more rather than starving the session.
+	if (!cursor) {
+		evictOldestHandle(keep);
+		cursor=cont->getCursor();
+	}
+
+	// remember it, so an attention that abandons this request can put
+	// it back
+	if (cursor) {
+		pendingcursor=cursor;
+	}
+
+	return cursor;
+}
+
 char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
 
 	// sp_prepexecrpc gets its statement in odbc call syntax -
@@ -8000,6 +8136,43 @@ bool sqlrprotocol_tds::rpcUnsupportedTypeError(byte_t tdstype) {
 	return false;
 }
 
+bool sqlrprotocol_tds::rpcUnnumberedError(byte_t state,
+						byte_t errclass,
+						const char *msgtext) {
+
+	// The rpc-path counterpart of the send*Error() functions.  An rpc
+	// gets exactly one response, which rpc() finishes with a done-proc
+	// and remoteProcedureCall() sends.  Sending an error from inside an
+	// rpc handler would put a second, complete response on the wire and
+	// leave the client's packet stream a command out of step from then
+	// on.  So append the error, flag the rpc failed, and let the outer
+	// call finish it.
+	//
+	// Like rpcUnsupportedTypeError(), these carry no return status -
+	// the proc never ran.
+
+	debugWrite("%s",msgtext);
+
+	appendError(0,state,errclass,msgtext,srvname,NULL,1);
+	rpcfailed=true;
+
+	return true;
+}
+
+bool sqlrprotocol_tds::rpcUnimplementedFeatureError() {
+	return rpcUnnumberedError(1,10,"Unimplemented feature");
+}
+
+bool sqlrprotocol_tds::rpcQueryTooLargeError(size_t querysize) {
+	stringbuffer	err;
+	queryTooLargeMessage(querysize,&err);
+	return rpcUnnumberedError(1,16,err.getString());
+}
+
+bool sqlrprotocol_tds::rpcNoCursorAvailableError() {
+	return rpcUnnumberedError(1,16,"No cursor available");
+}
+
 bool sqlrprotocol_tds::paramIsUnicode(uint16_t param) {
 	if (param>=rpcparamcount) {
 		return false;
@@ -8039,13 +8212,13 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	// numbered procs
 
 	if (!procname) {
-		return sendUnimplementedFeatureError();
+		return rpcUnimplementedFeatureError();
 	}
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	// Build the query, naming a bind variable per parameter.  A by-ref
@@ -8122,9 +8295,9 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 	// for - do.  One that doesn't just errors cleanly.
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	// build the query, naming a bind variable per remaining parameter
@@ -8190,9 +8363,9 @@ bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 	debugWrite("prepared handle: %d",handle);
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	// build the query, naming a bind variable per parameter, including
@@ -8256,13 +8429,13 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
-		return sendQueryTooLargeError(stmtlen);
+		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	// the parameter declaration string is only there if there are
@@ -8341,7 +8514,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	size_t	querylen=charstring::getLength(query);
 	if (querylen>maxquerysize) {
 		delete[] query;
-		return sendQueryTooLargeError(querylen);
+		return rpcQueryTooLargeError(querylen);
 	}
 
 	// reuse the handle the client sent, if it sent a live one.
@@ -8356,10 +8529,10 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	}
 
 	// get an available cursor
-	cursor=cont->getCursor();
+	cursor=availableCursor();
 	if (!cursor) {
 		delete[] query;
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	handle=newHandle();
@@ -8629,7 +8802,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 	debugWrite("schema: %s",(schema)?schema:"(null)");
 	debugWrite("object: %s",(object)?object:"(null)");
 
-	sqlrservercursor	*pkcursor=cont->getCursor();
+	sqlrservercursor	*pkcursor=availableCursor(cursor);
 	if (!pkcursor) {
 		delete[] currentcatalog;
 		delete[] currentschema;
@@ -8726,10 +8899,11 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 
 	// The statement runs on a cursor of its own.  Holding it from here
 	// also keeps the primary key lookup from taking it, since getCursor()
-	// only hands out cursors that aren't busy.
-	sqlrservercursor	*dmlcursor=cont->getCursor();
+	// only hands out cursors that aren't busy.  The cursor the update is
+	// positioned on is off limits to eviction - row points into its rows.
+	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	memorypool		*bindpool=cont->getBindPool(dmlcursor);
@@ -8782,9 +8956,9 @@ bool sqlrprotocol_tds::positionedDelete(sqlrservercursor *cursor,
 
 	// delete from <table> where <key>=@n and ...
 
-	sqlrservercursor	*dmlcursor=cont->getCursor();
+	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	memorypool		*bindpool=cont->getBindPool(dmlcursor);
@@ -8816,9 +8990,9 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 	// An insert isn't positioned on anything, so the cursor is only
 	// used to work out which columns the client is allowed to name.
 
-	sqlrservercursor	*dmlcursor=cont->getCursor();
+	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	memorypool		*bindpool=cont->getBindPool(dmlcursor);
@@ -8880,7 +9054,7 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 
 	if (querysize>maxquerysize) {
 		cont->release(cursor);
-		return sendQueryTooLargeError(querysize);
+		return rpcQueryTooLargeError(querysize);
 	}
 
 	cont->setInputBindCount(cursor,bindcount);
@@ -8993,7 +9167,7 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
-		return sendQueryTooLargeError(stmtlen);
+		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	// A real server only accepts a select or an exec/execute as a
@@ -9010,9 +9184,9 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	// a parameterized cursor sends a declaration string, then the values
@@ -9091,15 +9265,15 @@ bool sqlrprotocol_tds::cursorPrepare() {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
-		return sendQueryTooLargeError(stmtlen);
+		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
@@ -9204,15 +9378,15 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
-		return sendQueryTooLargeError(stmtlen);
+		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
 
 	// get an available cursor
-	sqlrservercursor	*cursor=cont->getCursor();
+	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
-		return sendNoCursorAvailableError();
+		return rpcNoCursorAvailableError();
 	}
 
 	bool	success=cont->prepareQuery(cursor,stmt,stmtlen,
@@ -10732,14 +10906,19 @@ bool sqlrprotocol_tds::sendTdsProtocolError() {
 	return sendError(0,0,10,"TDS Protocol Error",1);
 }
 
+void sqlrprotocol_tds::queryTooLargeMessage(size_t querysize,
+						stringbuffer *err) {
+	err->append("Query too large (");
+	err->append((uint64_t)querysize);
+	err->append('>');
+	err->append(maxquerysize);
+	err->append(')');
+}
+
 bool sqlrprotocol_tds::sendQueryTooLargeError(size_t querysize) {
 
 	stringbuffer	err;
-	err.append("Query too large (");
-	err.append((uint64_t)querysize);
-	err.append('>');
-	err.append(maxquerysize);
-	err.append(')');
+	queryTooLargeMessage(querysize,&err);
 
 	// FIXME: is there a real error message/number/state/class for this?
 	return sendError(0,1,16,err.getString(),1);

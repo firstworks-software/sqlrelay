@@ -2251,6 +2251,16 @@
 		(mssql error 8009, "Data type 0xNN is unknown"), matching
 		how a real server keeps the connection alive, instead of
 		tearing the connection down outright (#9205)
+	fixed the tds protocol module - a failed rpc call could send two
+		complete response packets for one request, desyncing the
+		client's tds stream; and the module leaked cursor and
+		prepared-statement handles on an abandoned sp_cursoropen or
+		an sp_prepare/sp_execute followed by an ATTENTION with no
+		matching close/unprepare, starving the cursor pool and
+		eventually crashing the client deep inside a later, unrelated
+		rpc call - getCursor() failures now evict the oldest
+		abandoned handle and retry once, and an ATTENTION releases
+		the cursor it interrupted (#9248)
 
 	fixed the tds protocol module's COLMETADATA writer to send a
 		minimal XMLTYPE_INFO (MS-TDS 2.2.5.4.3) for an xml column,
