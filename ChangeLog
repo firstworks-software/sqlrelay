@@ -1798,6 +1798,43 @@
 		rejected below 4 before the subtraction, and capped afterward -
 		against postgresql's own startup packet limit for the startup
 		message, and against maxquerysize for everything else (#9042)
+	fixed sqlrprotocol::readLenEncInt() - none of its switch cases
+		had a break, so every case fell through to default,
+		which always returned the raw marker byte; the 2 and 8
+		byte cases also did no endian conversion, so they were
+		wrong on big-endian hosts once the fallthrough was
+		removed. readLenEncInt() now takes the end of the packet
+		and returns false rather than reading past it, and the
+		mysql protocol module's six call sites (the handshake
+		response's challenge response size and connect
+		attributes, and COM_STMT_EXECUTE's blob/string bind
+		values) bound the result against the bytes remaining in
+		the packet before using it, rather than trusting an
+		attacker-controlled 64 bit length off the wire (#9047)
+	fixed the mysql protocol module - parseHandshakeResponse41()
+		read the challenge response length as a signed char on
+		the CLIENT_SECURE_CONNECTION branch, so a length byte of
+		0x80-0xff sign-extended into a huge 64 bit allocation,
+		throwing an uncaught std::bad_alloc and killing the
+		sqlr-connection process; reachable pre-authentication.
+		The length is now read unsigned and, like the
+		readLenEncInt() call sites above, bounded against the
+		bytes remaining in the packet (#9048)
+	fixed the postgresql protocol module - bind() read each bind
+		parameter's 32 bit size off the wire and used it directly to
+		allocate a buffer and copy out of the request packet, with
+		only a null-indicator check; a declared size near 4GB drove a
+		4GB allocation and an out-of-bounds copy from a much shorter
+		packet. paramsize is now bounded against the bytes remaining
+		in the packet before bindTextParameter() or
+		bindBinaryParameter() touch it. Also fixed two related bugs
+		found while auditing this code: the per-parameter format code
+		was indexed by the parameter index even when the client sent
+		a single format code for all parameters (violating the
+		protocol's 0/1/n rule and reading past the format code array
+		for clients that used it validly), and oids, needed for the
+		binary bind path, could be NULL or shorter than the declared
+		parameter value count and was indexed without a check (#9043)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -408,45 +408,71 @@ bool sqlrprotocol::readBE(const byte_t *rp, uint64_t *value,
 	return true;
 }
 
-uint64_t sqlrprotocol::readLenEncInt(const byte_t *rp, const byte_t **rpout) {
-	uint64_t	retval=0;
+bool sqlrprotocol::readLenEncInt(const byte_t *rp, const byte_t *end,
+						uint64_t *value,
+						const byte_t **rpout) {
+
+	// nothing to read
+	if (rp>=end) {
+		*value=0;
+		*rpout=rp;
+		return false;
+	}
+
 	switch (*rp) {
 		case 0xfe:
+			// 1 marker byte + 8 value bytes
+			if (end-rp<9) {
+				*value=0;
+				*rpout=rp;
+				return false;
+			}
 			{
 			uint64_t	val;
 			bytestring::copy(&val,rp+1,sizeof(uint64_t));
-			retval=val;
+			*value=leToHost(val);
 			*rpout=rp+9;
 			}
+			break;
 		case 0xfd:
-			{
-			uint32_t	val=0;
-			byte_t		*valbytes=(byte_t *)&val;
-			rp++;
-			valbytes[3]=*rp;
-			rp++;
-			valbytes[2]=*rp;
-			rp++;
-			valbytes[1]=*rp;
-			rp++;
-			valbytes[0]=0;
-			val=beToHost(val);
-			retval=(uint64_t)val;
-			*rpout=rp;
+			// 1 marker byte + 3 value bytes
+			if (end-rp<4) {
+				*value=0;
+				*rpout=rp;
+				return false;
 			}
+			{
+			uint32_t	val=((uint32_t)rp[1])|
+						((uint32_t)rp[2]<<8)|
+						((uint32_t)rp[3]<<16);
+			*value=(uint64_t)val;
+			*rpout=rp+4;
+			}
+			break;
 		case 0xfc:
+			// 1 marker byte + 2 value bytes
+			if (end-rp<3) {
+				*value=0;
+				*rpout=rp;
+				return false;
+			}
 			{
 			uint16_t	val;
 			bytestring::copy(&val,rp+1,sizeof(uint16_t));
-			retval=val;
+			*value=leToHost(val);
 			*rpout=rp+3;
 			}
+			break;
 		default:
 			// *rp should be <= 0xfb at this point
-			retval=*rp;
+			// (0xff/0xfb are reserved markers in the mysql
+			// protocol but callers of this function have
+			// always treated them as literal single-byte
+			// values, so preserve that behavior here)
+			*value=*rp;
 			*rpout=rp+1;
 	}
-	return retval;
+	return true;
 }
 
 bool sqlrprotocol::readBerEncInt(const byte_t *rp, uint64_t *value,

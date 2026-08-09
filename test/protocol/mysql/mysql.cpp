@@ -5,6 +5,8 @@
 #include <rudiments/bytestring.h>
 #include <rudiments/environment.h>
 #include <rudiments/stringbuffer.h>
+#include <rudiments/bytebuffer.h>
+#include <rudiments/inetsocketclient.h>
 #include <rudiments/stdio.h>
 #include <config.h>
 
@@ -22,6 +24,12 @@ MYSQL_RES	*result;
 MYSQL_FIELD	*field;
 MYSQL_ROW	row;
 
+// CLIENT_PROTOCOL_41, CLIENT_SECURE_CONNECTION and
+// CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA come from mysql.h; they're the
+// client capability flags needed to reach the two vulnerable branches in
+// sqlrprotocol_mysql::parseHandshakeResponse41() (see
+// src/protocols/mysql.cpp for the full flag list)
+
 // pin a result-set column's metadata; pass length -1 to skip the length check
 static void assertColumn(MYSQL_FIELD *field, const char *name,
 				int length, int flags, int type) {
@@ -31,6 +39,109 @@ static void assertColumn(MYSQL_FIELD *field, const char *name,
 	}
 	assertEquals((int)field->flags,flags);
 	assertEquals((int)field->type,type);
+}
+
+// Regression coverage for tickets #9047 and #9048: sqlrprotocol_mysql's
+// pre-authentication handshake response parser used to be able to crash
+// the sqlr-connection process on a single malformed packet -
+//  - #9048: on the CLIENT_SECURE_CONNECTION branch, the challenge-response
+//    length was read as a signed char, so a length byte of 0x80-0xff
+//    sign-extended into a huge 64 bit allocation
+//  - #9047: sqlrprotocol::readLenEncInt() had no "break" in any switch
+//    case, which (accidentally) capped every length it returned at 255;
+//    fixing that alone, without also bounding the result against the
+//    packet, would have turned the CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA
+//    branch into the same class of bug, with a full attacker-controlled
+//    64 bit length instead of a sign-extended byte
+//
+// This talks to the raw wire protocol directly (bypassing libmysqlclient
+// entirely) so it can send the malformed packets those bugs required.
+// It sends a handshake response with a bogus challenge-response length
+// and asserts that the server comes back with an error packet instead of
+// simply closing the connection (which is what happens pre-fix, when the
+// huge allocation throws an uncaught std::bad_alloc and kills the
+// sqlr-connection process before it can respond at all).
+static bool sendMalformedHandshakeResponse(const char *host, uint16_t port,
+				uint32_t clientcapabilityflags,
+				const unsigned char *tail, size_t tailsize) {
+
+	inetsocketclient	sock;
+	sock.setHost(host);
+	sock.setPort(port);
+	if (!sock.connect()) {
+		return false;
+	}
+
+	// read and discard the server's initial handshake packet
+	unsigned char	header[4];
+	if (sock.read(header,sizeof(header))!=(ssize_t)sizeof(header)) {
+		sock.close();
+		return false;
+	}
+	uint32_t	handshakesize=header[0]|
+					(header[1]<<8)|
+					(header[2]<<16);
+	unsigned char	discard[256];
+	uint32_t	left=handshakesize;
+	while (left) {
+		size_t	chunk=(left>sizeof(discard))?sizeof(discard):left;
+		if (sock.read(discard,chunk)!=(ssize_t)chunk) {
+			sock.close();
+			return false;
+		}
+		left-=chunk;
+	}
+
+	// build the handshake response packet body
+	bytebuffer	body;
+	unsigned char	le32[4];
+	le32[0]=(unsigned char)(clientcapabilityflags&0xff);
+	le32[1]=(unsigned char)((clientcapabilityflags>>8)&0xff);
+	le32[2]=(unsigned char)((clientcapabilityflags>>16)&0xff);
+	le32[3]=(unsigned char)((clientcapabilityflags>>24)&0xff);
+	body.append(le32,sizeof(le32));		// capability flags
+	unsigned char	maxpacket[4]={0,0,0,1};
+	body.append(maxpacket,sizeof(maxpacket));	// max-packet size
+	body.append((unsigned char)0x08);		// character set
+	unsigned char	reserved[23];
+	bytestring::zero(reserved,sizeof(reserved));
+	body.append(reserved,sizeof(reserved));	// reserved
+	body.append("root",5);				// username + nul
+	body.append(tail,tailsize);			// the malformed part
+
+	// wrap it in a packet header - 3 byte little-endian size, 1 byte
+	// sequence number (1, following the server's handshake at 0)
+	unsigned char	packetheader[4];
+	uint32_t	bodysize=(uint32_t)body.getSize();
+	packetheader[0]=(unsigned char)(bodysize&0xff);
+	packetheader[1]=(unsigned char)((bodysize>>8)&0xff);
+	packetheader[2]=(unsigned char)((bodysize>>16)&0xff);
+	packetheader[3]=1;
+
+	if (sock.write(packetheader,sizeof(packetheader))!=
+					(ssize_t)sizeof(packetheader) ||
+			sock.write((const unsigned char *)body.getBuffer(),
+					body.getSize())!=
+					(ssize_t)body.getSize()) {
+		sock.close();
+		return false;
+	}
+
+	// if the server is still alive, it will respond with an error
+	// packet (first byte of the payload is 0xff); if it crashed, the
+	// connection will simply be closed with nothing to read
+	unsigned char	respheader[4];
+	if (sock.read(respheader,sizeof(respheader))!=
+					(ssize_t)sizeof(respheader)) {
+		sock.close();
+		return false;
+	}
+	unsigned char	firstbyte;
+	bool	gotfirstbyte=(sock.read(&firstbyte,1)==1);
+
+	sock.close();
+
+	return gotfirstbyte && firstbyte==0xff;
 }
 
 int	main(int argc, char **argv) {
@@ -67,6 +178,34 @@ int	main(int argc, char **argv) {
 		db=hostname;
 	}
 
+	// #9047/#9048 regression: a malformed handshake response used to
+	// crash the sqlr-connection process pre-authentication; this only
+	// exercises sqlrelay's own mysql protocol emulation, not a native
+	// mysql server, since it's testing sqlrelay's parser
+	if (issqlrelay) {
+		stdoutput.printf(
+			"\n====== #9047/#9048 malformed handshake ======\n\n");
+		uint16_t	rawport=(uint16_t)charstring::convertToInteger(port);
+
+		stdoutput.printf("CLIENT_SECURE_CONNECTION, "
+					"sign-extending length byte: ");
+		unsigned char	badlengthbyte[]={0xff};
+		assertTrue(sendMalformedHandshakeResponse(host,rawport,
+					CLIENT_PROTOCOL_41|
+					CLIENT_SECURE_CONNECTION,
+					badlengthbyte,sizeof(badlengthbyte)));
+		stdoutput.printf("\n");
+
+		stdoutput.printf("CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA, "
+					"oversized 0xfe length: ");
+		unsigned char	badlenenc[]={0xfe,0xff,0xff,0xff,0xff,
+						0xff,0xff,0xff,0xff};
+		assertTrue(sendMalformedHandshakeResponse(host,rawport,
+					CLIENT_PROTOCOL_41|
+					CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA,
+					badlenenc,sizeof(badlenenc)));
+		stdoutput.printf("\n");
+	}
 
 	stdoutput.printf("\n============ Traditional API ============\n\n");
 

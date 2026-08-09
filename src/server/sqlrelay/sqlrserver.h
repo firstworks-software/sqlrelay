@@ -6163,11 +6163,21 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 					uint64_t expected,
 					const byte_t **rpout);
 
-		/** Reads length-encoded integer from byte string "in",
-		 *  converts it from big-endian to host byte order, returns it,
-		 *  and sets "out" to the byte following the end of the
-		 *  length-encoded integer. */
-		uint64_t	readLenEncInt(const byte_t *in,
+		/** Reads a length-encoded integer from byte string "in",
+		 *  converts it from little-endian to host byte order, stores
+		 *  it in "value", and sets "out" to the byte following the
+		 *  end of the length-encoded integer.  "end" points just
+		 *  past the last valid byte in "in"; the read (including any
+		 *  additional bytes the encoding requires) is bounds-checked
+		 *  against it.
+		 *
+		 *  Returns true if a complete length-encoded integer was
+		 *  read without running past "end", and false otherwise.  On
+		 *  false, "value" is set to 0 and "out" is set back to
+		 *  "in". */
+		bool	readLenEncInt(const byte_t *in,
+						const byte_t *end,
+						uint64_t *value,
 						const byte_t **out);
 
 		/** Reads a BER-encoded integer from byte string "rp" into

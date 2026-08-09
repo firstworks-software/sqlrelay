@@ -814,11 +814,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 
 		// com_stmt_execute
 		bool	comStmtExecute();
-		void	bindParameters(sqlrservercursor *cursor,
+		bool	bindParameters(sqlrservercursor *cursor,
 					uint16_t pcount,
 					uint16_t *ptypes,
 					const byte_t *nullbitmap,
 					const byte_t *in,
+					const byte_t *end,
 					const byte_t **out);
 		void	clearParams(sqlrservercursor *cursor);
 
@@ -1688,29 +1689,53 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 			CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA &&
 		clientcapabilityflags&
 			CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
-		responsesize=readLenEncInt(rp,&rp);
+		if (!readLenEncInt(rp,end,&responsesize,&rp) ||
+				responsesize>(uint64_t)(end-rp)) {
+			debugWrite("malformed challenge response size");
+			debugEnd();
+			sendMalformedPacketError();
+			return false;
+		}
 		delete[] response;
 		response=(char *)bytestring::duplicate(rp,responsesize);
 		rp+=responsesize;
 	} else if (servercapabilityflags&CLIENT_SECURE_CONNECTION &&
 			clientcapabilityflags&CLIENT_SECURE_CONNECTION) {
-		responsesize=*((char *)rp);
+		// read the length byte unsigned - it was previously read as
+		// a signed char, which sign-extended values 0x80-0xff into
+		// a huge 64 bit responsesize (see #9048)
+		if (rp>=end) {
+			debugWrite("malformed challenge response size");
+			debugEnd();
+			sendMalformedPacketError();
+			return false;
+		}
+		responsesize=*rp;
 		rp++;
+		if (responsesize>(uint64_t)(end-rp)) {
+			debugWrite("malformed challenge response");
+			debugEnd();
+			sendMalformedPacketError();
+			return false;
+		}
 		delete[] response;
 		response=(char *)bytestring::duplicate(rp,responsesize);
 		rp+=responsesize;
 	} else {
-		for (const byte_t *r=rp; *r && r!=end; r++) {
+		for (const byte_t *r=rp; r<end && *r; r++) {
 			responsesize++;
 		}
 		delete[] response;
 		response=(char *)bytestring::duplicate(rp,responsesize);
-		rp+=responsesize+1;
+		rp+=responsesize;
+		if (rp<end) {
+			rp++;
+		}
 	}
 
 	// sometimes there's a null terminator here
 	// eg. the Connector/J 5.1.45 sends one, even when it sends the size
-	if (!*rp) {
+	if (rp<end && !*rp) {
 		rp++;
 	}
 
@@ -1755,19 +1780,44 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 		debugStart("connect attrs");
 
 		// size of all key-values
-		uint64_t	allsize=readLenEncInt(rp,&rp);
-		const byte_t	*start=rp;
-		while ((uint64_t)(rp-start)<allsize) {
+		uint64_t	allsize=0;
+		if (!readLenEncInt(rp,end,&allsize,&rp) ||
+				allsize>(uint64_t)(end-rp)) {
+			debugWrite("malformed connect attrs size");
+			debugEnd();
+			debugEnd();
+			sendMalformedPacketError();
+			return false;
+		}
+		const byte_t	*attrsend=rp+allsize;
+		while (rp<attrsend) {
 
 			// key
-			uint64_t	keysize=readLenEncInt(rp,&rp);
-			char		*key=charstring::duplicate(
+			uint64_t	keysize=0;
+			if (!readLenEncInt(rp,attrsend,&keysize,&rp) ||
+					keysize>(uint64_t)(attrsend-rp)) {
+				debugWrite("malformed connect attr key size");
+				debugEnd();
+				debugEnd();
+				sendMalformedPacketError();
+				return false;
+			}
+			char	*key=charstring::duplicate(
 						(const char *)rp,keysize);
 			rp+=keysize;
 
 			// value
-			uint64_t	valsize=readLenEncInt(rp,&rp);
-			char		*val=charstring::duplicate(
+			uint64_t	valsize=0;
+			if (!readLenEncInt(rp,attrsend,&valsize,&rp) ||
+					valsize>(uint64_t)(attrsend-rp)) {
+				debugWrite("malformed connect attr value size");
+				debugEnd();
+				delete[] key;
+				debugEnd();
+				sendMalformedPacketError();
+				return false;
+			}
+			char	*val=charstring::duplicate(
 						(const char *)rp,valsize);
 			rp+=valsize;
 
@@ -4394,6 +4444,7 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 	// executes the previously prepared query
 
 	const byte_t	*rp=reqpacket;
+	const byte_t	*end=reqpacket+reqpacketsize;
 	rp++;
 
 	// get statement id
@@ -4454,7 +4505,10 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 		}
 
 		// bind the parameters
-		bindParameters(cursor,pcount,pt,nullbitmap,rp,&rp);
+		if (!bindParameters(cursor,pcount,pt,nullbitmap,rp,end,&rp)) {
+			debugEnd();
+			return sendMalformedPacketError();
+		}
 	} else {
 		clearParams(cursor);
 	}
@@ -4470,11 +4524,12 @@ bool sqlrprotocol_mysql::comStmtExecute() {
 	return sendQueryResult(cursor,true);
 }
 
-void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
+bool sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 					uint16_t pcount,
 					uint16_t *ptypes,
 					const byte_t *nullbitmap,
 					const byte_t *in,
+					const byte_t *end,
 					const byte_t **out) {
 
 	if (pcount>maxbindcount) {
@@ -4725,8 +4780,15 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 			case MYSQL_TYPE_MEDIUM_BLOB:
 			case MYSQL_TYPE_LONG_BLOB:
 			case MYSQL_TYPE_BLOB:
+				{
 				bv->type=SQLRSERVERBINDVARTYPE_BLOB;
-				bv->valuesize=readLenEncInt(rp,&rp);
+				uint64_t	blobsize=0;
+				if (!readLenEncInt(rp,end,&blobsize,&rp) ||
+						blobsize>(uint64_t)(end-rp)) {
+					debugEnd();
+					return false;
+				}
+				bv->valuesize=(uint32_t)blobsize;
 				bv->value.stringval=
 					(char *)bindpool->allocate(
 							bv->valuesize+1);
@@ -4736,13 +4798,21 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.stringval[bv->valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
+				}
 				break;
 			case MYSQL_TYPE_STRING:
 			case MYSQL_TYPE_VAR_STRING:
 			// (for all other types, assume string)
 			default:
+				{
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
-				bv->valuesize=readLenEncInt(rp,&rp);
+				uint64_t	stringsize=0;
+				if (!readLenEncInt(rp,end,&stringsize,&rp) ||
+						stringsize>(uint64_t)(end-rp)) {
+					debugEnd();
+					return false;
+				}
+				bv->valuesize=(uint32_t)stringsize;
 				bv->value.stringval=
 					(char *)bindpool->allocate(
 							bv->valuesize+1);
@@ -4752,6 +4822,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 				bv->value.stringval[bv->valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
+				}
 				break;
 		}
 
@@ -4781,6 +4852,7 @@ void sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 	debugEnd();
 
 	*out=rp;
+	return true;
 }
 
 void sqlrprotocol_mysql::clearParams(sqlrservercursor *cursor) {
