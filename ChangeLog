@@ -2060,6 +2060,31 @@
 			audit of every debugWrite()/debugStart() call under
 			src/ by passing the data as a %s argument instead
 			(#9221)
+		fixed the postgresql protocol module's getColumnTypeOid() - it was a
+			postgresql-native oid table with cases for only 128 of the 193
+			sqlrelay datatypes, so 65 kinds of column described as oid 705
+			(unknown); added cases for the remaining datatypes, including
+			the binary lob family (image, binary, varbinary, longbinary,
+			the various *blob types, raw, long_raw, bfile, geometry,
+			sdo_geometry, and informix's byte type), which map onto bytea;
+			sendDataRow() now hex-encodes bytea values to match postgresql's
+			text-format wire representation, and sends lob columns' actual
+			content instead of an empty field, following the same read-the-
+			whole-lob-into-a-buffer approach as the mysql protocol module;
+			sendRowDescription() now reports a real per-type pg_type.typlen
+			(-1 for the varlena types, a fixed width for the rest) instead
+			of the column's declared width for every type but bpchar/
+			varchar, and sets the numeric type's modifier (precision/scale)
+			as well; also fixed getColumnSize() truncating above 65535 when
+			computing the bpchar/varchar modifier; also fixed datatypes.h's
+			isBlobTypeChar()/isBlobTypeInt() and isBinaryTypeChar()/
+			isBinaryTypeInt() classifying db2's graphic/vargraphic/
+			longvargraphic (double-byte character types, not binary) as
+			blobs, and added informix's byte type, which they were missing;
+			left the long datatype unmapped (still oid 705) since oracle
+			returns it for character data while sap/freetds return it for
+			binary data, and it can't be told apart without splitting the
+			datatype (#9017)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

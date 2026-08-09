@@ -40,6 +40,9 @@
 // (see MAX_STARTUP_PACKET_LENGTH in postgresql's pqcomm.h)
 #define MAX_STARTUP_PACKET_SIZE		10000
 
+// max bytes a single character can take up, for sizing lob reads
+#define MAX_BYTES_PER_CHAR		4
+
 // auth types
 #define AUTH_NONE		0
 #define AUTH_KRB5		2
@@ -130,9 +133,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 							uint32_t maxrows);
 		bool	sendRowDescription(sqlrservercursor *cursor,
 							uint16_t colcount);
+		uint32_t	getColumnOid(sqlrservercursor *cursor,
+							uint32_t col);
 		uint32_t	getColumnTypeOid(uint16_t coltype);
+		int16_t	getColumnTypeLen(uint32_t oid);
 		bool	sendDataRow(sqlrservercursor *cursor,
 							uint16_t colcount);
+		bool	blobAlreadyHex();
+		void	buildLobField(sqlrservercursor *cursor,
+							uint32_t col,
+							bool isbytea);
+		void	writeByteaField(const char *data, uint64_t size);
 		bool	sendCommandComplete(sqlrservercursor *cursor);
 		bool	sendEmptyQueryResponse();
 
@@ -174,6 +185,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 		filedescriptor	*clientsock;
 
 		bytebuffer	resppacket;
+		char		lobbuffer[32768];
 
 		uint32_t	reqpacketsize;
 		byte_t		*reqpacket;
@@ -1442,32 +1454,36 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 
 		// data type oid (or 0 if not known)
 		const char	*coltypename=cont->getColumnTypeName(cursor,i);
-		uint32_t	coltypeoid=0;
-		if (charstring::isNumber(coltypename)) {
-			// The postgresql backend returns oid's unless
-			// typemangling=yes/lookup is set.  If we get a number
-			// for the type name, then assume the backend is
-			// returning oid's.
-			coltypeoid=charstring::convertToInteger(coltypename);
-		} else {
-			coltypeoid=getColumnTypeOid(
-					cont->getColumnType(cursor,i));
-		}
+		uint32_t	coltypeoid=getColumnOid(cursor,i);
 		writeBE(&resppacket,coltypeoid);
 
-		// data type size and modifier
-		uint16_t	datatypesize=cont->getColumnSize(cursor,i);
+		// data type size: real postgresql reports pg_type.typlen,
+		// a per-type constant, not anything derived from the
+		// column's declared width - most types are varlena and
+		// report -1 here, with their width carried in the modifier
+		// instead
+		int16_t		datatypesize=getColumnTypeLen(coltypeoid);
 		uint32_t	datatypemodifier=(uint32_t)-1;
-		// For various types (I'm sure I'll discover others later),
-		// return -1 for the size and return the size in the modifier.
-		// For bpchar/varchar, atttypmod is the declared length plus
-		// VARHDRSZ (4 bytes); clients subtract 4 to recover the
-		// declared length.
+		uint32_t	columnsize=cont->getColumnSize(cursor,i);
 		if (coltypeoid==1042 || coltypeoid==1043) {
-			datatypemodifier=datatypesize+4;
-			datatypesize=(uint16_t)-1;
+			// for bpchar/varchar, atttypmod is the declared
+			// length plus VARHDRSZ (4 bytes); clients subtract 4
+			// to recover the declared length
+			datatypemodifier=columnsize+4;
+		} else if (coltypeoid==1700) {
+			// for numeric, atttypmod packs precision into the
+			// high 16 bits and scale into the low 16, then adds
+			// VARHDRSZ
+			uint32_t	precision=
+				cont->getColumnPrecision(cursor,i);
+			if (precision) {
+				uint32_t	scale=
+					cont->getColumnScale(cursor,i);
+				datatypemodifier=
+					((precision<<16)|(scale&0xffff))+4;
+			}
 		}
-		writeBE(&resppacket,datatypesize);
+		writeBE(&resppacket,(uint16_t)datatypesize);
 		writeBE(&resppacket,datatypemodifier);
 
 		// format code text=0, binary=1
@@ -1492,6 +1508,19 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 
 	// send response packet
 	return sendPacket(MESSAGE_ROWDESCRIPTION);
+}
+
+uint32_t sqlrprotocol_postgresql::getColumnOid(sqlrservercursor *cursor,
+							uint32_t col) {
+
+	// The postgresql backend returns oid's unless typemangling=yes/lookup
+	// is set.  If we get a number for the type name, then assume the
+	// backend is returning oid's.
+	const char	*coltypename=cont->getColumnTypeName(cursor,col);
+	if (charstring::isNumber(coltypename)) {
+		return charstring::convertToInteger(coltypename);
+	}
+	return getColumnTypeOid(cont->getColumnType(cursor,col));
 }
 
 uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
@@ -1534,6 +1563,11 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 		case GRAPHIC_DATATYPE:
 		case VARGRAPHIC_DATATYPE:
 		case LONGVARGRAPHIC_DATATYPE:
+		case LVARCHAR_DATATYPE:
+		case ENUM_DATATYPE:
+		case SET_DATATYPE:
+		case MLSLABEL_DATATYPE:
+		case DATALINK_DATATYPE:
 			return 25; //text
 		case OID_DATATYPE:
 			return 26; //oid
@@ -1741,9 +1775,158 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 			return 2282; //opaque
 		case ANYELEMENT_DATATYPE:
 			return 2283; //anyelement
+		// Fifteen sqlrelay datatypes are various databases' binary
+		// lob types.  Postgresql has no distinct family of binary
+		// lob types, so they all map onto bytea.  sendDataRow()
+		// hex-encodes their contents to match bytea's text-format
+		// wire representation.
+		case IMAGE_DATATYPE:
+		case BINARY_DATATYPE:
+		case VARBINARY_DATATYPE:
+		case LONGBINARY_DATATYPE:
+		case TINY_BLOB_DATATYPE:
+		case MEDIUM_BLOB_DATATYPE:
+		case LONG_BLOB_DATATYPE:
+		case BLOB_DATATYPE:
+		case LONGVARBINARY_DATATYPE:
+		case RAW_DATATYPE:
+		case LONG_RAW_DATATYPE:
+		case BFILE_DATATYPE:
+		case GEOMETRY_DATATYPE:
+		case SDO_GEOMETRY_DATATYPE:
+		case BYTE_DATATYPE:
+			return 17; //bytea
+		// integers
+		case INT_DATATYPE:
+		case INTEGER_DATATYPE:
+		case MEDIUMINT_DATATYPE:
+		case USHORT_DATATYPE:
+			return 23; //int4
+		case SMALLINT_DATATYPE:
+		case TINYINT_DATATYPE:
+		case SHORT_DATATYPE:
+		case TINY_DATATYPE:
+		case YEAR_DATATYPE:
+			return 21; //int2
+		case BIGINT_DATATYPE:
+		case LONGLONG_DATATYPE:
+		case INT64_DATATYPE:
+		case UINT_DATATYPE:
+		case QUAD_DATATYPE:
+			return 20; //int8
+		// numeric/floating point
+		case DECIMAL_DATATYPE:
+		case NUMBER_DATATYPE:
+		case UBIGINT_DATATYPE:
+			return 1700; //numeric
+		case REAL_DATATYPE:
+		case SMALLFLOAT_DATATYPE:
+			return 700; //float4
+		case FLOAT_DATATYPE:
+		case DOUBLE_DATATYPE:
+		case DOUBLE_PRECISION_DATATYPE:
+		case D_FLOAT_DATATYPE:
+			return 701; //float8
+		case BOOLEAN_DATATYPE:
+			return 16; //bool
+		// date/time
+		case DATETIME_DATATYPE:
+		case SMALLDATETIME_DATATYPE:
+			return 1114; //timestamp
+		case NEWDATE_DATATYPE:
+			return 1082; //date
+		case DATETIMEOFFSET_DATATYPE:
+			return 1184; //timestamptz
+		case SMALLMONEY_DATATYPE:
+			return 790; //money
+		// character
+		case STRING_DATATYPE:
+		case NCHAR_DATATYPE:
+			return 1042; //bpchar
+		case VARSTRING_DATATYPE:
+		case VARCHAR2_DATATYPE:
+		case NVARCHAR_DATATYPE:
+		case ROWID_DATATYPE:
+			return 1043; //varchar
+		case UNIQUEIDENTIFIER_DATATYPE:
+			return 2950; //uuid
+		// no postgresql equivalent, and no data to carry: internal
+		// sentinels (ILLEGAL/SENSITIVITY/BOUNDARY are sybase ctlib
+		// error markers, not real column types) or types with no
+		// usable representation
+		case NULL_DATATYPE:
+		case ARRAY_DATATYPE:
+		case USER_DEFINED_TYPE_DATATYPE:
+		case ILLEGAL_DATATYPE:
+		case SENSITIVITY_DATATYPE:
+		case BOUNDARY_DATATYPE:
+		case UNDEFINED_DATATYPE:
+		case LASTREAL_DATATYPE:
+			return 705; //unknown
+		// LONG is ambiguous: oracle returns it for LONG (character
+		// data), sap/freetds return it for CS_LONG_TYPE (not
+		// character data).  It can't be mapped correctly without
+		// splitting the enum value, so it falls through to unknown
+		// below rather than risk mapping it wrong.
 		case UNKNOWN_DATATYPE:
 		default:
 			return 705; //unknown
+	}
+}
+
+int16_t sqlrprotocol_postgresql::getColumnTypeLen(uint32_t oid) {
+
+	// Most postgresql types are varlena (variable-length, stored with a
+	// header) and report typlen -1 in pg_type; only fixed-width types
+	// report an actual byte count.  typlen is a per-type constant, not
+	// anything derived from a particular column's data.
+	switch (oid) {
+		case 16: return 1;	//bool
+		case 18: return 1;	//char
+		case 19: return 64;	//name
+		case 20: return 8;	//int8
+		case 21: return 2;	//int2
+		case 23: return 4;	//int4
+		case 24: return 4;	//regproc
+		case 26: return 4;	//oid
+		case 27: return 6;	//tid
+		case 28: return 4;	//xid
+		case 29: return 4;	//cid
+		case 210: return 2;	//smgr
+		case 600: return 16;	//point
+		case 601: return 32;	//lseg
+		case 603: return 32;	//box
+		case 628: return 32;	//line
+		case 700: return 4;	//float4
+		case 701: return 8;	//float8
+		case 702: return 4;	//abstime
+		case 703: return 4;	//reltime
+		case 704: return 12;	//tinterval
+		case 718: return 24;	//circle
+		case 790: return 8;	//money
+		case 829: return 6;	//macaddr
+		case 1033: return 12;	//aclitem
+		case 1082: return 4;	//date
+		case 1083: return 8;	//time
+		case 1114: return 8;	//timestamp
+		case 1184: return 8;	//timestamptz
+		case 1186: return 16;	//interval
+		case 1266: return 12;	//timetz
+		case 2202: //regprocedure
+		case 2203: //regoper
+		case 2204: //regoperator
+		case 2205: //regclass
+		case 2206: //regtype
+			return 4;
+		case 2276: return 4;	//any
+		case 2278: return 4;	//void
+		case 2279: return 4;	//trigger
+		case 2280: return 4;	//language_handler
+		case 2281: return 8;	//internal
+		case 2282: return 4;	//opaque
+		case 2283: return 4;	//anyelement
+		default:
+			return -1;
 	}
 }
 
@@ -1771,6 +1954,16 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 			uint32_t	unegone=0;
 			bytestring::copy(&unegone,&negone,sizeof(int32_t));
 			writeBE(&resppacket,unegone);
+		} else if (lob) {
+
+			// bytea has to travel the wire as a hex string;
+			// every other type travels as-is
+			buildLobField(cursor,i,getColumnOid(cursor,i)==17);
+
+		} else if (getColumnOid(cursor,i)==17) {
+
+			writeByteaField(field,fieldsize);
+
 		} else {
 
 			// FIXME: currently, we only support text format, but
@@ -1784,6 +1977,8 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 		debugStart("column %d",i);
 		if (null) {
 			debugWrite("(null)");
+		} else if (lob) {
+			debugWrite("(lob)");
 		} else {
 			debugWrite("%d: %.*s",(int)fieldsize,(int)fieldsize,field);
 		}
@@ -1794,6 +1989,85 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 
 	// send response packet
 	return sendPacket(MESSAGE_DATAROW);
+}
+
+bool sqlrprotocol_postgresql::blobAlreadyHex() {
+
+	// The postgresql backend's own getField() already hands back a hex
+	// string for bytea columns when decodeblobs=no.  Every other case -
+	// this backend at its (default) decodeblobs=yes, or any other
+	// backend entirely - hands back raw binary that still needs
+	// encoding, so only that one combination should skip the encoder.
+	return (!charstring::compare(cont->getDbType(),"postgresql") &&
+			charstring::isNo(
+				cont->getConnectStringValue("decodeblobs")));
+}
+
+void sqlrprotocol_postgresql::writeByteaField(const char *data,
+							uint64_t size) {
+
+	if (blobAlreadyHex()) {
+		writeBE(&resppacket,(uint32_t)size);
+		write(&resppacket,data,size);
+		return;
+	}
+
+	// postgresql's text-format bytea is "\x" followed by 2 hex
+	// characters per byte
+	char		*hex=NULL;
+	uint64_t	hexsize=0;
+	charstring::hexEncode((const byte_t *)data,size,&hex,&hexsize);
+	writeBE(&resppacket,(uint32_t)(hexsize+2));
+	write(&resppacket,"\\x",2);
+	write(&resppacket,hex,hexsize);
+	delete[] hex;
+}
+
+void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
+							uint32_t col,
+							bool isbytea) {
+
+	// Get the lob length.  If this fails, send a NULL field.
+	uint64_t	loblength=0;
+	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
+		int32_t		negone=-1;
+		uint32_t	unegone=0;
+		bytestring::copy(&unegone,&negone,sizeof(int32_t));
+		writeBE(&resppacket,unegone);
+		cont->closeLobField(cursor,col);
+		return;
+	}
+
+	// Read the whole lob into a temp buffer, then append that (hex
+	// encoding it first, if it's a bytea) to resppacket.  Postgresql's
+	// DataRow field has to be prefixed with its final byte count, and
+	// that isn't known for certain until the lob has been fully read.
+	bytebuffer	temp;
+	if (loblength) {
+		uint64_t	charstoread=sizeof(lobbuffer)/MAX_BYTES_PER_CHAR;
+		uint64_t	charsread=0;
+		uint64_t	offset=0;
+		for (;;) {
+			if (!cont->getLobFieldSegment(cursor,col,
+						lobbuffer,sizeof(lobbuffer),
+						offset,charstoread,
+						&charsread) || !charsread) {
+				break;
+			}
+			temp.append(lobbuffer,charsread);
+			offset=offset+charstoread;
+		}
+	}
+	cont->closeLobField(cursor,col);
+
+	if (isbytea) {
+		writeByteaField((const char *)temp.getBuffer(),
+						temp.getSize());
+	} else {
+		writeBE(&resppacket,(uint32_t)temp.getSize());
+		write(&resppacket,(const char *)temp.getBuffer(),
+						temp.getSize());
+	}
 }
 
 bool sqlrprotocol_postgresql::sendCommandComplete(sqlrservercursor *cursor) {

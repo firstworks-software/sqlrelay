@@ -636,7 +636,13 @@ static bool isNumberTypeInt(int16_t type) {
 #endif
 
 #ifdef NEED_IS_BLOB_TYPE_CHAR
-static bool isBlobTypeChar(const char *type) { 
+// GRAPHIC/VARGRAPHIC/LONGVARGRAPHIC are db2's double-byte character types,
+// not binary data, despite the similar name; they're classified as clobs
+// below instead.  LONG is ambiguous: oracle returns it for LONG, which is
+// character data, while sap/freetds return it for CS_LONG_TYPE, which is
+// not.  It can't be classified correctly without splitting the enum value,
+// so it's left here rather than moved to isClobType*.
+static bool isBlobTypeChar(const char *type) {
 	return (!charstring::compareIgnoringCase(type,"IMAGE") ||
 		!charstring::compareIgnoringCase(type,"BINARY") ||
 		!charstring::compareIgnoringCase(type,"VARBINARY") ||
@@ -652,14 +658,12 @@ static bool isBlobTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"BFILE") ||
 		!charstring::compareIgnoringCase(type,"GEOMETRY") ||
 		!charstring::compareIgnoringCase(type,"SDO_GEOMETRY") ||
-		!charstring::compareIgnoringCase(type,"GRAPHIC") ||
-		!charstring::compareIgnoringCase(type,"VARGRAPHIC") ||
-		!charstring::compareIgnoringCase(type,"LONGVARGRAPHIC"));
+		!charstring::compareIgnoringCase(type,"BYTE"));
 }
 #endif
 
 #ifdef NEED_IS_BLOB_TYPE_INT
-static bool isBlobTypeInt(int16_t type) { 
+static bool isBlobTypeInt(int16_t type) {
 	return (type==IMAGE_DATATYPE ||
 		type==BINARY_DATATYPE ||
 		type==VARBINARY_DATATYPE ||
@@ -675,9 +679,7 @@ static bool isBlobTypeInt(int16_t type) {
 		type==BFILE_DATATYPE ||
 		type==GEOMETRY_DATATYPE ||
 		type==SDO_GEOMETRY_DATATYPE ||
-		type==GRAPHIC_DATATYPE ||
-		type==VARGRAPHIC_DATATYPE ||
-		type==LONGVARGRAPHIC_DATATYPE);
+		type==BYTE_DATATYPE);
 }
 #endif
 
@@ -744,9 +746,7 @@ static bool isBinaryTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"BLOB") ||
 		!charstring::compareIgnoringCase(type,"BFILE") ||
 		!charstring::compareIgnoringCase(type,"LONGVARBINARY") ||
-		!charstring::compareIgnoringCase(type,"GRAPHIC") ||
-		!charstring::compareIgnoringCase(type,"VARGRAPHIC") ||
-		!charstring::compareIgnoringCase(type,"LONGVARGRAPHIC") ||
+		!charstring::compareIgnoringCase(type,"BYTE") ||
 		!charstring::compareIgnoringCase(type,"OID") ||
 		!charstring::compareIgnoringCase(type,"_OID") ||
 		!charstring::compareIgnoringCase(type,"OID_ARRAY") ||
@@ -774,9 +774,7 @@ static bool isBinaryTypeInt(int16_t type) {
 		type==BLOB_DATATYPE ||
 		type==BFILE_DATATYPE ||
 		type==LONGVARBINARY_DATATYPE ||
-		type==GRAPHIC_DATATYPE ||
-		type==VARGRAPHIC_DATATYPE ||
-		type==LONGVARGRAPHIC_DATATYPE ||
+		type==BYTE_DATATYPE ||
 		type==OID_DATATYPE ||
 		type==_OID_DATATYPE ||
 		type==OIDVECTOR_DATATYPE ||
