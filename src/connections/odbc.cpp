@@ -49,6 +49,7 @@ struct odbccolumn {
 	char		dbtypename[64];
 #if (ODBCVER >= 0x0300) && defined(SQLCOLATTRIBUTE_SQLLEN)
 	SQLLEN		type;
+	SQLLEN		concisetype;
 	SQLLEN		size;
 	SQLLEN		precision;
 	SQLLEN		scale;
@@ -57,6 +58,7 @@ struct odbccolumn {
 	SQLLEN		autoincrement;
 #else
 	SQLINTEGER	type;
+	SQLINTEGER	concisetype;
 	SQLINTEGER	size;
 	SQLINTEGER	precision;
 	SQLINTEGER	scale;
@@ -5014,6 +5016,27 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 					return false;
 				}
 
+				// SQL_DESC_TYPE is the "verbose" type -
+				// SQL_DATETIME for a date, time or timestamp
+				// column alike, on drivers that follow the
+				// spec.  SQL_DESC_CONCISE_TYPE discriminates
+				// those - SQL_TYPE_DATE, SQL_TYPE_TIME or
+				// SQL_TYPE_TIMESTAMP - on every driver seen
+				// so far, but not MS SQL Server's datetime vs.
+				// datetime2 (see the type name check below),
+				// so keep both.
+				column[i].concisetype=column[i].type;
+				if (column[i].type==SQL_DATETIME) {
+					erg=SQLColAttribute(stmt,i+1,
+							SQL_DESC_CONCISE_TYPE,
+							NULL,0,NULL,
+							&(column[i].concisetype));
+					if (erg!=SQL_SUCCESS &&
+						erg!=SQL_SUCCESS_WITH_INFO) {
+						return false;
+					}
+				}
+
 				// column type name
 				// MS SQL Server reports datetime and datetime2
 				// identically - SQL_DESC_TYPE SQL_DATETIME,
@@ -5161,6 +5184,10 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 					erg!=SQL_SUCCESS_WITH_INFO) {
 					return false;
 				}
+				// ODBC 2.x has no verbose/concise type
+				// split, SQL_COLUMN_TYPE already
+				// discriminates date, time and timestamp
+				column[i].concisetype=column[i].type;
 
 				// column type name
 				// (see the comment on the odbc 3 version
@@ -5380,6 +5407,7 @@ bool odbccursor::appendNullColumns(uint8_t count) {
 		column[ncols].namesize=0;
 		column[ncols].dbtypename[0]='\0';
 		column[ncols].type=SQL_CHAR;
+		column[ncols].concisetype=SQL_CHAR;
 		column[ncols].size=0;
 		column[ncols].precision=0;
 		column[ncols].scale=0;
@@ -5517,10 +5545,26 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 					column[i].dbtypename,"smalldatetime")) {
 				return SMALLDATETIME_DATATYPE;
 			}
-			// FIXME: need parameter indicating whether
-			// to map this to date or datetime.  MySQL, for example,
-			// may use SQL_DATE for dates and SQL_TIMESTAMP for
-			// datetimes.
+			// and MS SQL Server's own datetime
+			if (!charstring::compareIgnoringCase(
+					column[i].dbtypename,"datetime")) {
+				return DATETIME_DATATYPE;
+			}
+			// Most other drivers put SQL_DATETIME here for a
+			// date, time and timestamp column alike (this is
+			// the "verbose" type).  SQL_DESC_CONCISE_TYPE
+			// discriminates them - SQL_TYPE_DATE, SQL_TYPE_TIME
+			// or SQL_TYPE_TIMESTAMP - so use it here instead.
+			switch (column[i].concisetype) {
+				case SQL_TYPE_DATE:
+					return DATE_DATATYPE;
+				case SQL_TYPE_TIME:
+					return TIME_DATATYPE;
+				case SQL_TYPE_TIMESTAMP:
+					return TIMESTAMP_DATATYPE;
+				default:
+					break;
+			}
 			return DATETIME_DATATYPE;
 		case SQL_TIME:
 		//case SQL_INTERVAL:

@@ -2100,6 +2100,14 @@
 			now passes -1 when isnull is set, matching the sap
 			module, which binds through the same ct-lib call
 			(#9148)
+		fixed the odbc connection module's getColumnType() - it read a
+			column's type with SQL_DESC_TYPE, the "verbose" type,
+			which most drivers report as SQL_DATETIME alike for a
+			date, time or timestamp column, so all three came back
+			as datetime; now also reads SQL_DESC_CONCISE_TYPE, which
+			discriminates them on every driver tested, and falls
+			back to it after the existing MS SQL Server type name
+			checks (#9054)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
