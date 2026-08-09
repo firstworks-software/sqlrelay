@@ -212,6 +212,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 		dictionary<char *, sqlrservercursor *>	stmtcursormap;
 		dictionary<char *, sqlrservercursor *>	portalcursormap;
 		dictionary<sqlrservercursor *, uint32_t *>	paramoids;
+		dictionary<sqlrservercursor *, uint16_t>	paramoidcounts;
 		dictionary<sqlrservercursor *, bool>		executeflag;
 };
 
@@ -1946,6 +1947,7 @@ bool sqlrprotocol_postgresql::parse() {
 	}
 	paramoids.remove(cursor);
 	paramoids.setValue(cursor,paramtypes);
+	paramoidcounts.setValue(cursor,paramcount);
 
 	// debug
 	if (getDebug()) {
@@ -2069,12 +2071,14 @@ bool sqlrprotocol_postgresql::bind() {
 	}
 	uint16_t	*paramformatcodes=NULL;
 	uint32_t	*oids=NULL;
+	uint16_t	oidcount=0;
 	if (paramformatcodecount) {
 		paramformatcodes=new uint16_t[paramformatcodecount];
 		for (uint16_t i=0; i<paramformatcodecount; i++) {
 			readBE(rp,&(paramformatcodes[i]),&rp);
 		}
 		oids=paramoids.getValue(cursor);
+		oidcount=paramoidcounts.getValue(cursor);
 	}
 
 	// debug
@@ -2094,6 +2098,18 @@ bool sqlrprotocol_postgresql::bind() {
 		delete[] paramformatcodes;
 		return sendTooManyBindsError();
 	}
+
+	// per the protocol, the format code count must be 0 (use text for
+	// all params), 1 (use paramformatcodes[0] for all params), or equal
+	// to the value count (one format code per param) - anything else
+	// would let the value loop below index paramformatcodes out of
+	// bounds
+	if (paramformatcodecount>1 && paramformatcodecount!=paramvaluecount) {
+		delete[] paramformatcodes;
+		return sendErrorResponse("ERROR","22023",
+					"Invalid parameter format code count");
+	}
+
 	// debug
 	debugWrite("param value count: %d",paramvaluecount);
 	for (uint16_t i=0; i<paramvaluecount; i++) {
@@ -2108,11 +2124,27 @@ bool sqlrprotocol_postgresql::bind() {
 
 		debugWrite("name: %s",bv->variable);
 
+		// the size field itself must fit in what's left of the
+		// packet - rp may already be at or past rpend here if an
+		// earlier field (param count, format codes) overran a
+		// too-short packet, and reading the size regardless would
+		// leave rp past rpend, which would then underflow the
+		// paramsize bounds check below
+		if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(uint32_t)) {
+			delete[] paramformatcodes;
+			return sendErrorResponse("ERROR","22003",
+						"Invalid parameter size");
+		}
+
 		// get size/null-indicator
 		uint32_t	paramsize;
 		readBE(rp,&paramsize,&rp);
 
 		debugWrite("size: %d",paramsize);
+
+		// per the 0/1/n rule checked above, a single format code
+		// applies to every param, otherwise index by i
+		uint16_t	fcindex=(paramformatcodecount==1)?0:i;
 
 		if (paramsize==(uint32_t)-1) {
 
@@ -2122,11 +2154,25 @@ bool sqlrprotocol_postgresql::bind() {
 
 			debugWrite("value: (null)");
 
-		} else if (!paramformatcodecount || !paramformatcodes[i]) {
+		} else if (paramsize>(uint32_t)(rpend-rp)) {
+
+			// the declared size doesn't fit in what's left of the
+			// request packet - don't let it drive an allocation
+			// and copy past the end of the buffer
+			delete[] paramformatcodes;
+			return sendErrorResponse("ERROR","22003",
+						"Invalid parameter size");
+
+		} else if (!paramformatcodecount || !paramformatcodes[fcindex]) {
 			debugWrite("format: text");
 			bindTextParameter(rp,paramsize,bindpool,bv,&rp);
 		} else {
 			debugWrite("format: binary");
+			if (!oids || i>=oidcount) {
+				delete[] paramformatcodes;
+				return sendErrorResponse("ERROR","26000",
+						"Invalid bind parameters");
+			}
 			if (!bindBinaryParameter(rp,oids[i],
 						paramsize,bindpool,bv,&rp)) {
 				delete[] paramformatcodes;
