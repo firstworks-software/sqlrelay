@@ -509,7 +509,7 @@ bool sqlrprotocol_postgresql::sendPacket(byte_t type) {
 	} else {
 		debugWrite("type: (null)");
 	}
-	debugWrite("size: %d",resppacket.getSize());
+	debugWrite("size: %lld",(long long)resppacket.getSize());
 	debugHexDump(resppacket.getBuffer(),resppacket.getSize());
 	debugEnd();
 
@@ -1781,7 +1781,7 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 		if (null) {
 			debugWrite("(null)");
 		} else {
-			debugWrite("%d: %.*s",fieldsize,fieldsize,field);
+			debugWrite("%d: %.*s",(int)fieldsize,(int)fieldsize,field);
 		}
 		debugEnd();
 	}
@@ -2274,7 +2274,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			read(rp,&value,rpout);
 			bv->value.integerval=value;
-			debugWrite("value: %lld",bv->value.integerval);
+			debugWrite("value: %lld",(long long)bv->value.integerval);
 			}
 			break;
 		case 21: //int2
@@ -2291,7 +2291,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			readBE(rp,(uint16_t *)&value,rpout);
 			bv->value.integerval=value;
-			debugWrite("value: %lld",bv->value.integerval);
+			debugWrite("value: %lld",(long long)bv->value.integerval);
 			}
 			break;
 		case 23: //int4
@@ -2308,7 +2308,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			readBE(rp,(uint32_t *)&value,rpout);
 			bv->value.integerval=value;
-			debugWrite("value: %lld",bv->value.integerval);
+			debugWrite("value: %lld",(long long)bv->value.integerval);
 			}
 			break;
 		case 20: //int8
@@ -2325,7 +2325,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			readBE(rp,(uint64_t *)&value,rpout);
 			bv->value.integerval=value;
-			debugWrite("value: %lld",bv->value.integerval);
+			debugWrite("value: %lld",(long long)bv->value.integerval);
 			}
 			break;
 		case 700: //float4

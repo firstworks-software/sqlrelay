@@ -4194,7 +4194,7 @@ bool sqlrprotocol_teradata::parseConnectParcel(
 
 	// debug
 	debugWrite("partition name: %.*s",
-			sizeof(partitionname),partitionname);
+			(int)sizeof(partitionname),partitionname);
 	debugWrite("logon sequence number:");
 	debugHexDump(logonsequencenumber,sizeof(logonsequencenumber));
 	debugWrite("function: %hd",function);
@@ -5181,7 +5181,7 @@ void sqlrprotocol_teradata::parseBigIntBind(const byte_t *ptr,
 	read(ptr,(uint64_t *)&val,outptr);
 	inbind->type=SQLRSERVERBINDVARTYPE_INTEGER;
 	inbind->value.integerval=val;
-	debugWrite("%lld",val);
+	debugWrite("%lld",(long long)val);
 }
 
 void sqlrprotocol_teradata::parseCharBind(const byte_t *ptr,
@@ -6315,7 +6315,7 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	debugWrite("unknown3: %hd",unknown3);
 	debugWrite("unknown4: %d",unknown4);
 	debugWrite("unknown5: %d",unknown5);
-	debugWrite("unknown6: %lld",unknown6);
+	debugWrite("unknown6: %lld",(long long)unknown6);
 	debugWrite("unknown7: %d",unknown7);
 	debugWrite("unknown8: %d",unknown8);
 	debugWrite("unknown9: %d",unknown9);
@@ -7286,16 +7286,16 @@ void sqlrprotocol_teradata::appendSsoGssKeys() {
 	write(&respdata,dhp,sizeof(dhp));
 	write(&respdata,dhg,sizeof(dhg));
 
-	debugWrite("dh \"p\" (%d bytes):",sizeof(dhp));
+	debugWrite("dh \"p\" (%lld bytes):",(long long)sizeof(dhp));
 	debugHexDump(dhp,sizeof(dhp));
-	debugWrite("dh \"g\" (%d bytes):",sizeof(dhg));
+	debugWrite("dh \"g\" (%lld bytes):",(long long)sizeof(dhg));
 	debugHexDump(dhg,sizeof(dhg));
 
 
 	// server public key
 	write(&respdata,serverpubkey,serverpubkeysize);
 
-	debugWrite("server public key (%d bytes):",serverpubkeysize);
+	debugWrite("server public key (%lld bytes):",(long long)serverpubkeysize);
 	debugHexDump(serverpubkey,serverpubkeysize);
 }
 
@@ -7517,7 +7517,7 @@ void sqlrprotocol_teradata::appendStatementStatusParcel(
 	debugWrite("statement number: %d",statementnumber);
 	debugWrite("code: %d",code);
 	debugWrite("activity: %d",req->activity);
-	debugWrite("activity count: %d",req->activitycount);
+	debugWrite("activity count: %lld",(long long)req->activitycount);
 	debugWrite("field count: %d",req->fieldcount);
 	debugParcelEnd();
 
@@ -7734,7 +7734,7 @@ void sqlrprotocol_teradata::appendEstimatedProcessingTimeExtension(
 							uint64_t time) {
 
 	debugExtStart("estimated processing time");
-	debugWrite("time: %lld",time);
+	debugWrite("time: %lld",(long long)time);
 	debugExtEnd();
 
 	// PBTILOUT - statistics layout
@@ -8009,7 +8009,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 			debugWrite("PBTIFMI - misc info: %d",
 					pbtifmi);
 			debugWrite("PBTIFMDL - byte length: %lld",
-					pbtifmdl);
+					(long long)pbtifmdl);
 		}
 
 		debugWrite("PBTIFND - precision: %d",pbtifnd);
@@ -8020,7 +8020,7 @@ void sqlrprotocol_teradata::appendQueryExtension(uint16_t col) {
 			debugWrite("PBTIFCT - charset: %d",
 					pbtifct);
 			debugWrite("PBTIFMNC - char length: %lld",
-					pbtifmnc);
+					(long long)pbtifmnc);
 			debugWrite("PBTIFCS - case sensitive: %c",
 					pbtifcs);
 			debugWrite("PBTIFSN - signed: %c",
@@ -9202,9 +9202,9 @@ bool sqlrprotocol_teradata::generateEphemeralKeys() {
 	serverprivkey=dh.getPrivateKey();
 	serverprivkeysize=dh.getPrivateKeySize();
 
-	debugWrite("server public key (%d bytes):",serverpubkeysize);
+	debugWrite("server public key (%lld bytes):",(long long)serverpubkeysize);
 	debugHexDump(serverpubkey,serverpubkeysize);
-	debugWrite("server private key (%d bytes):",serverprivkeysize);
+	debugWrite("server private key (%lld bytes):",(long long)serverprivkeysize);
 	debugHexDump(serverprivkey,serverprivkeysize);
 
 	debugEnd();
@@ -9346,7 +9346,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// no known reference, this came out of the jdbc driver's
 	// com.teradata.tdgss.jgssp2td2.Td2Crypto.unwrap() method
 
-	debugStart("decrypt (%lld bytes)",encdatasize);
+	debugStart("decrypt (%lld bytes)",(long long)encdatasize);
 
 	// create the decryptor
 	// (aes128 uses CBC and PKCS5 by default,
@@ -9387,7 +9387,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	debugWrite("flags: 0x%02x",(int)flags);
 	debugWrite("qop index: %d",(int)qopindex);
 	debugWrite("message length: %d",(int)msglength);
-	debugWrite("sequence number: %lld",seqnum);
+	debugWrite("sequence number: %lld",(long long)seqnum);
 	debugHexDump(token,ivsize);
 	debugEnd();
 
@@ -9417,7 +9417,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	uint64_t	prefixsize=encdatasize-ivsize-msglength;
 	if (prefixsize) {
 		debugWrite("unexpected %lld bytes before "
-				"the ciphertext:",prefixsize);
+				"the ciphertext:",(long long)prefixsize);
 		debugHexDump(encdata,prefixsize);
 	}
 
@@ -9436,9 +9436,9 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	a.setKey(sharedkey,a.getKeySize());
 
 	debugWrite("qop: %s",qopstr[negotiatedqop]);
-	debugWrite("iv (%d bytes):",ivsize);
+	debugWrite("iv (%lld bytes):",(long long)ivsize);
 	debugHexDump(token,ivsize);
-	debugWrite("key (%d bytes):",a.getKeySize());
+	debugWrite("key (%lld bytes):",(long long)a.getKeySize());
 	debugHexDump(sharedkey,a.getKeySize());
 	debugWrite("ciphertext (%d bytes):",msglength);
 	debugHexDump(ciphertext,msglength);
@@ -9459,7 +9459,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 		return false;
 	}
 
-	debugWrite("plaintext (%lld bytes):",ddatasize);
+	debugWrite("plaintext (%lld bytes):",(long long)ddatasize);
 	debugHexDump(ddata,ddatasize);
 
 	// split the plaintext into parcels, mic, and token header copy
@@ -9512,7 +9512,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// copy out the parcels
 	decdata->append(ddata,datasize);
 
-	debugWrite("decrypted data (%lld bytes)",datasize);
+	debugWrite("decrypted data (%lld bytes)",(long long)datasize);
 	debugHexDump(decdata->getBuffer(),decdata->getSize());
 
 	debugEnd();

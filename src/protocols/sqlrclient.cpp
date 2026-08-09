@@ -279,7 +279,7 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 
 	debugStart("parameters");
 	debugWrite("idleclienttimeout: %d",idleclienttimeout);
-	debugWrite("maxclientinfosize: %lld",maxclientinfosize);
+	debugWrite("maxclientinfosize: %lld",(long long)maxclientinfosize);
 	debugWrite("maxquerysize: %d",maxquerysize);
 	debugWrite("maxbindcount: %hd",maxbindcount);
 	debugWrite("maxbindnamesize: %hd",maxbindnamesize);
@@ -914,7 +914,7 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 	clientsock->setNonBlockingMode(false);
 	delete[] dummy;
 
-	debugWrite("absorbed %lld bytes",(int64_t)bytesread);
+	debugWrite("absorbed %lld bytes",(long long)bytesread);
 
 	// indicate that an error has occurred
 	clientsock->write((uint16_t)ERROR_OCCURRED);
@@ -2305,9 +2305,9 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 		cont->raiseClientProtocolErrorEvent(cursor,1,
 				"get client info failed: "
 				"client sent bad client info size: %lld",
-				clientinfosize);
+				(long long)clientinfosize);
 		debugWrite("client sent bad client info size: %lld",
-							clientinfosize);
+							(long long)clientinfosize);
 		debugEnd();
 		return false;
 	}
@@ -2324,7 +2324,7 @@ bool sqlrprotocol_sqlrclient::getClientInfo(sqlrservercursor *cursor) {
 	}
 	clientinfo[clientinfosize]='\0';
 
-	debugWrite("clientinfo: %.*s",clientinfosize,clientinfo);
+	debugWrite("clientinfo: %.*s",(int)clientinfosize,clientinfo);
 
 	// FIXME: push up?
 	// update the stats with the client info
@@ -2395,9 +2395,9 @@ bool sqlrprotocol_sqlrclient::getQuery(sqlrservercursor *cursor) {
 
 	debugstr.clear();
 	debugstr.safePrint(querybuffer,querysize);
-	debugWrite("query: \"%.*s\"",debugstr.getSize(),debugstr.getString());
+	debugWrite("query: \"%.*s\"",(int)debugstr.getSize(),debugstr.getString());
 	//debugWrite("query: \"%.*s\"",querysize,querybuffer);
-	debugWrite("query size: %d",debugstr.getSize());
+	debugWrite("query size: %lld",(long long)debugstr.getSize());
 
 	// FIXME: push up?
 	// update the stats with the current query
@@ -3433,8 +3433,8 @@ bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 	}
 
 	debugWrite("lazy fetch: %d",lazyfetch);
-	debugWrite("skip: %lld",skip);
-	debugWrite("fetch: %lld",fetch);
+	debugWrite("skip: %lld",(long long)skip);
+	debugWrite("fetch: %lld",(long long)fetch);
 
 	debugEnd();
 	return true;
@@ -4154,7 +4154,7 @@ bool sqlrprotocol_sqlrclient::returnResultSetData(sqlrservercursor *cursor,
 			return true;
 		}
 
-		debugWrite("fetching %lld rows...",fetch);
+		debugWrite("fetching %lld rows...",(long long)fetch);
 
 		// send the specified number of rows back
 		for (uint64_t i=0; (!fetch || i<fetch); i++) {
@@ -4195,7 +4195,7 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
-	debugWrite("error number: %lld",errnum);
+	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("error string: %.*s",errorsize,errorstring);
 
 	// send the error status
@@ -4368,7 +4368,7 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 	bool		liveconnection;
 	cont->getError(&errorstring,&errorsize,&errnum,&liveconnection);
 
-	debugWrite("error number: %lld",errnum);
+	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("error string: %.*s",errorsize,errorstring);
 
 	// send the appropriate error status
@@ -4403,7 +4403,7 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
-	debugWrite("error number: %lld",errnum);
+	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("error string: %.*s",errorsize,errorstring);
 
 	// send the appropriate error status

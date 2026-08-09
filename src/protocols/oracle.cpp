@@ -2069,10 +2069,10 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 					tracecrossfacilityitem1);
 	debugWrite("trace cross facility item 2: 0x%08x",
 					tracecrossfacilityitem2);
-	debugWrite("trace unique connection id 1: 0x%016x",
-					traceuniqueconnectionid1);
-	debugWrite("trace unique connection id 2: 0x%016x",
-					traceuniqueconnectionid2);
+	debugWrite("trace unique connection id 1: 0x%016llx",
+					(unsigned long long)traceuniqueconnectionid1);
+	debugWrite("trace unique connection id 2: 0x%016llx",
+					(unsigned long long)traceuniqueconnectionid2);
 	debugWrite("connect data: %*s",connectdatasize,connectdata);
 	debugEnd();
 
@@ -6115,7 +6115,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
 				debugWrite("type: INTEGER");
 				debugWrite("value: %lld",
-						bv->value.integerval);
+						(long long)bv->value.integerval);
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 				debugWrite("type: DOUBLE");
 				debugWrite("value: %f (%d,%d)",
@@ -7488,7 +7488,7 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 	debugWrite("size: %d",size);
 	debugWrite("marker3: %d",marker3);
 	debugWrite("nullable: %d",nullable);
-	debugWrite("name size: %ld",namesize);
+	debugWrite("name size: %u",namesize);
 	debugWrite("name: %s",name);
 	debugWrite("marker4: %d",marker4);
 	debugWrite("marker5: %d",marker5);
@@ -7702,7 +7702,7 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			debugWrite("LOB");
 			putLobField(cursor,i);
 		} else if (!null) {
-			debugWrite("\"%s\" (%d)",field,fieldsize);
+			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
 			putField(field,fieldsize,ct[i]);
 
 			// no idea

@@ -1952,6 +1952,19 @@
 		doubleval.value; and the teradata module's PBTIFDB dump used
 		%.s instead of %.*s, dropping the db name argument and
 		consuming its length as the pointer instead (#9116)
+	fixed the mysql, oracle, postgresql, sqlrclient, tds, and teradata
+		protocol modules, plus the sqlrprotocol base class - debugWrite()
+		and debugStart() calls whose printf conversion didn't match the
+		width of its argument (a 64 bit value through %d, %ld, or %x,
+		or a 32 bit value through %ld), found by compiling every
+		protocol module with a scratch copy of the debugWrite(),
+		debugStart(), and rudiments printf headers annotated with
+		__attribute__((format(printf,...))); on a mismatched ABI a 64
+		bit value truncates or a 32 bit value picks up whatever else
+		was on the stack; fixed by casting the argument to (long long)
+		or (unsigned long long) and using %lld, or by fixing the
+		conversion to match an argument that was already the right
+		width (#9115)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

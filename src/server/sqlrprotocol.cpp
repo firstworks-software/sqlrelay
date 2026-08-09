@@ -379,8 +379,9 @@ bool sqlrprotocol::readLE(const byte_t *rp, uint64_t *value,
 						const byte_t **rpout) {
 	readLE(rp,value,rpout);
 	if (*value!=expected) {
-		debugWrite("bad %s 0x%016x, expected 0x%016x\n",
-						name,*value,expected);
+		debugWrite("bad %s 0x%016llx, expected 0x%016llx\n",
+						name,(unsigned long long)*value,
+						(unsigned long long)expected);
 		*rpout=rp;
 		return false;
 	}
@@ -400,8 +401,9 @@ bool sqlrprotocol::readBE(const byte_t *rp, uint64_t *value,
 						const byte_t **rpout) {
 	readBE(rp,value,rpout);
 	if (*value!=expected) {
-		debugWrite("bad %s 0x%016x, expected 0x%016x\n",
-						name,*value,expected);
+		debugWrite("bad %s 0x%016llx, expected 0x%016llx\n",
+						name,(unsigned long long)*value,
+						(unsigned long long)expected);
 		*rpout=rp;
 		return false;
 	}

@@ -925,8 +925,8 @@ sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
 				"oldmariadbjdbcservercapabilitieshack"));
 
 	debugStart("parameters");
-	debugWrite("handshake: %d",handshake);
-	debugWrite("clientprotocol: %d",clientprotocol);
+	debugWrite("handshake: %lld",(long long)handshake);
+	debugWrite("clientprotocol: %lld",(long long)clientprotocol);
 	debugWrite("datetodatetime: %d",datetodatetime);
 	debugWrite("zeroscaledecimaltobigint: %d",
 				zeroscaledecimaltobigint);
@@ -1383,7 +1383,7 @@ bool sqlrprotocol_mysql::recvPacket() {
 		}
 
 		if (getDebug()) {
-			debugWrite("data size: %d",localreqpacketsize);
+			debugWrite("data size: %lld",(long long)localreqpacketsize);
 			debugWrite("seq: %d",seq);
 			bytebuffer	temp;
 			temp.append(sizebytes[3]);
@@ -1534,7 +1534,7 @@ void sqlrprotocol_mysql::buildHandshake10() {
 	debugWrite("protocol version: 0x%02x",
 				(uint32_t)(0x000000ff&protocolversion));
 	debugWrite("server version: \"%s\"",serverversion);
-	debugWrite("connectionid: %ld",connectionid);
+	debugWrite("connectionid: %u",connectionid);
 	debugWrite("challenge: \"%s\"",challenge);
 	debugCapabilityFlags(servercapabilityflags);
 	debugCharacterSet(servercharacterset);
@@ -1599,7 +1599,7 @@ void sqlrprotocol_mysql::buildHandshake9() {
 	debugWrite("protocol version: 0x%02x",
 			(uint32_t)(0x000000ff&protocolversion));
 	debugWrite("server version: \"%s\"",serverversion);
-	debugWrite("connectionid: %ld",connectionid);
+	debugWrite("connectionid: %u",connectionid);
 	debugWrite("scramble: \"%s\"",challenge);
 	debugCapabilityFlags(servercapabilityflags);
 	debugEnd();
@@ -1740,7 +1740,7 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	}
 
 	if (getDebug()) {
-		debugWrite("challenge response size: %lld",responsesize);
+		debugWrite("challenge response size: %lld",(long long)responsesize);
 		stringbuffer	b;
 		b.safePrint(response,responsesize);
 		debugWrite("challenge response: \"%s\"",b.getString());
@@ -2124,7 +2124,7 @@ bool sqlrprotocol_mysql::recvAuthResponse() {
 
 	if (getDebug()) {
 		debugStart("auth response");
-		debugWrite("challenge response size: %lld",responsesize);
+		debugWrite("challenge response size: %lld",(long long)responsesize);
 		stringbuffer	b;
 		b.safePrint(response,responsesize);
 		debugWrite("challenge response: \"%s\"",b.getString());
@@ -2243,8 +2243,8 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 	if (getDebug()) {
 		debugStart((noteof)?"ok":"ok (eof)");
 		debugWrite("header: 0x%02x",(uint32_t)(0x000000ff&header));
-		debugWrite("affected rows: %lld",affectedrows);
-		debugWrite("last insert id: %lld",lastinsertid);
+		debugWrite("affected rows: %lld",(long long)affectedrows);
+		debugWrite("last insert id: %lld",(long long)lastinsertid);
 		if (servercapabilityflags&CLIENT_PROTOCOL_41 &&
 				clientcapabilityflags&CLIENT_PROTOCOL_41) {
 			debugStatusFlags(statusflags);
@@ -2306,7 +2306,7 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 	debugStart("err");
 	debugWrite("error code: %hd",errorcode);
 	debugWrite("error message: \"%.*s\"",(uint32_t)errorsize,errormessage);
-	debugWrite("error size: %lld",errorsize);
+	debugWrite("error size: %lld",(long long)errorsize);
 	debugWrite("sql state: \"%s\"",sqlstate);
 	debugEnd();
 
@@ -3008,7 +3008,7 @@ bool sqlrprotocol_mysql::comQuery(sqlrservercursor *cursor) {
 		stringbuffer	b;
 		b.safePrint(query,(uint32_t)querysize);
 		debugWrite("query: \"%s\"",b.getString());
-		debugWrite("query size: %d",querysize);
+		debugWrite("query size: %lld",(long long)querysize);
 		debugEnd();
 	}
 
@@ -3218,7 +3218,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 	debugWrite("name: %s",colname);
 	debugWrite("org name: %s",orgcolname);
 	debugCharacterSet(servercharacterset);
-	debugWrite("size: %ld",size);
+	debugWrite("size: %u",size);
 	debugColumnType(columntypestring,columntype);
 	debugColumnFlags(flags);
 	debugWrite("defaults: %s",defaults);
@@ -3599,7 +3599,7 @@ bool sqlrprotocol_mysql::buildBinaryRow(sqlrservercursor *cursor,
 			debugWrite("LOB");
 			buildLobField(cursor,i);
 		} else if (!null) {
-			debugWrite("\"%s\" (%d)",field,fieldsize);
+			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
 			buildBinaryField(field,fieldsize,ct[i]);
 		}
 
@@ -3795,7 +3795,7 @@ bool sqlrprotocol_mysql::buildTextRow(sqlrservercursor *cursor,
 			debugWrite("LOB");
 			buildLobField(cursor,i);
 		} else {
-			debugWrite("\"%s\" (%d)",field,fieldsize);
+			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
 			writeLenEncStr(&resppacket,field,fieldsize);
 		}
 
@@ -4274,7 +4274,7 @@ bool sqlrprotocol_mysql::comProcessKill(sqlrservercursor *cursor) {
 	readLE(rp,&connid,&rp);
 
 	debugStart("com_process_kill");
-	debugWrite("connection id: %ld",connid);
+	debugWrite("connection id: %u",connid);
 	debugEnd();
 
 	stringbuffer	query;
@@ -4315,7 +4315,7 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 		stringbuffer	b;
 		b.safePrint(query,(uint32_t)querysize);
 		debugWrite("query: \"%s\"",b.getString());
-		debugWrite("query size: %d",querysize);
+		debugWrite("query size: %lld",(long long)querysize);
 		debugEnd();
 	}
 
@@ -4833,7 +4833,7 @@ bool sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 			debugWrite("value: %s",bv->value.stringval);
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
 			debugWrite("type: INTEGER");
-			debugWrite("value: %lld",bv->value.integerval);
+			debugWrite("value: %lld",(long long)bv->value.integerval);
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
 			debugWrite("type: DOUBLE");
 			debugWrite("value: %f (%d,%d)",
@@ -4886,7 +4886,7 @@ bool sqlrprotocol_mysql::comStmtSendLongData() {
 	debugStart("com_stmt_long_data");
 	debugWrite("statement id: %d",stmtid);
 	debugWrite("parameter id: %d",paramid);
-	debugWrite("data size: %lld",datasize);
+	debugWrite("data size: %lld",(long long)datasize);
 	debugHexDump(data,datasize);
 	debugEnd();
 
