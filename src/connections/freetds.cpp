@@ -59,7 +59,14 @@ extern	CS_INT	cs_dt_crack(CS_CONTEXT *,CS_INT,CS_VOID *,CS_DATEREC *);
 }
 #endif
 
-// this is here in case freetds ever supports cursors
+// this is here in case freetds ever supports cursors.  Verified live
+// (against a real ASE, via freetds) that freetds does NOT reliably support
+// ct_cursor()-based select cursors or ct_param()-based binds on plain
+// language commands - turning this on breaks ordinary selects and DML.
+// rpc commands (ct_command(CS_RPC_CMD) plus ct_param(), used by the
+// exec/execute/{call} branches of prepareQuery()) were verified live to
+// work correctly though, so that part isn't gated by this define; see
+// prepareQuery(), supportsNativeBinds() and executeQuery() below.
 //#define FREETDS_SUPPORTS_CURSORS
 
 // some versions of freetds don't define this
@@ -98,7 +105,6 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 							const char *data,
 							uint32_t datasize);
 		void		decodeBlob(char **data, uint32_t *datasize);
-		#ifdef FREETDS_SUPPORTS_CURSORS
 		bool		inputBind(const char *variable,
 						uint16_t variablesize,
 						const char *value,
@@ -151,7 +157,6 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 						const char **tz,
 						bool *isnegative,
 						int16_t *isnull);
-		#endif
 		bool		executeQuery(const char *query,
 						uint32_t size);
 		bool		knowsAffectedRows();
@@ -190,11 +195,15 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		size_t		cursornamesize;
 
 		void		checkRePrepare();
-		#ifdef FREETDS_SUPPORTS_CURSORS
 		bool		inputBind(CS_VOID *value,
 						CS_INT valuesize,
 						CS_SMALLINT indicator);
-		#endif
+
+		// true when the current command is an rpc command whose
+		// ct_command(CS_RPC_CMD) has already been issued by
+		// prepareQuery(); executeQuery() uses this to know whether it
+		// still needs to send the query as a plain language command
+		bool		rpc;
 
 		uint32_t	majorversion;
 		uint32_t	minorversion;
@@ -217,11 +226,9 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		uint16_t	maxbindcount;
 		CS_DATAFMT	*parameter;
 		uint16_t	paramindex;
-		#ifdef FREETDS_SUPPORTS_CURSORS
 		CS_VOID		**inbindvalue;
 		CS_INT		*inbinddatasize;
 		CS_SMALLINT	*inbindindicator;
-		#endif
 		char		**inbindts;
 		CS_INT		*outbindtype;
 		char		**outbindstrings;
@@ -3889,13 +3896,13 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 	cursornamesize=charstring::getIntegerLength(id);
 	cursorname=charstring::parseNumber(id);
 
+	rpc=false;
+
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
-	#ifdef FREETDS_SUPPORTS_CURSORS
 	inbindvalue=new CS_VOID *[maxbindcount];
 	inbinddatasize=new CS_INT[maxbindcount];
 	inbindindicator=new CS_SMALLINT[maxbindcount];
-	#endif
 	inbindts=new char *[maxbindcount];
 	outbindtype=new CS_INT[maxbindcount];
 	outbindstrings=new char *[maxbindcount];
@@ -3932,11 +3939,9 @@ freetdscursor::~freetdscursor() {
 	close();
 	delete[] cursorname;
 	delete[] parameter;
-	#ifdef FREETDS_SUPPORTS_CURSORS
 	delete[] inbindvalue;
 	delete[] inbinddatasize;
 	delete[] inbindindicator;
-	#endif
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete[] inbindts[i];
 	}
@@ -4100,6 +4105,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 	paramindex=0;
 	outbindindex=0;
+	rpc=false;
 
 	if ((!charstring::compare(query,"select",6) ||
 		!charstring::compare(query,"SELECT",6)) &&
@@ -4126,7 +4132,6 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 		// initiate an rpc command
 		cmd=languagecmd;
-		#ifdef FREETDS_SUPPORTS_CURSORS
 
 		// get the procedure name
 		const char	*p=conn->cont->skipWhitespace(query+4);
@@ -4143,7 +4148,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
-		#endif
+		rpc=true;
 
 	} else if ((!charstring::compare(query,"execute",7) ||
 			!charstring::compare(query,"EXECUTE",7)) &&
@@ -4151,7 +4156,6 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 		// initiate an rpc command
 		cmd=languagecmd;
-		#ifdef FREETDS_SUPPORTS_CURSORS
 
 		// get the procedure name
 		const char	*p=conn->cont->skipWhitespace(query+7);
@@ -4168,7 +4172,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
-		#endif
+		rpc=true;
 
 	} else if (query[0]=='{') {
 
@@ -4177,7 +4181,6 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 		// initiate an rpc command
 		cmd=languagecmd;
-		#ifdef FREETDS_SUPPORTS_CURSORS
 
 		// find "call"
 		const char	*p=query+1;
@@ -4210,7 +4213,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 				CS_UNUSED)!=CS_SUCCEED) {
 			return false;
 		}
-		#endif
+		rpc=true;
 
 	} else {
 
@@ -4233,11 +4236,21 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 }
 
 bool freetdscursor::supportsNativeBinds(const char *query, uint32_t size) {
-	#ifdef FREETDS_SUPPORTS_CURSORS
+
+	// only rpc commands (exec/execute/{call ...}) get real ct_param()
+	// binds - see the comment by FREETDS_SUPPORTS_CURSORS above.
+	// Ordinary language commands and cursor-based selects still fall
+	// back to faked (inlined literal) binds
+	if (((!charstring::compare(query,"exec",4) ||
+			!charstring::compare(query,"EXEC",4)) &&
+					character::isWhitespace(query[4])) ||
+		((!charstring::compare(query,"execute",7) ||
+			!charstring::compare(query,"EXECUTE",7)) &&
+					character::isWhitespace(query[7])) ||
+		query[0]=='{') {
 		return true;
-	#else
-		return false;
-	#endif
+	}
+	return false;
 }
 
 void freetdscursor::encodeBlob(stringbuffer *buffer,
@@ -4288,7 +4301,6 @@ void freetdscursor::checkRePrepare() {
 	}
 }
 
-#ifdef FREETDS_SUPPORTS_CURSORS
 bool freetdscursor::inputBind(CS_VOID *value, CS_INT valuesize,
 						CS_SMALLINT indicator) {
 
@@ -4620,7 +4632,6 @@ bool freetdscursor::outputBind(const char *variable,
 	paramindex++;
 	return true;
 }
-#endif
 
 bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 
@@ -4633,18 +4644,24 @@ bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 	freetdsconn->errorcode=0;
 	freetdsconn->liveconnection=true;
 
-	if (ct_command(cmd,CS_LANG_CMD,
-			(CS_CHAR *)query,size,
-			CS_UNUSED)!=CS_SUCCEED) {
-		return false;
-	}
-	clean=false;
-
 	// initialize row counts
 	affectedrows=0;
 	row=0;
 	maxrow=0;
 	totalrows=0;
+
+	// an rpc command was already issued by prepareQuery(); anything else
+	// (a cursor-based select or a plain language command) still needs to
+	// go out here as a plain language command, since cursor support and
+	// native binds on non-rpc commands aren't enabled - see the comment
+	// by FREETDS_SUPPORTS_CURSORS above
+	if (!rpc) {
+		if (ct_command(cmd,CS_LANG_CMD,
+				(CS_CHAR *)query,size,
+				CS_UNUSED)!=CS_SUCCEED) {
+			return false;
+		}
+	}
 
 	#ifdef FREETDS_SUPPORTS_CURSORS
 	if (cmd==cursorcmd) {

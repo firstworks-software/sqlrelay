@@ -2121,6 +2121,19 @@
 			binds that instead, and reports its true converted
 			length, so unicode input-output string binds round-trip
 			without truncation (#9025)
+		fixed the freetds connection module's prepareQuery() - its
+			entire body sat behind FREETDS_SUPPORTS_CURSORS, a
+			define that was never set, so an "exec", "execute" or
+			ODBC/JDBC "{call ...}" query never actually issued an
+			rpc command; and even with that ifdef forced on,
+			executeQuery() unconditionally re-issued the query as a
+			plain language command, discarding whatever
+			prepareQuery() had set up; the rpc command path (and
+			native, ct_param()-based binds for it) is now always
+			on, verified against a live ASE via freetds; select
+			cursors and native binds for plain language commands
+			stay off, since freetds's ct-lib emulation doesn't
+			reliably support them (#9050)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
