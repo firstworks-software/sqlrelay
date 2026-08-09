@@ -814,6 +814,11 @@ static const char *procnames[]={
 #define RPC_OP_UNSUPPORTED	16957
 #define RPC_FETCH_UNSUPPORTED	16958
 
+// a wire type this module doesn't recognize - unlike the errors above, a
+// real server never gets far enough to identify a proc to return this as a
+// status for, so it's reported as a plain error instead
+#define RPC_UNKNOWN_DATA_TYPE	8009
+
 // close-all cursor id for sp_cursorclose
 #define CURSOR_CLOSE_ALL	0xFFFFFFFF
 
@@ -1293,6 +1298,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	rpcInvalidColumnError(uint16_t param);
 		bool	rpcParamTypeError(const char *procname,
 					const char *param);
+		bool	rpcUnsupportedTypeError(byte_t tdstype);
 		bool	paramIsUnicode(uint16_t param);
 
 		uint32_t	newHandle();
@@ -1446,6 +1452,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// whether the rpc currently being handled failed, so that
 		// the done that closes it can say so
 		bool			rpcfailed;
+
+		// whether params() bailed on a wire type it doesn't
+		// recognize, part way through the parameter list - rpc()
+		// checks this to end the request cleanly (matching a real
+		// server rejecting the one unknown parameter) instead of
+		// treating the parse failure as a corrupted stream
+		bool			rpcunsupportedtype;
 
 		// The table and columns that the "insert bulk" statement
 		// named, and the column metadata that the bulk load packet
@@ -1601,6 +1614,7 @@ void sqlrprotocol_tds::init() {
 
 	rpcparamcount=0;
 	rpcfailed=false;
+	rpcunsupportedtype=false;
 
 	bulktable=NULL;
 	bulkcolumncount=0;
@@ -7393,6 +7407,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	size_t		rpsize=*rpsizeinout;
 
 	*more=false;
+	rpcunsupportedtype=false;
 
 	// nothing left to do
 	if (rpsize<sizeof(uint16_t)) {
@@ -7478,6 +7493,19 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	// get the parameters
 	if (!params(rp,rpsize,&rp,&rpsize)) {
 		delete[] procname;
+		if (rpcunsupportedtype) {
+			// the rest of the parameter stream can't be parsed -
+			// the failing parameter's own encoded length is
+			// exactly what's unknown - but the error is already
+			// queued, so end this rpc cleanly instead of treating
+			// it as a corrupted stream and dropping the
+			// connection.  *more is already false: a real server
+			// rejects the one unrecognized parameter and moves on,
+			// but there's no way to locate whatever else might
+			// follow it in this message, batched or not
+			doneProc(DONE_FINAL|DONE_ERROR,0,0);
+			return true;
+		}
 		return false;
 	}
 
@@ -7880,6 +7908,29 @@ bool sqlrprotocol_tds::rpcParamTypeError(const char *procname,
 	rpcfailed=true;
 
 	return true;
+}
+
+bool sqlrprotocol_tds::rpcUnsupportedTypeError(byte_t tdstype) {
+
+	// A real server never gets far enough parsing an unrecognized wire
+	// type to identify (let alone run) a proc, so unlike the errors
+	// above, this carries no return status of its own - just the error
+	// text and the done that closes the rpc out.
+
+	char	*hex=charstring::hexEncode(&tdstype,1);
+	charstring::upper(hex);
+
+	stringbuffer	err;
+	err.append("Data type 0x")->append(hex)->append(" is unknown.");
+	delete[] hex;
+
+	debugWrite("%s",err.getString());
+
+	appendError(RPC_UNKNOWN_DATA_TYPE,1,16,
+			err.getString(),srvname,NULL,1);
+	rpcunsupportedtype=true;
+
+	return false;
 }
 
 bool sqlrprotocol_tds::paramIsUnicode(uint16_t param) {
@@ -9566,8 +9617,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
-		debugWrite("unsupported partlentype");
-		return false;
+		return rpcUnsupportedTypeError(tdstype);
 	}
 
 	// An output parameter is sent back as the type the client declared
@@ -10289,8 +10339,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			break;
 		case TDS_TYPE_UDT:
 			// FIXME: nothing parses a udt body yet
-			debugWrite("unsupported type");
-			return false;
+			return rpcUnsupportedTypeError(tdstype);
 		case TDS_TYPE_XML:
 		case TDS_TYPE_TEXT:
 		case TDS_TYPE_NTEXT:
@@ -10399,11 +10448,9 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			// *TVP_ROW
 			// TVP_END_TOKEN
 			// FIXME: nothing parses a tvp body yet
-			debugWrite("unsupported type");
-			return false;
+			return rpcUnsupportedTypeError(tdstype);
 		default:
-			debugWrite("unsupported type");
-			return false;
+			return rpcUnsupportedTypeError(tdstype);
 	}
 
 	if (negotiatedtdsversion>=740) {

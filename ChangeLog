@@ -2246,6 +2246,11 @@
 		sp_prepare inside a raw batch) and forward the call there,
 		instead of rejecting it with RPC_NO_SUCH_STMT - the same
 		class of bug #9202 fixed for execute()/unprepare() (#9203)
+	fixed the tds protocol module's paramValue() to reject an
+		unrecognized rpc parameter wire type with a plain error
+		(mssql error 8009, "Data type 0xNN is unknown"), matching
+		how a real server keeps the connection alive, instead of
+		tearing the connection down outright (#9205)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
