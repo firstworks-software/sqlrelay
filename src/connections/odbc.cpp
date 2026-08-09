@@ -83,8 +83,13 @@ struct datebind {
 };
 
 struct charbind {
+	charbind() : value(NULL), valuesize(0), ucsvalue(NULL) {}
+	~charbind() { delete[] ucsvalue; }
 	char		*value;
 	uint32_t	valuesize;
+	// scratch buffer used for unicode input-output string binds;
+	// NULL unless inputOutputBind(...,char *,...) allocated one
+	byte_t		*ucsvalue;
 };
 
 struct flagtoname {
@@ -4475,6 +4480,16 @@ bool odbccursor::inputOutputBind(const char *variable,
 	SQLSMALLINT	valtype=SQL_C_CHAR;
 	SQLSMALLINT	paramtype=SQL_CHAR;
 	SQLLEN		buffersize=valuesize;
+	// Bytes of valid data already sitting in the bind buffer, in
+	// whichever encoding actually gets bound below.  Used to set the
+	// StrLen_or_IndPtr so the driver sees the whole input value.
+	size_t		sizetocopy=charstring::getLength(value);
+	// Scratch buffer for the unicode case, sized to hold the
+	// converted value (and to give the driver as much room to write
+	// output back as the caller's buffer implies).  Left NULL, and
+	// "value" bound directly, for the non-unicode case.
+	byte_t		*ucsvalue=NULL;
+	SQLLEN		ucsvaluesize=0;
 	#ifdef HAVE_SQLCONNECTW
 	if (odbcconn->unicode) {
 
@@ -4491,20 +4506,23 @@ bool odbccursor::inputOutputBind(const char *variable,
 			return false;
 		}
 		// stringSize() already counts the null terminator
-		size_t	nullsize=nullSize(encoding);
-		size_t	sizetocopy=stringSize(valueucs,encoding);
-		if (sizetocopy<=valuesize) {
-			bytestring::copy(value,valueucs,sizetocopy);
-		} else {
-			// truncate, and null-terminate if there's room
-			bytestring::copy(value,valueucs,valuesize);
-			if (valuesize>=nullsize) {
-				bytestring::zero(value+valuesize-nullsize,
-								nullsize);
-			} else {
-				bytestring::zero(value,valuesize);
-			}
+		sizetocopy=stringSize(valueucs,encoding);
+
+		// Convert into a scratch buffer instead of truncating the
+		// converted value back into "value".  "value" was sized
+		// for the utf-8 form; ucs-2 needs up to twice that, so
+		// reusing it silently cut the value down to the utf-8
+		// size.  Size the scratch buffer to the larger of the
+		// converted value and double the caller's buffer, so it
+		// has room for both the converted input and any output
+		// the driver writes back.
+		ucsvaluesize=(SQLLEN)((size_t)valuesize*2);
+		if (ucsvaluesize<(SQLLEN)sizetocopy) {
+			ucsvaluesize=(SQLLEN)sizetocopy;
 		}
+		ucsvalue=new byte_t[ucsvaluesize];
+		bytestring::copy(ucsvalue,valueucs,sizetocopy);
+
 		delete[] valueucs;
 		valtype=SQL_C_WCHAR;
 		paramtype=SQL_WVARCHAR;
@@ -4514,13 +4532,14 @@ bool odbccursor::inputOutputBind(const char *variable,
 	charbind	*cb=new charbind;
 	cb->value=value;
 	cb->valuesize=valuesize;
+	cb->ucsvalue=ucsvalue;
 
 	inoutdatebind[pos-1]=NULL;
 	inoutcharbind[pos-1]=cb;
 	inoutisnullptr[pos-1]=isnull;
 
 	inoutisnull[pos-1]=(*isnull==SQL_NULL_DATA)?
-				sqlnulldata:charstring::getLength(value);
+				sqlnulldata:(SQLLEN)sizetocopy;
 
 	// FIXME: original code...
 	/*erg=SQLBindParameter(stmt,
@@ -4571,8 +4590,10 @@ bool odbccursor::inputOutputBind(const char *variable,
 				paramtype,
 				valuesize,	// in characters
 				0,
-				(SQLPOINTER)value,
-				buffersize,	// in bytes
+				(ucsvalue)?
+					(SQLPOINTER)ucsvalue:
+					(SQLPOINTER)value,
+				(ucsvalue)?ucsvaluesize:buffersize,
 				&(inoutisnull[pos-1]));
 	}
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
@@ -4882,9 +4903,15 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 			// convert wchar output binds to user coding
 			char		*value=inoutcharbind[i]->value;
 			uint32_t	valuesize=inoutcharbind[i]->valuesize;
+			// the driver wrote its output into the scratch
+			// buffer (if one was allocated for the bind),
+			// not into the undersized caller buffer
+			byte_t		*ucsvalue=inoutcharbind[i]->ucsvalue;
 			char		*err=NULL;
 			byte_t		*u=convertCharset(
-						(const byte_t *)value,
+						(ucsvalue)?
+							ucsvalue:
+							(const byte_t *)value,
 						odbcconn->ncharencoding,
 						"UTF-8",&err);
 			if (err) {

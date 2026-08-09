@@ -2108,6 +2108,19 @@
 			discriminates them on every driver tested, and falls
 			back to it after the existing MS SQL Server type name
 			checks (#9054)
+		fixed the odbc connection module's inputOutputBind() for
+			strings - under unicode, it converted the input value to
+			the backend's wide encoding in place, then used a byte
+			strlen on the converted buffer to tell the driver how
+			much input was valid, so an ascii value that converts to
+			2 bytes per character was reported as 1 byte long and the
+			driver saw only its first byte; it also truncated the
+			converted value down to the original (narrower, utf-8
+			sized) buffer when the wide form needed more room; now
+			converts into a scratch buffer sized for the wide form,
+			binds that instead, and reports its true converted
+			length, so unicode input-output string binds round-trip
+			without truncation (#9025)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
