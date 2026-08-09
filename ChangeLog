@@ -1835,6 +1835,14 @@
 		for clients that used it validly), and oids, needed for the
 		binary bind path, could be NULL or shorter than the declared
 		parameter value count and was indexed without a check (#9043)
+	fixed the postgresql protocol module - bindBinaryParameter()'s
+		unsupported-oid case sent an ErrorResponse but returned
+		true (the write succeeded), so bind() treated the
+		parameter as bound, went on to send BindComplete for the
+		same Bind message, and left bv->type unset for that
+		parameter. It now reports failure after sending the
+		error, matching bind()'s existing handling of a false
+		return (#9218)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

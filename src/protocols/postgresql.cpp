@@ -2515,7 +2515,11 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			err.append("parameter oid ");
 			err.append(oid);
 			err.append(" not supported");
-			return sendErrorResponse(err.getString());
+			// send the error but report failure to bind() - a
+			// successful error-response write must not be
+			// mistaken for a successful bind
+			sendErrorResponse(err.getString());
+			return false;
 	}
 	return true;
 }
