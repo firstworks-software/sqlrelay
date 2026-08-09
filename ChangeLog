@@ -1880,6 +1880,15 @@
 		enum identifiers (SHORT_DATATYPE, TINY_DATATYPE) instead of
 		the datatypestring[] entries (SHORT, TINY); comment only, no
 		behavior changed (#9077)
+	removed 8 dead type comparisons from the c# api's
+		SQLRelayDataReader - two chains each had a SHORT_DATATYPE
+		and TINY_DATATYPE branch spelled the way the datatype enum
+		in datatypes.h spells them, rather than "SHORT" and "TINY"
+		as datatypestring[] spells them, and a "Boolean " and
+		"Boolean _ARRAY" branch left over from a botched BOOL to
+		Boolean rename. All 8 were unreachable; each chain already
+		had correct, reachable SHORT, TINY, BOOL, and BOOL_ARRAY
+		branches further down (#9074)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

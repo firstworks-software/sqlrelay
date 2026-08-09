@@ -638,14 +638,6 @@ namespace SQLRClient
             {
                 return typeof(Byte[]);
             }
-            else if (type == "SHORT_DATATYPE")
-            {
-                return typeof(Int16);
-            }
-            else if (type == "TINY_DATATYPE")
-            {
-                return typeof(Int16);
-            }
             // added by firebird
             else if (type == "D_FLOAT")            // 67
             {
@@ -668,10 +660,6 @@ namespace SQLRClient
                 return typeof(Double);
             }
             // added by postgresql
-            else if (type == "Boolean ")
-            {
-                return typeof(Boolean);
-            }
             else if (type == "BYTEA")
             {
                 return typeof(Byte[]);
@@ -796,10 +784,6 @@ namespace SQLRClient
                 return typeof(Byte[]);
             }
             else if (type == "CIDR")
-            {
-                return typeof(Byte[]);
-            }
-            else if (type == "Boolean _ARRAY")
             {
                 return typeof(Byte[]);
             }
@@ -1506,14 +1490,6 @@ namespace SQLRClient
             {
                 return field;
             }
-            else if (type == "SHORT_DATATYPE")
-            {
-                return Convert.ToInt16(System.Text.Encoding.Default.GetString(field));
-            }
-            else if (type == "TINY_DATATYPE")
-            {
-                return Convert.ToInt16(System.Text.Encoding.Default.GetString(field));
-            }
             // added by firebird
             else if (type == "D_FLOAT")            // 67
             {
@@ -1536,10 +1512,6 @@ namespace SQLRClient
                 return Convert.ToDouble(System.Text.Encoding.Default.GetString(field));
             }
             // added by postgresql
-            else if (type == "Boolean ")
-            {
-                return Convert.ToBoolean(System.Text.Encoding.Default.GetString(field));
-            }
             else if (type == "BYTEA")
             {
                 return field;
@@ -1664,10 +1636,6 @@ namespace SQLRClient
                 return field;
             }
             else if (type == "CIDR")
-            {
-                return field;
-            }
-            else if (type == "Boolean _ARRAY")
             {
                 return field;
             }
