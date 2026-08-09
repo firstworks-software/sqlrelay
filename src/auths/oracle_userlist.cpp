@@ -16,25 +16,27 @@
 #include <rudiments/bytebuffer.h>
 #include <rudiments/parameterstring.h>
 #include <rudiments/sha1.h>
+#include <rudiments/sha512.h>
 #include <rudiments/md5.h>
+#include <rudiments/aes192.h>
+#include <rudiments/aes256.h>
 #include <rudiments/pbkdf2.h>
 #include <rudiments/sensitivevalue.h>
 
-// rudiments has sha-1, md5 and pbkdf2-hmac-sha512, but no sha-512, and its
-// only aes class has a fixed 16-byte key and applies cms padding.  O5LOGON
-// needs sha-512, and aes-cbc with a 24- or 32-byte key, a zero iv and no
-// padding, so those three come from openssl directly.  libcrypto is already on
+// rudiments has sha-1, sha-512, md5, aes-192, aes-256 and pbkdf2-hmac-sha512
+// (#9100), so O5LOGON's sha-512 and aes-cbc-with-no-padding needs are covered.
+// The one primitive rudiments still doesn't have is a cryptographically
+// secure random number generator - prng is a seeded PRNG, not a
+// CSPRNG, so it can't produce the session key and salt material below.  That
+// still comes from openssl's RAND_bytes() directly.  libcrypto is already on
 // every auth module's link line, through PLUGINLIBS and RUDIMENTSLIBS in
-// config.mk, and rudiments publishes these defines in its own installed
+// config.mk, and rudiments publishes RUDIMENTS_HAS_SSL in its own installed
 // config.h, which any rudiments header pulls in.  SQL Relay has no crypto
-// probe of its own to key off instead - see #9099 and #9100.  Where they're
-// not defined, the module still builds and oracle_clear_password still works;
-// O5LOGON just isn't offered.
-#if defined(RUDIMENTS_HAS_SSL) && \
-	defined(RUDIMENTS_HAS_EVP_CIPHER_CTX_NEW) && \
-	defined(RUDIMENTS_HAS_SHA512_CTX)
+// probe of its own to key off instead - see #9099.  Where it's not defined,
+// the module still builds and oracle_clear_password still works; O5LOGON
+// just isn't offered.
+#if defined(RUDIMENTS_HAS_SSL)
 	#define SQLRAUTH_ORACLE_O5LOGON
-	#include <openssl/evp.h>
 	#include <openssl/rand.h>
 #endif
 
@@ -170,7 +172,8 @@ static const char *supportedauthmethods[]={
 #ifdef SQLRAUTH_ORACLE_O5LOGON
 
 // aes-cbc with a zero iv and no padding, over whole blocks.  rudiments' aes128
-// can't do this - wrong key size, and it pads.
+// can't do this - wrong key size, and it always pads - but aes192 and aes256
+// can, via setPadding(false).
 static bool aesCbc(bool encrypt,
 			const byte_t *key, size_t keysize,
 			const byte_t *in, size_t insize,
@@ -183,34 +186,42 @@ static bool aesCbc(bool encrypt,
 	byte_t	iv[16];
 	bytestring::zero(iv,sizeof(iv));
 
-	EVP_CIPHER_CTX	*ctx=EVP_CIPHER_CTX_new();
-	if (!ctx) {
-		return false;
-	}
+	encryption	*enc=(keysize==24)?
+				(encryption *)new aes192():
+				(encryption *)new aes256();
+	enc->setPadding(false);
 
 	bool	retval=false;
-	int	outlen=0;
-	int	finallen=0;
-	if (EVP_CipherInit_ex(ctx,
-			(keysize==24)?EVP_aes_192_cbc():EVP_aes_256_cbc(),
-			NULL,key,iv,(encrypt)?1:0)==1 &&
-		EVP_CIPHER_CTX_set_padding(ctx,0)==1 &&
-		EVP_CipherUpdate(ctx,out,&outlen,in,(int)insize)==1 &&
-		EVP_CipherFinal_ex(ctx,out+outlen,&finallen)==1) {
-		retval=((size_t)(outlen+finallen)==insize);
+	if (enc->setKey(key,keysize) && enc->setIv(iv,sizeof(iv)) &&
+					enc->append(in,(uint32_t)insize)) {
+		const byte_t	*result=(encrypt)?
+				enc->getEncryptedData():enc->getDecryptedData();
+		uint64_t	resultsize=(encrypt)?
+				enc->getEncryptedDataSize():
+				enc->getDecryptedDataSize();
+		if (result && resultsize==insize) {
+			bytestring::copy(out,result,insize);
+			retval=true;
+		}
 	}
 
-	EVP_CIPHER_CTX_free(ctx);
+	delete enc;
 
 	return retval;
 }
 
-// sha-512, which rudiments doesn't have.  the one-shot EVP_Digest() rather
-// than EVP_MD_CTX_*, which was renamed between openssl versions.
-static bool sha512(const byte_t *in, size_t insize, byte_t *out) {
-	unsigned int	outsize=0;
-	return (EVP_Digest(in,insize,out,&outsize,EVP_sha512(),NULL)==1 &&
-							outsize==64);
+// sha-512, via rudiments' sha512 class (#9100)
+static bool sha512Hash(const byte_t *in, size_t insize, byte_t *out) {
+	sha512	s;
+	if (!s.append(in,(uint32_t)insize)) {
+		return false;
+	}
+	const byte_t	*digest=s.getHash();
+	if (!digest) {
+		return false;
+	}
+	bytestring::copy(out,digest,64);
+	return true;
 }
 
 static bool derivedKey(const byte_t *password, uint32_t passwordsize,
@@ -269,7 +280,7 @@ static bool passwordHash(const char *password,
 		in.append(passwordkey,sizeof(passwordkey));
 		in.append(vfrdata,vfrdatasize);
 		byte_t		digest[64];
-		bool		retval=sha512(in.getBuffer(),
+		bool		retval=sha512Hash(in.getBuffer(),
 						in.getSize(),digest);
 		if (retval) {
 			bytestring::copy(passwordhash,digest,32);

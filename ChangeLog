@@ -1756,6 +1756,13 @@
 		column's type info carried five zero bytes for its collation;
 		both now send the SQL_Latin1_General_CP1_CI_AS collation that
 		matches the cp1252 the character values are converted to
+	fixed the oracle userlist auth module - o5logon's sha-512 and
+		aes-cbc-with-no-padding needs went straight to openssl's evp
+		interface, because rudiments had neither; rudiments has both
+		now (sha512, aes192 and aes256, with a padding switch), so the
+		module uses those instead - only the cryptographically secure
+		random number generator, which rudiments still doesn't have,
+		still comes from openssl directly
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
