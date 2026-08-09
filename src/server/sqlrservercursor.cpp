@@ -1778,6 +1778,30 @@ bool sqlrservercursor::columnInfoIsValidAfterPrepare() {
 	return false;
 }
 
+uint16_t sqlrservercursor::getInputBindCountFromPrepare() {
+	return 0;
+}
+
+uint16_t sqlrservercursor::getInputBindType(uint16_t index) {
+	return UNKNOWN_DATATYPE;
+}
+
+uint32_t sqlrservercursor::getInputBindSize(uint16_t index) {
+	return 0;
+}
+
+uint32_t sqlrservercursor::getInputBindScale(uint16_t index) {
+	return 0;
+}
+
+uint32_t sqlrservercursor::getInputBindPrecision(uint16_t index) {
+	return 0;
+}
+
+bool sqlrservercursor::getInputBindIsNullable(uint16_t index) {
+	return false;
+}
+
 void sqlrservercursor::setColumnInfoIsValid(bool valid) {
 	pvt->_columninfoisvalid=valid;
 }

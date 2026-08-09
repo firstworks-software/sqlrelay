@@ -3022,6 +3022,56 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		uint16_t	countBindVariables(const char *query,
 							uint32_t querysize);
 
+		/** Returns the number of input bind variables that "cursor"'s
+		 *  backend reported after the query was prepared, or 0 if
+		 *  the backend doesn't know (either because it can't
+		 *  describe bind variables at all, or because the count
+		 *  isn't known until execution).
+		 *
+		 *  Valid, if ever, between prepareQuery() and executeQuery(). */
+		uint16_t	getInputBindCountFromPrepare(
+						sqlrservercursor *cursor);
+
+		/** Returns the numeric type id of the input bind variable at
+		 *  position "index", as reported by "cursor"'s backend after
+		 *  the query was prepared.  "index" is 0-based.
+		 *
+		 *  Returns UNKNOWN_DATATYPE if the backend doesn't know. */
+		uint16_t	getInputBindType(sqlrservercursor *cursor,
+							uint16_t index);
+
+		/** Returns the size of the input bind variable at position
+		 *  "index", as reported by "cursor"'s backend after the
+		 *  query was prepared.  "index" is 0-based.
+		 *
+		 *  Returns 0 if the backend doesn't know. */
+		uint32_t	getInputBindSize(sqlrservercursor *cursor,
+							uint16_t index);
+
+		/** Returns the scale of the input bind variable at position
+		 *  "index", as reported by "cursor"'s backend after the
+		 *  query was prepared.  "index" is 0-based.
+		 *
+		 *  Returns 0 if the backend doesn't know. */
+		uint32_t	getInputBindScale(sqlrservercursor *cursor,
+							uint16_t index);
+
+		/** Returns the precision of the input bind variable at
+		 *  position "index", as reported by "cursor"'s backend after
+		 *  the query was prepared.  "index" is 0-based.
+		 *
+		 *  Returns 0 if the backend doesn't know. */
+		uint32_t	getInputBindPrecision(sqlrservercursor *cursor,
+							uint16_t index);
+
+		/** Returns true if the input bind variable at position
+		 *  "index" is nullable, as reported by "cursor"'s backend
+		 *  after the query was prepared.  "index" is 0-based.
+		 *
+		 *  Returns false if the backend doesn't know. */
+		bool	getInputBindIsNullable(sqlrservercursor *cursor,
+							uint16_t index);
+
 		/** Splits "combinedobject" into "catalog", "schema", and
 		 *  "object", depending on "objecttype".
 		 *
@@ -5267,6 +5317,53 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  prepared and false if column info is only valid after a
 		 *  query has been executed. */
 		virtual bool	columnInfoIsValidAfterPrepare();
+
+		/** Returns the number of input bind variables that the
+		 *  backend reported after the query was prepared, or 0 if
+		 *  the backend doesn't know.  Valid, if ever, between
+		 *  prepareQuery() and executeQuery().
+		 *
+		 *  The base class returns 0.  A backend that can describe
+		 *  bind variables from a prepared statement (eg. firebird's
+		 *  isc_dsql_describe_bind(), odbc's SQLDescribeParam(),
+		 *  mysql's mysql_stmt_param_count()) should override this
+		 *  and the accessors below. */
+		virtual uint16_t	getInputBindCountFromPrepare();
+
+		/** Returns the numeric type id of the input bind variable at
+		 *  position "index", as reported by the backend after the
+		 *  query was prepared.  "index" is 0-based.
+		 *
+		 *  The base class returns UNKNOWN_DATATYPE. */
+		virtual uint16_t	getInputBindType(uint16_t index);
+
+		/** Returns the size of the input bind variable at position
+		 *  "index", as reported by the backend after the query was
+		 *  prepared.  "index" is 0-based.
+		 *
+		 *  The base class returns 0. */
+		virtual uint32_t	getInputBindSize(uint16_t index);
+
+		/** Returns the scale of the input bind variable at position
+		 *  "index", as reported by the backend after the query was
+		 *  prepared.  "index" is 0-based.
+		 *
+		 *  The base class returns 0. */
+		virtual uint32_t	getInputBindScale(uint16_t index);
+
+		/** Returns the precision of the input bind variable at
+		 *  position "index", as reported by the backend after the
+		 *  query was prepared.  "index" is 0-based.
+		 *
+		 *  The base class returns 0. */
+		virtual uint32_t	getInputBindPrecision(uint16_t index);
+
+		/** Returns true if the input bind variable at position
+		 *  "index" is nullable, as reported by the backend after the
+		 *  query was prepared.  "index" is 0-based.
+		 *
+		 *  The base class returns false. */
+		virtual bool	getInputBindIsNullable(uint16_t index);
 
 		/** Returns the id of this cursor. */
 		uint16_t	getId();

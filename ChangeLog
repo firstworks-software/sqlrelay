@@ -2201,6 +2201,17 @@
 		arbitrary size; every other backend and the default cursor
 		implementation fall back to the old flat-buffer behavior
 		unchanged (#9151)
+	added a server api for asking a backend what a prepared statement's
+		bind variables are - sqlrservercursor::getInputBindCountFromPrepare()
+		and getInputBindType()/getInputBindSize()/getInputBindScale()/
+		getInputBindPrecision()/getInputBindIsNullable(), with
+		sqlrservercontroller passthroughs, mirroring the existing
+		result-set column info api; the base cursor returns "don't
+		know" (a count of 0) and every backend keeps today's behavior
+		unless it overrides these; firebird now copies the bind
+		description isc_dsql_describe_bind() already fills into
+		inbindsqlda out of prepareQuery(), before inputBind() overwrites
+		it in place, and answers from that copy (#9140)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

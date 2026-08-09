@@ -38,6 +38,59 @@ static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
 #endif
 }
 
+// maps a firebird sqltype/sqlsubtype/sqlscale (as returned by
+// isc_dsql_describe() or isc_dsql_describe_bind()) to a SQL Relay datatype
+// id.  Mirrors the coercion firebirdcursor::describeResultSet() applies to
+// output columns, minus the buffer assignment, so it can also be used for
+// input bind variables.
+static int firebirdSqlTypeToDatatype(short sqltype,
+					short sqlsubtype, short sqlscale) {
+	if (sqltype==SQL_TEXT || sqltype==SQL_TEXT+1) {
+		return CHAR_DATATYPE;
+	} else if (sqltype==SQL_VARYING || sqltype==SQL_VARYING+1) {
+		return VARCHAR_DATATYPE;
+	} else if (sqltype==SQL_SHORT || sqltype==SQL_SHORT+1) {
+		return SMALLINT_DATATYPE;
+	// Looks like sometimes firebird returns INT64's as SQL_LONG type.
+	// These can be identified because the sqlscale gets set too.  Treat
+	// SQL_LONG's with an sqlscale as INT64's.
+	} else if ((sqltype==SQL_LONG || sqltype==SQL_LONG+1) && !sqlscale) {
+		return INTEGER_DATATYPE;
+	} else if (
+	#ifdef SQL_INT64
+			(sqltype==SQL_INT64 || sqltype==SQL_INT64+1) ||
+	#endif
+			((sqltype==SQL_LONG || sqltype==SQL_LONG+1) &&
+								sqlscale)) {
+		return (sqlsubtype==1)?NUMERIC_DATATYPE:DECIMAL_DATATYPE;
+	} else if (sqltype==SQL_FLOAT || sqltype==SQL_FLOAT+1) {
+		return FLOAT_DATATYPE;
+	} else if (sqltype==SQL_DOUBLE || sqltype==SQL_DOUBLE+1) {
+		return DOUBLE_PRECISION_DATATYPE;
+	} else if (sqltype==SQL_D_FLOAT || sqltype==SQL_D_FLOAT+1) {
+		return D_FLOAT_DATATYPE;
+	} else if (sqltype==SQL_ARRAY || sqltype==SQL_ARRAY+1) {
+		return ARRAY_DATATYPE;
+	} else if (sqltype==SQL_QUAD || sqltype==SQL_QUAD+1) {
+		return QUAD_DATATYPE;
+	#ifdef SQL_TIMESTAMP
+	} else if (sqltype==SQL_TIMESTAMP || sqltype==SQL_TIMESTAMP+1) {
+	#else
+	} else if (sqltype==SQL_DATE || sqltype==SQL_DATE+1) {
+	#endif
+		return TIMESTAMP_DATATYPE;
+	#ifdef SQL_TIMESTAMP
+	} else if (sqltype==SQL_TYPE_TIME || sqltype==SQL_TYPE_TIME+1) {
+		return TIME_DATATYPE;
+	} else if (sqltype==SQL_TYPE_DATE || sqltype==SQL_TYPE_DATE+1) {
+		return DATE_DATATYPE;
+	#endif
+	} else if (sqltype==SQL_BLOB || sqltype==SQL_BLOB+1) {
+		return (sqlsubtype==1)?CLOB_DATATYPE:BLOB_DATATYPE;
+	}
+	return UNKNOWN_DATATYPE;
+}
+
 struct fieldstruct {
 	int		sqlrtype;
 	short		type;
@@ -57,6 +110,16 @@ struct fieldstruct {
 	bool		blobisopen;
 
 	short		nullindicator;
+};
+
+// isc_dsql_describe_bind() fills these fields into inbindsqlda, but
+// inputBind() overwrites them in place before execute, so prepareQuery()
+// copies them out here to answer getInputBindType()/etc. later
+struct inbinddescribestruct {
+	short		sqltype;
+	short		sqlscale;
+	short		sqlsubtype;
+	short		sqllen;
 };
 
 struct datebind {
@@ -214,6 +277,12 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		void		closeLobField(uint32_t col);
 		void		closeResultSet();
 		bool		columnInfoIsValidAfterPrepare();
+		uint16_t	getInputBindCountFromPrepare();
+		uint16_t	getInputBindType(uint16_t index);
+		uint32_t	getInputBindSize(uint16_t index);
+		uint32_t	getInputBindScale(uint16_t index);
+		uint32_t	getInputBindPrecision(uint16_t index);
+		bool		getInputBindIsNullable(uint16_t index);
 
 
 		isc_stmt_handle	stmt;
@@ -224,6 +293,8 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		ISC_TIMESTAMP	*inbindts;
 		ISC_QUAD	*inbindblobid;
 		isc_blob_handle	*inbindblobhandle;
+		inbinddescribestruct	*inbinddescribe;
+		uint16_t	inbindcountfromprepare;
 
 		XSQLDA	ISC_FAR	*outbindsqlda;
 		ISC_QUAD	*outbindblobid;
@@ -2361,6 +2432,8 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	inbindts=new ISC_TIMESTAMP[maxbindcount];
 	inbindblobid=new ISC_QUAD[maxbindcount];
 	inbindblobhandle=new isc_blob_handle[maxbindcount];
+	inbinddescribe=new inbinddescribestruct[maxbindcount];
+	inbindcountfromprepare=0;
 
 
 	// set up output binds
@@ -2390,6 +2463,7 @@ firebirdcursor::~firebirdcursor() {
 	delete[] inbindts;
 	delete[] inbindblobid;
 	delete[] inbindblobhandle;
+	delete[] inbinddescribe;
 
 	delete[] outbindsqlda;
 	delete[] outbindblobid;
@@ -2517,6 +2591,16 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 	inbindsqlda->sqln=inbindsqlda->sqld;
+
+	// copy the describe out now - inputBind() overwrites inbindsqlda's
+	// sqlvar entries in place on its way to execute
+	inbindcountfromprepare=inbindsqlda->sqld;
+	for (uint16_t i=0; i<inbindcountfromprepare; i++) {
+		inbinddescribe[i].sqltype=inbindsqlda->sqlvar[i].sqltype;
+		inbinddescribe[i].sqlscale=inbindsqlda->sqlvar[i].sqlscale;
+		inbinddescribe[i].sqlsubtype=inbindsqlda->sqlvar[i].sqlsubtype;
+		inbinddescribe[i].sqllen=inbindsqlda->sqlvar[i].sqllen;
+	}
 
 	// Describe the result set now, so that the column info is valid
 	// straight after the prepare.  Skip the statement types that
@@ -4014,6 +4098,71 @@ void firebirdcursor::closeResultSet() {
 
 bool firebirdcursor::columnInfoIsValidAfterPrepare() {
 	return true;
+}
+
+uint16_t firebirdcursor::getInputBindCountFromPrepare() {
+	return inbindcountfromprepare;
+}
+
+uint16_t firebirdcursor::getInputBindType(uint16_t index) {
+	if (index>=inbindcountfromprepare) {
+		return UNKNOWN_DATATYPE;
+	}
+	return firebirdSqlTypeToDatatype(inbinddescribe[index].sqltype,
+					inbinddescribe[index].sqlsubtype,
+					inbinddescribe[index].sqlscale);
+}
+
+uint32_t firebirdcursor::getInputBindSize(uint16_t index) {
+	if (index>=inbindcountfromprepare) {
+		return 0;
+	}
+	return inbinddescribe[index].sqllen;
+}
+
+uint32_t firebirdcursor::getInputBindScale(uint16_t index) {
+	if (index>=inbindcountfromprepare) {
+		return 0;
+	}
+	return -inbinddescribe[index].sqlscale;
+}
+
+uint32_t firebirdcursor::getInputBindPrecision(uint16_t index) {
+
+	if (index>=inbindcountfromprepare) {
+		return 0;
+	}
+
+	// same mapping as getColumnPrecision()
+	switch (getInputBindType(index)) {
+		case CHAR_DATATYPE:
+		case VARCHAR_DATATYPE:
+		case BLOB_DATATYPE:
+			return inbinddescribe[index].sqllen;
+		case SMALLINT_DATATYPE:
+			return 5;
+		case INTEGER_DATATYPE:
+			return 11;
+		case NUMERIC_DATATYPE:
+		case DECIMAL_DATATYPE:
+			// FIXME: can be from 1 to 18
+			// (oddly, scale is given as a negative number)
+			return 18+inbinddescribe[index].sqlscale;
+		case TIME_DATATYPE:
+			return 8;
+		case DATE_DATATYPE:
+			return 10;
+		default:
+			return inbinddescribe[index].sqllen;
+	}
+}
+
+bool firebirdcursor::getInputBindIsNullable(uint16_t index) {
+	if (index>=inbindcountfromprepare) {
+		return false;
+	}
+	// the low bit of sqltype indicates nullability
+	return inbinddescribe[index].sqltype&1;
 }
 
 extern "C" {

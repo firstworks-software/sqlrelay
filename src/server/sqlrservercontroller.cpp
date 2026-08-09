@@ -3848,6 +3848,37 @@ uint16_t sqlrservercontroller::countBindVariables(const char *query,
 				pvt->_dollarsignsupported);
 }
 
+uint16_t sqlrservercontroller::getInputBindCountFromPrepare(
+						sqlrservercursor *cursor) {
+	return cursor->getInputBindCountFromPrepare();
+}
+
+uint16_t sqlrservercontroller::getInputBindType(sqlrservercursor *cursor,
+							uint16_t index) {
+	return cursor->getInputBindType(index);
+}
+
+uint32_t sqlrservercontroller::getInputBindSize(sqlrservercursor *cursor,
+							uint16_t index) {
+	return cursor->getInputBindSize(index);
+}
+
+uint32_t sqlrservercontroller::getInputBindScale(sqlrservercursor *cursor,
+							uint16_t index) {
+	return cursor->getInputBindScale(index);
+}
+
+uint32_t sqlrservercontroller::getInputBindPrecision(
+						sqlrservercursor *cursor,
+						uint16_t index) {
+	return cursor->getInputBindPrecision(index);
+}
+
+bool sqlrservercontroller::getInputBindIsNullable(sqlrservercursor *cursor,
+							uint16_t index) {
+	return cursor->getInputBindIsNullable(index);
+}
+
 void sqlrservercontroller::splitObjectName(const char *currentcatalog,
 						const char *currentschema,
 						const char *objecttype,
