@@ -270,14 +270,6 @@ class sqlrservercontrollerprivate {
 	uint32_t	_accepttimeout;
 
 	bool		_suspendedsession;
-
-	// whether the client session about to be handled is a client
-	// resuming a session it suspended, on a new socket, as opposed to a
-	// new client.  Set from _suspendedsession right before that gets
-	// cleared for the upcoming clientSession() call, and only cleared in
-	// initSession(), which the suspended-session loop never calls
-	// between a suspend and its resume - unlike _suspendedsession, which
-	// clientSession() itself clears on every call.
 	bool		_resumedsession;
 
 	inetsocketserver	**_serversockin;
@@ -1692,8 +1684,9 @@ bool sqlrservercontroller::listen() {
 
 			if (success==1) {
 
-				// a client is picking up a session it suspended
-				// if we were waiting on the resume socket for one
+				// a client is picking up a session it
+				// suspended if we were waiting on the resume
+				// socket for one
 				pvt->_resumedsession=pvt->_suspendedsession;
 				pvt->_suspendedsession=false;
 
