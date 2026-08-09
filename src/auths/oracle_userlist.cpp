@@ -23,17 +23,16 @@
 #include <rudiments/pbkdf2.h>
 #include <rudiments/sensitivevalue.h>
 #include <rudiments/csprng.h>
+#include <rudiments/tls.h>
 
 // rudiments has sha-1, sha-512, md5, aes-192, aes-256, pbkdf2-hmac-sha512
 // (#9100) and csprng (#9211), so O5LOGON's sha-512, aes-cbc-with-no-padding
 // and session-key/salt needs are all covered - the module no longer touches
-// openssl directly.  RUDIMENTS_HAS_SSL is still the right guard for
-// SQLRAUTH_ORACLE_O5LOGON, since rudiments' sha512/aes192/aes256 are
-// themselves openssl-backed.  Where it's not defined, the module still
-// builds and oracle_clear_password still works; O5LOGON just isn't offered.
-#if defined(RUDIMENTS_HAS_SSL)
-	#define SQLRAUTH_ORACLE_O5LOGON
-#endif
+// openssl directly.  O5LOGON is offered at runtime only when
+// tls::isSupported() is true, since rudiments' pbkdf2-hmac-sha512 (needed
+// for 12c verifiers) has no non-openssl fallback and fails outright without
+// it.  Where it isn't supported, oracle_clear_password still works;
+// O5LOGON just isn't offered.
 
 // verifier types, from python-oracledb's constants.pxi
 #define VERIFIER_TYPE_11G_1	0xb152
@@ -157,14 +156,10 @@ sqlrauth_oracle_userlist::sqlrauth_oracle_userlist(
 }
 
 static const char *supportedauthmethods[]={
-	#ifdef SQLRAUTH_ORACLE_O5LOGON
 	"O5LOGON",
-	#endif
 	"oracle_clear_password",
 	NULL
 };
-
-#ifdef SQLRAUTH_ORACLE_O5LOGON
 
 // aes-cbc with a zero iv and no padding, over whole blocks.  rudiments' aes128
 // can't do this - wrong key size, and it always pads - but aes192 and aes256
@@ -623,8 +618,6 @@ static bool o5logonServerResponse(const char *password,
 	return retval;
 }
 
-#endif
-
 const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 
 	// this module only supports oracle credentials
@@ -757,8 +750,7 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 		return !charstring::compare(suppliedresponse,validpassword);
 	}
 
-	#ifdef SQLRAUTH_ORACLE_O5LOGON
-	if (!charstring::compare(method,"O5LOGON")) {
+	if (tls::isSupported() && !charstring::compare(method,"O5LOGON")) {
 
 		if (!getDebug()) {
 			return o5logonVerify(suppliedresponse,
@@ -780,7 +772,6 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 		debugEnd();
 		return retval;
 	}
-	#endif
 
 	return false;
 }
@@ -788,7 +779,9 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 						stringbuffer *challenge) {
 
-#ifdef SQLRAUTH_ORACLE_O5LOGON
+	if (!tls::isSupported()) {
+		return false;
+	}
 
 	// this module only supports oracle credentials
 	if (charstring::compare(cred->getType(),"oracle")) {
@@ -825,12 +818,6 @@ bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 	delete[] validpassword;
 
 	return retval;
-
-#else
-
-	return false;
-
-#endif
 }
 
 extern "C" {
