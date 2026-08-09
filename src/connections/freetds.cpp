@@ -1268,7 +1268,10 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 		return false;
 	}
 
-	// set charset
+	// set charset - this only asks the server which charset to use, it
+	// isn't the charset FreeTDS itself decodes incoming data as (that's
+	// "client charset" in freetds.conf, and freetds.conf is the only way
+	// to set it)
 	if (!charstring::isNullOrEmpty(charset) &&
 		cs_locale(context,CS_SET,locale,CS_SYB_CHARSET,
 			(CS_CHAR *)charset,CS_NULLTERM,(CS_INT *)NULL)!=
