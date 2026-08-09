@@ -10,4 +10,19 @@
 		</connections>
 	</instance>
 
+	<!-- freetds cannot present a client certificate (see
+	     tdstlsmutualauth.sh), so there is no mutual-auth counterpart to
+	     this instance -->
+	<instance id="tdsprotocoltlstest" dbase="odbc" translatebindvariables="yes">
+		<listeners>
+			<listener protocol="tds" port="1433"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;mars=yes"/>
+		</connections>
+	</instance>
+
 </instances>

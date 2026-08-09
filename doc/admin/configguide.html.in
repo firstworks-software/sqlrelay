@@ -3587,7 +3587,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The version matters for more than field widths.  <b>Clients such as FreeTDS only send a PRELOGIN packet - the packet where encryption is negotiated - when using TDS 7.1 or later.</b>  Below that, the client skips straight to the login packet, and any encryption settings configured on the client are silently never applied.  That is a property of the client, not of SQL Relay.</p>
 
-<p>So if the back-end's version string can't be mapped, and the client's own default version is low, no PRELOGIN negotiation happens at all.  Setting <i>tdsversion</i> to 710 or higher is what makes it happen.  Note, though, that SQL Relay doesn't support TLS on tds listeners regardless of the version - see below.</p>
+<p>So if the back-end's version string can't be mapped, and the client's own default version is low, no PRELOGIN negotiation happens at all.  Setting <i>tdsversion</i> to 710 or higher is what makes it happen.  See <a href="#tdstls">TLS/SSL Encryption and Authentication</a> below.</p>
 
 <a name="tdspacketsize"/><h3>Packet Size</h3>
 
@@ -3620,30 +3620,65 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <a name="tdstls"/><h3>TLS/SSL Encryption and Authentication</h3>
 
-<p><b>The TDS protocol module does not support TLS/SSL.</b></p>
+<p>SQL Relay supports TLS/SSL encryption and authentication between the TDS client and SQL Relay server.</p>
 
-<p>TDS negotiates encryption in the PRELOGIN exchange, and the module answers the encryption option with ENCRYPT_NOT_SUP every time.  A client that is merely willing to encrypt continues without encryption.  A client configured to require encryption gives up on its own when it sees ENCRYPT_NOT_SUP - SQL Relay never actively refuses the connection.</p>
+<p>When TLS/SSL encryption and authentication is used:</p>
 
-<p>Setting tls="yes" on a tds listener prints a warning to standard error when the instance starts:</p>
+<ul>
+  <li>Communications between the TDS client and SQL Relay server are encrypted.</li>
+  <li>TDS clients may optionally validate the server's certificate and identity.</li>
+</ul>
+
+<p>When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.</p>
+
+<p>The following configuration enables TLS/SSL encryption for an instance of SQL Relay:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
 http://www.lorenzobettini.it
 http://www.gnu.org/software/src-highlite -->
-<pre><tt>Warning<font color="#990000">:</font> TLS support requested but the tds protocol <font color="#008080">module</font> doesn<font color="#FF0000">'t support TLS</font></tt></pre>
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
 
 </blockquote>
-<p>The other tls* attributes documented for the other protocols - tlscert, tlskey, tlsca, tlsvalidate, and so on - still parse without error on a tds listener, and the certificate is still loaded.  They simply have no effect.  Don't spend time debugging a certificate path or a certificate authority when the real answer is that tds sessions are never encrypted.  This is a known limitation.</p>
+<ul>
+  <li>The <b>tls</b> attribute enables (or disables) TLS/SSL encryption.</li>
+  <li>The <b>tlscert</b> attribute specifies the TLS/SSL certificate chain to use.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="tlscert.html">The tlscert Parameter</a> for details.)</li>
+  </ul>
 
-<p>If the connection between the client and SQL Relay has to be encrypted, use a general-purpose tunnel (such as an SSH tunnel or a VPN) between the client and the SQL Relay server, or use one of the protocols that does support TLS/SSL.</p>
+</ul>
+
+<p>TDS negotiates encryption in the PRELOGIN exchange, before the login is sent, and the module answers with what the client asked for:</p>
+
+<ul>
+  <li>A client that requires encryption gets the whole session encrypted.</li>
+  <li>A client that is merely willing to encrypt gets only its login encrypted.  The rest of the session runs in the clear.  This is what a Microsoft SQL Server does by default, and what most TDS clients ask for unless they are configured otherwise.</li>
+  <li>A client that says it doesn't support encryption, or that omits the encryption option entirely, isn't pushed into a handshake it never offered.  Its login is refused with a "TLS required" error instead.</li>
+</ul>
+
+<p>Which of these a client asks for is a client-side setting.  With freetds, for example, it is the <i>encryption</i> setting in freetds.conf, and a client that validates the server's certificate also needs a <i>ca file</i> there.</p>
+
+<p>The <b>tlsvalidate</b> and <b>tlsca</b> attributes described for the other protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.</p>
 
 <a name="tdslimitations"/><h3>Limitations</h3>
 
 <p>The implementation of the TDS protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:</p>
 
 <ul>
-  <li>TLS/SSL encryption and authentication are not supported.  See <a href="#tdstls">TLS/SSL Encryption and Authentication</a> above.</li>
+  <li>TLS/SSL mutual authentication requires a client that can present a client certificate.  The freetds client cannot.  See <a href="#tdstls">TLS/SSL Encryption and Authentication</a> above.</li>
   <li>For odbc-backed instances, the connect string needs mars=yes for cursors and positioned updates to work.  Without it, a query sent while another cursor still has rows pending fails with "Connection is busy with results for another command".  See the <a href="configreference.html#odbc">SQL Relay Configuration Reference</a> for the <i>mars</i> option.</li>
 </ul>
 
@@ -4316,7 +4351,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>When configured to use the MySQL or PostgreSQL protocols, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See <a href="#mysqltls">MySQL TLS/SSL Encryption and Authentication</a> and <a href="#postgresqltls">PostgreSQL TLS/SSL Encryption and Authentication</a> for details.</p>
 
-<p>When configured to use the TDS protocol, SQL Relay does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server at all.  See <a href="#tdstls">TLS/SSL Encryption and Authentication</a> for details.</p>
+<p>When configured to use the TDS protocol, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See <a href="#tdstls">TDS TLS/SSL Encryption and Authentication</a> for details.</p>
 
 <p>When configured to use the Oracle protocol, SQL Relay likewise does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server.  (Oracle's own native network encryption and crypto-checksumming, a separate feature negotiated within the Oracle protocol itself, is a different matter - see <a href="#oraclelimitations">Limitations</a> under Oracle Protocol.)</p>
 

@@ -924,8 +924,85 @@ uint32_t tdsrows::getColCount() {
 }
 
 
+class sqlrprotocol_tds;
+
+// A filedescriptor that shares another one's descriptor.  Closing it would
+// close the socket out from under whoever really owns it, so two things
+// keep that from happening.
+//
+// lowLevelClose() is a no-op, which covers an explicit close() of a live
+// object.
+//
+// The destructor unbinds the descriptor, which covers the base class
+// destructor's close().  The no-op alone can't - by the time
+// ~filedescriptor() runs, this sub-object is gone, so the virtual call
+// lands on filedescriptor::lowLevelClose(), which really does close
+// whatever descriptor number is still set.  Unbinding first leaves
+// nothing to close.
+class tdssharedfd : public filedescriptor {
+	public:
+			~tdssharedfd();
+	protected:
+		int32_t	lowLevelClose();
+};
+
+tdssharedfd::~tdssharedfd() {
+	setFileDescriptor(-1);
+}
+
+int32_t tdssharedfd::lowLevelClose() {
+	return 0;
+}
+
+// The TLS engine's end of the client socket.
+//
+// MS-TDS tunnels the TLS handshake inside TDS packets - the client wraps its
+// handshake records in packets of its own, and expects the server's records
+// wrapped the same way - so something has to add and strip that framing
+// between the TLS engine and the socket.  This is that something: the
+// tlscontext reads and writes it, and it reads and writes the real client
+// socket.
+//
+// Framing is only on for the handshake.  Once that's done the records flow
+// unframed, and this just passes them through.  It stays bound to the
+// tlscontext either way - the context keeps the pointer for as long as the
+// TLS session lives.
+//
+// The pass-through goes through the client socket's own read() and write()
+// rather than a second descriptor bound to the same socket, because the
+// client socket's read buffer may already hold bytes read ahead of the
+// handshake, and a second descriptor would race it for the rest.
+class tdstlsframer : public tdssharedfd {
+	public:
+			tdstlsframer(sqlrprotocol_tds *tds);
+			~tdstlsframer();
+
+		// turns framing on or off.  Turning it on discards any
+		// partly-read packet; turning it off leaves what's left of
+		// it to be served by the pass-through read.
+		void	setFraming(bool framing);
+	protected:
+		ssize_t	lowLevelRead(void *buf, size_t count);
+		ssize_t	lowLevelWrite(const void *buf, size_t count);
+	private:
+		bool	readPacket();
+
+		sqlrprotocol_tds	*tds;
+
+		bool		framing;
+
+		// the payload of the packet currently being served to the
+		// TLS engine, and how much of it is left
+		byte_t		*readbuffer;
+		uint32_t	readbuffersize;
+		uint32_t	readposition;
+
+		byte_t		packetid;
+};
+
 // TDS protocol class
 class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
+	friend class tdstlsframer;
 	public:
 		sqlrprotocol_tds(sqlrservercontroller *cont,
 							domnode *parameters);
@@ -982,6 +1059,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void		negotiateTdsVersion();
 
 		bool	preLogin();
+		// decides what to answer the client's encryption option
+		// with, and what that answer commits the session to
+		byte_t	negotiateEncryption(byte_t clientencryption);
+		// runs the handshake and puts the tls session in front of
+		// the client socket
+		bool	startTls();
+		// takes it back out again
+		void	stopTls();
 		// whether size bytes at offset bytes from the start of the
 		// packet are still inside a packetsize-byte packet
 		bool	fitsInPacket(uint16_t offset,
@@ -1369,6 +1454,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *msgtext,
 					uint32_t linenumber);
 		bool	sendUnimplementedFeatureError();
+		bool	sendTlsRequiredError();
 		bool	sendTdsProtocolError();
 		void	queryTooLargeMessage(size_t querysize,
 					stringbuffer *err);
@@ -1413,7 +1499,36 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		void	debugSystemError();
 
+		// The socket the client is really connected to, and the one
+		// the rest of the module reads and writes.  They're the same
+		// until tls is negotiated, after which clientsock points at
+		// tlsstream and every read and write goes through the tls
+		// session.
+		filedescriptor	*rawclientsock;
 		filedescriptor	*clientsock;
+
+		// the client socket, seen through the tls session
+		tdssharedfd	tlsstream;
+
+		// the tls session, seen from the socket end
+		tdstlsframer	*tlsframer;
+
+		// what the pre-login negotiated: no tls, tls for the login
+		// packet only, or tls for the whole session
+		enum	tlsmode_t {
+			TLS_MODE_NONE=0,
+			TLS_MODE_LOGIN,
+			TLS_MODE_SESSION
+		};
+		tlsmode_t	tlsmode;
+
+		// whether the client answered that it doesn't support
+		// encryption while tls was required
+		bool		tlsrefused;
+
+		// whether clientsock is currently going through the tls
+		// session
+		bool		tlsactive;
 
 		uint32_t	configtdsversion;
 		uint32_t	configpacketsize;
@@ -1520,7 +1635,13 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrprotocol(cont,parameters) {
 
+	rawclientsock=NULL;
 	clientsock=NULL;
+
+	tlsframer=new tdstlsframer(this);
+	tlsmode=TLS_MODE_NONE;
+	tlsrefused=false;
+	tlsactive=false;
 
 	// the version that getServerTdsVersion() guesses from the backend's
 	// version string can be overridden, for backends that it can't
@@ -1550,12 +1671,6 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	debugWrite("packetsize: %d",configpacketsize);
 	debugWrite("maxpacketsize: %d",configmaxpacketsize);
 	debugEnd();
-
-	// tls="yes" would otherwise be accepted and silently ignored
-	if (useTls()) {
-		stderror.printf("Warning: TLS support requested but the tds "
-				"protocol module doesn't support TLS\n");
-	}
 
 	const char	*dbtype=cont->getDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
@@ -1600,6 +1715,11 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 sqlrprotocol_tds::~sqlrprotocol_tds() {
 	free();
 
+	// the tls context keeps the framer for as long as it's bound to it,
+	// and outlives this class
+	getTlsContext()->setFileDescriptor(NULL);
+	delete tlsframer;
+
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete[] bindvarnames[i];
 	}
@@ -1620,6 +1740,195 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] bulkscales;
 }
 
+tdstlsframer::tdstlsframer(sqlrprotocol_tds *tds) : tdssharedfd() {
+	this->tds=tds;
+	framing=false;
+	readbuffer=new byte_t[MAX_PACKET_SIZE];
+	readbuffersize=0;
+	readposition=0;
+	packetid=0;
+}
+
+tdstlsframer::~tdstlsframer() {
+	delete[] readbuffer;
+}
+
+void tdstlsframer::setFraming(bool framing) {
+
+	// Only a fresh handshake discards what's staged.  Turning framing
+	// off has to keep it - the client's last handshake packet can carry
+	// bytes past the end of the handshake, which the tls engine didn't
+	// consume, and the pass-through read below still has to serve them.
+	if (framing) {
+		readbuffersize=0;
+		readposition=0;
+		packetid=0;
+	}
+	this->framing=framing;
+}
+
+ssize_t tdstlsframer::lowLevelRead(void *buf, size_t count) {
+
+	// pass through, once the handshake is out of the way
+	if (!framing) {
+
+		// anything the handshake left staged comes first
+		if (readposition<readbuffersize) {
+			uint32_t	available=readbuffersize-readposition;
+			if (count>available) {
+				count=available;
+			}
+			bytestring::copy(buf,readbuffer+readposition,count);
+			readposition+=(uint32_t)count;
+			return (ssize_t)count;
+		}
+
+		return tds->rawclientsock->read((byte_t *)buf,count);
+	}
+
+	// get another packet, if the last one has been used up
+	if (readposition==readbuffersize && !readPacket()) {
+		return -1;
+	}
+
+	// serve as much of it as was asked for
+	uint32_t	available=readbuffersize-readposition;
+	if (count>available) {
+		count=available;
+	}
+	bytestring::copy(buf,readbuffer+readposition,count);
+	readposition+=(uint32_t)count;
+	return (ssize_t)count;
+}
+
+bool tdstlsframer::readPacket() {
+
+	// Loop past empty packets.  A packet with no payload would leave
+	// nothing to serve, and returning 0 bytes would look like the client
+	// hung up.
+	for (;;) {
+
+		// get the header
+		byte_t	header[PACKET_HEADER_SIZE];
+		if (tds->rawclientsock->read(header,sizeof(header))!=
+						(ssize_t)sizeof(header)) {
+			tds->debugStart("tls recv");
+			tds->debugWrite("read packet header failed");
+			tds->debugEnd();
+			return false;
+		}
+
+		// only the size matters here, and it's big-endian
+		uint32_t	packetsize=
+				((uint32_t)header[2]<<8)|(uint32_t)header[3];
+		if (packetsize<PACKET_HEADER_SIZE) {
+			tds->debugStart("tls recv");
+			tds->debugWrite("invalid packet size: %d",packetsize);
+			tds->debugEnd();
+			return false;
+		}
+		uint32_t	datasize=packetsize-PACKET_HEADER_SIZE;
+
+		// get the payload
+		if (datasize && tds->rawclientsock->read(readbuffer,datasize)!=
+							(ssize_t)datasize) {
+			tds->debugStart("tls recv");
+			tds->debugWrite("read packet data failed");
+			tds->debugEnd();
+			return false;
+		}
+
+		tds->debugStart("tls recv");
+		tds->debugWrite("packet type: 0x%02x",header[0]);
+		tds->debugWrite("packet status: 0x%02x",header[1]);
+		tds->debugWrite("packet size: %d",packetsize);
+		tds->debugHexDump(readbuffer,datasize);
+		tds->debugEnd();
+
+		if (datasize) {
+			readbuffersize=datasize;
+			readposition=0;
+			return true;
+		}
+	}
+}
+
+ssize_t tdstlsframer::lowLevelWrite(const void *buf, size_t count) {
+
+	// pass through, once the handshake is out of the way.  The flush is
+	// needed either way - the client socket buffers writes, and nothing
+	// above this knows to flush it.
+	if (!framing) {
+		ssize_t	result=tds->rawclientsock->write(
+						(const byte_t *)buf,count);
+		if (result>0 && !tds->rawclientsock->flushWriteBuffer(-1,-1)) {
+			return -1;
+		}
+		return result;
+	}
+
+	// frame the records, splitting them across packets the way
+	// sendPacket() does.  The client doesn't check the packet type,
+	// and a real server answers a pre-login with a tabular result,
+	// so that's what these go out as.
+	const byte_t	*data=(const byte_t *)buf;
+	uint64_t	remaining=count;
+	uint32_t	maxdatasize=
+			(tds->negotiatedpacketsize>PACKET_HEADER_SIZE)?
+				tds->negotiatedpacketsize-PACKET_HEADER_SIZE:
+				MIN_PACKET_SIZE-PACKET_HEADER_SIZE;
+
+	do {
+
+		uint32_t	datasize=(remaining>maxdatasize)?
+						maxdatasize:
+						(uint32_t)remaining;
+		remaining-=datasize;
+
+		uint32_t	packetsize=datasize+PACKET_HEADER_SIZE;
+
+		byte_t	header[PACKET_HEADER_SIZE];
+		header[0]=TABULAR_RESULT;
+		header[1]=(remaining)?STATUS_NORMAL:STATUS_EOM;
+		header[2]=(byte_t)(packetsize>>8);
+		header[3]=(byte_t)(packetsize&0xFF);
+		header[4]=0;
+		header[5]=0;
+		header[6]=packetid;
+		header[7]=0;
+
+		tds->debugStart("tls send");
+		tds->debugWrite("packet type: 0x%02x",header[0]);
+		tds->debugWrite("packet status: 0x%02x",header[1]);
+		tds->debugWrite("packet size: %d",packetsize);
+		tds->debugHexDump(data,datasize);
+		tds->debugEnd();
+
+		if (tds->rawclientsock->write(header,sizeof(header))!=
+					(ssize_t)sizeof(header) ||
+			tds->rawclientsock->write(data,datasize)!=
+					(ssize_t)datasize) {
+			tds->debugStart("tls send");
+			tds->debugWrite("write packet failed");
+			tds->debugEnd();
+			return -1;
+		}
+
+		data+=datasize;
+		packetid=(byte_t)((packetid+1)%256);
+
+	} while (remaining);
+
+	if (!tds->rawclientsock->flushWriteBuffer(-1,-1)) {
+		tds->debugStart("tls send");
+		tds->debugWrite("flush write buffer failed");
+		tds->debugEnd();
+		return -1;
+	}
+
+	return (ssize_t)count;
+}
+
 void sqlrprotocol_tds::init() {
 
 	packetid=0;
@@ -1635,6 +1944,14 @@ void sqlrprotocol_tds::init() {
 
 	oldpacketsize=configpacketsize;
 	negotiatedpacketsize=configpacketsize;
+
+	// the previous session may have left tls in front of the socket
+	if (tlsactive) {
+		stopTls();
+	}
+	tlsframer->setFraming(false);
+	tlsmode=TLS_MODE_NONE;
+	tlsrefused=false;
 
 	// the module instance outlives the session, so a client that gets
 	// this connection next must not inherit the previous client's login
@@ -2244,6 +2561,7 @@ void sqlrprotocol_tds::negotiateTdsVersion() {
 clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 							filedescriptor *cs) {
 
+	rawclientsock=cs;
 	clientsock=cs;
 
 	// set up the socket
@@ -2378,6 +2696,7 @@ bool sqlrprotocol_tds::preLogin() {
 	uint32_t	version=0;
 	uint16_t	subbuild=0;
 	byte_t		encryption=0;
+	bool		sawencryption=false;
 	char		*instvalidity=NULL;
 	uint32_t	threadid=0;
 	byte_t		mars=0;
@@ -2471,6 +2790,7 @@ bool sqlrprotocol_tds::preLogin() {
 					break;
 				}
 				read(startrp+ploptoff,&encryption,&dummy);
+				sawencryption=true;
 				debugWrite("pl_encryption");
 				debugWrite("encryption:	0x%02x",encryption);
 				break;
@@ -2616,13 +2936,12 @@ bool sqlrprotocol_tds::preLogin() {
 	ploptsize=sizeof(encryption);
 	ploptoff+=ploptsize;
 	writeBE(&resppacket,ploptsize);
-	// FIXME: implement encryption
-	// MS-TDS tunnels the TLS handshake inside TDS packets until the
-	// handshake completes, so the server has to wrap and unwrap TLS
-	// records between the TLS engine and the socket.  rudiments binds
-	// OpenSSL straight to the file descriptor, leaving nowhere to put
-	// that layer, so ENCRYPT_NOT_SUP is the only answer available.
-	encryption=ENCRYPT_NOT_SUP;
+	// A client that never sent the option didn't offer a handshake, so
+	// it gets the same answer as one that said it doesn't support
+	// encryption, rather than being pushed into a handshake it isn't
+	// expecting.
+	encryption=negotiateEncryption(
+			(sawencryption)?encryption:(byte_t)ENCRYPT_NOT_SUP);
 	write(&packetdata,encryption);
 	debugWrite("pl_encryption");
 	debugWrite("encryption: 0x%02x",encryption);
@@ -2678,7 +2997,101 @@ bool sqlrprotocol_tds::preLogin() {
 	// clean up
 	delete[] instvalidity;
 
+	// the handshake follows the pre-login response immediately
+	if (retval && tlsmode!=TLS_MODE_NONE) {
+		retval=startTls();
+	}
+
 	return retval;
+}
+
+byte_t sqlrprotocol_tds::negotiateEncryption(byte_t clientencryption) {
+
+	tlsmode=TLS_MODE_NONE;
+	tlsrefused=false;
+
+	if (!useTls()) {
+		return ENCRYPT_NOT_SUP;
+	}
+
+	switch (clientencryption) {
+		case ENCRYPT_OFF:
+			// encrypt the login packet only
+			tlsmode=TLS_MODE_LOGIN;
+			return ENCRYPT_OFF;
+		case ENCRYPT_ON:
+		case ENCRYPT_REQ:
+			// encrypt the whole session
+			tlsmode=TLS_MODE_SESSION;
+			return ENCRYPT_ON;
+		default:
+			// A client that says it doesn't support encryption
+			// can't be pushed into a handshake it never offered,
+			// and tls="yes" has no "optional" mode, so the login
+			// that follows gets refused instead.
+			tlsrefused=true;
+			return ENCRYPT_NOT_SUP;
+	}
+}
+
+bool sqlrprotocol_tds::startTls() {
+
+	debugStart("tls");
+
+	// Cap the version, unless the operator pinned one.  freetds's
+	// gnutls build doesn't flush what's left in its buffers after the
+	// handshake, and tls 1.3 leaves post-handshake records there,
+	// which corrupts the stream that follows.
+	if (charstring::isNullOrEmpty(
+				getTlsContext()->getProtocolVersion())) {
+		getTlsContext()->setProtocolVersion("TLS1.2");
+	}
+	debugWrite("version: %s",getTlsContext()->getProtocolVersion());
+
+	// the handshake itself arrives wrapped in tds packets
+	tlsframer->setFraming(true);
+	getTlsContext()->setFileDescriptor(tlsframer);
+	bool	success=getTlsContext()->accept();
+	tlsframer->setFraming(false);
+
+	if (!success) {
+		debugWrite("accept failed: %s",
+				getTlsContext()->getErrorString());
+		debugEnd();
+		return false;
+	}
+
+	// From here on, reads and writes go through the tls session, which
+	// reads and writes the socket through the framer.  tlsstream shares
+	// the socket's descriptor, but only for the operations that the
+	// socket layer doesn't handle itself.
+	tlsstream.setFileDescriptor(rawclientsock->getFileDescriptor());
+	tlsstream.setSocketLayer(getTlsContext());
+	tlsstream.setTranslateByteOrder(true);
+	tlsstream.setReadBufferSize(65536);
+	tlsstream.setWriteBufferSize(65536);
+	clientsock=&tlsstream;
+	tlsactive=true;
+
+	debugWrite("accepted");
+	debugEnd();
+
+	return true;
+}
+
+void sqlrprotocol_tds::stopTls() {
+
+	debugStart("tls");
+	debugWrite("dropping tls");
+	debugEnd();
+
+	// Go back to reading and writing the socket directly.  No
+	// close-notify - the client doesn't send one either, and expects
+	// the next byte to be the start of a plain tds packet.
+	clientsock=rawclientsock;
+	tlsstream.setSocketLayer(NULL);
+	tlsstream.close();
+	tlsactive=false;
 }
 
 bool sqlrprotocol_tds::fitsInPacket(uint16_t offset,
@@ -2733,6 +3146,16 @@ bool sqlrprotocol_tds::loginFieldFits(const char *name,
 bool sqlrprotocol_tds::preTds7Login() {
 
 	debugStart("pre-tds7 login");
+
+	// pre-7.1 clients send this instead of a pre-login, so there's
+	// never an opportunity to negotiate tls with them at all
+	if (useTls()) {
+		debugWrite("tls required but the client didn't negotiate it");
+		debugEnd();
+		sendTlsRequiredError();
+		return false;
+	}
+
 	debugEnd();
 
 	// FIXME: actually implement this
@@ -2742,6 +3165,24 @@ bool sqlrprotocol_tds::preTds7Login() {
 }
 
 bool sqlrprotocol_tds::tds7Login() {
+
+	// nothing gets authenticated in the clear when tls is required
+	if (useTls() && !tlsactive) {
+		debugStart("tds7 login");
+		debugWrite((tlsrefused)?
+				"tls required but the client "
+				"doesn't support it":
+				"tls required but not negotiated");
+		debugEnd();
+		sendTlsRequiredError();
+		return false;
+	}
+
+	// the login packet has been read by now, and in login-only mode
+	// it's the only thing that was meant to be encrypted
+	if (tlsmode==TLS_MODE_LOGIN) {
+		stopTls();
+	}
 
 	const byte_t	*rp=reqpacket.getBuffer();
 	const byte_t	*startrp=rp;
@@ -10899,6 +11340,14 @@ bool sqlrprotocol_tds::sendError(uint32_t number,
 bool sqlrprotocol_tds::sendUnimplementedFeatureError() {
 	// FIXME: is there a real error message/number/state/class for this?
 	return sendError(0,1,10,"Unimplemented feature",1);
+}
+
+bool sqlrprotocol_tds::sendTlsRequiredError() {
+	// FIXME: is there a real error message/number/state/class for this?
+	return sendError(0,1,16,
+			(getTlsContext()->getValidatePeer())?
+					"TLS mutual auth required":
+					"TLS required",1);
 }
 
 bool sqlrprotocol_tds::sendTdsProtocolError() {

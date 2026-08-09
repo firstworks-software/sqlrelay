@@ -2261,6 +2261,18 @@
 		rpc call - getCursor() failures now evict the oldest
 		abandoned handle and retry once, and an ATTENTION releases
 		the cursor it interrupted (#9248)
+	added TLS support to the tds protocol module - the pre-login now
+		negotiates encryption instead of always answering "not
+		supported", the handshake runs wrapped in tds packets the way
+		MS-TDS requires, and a client that asks for login-packet-only
+		encryption gets it, with the session dropping back to
+		cleartext after the login packet; a client that won't
+		negotiate TLS when tls="yes" is now refused instead of being
+		logged in in the clear (#8848)
+	updated the config guide's tds protocol section for TLS - it said the
+		module doesn't support TLS at all, quoted a startup warning
+		that no longer exists, and listed TLS under the module's
+		limitations (#8848)
 
 	fixed the tds protocol module's COLMETADATA writer to send a
 		minimal XMLTYPE_INFO (MS-TDS 2.2.5.4.3) for an xml column,
