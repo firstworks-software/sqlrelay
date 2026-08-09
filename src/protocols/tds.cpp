@@ -3,6 +3,7 @@
 
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/character.h>
+#include <rudiments/regularexpression.h>
 #include <rudiments/wcharstring.h>
 #include <rudiments/iconvert.h>
 #include <rudiments/process.h>
@@ -1238,6 +1239,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	cursorClose();
 		bool	cursorPositioned();
 		bool	isCursorStatement(const char *stmt);
+		size_t	stripForUpdateOf(const char *stmt, size_t stmtlen);
 
 		// sp_cursor helpers
 		bool	positionedUpdate(sqlrservercursor *cursor,
@@ -1480,6 +1482,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		dictionary<uint32_t, sqlrservercursor *>	cursorhandles;
 		uint32_t					nexthandle;
 
+		// matches a trailing "for update [of col,...]" clause in a
+		// cursor-declare statement, so it can be stripped before the
+		// statement is prepared - sqlrelay tracks positioned-update
+		// state itself rather than opening a real backend-native
+		// cursor, and mssql only accepts that clause inside an actual
+		// DECLARE CURSOR statement, not a bare select
+		regularexpression	forupdateof;
+
 		// false once a cursor has been executed, so that fetching
 		// more rows doesn't run the query again
 		dictionary<sqlrservercursor *, bool>		executeflag;
@@ -1561,6 +1571,11 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	bulktypes=new byte_t[maxbindcount];
 	bulksizes=new uint32_t[maxbindcount];
 	bulkscales=new byte_t[maxbindcount];
+
+	forupdateof.setPattern(
+		"\\sfor\\s+update(\\s+of\\s+[a-z0-9_.,\\s]+)?\\s*$",
+		REGULAR_EXPRESSION_CASE_INSENSITIVE);
+	forupdateof.study();
 
 	init();
 }
@@ -8947,6 +8962,22 @@ bool sqlrprotocol_tds::isCursorStatement(const char *stmt) {
 		!charstring::compareIgnoringCase(stmt,"execute",7);
 }
 
+size_t sqlrprotocol_tds::stripForUpdateOf(const char *stmt, size_t stmtlen) {
+
+	// mssql only accepts "for update [of col,...]" inside an actual
+	// DECLARE CURSOR statement, and this module never issues one - it
+	// prepares the client's cursor-declare text as an ordinary
+	// statement and tracks positioned-update state itself (see
+	// positionedUpdate() and the positionrows machinery).  So a client
+	// that puts the clause in the declare text rather than passing
+	// CS_FOR_UPDATE as an option gets it rejected by the backend
+	// outright unless it's stripped first.
+	if (forupdateof.match(stmt,stmtlen)) {
+		return (size_t)(forupdateof.getSubstringStartOffset(0));
+	}
+	return stmtlen;
+}
+
 bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 
 	// sp_cursoropen @cursor output, @stmt, [@scrollopt output,
@@ -8975,6 +9006,8 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 				"A cursor may only be declared for a select "
 				"or an exec statement");
 	}
+
+	stmtlen=stripForUpdateOf(stmt,stmtlen);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=cont->getCursor();
@@ -9060,6 +9093,8 @@ bool sqlrprotocol_tds::cursorPrepare() {
 	if (stmtlen>maxquerysize) {
 		return sendQueryTooLargeError(stmtlen);
 	}
+
+	stmtlen=stripForUpdateOf(stmt,stmtlen);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=cont->getCursor();
@@ -9171,6 +9206,8 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 	if (stmtlen>maxquerysize) {
 		return sendQueryTooLargeError(stmtlen);
 	}
+
+	stmtlen=stripForUpdateOf(stmt,stmtlen);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=cont->getCursor();
