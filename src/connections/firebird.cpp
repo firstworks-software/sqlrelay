@@ -335,6 +335,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		sqlrtxmodel_t	getNativeTransactionModel();
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
+		bool	setReadOnly(bool readonly);
 		bool	supportsAutoCommit();
 		bool	commit();
 		bool	rollback();
@@ -434,6 +435,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		stringbuffer	errormsg;
 
 		bool		autocommit;
+		bool		nextreadonly;
 
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
@@ -458,6 +460,25 @@ static char tpbac[] = {
 	isc_tpb_autocommit
 };
 
+static char tpbreadonly[] = {
+	isc_tpb_version3,
+	isc_tpb_read,
+	isc_tpb_read_committed,
+	isc_tpb_rec_version,
+	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
+	isc_tpb_wait
+};
+
+static char tpbacreadonly[] = {
+	isc_tpb_version3,
+	isc_tpb_read,
+	isc_tpb_read_committed,
+	isc_tpb_rec_version,
+	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
+	isc_tpb_wait,
+	isc_tpb_autocommit
+};
+
 firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 						sqlrserverconnection(cont) {
 	dbversion=NULL;
@@ -465,6 +486,7 @@ firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 	database=NULL;
 	host=NULL;
 	autocommit=false;
+	nextreadonly=false;
 	initDatabaseFeatures();
 }
 
@@ -1086,16 +1108,32 @@ sqlrtxmodel_t firebirdconnection::getNativeTransactionModel() {
 
 bool firebirdconnection::setAutoCommitOn() {
 	autocommit=true;
+	// consume the read-only hint, if any, so it applies to just this
+	// transaction and not to whatever comes after it
+	bool	ro=nextreadonly;
+	nextreadonly=false;
 	return !isc_commit_transaction(error,&tr) &&
 		!isc_start_transaction(error,&tr,1,&db,
-					(uint16_t)sizeof(tpbac),&tpbac);
+			(uint16_t)((ro)?sizeof(tpbacreadonly):
+					sizeof(tpbac)),
+			(ro)?&tpbacreadonly:&tpbac);
 }
 
 bool firebirdconnection::setAutoCommitOff() {
 	autocommit=false;
+	// consume the read-only hint, if any, so it applies to just this
+	// transaction and not to whatever comes after it
+	bool	ro=nextreadonly;
+	nextreadonly=false;
 	return !isc_commit_transaction(error,&tr) &&
 		!isc_start_transaction(error,&tr,1,&db,
-					(uint16_t)sizeof(tpb),&tpb);
+			(uint16_t)((ro)?sizeof(tpbreadonly):sizeof(tpb)),
+			(ro)?&tpbreadonly:&tpb);
+}
+
+bool firebirdconnection::setReadOnly(bool readonly) {
+	nextreadonly=readonly;
+	return true;
 }
 
 bool firebirdconnection::supportsAutoCommit() {

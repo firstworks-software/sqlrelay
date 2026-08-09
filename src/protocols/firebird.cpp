@@ -3407,6 +3407,12 @@ bool sqlrprotocol_firebird::transaction() {
 	// back ends it.
 	if (!intransaction) {
 
+		// hint the backend before starting the transaction, so a
+		// backend that can honor it (eg. firebird's isc_tpb_read)
+		// gets the benefits of a read-only transaction, not just the
+		// client-visible refusal of writes below
+		cont->setReadOnly(readonly);
+
 		// Autocommit and an explicit transaction are alternatives.  A
 		// tpb that asks for autocommit turns the connection's
 		// autocommit on and begins nothing, and the commit or

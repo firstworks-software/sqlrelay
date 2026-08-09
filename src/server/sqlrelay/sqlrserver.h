@@ -694,9 +694,17 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		bool	setAutoCommitOn();
 
 		/** Set auto-commit off.
-		 *  
+		 *
 		 *  Returns true on success and false on failure. */
 		bool	setAutoCommitOff();
+
+		/** Hints that the next transaction the backend starts should
+		 *  be read-only, if the backend has a way to ask for that.
+		 *
+		 *  Returns true if the backend honored the hint and false if
+		 *  it doesn't know how (in which case the transaction starts
+		 *  as it would have anyway). */
+		bool	setReadOnly(bool readonly);
 
 		/** Sets a flag indicating whether a DML query has been run and
 		 *  thus whether a commit or rollback is needed under certain
@@ -3458,6 +3466,19 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *
 		 *  Returns true on success and false on failure. */
 		virtual bool	setAutoCommitOff();
+
+		/** Hints that the next transaction this connection starts
+		 *  should be read-only, if the database has a way to ask for
+		 *  that (eg. firebird's isc_tpb_read).
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to honor the hint in a
+		 *  database-specific manner.
+		 *
+		 *  Returns true if the hint was honored and false if it
+		 *  wasn't (in which case the transaction starts as it would
+		 *  have anyway). */
+		virtual bool	setReadOnly(bool readonly);
 
 		/** Returns true if the database supports auto-commit (ie. if
 		 *  setAutoCommitOn() and setAutoCommitOff() are implemented in

@@ -214,6 +214,10 @@ bool sqlrserverconnection::setAutoCommitOff() {
 	return false;
 }
 
+bool sqlrserverconnection::setReadOnly(bool readonly) {
+	return false;
+}
+
 bool sqlrserverconnection::supportsAutoCommit() {
 	return false;
 }

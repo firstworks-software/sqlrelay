@@ -2720,6 +2720,10 @@ bool sqlrservercontroller::setAutoCommitOff() {
 	return true;
 }
 
+bool sqlrservercontroller::setReadOnly(bool readonly) {
+	return pvt->_conn->setReadOnly(readonly);
+}
+
 bool sqlrservercontroller::begin() {
 
 	if (pvt->_debugsql) {

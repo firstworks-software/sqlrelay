@@ -2212,6 +2212,15 @@
 		description isc_dsql_describe_bind() already fills into
 		inbindsqlda out of prepareQuery(), before inputBind() overwrites
 		it in place, and answers from that copy (#9140)
+	added a server api for hinting that the next transaction should be
+		read-only - sqlrserverconnection::setReadOnly(), with a
+		sqlrservercontroller passthrough; the base connection just
+		returns false ("don't know") and every backend keeps today's
+		behavior unless it overrides this; firebird now honors the
+		hint by starting the transaction with isc_tpb_read instead of
+		isc_tpb_write, so a read-only transaction gets the backend's
+		benefits (no sweep pressure on firebird) instead of just the
+		protocol module's client-visible refusal of writes (#9109)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
