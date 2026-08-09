@@ -1875,6 +1875,11 @@
 		case now checks the read size against both paramsize and
 		the bytes remaining in the packet before reading, and the
 		numeric case now advances the caller's pointer (#9217)
+	fixed comments in the oracle, tds, and mysql protocol modules' type
+		maps - the labels at indexes 65 and 66 named the datatype
+		enum identifiers (SHORT_DATATYPE, TINY_DATATYPE) instead of
+		the datatypestring[] entries (SHORT, TINY); comment only, no
+		behavior changed (#9077)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

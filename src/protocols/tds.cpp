@@ -416,9 +416,9 @@ static byte_t	tdstypemap[]={
 	(byte_t)TDS_TYPE_BIGVARCHR,
 	// "USER_DEFINED_TYPE"
 	(byte_t)TDS_TYPE_UDT,
-	// "SHORT_DATATYPE"
+	// "SHORT"
 	(byte_t)TDS_TYPE_INTN,
-	// "TINY_DATATYPE"
+	// "TINY"
 	(byte_t)TDS_TYPE_INTN,
 	// added by firebird
 	// "D_FLOAT"

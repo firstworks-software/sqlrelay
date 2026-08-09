@@ -476,9 +476,9 @@ static uint16_t	oracletypemap[]={
 	(uint16_t)ORACLE_TYPE_VARCHAR,
 	// "USER_DEFINED_TYPE"
 	(uint16_t)ORACLE_TYPE_VARCHAR,
-	// "SHORT_DATATYPE"
+	// "SHORT"
 	(uint16_t)ORACLE_TYPE_NUMBER,
-	// "TINY_DATATYPE"
+	// "TINY"
 	(uint16_t)ORACLE_TYPE_NUMBER,
 	// added by firebird
 	// "D_FLOAT"

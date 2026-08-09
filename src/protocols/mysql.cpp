@@ -266,9 +266,9 @@ static byte_t	mysqltypemap[]={
 	(byte_t)MYSQL_TYPE_STRING,
 	// "USER_DEFINED_TYPE"
 	(byte_t)MYSQL_TYPE_STRING,
-	// "SHORT_DATATYPE"
+	// "SHORT"
 	(byte_t)MYSQL_TYPE_SHORT,
-	// "TINY_DATATYPE"
+	// "TINY"
 	(byte_t)MYSQL_TYPE_TINY,
 	// added by firebird
 	// "D_FLOAT"
