@@ -1930,6 +1930,19 @@
 		client anyway), sap and freetds only learn column info via
 		ct_results()/ct_describe() after ct_send(), and router's own
 		prepare never contacts the downstream server at all (#9168)
+	fixed the teradata protocol module - it never cleared the cursor's
+		bind pool after allocating bind variable names out of it, so
+		the pool grew for the life of the sqlr-connection process;
+		now cleared once at the start of each request's bind phase,
+		in parseUsing() and parseStatementInfoExtensions() (#9024)
+	fixed the replay trigger - copyBind's arguments were reversed on
+		the restore path, so a replay left the cursor's binds
+		untouched and overwrote the logged values with them instead,
+		corrupting the log for any later pass or replay (#9023)
+	fixed the replay trigger - it leaked every logged bind variable
+		for the life of the sqlr-connection process because its
+		linked lists never called setManageValues(true), so deleting
+		the log never reached the bind variables underneath it (#9022)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

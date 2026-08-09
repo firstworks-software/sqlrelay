@@ -317,6 +317,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		sqlrserverbindvar	*invars=
 					sqlrcur->getInputBinds();
 		qd->inbindvars=new linkedlist<sqlrserverbindvar *>();
+		qd->inbindvars->setManageValues(true);
 		for (uint16_t i=0; i<incount; i++) {
 			sqlrserverbindvar	*bv=new sqlrserverbindvar;
 			cont->copyBind(&(invars[i]),bv,&logpool);
@@ -330,6 +331,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		sqlrserverbindvar	*outvars=
 					sqlrcur->getOutputBinds();
 		qd->outbindvars=new linkedlist<sqlrserverbindvar *>();
+		qd->outbindvars->setManageValues(true);
 		for (uint16_t i=0; i<outcount; i++) {
 			sqlrserverbindvar	*bv=new sqlrserverbindvar;
 			cont->copyBind(&(outvars[i]),bv,&logpool);
@@ -343,6 +345,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		sqlrserverbindvar	*inoutvars=
 					sqlrcur->getInputOutputBinds();
 		qd->inoutbindvars=new linkedlist<sqlrserverbindvar *>();
+		qd->inoutbindvars->setManageValues(true);
 		for (uint16_t i=0; i<inoutcount; i++) {
 			sqlrserverbindvar	*bv=new sqlrserverbindvar;
 			cont->copyBind(&(inoutvars[i]),bv,&logpool);
@@ -665,7 +668,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 						inbindnode->getValue();
 				debugWrite("%.*s",
 					bv->variablesize,bv->variable);
-				cont->copyBind(&(invars[i]),bv,pool);
+				cont->copyBind(bv,&(invars[i]),pool);
 				inbindnode=inbindnode->getNext();
 			}
 			if (incount) {
@@ -689,7 +692,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 						outbindnode->getValue();
 				debugWrite("%.*s",
 					bv->variablesize,bv->variable);
-				cont->copyBind(&(outvars[i]),bv,pool);
+				cont->copyBind(bv,&(outvars[i]),pool);
 				outbindnode=outbindnode->getNext();
 			}
 			if (outcount) {
@@ -714,7 +717,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 						inoutbindnode->getValue();
 				debugWrite("%.*s",
 					bv->variablesize,bv->variable);
-				cont->copyBind(&(inoutvars[i]),bv,pool);
+				cont->copyBind(bv,&(inoutvars[i]),pool);
 				inoutbindnode=inoutbindnode->getNext();
 			}
 			if (inoutcount) {

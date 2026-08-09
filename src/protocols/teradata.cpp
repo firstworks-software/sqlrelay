@@ -4661,6 +4661,7 @@ void sqlrprotocol_teradata::parseUsing() {
 
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(req->cur);
 	memorypool		*bindpool=cont->getBindPool(req->cur);
+	bindpool->clear();
 
 	const char	*ptr;
 	uint16_t	ibcount=0;
@@ -5424,6 +5425,10 @@ bool sqlrprotocol_teradata::parseStatementInfoExtensions(
 	// isn't defined in the spec, but appears to describe a parameter.
 
 	debugStart("bind variables");
+
+	// this request's bind phase begins here; clear the pool once,
+	// before parsing any of its parameter extensions
+	cont->getBindPool(req->cur)->clear();
 
 	// input bind count
 	uint16_t	ibcount=0;
