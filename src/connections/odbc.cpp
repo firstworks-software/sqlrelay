@@ -4480,18 +4480,21 @@ bool odbccursor::inputOutputBind(const char *variable,
 	SQLSMALLINT	valtype=SQL_C_CHAR;
 	SQLSMALLINT	paramtype=SQL_CHAR;
 	SQLLEN		buffersize=valuesize;
-	// Bytes of valid data already sitting in the bind buffer, in
-	// whichever encoding actually gets bound below.  Used to set the
-	// StrLen_or_IndPtr so the driver sees the whole input value.
-	size_t		sizetocopy=charstring::getLength(value);
+	// Bytes of valid data (excluding the null terminator) already
+	// sitting in the bind buffer, in whichever encoding actually gets
+	// bound below.  Used to set the StrLen_or_IndPtr so the driver
+	// sees the whole input value, and no more.
+	size_t		indicatorlen=charstring::getLength(value);
 	// Scratch buffer for the unicode case, sized to hold the
 	// converted value (and to give the driver as much room to write
 	// output back as the caller's buffer implies).  Left NULL, and
-	// "value" bound directly, for the non-unicode case.
+	// "value" bound directly, for the non-unicode case, and for a
+	// null bind (which is bound as SQL_C_BINARY below and never reads
+	// this buffer).
 	byte_t		*ucsvalue=NULL;
 	SQLLEN		ucsvaluesize=0;
 	#ifdef HAVE_SQLCONNECTW
-	if (odbcconn->unicode) {
+	if (odbcconn->unicode && *isnull!=SQL_NULL_DATA) {
 
 		const char	*encoding=odbcconn->ncharencoding;
 		char	*err=NULL;
@@ -4505,8 +4508,10 @@ bool odbccursor::inputOutputBind(const char *variable,
 			setConvCharError("input-output bind",err);
 			return false;
 		}
-		// stringSize() already counts the null terminator
-		sizetocopy=stringSize(valueucs,encoding);
+		// stringSize() counts the null terminator, but the
+		// indicator must exclude it
+		size_t	sizetocopy=stringSize(valueucs,encoding);
+		indicatorlen=sizetocopy-nullSize(encoding);
 
 		// Convert into a scratch buffer instead of truncating the
 		// converted value back into "value".  "value" was sized
@@ -4539,7 +4544,7 @@ bool odbccursor::inputOutputBind(const char *variable,
 	inoutisnullptr[pos-1]=isnull;
 
 	inoutisnull[pos-1]=(*isnull==SQL_NULL_DATA)?
-				sqlnulldata:(SQLLEN)sizetocopy;
+				sqlnulldata:(SQLLEN)indicatorlen;
 
 	// FIXME: original code...
 	/*erg=SQLBindParameter(stmt,
