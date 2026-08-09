@@ -1881,50 +1881,131 @@ int16_t sqlrprotocol_postgresql::getColumnTypeLen(uint32_t oid) {
 	// report an actual byte count.  typlen is a per-type constant, not
 	// anything derived from a particular column's data.
 	switch (oid) {
-		case 16: return 1;	//bool
-		case 18: return 1;	//char
-		case 19: return 64;	//name
-		case 20: return 8;	//int8
-		case 21: return 2;	//int2
-		case 23: return 4;	//int4
-		case 24: return 4;	//regproc
-		case 26: return 4;	//oid
-		case 27: return 6;	//tid
-		case 28: return 4;	//xid
-		case 29: return 4;	//cid
-		case 210: return 2;	//smgr
-		case 600: return 16;	//point
-		case 601: return 32;	//lseg
-		case 603: return 32;	//box
-		case 628: return 32;	//line
-		case 700: return 4;	//float4
-		case 701: return 8;	//float8
-		case 702: return 4;	//abstime
-		case 703: return 4;	//reltime
-		case 704: return 12;	//tinterval
-		case 718: return 24;	//circle
-		case 790: return 8;	//money
-		case 829: return 6;	//macaddr
-		case 1033: return 12;	//aclitem
-		case 1082: return 4;	//date
-		case 1083: return 8;	//time
-		case 1114: return 8;	//timestamp
-		case 1184: return 8;	//timestamptz
-		case 1186: return 16;	//interval
-		case 1266: return 12;	//timetz
-		case 2202: //regprocedure
-		case 2203: //regoper
-		case 2204: //regoperator
-		case 2205: //regclass
-		case 2206: //regtype
+		// bool
+		case 16:
+			return 1;
+		// char
+		case 18:
+			return 1;
+		// name
+		case 19:
+			return 64;
+		// int8
+		case 20:
+			return 8;
+		// int2
+		case 21:
+			return 2;
+		// int4
+		case 23:
 			return 4;
-		case 2276: return 4;	//any
-		case 2278: return 4;	//void
-		case 2279: return 4;	//trigger
-		case 2280: return 4;	//language_handler
-		case 2281: return 8;	//internal
-		case 2282: return 4;	//opaque
-		case 2283: return 4;	//anyelement
+		// regproc
+		case 24:
+			return 4;
+		// oid
+		case 26:
+			return 4;
+		// tid
+		case 27:
+			return 6;
+		// xid
+		case 28:
+			return 4;
+		// cid
+		case 29:
+			return 4;
+		// smgr
+		case 210:
+			return 2;
+		// point
+		case 600:
+			return 16;
+		// lseg
+		case 601:
+			return 32;
+		// box
+		case 603:
+			return 32;
+		// line
+		case 628:
+			return 32;
+		// float4
+		case 700:
+			return 4;
+		// float8
+		case 701:
+			return 8;
+		// abstime
+		case 702:
+			return 4;
+		// reltime
+		case 703:
+			return 4;
+		// tinterval
+		case 704:
+			return 12;
+		// circle
+		case 718:
+			return 24;
+		// money
+		case 790:
+			return 8;
+		// macaddr
+		case 829:
+			return 6;
+		// aclitem
+		case 1033:
+			return 12;
+		// date
+		case 1082:
+			return 4;
+		// time
+		case 1083:
+			return 8;
+		// timestamp
+		case 1114:
+			return 8;
+		// timestamptz
+		case 1184:
+			return 8;
+		// interval
+		case 1186:
+			return 16;
+		// timetz
+		case 1266:
+			return 12;
+		// regprocedure
+		case 2202:
+		// regoper
+		case 2203:
+		// regoperator
+		case 2204:
+		// regclass
+		case 2205:
+		// regtype
+		case 2206:
+			return 4;
+		// any
+		case 2276:
+			return 4;
+		// void
+		case 2278:
+			return 4;
+		// trigger
+		case 2279:
+			return 4;
+		// language_handler
+		case 2280:
+			return 4;
+		// internal
+		case 2281:
+			return 8;
+		// opaque
+		case 2282:
+			return 4;
+		// anyelement
+		case 2283:
+			return 4;
 		default:
 			return -1;
 	}
