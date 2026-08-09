@@ -1889,6 +1889,14 @@
 		Boolean rename. All 8 were unreachable; each chain already
 		had correct, reachable SHORT, TINY, BOOL, and BOOL_ARRAY
 		branches further down (#9074)
+	fixed jdbc api's SQLRelayResultSetMetaData - getColumnClassName()
+		returned java.lang.Short for the USHORT, YEAR, SHORT, TINY,
+		and INT2 type names but java.lang.Integer for SMALLINT and
+		TINYINT, even though getColumnType() maps all seven to the
+		same jdbc type (Types.SMALLINT or Types.TINYINT); per the
+		jdbc spec's type mapping table, Integer is correct for the
+		whole family, so the five outliers now return Integer too
+		(#9086)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -172,7 +172,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 				retval="java.lang.String";
 				break;
 			case "USHORT":
-				retval="java.lang.Short";
+				retval="java.lang.Integer";
 				break;
 	
 			// added by lago
@@ -216,7 +216,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 				retval="java.lang.Integer";
 				break;
 			case "YEAR":
-				retval="java.lang.Short";
+				retval="java.lang.Integer";
 				break;
 			case "NEWDATE":
 				retval=(getDateToTimestamp())?
@@ -305,10 +305,10 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 				retval="java.lang.Byte";
 				break;
 			case "SHORT":
-				retval="java.lang.Short";
+				retval="java.lang.Integer";
 				break;
 			case "TINY":
-				retval="java.lang.Short";
+				retval="java.lang.Integer";
 				break;
 	
 			// added by firebird
@@ -342,7 +342,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 				retval="java.lang.BigInteger";
 				break;
 			case "INT2":
-				retval="java.lang.Short";
+				retval="java.lang.Integer";
 				break;
 			case "INT2VECTOR":
 				retval="java.lang.Byte";
