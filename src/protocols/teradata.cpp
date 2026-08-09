@@ -1342,6 +1342,10 @@ clientsessionexitstatus_t sqlrprotocol_teradata::clientSession(
 
 	if (initialHandshake()) {
 
+		// run session-start queries, now that the client is
+		// authenticated
+		cont->beginSession();
+
 		bool	loop=true;
 		do {
 

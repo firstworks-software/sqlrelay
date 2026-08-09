@@ -1058,6 +1058,10 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 	clientsessionexitstatus_t	status=CLIENTSESSIONEXITSTATUS_ERROR;
 	if (initialHandshake()) {
 
+		// run session-start queries, now that the client is
+		// authenticated
+		cont->beginSession();
+
 		// loop, getting and executing requests
 		bool	loop=true;
 		do {

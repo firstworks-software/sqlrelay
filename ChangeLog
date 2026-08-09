@@ -1985,6 +1985,17 @@
 		runs for a genuinely new client, so an abandoned suspend (the
 		client never reconnects and the resume socket times out) can't
 		leave the next, unrelated client pre-authenticated (#9135)
+		fixed the mysql, postgresql, tds, oracle, teradata and firebird
+			protocol modules - none of them called
+			sqlrservercontroller::beginSession(), so an instance's
+			session-start queries never ran for a client connecting
+			over any of those protocols, even though endSession() (and
+			its session-end queries) already ran for all of them;
+			beginSession() is now called as soon as each module commits
+			to the client's session - right after the handshake that
+			ends in a successful auth() for mysql, postgresql, oracle,
+			teradata and firebird, and right after auth() succeeds
+			within tds7Login() for tds (#9139)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

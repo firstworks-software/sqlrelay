@@ -1471,6 +1471,10 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 	clientsessionexitstatus_t	status=CLIENTSESSIONEXITSTATUS_ERROR;
 	if (initialHandshake()) {
 
+		// run session-start queries, now that the client is
+		// authenticated
+		cont->beginSession();
+
 		// loop, getting and executing commands
 		bool		loop=true;
 		const byte_t	*rp=NULL;

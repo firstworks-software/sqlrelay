@@ -3082,6 +3082,9 @@ bool sqlrprotocol_tds::tds7Login() {
 	if (retval) {
 		if (auth(username,cchusername,password,cchpassword)) {
 			loggedin=true;
+			// run session-start queries, now that the client
+			// is authenticated
+			cont->beginSession();
 			loginAck();
 		} else {
 			authError(username,cchusername);
