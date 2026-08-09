@@ -1782,6 +1782,13 @@
 		its allocation and its only delete[], one reachable by any
 		authenticated client sending a Bind message with more param
 		values than maxbindcount (#9044)
+	fixed the postgresql protocol module - bind() cleared the cursor's
+		bind pool long before it set the input bind count, and three
+		early returns sat in the gap; a client that hit one of them
+		left the cursor with a stale bind count over a freshly emptied
+		pool, so the next Execute on that cursor read stale or
+		dangling value pointers; the bind count is now zeroed in the
+		same breath as the pool clear (#9021)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

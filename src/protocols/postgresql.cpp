@@ -2025,6 +2025,11 @@ bool sqlrprotocol_postgresql::bind() {
 	memorypool		*bindpool=cont->getBindPool(cursor);
 	bindpool->clear();
 
+	// the bind values are allocated out of the pool above, so drop the
+	// count with it - otherwise an early return below leaves the cursor
+	// with a stale count and dangling value pointers
+	cont->setInputBindCount(cursor,0);
+
 	// (re)set the execute flag
 	// (see execute() method for more info on this)
 	executeflag.setValue(cursor,true);
