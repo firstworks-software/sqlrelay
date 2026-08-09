@@ -1911,6 +1911,25 @@
 		spellings; the old spellings are still reachable under
 		typemangling=2, so the *_ARRAY spellings were added alongside
 		them rather than replacing them (#9076)
+	added db2cursor::columnInfoIsValidAfterPrepare() and
+		informixcursor::columnInfoIsValidAfterPrepare() - both CLI
+		backends can describe a prepared statement's columns via
+		SQLNumResultCols()/SQLColAttribute() right after SQLPrepare(),
+		the same way odbc.cpp already does; factored that work out of
+		executeQuery() into a shared handleColumns() so prepareQuery()
+		can call it too, following the odbc.cpp precedent - a
+		per-cursor flag, not an unconditional true, since some query
+		shapes still can't describe their columns until execute
+		(#9168); left oracle, sqlite, sap, freetds, and router
+		unchanged - oracle's only describe mechanism requires an
+		extra execute and risks a documented statement-cache segfault
+		with unbound binds, sqlite can only give unreliable per-value
+		column types before a row is stepped to (and the controller
+		locks in whatever header it gets at prepare time, so a second,
+		more-accurate describe at execute time would never reach the
+		client anyway), sap and freetds only learn column info via
+		ct_results()/ct_describe() after ct_send(), and router's own
+		prepare never contacts the downstream server at all (#9168)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

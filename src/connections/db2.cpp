@@ -63,6 +63,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		bool		close();
 		bool		prepareQuery(const char *query,
 						uint32_t size);
+		bool		handleColumns(bool getcolumninfo,
+						bool bindcolumns);
 		void		encodeBlob(stringbuffer *buffer,
 						const char *data,
 						uint32_t datasize);
@@ -186,6 +188,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 					uint64_t *charsread);
 		void		closeResultSet();
 
+		bool		columnInfoIsValidAfterPrepare();
+
 		SQLRETURN	erg;
 		SQLHSTMT	stmt;
 		SQLHSTMT	lobstmt;
@@ -219,6 +223,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		uint64_t	rownumber;
 
 		bool		bindformaterror;
+
+		bool		columninfoisvalidafterprepare;
 
 		stringbuffer	errormsg;
 
@@ -2360,6 +2366,7 @@ db2cursor::db2cursor(sqlrserverconnection *conn, uint16_t id) :
 	}
 	sqlnulldata=SQL_NULL_DATA;
 	bindformaterror=false;
+	columninfoisvalidafterprepare=true;
 	allocateResultSetBuffers(conn->cont->getMaxColumnCount());
 }
 
@@ -2497,10 +2504,17 @@ bool db2cursor::prepareQuery(const char *query, uint32_t size) {
 
 	// initialize column count
 	ncols=0;
+	columninfoisvalidafterprepare=true;
 
 	// prepare the query
 	erg=SQLPrepare(stmt,(SQLCHAR *)query,size);
-	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		return false;
+	}
+
+	// get column info now, if it's available yet, so callers can
+	// describe the result set before it's executed
+	return handleColumns(true,false);
 }
 
 void db2cursor::encodeBlob(stringbuffer *buffer,
@@ -2978,141 +2992,10 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 
 	checkForTempTable(query,size);
 
-	// get the column count
-	erg=SQLNumResultCols(stmt,&ncols);
-	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+	// get column info (unless it's already valid from prepareQuery)
+	// and bind the columns to lob locators or buffers
+	if (!handleColumns(!columninfoisvalidafterprepare,true)) {
 		return false;
-	}
-
-	// allocate buffers and limit column count if necessary
-	if (!conn->cont->getMaxColumnCount()) {
-
-		allocateResultSetBuffers(ncols);
-
-		#if (DB2VERSION>7)
-		// set the row status ptr
-		// (only do this here if we're
-		// dynamically allocating row buffers)
-		erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_STATUS_PTR,
-					(SQLPOINTER)rowstat,0);
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			return false;
-		}
-		#endif
-
-	} else if ((uint32_t)ncols>conn->cont->getMaxColumnCount()) {
-		ncols=conn->cont->getMaxColumnCount();
-	}
-
-	// run through the columns
-	for (SQLSMALLINT i=0; i<ncols; i++) {
-
-		if (conn->cont->getSendColumnInfo()) {
-
-			// column name
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LABEL,
-					column[i].name,4096,
-					(SQLSMALLINT *)&(column[i].namesize),
-					NULL);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column size
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LENGTH,
-					NULL,0,NULL,&(column[i].size));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column type
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_TYPE,
-					NULL,0,NULL,&(column[i].type));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column precision
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_PRECISION,
-					NULL,0,NULL,&(column[i].precision));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column scale
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_SCALE,
-					NULL,0,NULL,&(column[i].scale));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column nullable
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_NULLABLE,
-					NULL,0,NULL,&(column[i].nullable));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// primary key
-
-			// unique
-
-			// part of key
-
-			// unsigned number
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_UNSIGNED,
-				NULL,0,NULL,&(column[i].unsignednumber));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// zero fill
-
-			// binary
-
-			// autoincrement
-			erg=SQLColAttribute(stmt,i+1,
-				SQL_COLUMN_AUTO_INCREMENT,
-				NULL,0,NULL,&(column[i].autoincrement));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// table name
-			erg=SQLColAttribute(stmt,i+1,
-				SQL_COLUMN_TABLE_NAME,
-				column[i].table,4096,
-				(SQLSMALLINT *)&(column[i].tablesize),
-				NULL);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-			//column[i].tablesize=
-				//charstring::getLength(column[i].table);
-		}
-
-		// bind the column to a lob locator or buffer
-		switch (column[i].type) {
-			case SQL_CLOB:
-				erg=SQLBindCol(stmt,i+1,SQL_C_CLOB_LOCATOR,
-						loblocator[i],0,
-						indicator[i]);
-				break;
-			case SQL_BLOB:
-				erg=SQLBindCol(stmt,i+1,SQL_C_BLOB_LOCATOR,
-						loblocator[i],0,
-						indicator[i]);
-				break;
-			default:
-				erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
-					field[i],
-					conn->cont->getMaxFieldSize(),
-					indicator[i]);
-				break;
-		}
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			return false;
-		}
 	}
 
 	// get the row count
@@ -3139,6 +3022,189 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 		}
 	}
 	
+	return true;
+}
+
+bool db2cursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
+
+	// get the column count
+	erg=SQLNumResultCols(stmt,&ncols);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+
+		// at prepare-time, some query shapes (eg. unbound parameters)
+		// don't have valid column info yet; don't fail here, just
+		// note that and let executeQuery gather it after execute
+		if (!bindcolumns) {
+			columninfoisvalidafterprepare=false;
+			ncols=0;
+			return true;
+		}
+		return false;
+	}
+
+	// limit column count if necessary
+	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
+	if (maxcolumncount && (uint32_t)ncols>maxcolumncount) {
+		ncols=maxcolumncount;
+	}
+
+	if (getcolumninfo) {
+
+		// allocate buffers if necessary
+		if (!maxcolumncount) {
+
+			// free any buffers left over from a previous
+			// prepare/execute of this same cursor
+			deallocateResultSetBuffers();
+			allocateResultSetBuffers(ncols);
+
+			#if (DB2VERSION>7)
+			// set the row status ptr
+			// (only do this here if we're
+			// dynamically allocating row buffers)
+			erg=SQLSetStmtAttr(stmt,SQL_ATTR_ROW_STATUS_PTR,
+						(SQLPOINTER)rowstat,0);
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				return false;
+			}
+			#endif
+		}
+
+		// run through the columns
+		for (SQLSMALLINT i=0; i<ncols; i++) {
+
+			if (conn->cont->getSendColumnInfo()) {
+
+				// column name
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LABEL,
+						column[i].name,4096,
+						(SQLSMALLINT *)
+						&(column[i].namesize),
+						NULL);
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column size
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LENGTH,
+						NULL,0,NULL,&(column[i].size));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column type
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_TYPE,
+						NULL,0,NULL,&(column[i].type));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column precision
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_PRECISION,
+					NULL,0,NULL,&(column[i].precision));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column scale
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_SCALE,
+						NULL,0,NULL,&(column[i].scale));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column nullable
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_NULLABLE,
+					NULL,0,NULL,&(column[i].nullable));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// primary key
+
+				// unique
+
+				// part of key
+
+				// unsigned number
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_UNSIGNED,
+					NULL,0,NULL,
+					&(column[i].unsignednumber));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// zero fill
+
+				// binary
+
+				// autoincrement
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_AUTO_INCREMENT,
+					NULL,0,NULL,
+					&(column[i].autoincrement));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// table name
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_TABLE_NAME,
+					column[i].table,4096,
+					(SQLSMALLINT *)&(column[i].tablesize),
+					NULL);
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+				//column[i].tablesize=
+					//charstring::getLength(
+					//		column[i].table);
+			}
+		}
+	}
+
+	if (bindcolumns) {
+
+		// bind the columns to lob locators or buffers
+		for (SQLSMALLINT i=0; i<ncols; i++) {
+			switch (column[i].type) {
+				case SQL_CLOB:
+					erg=SQLBindCol(stmt,i+1,
+							SQL_C_CLOB_LOCATOR,
+							loblocator[i],0,
+							indicator[i]);
+					break;
+				case SQL_BLOB:
+					erg=SQLBindCol(stmt,i+1,
+							SQL_C_BLOB_LOCATOR,
+							loblocator[i],0,
+							indicator[i]);
+					break;
+				default:
+					erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
+						field[i],
+						conn->cont->getMaxFieldSize(),
+						indicator[i]);
+					break;
+			}
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				return false;
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -3540,6 +3606,13 @@ void db2cursor::closeResultSet() {
 		deallocateResultSetBuffers();
 	}
 
+	// the column buffers freed above no longer hold anything, so any
+	// query re-executed on this cursor without an intervening
+	// prepareQuery() (eg. the client protocol's re-execute) has to
+	// redescribe and rebind rather than trust the flag set by the
+	// original prepare
+	columninfoisvalidafterprepare=false;
+
 	// NOTE: this is a bit of a kludge.
 	//
 	// ncols is reset at the beginning of prepareQuery, and other methods,
@@ -3559,6 +3632,10 @@ void db2cursor::closeResultSet() {
 	// counts) but this is the critical one for now, so we'll sort that
 	// out later.
 	ncols=0;
+}
+
+bool db2cursor::columnInfoIsValidAfterPrepare() {
+	return columninfoisvalidafterprepare;
 }
 
 extern "C" {

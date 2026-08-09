@@ -63,6 +63,8 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 		bool		close();
 		bool		prepareQuery(const char *query,
 						uint32_t size);
+		bool		handleColumns(bool getcolumninfo,
+						bool bindcolumns);
 		bool		inputBind(const char *variable, 
 						uint16_t variablesize,
 						const char *value, 
@@ -143,6 +145,7 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 							uint64_t *charsread);
 		bool		executeQuery(const char *query,
 						uint32_t size);
+		bool		columnInfoIsValidAfterPrepare();
 		void		getError(char *errorbuffer,
 						uint32_t errorbuffersize,
 						uint32_t *errorsize,
@@ -182,6 +185,7 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 		SQLRETURN	erg;
 		SQLHSTMT	stmt;
 		SQLSMALLINT	ncols;
+		bool		columninfoisvalidafterprepare;
 		SQLLEN 		affectedrows;
 
 		int32_t		columncount;
@@ -2742,6 +2746,7 @@ informixcursor::informixcursor(sqlrserverconnection *conn, uint16_t id) :
 	}
 	sqlnulldata=SQL_NULL_DATA;
 	bindformaterror=false;
+	columninfoisvalidafterprepare=true;
 	allocateResultSetBuffers(conn->cont->getMaxColumnCount());
 	truevalue=SQL_TRUE;
 }
@@ -2847,6 +2852,7 @@ bool informixcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// initialize column count
 	ncols=0;
+	columninfoisvalidafterprepare=true;
 
 	// handle noops
 	noop=!charstring::compare(query,"noop");
@@ -2856,7 +2862,201 @@ bool informixcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// prepare the query
 	erg=SQLPrepare(stmt,(SQLCHAR *)query,size);
-	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		return false;
+	}
+
+	// get column info now, if possible, so column accessors work
+	// before execute
+	return handleColumns(true,false);
+}
+
+bool informixcursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
+
+	// get the column count
+	erg=SQLNumResultCols(stmt,&ncols);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+
+		// column info may not be valid until after execute for some
+		// queries (eg. ones whose result-set shape depends on an
+		// unbound parameter).  Tolerate that here, at prepare time,
+		// and let executeQuery() retry once the query has run.
+		if (!bindcolumns) {
+			columninfoisvalidafterprepare=false;
+			ncols=0;
+			return true;
+		}
+		return false;
+	}
+
+	// limit column count if necessary
+	int32_t	maxcolumncount=conn->cont->getMaxColumnCount();
+	if (maxcolumncount && ncols>maxcolumncount) {
+		ncols=maxcolumncount;
+	}
+
+	if (getcolumninfo) {
+
+		// allocate buffers if necessary
+		if (!maxcolumncount) {
+
+			// free any buffers left over from a previous
+			// prepare/execute of this same cursor
+			deallocateResultSetBuffers();
+			allocateResultSetBuffers(ncols);
+		}
+
+		// run through the columns
+		for (SQLSMALLINT i=0; i<ncols; i++) {
+
+			if (conn->cont->getSendColumnInfo()) {
+
+				// column name
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LABEL,
+						column[i].name,4096,
+						&(column[i].namesize),
+						NULL);
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column size
+				// SQL_COLUMN_LENGTH isn't reliable in
+				// informix.  It usually returns -1 or 0.
+				// Just copy the result of
+				// SQL_COLUMN_PRECISION below...
+
+				// column type
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_TYPE,
+						NULL,0,NULL,&(column[i].type));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column type name
+				// Informix reports money and decimal both as
+				// SQL_DECIMAL, and varchar, nvarchar, and
+				// lvarchar all as SQL_VARCHAR.  The type name
+				// is the only way to tell money from decimal
+				// and lvarchar from varchar (nvarchar is
+				// reported identically to varchar, with no
+				// way to distinguish it).
+				SQLSMALLINT	dbtypenamesize;
+				erg=SQLColAttribute(stmt,i+1,
+						SQL_DESC_TYPE_NAME,
+						column[i].dbtypename,
+						sizeof(column[i].dbtypename),
+						&dbtypenamesize,NULL);
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// informix doesn't support column size,
+				// so we'll just use the precision
+
+				// column precision
+				erg=SQLColAttribute(stmt,i+1,
+						SQL_COLUMN_PRECISION,
+						NULL,0,NULL,
+						&(column[i].precision));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column scale
+				erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_SCALE,
+						NULL,0,NULL,&(column[i].scale));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// column nullable
+				// Informix doesn't support
+				// SQL_COLUMN_NULLABLE.  Nullability is just
+				// part of the "flags".
+				erg=SQLColAttribute(stmt,i+1,
+						SQL_INFX_ATTR_FLAGS,
+						NULL,0,NULL,&(column[i].flags));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// primary key
+
+				// unique
+
+				// part of key
+
+				// unsigned number
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_UNSIGNED,
+					NULL,0,NULL,
+					&(column[i].unsignednumber));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// zero fill
+
+				// binary
+
+				// autoincrement
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_AUTO_INCREMENT,
+					NULL,0,NULL,
+					&(column[i].autoincrement));
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+
+				// table name
+				erg=SQLColAttribute(stmt,i+1,
+					SQL_COLUMN_TABLE_NAME,
+					column[i].table,4096,
+					(SQLSMALLINT *)&(column[i].tablesize),
+					NULL);
+				if (erg!=SQL_SUCCESS &&
+					erg!=SQL_SUCCESS_WITH_INFO) {
+					return false;
+				}
+				//column[i].tablesize=
+					//charstring::getLength(
+					//		column[i].table);
+			}
+		}
+	}
+
+	if (bindcolumns) {
+
+		// run through the columns
+		for (SQLSMALLINT i=0; i<ncols; i++) {
+			if (column[i].type==SQL_LONGVARBINARY ||
+				column[i].type==SQL_INFX_UDT_BLOB) {
+				erg=SQLBindCol(stmt,i+1,SQL_C_BINARY,
+						field[i],
+						conn->cont->getMaxFieldSize(),
+						indicator[i]);
+			} else {
+				erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
+						field[i],
+						conn->cont->getMaxFieldSize(),
+						indicator[i]);
+			}
+			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 bool informixcursor::inputBind(const char *variable,
@@ -3328,141 +3528,10 @@ bool informixcursor::executeQuery(const char *query, uint32_t size) {
 
 	checkForTempTable(query,size);
 
-	// get the column count
-	erg=SQLNumResultCols(stmt,&ncols);
-	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+	// get/bind column info; skip the describe step if it's already
+	// valid from prepareQuery()
+	if (!handleColumns(!columninfoisvalidafterprepare,true)) {
 		return false;
-	}
-
-	// allocate buffers and limit column count if necessary
-	int32_t	maxcolumncount=conn->cont->getMaxColumnCount();
-	if (!maxcolumncount) {
-		allocateResultSetBuffers(ncols);
-	} else if (ncols>maxcolumncount) {
-		ncols=maxcolumncount;
-	}
-
-	// run through the columns
-	for (SQLSMALLINT i=0; i<ncols; i++) {
-
-		if (conn->cont->getSendColumnInfo()) {
-
-			// column name
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_LABEL,
-					column[i].name,4096,
-					&(column[i].namesize),
-					NULL);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column size
-			// SQL_COLUMN_LENGTH isn't reliable in informix.  It
-			// usually returns -1 or 0.  Just copy the result of
-			// SQL_COLUMN_PRECISION below...
-
-			// column type
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_TYPE,
-					NULL,0,NULL,&(column[i].type));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column type name
-			// Informix reports money and decimal both as
-			// SQL_DECIMAL, and varchar, nvarchar, and lvarchar
-			// all as SQL_VARCHAR.  The type name is the only way
-			// to tell money from decimal and lvarchar from
-			// varchar (nvarchar is reported identically to
-			// varchar, with no way to distinguish it).
-			SQLSMALLINT	dbtypenamesize;
-			erg=SQLColAttribute(stmt,i+1,SQL_DESC_TYPE_NAME,
-					column[i].dbtypename,
-					sizeof(column[i].dbtypename),
-					&dbtypenamesize,NULL);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// informix doesn't support column size,
-			// so we'll just use the precision
-
-			// column precision
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_PRECISION,
-					NULL,0,NULL,&(column[i].precision));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column scale
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_SCALE,
-					NULL,0,NULL,&(column[i].scale));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// column nullable
-			// Informix doesn't support SQL_COLUMN_NULLABLE.
-			// Nullability is just part of the "flags".
-			erg=SQLColAttribute(stmt,i+1,SQL_INFX_ATTR_FLAGS,
-					NULL,0,NULL,&(column[i].flags));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// primary key
-
-			// unique
-
-			// part of key
-
-			// unsigned number
-			erg=SQLColAttribute(stmt,i+1,SQL_COLUMN_UNSIGNED,
-				NULL,0,NULL,&(column[i].unsignednumber));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// zero fill
-
-			// binary
-
-			// autoincrement
-			erg=SQLColAttribute(stmt,i+1,
-				SQL_COLUMN_AUTO_INCREMENT,
-				NULL,0,NULL,&(column[i].autoincrement));
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-
-			// table name
-			erg=SQLColAttribute(stmt,i+1,
-				SQL_COLUMN_TABLE_NAME,
-				column[i].table,4096,
-				(SQLSMALLINT *)&(column[i].tablesize),
-				NULL);
-			if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-				return false;
-			}
-			//column[i].tablesize=
-				//charstring::getLength(column[i].table);
-		}
-
-		if (column[i].type==SQL_LONGVARBINARY ||
-			column[i].type==SQL_INFX_UDT_BLOB) {
-			erg=SQLBindCol(stmt,i+1,SQL_C_BINARY,
-					field[i],
-					conn->cont->getMaxFieldSize(),
-					indicator[i]);
-		} else {
-			erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
-					field[i],
-					conn->cont->getMaxFieldSize(),
-					indicator[i]);
-		}
-		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
-			return false;
-		}
 	}
 
 	// get the row count
@@ -3493,6 +3562,10 @@ bool informixcursor::executeQuery(const char *query, uint32_t size) {
 	}
 	
 	return true;
+}
+
+bool informixcursor::columnInfoIsValidAfterPrepare() {
+	return columninfoisvalidafterprepare;
 }
 
 void informixcursor::getError(char *errorbuffer,
@@ -3888,6 +3961,13 @@ void informixcursor::closeResultSet() {
 	if (!conn->cont->getMaxColumnCount()) {
 		deallocateResultSetBuffers();
 	}
+
+	// the column buffers freed above no longer hold anything, so any
+	// query re-executed on this cursor without an intervening
+	// prepareQuery() (eg. the client protocol's re-execute) has to
+	// redescribe and rebind rather than trust the flag set by the
+	// original prepare
+	columninfoisvalidafterprepare=false;
 
 	// NOTE: this is a bit of a kludge.
 	//
