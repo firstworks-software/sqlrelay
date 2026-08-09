@@ -240,7 +240,9 @@ bool sqlrtrigger_upsert::runAfterExecute(sqlrserverconnection *sqlrcon,
 					&liveconnection);
 		cont->setError(icur,errorstring,errorsize,
 					errnum,liveconnection);
-		debugWrite("error: %d - %.*s",errnum,errorsize,errorstring);
+		debugWrite("error: %lld - %.*s",
+				(long long)errnum,
+				(int)errorsize,errorstring);
 	}
 
 	debugEnd();

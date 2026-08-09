@@ -102,7 +102,7 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 		b.append("\"");
 		debugWrite(b.getString());
 		debugWrite("method: \"%s\"",method);
-		debugWrite("salt: \"%s\"",salt);
+		debugWrite("salt: \"%u\"",salt);
 		debugEnd();
 	}
 

@@ -266,7 +266,7 @@ bool sqlrtrigger_savepoints::runQuery(const char *format) {
 	spsql.clear();
 	buildSavepointSql(format,&spsql);
 
-	debugWrite("%.*s",spsql.getSize(),spsql.getString());
+	debugWrite("%.*s",(int)spsql.getSize(),spsql.getString());
 
 	// use a dedicated cursor
 	sqlrservercursor	*spcur=cont->newCursor();

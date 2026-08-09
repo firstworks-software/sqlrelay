@@ -1996,6 +1996,35 @@
 			ends in a successful auth() for mysql, postgresql, oracle,
 			teradata and firebird, and right after auth() succeeds
 			within tds7Login() for tds (#9139)
+		fixed the same class of debugWrite()/debugStart() printf
+			conversion mismatch #9115 fixed in the protocol modules, this
+			time in the auths, triggers, querytranslations,
+			errortranslations, and directives modules - a %s against a
+			uint32_t salt in the postgresql_connectstrings and
+			postgresql_userlist auth modules, a %.*s precision argument
+			narrower than the size_t/ssize_t it was given in replay,
+			savepoints, and splitmultiinsert (triggers), and both
+			patterns.cpp files (querytranslations and errortranslations),
+			a %d against an int64_t errnum in splitmultiinsert and upsert,
+			a %lld against a uint64_t affected-row count with no cast in
+			splitmultiinsert, a %lld against an int64_t error number with
+			no cast in renumber (errortranslations), and a %s/%lld
+			mismatch against an int/int64_t argument in custom_wf
+			(directives); found the same way #9115 did, by compiling every
+			non-protocol module directory against a scratch copy of
+			sqlrserver.h with __attribute__((format(printf,...))) added
+			to debugStart()/debugWrite(); filters, loggers,
+			resultsettranslations, resultsetrowtranslations,
+			resultsetrowblocktranslations, resultsetheadertranslations,
+			bindvariabletranslations, routers, queries, moduledatas, and
+			src/server were already clean; added the format attribute for
+			real this time, as SQLR_PRINTF_FORMAT (a macro guarded on
+			__GNUC__) on the real debugStart()/debugWrite() declarations
+			in sqlrserver.h, and fixed the last mismatch it turned up - a
+			zero-length format string passed to debugWrite() five times
+			in the teradata protocol module, changed to "%s","" - so a
+			full -Werror build stays clean and the compiler now catches
+			the next one of these at compile time (#9220)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

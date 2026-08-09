@@ -132,7 +132,7 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 		singleinsert.append(values.getString(),values.getSize());
 		singleinsert.append(suffix.getString(),suffix.getSize());
 
-		debugWrite("%.*s",singleinsert.getSize(),
+		debugWrite("%.*s",(int)singleinsert.getSize(),
 					singleinsert.getString());
 
 		// copy input binds from micur to sicur
@@ -162,8 +162,9 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 						&liveconnection);
 			cont->setError(micur,errorstring,errorsize,
 						errnum,liveconnection);
-			debugWrite("error: %d - %.*s",
-					errnum,errorsize,errorstring);
+			debugWrite("error: %lld - %.*s",
+					(long long)errnum,
+					(int)errorsize,errorstring);
 			break;
 		}
 
@@ -185,7 +186,7 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 	// copy affected rows back to micur
 	cont->setAffectedRows(micur,affectedrows);
 
-	debugWrite("affected rows: %lld",affectedrows);
+	debugWrite("affected rows: %llu",(unsigned long long)affectedrows);
 	debugEnd();
 
 	// clean up

@@ -4827,7 +4827,7 @@ void sqlrprotocol_teradata::parseUsing() {
 		}
 
 		// debug
-		debugWrite("");
+		debugWrite("%s","");
 		if (inbind->valuesize) {
 			debugWrite("%d: %s(%.*s(%d))",
 						ibcount,
@@ -5040,7 +5040,7 @@ bool sqlrprotocol_teradata::parseDataParcel(
 		bindtype		*inbindtype=&(req->bindtypes[count]);
 
 		// debug
-		debugWrite("");
+		debugWrite("%s","");
 		if (inbind->valuesize) {
 			debugWrite("%s(%.*s(%d)) = ",inbind->variable,
 							inbindtype->typelen,
@@ -5619,7 +5619,7 @@ bool sqlrprotocol_teradata::parseParameterExtension(
 	inbindtype->typelen=charstring::getLength(inbindtype->type);
 	inbind->valuesize=0;
 
-	debugWrite("");
+	debugWrite("%s","");
 	if (inbind->valuesize) {
 		debugWrite("%d: %s(%.*s(%d))",ibcount,
 					inbind->variable,
@@ -5704,7 +5704,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 			b.clear();
 			debugWrite(" (%02x)",*(ptr+i));
 		}
-		debugWrite("");
+		debugWrite("%s","");
 	}
 	for (uint16_t i=0; i<ibcount; i++) {
 
@@ -5734,7 +5734,7 @@ bool sqlrprotocol_teradata::parseMultipartIndicDataParcel(
 		bindtype		*inbindtype=&(req->bindtypes[i]);
 
 		// debug
-		debugWrite("");
+		debugWrite("%s","");
 		if (inbind->valuesize) {
 			debugWrite("%s(%.*s(%d)) = ",
 					inbind->variable,

@@ -52,7 +52,7 @@ bool sqlrdirective_custom_wf::run(sqlrserverconnection *sqlrcon,
 
 	// check for rpc markers (which might follow the comments)
 	if (*line==MARKER_ODBC_RPC) {
-		debugWrite("%s...",MARKER_ODBC_RPC);
+		debugWrite("%c...",MARKER_ODBC_RPC);
 		sqlrcur->setExecuteDirect(true);
 		sqlrcur->setExecuteRpc(true);
 	}
@@ -107,7 +107,8 @@ void sqlrdirective_custom_wf::parseDirective(
 			// we would like to use the argumentsize.
 			debugWrite("%s%lld...",
 					KEYWORD_QUERYTIMEOUT,
-					charstring::convertToInteger(argument));
+					(long long)charstring::convertToInteger(
+								argument));
 			sqlrcur->setQueryTimeout(
 					charstring::convertToInteger(argument));
 		} else {

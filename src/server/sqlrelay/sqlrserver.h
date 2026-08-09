@@ -6,6 +6,15 @@
 
 #include <sqlrelay/private/sqlrserverincludes.h>
 
+// enables -Wformat checking of debugStart()/debugWrite() calls against
+// their printf-style arguments
+#ifdef __GNUC__
+	#define SQLR_PRINTF_FORMAT(fmt,args) \
+			__attribute__((format(printf,fmt,args)))
+#else
+	#define SQLR_PRINTF_FORMAT(fmt,args)
+#endif
+
 enum sqlrtxmodel_t {
 	SQLRTXMODEL_UNKNOWN=0,
 	SQLRTXMODEL_NONE,
@@ -5789,11 +5798,13 @@ class SQLRSERVER_DLLSPEC sqlrservermodule : public sqlrserverbase {
 
 		/** Starts a section of debug, writing "..." formatted using
 		 *  "title". */
-		void	debugStart(const char *title, ...);
+		void	debugStart(const char *title, ...)
+				SQLR_PRINTF_FORMAT(2,3);
 
 		/** Writes "..." formatted using "string" as a single line of
 		 *  debug. */
-		void	debugWrite(const char *string, ...);
+		void	debugWrite(const char *string, ...)
+				SQLR_PRINTF_FORMAT(2,3);
 
 		/** Dumps "size" bytes of "data" as hex. */
 		void	debugHexDump(const byte_t *data, uint64_t size);

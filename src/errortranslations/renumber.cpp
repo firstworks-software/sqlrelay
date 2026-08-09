@@ -52,7 +52,7 @@ bool sqlrerrortranslation_renumber::run(sqlrserverconnection *sqlrcon,
 	translatederror->append(error,errorlength);
 
 	debugWrite("original error number:");
-	debugWrite("\"%lld\"",errornumber);
+	debugWrite("\"%lld\"",(long long)errornumber);
 
 	int64_t	to;
 	if (map.getValue(errornumber,&to)) {
@@ -60,7 +60,7 @@ bool sqlrerrortranslation_renumber::run(sqlrserverconnection *sqlrcon,
 	}
 
 	debugWrite("translated to:");
-	debugWrite("\"%lld\"",*translatederrornumber);
+	debugWrite("\"%lld\"",(long long)*translatederrornumber);
 
 	return true;
 }

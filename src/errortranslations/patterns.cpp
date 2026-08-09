@@ -301,9 +301,9 @@ void sqlrerrortranslation_patterns::applyPattern(const char *str,
 
 		debugWrite("applying regex");
 		debugWrite("from:");
-		debugWrite("\"%.*s%s\"",pfromlen,p->from,fromellipses);
+		debugWrite("\"%.*s%s\"",(int)pfromlen,p->from,fromellipses);
 		debugWrite("to:");
-		debugWrite("\"%.*s%s\"",ptolen,p->to,toellipses);
+		debugWrite("\"%.*s%s\"",(int)ptolen,p->to,toellipses);
 
 		convstr=charstring::replace(str,
 					p->fromre,
@@ -315,9 +315,9 @@ void sqlrerrortranslation_patterns::applyPattern(const char *str,
 
 		debugWrite("applying string:");
 		debugWrite("from:");
-		debugWrite("\"%.*s%s\"",pfromlen,p->from,fromellipses);
+		debugWrite("\"%.*s%s\"",(int)pfromlen,p->from,fromellipses);
 		debugWrite("to:");
-		debugWrite("\"%.*s%s\"",ptolen,p->to,toellipses);
+		debugWrite("\"%.*s%s\"",(int)ptolen,p->to,toellipses);
 		if (p->scope==SCOPE_INSIDE_QUOTES) {
 			debugWrite("inside quotes on chunk:");
 			debugWrite("\"%s\"",str);

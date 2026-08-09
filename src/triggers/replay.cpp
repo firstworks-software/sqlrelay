@@ -1056,7 +1056,7 @@ void sqlrtrigger_replay::writeToLogFile(const char *logfile,
 	// write the log message all-at-once
 	lf.write(str,size);
 
-	debugWrite("%.*s",size,str);
+	debugWrite("%.*s",(int)size,str);
 }
 
 void sqlrtrigger_replay::endTransaction(bool commit) {
