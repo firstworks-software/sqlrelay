@@ -7095,6 +7095,27 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 				}
 				bv->value.stringval[size]='\0';
 				bv->isnull=cont->getNonNullBindValue();
+
+				// hand the segment boundaries the client
+				// wrote down to along with the bytes, so a
+				// backend that has its own notion of
+				// segments (eg. firebird) can preserve them
+				// instead of re-chunking the flat buffer
+				uint32_t	segcount=blob->segcount;
+				bv->segmentcount=(uint16_t)
+					((segcount>0xffff)?0xffff:segcount);
+				if (bv->segmentcount) {
+					size_t	seglenbytes=
+						(size_t)bv->segmentcount*
+						sizeof(uint32_t);
+					uint32_t	*seglens=(uint32_t *)
+						bindpool->allocate(
+							seglenbytes);
+					bytestring::copy(seglens,
+						blob->seglengths.getBuffer(),
+						seglenbytes);
+					bv->segmentlengths=seglens;
+				}
 			}
 		} else if (strval) {
 			bv->type=SQLRSERVERBINDVARTYPE_STRING;

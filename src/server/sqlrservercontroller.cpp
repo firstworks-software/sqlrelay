@@ -5317,21 +5317,41 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 				return false;
 			}
 		} else if (bind->type==SQLRSERVERBINDVARTYPE_BLOB) {
-			if (!cursor->inputBindBlob(
+			bool	result=(bind->segmentlengths)?
+				cursor->inputBindBlob(
 					bind->variable,
 					bind->variablesize,
 					bind->value.stringval,
 					bind->valuesize,
-					&bind->isnull)) {
+					bind->segmentlengths,
+					bind->segmentcount,
+					&bind->isnull):
+				cursor->inputBindBlob(
+					bind->variable,
+					bind->variablesize,
+					bind->value.stringval,
+					bind->valuesize,
+					&bind->isnull);
+			if (!result) {
 				return false;
 			}
 		} else if (bind->type==SQLRSERVERBINDVARTYPE_CLOB) {
-			if (!cursor->inputBindClob(
+			bool	result=(bind->segmentlengths)?
+				cursor->inputBindClob(
 					bind->variable,
 					bind->variablesize,
 					bind->value.stringval,
 					bind->valuesize,
-					&bind->isnull)) {
+					bind->segmentlengths,
+					bind->segmentcount,
+					&bind->isnull):
+				cursor->inputBindClob(
+					bind->variable,
+					bind->variablesize,
+					bind->value.stringval,
+					bind->valuesize,
+					&bind->isnull);
+			if (!result) {
 				return false;
 			}
 		}

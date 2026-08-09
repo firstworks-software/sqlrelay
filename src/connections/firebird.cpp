@@ -112,12 +112,26 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 						const char *value,
 						uint32_t valuesize,
 						int16_t *isnull);
+		bool		inputBindBlob(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
+						const uint32_t *segmentlengths,
+						uint16_t segmentcount,
+						int16_t *isnull);
 		bool		inputBindClob(const char *variable,
 						uint16_t variablesize,
 						const char *value,
 						uint32_t valuesize,
 						int16_t *isnull);
-		bool		outputBind(const char *variable, 
+		bool		inputBindClob(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
+						const uint32_t *segmentlengths,
+						uint16_t segmentcount,
+						int16_t *isnull);
+		bool		outputBind(const char *variable,
 						uint16_t variablesize,
 						char *value, 
 						uint32_t valuesize,
@@ -2656,6 +2670,19 @@ bool firebirdcursor::inputBindBlob(const char *variable,
 					const char *value,
 					uint32_t valuesize,
 					int16_t *isnull) {
+	// no segment boundaries to preserve, so write the value in
+	// MAX_LOB_CHUNK_SIZE-sized pieces of our own choosing
+	return inputBindBlob(variable,variablesize,value,valuesize,
+					NULL,0,isnull);
+}
+
+bool firebirdcursor::inputBindBlob(const char *variable,
+					uint16_t variablesize,
+					const char *value,
+					uint32_t valuesize,
+					const uint32_t *segmentlengths,
+					uint16_t segmentcount,
+					int16_t *isnull) {
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
@@ -2674,24 +2701,42 @@ bool firebirdcursor::inputBindBlob(const char *variable,
 		return false;
 	}
 
-	// write the value to the blob, MAX_LOB_CHUNK_SIZE bytes at a time
+	// write the value to the blob - one isc_put_segment() per segment
+	// the client wrote, when segment boundaries were given, or
+	// MAX_LOB_CHUNK_SIZE bytes at a time otherwise
 	uint32_t	bytesput=0;
+	uint16_t	seg=0;
 	while (bytesput<valuesize) {
-		uint16_t	bytestoput=0;
-		if (valuesize-bytesput<MAX_LOB_CHUNK_SIZE) {
-			bytestoput=valuesize-bytesput;
-		} else {
-			bytestoput=MAX_LOB_CHUNK_SIZE;
-		}
-		// (modern versions of isc_put_segment take a const char *
-		// parameter, but old versions take char * and this cast works
-		// with both)
-		if (isc_put_segment(firebirdconn->error,
+		uint32_t	segbytesleft=(segmentlengths)?
+					segmentlengths[seg]:
+					(valuesize-bytesput);
+		uint32_t	segbytesput=0;
+		while (segbytesput<segbytesleft) {
+			uint16_t	bytestoput=0;
+			if (segbytesleft-segbytesput<MAX_LOB_CHUNK_SIZE) {
+				bytestoput=segbytesleft-segbytesput;
+			} else {
+				bytestoput=MAX_LOB_CHUNK_SIZE;
+			}
+			// (modern versions of isc_put_segment take a
+			// const char * parameter, but old versions take
+			// char * and this cast works with both)
+			if (isc_put_segment(firebirdconn->error,
 					&inbindblobhandle[index],
-					bytestoput,(char *)(value+bytesput))) {
-			return false;
+					bytestoput,
+					(char *)(value+bytesput))) {
+				return false;
+			}
+			bytesput=bytesput+bytestoput;
+			segbytesput=segbytesput+bytestoput;
 		}
-		bytesput=bytesput+bytestoput;
+		seg++;
+		if (segmentlengths && seg>=segmentcount && bytesput<valuesize) {
+			// ran out of segments before running out of bytes -
+			// shouldn't happen, but fall back to chunking
+			// whatever is left as one more segment
+			segmentlengths=NULL;
+		}
 	}
 
 	// close the blob
@@ -2721,6 +2766,17 @@ bool firebirdcursor::inputBindClob(const char *variable,
 					int16_t *isnull) {
 	return inputBindBlob(variable,variablesize,
 				value,valuesize,isnull);
+}
+
+bool firebirdcursor::inputBindClob(const char *variable,
+					uint16_t variablesize,
+					const char *value,
+					uint32_t valuesize,
+					const uint32_t *segmentlengths,
+					uint16_t segmentcount,
+					int16_t *isnull) {
+	return inputBindBlob(variable,variablesize,value,valuesize,
+				segmentlengths,segmentcount,isnull);
 }
 
 bool firebirdcursor::outputBind(const char *variable, 

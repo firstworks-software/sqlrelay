@@ -125,6 +125,14 @@ enum sqlrloglevel_t {
 
 class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 	public:
+		// leaves everything unset except segmentlengths/segmentcount,
+		// matching the class' historical lack of a constructor -
+		// those two default to NULL/0 so a bind var that no
+		// protocol module ever segments (everything but firebird)
+		// can't pick up a stale pointer from a previous bind that
+		// reused this slot
+		sqlrserverbindvar() : segmentlengths(NULL), segmentcount(0) {}
+
 		char	*variable;
 		int16_t	variablesize;
 		union {
@@ -153,6 +161,13 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 		sqlrserverbindvartype_t	type;
 		byte_t			nativetype;
 		int16_t			isnull;
+
+		// for a blob/clob that arrived as more than one segment
+		// (eg. over the firebird protocol) - the byte length of
+		// each segment, in order, or NULL if the value arrived (or
+		// should be treated) as a single piece
+		const uint32_t		*segmentlengths;
+		uint16_t		segmentcount;
 };
 
 class SQLRSERVER_DLLSPEC sqlrserverbase {
@@ -4460,10 +4475,31 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  This method just calls the inputBind() method for strings,
 		 *  but may be overridden by a child class to work differently,
 		 *  for example, to operate on "value" in chunks. */
-		virtual	bool	inputBindBlob(const char *variable, 
+		virtual	bool	inputBindBlob(const char *variable,
 						uint16_t variablesize,
-						const char *value, 
+						const char *value,
 						uint32_t valuesize,
+						int16_t *isnull);
+
+		/** Binds blob value "value", of "valuesize" bytes, that
+		 *  arrived as "segmentcount" segments whose byte lengths are
+		 *  given, in order, by "segmentlengths", with null
+		 *  indicator "isnull" to input bind variable "variable" of
+		 *  "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just calls the plain inputBindBlob() method,
+		 *  discarding the segment boundaries, but may be overridden
+		 *  by a child class that can preserve them, for example, to
+		 *  write "value" to the backend one segment at a time
+		 *  instead of in arbitrarily-sized chunks. */
+		virtual	bool	inputBindBlob(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
+						const uint32_t *segmentlengths,
+						uint16_t segmentcount,
 						int16_t *isnull);
 
 		/** Binds clob value "value", of "valuesize" bytes, with
@@ -4475,10 +4511,29 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  This method just calls the inputBind() method for strings,
 		 *  but may be overridden by a child class to work differently,
 		 *  for example, to operate on "value" in chunks. */
-		virtual	bool	inputBindClob(const char *variable, 
+		virtual	bool	inputBindClob(const char *variable,
 						uint16_t variablesize,
-						const char *value, 
+						const char *value,
 						uint32_t valuesize,
+						int16_t *isnull);
+
+		/** Binds clob value "value", of "valuesize" bytes, that
+		 *  arrived as "segmentcount" segments whose byte lengths are
+		 *  given, in order, by "segmentlengths", with null
+		 *  indicator "isnull" to input bind variable "variable" of
+		 *  "variablesize" bytes.
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just calls the plain inputBindClob() method,
+		 *  discarding the segment boundaries, but may be overridden
+		 *  by a child class that can preserve them. */
+		virtual	bool	inputBindClob(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
+						const uint32_t *segmentlengths,
+						uint16_t segmentcount,
 						int16_t *isnull);
 
 		/** Binds character buffer "value", of "valuesize" bytes, and

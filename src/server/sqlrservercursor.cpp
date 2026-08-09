@@ -753,6 +753,17 @@ bool sqlrservercursor::inputBindBlob(const char *variable,
 	return inputBind(variable,variablesize,value,valuesize,isnull);
 }
 
+bool sqlrservercursor::inputBindBlob(const char *variable,
+					uint16_t variablesize,
+					const char *value,
+					uint32_t valuesize,
+					const uint32_t *segmentlengths,
+					uint16_t segmentcount,
+					int16_t *isnull) {
+	// by default, segment boundaries aren't preserved
+	return inputBindBlob(variable,variablesize,value,valuesize,isnull);
+}
+
 bool sqlrservercursor::inputBindClob(const char *variable,
 					uint16_t variablesize,
 					const char *value,
@@ -760,6 +771,17 @@ bool sqlrservercursor::inputBindClob(const char *variable,
 					int16_t *isnull) {
 	// fall back to string bind implementation
 	return inputBind(variable,variablesize,value,valuesize,isnull);
+}
+
+bool sqlrservercursor::inputBindClob(const char *variable,
+					uint16_t variablesize,
+					const char *value,
+					uint32_t valuesize,
+					const uint32_t *segmentlengths,
+					uint16_t segmentcount,
+					int16_t *isnull) {
+	// by default, segment boundaries aren't preserved
+	return inputBindClob(variable,variablesize,value,valuesize,isnull);
 }
 
 bool sqlrservercursor::outputBind(const char *variable,
