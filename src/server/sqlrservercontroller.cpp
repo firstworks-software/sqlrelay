@@ -271,6 +271,15 @@ class sqlrservercontrollerprivate {
 
 	bool		_suspendedsession;
 
+	// whether the client session about to be handled is a client
+	// resuming a session it suspended, on a new socket, as opposed to a
+	// new client.  Set from _suspendedsession right before that gets
+	// cleared for the upcoming clientSession() call, and only cleared in
+	// initSession(), which the suspended-session loop never calls
+	// between a suspend and its resume - unlike _suspendedsession, which
+	// clientSession() itself clears on every call.
+	bool		_resumedsession;
+
 	inetsocketserver	**_serversockin;
 	uint64_t		_serversockincount;
 	unixsocketserver	*_serversockun;
@@ -1683,6 +1692,9 @@ bool sqlrservercontroller::listen() {
 
 			if (success==1) {
 
+				// a client is picking up a session it suspended
+				// if we were waiting on the resume socket for one
+				pvt->_resumedsession=pvt->_suspendedsession;
 				pvt->_suspendedsession=false;
 
 				// have a session with the client
@@ -1861,6 +1873,7 @@ void sqlrservercontroller::initSession() {
 
 	pvt->_needscommitorrollback=false;
 	pvt->_suspendedsession=false;
+	pvt->_resumedsession=false;
 	for (int32_t i=0; i<pvt->_cursorcount; i++) {
 		release(pvt->_cur[i]);
 	}
@@ -7985,6 +7998,10 @@ void sqlrservercontroller::endSession() {
 	}
 
 	debugEnd();
+}
+
+bool sqlrservercontroller::isResumedSession() {
+	return pvt->_resumedsession;
 }
 
 void sqlrservercontroller::dropTempTables(sqlrservercursor *cursor) {

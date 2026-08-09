@@ -396,6 +396,15 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Ends the session with a client. */
 		void	endSession();
 
+		/** Returns true if the client session about to be handled is a
+		 *  client resuming a session it suspended with suspendSession(),
+		 *  on a new socket, rather than a new client.  Protocol modules
+		 *  that track per-session state across clientSession() calls -
+		 *  e.g. whether the client has authenticated - can use this to
+		 *  tell the two apart, since the same protocol module instance
+		 *  is reused for both. */
+		bool	isResumedSession();
+
 
 
 		// ping...

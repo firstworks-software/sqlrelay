@@ -1965,6 +1965,26 @@
 		or (unsigned long long) and using %lld, or by fixing the
 		conversion to match an argument that was already the right
 		width (#9115)
+	fixed the sqlrclient protocol module - clientSession() dispatched
+		every command in one long if/else chain with AUTH as just one
+		branch among the others, so a client could skip AUTH and send
+		a query as its first command and have it run under the pooled
+		connection's credentials; a flag now tracks whether the
+		session has authenticated, set where AUTH succeeds and checked
+		once at the top of the dispatch chain, exempting PING and
+		IDENTIFY (useful pre-login) and END_SESSION (so an
+		unauthenticated client can still hang up cleanly); the flag is
+		cleared at the top of each clientSession() call since the
+		module instance is reused across every client of a pooled
+		connection, except when sqlrservercontroller says the next
+		call is that same already-authenticated session resuming on a
+		new socket rather than a new client - added
+		sqlrservercontroller::isResumedSession() for this, backed by a
+		flag the controller sets right before a resumed client's
+		clientSession() call and clears in initSession(), which only
+		runs for a genuinely new client, so an abandoned suspend (the
+		client never reconnects and the resume socket times out) can't
+		leave the next, unrelated client pre-authenticated (#9135)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

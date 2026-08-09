@@ -47,6 +47,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		bool	getCommand(uint16_t *command);
 		sqlrservercursor	*getCursor(uint16_t command);
 		void	noAvailableCursors(uint16_t command);
+		void	sendNotAuthenticatedError();
 		bool	authCommand();
 		bool	getUserFromClient();
 		bool	getPasswordFromClient();
@@ -249,6 +250,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 
 		uint16_t	protocolversion;
 		uint16_t	endresultset;
+
+		// whether the session has authenticated.  The module instance
+		// is reused across every client of a pooled connection, so
+		// this has to be reset at the top of each clientSession() call,
+		// not just at construction - except when cont->isResumedSession()
+		// says this call is that same already-authenticated session
+		// resuming on a new socket, not a new client.
+		bool		authenticated;
 };
 
 sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
@@ -268,6 +277,7 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 	waitfordowndb=cont->getConfig()->getWaitForDownDatabase();
 	clientinfo=new char[maxclientinfosize+1];
 	clientsock=NULL;
+	authenticated=false;
 
 	if (useKrb()) {
 		ctx=getGssContext();
@@ -345,6 +355,14 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 
 	clientsock=cs;
 
+	// this instance is reused for every client of a pooled connection,
+	// so a client that gets this connection next must not inherit the
+	// previous client's authentication - unless this call is that same
+	// client resuming a session it suspended, on a new socket
+	if (!cont->isResumedSession()) {
+		authenticated=false;
+	}
+
 	// set up the socket
 	clientsock->setTranslateByteOrder(true);
 	clientsock->setNaglesAlgorithmEnabled(false);
@@ -406,10 +424,24 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			break;
 		} else
 
+		// everything else requires a successful AUTH first.  PING and
+		// IDENTIFY are exempted because they're useful as a pre-login
+		// health check, and END_SESSION because a client that never
+		// logged in still needs to be able to hang up cleanly.
+		if (!authenticated && command!=AUTH &&
+					command!=PING &&
+					command!=IDENTIFY &&
+					command!=END_SESSION) {
+			sendNotAuthenticatedError();
+			endsession=false;
+			break;
+		} else
+
 		// these commands are all handled at the connection level
 		if (command==AUTH) {
 			cont->incrementAuthCount();
 			if (authCommand()) {
+				authenticated=true;
 				cont->beginSession();
 				continue;
 			}
@@ -1009,6 +1041,21 @@ bool sqlrprotocol_sqlrclient::authCommand() {
 	clientsock->flushWriteBuffer(-1,-1);
 
 	return false;
+}
+
+void sqlrprotocol_sqlrclient::sendNotAuthenticatedError() {
+
+	debugStart("not authenticated");
+	debugEnd();
+
+	// indicate that an error has occurred and disconnect, the same as
+	// a failed auth does
+	clientsock->write((uint16_t)ERROR_OCCURRED_DISCONNECT);
+	clientsock->write((uint64_t)SQLR_ERROR_NOTAUTHENTICATED);
+	clientsock->write((uint16_t)charstring::getLength(
+				SQLR_ERROR_NOTAUTHENTICATED_STRING));
+	clientsock->write(SQLR_ERROR_NOTAUTHENTICATED_STRING);
+	clientsock->flushWriteBuffer(-1,-1);
 }
 
 bool sqlrprotocol_sqlrclient::getUserFromClient() {
