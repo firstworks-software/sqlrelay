@@ -168,7 +168,7 @@ static const char *supportedauthmethods[]={
 
 // aes-cbc with a zero iv and no padding, over whole blocks.  rudiments' aes128
 // can't do this - wrong key size, and it always pads - but aes192 and aes256
-// can, via setPadding(false).
+// can, via setUsePadding(false).
 static bool aesCbc(bool encrypt,
 			const byte_t *key, size_t keysize,
 			const byte_t *in, size_t insize,
@@ -184,7 +184,7 @@ static bool aesCbc(bool encrypt,
 	encryption	*enc=(keysize==24)?
 				(encryption *)new aes192():
 				(encryption *)new aes256();
-	enc->setPadding(false);
+	enc->setUsePadding(false);
 
 	bool	retval=false;
 	if (enc->setKey(key,keysize) && enc->setIv(iv,sizeof(iv)) &&

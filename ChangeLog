@@ -2231,6 +2231,9 @@
 		SQLParamData/SQLPutData in executeQuery(), verified live
 		against a real ASE via both the native driver and FreeTDS
 		(#9226)
+	updated the oracle userlist auth module's O5LOGON aesCbc() helper
+		for rudiments' encryption::setPadding -> setUsePadding rename
+		(rudiments #9222) (#9236)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
