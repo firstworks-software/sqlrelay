@@ -1988,12 +1988,17 @@ bool routercursor::inputBindClob(const char *variable,
 	return true;
 }
 
-bool routercursor::outputBind(const char *variable, 
+bool routercursor::outputBind(const char *variable,
 				uint16_t variablesize,
 				char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
-	currentcur->defineOutputBindString(variable+1,valuesize);
+	// valuesize is the local buffer size (declared size+1, for the null
+	// terminator). Pass the declared size to the next hop, so the
+	// buffer doesn't grow by one for every router in the chain - the
+	// remote will add its own +1 when it binds to its own backend.
+	currentcur->defineOutputBindString(variable+1,
+					(valuesize)?valuesize-1:0);
 	obv[obcount].variable=variable+1;
 	obv[obcount].type=SQLRSERVERBINDVARTYPE_STRING;
 	obv[obcount].value.stringvalue=value;
@@ -2151,8 +2156,18 @@ bool routercursor::executeQuery(const char *query, uint32_t size) {
 			uint32_t	len=
 				currentcur->getOutputBindLength(variable);
 			if (str) {
+				// clamp to the local buffer's actual size
+				// and null-terminate within bounds, rather
+				// than trusting the remote's reported length
+				uint32_t	bufsize=obv[outi].valuesize;
+				if (bufsize && len>=bufsize) {
+					len=bufsize-1;
+				}
 				charstring::copy(obv[outi].value.stringvalue,
 								str,len);
+				if (bufsize) {
+					obv[outi].value.stringvalue[len]='\0';
+				}
 			} else {
 				obv[outi].value.stringvalue[0]='\0';
 				*(obv[outi].isnull)=routerconn->nullbindvalue;

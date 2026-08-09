@@ -2025,6 +2025,17 @@
 			in the teradata protocol module, changed to "%s","" - so a
 			full -Werror build stays clean and the compiler now catches
 			the next one of these at compile time (#9220)
+		fixed the router pseudo-backend's outputBind() - it passed the
+			local buffer size (declared size+1, for the null
+			terminator) straight through as the declared size to the
+			next hop, so a string output bind grew by one byte per
+			router in the chain; it now passes the declared size, and
+			the remote adds its own +1 when it binds to its own
+			backend, as before; also, the copy-back from the remote's
+			result was bounded only by the length the remote reported,
+			with no check against the local buffer's actual size; it's
+			now clamped to that size and null-terminated within bounds
+			(#9026)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
