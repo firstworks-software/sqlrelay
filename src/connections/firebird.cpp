@@ -3281,7 +3281,11 @@ bool firebirdcursor::describeResultSet() {
 				outsqlda->sqlvar[i].sqltype==SQL_BLOB+1) {
 			outsqlda->sqlvar[i].sqldata=(char *)&field[i].blobid;
 			outsqlda->sqlvar[i].sqllen=sizeof(ISC_QUAD);
-			field[i].sqlrtype=BLOB_DATATYPE;
+			if (outsqlda->sqlvar[i].sqlsubtype==1) {
+				field[i].sqlrtype=CLOB_DATATYPE;
+			} else {
+				field[i].sqlrtype=BLOB_DATATYPE;
+			}
 			field[i].blobisopen=false;
 		} else {
 			outsqlda->sqlvar[i].sqltype=SQL_VARYING;
@@ -3779,7 +3783,8 @@ void firebirdcursor::getField(uint32_t col,
 bool firebirdcursor::getLobFieldLength(uint32_t col, uint64_t *length) {
 
 	// ignore non-blobs
-	if (field[col].sqlrtype!=BLOB_DATATYPE) {
+	if (field[col].sqlrtype!=BLOB_DATATYPE &&
+			field[col].sqlrtype!=CLOB_DATATYPE) {
 		return false;
 	}
 
@@ -3846,7 +3851,8 @@ bool firebirdcursor::getLobFieldSegment(uint32_t col,
 					uint64_t *charsread) {
 
 	// ignore non-blobs
-	if (field[col].sqlrtype!=BLOB_DATATYPE) {
+	if (field[col].sqlrtype!=BLOB_DATATYPE &&
+			field[col].sqlrtype!=CLOB_DATATYPE) {
 		return false;
 	}
 
@@ -3909,7 +3915,8 @@ bool firebirdcursor::getLobFieldSegment(uint32_t col,
 void firebirdcursor::closeLobField(uint32_t col) {
 
 	// ignore non-blobs
-	if (field[col].sqlrtype!=BLOB_DATATYPE) {
+	if (field[col].sqlrtype!=BLOB_DATATYPE &&
+			field[col].sqlrtype!=CLOB_DATATYPE) {
 		return;
 	}
 
