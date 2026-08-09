@@ -3165,10 +3165,17 @@ bool firebirdcursor::describeResultSet() {
 		}
 	}
 
-	// don't return more columns than the buffers hold - fieldcount is
-	// maxcolumncount when the count is capped, so this is the cap too
-	if (outsqlda->sqld>fieldcount) {
-		outsqlda->sqld=fieldcount;
+	// maxcolumncount capped the buffers below the select list's size -
+	// sqlvar wasn't filled in at all in that case (see above), so bail
+	// with an error rather than process it as if it were
+	if (maxcolumncount && outsqlda->sqld>(int32_t)maxcolumncount) {
+		stringbuffer	err;
+		err.append(SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL_STRING);
+		err.append(" (")->append(maxcolumncount);
+		err.append('<')->append(outsqlda->sqld)->append(')');
+		conn->cont->setError(this,err.getString(),
+				SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL,true);
+		return false;
 	}
 
 	for (uint16_t i=0; i<outsqlda->sqld; i++) {

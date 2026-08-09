@@ -1857,6 +1857,14 @@
 		like isql, refused to display it. describeResultSet() now
 		reports sub type 1 blobs as clobs, matching how the firebird
 		protocol module already classifies them (#9152)
+	fixed the firebird connection module - a maxcolumncount smaller than
+		a query's select list made describeResultSet() clamp the
+		column count and walk sqlvar entries that isc_dsql_describe()
+		never filled in (a describe into a too-small sqlda only sets
+		the count, not the descriptors), returning that many nameless,
+		zero-length, unknown-type columns instead of an error.
+		describeResultSet() now reports SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL
+		in that case, matching the mysql connection module (#9154)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
