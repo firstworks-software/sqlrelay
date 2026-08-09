@@ -22,22 +22,17 @@
 #include <rudiments/aes256.h>
 #include <rudiments/pbkdf2.h>
 #include <rudiments/sensitivevalue.h>
+#include <rudiments/csprng.h>
 
-// rudiments has sha-1, sha-512, md5, aes-192, aes-256 and pbkdf2-hmac-sha512
-// (#9100), so O5LOGON's sha-512 and aes-cbc-with-no-padding needs are covered.
-// The one primitive rudiments still doesn't have is a cryptographically
-// secure random number generator - prng is a seeded PRNG, not a
-// CSPRNG, so it can't produce the session key and salt material below.  That
-// still comes from openssl's RAND_bytes() directly.  libcrypto is already on
-// every auth module's link line, through PLUGINLIBS and RUDIMENTSLIBS in
-// config.mk, and rudiments publishes RUDIMENTS_HAS_SSL in its own installed
-// config.h, which any rudiments header pulls in.  SQL Relay has no crypto
-// probe of its own to key off instead - see #9099.  Where it's not defined,
-// the module still builds and oracle_clear_password still works; O5LOGON
-// just isn't offered.
+// rudiments has sha-1, sha-512, md5, aes-192, aes-256, pbkdf2-hmac-sha512
+// (#9100) and csprng (#9211), so O5LOGON's sha-512, aes-cbc-with-no-padding
+// and session-key/salt needs are all covered - the module no longer touches
+// openssl directly.  RUDIMENTS_HAS_SSL is still the right guard for
+// SQLRAUTH_ORACLE_O5LOGON, since rudiments' sha512/aes192/aes256 are
+// themselves openssl-backed.  Where it's not defined, the module still
+// builds and oracle_clear_password still works; O5LOGON just isn't offered.
 #if defined(RUDIMENTS_HAS_SSL)
 	#define SQLRAUTH_ORACLE_O5LOGON
-	#include <openssl/rand.h>
 #endif
 
 // verifier types, from python-oracledb's constants.pxi
@@ -406,7 +401,8 @@ static bool o5logonChallenge(const char *password,
 	byte_t	sesskey[SESSION_KEY_SIZE_11G];
 	byte_t	encsesskey[SESSION_KEY_SIZE_11G];
 	bytestring::set(sesskey+materialsize,(byte_t)padsize,padsize);
-	bool	retval=(RAND_bytes(sesskey,(int)materialsize)==1 &&
+	csprng	csr;
+	bool	retval=(csr.generateBytes(sesskey,sizeof(sesskey),materialsize) &&
 			aesCbc(true,passwordhash,passwordhashsize,
 					sesskey,sesskeysize,encsesskey));
 	if (retval) {
@@ -611,7 +607,8 @@ static bool o5logonServerResponse(const char *password,
 	byte_t	encresponse[SERVER_RESPONSE_SIZE];
 	bytestring::copy(plaintext+16,SERVER_RESPONSE_PAYLOAD,16);
 	bytestring::set(plaintext+32,16,16);
-	bool	retval=(RAND_bytes(plaintext,16)==1 &&
+	csprng	csr;
+	bool	retval=(csr.generateBytes(plaintext,sizeof(plaintext),16) &&
 			aesCbc(true,combokey,combokeysize,
 				plaintext,sizeof(plaintext),encresponse));
 	if (retval) {

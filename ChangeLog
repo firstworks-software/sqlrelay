@@ -1771,6 +1771,12 @@
 		module uses those instead - only the cryptographically secure
 		random number generator, which rudiments still doesn't have,
 		still comes from openssl directly
+	fixed the oracle userlist auth module - the session key and salt
+		bytes for o5logon came from openssl's RAND_bytes() directly,
+		because rudiments' random number classes were seeded PRNGs, not
+		CSPRNGs; rudiments now has csprng (#9211), so the module gets
+		those bytes from that instead, and no longer includes any
+		openssl header (#9099)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
