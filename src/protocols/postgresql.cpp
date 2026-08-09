@@ -36,6 +36,9 @@
 #define MESSAGE_CLOSECOMPLETE		'3'
 #define MESSAGE_TERMINATE		'X'
 
+// real postgresql servers cap the pre-auth startup packet at this size
+// (see MAX_STARTUP_PACKET_LENGTH in postgresql's pqcomm.h)
+#define MAX_STARTUP_PACKET_SIZE		10000
 
 // auth types
 #define AUTH_NONE		0
@@ -447,8 +450,24 @@ bool sqlrprotocol_postgresql::recvPacket(bool gettype) {
 		return false;
 	}
 
-	// reqpacketsize includes itself
+	// reqpacketsize includes itself, so anything smaller is invalid,
+	// and subtracting without this check would underflow
+	if (reqpacketsize<sizeof(uint32_t)) {
+		debugWrite("invalid packet data size");
+		sendErrorResponse("Invalid packet size");
+		return false;
+	}
 	reqpacketsize-=sizeof(uint32_t);
+
+	// cap the size before allocating - the startup packet (the one
+	// received without a type byte) uses postgresql's own limit,
+	// everything else is capped like a query
+	uint32_t	maxreqpacketsize=gettype?maxquerysize:MAX_STARTUP_PACKET_SIZE;
+	if (reqpacketsize>maxreqpacketsize) {
+		debugWrite("packet data size too large");
+		sendErrorResponse("Invalid packet size");
+		return false;
+	}
 
 	// packet
 	delete[] reqpacket;

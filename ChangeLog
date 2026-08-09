@@ -1789,6 +1789,15 @@
 		pool, so the next Execute on that cursor read stale or
 		dangling value pointers; the bind count is now zeroed in the
 		same breath as the pool clear (#9021)
+	fixed the postgresql protocol module - recvPacket() read the
+		declared packet size off the wire and subtracted the size
+		field's own width with no check, so a declared size below 4
+		underflowed to a huge value, and even a valid-looking size had
+		no upper bound before the allocation; reachable pre-auth via
+		the startup message and password message. reqpacketsize is now
+		rejected below 4 before the subtraction, and capped afterward -
+		against postgresql's own startup packet limit for the startup
+		message, and against maxquerysize for everything else (#9042)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
