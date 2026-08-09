@@ -2036,6 +2036,14 @@
 			with no check against the local buffer's actual size; it's
 			now clamped to that size and null-terminated within bounds
 			(#9026)
+		fixed the postgresql connection module - with typemangling
+			omitted, columnTypeFormat() still claimed the type was
+			sent as a name, but getColumnTypeName() just stringified
+			the raw oid, so every client-side type name comparison
+			failed; it now reports ids in that mode too, so clients
+			resolve a real name from the type id, which
+			getColumnType() already maps correctly regardless of
+			typemangling (#9090)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
