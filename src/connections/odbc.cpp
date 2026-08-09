@@ -450,6 +450,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*overrideschema;
 		bool		unicode;
 		const char	*ncharencoding;
+		bool		binarylobbind;
 
 		stringbuffer	errormessage;
 
@@ -688,6 +689,7 @@ odbcconnection::odbcconnection(sqlrservercontroller *cont) :
 	overrideschema=NULL;
 	unicode=true;
 	ncharencoding=NULL;
+	binarylobbind=false;
 	columninfonotvalidyeterror=NULL;
 	databasefeatures=NULL;
 }
@@ -736,6 +738,14 @@ void odbcconnection::handleConnectString() {
 		charstring::compare(ncharencoding,"UTF-16",6))) {
 		ncharencoding="UCS-2//TRANSLIT";
 	}
+
+	// generic odbc (any driver not otherwise recognized below) defaults
+	// to binding blobs as character strings, since that's the only
+	// shape known to be safe against an untested third-party driver.
+	// A site that has tested its own driver against a binary bind can
+	// opt in with this option - see the bottom of logIn().
+	binarylobbind=charstring::isYes(
+			cont->getConnectStringValue("binarylobbind"));
 
 	// unixodbc doesn't support array fetches
 	cont->setFetchAtOnce(1);
@@ -1063,6 +1073,49 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 		// parameter is aimed at, for nulls only.  (See the null arm
 		// of odbccursor::inputBind().)
 		describenullbinds=true;
+	} else if (!charstring::compare(dbmsnamebuffer,"SQL Server") ||
+				!charstring::compare(dbmsnamebuffer,"ASE")) {
+		// SAP ASE's own driver reports SQL_DBMS_NAME as exactly
+		// "SQL Server" (not "Microsoft SQL Server", which is what the
+		// arm above matches), so it needs its own arm.  FreeTDS,
+		// which is how the tds protocol module fronts ASE, reports
+		// "ASE" instead, so that's matched here too.  Like MS SQL
+		// Server, ASE won't implicitly convert a character parameter
+		// to binary, varbinary or image - it silently mangles the
+		// value instead of erroring, which is worse.  Bind blobs as
+		// binary instead.  (The trade is that a blob bind can no
+		// longer reach a char/varchar/text column.  Also, this bind
+		// shape tops out at 32768 bytes on ASE, on both drivers -
+		// anything longer comes back truncated - because the module
+		// doesn't chunk input binds with SQLPutData.)
+		usecharforlobbind=false;
+	} else if (!charstring::compare(dbmsnamebuffer,"DB2",3)) {
+		// DB2's driver reports a platform-specific SQL_DBMS_NAME
+		// (eg. "DB2/LINUXX8664"), hence the prefix compare.  Same
+		// trade as MS SQL Server/ASE above: DB2 won't implicitly
+		// convert a character bind into a blob column - it's a hard
+		// error there rather than silent mangling - so binary columns
+		// are otherwise unreachable.
+		usecharforlobbind=false;
+	} else if (!charstring::compare(dbmsnamebuffer,"Informix")) {
+		// Same trade again, for Informix's byte/blob columns, also a
+		// hard error rather than silent mangling.
+		usecharforlobbind=false;
+	}
+
+	// Unlike MS SQL Server, none of the three arms above need
+	// describenullbinds: measured live, a character null bind executes
+	// fine into a nullable binary/blob column on ASE (both drivers), DB2
+	// and Informix, so there's nothing there for SQLDescribeParam to fix.
+
+	// Generic odbc: any other driver, including third-party ones this
+	// module has never been tested against, keeps the safe default
+	// (usecharforlobbind=true) unless a site opts in explicitly via the
+	// "binarylobbind" connect string option, having tested its own
+	// driver.  That override also applies on top of the arms above, but
+	// there it's a no-op since they already cleared the flag.
+	if (binarylobbind) {
+		usecharforlobbind=false;
 	}
 
 	return true;

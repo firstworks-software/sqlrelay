@@ -331,7 +331,7 @@ For '''sqlite''' databases, the connect string syntax is "db=DB;dbtype=ID;lang=L
 
 
 [=#odbc]
-For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA"
+For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA;binarylobbind=yes/no"
 
 * '''user''': The username SQL Relay should use to log into the database.  Required.
 * '''password''': The password SQL Relay should use to log into the database.  Required.  Required.  The password is generally stored in plain text but it is possible to encrypt the password using a loadable module.  See [configguide.html#pwdenc Password Encryption]
@@ -350,6 +350,7 @@ For '''odbc''' databases, the connect string syntax is "user=USER;password=PASSW
 * '''tracefile''': Allows you to override the default ODBC trace file name, or the trace file name specified in the DSN.  If omitted then the trace file name specified in the DSN will be used.  If that is omitted then the default trace file name will be used.
 * '''detachbeforelogin''': Whether or not to detach from the controlling terminal before login.  When set to yes, the process ID's in the ODBC trace file will match the process ID of the sqlr-connection process.  Otherwise they will not.  Defaults to no.
 * '''overrideschema''': Overrides the schema that the database believes that it is in when requesting lists of tables, columns, procedures, etc.  Useful for specific databases (eg. Apache Hive) that misreport the schema.
+* '''binarylobbind''': Whether to bind blob values as raw binary rather than as a character string.  SQL Relay already does this automatically for MS SQL Server, SAP ASE, DB2, Informix and Teradata, whose drivers were tested and don't implicitly convert a character bind into a binary/blob column.  For any other driver, set this to yes only after testing it: switching to a binary bind means a blob can no longer be bound into a character (char/varchar/text) column.  Optional, defaults to no.
 
 
 [=#advanced]

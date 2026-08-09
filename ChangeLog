@@ -2134,6 +2134,17 @@
 			cursors and native binds for plain language commands
 			stay off, since freetds's ct-lib emulation doesn't
 			reliably support them (#9050)
+	fixed the odbc connection module - blob binds went out as character
+		strings for every backend but MS SQL Server and Teradata, so
+		raw bytes never reached binary/blob columns on SAP ASE (native
+		driver or FreeTDS), DB2 or Informix - a character bind into
+		those columns is a hard error on DB2 and Informix and silent
+		mangling on ASE; blobs now bind as SQL_C_BINARY on those
+		backends too, detected by SQL_DBMS_NAME the same way as MS SQL
+		Server; added a "binarylobbind" connect string option so a
+		site can opt any other, untested odbc driver into the same
+		binary bind rather than waiting on a built-in default for it
+		(#9062)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

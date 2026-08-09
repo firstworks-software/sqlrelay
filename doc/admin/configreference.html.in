@@ -411,7 +411,7 @@ or a tnsnames-style expression such as:
   <li><b>busytimeoutms</b>: The number of milliseconds to wait for a contended write lock to clear before returning an error.  Set to 0 to fail immediately when a write lock is contended.  Optional, defaults to 5000 (5 seconds).</li>
 </ul>
 
-<br/><a name="odbc"/><p>For <b>odbc</b> databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA"</p>
+<br/><a name="odbc"/><p>For <b>odbc</b> databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA;binarylobbind=yes/no"</p>
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
@@ -431,6 +431,7 @@ or a tnsnames-style expression such as:
   <li><b>tracefile</b>: Allows you to override the default ODBC trace file name, or the trace file name specified in the DSN.  If omitted then the trace file name specified in the DSN will be used.  If that is omitted then the default trace file name will be used.</li>
   <li><b>detachbeforelogin</b>: Whether or not to detach from the controlling terminal before login.  When set to yes, the process ID's in the ODBC trace file will match the process ID of the sqlr-connection process.  Otherwise they will not.  Defaults to no.</li>
   <li><b>overrideschema</b>: Overrides the schema that the database believes that it is in when requesting lists of tables, columns, procedures, etc.  Useful for specific databases (eg. Apache Hive) that misreport the schema.</li>
+  <li><b>binarylobbind</b>: Whether to bind blob values as raw binary rather than as a character string.  SQL Relay already does this automatically for MS SQL Server, SAP ASE, DB2, Informix and Teradata, whose drivers were tested and don't implicitly convert a character bind into a binary/blob column.  For any other driver, set this to yes only after testing it: switching to a binary bind means a blob can no longer be bound into a character (char/varchar/text) column.  Optional, defaults to no.</li>
 </ul>
 
 <br/><a name="advanced"/><h2>Advanced Configuration</h2>
