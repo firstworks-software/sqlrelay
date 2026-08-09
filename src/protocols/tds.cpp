@@ -4269,7 +4269,25 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 
 	debugWrite("tdstype: 0x%02x",tdstype);
 
-	if (isFixedLenType(tdstype)) {
+	// XMLTYPE_INFO (MS-TDS 2.2.5.4.3) is just a SchemaPresent byte, with
+	// no bound schema collection - never the size/collation a varlentype
+	// gets, so this bypasses the isVarLenType()/isPartLenType() chain
+	// below entirely rather than relying on it: XML is in both of those
+	// lists (shared with paramValue()'s rpc-parameter reads and
+	// bulkTypeInfo()'s bcp column descriptions, neither of which this
+	// covers), and isVarLenType() is checked first, so without this
+	// special case XML always took the varlentype branch - sent exactly
+	// like ntext, with no XMLTYPE_INFO at all.  mapType() already
+	// downgrades xml to ntext for pre-7.2 clients, so this never runs
+	// for one of those.
+	if (tdstype==TDS_TYPE_XML) {
+
+		debugWrite("xmltype...");
+
+		// SchemaPresent: no schema collection bound
+		write(&resppacket,(byte_t)0x00);
+
+	} else if (isFixedLenType(tdstype)) {
 
 		debugWrite("fixedlentype...");
 
@@ -4295,7 +4313,6 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				debugWrite("size: %d (32-bit)",size);
 				break;
 			case TDS_TYPE_NTEXT:
-			case TDS_TYPE_XML:
 				// the size must be sent in bytes, but the
 				// backend reports it in characters
 				if (size>1073741823) {
@@ -4892,12 +4909,18 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			case TDS_TYPE_UDT:
 				// FIXME: ???
 				break;
-			case TDS_TYPE_XML:
 			case TDS_TYPE_TEXT:
 			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
 			case TDS_TYPE_SSVARIANT:
 				writeLE(&resppacket,(uint32_t)0xFFFFFFFF);
+				break;
+			case TDS_TYPE_XML:
+				// PLP_NULL - an all-ones 64-bit length, distinct
+				// from the 32-bit sentinel above.  XML is always
+				// PLP-encoded, never the plain length-prefixed
+				// form text/ntext/image use.
+				writeLE(&resppacket,(uint64_t)0xFFFFFFFFFFFFFFFFULL);
 				break;
 		}
 
@@ -5239,7 +5262,6 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			debugWrite("%.*s",(int)fieldsize,field);
 			}
 			break;
-		case TDS_TYPE_XML:
 		case TDS_TYPE_NTEXT:
 			{
 			// the data is ucs-2, and the size is in bytes
@@ -5252,6 +5274,36 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			delete[] field16;
 			debugWrite("size: %lld",
 				(long long)(field16length*sizeof(ucs2_t)));
+			debugWrite("data: ");
+			debugWrite("%.*s",(int)fieldsize,field);
+			}
+			break;
+		case TDS_TYPE_XML:
+			{
+			// PLP (MS-TDS 2.2.5.2.3.2): an 8-byte total length,
+			// then the data as one chunk (a 4-byte chunk length
+			// followed by the chunk's bytes), then a 4-byte zero
+			// length chunk to terminate - the whole value is
+			// already in hand, so there's no reason to split it
+			// into more than one chunk.  A zero length chunk *is*
+			// the terminator, so an empty value skips the data
+			// chunk entirely rather than sending one with nothing
+			// in it - a zero-length data chunk followed by the
+			// terminator would be an extra 4 bytes the client
+			// doesn't expect, corrupting whatever follows it.
+			size_t	field16length;
+			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
+							&field16length);
+			uint64_t	totalsize=
+				(uint64_t)(field16length*sizeof(ucs2_t));
+			writeLE(&resppacket,totalsize);
+			if (totalsize) {
+				writeLE(&resppacket,(uint32_t)totalsize);
+				write(&resppacket,field16,field16length);
+			}
+			writeLE(&resppacket,(uint32_t)0);
+			delete[] field16;
+			debugWrite("size: %lld",(long long)totalsize);
 			debugWrite("data: ");
 			debugWrite("%.*s",(int)fieldsize,field);
 			}

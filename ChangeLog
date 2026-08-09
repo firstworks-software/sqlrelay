@@ -2252,6 +2252,14 @@
 		how a real server keeps the connection alive, instead of
 		tearing the connection down outright (#9205)
 
+	fixed the tds protocol module's COLMETADATA writer to send a
+		minimal XMLTYPE_INFO (MS-TDS 2.2.5.4.3) for an xml column,
+		and its row writer to PLP-encode xml values and nulls,
+		instead of sending xml exactly like ntext (a plain length-
+		prefixed value with no XMLTYPE_INFO at all), which made
+		ct_describe() report a generic text type instead of the
+		longchar type a real server reports for xml (#9201)
+
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
 	fixed setProtocolIsBingEndian() (assignment reversal)
