@@ -1865,6 +1865,16 @@
 		zero-length, unknown-type columns instead of an error.
 		describeResultSet() now reports SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL
 		in that case, matching the mysql connection module (#9154)
+	fixed the postgresql protocol module - bindBinaryParameter()'s
+		fixed-width cases (bool, int2, int4, int8, float4, float8)
+		and the numeric case's digit loop read past the end of the
+		request packet when a binary bind's declared paramsize or
+		actual packet length was too short, and the numeric case
+		never wrote back through rpout, leaving bind() to resume
+		parsing the rest of the packet from the wrong offset. Each
+		case now checks the read size against both paramsize and
+		the bytes remaining in the packet before reading, and the
+		numeric case now advances the caller's pointer (#9217)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

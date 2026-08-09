@@ -144,6 +144,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 						sqlrserverbindvar *bv,
 						const byte_t **rpout);
 		bool	bindBinaryParameter(const byte_t *rp,
+						const byte_t *rpend,
 						uint32_t oid,
 						uint32_t paramsize,
 						memorypool *bindpool,
@@ -2173,7 +2174,7 @@ bool sqlrprotocol_postgresql::bind() {
 				return sendErrorResponse("ERROR","26000",
 						"Invalid bind parameters");
 			}
-			if (!bindBinaryParameter(rp,oids[i],
+			if (!bindBinaryParameter(rp,rpend,oids[i],
 						paramsize,bindpool,bv,&rp)) {
 				delete[] paramformatcodes;
 				return false;
@@ -2246,6 +2247,7 @@ void sqlrprotocol_postgresql::bindTextParameter(const byte_t *rp,
 }
 
 bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
+						const byte_t *rpend,
 						uint32_t oid,
 						uint32_t paramsize,
 						memorypool *bindpool,
@@ -2261,6 +2263,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 16: //bool
 		case 1000: //_bool
 			{
+			// bounds-check before reading
+			if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(byte_t) ||
+						paramsize<sizeof(byte_t)) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			byte_t	value=0;
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			read(rp,&value,rpout);
@@ -2271,6 +2280,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 21: //int2
 		case 1005: //_int2
 			{
+			// bounds-check before reading
+			if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(int16_t) ||
+						paramsize<sizeof(int16_t)) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			int16_t	value=0;
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			readBE(rp,(uint16_t *)&value,rpout);
@@ -2281,6 +2297,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 23: //int4
 		case 1007: //_int4
 			{
+			// bounds-check before reading
+			if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(int32_t) ||
+						paramsize<sizeof(int32_t)) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			int32_t	value=0;
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			readBE(rp,(uint32_t *)&value,rpout);
@@ -2291,6 +2314,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 20: //int8
 		case 1016: //_int8
 			{
+			// bounds-check before reading
+			if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(int64_t) ||
+						paramsize<sizeof(int64_t)) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			int64_t	value=0;
 			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
 			readBE(rp,(uint64_t *)&value,rpout);
@@ -2301,6 +2331,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 700: //float4
 		case 1021: //_float4
 			{
+			// bounds-check before reading
+			if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(uint32_t) ||
+						paramsize<sizeof(uint32_t)) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
 			uint32_t	val;
 			readBE(rp,&val,rpout);
@@ -2315,6 +2352,13 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 701: //float8
 		case 1022: //_float8
 			{
+			// bounds-check before reading
+			if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(uint64_t) ||
+						paramsize<sizeof(uint64_t)) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
 			uint64_t	val;
 			readBE(rp,&val,rpout);
@@ -2365,6 +2409,14 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 1700: //numeric
 		case 1231: //_numeric
 			{
+			// bounds-check the header before reading
+			uint32_t	headersize=4*sizeof(uint16_t);
+			if (rp>rpend || (uint32_t)(rpend-rp)<headersize ||
+						paramsize<headersize) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			uint16_t	ndigits;
 			uint16_t	weight;
 			uint16_t	sign;
@@ -2373,6 +2425,15 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			readBE(rp,&weight,&rp);
 			readBE(rp,&sign,&rp);
 			readBE(rp,&dscale,&rp);
+
+			// bounds-check the digits before reading
+			uint32_t	digitssize=2*(uint32_t)ndigits;
+			if (rp>rpend || (uint32_t)(rpend-rp)<digitssize ||
+					paramsize-headersize<digitssize) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter size");
+				return false;
+			}
 			stringbuffer	str;
 			if (sign) {
 				str.append('-');
@@ -2386,7 +2447,10 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 					str.printf("%04d",digit);
 				}
 			}
-			
+
+			// advance the caller's pointer past this parameter
+			*rpout=rp;
+
 			bv->type=SQLRSERVERBINDVARTYPE_STRING;
 			bv->valuesize=str.getSize();
 			bv->value.stringval=(char *)bindpool->
