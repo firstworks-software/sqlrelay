@@ -2162,6 +2162,19 @@
 		- a trailing ";" was left as part of the name; the walk now
 			stops there too
 		verified live against a real ASE via both sap and freetds (#9053)
+	fixed the odbc connection module - a query with output binds and more
+		than one result set still only ever exposed the first result
+		set to the client, because cacheRowsAndDrainResultSets() (added
+		for #8970) drained every result set behind the first with its
+		own SQLMoreResults() loop to make the driver write the output
+		bind buffers, without keeping anything from them; it now
+		buffers each of those result sets' own column metadata and
+		rows too (falling back to draining without buffering, same as
+		before, for one that's too big to buffer or contains lob
+		columns), and nextResultSet() replays them once the driver's
+		own SQLMoreResults() walk is exhausted; verified live against a
+		real mssql backend with output-bind procedures returning two
+		and three result sets (#9198)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

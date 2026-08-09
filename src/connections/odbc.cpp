@@ -70,6 +70,28 @@ struct odbccolumn {
 	uint16_t	tablesize;
 };
 
+// A result set buffered by cacheRowsAndDrainResultSets(), to get at output
+// binds behind it - both its column metadata and its rows, so
+// odbccursor::nextResultSet() can replay it once the drain has walked off
+// of the end of the driver's own result sets (see cacheResultSetsAfterFirst()
+// in odbc.cpp).
+struct odbccachedresultset {
+	odbccachedresultset() : column(NULL), ncols(0), affectedrows(0) {
+		rows.setManageArrayValues(true);
+	}
+	~odbccachedresultset() {
+		delete[] column;
+	}
+	odbccolumn					*column;
+	SQLSMALLINT					ncols;
+	#ifdef SQLROWCOUNT_SQLLEN
+	SQLLEN						affectedrows;
+	#else
+	SQLINTEGER					affectedrows;
+	#endif
+	singlylinkedlist<unsigned char *>		rows;
+};
+
 struct datebind {
 	int16_t			*year;
 	int16_t			*month;
@@ -225,9 +247,17 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		uint16_t	getColumnTableSize(uint32_t i);
 		bool		noRowsToReturn();
 		bool		cacheRowsAndDrainResultSets();
-		bool		cacheCurrentRow(uint64_t *cachedbytes);
+		bool		cacheResultSetsAfterFirst(uint64_t *cachedbytes);
+		bool		cacheCurrentRow(
+					singlylinkedlist<unsigned char *> *rows,
+					uint64_t *cachedbytes);
 		void		fetchCachedRow();
 		void		clearCachedRows();
+		void		clearCachedResultSets();
+		void		restoreColumnBuffers(odbccolumn *savedcolumn,
+							SQLSMALLINT savedncols);
+		void		useNextCachedResultSet(
+						bool *nextresultsetavailable);
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
 					const char **field,
@@ -312,6 +342,11 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		singlylinkedlist< unsigned char * >	cachedrows;
 		listnode< unsigned char * >		*currentcachedrow;
 		bool					cachedrowsarecomplete;
+
+		// result sets buffered behind the current one, by
+		// cacheRowsAndDrainResultSets(), to be replayed by
+		// nextResultSet() once resultsetsdrained is set
+		singlylinkedlist< odbccachedresultset * >	cachedresultsets;
 
 		bool		resultsetsdrained;
 
@@ -3673,6 +3708,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	cachedrows.setManageArrayValues(true);
 	currentcachedrow=NULL;
 	cachedrowsarecomplete=false;
+	cachedresultsets.setManageValues(true);
 	resultsetsdrained=false;
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.setManageArrayValues(true);
@@ -5015,6 +5051,7 @@ void odbccursor::initializeRowCounts() {
 	affectedrows=-1;
 	resultsetsdrained=false;
 	clearCachedRows();
+	clearCachedResultSets();
 }
 
 bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
@@ -5790,7 +5827,7 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 		}
 	}
 
-	// buffer the rows
+	// buffer the rows of this, the current result set
 	uint64_t	cachedbytes=0;
 	for (;;) {
 
@@ -5807,16 +5844,66 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 		// and the rest still come from the statement, so no row is
 		// lost.  The result sets just don't get drained, so the output
 		// binds keep whatever they were initialized to.
-		if (!cacheCurrentRow(&cachedbytes)) {
+		if (!cacheCurrentRow(&cachedrows,&cachedbytes)) {
 			currentcachedrow=cachedrows.getFirst();
 			cachedrowsarecomplete=false;
 			return true;
 		}
 	}
 
-	// drain the rest of the result sets, which is what finally makes the
-	// driver write the output bind buffers
+	// Save this result set's own column metadata before walking off of
+	// it below.  Draining the rest of the result sets to get at the
+	// output binds behind them means advancing past this one with
+	// SQLMoreResults(), and any result set behind it that also gets
+	// buffered (see cacheResultSetsAfterFirst(), so nextResultSet() can
+	// replay the walk) reuses handleColumns(), which overwrites
+	// column[]/ncols/affectedrows in place as it goes.
+	odbccolumn	*firstcolumn=new odbccolumn[ncols];
+	for (SQLSMALLINT i=0; i<ncols; i++) {
+		firstcolumn[i]=column[i];
+	}
+	SQLSMALLINT	firstncols=ncols;
+
+	// walk and buffer whatever result sets come after this one, which is
+	// what finally makes the driver write the output bind buffers
+	bool	drained=cacheResultSetsAfterFirst(&cachedbytes);
+
+	// restore this result set's own column metadata/row count - the
+	// caller is about to build the result set header from it
+	restoreColumnBuffers(firstcolumn,firstncols);
+	delete[] firstcolumn;
+
+	currentcachedrow=cachedrows.getFirst();
+	cachedrowsarecomplete=true;
+
+	if (!drained) {
+		return false;
+	}
+
+	resultsetsdrained=true;
+
+	return true;
+}
+
+// Walks whatever result sets come after the current one with
+// SQLMoreResults(), buffering each one's column metadata and rows (see
+// odbccachedresultset) so nextResultSet() can replay them once the walk
+// reaches the end.  A result set that can't be buffered - too big (the
+// same cap cacheCurrentRow() applies to the current result set), or
+// containing lob columns (which are read live with SQLGetData, not bound)
+// - can't be un-advanced-past once SQLMoreResults() has moved beyond it,
+// so buffering just stops there; per ODBC, SQLMoreResults() discards
+// whatever of a result set wasn't fetched, so the walk still runs on to
+// SQL_NO_DATA to get the output binds written, it just stops adding to the
+// cache. Returns false only on a real driver error.
+bool odbccursor::cacheResultSetsAfterFirst(uint64_t *cachedbytes) {
+
+	clearCachedResultSets();
+
+	bool	stillcaching=true;
+
 	for (;;) {
+
 		erg=SQLMoreResults(stmt);
 		#if defined(SQL_NO_DATA)
 		if (erg==SQL_NO_DATA) {
@@ -5830,16 +5917,76 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 			return false;
 		}
-	}
 
-	currentcachedrow=cachedrows.getFirst();
-	cachedrowsarecomplete=true;
-	resultsetsdrained=true;
+		// once a result set couldn't be buffered, there's no way back
+		// to it - just keep draining without describing or binding
+		// anything further
+		if (!stillcaching) {
+			continue;
+		}
+
+		// Column bindings persist by ordinal across SQLMoreResults(),
+		// and a stale binding for an ordinal the new result set
+		// doesn't have is left alone rather than cleared - so this
+		// result set has to be described and bound from scratch,
+		// exactly like nextResultSet() does.
+		if (!handleColumns(true,true)) {
+			return false;
+		}
+		erg=SQLRowCount(stmt,&affectedrows);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			return false;
+		}
+
+		bool	cacheable=true;
+		for (SQLSMALLINT i=0; i<ncols; i++) {
+			if (isLob(column[i].type)) {
+				cacheable=false;
+				break;
+			}
+		}
+
+		odbccachedresultset	*crs=NULL;
+		if (cacheable) {
+			crs=new odbccachedresultset;
+			crs->ncols=ncols;
+			crs->column=new odbccolumn[ncols];
+			for (SQLSMALLINT i=0; i<ncols; i++) {
+				crs->column[i]=column[i];
+			}
+			crs->affectedrows=affectedrows;
+		}
+
+		for (;;) {
+			bool	error=false;
+			if (!fetchRow(&error)) {
+				if (error) {
+					delete crs;
+					return false;
+				}
+				break;
+			}
+			if (crs && !cacheCurrentRow(&(crs->rows),cachedbytes)) {
+				// too big to buffer along with everything
+				// cached so far - stop caching this result
+				// set (and, from here on, any further one)
+				delete crs;
+				crs=NULL;
+			}
+		}
+
+		if (crs) {
+			cachedresultsets.append(crs);
+		} else {
+			stillcaching=false;
+		}
+	}
 
 	return true;
 }
 
-bool odbccursor::cacheCurrentRow(uint64_t *cachedbytes) {
+bool odbccursor::cacheCurrentRow(singlylinkedlist<unsigned char *> *rows,
+						uint64_t *cachedbytes) {
 
 	// A buffered row is the indicator and data of each column, in column
 	// order, packed one after another.  A null or empty field contributes
@@ -5867,11 +6014,26 @@ bool odbccursor::cacheCurrentRow(uint64_t *cachedbytes) {
 			ptr=ptr+indicator[i];
 		}
 	}
-	cachedrows.append(cachedrow);
+	rows->append(cachedrow);
 
 	*cachedbytes=*cachedbytes+rowsize;
 
 	return true;
+}
+
+// (Re)establishes column[]/ncols (and the field[]/indicator[] buffers that
+// go with them) as "savedcolumn"/"savedncols", respecting the same
+// maxcolumncount-driven reuse-vs-reallocate rule as handleColumns().
+void odbccursor::restoreColumnBuffers(odbccolumn *savedcolumn,
+						SQLSMALLINT savedncols) {
+	ncols=savedncols;
+	if (!conn->cont->getMaxColumnCount()) {
+		deallocateResultSetBuffers();
+		allocateResultSetBuffers(ncols);
+	}
+	for (SQLSMALLINT i=0; i<ncols; i++) {
+		column[i]=savedcolumn[i];
+	}
 }
 
 void odbccursor::fetchCachedRow() {
@@ -5893,6 +6055,10 @@ void odbccursor::clearCachedRows() {
 	cachedrows.clear();
 	currentcachedrow=NULL;
 	cachedrowsarecomplete=false;
+}
+
+void odbccursor::clearCachedResultSets() {
+	cachedresultsets.clear();
 }
 
 bool odbccursor::fetchRow(bool *error) {
@@ -6079,9 +6245,12 @@ bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
 		return true;
 	}
 
-	// once cacheRowsAndDrainResultSets() has walked off of the end of the
-	// result sets, there's nothing left to advance to
+	// Once cacheRowsAndDrainResultSets() has walked off of the end of the
+	// driver's own result sets, there's nothing left there to advance to -
+	// but serve whatever it buffered along the way instead of reporting
+	// none available.
 	if (resultsetsdrained) {
+		useNextCachedResultSet(nextresultsetavailable);
 		return true;
 	}
 
@@ -6132,9 +6301,46 @@ bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
 	return true;
 }
 
+// Pops the next result set that cacheRowsAndDrainResultSets() buffered (see
+// cacheResultSetsAfterFirst()) and makes it the active one, exactly as if
+// SQLMoreResults() had just advanced onto it live: column[]/ncols/
+// affectedrows describe it, and its rows are served through cachedrows/
+// currentcachedrow, the same as the first result set's own cached rows.
+void odbccursor::useNextCachedResultSet(bool *nextresultsetavailable) {
+
+	listnode<odbccachedresultset *>	*node=cachedresultsets.getFirst();
+	if (!node) {
+		return;
+	}
+
+	odbccachedresultset	*crs=node->getValue();
+	cachedresultsets.setManageValues(false);
+	cachedresultsets.remove(node);
+	cachedresultsets.setManageValues(true);
+
+	restoreColumnBuffers(crs->column,crs->ncols);
+	affectedrows=crs->affectedrows;
+
+	// take the buffered rows over into cachedrows rather than copying
+	// them again
+	clearCachedRows();
+	for (listnode<unsigned char *> *n=crs->rows.getFirst();
+						n; n=n->getNext()) {
+		cachedrows.append(n->getValue());
+	}
+	crs->rows.setManageArrayValues(false);
+	currentcachedrow=cachedrows.getFirst();
+	cachedrowsarecomplete=true;
+
+	delete crs;
+
+	*nextresultsetavailable=true;
+}
+
 void odbccursor::closeResultSet() {
 
 	clearCachedRows();
+	clearCachedResultSets();
 	resultsetsdrained=false;
 
 	if (stmt) {
