@@ -482,9 +482,6 @@ static const char *dbfeaturenames[]={
 #define SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY 900023
 #define SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY_STRING \
 	"Bulk load prepare failed - invalid query."
-#define SQLR_ERROR_BULKLOADJOIN_IPC_KEY 900023
-#define SQLR_ERROR_BULKLOADJOIN_IPC_KEY_STRING \
-	"Bulk load join failed - failed to generate ipc key."
 #define SQLR_ERROR_BULKLOADJOIN_SHM 900024
 #define SQLR_ERROR_BULKLOADJOIN_SHM_STRING \
 	"Bulk load join failed - failed to attach to shm segment."
@@ -505,6 +502,11 @@ static const char *dbfeaturenames[]={
 #define SQLR_ERROR_NOTAUTHENTICATED 900035
 #define SQLR_ERROR_NOTAUTHENTICATED_STRING \
 	"Not authenticated."
+// this one is out of order because it had previously been set to 900023, same
+// as SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY, and it needed to be reassigned
+#define SQLR_ERROR_BULKLOADJOIN_IPC_KEY 900036
+#define SQLR_ERROR_BULKLOADJOIN_IPC_KEY_STRING \
+	"Bulk load join failed - failed to generate ipc key."
 
 
 #define SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK 999995
