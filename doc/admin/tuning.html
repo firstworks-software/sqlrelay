@@ -332,7 +332,7 @@ host/port.</p>
 
 <a name="handoff""/><h2>Use a Platform That Supports File Descriptor Passing</h2>
 
-<p>When a client connects to the SQL Relay listener process, it waits for an available database connection, then either hands the client off to that process via file descriptor passing, or proxies the incoming client, ferrying data back and forth between it and the database connecton process.</p>
+<p>When a client connects to the SQL Relay listener process, it waits for an available database connection, then either hands the client off to that process via file descriptor passing, or proxies the incoming client, ferrying data back and forth between it and the database connection process.</p>
 
 <p>Whether to pass or proxy can be specified by the "handoff" parameter in ths configuration file.  If you omit the handoff parameter or set handoff="pass" then file descriptor passing will be used.  If you set handoff="proxy" then proxying will be used.</p>
 
