@@ -3,6 +3,7 @@
 
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
+#include <rudiments/bytestring.h>
 #include <rudiments/character.h>
 #include <rudiments/prng.h>
 #include <rudiments/process.h>
@@ -2778,6 +2779,12 @@ bool sqlrprotocol_mysql::getRequest(char *request) {
 	if (!recvPacket()) {
 		return false;
 	}
+	// A zero length packet has no command byte.  reqpacketpool
+	// doesn't zero its buffer, so reading one back would leak
+	// whatever byte a previous packet left there.
+	if (!reqpacketsize) {
+		return false;
+	}
 	*request=*(reqpacket);
 	return true;
 }
@@ -2794,6 +2801,9 @@ bool sqlrprotocol_mysql::comInitDb() {
 
 	// analogous to "use db"
 
+	// getRequest() rejects a zero length packet before dispatching to
+	// any command handler, so rpsize is always at least 1 here and
+	// rpsize-1 can't underflow.
 	const char	*rp=(const char *)reqpacket;
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
@@ -2949,6 +2959,9 @@ bool sqlrprotocol_mysql::comCreateDb(sqlrservercursor *cursor) {
 
 	// creates a new database
 
+	// getRequest() rejects a zero length packet before dispatching to
+	// any command handler, so rpsize is always at least 1 here and
+	// rpsize-1 can't underflow.
 	const char	*rp=(const char *)reqpacket;
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
@@ -2970,6 +2983,9 @@ bool sqlrprotocol_mysql::comDropDb(sqlrservercursor *cursor) {
 
 	// drops an existing database
 
+	// getRequest() rejects a zero length packet before dispatching to
+	// any command handler, so rpsize is always at least 1 here and
+	// rpsize-1 can't underflow.
 	const char	*rp=(const char *)reqpacket;
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
@@ -2995,7 +3011,12 @@ bool sqlrprotocol_mysql::comQuery(sqlrservercursor *cursor) {
 	const char	*query=(const char *)reqpacket+1;
 	uint64_t	querysize=reqpacketsize-1;
 
-	// bounds checking
+	// If reqpacketsize were 0, querysize would underflow to a huge
+	// value, but getRequest() already rejects a zero length packet
+	// before dispatching here, so this can't happen.  Even so, the
+	// bounds check below also happens to catch an underflowed
+	// querysize (it's enormous), so keep this check ahead of any use
+	// of querysize.
 	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
@@ -3954,10 +3975,19 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	rp++;
 	rpsize--;
 
-	// get the table
-	char	*table=charstring::duplicate((const char *)rp);
-	rp+=charstring::getLength(table);
-	rpsize-=charstring::getLength(table);
+	// Get the table.  It's a null-terminated string, but the packet
+	// buffer carries no terminator of its own, so the null has to be
+	// found within the bytes that are actually left in the packet
+	// rather than by an unbounded scan.
+	const byte_t	*nullterm=(const byte_t *)
+			bytestring::findFirst(rp,(byte_t)'\0',rpsize);
+	if (!nullterm) {
+		return sendErrPacket(1105,"malformed packet","HY000");
+	}
+	uint64_t	tablesize=nullterm-rp;
+	char		*table=charstring::duplicate((const char *)rp,tablesize);
+	rp+=tablesize;
+	rpsize-=tablesize;
 
 	// get the wildcard
 	char	*wild=charstring::duplicate((const char *)rp,rpsize);
@@ -4303,7 +4333,12 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 	const char	*query=(const char *)reqpacket+1;
 	uint64_t	querysize=reqpacketsize-1;
 
-	// bounds checking
+	// If reqpacketsize were 0, querysize would underflow to a huge
+	// value, but getRequest() already rejects a zero length packet
+	// before dispatching here, so this can't happen.  Even so, the
+	// bounds check below also happens to catch an underflowed
+	// querysize (it's enormous), so keep this check ahead of any use
+	// of querysize.
 	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
@@ -4878,6 +4913,12 @@ bool sqlrprotocol_mysql::comStmtSendLongData() {
 	uint64_t	rpsize=reqpacketsize;
 	rp++;
 	rpsize--;
+
+	// a well formed packet has at least a statement id and a
+	// parameter id following the command byte
+	if (rpsize<sizeof(uint32_t)+sizeof(uint16_t)) {
+		return true;
+	}
 
 	// get statement id
 	uint32_t	stmtid;

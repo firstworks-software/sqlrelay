@@ -302,6 +302,13 @@
 		bind variable translation rewrite @-prefixed user-defined
 		variables (eg. "set @x=1") as bind markers and then run them
 		with no bind values
+	fixed the mysql protocol module's comFieldList(), comInitDb(),
+		comCreateDb(), comDropDb() and comStmtSendLongData(), which
+		computed a remaining-bytes count by subtracting from an
+		attacker controlled packet size with no bounds check, so a
+		short or zero length packet underflowed the count and drove
+		an oversized allocation and copy, crashing the sqlr-connection
+		process
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
