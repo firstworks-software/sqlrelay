@@ -908,6 +908,17 @@ SQLRETURN SQL_API SQLCloseCursor(SQLHSTMT statementhandle) {
 static SQLSMALLINT SQLR_MapColumnType(CONN *conn,
 					sqlrcursor *cur, uint32_t col) {
 	const char	*ctype=cur->getColumnType(col);
+	// postgresql spells an array type with a leading underscore
+	// under typemangling=lookup; sqlrelay's own spelling appends
+	// _ARRAY to the element type instead - normalize to that
+	char		arraytypebuffer[64];
+	if (ctype && ctype[0]=='_' &&
+			charstring::getLength(ctype+1)<
+					sizeof(arraytypebuffer)-6) {
+		charstring::copy(arraytypebuffer,ctype+1);
+		charstring::append(arraytypebuffer,"_ARRAY");
+		ctype=arraytypebuffer;
+	}
 	if (!charstring::compareIgnoringCase(ctype,"UNKNOWN")) {
 		return SQL_UNKNOWN_TYPE;
 	}

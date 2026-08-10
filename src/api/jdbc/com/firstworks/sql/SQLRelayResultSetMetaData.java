@@ -68,7 +68,17 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		// uppercase with Locale.ROOT - a turkish locale maps i to a
 		// dotted capital I, which matches nothing
 		// ("" rather than null - java throws on a switch over null)
-		return (type==null)?"":type.toUpperCase(Locale.ROOT);
+		if (type==null) {
+			return "";
+		}
+		String	uppertype=type.toUpperCase(Locale.ROOT);
+		// postgresql spells an array type with a leading underscore
+		// under typemangling=lookup; sqlrelay's own spelling appends
+		// _ARRAY to the element type instead - normalize to that
+		if (uppertype.startsWith("_")) {
+			return uppertype.substring(1)+"_ARRAY";
+		}
+		return uppertype;
 	}
 
 	public

@@ -329,7 +329,19 @@ namespace SQLRClient
          *  which matches nothing. */
         private static String normalizeTypeName(String type)
         {
-            return (type == null) ? null : type.ToUpperInvariant();
+            if (type == null)
+            {
+                return null;
+            }
+            String uppertype = type.ToUpperInvariant();
+            // postgresql spells an array type with a leading underscore
+            // under typemangling=lookup; sqlrelay's own spelling appends
+            // _ARRAY to the element type instead - normalize to that
+            if (uppertype.StartsWith("_"))
+            {
+                return uppertype.Substring(1) + "_ARRAY";
+            }
+            return uppertype;
         }
 
         /** Gets the Type information corresponding to the type of Object that

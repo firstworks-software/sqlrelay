@@ -295,6 +295,9 @@
 		disagreed about a plain (non-array) postgresql bytea column
 	fixed SQLR_ERROR_BULKLOADJOIN_IPC_KEY which previously had the same
 		error number as SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY
+	fixed the odbc, jdbc and c# drivers to recognize postgresql's
+		underscore-prefixed array type names under typemangling=lookup,
+		not just sqlrelay's own X_ARRAY spelling
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
