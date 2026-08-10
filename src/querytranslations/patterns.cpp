@@ -352,10 +352,10 @@ void sqlrquerytranslation_patterns::matchAndReplace(const char *str,
 			break;
 		}
 
-		// get the bounds of the matching chunk
-		int32_t		mi=p->matchre->getSubstringCount()-1;
-		const char	*matchstart=p->matchre->getSubstringStart(mi);
-		const char	*matchend=p->matchre->getSubstringEnd(mi);
+		// get the bounds of the matching chunk,
+		// substring 0 is the whole match, not a capture group
+		const char	*matchstart=p->matchre->getSubstringStart(0);
+		const char	*matchend=p->matchre->getSubstringEnd(0);
 
 		// move on if they're the same
 		if (matchend==matchstart) {

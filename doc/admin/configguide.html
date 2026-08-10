@@ -6348,6 +6348,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.</p>
 
+<p>When match is type="regex" and the pattern contains capture groups, it's the whole match, not a capture group, that gets passed down to nested tags.  Capture groups may still be used for grouping and alternation within the pattern; they just don't narrow what nested tags see.</p>
+
 <p>Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.</p>
 
 <p>Though more than 2 levels is rarely necessary, any level of nesting is supported:</p>
@@ -7003,6 +7005,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.</p>
 
 <p>The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.</p>
+
+<p>When match is type="regex" and the pattern contains capture groups, it's the whole match, not a capture group, that gets passed down to nested tags.  Capture groups may still be used for grouping and alternation within the pattern; they just don't narrow what nested tags see.</p>
 
 <p>Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.</p>
 

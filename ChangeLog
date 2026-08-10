@@ -330,6 +330,10 @@
 	fixed the querytranslations and errortranslations patterns modules -
 		a match= regex that could match a zero-length string made
 		matchAndReplace() spin forever, hanging sqlr-connection
+	fixed the querytranslations and errortranslations patterns modules -
+		a match= regex with capture groups passed only the last capture
+		group down to nested pattern tags instead of the whole match,
+		consistent with the fix to charstring::replace() in rudiments
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
