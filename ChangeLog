@@ -343,6 +343,12 @@
 		website pages' Kerberos and TLS sections, and in the tuning
 		guide, matching typo fixes already made in the client api
 		headers
+	documented the php pdo driver's dsn options in phppdo.wt, including
+		connecttime, tlsdepth, bindvariabledelimiters and
+		emulatepreparesunicodestrings, which were missing, and
+		connecttime's units (seconds, with a decimal fraction for
+		sub-second values); also removed columnnamecase, which was
+		documented there but isn't a php pdo dsn option
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
