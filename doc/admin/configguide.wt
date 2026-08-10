@@ -4477,7 +4477,7 @@ The following attributes are currently supported:
 * '''dateformat''' - Similar to datetimeformat but if a date without the time component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.
 * '''timeformat''' - Similar to datetimeformat but if a time without the date component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.
 * '''dateddmm''' - If set to "yes" then dates are assumed to be in the DD-MM-YYYY format (with days leading), as opposed to MM-DD-YYYY format (with months leading).  This is important for interpreting dates like 03-04-2000.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.
-* '''dateyyddmm''' - If set to "yes" then dates are assumed to be in the YYYY-DD-MM format (with days leading), as opposed to YYYY-MM-DD-YYYY (with months leading).  This is important for interpreting dates like 2000-03-04.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.
+* '''dateyyyyddmm''' - If set to "yes" then dates are assumed to be in the YYYY-DD-MM format (with days leading), as opposed to YYYY-MM-DD format (with months leading).  This is important for interpreting dates like 2000-03-04.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.
 * '''datedelimiters''' - Determining whether the field is a date/time or not can be tricky.  Different cultures and systems delimit dates with different characteres, including slashes, dashes, colons and periods.  This attribute enables you to specify which of these to pay attention to.  For example, if your database contains both slash-delimited and dash-delimited dates, but also contains dot-delimited data that could be misinterpreted as a date, then you'd want to set this to "/-".  Defaults to "/-:."  Characters other than slash, dash, colon and dot are ignored.
 * '''ignorenondatetime''' - If this attribute is set to "yes" then only fields with date/time datatypes will be examined.  Char, and varchar fields, for example, will be ignored.  By default, all fields are examined and heuristics are used to determine whether the field contains a date/time.
 
@@ -4501,7 +4501,7 @@ Into:
 07/10/2015 17:18:55
 }}}
 
-Note that '''dateddmm''' and '''dateyyddmm''' should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.
+Note that '''dateddmm''' and '''dateyyyyddmm''' should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.
 
 Note also that date/time translation in general is especially problematic with MS SQL Server.  See [../faq/#mssqldates the FAQ] for more info.
 
