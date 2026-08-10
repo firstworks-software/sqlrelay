@@ -169,7 +169,7 @@ static void assertColumn(OCIStmt *stmt, ub4 pos, const char *name,
 	OCIDescriptorFree(param,OCI_DTYPE_PARAM);
 }
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	// pass "native" to test a real oracle instance instead of
 	// sqlrelay's oracle protocol

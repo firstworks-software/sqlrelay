@@ -16,7 +16,7 @@ MYSQL_RES	*result;
 MYSQL_FIELD	*field;
 MYSQL_ROW	row;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_STMT_PREPARE
 

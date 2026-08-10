@@ -147,7 +147,7 @@ static bool sendMalformedHandshakeResponse(const char *host, uint16_t port,
 	return gotfirstbyte && firstbyte==0xff;
 }
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	#ifdef HAVE_MYSQL_STMT_PREPARE
 

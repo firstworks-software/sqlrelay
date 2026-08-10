@@ -89,7 +89,7 @@ CS_RETCODE serverMessageCallback(CS_CONTEXT *ctxt,
 	return CS_SUCCEED;
 }
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	const char	*server;
 	const char	*user;

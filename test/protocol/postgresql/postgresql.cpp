@@ -14,7 +14,7 @@
 
 PGconn	*pgconn;
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 #ifdef HAVE_POSTGRESQL_PQEXECPREPARED
 

@@ -305,7 +305,7 @@ static void printSqlType(XSQLVAR *var) {
 	}
 }
 
-int	main(int argc, char **argv) {
+int main(int argc, char **argv) {
 
 	// pass "native" to test a real firebird instance instead of
 	// sqlrelay's firebird protocol.  a second argument names which one,
