@@ -343,6 +343,9 @@
 		spelled dateyyddmm (two y's), but the module reads
 		dateyyyyddmm (four y's); also fixed a stray trailing -YYYY in
 		the format description
+	fixed two config guide links to the query translations section that
+		pointed at #querytranslations (plural), but the anchor is
+		#querytranslation (singular), so both links went nowhere
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

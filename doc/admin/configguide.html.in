@@ -5604,7 +5604,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All filter modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
-<p>All filter modules have an <i>when</i> attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See <a href="#querytranslations">Query Translations</a> below for more information.</p>
+<p>All filter modules have an <i>when</i> attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See <a href="#querytranslation">Query Translations</a> below for more information.</p>
 
 <p>Filter modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -5660,7 +5660,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See <a href="#querytranslations">Query Translations</a> and the <a href="#normalize">normalize</a> translation below for more information.</p>
+<p>Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See <a href="#querytranslation">Query Translations</a> and the <a href="#normalize">normalize</a> translation below for more information.</p>
 
 <p>Currently, the following filter modules are available in the standard SQL Relay distribution:</p>
 
@@ -6666,7 +6666,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>dateformat</b> - Similar to datetimeformat but if a date without the time component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.</li>
   <li><b>timeformat</b> - Similar to datetimeformat but if a time without the date component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.</li>
   <li><b>dateddmm</b> - If set to "yes" then dates are assumed to be in the DD-MM-YYYY format (with days leading), as opposed to MM-DD-YYYY format (with months leading).  This is important for interpreting dates like 03-04-2000.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.</li>
-  <li><b>dateyyddmm</b> - If set to "yes" then dates are assumed to be in the YYYY-DD-MM format (with days leading), as opposed to YYYY-MM-DD-YYYY (with months leading).  This is important for interpreting dates like 2000-03-04.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.</li>
+  <li><b>dateyyyyddmm</b> - If set to "yes" then dates are assumed to be in the YYYY-DD-MM format (with days leading), as opposed to YYYY-MM-DD format (with months leading).  This is important for interpreting dates like 2000-03-04.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.</li>
   <li><b>datedelimiters</b> - Determining whether the field is a date/time or not can be tricky.  Different cultures and systems delimit dates with different characteres, including slashes, dashes, colons and periods.  This attribute enables you to specify which of these to pay attention to.  For example, if your database contains both slash-delimited and dash-delimited dates, but also contains dot-delimited data that could be misinterpreted as a date, then you'd want to set this to "/-".  Defaults to "/-:."  Characters other than slash, dash, colon and dot are ignored.</li>
   <li><b>ignorenondatetime</b> - If this attribute is set to "yes" then only fields with date/time datatypes will be examined.  Char, and varchar fields, for example, will be ignored.  By default, all fields are examined and heuristics are used to determine whether the field contains a date/time.</li>
 </ul>
@@ -6707,7 +6707,7 @@ Jul 10 2015 05:17:55:717PM
 <blockquote>
 07/10/2015 17:18:55
 </blockquote>
-<p>Note that <b>dateddmm</b> and <b>dateyyddmm</b> should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.</p>
+<p>Note that <b>dateddmm</b> and <b>dateyyyyddmm</b> should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.</p>
 
 <p>Note also that date/time translation in general is especially problematic with MS SQL Server.  See <a href="../faq/#mssqldates">the FAQ</a> for more info.</p>
 

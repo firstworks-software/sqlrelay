@@ -3845,7 +3845,7 @@ All filter modules have an //enabled// attribute, allowing the module to be temp
 
 All filter modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
-All filter modules have an //when// attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See [#querytranslations Query Translations] below for more information.
+All filter modules have an //when// attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See [#querytranslation Query Translations] below for more information.
 
 Filter modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
@@ -3865,7 +3865,7 @@ When using query filters, it is helpful to use the //normalize// query translati
 }}}
 }}}
 
-Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See [#querytranslations Query Translations] and the [#normalize normalize] translation below for more information.
+Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See [#querytranslation Query Translations] and the [#normalize normalize] translation below for more information.
 
 Currently, the following filter modules are available in the standard SQL Relay distribution:
 
