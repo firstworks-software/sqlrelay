@@ -339,10 +339,12 @@ void sqlrquerytranslation_patterns::matchAndReplace(const char *str,
 							stringbuffer *outb) {
 
 	const char	*start=str;
+	const char	*ptr=str;
 	for (;;) {
 
-		// look for a matching part
-		const char	*ptr=start;
+		// look for a matching part,
+		// ptr persists across iterations so a zero-length match
+		// still advances the scan position rather than spinning
 		if (!*ptr || !p->matchre->match(ptr) ||
 				!p->matchre->getSubstringCount()) {
 
@@ -373,6 +375,7 @@ void sqlrquerytranslation_patterns::matchAndReplace(const char *str,
 
 		// move the start forward
 		start=matchend;
+		ptr=matchend;
 
 		// bail if we're not matching globally
 		if (!p->matchglobal) {
