@@ -12,7 +12,7 @@ extern "C" {
 
 typedef	enum {
 	UNKNOWN_DATATYPE=0,
-	// addded by freetds
+	// added by freetds
 	CHAR_DATATYPE,		// 1
 	INT_DATATYPE,
 	SMALLINT_DATATYPE,
@@ -225,7 +225,7 @@ typedef	enum {
 #ifdef NEED_DATATYPESTRING
 static const char	*datatypestring[] = {
 	"UNKNOWN",
-	// addded by freetds
+	// added by freetds
 	"CHAR",		// 1
 	"INT",
 	"SMALLINT",
@@ -637,11 +637,10 @@ static bool isNumberTypeInt(int16_t type) {
 
 #ifdef NEED_IS_BLOB_TYPE_CHAR
 // GRAPHIC/VARGRAPHIC/LONGVARGRAPHIC are db2's double-byte character types,
-// not binary data, despite the similar name; they're classified as clobs
-// below instead.  LONG is ambiguous: oracle returns it for LONG, which is
-// character data, while sap/freetds return it for CS_LONG_TYPE, which is
-// not.  It can't be classified correctly without splitting the enum value,
-// so it's left here rather than moved to isClobType*.
+// not binary data, despite the similar name, so they're left out.  LONG is
+// ambiguous: oracle returns it for LONG, which is character data, while
+// sap/freetds return it for CS_LONG_TYPE, which is not, so it's left here
+// rather than moved to isClobType*.
 static bool isBlobTypeChar(const char *type) {
 	return (!charstring::compareIgnoringCase(type,"IMAGE") ||
 		!charstring::compareIgnoringCase(type,"BINARY") ||

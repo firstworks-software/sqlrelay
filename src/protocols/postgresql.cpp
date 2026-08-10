@@ -508,7 +508,7 @@ bool sqlrprotocol_postgresql::recvPacket(bool gettype) {
 
 bool sqlrprotocol_postgresql::sendPacket(byte_t type) {
 
-	// Read a response packet to the client...
+	// Write a response packet to the client...
 
 	// response packet structure:
 	// 
@@ -1545,10 +1545,10 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 			return 23; //int4
 		case REGPROC_DATATYPE:
 			return 24; //regproc
-		// Postgresql has no distinct character-lob types.  Its text
-		// type is unbounded, so every character lob maps onto it.
-		// The graphic types are db2's double-byte character types,
-		// despite being grouped with the blobs in datatypes.h.
+		// postgresql has no distinct character-lob types, so they
+		// all map onto its unbounded text type
+		// (the graphic types are db2's double-byte character types,
+		// despite being grouped with the blobs in datatypes.h)
 		case TEXT_DATATYPE:
 		case LONGCHAR_DATATYPE:
 		case LONGVARCHAR_DATATYPE:
@@ -1775,11 +1775,10 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 			return 2282; //opaque
 		case ANYELEMENT_DATATYPE:
 			return 2283; //anyelement
-		// Fifteen sqlrelay datatypes are various databases' binary
-		// lob types.  Postgresql has no distinct family of binary
-		// lob types, so they all map onto bytea.  sendDataRow()
-		// hex-encodes their contents to match bytea's text-format
-		// wire representation.
+		// postgresql has no distinct family of binary lob types, so
+		// the other databases' binary lob types all map onto bytea
+		// (sendDataRow() hex-encodes their contents to match bytea's
+		// text-format wire representation)
 		case IMAGE_DATATYPE:
 		case BINARY_DATATYPE:
 		case VARBINARY_DATATYPE:
@@ -1876,10 +1875,8 @@ uint32_t sqlrprotocol_postgresql::getColumnTypeOid(uint16_t coltype) {
 
 int16_t sqlrprotocol_postgresql::getColumnTypeLen(uint32_t oid) {
 
-	// Most postgresql types are varlena (variable-length, stored with a
-	// header) and report typlen -1 in pg_type; only fixed-width types
-	// report an actual byte count.  typlen is a per-type constant, not
-	// anything derived from a particular column's data.
+	// pg_type.typlen - a per-type constant, not anything derived from
+	// a particular column's data (the varlena types report -1)
 	switch (oid) {
 		// bool
 		case 16:
@@ -2074,11 +2071,8 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 
 bool sqlrprotocol_postgresql::blobAlreadyHex() {
 
-	// The postgresql backend's own getField() already hands back a hex
-	// string for bytea columns when decodeblobs=no.  Every other case -
-	// this backend at its (default) decodeblobs=yes, or any other
-	// backend entirely - hands back raw binary that still needs
-	// encoding, so only that one combination should skip the encoder.
+	// the postgresql backend's own getField() already hands back a hex
+	// string for bytea columns when decodeblobs=no
 	return (!charstring::compare(cont->getDbType(),"postgresql") &&
 			charstring::isNo(
 				cont->getConnectStringValue("decodeblobs")));
@@ -2108,7 +2102,7 @@ void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
 							uint32_t col,
 							bool isbytea) {
 
-	// Get the lob length.  If this fails, send a NULL field.
+	// get the lob length, sending a -1 (NULL) field if that fails
 	uint64_t	loblength=0;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		int32_t		negone=-1;
@@ -2119,10 +2113,10 @@ void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
 		return;
 	}
 
-	// Read the whole lob into a temp buffer, then append that (hex
-	// encoding it first, if it's a bytea) to resppacket.  Postgresql's
-	// DataRow field has to be prefixed with its final byte count, and
-	// that isn't known for certain until the lob has been fully read.
+	// read the whole lob into a temp buffer before appending it
+	// (postgresql's DataRow field has to be prefixed with its final
+	// byte count, which isn't known for certain until the lob has
+	// been fully read)
 	bytebuffer	temp;
 	if (loblength) {
 		uint64_t	charstoread=sizeof(lobbuffer)/MAX_BYTES_PER_CHAR;

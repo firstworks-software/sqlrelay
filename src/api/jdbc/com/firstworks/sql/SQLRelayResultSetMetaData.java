@@ -34,13 +34,8 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	void setResultSet(SQLRelayResultSet resultset)
 						throws SQLException {
 		this.resultset=resultset;
-		// Capture the connection now rather than walking
-		// resultset.getStatement().getConnection() on demand.
-		// SQLRelayResultSet.reset() nulls its statement when the
-		// result set or the statement is closed, and a metadata
-		// object outlives both, so the walk gets a
-		// NullPointerException from a metadata object that is
-		// otherwise still perfectly usable.
+		// capture the connection now
+		// (the statement is nulled on close, and this outlives it)
 		this.conn=resultset.getStatement().getConnection();
 	}
 
@@ -48,11 +43,10 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return sqlrcur;
 	}
 
-	// jdbc's ResultSetMetaData only promises to throw on a database
-	// access error, not on an invalid column, but every reference
-	// driver throws here, and so does sql relay's own odbc api.
 	private
 	void validateColumn(int column) throws SQLException {
+		// jdbc doesn't require throwing on an invalid column, but
+		// the reference drivers do
 		if (column<1 || column>sqlrcur.colCount()) {
 			conn.throwException("invalid column index");
 		}
@@ -69,14 +63,11 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		return catalogname;
 	}
 
-	// Uppercase with Locale.ROOT rather than the jvm's default
-	// locale: in a turkish locale, "int4" uppercases to a dotted
-	// capital I followed by NT4, which matches nothing.  Return ""
-	// rather than null: getColumnType() returns null for an
-	// out-of-range column, and java throws on a switch over a null
-	// string.
 	private
 	String normalizeTypeName(String type) {
+		// uppercase with Locale.ROOT - a turkish locale maps i to a
+		// dotted capital I, which matches nothing
+		// ("" rather than null - java throws on a switch over null)
 		return (type==null)?"":type.toUpperCase(Locale.ROOT);
 	}
 
@@ -775,12 +766,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		drv.debugFunction(this);
 		validateColumn(column);
 		drv.debugPrintln("column: "+column);
-		// Types.OTHER rather than 0, which is Types.NULL.  A name
-		// with no case below is a type this driver cannot classify,
-		// which is what jdbc defines Types.OTHER for, and what the
-		// "UNKNOWN" case below already answers.  Backends do send
-		// such names - postgresql sends its own type names, or bare
-		// oids, depending on typemangling.
+		// Types.OTHER rather than 0, which is Types.NULL
 		int	retval=Types.OTHER;
 		String	ctype=normalizeTypeName(
 					sqlrcur.getColumnType(column-1));

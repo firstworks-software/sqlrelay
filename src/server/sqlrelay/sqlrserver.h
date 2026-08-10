@@ -125,12 +125,10 @@ enum sqlrloglevel_t {
 
 class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 	public:
-		// leaves everything unset except segmentlengths/segmentcount,
-		// matching the class' historical lack of a constructor -
-		// those two default to NULL/0 so a bind var that no
-		// protocol module ever segments (everything but firebird)
-		// can't pick up a stale pointer from a previous bind that
-		// reused this slot
+		// segmentlengths/segmentcount default to NULL/0 so a bind
+		// var that no protocol module ever segments (everything but
+		// firebird) can't pick up a stale pointer from a previous
+		// bind that reused this slot
 		sqlrserverbindvar() : segmentlengths(NULL), segmentcount(0) {}
 
 		char	*variable;
@@ -480,21 +478,21 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  :* - database uses a : followed by any characters to
 		 *       represent a bind variable
 		 *
-		 *  Returns :* by default but may be overriden by a child
+		 *  Returns :* by default but may be overridden by a child
 		 *  class. */
 		const char	*getBindFormat();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a non-null bind value.
 		 *
-		 *  Returns 0 by default, but may be overriden by a child
+		 *  Returns 0 by default, but may be overridden by a child
 		 *  class. */
 		int16_t	getNonNullBindValue();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a null bind value.
 		 *
-		 *  Returns -1 by default but may be overriden by a child
+		 *  Returns -1 by default but may be overridden by a child
 		 *  class. */
 		int16_t	getNullBindValue();
 
@@ -529,7 +527,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  Returns an empty string if the database does not support
 		 *  sequences.
 		 *
-		 *  Returns %s.nextval by default but may be overriden by a
+		 *  Returns %s.nextval by default but may be overridden by a
 		 *  child class. */
 		const char	*getNextvalFormat();
 
@@ -1056,11 +1054,11 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  since the instance was started. */
 		void	incrementAuthCount();
 
-		/** Returns the number of sessions that have been suspeneded
+		/** Returns the number of sessions that have been suspended
 		 *  since the instance was started. */
 		uint32_t	getSuspendSessionCount();
 
-		/** Increments the number of sessions that have been suspeneded
+		/** Increments the number of sessions that have been suspended
 		 *  since the instance was started. */
 		void	incrementSuspendSessionCount();
 
@@ -1641,7 +1639,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		stringbuffer	*getTranslatedQueryBuffer(
 						sqlrservercursor *cursor);
 
-		/** Returns the query currently stored in the translated quer
+		/** Returns the query currently stored in the translated query
 		 *  buffer of "cursor". */
 		const char	*getTranslatedQuery(sqlrservercursor *cursor);
 
@@ -1695,7 +1693,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  Returns true on success and false otherwise. */
 		bool	executeQuery(sqlrservercursor *cursor);
 
-		/** Executes the currently prepraed query of "cursor".
+		/** Executes the currently prepared query of "cursor".
 		 *
 		 *  Directives are enabled if "enabledirectives" is true or
 		 *  disabled if it is false.
@@ -1727,7 +1725,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  another result set was not available.
 		 *
 		 *  Returns false if an error occured while checking for
-		 *  another resulet set. */
+		 *  another result set. */
 		bool	nextResultSet(sqlrservercursor *cursor,
 						bool *nextresultsetavailable);
 
@@ -2116,7 +2114,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  "database"."schema"."oldtable" and new table name "newtable"
 		 *  in the table name replacement map, such "newtable" can be
 		 *  retrieved by a call to getReplacementTableName.  This is
-		 *  primarly useful for remapping temporary table names, but
+		 *  primarily useful for remapping temporary table names, but
 		 *  could be used for other things as well. */
 		void	setReplacementTableName(
 					const char *database,
@@ -2128,7 +2126,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  "database"."schema"."oldindex" and new index name
 		 *  "newindex", which are dependent on table "table", in the
 		 *  index name replacement map, such that "newindex" can be
-		 *  retrieved by getReplacementIndexName.  This is primarly
+		 *  retrieved by getReplacementIndexName.  This is primarily
 		 *  useful for remapping temporary index names, but could be
 		 *  used for other things as well. */
 		void	setReplacementIndexName(
@@ -2202,7 +2200,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		bool	getDatabaseList(sqlrservercursor *cursor,
 							const char *db);
 
-		/** Fetches the list of catlogs that are visible to the user
+		/** Fetches the list of catalogs that are visible to the user
 		 *  that SQL Relay is logged in as.  Only returns catalog names
 		 *  that match "catalog" if "catalog" is non-NULL.
 		 *
@@ -2291,7 +2289,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Fetches the list of stored procedures in
 		 *  "catalog"."schema", and information about them,
 		 *  such as the number of input and output parameters, the
-		 *  numer of result sets that the procdure may retrun, a
+		 *  number of result sets that the procedure may return, a
 		 *  description of the procedure, and the procedure type
 		 *  (procedure or function).  Only returns info for procedures
 		 *  that match "procedure" if "procedure" is non-NULL.
@@ -3269,7 +3267,7 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  str2 is greater than str1.
 		 *
 		 *  Also returns 0 if both strings are NULL, 1 if str1 is NULL
-		 *  but str2 is not, and -1 if str2 is NULl but str1 is not. */
+		 *  but str2 is not, and -1 if str2 is NULL but str1 is not. */
 		int32_t	compareQuoted(const char *str1, const char *str2);
 
 		/** Returns true if datatype string "type" is a bit type and
@@ -3510,7 +3508,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		virtual bool	begin();
 
 		/** Returns the query that the database uses to begin a
-		 *  transcation. */
+		 *  transaction. */
 		virtual const char	*beginTransactionQuery();
 
 		/** Commits the current transaction.
@@ -3626,7 +3624,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  this method returns the auto-increment-id that was
 		 *  generated in "id".
 		 *
-		 *  Returns true on succcess and false if an error occurred. */
+		 *  Returns true on success and false if an error occurred. */
 		virtual bool	getLastInsertId(uint64_t *id);
 
 		/** Returns the query that the database uses to fetch the
@@ -3710,7 +3708,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  if the database is alive or not.
 		 *
 		 *  This implementation returns "select 1", but it may be
-		 *  overridden by a child class to return a more approprite
+		 *  overridden by a child class to return a more appropriate
 		 *  query for this database. */
 		virtual const char	*pingQuery();
 
@@ -3847,7 +3845,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  procedures in "catalog"."schema", and information about
 		 *  them,
 		 *  such as the number of input and output parameters, the
-		 *  numer of result sets that the procdure may retrun, a
+		 *  number of result sets that the procedure may return, a
 		 *  description of the procedure, and the procedure type
 		 *  (procedure or function).  Only returns info for procedures
 		 *  that match "procedure" if "procedure" is non-NULL.
@@ -4279,21 +4277,21 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  :* - database uses a : followed by any characters to
 		 *       represent a bind variable
 		 *
-		 *  Returns :* by default but may be overriden by a child
+		 *  Returns :* by default but may be overridden by a child
 		 *  class. */
 		virtual	const char	*getBindFormat();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a non-null bind value.
 		 *
-		 *  Returns 0 by default but may be overriden by a child
+		 *  Returns 0 by default but may be overridden by a child
 		 *  class. */
 		virtual	int16_t		getNonNullBindValue();
 
 		/** Returns the value that the database expects or returns in
 		 *  the "null indicator" for a null bind value.
 		 *
-		 *  Retruns -1 by default but may be overriden by a child
+		 *  Returns -1 by default but may be overridden by a child
 		 *  class. */
 		virtual	int16_t		getNullBindValue();
 
@@ -4314,7 +4312,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  Returns an empty string if the database does not support
 		 *  sequences.
 		 *
-		 *  Returns %s.nextval by default but may be overriden by a
+		 *  Returns %s.nextval by default but may be overridden by a
 		 *  child class. */
 		virtual const char	*getNextvalFormat();
 
@@ -4386,7 +4384,7 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 	public:
 
-		/** Creates an instance of sqlrserverccursor and assigns it an
+		/** Creates an instance of sqlrservercursor and assigns it an
 		 *  id of "id". */
 		sqlrservercursor(sqlrserverconnection *conn, uint16_t id);
 
@@ -4433,7 +4431,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  binds, and false if native binds are not supported by this
 		 *  query.
 		 *
-		 *  This method just returns true, but may be overriden by
+		 *  This method just returns true, but may be overridden by
 		 *  a child class to return true or false, as appropriate. */
 		virtual	bool	supportsNativeBinds(const char *query,
 							uint32_t size);
@@ -4485,7 +4483,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  "tz", and "isnegative" to a date/time string and writes the
 		 *  string to "buffer" of "buffersize" bytes.
 		 *
-		 *  The date/time is convered using the format specfied in the
+		 *  The date/time is converted using the format specified in the
 		 *  fakeinputbindvariablesdateformat attribute of the instance
 		 *  tag in the sqlrelay config file, or "YYYY-MM-DD HH24:MI:SS"
 		 *  if no format was specified.
@@ -4980,7 +4978,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  another result set was not available.
 		 *
 		 *  Returns false if an error occured while checking for
-		 *  another resulet set. */
+		 *  another result set. */
 		virtual	bool	nextResultSet(bool *nextresultsetavailable);
 
 		/** Returns true if the query currently stored in the query
@@ -5493,7 +5491,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		/** Returns the translated query buffer. */
 		stringbuffer	*getTranslatedQueryBuffer();
 
-		/** Returns the query currently stored in the translated quer
+		/** Returns the query currently stored in the translated query
 		 *  buffer. */
 		const char	*getTranslatedQuery();
 
@@ -5536,7 +5534,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		uint64_t	getQueryStartUSec();
 
 		/** Sets the query-end time.  That is, the time that query
-		 *  execution was complated, to "sec" and "usec". */
+		 *  execution was completed, to "sec" and "usec". */
 		void	setQueryEnd(uint64_t sec, uint64_t usec);
 
 		/** Returns the seconds component of the query-end time
@@ -6031,7 +6029,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		 *  * krbkeytab - the Kerberos keytab file to use
 		 *  * krbservice - the Kerberos service to use
 		 *  * krbmech - the Kerberos mech to use
-		 *  * krbflags - the Kerboeros flags to use
+		 *  * krbflags - the Kerberos flags to use
 		 *
 		 *  However, it may be overridden by a child class to perform
 		 *  additional initialization tasks and handle additional
@@ -6849,7 +6847,7 @@ class SQLRSERVER_DLLSPEC sqlrteradatacredentials : public sqlrcredentials {
 		/** Sets the client file descriptor to "fd". */
 		void	setClientFileDescriptor(filedescriptor *fd);
 
-		/** Returns the client file desctiptor. */
+		/** Returns the client file descriptor. */
 		filedescriptor	*getClientFileDescriptor();
 
 	#include <sqlrelay/private/sqlrteradatacredentials.h>
@@ -7189,7 +7187,7 @@ class SQLRSERVER_DLLSPEC sqlrschedule : public sqlrservermodule {
 		 *  time, and false if "user" is not allowed access.
 		 *
 		 *  This implementation ignores "user" and just returns true if
-		 *  access woud be allowed by comparing the current date/time
+		 *  access would be allowed by comparing the current date/time
 		 *  to the rules, taking the "default" parameter into account,
 		 *  or false otherwise.  It may be overridden by child class to
 		 *  evaluate rules to determine if the user is allowed
@@ -7397,7 +7395,7 @@ class SQLRSERVER_DLLSPEC sqlrparser : public sqlrservermodule {
 		virtual	xmldom	*detachMetaDataTree();
 
 		/** Parses "query" and populates an xmldom tree that represents
-		 *  the query.  Also, optionally, populatss an xmldom tree
+		 *  the query.  Also, optionally, populates an xmldom tree
 		 *  representing metadata about the query.
 		 *
 		 *  Returns true on success and false if an error occurred.
@@ -7759,8 +7757,8 @@ class SQLRSERVER_DLLSPEC sqlrresultsetrowblocktranslation :
 		 *                    consists of, defaults to 10 if not
 		 *                    specified
 		 *
-		 *  Note that rowblockcont is an attribute of the parent
-		 *  resultestrowblocktranslations tag, not of individual
+		 *  Note that rowblockcount is an attribute of the parent
+		 *  resultsetrowblocktranslations tag, not of individual
 		 *  resultsetrowblocktranslation tags.
 		 *
 		 *  However, it may be overridden by a child class to perform
@@ -8098,10 +8096,10 @@ class SQLRSERVER_DLLSPEC sqlrquery : public sqlrservermodule {
 		virtual	~sqlrquery();
 
 		/** Returns true if "querysize" bytes of "querystring" match
-		 *  critera for handling this query and false otherwise.
+		 *  criteria for handling this query and false otherwise.
 		 *
 		 *  This implementation just returns false, but may be
-		 *  overridden by a child class to do specfic query
+		 *  overridden by a child class to do specific query
 		 *  matching. */
 		virtual bool	match(const char *querystring,
 						uint32_t querysize);
@@ -8134,7 +8132,7 @@ class SQLRSERVER_DLLSPEC sqlrquerycursor : public sqlrservercursor {
 		/** Returns the query type of the first "size" bytes of "query".
 		 * 
 		 *  This implementation just returns SQLRQUERYTYPE_CUSTOM, but
-		 *  may be overridden by a child class to do specfic query type
+		 *  may be overridden by a child class to do specific query type
 		 *  analysis. */
 		virtual sqlrquerytype_t	determineQueryType(
 						const char *query,

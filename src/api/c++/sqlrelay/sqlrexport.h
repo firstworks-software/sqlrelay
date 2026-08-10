@@ -30,7 +30,7 @@ class SQLRCLIENT_DLLSPEC sqlrexport {
  		 *  is configured to use to fetch data for the export. */
 		sqlrconnection	*getSqlrConnection();
 
-		/** Returns the instance of sqlrursor that this instance
+		/** Returns the instance of sqlrcursor that this instance
  		 *  is configured to use to fetch data for the export. */
 		sqlrcursor	*getSqlrCursor();
 

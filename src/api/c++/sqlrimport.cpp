@@ -959,7 +959,7 @@ bool sqlrimport::determineColumnTypes() {
 
 	// run through the columns, figuring out which are numbers and dates...
 	// NOTE: col is the index of the database columns and counter is the
-	// index of the numericcolumn/datetimecolumn dictionaries.  Separeate
+	// index of the numericcolumn/datetimecolumn dictionaries.  Separate
 	// indices are necessary to handle primary keys and static values.
 	uint32_t	counter=0;
 	uint32_t	colcount=getSqlrCursor()->colCount();

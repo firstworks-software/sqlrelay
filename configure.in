@@ -1178,11 +1178,10 @@ AC_SUBST(SHORTHOSTNAME)
 MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
 AC_CONFIG_FILES([$MAKELIST])
 
-dnl these files need post-processing, which has to be attached to the files
-dnl themselves rather than run after AC_OUTPUT, otherwise regenerating them
-dnl with config.status alone would skip it
+dnl Post-processing is attached to the files themselves rather than run after
+dnl AC_OUTPUT, so regenerating them with config.status alone doesn't skip it.
 
-dnl make the generated scripts executable
+dnl Make the generated scripts executable.
 AC_CONFIG_FILES([bin/sqlrclient-config
 		bin/sqlrclientwrapper-config
 		bin/sqlrserver-config
@@ -1192,8 +1191,8 @@ AC_CONFIG_FILES([bin/sqlrclient-config
 		test/erlang/run],
 		[chmod 755 "$ac_file"])
 
-dnl @prefix@ carries a literal ${DESTDIR}, but launchd reads these paths at
-dnl runtime, after install, so strip it back out
+dnl Strip the literal ${DESTDIR} out of @prefix@ - launchd reads these paths
+dnl after install.
 AC_CONFIG_FILES([init/com.firstworks.sqlrelay.plist
 		init/com.firstworks.sqlrcachemanager.plist],
 		[sed -e "s|\${DESTDIR}||g" "$ac_file" > "$ac_file".new

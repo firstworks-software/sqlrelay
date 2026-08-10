@@ -2512,8 +2512,8 @@ bool db2cursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
-	// get column info now, if it's available yet, so callers can
-	// describe the result set before it's executed
+	// get column info now, if it's available yet, so the result set can
+	// be described before execute
 	return handleColumns(true,false);
 }
 
@@ -2713,7 +2713,7 @@ bool db2cursor::inputBindBlob(const char *variable,
 }
 
 #if (DB2VERSION<=7)
-// The default implementeation of inputBindClob() just calls inputBind().
+// The default implementation of inputBindClob() just calls inputBind().
 // That works fine for versions > 7 but does not work with 7 or less.
 // Conversely, SQL_CLOB doesn't work with some versions > 7 so we can't use
 // this code with versions > 7.
@@ -2992,8 +2992,8 @@ bool db2cursor::executeQuery(const char *query, uint32_t size) {
 
 	checkForTempTable(query,size);
 
-	// get column info (unless it's already valid from prepareQuery)
-	// and bind the columns to lob locators or buffers
+	// get column info, unless prepareQuery() already did, then bind the
+	// columns
 	if (!handleColumns(!columninfoisvalidafterprepare,true)) {
 		return false;
 	}
@@ -3031,9 +3031,9 @@ bool db2cursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 	erg=SQLNumResultCols(stmt,&ncols);
 	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 
-		// at prepare-time, some query shapes (eg. unbound parameters)
-		// don't have valid column info yet; don't fail here, just
-		// note that and let executeQuery gather it after execute
+		// some query shapes (eg. unbound parameters) don't have
+		// valid column info at prepare time - let executeQuery()
+		// gather it after execute
 		if (!bindcolumns) {
 			columninfoisvalidafterprepare=false;
 			ncols=0;
@@ -3606,11 +3606,9 @@ void db2cursor::closeResultSet() {
 		deallocateResultSetBuffers();
 	}
 
-	// the column buffers freed above no longer hold anything, so any
-	// query re-executed on this cursor without an intervening
-	// prepareQuery() (eg. the client protocol's re-execute) has to
-	// redescribe and rebind rather than trust the flag set by the
-	// original prepare
+	// force a redescribe and rebind - the buffers freed above no longer
+	// hold anything, and a query can be re-executed on this cursor with
+	// no intervening prepareQuery() (eg. the client protocol's re-execute)
 	columninfoisvalidafterprepare=false;
 
 	// NOTE: this is a bit of a kludge.

@@ -31,9 +31,7 @@ bool sqlrexportcsv::exportColumnName(bool first) {
 	const char	*name=getCurrentField();
 	uint32_t	namelen=getCurrentFieldLength();
 
-	// we need to quote the column name if it's not a number, or if it
-	// contains anything that would otherwise break the field, the row,
-	// or the file apart
+	// decide whether to quote the column name
 	bool	quote=(!charstring::isNumber(name,(int32_t)namelen) ||
 					needsQuotes(name,namelen));
 
@@ -62,7 +60,7 @@ bool sqlrexportcsv::exportColumnName(bool first) {
 bool sqlrexportcsv::endProcessingColumns() {
 
 	// (we call this before closing the columns in case an
-	// overridden columnsEnd() wants to add mroe columns or
+	// overridden columnsEnd() wants to add more columns or
 	// something)
 	if (!sqlrexportfile::endProcessingColumns()) {
 		return false;
@@ -92,12 +90,10 @@ bool sqlrexportcsv::exportField(bool first) {
 	const char	*field=getCurrentField();
 	uint32_t	length=getCurrentFieldLength();
 
-	// we need to quote the field if it contains anything
-	// that would otherwise break the field, the row, or the
-	// file apart, or if it's not from a numeric column, or
-	// if it is, but has 12 or more characters.  Excel (and
-	// presumably other spreadsheet apps) likes to convert
-	// 12+ digit numbers to scientific notation.
+	// decide whether to quote the field
+	// (a 12+ character value from a numeric column is quoted too,
+	// because Excel and presumably other spreadsheet apps convert
+	// 12+ digit numbers to scientific notation)
 	bool	quote=(!getIsNumericColumn(getCurrentColumn()) ||
 			length>=12 || needsQuotes(field,length));
 
@@ -128,7 +124,7 @@ bool sqlrexportcsv::exportField(bool first) {
 bool sqlrexportcsv::endProcessingRow() {
 
 	// (we call this before closing the row in case an overridden
-	// rowEnd() wants to add mroe fields or something)
+	// rowEnd() wants to add more fields or something)
 	if (!sqlrexportfile::endProcessingRow()) {
 		return false;
 	}

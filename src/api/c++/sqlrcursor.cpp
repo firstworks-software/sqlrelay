@@ -302,7 +302,7 @@ class sqlrcursorprivate {
 		socketclient	*_cs;
 };
 
-// This method is a member of sqlrcursorprivate, rather than sqlrcuror, because
+// This method is a member of sqlrcursorprivate, rather than sqlrcursor, because
 // if it were a member of sqlrcursor, then it would have to be defined in the
 // header file.  If it were, then since it references a
 // dynamicarray<sqlrclientbindvar>, older compilers would also require that
@@ -7384,9 +7384,7 @@ bool sqlrcursor::nextResultSet() {
 		return false;
 	}
 
-	// the new result set has its own column metadata and rows;
-	// clear the previous result set's cached ones and fetch the
-	// new ones instead of continuing to report stale data
+	// clear the previous result set and fetch the new one
 	clearVariables();
 	clearResultSet();
 	pvt->_cached=false;

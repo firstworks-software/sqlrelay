@@ -159,9 +159,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 		// One-way encryption can't be used with firebird_legacy.  The
 		// legacy hash can only be derived from the password itself,
 		// and a one-way module can't recover it from the
-		// configuration.  Since fbclient always sends the legacy hash,
-		// a firebird listener whose connect string uses a one-way
-		// password encryption can't authenticate anyone.
+		// configuration.
 		if (charstring::compare(method,"firebird_cleartext")) {
 			if (getDebug()) {
 				debugStart("auth");
@@ -223,9 +221,8 @@ bool sqlrauth_firebird_connectstrings::compare(const char *suppliedpassword,
 
 char *sqlrauth_firebird_connectstrings::legacyHash(const char *password) {
 
-	// Note that des truncates the password at 8 characters, so
-	// "testpassword" and "testpass" hash identically.  That is firebird's
-	// legacy_auth behavior, not something introduced here.
+	// des truncates the password at 8 characters, so "testpassword" and
+	// "testpass" hash identically - firebird's legacy_auth does the same
 	des	d;
 
 	size_t	saltsize=d.getRequiredSaltSize();

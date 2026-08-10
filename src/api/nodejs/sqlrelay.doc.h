@@ -101,7 +101,7 @@ class SQLRConnection {
 		 *
 		 *  "flags" indicates what Kerberos flags to use.  Multiple
 		 *  flags may be specified, separated by commas.  If left
-		 *  empty or NULL then a defalt set of flags will be used.
+		 *  empty or NULL then a default set of flags will be used.
 		 *  Only set this if you know that you have a good reason to.
 		 *
 		 *  Valid flags include:
@@ -155,7 +155,7 @@ class SQLRConnection {
 		 *      "ca" - Validate that the server's certificate was
 		 *             signed by a trusted certificate authority.
 		 *      "ca+host" - Perform "ca" validation and also validate
-		 *             that one of the subject altenate names (or the
+		 *             that one of the subject alternate names (or the
 		 *             common name if no SANs are present) in the
 		 *             certificate matches the host parameter.
 		 *             (Falls back to "ca" validation when a unix
@@ -182,7 +182,7 @@ class SQLRConnection {
 		 *
 		 *  Note that the supported "cert" and "ca" file formats may
 		 *  vary between platforms.  A variety of file formats are
-		 *  generally supported on Linux/Unix platfoms (.pem, .pfx,
+		 *  generally supported on Linux/Unix platforms (.pem, .pfx,
 		 *  etc.) but only the .pfx format is currently supported on
 		 *  Windows. */
 		function enableTls(var version,
@@ -360,7 +360,7 @@ class SQLRConnection {
 
 
 		/** Returns the database's native transaction model.  See
-		 *  setTranscationModel() for a list of potential return
+		 *  setTransactionModel() for a list of potential return
 		 *  values.  Returns NULL if an error occurred. */
 		function getDefaultTransactionModel();
 
@@ -371,17 +371,17 @@ class SQLRConnection {
 		 *  * none - no transactions
 		 *  * "implicit"
 		 *      * in a transaction when the session begins
-		 *      * commit/rollback implicitly starts a new transcaction
+		 *      * commit/rollback implicitly starts a new transaction
 		 *      * autocommit on/off take effect immediately
 		 *  * "explicit"
 		 *      * not in a transaction when the session begins
 		 *      * begin required to start a new transaction
-		 *      * commit/rollback does not start a new transcaction
+		 *      * commit/rollback does not start a new transaction
 		 *      * autocommit on/off take effect immediately
 		 *  * "explicit-deferred"
 		 *      * not in a transaction when the session begins
 		 *      * begin required to start a new transaction
-		 *      * commit/rollback does not start a new transcaction
+		 *      * commit/rollback does not start a new transaction
 		 *      * while in a begin-initiated transaction, autocommit
 		 *        on takes effect at next commit/rollback (deferred)
 		 *      * while in an autocommit-off-initiated transaction,
@@ -389,14 +389,14 @@ class SQLRConnection {
 		 *  * "explicit-error"
 		 *      * not in a transaction when the session begins
 		 *      * begin required to start a new transaction
-		 *      * commit/rollback does not start a new transcaction
+		 *      * commit/rollback does not start a new transaction
 		 *      * while in a transaction, autocommit on/off throw error
 		 *
 		 *  Returns true on success and false on failure. */
 		function setTransactionModel(var txmodel);
 
 		/** Returns the current transaction model.  See
-		 *  setTranscationModel() for a list of potential return
+		 *  setTransactionModel() for a list of potential return
 		 *  values.  Returns NULL if an error occurred. */
 		function getTransactionModel();
 
@@ -820,7 +820,7 @@ class SQLRConnection {
 class SQLRCursor {
 	public:
 		/** Creates a cursor to run queries and fetch result
-		 *  sets using connecton "sqlrc". */
+		 *  sets using connection "sqlrc". */
 		SQLRCursor(var sqlrc);
 
 
@@ -874,7 +874,7 @@ class SQLRCursor {
 		function cacheToFile(var filename);
 
 		/** Sets the time-to-live for cached result
-		 *  sets. The sqlr-cachemanger will remove each 
+		 *  sets. The sqlr-cachemanager will remove each
 		 *  cached result set "ttl" seconds after it's 
 		 *  created, provided it's scanning the directory
 		 *  containing the cache files. */
@@ -989,7 +989,7 @@ class SQLRCursor {
 		 *  * interval_precision
 		 *
 		 *  If "type" is empty or NULL then a result set containing
-		 *  all data types in the current databas/schema will be
+		 *  all data types in the current database/schema will be
 		 *  returned.
 		 *
 		 *  If SQL Relay doesn't support getting type info

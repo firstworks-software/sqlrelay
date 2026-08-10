@@ -76,7 +76,7 @@ class SQLRCLIENT_DLLSPEC sqlrexportcsvjsondomnode :
 		 *
 		 *  Note that since there is no tag representing the set of
 		 *  records/rows, rather the tag for an each record/row is just
-		 *  appeneded to the top-level tag, there is no "rows domnode".
+		 *  appended to the top-level tag, there is no "rows domnode".
 		 *  As such, this method never calls setRowsDomNode(), and
 		 *  getRowsDomNode() always return NULL.
 		 *

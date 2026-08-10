@@ -3189,11 +3189,10 @@ uint32_t postgresqlcursor::colCount() {
 }
 
 uint16_t postgresqlcursor::columnTypeFormat() {
-	// typemangling=2 is the only mode where getColumnTypeName()
-	// returns a real, looked-up name.  For typemangling=0 (absent)
-	// it just stringifies the raw oid, which isn't a name at all, so
-	// send ids instead and let the client resolve a real name from
-	// the type id that getColumnType() already maps correctly.
+	// typemangling=2 is the only mode where getColumnTypeName() returns
+	// a real, looked-up name - otherwise it just stringifies the raw
+	// oid, so send ids instead and let the client resolve a name from
+	// the type id that getColumnType() already maps correctly
 	if (postgresqlconn->typemangling==2) {
 		return (uint16_t)COLUMN_TYPE_NAMES;
 	} else {

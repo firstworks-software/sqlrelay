@@ -38,13 +38,10 @@ static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
 #endif
 }
 
-// maps a firebird sqltype/sqlsubtype/sqlscale (as returned by
-// isc_dsql_describe() or isc_dsql_describe_bind()) to a SQL Relay datatype
-// id.  Mirrors the coercion firebirdcursor::describeResultSet() applies to
-// output columns, minus the buffer assignment, so it can also be used for
-// input bind variables.
 static int firebirdSqlTypeToDatatype(short sqltype,
 					short sqlsubtype, short sqlscale) {
+	// mirrors the coercion describeResultSet() applies to output
+	// columns, minus the buffer assignment
 	if (sqltype==SQL_TEXT || sqltype==SQL_TEXT+1) {
 		return CHAR_DATATYPE;
 	} else if (sqltype==SQL_VARYING || sqltype==SQL_VARYING+1) {
@@ -112,9 +109,6 @@ struct fieldstruct {
 	short		nullindicator;
 };
 
-// isc_dsql_describe_bind() fills these fields into inbindsqlda, but
-// inputBind() overwrites them in place before execute, so prepareQuery()
-// copies them out here to answer getInputBindType()/etc. later
 struct inbinddescribestruct {
 	short		sqltype;
 	short		sqlscale;
@@ -1108,8 +1102,7 @@ sqlrtxmodel_t firebirdconnection::getNativeTransactionModel() {
 
 bool firebirdconnection::setAutoCommitOn() {
 	autocommit=true;
-	// consume the read-only hint, if any, so it applies to just this
-	// transaction and not to whatever comes after it
+	// consume the read-only hint, so it applies to this transaction only
 	bool	ro=nextreadonly;
 	nextreadonly=false;
 	return !isc_commit_transaction(error,&tr) &&
@@ -1121,8 +1114,7 @@ bool firebirdconnection::setAutoCommitOn() {
 
 bool firebirdconnection::setAutoCommitOff() {
 	autocommit=false;
-	// consume the read-only hint, if any, so it applies to just this
-	// transaction and not to whatever comes after it
+	// consume the read-only hint, so it applies to this transaction only
 	bool	ro=nextreadonly;
 	nextreadonly=false;
 	return !isc_commit_transaction(error,&tr) &&
@@ -1185,12 +1177,10 @@ void firebirdconnection::getError(char *errorbuffer,
 	if (errormsg.getStringLength()) {
 
 		// The error buffer is reused for the life of the process and
-		// safeCopy leaves it unterminated, so the size has to come from
-		// the source string.  Measuring the buffer instead would run
-		// off the end of a short message into the previous, longer one.
-		// A byte of the buffer is kept for the terminator, rather than
-		// the byte past it, which isn't ours to write however much the
-		// caller happens to have allocated.
+		// safeCopy leaves it unterminated, so the size has to come
+		// from the source string.  Measuring the buffer instead would
+		// run off the end of a short message into the previous,
+		// longer one.
 		*errorsize=errormsg.getStringLength();
 		if (*errorsize>=errorbuffersize) {
 			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
@@ -2532,12 +2522,9 @@ void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 		for (int32_t i=0; i<columncount; i++) {
 			field[i].textbuffer=new char[
 					conn->cont->getMaxFieldSize()+1];
-			// sqlrtype/blobisopen are otherwise left
-			// uninitialized until describeResultSet() runs;
-			// init them here so closeResultSet() can safely
-			// scan for open lobs even on a slot it hasn't
-			// described yet (e.g. buffers preallocated by
-			// maxcolumncount, ahead of any query)
+			// init these so closeResultSet() can scan for open
+			// lobs on a slot describeResultSet() hasn't
+			// described yet
 			field[i].sqlrtype=UNKNOWN_DATATYPE;
 			field[i].blobisopen=false;
 		}
@@ -2640,11 +2627,9 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		inbinddescribe[i].sqllen=inbindsqlda->sqlvar[i].sqllen;
 	}
 
-	// Describe the result set now, so that the column info is valid
-	// straight after the prepare.  Skip the statement types that
-	// executeQuery() returns early for - commit and rollback go through
-	// the api rather than the statement, and an exec-procedure statement's
-	// output lands in outbindsqlda rather than outsqlda.
+	// describe the result set now, so the column info is valid straight
+	// after the prepare, but skip the statement types that executeQuery()
+	// returns early for
 	if (!queryIsCommitOrRollback() && !queryisexecsp) {
 		if (!describeResultSet()) {
 			return false;
@@ -3334,8 +3319,7 @@ bool firebirdcursor::describeResultSet() {
 
 	// A describe into an sqlda with too few slots fills in the column
 	// count and nothing else, so if the count came back higher than the
-	// buffers hold, grow them and describe again.  It only happens if
-	// isc_dsql_prepare didn't report the count above.
+	// buffers hold, grow them and describe again.
 	if (!maxcolumncount && outsqlda->sqld>fieldcount) {
 		allocateResultSetBuffers(outsqlda->sqld);
 		if (isc_dsql_describe(firebirdconn->error,&stmt,1,outsqlda)) {
@@ -3860,10 +3844,9 @@ void firebirdcursor::getField(uint32_t col,
 			}
 
 			// Integer division truncates toward zero and the
-			// remainder carries the sign, so formatting the halves
-			// separately would put a sign on each of them - and
-			// lose it entirely when the integer part is zero.
-			// Render the sign once, from the whole value.
+			// remainder carries the sign, so formatting the
+			// halves separately would put a sign on each of them,
+			// and lose it entirely when the integer part is zero.
 			ISC_INT64	whole=v/p;
 			ISC_INT64	frac=v%p;
 			const char	*sign=(v<0)?"-":"";
@@ -4112,15 +4095,14 @@ void firebirdcursor::closeLobField(uint32_t col) {
 	}
 }
 
-// The result set buffers are deliberately left alone here, though any lob
-// left open by an abandoned fetch is closed below.  The controller caches
-// the column names it got from this cursor, which for firebird are
-// pointers into outsqldabuffer, and doesn't refresh them when a query is
-// re-executed without being re-prepared.  Freeing the buffers here would
-// leave those pointers dangling.  describeResultSet() grows them when a
-// query needs more columns, so nothing is held beyond the widest result set
-// this cursor has returned.
 void firebirdcursor::closeResultSet() {
+
+	// the result set buffers are deliberately left alone - the controller
+	// caches column names that point into outsqldabuffer and doesn't
+	// refresh them when a query is re-executed without being re-prepared
+	// (describeResultSet() grows them when a query needs more columns,
+	// so nothing is held beyond the widest result set this cursor has
+	// returned)
 
 	// close any lobs that were left open by an abandoned fetch
 	for (int32_t i=0; i<fieldcount; i++) {
@@ -4171,7 +4153,8 @@ uint32_t firebirdcursor::getInputBindPrecision(uint16_t index) {
 		return 0;
 	}
 
-	// same mapping as getColumnPrecision()
+	// same mapping as getColumnPrecision(), except that the types it
+	// answers 0 for fall through to sqllen here
 	switch (getInputBindType(index)) {
 		case CHAR_DATATYPE:
 		case VARCHAR_DATATYPE:

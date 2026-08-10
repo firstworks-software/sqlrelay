@@ -42,23 +42,17 @@
 #define TOKEN_RETURNSTATUS		0x79
 #define TOKEN_RETURNVALUE		0xAC
 
-// packet header size, and the smallest, default, and largest packet sizes,
-// given that the size on the wire is 16 bits and includes the header
+// packet header size, and the smallest, default, and largest packet sizes
+// (the size on the wire is 16 bits and includes the header)
 #define	PACKET_HEADER_SIZE		8
 #define	MIN_PACKET_SIZE			512
 #define	DEFAULT_PACKET_SIZE		4096
 #define	MAX_PACKET_SIZE			65535
 
-// recvPacket() reassembles a request out of one or more of the packets
-// above, with no size of its own on the wire - a multi-packet request
-// just keeps arriving until one arrives with STATUS_EOM set.  maxquerysize
-// bounds the query text itself further downstream (in ucs2 characters, so
-// 2 bytes/char, plus each request's ALL_HEADERS block and, for rpc and
-// bulk load, the parameter/row data on top of that), so it isn't a safe
-// byte-for-byte cap on the raw reassembled request - a legitimate
-// maxquerysize-sized batch alone is already ~2x that many bytes.  This is
-// a coarse, generous ceiling meant only to bound worst-case memory use;
-// the maxquerysize checks downstream remain the real, user-facing limits.
+// a floor under maxrequestsize, the coarse ceiling that recvPacket() puts on
+// a reassembled request, which has no size of its own on the wire.
+// maxquerysize downstream bounds the query text rather than the whole
+// request, so it can't cap this, but it remains the real, user-facing limit.
 #define	MIN_MAX_REQUEST_SIZE		(16*1024*1024)
 
 // login7's fixed header, before the variable length fields it points into.
@@ -155,25 +149,19 @@
 #define OLEDB_OFF	0x00
 #define OLEDB_ON	0x01
 
-// The collation a real sql server running SQL_Latin1_General_CP1_CI_AS
-// sends, both in the login env change and in every character column's
-// type info: lcid 0x0409 (en-US), flags 0x0d (ignore case, width and
-// kana) and sort id 0x34 (52).  It is not derived from the back end - no
-// back end reports a sql server collation, and most aren't sql server at
-// all - but it does have to agree with TDS_NONUNICODE_CHARSET below,
-// which is the encoding it tells the client the non-unicode character
-// columns are in.
+// the collation a real sql server running SQL_Latin1_General_CP1_CI_AS
+// sends: lcid 0x0409 (en-US), flags 0x0d (ignore case, width and kana)
+// and sort id 0x34.  no back end reports a sql server collation, so this
+// isn't derived from one, but it does have to agree with
+// TDS_NONUNICODE_CHARSET below.
 #define TDS_COLLATION_LCID	0x00D00409
 #define TDS_COLLATION_SORTID	0x34
 
 // character encodings used when moving character data between the client
 // and the back end
-//
-// The n-types are ucs-2 in the tds spec, but real clients send utf-16
-// surrogate pairs for characters outside the bmp, and utf-16le decodes
-// those correctly and ucs-2 identically otherwise.  //TRANSLIT makes
-// iconv substitute a '?' for a character cp1252 has no form for, which is
-// what a real sql server stores in a non-unicode column in that case.
+// (utf-16le rather than the spec's ucs-2, because real clients send
+// surrogate pairs outside the bmp.  //TRANSLIT makes iconv substitute a
+// '?' for a character cp1252 has no form for, like a real sql server)
 #define TDS_UNICODE_CHARSET	"UTF-16LE"
 #define TDS_NONUNICODE_CHARSET	"CP1252//TRANSLIT"
 #define TDS_BACKEND_CHARSET	"UTF-8"
@@ -213,16 +201,11 @@
 // than one of the client's parameters
 #define RPC_RETURN_VALUE_PARAM	0xFFFF
 
-// base for handles that sqlrelay mints itself for rpc-issued sp_prepare
-// statements (see newHandle()).  a client may instead get a handle
-// straight from the real backend by running "exec sp_prepare ..." in a
-// raw batch; those handles are small sequential integers starting near 1
-// that sqlrelay never records.  starting sqlrelay's own handles well
-// above that range keeps the two spaces disjoint, so a stmthandles
-// lookup miss can be trusted to mean "not one of ours, pass it through"
-// rather than a coin-flip on numeric collision.  chosen low enough that
-// the counter, which must fit a T-SQL int (signed 32-bit) on the wire,
-// can climb from here to INT32_MAX before wrapping.
+// base for the handles sqlrelay mints itself (see newHandle()).  a client
+// can get a small sequential handle straight from the backend instead, by
+// running "exec sp_prepare ..." in a raw batch, so keeping the two ranges
+// disjoint lets a stmthandles lookup miss mean "not one of ours".  low
+// enough for the counter to climb to INT32_MAX, the widest a T-SQL int holds.
 #define SQLRELAY_HANDLE_BASE	0x40000000
 
 // stream headers
@@ -282,7 +265,7 @@
 static byte_t	tdstypemap[]={
 	// "UNKNOWN"
 	(byte_t)TDS_TYPE_NULL,
-	// addded by freetds
+	// added by freetds
 	// "CHAR"
 	(byte_t)TDS_TYPE_BIGCHAR,
 	// "INT"
@@ -696,8 +679,7 @@ static byte_t	tdstypemap[]={
 #define SP_PREP_EXEC_RPC	14
 
 // the widest a decimal or numeric can be on the wire - 1 sign byte plus up
-// to 16 bytes of magnitude.  typeInfo() declares it and paramValue() has to
-// accept exactly it, so they share the constant rather than two literals.
+// to 16 bytes of magnitude
 #define TDS_DECIMAL_MAX_SIZE	17 
 #define SP_UNPREPARE		15 
 
@@ -725,8 +707,8 @@ static const char *procids[]={
 	"SP_UNPREPARE"
 };
 
-// Clients may send any of the procs above by name instead of by id.  Freetds
-// always sends sp_execute by name, for example.  Indices match procids above.
+// the procs above by name, which clients may send instead of the id
+// (freetds always sends sp_execute by name)
 static const char *procnames[]={
 	"",
 	"sp_cursor",
@@ -790,13 +772,12 @@ static const char *procnames[]={
 #define CURSOR_OP_SETPOSITION	0x0020
 #define CURSOR_OP_ABSOLUTE	0x0040
 
-// the most rows of a fetch that are kept for sp_cursor to position on.
-// A client that fetches more than this can still update the ones inside
-// the window, which covers every rowset size an odbc driver actually uses.
+// the most rows of a fetch that are kept for sp_cursor to position on,
+// which covers every rowset size an odbc driver actually uses
 #define CURSOR_MAX_POSITION_ROWS	1024
 
 // the most exec statements in one batch that get a synthesized return
-// status.  A batch with more than this just goes without one for the extras.
+// status
 #define BATCH_MAX_EXECS		32
 
 // the return status that all of these procs use for success
@@ -815,49 +796,38 @@ static const char *procnames[]={
 #define RPC_OP_UNSUPPORTED	16957
 #define RPC_FETCH_UNSUPPORTED	16958
 
-// a wire type this module doesn't recognize - unlike the errors above, a
-// real server never gets far enough to identify a proc to return this as a
-// status for, so it's reported as a plain error instead
+// a wire type this module doesn't recognize, reported as a plain error
+// rather than a return status - a real server never gets far enough to
+// identify a proc to return one for
 #define RPC_UNKNOWN_DATA_TYPE	8009
 
 // close-all cursor id for sp_cursorclose
 #define CURSOR_CLOSE_ALL	0xFFFFFFFF
 
 
-// A row of a result set, copied out of it while it was being sent.  A null
-// field has a NULL value.
+// a row copied out of a result set, with a NULL value for a null field
 class tdsrow {
 	public:
 		char		**values;
 		uint64_t	*sizes;
 };
 
-// The rows that the most recent sp_cursorfetch returned for one cursor.
-//
-// sp_cursor arrives as a request of its own, after the fetch that positioned
-// the cursor.  By then sqlrservercontroller's field pointers have been
-// re-aimed at whichever cursor fetched last - and looking the table's primary
-// key up fetches on another cursor in between - so the values a positioned
-// update needs in its where clause have to be copied while the row is being
-// read for the ROW token, not read back later.
+// the rows the most recent sp_cursorfetch returned for one cursor.  the
+// values have to be copied while the row is read for the ROW token -
+// sp_cursor arrives as a request of its own, by which time
+// sqlrservercontroller's field pointers have been re-aimed at whichever
+// cursor fetched last
 class tdsrows {
 	public:
 				tdsrows();
 
-		// discards the rows and starts over with "colcount" columns
 		void		reset(uint32_t colcount);
-
-		// appends an empty row and returns it, or NULL if the
-		// window is full
 		tdsrow		*newRow();
 		void		setField(tdsrow *row,
 						uint32_t col,
 						const char *value,
 						uint64_t size,
 						bool null);
-
-		// rownum is 1-based, the way sp_cursor numbers rows.
-		// Returns NULL if there is no such row.
 		tdsrow		*getRow(uint64_t rownum);
 
 		uint32_t	getColCount();
@@ -909,6 +879,7 @@ void tdsrows::setField(tdsrow *row, uint32_t col,
 }
 
 tdsrow *tdsrows::getRow(uint64_t rownum) {
+	// rownum is 1-based, the way sp_cursor numbers rows
 	if (!rownum || rownum>rows.getCount()) {
 		return NULL;
 	}
@@ -926,19 +897,11 @@ uint32_t tdsrows::getColCount() {
 
 class sqlrprotocol_tds;
 
-// A filedescriptor that shares another one's descriptor.  Closing it would
-// close the socket out from under whoever really owns it, so two things
-// keep that from happening.
-//
-// lowLevelClose() is a no-op, which covers an explicit close() of a live
-// object.
-//
-// The destructor unbinds the descriptor, which covers the base class
-// destructor's close().  The no-op alone can't - by the time
-// ~filedescriptor() runs, this sub-object is gone, so the virtual call
-// lands on filedescriptor::lowLevelClose(), which really does close
-// whatever descriptor number is still set.  Unbinding first leaves
-// nothing to close.
+// a filedescriptor that shares another one's descriptor, without ever
+// closing it out from under whoever really owns it.  the no-op
+// lowLevelClose() covers an explicit close(); the destructor has to unbind
+// the descriptor as well, because by the time ~filedescriptor() runs this
+// sub-object is gone and the virtual call lands on the base class close.
 class tdssharedfd : public filedescriptor {
 	public:
 			~tdssharedfd();
@@ -954,32 +917,17 @@ int32_t tdssharedfd::lowLevelClose() {
 	return 0;
 }
 
-// The TLS engine's end of the client socket.
-//
-// MS-TDS tunnels the TLS handshake inside TDS packets - the client wraps its
-// handshake records in packets of its own, and expects the server's records
-// wrapped the same way - so something has to add and strip that framing
-// between the TLS engine and the socket.  This is that something: the
-// tlscontext reads and writes it, and it reads and writes the real client
-// socket.
-//
-// Framing is only on for the handshake.  Once that's done the records flow
-// unframed, and this just passes them through.  It stays bound to the
-// tlscontext either way - the context keeps the pointer for as long as the
-// TLS session lives.
-//
-// The pass-through goes through the client socket's own read() and write()
-// rather than a second descriptor bound to the same socket, because the
-// client socket's read buffer may already hold bytes read ahead of the
-// handshake, and a second descriptor would race it for the rest.
+// the tls engine's end of the client socket.  ms-tds tunnels the tls
+// handshake inside tds packets, so this sits between the tls context and
+// the real client socket, adding and stripping that framing.  framing is
+// only on for the handshake; afterward it just passes records through, on
+// the client socket's own read() and write() rather than a second
+// descriptor, which would race it for bytes already in its read buffer.
 class tdstlsframer : public tdssharedfd {
 	public:
 			tdstlsframer(sqlrprotocol_tds *tds);
 			~tdstlsframer();
 
-		// turns framing on or off.  Turning it on discards any
-		// partly-read packet; turning it off leaves what's left of
-		// it to be served by the pass-through read.
 		void	setFraming(bool framing);
 	protected:
 		ssize_t	lowLevelRead(void *buf, size_t count);
@@ -991,8 +939,7 @@ class tdstlsframer : public tdssharedfd {
 
 		bool		framing;
 
-		// the payload of the packet currently being served to the
-		// TLS engine, and how much of it is left
+		// the packet currently being served to the tls engine
 		byte_t		*readbuffer;
 		uint32_t	readbuffersize;
 		uint32_t	readposition;
@@ -1015,33 +962,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	free();
 		void	reInit();
 
-		// Converts "insize" bytes at "inbuf" from character
-		// encoding "inenc" to "outenc".  Returns a newly
-		// allocated, null-terminated buffer and sets "outsize" to
-		// the size of the converted data in bytes, or returns NULL
-		// if the conversion isn't supported or the data can't be
-		// converted.
 		byte_t	*convertCharset(const byte_t *inbuf,
 					size_t insize,
 					const char *inenc,
 					const char *outenc,
 					size_t *outsize);
-		// Converts "chars" characters of the client's ucs-2 to the
-		// utf-8 that the back end takes query text and string
-		// values in.  Sets "size" to the result's length in bytes.
 		char	*ucs2ToUtf8(const ucs2_t *str,
 					size_t chars,
 					size_t *size);
-		// Converts "size" bytes of the back end's utf-8 to ucs-2,
-		// for the client's unicode column types.  Sets "chars" to
-		// the result's length in characters.
 		ucs2_t	*utf8ToUcs2(const char *str,
 					size_t size,
 					size_t *chars);
-		// Converts "size" bytes of the back end's utf-8 to the
-		// cp1252 that the collation declares for the client's
-		// non-unicode column types.  Sets "outsize" to the
-		// result's length in bytes.
 		char	*utf8ToCp1252(const char *str,
 					size_t size,
 					size_t *outsize);
@@ -1059,16 +990,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void		negotiateTdsVersion();
 
 		bool	preLogin();
-		// decides what to answer the client's encryption option
-		// with, and what that answer commits the session to
 		byte_t	negotiateEncryption(byte_t clientencryption);
-		// runs the handshake and puts the tls session in front of
-		// the client socket
 		bool	startTls();
-		// takes it back out again
 		void	stopTls();
-		// whether size bytes at offset bytes from the start of the
-		// packet are still inside a packetsize-byte packet
 		bool	fitsInPacket(uint16_t offset,
 						size_t size,
 						size_t packetsize);
@@ -1076,9 +1000,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	preTds7Login();
 
 		bool	tds7Login();
-		// whether a login7 field is within its maximum and still
-		// inside the packet, dropping the length along with the
-		// field when it isn't
 		bool	loginFieldFits(const char *name,
 						uint16_t ib,
 						uint16_t *cch,
@@ -1118,10 +1039,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	sspi();
 
 		bool	sqlBatch();
-		// Finds the exec/execute statements in a batch and, for
-		// each one, records the 1-based index of the result set
-		// that its return status has to follow.  Returns how many
-		// were recorded.
 		uint16_t	batchExecResultSets(const char *sql,
 						uint16_t *rsindex,
 						uint16_t maxcount);
@@ -1151,20 +1068,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	isVarLenType(byte_t tdstype);
 		bool	isPartLenType(byte_t tdstype);
 		bool	isCharType(byte_t tdstype);
-		// Maps a backend-reported column size onto one of the widths
-		// that "n" types (intn, bitn, fltn, moneyn, datetimn) are
-		// allowed to use.  Backends don't agree about what column
-		// size means for those types.  FreeTDS reports the storage
-		// width in bytes, but ODBC reports SQL_DESC_LENGTH, which is
-		// a digit count.
 		byte_t	nTypeSize(uint16_t coltype,
 					byte_t tdstype,
 					uint32_t colsize);
 		int64_t	moneyValue(const char *field);
 		uint64_t	rows(sqlrservercursor *cursor);
-		// "position" is where sp_cursor gets the row values that
-		// a positioned update matches on, so only sp_cursorfetch
-		// passes one
 		uint64_t	rows(sqlrservercursor *cursor,
 					uint64_t maxrows,
 					tdsrows *position=NULL);
@@ -1217,9 +1125,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	guid(const char *field, byte_t *g);
 		byte_t	charsToHex(const char *chars);
 
-		// Answers the "insert bulk" statement that opens a bulk
-		// load, rather than passing it to the backend, and returns
-		// false if the statement isn't one.
 		bool	insertBulk(const char *sql);
 		bool	bulkLoad();
 		bool	bulkColMetaData(const byte_t **rpinout,
@@ -1292,13 +1197,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t *rpsizeout,
 					bool *more);
 
-		// rpc parameter accessors - "param" indexes the parameters
-		// as they arrived on the wire
+		// rpc parameter accessors, indexed as the params arrived
 		bool		paramIsNull(uint16_t param);
 		int64_t		paramInteger(uint16_t param);
 		const char	*paramString(uint16_t param);
 
-		// binds params [first..rpcparamcount) to the cursor
 		void	bindParams(sqlrservercursor *cursor, uint16_t first,
 						bool returnvalue=false);
 
@@ -1340,9 +1243,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t querysize,
 						uint16_t bindcount);
 
-		// appends "value=@n" or "value is null" for each of the
-		// cursor's primary key columns, and the binds to go with
-		// them.  Returns false if the table has no usable key.
 		bool	positionedWhere(sqlrservercursor *cursor,
 						const char *table,
 						tdsrow *row,
@@ -1351,8 +1251,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						sqlrserverbindvar *binds,
 						uint16_t *bindcount);
 
-		// matches an sp_cursor value parameter's name to a column of
-		// the cursor's result set, with one leading @ stripped
 		const char	*positionedColumn(sqlrservercursor *cursor,
 							uint16_t param);
 		void	positionedBind(sqlrserverbindvar *bv,
@@ -1365,8 +1263,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						memorypool *bindpool,
 						uint16_t param);
 
-		// the rows that the most recent sp_cursorfetch returned
-		// for "cursor"
 		tdsrows	*positionRows(sqlrservercursor *cursor, bool create);
 		void	releasePositionRows(sqlrservercursor *cursor);
 		void	releaseAllPositionRows();
@@ -1411,7 +1307,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		sqlrservercursor	*availableCursor(
 					sqlrservercursor *keep=NULL);
 
-		// converts odbc {call p(?,?)} syntax to exec p ?,?
 		char	*callSyntaxToExec(const char *stmt);
 
 		void	envChange(byte_t type,
@@ -1421,7 +1316,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t oldvaluelen);
 
 		// info/error token builders - these only append to the
-		// response packet, the caller decides when to send it
+		// response packet, the caller sends it
 		void	appendInfo(uint32_t number,
 					byte_t state,
 					byte_t infoclass,
@@ -1499,22 +1394,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		void	debugSystemError();
 
-		// The socket the client is really connected to, and the one
-		// the rest of the module reads and writes.  They're the same
-		// until tls is negotiated, after which clientsock points at
-		// tlsstream and every read and write goes through the tls
-		// session.
+		// the same socket until tls is negotiated, after which
+		// clientsock points at tlsstream
 		filedescriptor	*rawclientsock;
 		filedescriptor	*clientsock;
 
-		// the client socket, seen through the tls session
 		tdssharedfd	tlsstream;
 
-		// the tls session, seen from the socket end
 		tdstlsframer	*tlsframer;
 
-		// what the pre-login negotiated: no tls, tls for the login
-		// packet only, or tls for the whole session
 		enum	tlsmode_t {
 			TLS_MODE_NONE=0,
 			TLS_MODE_LOGIN,
@@ -1522,12 +1410,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		};
 		tlsmode_t	tlsmode;
 
-		// whether the client answered that it doesn't support
-		// encryption while tls was required
 		bool		tlsrefused;
 
-		// whether clientsock is currently going through the tls
-		// session
 		bool		tlsactive;
 
 		uint32_t	configtdsversion;
@@ -1559,15 +1443,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool		dbistds;
 
-		// whether the session has logged in.  The listener doesn't
-		// authenticate - every protocol module owns that - so nothing
-		// but this stands between a client's first packet and the
-		// parsers.
 		bool		loggedin;
 
-		// rpc parameters, as they arrived on the wire.  The handlers
-		// decide which are the proc's own arguments and which are
-		// bind values for the statement it carries.
+		// rpc parameters, as they arrived on the wire
 		memorypool		rpcparampool;
 		sqlrserverbindvar	*rpcparams;
 		bool			*rpcparambyref;
@@ -1578,21 +1456,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint16_t		*outbindparams;
 		uint16_t		rpcparamcount;
 
-		// whether the rpc currently being handled failed, so that
-		// the done that closes it can say so
 		bool			rpcfailed;
 
-		// whether params() bailed on a wire type it doesn't
-		// recognize, part way through the parameter list - rpc()
-		// checks this to end the request cleanly (matching a real
-		// server rejecting the one unknown parameter) instead of
-		// treating the parse failure as a corrupted stream
 		bool			rpcunsupportedtype;
 
-		// The table and columns that the "insert bulk" statement
-		// named, and the column metadata that the bulk load packet
-		// itself carries.  The two arrive in separate requests, so
-		// they have to be kept between them.
+		// the "insert bulk" statement and the bulk load packet
+		// arrive in separate requests, so these are kept between them
 		memorypool		bulkpool;
 		char			*bulktable;
 		char			**bulkcolumns;
@@ -1601,33 +1470,20 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t		*bulksizes;
 		byte_t			*bulkscales;
 
-		// prepared statement and cursor handles.  These are handed
-		// out independently of each other and of the cursor id,
-		// because a client can hold a prepared handle and a cursor
-		// derived from it at the same time.  Handle 0 is invalid.
+		// a client can hold a prepared statement handle and a cursor
+		// derived from it at the same time, so these are independent
 		dictionary<uint32_t, sqlrservercursor *>	stmthandles;
 		dictionary<uint32_t, sqlrservercursor *>	cursorhandles;
 		uint32_t					nexthandle;
 
-		// the cursor that the request being processed got from the
-		// pool, so that an attention that abandons the request can
-		// put it back
 		sqlrservercursor				*pendingcursor;
 
-		// matches a trailing "for update [of col,...]" clause in a
-		// cursor-declare statement, so it can be stripped before the
-		// statement is prepared - sqlrelay tracks positioned-update
-		// state itself rather than opening a real backend-native
-		// cursor, and mssql only accepts that clause inside an actual
-		// DECLARE CURSOR statement, not a bare select
 		regularexpression	forupdateof;
 
 		// false once a cursor has been executed, so that fetching
 		// more rows doesn't run the query again
 		dictionary<sqlrservercursor *, bool>		executeflag;
 
-		// the rows that the most recent sp_cursorfetch returned for
-		// each open cursor, which is what sp_cursor positions on
 		dictionary<sqlrservercursor *, tdsrows *>	positionrows;
 };
 
@@ -1643,9 +1499,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	tlsrefused=false;
 	tlsactive=false;
 
-	// the version that getServerTdsVersion() guesses from the backend's
-	// version string can be overridden, for backends that it can't
-	// work out on its own
+	// overrides the version that getServerTdsVersion() guesses from the
+	// backend's version string, for backends it can't work out on its own
 	configtdsversion=(uint32_t)charstring::convertToInteger(
 				parameters->getAttributeValue("tdsversion"));
 
@@ -1755,10 +1610,9 @@ tdstlsframer::~tdstlsframer() {
 
 void tdstlsframer::setFraming(bool framing) {
 
-	// Only a fresh handshake discards what's staged.  Turning framing
-	// off has to keep it - the client's last handshake packet can carry
-	// bytes past the end of the handshake, which the tls engine didn't
-	// consume, and the pass-through read below still has to serve them.
+	// only a fresh handshake discards what's staged - the client's last
+	// handshake packet can carry bytes past the end of the handshake,
+	// which the pass-through read below still has to serve
 	if (framing) {
 		readbuffersize=0;
 		readposition=0;
@@ -1803,9 +1657,8 @@ ssize_t tdstlsframer::lowLevelRead(void *buf, size_t count) {
 
 bool tdstlsframer::readPacket() {
 
-	// Loop past empty packets.  A packet with no payload would leave
-	// nothing to serve, and returning 0 bytes would look like the client
-	// hung up.
+	// loop past empty packets
+	// (returning 0 bytes would look like the client hung up)
 	for (;;) {
 
 		// get the header
@@ -1855,9 +1708,8 @@ bool tdstlsframer::readPacket() {
 
 ssize_t tdstlsframer::lowLevelWrite(const void *buf, size_t count) {
 
-	// pass through, once the handshake is out of the way.  The flush is
-	// needed either way - the client socket buffers writes, and nothing
-	// above this knows to flush it.
+	// pass through, once the handshake is out of the way (the client
+	// socket buffers writes, and nothing above knows to flush it)
 	if (!framing) {
 		ssize_t	result=tds->rawclientsock->write(
 						(const byte_t *)buf,count);
@@ -1868,9 +1720,8 @@ ssize_t tdstlsframer::lowLevelWrite(const void *buf, size_t count) {
 	}
 
 	// frame the records, splitting them across packets the way
-	// sendPacket() does.  The client doesn't check the packet type,
-	// and a real server answers a pre-login with a tabular result,
-	// so that's what these go out as.
+	// sendPacket() does (they go out as tabular results, which is what
+	// a real server answers a pre-login with)
 	const byte_t	*data=(const byte_t *)buf;
 	uint64_t	remaining=count;
 	uint32_t	maxdatasize=
@@ -1957,8 +1808,8 @@ void sqlrprotocol_tds::init() {
 	// this connection next must not inherit the previous client's login
 	loggedin=false;
 
-	// handle 0 is invalid; start above SQLRELAY_HANDLE_BASE to stay
-	// disjoint from real-backend-issued handles (see newHandle())
+	// start at SQLRELAY_HANDLE_BASE, to stay disjoint from the handles
+	// the real backend issues (see newHandle())
 	nexthandle=SQLRELAY_HANDLE_BASE;
 	pendingcursor=NULL;
 
@@ -2001,9 +1852,8 @@ byte_t *sqlrprotocol_tds::convertCharset(const byte_t *inbuf,
 						const char *outenc,
 						size_t *outsize) {
 
-	// size the output buffer.  4 bytes per input byte covers every
-	// conversion done here, and 2 more leave room to null-terminate
-	// the result whether it's 1 or 2 bytes per character.
+	// size the output buffer - 4 bytes per input byte covers every
+	// conversion done here, plus room for a 1 or 2 byte null terminator
 	size_t	outbufsize=insize*4+2;
 	byte_t	*outbuf=new byte_t[outbufsize];
 
@@ -2144,9 +1994,8 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// sanity checks.  TABULAR_RESULT is deliberately not in this
-		// list - it's the type sendPacket() frames every response as,
-		// so a client never sends it.
+		// sanity checks (TABULAR_RESULT isn't in the list - a client
+		// never sends the type sendPacket() frames responses as)
 		if (*packettype!=SQL_BATCH &&
 			*packettype!=PRE_TDS7_LOGIN &&
 			*packettype!=RPC &&
@@ -2171,23 +2020,18 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		packetsize-=PACKET_HEADER_SIZE;
 
 		// a zero-byte payload is only legal on the last packet of a
-		// request (eg. ATTENTION_SIGNAL, which is always a single,
-		// empty, eom packet) - anywhere else it's a client sending
-		// header-only packets to spin this loop forever without
-		// ever growing reqpacket
+		// request (eg. ATTENTION_SIGNAL) - anywhere else it's a client
+		// spinning this loop forever with header-only packets
 		if (!packetsize && !(packetstatus&STATUS_EOM)) {
 			debugWrite("empty non-eom packet");
 			debugSystemError();
 			return false;
 		}
 
-		// cap the total size of the reassembled request - nothing
-		// upstream of this loop knows the packet count or total size
-		// in advance, and STATUS_EOM is entirely up to the client, so
-		// without this a client can grow reqpacket without bound by
-		// just never setting it.  Checked before the read below so a
-		// packet that would exceed the cap doesn't get its payload
-		// read (and allocated) at all.
+		// cap the total size of the reassembled request - STATUS_EOM is
+		// entirely up to the client, so without this it can grow
+		// reqpacket without bound by never setting it.  checked before
+		// the read below, so an over-cap packet is never allocated.
 		if ((uint64_t)reqpacket.getSize()+(uint64_t)packetsize>
 							maxrequestsize) {
 			debugWrite("request too large: %lld",
@@ -2197,8 +2041,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		}
 
 		// get the packet data
-		// (read into a reused memorypool - it's fast, minimizes
-		// heap fragmentation, and the data is copied into
+		// (into a reused memorypool - the data is copied into
 		// reqpacket immediately below)
 		reqpacketpool.clear();
 		byte_t	*packet=reqpacketpool.allocate(packetsize);
@@ -2340,10 +2183,10 @@ bool sqlrprotocol_tds::sendPacket() {
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
 
-	// The callers cap this too, but they're far enough away that this
-	// has to stand on its own.  size and i both have to be size_t's -
+	// the callers cap this too, but they're far enough away that it has
+	// to stand on its own.  size and i below both have to be size_t's -
 	// a 16-bit size truncates and over-reads the copy, and a 16-bit i
-	// with a 64-bit size never terminates.
+	// with a 64-bit size never terminates
 	if (charcount>MAX_LOGIN_CHARS) {
 		return NULL;
 	}
@@ -2457,7 +2300,7 @@ uint32_t sqlrprotocol_tds::tdsVersionHexToDec(uint32_t tdsversion) {
 			return 731;
 		case 0x04000074:
 		case 0x74000004:
-			// SQL Server 2012, 2014, 2106
+			// SQL Server 2012, 2014, 2016
 			return 740;
 		default:
 			return 700;
@@ -2495,7 +2338,7 @@ uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 				// SQL Server 2008 R2
 				return 0x730B0003;
 			case 740:
-				// SQL Server 2012, 2014, 2106
+				// SQL Server 2012, 2014, 2016
 				return 0x74000004;
 			default:
 				return 0x07000000;
@@ -2529,7 +2372,7 @@ uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 				// SQL Server 2008 R2
 				return 0x03000B73;
 			case 740:
-				// SQL Server 2012, 2014, 2106
+				// SQL Server 2012, 2014, 2016
 				return 0x04000074;
 			default:
 				return 0x00000070;
@@ -2539,12 +2382,10 @@ uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 
 void sqlrprotocol_tds::negotiateTdsVersion() {
 
-	// If we couldn't work out the backend's tds version then go with
-	// whatever the client asked for.  Falling back to an old version
-	// hangs the client, because the width of some fields varies with the
-	// version, and clients don't necessarily reconsider the version they
-	// asked for.  FreeTDS, for example, sizes the done token's rowcount
-	// from the version it requested, not from the one we send back.
+	// if we couldn't work out the backend's tds version then go with
+	// whatever the client asked for - falling back to an older one hangs
+	// the client, which sizes some fields from the version it requested
+	// rather than the one we send back
 	uint32_t	stv=(servertdsversion)?servertdsversion:
 					(clienttdsversion)?clienttdsversion:700;
 
@@ -2589,12 +2430,10 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 			break;
 		}
 
-		// exactly one set of requests is legal in each state, so
-		// reject the mismatch in both directions.  A login-phase
-		// request that arrives a second time is as bad as a query
-		// that arrives before the first one - it re-auths the session
-		// under the modules and renegotiates the wire format, while
-		// the previous user's cursors are still open.
+		// exactly one set of requests is legal in each state, so reject
+		// the mismatch in both directions - a login-phase request that
+		// arrives a second time re-auths the session and renegotiates
+		// the wire format while the previous user's cursors are open
 		bool	loginrequest=(packettype==PRE_LOGIN ||
 					packettype==PRE_TDS7_LOGIN ||
 					packettype==TDS7_LOGIN ||
@@ -2670,11 +2509,9 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				break;
 		}
 
-		// the request is done and its response has been sent, so
-		// there's nothing left for an attention to cancel.  a cursor
-		// the request meant to leave open is still in its handle
-		// dictionary, and an sp_unprepare or sp_cursorclose is what
-		// releases it now.
+		// the request is done and answered, so there's nothing left for
+		// an attention to cancel.  a cursor it meant to leave open is
+		// still in its handle dictionary.
 		pendingcursor=NULL;
 
 	} while (loop);
@@ -2759,9 +2596,9 @@ bool sqlrprotocol_tds::preLogin() {
 			break;
 		}
 
-		// The cases below read a fixed size, whatever ploptsize
-		// says, so each one needs its own bound.  Only PL_INSTOPT
-		// reads exactly ploptsize, which the check above covers.
+		// the cases below read a fixed size, whatever ploptsize
+		// says, so each needs its own bound - only PL_INSTOPT reads
+		// exactly ploptsize, which the check above covers
 
 		// get the option data
 		const byte_t		*dummy;
@@ -2936,10 +2773,8 @@ bool sqlrprotocol_tds::preLogin() {
 	ploptsize=sizeof(encryption);
 	ploptoff+=ploptsize;
 	writeBE(&resppacket,ploptsize);
-	// A client that never sent the option didn't offer a handshake, so
-	// it gets the same answer as one that said it doesn't support
-	// encryption, rather than being pushed into a handshake it isn't
-	// expecting.
+	// a client that never sent the option didn't offer a handshake, so it
+	// gets the same answer as one that said it doesn't support encryption
 	encryption=negotiateEncryption(
 			(sawencryption)?encryption:(byte_t)ENCRYPT_NOT_SUP);
 	write(&packetdata,encryption);
@@ -3025,10 +2860,9 @@ byte_t sqlrprotocol_tds::negotiateEncryption(byte_t clientencryption) {
 			tlsmode=TLS_MODE_SESSION;
 			return ENCRYPT_ON;
 		default:
-			// A client that says it doesn't support encryption
-			// can't be pushed into a handshake it never offered,
-			// and tls="yes" has no "optional" mode, so the login
-			// that follows gets refused instead.
+			// tls="yes" has no "optional" mode, and a client
+			// that says it doesn't support encryption can't be
+			// pushed into a handshake, so refuse the login
 			tlsrefused=true;
 			return ENCRYPT_NOT_SUP;
 	}
@@ -3038,10 +2872,10 @@ bool sqlrprotocol_tds::startTls() {
 
 	debugStart("tls");
 
-	// Cap the version, unless the operator pinned one.  freetds's
-	// gnutls build doesn't flush what's left in its buffers after the
-	// handshake, and tls 1.3 leaves post-handshake records there,
-	// which corrupts the stream that follows.
+	// cap the version, unless the operator pinned one - freetds's gnutls
+	// build doesn't flush what's left in its buffers after the handshake,
+	// and tls 1.3 leaves post-handshake records there, which corrupts the
+	// stream that follows
 	if (charstring::isNullOrEmpty(
 				getTlsContext()->getProtocolVersion())) {
 		getTlsContext()->setProtocolVersion("TLS1.2");
@@ -3061,10 +2895,8 @@ bool sqlrprotocol_tds::startTls() {
 		return false;
 	}
 
-	// From here on, reads and writes go through the tls session, which
-	// reads and writes the socket through the framer.  tlsstream shares
-	// the socket's descriptor, but only for the operations that the
-	// socket layer doesn't handle itself.
+	// from here on, reads and writes go through the tls session, which
+	// reads and writes the socket through the framer
 	tlsstream.setFileDescriptor(rawclientsock->getFileDescriptor());
 	tlsstream.setSocketLayer(getTlsContext());
 	tlsstream.setTranslateByteOrder(true);
@@ -3085,9 +2917,8 @@ void sqlrprotocol_tds::stopTls() {
 	debugWrite("dropping tls");
 	debugEnd();
 
-	// Go back to reading and writing the socket directly.  No
-	// close-notify - the client doesn't send one either, and expects
-	// the next byte to be the start of a plain tds packet.
+	// go back to the socket directly, with no close-notify - the client
+	// doesn't send one either and expects the next byte to start a packet
 	clientsock=rawclientsock;
 	tlsstream.setSocketLayer(NULL);
 	tlsstream.close();
@@ -3097,16 +2928,12 @@ void sqlrprotocol_tds::stopTls() {
 bool sqlrprotocol_tds::fitsInPacket(uint16_t offset,
 						size_t size,
 						size_t packetsize) {
-	// Subtraction rather than offset+size<=packetsize, which can wrap.
-	// Both of preLogin()'s operands are 16 bits, but the sspi block's
-	// size is 32, and on a 32-bit build that sum overflows.
+	// subtraction rather than offset+size<=packetsize, which can wrap -
+	// the sspi block's size is 32 bits, and on a 32-bit build that sum
+	// overflows
 	return (offset<=packetsize && size<=packetsize-offset);
 }
 
-// A field that fails either test is dropped, leaving its pointer NULL.
-// The length has to be dropped with it - the two travel together into the
-// debug block, auth(), changeDatabase() and changeLanguage(), and neither
-// safePrint() nor envChange() survives a NULL pointer with a nonzero length.
 bool sqlrprotocol_tds::loginFieldFits(const char *name,
 						uint16_t ib,
 						uint16_t *cch,
@@ -3114,10 +2941,9 @@ bool sqlrprotocol_tds::loginFieldFits(const char *name,
 						size_t charsize,
 						size_t rpsize) {
 
-	// An empty field reads nothing, so where it points doesn't matter.
-	// Checking it anyway would turn an empty username or password from
-	// "" into NULL going into auth(), for clients that leave the offset
-	// of a field they don't use pointing anywhere at all.
+	// an empty field reads nothing, so where it points doesn't matter -
+	// checking it anyway would turn an empty username or password into
+	// NULL going into auth()
 	if (!*cch) {
 		return true;
 	}
@@ -3127,6 +2953,8 @@ bool sqlrprotocol_tds::loginFieldFits(const char *name,
 		debugWrite("%s: %hd exceeds the %hd maximum, "
 				"dropping the field",name,*cch,max);
 		debugEnd();
+		// drop the length too - safePrint() and envChange() don't
+		// survive a NULL pointer with a nonzero length
 		*cch=0;
 		return false;
 	}
@@ -3187,13 +3015,12 @@ bool sqlrprotocol_tds::tds7Login() {
 	const byte_t	*rp=reqpacket.getBuffer();
 	const byte_t	*startrp=rp;
 
-	// the whole request, in bytes.  Not decremented as the header is
-	// read - the header is read straight through, and the fields after
-	// it are indexed off startrp rather than walked.
+	// the whole request, in bytes - not decremented as the header is
+	// read, since the fields after it are indexed off startrp
 	size_t		rpsize=reqpacket.getSize();
 
 	// the fixed header is read straight through below, so it has to be
-	// there.  Nothing has been allocated yet, so there's nothing to free.
+	// there
 	if (rpsize<LOGIN7_HEADER_SIZE) {
 		debugStart("tds7 login");
 		debugWrite("truncated login7: %lld<%d",
@@ -3445,22 +3272,19 @@ bool sqlrprotocol_tds::tds7Login() {
 							cchchangepassword);
 	}
 	// cbsspilong is only consulted when cbsspi is saturated, and it only
-	// exists from tds 7.2 up.  The version test is documentation rather
-	// than a behaviour change - below 7.2 cbsspilong is still 0 from its
-	// initializer, so the test it guards would fail anyway.  Nothing here
-	// bounds anything; the checks below are what do that.
+	// exists from tds 7.2 up
+	// (the version test is documentation rather than a behaviour change -
+	// below 7.2 cbsspilong is still 0 from its initializer)
 	uint32_t	sspisize=cbsspi;
 	if (clienttdsversion>=720 && cbsspi==65535 && cbsspilong) {
 		sspisize=cbsspilong;
 	}
 
-	// This one isn't bounded by the packet on its own.  recvPacket()
-	// only caps the total request at maxrequestsize (#9138), which is
-	// far looser than MAX_LOGIN_SSPI_BYTES, so rpsize can still be much
-	// larger than this field is allowed to be, and the maximum has to
-	// come first.  The size has to be dropped along with the pointer,
-	// because the hex dump below walks the length whether or not
-	// there's a buffer at the other end.
+	// this one isn't bounded by the packet on its own - recvPacket() only
+	// caps the total request at maxrequestsize, which is far looser than
+	// MAX_LOGIN_SSPI_BYTES, so the maximum has to come first.  the size
+	// has to be dropped along with the pointer, because the hex dump
+	// below walks the length whether or not there's a buffer.
 	if (sspisize>MAX_LOGIN_SSPI_BYTES) {
 		debugStart("tds7 login");
 		debugWrite("sspi: %u exceeds the %d maximum, "
@@ -3627,9 +3451,8 @@ bool sqlrprotocol_tds::tds7Login() {
 	}
 
 	// change collation...
-	// A real sql server answers with the collation it actually uses
-	// rather than echoing the client's lcid back, and the client sizes
-	// its charset conversions from that.
+	// (a real server answers with the collation it actually uses rather
+	// than echoing the client's lcid back)
 	if (retval) {
 		if (changeCollation(clientlcid)) {
 			envChangeSqlCollation(TDS_COLLATION_LCID,
@@ -3850,10 +3673,8 @@ bool sqlrprotocol_tds::changeCollation(uint32_t lcid) {
 	bool		lcidbinary2=(lcid&(0x01<<5))>>5;
 	byte_t		lcidversion=(lcid&(0x0F<<8))>>8;
 
-	// The lcid in a login is a request, not a setting.  There is no
-	// per-session collation to switch here - the back end's own is
-	// whatever it is - so any lcid is accepted, and the caller sends
-	// the collation the server really uses back to the client.
+	// the lcid in a login is a request, not a setting - there is no
+	// per-session collation to switch here, so any lcid is accepted
 	bool	changecollationsuccess=true;
 
 	if (getDebug()) {
@@ -4023,16 +3844,14 @@ bool sqlrprotocol_tds::attention() {
 	debugStart("attention");
 	debugEnd();
 
-	// The query has already run by the time the cancel arrives, so
-	// there's nothing to interrupt.  MS-TDS 2.2.1.6 says to acknowledge
-	// it with a done that has the attention bit set, either way.
+	// the query has already run by the time the cancel arrives, so
+	// there's nothing to interrupt, but MS-TDS 2.2.1.6 says to
+	// acknowledge it with a done that has the attention bit set
 
-	// The client is walking away from the request though, and won't
-	// send the sp_unprepare or sp_cursorclose that would have released
-	// the cursor it left open, so put that cursor back here.  The
-	// protocol doesn't say which handle the attention is for, so it's
-	// the request's own cursor that gets released, and only if it's
-	// still one of the handles this module handed out.
+	// the client won't send the sp_unprepare or sp_cursorclose that
+	// would have released the cursor it left open, so put it back here
+	// (the protocol doesn't say which handle the attention is for, so
+	// it's the request's own cursor, and only if this module minted it)
 	if (pendingcursor &&
 		(handlesContain(&stmthandles,pendingcursor) ||
 		handlesContain(&cursorhandles,pendingcursor))) {
@@ -4116,9 +3935,8 @@ bool sqlrprotocol_tds::sqlBatch() {
 		return sendQueryTooLargeError(sql8size);
 	}
 
-	// A bulk load opens with an "insert bulk" statement.  Only the
-	// protocol module can answer that - passing it through would put
-	// the backend's own connection into bulk mode.
+	// a bulk load opens with an "insert bulk" statement - passing it
+	// through would put the backend's own connection into bulk mode
 	if (insertBulk(sql8)) {
 
 		delete[] sql8;
@@ -4133,17 +3951,15 @@ bool sqlrprotocol_tds::sqlBatch() {
 			return sendPacket();
 		}
 
-		// The client won't leave its pending state, and so won't
-		// start sending bulk data, unless this done clears
-		// DONE_MORE.
+		// the client won't start sending bulk data unless this
+		// done clears DONE_MORE
 		done();
 		return sendPacket();
 	}
 
-	// A batch has no bind variables, and the cursor may have been left
-	// with some by an rpc that used it earlier.  Nothing in the batch
-	// that looks like a bind variable is one either.  @name is a local
-	// variable or a parameter declaration, and @@name is a global.
+	// a batch has no bind variables, and the cursor may have been left
+	// with some by an rpc that used it earlier.  @name in a batch is a
+	// local variable or a parameter declaration, and @@name is a global.
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
 	cont->setInputOutputBindCount(cursor,0);
@@ -4202,13 +4018,11 @@ bool sqlrprotocol_tds::sqlBatch() {
 				(DONE_MORE|DONE_COUNT):
 				(DONE_FINAL|DONE_COUNT),0,rowcount);
 
-			// Odbc gives no way to see the return status of an
-			// exec inside a batch, but native sql server sends
-			// one, and clients count on it being there.  A
-			// success status stands in for it.  FreeTDS throws
-			// away a return-status that anything other than a
-			// done-proc follows, so the two tokens have to stay
-			// adjacent.
+			// odbc gives no way to see the return status of an
+			// exec inside a batch, so a success status stands
+			// in for the one clients expect.  freetds throws
+			// away a return-status that anything but a done-proc
+			// follows, so the two tokens have to stay adjacent.
 			for (uint16_t i=0; i<pairs; i++) {
 				returnStatus(RPC_STATUS_SUCCESS);
 				doneProc((avail || i+1<pairs)?
@@ -4421,9 +4235,9 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 		uint32_t	headersize;
 		uint16_t	headertype;
 
-		// The clamp above keeps allheaderssize no larger than
+		// the clamp above keeps allheaderssize no larger than
 		// rpsize, and both drop by the same amount each pass, so
-		// this also keeps the two reads below inside the packet.
+		// this keeps the two reads below inside the packet too
 		if (allheaderssize<sizeof(headersize)+sizeof(headertype)) {
 			debugWrite("truncated header");
 			break;
@@ -4441,8 +4255,7 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 			debugWrite("invalid header size: %d",headersize);
 			// rpsize is only decremented at the bottom of the
 			// loop, so put rp back where this header started
-			// rather than leaving it 6 bytes ahead of the size
-			// we hand back
+			// rather than 6 bytes ahead of the size handed back
 			rp=headerstart;
 			break;
 		}
@@ -4572,14 +4385,11 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 	debugStart("col meta data");
 	debugWrite("token: 0x%02x",token);
 
-	// Count doubles as the "no metadata" signal - 0xFFFF alone, with
+	// count doubles as the "no metadata" signal - 0xFFFF alone, with
 	// nothing else in the token, rather than the real count followed by
-	// 0xFFFF.  A client that set RPC_NO_META_DATA (freetds does this on
-	// every sp_cursorfetch, since it already has the shape from the
-	// declare/open) reads Count first and stops right there if it's
-	// 0xFFFF; sending the real count ahead of it left every column that
-	// followed - and everything after it in the packet - misread as
-	// column metadata.
+	// 0xFFFF.  a client that set RPC_NO_META_DATA (freetds does, on every
+	// sp_cursorfetch) reads count first and stops there if it's 0xFFFF,
+	// so sending the real count ahead of it misreads everything after.
 	if (nometadata) {
 		writeLE(&resppacket,(uint16_t)0xFFFF);
 		debugWrite("no metadata");
@@ -4632,13 +4442,11 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 			case TDS_TYPE_TIMEN:
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
-				// These four were introduced in TDS 7.3.  A real
-				// sql server doesn't downgrade them to an older
-				// date/time type for an older client - it
-				// converts them to strings server-side and
-				// sends nvarchar in the iso/odbc rendering.
-				// The backends hand us that same rendering, so
-				// just pass it through.
+				// a real sql server doesn't downgrade these
+				// to an older date/time type for an older
+				// client - it sends nvarchar in the iso/odbc
+				// rendering, which is what the backends hand
+				// us anyway
 				tdstype=TDS_TYPE_NVARCHAR;
 				break;
 		}
@@ -4768,17 +4576,12 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 
 	debugWrite("tdstype: 0x%02x",tdstype);
 
-	// XMLTYPE_INFO (MS-TDS 2.2.5.4.3) is just a SchemaPresent byte, with
-	// no bound schema collection - never the size/collation a varlentype
-	// gets, so this bypasses the isVarLenType()/isPartLenType() chain
-	// below entirely rather than relying on it: XML is in both of those
-	// lists (shared with paramValue()'s rpc-parameter reads and
-	// bulkTypeInfo()'s bcp column descriptions, neither of which this
-	// covers), and isVarLenType() is checked first, so without this
-	// special case XML always took the varlentype branch - sent exactly
-	// like ntext, with no XMLTYPE_INFO at all.  mapType() already
-	// downgrades xml to ntext for pre-7.2 clients, so this never runs
-	// for one of those.
+	// XMLTYPE_INFO (MS-TDS 2.2.5.4.3) is just a SchemaPresent byte, never
+	// the size/collation a varlentype gets, so this bypasses the
+	// isVarLenType()/isPartLenType() chain below rather than relying on
+	// it - XML is in both of those lists, and isVarLenType() is checked
+	// first, so without this XML goes out exactly like ntext, with no
+	// XMLTYPE_INFO at all
 	if (tdstype==TDS_TYPE_XML) {
 
 		debugWrite("xmltype...");
@@ -4845,11 +4648,9 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				debugWrite("size: %d (16-bit)",size);
 				break;
 			case TDS_TYPE_GUID:
-				// a guid is always 16 bytes on the wire.
-				// The back end reports the width of its
-				// printed form, 36, which is a different
-				// thing - and the row writer below already
-				// writes 16.
+				// a guid is always 16 bytes on the wire -
+				// the back end reports 36, the width of
+				// its printed form
 				write(&resppacket,(byte_t)16);
 				debugWrite("size: 16 (8-bit)");
 				break;
@@ -4876,11 +4677,9 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 			case TDS_TYPE_NUMERICN:
 			case TDS_TYPE_DECIMAL:
 			case TDS_TYPE_DECIMALN:
-				// for these, the size is the widest the value
-				// can be on the wire - 1 sign byte plus up to
-				// 16 bytes of magnitude - rather than the
-				// precision, and real servers just send the
-				// max, whatever the precision is
+				// the size is the widest the value can be on
+				// the wire, not the precision, and real
+				// servers just send the max
 				size=TDS_DECIMAL_MAX_SIZE;
 				write(&resppacket,(byte_t)size);
 				debugWrite("size: %d (8-bit)",size);
@@ -5141,12 +4940,6 @@ bool sqlrprotocol_tds::isCharType(byte_t tdstype) {
 	}
 }
 
-// TDS carries money as the value times 10^4, in a signed integer.  The back
-// end renders it as a decimal string, but with as many places as it likes -
-// mssql through odbc gives four, others give two - so the fraction has to be
-// padded or truncated rather than assumed.  Scaling a digit-stripped string
-// by a fixed factor, which is what this used to do, is only right for one of
-// those renderings and is out by a factor of 100 for the other.
 int64_t sqlrprotocol_tds::moneyValue(const char *field) {
 
 	if (charstring::isNullOrEmpty(field)) {
@@ -5168,6 +4961,8 @@ int64_t sqlrprotocol_tds::moneyValue(const char *field) {
 	}
 
 	// exactly four fractional digits, however many the back end sent
+	// (tds carries money as the value times 10^4, and the back ends
+	// differ - mssql through odbc renders four places, others render two)
 	uint16_t	places=0;
 	if (*ch=='.') {
 		ch++;
@@ -5209,12 +5004,10 @@ byte_t sqlrprotocol_tds::nTypeSize(uint16_t coltype,
 		case TDS_TYPE_FLTN:
 		case TDS_TYPE_MONEYN:
 		case TDS_TYPE_DATETIMN:
-			// Only 4 and 8 are valid.  Each of these three
-			// covers a narrow type and a wide one, and the
-			// column type is the only thing that says which -
-			// the column size can't, because a back end that
+			// only 4 and 8 are valid, and the column type is the
+			// only thing that says which - a back end that
 			// reports a digit count rather than a storage width
-			// gives 24 for a real and 19 for a money.
+			// gives 24 for a real and 19 for a money
 			switch (coltype) {
 				case SMALLDATETIME_DATATYPE:
 				case REAL_DATATYPE:
@@ -5226,9 +5019,8 @@ byte_t sqlrprotocol_tds::nTypeSize(uint16_t coltype,
 				case MONEY_DATATYPE:
 					return 8;
 			}
-			// fall back on the storage width for a back end
-			// that does report one, and for the types this
-			// doesn't cover
+			// fall back on the storage width, for a back end
+			// that reports one and for uncovered types
 			return (colsize==4)?4:8;
 	}
 	return (byte_t)colsize;
@@ -5415,10 +5207,8 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 				writeLE(&resppacket,(uint32_t)0xFFFFFFFF);
 				break;
 			case TDS_TYPE_XML:
-				// PLP_NULL - an all-ones 64-bit length, distinct
-				// from the 32-bit sentinel above.  XML is always
-				// PLP-encoded, never the plain length-prefixed
-				// form text/ntext/image use.
+				// PLP_NULL - an all-ones 64-bit length,
+				// since XML is always PLP-encoded
 				writeLE(&resppacket,(uint64_t)0xFFFFFFFFFFFFFFFFULL);
 				break;
 		}
@@ -5781,15 +5571,11 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			{
 			// PLP (MS-TDS 2.2.5.2.3.2): an 8-byte total length,
 			// then the data as one chunk (a 4-byte chunk length
-			// followed by the chunk's bytes), then a 4-byte zero
-			// length chunk to terminate - the whole value is
-			// already in hand, so there's no reason to split it
-			// into more than one chunk.  A zero length chunk *is*
-			// the terminator, so an empty value skips the data
-			// chunk entirely rather than sending one with nothing
-			// in it - a zero-length data chunk followed by the
-			// terminator would be an extra 4 bytes the client
-			// doesn't expect, corrupting whatever follows it.
+			// and the bytes), then a 4-byte zero length chunk to
+			// terminate.  a zero length chunk *is* the
+			// terminator, so an empty value skips the data chunk
+			// entirely - sending one would be 4 bytes the client
+			// doesn't expect, corrupting whatever follows.
 			size_t	field16length;
 			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
 							&field16length);
@@ -5834,10 +5620,6 @@ static bool isLeapYear(int32_t year) {
 	return (!(year%4) && (year%100 || !(year%400)));
 }
 
-// Rudiments' datetime::parse takes a trailing "+hh:mm" for a third date/time
-// part and fails, and for a string that supplies only a date or only a time it
-// leaves the rest at -1.  Neither survives the writers' unsigned arithmetic, so
-// split the offset off first and floor whatever the string didn't supply.
 bool sqlrprotocol_tds::parseDateTime(const char *datetime,
 					int16_t *year,
 					int16_t *month,
@@ -5851,6 +5633,7 @@ bool sqlrprotocol_tds::parseDateTime(const char *datetime,
 	*tzoffset=0;
 
 	// split off a trailing "+hh:mm" or "-hh:mm"
+	// (datetime::parse takes it for a third date/time part and fails)
 	char	*copy=NULL;
 	const char	*str=datetime;
 	const char	*sp=charstring::findLast(datetime,' ');
@@ -5880,7 +5663,8 @@ bool sqlrprotocol_tds::parseDateTime(const char *datetime,
 
 	delete[] copy;
 
-	// floor whatever the string didn't supply
+	// floor whatever the string didn't supply, since datetime::parse
+	// leaves it at -1 and the writers' arithmetic is unsigned
 	if (!success) {
 		*year=1;
 		*month=1;
@@ -6020,10 +5804,6 @@ void sqlrprotocol_tds::dateTime(const char *datetime,
 	debugEnd();
 }
 
-// The reverse of dateTime().  bulkDateTime() already renders the wire format
-// as a string, and parseDateTime() already takes that string apart into the
-// fields a date bind needs, so this just chains the two rather than repeating
-// the leap-year arithmetic a third time.
 void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
 					uint32_t threehundredths,
 					sqlrserverbindvar *bv) {
@@ -6283,10 +6063,9 @@ void sqlrprotocol_tds::datetimeoffsetn(const char *field, byte_t scale) {
 	uint64_t	increments=0;
 	if (parsed) {
 
-		// The date and time parts of a datetimeoffset are the utc
-		// instant, not the local wall time - the offset is carried
-		// alongside so the client can render it back.  Shift by the
-		// offset, borrowing or carrying a day if it crosses midnight.
+		// the date and time parts are the utc instant, not local
+		// wall time, so shift by the offset - borrowing or
+		// carrying a day if it crosses midnight
 		dayssince1=daysSince1(year,month,day);
 		int32_t	secssince12am=hour*3600+minute*60+second-tzoffset*60;
 		while (secssince12am<0) {
@@ -6564,10 +6343,9 @@ bool sqlrprotocol_tds::insertBulk(const char *sql) {
 
 		ptr=cont->skipWhitespaceAndComments(ptr);
 
-		// The column name, which freetds bracket-quotes, doubling
-		// any bracket in the name itself.  It gets copied out
-		// verbatim, quoting and all, so that the insert below asks
-		// for the same column the client did.
+		// the column name, which freetds bracket-quotes, doubling
+		// any bracket in the name itself.  copied out verbatim,
+		// quoting and all, so the insert below names the same column.
 		start=ptr;
 		if (*ptr=='[') {
 			ptr++;
@@ -6647,10 +6425,9 @@ bool sqlrprotocol_tds::bulkLoad() {
 				"statement",1);
 	}
 
-	// The packet opens with the client's own column metadata.  A bad
-	// one doesn't end the session, unlike a protocol error elsewhere -
-	// each request arrives as a whole packet, so dropping this one
-	// leaves the request stream in sync.
+	// the packet opens with the client's own column metadata.  a bad one
+	// doesn't end the session - each request is a whole packet, so
+	// dropping this one leaves the request stream in sync.
 	uint16_t	colcount=0;
 	if (!bulkColMetaData(&rp,&rpsize,&colcount)) {
 		debugEnd();
@@ -6658,9 +6435,9 @@ bool sqlrprotocol_tds::bulkLoad() {
 				"Malformed bulk load column metadata",1);
 	}
 
-	// The insert bulk statement and the column metadata describe the
-	// same columns, in the same order.  If they disagree, there's no
-	// way to tell which column a value belongs to.
+	// the insert bulk statement and the column metadata describe the same
+	// columns in the same order - if they disagree, there's no telling
+	// which column a value belongs to
 	if (colcount!=bulkcolumncount) {
 		debugWrite("column count mismatch: %d != %d",
 					colcount,bulkcolumncount);
@@ -6809,8 +6586,8 @@ bool sqlrprotocol_tds::bulkColMetaData(const byte_t **rpinout,
 			return false;
 		}
 
-		// A blob column carries the table name, but without the
-		// numparts byte that a server-to-client col meta data has.
+		// a blob column carries the table name, but without the
+		// numparts byte that a server-to-client col meta data has
 		byte_t	tdstype=bulktypes[col];
 		if (tdstype==TDS_TYPE_TEXT ||
 			tdstype==TDS_TYPE_NTEXT ||
@@ -7199,10 +6976,9 @@ void sqlrprotocol_tds::bulkYmd(int32_t days,
 					int32_t startyear,
 					stringbuffer *strb) {
 
-	// A datetime counts from 1900-01-01 and can run backwards, since
-	// the range starts in 1753.  The year loops are bounded by the
-	// range the format itself allows, so a garbage day count can't
-	// spin here.
+	// a datetime counts from 1900-01-01 and can run backwards, since the
+	// range starts in 1753.  the year loops are bounded by the range the
+	// format allows, so a garbage day count can't spin here.
 	int32_t	year=startyear;
 	while (days<0 && year>1) {
 		year--;
@@ -7329,9 +7105,9 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 	byte_t		tdstype=bulktypes[col];
 	byte_t		scale=bulkscales[col];
 
-	// A text, ntext or image value arrives behind a text pointer and
-	// timestamp, both of which a bulk load fills with 0xFF.  A single
-	// zero length in place of the pointer means null.
+	// a text, ntext or image value arrives behind a text pointer and
+	// timestamp, both filled with 0xFF by a bulk load.  a single zero
+	// length in place of the pointer means null.
 	if (tdstype==TDS_TYPE_TEXT ||
 		tdstype==TDS_TYPE_NTEXT ||
 		tdstype==TDS_TYPE_IMAGE) {
@@ -7353,8 +7129,8 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		rpsize-=prefixsize;
 	}
 
-	// The "n" types carry a size that also says which concrete type
-	// the value is, and a size of zero means null.
+	// the "n" types carry a size that also says which concrete type
+	// the value is, and a size of zero means null
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
@@ -8045,15 +7821,11 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	if (!params(rp,rpsize,&rp,&rpsize)) {
 		delete[] procname;
 		if (rpcunsupportedtype) {
-			// the rest of the parameter stream can't be parsed -
 			// the failing parameter's own encoded length is
-			// exactly what's unknown - but the error is already
-			// queued, so end this rpc cleanly instead of treating
-			// it as a corrupted stream and dropping the
-			// connection.  *more is already false: a real server
-			// rejects the one unrecognized parameter and moves on,
-			// but there's no way to locate whatever else might
-			// follow it in this message, batched or not
+			// exactly what's unknown, so there's no locating
+			// whatever follows it - but the error is already
+			// queued, so end this rpc cleanly rather than
+			// dropping the connection
 			doneProc(DONE_FINAL|DONE_ERROR,0,0);
 			return true;
 		}
@@ -8118,11 +7890,9 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 			break;
 	}
 
-	// The done for a non-final rpc in a batch says so.  A failed one has to
-	// set DONE_ERROR - the ct-lib client reports CS_CMD_FAIL for a done
-	// that carries it and CS_CMD_SUCCEED for one that doesn't, so without
-	// it a failed rpc reports success and the client's ct_results walk
-	// falls one result out of step with the response.
+	// a failed rpc has to set DONE_ERROR - the ct-lib client reports
+	// CS_CMD_SUCCEED for a done without it, so a failed rpc would report
+	// success and its ct_results walk would fall a result out of step
 	uint16_t	donestatus=(*more)?(DONE_MORE|DONE_RPCINBATCH):DONE_FINAL;
 	if (rpcfailed) {
 		donestatus|=DONE_ERROR;
@@ -8253,21 +8023,19 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
 
 		*bv=rpcparams[i];
 
-		// Bind variables are named by position, not by whatever the
-		// client called them.  Backends work out which parameter a
-		// bind is from the number in its name - odbccursor::inputBind
-		// does exactly that - so a client's @P1 has to become @1.
-		// The names the client used in the statement itself are
-		// matched up by translatebindvariables, in order.
+		// bind variables are named by position, not by whatever the
+		// client called them - backends work out which parameter a
+		// bind is from the number in its name, so a client's @P1
+		// has to become @1
+		// (the names the client used in the statement itself are
+		// matched up by translatebindvariables, in order)
 		bv->variable=bindvarnames[bindindex];
 		bv->variablesize=bindvarnamesizes[bindindex];
 
-		// An output parameter of a character type needs a buffer the
-		// size the client declared it, not the size of whatever value
-		// came in with it.  An output-only parameter arrives null,
-		// with no value and no type at all, so without this it gets
-		// no bind - and then the backend rejects the query for a
-		// parameter it was never given.
+		// an output parameter of a character type needs a buffer the
+		// size the client declared, not the size of the value that
+		// came in with it - an output-only parameter arrives null,
+		// and without this it would get no bind at all
 		if (rpcparambyref[i] && isCharType(rpcparamtdstypes[i]) &&
 					rpcparammaxsizes[i]>bv->valuesize) {
 			char	*value=(char *)bindpool->allocate(
@@ -8413,13 +8181,10 @@ void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
 void sqlrprotocol_tds::evictOldestHandle(sqlrservercursor *keep) {
 
 	// the dictionaries track insertion order, so the first key is the
-	// oldest handle.  cursor handles are evicted before prepared
-	// statement handles, since an abandoned cursor is the more likely
-	// leak, but either way releaseCursorHandles() drops both kinds of
-	// handle to the cursor it picks.  keep is the cursor the request
-	// that needs another one is itself working from - evicting that
-	// would release the rows it's reading and hand the cursor right
-	// back to it.
+	// oldest handle.  cursor handles go before prepared statement
+	// handles, since an abandoned cursor is the more likely leak.  keep
+	// is the cursor the request that needs another one is working from -
+	// evicting that would release the rows it's reading.
 	dictionary<uint32_t, sqlrservercursor *>	*handles[2];
 	handles[0]=&cursorhandles;
 	handles[1]=&stmthandles;
@@ -8445,11 +8210,9 @@ sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
 
 	sqlrservercursor	*cursor=cont->getCursor();
 
-	// A client can walk off and leave a prepared statement or cursor
-	// handle open - no sp_unprepare, no sp_cursorclose - and each one
-	// holds a cursor forever.  Enough of those and the pool runs dry
-	// and every request after that fails.  Evict the oldest handle and
-	// try once more rather than starving the session.
+	// a client can walk off and leave a prepared statement or cursor
+	// handle open, and each one holds a cursor forever, so evict the
+	// oldest rather than starving the session
 	if (!cursor) {
 		evictOldestHandle(keep);
 		cursor=cont->getCursor();
@@ -8556,10 +8319,9 @@ bool sqlrprotocol_tds::rpcParamTypeError(const char *procname,
 
 bool sqlrprotocol_tds::rpcUnsupportedTypeError(byte_t tdstype) {
 
-	// A real server never gets far enough parsing an unrecognized wire
-	// type to identify (let alone run) a proc, so unlike the errors
-	// above, this carries no return status of its own - just the error
-	// text and the done that closes the rpc out.
+	// a real server never gets far enough parsing an unrecognized wire
+	// type to identify a proc, so unlike the errors above this carries
+	// no return status of its own
 
 	char	*hex=charstring::hexEncode(&tdstype,1);
 	charstring::upper(hex);
@@ -8581,16 +8343,13 @@ bool sqlrprotocol_tds::rpcUnnumberedError(byte_t state,
 						byte_t errclass,
 						const char *msgtext) {
 
-	// The rpc-path counterpart of the send*Error() functions.  An rpc
-	// gets exactly one response, which rpc() finishes with a done-proc
-	// and remoteProcedureCall() sends.  Sending an error from inside an
-	// rpc handler would put a second, complete response on the wire and
-	// leave the client's packet stream a command out of step from then
-	// on.  So append the error, flag the rpc failed, and let the outer
-	// call finish it.
-	//
-	// Like rpcUnsupportedTypeError(), these carry no return status -
-	// the proc never ran.
+	// the rpc-path counterpart of the send*Error() functions.  an rpc gets
+	// exactly one response, which rpc() finishes with a done-proc and
+	// remoteProcedureCall() sends, so sending an error from inside a
+	// handler would put a second response on the wire and leave the
+	// client's packet stream a command out of step.  like
+	// rpcUnsupportedTypeError(), these carry no return status - the proc
+	// never ran.
 
 	debugWrite("%s",msgtext);
 
@@ -8662,22 +8421,18 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 		return rpcNoCursorAvailableError();
 	}
 
-	// Build the query, naming a bind variable per parameter.  A by-ref
-	// parameter gets no T-SQL "output" keyword after it.  The direction
-	// is already carried by the bind itself - SQL_PARAM_OUTPUT in the
-	// odbc module, CS_RETURN in the freetds and sap ones - and sql
-	// server rejects "output" after a parameter marker outright.
-	//
-	// This is odbc call syntax rather than "exec procname ...", because
-	// that has nowhere to put the procedure's return value and the
-	// client expects one in the RETURNSTATUS token.  The bind variable
-	// before "=call" is the return value, which is why the client's
-	// parameters start at bindvarnames[1].
-	//
-	// The space after the brace is load-bearing: beforeBindVariable()
-	// in src/common/bindvariables.h does not treat '{' as something a
-	// bind variable can follow, so without it the return value's marker
-	// is never translated to the backend's bind format.
+	// build the query, naming a bind variable per parameter.  a by-ref
+	// parameter gets no T-SQL "output" keyword - the bind itself carries
+	// the direction (SQL_PARAM_OUTPUT in the odbc module, CS_RETURN in
+	// the freetds and sap ones), and sql server rejects "output" after a
+	// parameter marker outright.  odbc call syntax rather than "exec
+	// procname ...", because that has nowhere to put the return value the
+	// client expects in the RETURNSTATUS token - the bind variable before
+	// "=call" is it, which is why the client's parameters start at
+	// bindvarnames[1].  the space after the brace is load-bearing:
+	// beforeBindVariable() in src/common/bindvariables.h doesn't treat '{'
+	// as something a bind variable can follow, so without it the return
+	// value's marker is never translated.
 	stringbuffer	query;
 	query.append("{ ")->append(bindvarnames[0])->append("=call ");
 	query.append(procname)->append('(');
@@ -8700,9 +8455,8 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
-	// build the response.  An ordinary procedure that never ran - because
-	// there is no such procedure, say - sends no return status at all,
-	// unlike the numbered procs, which send the error's own number.
+	// build the response.  an ordinary procedure that never ran sends no
+	// return status at all, unlike the numbered procs.
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
 		returnStatus(procReturnValue(cursor));
@@ -8722,18 +8476,13 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 						bool resultset,
 						bool nometadata) {
 
-	// Runs "exec <procname> <handle> [,values...]" against the backend,
-	// for a handle the backend minted itself - one the client got by
-	// running "exec sp_prepare ..." inside a raw batch, which sqlBatch()
-	// passes straight through, so it was never recorded in stmthandles.
-	//
-	// Only the handle has to be a literal.  The trailing values go
-	// through the normal bound-parameter path, the same way namedProc()
-	// passes an ordinary proc's parameters through.
-	//
-	// This assumes the backend really has sp_execute/sp_unprepare, which
-	// sql server and sybase - the backends the tds protocol module is
-	// for - do.  One that doesn't just errors cleanly.
+	// runs "exec <procname> <handle> [,values...]" for a handle the
+	// backend minted itself - one the client got by running
+	// "exec sp_prepare ..." inside a raw batch, which sqlBatch() passes
+	// straight through, so it was never recorded in stmthandles.  only
+	// the handle has to be a literal; the trailing values go through the
+	// normal bound-parameter path.  this assumes the backend really has
+	// sp_execute/sp_unprepare, which sql server and sybase do.
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
@@ -8759,7 +8508,7 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
-	// build the response.  A bad handle gets the backend's own error -
+	// build the response.  a bad handle gets the backend's own error -
 	// sql server error 8179 - rather than one synthesized here.
 	if (success) {
 		if (resultset) {
@@ -8779,27 +8528,19 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 						bool nometadata) {
 
-	// Same idea as backendHandleProc(), for sp_cursorexecute against a
-	// prepared-statement handle the backend minted itself.  Unlike
+	// same idea as backendHandleProc(), for sp_cursorexecute against a
+	// prepared-statement handle the backend minted itself.  unlike
 	// sp_execute/sp_unprepare, sp_cursorexecute has output parameters of
-	// its own - the cursor handle, scrollopt, ccopt and rowcount - so
-	// they have to go through the normal in/out bind machinery
-	// (bindParams()/returnValues(), the same generic mechanism
-	// namedProc() uses for an arbitrary proc's output parameters).
+	// its own, so every parameter, including the handle, has to ride as
+	// an ordinary bind - on the odbc connection module a plain EXEC batch
+	// never reports a proc's output parameters back to the driver, only
+	// the "{call proc(...)}" escape does
+	// (freetds accepts either form - see freetdscursor::prepareQuery())
 	//
-	// That also means this can't reuse backendHandleProc()'s plain
-	// "exec procname handle,values..." query text: on the odbc
-	// connection module, a plain EXEC batch never reports a stored
-	// proc's output parameters back to the driver, only the ODBC/JDBC
-	// "{call proc(...)}" escape does (freetds accepts either form - see
-	// freetdscursor::prepareQuery()).  So every parameter, including the
-	// handle itself, rides as an ordinary bind, the same shape
-	// namedProc() already uses for a generic proc call.
-	//
-	// The result set (if any) is sent in full here too, rather than left
-	// for a later sp_cursorfetch: the backend's own returned cursor id
-	// is a raw backend cursor, not one sqlrelay tracks a sqlrservercursor
-	// under, so there's no way to fetch from it afterward yet (#9204).
+	// the result set (if any) is sent in full here rather than left for a
+	// later sp_cursorfetch - the backend's own returned cursor id is a
+	// raw backend cursor, not one sqlrelay tracks a sqlrservercursor
+	// under, so there's no way to fetch from it afterward yet.
 
 	debugWrite("prepared handle: %d",handle);
 
@@ -8832,7 +8573,7 @@ bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
-	// build the response.  A bad handle gets the backend's own error -
+	// build the response.  a bad handle gets the backend's own error -
 	// sql server error 8179 - rather than one synthesized here.
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
@@ -8883,9 +8624,8 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	// parameters, and the values follow it
 	uint16_t	firstvalue=(rpcparamcount>1)?2:1;
 
-	// A statement that comes with no values has no bind variables in
-	// it.  A single-@ name in one is a local variable or a parameter
-	// declaration.
+	// a statement that comes with no values has no bind variables - a
+	// single-@ name in one is a local variable or parameter declaration
 	if (rpcparamcount<=firstvalue) {
 		cont->setTranslateBindVariablesForThisQuery(cursor,false);
 	}
@@ -8929,7 +8669,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
-	// these arguments are declared nvarchar.  A rejected call leaves the
+	// these arguments are declared nvarchar.  a rejected call leaves the
 	// handle invalid, which the client reads out of a null return value.
 	const char	*pn=(rpcsyntax)?"sp_prepexecrpc":
 				((prepexec)?"sp_prepexec":"sp_prepare");
@@ -8958,13 +8698,12 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		return rpcQueryTooLargeError(querylen);
 	}
 
-	// reuse the handle the client sent, if it sent a live one.
-	// A backend-owned handle here is not re-prepared on the backend -
-	// this just mints a new one instead (out of scope, see #9203).
+	// re-preparing always mints a new handle - a backend-owned handle
+	// isn't re-prepared on the backend either
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (cursor) {
-		// re-preparing a live handle replaces its statement
+		// drop the cursor a live handle was holding
 		stmthandles.remove(handle);
 		cont->release(cursor);
 	}
@@ -9068,8 +8807,7 @@ bool sqlrprotocol_tds::unprepare() {
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
 		// a handle below the base is the backend's own, from an
-		// sp_prepare inside a raw batch - unprepare it there.
-		// Nothing to track afterward, since it was never one of ours.
+		// sp_prepare inside a raw batch - unprepare it there
 		if (handle && handle<SQLRELAY_HANDLE_BASE) {
 			return backendHandleProc("sp_unprepare",handle,
 							false,false);
@@ -9095,17 +8833,14 @@ bool sqlrprotocol_tds::cursorPositioned() {
 
 	// sp_cursor @cursor, @optype, @rownum, @table [, @column...]
 	//
-	// This is the positioned update/delete/insert proc.  A real sql
-	// server does it with "where current of", which the server API has
-	// no equivalent for, so the statement is synthesized instead - the
-	// row's primary key values were kept when sp_cursorfetch sent it,
-	// and they become the where clause.  That is what an odbc driver
-	// does for an optimistic cursor.
+	// the positioned update/delete/insert proc.  a real sql server does
+	// it with "where current of", which the server API has no equivalent
+	// for, so the statement is synthesized from the row's primary key
+	// values, which were kept when sp_cursorfetch sent it - the same
+	// thing an odbc driver does for an optimistic cursor.
 	//
-	// The values to set arrive as one parameter per column, named for
-	// the column with a leading @.  A real server rejects any other
-	// form, so anything that doesn't name a column of the result set
-	// is an error here too.
+	// the values to set arrive as one parameter per column, named for the
+	// column with a leading @, and a real server rejects any other form.
 
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
@@ -9226,11 +8961,10 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 					sqlrserverbindvar *binds,
 					uint16_t *bindcount) {
 
-	// Split the table name the client sent into the parts that
-	// getPrimaryKeysList() wants.  It matches on the schema exactly, so
-	// an unqualified table has to be filled out with the current one
-	// rather than left empty - empty means "tables with no schema", and
-	// matches nothing.
+	// split the table name into the parts getPrimaryKeysList() wants - it
+	// matches on the schema exactly, so an unqualified table has to be
+	// filled out with the current schema rather than left empty, which
+	// means "tables with no schema" and matches nothing
 	char		*currentcatalog=cont->getCurrentCatalog();
 	char		*currentschema=cont->getCurrentSchema();
 	const char	*catalog=NULL;
@@ -9251,8 +8985,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 	}
 
 	// COLUMN_NAME is column 3 of an odbc SQLPrimaryKeys() result set.
-	// The names are collected null-separated so that one buffer holds
-	// them all, and walked the same way below.
+	// the names are collected null-separated into one buffer.
 	stringbuffer	keycols;
 	uint16_t	keycolcount=0;
 	if (cont->getPrimaryKeysList(pkcursor,catalog,schema,object)) {
@@ -9338,10 +9071,9 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 
 	// update <table> set <col>=@n, ... where <key>=@n and ...
 
-	// The statement runs on a cursor of its own.  Holding it from here
-	// also keeps the primary key lookup from taking it, since getCursor()
-	// only hands out cursors that aren't busy.  The cursor the update is
-	// positioned on is off limits to eviction - row points into its rows.
+	// a cursor of its own, held from here so the primary key lookup can't
+	// take it.  the cursor the update is positioned on is off limits to
+	// eviction - row points into its rows.
 	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
 		return rpcNoCursorAvailableError();
@@ -9428,8 +9160,8 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 
 	// insert into <table> (<col>, ...) values (@n, ...)
 	//
-	// An insert isn't positioned on anything, so the cursor is only
-	// used to work out which columns the client is allowed to name.
+	// an insert isn't positioned on anything, so the cursor is only
+	// used to work out which columns the client is allowed to name
 
 	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
@@ -9581,12 +9313,9 @@ size_t sqlrprotocol_tds::stripForUpdateOf(const char *stmt, size_t stmtlen) {
 
 	// mssql only accepts "for update [of col,...]" inside an actual
 	// DECLARE CURSOR statement, and this module never issues one - it
-	// prepares the client's cursor-declare text as an ordinary
-	// statement and tracks positioned-update state itself (see
-	// positionedUpdate() and the positionrows machinery).  So a client
-	// that puts the clause in the declare text rather than passing
-	// CS_FOR_UPDATE as an option gets it rejected by the backend
-	// outright unless it's stripped first.
+	// prepares the client's cursor-declare text as an ordinary statement
+	// and tracks positioned-update state itself, so the clause has to be
+	// stripped or the backend rejects it outright
 	if (forupdateof.match(stmt,stmtlen)) {
 		return (size_t)(forupdateof.getSubstringStartOffset(0));
 	}
@@ -9611,11 +9340,9 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 		return rpcQueryTooLargeError(stmtlen);
 	}
 
-	// A real server only accepts a select or an exec/execute as a
-	// cursor statement - anything else (an update, say) is refused
-	// without ever reaching the backend.  Without this check, the text
-	// just runs as an ordinary query via cont->prepareQuery() below,
-	// which silently turns a cursor declare into a live write.
+	// a real server only accepts a select or an exec/execute as a cursor
+	// statement - without this check, an update would just run as an
+	// ordinary query below, turning a cursor declare into a live write
 	if (!isCursorStatement(stmt)) {
 		return rpcNumberedError(RPC_OP_UNSUPPORTED,
 				"A cursor may only be declared for a select "
@@ -9633,9 +9360,8 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// a parameterized cursor sends a declaration string, then the values
 	uint16_t	firstvalue=6;
 
-	// A statement that comes with no values has no bind variables in
-	// it.  A single-@ name in one is a local variable or a parameter
-	// declaration.
+	// a statement that comes with no values has no bind variables - a
+	// single-@ name in one is a local variable or parameter declaration
 	if (rpcparamcount<=firstvalue) {
 		cont->setTranslateBindVariablesForThisQuery(cursor,false);
 	}
@@ -9678,9 +9404,9 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// the client reads the cursor id out of the first return value
 	returnValueInteger(1,(int32_t)handle,false);
 
-	// There is no scrollable cursor support in the server API - only
-	// forward-only skipRow/skipRows.  Both of these are in/out and the
-	// spec lets the server substitute what it can actually do.
+	// the server API has no scrollable cursor support - only forward-only
+	// skipRow/skipRows.  both of these are in/out, and the spec lets the
+	// server substitute what it can do.
 	returnValueInteger(2,CURSOR_SCROLLOPT_FORWARD_ONLY,false);
 	returnValueInteger(3,CURSOR_CCOPT_READ_ONLY,false);
 
@@ -9884,8 +9610,7 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
 		// a handle below the base is the backend's own, from an
-		// sp_prepare inside a raw batch - unprepare it there.
-		// Nothing to track afterward, since it was never one of ours.
+		// sp_prepare inside a raw batch - unprepare it there
 		if (handle && handle<SQLRELAY_HANDLE_BASE) {
 			return backendHandleProc("sp_cursorunprepare",handle,
 							false,false);
@@ -9943,9 +9668,8 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 		executeflag.setValue(cursor,false);
 	}
 
-	// Only forward-only fetching is possible.  Anything that would have
-	// to go backwards or jump is refused rather than silently answered
-	// with the wrong rows.
+	// only forward-only fetching is possible, so anything that would go
+	// backwards or jump is refused rather than answered with wrong rows
 	switch (fetchtype) {
 		case CURSOR_FETCH_FIRST:
 		case CURSOR_FETCH_NEXT:
@@ -10004,8 +9728,8 @@ bool sqlrprotocol_tds::cursorOption() {
 	debugWrite("code: %lld",(long long)paramInteger(1));
 	debugWrite("value: %lld",(long long)paramInteger(2));
 
-	// None of the options - text pointers, scroll options, cursor name -
-	// change anything that this module can do, so just accept them.
+	// none of the options - text pointers, scroll options, cursor name -
+	// change anything this module can do, so just accept them
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
@@ -10059,10 +9783,9 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 	bool		exceeded=false;
 	while (rpsize) {
 
-		// The batch flags follow the last parameter, and a parameter
-		// starts with its name length.  Nothing in the packet says
-		// which one comes next, but no client sends a parameter name
-		// anywhere near that long.
+		// the batch flags follow the last parameter, and a parameter
+		// starts with its name length - nothing in the packet says
+		// which comes next, but no name is anywhere near that long
 		if (*rp==RPC_BATCH_FLAG || *rp==RPC_NO_EXEC_FLAG) {
 			break;
 		}
@@ -10150,10 +9873,9 @@ bool sqlrprotocol_tds::param(uint16_t param,
 	// FIXME: support encryption
 
 
-	// The parameters are kept as they arrived, rather than being sorted
-	// into input and output binds here.  Which of them are bind values
-	// at all depends on which proc was called, and only the handler for
-	// that proc knows.
+	// the parameters are kept as they arrived - which of them are bind
+	// values at all depends on which proc was called, and only that
+	// proc's handler knows
 	sqlrserverbindvar	*bv=NULL;
 	if (!exceeded) {
 
@@ -10199,10 +9921,6 @@ bool sqlrprotocol_tds::param(uint16_t param,
 	return retval;
 }
 
-// The value half of param().  Split out so that its many early returns
-// don't have to remember to free the parameter name or to close the debug
-// block - param() owns both.  bulkField() and bulkValue() are split for
-// the same reason.
 bool sqlrprotocol_tds::paramValue(uint16_t param,
 					const byte_t **rpinout,
 					size_t *rpsizeinout,
@@ -10324,9 +10042,8 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		return rpcUnsupportedTypeError(tdstype);
 	}
 
-	// An output parameter is sent back as the type the client declared
-	// it, so keep that.  tdstype is rewritten just below, to read the
-	// value, so it has to be recorded here.
+	// an output parameter goes back as the type the client declared, and
+	// tdstype is rewritten just below to read the value
 	if (bv) {
 		rpcparamtdstypes[param]=tdstype;
 		rpcparammaxsizes[param]=maxsize;
@@ -10759,18 +10476,14 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				byte_t	size;
 				read(rp,&size,&rp);
 				rpsize--;
-				// A length of 0 is how the protocol says
-				// null, so it isn't an error - but size-1
-				// below would be -1, and the size_t it
-				// converts to is enormous.
+				// a length of 0 is how the protocol says
+				// null, and size-1 below would be -1
 				if (!size) {
 					debugWrite("value: (null)");
 					break;
 				}
-				// Without this, a size the client chose
-				// writes up to 254 bytes over a 16 byte
-				// stack array - and over the saved registers
-				// and return address behind it.
+				// without this, a client-chosen size writes
+				// up to 254 bytes over a 16 byte stack array
 				if (size>sizeof(val)+1) {
 					debugWrite("invalid size: %d",size);
 					return false;
@@ -10990,10 +10703,9 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			uint16_t	length=size/sizeof(ucs2_t);
 
 			// an nchar is blank padded out to its declared size,
-			// like a real sql server does - an nvarchar isn't;
-			// the declared size is in bytes too.  it's client-chosen,
-			// not a count of bytes that arrived, so cap the pad at
-			// TDS_MAX_CHAR_SIZE
+			// like a real sql server does - an nvarchar isn't.
+			// the declared size is in bytes and client-chosen, so
+			// cap the pad at TDS_MAX_CHAR_SIZE
 			uint32_t	maxlength=maxsize/sizeof(ucs2_t);
 			uint32_t	valuelength=length;
 			if (tdstype==TDS_TYPE_NCHAR && maxlength>length &&
@@ -11048,9 +10760,9 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_TEXT:
 		case TDS_TYPE_NTEXT:
 			{
-			// Freetds sends anything over 4000 characters this
+			// freetds sends anything over 4000 characters this
 			// way, including the statement and parameter
-			// declaration strings that the sp_ procs take.
+			// declaration strings the sp_ procs take
 			if (rpsize<sizeof(uint32_t)) {
 				return false;
 			}
@@ -11434,12 +11146,10 @@ void sqlrprotocol_tds::doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount) {
 
-	// A done-in-proc is always followed by at least the done-proc that
-	// closes the rpc, so it is never the last done in a response, and
-	// sql server always sets DONE_MORE on one.  Without that bit freetds
-	// takes it for the last one, stops reading there, and leaves the rest
-	// of the response in its buffer, which puts every command after it
-	// one response behind.
+	// a done-in-proc is never the last done in a response, and sql server
+	// always sets DONE_MORE on one.  without that bit freetds takes it for
+	// the last one and stops reading, leaving every command after it one
+	// response behind.
 	done(TOKEN_DONEINPROC,status|DONE_MORE,curcmd,donerowcount);
 }
 
@@ -11523,11 +11233,10 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 		writeLE(&resppacket,(uint32_t)0);
 	}
 
-	// Flags.  A real sql server sends none set here, and it matters more
-	// than the spec suggests: the ct-lib client reads a return value's
-	// user type as 4 bytes whatever the tds version, so it swallows these
-	// two as well, and ct_describe reports 65536 rather than 0 for a flags
-	// word of 0x0001.
+	// flags - a real sql server sends none set, and the ct-lib client
+	// reads a return value's user type as 4 bytes whatever the tds
+	// version, so it swallows these two as well and ct_describe reports
+	// 65536 rather than 0 for a flags word of 0x0001
 	writeLE(&resppacket,(uint16_t)0x0000);
 
 	debugWrite("ordinal: %d",ordinal);
@@ -11581,10 +11290,8 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 					uint32_t maxsize) {
 
 	// unicode types go back as ucs-2, everything else as the "big"
-	// (2-byte-length) form of what the client declared.  the legacy
-	// 1-byte-length char/varchar are only sent by pre-7.0 clients, which
-	// can't get this far, and text/ntext have a different shape
-	// altogether, so both fall back to the closest "big" type.
+	// (2-byte-length) form of what the client declared - the legacy
+	// 1-byte forms and text/ntext fall back to the closest "big" type
 	bool	unicode=(tdstype==TDS_TYPE_NCHAR ||
 				tdstype==TDS_TYPE_NVARCHAR ||
 				tdstype==TDS_TYPE_NTEXT);
@@ -11605,9 +11312,9 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 				!bv->value.stringval ||
 				cont->getBindValueIsNull(bv->isnull));
 
-	// the value is whatever the backend put in the buffer, decoded out
-	// of its utf-8 into what the client's declared type takes, and then
-	// blank padded out to the declared size if that type is fixed-width
+	// the value is whatever the backend put in the buffer, decoded into
+	// what the client's declared type takes and blank padded if that
+	// type is fixed-width
 	const char	*value=(isnull)?NULL:bv->value.stringval;
 	size_t		valuelength=(isnull)?0:charstring::getLength(value);
 	char		*value8=NULL;
@@ -11725,12 +11432,10 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 	returnValueHeader(ordinal,rpcparamnames[rpcparam],
 					rpcparamnamesizes[rpcparam]);
 
-	// A character or datetime output parameter goes back as the type the
-	// client declared it, the way a real sql server echoes one.  SQL
-	// Relay's own bind type doesn't carry enough to work that out - a
-	// char(20) and a varchar(max) are both just strings to it - and
-	// ct_describe() reports whatever type arrives, so getting it from the
-	// bind type instead makes the client see something it never asked for.
+	// a character or datetime output parameter goes back as the type the
+	// client declared, the way a real sql server echoes one - sql relay's
+	// own bind type can't tell a char(20) from a varchar(max), and
+	// ct_describe() reports whatever type arrives
 	byte_t		declaredtype=rpcparamtdstypes[rpcparam];
 	uint32_t	declaredmaxsize=rpcparammaxsizes[rpcparam];
 	if (isCharType(declaredtype)) {
@@ -11746,16 +11451,14 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 		return;
 	}
 
-	// SQL Relay hands back whatever the database put in the output bind.
-	// Only integers and strings can come back through this path.
+	// otherwise, whatever the database put in the output bind
 	switch (bv->type) {
 		case SQLRSERVERBINDVARTYPE_INTEGER:
 			{
-			// An integer goes back at the width the client
-			// declared, the way a real sql server echoes it.
-			// Sending it as an 8 byte INTN instead makes
-			// ct_describe report CS_LONG_TYPE for what the client
-			// sent as a CS_INT_TYPE.
+			// an integer goes back at the width the client
+			// declared - sending an 8 byte INTN instead makes
+			// ct_describe report CS_LONG_TYPE for what the
+			// client sent as a CS_INT_TYPE
 			byte_t	size=(byte_t)rpcparammaxsizes[rpcparam];
 			if (size!=1 && size!=2 && size!=4 && size!=8) {
 				size=sizeof(int64_t);

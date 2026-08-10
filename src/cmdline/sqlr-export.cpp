@@ -182,9 +182,8 @@ int main(int argc, const char **argv) {
 	sqlrcmdline 	cmdline(argc,argv);
 
 	// an option that requires a value has to have one
-	// A missing value used to come out empty, which meant 0 for the
-	// numeric options, so a trailing -resultsetbuffersize quietly set the
-	// buffer size to 0.  It's a usage error now.
+	// (getValue() hands back an empty string for one that doesn't, which
+	// would mean 0 for the numeric options)
 	const char	*mvo=cmdline.missingValueOption(valueoptions);
 	if (mvo) {
 		stderror.printf("usage: -%s requires a value.  "

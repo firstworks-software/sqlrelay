@@ -105,8 +105,7 @@ LTINSTALL = $(LIBTOOL) --mode=install
 MV = mv
 # not plain cp - cp rewrites an existing destination in place, keeping its
 # inode, which changes the text pages of any running process that has the
-# file mmap'd.  safecp.sh removes the destination first, so the new file
-# gets a new inode.  See trac #8852.
+# file mmap'd
 CP = $(top_builddir)/safecp.sh
 CHMOD = chmod
 MKINSTALLDIRS = $(top_builddir)/mkinstalldirs
@@ -807,9 +806,8 @@ endif
 
 
 # protocols
-# the tds protocol module needs no db client library, so it's always built
-# (see #8785).  the other protocol modules are installed by installsharedlib
-# itself.
+# the tds protocol module needs no db client library, so it's always built,
+# and it's the only protocol module listed here
 PROTOCOLSINSTALLTARGETS = installsharedlib-tds
 
 

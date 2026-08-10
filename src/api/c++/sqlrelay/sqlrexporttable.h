@@ -40,7 +40,7 @@ class SQLRCLIENT_DLLSPEC sqlrexporttable : virtual public sqlrexport {
 		/** Exports the result set of the cursor currently in use as
 		 *  set by the most recent call to setSqlrCursor() to the
 		 *  database table set by the most recent call to setTable()
-		 *  using the sqlrconnection and sqlrcuror set by the most
+		 *  using the sqlrconnection and sqlrcursor set by the most
 		 *  recent calls to setExportSqlrConnection() and
 		 *  setExportSqlrCursor().  If setCommitCount() was called with
 		 *  a non-zero value then a commit will be called after every

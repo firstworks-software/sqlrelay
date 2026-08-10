@@ -232,12 +232,11 @@ byte_t	jwtmechoid[]={
 
 #define LAN_HEADER_SIZE	52
 
-// In an encrypted message, the lan header stops after the session number and
-// everything past that is ciphertext.  The fields that would have followed -
-// request auth, request number, gateway byte, host character set, and spare -
-// are encrypted along with the parcels, and turn up at the front of the
-// plaintext.  So the values read out of the lan header itself are garbage, and
-// have to be re-read after decrypting.  See parseEncryptedLanHeader().
+// in an encrypted message the lan header stops after the session number
+// (request auth, request number, gateway byte, host character set and spare
+// are encrypted along with the parcels and turn up at the front of the
+// plaintext, so the values read out of the lan header are garbage and have
+// to be re-read - see parseEncryptedLanHeader())
 #define ENCRYPTED_LAN_HEADER_SIZE	24
 
 
@@ -2014,7 +2013,7 @@ bool sqlrprotocol_teradata::copKindStart() {
 
 		// check for data...
 
-		// If the query constained a USING clause then it will
+		// If the query contained a USING clause then it will
 		// have defined the bind variables and a data parcel
 		// will provide the values.
 		//
@@ -2605,7 +2604,7 @@ bool sqlrprotocol_teradata::sendResponseToClient() {
 		// [0] - always 0
 		// [1] - always 0
 		// [2] - changes every request and appears to be random
-		// [3] - changes every request and appaers to be random
+		// [3] - changes every request and appears to be random
 		// [4] - minute_of_hour%4*64+second_of_minute
 		// 		starts at 0,
 		// 		increments each second,
@@ -7324,12 +7323,12 @@ void sqlrprotocol_teradata::appendSsoGssQops() {
 
 	// The client sent a set of supported qop algorithms in the
 	// SSO Request - trip 0, we'll send a set of supported
-	// combinations of them in them here.
+	// combinations of them here.
 	//
-	// The server always sends 4, and they're all the same here
-	// because we only support one qop.  They're really 4 key
-	// slots though - the client cuts the shared secret into one
-	// slice per qop, and picks one by index.  See setSharedKey().
+	// (the server always sends 4, and they're all the same here
+	// because we only support one qop - they're really 4 key
+	// slots, the client cuts the shared secret into one slice
+	// per qop and picks one by index, see setSharedKey())
 	byte_t	qops[]={
 		SSORESP_NEGOTIATED_QOP1,
 		SSORESP_NEGOTIATED_QOP2,
@@ -9357,7 +9356,7 @@ bool sqlrprotocol_teradata::decrypt(const byte_t *encdata,
 	// so we don't need to set those anywhere)
 	aes128	a;
 
-	// get the initializaton vector size
+	// get the initialization vector size
 	size_t	ivsize=a.getIvSize();
 
 	// validate the encdata

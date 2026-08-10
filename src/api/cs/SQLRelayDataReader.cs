@@ -324,14 +324,9 @@ namespace SQLRClient
             return _sqlrcur.getColumnType((UInt32)i);
         }
 
-        /** Uppercases a datatype name for comparison against the names in
-         *  datatypestring[].  Those are spelled uppercase, but a connection
-         *  module is free to report the database's own spelling instead -
-         *  postgresql, with the default typemangling, reports lowercase
-         *  names - and without this every column would fall through the
-         *  name-to-type chains below.  ToUpperInvariant() rather than
-         *  ToUpper(), since in a Turkish locale "int4" uppercases to a
-         *  dotted capital I and matches nothing. */
+        /** Uppercases a datatype name with ToUpperInvariant() rather than
+         *  ToUpper() - a Turkish locale maps i to a dotted capital I,
+         *  which matches nothing. */
         private static String normalizeTypeName(String type)
         {
             return (type == null) ? null : type.ToUpperInvariant();
@@ -347,7 +342,7 @@ namespace SQLRClient
             {
                 return typeof(String);
             }
-            // addded by freetds
+            // added by freetds
             else if (type == "CHAR")                        // 1
             {
                 return typeof(String);
@@ -1171,10 +1166,8 @@ namespace SQLRClient
             return retval;
         }
 
-        /** Converts a boolean field to a Boolean.  Backends don't agree on
-         *  how they spell one - informix sends 1 and 0, postgresql sends t
-         *  and f - and Convert.ToBoolean() accepts neither, it throws on
-         *  anything but "True" or "False". */
+        /** Converts a boolean field to a Boolean.  Convert.ToBoolean()
+         *  throws on anything but "True" or "False". */
         private static Boolean convertBoolean(Byte[] field)
         {
             String value = System.Text.Encoding.Default.GetString(field).Trim();
@@ -1200,7 +1193,7 @@ namespace SQLRClient
             {
                 return System.Text.Encoding.Default.GetString(field);
             }
-            // addded by freetds
+            // added by freetds
             else if (type == "CHAR")                        // 1
             {
                 return System.Text.Encoding.Default.GetString(field);

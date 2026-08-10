@@ -2080,7 +2080,7 @@ int32_t sqlrservercontroller::waitForClient() {
 				// this condition should initiate a shut down
 				// of this process as well, but for now we'll
 				// just wait to be shut down manually.
-				// Unfortunatley, that means looping over and
+				// Unfortunately, that means looping over and
 				// over, with that read failing every time.
 				// We'll sleep so as not to slam the machine
 				// while we loop.
@@ -2114,7 +2114,7 @@ int32_t sqlrservercontroller::waitForClient() {
 				// this condition should initiate a shut down
 				// of this process as well, but for now we'll
 				// just wait to be shut down manually.
-				// Unfortunatley, that means looping over and
+				// Unfortunately, that means looping over and
 				// over, with this failing every time.
 				// We'll sleep so as not to slam the machine
 				// while we loop.
@@ -5662,8 +5662,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	// because translateQuery might use it
 	cursor->getBindMappingsPool()->clear();
 
-	// The mappings are allocated out of the pool above, so they have to
-	// be cleared here, whether or not translateBindVariables() runs below.
+	// the mappings are allocated out of the pool above, so clear them
+	// here whether or not translateBindVariables() runs below
 	cursor->getBindMappings()->clear();
 
 	// before-filter query
@@ -5897,9 +5897,8 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		// because translateQuery might use it
 		cursor->getBindMappingsPool()->clear();
 
-		// The mappings are allocated out of the pool above, so they
-		// have to be cleared here, whether or not
-		// translateBindVariables() runs below.
+		// the mappings are allocated out of the pool above, so clear
+		// them here whether or not translateBindVariables() runs below
 		cursor->getBindMappings()->clear();
 
 		// before-filter query
@@ -11524,11 +11523,10 @@ bool sqlrservercontroller::nextResultSet(sqlrservercursor *cursor,
 	bool	success=cursor->nextResultSet(nextresultsetavailable);
 
 	// a new result set means new column metadata, a new affected-row
-	// count and a fresh row-fetch position.  Without this, colCount()/
-	// getColumnName()/etc keep answering from handleResultSetHeader()'s
-	// snapshot of the *previous* result set - stale at best, and reading
-	// off a pointer the "db"cursor may have already freed and reused at
-	// worst, since it's re-describing its own buffers underneath us.
+	// count and a fresh row-fetch position
+	// (without this, colCount()/getColumnName()/etc keep answering from
+	// the previous result set's snapshot, off a pointer the db cursor
+	// may have already freed and reused)
 	if (success && *nextresultsetavailable) {
 		cursor->clearTotalRowsFetched();
 		if (!pvt->_overrideaffectedrows.getValue(cursor)) {

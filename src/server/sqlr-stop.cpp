@@ -21,9 +21,8 @@
 #define KILL_POLLS	10
 #define POLL_INTERVAL	100000
 
-// The scaler is stopped by itself, before anything else, because it spawns
-// connections.  See the comment in main().  Each suffixes array is
-// index-coupled to the programs array above it.
+// the scaler is stopped by itself, before anything else - see main()
+// (each suffixes array is index-coupled to the programs array above it)
 const char *scalerprograms[]={
 	"sqlr-scaler-",
 	NULL
@@ -49,10 +48,10 @@ struct targetprocess {
 static bool stillRunning(targetprocess *tp) {
 
 	// On platforms with kill(), signal 0 tests whether the process still
-	// exists without disturbing it.  Windows has no kill() and rudiments
-	// emulates signals there by injecting a thread into the target, which
-	// is far too invasive to do over and over, so watch for the pid file
-	// instead.  Each process removes its own pid file as it exits.
+	// exists without disturbing it.  Windows has no kill(), and rudiments
+	// emulates signals there by injecting a thread into the target, so
+	// watch for the pid file instead - each process removes its own as it
+	// exits.
 	#ifndef _WIN32
 	if (process::sendSignal(tp->pid,0)) {
 		return true;
@@ -177,10 +176,10 @@ static void collectTargets(directory *dir,
 
 			if (pid) {
 
-				// Skip the process if an earlier sweep already
-				// dealt with it.  A process that couldn't be
-				// killed still has its pid file, and must not
-				// be signalled and reported a second time.
+				// skip the process if an earlier sweep already
+				// dealt with it
+				// (a process that couldn't be killed still
+				// has its pid file)
 				if (seen->find(pid)) {
 					delete[] pidstr;
 					continue;
@@ -200,7 +199,7 @@ static void collectTargets(directory *dir,
 				// Sometimes the pid file gets removed or
 				// truncated while it's being read and pid is
 				// 0.  In that case, just attempt to remove the
-				// pid file.  This might also fail becase it
+				// pid file.  This might also fail because it
 				// might already be in the process of being
 				// removed, so we don't need to check whether
 				// it succeeded or not.
@@ -214,9 +213,9 @@ static void collectTargets(directory *dir,
 
 static void stopTargets(linkedlist< targetprocess * > *targets) {
 
-	// Signal all of the processes, then wait for all of them at once.
-	// Signalling and waiting for each one in turn would multiply the
-	// timeout by the number of processes.
+	// signal all of the processes, then wait for all of them at once
+	// (waiting for each one in turn would multiply the timeout by the
+	// number of processes)
 	for (listnode< targetprocess * > *node=targets->getFirst();
 						node; node=node->getNext()) {
 		process::sendSignal(node->getValue()->pid,SIGTERM);
@@ -327,12 +326,11 @@ int main(int argc, const char **argv) {
 	}
 
 	// The scaler gets stopped, and confirmed dead, before anything else is
-	// even looked for.  The scaler exists to spawn connections, and it
-	// spawns one whenever the connected client count in the shared memory
-	// segment exceeds the current connection count, so killing connections
-	// while it is still running just makes it replace them.  A connection
-	// spawned after the pid directory had been scanned would never be
-	// signalled, and would be orphaned onto init when the scaler exited.
+	// even looked for.  It spawns a connection whenever the connected
+	// client count exceeds the connection count, so killing connections
+	// while it is still running just makes it replace them, and one
+	// spawned after the pid directory had been scanned would be orphaned
+	// onto init.
 	linkedlist< uint64_t >		seen;
 	linkedlist< targetprocess * >	scaler;
 	collectTargets(&dir,sqlrpth.getPidDir(),id,idlen,
@@ -340,11 +338,10 @@ int main(int argc, const char **argv) {
 	stopTargets(&scaler);
 	bool	allstopped=reportAndCleanUp(&scaler);
 
-	// Now stop everything else.  Sweep twice, because a connection that
-	// the scaler spawned just before it exited might not have created its
-	// pid file yet when the first sweep read the pid directory.  The seen
-	// list keeps the second sweep from signalling and reporting anything
-	// that the first sweep already dealt with.
+	// now stop everything else
+	// (sweep twice, because a connection the scaler spawned just before
+	// it exited might not have created its pid file yet when the first
+	// sweep read the pid directory)
 	for (uint16_t sweep=0; sweep<2; sweep++) {
 
 		linkedlist< targetprocess * >	targets;

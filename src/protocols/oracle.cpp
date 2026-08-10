@@ -139,7 +139,7 @@
 	"supported.\n"
 
 // the version the module reports as its own - oracle 11.2.0.1.0, 0x0b200100,
-// which is the version the rest of it answers as.  See #9147.
+// which is the version the rest of it answers as.
 #define SERVER_VERSION_NUMBER		"186646784"
 
 // what a live 11.2 listener puts in the two reason bytes of a refuse
@@ -341,7 +341,7 @@
 static uint16_t	oracletypemap[]={
 	// "UNKNOWN"
 	(uint16_t)ORACLE_TYPE_VARCHAR,
-	// addded by freetds
+	// added by freetds
 	// "CHAR"
 	(uint16_t)ORACLE_TYPE_CHAR,
 	// "INT"
@@ -1114,7 +1114,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	tdu;
 
 		// whether the tns packet header carries a 32-bit length
-		// instead of a 16-bit length and a checksum
 		bool		largeheader;
 
 		uint32_t	anorequestversion;
@@ -1139,19 +1138,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	nationalcharset;
 		uint32_t	verifiertype;
 
-		// the oracle version the module imitates - every field a
-		// client picks a reader from moves together
+		// the oracle version the module imitates
 		byte_t		serverfieldversion;
 		const char	*serverversionno;
 		const char	*serverversionsql;
 
-		// whether the client marshals the authentication exchange in
-		// its own memory layout rather than portably
+		// whether the client marshals in its own memory layout
 		bool		nativeencoding;
 
-		// the ttc code the last tti function came in under.  One
-		// function code means two different things depending on it -
-		// see TTI_SWITCH_SESSION in clientSession().
+		// the ttc code the last tti function came in under
 		byte_t		lastttccode;
 
 		uint16_t	clientcharsetin;
@@ -1207,14 +1202,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		*columntypescached;
 		uint16_t	**columntypes;
 
-		// how many rows of each cursor's result set have gone out.  A
-		// client counts rows for the whole result set rather than for
-		// the batch it just got, so a fetch's summary has to carry the
-		// running total.
+		// how many rows of each cursor's result set have gone out,
+		// since a fetch's summary has to carry the running total
 		uint32_t	*rowssent;
 
-		// the sequence number of the request being answered, which
-		// the summary object has to echo back
+		// the sequence number the summary object has to echo back
 		byte_t		callnumber;
 
 		bool		query3session;
@@ -1243,17 +1235,14 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	// a reader from moves with it: the capability field version, the shape
 	// of every summary object, the version the module reports, and the
 	// default verifier type.  Answering one client as one version and
-	// another as another is what #9156, #9158 and #9171 were all one
-	// symptom of.
+	// another as another is what breaks the login and the first query.
 	//
-	// It is a choice because no one version serves every client.  A 12.1
-	// summary object carries two more fields than an 11.2 one, and
-	// python-oracledb and node-oracledb read them unconditionally - they do
-	// not support a server older than 12.1 at all - while OCI 23.26 in the
-	// portable encoding reads the 11.2 shape and nothing else.  ojdbc 23.26
-	// reads whichever the field version implies and works either way.  So
-	// 12.1 serves three of the four clients and is the default, and 11.2 is
-	// there for a deployment whose clients are OCI.  See #9171.
+	// No one version serves every client.  python-oracledb and
+	// node-oracledb don't support a server older than 12.1 and read the
+	// two extra fields of a 12.1 summary object unconditionally, OCI 23.26
+	// in the portable encoding reads the 11.2 shape and nothing else, and
+	// ojdbc 23.26 works either way.  So 12.1 is the default, and 11.2 is
+	// there for a deployment whose clients are OCI.
 	const char	*sv=parameters->getAttributeValue("serverversion");
 	if (!charstring::compare(sv,"11.2")) {
 		serverfieldversion=CCAP_FIELD_VERSION_11_2;
@@ -1265,11 +1254,9 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		serverversionsql=SERVER_VERSION_SQL_12_1;
 	}
 
-	// which o5logon verifier type to offer.  A 12c verifier arrived with
-	// 12.1 and cannot exist on an 11.2 database, so the default follows the
-	// version the module reports rather than being fixed, and an explicit
-	// setting still wins - the 11g path has to stay reachable for testing,
-	// and for a client old enough to need it.
+	// which o5logon verifier type to offer
+	// (a 12c verifier can't exist on an 11.2 database, so the default
+	// follows the version the module reports; an explicit setting wins)
 	uint32_t	defaultverifiertype=
 			(serverfieldversion<CCAP_FIELD_VERSION_12_1)?
 					VERIFIER_TYPE_11G_2:VERIFIER_TYPE_12C;
@@ -1389,9 +1376,8 @@ void sqlrprotocol_oracle::init() {
 	clientfieldversion=0;
 
 	// the module's own, until a data type negotiation lowers it to a
-	// client's.  It decides the shape of every summary object the module
-	// writes, and the authentication exchange writes two of them, so it
-	// can't start at zero for a client that never negotiates.
+	// client's.  it can't start at zero - the authentication exchange
+	// writes summary objects before any negotiation happens.
 	fieldversion=serverfieldversion;
 	clientwantsdbtimezone=false;
 	clientwantstzversion=false;
@@ -1598,13 +1584,11 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=false;
 					break;
 				case TTI_SWITCH_SESSION:
-					// One function code, two meanings,
-					// told apart by the ttc code it came
-					// in under.  As a piggyback it names
-					// the session the call behind it is
-					// for; as an ordinary call it is an
-					// 8.0.5 client asking for the server
-					// version.
+					// one function code, two meanings
+					// (a piggyback names the session the
+					// call behind it is for; an ordinary
+					// call is an 8.0.5 client asking for
+					// the server version)
 					if (lastttccode==
 						TTC_EXTENDED_TTI_FUNCTION) {
 						loop=switchSession(rp,&rp);
@@ -1653,16 +1637,6 @@ bool sqlrprotocol_oracle::sendPacket() {
 	return sendPacket(false);
 }
 
-// The tns packet header is 8 bytes either way, but what the first 4 of them
-// hold changes with the connect protocol version.  Below PROTOCOL_VERSION_12
-// they are a 16-bit length and a 16-bit packet checksum; at 12 and above they
-// are a 32-bit length, which is what lets a packet be bigger than 64k.  See
-// python-oracledb's src/oracledb/impl/thin/packet.pyx, which switches on
-// TNS_VERSION_MIN_LARGE_SDU, 315.
-//
-// The switch happens after the accept, not with it: the accept itself still
-// carries the 16-bit header, and getting that backwards makes a client read a
-// zero length and drop the connection.
 bool sqlrprotocol_oracle::sendPacket(bool flush) {
 
 	uint32_t	reqpacketsize=(uint32_t)reqpacket.getSize();
@@ -1671,6 +1645,10 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 	uint16_t	headerchecksum=0;
 
 	// overwrite the first 8 bytes of the reqpacket with the packet header
+	// (8 bytes either way - a 32-bit length at PROTOCOL_VERSION_12 and
+	// above, a 16-bit length and a packet checksum below it; see
+	// python-oracledb's src/oracledb/impl/thin/packet.pyx, which switches
+	// on TNS_VERSION_MIN_LARGE_SDU, 315)
 	reqpacket.setPositionRelativeToBeginning(0);
 	if (largeheader) {
 		reqpacket.write(hostToBE(reqpacketsize));
@@ -2022,23 +2000,17 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	sdu=smallsdu;
 	tdu=smalltdu;
 
-	// A client offering PROTOCOL_VERSION_12 or higher repeats the sdu and
-	// the tdu as 32-bit values behind the trace ids, and those are the
-	// ones it means - the 16-bit pair in front of them can't carry what it
-	// is asking for.
+	// a client at PROTOCOL_VERSION_12 or higher repeats the sdu and tdu as
+	// 32-bit values behind the trace ids, and those are the ones it means
 	if (connectversion>=PROTOCOL_VERSION_12 && resppacketsize>=58) {
 		readBE(rp,&sdu,&rp);
 		readBE(rp,&tdu,&rp);
 	}
 
 	// connect data
-	//
-	// A connect string too long for the connect packet travels in a data
-	// packet right behind it, and the offset then points at the end of the
-	// connect packet rather than into it.  python-oracledb does that for
-	// any connect string over 230 bytes, which is most of them, and the
-	// packet it sends is the two data flag bytes and then the string.
-	// Leaving it unread desyncs everything after it.
+	// (a connect string too long for the connect packet arrives in a data
+	// packet behind it - two data flag bytes and then the string - and the
+	// offset then points past the end of the connect packet)
 	const char	*connectdata=NULL;
 	uint32_t	dataoffset=(connectdataoffset>=8)?
 					(uint32_t)connectdataoffset-8:0;
@@ -2087,12 +2059,8 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 
 	// answer with the highest protocol version we support that the client
 	// can speak
-	//
-	// A real oracle 11.2 server answers PROTOCOL_VERSION_11 and a 12.2 one
-	// answers higher.  python-oracledb and node-oracledb refuse anything
-	// under PROTOCOL_VERSION_12 outright - it's a literal source check in
-	// python-oracledb's impl/thin/messages/connect.pyx - so 12 is what
-	// makes them connect at all.
+	// (python-oracledb and node-oracledb refuse anything under
+	// PROTOCOL_VERSION_12 outright, so 12 is what makes them connect)
 	if (connectlowestversion<=PROTOCOL_VERSION_12 &&
 			connectversion>=PROTOCOL_VERSION_12) {
 		connectversion=PROTOCOL_VERSION_12;
@@ -2114,14 +2082,6 @@ bool sqlrprotocol_oracle::sendAccept() {
 	return sendAccept(NULL,0);
 }
 
-// The accept grows with the version it announces.  Below PROTOCOL_VERSION_12
-// its body is 24 bytes and the packet is 32; at 12 and above a 32-bit sdu, a
-// 32-bit tdu and one trailing byte go on the end, making the body 33 and the
-// packet 41.  python-oracledb reads the 32-bit sdu unconditionally once the
-// version is 12 or more.
-//
-// The accept itself keeps the 16-bit packet header whatever version it
-// announces.  Only the packets after it switch.
 bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 
 	bool	large=(connectversion>=PROTOCOL_VERSION_12);
@@ -2157,6 +2117,10 @@ bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 	writeHost(&reqpacket,(uint16_t)1);
 	writeBE(&reqpacket,datasize);
 	writeBE(&reqpacket,dataoffset);
+	// echo the client's ano flags back
+	// (the client decides whether to send an ano request from the flags in
+	// the accept, so echoing means both ends reach the same decision from
+	// the same bits)
 	writeBE(&reqpacket,anoflags);
 	writeBE(&reqpacket,padding);
 	if (large) {
@@ -2170,6 +2134,8 @@ bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 		return false;
 	}
 
+	// the accept itself keeps the 16-bit header whatever version it
+	// announces - only the packets after it switch
 	largeheader=large;
 
 	return true;
@@ -2187,20 +2153,10 @@ bool sqlrprotocol_oracle::sendResend() {
 	return sendPacket(true);
 }
 
-// A refuse packet's body is two reason bytes, a big endian uint16 length and
-// a connect-string-shaped message, and the message is where the reason
-// actually is: the client digs the ERR= out of it and reports that.  A body
-// of no bytes at all, which is what this used to send, is the one case
-// python-oracledb calls out by name - "the listener refused the connection but
-// an unexpected error format was returned" - and it leaves the user with no
-// reason at all.
-//
-// The shape and the two reason bytes are a live oracle 11.2 listener's,
-// captured by asking it for a service name it doesn't have.  The error number
-// appears twice, once as ERR= and once as CODE= inside an ERROR_STACK, and
-// EMFI is 4 in every capture.
 bool sqlrprotocol_oracle::sendRefuse(uint32_t tnserror) {
 
+	// the client digs the ERR= out of the message rather than reading the
+	// two reason bytes, so an empty body leaves it with no reason at all
 	stringbuffer	message;
 	message.append("(DESCRIPTION=(TMP=)(VSNNUM=");
 	message.append(SERVER_VERSION_NUMBER);
@@ -2230,20 +2186,15 @@ bool sqlrprotocol_oracle::sendRefuse(uint32_t tnserror) {
 
 bool sqlrprotocol_oracle::anoNegotiation() {
 
-	// ano is optional, and the connect packet's nsi flags say whether the
-	// client means to negotiate it.  only a client that set NSI_NA_WANTED
-	// sends an ano request; oracle's own thin drivers don't - captured
-	// against an oracle 12.2 server, python-oracledb sends 0x84,
+	// ano is optional - only a client that set NSI_NA_WANTED sends an ano
+	// request, and waiting for one that never comes reads the client's
+	// ttipro as one and kills the handshake.  the two flag bytes are
+	// written identically by every client seen, but check both anyway.
+	//
+	// oracle's own thin drivers don't ask for it - captured against an
+	// oracle 12.2 server, python-oracledb sends 0x84,
 	// NSI_SUP_SEC_RENEG|NSI_NA_DISABLED, and node-oracledb sends 0x08,
 	// NSI_NA_NO_SERVICES, and both go straight to the tti negotiation.
-	// waiting for an ano request they'll never send means reading their
-	// ttipro as one, failing on the missing 0xdeadbeef, and killing the
-	// handshake.  the two flag bytes are written identically by every
-	// client seen, but check both anyway.
-	// the accept echoes these flags back, which is what makes this work
-	// from the client's side too: the client decides whether to send an
-	// ano request from the flags in the accept, so echoing means both
-	// ends reach the same decision from the same bits.
 	if (!(((anoflags>>8)|anoflags)&NSI_NA_WANTED)) {
 		debugStart("ano");
 		debugWrite("client didn't ask for ano, skipping it");
@@ -2262,10 +2213,9 @@ bool sqlrprotocol_oracle::anoNegotiation() {
 
 void sqlrprotocol_oracle::warnAnoDeclined() {
 
-	// this goes through the logger modules rather than stderror.printf(),
-	// which is what tds uses for its tls warning, because that one fires
-	// once at module construction and this one fires per connection.
-	// there's no cursor during the handshake.
+	// through the logger modules rather than stderror.printf(), because
+	// this fires per connection rather than once at construction.  there's
+	// no cursor during the handshake, hence the NULL.
 	uint32_t	encdrivers=anoDriversOffered(encryptiondrivers,
 							encryptiondrivercount);
 	if (encdrivers) {
@@ -2297,8 +2247,7 @@ uint32_t sqlrprotocol_oracle::anoDriversOffered(uint16_t *drivers,
 						uint32_t drivercount) {
 
 	// algorithm 0 is "none", and every client sends it whether it wants
-	// encryption or not - node-oracledb sends that one byte and nothing
-	// else - so it isn't an offer of anything.
+	// encryption or not, so it isn't an offer of anything
 	uint32_t	offered=0;
 	for (uint32_t i=0; i<drivercount; i++) {
 		if (drivers[i]) {
@@ -2411,10 +2360,8 @@ bool sqlrprotocol_oracle::anoBoundsCheck(const byte_t *rp,
 						size_t size,
 						const char *name) {
 
-	// the rp>end test is belt and braces.  nothing in the ano parse moves
-	// the read pointer without checking first, so it can't get past the
-	// end, but if it ever did then end-rp would be negative and the
-	// unsigned comparison on its own would pass.
+	// the rp>end test is belt and braces - if rp ever did get past end
+	// then end-rp would be negative and the unsigned comparison would pass
 	if (rp>end || (size_t)(end-rp)<size) {
 		debugWrite("bad ano %s, truncated",name);
 		return false;
@@ -2657,9 +2604,8 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		return false;
 	}
 
-	// the end of this field.  measured here, before anything has read
-	// past the header, because readMarker32/16 only rewind the read
-	// pointer when they fail, so past this point rp may have moved.
+	// the end of this field, measured before anything reads past the
+	// header - readMarker32/16 only rewind the read pointer when they fail
 	const byte_t	*fieldend=rp+size;
 
 	// if size was 1, then there is just a null terminator
@@ -2675,26 +2621,21 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		!readMarker32(rp,0xdeadbeef,&rp) ||
 		!readMarker16(rp,0x0003,&rp)) {
 
-		// A long standing FIXME here said that a field sometimes has
-		// an array marker and no deadbeef, and sometimes neither, and
-		// that in both cases the rest of it was uninterpretable.
-		// Both shapes were the encryption and crypto-checksumming
-		// services' driver lists, which are one byte per algorithm id
-		// with a field header identical to this one - and #8981 gave
-		// those their own reader, so neither reaches this function
-		// any more.  The difference between the two shapes was only
-		// whether the first two algorithm ids happened to spell the
-		// array marker: ojdbc 23.26 offers 0, 3, 4, 5 and 6 for
-		// crypto-checksumming, and the first two of those are the
-		// bytes 00 03.
+		// A field sometimes has an array marker and no deadbeef, and
+		// sometimes neither.  Both shapes are the encryption and
+		// crypto-checksumming services' driver lists - one byte per
+		// algorithm id, with a field header identical to this one -
+		// and they have their own reader now, so neither reaches this
+		// function.  The two differ only in whether the first two
+		// algorithm ids happen to spell the array marker: ojdbc 23.26
+		// offers 0, 3, 4, 5 and 6 for crypto-checksumming, and the
+		// first two of those are the bytes 00 03.
 		//
 		// The one caller left is getSupervisorService(), and both
-		// clients that reach ano here send a real deadbeef ub2 array
-		// in that field.  So this is a guard rather than a decoder,
-		// and what nobody has is a capture of it firing - hence the
-		// dump.  Returning NULL/0 without failing is deliberate: the
-		// service parses either way and a supervisor list nobody can
-		// read is not worth refusing a connection over.
+		// clients that reach ano here send a real deadbeef ub2 array,
+		// so this is a guard rather than a decoder - hence the dump.
+		// Returning NULL/0 without failing is deliberate: a supervisor
+		// list nobody can read is not worth refusing a connection over.
 		debugStart("unrecognized array field");
 		debugHexDump(fieldend-size,size);
 		debugEnd();
@@ -2728,17 +2669,6 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 	return true;
 }
 
-// The encryption and crypto-checksumming services send their algorithm list
-// as one byte per algorithm id, not as the ub2 array getAnoArrayField()
-// reads, even though the field header is identical - same size, same type 1.
-// Nothing in the field says which shape it is; only the service does.
-//
-// Three sources agree on the byte form.  Redfern's 8i capture on the Oracle
-// Protocol wiki page sends "00 01 00 01 00" for the encryption service, one
-// byte, annotated "AlgID (0=none)".  node-oracledb's EncryptionService and
-// DataIntegrityService both send that same single byte through sendRaw(),
-// which writes a size, a type of 1, and then raw bytes.  And ojdbc8 sends
-// "00 04 00 01 00 0f 10 11", which is none, aes128, aes192 and aes256.
 bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 						const byte_t *end,
 						uint16_t **drivers,
@@ -2765,10 +2695,18 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 		return false;
 	}
 
-	// a field of this shape could carry the ub2 array instead, which
-	// starts with a deadbeef marker.  no client seen sends one here, and
-	// reading one as bytes would report nonsense, so skip it rather than
-	// guess.  see the FIXME in getAnoArrayField().
+	// the encryption and crypto-checksumming services send one byte per
+	// algorithm id even though the field header is identical to the ub2
+	// array getAnoArrayField() reads - and a field of this shape could
+	// carry that instead, so skip it rather than report nonsense
+	//
+	// Three sources agree on the byte form.  Redfern's 8i capture on the
+	// Oracle Protocol wiki page sends "00 01 00 01 00" for the encryption
+	// service, one byte, annotated "AlgID (0=none)".  node-oracledb's
+	// EncryptionService and DataIntegrityService both send that same
+	// single byte through sendRaw(), which writes a size, a type of 1,
+	// and then raw bytes.  And ojdbc8 sends "00 04 00 01 00 0f 10 11",
+	// which is none, aes128, aes192 and aes256.
 	if (size>=4 && rp[0]==0xde && rp[1]==0xad &&
 					rp[2]==0xbe && rp[3]==0xef) {
 		debugWrite("driver list is a ub2 array, not decoded");
@@ -3106,12 +3044,8 @@ bool sqlrprotocol_oracle::recvTtiRequest() {
 bool sqlrprotocol_oracle::sendTtiResponse() {
 
 	// pick the highest version the client offers that we implement
-	//
-	// Clients send the list in descending order, but nothing in the
-	// protocol requires that, so don't just take the first supported one.
-	// Anything below TTI_VERSION_MIN is skipped rather than accepted,
-	// because putTti4Response() and below are empty stubs and would send
-	// an empty data packet.
+	// (nothing requires the client's list to be in descending order, and
+	// anything below TTI_VERSION_MIN has only an empty stub to answer with)
 	ttiversion=0;
 	for (uint32_t i=0; i<ttiversioncount; i++) {
 		if (ttiversions[i]>=TTI_VERSION_MIN &&
@@ -3123,12 +3057,8 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 	if (!ttiversion) {
 		debugWrite("no supported tti protocol version found");
 
-		// Not a refuse packet, whatever the shape of the failure -
-		// the accept has already gone out and a refuse is only valid
-		// before it.  An error packet is how a server says no from
-		// here on.  There's no client on this host that offers no
-		// supported tti version, so this path is argued from the
-		// layer the packet belongs to rather than from a run.
+		// not a refuse packet - the accept has already gone out, and a
+		// refuse is only valid before it
 		return sendErrorPacket("tti version error",
 					ORA_VERSION_NOT_SUPPORTED,
 					ORA_VERSION_NOT_SUPPORTED_MESSAGE);
@@ -3166,38 +3096,26 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // CCAP_TTC1 bit 0x01 and CCAP_OCI1 bit 0x01 are that server's, 0x7f and 0xff,
 // and they have to stay that way.  go-ora reads them as end-of-call-status and
 // fast-session-propagate, and then reads an extra field for each off the front
-// of every summary object.  #8978 cleared them on the grounds that this module
-// sends neither field, and that was wrong: the module doesn't build its
-// footers field by field, it appends byte strings captured from that same
-// server, so both fields are in them, unnamed.  Its authentication ok trailer
-// and its authentication error packet are byte for byte that server's, and its
-// error packet decodes only one way - with the bits set, the summary object's
-// return code lands on the ora number in the message that follows it, and with
-// them clear it lands on a zero length integer, reads 0, and a return code of
-// 0 means there is no message to read at all.  Measured, with the bits clear:
-// ojdbc 23.26 hangs forever on a correct login and reports the module's
-// ORA-01017 as an ArrayIndexOutOfBoundsException.
-//
-// The two move together.  Sending a footer without the fields means clearing
-// both bits in the same change, and clearing either bit means taking the
-// fields out of every footer.  putGenericFooter() is the one that isn't
-// covered by this - it came from an 8i server rather than the 11.2 one, and
-// it's on the query path, which no client has reached yet.
+// of every summary object.  They must not be cleared on the grounds that the
+// module sends neither field: the module doesn't build its footers field by
+// field, it appends byte strings captured from that same server, so both
+// fields are in them, unnamed.  Measured, with the bits clear: ojdbc 23.26
+// hangs forever on a correct login and reports the module's ORA-01017 as an
+// ArrayIndexOutOfBoundsException.  The two move together - clearing either bit
+// means taking the fields out of every footer.
 //
 // The array is 42 bytes rather than the 39 a real 11.2 server sends, because
 // python-oracledb reads CCAP_TTC4 with bounds checking disabled and no length
 // guard.  Zero there is also the value we want: it leaves CCAP_END_OF_RESPONSE
 // and CCAP_EXPLICIT_BOUNDARY clear, so the client uses the older framing.
 //
-// CCAP_FIELD_VERSION is negotiated as a minimum rather than as a request, so
-// it is a ceiling on what any client will ask of the module, not a promise to
-// it.  The value here is the 11.2 server's; putTti6Response() overwrites it
-// with the version the listener is configured to imitate, since it is what a
-// client picks its summary object reader from.  Nothing above
+// CCAP_FIELD_VERSION is a ceiling on what any client will ask of the module
+// rather than a promise to it, and putTti6Response() overwrites the value here
+// with the version the listener is configured to imitate.  Nothing above
 // CCAP_FIELD_VERSION_12_1 is offered: it would oblige an oaccolid in every
-// describe-info column and five more fields in every execute, and it is
-// measured to break ojdbc 23.26, which logs in at 8 or 9 and then fails in
-// the describe with ORA-17401.
+// describe-info column and five more fields in every execute, and it breaks
+// ojdbc 23.26, which logs in at 8 or 9 and then fails in the describe with
+// ORA-17401.
 static const byte_t	ttiservercompilecaps[]={
 	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, CCAP_FIELD_VERSION_11_2,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x7f,
@@ -3208,11 +3126,9 @@ static const byte_t	ttiservercompilecaps[]={
 };
 
 // server runtime capabilities, from the same server
-//
-// RCAP_TTC is RCAP_TTC_ZERO_COPY plus one unnamed bit.  It leaves RCAP_TTC_32K
-// clear, since this module doesn't support 32k varchars, and
-// RCAP_TTC_SESSION_STATE_OPS clear, since it doesn't support request
-// boundaries either.
+// (RCAP_TTC is RCAP_TTC_ZERO_COPY plus one unnamed bit; RCAP_TTC_32K and
+// RCAP_TTC_SESSION_STATE_OPS are clear because the module supports neither
+// 32k varchars nor request boundaries)
 static const byte_t	ttiserverruntimecaps[]={
 	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
 };
@@ -3241,32 +3157,30 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 	// protocol version and server banner...
 	//
-	// This is the server's platform, and it is what an OCI client picks its
-	// wire encoding from: one whose own platform matches marshals every
-	// request in its own memory layout - 8 byte pointer sentinels, fixed
-	// width little endian counts, buffer sizes rather than byte counts -
-	// and one whose platform doesn't marshals portably, for the whole
-	// session.  This module implements the portable encoding everywhere, so
-	// the string it sends has to be one that can never match.
-	//
-	// It used to be the client's own string, echoed, which made the module
-	// answer every client with a match.  See #9156.
+	// This is the server's platform, and it is what an OCI client picks
+	// its wire encoding from: one whose own platform matches marshals
+	// every request in its own memory layout - 8 byte pointer sentinels,
+	// fixed width little endian counts, buffer sizes rather than byte
+	// counts - and one whose platform doesn't marshals portably, for the
+	// whole session.  This module implements the portable encoding
+	// everywhere, so the string it sends has to be one that can never
+	// match, and naming a platform SQL Relay merely isn't - solaris, say -
+	// is a promise it can't keep, since it builds there.
 	//
 	// A real server's is its platform - a live 11.2 on centos 5 x64 and a
-	// live 12.2 on centos 7 x64 both send "x86_64/Linux 2.4.xx", an 8i, 9i,
-	// 10g or 11g on x86 sends "Linuxi386/Linux-2.0.34-8.1.0", and an 8.0.5
-	// sends "Linuxi386/Linux-2.0.34 ", where dropping the trailing space
-	// makes the client send a marker after the first phase of
+	// live 12.2 on centos 7 x64 both send "x86_64/Linux 2.4.xx", an 8i,
+	// 9i, 10g or 11g on x86 sends "Linuxi386/Linux-2.0.34-8.1.0", and an
+	// 8.0.5 sends "Linuxi386/Linux-2.0.34 ", where dropping the trailing
+	// space makes the client send a marker after the first phase of
 	// authentication.  Sending any of them brings the problem back for a
-	// client on the same platform, which on a typical deployment is most of
-	// them, and naming a platform SQL Relay merely isn't - solaris, say -
-	// is a promise SQL Relay can't keep, since it builds there.
+	// client on the same platform, which on a typical deployment is most
+	// of them.
 	//
 	// A client compares this string; it doesn't parse it.  Measured:
-	// OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for "SQLRelay" and
-	// for "SQL Relay 2.3.0" alike, and the other three clients have been
-	// answered with their own non-platform strings all along by the echo -
-	// "Java_TTC-8.2.0", "python-oracledb", "node-oracledb".
+	// OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for "SQLRelay"
+	// and for "SQL Relay 2.3.0" alike, and ojdbc, python-oracledb and
+	// node-oracledb take a non-platform string too - their own are
+	// "Java_TTC-8.2.0", "python-oracledb" and "node-oracledb".
 	serverstring=SERVER_BANNER;
 
 	write(&reqpacket,version);
@@ -3280,19 +3194,15 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 
 	// server flags
-	//
-	// Real 11.2 and 12.2 servers send 1 here, and neither python-oracledb
-	// nor go-ora reads it.  The 8.0-era client this module was originally
-	// developed against saw 0, so if that path regresses, this is the
-	// first byte to put back.
+	// (real 11.2 and 12.2 servers send 1; the 8.0-era client this module
+	// was originally developed against saw 0, so if that path regresses,
+	// this is the first byte to put back)
 	write(&reqpacket,(byte_t)1);
 
 
 	// charset graph elements
-	//
-	// A real 11.2 server sends none.  A 12.2 server with an AL32UTF8
-	// database sends 10, of 5 bytes each, but both python-oracledb and
-	// go-ora skip the list without reading it, so sending none is safe.
+	// (a real 11.2 server sends none, and both python-oracledb and go-ora
+	// skip the list without reading it, so none is safe)
 	uint16_t	charsetgraphelementcount=0;
 
 	writeLE(&reqpacket,charsetgraphelementcount);
@@ -3301,9 +3211,8 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 	// fdo... (whatever that is)
 	uint16_t	fdosize=100;
 	uint32_t	fdodatasize=fdosize-4;
-	// Nothing in python-oracledb or go-ora reads part1 or part2, so what
-	// they mean is still unknown.  Only their sizes matter; the client
-	// adds them up to find the charsets that follow them.
+	// meaning unknown - only the sizes matter, since the client adds them
+	// up to find the charsets that follow
 	byte_t	part1[]={
 		0x05, 0x0b, 0x0c, 0x03, 0x0c, 0x0c, 0x05, 0x04,
 		0x05, 0x0d, 0x06, 0x09, 0x07, 0x08, 0x05, 0x0e,
@@ -3345,11 +3254,8 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 
 	// capabilities, each prefixed with a 1-byte length
-	//
-	// The arrays are a version 6 field.  A real 11.2 server made to
-	// negotiate version 5 ends its response at the fdo block, with no
-	// length byte for either array rather than a zero one, so callers that
-	// pass none get neither length byte.
+	// (a version 6 field - a version 5 response ends at the fdo block,
+	// with no length byte for either array rather than a zero one)
 	if (compilecapssize) {
 		write(&reqpacket,compilecapssize);
 		reqpacket.append(compilecaps,compilecapssize);
@@ -3381,27 +3287,16 @@ void sqlrprotocol_oracle::putTti6Response() {
 
 	// oracle 8i+ supports TTI 6 (and lower)
 	//
-	// The same response as TTI 5, with a different version byte and the
-	// capability arrays that only version 6 carries.  Real 11.2 and 12.2
-	// servers both answer version 6 with exactly this layout, and the same
-	// 11.2 server made to negotiate version 5 answers the same bytes minus
-	// the arrays.
-	//
 	// CCAP_LOGON_TYPES has to track the verifier type the challenge is
-	// going to carry.  ojdbc 23.26 sends an empty AUTH_PASSWORD - and no
-	// AUTH_PBKDF2_SPEEDY_KEY - for a 12c verifier unless CCAP_O7LOGON is
-	// set, and does the same for an 11g verifier when it is set.  It picks
-	// its logon code path from the bit and its crypto from the verifier
-	// type, and refuses the login when they disagree.
-	//
-	// It takes two bits, not one.  OCI 23.26 reads CCAP_O5LOGON_NP as well,
-	// and with only one of the two set it takes the 11g path for the
-	// session key size while taking the 12c path for the crypto - it
-	// answers a 32 byte challenge with a 48 byte key and an
-	// AUTH_PBKDF2_SPEEDY_KEY, which no auth module can verify.  Measured
-	// one bit at a time: 0x2d and 0x0f both give ORA-01017 for a password
-	// that is right, and 0x2f logs in.  A live 12.2 server sets both, and a
-	// live 11.2 server sets neither.  See #9158.
+	// going to carry.  ojdbc 23.26 picks its logon code path from the bit
+	// and its crypto from the verifier type, and refuses the login when
+	// they disagree.  It takes two bits, not one: OCI 23.26 reads
+	// CCAP_O5LOGON_NP as well, and with only one of the two set it takes
+	// the 11g path for the session key size while taking the 12c path for
+	// the crypto, which no auth module can verify.  Measured one bit at a
+	// time: 0x2d and 0x0f both give ORA-01017 for a password that is
+	// right, and 0x2f logs in.  A live 12.2 server sets both, and a live
+	// 11.2 server sets neither.
 	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
 	bytestring::copy(compilecaps,ttiservercompilecaps,
 					sizeof(ttiservercompilecaps));
@@ -3419,12 +3314,9 @@ void sqlrprotocol_oracle::putTti6Response() {
 void sqlrprotocol_oracle::putTti5Response() {
 
 	// oracle 8.0 supports TTI 5 (and lower)
-	//
-	// No capability arrays.  They are a version 6 field, and sending them
-	// anyway is not merely redundant: a real 11.2 server made to negotiate
-	// version 5 serves OCI 23.26 end to end, and the same negotiation with
-	// these arrays appended gets ORA-28547 from it and ORA-17401 from
-	// ojdbc 23.26.
+	// (no capability arrays - they are a version 6 field, and appending
+	// them anyway gets ORA-28547 from OCI 23.26 and ORA-17401 from ojdbc
+	// 23.26)
 	putTtiResponse(ttiversion,NULL,0,NULL,0);
 }
 
@@ -3466,31 +3358,24 @@ void sqlrprotocol_oracle::putTti1Response() {
 //
 // The db time zone group is not in python-oracledb, which leaves the runtime
 // capability that asks for it clear and so never sees it.  go-ora,
-// v2/data_type_nego.go, reads it, and OCI 23.26 asks for it, so it is measured
-// as well as read: OCI's whole 102 byte request is accounted for only with it,
-// and a real 11.2 server answers OCI with 26 bytes that are nothing else.
+// v2/data_type_nego.go, reads it, and OCI 23.26 asks for it.
 
-// The db time zone, byte for byte as both a live 11.2 and a live 12.2 server
+// the db time zone, byte for byte as both a live 11.2 and a live 12.2 server
 // send it.  go-ora reads bytes 4, 5 and 6 as hours, minutes and seconds biased
-// by 60, so three 0x3c is an offset of +00:00.  The module has no db time zone
-// of its own to report, and both servers captured were on UTC anyway.
+// by 60, so three 0x3c is an offset of +00:00.
 static const byte_t	dbtimezone[]={
 	0x80, 0x00, 0x00, 0x00, 0x3c, 0x3c, 0x3c, 0x80,
 	0x00, 0x00, 0x00
 };
 
-// The time zone data file version.  A live 11.2 server sends 11 and a live
-// 12.2 server sends 26.  The module answers CCAP_FIELD_VERSION_11_2 elsewhere,
-// and the lower version claims fewer time zone regions, so 11 it is.
+// the time zone data file version.  a live 11.2 server sends 11 and a live
+// 12.2 server sends 26; the lower version claims fewer time zone regions.
 #define DB_TIMEZONE_VERSION	11
 
 bool sqlrprotocol_oracle::dataTypeNegotiation() {
 	return recvDataTypeRequest() && sendDataTypeResponse();
 }
 
-// A length byte, then that many bytes of capabilities.  Points into the
-// response packet rather than copying it - nothing reads another packet
-// between here and the response.
 bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
 					const byte_t *end,
 					const byte_t **caps,
@@ -3513,6 +3398,8 @@ bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
 		return false;
 	}
 
+	// points into the response packet rather than copying - nothing reads
+	// another packet between here and the response
 	*caps=rp;
 	*capssize=size;
 
@@ -3583,23 +3470,16 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		return false;
 	}
 
-	// The client's character set, twice, in host order.  These used to be
-	// asserted against a marker of 0x0100 each, read big endian.  They
-	// aren't markers.  An 8.0.5 client sends 1, US7ASCII, twice, which is
-	// 01 00 01 00 on the wire, which is 0x0100 twice read the wrong way
-	// round - and that is where the constants came from.  A modern client
-	// echoes back whatever the tti response announced.
-	//
-	// Neither of them is the national character set, which is a separate
-	// field further down, inside the db time zone group.  go-ora calls
-	// these two the client's remote-in and remote-out character sets and
-	// writes the same value in both, and so does every client measured.
+	// the client's remote-in and remote-out character sets, in host order.
+	// every client measured writes the same value in both.  neither is the
+	// national character set, which is a separate field further down,
+	// inside the db time zone group.
 	readLE(rp,&clientcharsetin,&rp);
 	readLE(rp,&clientcharsetout,&rp);
 
-	// A bit field, not a marker.  8.0.5 sends none of it, 9i and OCI 23.26
-	// send CONV_LENGTH alone, ojdbc 23.26 sends MULTI_BYTE alone, and
-	// python-oracledb sends both.
+	// a bit field, not a marker - 9i and OCI 23.26 send
+	// ENCODING_CONV_LENGTH alone, ojdbc 23.26 sends ENCODING_MULTI_BYTE
+	// alone, python-oracledb sends both
 	read(rp,&encodingflags,&rp);
 
 	// the client's capability arrays
@@ -3612,10 +3492,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		return false;
 	}
 
-	// The field version is negotiated as the lower of the two.  A modern
-	// client asks for far more than the module offers, so the module's is
-	// what wins in practice, but a client old enough to ask for less has to
-	// get less.
+	// the field version is negotiated as the lower of the two
 	clientfieldversion=(compilecapssize>CCAP_FIELD_VERSION)?
 				compilecaps[CCAP_FIELD_VERSION]:0;
 	fieldversion=serverfieldversion;
@@ -3623,8 +3500,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		fieldversion=clientfieldversion;
 	}
 
-	// The db time zone group, which is there only if the client asked for
-	// it.  Of the clients on this host only OCI 23.26 does.
+	// the db time zone group, there only if the client asked for it
 	clientwantsdbtimezone=(runtimecapssize>RCAP_DB_TIMEZONE &&
 				(runtimecaps[RCAP_DB_TIMEZONE]&
 					RCAP_DB_TIMEZONE_REQUESTED)!=0);
@@ -3647,16 +3523,13 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		readLE(rp,&clientnationalcharset,&rp);
 	}
 
-	// The client's data type list, which nothing in the response depends
-	// on - a real server answers every client with its own table.  So a
-	// list that runs out early is counted and reported rather than
-	// refused, and an empty one is not an error at all: OCI 23.26 sends no
-	// list, not even the terminator, and a real server answers it with
-	// none either.
+	// the client's data type list, which nothing in the response depends
+	// on - a real server answers every client with its own table, so a
+	// short or empty list is counted and reported rather than refused
 	//
-	// NOTE: When talking to the db directly, 8.0.5 sends/recieves almost
+	// NOTE: When talking to the db directly, 8.0.5 sends/receives almost
 	// nothing, but when talking to relay it sends/receives a ton of stuff.
-	// It's not exctly clear what triggers this.
+	// It's not exactly clear what triggers this.
 	datatypes=rp;
 	datatypessize=end-rp;
 	datatypecount=countDataTypes(rp,end);
@@ -3692,10 +3565,9 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugEnd();
 	}
 
-	// The client states what it will send here rather than asking for
-	// anything.  python-oracledb writes utf8 whatever the server said, so
-	// this is not a negotiation the module can lose, but a client that
-	// disagrees with the listener is worth saying out loud.
+	// the client states what it will send rather than asking for anything,
+	// so this is not a negotiation the module can lose - but a client that
+	// disagrees with the listener is worth saying out loud
 	if (clientcharsetin!=charset || clientcharsetout!=charset) {
 		debugWrite("client charsets %d/%d differ from the "
 				"listener's %d, using the listener's",
@@ -3705,8 +3577,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	return true;
 }
 
-// The data types the module supports, captured from a live oracle 11.2 server
-// - the same server #8978's capability arrays came from, and the version the
+// the data types the module supports, captured from a live oracle 11.2 server
+// - the same server the capability arrays above came from, and the version the
 // module answers as.  Each row is the type, the type it converts to, and the
 // representation of that type, 1 universal or 10 native.  A conversion type of
 // 0 means the type is not exchanged, and its row is 4 bytes on the wire rather
@@ -4079,10 +3951,7 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 		}
 	}
 
-	// The data types, if the client sent a list of its own.  It never sent
-	// one of the module's own before this - the whole request, capability
-	// arrays and all, was echoed back - which parses as 6 types and leaves
-	// the rest in the client's buffer to be read as the next message.
+	// the data types, if the client sent a list of its own
 	uint16_t	count=0;
 	if (datatypessize) {
 		count=sizeof(ttidatatypes)/sizeof(ttidatatypes[0]);
@@ -4123,8 +3992,6 @@ bool sqlrprotocol_oracle::authenticate() {
 		sendAuthenticationResponse();
 }
 
-// A ub4 is a count byte, then that many bytes of the value, big endian.  A
-// count of 0 means the value is 0 and nothing follows.
 bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
 					const byte_t *end,
 					uint32_t *value,
@@ -4160,9 +4027,6 @@ bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
 	return true;
 }
 
-// A length byte, then that many bytes.  0xfe introduces a chunked long form
-// that nothing in the authentication exchange uses, so bail on it rather than
-// desync.
 bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 					const byte_t *end,
 					char **string,
@@ -4180,6 +4044,8 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	byte_t	length;
 	read(rp,&length,&rp);
 
+	// 0xfe introduces a chunked long form that nothing in the
+	// authentication exchange uses, so bail rather than desync
 	if (length==0xfe) {
 		debugWrite("chunked string, not supported");
 		return false;
@@ -4197,11 +4063,6 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	return true;
 }
 
-// The counts in the authentication exchange are ub4s in the portable encoding
-// and fixed width little endian integers in the native one.  The native widths
-// are not all the same - a size or a flags word is 4 bytes, a request's pair
-// count is 8 - so the caller names the one it wants.  Only the low 4 bytes of
-// a wide one ever carry anything.
 bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
 					const byte_t *end,
 					uint32_t *value,
@@ -4232,8 +4093,6 @@ bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
 	return true;
 }
 
-// One raw byte in the portable encoding, an 8 byte sentinel in the native one.
-// Nothing follows either; they're read only to stay in step.
 bool sqlrprotocol_oracle::getAuthPointer(const byte_t *rp,
 					const byte_t *end,
 					const byte_t **rpout) {
@@ -4263,17 +4122,6 @@ void sqlrprotocol_oracle::putAuthCount(uint32_t value, byte_t nativesize) {
 	}
 }
 
-// A key/value pair: name size, name, value size, value, flags - with the value
-// and its length byte both omitted when the value size is 0.  The omission is
-// the thing that's easiest to get wrong; a client sends it whenever it refuses
-// to send an AUTH_PASSWORD.  flags is a count too, not one byte - the client's
-// AUTH_SESSKEY carries 1, and a server's AUTH_VFR_DATA carries the verifier
-// type.
-//
-// A native encoding client's sizes are buffer sizes rather than byte counts -
-// the character count times the bytes per character of its charset, so three
-// times the length for AL32UTF8 - and the length that matters is the string's
-// own length byte either way.
 bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 					const byte_t *end,
 					char **fieldname,
@@ -4295,6 +4143,10 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 		return false;
 	}
 
+	// the value and its length byte are both omitted when the value size
+	// is 0, which is what a client sends when it refuses an AUTH_PASSWORD.
+	// a native encoding client's sizes are buffer sizes rather than byte
+	// counts, so the string's own length byte is the one that matters.
 	uint32_t	valuesize=0;
 	if (*fieldsize && !getLenString(rp,end,field,&valuesize,&rp)) {
 		return false;
@@ -4309,9 +4161,6 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 	return true;
 }
 
-// A pointer field is one raw byte: 1 when the client is sending the thing it
-// points at, 0 when it isn't.  Nothing in the module follows one; they're read
-// only to stay in step.
 bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 					const byte_t *end,
 					byte_t *value,
@@ -4346,9 +4195,6 @@ void sqlrprotocol_oracle::putUb4(uint32_t value) {
 	}
 }
 
-// A signed integer sets bit 0x80 of the count byte and sends the magnitude.
-// A column's scale is the only place the module needs one - a real server
-// reports -127 for a number with no declared scale.
 void sqlrprotocol_oracle::putSb4(int32_t value) {
 	if (value>=0) {
 		putUb4((uint32_t)value);
@@ -4372,10 +4218,6 @@ void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
 	write(&reqpacket,string,(size_t)size);
 }
 
-// The same length-then-bytes as putLenString(), but with the long form for
-// anything over 252 bytes: a 0xfe marker, then a ub4 length and that many
-// bytes per chunk, then a zero length.  A row value needs it and an
-// authentication field never did, which is why putLenString() doesn't have it.
 void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 
 	if (size<=MAX_SHORT_LENGTH) {
@@ -4386,6 +4228,10 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		return;
 	}
 
+	// the long form: a 0xfe marker, then a ub4 length and that many bytes
+	// per chunk, then a zero length
+	// (a row value needs it and an authentication field never did, which
+	// is why putLenString() doesn't have it)
 	write(&reqpacket,(byte_t)LONG_LENGTH_INDICATOR);
 	uint32_t	offset=0;
 	while (offset<size) {
@@ -4400,9 +4246,6 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 	putUb4(0);
 }
 
-// A ub4 size, then the bytes with their own length in front of them again -
-// and nothing at all when the size is 0.  Column names, the current date and
-// the describe's query cache key are all this shape.
 void sqlrprotocol_oracle::putBytesWithLength(const char *bytes,
 							uint32_t size) {
 	putUb4(size);
@@ -4411,8 +4254,6 @@ void sqlrprotocol_oracle::putBytesWithLength(const char *bytes,
 	}
 }
 
-// The 7 byte date a server puts in a describe: century and year both biased
-// by 100, then month and day, then hour, minute and second each biased by 1.
 void sqlrprotocol_oracle::putOracleDate(byte_t *out) {
 
 	datetime	dt;
@@ -4453,12 +4294,11 @@ void sqlrprotocol_oracle::putAuthField(const char *fieldname,
 	putAuthField(fieldname,field,0);
 }
 
-// The o5logon inputs, as a rudiments parameterstring.  They ride in the
-// credentials' "extra" field because sqlroraclecredentials has 5 fields and
-// o5logon needs 8 inputs.  The contract is documented at the top of
-// src/auths/oracle_userlist.cpp.
 void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 
+	// the o5logon inputs ride in the credentials' "extra" field because
+	// sqlroraclecredentials has 5 fields and o5logon needs 8.  the
+	// contract is documented at the top of src/auths/oracle_userlist.cpp.
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 
 	extra->append("verifiertype=")->append(verifiertype);
@@ -4533,18 +4373,14 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	}
 	read(rp,&seqnumber,&rp);
 
-	// There are two wire encodings for this request, and which one a client
-	// sends is decided by the platform banner the module answered the tti
-	// protocol negotiation with.  A client whose own platform doesn't match
-	// it marshals portably - ub4 counts, one byte pointer fields, the user
-	// name written raw.  A client whose platform does match sends its own
-	// memory layout instead: 8 byte pointer sentinels, fixed width little
-	// endian counts, and a length prefixed user name.  It is not something
-	// the module provokes - an OCI client sends the same bytes to a real
-	// oracle server, and it is what a real server answers with in turn.
-	//
-	// The first pointer field tells them apart, 0x01 against the first byte
-	// of the sentinel, 0xfe.  Phase two keeps whatever phase one decided.
+	// which of the two wire encodings the client uses is decided by the
+	// platform banner the module answered the tti protocol negotiation
+	// with, and the first pointer field tells them apart - 0x01 against
+	// the first byte of the native sentinel, 0xfe.  phase two keeps
+	// whatever phase one decided.
+	// (the native encoding isn't something the module provokes - an OCI
+	// client sends the same bytes to a real oracle server, and a real
+	// server answers in kind)
 	if (!secondphase) {
 		nativeencoding=(end-rp>=1 && *rp==0xfe);
 	}
@@ -4574,24 +4410,21 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	debugWrite("field count: %d",fieldcount);
 
 	// Whether the user name is length prefixed is a client difference, not
-	// an encoding one.  A native encoding client always prefixes it.  Of
-	// the portable ones, python-oracledb, node-oracledb and OCI prefix it
-	// and ojdbc writes it raw, taking its length from the count above.
-	//
-	// Nor is the count the same thing for all of them.  For the first three
-	// it is the name's byte count.  For OCI it is a buffer size - the
+	// an encoding one.  python-oracledb, node-oracledb and OCI prefix it,
+	// and ojdbc writes it raw and takes its length from the count above.
+	// Nor is the count the same thing for all of them: for the first three
+	// it is the name's byte count, and for OCI it is a buffer size - the
 	// character count times the bytes per character of its charset - so an
-	// 8 character name in AL32UTF8 is declared as 24.  #9142 found both of
-	// those in the native encoding and took them for native properties;
-	// they are OCI properties, and OCI does them in the portable encoding
-	// too, which is where every client ends up now that the module answers
-	// a banner none of them match.  See #9156.
+	// 8 character name in AL32UTF8 is declared as 24.  These are OCI
+	// properties, not native encoding properties, and OCI does them in
+	// the portable encoding too, which is where every client ends up now
+	// that the module answers a banner none of them match.
 	//
-	// So the prefix is taken when the next byte can be one: when the bytes
-	// are there for it, and either it is below a space - no user name
-	// starts with a control character - or the count in front of it is that
-	// byte times the 1, 2, 3 or 4 bytes per character a charset can have,
-	// which is all a buffer size ever is.
+	// So the prefix is taken when the next byte can be one: the bytes are
+	// there for it, and either it is below a space - no user name starts
+	// with a control character - or the count in front of it is that byte
+	// times the 1, 2, 3 or 4 bytes per character a charset can have, which
+	// is all a buffer size ever is.
 	bool	lengthprefixed=nativeencoding;
 	if (!lengthprefixed && rp<end && (size_t)(end-rp)>(size_t)*rp) {
 		uint32_t	prefix=*rp;
@@ -4620,8 +4453,8 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	}
 	debugWrite("user: %s",user);
 	if (secondphase) {
-		// phase two names the user again.  Refuse a phase two that
-		// answers a challenge built for somebody else.
+		// phase two names the user again - refuse one that answers
+		// a challenge built for somebody else
 		bool	sameuser=!charstring::compare(user,username);
 		delete[] user;
 		if (!sameuser) {
@@ -4660,11 +4493,8 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 			continue;
 		}
 
-		// AUTH_PASSWORD and the client's AUTH_SESSKEY are the only two
-		// the auth module needs.  A zero length AUTH_PASSWORD is a
-		// normal thing to receive - it's what a client sends when it
-		// couldn't validate the padding in the challenge - so record
-		// that it arrived separately from what it held.
+		// a zero length AUTH_PASSWORD is a normal thing to receive, so
+		// record that it arrived separately from what it held
 		if (!charstring::compare(fieldname,"AUTH_PASSWORD")) {
 			gotauthpassword=true;
 			delete[] authpassword;
@@ -4687,10 +4517,8 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 
-	// A real server's AUTH_VFR_DATA is the user's stored verifier salt and
-	// is identical for every login of that user.  SQL Relay has no stored
-	// verifier, so it generates a fresh one per login.  That's a real
-	// difference from oracle, but not one a client can act on.
+	// a real server's AUTH_VFR_DATA is the user's stored verifier salt.
+	// SQL Relay has none, so it generates a fresh one per login.
 	delete[] authvfrdata;
 	authvfrdata=generateHex((pbkdf2)?VFR_DATA_SIZE_12C:VFR_DATA_SIZE_11G);
 	delete[] authpbkdf2csksalt;
@@ -4711,7 +4539,6 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	// and tell a client which user names exist.  Real oracle fabricates a
 	// verifier for a user it doesn't have and runs the whole exchange
 	// anyway, so an unknown user looks exactly like a wrong password.
-	// See #9130.
 	stringbuffer	challenge;
 	fabricatedchallenge=!cont->challenge(&cred,&challenge);
 	if (fabricatedchallenge) {
@@ -4731,10 +4558,8 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 
-	// Trailer after the last pair, from an 11.2 capture.  It is a summary
-	// object, so putAuthTrailer() adds the two fields a 12.1 server puts on
-	// the end of one, which is what makes it the 33 bytes a live 12.2
-	// server sends.
+	// trailer after the last pair, from an 11.2 capture.  it is a summary
+	// object, so putAuthTrailer() adds the 12.1 fields to it.
 	static const byte_t	trailer[]={
 		0x04, 0x01, 0x01, 0x01, 0x02,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4755,10 +4580,9 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	// response's is 2
 	putAuthCount((pbkdf2)?6:3,2);
 
-	// AUTH_SESSKEY is 48 bytes for an 11g verifier and 32 for a 12c one.
-	// The client picks its code path from that length, not from the
-	// verifier type it was told, so it's load bearing.  The auth module
-	// gets it right; nothing here has to.
+	// AUTH_SESSKEY is 48 bytes for an 11g verifier and 32 for a 12c one,
+	// and the client picks its code path from that length, not from the
+	// verifier type it was told
 	putAuthField("AUTH_SESSKEY",serverauthsesskey);
 
 	// the verifier type travels in AUTH_VFR_DATA's flags ub4, and nowhere
@@ -4782,27 +4606,22 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	return sendPacket(true);
 }
 
-// The trailer a real server sends after the last pair, which differs by
-// encoding as well as by phase.  The native one is 136 bytes where the
-// portable one is 31, and it is a marshalled struct rather than a field
-// stream: the 11.2 captures it came from carry a live pointer value in it,
-// which is zeroed here.
-//
-// The portable one is a summary object, so it owes the two fields a 12.1
-// server adds - which is what takes it from 31 bytes to the 33 a live 12.2
-// server sends.  The native one is not a field stream at all and gets
-// nothing; no client reaches it now that #9156 answers a banner none of them
-// match, and it is kept only as the fallback if one ever does.
 void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 						size_t portablesize,
 						bool secondphase) {
 
+	// the portable trailer is a summary object, so it owes the two fields
+	// a 12.1 server adds
 	if (!nativeencoding) {
 		reqpacket.append(portable,portablesize);
 		putSummaryExtension(0,0);
 		return;
 	}
 
+	// a marshalled struct rather than a field stream, so it gets no
+	// summary extension.  no client reaches it now that the module answers
+	// a banner none of them match; it is kept as the fallback if one ever
+	// does.  the live pointer value the 11.2 capture carried is zeroed.
 	static const byte_t	nativetrailer[]={
 		0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4836,10 +4655,10 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 	// The unknown-user answer comes first, ahead of the empty-password
-	// one, because that's the order a real server uses: its answer to an
-	// unknown user with an empty AUTH_PASSWORD is ORA-01017, where a known
-	// user with an empty one gets ORA-01005.  Checking the other way round
-	// would hand back the distinction #9130 is about.
+	// one, because that's the order a real server uses: an unknown user
+	// with an empty AUTH_PASSWORD gets ORA-01017 where a known one gets
+	// ORA-01005.  Checking the other way round would hand back the
+	// distinction between an unknown user and a wrong password.
 	if (fabricatedchallenge) {
 		debugWrite("fabricated challenge, refusing");
 		return sendAuthenticationError(
@@ -4848,10 +4667,9 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 				"logon denied\n");
 	}
 
-	// A zero length AUTH_PASSWORD is what a client sends when it couldn't
-	// validate the padding in the challenge, which is what a wrong
-	// password looks like to an 11g client.  It gets its own error, which
-	// is what a real server answers too.
+	// a zero length AUTH_PASSWORD is what an 11g client sends when it
+	// couldn't validate the padding in the challenge, and a real server
+	// answers it with its own error too
 	if (!gotauthpassword || charstring::isNullOrEmpty(authpassword)) {
 		debugWrite("no auth password");
 		return sendAuthenticationError(ORA_NULL_PASSWORD,
@@ -4878,10 +4696,9 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	}
 
 	// AUTH_SVR_RESPONSE proves to the client that the server knew the
-	// password too, and a real client refuses the login without it.  The
-	// combo key it's built from lives in the auth module, and auth()
-	// returns only the user name, so it comes back through challenge()
-	// under a second method name.
+	// password too, and a real client refuses the login without it.  the
+	// combo key it's built from lives in the auth module, so it comes back
+	// through challenge() under a second method name.
 	cred.setMethod("O5LOGON-SERVER-RESPONSE");
 	stringbuffer	svrresponse;
 	if (!cont->challenge(&cred,&svrresponse)) {
@@ -4897,8 +4714,8 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 
-	// The phase two trailer, from an 11.2 capture, and not identified
-	// either.  It differs from the phase one trailer in two bytes.
+	// the phase two trailer, from an 11.2 capture, and not identified
+	// either.  it differs from the phase one trailer in two bytes.
 	static const byte_t	trailer[]={
 		0x04, 0x01, 0x01, 0x01, 0x03,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -4916,7 +4733,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	debugTtcCode(ttccode);
 
 	// A real server sends 39 to 44 pairs here, mostly nls settings.  Only
-	// AUTH_SVR_RESPONSE is known to be required.  See #8979 for the rest.
+	// AUTH_SVR_RESPONSE is known to be required.
 	putAuthCount(9,2);
 
 	// what both live servers send here
@@ -4926,12 +4743,11 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_XACTION_TRAITS","3");
 
 	// The version a client reports as the server's, and it is not cosmetic.
-	// It was 0x08005000, 8.0.5, until #9147: ojdbc 23.26 picks its result
-	// set reader from it, and told 8.0.5 it read the module's 11.2 shaped
-	// describe with an 8.0 era reader and threw ORA-17401 on the first
-	// query.  It moves with the field version and the verifier type, since
-	// a client that is told one version and answered as another is what
-	// #9156, #9158 and #9171 were all one symptom of.
+	// ojdbc 23.26 picks its result set reader from it - told 8.0.5, it
+	// reads the module's 11.2 shaped describe with an 8.0 era reader and
+	// throws ORA-17401 on the first query.  It moves with the field version
+	// and the verifier type, since telling a client one version and
+	// answering it as another breaks the login and the first query.
 	putAuthField("AUTH_VERSION_NO",serverversionno);
 	putAuthField("AUTH_VERSION_STATUS","0");
 	putAuthField("AUTH_CAPABILITY_TABLE","");
@@ -4946,37 +4762,29 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	return sendPacket(true);
 }
 
-// A real server answers a failed login with a ttc 0x04 packet carrying an ora
-// number and its message, and lets the client disconnect itself.  Returning
-// false without writing one reads to the client as a dropped socket - it gets
-// ORA-03113 or ORA-12537 - rather than as a refusal.
-//
-// putError() can't be reused: its layout doesn't parse as a ub4 stream and
-// matches neither of the two captures this was written from.
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 						const char *message) {
 	return sendErrorPacket("authentication error",oranum,message);
 }
 
-// The same packet, for anything after the accept that has to say no.  A
-// refuse packet can't be used there: it's an ns layer packet type and it's
-// only valid before the accept, so a client that has already been accepted
-// reads one as a data packet and desyncs.
 bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 						uint32_t oranum,
 						const char *message) {
 
+	// a refuse packet can't be used after the accept - it's an ns layer
+	// packet type, and a client that has already been accepted reads one
+	// as a data packet and desyncs.  returning false without writing this
+	// reads as a dropped socket, ORA-03113 or ORA-12537, not a refusal.
+	// putError() can't be reused either; its layout doesn't parse as a ub4
+	// stream.
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_ERROR;
 
-	// A ub4 stream: a 1, two zeros, the ora number, then a run of zero
-	// ub4s, then the message.  Reproduced byte for byte from an 11.2
-	// server rather than reconstructed, since what the client's parser
-	// keys off isn't known.  A 12.2 server sends 4 more bytes: one more
-	// zero ub4 near the front, and the ora number again just before the
-	// message.
+	// a ub4 stream: a 1, two zeros, the ora number, then a run of zero
+	// ub4s, then the message.  reproduced byte for byte from an 11.2
+	// server, since what the client's parser keys off isn't known.
 	static const byte_t	prefix[]={
 		0x01, 0x01, 0x00, 0x00
 	};
@@ -4988,11 +4796,9 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		0x00, 0x00, 0x00, 0x00
 	};
 
-	// The same packet in the native encoding, from the same 11.2 server
-	// answering an OCI client's wrong password.  It is a marshalled struct
-	// too, and the only field in it that is identifiable is the ora
-	// number, at offset 11 as a little endian uint32.  The live pointer
-	// value the capture carried is zeroed.
+	// the same packet in the native encoding, a marshalled struct whose
+	// only identifiable field is the ora number, at offset 11 as a little
+	// endian uint32.  the live pointer value the capture carried is zeroed.
 	static const byte_t	nativeprefix[]={
 		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
 		0x00, 0x00, 0x00
@@ -5433,12 +5239,6 @@ void sqlrprotocol_oracle::debugSystemError() {
 	delete[] err;
 }
 
-// The data flags belong to the packet, not to the message.  A client can pack
-// more than one tti message into one packet, and only the first of them
-// follows the flags - ojdbc sends a close-cursors piggyback and a logoff
-// together, and reading two more bytes of flags in front of the logoff loses
-// it.  So the flags are read exactly when a packet is read, and every message
-// after the first starts at its ttc code.
 bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 						byte_t *ttifunction,
 						const byte_t **rpout) {
@@ -5468,6 +5268,9 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 	uint16_t	dataflags=0;
 	byte_t		ttccode;
 
+	// the data flags belong to the packet, not to the message - a client
+	// can pack more than one message into one packet, and only the first
+	// of them follows the flags
 	if (newpacket) {
 		if (end-rp<2) {
 			debugWrite("truncated data flags");
@@ -6160,10 +5963,8 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	query3session=true;
 
 	// get the requested cursor
-	//
-	// Cursor id 0 means "open one for me".  The ids on the wire are the
-	// controller's plus 1, since the controller's start at 0 and 0 is
-	// spoken for.
+	// (cursor id 0 means "open one for me", and the ids on the wire are
+	// the controller's plus 1, since the controller's start at 0)
 	sqlrservercursor	*cursor;
 	if (!cursorid) {
 		cursor=cont->getCursor();
@@ -6232,32 +6033,6 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	return sendQuery3Response(cursor,options,cursorid,prefetchrows);
 }
 
-// The execute request a 10g-or-later client sends.  Its layout is
-// python-oracledb's ExecuteMessage - _write_execute_message() in
-// src/oracledb/impl/thin/messages/execute.pyx - and every field in it is
-// either a ub4 or a single raw byte, so nothing in it sits at a fixed offset.
-//
-// Three things this got wrong before, each enough to desync the parse on its
-// own:
-//
-//  - a one byte sequence number follows the tti function code, and
-//    getTtiFunction() doesn't consume it.
-//  - options is one ub4, not two big endian ub2s.  What the module used to
-//    print as "options" was the sequence number and the ub4's count byte read
-//    together, and what it printed as "moreoptions" was the real options word.
-//  - the query size is a ub4 six fields in, not a little endian uint32 at a
-//    guessed offset.  The old offset landed on the prefetch buffer size,
-//    which is where "query size: -252n" came from.
-//
-// The tail between the registration id and the query text is not fixed.  It
-// grows with the field version negotiated in #8980: ojdbc sends nothing there
-// against an 11.2 server and ten more bytes against a 12.2 one, and
-// python-oracledb sends those ten and then a length byte for the query.  All
-// of them are zero for a query with no binds, so they're skipped as a run of
-// zeros rather than counted - a query's text never starts with a zero byte.
-// The length byte is taken only when it matches the size already declared up
-// front, because ojdbc never writes one, at any query length, and
-// python-oracledb always does.
 bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 						const byte_t *end,
 						uint32_t *options,
@@ -6266,6 +6041,9 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 						const char **query,
 						uint32_t *querysize) {
 
+	// the layout is python-oracledb's _write_execute_message(), in
+	// src/oracledb/impl/thin/messages/execute.pyx - every field is either
+	// a ub4 or a single raw byte, so nothing sits at a fixed offset
 	*options=0;
 	*cursorid=0;
 	*prefetchrows=0;
@@ -6316,6 +6094,11 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 
 	if (*querysize) {
 
+		// the tail between the registration id and the query text is
+		// not fixed - it grows with the negotiated field version, and
+		// all of it is zero for a query with no binds, so skip it as a
+		// run of zeros rather than count it (a query's text never
+		// starts with a zero byte)
 		while (rp<end && !(*rp)) {
 			rp++;
 		}
@@ -6325,17 +6108,14 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			return false;
 		}
 
-		// A length byte in front of the text.  Two clients write one
-		// and they declare the size differently: python-oracledb's
-		// declared size is the byte count and matches it, and OCI's is
-		// a buffer size - the character count times the bytes per
-		// character of its charset - so an 18 character query in
-		// AL32UTF8 arrives declared as 54 with a length byte of 18.
-		// That is the same thing OCI does with the user name in the
-		// login, see #9156, and the length byte is the one to believe
-		// either way.  OCI's case is only taken when the declared size
-		// is more than the packet has left, which is what makes it
-		// unambiguous.
+		// a length byte in front of the text.  python-oracledb's
+		// declared size is the byte count and matches it; OCI's is a
+		// buffer size - the character count times the bytes per
+		// character of its charset - the same thing it does with the
+		// user name in the login, and the length byte is the one to
+		// believe either way.  OCI's case is only taken when the
+		// declared size is more than the packet has left, which is
+		// what makes it unambiguous.
 		if (rp<end && *rp && (uint32_t)(*rp)<*querysize &&
 			(size_t)(end-rp)<(size_t)*querysize &&
 			(*querysize==(uint32_t)(*rp)*2 ||
@@ -6380,16 +6160,15 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	return true;
 }
 
-// What a live 11.2 server answers a select with, in order: a describe, a row
-// header, one row data message per row, a return parameters block, and a
-// summary object.  Each is its own ttc code inside the one packet.  The 8i
-// era byte strings this used to append are gone, along with the bare TTC_OK
-// they ended in - #9147 has the whole 470 byte answer decoded field by field.
 bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 						uint32_t options,
 						uint32_t cursorid,
 						uint32_t prefetchrows) {
 
+	// what a live 11.2 server answers a select with, in order: a describe,
+	// a row header, one row data message per row, a return parameters
+	// block, and a summary object, each with its own ttc code inside the
+	// one packet
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint32_t	colcount=cont->colCount(cursor);
@@ -6409,12 +6188,9 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 			putDescribeInfo(cursor,colcount);
 		}
 
-		// The rows.  A modern client doesn't set OPTION_FETCH on the
-		// first execute of a query - it asks the server to prefetch,
-		// through the row count in the request, and a real server
-		// sends rows for that whether OPTION_FETCH is set or not.
-		// Gating on OPTION_FETCH is why no row ever came back even
-		// once the request parsed.
+		// the rows.  a modern client doesn't set OPTION_FETCH on the
+		// first execute - it asks for a prefetch through the row count
+		// in the request, and a real server sends rows for that anyway.
 		uint32_t	rowstofetch=prefetchrows;
 		if (!rowstofetch && (options&OPTION_FETCH)) {
 			rowstofetch=1;
@@ -6451,10 +6227,8 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 	rowssent[cont->getId(cursor)]+=rowsfetched;
 
-	// A prefetch that ran out of rows ends in ORA-01403, which the client
-	// reads as "no more rows" rather than as a failure.  A query that
-	// filled the prefetch ends with no error, and the client asks for
-	// more.
+	// a prefetch that ran out of rows ends in ORA-01403, which the client
+	// reads as "no more rows"; one that filled it ends clean
 	if (endofrows) {
 		putSummary(cursorid,ORA_NO_DATA_FOUND,
 					rowssent[cont->getId(cursor)],
@@ -6480,9 +6254,8 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 
 	write(&reqpacket,(byte_t)TTC_DESCRIBE_INFO);
 
-	// A block the client skips whole.  A live server puts 16 bytes of
-	// query hash and a 7 byte date in it; the module has no hash to
-	// report and the client never looks, so the hash is zeros.
+	// a block the client skips whole - 16 bytes of query hash and a 7 byte
+	// date, and the module has no hash to report
 	byte_t	prologue[23];
 	bytestring::zero(prologue,sizeof(prologue));
 	putOracleDate(prologue+16);
@@ -6538,13 +6311,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((character)?0x80:0x00));
 
-	// A real server reports scale -127 for a number with no declared
-	// scale, which tells the client to take the value as it comes rather
-	// than rescale it.
+	// a real server reports scale -127 for a number with no declared
+	// scale, which tells the client not to rescale the value
 	putColumnPrecisionScale(0,(character)?0:-127);
 
-	// A buffer size of 0 means "this column is null by describe", so it
-	// can never be sent as 0 for a column that has values.
+	// a buffer size of 0 means "this column is null by describe", so it
+	// can never be sent as 0 for a column that has values
 	putUb4(size);
 
 	putUb4(0);
@@ -6569,29 +6341,26 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	debugEnd();
 }
 
-// A column's precision and scale are the two signed one byte fields in the
-// answer, and the scale is the one place the two integer encodings a client
-// can ask for differ.  A client that sets ENCODING_CONV_LENGTH in its data
-// type request reads it as a raw signed byte; one that does not reads it as a
-// count prefixed integer.  The precision is a raw signed byte to both.
-//
-// Measured against a live 12.2 server through a proxy that rewrote only that
-// flag in the client's request: it answers the scale of a number(10,2) with
-// 02 when the flag is set and 01 02 when it is not, and the precision with 0a
-// either way.  Nothing else moves it - not the negotiated field version, which
-// was 9 in both.
-//
-// Of the four clients on this host only ojdbc 23.26 leaves the flag clear, so
-// writing the count prefixed form unconditionally served ojdbc and no one
-// else.  Given the form it did not ask for a client is one byte out for the
-// rest of the packet: node-oracledb reports "read integer of length 127 when
-// expecting integer of no more than length 4", and python-oracledb and OCI
-// answer with a marker packet and close.  See #9172.
 void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 							int8_t scale) {
 
 	write(&reqpacket,(byte_t)precision);
 
+	// the scale is the one place the two integer encodings differ - a
+	// client that set ENCODING_CONV_LENGTH reads it as a raw signed byte
+	// and one that didn't reads it as a count prefixed integer.  the
+	// precision is a raw signed byte to both.
+	//
+	// Measured against a live 12.2 server through a proxy that rewrote
+	// only that flag in the client's request: it answers the scale of a
+	// number(10,2) with 02 when the flag is set and 01 02 when it is not,
+	// and the precision with 0a either way.  Nothing else moves it - not
+	// the negotiated field version, which was 9 in both.  Of the four
+	// clients on this host only ojdbc 23.26 leaves the flag clear.  Given
+	// the form it did not ask for, a client is one byte out for the rest
+	// of the packet: node-oracledb reports "read integer of length 127
+	// when expecting integer of no more than length 4", and
+	// python-oracledb and OCI answer with a marker packet and close.
 	if (encodingflags&ENCODING_CONV_LENGTH) {
 		write(&reqpacket,(byte_t)scale);
 	} else {
@@ -6599,11 +6368,6 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 	}
 }
 
-// Only the types the module can encode are described as themselves.
-// Everything else is described as a varchar2 and sent as the text the back
-// end handed over, which at least stays in step - a column described as a
-// date and then sent as text desyncs the client for the rest of the result
-// set.
 uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 	switch (columntype) {
 		case ORACLE_TYPE_NUMBER:
@@ -6613,6 +6377,9 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_FIXED_CHAR:
 			return ORACLE_TYPE_CHAR;
 		default:
+			// anything the module can't encode is described as a
+			// varchar2 and sent as text - describing it as its own
+			// type and sending text desyncs the client
 			return ORACLE_TYPE_VARCHAR;
 	}
 }
@@ -6632,23 +6399,21 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 	return size;
 }
 
-// flags is 0x22 in the answer to an execute and 0x02 in the answer to a
-// fetch, which is what a live 11.2 server sends in each.
 void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 						uint32_t colcount,
 						uint32_t prefetchrows) {
 
 	write(&reqpacket,(byte_t)TTC_ROW_HEADER);
 
+	// 0x22 in the answer to an execute and 0x02 in the answer to a fetch
 	write(&reqpacket,flags);
 	putUb4(colcount);
 	putUb4(0);
 	putUb4(prefetchrows);
 	putUb4(0);
 
-	// No bit vector.  A real server sends one to say which columns
-	// repeat the previous row's value; without one every column is sent
-	// in full, which is what the module does.
+	// no bit vector.  a real server sends one to say which columns repeat
+	// the previous row's value; without one every column is sent in full.
 	putUb4(0);
 
 	putUb4(0);
@@ -6689,11 +6454,10 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 	}
 }
 
-// The block a real server sends between the rows and the summary.  Nothing
-// in it is load bearing: a live 11.2 server puts 19 session state key/value
-// pairs here and a live 12.2 server puts none, for the same query.
 void sqlrprotocol_oracle::putReturnParameters() {
 
+	// nothing in this block is load bearing - a live 11.2 server puts 19
+	// session state key/value pairs here and a live 12.2 server puts none
 	write(&reqpacket,(byte_t)TTC_OK);
 
 	putUb4(AL8O4_COUNT);
@@ -6706,27 +6470,26 @@ void sqlrprotocol_oracle::putReturnParameters() {
 	putUb4(0);
 }
 
-// The two fields a summary object grew at oracle 12.1: the error number
-// again, as a ub4, and a ub8 row count, immediately before the message.  A
-// client picks its reader from the negotiated field version - ojdbc 23.26
-// uses T4CTTIoer19 from 12.1 up and an older reader below it - and
-// python-oracledb reads both unconditionally, in _process_error_info() in
-// impl/thin/messages/base.pyx, which is the same fact as its refusal to talk
-// to a server older than 12.1.
-//
-// Told the wrong shape a client does not recover.  Given two bytes it does
-// not expect ojdbc reads the next message two bytes out and reports
-// ORA-17401; denied two it does expect, python-oracledb and node-oracledb ask
-// the socket for them and block forever.  So this is not optional and it owes
-// every ttc 0x04 the module writes, which is both authentication trailers,
-// the error packet and putSummary().  See #9171.
-//
-// Checked against both live servers, which differ here and nowhere else in
-// the object: 11.2 ends at the message, and 12.2 puts 02 05 7b 01 01 in front
-// of it for an ORA-01403 after one row, and 02 03 f9 00 for an ORA-01017.
 void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 						uint32_t rowcount) {
 
+	// the two fields a summary object grew at oracle 12.1: the error
+	// number again, as a ub4, and a ub8 row count, immediately before the
+	// message.  a client picks its reader from the negotiated field
+	// version - ojdbc 23.26 uses T4CTTIoer19 from 12.1 up and an older
+	// reader below it, and python-oracledb reads both fields
+	// unconditionally, in _process_error_info() in
+	// impl/thin/messages/base.pyx, which is the same fact as its refusal
+	// to talk to a server older than 12.1.  told the wrong shape a client
+	// does not recover: ojdbc reads the next message two bytes out and
+	// reports ORA-17401, python-oracledb and node-oracledb block on the
+	// socket forever.  so this owes every ttc 0x04 the module writes: both
+	// authentication trailers, the error packet and putSummary().
+	//
+	// Checked against both live servers, which differ here and nowhere
+	// else in the object: 11.2 ends at the message, and 12.2 puts
+	// 02 05 7b 01 01 in front of it for an ORA-01403 after one row, and
+	// 02 03 f9 00 for an ORA-01017.
 	if (fieldversion<CCAP_FIELD_VERSION_12_1) {
 		return;
 	}
@@ -6735,16 +6498,16 @@ void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 	putUb4(rowcount);
 }
 
-// The summary object that ends every answer.  It's the same field sequence
-// sendAuthenticationError() emits - which was captured whole from a live 11.2
-// server - written out one field at a time.  The end of call status and the
-// ecid sequence at the front are the two fields CCAP_TTC1 and CCAP_OCI1 bit
-// 0x01 promise, and #9134 is why the module has to send them.
 void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 						uint32_t oranum,
 						uint32_t rowcount,
 						const char *message) {
 
+	// the same field sequence sendAuthenticationError() emits - captured
+	// whole from a live 11.2 server - written out one field at a time.
+	// the end of call status and the ecid sequence at the front are the
+	// two fields CCAP_TTC1 and CCAP_OCI1 bit 0x01 promise, and the module
+	// has to send them because it sets those bits
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
 	putUb4(1);
@@ -6772,18 +6535,14 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	putUb4(0);
 	write(&reqpacket,(byte_t)0);
 
-	// The call number.  It has to be the sequence number of the request
-	// being answered - a client matches the answer to the call it made
-	// with it.  A constant here is what made ojdbc 23.26 throw an
-	// SQLException with no message at its first fetch: the execute
-	// happened to carry the same number, so only the fetches broke.
+	// the sequence number of the request being answered - a client matches
+	// the answer to the call it made with it
 	write(&reqpacket,callnumber);
 
 	putUb4(0);
 
-	// success iterations, which is one execution rather than one row -
-	// a live server sends 1 for a fetch of 10 rows and for a fetch of
-	// none
+	// success iterations, which is one execution rather than one row - a
+	// live server sends 1 for a fetch of 10 rows and for a fetch of none
 	putUb4(1);
 
 	putUb4(0);
@@ -6808,17 +6567,16 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	debugEnd();
 }
 
-// Oracle's number format: an exponent byte, then up to 20 base 100 mantissa
-// digits.  A positive number's exponent byte is 193+e and its digits are each
-// digit+1.  A negative number's is 62-e, its digits are each 101-digit, and a
-// 0x66 terminator follows unless the mantissa already fills 20 bytes.  Zero is
-// a single 0x80.  e is the base 100 exponent of the leading digit.
-//
-// Checked against a live 11.2 server, which answers 1 with c1 02, -7 with
-// 3e 5e 66 and 12345.678 with c3 02 18 2e 44 51.
 void sqlrprotocol_oracle::putNumberField(const char *field,
 						uint32_t fieldsize) {
 
+	// oracle's number format: an exponent byte, then up to 20 base 100
+	// mantissa digits.  a positive number's exponent byte is 193+e and its
+	// digits are each digit+1; a negative number's is 62-e, its digits are
+	// each 101-digit, and a 0x66 terminator follows unless the mantissa
+	// fills 20 bytes.  zero is a single 0x80.  1 is c1 02, -7 is 3e 5e 66
+	// and 12345.678 is c3 02 18 2e 44 51.
+	//
 	// the sign, the digits, and how many of them are in front of the
 	// decimal point once any exponent has been applied
 	bool		negative=false;
@@ -6872,9 +6630,8 @@ void sqlrprotocol_oracle::putNumberField(const char *field,
 		return;
 	}
 
-	// The base 100 digits straddle the decimal point, so the count of
-	// digits in front of it has to be even, and the whole run has to be
-	// an even length.
+	// the base 100 digits straddle the decimal point, so the count of
+	// digits in front of it has to be even, and so does the whole run
 	byte_t		padded[MAX_NUMBER_DIGITS+2];
 	uint16_t	paddedcount=0;
 	if (point%2) {
@@ -6986,10 +6743,6 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 	return sendPacket(true);
 }
 
-// A 10g-or-later client's fetch request is much smaller than its execute: a
-// sequence number, the cursor id and how many rows it wants, all ub4s.  It
-// asks for one whenever a result set outruns the prefetch it asked for in the
-// execute, so a select of more rows than that never worked before.
 bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 
 	const byte_t	*end=resppacket+resppacketsize;
@@ -7030,13 +6783,12 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 	return sendFetch3Response(cursor,cursorid,rowstofetch);
 }
 
-// A real server answers a fetch with the same three parts as an execute,
-// minus the describe and the return parameters: a row header, the rows, and a
-// summary object which carries ORA-01403 once the rows run out.
 bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 						uint32_t cursorid,
 						uint32_t rowstofetch) {
 
+	// the same as an execute's answer minus the describe and the return
+	// parameters: a row header, the rows, and a summary object
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint32_t	colcount=cont->colCount(cursor);
@@ -7062,11 +6814,9 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 				break;
 			}
 
-			// A fetch that has no rows left is answered with the
-			// summary object alone - a real server sends no row
-			// header at all in that case, and the header is only
-			// written once the first row is in hand for that
-			// reason.
+			// a fetch with no rows left is answered with the
+			// summary object alone, so the row header is only
+			// written once the first row is in hand
 			if (!rowsfetched) {
 				putRowHeader(0x02,colcount,rowstofetch);
 			}
@@ -7299,7 +7049,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				0x00, 0x00, 0x00, 0x00
 			};
 	
-			// this apears to increment with each response
+			// this appears to increment with each response
 			const byte_t	unknown10[]={
 				0x27
 			};
@@ -7980,15 +7730,14 @@ bool sqlrprotocol_oracle::disconnect(const byte_t *rp) {
 	return sendDisconnectResponse();
 }
 
-// A logoff is answered with a status message, and a status message is a ub4
-// call status and a ub2 end-to-end sequence number - python-oracledb reads
-// them in _process_message() in impl/thin/messages/base.pyx.  Sending the ttc
-// code and stopping, which is what this used to do, is a truncated one, and a
-// client that reads past it gets nothing and reports ORA-03113 for a logoff
-// that actually succeeded.  The values are a live oracle 11.2 server's answer
-// to ojdbc 23.26's logoff, which is 14 bytes on the wire.
 bool sqlrprotocol_oracle::sendDisconnectResponse() {
 
+	// a logoff is answered with a status message: a call status and an
+	// end-to-end sequence number, as a live 11.2 server answers ojdbc
+	// 23.26's logoff - 14 bytes on the wire.  python-oracledb reads them
+	// in _process_message(), in impl/thin/messages/base.pyx.  a client
+	// that reads past a truncated one gets nothing and reports ORA-03113
+	// for a logoff that actually succeeded.
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -8057,14 +7806,13 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	return sendPacket(true);
 }
 
-// The close-cursors piggyback.  A client sends it in front of another call
-// rather than on its own - ojdbc packs one in front of its logoff - so the
-// read has to stop exactly where the body ends, or the message behind it is
-// misread.  The body is not a fixed width: it grows by one ub4 per cursor.
-// The layout is python-oracledb's _write_close_cursors_piggyback() in
-// impl/thin/messages/base.pyx.  There is no response.
 bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 
+	// the close-cursors piggyback, python-oracledb's
+	// _write_close_cursors_piggyback().  a client packs it in front of
+	// another call rather than sending it on its own, so the read has to
+	// stop exactly where the body ends or the call behind it is misread.
+	// there is no response.
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
@@ -8118,18 +7866,14 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 	return true;
 }
 
-// The session switch piggyback.  An OCI client sends one in front of every
-// call, naming the session the call is for - the session id and the serial
-// number the authentication response handed out, and a third ub4 that is 1 in
-// every capture.  Like the close-cursors piggyback it is packed in front of a
-// real call rather than sent on its own, so the read has to stop exactly where
-// the body ends or the call behind it is lost.  There is no response.
-//
-// SQL Relay has one session per connection, so there is nothing to switch to.
-// The fields are read to stay in step and to be seen in the log.
 bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 						const byte_t **rpout) {
 
+	// the session switch piggyback, which an OCI client packs in front of
+	// every call, naming the session it is for.  SQL Relay has one session
+	// per connection, so the fields are read only to stay in step - but
+	// the read still has to stop exactly where the body ends or the call
+	// behind it is lost.  there is no response.
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
@@ -8200,21 +7944,20 @@ bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
 }
 
 
-// #9134 left this as the one footer it couldn't check, on the grounds that
-// nothing had ever reached the query path.  Something has now, and the answer
-// is that this is not on it: a 10g-or-later client's query goes through
-// query3() and fetch3(), which build a summary object field by field, and
-// none of the three functions that append this - sendQueryResponse(),
-// sendQuery2Response() and sendFetchResponse() - is reachable from one.  So
-// CCAP_TTC1 and CCAP_OCI1 bit 0x01 do not apply to it either way.  The two
-// fields those bits promise live at the front of a summary object, and this
-// is not a summary object - it parses as no field sequence any client reads,
-// and two of its bytes look like an 8i server's pointers.  It stays as it is,
-// for the 8.0.5 and 8i paths, which have no client on this host to check it
-// against.
 void sqlrprotocol_oracle::putGenericFooter() {
 
 	// no idea...
+
+	// not on the query path - a 10g-or-later client's query goes through
+	// query3() and fetch3(), which build a summary object field by field,
+	// and none of sendQueryResponse(), sendQuery2Response() and
+	// sendFetchResponse() is reachable from one.  so CCAP_TTC1 and
+	// CCAP_OCI1 bit 0x01 don't apply to it: the two fields those bits
+	// promise live at the front of a summary object, and this is not one -
+	// it parses as no field sequence any client reads, and two of its
+	// bytes look like an 8i server's pointers.  it stays as it is, for the
+	// 8.0.5 and 8i paths, which have no client on this host to check it
+	// against.
 
 	// 8i server sends this to 8i client
 	//

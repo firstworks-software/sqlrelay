@@ -425,8 +425,8 @@ CONNECTIONSINSTALLTARGETS = @INSTALLDB2@ @INSTALLFIREBIRD@ @INSTALLMYSQL@ @INSTA
 
 
 # protocols
-# the tds protocol module needs no db client library, so it's always built
-# (see #8785).  the other protocol modules are installed by installdll itself.
+# the tds protocol module needs no db client library, so it's always built,
+# and it's the only protocol module listed here
 PROTOCOLSINSTALLTARGETS = installdll-tds
 
 

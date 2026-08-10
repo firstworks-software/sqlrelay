@@ -287,6 +287,7 @@
 	added sqlrservercontroller::isResumedSession(), so an abandoned
 		suspended session can't leave the next, unrelated client
 		pre-authenticated
+	cleaned up source code comments added since the 2.1.1 release
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

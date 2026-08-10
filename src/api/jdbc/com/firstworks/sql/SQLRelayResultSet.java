@@ -262,14 +262,8 @@ public class SQLRelayResultSet implements ResultSet {
 		drv.debugFunction(this);
 		throwExceptionIfClosed();
 		drv.debugPrintln("column label: "+columnlabel);
-		// A column name is null when the server was told not to
-		// send column info.  The driver never asks for that, but an
-		// app can, through unwrap().dontGetColumnInfo(), and the
-		// flag sticks for the life of the cursor.  colCount() still
-		// reports the real count in that state, so this loop runs.
-		// A null name matches nothing - fall through to the
-		// not-found exception below rather than throwing a
-		// NullPointerException out of equalsIgnoreCase().
+		// column names are null when the server was told not to
+		// send column info
 		for (int i=0; i<sqlrcur.colCount(); i++) {
 			String	name=sqlrcur.getColumnName(i);
 			if (name!=null && name.equalsIgnoreCase(columnlabel)) {
@@ -305,15 +299,10 @@ public class SQLRelayResultSet implements ResultSet {
 		if (type==null) {
 			return false;
 		}
-		// Uppercase with Locale.ROOT rather than the jvm's default
-		// locale.  In a turkish locale, "image" uppercases to a dotted
-		// capital I followed by MAGE, which matches none of the cases
-		// below.
-		// Several of these have two spellings each.  A backend that
-		// reports the datatype list's own names sends CHAR_ARRAY,
-		// VARCHAR_ARRAY, BPCHAR, BYTEA, etc., but postgresql with
-		// typemangling=lookup sends pg_type.typname spellings instead,
-		// like _char, _varchar, _bpchar and _bytea.
+		// uppercase with Locale.ROOT - a turkish locale maps i to a
+		// dotted capital I, which matches nothing below
+		// (some array types are spelled twice - X_ARRAY from the
+		// datatype list, _X from postgresql with typemangling=lookup)
 		switch (type.toUpperCase(Locale.ROOT)) {
 			case "CHAR":
 			case "CHAR_ARRAY":
@@ -3055,10 +3044,7 @@ public class SQLRelayResultSet implements ResultSet {
 
 	private
 	void validateColumn(String columnlabel) throws SQLException {
-		// The array itself is null when the server was told not to
-		// send column info - see findColumn() - and an element
-		// would be null for a name the server did send as null.
-		// Neither matches, so fall through to the exception below.
+		// null when the server was told not to send column info
 		String[] cols=sqlrcur.getColumnNames();
 		if (cols!=null) {
 			for (int i=0; i<cols.length; i++) {

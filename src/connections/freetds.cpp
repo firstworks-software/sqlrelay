@@ -59,14 +59,11 @@ extern	CS_INT	cs_dt_crack(CS_CONTEXT *,CS_INT,CS_VOID *,CS_DATEREC *);
 }
 #endif
 
-// this is here in case freetds ever supports cursors.  Verified live
-// (against a real ASE, via freetds) that freetds does NOT reliably support
-// ct_cursor()-based select cursors or ct_param()-based binds on plain
-// language commands - turning this on breaks ordinary selects and DML.
-// rpc commands (ct_command(CS_RPC_CMD) plus ct_param(), used by the
-// exec/execute/{call} branches of prepareQuery()) were verified live to
-// work correctly though, so that part isn't gated by this define; see
-// prepareQuery(), supportsNativeBinds() and executeQuery() below.
+// this is here in case freetds ever supports cursors.  measured live
+// against a real ASE: freetds doesn't reliably support ct_cursor() select
+// cursors or ct_param() binds on plain language commands, and turning this
+// on breaks ordinary selects and DML.  rpc commands (ct_command(CS_RPC_CMD)
+// plus ct_param()) do work, so they aren't gated by it.
 //#define FREETDS_SUPPORTS_CURSORS
 
 // some versions of freetds don't define this
@@ -164,9 +161,6 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
 		uint16_t	getColumnType(uint32_t col);
-		// undoes the multiplication that freetds applies to the
-		// size of character columns when the client charset is a
-		// multi-byte charset
 		void		deflateColumnSize(CS_INT index);
 		uint32_t	getColumnSize(uint32_t col);
 		uint32_t	getColumnPrecision(uint32_t col);
@@ -200,10 +194,6 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 						CS_SMALLINT indicator);
 		bool		parseRpcParams(const char *p);
 
-		// true when the current command is an rpc command whose
-		// ct_command(CS_RPC_CMD) has already been issued by
-		// prepareQuery(); executeQuery() uses this to know whether it
-		// still needs to send the query as a plain language command
 		bool		rpc;
 
 		uint32_t	majorversion;
@@ -1123,10 +1113,9 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 	if (!usedversion) {
 
 		// An unrecognized locale fails here rather than at cs_locale,
-		// and the client library's own diagnostic - the locale name
-		// and the locales.dat it isn't in - goes to stderr before
-		// CS_MESSAGE_CB exists, so it can't be captured.  Naming the
-		// locale is all that can be done from here.
+		// and the client library's own diagnostic goes to stderr
+		// before CS_MESSAGE_CB exists, so naming the locale is all
+		// that can be done from here.
 		stringbuffer	ctxerror;
 		ctxerror.append("Failed to allocate/initialize "
 						"a context structure");
@@ -1268,10 +1257,9 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 		return false;
 	}
 
-	// set charset - this only asks the server which charset to use, it
-	// isn't the charset FreeTDS itself decodes incoming data as (that's
-	// "client charset" in freetds.conf, and freetds.conf is the only way
-	// to set it)
+	// set charset - this only asks the server which charset to use
+	// (the charset freetds decodes with is "client charset" in
+	// freetds.conf, and freetds.conf is the only way to set it)
 	if (!charstring::isNullOrEmpty(charset) &&
 		cs_locale(context,CS_SET,locale,CS_SYB_CHARSET,
 			(CS_CHAR *)charset,CS_NULLTERM,(CS_INT *)NULL)!=
@@ -1300,10 +1288,10 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 	// The ping asks for a 1-character column because it doubles as a
 	// charset calibration.  freetds multiplies the size it reports for
 	// character columns by the client charset's maximum bytes per
-	// character, and no ctlib call reports what that charset is.
-	// CS_CLIENTCHARSET only reads back one that we set ourselves, and
-	// it's usually set in freetds.conf instead.  A 1-character column
-	// comes back already multiplied though, so its size is the factor.
+	// character, and no ctlib call reports what that charset is
+	// (CS_CLIENTCHARSET only reads back one we set ourselves, and it's
+	// usually set in freetds.conf instead), so a 1-character column's
+	// reported size is the factor.
 	bool	retval=true;
 	CS_COMMAND	*cmd;
 	if (ct_cmd_alloc(dbconn,&cmd)!=CS_SUCCEED) {
@@ -4090,14 +4078,11 @@ bool freetdscursor::close() {
 	return retval;
 }
 
-// walk an rpc procedure name.  The name may be a bare token, or delimited
-// with double-quotes (the ASE spelling, under quoted_identifier) or square
-// brackets (the T-SQL/MS SQL Server spelling); either delimiter may contain
-// whitespace.  A bare name ends at "(", "}", ";" or whitespace.  Returns
-// the position just past the name (or its closing delimiter); *namestart
-// and *namelen give the name itself, with any delimiters stripped.
 static const char *getRpcName(const char *p, const char **namestart,
 							CS_INT *namelen) {
+
+	// a delimited name (double-quotes under quoted_identifier, square
+	// brackets in T-SQL) may contain whitespace
 	if (*p=='"' || *p=='[') {
 		char	closing=(*p=='[')?']':'"';
 		p++;
@@ -4182,10 +4167,8 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 		}
 		rpc=true;
 
-		// literal parameters written directly into the query
-		// (eg. "exec someproc 1,2") aren't bound by the client -
-		// ct_param() them here or the rpc would silently run
-		// without them
+		// ct_param() literal parameters written into the query
+		// (eg. "exec someproc 1,2" - the client doesn't bind those)
 		if (!parseRpcParams(p)) {
 			return false;
 		}
@@ -4212,10 +4195,8 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 		}
 		rpc=true;
 
-		// literal parameters written directly into the query
-		// (eg. "execute someproc 1,2") aren't bound by the client -
-		// ct_param() them here or the rpc would silently run
-		// without them
+		// ct_param() literal parameters written into the query
+		// (eg. "execute someproc 1,2" - the client doesn't bind those)
 		if (!parseRpcParams(p)) {
 			return false;
 		}
@@ -4281,10 +4262,9 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 bool freetdscursor::supportsNativeBinds(const char *query, uint32_t size) {
 
-	// only rpc commands (exec/execute/{call ...}) get real ct_param()
-	// binds - see the comment by FREETDS_SUPPORTS_CURSORS above.
-	// Ordinary language commands and cursor-based selects still fall
-	// back to faked (inlined literal) binds
+	// only rpc commands get real ct_param() binds; everything else falls
+	// back to faked binds - see the comment by FREETDS_SUPPORTS_CURSORS
+	// above
 	if (((!charstring::compare(query,"exec",4) ||
 			!charstring::compare(query,"EXEC",4)) &&
 					character::isWhitespace(query[4])) ||
@@ -4345,20 +4325,13 @@ void freetdscursor::checkRePrepare() {
 	}
 }
 
-// ct_param() a comma-separated list of literal rpc parameters (eg. the
-// "1,2" in "exec someproc 1,2"); quoted literals have their quotes
-// stripped.  p points just past the procedure name; stops at end of
-// string or a statement-terminating ";".
 bool freetdscursor::parseRpcParams(const char *p) {
 
 	p=conn->cont->skipWhitespace(p);
 
-	// bind-variable references (eg. "exec testproc @in1,@in2 output")
-	// are supplied by the client's own inputBind() calls, matched by
-	// name - this text is just documentation and must be left alone.
-	// Only parse it here when it's nothing but literal values, since
-	// there's no way to tell, from here, that the client is about to
-	// bind by name.
+	// bail if the parameters are bind-variable references
+	// (eg. "exec testproc @in1,@in2 output" - the client binds those
+	// by name itself, so the text here is just documentation)
 	for (const char *s=p; *s && *s!=';'; s++) {
 		if (*s=='@') {
 			return true;
@@ -4399,11 +4372,10 @@ bool freetdscursor::parseRpcParams(const char *p) {
 		parameter[paramindex].status=CS_INPUTVALUE;
 		parameter[paramindex].locale=NULL;
 
-		// an rpc parameter has to match the target parameter's type
-		// on the wire - the backend won't implicitly convert a char
-		// value to int/float the way it would a literal in ordinary
-		// SQL text, so figure out a type for unquoted numeric
-		// literals
+		// type unquoted numeric literals - an rpc parameter has to
+		// match the target parameter's type on the wire, and the
+		// backend won't convert char to int/float the way it would
+		// a literal in ordinary SQL text
 		CS_RETCODE	rc;
 		if (!quoted && charstring::isInteger(valstart,vallen)) {
 			int64_t	intval=charstring::convertToInteger(valstart);
@@ -4787,10 +4759,8 @@ bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 	maxrow=0;
 	totalrows=0;
 
-	// an rpc command was already issued by prepareQuery(); anything else
-	// (a cursor-based select or a plain language command) still needs to
-	// go out here as a plain language command, since cursor support and
-	// native binds on non-rpc commands aren't enabled - see the comment
+	// prepareQuery() already issued an rpc command; anything else still
+	// has to go out here as a plain language command - see the comment
 	// by FREETDS_SUPPORTS_CURSORS above
 	if (!rpc) {
 		if (ct_command(cmd,CS_LANG_CMD,
@@ -5251,12 +5221,11 @@ void freetdscursor::deflateColumnSize(CS_INT index) {
 
 	// bail if the client charset is a single-byte charset
 	//
-	// A factor of 1 doesn't prove that nothing was multiplied.  The ping
-	// measures a varchar, and freetds skips the multiply when the column's
-	// charset already matches the client charset, so if the server's
-	// charset is the client charset then the ping measures 1 while the
-	// unicode columns are still multiplied - those convert through utf-16,
-	// which never matches.
+	// A factor of 1 doesn't prove that nothing was multiplied.  freetds
+	// skips the multiply when the column's charset already matches the
+	// client charset, and the ping measures a varchar, so unicode columns
+	// can still be multiplied when the ping measures 1 (they convert
+	// through utf-16, which never matches).
 	if (freetdsconn->bytesperchar<2) {
 		return;
 	}
@@ -5282,11 +5251,9 @@ void freetdscursor::deflateColumnSize(CS_INT index) {
 
 	// A column whose own collation charset matches the client charset
 	// isn't multiplied either, and gets scaled down anyway.  ct_describe
-	// reports the multiplied size and nothing else - not the collation,
-	// not the size the server sent - so there's no way to spot it.  MS SQL
-	// Server on TDS 7.1 and later only, since SAP/Sybase has one
-	// server-wide charset.  Use the odbc connection for those, it reports
-	// the size the server sent.
+	// reports the multiplied size and nothing else, so there's no way to
+	// spot it.  MS SQL Server on TDS 7.1 and later only, since SAP/Sybase
+	// has one server-wide charset - use the odbc connection for those.
 	column[index].maxlength/=freetdsconn->bytesperchar;
 }
 

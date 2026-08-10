@@ -954,10 +954,8 @@ bool sqlrlistener::listenOnClientSocket(uint16_t protocolindex,
 
 void sqlrlistener::unixSocketListenFailed(const char *sockname) {
 
-	// An over-long socket file name fails with ENAMETOOLONG, which has
-	// nothing to do with permissions.  Blaming the directory sends the
-	// reader to check the one thing that isn't wrong, so say which of
-	// the two it was.
+	// an over-long socket file name fails with ENAMETOOLONG, which has
+	// nothing to do with permissions
 	if (error::getErrorNumber()==ENAMETOOLONG) {
 		#ifndef _WIN32
 			struct sockaddr_un	sun;

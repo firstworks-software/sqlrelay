@@ -7,22 +7,16 @@
 #
 # a directive looks like:
 #	<!--#include virtual="path" -->
-# and is replaced by the contents of the file it names.  the path is relative
-# to the directory of the file holding the directive, the way apache's
-# mod_include treats virtual.  when the named file has a .in counterpart, the
-# .in file is expanded instead, so the order the files are generated in does
-# not matter.
+# the path is relative to the directory of the file holding the directive,
+# the way apache's mod_include treats virtual.  when the named file has a
+# .in counterpart, the .in file is expanded instead, so the order the files
+# are generated in does not matter.
 
-# writes a message to stderr and gives up
 die() {
 	echo "ssi.sh: $1" >&2
 	exit 1
 }
 
-# writes one line to stdout, expanding its include directive, if it has one
-# $1 - the line
-# $2 - the directory to resolve the include path against
-# $3 - the chain of files currently being expanded
 expandline() {
 	_elline=$1
 	_eldir=$2
@@ -68,9 +62,6 @@ expandline() {
 	return 0
 }
 
-# writes a file to stdout, expanding its include directives
-# $1 - the file
-# $2 - the chain of files currently being expanded
 expandfile() {
 	_efname=$1
 	_efchain=$2

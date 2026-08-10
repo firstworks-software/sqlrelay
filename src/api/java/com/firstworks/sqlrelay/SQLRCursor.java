@@ -9,7 +9,7 @@ public class SQLRCursor {
 	}
 
 	/** Creates a cursor to run queries and fetch result
-	 *  sets using connecton "sqlrc". */
+	 *  sets using connection "sqlrc". */
 	public SQLRCursor(SQLRConnection con) {
 		connection=con;
 		cursor=alloc(con.connection);
@@ -61,7 +61,7 @@ public class SQLRCursor {
 	 *  caching.  */
 	public native void	cacheToFile(String filename);
 	/** Sets the time-to-live for cached result
-	 *  sets. The sqlr-cachemanger will remove each 
+	 *  sets. The sqlr-cachemanager will remove each
 	 *  cached result set "ttl" seconds after it's 
 	 *  created, provided it's scanning the directory
 	 *  containing the cache files.  */
@@ -182,7 +182,7 @@ public class SQLRCursor {
 	 *  </ul>
 	 *
 	 *  If "type" is empty or null then a result set containing
-	 *  all data types in the current databas/schema will be
+	 *  all data types in the current database/schema will be
 	 *  returned.
 	 *
 	 *  If SQL Relay doesn't support getting type info

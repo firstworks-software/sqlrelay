@@ -137,11 +137,7 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 					// response can only be derived from
 					// the password itself, and a one-way
 					// module can't recover it from the
-					// configuration.  Since a client
-					// configured for md5 always sends the
-					// md5 response, a listener whose
-					// connect string combines the two
-					// can't authenticate anyone at all.
+					// configuration.
 					if (charstring::compare(method,
 						"postgresql_cleartext")) {
 						if (getDebug()) {
@@ -156,9 +152,8 @@ const char *sqlrauth_postgresql_connectstrings::auth(sqlrcredentials *cred) {
 						return NULL;
 					}
 
-					// postgresql_cleartext sends the
-					// password itself, so encrypt what
-					// was passed in and compare it to the
+					// encrypt the password that was
+					// passed in and compare it to the
 					// encrypted password from the
 					// configuration
 					char	*pwd=pe->encrypt(password);

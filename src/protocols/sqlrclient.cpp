@@ -251,12 +251,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		uint16_t	protocolversion;
 		uint16_t	endresultset;
 
-		// whether the session has authenticated.  The module instance
-		// is reused across every client of a pooled connection, so
-		// this has to be reset at the top of each clientSession() call,
-		// not just at construction - except when cont->isResumedSession()
-		// says this call is that same already-authenticated session
-		// resuming on a new socket, not a new client.
 		bool		authenticated;
 };
 
@@ -2322,11 +2316,7 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 						cont->getErrorBuffer(cursor));
 
 				// Bail out if we're shutting down.
-				// reLogIn() logs out and returns
-				// without logging back in once the
-				// shutdown flag is set, and this loop
-				// has no shutdown flag check of its
-				// own, so looping back would retry the
+				// Otherwise this loop retries the
 				// query against a logged-out
 				// connection over and over, spinning
 				// until the process is killed with
@@ -3623,7 +3613,7 @@ uint16_t sqlrprotocol_sqlrclient::protocolAppropriateColumnType(
 		return coltype;
 	}
 
-	// these types didn't exist in earlier protocol verions
+	// these types didn't exist in earlier protocol versions
 	switch (coltype) {
 		// also added by mysql
 		case TINYTEXT_DATATYPE:

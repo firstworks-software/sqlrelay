@@ -1246,7 +1246,7 @@ sqlrconnectionPrepare(pdo_dbh_t *dbh,
 	// Ideally we'd set a custom attribute for whether binds are translated
 	// on the server or not.
 
-	// SQL Relay actually supports named and postitional placeholders but
+	// SQL Relay actually supports named and positional placeholders but
 	// there doesn't appear to be a way to set both.  Positional is a larger
 	// value in the enum, so I guess we'll use that.  The pdo code appears
 	// to just check to see if it's not PDO_PLACEHOLDER_NONE anyway so
@@ -1356,7 +1356,7 @@ sqlrconnectionQuote(pdo_dbh_t *dbh,
 	size_t		unquotedlen=ZSTR_LEN(zunquoted);
 
 	// this is awkward, but it allows us to use
-	// the exisiting code below with PHP 8.1+
+	// the existing code below with PHP 8.1+
 	char	*q=NULL;
 	size_t	qlen=0;
 	char	**quoted=&q;
@@ -1537,7 +1537,7 @@ sqlrconnectionSetAttribute(pdo_dbh_t *dbh,
 			return 1;
 		#ifdef HAVE_PHP_PDO_ATTR_EMULATE_PREPARES
 		case PDO_ATTR_EMULATE_PREPARES:
-			// use substititution variables rather than binds
+			// use substitution variables rather than binds
 			convert_to_boolean(val);
 			sqlrdbh->usesubvars=ISTRUE(val);
 			return 1;
@@ -1637,7 +1637,7 @@ static int sqlrconnectionGetAttribute(pdo_dbh_t *dbh,
 	sqlrconnection	*sqlrcon=(sqlrconnection *)sqlrdbh->sqlrcon;
 
 	// PDO handles several of these options itself.  These are the ones
-	// it doens't handle.
+	// it doesn't handle.
 	char		*temp;
 	int32_t		timeoutsec;
 	int32_t		timeoutusec;
@@ -1721,7 +1721,7 @@ static int sqlrconnectionGetAttribute(pdo_dbh_t *dbh,
 			return 1;
 		#ifdef HAVE_PHP_PDO_ATTR_EMULATE_PREPARES
 		case PDO_ATTR_EMULATE_PREPARES:
-			// use substititution variables rather than binds
+			// use substitution variables rather than binds
 			ZVAL_BOOL(retval,sqlrdbh->usesubvars);
 			return 1;
 		#endif

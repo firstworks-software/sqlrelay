@@ -25,14 +25,10 @@
 #include <rudiments/csprng.h>
 #include <rudiments/tls.h>
 
-// rudiments has sha-1, sha-512, md5, aes-192, aes-256, pbkdf2-hmac-sha512
-// (#9100) and csprng (#9211), so O5LOGON's sha-512, aes-cbc-with-no-padding
-// and session-key/salt needs are all covered - the module no longer touches
-// openssl directly.  O5LOGON is offered at runtime only when
-// tls::isSupported() is true, since rudiments' pbkdf2-hmac-sha512 (needed
-// for 12c verifiers) has no non-openssl fallback and fails outright without
-// it.  Where it isn't supported, oracle_clear_password still works;
-// O5LOGON just isn't offered.
+// O5LOGON is offered at runtime only when tls::isSupported() is true, since
+// rudiments' pbkdf2-hmac-sha512 (needed for 12c verifiers) has no
+// non-openssl fallback and fails outright without it.  Where it isn't
+// supported, oracle_clear_password still works; O5LOGON just isn't offered.
 
 // verifier types, from python-oracledb's constants.pxi
 #define VERIFIER_TYPE_11G_1	0xb152
@@ -161,9 +157,6 @@ static const char *supportedauthmethods[]={
 	NULL
 };
 
-// aes-cbc with a zero iv and no padding, over whole blocks.  rudiments' aes128
-// can't do this - wrong key size, and it always pads - but aes192 and aes256
-// can, via setUsePadding(false).
 static bool aesCbc(bool encrypt,
 			const byte_t *key, size_t keysize,
 			const byte_t *in, size_t insize,
@@ -200,7 +193,6 @@ static bool aesCbc(bool encrypt,
 	return retval;
 }
 
-// sha-512, via rudiments' sha512 class (#9100)
 static bool sha512Hash(const byte_t *in, size_t insize, byte_t *out) {
 	sha512	s;
 	if (!s.append(in,(uint32_t)insize)) {
@@ -237,8 +229,6 @@ static bool derivedKey(const byte_t *password, uint32_t passwordsize,
 	return true;
 }
 
-// password_hash is the key AUTH_SESSKEY is encrypted under.  24 bytes for an
-// 11g verifier and 32 for a 12c one.
 static bool passwordHash(const char *password,
 				uint32_t verifiertype,
 				const byte_t *vfrdata, uint64_t vfrdatasize,
@@ -299,10 +289,10 @@ static bool passwordHash(const char *password,
 	return true;
 }
 
-// The client tells 11g and 12c apart by the length of the session key rather
-// than by the verifier type it was told, so the lengths are load-bearing on
-// the wire.
 static size_t sessionKeySize(uint32_t verifiertype) {
+	// the client tells 11g and 12c apart by the length of the session key
+	// rather than by the verifier type it was told, so these lengths are
+	// load-bearing on the wire
 	return (verifiertype==VERIFIER_TYPE_12C)?
 			SESSION_KEY_SIZE_12C:SESSION_KEY_SIZE_11G;
 }
@@ -313,7 +303,6 @@ static bool supportedVerifierType(uint32_t verifiertype) {
 		verifiertype==VERIFIER_TYPE_12C);
 }
 
-// hex-decodes "value" and requires it to come out "size" bytes long
 static bool hexDecodeExactly(const char *value, size_t size, byte_t *out) {
 
 	byte_t		*decoded=NULL;
@@ -335,7 +324,6 @@ static char *hexEncodeUpper(const byte_t *in, uint64_t insize) {
 	return hex;
 }
 
-// the password hash and the session key size, which both phases start from
 static bool o5logonParameters(const char *password,
 				parameterstring *p,
 				uint32_t *verifiertype,
@@ -368,7 +356,6 @@ static bool o5logonParameters(const char *password,
 	return retval;
 }
 
-// AUTH_SESSKEY - session key part A, encrypted under the password hash
 static bool o5logonChallenge(const char *password,
 				const char *extra,
 				stringbuffer *challenge) {
@@ -388,7 +375,7 @@ static bool o5logonChallenge(const char *password,
 	// For an 11g verifier the plaintext isn't 48 random bytes.  Real oracle
 	// sends 40 bytes of key material plus 8 bytes of 0x08 - pkcs#7 padding
 	// up to the 48 byte boundary - and the client rejects the login if the
-	// padding isn't there.  A 12c verifier has no padding.  See #9118.
+	// padding isn't there.  A 12c verifier has no padding.
 	size_t	padsize=(sesskeysize==SESSION_KEY_SIZE_11G)?
 					SESSION_KEY_PAD_SIZE_11G:0;
 	size_t	materialsize=sesskeysize-padsize;
@@ -412,7 +399,6 @@ static bool o5logonChallenge(const char *password,
 	return retval;
 }
 
-// the combo key, which AUTH_PASSWORD is encrypted under
 static bool o5logonComboKey(uint32_t verifiertype,
 				parameterstring *p,
 				const byte_t *parta, const byte_t *partb,
@@ -477,9 +463,6 @@ static bool o5logonComboKey(uint32_t verifiertype,
 	return retval;
 }
 
-// Rebuilds the combo key from the two session keys in "p".  Both phase-two
-// paths need it - the one that verifies AUTH_PASSWORD and the one that builds
-// AUTH_SVR_RESPONSE.
 static bool o5logonComboKeyFromExtra(const char *password,
 					parameterstring *p,
 					byte_t *combokey,
@@ -494,9 +477,8 @@ static bool o5logonComboKeyFromExtra(const char *password,
 		return false;
 	}
 
-	// Session key part A comes back by decrypting the challenge that
-	// challenge() produced, and part B by decrypting the client's
-	// AUTH_SESSKEY.  Both are encrypted under the password hash.
+	// decrypt part a from the server's challenge and part b from the
+	// client's AUTH_SESSKEY
 	byte_t	encsesskey[SESSION_KEY_SIZE_11G];
 	byte_t	parta[SESSION_KEY_SIZE_11G];
 	byte_t	partb[SESSION_KEY_SIZE_11G];
@@ -520,9 +502,6 @@ static bool o5logonComboKeyFromExtra(const char *password,
 	return ok;
 }
 
-// Verifies AUTH_PASSWORD against "password".  If "supplied" isn't NULL then
-// the password the client actually sent is appended to it, for the debug
-// output that the caller does.
 static bool o5logonVerify(const char *authpassword,
 				const char *password,
 				const char *extra,
@@ -582,9 +561,6 @@ static bool o5logonVerify(const char *authpassword,
 	return ok;
 }
 
-// AUTH_SVR_RESPONSE - the server's proof to the client that it knew the
-// password too.  The same shape as AUTH_PASSWORD in the other direction: a
-// 16-byte random salt, the payload, then number padding.
 static bool o5logonServerResponse(const char *password,
 					const char *extra,
 					stringbuffer *response) {
@@ -672,12 +648,11 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 			return NULL;
 		}
 
-		// For one-way encryption, encrypt the password that was
+		// for one-way encryption, encrypt the password that was
 		// passed in and compare it to the encrypted password in the
-		// configuration.  That only works for oracle_clear_password,
-		// which is the only method that passes the password itself
-		// in.  O5LOGON derives its challenge from the password, so it
-		// needs the cleartext.
+		// configuration
+		// (only oracle_clear_password passes the password itself in -
+		// O5LOGON needs the cleartext to derive its challenge)
 		if (pe->oneWay()) {
 			if (charstring::compare(method,
 						"oracle_clear_password")) {
@@ -689,7 +664,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 			return (retval)?user:NULL;
 		}
 
-		// For two-way encryption, decrypt the password from the
+		// for two-way encryption, decrypt the password from the
 		// configuration and compare it to the password that was
 		// passed in...
 		char	*pwd=pe->decrypt(passwords[i]);

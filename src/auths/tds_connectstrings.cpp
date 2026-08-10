@@ -118,12 +118,6 @@ const char *sqlrauth_tds_connectstrings::userPassword(
 			return NULL;
 		}
 
-		// For one-way encryption, encrypt the password that was passed
-		// in and compare it to the encrypted password in the
-		// configuration.  For two-way encryption, decrypt the password
-		// from the configuration and compare to to the password that
-		// was passed in...
-
 		bool	result=false;
 		char	*pwd=NULL;
 		if (pe->oneWay()) {

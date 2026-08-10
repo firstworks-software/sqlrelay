@@ -2,7 +2,7 @@
 # See the file COPYING for more information
 
 # Creates a cursor to run queries and fetch result
-# sets using connecton "sqlrc".
+# sets using connection "sqlrc".
 proc sqlrcurCmd {sqlrc} 
 
 # Destroys the cursor and cleans up all associated
@@ -61,7 +61,7 @@ proc lowerCaseColumnNames {}
 proc cacheToFile {filename}
 
 # Sets the time-to-live for cached result
-# sets. The sqlr-cachemanger will remove each
+# sets. The sqlr-cachemanager will remove each
 # cached result set "ttl" seconds after it's
 # created, provided it's scanning the directory
 # containing the cache files.
@@ -176,7 +176,7 @@ proc getTableList {wild}
 # * interval_precision
 #
 # If "type" is empty or NULL then a result set containing
-# all data types in the current databas/schema will be
+# all data types in the current database/schema will be
 # returned.
 #
 # If SQL Relay doesn't support getting type info

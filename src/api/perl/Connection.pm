@@ -129,7 +129,7 @@ __END__
             #
             #  "flags" indicates what Kerberos flags to use.  Multiple
             #  flags may be specified, separated by commas.  If left
-            #  empty or NULL then a defalt set of flags will be used.
+            #  empty or NULL then a default set of flags will be used.
             #  Only set this if you know that you have a good reason to.
             #
             #  Valid flags include:
@@ -183,7 +183,7 @@ __END__
             #      "ca" - Validate that the server's certificate was
             #             signed by a trusted certificate authority.
             #      "ca+host" - Perform "ca" validation and also validate
-            #             that one of the subject altenate names (or the
+            #             that one of the subject alternate names (or the
             #             common name if no SANs are present) in the
             #             certificate matches the host parameter.
             #             (Falls back to "ca" validation when a unix
@@ -210,7 +210,7 @@ __END__
             #
             #  Note that the supported "cert" and "ca" file formats may
             #  vary between platforms.  A variety of file formats are
-            #  generally supported on Linux/Unix platfoms (.pem, .pfx,
+            #  generally supported on Linux/Unix platforms (.pem, .pfx,
             #  etc.) but only the .pfx format is currently supported on
             #  Windows.
 
@@ -373,7 +373,7 @@ __END__
 
         getDefaultTransactionModel();
             # Returns the database's native transaction model.  See
-            # setTranscationModel() for a list of potential return
+            # setTransactionModel() for a list of potential return
             # values.  Returns undef if an error occurred.
 
         setTransactionModel(txmodel);
@@ -385,17 +385,17 @@ __END__
             #  * "implicit"
             #      * in a transaction when the session begins
             #      * commit/rollback implicitly starts a new
-            #        transcaction
+            #        transaction
             #      * autocommit on/off take effect immediately
             #  * "explicit"
             #      * not in a transaction when the session begins
             #      * begin required to start a new transaction
-            #      * commit/rollback does not start a new transcaction
+            #      * commit/rollback does not start a new transaction
             #      * autocommit on/off take effect immediately
             #  * "explicit-deferred"
             #      * not in a transaction when the session begins
             #      * begin required to start a new transaction
-            #      * commit/rollback does not start a new transcaction
+            #      * commit/rollback does not start a new transaction
             #      * while in a begin-initiated transaction, autocommit
             #        on takes effect at next commit/rollback (deferred)
             #      * while in an autocommit-off-initiated transaction,
@@ -403,7 +403,7 @@ __END__
             #  * "explicit-error"
             #      * not in a transaction when the session begins
             #      * begin required to start a new transaction
-            #      * commit/rollback does not start a new transcaction
+            #      * commit/rollback does not start a new transaction
             #      * while in a transaction, autocommit on/off throw
             #        error
             #
@@ -411,7 +411,7 @@ __END__
 
         getTransactionModel();
             # Returns the current transaction model.  See
-            # setTranscationModel() for a list of potential return
+            # setTransactionModel() for a list of potential return
             # values.  Returns undef if an error occurred.
 
         getDefaultIsolationLevel();

@@ -291,7 +291,7 @@ bool sqlrimportxml::resetSequence() {
 		}
 		return true;
 
-	// for postgreql, db2, and informix...
+	// for postgresql, db2, and informix...
 	} else if (charstring::contains(getDbType(),"postgresql") ||
 			charstring::contains(getDbType(),"db2") ||
 			charstring::contains(getDbType(),"informix")) {

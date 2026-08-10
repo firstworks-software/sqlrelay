@@ -282,16 +282,13 @@ class sqlrshenv {
 		// outlive the command that ran it.
 		char		*resumesocket;
 		sqlrshformat	format;
-		// which getFieldAs...() method the result set is fetched
-		// with.  getasnumber is an alias for the number mode, so
-		// there's no separate flag for it.
 		sqlrshfieldsas	fieldsas;
 		bool		noelapsed;
 		bool		nextresultset;
 		bool		txqueries;
 		bool		continueonerror;
 		// the number of statements that failed in the script or the
-		// -command list, which is what the count on stderr reports
+		// -command list
 		uint64_t	errorcount;
 };
 
@@ -738,8 +735,8 @@ void sqlrsh::userRcFile(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	charstring::append(userrcfile,"/.sqlrshrc");
 
 	// process the file
-	// A failing command in the rc file doesn't change the exit status, so
-	// it doesn't count toward the failure count either.
+	// (a failing command in the rc file doesn't change the exit status,
+	// so it doesn't count toward the failure count either)
 	uint64_t	errorcount=env->errorcount;
 	runScript(sqlrcon,sqlrcur,env,userrcfile,false);
 	env->errorcount=errorcount;
@@ -748,9 +745,8 @@ void sqlrsh::userRcFile(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 
 void sqlrsh::countError(sqlrshenv *env, uint64_t errorcount) {
 
-	// The run command runs a script, and that script already counted
-	// whatever failed inside it.  Counting the run command itself here
-	// too would count those failures twice.
+	// the run command runs a script, and that script already counted
+	// whatever failed inside it
 	if (env->errorcount>errorcount) {
 		return;
 	}
@@ -763,11 +759,9 @@ bool sqlrsh::continueOnError(sqlrconnection *sqlrcon, sqlrshenv *env) {
 		return false;
 	}
 
-	// A statement that took the session down with it stops the run
-	// anyway.  Running the rest against a connection that isn't there
-	// just turns one failure into all of them.  ping() reopens the
-	// session, so a false here means the server is gone, not that the
-	// last statement closed the session.
+	// a statement that took the session down with it stops the run anyway
+	// (ping() reopens the session, so a false here means the server is
+	// gone, not that the last statement closed the session)
 	return sqlrcon->ping();
 }
 
@@ -777,15 +771,14 @@ void sqlrsh::reportErrorCount(sqlrshenv *env, int32_t *exitcode) {
 		return;
 	}
 
-	// A statement that failed is a failed run, whatever the loop that ran
-	// it handed back.  This is what makes 4 mean "at least one statement
-	// failed" even when the failures were all inside a nested script.
+	// a statement that failed is a failed run, whatever the loop that ran
+	// it handed back
 	*exitcode=SQLRSH_EXIT_QUERY;
 
-	// A run that stopped at its first failure has a count of 1, which the
-	// exit code already said.  Anything else is worth the line: either
-	// continueonerror is on, or it was on earlier and the run carried on
-	// past a failure before something turned it off.
+	// a run that stopped at its first failure has a count of 1, which the
+	// exit code already said
+	// (a higher count with continueonerror off means it was on earlier
+	// and the run carried on past a failure)
 	if (!env->continueonerror && env->errorcount<2) {
 		return;
 	}
@@ -1645,8 +1638,6 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	}
 
 	// handle fieldsas
-	// It takes a value rather than on|off, so an unrecognized mode is a
-	// failed command, the way an unrecognized format name is.
 	if (cmdtype==19) {
 		char	*name=charstring::duplicate(ptr);
 		charstring::bothTrim(name);
@@ -2616,9 +2607,8 @@ uint32_t sqlrsh::plainColumnWidth(sqlrcursor *sqlrcur, sqlrshenv *env,
 							uint32_t col) {
 
 	// getLongest() measures the raw fields, so a conversion that widens
-	// them runs past it.  A boolean is the one conversion whose width is
-	// known before the rows arrive - it is always true or false - so it
-	// is the one that can be padded for.
+	// them runs past it - a boolean is the one whose width is known
+	// before the rows arrive
 	uint32_t	longest=sqlrcur->getLongest(col);
 	if (env->fieldsas==SQLRSH_FIELDSAS_BOOLEAN && longest<5) {
 		const char	*fieldtype=sqlrcur->getColumnType(col);
@@ -2942,17 +2932,15 @@ bool sqlrsh::formatFieldAsDate(char *buffer, size_t buffersize,
 				int16_t hour, int16_t minute, int16_t second,
 				int32_t microsecond, bool isnegative) {
 
-	// A month or a day that's there but zero is mysql's 0000-00-00, which
-	// parses to year 2000 with both at zero.  Rendering it would either
-	// invent a year the field never had or drop the date half of a
-	// datetime, so the whole field passes through instead.
+	// a month or a day that's there but zero is mysql's 0000-00-00, so
+	// the whole field passes through rather than being rendered
 	if (!month || !day) {
 		return false;
 	}
 
-	// A time on its own comes back with the month and the day unset, but
-	// with the year adjusted to something, so the date part is decided on
-	// the month and the day rather than on the year.
+	// a time on its own comes back with the month and the day unset, but
+	// with the year adjusted, so the date part is decided on the month
+	// and the day
 	bool	hasdate=(month>0 && day>0);
 	bool	hastime=(hour>=0);
 	if (!hasdate && !hastime) {
@@ -2978,9 +2966,8 @@ bool sqlrsh::formatFieldAsDate(char *buffer, size_t buffersize,
 					(int)((minute>=0)?minute:0),
 					(int)((second>=0)?second:0));
 		date.append(part);
-		// The parse can't tell a fraction that wasn't there from one
-		// that was zero - both come back as 0 - so a zero one is
-		// left off rather than hung on every timestamp.
+		// the parse can't tell a fraction that wasn't there from one
+		// that was zero, so a zero one is left off
 		if (microsecond>0) {
 			charstring::printf(part,sizeof(part),".%06d",
 						(int)microsecond);
@@ -3042,19 +3029,17 @@ const char *sqlrsh::getFieldForDisplay(sqlrcursor *sqlrcur, sqlrshenv *env,
 
 		// getFieldAsBoolean() answers for a field of any type at all,
 		// so only the column type can say whether the answer means
-		// anything.  A name column falls through here unconverted.
+		// anything
 		field=(sqlrcur->getFieldAsBoolean(row,col))?"true":"false";
 		*length=charstring::getLength(field);
 		*jsontype=SQLRSH_JSONTYPE_BOOLEAN;
 
 	} else if (env->fieldsas==SQLRSH_FIELDSAS_DATE) {
 
-		// Unlike getFieldAsBoolean(), this one reports whether it
-		// could read the field, so its own answer is the guard and no
-		// column type test is needed.  That matters for a database
-		// that reports a storage class rather than a declared type -
-		// sqlite calls a date column STRING - where a type test would
-		// make the mode do nothing at all.
+		// unlike getFieldAsBoolean(), this one reports whether it
+		// could read the field, so its own answer is the guard - a
+		// column type test would make the mode do nothing at all for
+		// sqlite, which calls a date column STRING
 		int16_t	year;
 		int16_t	month;
 		int16_t	day;
@@ -5112,10 +5097,6 @@ void sqlrsh::autocommit(sqlrshenv *env, bool on) {
 	}
 }
 
-// The part after the dot is a decimal fraction of a second, so 5.25 is five
-// and a quarter seconds.  That matches the c++ api, which reads the
-// SQLR_CLIENT_*_TIMEOUT environment variables the same way, and it matches
-// what these commands print, since the microseconds are padded to 6 places.
 static bool parseTimeout(const char *args, uint32_t *sec, uint32_t *usec) {
 
 	// skip to the timeout itself
@@ -5124,9 +5105,9 @@ static bool parseTimeout(const char *args, uint32_t *sec, uint32_t *usec) {
 	}
 
 	// get seconds
-	// The api takes these as an int32_t and treats a negative as no
-	// timeout at all, so a value past its max has to be refused rather
-	// than wrapped around into one.
+	// (the api takes these as an int32_t and treats a negative as no
+	// timeout at all, so a value past its max is refused rather than
+	// wrapped around into one)
 	if (!character::isDigit(*args)) {
 		return false;
 	}
@@ -5143,6 +5124,8 @@ static bool parseTimeout(const char *args, uint32_t *sec, uint32_t *usec) {
 	}
 
 	// get the fraction of a second, as microseconds
+	// (a decimal fraction, the way the c++ api reads the
+	// SQLR_CLIENT_*_TIMEOUT environment variables)
 	*usec=0;
 	if (*args=='.') {
 		args++;
@@ -5754,9 +5737,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	cmdline=new sqlrcmdline(argc,argv);
 
 	// an option that requires a value has to have one
-	// A missing value used to come out empty, which meant 0 for the
-	// numeric options, so a trailing -resultsetbuffersize set the buffer
-	// size to 0.  It's a usage error now.
+	// (getValue() hands back an empty string for one that doesn't, which
+	// would mean 0 for the numeric options)
 	const char	*mvo=cmdline->missingValueOption(valueoptions);
 	if (mvo) {
 		stderror.printf("usage: -%s requires a value.  "
@@ -5982,10 +5964,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// handle debug
-	// A bare -debug means on, and a value that is neither on nor off is a
-	// file to write to, the way the debug command takes one.  This runs
-	// before the connection is checked below, so a connection that fails
-	// can be debugged too.
+	// (runs before the connection is checked below, so a connection that
+	// fails can be debugged too)
 	if (cmdline->isFound("debug")) {
 		const char	*debugvalue=cmdline->getValue("debug");
 		if (charstring::isNullOrEmpty(debugvalue) ||
@@ -6033,10 +6013,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// handle the getFieldAs...() mode
-	// -getasnumber is an alias for two of the modes, and only an explicit
-	// one changes anything, so that -fieldsas isn't undone by a
-	// -getasnumber that isn't there.  -fieldsas runs after it, so the more
-	// specific of the two wins when both are given.
+	// (-getasnumber is an alias for two of the modes, and runs first, so
+	// the more specific -fieldsas wins when both are given)
 	if (cmdline->isFound("getasnumber")) {
 		env.fieldsas=(onOffOption("getasnumber",false))?
 						SQLRSH_FIELDSAS_NUMBER:
@@ -6108,8 +6086,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// handle autocommit
-	// The server decides it otherwise, so only an explicit option changes
-	// it.  Unlike the autocommit command, this doesn't write a banner.
+	// (the server decides it otherwise, so only an explicit option
+	// changes it, and no banner is written)
 	if (cmdline->isFound("autocommit")) {
 		env.autocommit=onOffOption("autocommit",env.autocommit);
 		bool	success=(env.autocommit)?sqlrcon.autoCommitOn():

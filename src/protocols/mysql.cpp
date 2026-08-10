@@ -129,7 +129,7 @@
 static byte_t	mysqltypemap[]={
 	// "UNKNOWN"
 	(byte_t)MYSQL_TYPE_NULL,
-	// addded by freetds
+	// added by freetds
 	// "CHAR"
 	(byte_t)MYSQL_TYPE_STRING,
 	// "INT"
@@ -1705,9 +1705,8 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 		rp+=responsesize;
 	} else if (servercapabilityflags&CLIENT_SECURE_CONNECTION &&
 			clientcapabilityflags&CLIENT_SECURE_CONNECTION) {
-		// read the length byte unsigned - it was previously read as
-		// a signed char, which sign-extended values 0x80-0xff into
-		// a huge 64 bit responsesize (see #9048)
+		// read the length byte unsigned, so values 0x80-0xff don't
+		// sign-extend into a huge 64 bit responsesize
 		if (rp>=end) {
 			debugWrite("malformed challenge response size");
 			debugEnd();
@@ -1988,7 +1987,7 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 	//   sent us a challenge response, indicating that it likes the
 	//   auth that we offered
 	// * the server was configured with handshake=9 (protocol 320,
-	//   mysql_old_password) and the client responded apropriately
+	//   mysql_old_password) and the client responded appropriately
 	// * the server was configured with handshake=10 (protocol 41) but
 	//   the client indicated that it doesn't support protocol 41 and
 	//   so we fell back to protocol 320 and mysql_old_password
@@ -2003,9 +2002,9 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 
 	// If the client does not support plugin auth, then it must support
 	// mysql_old_password and mysql_native_password.  If it didn't send a
-	// challenge response, then it didn't like like the auth that we
+	// challenge response, then it didn't like the auth that we
 	// offered, which must have been mysql_native_password.  So, try
-	// switching to mysql_old_password using the "old auth swtich"
+	// switching to mysql_old_password using the "old auth switch"
 	if (!(clientcapabilityflags&CLIENT_PLUGIN_AUTH) &&
 		charstring::isNullOrEmpty(clientauthpluginname)) {
 
@@ -3163,7 +3162,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 					// FIXME: get the schema somehow
 					"",
 					columntable,
-					// FIXME: get the orignal
+					// FIXME: get the original
 					// table somehow
 					"",
 					columnname,

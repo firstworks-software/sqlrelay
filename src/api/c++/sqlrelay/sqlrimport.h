@@ -30,7 +30,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
  		 *  is configured to use to insert data for the import. */
 		sqlrconnection	*getSqlrConnection();
 
-		/** Returns the instance of sqlrursor that this instance
+		/** Returns the instance of sqlrcursor that this instance
  		 *  is configured to use to insert data for the import. */
 		sqlrcursor	*getSqlrCursor();
 
@@ -49,7 +49,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 						uint32_t primarykeycolumnindex,
 						const char *primarykeysequence);
 
-		/** Removes any primary key configuaration set by a prior call
+		/** Removes any primary key configuration set by a prior call
 		 *  to insertPrimaryKey(). */
 		void	removePrimaryKey();
 
@@ -82,7 +82,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 						uint32_t columnindex,
 						const char *value);
 
-		/** Removes any static value configuaration at "columnindex"
+		/** Removes any static value configuration at "columnindex"
 		 *  set by a prior call to insertStaticValue(). */
 		void	removeStaticValue(uint32_t columnindex);
 
@@ -186,14 +186,14 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  otherwise. */
 		bool	getMixedCaseColumnNames();
 
-		/** Lower-cases colum names. */
+		/** Lower-cases column names. */
 		void	setLowerCaseColumnNames();
 
 		/** Returns true if column names are lower-cased and false
 		 *  otherwise. */
 		bool	getLowerCaseColumnNames();
 
-		/** Upper-cases colum names. */
+		/** Upper-cases column names. */
 		void	setUpperCaseColumnNames();
 
 		/** Returns true if column names are upper-cased and false
@@ -296,7 +296,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *
 		 *  Eg. if set to 0 then
 		 *  * the date's year component will be taken literally
-		 *  * a date like 99 or 90 will be considerd to actually be the
+		 *  * a date like 99 or 90 will be considered to actually be the
 		 *    year 99 or 90
 		 *
 		 *  Defaults to 100.
@@ -506,7 +506,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  deallocated by this class.  Plan accordingly.
 		 *
 		 *  Note that this method is called whether or not a column is
-		 *  ignored.  For example... If setIgnoreColums(true) has been
+		 *  ignored.  For example... If setIgnoreColumns(true) has been
 		 *  called, then this method will still be called for each
 		 *  column.  If setIgnoreColumnsWithEmptyNames(true) has been
 		 *  called, then this method will still be called for each
@@ -539,7 +539,7 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  * getIsDateTimeColumn() should return false for all columns
 		 *
 		 *  Note that this method is called whether or not a column is
-		 *  ignored.  For example... If setIgnoreColums(true) has been
+		 *  ignored.  For example... If setIgnoreColumns(true) has been
 		 *  called, then this method will still be called for each
 		 *  column.  If setIgnoreColumnsWithEmptyNames(true) has been
 		 *  called, then this method will still be called for each

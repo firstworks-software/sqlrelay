@@ -1993,10 +1993,9 @@ bool routercursor::outputBind(const char *variable,
 				char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
-	// valuesize is the local buffer size (declared size+1, for the null
-	// terminator). Pass the declared size to the next hop, so the
-	// buffer doesn't grow by one for every router in the chain - the
-	// remote will add its own +1 when it binds to its own backend.
+	// valuesize is the local buffer size (the declared size plus one for
+	// the null terminator), so pass the declared size to the next hop -
+	// otherwise the buffer grows by one for every router in the chain.
 	currentcur->defineOutputBindString(variable+1,
 					(valuesize)?valuesize-1:0);
 	obv[obcount].variable=variable+1;

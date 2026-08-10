@@ -167,7 +167,7 @@ __END__
 
         setCacheTtl(int ttl);
             # Sets the time-to-live for cached result
-            # sets. The sqlr-cachemanger will remove each 
+            # sets. The sqlr-cachemanager will remove each
             # cached result set "ttl" seconds after it's 
             # created, provided it's scanning the directory
             # containing the cache files.
@@ -285,7 +285,7 @@ __END__
             #
             # If "type" is empty or undef then a result set
             # containing all data types in the current
-            # databas/schema will be returned.
+            # database/schema will be returned.
             #
             # If SQL Relay doesn't support getting type info
             # for the current database backend (or the database

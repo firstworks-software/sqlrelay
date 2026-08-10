@@ -46,9 +46,7 @@
 // SAP ASE's own driver, and FreeTDS (which fronts ASE for the tds
 // protocol module), truncate a single-shot binary input bind at
 // exactly this size - a value any longer comes back cut off rather
-// than erroring.  Above this size, odbccursor::inputBindBlob() defers
-// the bind with SQL_LEN_DATA_AT_EXEC and odbccursor::executeQuery()
-// sends the value in pieces via SQLPutData instead.
+// than erroring
 #define BLOB_BIND_CHUNK_THRESHOLD	32768
 #define BLOB_BIND_CHUNK_SIZE		32000
 
@@ -79,11 +77,7 @@ struct odbccolumn {
 	uint16_t	tablesize;
 };
 
-// A result set buffered by cacheRowsAndDrainResultSets(), to get at output
-// binds behind it - both its column metadata and its rows, so
-// odbccursor::nextResultSet() can replay it once the drain has walked off
-// of the end of the driver's own result sets (see cacheResultSetsAfterFirst()
-// in odbc.cpp).
+// a result set buffered to get at the output binds behind it
 struct odbccachedresultset {
 	odbccachedresultset() : column(NULL), ncols(0), affectedrows(0) {
 		rows.setManageArrayValues(true);
@@ -118,15 +112,12 @@ struct charbind {
 	~charbind() { delete[] ucsvalue; }
 	char		*value;
 	uint32_t	valuesize;
-	// scratch buffer used for unicode input-output string binds;
-	// NULL unless inputOutputBind(...,char *,...) allocated one
+	// scratch buffer for unicode input-output string binds; NULL otherwise
 	byte_t		*ucsvalue;
 };
 
-// large binary blob input binds are sent via SQLPutData rather than in
-// one shot (see odbccursor::inputBindBlob()); this carries the value
-// across from the bind call to the SQLParamData/SQLPutData loop in
-// odbccursor::executeQuery()
+// carries a deferred blob bind value from inputBindBlob() to the
+// SQLParamData/SQLPutData loop in executeQuery()
 struct blobbind {
 	blobbind() : value(NULL), valuesize(0), pos(0) {}
 	const char	*value;
@@ -347,9 +338,6 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		SQLINTEGER		sqlnulldata;
 		#endif
 
-		// whether the driver said this parameter is aimed at a
-		// binary column, cached so a bulk load asks once per
-		// position per prepare rather than once per row
 		bool			*nullbindisbinary;
 		bool			*nullbinddescribed;
 		bool	nullBindIsBinary(uint16_t pos);
@@ -364,9 +352,6 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		listnode< unsigned char * >		*currentcachedrow;
 		bool					cachedrowsarecomplete;
 
-		// result sets buffered behind the current one, by
-		// cacheRowsAndDrainResultSets(), to be replayed by
-		// nextResultSet() once resultsetsdrained is set
 		singlylinkedlist< odbccachedresultset * >	cachedresultsets;
 
 		bool		resultsetsdrained;
@@ -549,10 +534,9 @@ size_t isUtf8(const char *encoding) {
 			charstring::contains(encoding,"UTF-8"));
 }
 
-// returns number of characters in the string, not counting any byte-order
-// mark or the null terminator
 size_t len(const byte_t *str, const char *encoding) {
 
+	// characters, excluding any byte-order mark and the terminator
 	const byte_t	*ptr=str;
 	size_t		res=0;
 
@@ -593,10 +577,9 @@ size_t len(const byte_t *str, const char *encoding) {
 	return res;
 }
 
-// returns number of bytes in the string, including any byte-order mark
-// and the null terminator
 size_t stringSize(const byte_t *str, const char *encoding) {
 
+	// bytes, including any byte-order mark and the terminator
 	const byte_t	*ptr=str;
 	size_t		res=0;
 
@@ -795,11 +778,8 @@ void odbcconnection::handleConnectString() {
 		ncharencoding="UCS-2//TRANSLIT";
 	}
 
-	// generic odbc (any driver not otherwise recognized below) defaults
-	// to binding blobs as character strings, since that's the only
-	// shape known to be safe against an untested third-party driver.
-	// A site that has tested its own driver against a binary bind can
-	// opt in with this option - see the bottom of logIn().
+	// opt-in override of the safe character blob bind default
+	// (see the bottom of logIn())
 	binarylobbind=charstring::isYes(
 			cont->getConnectStringValue("binarylobbind"));
 
@@ -1006,9 +986,8 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 	usecharforlobbind=true;
 	describenullbinds=false;
 
-	// Whether the driver implements SQLDescribeParam at all.  SQL Relay's
-	// own odbc driver doesn't, and answers this honestly, so an
-	// odbc-module-to-sqlrelay chain has to fall back rather than fail.
+	// SQL Relay's own odbc driver doesn't implement SQLDescribeParam,
+	// so an odbc-module-to-sqlrelay chain has to fall back rather than fail
 	SQLUSMALLINT	describeparamsupported=0;
 	hasdescribeparam=(SQLGetFunctions(dbc,SQL_API_SQLDESCRIBEPARAM,
 					&describeparamsupported)==SQL_SUCCESS &&
@@ -1116,60 +1095,41 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 		begintxquery="BEGIN TRANSACTION";
 
 		// SQL Server won't implicitly convert a character parameter
-		// to binary, varbinary or image, so the character bind can't
-		// reach those columns at all.  It also charset-converts the
-		// value, which raw bytes don't survive.  Bind blobs as
-		// binary instead.  (The trade is that a blob bind can no
-		// longer reach a text or ntext column.)
+		// to binary, varbinary or image, and it charset-converts the
+		// value, which raw bytes don't survive
 		usecharforlobbind=false;
 
-		// The same conversion rule applies to a null bind, which
-		// can't be a blob bind because the client api flattens a
-		// null lob into a plain null.  Ask the driver what the
-		// parameter is aimed at, for nulls only.  (See the null arm
-		// of odbccursor::inputBind().)
+		// the same rule applies to a null bind, which the client api
+		// flattens into a plain null, so ask the driver what the
+		// parameter is aimed at
 		describenullbinds=true;
 	} else if (!charstring::compare(dbmsnamebuffer,"SQL Server") ||
 				!charstring::compare(dbmsnamebuffer,"ASE")) {
 		// SAP ASE's own driver reports SQL_DBMS_NAME as exactly
-		// "SQL Server" (not "Microsoft SQL Server", which is what the
-		// arm above matches), so it needs its own arm.  FreeTDS,
-		// which is how the tds protocol module fronts ASE, reports
-		// "ASE" instead, so that's matched here too.  Like MS SQL
-		// Server, ASE won't implicitly convert a character parameter
-		// to binary, varbinary or image - it silently mangles the
-		// value instead of erroring, which is worse.  Bind blobs as
-		// binary instead.  (The trade is that a blob bind can no
-		// longer reach a char/varchar/text column.  Also, this bind
-		// shape tops out at 32768 bytes on ASE, on both drivers -
-		// anything longer comes back truncated - because the module
-		// doesn't chunk input binds with SQLPutData.)
+		// "SQL Server", and FreeTDS, which is how the tds protocol
+		// module fronts ASE, reports "ASE".  Like MS SQL Server, ASE
+		// won't implicitly convert a character parameter to binary,
+		// varbinary or image - it silently mangles the value instead
+		// of erroring
 		usecharforlobbind=false;
 	} else if (!charstring::compare(dbmsnamebuffer,"DB2",3)) {
 		// DB2's driver reports a platform-specific SQL_DBMS_NAME
-		// (eg. "DB2/LINUXX8664"), hence the prefix compare.  Same
-		// trade as MS SQL Server/ASE above: DB2 won't implicitly
-		// convert a character bind into a blob column - it's a hard
-		// error there rather than silent mangling - so binary columns
-		// are otherwise unreachable.
+		// (eg. "DB2/LINUXX8664"), hence the prefix compare.  DB2
+		// won't implicitly convert a character bind into a blob
+		// column either - a hard error there rather than silent
+		// mangling
 		usecharforlobbind=false;
 	} else if (!charstring::compare(dbmsnamebuffer,"Informix")) {
-		// Same trade again, for Informix's byte/blob columns, also a
-		// hard error rather than silent mangling.
+		// same for Informix's byte/blob columns, also a hard error
 		usecharforlobbind=false;
 	}
 
-	// Unlike MS SQL Server, none of the three arms above need
-	// describenullbinds: measured live, a character null bind executes
-	// fine into a nullable binary/blob column on ASE (both drivers), DB2
-	// and Informix, so there's nothing there for SQLDescribeParam to fix.
+	// none of the three arms above need describenullbinds: measured live,
+	// a character null bind executes fine into a nullable binary/blob
+	// column on ASE (both drivers), DB2 and Informix
 
-	// Generic odbc: any other driver, including third-party ones this
-	// module has never been tested against, keeps the safe default
-	// (usecharforlobbind=true) unless a site opts in explicitly via the
-	// "binarylobbind" connect string option, having tested its own
-	// driver.  That override also applies on top of the arms above, but
-	// there it's a no-op since they already cleared the flag.
+	// any untested driver keeps the safe character bind unless a site
+	// opts in with "binarylobbind"
 	if (binarylobbind) {
 		usecharforlobbind=false;
 	}
@@ -3949,11 +3909,6 @@ bool odbccursor::allocateStatementHandle() {
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
-// Whether the parameter at pos is aimed at a binary column.  Only a null
-// bind needs to ask - every other bind knows its own type - and only on a
-// back end that won't implicitly convert a character parameter to a binary
-// one.  Answering false is always safe: it keeps the character bind that has
-// been the only behaviour up to now.
 bool odbccursor::nullBindIsBinary(uint16_t pos) {
 
 	if (!odbcconn->describenullbinds || !odbcconn->hasdescribeparam) {
@@ -3970,10 +3925,10 @@ bool odbccursor::nullBindIsBinary(uint16_t pos) {
 		return nullbindisbinary[pos-1];
 	}
 
-	// A failed describe is the ordinary case for a parameter whose type
-	// the back end can't deduce - "select ?" is the obvious one - so it
-	// isn't an error, just an answer of "no".  The diagnostic it leaves
-	// on stmt is cleared by the SQLBindParameter that follows.
+	// a failed describe isn't an error, just an answer of "no", for a
+	// parameter whose type the back end can't deduce ("select ?")
+	// (the diagnostic it leaves on stmt is cleared by the next
+	// SQLBindParameter)
 	SQLSMALLINT	datatype=0;
 	#ifdef SQLBINDPARAMETER_SQLLEN
 	SQLULEN		parametersize=0;
@@ -4009,21 +3964,18 @@ bool odbccursor::inputBind(const char *variable,
 
 	if (*isnull==SQL_NULL_DATA) {
 
-		// A null bind is generic - one SQLBindParameter call serves
-		// every bind type and every column type, because the client
-		// api flattens a null lob bind into a plain null bind before
-		// it reaches the wire.  So the only way to tell whether this
-		// one is aimed at a binary column is to ask the driver.
+		// the client api flattens a null lob bind into a plain null
+		// bind, so the only way to tell whether this one is aimed at
+		// a binary column is to ask the driver
 		SQLSMALLINT	paramtype=SQL_VARCHAR;
 		if (nullBindIsBinary(pos)) {
 
 			// SQL_VARBINARY rather than whatever the driver
 			// actually said - a ColumnSize of 0 is allowed with
-			// SQL_VARBINARY but not SQL_LONGVARBINARY (see #975),
-			// and this is the same call that
-			// odbccursor::inputBindBlob()'s null arm already
-			// makes, which is known to reach binary, varbinary
-			// and image alike.
+			// SQL_VARBINARY but not SQL_LONGVARBINARY, and this is
+			// the same call that inputBindBlob()'s null arm
+			// already makes, which is known to reach binary,
+			// varbinary and image alike
 			paramtype=SQL_VARBINARY;
 		}
 
@@ -4355,7 +4307,7 @@ bool odbccursor::inputBindBlob(const char *variable,
 
 	if (*isnull==SQL_NULL_DATA) {
 
-		// see the "see #6232" comment in inputBind() for why a
+		// see the ColumnSize note in inputBind() for why a
 		// ColumnSize of 0 works here
 		inbindlength[pos-1]=SQL_NULL_DATA;
 
@@ -4373,11 +4325,9 @@ bool odbccursor::inputBindBlob(const char *variable,
 		return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 	}
 
-	// StrLen_or_IndPtr has to be passed for a binary bind.  If it's
-	// NULL then the driver looks for a null terminator to find the end
-	// of the value, and a binary value can contain nulls of its own.
-	// (Passing NULL here used to truncate any value containing a 0
-	// byte at the first one.)
+	// StrLen_or_IndPtr has to be passed for a binary bind - if it's NULL
+	// then the driver looks for a null terminator to find the end of the
+	// value, and a binary value can contain nulls of its own
 	inbindlength[pos-1]=valuesize;
 
 	// SQL Server rejects a ColumnSize over 8000 for a SQL_VARBINARY,
@@ -4386,12 +4336,12 @@ bool odbccursor::inputBindBlob(const char *variable,
 	SQLSMALLINT	paramtype=(valuesize>8000)?
 					SQL_LONGVARBINARY:SQL_VARBINARY;
 
-	// a ColumnSize of 0 is invalid here - see "see #975" in inputBind()
+	// a ColumnSize of 0 is invalid here - see the ColumnSize note
+	// in inputBind()
 	uint32_t	columnsize=(valuesize)?valuesize:1;
 
 	// values over the threshold get sent in pieces via SQLPutData,
-	// deferred until executeQuery() calls SQLParamData - see the
-	// BLOB_BIND_CHUNK_THRESHOLD comment above
+	// deferred until executeQuery() calls SQLParamData
 	if (valuesize>BLOB_BIND_CHUNK_THRESHOLD) {
 
 		delete inblobbind[pos-1];
@@ -4410,10 +4360,8 @@ bool odbccursor::inputBindBlob(const char *variable,
 					paramtype,
 					columnsize,	// in bytes
 					0,
-					// token handed back by SQLParamData
-					// in executeQuery(), identifying
-					// which blobbind to pull the value
-					// from
+					// token handed back by
+					// SQLParamData in executeQuery()
 					(SQLPOINTER)bb,
 					0,		// in bytes
 					&(inbindlength[pos-1]));
@@ -4455,9 +4403,9 @@ bool odbccursor::outputBind(const char *variable,
 
 	charbind	*cb=new charbind;
 	cb->value=value;
-	// This has to be buffersize.  The reduction above turns valuesize into
-	// a column size in characters, but the post-execute conversion needs
-	// the size of the buffer in bytes.
+	// buffersize, not valuesize - the reduction above turns valuesize into
+	// a column size in characters, and the post-execute conversion needs
+	// the size of the buffer in bytes
 	cb->valuesize=(uint32_t)buffersize;
 
 	outdatebind[pos-1]=NULL;
@@ -4627,17 +4575,11 @@ bool odbccursor::inputOutputBind(const char *variable,
 	SQLSMALLINT	valtype=SQL_C_CHAR;
 	SQLSMALLINT	paramtype=SQL_CHAR;
 	SQLLEN		buffersize=valuesize;
-	// Bytes of valid data (excluding the null terminator) already
-	// sitting in the bind buffer, in whichever encoding actually gets
-	// bound below.  Used to set the StrLen_or_IndPtr so the driver
-	// sees the whole input value, and no more.
+	// bytes of valid data in the bind buffer, excluding the null
+	// terminator, in whichever encoding gets bound below
 	size_t		indicatorlen=charstring::getLength(value);
-	// Scratch buffer for the unicode case, sized to hold the
-	// converted value (and to give the driver as much room to write
-	// output back as the caller's buffer implies).  Left NULL, and
-	// "value" bound directly, for the non-unicode case, and for a
-	// null bind (which is bound as SQL_C_BINARY below and never reads
-	// this buffer).
+	// scratch buffer for the unicode case; left NULL, and "value"
+	// bound directly, otherwise
 	byte_t		*ucsvalue=NULL;
 	SQLLEN		ucsvaluesize=0;
 	#ifdef HAVE_SQLCONNECTW
@@ -4660,14 +4602,9 @@ bool odbccursor::inputOutputBind(const char *variable,
 		size_t	sizetocopy=stringSize(valueucs,encoding);
 		indicatorlen=sizetocopy-nullSize(encoding);
 
-		// Convert into a scratch buffer instead of truncating the
-		// converted value back into "value".  "value" was sized
-		// for the utf-8 form; ucs-2 needs up to twice that, so
-		// reusing it silently cut the value down to the utf-8
-		// size.  Size the scratch buffer to the larger of the
-		// converted value and double the caller's buffer, so it
-		// has room for both the converted input and any output
-		// the driver writes back.
+		// convert into a scratch buffer rather than back into
+		// "value" - "value" was sized for the utf-8 form, and
+		// ucs-2 needs up to twice that
 		ucsvaluesize=(SQLLEN)((size_t)valuesize*2);
 		if (ucsvaluesize<(SQLLEN)sizetocopy) {
 			ucsvaluesize=(SQLLEN)sizetocopy;
@@ -4925,12 +4862,8 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 		erg=SQLExecute(stmt);
 	}
 
-	// any binary blob bind that inputBindBlob() deferred with
-	// SQL_LEN_DATA_AT_EXEC (see BLOB_BIND_CHUNK_THRESHOLD) leaves the
-	// execute above returning SQL_NEED_DATA; SQLParamData hands back
-	// the blobbind token for each one in turn, and the value is sent
-	// piecewise via SQLPutData until SQLParamData reports there's
-	// nothing left to send
+	// send any blob bind that inputBindBlob() deferred piecewise via
+	// SQLPutData (see BLOB_BIND_CHUNK_THRESHOLD)
 	if (erg==SQL_NEED_DATA) {
 		SQLPOINTER	token=NULL;
 		while ((erg=SQLParamData(stmt,&token))==SQL_NEED_DATA) {
@@ -4990,10 +4923,7 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
-	// Data isn't written to the output bind buffers (at least with the
-	// Microsoft ODBC Driver) until SQLMoreResults() returns SQL_NO_DATA.
-	// If the query returned rows, then they have to be buffered before
-	// the result sets can be drained, or draining would throw them away.
+	// get the output binds written
 	if (!cacheRowsAndDrainResultSets()) {
 		return false;
 	}
@@ -5089,8 +5019,7 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 			char		*value=inoutcharbind[i]->value;
 			uint32_t	valuesize=inoutcharbind[i]->valuesize;
 			// the driver wrote its output into the scratch
-			// buffer (if one was allocated for the bind),
-			// not into the undersized caller buffer
+			// buffer, if the bind allocated one
 			byte_t		*ucsvalue=inoutcharbind[i]->ucsvalue;
 			char		*err=NULL;
 			byte_t		*u=convertCharset(
@@ -5231,13 +5160,8 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 
 				// SQL_DESC_TYPE is the "verbose" type -
 				// SQL_DATETIME for a date, time or timestamp
-				// column alike, on drivers that follow the
-				// spec.  SQL_DESC_CONCISE_TYPE discriminates
-				// those - SQL_TYPE_DATE, SQL_TYPE_TIME or
-				// SQL_TYPE_TIMESTAMP - on every driver seen
-				// so far, but not MS SQL Server's datetime vs.
-				// datetime2 (see the type name check below),
-				// so keep both.
+				// column alike - and SQL_DESC_CONCISE_TYPE
+				// discriminates those, so keep both
 				column[i].concisetype=column[i].type;
 				if (column[i].type==SQL_DATETIME) {
 					erg=SQLColAttribute(stmt,i+1,
@@ -5251,12 +5175,9 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 				}
 
 				// column type name
-				// MS SQL Server reports datetime and datetime2
-				// identically - SQL_DESC_TYPE SQL_DATETIME,
-				// SQL_DESC_CONCISE_TYPE SQL_TYPE_TIMESTAMP,
-				// and a datetime2(3) even has the same length,
-				// precision and scale as a datetime.  The type
-				// name is the only way to tell them apart.
+				// (MS SQL Server reports datetime and
+				// datetime2 identically, so the type name is
+				// the only way to tell them apart)
 				SQLSMALLINT	dbtypenamesize;
 				erg=SQLColAttribute(stmt,i+1,SQL_DESC_TYPE_NAME,
 						column[i].dbtypename,
@@ -5716,10 +5637,7 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 			return NTEXT_DATATYPE;
 		case SQL_DECIMAL:
 			// MS SQL Server reports money, smallmoney and
-			// decimal the same way here, so go by the type name.
-			// They aren't decimals - they're fixed scale-4 types
-			// with their own wire format, and a client that
-			// describes the column can tell.
+			// decimal the same way here, so go by the type name
 			if (!charstring::compareIgnoringCase(
 					column[i].dbtypename,"money")) {
 				return MONEY_DATATYPE;
@@ -5763,11 +5681,9 @@ uint16_t odbccursor::getColumnType(uint32_t i) {
 					column[i].dbtypename,"datetime")) {
 				return DATETIME_DATATYPE;
 			}
-			// Most other drivers put SQL_DATETIME here for a
-			// date, time and timestamp column alike (this is
-			// the "verbose" type).  SQL_DESC_CONCISE_TYPE
-			// discriminates them - SQL_TYPE_DATE, SQL_TYPE_TIME
-			// or SQL_TYPE_TIMESTAMP - so use it here instead.
+			// most other drivers put SQL_DATETIME here for a
+			// date, time and timestamp column alike, so go by
+			// the concise type
 			switch (column[i].concisetype) {
 				case SQL_TYPE_DATE:
 					return DATE_DATATYPE;
@@ -5876,42 +5792,33 @@ bool odbccursor::noRowsToReturn() {
 	return (!ncols);
 }
 
-// Cap on how much of a result set will be buffered to get at the output binds
-// behind it.  A result set larger than this keeps all of its rows - the ones
-// that were buffered are just served from the buffer first - but the output
-// binds are left unwritten, because the result sets can't be drained without
-// losing the rest of the rows.
+// cap on how much of a result set will be buffered to get at the output
+// binds behind it
 #define MAXOUTPUTBINDROWCACHESIZE (16*1024*1024)
 
 bool odbccursor::cacheRowsAndDrainResultSets() {
 
 	// At least with the Microsoft ODBC Driver, a stored procedure's output
 	// parameters and return status don't reach the bind buffers until
-	// SQLMoreResults() has returned SQL_NO_DATA.  They arrive at the end of
-	// the wire protocol's token stream, after the rows, so no driver can
-	// hand them over any earlier.
-	//
-	// The protocol modules send the output bind values as part of the
-	// result set header, ahead of the rows, so the values have to be in
-	// hand by the time this method returns.  That means the rows have to be
-	// buffered here, and the result sets drained, before the caller copies
-	// the output binds out.
+	// SQLMoreResults() has returned SQL_NO_DATA.  The protocol modules send
+	// the output bind values ahead of the rows, though, so the rows have to
+	// be buffered here, and the result sets drained, before the caller
+	// copies the output binds out.
 
 	// nothing to drain if the query has no output binds
 	if (!getOutputBindCount() && !getInputOutputBindCount()) {
 		return true;
 	}
 
-	// If the query didn't return any rows then there's nothing to buffer,
-	// and the driver has already written the bind buffers.  This is the
-	// case for a plain rpc, and it worked before any of this existed.
+	// no rows means nothing to buffer, and the driver has already written
+	// the bind buffers
 	if (!ncols) {
 		return true;
 	}
 
-	// Lob fields are read from the live statement with SQLGetData, so they
-	// can't be buffered.  Leave the result set alone rather than lose them,
-	// and let the output binds go unwritten.
+	// lob fields are read from the live statement with SQLGetData, so they
+	// can't be buffered - leave the result set alone rather than lose them,
+	// and let the output binds go unwritten
 	for (SQLSMALLINT i=0; i<ncols; i++) {
 		if (isLob(column[i].type)) {
 			return true;
@@ -5930,11 +5837,9 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 			break;
 		}
 
-		// If the result set is too big to buffer then stop here.  The
-		// rows that were buffered are still served from the buffer,
-		// and the rest still come from the statement, so no row is
-		// lost.  The result sets just don't get drained, so the output
-		// binds keep whatever they were initialized to.
+		// too big to buffer - no row is lost, but the result sets
+		// don't get drained, so the output binds keep whatever they
+		// were initialized to
 		if (!cacheCurrentRow(&cachedrows,&cachedbytes)) {
 			currentcachedrow=cachedrows.getFirst();
 			cachedrowsarecomplete=false;
@@ -5942,13 +5847,9 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 		}
 	}
 
-	// Save this result set's own column metadata before walking off of
-	// it below.  Draining the rest of the result sets to get at the
-	// output binds behind them means advancing past this one with
-	// SQLMoreResults(), and any result set behind it that also gets
-	// buffered (see cacheResultSetsAfterFirst(), so nextResultSet() can
-	// replay the walk) reuses handleColumns(), which overwrites
-	// column[]/ncols/affectedrows in place as it goes.
+	// save this result set's own column metadata before walking off of it
+	// below - handleColumns() overwrites column[]/ncols/affectedrows in
+	// place for each result set the walk describes
 	odbccolumn	*firstcolumn=new odbccolumn[ncols];
 	for (SQLSMALLINT i=0; i<ncols; i++) {
 		firstcolumn[i]=column[i];
@@ -5976,17 +5877,6 @@ bool odbccursor::cacheRowsAndDrainResultSets() {
 	return true;
 }
 
-// Walks whatever result sets come after the current one with
-// SQLMoreResults(), buffering each one's column metadata and rows (see
-// odbccachedresultset) so nextResultSet() can replay them once the walk
-// reaches the end.  A result set that can't be buffered - too big (the
-// same cap cacheCurrentRow() applies to the current result set), or
-// containing lob columns (which are read live with SQLGetData, not bound)
-// - can't be un-advanced-past once SQLMoreResults() has moved beyond it,
-// so buffering just stops there; per ODBC, SQLMoreResults() discards
-// whatever of a result set wasn't fetched, so the walk still runs on to
-// SQL_NO_DATA to get the output binds written, it just stops adding to the
-// cache. Returns false only on a real driver error.
 bool odbccursor::cacheResultSetsAfterFirst(uint64_t *cachedbytes) {
 
 	clearCachedResultSets();
@@ -6010,17 +5900,17 @@ bool odbccursor::cacheResultSetsAfterFirst(uint64_t *cachedbytes) {
 		}
 
 		// once a result set couldn't be buffered, there's no way back
-		// to it - just keep draining without describing or binding
-		// anything further
+		// to it - just keep draining, without describing or binding
+		// anything further (per ODBC, SQLMoreResults() discards
+		// whatever of a result set wasn't fetched)
 		if (!stillcaching) {
 			continue;
 		}
 
-		// Column bindings persist by ordinal across SQLMoreResults(),
+		// column bindings persist by ordinal across SQLMoreResults(),
 		// and a stale binding for an ordinal the new result set
-		// doesn't have is left alone rather than cleared - so this
-		// result set has to be described and bound from scratch,
-		// exactly like nextResultSet() does.
+		// doesn't have is left alone rather than cleared, so describe
+		// and bind this one from scratch
 		if (!handleColumns(true,true)) {
 			return false;
 		}
@@ -6079,9 +5969,8 @@ bool odbccursor::cacheResultSetsAfterFirst(uint64_t *cachedbytes) {
 bool odbccursor::cacheCurrentRow(singlylinkedlist<unsigned char *> *rows,
 						uint64_t *cachedbytes) {
 
-	// A buffered row is the indicator and data of each column, in column
-	// order, packed one after another.  A null or empty field contributes
-	// its indicator and no data.
+	// a buffered row is the indicator and data of each column, in column
+	// order, packed one after another
 	uint64_t	rowsize=0;
 	for (SQLSMALLINT i=0; i<ncols; i++) {
 		rowsize=rowsize+sizeof(indicator[i]);
@@ -6112,9 +6001,6 @@ bool odbccursor::cacheCurrentRow(singlylinkedlist<unsigned char *> *rows,
 	return true;
 }
 
-// (Re)establishes column[]/ncols (and the field[]/indicator[] buffers that
-// go with them) as "savedcolumn"/"savedncols", respecting the same
-// maxcolumncount-driven reuse-vs-reallocate rule as handleColumns().
 void odbccursor::restoreColumnBuffers(odbccolumn *savedcolumn,
 						SQLSMALLINT savedncols) {
 	ncols=savedncols;
@@ -6156,10 +6042,9 @@ bool odbccursor::fetchRow(bool *error) {
 
 	*error=false;
 
-	// If the rows were buffered up front, to get at the output binds behind
-	// them, then serve them from the buffer.  When the buffer runs out,
-	// either the result set is done, or the buffer hit its cap and the rest
-	// of the rows still have to come from the statement.
+	// serve buffered rows first; when the buffer runs out, either the
+	// result set is done, or the buffer hit its cap and the rest still
+	// have to come from the statement
 	if (currentcachedrow) {
 		fetchCachedRow();
 		return true;
@@ -6336,10 +6221,8 @@ bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
 		return true;
 	}
 
-	// Once cacheRowsAndDrainResultSets() has walked off of the end of the
-	// driver's own result sets, there's nothing left there to advance to -
-	// but serve whatever it buffered along the way instead of reporting
-	// none available.
+	// once the drain has walked off of the end of the driver's own result
+	// sets, serve whatever it buffered along the way
 	if (resultsetsdrained) {
 		useNextCachedResultSet(nextresultsetavailable);
 		return true;
@@ -6364,18 +6247,15 @@ bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
 		return false;
 	}
 
-	// Column bindings persist by ordinal across SQLMoreResults(), and a
-	// stale binding for an ordinal that the new result set doesn't have is
-	// left alone rather than cleared.  So the new result set has to be
-	// described and bound from scratch, exactly like the first one.
+	// column bindings persist by ordinal across SQLMoreResults(), and a
+	// stale binding for an ordinal the new result set doesn't have is left
+	// alone rather than cleared, so describe and bind from scratch
 	initializeRowCounts();
 	if (!handleColumns(true,true)) {
 		// handleColumns() may have already freed and reallocated the
-		// column buffers for the new result set before failing, so
-		// ncols has to be zeroed here too - otherwise the caller's
-		// cached column-header snapshot (which it only refreshes on
-		// success) is left describing a result set whose backing
-		// buffers are gone.
+		// column buffers before failing, so zero ncols too - the
+		// caller's cached column-header snapshot is only refreshed on
+		// success
 		ncols=0;
 		return false;
 	}
@@ -6392,11 +6272,6 @@ bool odbccursor::nextResultSet(bool *nextresultsetavailable) {
 	return true;
 }
 
-// Pops the next result set that cacheRowsAndDrainResultSets() buffered (see
-// cacheResultSetsAfterFirst()) and makes it the active one, exactly as if
-// SQLMoreResults() had just advanced onto it live: column[]/ncols/
-// affectedrows describe it, and its rows are served through cachedrows/
-// currentcachedrow, the same as the first result set's own cached rows.
 void odbccursor::useNextCachedResultSet(bool *nextresultsetavailable) {
 
 	listnode<odbccachedresultset *>	*node=cachedresultsets.getFirst();

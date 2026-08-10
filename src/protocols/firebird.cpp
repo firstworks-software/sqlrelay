@@ -233,7 +233,7 @@
 
 // the highest version the module can negotiate
 // (13 and up must answer op_accept_data or op_cond_accept and drive the auth
-// plugin handshake, which the module doesn't implement - see #8947)
+// plugin handshake, which the module doesn't implement)
 #define MAX_PROTOCOL_VERSION	PROTOCOL_VERSION12
 
 // how many offered protocols the connect block can carry
@@ -824,10 +824,10 @@
 #define BLOB_SEEK_END		2
 
 // how wide a bind variable says it is
-// (SQL Relay only knows a bind's position, never its type, so a bind
-// describes as a string, and this is the width it claims - big enough for
-// anything a client is likely to send, small enough that a client sizing a
-// buffer per parameter doesn't notice)
+// (a bind whose type the module couldn't work out describes as a string, and
+// this is the width it claims - big enough for anything a client is likely to
+// send, small enough that a client sizing a buffer per parameter doesn't
+// notice)
 #define FIREBIRD_BIND_LENGTH	4000
 
 // status vector items
@@ -913,12 +913,12 @@
 #define P_REQ_async	1
 
 // the largest counted string or buffer the module will read
-// (firebird's api types every length these carry as a short - see
-// isc_attach_database and isc_database_info in ibase.h - and firebird's own
-// decoder folds a sign-extended 0xffffffff back down to 0xffff)
+// (firebird's api types these lengths as a short - see isc_attach_database
+// and isc_database_info in ibase.h - and its own decoder folds a
+// sign-extended 0xffffffff back down to 0xffff)
 #define MAX_CSTRING_LENGTH	65535
 
-// one field of a message, as the blr that came with it describes it
+// one field of a message, as the blr describes it
 struct sqlrfirebirdfield {
 	byte_t		blrtype;
 	int16_t		scale;
@@ -934,51 +934,36 @@ struct sqlrfirebirdbind {
 };
 
 // what the module knows about a statement the client allocated
-// (the statement handle is the cursor id plus one, so a handle is never 0,
-// and no separate handle-to-cursor map is needed - see getStatement())
 struct sqlrfirebirdstatement {
 	uint32_t		stmttype;
 	bool			prepared;
-	// the result set was opened by prepareStatement(), so execute()
-	// must not open it a second time - see prepareStatement()
 	bool			preexecuted;
 	bool			cursoropen;
 	char			*cursorname;
-	// the message format of the last op_fetch, kept because the client
-	// only sends the blr on the first fetch of a cursor
+	// the blr comes only with the first fetch of a cursor
 	sqlrfirebirdfield	*outfields;
 	uint16_t		outfieldcount;
-	// what each bind variable describes as, or NULL when the module
-	// couldn't work it out - see describeBinds()
+	// NULL when describeBinds() couldn't work the types out
 	sqlrfirebirdbind	*binds;
 	uint16_t		bindcount;
 	bool			bindsdescribed;
 };
 
-// a blob the session is holding - either one the client built with
-// op_create_blob and will bind, or one a fetched column handed out an id for
+// a blob the session is holding, either built by the client or fetched
 struct sqlrfirebirdblob {
-	// unique within the session, non-zero, and the low word of the
-	// ISC_QUAD the client sees - see newBlob()
 	uint32_t	id;
 	// non-zero only between an open and the close that ends it
 	uint32_t	handle;
-	// the client built this one and may still bind it
 	bool		iswrite;
-	// the bytes, and the lengths of the segments they arrived in
 	bytebuffer	data;
 	bytebuffer	seglengths;
 	uint32_t	segcount;
 	uint32_t	maxseglength;
-	// how far a read has got - the byte it will read next, which segment
-	// that byte is in, and where in the data that segment starts
+	// how far a read has got
 	uint64_t	readpos;
 	uint32_t	readseg;
 	uint64_t	readsegstart;
 	// what the bpb asked for, answered back as isc_info_blob_type
-	// (the sub type the bpb carries isn't kept - what decides whether a
-	// bound blob goes as a blob or a clob is the sub type the client's
-	// blr declares for that parameter, not the one the bpb asked for)
 	bool		isstream;
 };
 
@@ -1001,14 +986,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 		void	successStatusVector();
 		void	errorStatusVector(uint32_t gdscode);
-		// Builds the status vector a real firebird sends when it
-		// can't open the database file.  2.5, 3.0 and 4.0 all send
-		// it byte-for-byte, and the "open" and "No such file or
-		// directory" arguments below are theirs, captured off the
-		// wire.
 		void	openErrorStatusVector(const char *file);
-		// "blobid" is the whole 8-byte id, whose high word is what
-		// firebird calls the response's object id
 		bool	genericResponse(const char *title,
 						uint32_t objecthandle,
 						uint64_t blobid,
@@ -1315,79 +1293,52 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 		uint32_t	opcode;
 
-		// what connect() negotiated (see MAX_PROTOCOL_VERSION)
 		uint32_t	protocolversion;
 
 		char		*db;
 		char		*username;
 		char		*password;
-		// which dpb item the password came out of
-		// (a string literal - not owned, and not freed)
+		// which dpb item the password came out of (not owned)
 		const char	*authmethod;
 		char		*wd;
 		uint32_t	dbhandle;
 
 		uint32_t	statusvector[20];
-		// the values of the vector's string arguments, indexed
-		// alongside it - a non-null entry means that element is a
-		// string rather than an int
-		// (string literals or session-lifetime buffers - not owned,
-		// and not freed)
+		// the vector's string arguments, indexed alongside it, a
+		// non-null entry marking a string element (not owned)
 		const char	*statusvectorstr[20];
 		uint8_t		statusvectorlen;
 
-		// the transaction handle handed to the client
-		// (SQL Relay has one transaction per session, so there is one
-		// handle, and it is only valid between op_transaction and the
-		// commit or rollback that ends it)
 		uint32_t	trhandle;
 		bool		intransaction;
-		// the tpb asked for autocommit, so the commit or rollback
-		// that ends this transaction has nothing left to do
 		bool		trautocommit;
-		// The tpb asked for a read-only transaction.  SQL Relay has no
-		// way to ask a backend for one, so the transaction underneath
-		// is read-write and the module refuses writes itself - see
-		// isWriteStatement().
 		bool		trreadonly;
 
-		// how many statements the module can hold at once, and their
-		// state, indexed by cursor id
 		uint16_t	maxcursorcount;
 		sqlrfirebirdstatement	*statements;
 
-		// "?1", "?2", ... - what a bind variable is called when the
-		// wire format only gives its position
 		char		**bindvarnames;
 		int16_t		*bindvarnamesizes;
 
-		// The blobs the session is holding, oldest first, and how many
-		// bytes they add up to.  A blob id has to be unique within the
-		// session and non-zero, and the backend's own isn't reachable
-		// through the server API, so the module counts its own.
+		// the blobs the session is holding, oldest first
 		linkedlist< sqlrfirebirdblob * >	blobs;
 		uint64_t	blobbytes;
 		uint32_t	nextblobid;
 		uint32_t	nextblobhandle;
 
-		// staging buffer for reading a blob out of the backend, big
-		// enough that BLOB_SEGMENT_SIZE characters fit however wide a
-		// character is.  allocated on the first blob a session
-		// fetches, since most sessions fetch none.
+		// staging buffer for reading a blob out of the backend,
+		// allocated on the first blob a session fetches
 		char		*lobbuffer;
 
-		// a bind parameter named a blob the session doesn't have -
-		// see readMessage()
+		// a bind named a blob the session doesn't have
 		bool		badblobid;
 
-		// where errorResponse() keeps the text it was handed, since
-		// statusvectorstr doesn't own what it points at
+		// backs the text statusvectorstr doesn't own
 		stringbuffer	errormessage;
 		char		errorsqlstate[6];
 
 		bytebuffer	respbuffer;
 
-		// how big a response buffer the client is willing to accept
 		uint32_t	respbufferlen;
 };
 
@@ -1868,11 +1819,11 @@ bool sqlrprotocol_firebird::connect() {
 			return false;
 		}
 
-		// Only the first MAX_CNCT_VERSIONS offered protocols count, but
-		// every one the client sent still has to be read, or the rest
-		// of them would be misread as the next packet.  Firebird does
-		// the same - it reads p_cnct_count tuples and then clamps
-		// p_cnct_count.  See FB25 src/remote/protocol.cpp:294.
+		// only the first MAX_CNCT_VERSIONS count, but every one the
+		// client sent still has to be read, or the rest would be
+		// misread as the next packet
+		// (firebird does the same - see FB25
+		// src/remote/protocol.cpp:294)
 		if (i>=MAX_CNCT_VERSIONS) {
 			continue;
 		}
@@ -1951,7 +1902,7 @@ bool sqlrprotocol_firebird::connect() {
 	protocolversion=acptversion;
 
 	// FIXME: PROTOCOL_VERSION13 and up must answer op_accept_data or
-	// op_cond_accept here, and drive the auth plugin handshake (see #8947).
+	// op_cond_accept here, and drive the auth plugin handshake.
 	// MAX_PROTOCOL_VERSION keeps the negotiation below 13 until they can.
 	opcode=op_accept;
 	if (!writeInt(opcode,"accept op code",&byteswritten)) {
@@ -2005,11 +1956,8 @@ bool sqlrprotocol_firebird::attach() {
 	}
 	debugOpCode("attach op code",opcode);
 
-	// A client that means to create a database, drop one, or reach the
-	// service manager sends its own op here instead of op_attach, and the
-	// session loop never sees it, because this runs ahead of the loop.
-	// None of those are implemented, but the client gets told that rather
-	// than losing the connection with nothing to report.
+	// a create, drop or service-manager op arrives here instead of
+	// op_attach, ahead of the session loop that would otherwise see it
 	if (opcode!=op_attach) {
 		debugEnd();
 		return sendNotImplementedError();
@@ -2045,11 +1993,10 @@ bool sqlrprotocol_firebird::attach() {
 		debugDpbVersion(dpbversion);
 	}
 
-	// The version byte selects the item encoding.  isc_dpb_version1 gives
-	// each item a 1-byte value length, isc_dpb_version2 (the "wide"
-	// variant, which firebird sends only at protocol 13 and up) a 4-byte
-	// little-endian one.  Any other version byte leaves the framing
-	// unknown, so the walk below is skipped rather than guessed at.
+	// the version byte selects the item encoding - version1 gives each
+	// item a 1-byte value length, version2 a 4-byte little-endian one
+	// (any other version leaves the framing unknown, so the walk below is
+	// skipped rather than guessed at)
 	uint32_t	dpblensize=0;
 	if (dpbversion==isc_dpb_version1) {
 		dpblensize=1;
@@ -2212,12 +2159,12 @@ bool sqlrprotocol_firebird::attach() {
 							"user name",&username);
 				break;
 
-			// The password arrives one of two ways.  isc_dpb_password
-			// is the password itself, and isc_dpb_password_enc is
-			// firebird's legacy_auth hash of it.  fbclient rewrites
-			// the former into the latter, so a real firebird client
-			// always sends the hash; only clients that build the
-			// dpb themselves send the password.
+			// isc_dpb_password is the password itself and
+			// isc_dpb_password_enc firebird's legacy_auth hash
+			// of it
+			// (fbclient rewrites the former into the latter, so
+			// only a client that builds its own dpb sends the
+			// password)
 			case isc_dpb_password:
 				readStringFromBuffer(dpbvalue,dpbvaluelen,
 							"password",&password);
@@ -2580,7 +2527,9 @@ void sqlrprotocol_firebird::openErrorStatusVector(const char *file) {
 	statusvector[7]=isc_io_open_err;
 	// the errno text, already rendered
 	// (which is what isc_arg_interpreted means, as opposed to
-	// isc_arg_string, which the client renders itself)
+	// isc_arg_string, which the client renders itself.  this text and the
+	// "open" above are a real firebird's own, captured off the wire and
+	// byte-for-byte in 2.5, 3.0 and 4.0.)
 	statusvector[8]=isc_arg_interpreted;
 	statusvectorstr[9]="No such file or directory";
 	// end of vector...
@@ -2700,9 +2649,8 @@ bool sqlrprotocol_firebird::authenticate() {
 		return true;
 	}
 
-	// A failed login is answered with an op_response carrying nothing but
-	// isc_login, and no message text.  That is what a real firebird server
-	// sends, and the client renders the text from the code itself.
+	// isc_login and no message text is what a real firebird sends - the
+	// client renders the text from the code itself
 	errorStatusVector(isc_login);
 
 	// the response is sent, but the session still ends
@@ -2742,10 +2690,9 @@ bool sqlrprotocol_firebird::validateDatabase() {
 		condb=colon+1;
 	}
 
-	// A real firebird resolves the path on its own filesystem and looks
-	// up aliases.  Neither is available here - the file belongs to the
-	// database the connection module attached to, on whatever machine
-	// that is - so the comparison is of the strings, exactly.
+	// compare the strings exactly
+	// (a real firebird resolves the path on its own filesystem and looks
+	// up aliases, neither of which is available here)
 	bool	valid=!charstring::compare(condb,db);
 
 	if (getDebug()) {
@@ -2806,9 +2753,9 @@ bool sqlrprotocol_firebird::detach() {
 
 	debugEnd();
 
-	// A detach ends whatever is still open.  Firebird rejects a detach
-	// with a live transaction, but SQL Relay's session teardown rolls one
-	// back on its own, so there's nothing to gain by refusing here.
+	// end whatever is still open
+	// (firebird rejects a detach with a live transaction, but SQL Relay's
+	// session teardown rolls one back anyway)
 	clearStatements();
 	clearBlobs();
 	if (intransaction) {
@@ -2821,9 +2768,8 @@ bool sqlrprotocol_firebird::detach() {
 
 	successStatusVector();
 
-	// The client sends op_disconnect straight after this and then closes
-	// the socket, so the session ends either way.  Answering the detach
-	// and staying in the loop is what lets it.
+	// stay in the loop - the client sends op_disconnect straight after
+	// this and then closes the socket
 	return genericResponse("detach response",
 				0,0,
 				NULL,0,
@@ -2843,12 +2789,11 @@ bool sqlrprotocol_firebird::appendInfoItem(byte_t item,
 					const byte_t *value,
 					uint16_t valuelen) {
 
-	// A response buffer isn't filled to the brim.  The 4 is the item byte,
-	// the 2 length bytes, and 1 more held back for the trailing
-	// isc_info_end.  When the cluster doesn't fit, a bare isc_info_truncated
-	// takes its place, the reply gets no isc_info_end, and the status vector
-	// still says success - the marker in the buffer is the only signal.
-	// See INF_put_item.
+	// the 4 is the item byte, the 2 length bytes, and 1 more held back
+	// for the trailing isc_info_end
+	// (a cluster that doesn't fit is replaced by a bare isc_info_truncated,
+	// the reply gets no isc_info_end, and the status vector still says
+	// success - see INF_put_item)
 	if (respbuffer.getSize()+valuelen+4>=respbufferlen) {
 		if (respbuffer.getSize()<respbufferlen) {
 			write(&respbuffer,(byte_t)isc_info_truncated);
@@ -3135,14 +3080,12 @@ bool sqlrprotocol_firebird::infoDatabase() {
 				break;
 
 			case frb_info_att_charset:
-				// The module hands bytes through without
-				// transliterating them, so the attachment's
-				// character set is NONE.  Answering this one
-				// matters more than it looks: isql treats an
-				// isc_info_error for any item other than
-				// isc_info_firebird_version as proof it is
-				// talking to a pre-interbase-6 server, and
-				// resets its sql dialect to 1.
+				// the module transliterates nothing, so the
+				// character set is NONE
+				// (isql takes an isc_info_error for any item
+				// but isc_info_firebird_version as proof of a
+				// pre-interbase-6 server, and resets its sql
+				// dialect to 1)
 				fits=appendInfoInt(dbinfoitem,
 						FIREBIRD_CHARACTER_SET);
 				break;
@@ -3246,10 +3189,10 @@ bool sqlrprotocol_firebird::infoDatabase() {
 			case isc_info_user_names:
 				// one cluster per attached user, and the
 				// module has one session per attachment, like
-				// a classic-mode server.  A real server always
-				// names someone, so an attach that carried no
-				// user name in its dpb stands in the same one
-				// describeColumns() does.
+				// a classic-mode server
+				// (a real server always names someone, so an
+				// attach with no user name in its dpb gets the
+				// same stand-in appendInfoDescribe() uses)
 				fits=appendInfoCountedString(dbinfoitem,
 					(charstring::isNullOrEmpty(username))?
 							"SYSDBA":username);
@@ -3259,9 +3202,9 @@ bool sqlrprotocol_firebird::infoDatabase() {
 				// an item a real server wouldn't answer
 				// either - isc_info_window_turns,
 				// isc_info_license, and the wal and log-file
-				// families that predate firebird.  Nothing
-				// else lands here, on purpose - see the isql
-				// note on frb_info_att_charset above.
+				// families that predate firebird
+				// (nothing else lands here, on purpose - see
+				// the isql note on frb_info_att_charset above)
 				fits=appendInfoError(dbinfoitem);
 				break;
 		}
@@ -3345,7 +3288,8 @@ bool sqlrprotocol_firebird::transaction() {
 	// get each parameter...
 	// (the test is < rather than != because an item whose length walks
 	// past the end would otherwise never land on the end pointer, and the
-	// loop would run off the buffer - the bug #8967 fixed in the dpb walk)
+	// loop would run off the buffer - the dpb walk bounds the same case
+	// with an explicit over-run check)
 	while (tpbptr<tpbendptr) {
 
 		// get the parameter
@@ -3400,11 +3344,9 @@ bool sqlrprotocol_firebird::transaction() {
 	// clean up
 	delete[] tpb;
 
-	// SQL Relay has one transaction per session, and a client is free to
-	// ask for several - isql asks for one in sql and then asks again with
-	// this op.  Rather than refuse, every handle it asks for names the
-	// same underlying transaction, and whichever one it commits or rolls
-	// back ends it.
+	// every handle names the same underlying transaction - SQL Relay has
+	// one per session, but a client is free to ask for several (isql asks
+	// for one in sql and then asks again with this op)
 	if (!intransaction) {
 
 		// hint the backend before starting the transaction, so a
@@ -3413,10 +3355,8 @@ bool sqlrprotocol_firebird::transaction() {
 		// client-visible refusal of writes below
 		cont->setReadOnly(readonly);
 
-		// Autocommit and an explicit transaction are alternatives.  A
-		// tpb that asks for autocommit turns the connection's
-		// autocommit on and begins nothing, and the commit or
-		// rollback that ends it has nothing left to do.
+		// autocommit and an explicit transaction are alternatives, so
+		// a tpb that asks for autocommit begins nothing
 		bool	started=(autocommit)?
 				cont->setAutoCommitOn():
 				(cont->setAutoCommitOff() && cont->begin());
@@ -3430,9 +3370,8 @@ bool sqlrprotocol_firebird::transaction() {
 		trreadonly=readonly;
 	}
 
-	// A handle is only ever compared against 0 by the client, but making
-	// each one distinct keeps a stale handle from looking live in a debug
-	// log.
+	// a client only ever compares a handle against 0, but distinct ones
+	// keep a stale handle from looking live in a debug log
 	trhandle++;
 
 	if (getDebug()) {
@@ -3470,9 +3409,8 @@ bool sqlrprotocol_firebird::commit() {
 
 	debugEnd();
 
-	// A commit with nothing open is a no-op rather than an error.  The
-	// client may hold a handle from a transaction something else already
-	// ended - see transaction().
+	// a commit with nothing open is a no-op - the client may hold a handle
+	// from a transaction something else already ended
 	if (!intransaction) {
 		successStatusVector();
 		return genericResponse("commit response",
@@ -3926,14 +3864,14 @@ bool sqlrprotocol_firebird::setCursor() {
 					isc_bad_stmt_handle);
 	}
 
-	// The name is kept but never handed to the backend - see #9087.  SQL
-	// Relay has no way to name a backend cursor.  Firebird only takes a
-	// name between prepare and execute, and against a backend that can't
-	// describe a prepared statement it would be too late here anyway,
-	// since runPreparedQuery() has already run a select with no binds and
-	// opened the backend's cursor.  Naming and fetching works; "where
-	// current of" fails at the backend with the -504 a real server sends
-	// for a cursor that doesn't exist.
+	// the name is kept but never handed to the backend - SQL Relay has no
+	// way to name a backend cursor
+	// (firebird only takes a name between prepare and execute, and against
+	// a backend that can't describe a prepared statement it would be too
+	// late here anyway, since runPreparedQuery() has already run a select
+	// with no binds and opened the backend's cursor.  naming and fetching
+	// works; "where current of" fails at the backend with the -504 a real
+	// server sends for a cursor that doesn't exist.)
 	delete[] stmt->cursorname;
 	stmt->cursorname=cursorname;
 
@@ -4109,37 +4047,32 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 		return retval;
 	}
 
-	// A read-only tpb gets a read-write transaction from SQL Relay, which
-	// has no way to ask a backend for a read-only one, so the write is
-	// refused here instead.  This sits after the prepare, and only runs for
-	// exec immediate, because that's where a real server refuses - a
-	// prepare in a read-only transaction succeeds, and one against a table
-	// that doesn't exist still has to fail with the backend's own error
-	// rather than this one.  A real server sends nothing but a bare
+	// refuse the write here - SQL Relay can't ask a backend for a
+	// read-only transaction
+	// (after the prepare, and only for exec immediate, because that is
+	// where a real server refuses.  a prepare in a read-only transaction
+	// succeeds, and one against a missing table still has to fail with
+	// the backend's own error.  a real server refuses at the moment a
+	// record is modified, so an update matching no rows succeeds there
+	// and is refused here.  it sends nothing but the bare
 	// isc_read_only_trans, and the client turns that one code into sqlcode
 	// -817, sqlstate 42000 and "attempted update during read-only
-	// transaction" out of its own tables.  It refuses at the moment a
-	// record is actually modified, so an update or delete matching no rows
-	// succeeds there and is refused here.
+	// transaction" out of its own tables.)
 	if (execimmediate && trreadonly && isWriteStatement(stmttype)) {
 		cont->release(cursor);
 		return errorResponse(title,isc_read_only_trans);
 	}
 
-	// A firebird client expects op_prepare_statement to answer with the
-	// shape of the result set.  When the columns are already known - a
-	// backend that describes a prepared statement has just filled them in
-	// - there is nothing more to do.  Otherwise they only arrive when the
-	// query runs, so a select with nothing to bind is run here and
-	// execute() knows not to run it a second time.  A select with binds
-	// can't be, and describes as no columns - see #9144.
-	//
-	// The test is colCount() rather than columnInfoIsValidAfterPrepare().
-	// That one answers what the backend's cursor class can do, not what
-	// this prepare did, and prepareQuery() has three paths - faked binds,
-	// per-query faked binds, and a query needing intercept - that skip the
-	// describe on a backend whose class says it describes.  colCount()
-	// answers 0 in exactly those cases, which is the question being asked.
+	// a firebird client expects op_prepare_statement to answer with the
+	// shape of the result set, so when the columns aren't already known a
+	// select with nothing to bind is run here and execute() knows not to
+	// run it a second time
+	// (a select with binds can't be, and describes as no columns.  the
+	// test is colCount() rather than columnInfoIsValidAfterPrepare()
+	// because that one answers what the backend's cursor class can do,
+	// not what this prepare did - prepareQuery() has three paths that
+	// skip the describe on a backend whose class says it describes, and
+	// colCount() answers 0 in exactly those cases)
 	bool	executed=false;
 	if (execimmediate ||
 		((stmttype==isc_info_sql_stmt_select ||
@@ -4263,13 +4196,12 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 
 	bool	messageread=true;
 	if (inmsgcount && infieldcount) {
-		// The binds are about to be refilled from the message, so
-		// whatever the last execute allocated can go.  Without this a
-		// statement executed in a loop grows the pool every time, and
-		// a blob parameter makes each round a big one.  Clearing here
-		// rather than before the "if" is deliberate - nothing refills
-		// the binds when there is no message, and the backend is still
-		// pointing at them.
+		// the binds are about to be refilled from the message, so
+		// whatever the last execute allocated can go - without this a
+		// statement executed in a loop grows the pool every time
+		// (clearing inside the "if" is deliberate - nothing refills
+		// the binds when there is no message, and the backend is
+		// still pointing at them)
 		if (cursor) {
 			cont->getBindPool(cursor)->clear();
 		}
@@ -4439,11 +4371,10 @@ bool sqlrprotocol_firebird::execImmediate2() {
 		return false;
 	}
 
-	// The message arrives ahead of the query it belongs to, so it has to
-	// be bound to a cursor before there is anything to run on it.  Binds
-	// live on the cursor rather than on the query, so filling them first
-	// and preparing after works, as long as nothing clears them in
-	// between - see runPreparedQuery().
+	// the message arrives ahead of the query, so it has to be bound to a
+	// cursor before there is anything to run on it
+	// (binds live on the cursor rather than the query, so filling first
+	// and preparing after works - see runPreparedQuery())
 	sqlrservercursor	*cursor=cont->getCursor();
 	if (!cursor) {
 		delete[] infields;
@@ -4482,12 +4413,11 @@ bool sqlrprotocol_firebird::execImmediate2() {
 		return false;
 	}
 
-	// This op shares a struct with op_prepare_statement, so it carries
+	// this op shares a struct with op_prepare_statement, so it carries
 	// requested info items and a response buffer length that govern
-	// nothing here - its reply is an sql response, not an info response.
-	// Firebird's own server ignores both and its client sends zeros.  They
-	// still have to come off the socket, but the length goes into a local
-	// rather than the member, which only an info response reads.
+	// nothing here - its reply is an sql response, not an info response
+	// (they still have to come off the socket, but the length goes into a
+	// local rather than the member, which only an info response reads)
 	uint32_t	clienttrhandle;
 	uint32_t	stmthandle;
 	uint32_t	dialect;
@@ -4688,8 +4618,8 @@ bool sqlrprotocol_firebird::sendFetchResponse(sqlrservercursor *cursor,
 		}
 	}
 
-	// A batch that stopped because it filled up ends with status 0 and no
-	// message, and one that ran out of rows ends with 100.
+	// a batch that stopped because it filled up ends with status 0 and no
+	// message, and one that ran out of rows ends with 100
 	opcode=op_fetch_response;
 	if (!writeInt(opcode,"response op code",&byteswritten) ||
 		!writeInt((msgcount && sent==msgcount)?0:100,
@@ -4797,12 +4727,11 @@ sqlrfirebirdblob *sqlrprotocol_firebird::newBlob() {
 
 uint32_t sqlrprotocol_firebird::newBlobHandle() {
 
-	// A response carries the handle in a 16-bit field that firebird writes
-	// with xdr_short, which sign extends.  So a handle with the top bit
-	// set goes out fine and comes back as 0xffff8000 or higher, and stops
-	// matching.  Staying under 0x8000 is what keeps a handle able to make
-	// the round trip.  0 means "no blob", and a handle an open blob is
-	// using can't be handed out twice.
+	// a response carries the handle in a 16-bit field that firebird writes
+	// with xdr_short, which sign extends, so a handle at 0x8000 or above
+	// comes back as 0xffff8000 or higher and stops matching
+	// (0 means "no blob", and a handle an open blob is using can't be
+	// handed out twice)
 	for (uint32_t i=0; i<0x7fff; i++) {
 		nextblobhandle=(nextblobhandle+1)&0x7fff;
 		if (!nextblobhandle) {
@@ -4869,12 +4798,11 @@ void sqlrprotocol_firebird::clearBlobs() {
 
 void sqlrprotocol_firebird::trimBlobs() {
 
-	// Drop the oldest blobs nothing is reading and nothing can still bind,
-	// until the session is back under budget.  Their ids stop resolving,
-	// so a client that fetches more than MAX_BLOB_BUFFER of blob before
-	// opening any of the ids it got gets an error rather than an
-	// out-of-memory.  A single blob bigger than the budget is still served
-	// whole - the ceiling is on how many pile up, not on how big one is.
+	// drop the oldest blobs nothing is reading and nothing can still
+	// bind, until the session is back under budget
+	// (their ids stop resolving, so an over-budget client gets an error
+	// rather than an out-of-memory.  the ceiling is on how many pile up,
+	// not on how big one is.)
 	listnode< sqlrfirebirdblob * >	*node=blobs.getFirst();
 	while (node && blobbytes>MAX_BLOB_BUFFER) {
 		listnode< sqlrfirebirdblob * >	*next=node->getNext();
@@ -4999,10 +4927,9 @@ void sqlrprotocol_firebird::bufferBlob(sqlrservercursor *cursor,
 	uint64_t	loblength=0;
 	cont->getLobFieldLength(cursor,col,&loblength);
 
-	// Each read comes back at a segment boundary, because the firebird
-	// backend's read loop stops short when a stored segment ends.  So the
-	// client reads a blob back segmented the way the backend stored it,
-	// rather than the way the module happened to ask for it.
+	// each read comes back at a segment boundary, because the firebird
+	// backend's read loop stops short when a stored segment ends, so the
+	// client reads a blob back segmented the way the backend stored it
 	uint64_t	offset=0;
 	for (;;) {
 		uint64_t	charsread=0;
@@ -5143,10 +5070,9 @@ bool sqlrprotocol_firebird::openBlobCommon(const char *title, bool hasbpb) {
 		return errorResponse(title,isc_bad_segstr_id);
 	}
 
-	// Opening a blob that is already open keeps the handle it already has
-	// rather than taking a second one.  Abandoning the first would put its
-	// number back in the pool, and a client still holding it would then
-	// reach whichever blob got it next instead of getting an error.
+	// keep the handle an already-open blob has rather than taking a second
+	// one - abandoning the first would put its number back in the pool,
+	// and a client still holding it would reach whichever blob got it next
 	uint32_t	blobhandle=blob->handle;
 	if (!blobhandle) {
 		blobhandle=newBlobHandle();
@@ -5199,9 +5125,9 @@ bool sqlrprotocol_firebird::getSegment() {
 
 	debugEnd();
 
-	// The length is a USHORT that went over the wire sign-extended, and
+	// the length is a USHORT that went over the wire sign-extended, and
 	// firebird's own length fixup doesn't run on this one, so a client
-	// asking for 32768 or more arrives negative.
+	// asking for 32768 or more arrives negative
 	buflen=buflen&0xffff;
 
 	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
@@ -5210,10 +5136,10 @@ bool sqlrprotocol_firebird::getSegment() {
 					isc_bad_segstr_handle);
 	}
 
-	// Pack whole segments into the client's buffer, each behind a 2-byte
-	// little-endian length, until the buffer fills or the blob runs out.
-	// A segment only part of which fit says so, and the client renders
-	// that as isc_segment.
+	// pack whole segments into the client's buffer, each behind a 2-byte
+	// little-endian length, until the buffer fills or the blob runs out
+	// (a segment only part of which fit says so, and the client renders
+	// that as isc_segment)
 	const byte_t	*data=blob->data.getBuffer();
 	const uint32_t	*seglengths=
 			(const uint32_t *)blob->seglengths.getBuffer();
@@ -5314,11 +5240,9 @@ bool sqlrprotocol_firebird::putSegmentCommon(const char *title, bool batch) {
 		return errorResponse(title,isc_bad_segstr_handle);
 	}
 
-	// A blob the client is building can't be trimmed - it exists precisely
-	// so its id can still be bound - so trimBlobs() will never reclaim it
-	// and the ceiling has to be enforced here instead.  Refusing the write
-	// is what keeps a client that puts segments in a loop from growing the
-	// connection process without limit.
+	// enforce the ceiling here, since trimBlobs() will never reclaim a
+	// blob the client is still building, and a client that puts segments
+	// in a loop would grow the connection process without limit
 	trimBlobs();
 	if (blobbytes>MAX_BLOB_BUFFER) {
 		delete[] buf;
@@ -5383,9 +5307,8 @@ bool sqlrprotocol_firebird::seekBlob() {
 					isc_bad_segstr_handle);
 	}
 
-	// Firebird refuses a seek on a segmented blob, but the module holds
-	// every blob whole, so it can serve one either way and there is
-	// nothing to gain by refusing.
+	// firebird refuses a seek on a segmented blob, but the module holds
+	// every blob whole, so it can serve one either way
 	int64_t	total=(int64_t)blob->data.getSize();
 	int64_t	position=(int32_t)offset;
 	if (mode==BLOB_SEEK_END) {
@@ -5475,9 +5398,9 @@ bool sqlrprotocol_firebird::closeBlob() {
 					isc_bad_segstr_handle);
 	}
 
-	// The bytes outlive the handle.  A client creates a blob, fills it,
-	// closes it, and only then binds its id into an insert - and a blob id
-	// stays good until the transaction that made it ends.
+	// the bytes outlive the handle - a client binds a blob's id into an
+	// insert only after closing it, and the id stays good until the
+	// transaction that made it ends
 	blob->handle=0;
 	rewindBlob(blob,0);
 
@@ -5615,10 +5538,9 @@ bool sqlrprotocol_firebird::cancel() {
 
 	debugEnd();
 
-	// A client sends this unsolicited, right after attach and again
-	// mid-session, and reads no reply.  Answering it desynchronizes the
-	// connection.  There is nothing to cancel either - the module never
-	// has a query in flight while it is reading a request.
+	// answer nothing - a client sends this unsolicited and reads no reply,
+	// so answering desynchronizes the connection, and there is nothing to
+	// cancel while the module is reading a request anyway
 	return true;
 }
 
@@ -5688,10 +5610,9 @@ bool sqlrprotocol_firebird::cancelEvents() {
 
 bool sqlrprotocol_firebird::sendNotImplementedError() {
 
-	// An op the module doesn't implement still has its request sitting on
-	// the socket, unread, so the connection can't be reused.  The session
-	// ends either way - but it ends after the client has been told what
-	// went wrong, rather than with a socket that just closed.
+	// the unread request is still on the socket, so the connection can't
+	// be reused - the session ends either way, but it ends after the
+	// client has been told what went wrong
 	errorResponse("not implemented response",
 			isc_wish_list,"0A000",-901,
 			"Feature is not supported",24);
@@ -5720,11 +5641,11 @@ bool sqlrprotocol_firebird::errorResponse(const char *title,
 						const char *message,
 						uint32_t messagesize) {
 
-	// The buffers the vector points into have to outlive this call, since
-	// genericResponse() writes from them.  The message is copied by its
-	// length rather than as a string - what the server API hands back is
-	// a buffer with a size, and reading it as a string runs off the end
-	// of the text into whatever the buffer still held.
+	// the buffers the vector points into have to outlive this call, since
+	// genericResponse() writes from them
+	// (the message is copied by its length rather than as a string - the
+	// server API hands back a buffer with a size, and reading it as a
+	// string runs off the end of the text)
 	errormessage.clear();
 	if (message && messagesize) {
 		errormessage.append(message,messagesize);
@@ -5739,11 +5660,10 @@ bool sqlrprotocol_firebird::errorResponse(const char *title,
 	bytestring::zero(statusvector,sizeof(statusvector));
 	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
 
-	// The leading code is what the client renders as the first message and
-	// what it looks the sql state up under.  An isc_arg_sql_state element
-	// overrides the lookup, and the isc_sqlerr/isc_arg_number pair
-	// overrides the sql code the same way, so the backend's own code
-	// survives rather than being flattened to the leading code's.
+	// the leading code is what the client renders as the first message and
+	// what it looks the sql state up under
+	// (isc_arg_sql_state overrides the lookup, and isc_sqlerr with
+	// isc_arg_number overrides the sql code, so the backend's own survives)
 	uint8_t	i=0;
 	statusvector[i++]=isc_arg_gds;
 	statusvector[i++]=gdscode;
@@ -5796,21 +5716,20 @@ bool sqlrprotocol_firebird::sendCursorError(const char *title,
 					&errnum,&liveconnection);
 	}
 
-	// The firebird backend reports the sql code, negative, which is what
-	// a firebird client expects to read back out of the vector.  Any other
+	// the firebird backend reports the sql code, negative, which is what a
+	// firebird client expects to read out of the vector - any other
 	// backend reports whatever it reports, and a positive number isn't a
-	// sql code at all, so it gets the generic one.
+	// sql code at all
 	int32_t	sqlcode=(int32_t)errnum;
 	if (sqlcode>=0) {
 		sqlcode=-901;
 	}
 
-	// A real firebird leads an error from preparing a statement with
-	// isc_dsql_error, which renders as "Dynamic SQL Error", and an error
-	// from running one with whatever the failure itself was.  The module
-	// can't reach for the individual runtime codes, so the second case
-	// leads with isc_random and lets the backend's own text stand as the
-	// message.
+	// a real firebird leads a prepare error with isc_dsql_error, which
+	// renders as "Dynamic SQL Error", and a runtime error with whatever
+	// the failure was
+	// (the module can't reach the individual runtime codes, so the second
+	// case leads with isc_random and lets the backend's text stand)
 	return errorResponse(title,
 				(preparing)?isc_dsql_error:isc_random,
 				sqlStateForSqlCode(sqlcode),
@@ -5859,18 +5778,17 @@ const char *sqlrprotocol_firebird::sqlStateForSqlCode(int32_t sqlcode) {
 	}
 }
 
-// A firebird client expects isc_dsql_describe_bind to answer with each
-// parameter's type, and SQL Relay exposes a bind's position and nothing else -
-// see #9140 for the server api addition that would settle this properly.  For
-// an insert the module can derive the same answer the backend would give,
-// because the type of a value going into a column is the column's type: parse
-// the insert, run a select of the columns the binds feed that returns no rows,
-// and describe each bind as its column.  Anything that doesn't parse, or
-// doesn't line up, leaves binds NULL and describes as it always did.
 void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 					sqlrfirebirdstatement *stmt,
 					const byte_t *items,
 					uint32_t itemslen) {
+
+	// a firebird client expects isc_dsql_describe_bind to answer with
+	// each parameter's type, which the module works out for itself
+	// FIXME: ask the backend first, with getInputBindCountFromPrepare()
+	// and getInputBindType() - only the firebird backend implements them
+	// (for an insert the type of a value going into a column is the
+	// column's type, so a select of the columns the binds feed answers it)
 
 	// the probe below costs a query, so it only runs when the client
 	// actually asked for the bind describe, and only once per prepare
@@ -5901,9 +5819,9 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 							probequery);
 	}
 
-	// The probe is built from the table's own column names, not from the
-	// client's query, so a wide table makes it longer than the query that
-	// asked for it.  The cursor's buffer is maxquerysize+1.
+	// the probe is built from the table's own column names, not from the
+	// client's query, so a wide table can make it longer than the query
+	// that asked for it (the cursor's buffer is maxquerysize+1)
 	if (probequerylen>maxquerysize) {
 		if (getDebug()) {
 			stdoutput.printf("	bind describe probe too "
@@ -5953,9 +5871,6 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 	cont->release(probecursor);
 }
 
-// Builds the select that describeBinds() runs, and answers how many binds it
-// covers.  False means the query isn't a shape the module can resolve, which
-// is every shape but an insert whose bind variables are whole values.
 bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 						stringbuffer *probe,
 						uint16_t *bindcount) {
@@ -6007,16 +5922,12 @@ bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 	delete columns;
 	delete values;
 
-	// A bind that isn't a whole value - "values (?+1)" - leaves the count
+	// a bind that isn't a whole value - "values (?+1)" - leaves the count
 	// short, and there is no way to tell which column it belonged to, so
-	// the whole statement falls back rather than describing some of it.
+	// the whole statement falls back
 	return usable && found==*bindcount;
 }
 
-// Which marker styles are in play is the backend's business, and a protocol
-// module can't see the flags countBindVariables() consults, so this takes any
-// of the four SQL Relay knows.  No literal, identifier or function call in a
-// value list starts with one of them.
 bool sqlrprotocol_firebird::isBindMarker(const char *value) {
 
 	if (!value) {
@@ -6029,14 +5940,16 @@ bool sqlrprotocol_firebird::isBindMarker(const char *value) {
 		p++;
 	}
 
+	// take any of the four markers SQL Relay knows - a protocol module
+	// can't see the flags countBindVariables() consults, and no literal,
+	// identifier or function call in a value list starts with one
 	if (*p!='?' && *p!=':' && *p!='@' && *p!='$') {
 		return false;
 	}
 	p++;
 
-	// The marker has to be the whole value.  A bind inside an expression -
-	// "values (?+1)" - feeds no column on its own, and describing it as
-	// one would be a guess.
+	// the marker has to be the whole value - a bind inside an expression,
+	// "values (?+1)", feeds no column on its own
 	while (character::isAlphanumeric(*p) || *p=='_') {
 		p++;
 	}
@@ -6143,12 +6056,12 @@ bool sqlrprotocol_firebird::isTransactionStatement(uint32_t stmttype) {
 
 bool sqlrprotocol_firebird::isWriteStatement(uint32_t stmttype) {
 
-	// Only these three, and deliberately not the ddl type.  statementType()
-	// uses ddl as its catch-all, so "execute block" lands there, and a real
-	// server runs a read-only "execute block" that only selects.  Real ddl
-	// is refused by a real server, but with a compound reply carrying a dyn
-	// code per verb and the object name - see #9107.  "set generator" is
-	// allowed too, since generators are outside transaction control.
+	// only these three, and deliberately not ddl - statementType() uses
+	// ddl as its catch-all, so "execute block", which a real server runs
+	// read-only, lands there.  refusing real ddl needs the compound reply
+	// a real server sends, carrying a dyn code per verb and the object
+	// name, and "set generator" is allowed anyway, since generators are
+	// outside transaction control.
 	return (stmttype==isc_info_sql_stmt_insert ||
 		stmttype==isc_info_sql_stmt_update ||
 		stmttype==isc_info_sql_stmt_delete);
@@ -6156,12 +6069,11 @@ bool sqlrprotocol_firebird::isWriteStatement(uint32_t stmttype) {
 
 bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 
-	// A client can ask for a transaction in sql rather than with
-	// op_transaction, and isql does - it sends "set transaction" as its
-	// first statement and reads the new handle out of the response.
-	// These never reach the backend.  SQL Relay drives its transaction
-	// through the controller, and the sql itself would only fail on a
-	// backend with no such statement.
+	// a client can ask for a transaction in sql rather than with
+	// op_transaction - isql sends "set transaction" first and reads the
+	// new handle out of the response
+	// (these never reach the backend - SQL Relay drives its transaction
+	// through the controller)
 	switch (stmttype) {
 
 		case isc_info_sql_stmt_start_trans:
@@ -6482,13 +6394,12 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 
 void sqlrprotocol_firebird::fixupRespBufferLen() {
 
-	// This field was a 16 bit short in older versions of the protocol, so
-	// an older client sends a length of 32768 or more sign-extended into
-	// the 32 bit field.  Firebird folds that back down wherever the field
-	// appears - fixupLength() in its src/remote/protocol.cpp - so this
-	// does too.  It has to run before the cap below, because 0xffff8000
-	// means 32768, and capping first would hand that client a 65535
-	// ceiling.
+	// this field was a 16 bit short in older versions of the protocol, so
+	// an older client sends 32768 or more sign-extended into the 32 bit
+	// field, and firebird folds it back down wherever it appears - see
+	// fixupLength() in its src/remote/protocol.cpp
+	// (this has to run before the cap below, because 0xffff8000 means
+	// 32768, and capping first would hand that client a 65535 ceiling)
 	if ((respbufferlen&0xffff0000)==0xffff0000) {
 		if (getDebug()) {
 			stdoutput.printf("	folded sign-extended response "
@@ -6500,15 +6411,16 @@ void sqlrprotocol_firebird::fixupRespBufferLen() {
 		respbufferlen&=0xffff;
 	}
 
-	// The length never sizes an allocation here - it's only the ceiling
+	// the length never sizes an allocation here - it's only the ceiling
 	// that truncates the response - but a client that declares a huge one
 	// never truncates, so the response buffer grows to whatever the
-	// requested items produce.  Firebird's api types this length as a
-	// short, so a cap costs a real client nothing, and clamping rather
-	// than failing leaves the protocol's own truncation as the answer to
-	// too large an ask.  (Firebird itself allocates whatever the client
-	// declares, twice for op_info_database, with no ceiling - see
-	// rem_port::info() in its src/remote/server/server.cpp.)
+	// requested items produce
+	// (firebird's api types this length as a short, so a cap costs a real
+	// client nothing, and clamping rather than failing leaves the
+	// protocol's own truncation as the answer to too large an ask.
+	// firebird itself allocates whatever the client declares, twice for
+	// op_info_database, with no ceiling - see rem_port::info() in its
+	// src/remote/server/server.cpp.)
 	if (respbufferlen<=MAX_CSTRING_LENGTH) {
 		return;
 	}
@@ -6764,9 +6676,8 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 	uint16_t	itemcount=(uint16_t)(p[0]|(p[1]<<8));
 	p+=2;
 
-	// Each column is a value item and a null indicator, so the count is
-	// always even.  An odd one off the wire would round the array down and
-	// leave the last item writing past its end.
+	// the count is always even - an odd one off the wire would round the
+	// array down and leave the last item writing past its end
 	if (itemcount%2) {
 		if (getDebug()) {
 			stdoutput.printf("	odd blr item count: %u\n",
@@ -6885,9 +6796,9 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 					uint16_t fieldcount,
 					uint32_t *bytesread) {
 
-	// Everything the blr describes has to come off the socket, cursor or
-	// no cursor, or the connection desynchronizes.  Only the binding is
-	// conditional.
+	// everything the blr describes has to come off the socket, cursor or
+	// no cursor, or the connection desynchronizes - only the binding is
+	// conditional
 	memorypool		*bindpool=NULL;
 	sqlrserverbindvar	*inbinds=NULL;
 	if (cursor) {
@@ -7103,10 +7014,10 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 				bv->isnull=cont->getNonNullBindValue();
 
 				// hand the segment boundaries the client
-				// wrote down to along with the bytes, so a
-				// backend that has its own notion of
-				// segments (eg. firebird) can preserve them
-				// instead of re-chunking the flat buffer
+				// wrote along with the bytes, so a backend
+				// with its own notion of segments (eg.
+				// firebird) can preserve them instead of
+				// re-chunking the flat buffer
 				uint32_t	segcount=blob->segcount;
 				bv->segmentcount=(uint16_t)
 					((segcount>0xffff)?0xffff:segcount);
@@ -7223,8 +7134,8 @@ bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
 			return false;
 		}
 
-		// A null value still occupies its full width above - this is
-		// what actually says it is null.
+		// a null value still occupies its full width above - this is
+		// what actually says it is null
 		if (!writeInt((null)?0xffffffff:0,
 					"null indicator",byteswritten)) {
 			return false;
@@ -7317,13 +7228,12 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_quad:
 		case blr_blob2:
 			{
-			// A fetched blob is answered with an id rather than
-			// the data, and the backend's own id isn't reachable
-			// through the server API, so the module hands out one
-			// of its own.  The bytes have to be read here rather
-			// than when the client asks for them, because the
-			// fetch loop has moved on to the next row by then -
-			// see bufferBlob().
+			// a fetched blob is answered with an id of the
+			// module's own, since the backend's isn't reachable
+			// through the server API
+			// (the bytes are read here rather than when the
+			// client asks for them, because the fetch loop has
+			// moved on to the next row by then - see bufferBlob())
 			uint32_t	low=0;
 			if (!null) {
 				bufferBlob(cursor,col,value,
@@ -7447,9 +7357,8 @@ uint16_t sqlrprotocol_firebird::sqlType(uint16_t coltype) {
 		case _CHAR_DATATYPE:
 			return SQL_TEXT;
 
-		// Firebird has one lob type for everything, distinguished by
-		// its sub type, so every character and binary lob maps onto
-		// it.
+		// firebird has one lob type for everything, distinguished by
+		// its sub type, so every character and binary lob maps onto it
 		case BLOB_DATATYPE:
 		case CLOB_DATATYPE:
 		case DBCLOB_DATATYPE:
@@ -7512,10 +7421,9 @@ uint16_t sqlrprotocol_firebird::sqlLength(uint16_t sqltype,
 
 int16_t sqlrprotocol_firebird::sqlSubType(uint16_t coltype) {
 
-	// For a number, the sub type is what tells decimal from numeric -
-	// firebird stores both as a scaled integer and has nothing else to
-	// tell them apart with.  For text it is the character set id, and for
-	// a lob it is 0 for binary and 1 for text.
+	// for a number the sub type is what tells decimal from numeric -
+	// firebird stores both as a scaled integer.  for text it is the
+	// character set id, and for a lob 0 for binary and 1 for text.
 	switch (coltype) {
 		case NUMERIC_DATATYPE:
 			return 1;
@@ -7630,18 +7538,17 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 
 	for (uint32_t col=first; col<count; col++) {
 
-		// The sequence has to lead each group.  It is what says which
-		// column the items after it describe, and a client that sees
-		// it late rejects the whole reply.
+		// the sequence has to lead each group - it says which column
+		// the items after it describe, and a client that sees it late
+		// rejects the whole reply
 		if (!appendInfoInt(isc_info_sql_sqlda_seq,col+1)) {
 			return false;
 		}
 
-		// SQL Relay only knows a bind's position, never its type.
-		// describeBinds() works the types out for an insert; for
-		// anything else a bind describes as a nullable string of a
-		// generous width - the one shape every backend can convert
-		// from.
+		// describeBinds() works a bind's type out for an insert - a
+		// bind whose type it couldn't work out describes as a nullable
+		// string of a generous width, the one shape every backend can
+		// convert from
 		bool	described=bind && stmt && stmt->binds &&
 					col<stmt->bindcount;
 		uint16_t	coltype=(!bind)?
@@ -7861,10 +7768,9 @@ bool sqlrprotocol_firebird::buildSqlInfo(sqlrservercursor *cursor,
 int64_t sqlrprotocol_firebird::scaledInteger(const char *value,
 						int16_t scale) {
 
-	// A scaled number goes on the wire as an integer with the decimal
+	// a scaled number goes on the wire as an integer with the decimal
 	// point left out - 1.5 at scale -2 is 150 - so the digits have to be
-	// shifted rather than the value divided, or the last digit rounds
-	// away.
+	// shifted rather than the value divided, or the last digit rounds away
 	if (charstring::isNullOrEmpty(value)) {
 		return 0;
 	}
@@ -7914,11 +7820,11 @@ uint16_t sqlrprotocol_firebird::splitNumbers(const char *value,
 						int32_t *parts,
 						uint16_t maxparts) {
 
-	// The firebird connection module renders a date as yyyy:mm:dd, a time
+	// the firebird connection module renders a date as yyyy:mm:dd, a time
 	// as hh:mm:ss and a timestamp as "yyyy-mm-dd hh:mm:ss", so what
-	// separates the numbers varies but their order never does.  Pulling
-	// the numbers out in order sidesteps the ambiguity that a delimiter-
-	// driven parse runs into with a colon-delimited date.
+	// separates the numbers varies but their order never does
+	// (a delimiter-driven parse would be ambiguous on a colon-delimited
+	// date)
 	uint16_t	count=0;
 	const char	*p=value;
 	while (p && *p && count<maxparts) {

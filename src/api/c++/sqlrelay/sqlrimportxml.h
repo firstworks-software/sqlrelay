@@ -19,7 +19,7 @@ class SQLRCLIENT_DLLSPEC sqlrimportxml : virtual public sqlrimportfile,
 
 		/** Imports data from the file set by the most recent call to
 		 *  setFileName().  The table or sequence to import the data
-		 *  into will be deried from the name attribute of the table or
+		 *  into will be derived from the name attribute of the table or
 		 *  sequence tag inside the file and may be overridden using
 		 *  setObjectName().
 		 *

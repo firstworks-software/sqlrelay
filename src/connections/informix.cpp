@@ -2866,8 +2866,8 @@ bool informixcursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
-	// get column info now, if possible, so column accessors work
-	// before execute
+	// get column info now, if it's available yet, so the result set can
+	// be described before execute
 	return handleColumns(true,false);
 }
 
@@ -2877,10 +2877,9 @@ bool informixcursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 	erg=SQLNumResultCols(stmt,&ncols);
 	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 
-		// column info may not be valid until after execute for some
-		// queries (eg. ones whose result-set shape depends on an
-		// unbound parameter).  Tolerate that here, at prepare time,
-		// and let executeQuery() retry once the query has run.
+		// some query shapes (eg. unbound parameters) don't have
+		// valid column info at prepare time - let executeQuery()
+		// gather it after execute
 		if (!bindcolumns) {
 			columninfoisvalidafterprepare=false;
 			ncols=0;
@@ -3528,8 +3527,8 @@ bool informixcursor::executeQuery(const char *query, uint32_t size) {
 
 	checkForTempTable(query,size);
 
-	// get/bind column info; skip the describe step if it's already
-	// valid from prepareQuery()
+	// get column info, unless prepareQuery() already did, then bind the
+	// columns
 	if (!handleColumns(!columninfoisvalidafterprepare,true)) {
 		return false;
 	}
@@ -3962,11 +3961,9 @@ void informixcursor::closeResultSet() {
 		deallocateResultSetBuffers();
 	}
 
-	// the column buffers freed above no longer hold anything, so any
-	// query re-executed on this cursor without an intervening
-	// prepareQuery() (eg. the client protocol's re-execute) has to
-	// redescribe and rebind rather than trust the flag set by the
-	// original prepare
+	// force a redescribe and rebind - the buffers freed above no longer
+	// hold anything, and a query can be re-executed on this cursor with
+	// no intervening prepareQuery() (eg. the client protocol's re-execute)
 	columninfoisvalidafterprepare=false;
 
 	// NOTE: this is a bit of a kludge.

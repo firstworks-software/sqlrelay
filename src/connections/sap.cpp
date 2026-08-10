@@ -118,8 +118,7 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 
 		bool		dbused;
 
-		// the client charset's expansion factor, from the server's
-		// charset to the client's - see sapcursor::deflateColumnSize()
+		// charset expansion factor - see deflateColumnSize()
 		uint32_t	csexpansion;
 
 		char		*dbversion;
@@ -967,10 +966,9 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 	if (!usedversion) {
 
 		// An unrecognized locale fails here rather than at cs_locale,
-		// and the client library's own diagnostic - the locale name
-		// and the locales.dat it isn't in - goes to stderr before
-		// CS_MESSAGE_CB exists, so it can't be captured.  Naming the
-		// locale is all that can be done from here.
+		// and the client library's own diagnostic goes to stderr
+		// before CS_MESSAGE_CB exists, so naming the locale is all
+		// that can be done from here.
 		stringbuffer	ctxerror;
 		ctxerror.append("Failed to allocate/initialize "
 						"a context structure");
@@ -1145,12 +1143,11 @@ bool sapconnection::logIn(const char **error, const char **warning) {
 	//
 	// The ping asks for a 1-character column because it doubles as a
 	// charset calibration.  Once @@client_csexpansion is above 1, Open
-	// Client reports char/varchar/nchar/nvarchar/sysname/text columns at
-	// their byte width rather than their declared width, and no ctlib
-	// call reports @@client_csexpansion directly.  A 1-character column
-	// comes back already multiplied though, so its size is the factor -
-	// see sapcursor::deflateColumnSize().  This mirrors freetdsconnection
-	// ::logIn()'s identical calibration.
+	// Client reports character columns at their byte width rather than
+	// their declared width, and no ctlib call reports
+	// @@client_csexpansion directly, so a 1-character column's reported
+	// size is the factor - see sapcursor::deflateColumnSize().  This
+	// mirrors freetdsconnection::logIn()'s identical calibration.
 	bool	retval=true;
 	CS_COMMAND	*cmd;
 	if (ct_cmd_alloc(dbconn,&cmd)!=CS_SUCCEED) {
@@ -2871,14 +2868,11 @@ bool sapcursor::close() {
 	return retval;
 }
 
-// walk an rpc procedure name.  The name may be a bare token, or delimited
-// with double-quotes (the ASE spelling, under quoted_identifier) or square
-// brackets (the T-SQL/MS SQL Server spelling); either delimiter may contain
-// whitespace.  A bare name ends at "(", "}", ";" or whitespace.  Returns
-// the position just past the name (or its closing delimiter); *namestart
-// and *namelen give the name itself, with any delimiters stripped.
 static const char *getRpcName(const char *p, const char **namestart,
 							CS_INT *namelen) {
+
+	// a delimited name (double-quotes under quoted_identifier, square
+	// brackets in T-SQL) may contain whitespace
 	if (*p=='"' || *p=='[') {
 		char	closing=(*p=='[')?']':'"';
 		p++;
@@ -2953,10 +2947,8 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 			return false;
 		}
 
-		// literal parameters written directly into the query
-		// (eg. "exec someproc 1,2") aren't bound by the client -
-		// ct_param() them here or the rpc would silently run
-		// without them
+		// ct_param() literal parameters written into the query
+		// (eg. "exec someproc 1,2" - the client doesn't bind those)
 		if (!parseRpcParams(p)) {
 			return false;
 		}
@@ -2982,10 +2974,8 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 			return false;
 		}
 
-		// literal parameters written directly into the query
-		// (eg. "execute someproc 1,2") aren't bound by the client -
-		// ct_param() them here or the rpc would silently run
-		// without them
+		// ct_param() literal parameters written into the query
+		// (eg. "execute someproc 1,2" - the client doesn't bind those)
 		if (!parseRpcParams(p)) {
 			return false;
 		}
@@ -3093,20 +3083,13 @@ void sapcursor::checkRePrepare() {
 	}
 }
 
-// ct_param() a comma-separated list of literal rpc parameters (eg. the
-// "1,2" in "exec someproc 1,2"); quoted literals have their quotes
-// stripped.  p points just past the procedure name; stops at end of
-// string or a statement-terminating ";".
 bool sapcursor::parseRpcParams(const char *p) {
 
 	p=conn->cont->skipWhitespace(p);
 
-	// bind-variable references (eg. "exec testproc @in1,@in2 output")
-	// are supplied by the client's own inputBind() calls, matched by
-	// name - this text is just documentation and must be left alone.
-	// Only parse it here when it's nothing but literal values, since
-	// there's no way to tell, from here, that the client is about to
-	// bind by name.
+	// bail if the parameters are bind-variable references
+	// (eg. "exec testproc @in1,@in2 output" - the client binds those
+	// by name itself, so the text here is just documentation)
 	for (const char *s=p; *s && *s!=';'; s++) {
 		if (*s=='@') {
 			return true;
@@ -3147,10 +3130,10 @@ bool sapcursor::parseRpcParams(const char *p) {
 		parameter[paramindex].status=CS_INPUTVALUE;
 		parameter[paramindex].locale=NULL;
 
-		// an rpc parameter has to match the target parameter's type
-		// on the wire - ASE won't implicitly convert a char value
-		// to int/float the way it would a literal in ordinary SQL
-		// text, so figure out a type for unquoted numeric literals
+		// type unquoted numeric literals - an rpc parameter has to
+		// match the target parameter's type on the wire, and ASE
+		// won't convert char to int/float the way it would a literal
+		// in ordinary SQL text
 		CS_RETCODE	rc;
 		if (!quoted && charstring::isInteger(valstart,vallen)) {
 			int64_t	intval=charstring::convertToInteger(valstart);
@@ -3839,10 +3822,10 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 			return TEXT_DATATYPE;
 		#ifdef CS_UNITEXT_TYPE
 		case CS_UNITEXT_TYPE:
-			// Open Client only asks for unitext as
-			// CS_UNITEXT_TYPE at the newer context versions.  At
-			// CS_VERSION_100 it reports unitext as CS_IMAGE_TYPE
-			// instead, so there it falls through to image.
+			// unitext only comes back as CS_UNITEXT_TYPE at the
+			// newer context versions.  At CS_VERSION_100 Open
+			// Client reports it as CS_IMAGE_TYPE, so there it
+			// falls through to image.
 			return NTEXT_DATATYPE;
 		#endif
 		case CS_VARCHAR_TYPE:
@@ -3850,16 +3833,15 @@ uint16_t sapcursor::getColumnType(uint32_t col) {
 		case CS_VARBINARY_TYPE:
 			return VARBINARY_DATATYPE;
 		case CS_LONGCHAR_TYPE:
-			// Open Client reports char, varchar, nchar, nvarchar
-			// and sysname as CS_LONGCHAR_TYPE rather than
-			// CS_CHAR_TYPE once the column is wider than 255
-			// bytes, or once @@client_csexpansion is above 1,
-			// which any multi-byte charset= makes it.  The
-			// usertype is the same either way, so this splits
-			// them the same way the CS_CHAR_TYPE arm does.  Every
-			// usertype that can arrive here was measured arriving
-			// as CS_CHAR_TYPE too, so nothing needs to fall
-			// through to LONGCHAR - a char(1000) is still a char.
+			// char, varchar, nchar, nvarchar and sysname come back
+			// as CS_LONGCHAR_TYPE rather than CS_CHAR_TYPE once
+			// the column is wider than 255 bytes, or once
+			// @@client_csexpansion is above 1.  The usertype is
+			// the same either way, so this splits them the same
+			// way the CS_CHAR_TYPE arm does - a char(1000) is
+			// still a char (every usertype that can arrive here
+			// was measured arriving as CS_CHAR_TYPE too, so
+			// nothing needs to fall through to LONGCHAR).
 			switch (column[col].usertype) {
 				case 2:
 					return VARCHAR_DATATYPE;
@@ -3936,7 +3918,7 @@ void sapcursor::deflateColumnSize(CS_INT index) {
 
 	// Only some character types are reported at their byte width once
 	// @@client_csexpansion is above 1 - measured directly against a live
-	// ASE, per ticket #9145.  CS_UNICHAR_TYPE (unichar/univarchar) is
+	// ASE.  CS_UNICHAR_TYPE (unichar/univarchar) is
 	// already ucs-2 and isn't multiplied - see the comment in
 	// getColumnType() above.  Binary types and CS_UNITEXT_TYPE/
 	// CS_IMAGE_TYPE aren't character data and aren't multiplied either.
