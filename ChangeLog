@@ -304,6 +304,11 @@
 		condition never changed) and when the send failed (the
 		resulting recv failure kept the loop going instead of
 		exiting)
+	fixed the mysql protocol module to clamp the client's declared
+		max-packet size, from the handshake response, to a sane
+		MIN_PACKET_SIZE/MAX_PACKET_SIZE range instead of reading it
+		off the wire and never checking it; also fixed two %d debug
+		format specifiers on that value, which is a uint32_t
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

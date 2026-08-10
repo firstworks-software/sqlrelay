@@ -39,6 +39,12 @@
 #define CLIENT_SESSION_TRACK				0x00800000
 #define CLIENT_DEPRECATE_EOF				0x01000000
 
+// smallest and largest sane values for a client's declared max-packet size
+// (the wire format caps a single packet at 16MB - 1, same ceiling used
+// elsewhere in this file for outgoing packets)
+#define MIN_PACKET_SIZE		1024
+#define MAX_PACKET_SIZE		16777215
+
 // character sets
 #define LATIN1_SWEDISH_CI	0x08
 #define UTF8_GENERAL_CI		0x21
@@ -1651,8 +1657,12 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 	// max-packet size
 	uint32_t	clientmaxpacketsize;
 	readLE(rp,&clientmaxpacketsize,&rp);
-	// FIXME: sanity check on clientmaxpacketsize
-	debugWrite("client max-packet size: %d",clientmaxpacketsize);
+	if (clientmaxpacketsize<MIN_PACKET_SIZE) {
+		clientmaxpacketsize=MIN_PACKET_SIZE;
+	} else if (clientmaxpacketsize>MAX_PACKET_SIZE) {
+		clientmaxpacketsize=MAX_PACKET_SIZE;
+	}
+	debugWrite("client max-packet size: %u",clientmaxpacketsize);
 
 	// character set
 	clientcharacterset=*rp;
@@ -1866,8 +1876,12 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 	rp+=3;
 	clientmaxpacketsize=(clientmaxpacketsize&0xFFFFFF00);
 	clientmaxpacketsize=leToHost(clientmaxpacketsize);
-	// FIXME: sanity check on clientmaxpacketsize
-	debugWrite("client max-packet size: %d",clientmaxpacketsize);
+	if (clientmaxpacketsize<MIN_PACKET_SIZE) {
+		clientmaxpacketsize=MIN_PACKET_SIZE;
+	} else if (clientmaxpacketsize>MAX_PACKET_SIZE) {
+		clientmaxpacketsize=MAX_PACKET_SIZE;
+	}
+	debugWrite("client max-packet size: %u",clientmaxpacketsize);
 
 	// handle tls
 	if (clientcapabilityflags&CLIENT_SSL) {
