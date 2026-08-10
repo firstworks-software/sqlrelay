@@ -1,3 +1,6 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
+
 extern "C" {
 	#include <ctpublic.h>
 	#include <bkpublic.h>

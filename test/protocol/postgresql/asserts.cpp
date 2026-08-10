@@ -1,3 +1,6 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
+
 #include <libpq-fe.h>
 #include <rudiments/charstring.h>
 #include <rudiments/stdio.h>

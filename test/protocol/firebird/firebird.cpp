@@ -1,3 +1,6 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
+
 #include <ibase.h>
 #include <config.h>
 #include <time.h>
