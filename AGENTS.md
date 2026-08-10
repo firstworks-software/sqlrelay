@@ -26,9 +26,16 @@ Common `./configure` toggles (see `configure.in`): `--disable-server`, `--disabl
 
 Top-level `Makefile` delegates to `src/Makefile`, which delegates to per-module directories. Each module directory builds a libtool `.la` plugin (e.g. `src/connections/sqlrconnection_mysql.la`, `src/auths/sqlrauth_mysql_userlist.la`).
 
-### Module registry generation
+### Adding a new module
 
-Plugin "registries" are generated at `configure` time from `*declarations.cpp.in` + `*assignments.cpp.in` templates (see files under `src/server/` and `src/util/`). Configure substitutes in only the modules actually being built. If you add a new auth/filter/logger/router/trigger/translation/protocol/parser/connection/directive/etc. module, you must update `configure.in` so it gets included in the generated registry - editing only the `.cpp.in` template is not enough unless the module is unconditionally built.
+Every module type - auth, filter, logger, router, trigger, protocol, parser, connection, directive, query, moduledata, notification, schedule, config, pwdenc, and the seven translation types - is built from a hand-maintained Makefile in its own source directory (src/auths/Makefile, src/routers/Makefile, and so on). Adding a module means adding entries there, mirroring an existing module. configure.in is not involved in getting a module built or picked up.
+
+How the module is found at runtime depends on the build mode:
+
+- Shared build (the default): the type's runtime loader - one file per type, e.g. sqlrauths.cpp, sqlrfilters.cpp, sqlrrouters.cpp under src/server/ (connection and parser are the exceptions - both load inside sqlrservercontroller.cpp instead) - dlopens the module's .so from libexecdir by filename at startup and looks up its factory symbol. A module works as soon as it is built and installed; there is no registry to update.
+- Static build (SQLRELAY_ENABLE_SHARED=no): src/server/Makefile and src/util/Makefile each generate a declarations/assignments file per type at make time, from *declarations.cpp.in + *assignments.cpp.in templates, by globbing the already-built object files in the module's source directory. A new module is picked up automatically once its object file exists and src/server (or src/util) is rebuilt.
+
+configure.in only matters when a module needs a genuinely new external dependency - e.g. a new connection backend needs a library probe (FW_CHECK_X / ENABLE_X in configure.in) and a build-target entry in config.mk.in. That is a separate concern from registry or build inclusion, which every module type gets automatically from its directory's Makefile.
 
 ## Runtime architecture
 
