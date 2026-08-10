@@ -298,6 +298,10 @@
 	fixed the odbc, jdbc and c# drivers to recognize postgresql's
 		underscore-prefixed array type names under typemangling=lookup,
 		not just sqlrelay's own X_ARRAY spelling
+	fixed the mysql protocol module's raw statement path, which had
+		bind variable translation rewrite @-prefixed user-defined
+		variables (eg. "set @x=1") as bind markers and then run them
+		with no bind values
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

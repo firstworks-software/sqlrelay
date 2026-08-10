@@ -3029,6 +3029,13 @@ bool sqlrprotocol_mysql::sendQuery(sqlrservercursor *cursor,
 	// FIXME: handle custom cursors
 	columntypescached[cont->getId(cursor)]=false;
 	clearParams(cursor);
+
+	// A raw statement has no bind variables, and the cursor may have
+	// been left with some by a prepared statement that used it earlier.
+	// Nothing in a raw statement that looks like a bind variable is one
+	// either.  @name is a mysql user-defined variable, not a bind.
+	cont->setTranslateBindVariablesForThisQuery(cursor,false);
+
 	return (cont->prepareQuery(cursor,query,querysize,
 						true,true,true,true) &&
 			cont->executeQuery(cursor,true,true,true,true))?
