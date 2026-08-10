@@ -309,6 +309,24 @@
 		MIN_PACKET_SIZE/MAX_PACKET_SIZE range instead of reading it
 		off the wire and never checking it; also fixed two %d debug
 		format specifiers on that value, which is a uint32_t
+	fixed the mysql protocol module's raw statement path, which had
+		bind variable translation rewrite @-prefixed user-defined
+		variables (eg. "set @x=1") as bind markers and then run them
+		with no bind values
+	fixed the mysql protocol module's comFieldList(), comInitDb(),
+		comCreateDb(), comDropDb() and comStmtSendLongData(), which
+		computed a remaining-bytes count by subtracting from an
+		attacker controlled packet size with no bounds check, so a
+		short or zero length packet underflowed the count and drove
+		an oversized allocation and copy, crashing the sqlr-connection
+		process
+	fixed the mysql protocol module's mysql_info reporting - it was
+		never populated, so insert-select, multi-row insert, alter and
+		update all returned NULL where a native server reports
+		"Records: ..." or "Rows matched: ..." (Duplicates, Warnings and
+		the distinction between rows matched and rows changed aren't
+		tracked by the server api yet, so those always read 0 or the
+		affected row count - see #9270)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

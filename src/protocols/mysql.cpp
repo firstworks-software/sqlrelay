@@ -3,6 +3,7 @@
 
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
+#include <rudiments/bytestring.h>
 #include <rudiments/character.h>
 #include <rudiments/prng.h>
 #include <rudiments/process.h>
@@ -728,6 +729,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 						uint64_t querysize);
 		bool	sendQueryResult(sqlrservercursor *cursor,
 						bool binary);
+		sqlrquerytype_t	refineInsertQueryType(sqlrservercursor *cursor);
+		void	appendInfoString(sqlrservercursor *cursor,
+						sqlrquerytype_t querytype,
+						uint64_t affectedrows,
+						stringbuffer *info);
 		bool	sendResultSet(sqlrservercursor *cursor,
 						uint32_t colcount,
 						bool binary);
@@ -2792,6 +2798,12 @@ bool sqlrprotocol_mysql::getRequest(char *request) {
 	if (!recvPacket()) {
 		return false;
 	}
+	// A zero length packet has no command byte.  reqpacketpool
+	// doesn't zero its buffer, so reading one back would leak
+	// whatever byte a previous packet left there.
+	if (!reqpacketsize) {
+		return false;
+	}
 	*request=*(reqpacket);
 	return true;
 }
@@ -2808,6 +2820,9 @@ bool sqlrprotocol_mysql::comInitDb() {
 
 	// analogous to "use db"
 
+	// getRequest() rejects a zero length packet before dispatching to
+	// any command handler, so rpsize is always at least 1 here and
+	// rpsize-1 can't underflow.
 	const char	*rp=(const char *)reqpacket;
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
@@ -2963,6 +2978,9 @@ bool sqlrprotocol_mysql::comCreateDb(sqlrservercursor *cursor) {
 
 	// creates a new database
 
+	// getRequest() rejects a zero length packet before dispatching to
+	// any command handler, so rpsize is always at least 1 here and
+	// rpsize-1 can't underflow.
 	const char	*rp=(const char *)reqpacket;
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
@@ -2984,6 +3002,9 @@ bool sqlrprotocol_mysql::comDropDb(sqlrservercursor *cursor) {
 
 	// drops an existing database
 
+	// getRequest() rejects a zero length packet before dispatching to
+	// any command handler, so rpsize is always at least 1 here and
+	// rpsize-1 can't underflow.
 	const char	*rp=(const char *)reqpacket;
 	uint64_t	rpsize=reqpacketsize;
 	char		*schemaname=charstring::duplicate(rp+1,rpsize-1);
@@ -3009,7 +3030,12 @@ bool sqlrprotocol_mysql::comQuery(sqlrservercursor *cursor) {
 	const char	*query=(const char *)reqpacket+1;
 	uint64_t	querysize=reqpacketsize-1;
 
-	// bounds checking
+	// If reqpacketsize were 0, querysize would underflow to a huge
+	// value, but getRequest() already rejects a zero length packet
+	// before dispatching here, so this can't happen.  Even so, the
+	// bounds check below also happens to catch an underflowed
+	// querysize (it's enormous), so keep this check ahead of any use
+	// of querysize.
 	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
@@ -3043,6 +3069,13 @@ bool sqlrprotocol_mysql::sendQuery(sqlrservercursor *cursor,
 	// FIXME: handle custom cursors
 	columntypescached[cont->getId(cursor)]=false;
 	clearParams(cursor);
+
+	// A raw statement has no bind variables, and the cursor may have
+	// been left with some by a prepared statement that used it earlier.
+	// Nothing in a raw statement that looks like a bind variable is one
+	// either.  @name is a mysql user-defined variable, not a bind.
+	cont->setTranslateBindVariablesForThisQuery(cursor,false);
+
 	return (cont->prepareQuery(cursor,query,querysize,
 						true,true,true,true) &&
 			cont->executeQuery(cursor,true,true,true,true))?
@@ -3064,18 +3097,148 @@ bool sqlrprotocol_mysql::sendQueryResult(sqlrservercursor *cursor,
 	// db doesn't support it.  So, rather than return an error, we'll just
 	// leave id=0.
 
-	// FIXME: for the following queries, info should be set:
-	// 	insert into ... select ...
-	// 		Records: xxx Duplicates: xxx Warnings: xxx
-	// 	insert into ... values (...),(...),(...)...
-	// 		Records: xxx Duplicates: xxx Warnings: xxx
+	// FIXME: load data infile isn't handled:
 	// 	load data infile ...
 	// 		Records: xxx Deleted: xxx Skipped: xxx Warnings: xxx
-	// 	alter table
-	// 		Records: xxx Duplicates: xxx Warnings: xxx
-	// 	update
-	// 		Rows matched: xxx Changed: xxx Warnings: xxx
-	return sendOkPacket(true,cont->getAffectedRows(cursor),id,0,0,"",0,"");
+	uint64_t	affectedrows=cont->getAffectedRows(cursor);
+	stringbuffer	info;
+	appendInfoString(cursor,cursor->getQueryType(),affectedrows,&info);
+
+	return sendOkPacket(true,affectedrows,id,0,0,
+					info.getString(),0,"");
+}
+
+// Refines a generic SQLRQUERYTYPE_INSERT into SQLRQUERYTYPE_MULTIINSERT or
+// SQLRQUERYTYPE_INSERTSELECT, when the query is one of those, without the
+// table/column/autoincrement metadata lookups that
+// sqlrservercontroller::parseInsert() does - all that's needed here is
+// which shape of insert this is, not its columns.
+sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
+						sqlrservercursor *cursor) {
+
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+	const char	*start=cont->skipWhitespaceAndComments(query);
+	const char	*end=query+querysize;
+
+	// FIXME: assumes a normalized query, same as parseInsert()
+	if (querysize<12 || charstring::compareIgnoringCase(
+						start,"insert into ",12)) {
+		return SQLRQUERYTYPE_INSERT;
+	}
+
+	// skip "insert into " and the table name
+	const char	*ptr=charstring::findFirst(start+12,' ');
+	if (!ptr || ptr>=end) {
+		return SQLRQUERYTYPE_INSERT;
+	}
+	ptr++;
+
+	// skip an optional column list
+	if (ptr<end && *ptr=='(') {
+		const char	*close=charstring::findFirst(ptr,')');
+		if (!close || close>=end) {
+			return SQLRQUERYTYPE_INSERT;
+		}
+		ptr=close+1;
+		while (ptr<end && character::isWhitespace(*ptr)) {
+			ptr++;
+		}
+	}
+
+	// look for the "values (" keyword, same kludge as parseInsert(),
+	// to handle "values(" with no space
+	const char	*rawvalues=NULL;
+	if (end>ptr+7 && !charstring::compareIgnoringCase(ptr,"values(",7)) {
+		rawvalues=ptr+7;
+	} else if (end>ptr+8 && !charstring::compareIgnoringCase(
+							ptr,"values (",8)) {
+		rawvalues=ptr+8;
+	}
+
+	// No values(...) clause - if the next keyword is a select (or a
+	// "with" clause feeding one), this is an insert...select.  Anything
+	// else (eg. "insert into t set a=1", "... default values", an
+	// unrecognized syntax variant) falls back to a plain insert, since
+	// that's the safe default - it's what native mysql reports for
+	// anything that isn't actually an insert-select.
+	if (!rawvalues) {
+		if ((end>ptr+7 && !charstring::compareIgnoringCase(
+							ptr,"select ",7)) ||
+				(end>ptr+5 && !charstring::compareIgnoringCase(
+							ptr,"with ",5))) {
+			return SQLRQUERYTYPE_INSERTSELECT;
+		}
+		return SQLRQUERYTYPE_INSERT;
+	}
+
+	// scan the first parenthesized set of values; if a comma follows
+	// its closing paren (allowing for whitespace in between) then a
+	// second set follows too, making this a multi-row insert
+	const char	*c=rawvalues;
+	uint32_t	parens=0;
+	for (;;) {
+		if (c>=end) {
+			return SQLRQUERYTYPE_INSERT;
+		}
+		if (*c=='\'') {
+			c=charstring::findEndOfQuotedString(
+					c,end-c,'\'',true,true);
+			continue;
+		}
+		if (*c=='(') {
+			parens++;
+		} else if (*c==')') {
+			if (parens) {
+				parens--;
+			} else {
+				c++;
+				while (c<end && character::isWhitespace(*c)) {
+					c++;
+				}
+				return (c<end && *c==',')?
+					SQLRQUERYTYPE_MULTIINSERT:
+					SQLRQUERYTYPE_INSERT;
+			}
+		}
+		c++;
+	}
+}
+
+// Appends a mysql_info string to "info" for the query types that a native
+// mysql server populates it for.  Leaves "info" empty for everything else,
+// including a plain single-row insert, matching native behavior.
+void sqlrprotocol_mysql::appendInfoString(sqlrservercursor *cursor,
+						sqlrquerytype_t querytype,
+						uint64_t affectedrows,
+						stringbuffer *info) {
+
+	if (querytype==SQLRQUERYTYPE_INSERT) {
+		querytype=refineInsertQueryType(cursor);
+	}
+
+	switch (querytype) {
+		case SQLRQUERYTYPE_INSERTSELECT:
+		case SQLRQUERYTYPE_MULTIINSERT:
+		case SQLRQUERYTYPE_ALTER:
+			// FIXME: Duplicates and Warnings aren't tracked by
+			// the server API yet (see #9270), so they're always
+			// reported as 0
+			info->append("Records: ")->append(affectedrows);
+			info->append("  Duplicates: 0  Warnings: 0");
+			break;
+		case SQLRQUERYTYPE_UPDATE:
+			// FIXME: "Rows matched" (as opposed to "Rows
+			// affected") and "Changed" aren't tracked separately
+			// by the server API yet (see #9270), so both use the
+			// affected row count, and Warnings is always 0
+			info->append("Rows matched: ")->append(affectedrows);
+			info->append("  Changed: ")->append(affectedrows);
+			info->append("  Warnings: 0");
+			break;
+		default:
+			break;
+	}
 }
 
 bool sqlrprotocol_mysql::sendResultSet(sqlrservercursor *cursor,
@@ -3961,10 +4124,19 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	rp++;
 	rpsize--;
 
-	// get the table
-	char	*table=charstring::duplicate((const char *)rp);
-	rp+=charstring::getLength(table);
-	rpsize-=charstring::getLength(table);
+	// Get the table.  It's a null-terminated string, but the packet
+	// buffer carries no terminator of its own, so the null has to be
+	// found within the bytes that are actually left in the packet
+	// rather than by an unbounded scan.
+	const byte_t	*nullterm=(const byte_t *)
+			bytestring::findFirst(rp,(byte_t)'\0',rpsize);
+	if (!nullterm) {
+		return sendErrPacket(1105,"malformed packet","HY000");
+	}
+	uint64_t	tablesize=nullterm-rp;
+	char		*table=charstring::duplicate((const char *)rp,tablesize);
+	rp+=tablesize;
+	rpsize-=tablesize;
 
 	// get the wildcard
 	char	*wild=charstring::duplicate((const char *)rp,rpsize);
@@ -4310,7 +4482,12 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 	const char	*query=(const char *)reqpacket+1;
 	uint64_t	querysize=reqpacketsize-1;
 
-	// bounds checking
+	// If reqpacketsize were 0, querysize would underflow to a huge
+	// value, but getRequest() already rejects a zero length packet
+	// before dispatching here, so this can't happen.  Even so, the
+	// bounds check below also happens to catch an underflowed
+	// querysize (it's enormous), so keep this check ahead of any use
+	// of querysize.
 	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
@@ -4885,6 +5062,12 @@ bool sqlrprotocol_mysql::comStmtSendLongData() {
 	uint64_t	rpsize=reqpacketsize;
 	rp++;
 	rpsize--;
+
+	// a well formed packet has at least a statement id and a
+	// parameter id following the command byte
+	if (rpsize<sizeof(uint32_t)+sizeof(uint16_t)) {
+		return true;
+	}
 
 	// get statement id
 	uint32_t	stmtid;

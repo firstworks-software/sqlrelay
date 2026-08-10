@@ -1022,10 +1022,75 @@ int	main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	#endif
 
-	// sqlrelay's mysql protocol doesn't populate mysql_info for
-	// insert-select, multi-row insert, alter, or update (#8106), and
-	// doesn't support load data infile (#8107), so those aren't asserted
-	// here
+	// #8106: mysql_info for insert-select, multi-row insert, alter and
+	// update.  sqlrelay only tracks an affected-row count, not
+	// duplicates/warnings/changed-vs-matched (see #9270), so those
+	// fields are pinned to 0 rather than compared against whatever the
+	// native server happens to report; the Records/Rows-matched count
+	// is compared exactly, since that comes straight from the same
+	// affected-row count mysql_affected_rows() already exercises above.
+	// load data infile isn't supported at all (#8107), so it isn't
+	// exercised here.
+	stdoutput.printf("mysql_info: create\n");
+	query="create table mysqlinfotest (id int, val int)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
+	stdoutput.printf("\n");
+
+	stdoutput.printf("mysql_info: plain insert\n");
+	query="insert into mysqlinfotest (id,val) values (1,10)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
+	stdoutput.printf("\n");
+
+	stdoutput.printf("mysql_info: multi-row insert\n");
+	query="insert into mysqlinfotest (id,val) values (2,20),(3,30),(4,40)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)3);
+	assertEquals(mysql_info(&mysql),
+			"Records: 3  Duplicates: 0  Warnings: 0");
+	stdoutput.printf("\n");
+
+	stdoutput.printf("mysql_info: insert-select\n");
+	query="insert into mysqlinfotest (id,val) "
+			"select id+10,val+100 from mysqlinfotest where id=1";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)1);
+	assertEquals(mysql_info(&mysql),
+			"Records: 1  Duplicates: 0  Warnings: 0");
+	stdoutput.printf("\n");
+
+	stdoutput.printf("mysql_info: update\n");
+	query="update mysqlinfotest set val=val+1 where id in (1,2,3)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)3);
+	assertEquals(mysql_info(&mysql),
+			"Rows matched: 3  Changed: 3  Warnings: 0");
+	stdoutput.printf("\n");
+
+	stdoutput.printf("mysql_info: alter\n");
+	query="alter table mysqlinfotest add column val2 int";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	if (issqlrelay) {
+		// sqlrelay always populates this now; the exact record
+		// count follows whatever the backend reports as affected
+		// rows for the alter, which varies by server/engine/version,
+		// so only the shape sqlrelay controls (Duplicates/Warnings)
+		// is pinned
+		const char	*alterinfo=mysql_info(&mysql);
+		assertTrue(charstring::startsWith(alterinfo,"Records: "));
+		assertTrue(charstring::endsWith(alterinfo,
+				"  Duplicates: 0  Warnings: 0"));
+	} else {
+		// a native server may or may not populate this at all for
+		// an instant/in-place alter, depending on server/engine/
+		// version, so nothing is asserted here
+	}
+	stdoutput.printf("\n");
+
+	query="drop table mysqlinfotest";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+
 
 	// mysql_change_user isn't implemented in sqlrelay's mysql protocol
 	// (#8108), so it isn't exercised here
