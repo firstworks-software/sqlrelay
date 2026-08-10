@@ -1,2300 +1,292 @@
 2.3.0 - bumped the version to 2.3.0
-	updated for rudiments' randomnumber -> prng rename (rudiments #9211,
-		which also renamed csrandomnumber to csprng and added an rng
-		base class both implement) - a mechanical rename across the
-		mysql, postgresql and oracle protocol modules, sqlr-scaler,
-		sqlrservercontroller, the oracle userlist auth module's
-		comment, and the bench/stress test harness; also removed a
-		dead #include <rudiments/randomnumber.h> from the firebird
-		protocol module, which never used the class
-	fixed sqlrsh csv output - non-ascii bytes, newlines, carriage returns,
-		tabs, and nulls were dropped, and fields containing them
-		weren't quoted
-	fixed sqlrsh csv output - nulls and empty strings were written
-		identically, nulls are now written as an unquoted empty field
-		and empty strings as a quoted empty field
-	fixed sqlrsh csv output - the ===== divider row was written between
-		the header row and the data, the divider is now written for
-		the plain format only
-	added sqlrsh getasnumber, noelapsed, nextresultset, and quiet commands
-	added sqlrsh -headers, -divider, -stats, -lazyfetch, -txqueries, and
-		-delimiter command line options, and made -getasnumber,
-		-noelapsed, -nextresultset, and -quiet accept an on|off value
-	fixed sqlrsh -script - a script that ran without an error still
-		exited 1, because the end of the file was treated as a failure
-	added distinct sqlrsh exit codes - 0 success, 1 usage error, 2 script
-		file couldn't be opened, 3 connection or authentication
-		failure, 4 query or command error - and sqlrsh now checks the
-		connection at startup so connection failures get their own
-		code
-	fixed sqlrsh csv output - the stats block was written after the data,
-		which broke csv by default, the stats are now written for the
-		plain format only
-	fixed sqlrsh csv output - the cache command's banner was written at
-		the top of the stream, the banner is now written for the
-		plain format only
-	fixed sqlrsh csv output - the fields command wrote the column names
-		without quoting or escaping them, the names now go through the
-		csv field writer
-	added sqlrsh json and jsonl output formats - json writes one compact
-		document per command, with the column names and types, the
-		rows, and the stats, and jsonl writes one object per line so
-		it streams - a database null is the json null, utf-8 and
-		every other byte pass through unchanged, and the scalar
-		commands, printbinds, the fields command, and errors all
-		emit json too
-	fixed sqlrsh -format - an unrecognized format name quietly fell back
-		to plain, it's a usage error now, and the format command and
-		the -format option share one list of names
-	added sqlrsh commands for the rest of the sqlrconnection api -
-		usecatalog, currentcatalog, useschema, databaseisschema,
-		databasefeature, getautocommit, intransaction,
-		transactionmodel, defaulttransactionmodel,
-		defaultisolationlevel, suspendsession, resumesession,
-		connectionport, connectionsocket, connect timeout,
-		getconnecttimeout, getresponsetimeout,
-		bindvariabledelimiters, bindvariabledelimitersupported, and
-		getdebug - each one honors all four output formats, and a
-		missing or invalid argument is a failed command
-	fixed sqlrsh json and jsonl output - the delimiter, autocommit,
-		response timeout, translatedquery, and querytree commands
-		wrote plain text no matter what the format was, they write
-		json now
-	added sqlrsh commands for the rest of the sqlrcursor result set and
-		column metadata api - columninfo, columninfo on|off,
-		columncase, suspendresultset, resultsetid, resumeresultset,
-		resumecachedresultset, closeresultset, cacheoff,
-		cachefilename, totalrows, firstrowindex, and endofresultset -
-		columninfo writes all thirteen pieces of metadata per column,
-		as a labelled block in plain, a header row and a row per
-		column in csv, and a list of objects with real booleans in
-		json and jsonl, and the two resume commands write the result
-		set they fetched, the way the opencache command does
-	added sqlrsh commands for the rest of the sqlrcursor bind variable
-		api - inputbindclob, inputbind with an explicit length,
-		outputbind blob, outputbind clob, outputbind cursor,
-		fetchfrombindcursor, countbindvariables, validatebinds,
-		validbind, substitution, clearsubstitutions, filequery, and
-		preparefilequery - each one honors all four output formats,
-		and a missing or invalid argument is a failed command
-	fixed sqlrsh printinputbind, printoutputbind, and
-		printinputoutputbind - all three were recognized as commands
-		but had no implementation at all, so they printed nothing and
-		failed
-	fixed sqlrsh bind variable values - blob values were written up to
-		their first null byte, and blob values, the bind variable name
-		when a bind was redefined, the type and its parameters, and a
-		value whose type wasn't recognized were all leaked
-	fixed sqlrsh inputbind - a value consisting of a single quote
-		character wrote off the end of a heap buffer
-	fixed sqlrsh outputbind and inputoutputbind usage messages - neither
-		listed the forms the command actually takes, and
-		inputoutputbind printed nothing at all for one of its errors
-	fixed sqlrsh inputbind, inputbindblob, outputbind, and
-		inputoutputbind - the command word on its own was sent to the
-		database and came back as a syntax error instead of the
-		command's usage
-	updated the sqlrsh usage text, -help output, help command, and man
-		page to cover every command and every command line option -
-		about 109 command forms and 9 options were missing, including
-		everything added in this release, and the four output formats,
-		the csv quoting and null rules, and the exit codes are all
-		written down now
-	cleaned up source code comments added since the 2.1.1 release -
-		de-versed narration back to step labels, trimmed
-		over-specified rationale, removed summaries from above
-		function definitions, and fixed typos, a few comments that
-		contradicted the code, and some stray non-ascii characters
-	the website's server-side includes are expanded at build time now
-		instead of by apache - the 95 pages that use them are
-		.html.in files, and the new ssi.sh and ssi.vbs scripts
-		expand them into .html, so the site can be served by any
-		web server, on unix or windows, and doc/.htaccess is gone
-	fixed 19 stale api documentation links in the website's .wt sources -
-		they'd been corrected in the generated html but never carried
-		back to the sources, so rebuilding the docs reverted them
-	the website's html files aren't executable anymore - the execute bit
-		was only there for apache's XBitHack, which went away with
-		the server-side includes, so they're installed 644 now like
-		the css and js already were, and a few stray executable
-		images were fixed while we were in there
-	removed insertparts.pl - the doc build replaced it with the wt tool in
-		2016 and nothing has referenced it since
-	added a README.md, for the github mirror at
-		github.com/firstworks-software/sqlrelay, which otherwise shows
-		a bare file listing as its front page
-	fixed a couple of memory leaks in sqlrsh - the default password taken
-		from the config file and the history file name were both
-		allocated and never freed
-	fixed an out-of-bounds read in the sqlrsh nullsasnulls command - the
-		command name was matched at 12 characters but the pointer was
-		advanced 13, so a bare "nullsasnulls;" read past the end of
-		the string
-	fixed the sqlrsh -id tlsciphers default - the guard tested getValue()
-		rather than isFound(), and getValue() returns an empty string
-		rather than a null for an option that wasn't given, so the
-		cipher list in the config file was never applied
-	fixed sqlrsh command line options that take a value - a missing value
-		came out empty, which meant 0 for the numeric options, so a
-		trailing -resultsetbuffersize quietly set the buffer size to 0
-		rather than being a usage error, and every other value-taking
-		option was quietly dropped
-	fixed the sqlrsh show only commands - only the twelve forms with a
-		mysql, odbc or jdbc list format suffix were recognized, so a
-		bare "show only tables;" and its views, aliases and synonyms
-		twins fell through to the database as sql and failed, the
-		bare forms now work and use the default list format, like
-		"show tables" does
-	fixed the sqlrsh clearinputbind, clearoutputbind and
-		clearinputoutputbind commands - the variable name the help text
-		has always shown was ignored and the whole list was cleared, a
-		name now clears just that variable, no name still clears the
-		whole list, and a name that is not in the list is a failed
-		command
-	fixed make install - it failed in doc/ on a host without the wt tool,
-		because installing the website built it first and the build
-		starts by running wt, the generated .html files are in version
-		control again and install just copies them, so regenerating
-		the site is a manual make in doc/, and make clean there now
-		removes everything the makefiles generate
-	fixed the sqlrsh connect timeout and response timeout commands - the
-		part after the dot was echoed at four digits and only its
-		first four characters were kept, so 5.000025 set no
-		microseconds at all, and it went to the api as a whole number
-		of microseconds while being documented as a fraction of a
-		second, so "connect timeout 5.25" claimed 5.25 seconds and
-		really set 5.0025, the part after the dot is now read as a
-		decimal fraction of a second, which is what the c++ api and
-		the SQLR_CLIENT_CONNECT_TIMEOUT and
-		SQLR_CLIENT_RESPONSE_TIMEOUT environment variables have
-		always meant by it, echoed padded to 6 places the way
-		getconnecttimeout and getresponsetimeout already report it,
-		and documented that way, so 5.25 sets and reports five and a
-		quarter seconds, and both commands now reject a timeout that
-		isn't a number or is out of range instead of quietly setting
-		0 or wrapping around to a negative, which turned the timeout
-		off while claiming to set it
-	added the sqlrsh -continueonerror option and continueonerror command,
-		which make a script or a -command list run every statement
-		rather than stopping at the first one that failed, and which
-		write the number of failed statements to stderr at the end of
-		the run, and redefined exit code 4 as "at least one statement
-		failed", since it no longer means that sqlrsh stopped there
+	requires rudiments 2.3.0 or newer now
+	updated for rudiments' randomnumber -> prng, csrandomnumber -> csprng
+		and setPadding -> setUsePadding renames
+	added per-module install and uninstall targets throughout the tree
+	make install writes each file under a temporary name and renames it now,
+		so a running listener or connection keeps the file it already
+		has
 	fixed make install - the tds protocol module was built but never
-		installed, because nothing referenced the
-		installsharedlib-tds target in src/protocols/Makefile, so
-		protocol="tds" couldn't be used from a normal install
-	added the tds_connectstrings auth module - an instance with no auths
-		and no users configured falls back to an auth module named
-		after each of its protocols, and tds_connectstrings didn't
-		exist, so every login through the tds protocol module failed
-	fixed the tds protocol module - a failed login left the client hanging,
-		because sending the response packet overwrote the login
-		failure, so the session ran on rather than ending
-	fixed the tds protocol module - an unrecognized database version fell
-		back to tds 4.2, which hung the client, since the width of
-		some fields varies with the tds version, an unrecognized
-		version now uses the version that the client asked for, and
-		the versions that odbc and freetds report for sql server 2016
-		through 2022 are recognized now
-	fixed the tds protocol module - after a failed login, the done token
-		reported success rather than an error, and the error token
-		reported line 1 rather than line 0
-	added the sqlrsh -final, -autocommit, -nullsasnulls, -debug,
-		-validatebinds and -bindvariabledelimiters options, so that
-		every setting that means something before the first query has
-		run is reachable as a command line option as well as a
-		command, and left cache, opencache and the per-query bind
-		commands as commands only, since a cache file belongs next to
-		the query it caches and a bind belongs to one query
-	fixed the sqlrsh lazyfetch, txqueries and continueonerror commands - a
-		bare one of them was matched with a trailing space, so it fell
-		through to the database as a query rather than turning the
-		setting off
-	fixed the sqlrsh nullsasnulls command - a bare one, or one with an
-		unrecognized value, did nothing at all, rather than turning
-		the setting off the way every other on|off command does
-	added the sqlrsh -fieldsas option and fieldsas command, which choose
-		which getFieldAs method every field of a result set is fetched
-		with - raw, number, boolean or date - so that
-		getFieldAsBoolean() and getFieldAsDate(), neither of which
-		sqlrsh could reach before, are reachable now, made getasnumber
-		an alias for the number and raw modes so that -getasnumber and
-		the getasnumber command still behave exactly as documented,
-		guarded each mode so that a column the conversion means
-		nothing for is written unchanged rather than turned into a
-		number, a true or a date, wrote a converted date as
-		[-]YYYY-MM-DD HH:MM:SS[.uuuuuu] carrying only the parts the
-		field had, and made json and jsonl type a converted field, so
-		number gives a bare json number and boolean a bare json true
-		or false
-	fixed the tds protocol module - a query like "select 1" sent a row
-		value length of 10 with no value bytes after it, because the
-		odbc backend reports a column size of 10 for an int and intn
-		only allows 1, 2, 4 or 8, so the client read the done token as
-		row data and reported "Datastream processing out of sync" -
-		bitn, fltn, moneyn and datetimn had the same problem
-	fixed the tds protocol module - the notify id and service broker
-		deployment lengths in a query notification header are byte
-		counts, but they were read as character counts, which ran past
-		the end of the request buffer and desynced the rest of the
-		stream, and a header whose size was 0 looped forever
-	fixed the tds protocol module - nchar, nvarchar, ntext and xml row
-		values were sent as 8-bit data with a character count, they
-		are sent as ucs-2 with a byte count now
-	fixed the tds protocol module - nchar and nvarchar bind values were
-		handed to the database as ucs-2 bytes, so N'foo' arrived as
-		"f\0o\0o\0", they are converted now, and copied into the bind
-		pool rather than pointing into the request buffer
-	fixed the tds protocol module - the maximum length that column
-		metadata reports for an nchar, nvarchar, ntext or xml column
-		has to be in bytes, but the backend reports it in characters
-	fixed the tds protocol module - a response packet's size was computed
-		in 16 bits, so a negotiated packet size of 65536 truncated to
-		0 and the send loop wrote empty packets forever, the
-		negotiated size is capped at 65535 minus the 8-byte header now
-	fixed the tds protocol module - the info and error token size was
-		computed in 16 bits, so a message over about 32k characters
-		overflowed it, the message is truncated to fit now
-	fixed the tds protocol module - the pre-login response copied from a
-		null pointer when the client sent no instance name option
-	fixed the tds protocol module - the sspi buffer size test compared a
-		variable against itself rather than against the size the
-		client sent
-	fixed the tds protocol module - a sql batch's size was computed in 16
-		bits, so a batch over about 128k characters was truncated, and
-		maxquerysize was read from the configuration and never
-		enforced
-	renamed the misleading size/length variables in the tds protocol
-		module, and renamed the parameter of the ucs2 read() and
-		write() methods in sqlrprotocol from "size" to "length", since
-		it is a count of characters rather than of bytes
-	added an sqlrsh reference to the website - the two synopsis lines on
-		the command line programs page were stale and the only other
-		thing that page said about sqlrsh was to run it and type
-		help;, so there is a new sqlrsh reference page covering every
-		command line option, every command in the groups the built-in
-		help uses, the four output formats with a sample of each, the
-		exit codes and the rc file, the command line programs page has
-		the real synopsis lines and a link to the new page now, and it
-		no longer claims that sqlrsh reads a system rc file, which it
-		never did - it reads .sqlrshrc in the user's home directory
-		and nothing else
-	fixed the tds protocol module - every request packet's data buffer was
-		allocated and never freed, so a session leaked memory in
-		proportion to the number of requests it handled, packets are
-		read into a reused memory pool now
-	fixed the tds protocol module - the send loop never advanced past the
-		data it had just sent, so a response larger than the
-		negotiated packet size sent its first chunk over and over,
-		and the data in each packet is sized from the negotiated
-		packet size minus the 8-byte header now, rather than being
-		the whole negotiated size
-	fixed the tds protocol module - the pre-login, login, attention, sspi,
-		federated authentication and transaction manager requests
-		each took a pooled cursor that they had no use for
-	fixed the tds protocol module - a request that arrived when no cursor
-		was available killed the session without telling the client,
-		an error is sent now
-	fixed the tds protocol module - the client session exit status was
-		always "error", so the log said nothing useful about how a
-		session ended
-	fixed the tds protocol module - a malformed remote procedure call's
-		error token was appended to whatever was already in the
-		response buffer and then never sent, so the client hung
-	fixed the tds protocol module - char and varchar bind values pointed
-		into the request buffer rather than being copied into the
-		bind pool, and a null value's 0xFFFF length was taken as a
-		real length
-	fixed the tds protocol module - about 35 response fields were
-		converted to little-endian twice, which is correct on a
-		little-endian host and wrong on a big-endian one
-	fixed the tds protocol module - the sql collation environment change
-		and the column metadata flags were sent big-endian, so the
-		client read a garbage collation and never saw a column's
-		nullable, updateable or identity flags
-	added tdsversion, packetsize and maxpacketsize parameters to the tds
-		protocol module - tdsversion overrides the version that the
-		module guesses from the backend's version string, for
-		backends whose version string it can't work it out from
-	fixed the tds protocol module - the login extension and change
-		password blobs were gated on flags that weren't decoded until
-		about 100 lines later, so they could never be read
-	fixed the tds protocol module - the server name and version were read
-		once when the module was created, so they went stale when the
-		backend reconnected
-	fixed the tds protocol module - the array of bind variable names was
-		never freed
-	fixed the tds protocol module - the tds 7.4 column metadata flags were
-		gated on a version test against 74 rather than 740, so they
-		were always sent, and three of them were shifted past the end
-		of the 16-bit field
-	fixed the tds protocol module - a date column's value added up the
-		days in the preceding months with an assignment where an
-		addition was meant, so it was wrong for every date, and it
-		was sent as 2 bytes rather than the 3 the protocol calls for
-	fixed the tds protocol module - a time column's value was always
-		midnight, and datetime2 and datetimeoffset values were sent
-		as a time and a date each carrying its own size, rather than
-		as one value under one size
-	fixed the tds protocol module - a column type reported by the backend
-		indexed the type map with no bounds check, and the map was
-		one entry short, so an informix lvarchar column read past the
-		end of it
-	fixed the tds protocol module - a system error was passed to the debug
-		output as a printf format string
-	cleaned up the tds protocol module - the info and error token builders
-		are named for what they do, there are error senders that
-		build and send in one call, init() and free() actually
-		initialize and release the session state, and the two
-		commented-out column encryption blocks are comments now
-	fixed sqlrsh -id - the password encryption module named by the
-		instance's passwordencryptionid was used without checking
-		that it was found, so a missing or misnamed module
-		segfaulted, and a one-way encryption silently produced a
-		null password and a misleading authentication error -
-		both are reported by name now and exit 1
-	fixed the sqlr-import and sqlr-export -id tlsciphers default - the
-		guard tested getValue() rather than isFound(), and getValue()
-		returns an empty string rather than a null for an option that
-		wasn't given, so the cipher list in the config file was never
-		applied
-	fixed sqlr-import and sqlr-export command line options that take a
-		value - a missing value came out empty, which meant 0 for the
-		numeric options, so a trailing -port quietly tried to connect
-		to port 0 rather than being a usage error, and every other
-		value-taking option was quietly dropped
-	fixed sqlr-export -krbservice - the value was read from the -krb
-		option rather than the -krbservice option, so the service name
-		given was ignored and the built-in default was used instead
-	moved the command line value-taking option check into sqlrcmdline, as
-		missingValueOption(), which knows the connection options that
-		every client tool takes, so sqlr-import and sqlr-export only
-		list their own
-	fixed sqlrsh show catalogs - the four show catalogs commands compared
-		one byte too many, which dragged the literal's terminating null
-		into the comparison, so only the bare forms matched and
-		show catalogs like 'pattern', and its mysql, odbc and jdbc
-		variants, fell through and were sent to the database as SQL,
-		failing with a syntax error
-	moved sqlrsh onto sqlrcmdline's missingValueOption() - it kept a
-		private copy of the same check, with a list that repeated
-		the 18 connection options sqlrcmdline already knows, so the
-		two lists could drift and a value-taking option added to one
-		would have been missed by the other
-	added rpc support to the tds protocol module - sp_executesql,
-		sp_prepare, sp_execute, sp_prepexec, sp_prepexecrpc,
-		sp_unprepare, sp_cursoropen, sp_cursorprepare,
-		sp_cursorexecute, sp_cursorprepexec, sp_cursorunprepare,
-		sp_cursorfetch, sp_cursoroption and sp_cursorclose were all
-		empty stubs that answered nothing, so a client that prepared
-		a statement or opened a server-side cursor - which is what
-		odbc and jdbc normally do - just hung, and each proc can now
-		be sent either by numeric proc id or by name, the way freetds
-		sends sp_execute
-	fixed the tds protocol module's rpc option flags - fNoMetaData and
-		fReuseMetaData were read from bits 2 and 3 rather than 1 and
-		2, so the no-metadata request that freetds sends on
-		sp_cursorfetch was read as something else
-	fixed the tds protocol module's rpc parameters - they were never
-		parsed at all on the numeric proc id path, the proc name was
-		used after it was freed, and a named procedure's result set
-		was never sent, so even exec someproc that selects returned
-		nothing
-	fixed the tds protocol module's rpc parameter collation - the five
-		collation bytes were read for char and text parameters
-		whatever the protocol version, but there is no collation
-		before tds 7.1, so every parameter after the first one on a
-		7.0 connection was read from the wrong offset, which read
-		past the end of the request packet
-	added text, ntext and xml rpc parameter values to the tds protocol
-		module - they were skipped, and that is how freetds sends the
-		statement and parameter declaration strings that sp_prepare
-		and sp_executesql take
-	added return values to the tds protocol module - returnValue() wrote
-		a token byte and nothing else, so the prepared statement
-		handle and cursor id that a client reads out of the first
-		return value never arrived
-	fixed the tds protocol module's attention signal packet type - it was
-		0x05 rather than the 0x06 that MS-TDS 2.2.3.1.1 gives, so
-		every client cancel was rejected as an invalid packet type
-		and ended the session, and an attention is now acknowledged
-		with a done that has the attention bit set
-	fixed the tds protocol module's bind variable count - a sql batch
-		left whatever bind count the last rpc on that cursor had set,
-		so the next batch was sent to the database with bind values
-		it had no bind variables for
-	fixed the tds protocol module's bulk load - it returned false, which
-		ended the session, so the client saw a dropped connection
-		rather than an error, it now reports that bulk load isn't
-		supported and keeps the session
-	fixed sqlr-import segfault when -table wasn't given and the file name
-		didn't end in the importer's extension, which included the
-		.tbl and .seq examples in its own help text and man page -
-		the extension is now removed only if the file name has it,
-		matched case-insensitively like the importer choice, and a
-		file name that leaves no name behind, like .xml, is a
-		reported error rather than undefined behavior
-	fixed sqlr-import -table being silently ignored for xml imports - the
-		name recorded in the file always won, so rows landed in a table
-		the user never named, and exit status was 0 either way, while
-		csv honored -table, an explicitly set name now wins over any
-		name derived from the import file, which is what the c++ api
-		already documented, and -table is now documented in the help
-		text, the man page, and the admin docs, which had documented
-		the opposite
-	fixed an out-of-bounds read in the mysql protocol module - its type
-		map was one entry shorter than the datatype list it's indexed
-		by, so an informix LVARCHAR column read past the end of the
-		array and reported whatever byte followed it as the column
-		type
-	fixed the c++ api sqlrconnection::getDatabaseFeature() - an unknown
-		feature name was printed to stdout even with debug off,
-		corrupting the calling program's output, and the message was
-		also missing its trailing newline
-	fixed sqlrimportxml and sqlrimportcsv - importData() segfaulted when
-		setFileName(NULL) was called and an object name was set,
-		neither importer can read standard input, so a NULL or empty
-		file name is now a reported error, and the c++ api docs no
-		longer describe import from standard input as though it works
-	fixed the odbc connection module - the size reported for wchar and
-		wvarchar fields counted the utf-8 null terminator, so every
-		wide value came back one byte longer than it really was, and
-		a maxfieldsize smaller than the terminator underflowed the
-		size
-	fixed the c++ api's parse of the SQLR_CLIENT_CONNECT_TIMEOUT and
-		SQLR_CLIENT_RESPONSE_TIMEOUT environment variables - the
-		fraction of a second was truncated rather than rounded, so
-		5.1 gave 5 seconds and 99999 microseconds instead of 100000,
-		and the timeout never read back as what was asked for, and
-		documented what format those variables take, which had never
-		been written down anywhere
-	fixed csv export in the c++ api - fields with embedded nulls were
-		truncated, and fields from numeric columns weren't quoted,
-		even when they contained a comma, quote, newline, or
-		carriage return
-	fixed the tds protocol module - the transaction descriptor header's
-		two fields were read in the opposite order from the one
-		ms-tds defines, the 8 byte transaction descriptor is read
-		before the 4 byte outstanding request count now
-	fixed the freetds connection module - varchar, nchar, and nvarchar
-		columns were all reported as char, because ctlib collapses
-		them into CS_CHAR_TYPE, the sybase usertype is used to tell
-		them apart now, ms sql server sends no usertype at all so
-		they still can't be told apart there
-	fixed the tds protocol module - the done-in-proc token was sent
-		without DONE_MORE, which sql server always sets, so freetds
-		took it for the last done in the response, stopped reading
-		there, and left the return status, return values, and
-		done-proc in its buffer, putting every command after it one
-		response behind and losing the column metadata that
-		sp_prepare returns
-	fixed the freetds connection module - varbinary columns were reported
-		as binary, because ctlib collapses both into
-		CS_BINARY_TYPE, the sybase usertype is used to tell them
-		apart now, ms sql server sends no usertype at all so they
-		still can't be told apart there
-	fixed the freetds connection module - character column sizes were
-		reported multiplied by the maximum bytes-per-character of
-		the client charset, 4 times too large under utf-8, the
-		login ping asks for a 1-character column now and uses the
-		size that comes back to scale them down, since ctlib
-		provides no way to find out what the client charset is
-	made the tds protocol module warn when a listener is configured with
-		tls="yes" - the module doesn't support tls, and used to
-		accept the attribute and silently ignore it
-	fixed the freetds connection module - date, time, datetime2 and
-		datetimeoffset columns were all reported as unknown, which
-		the tds protocol module sent as void with no data, they are
-		reported as date, time, timestamp and datetimeoffset now,
-		freetds prior to 1.4 sends no usertype for datetime2 or
-		datetimeoffset so they are both reported as timestamp there
-	implemented bulk load in the tds protocol module - the "insert bulk"
-		statement that opens one is answered by the module instead
-		of being passed to the backend, and the bulk load packets
-		that follow it are read and loaded a row at a time
-	fixed the tds protocol module - a long varchar column was described
-		as varbinary, so a text column came back as binary data and
-		couldn't be bulk loaded at all
+		installed, so protocol="tds" couldn't be used from a normal
+		install
+	fixed make install - it failed in doc/ on a host without the wt tool,
+		the generated website files are in version control again and
+		install just copies them
+	fixed configure's chmod and launchd plist fixups, which weren't part of
+		config.status
+	added sqlrsh json and jsonl output formats
+	added sqlrsh commands for the rest of the sqlrconnection, sqlrcursor
+		result set, column metadata and bind variable apis
+	added sqlrsh command line options for every setting that was reachable
+		only as a command
+	added sqlrsh -continueonerror and -fieldsas, and the matching commands
+	added distinct sqlrsh exit codes - 0 success, 1 usage error, 2 script
+		file couldn't be opened, 3 connection or authentication failure,
+		4 a statement failed
+	fixed sqlrsh csv output - quoting, escaping, nulls vs empty strings, and
+		the divider, stats and banner rows that broke it
+	fixed sqlrsh bind variable commands - printinputbind and its twins did
+		nothing, and blob values were truncated and leaked
+	fixed the sqlrsh connect timeout and response timeout commands, which
+		read the fraction of a second wrong
+	fixed sqlrsh -id - a missing or misnamed password encryption module
+		segfaulted, and a one-way one silently produced a null password
+	updated the sqlrsh usage text, help command and man page to cover every
+		command and option
+	added an sqlrsh reference page to the website, covering every option,
+		command, output format and exit code
+	added a README.md for the github mirror
+	the website's server-side includes are expanded at build time now
+		instead of by apache, so any web server on unix or windows can
+		serve the site - the html files are installed 644 now and
+		doc/.htaccess is gone
+	removed insertparts.pl, unreferenced since the doc build moved to the wt
+		tool
+	documented the tds and oracle protocol modules' listener attributes and
+		limitations in the config guide
+	documented the freetds and sap connection modules' character set
+		behavior and metadata accuracy
+	documented that a one-way passwordencryption can't be used with a
+		challenge/response method, and that the odbc connection module
+		needs mars=yes to run more than one cursor at a time against ms
+		sql server
+	noted the oracle protocol module's license - gpl 2 or later, with
+		material from python-oracledb under the universal permissive
+		license 1.0
+	added the tds_connectstrings and firebird_connectstrings auth modules
+	added sqlrauth::challenge(), exposed on sqlrservercontroller for
+		protocol modules to call
+	fixed an authentication hole in the des password encryption module - it
+		kept one des instance for the life of the process, so after one
+		successful login with a password of 8 characters or more, any
+		password authenticated on that connection
+	rewrote the oracle userlist auth module to do oracle's real 11g and 12c
+		o5logon verifier exchange, renaming its method from
+		oracle_native_password to o5logon
+	fixed the oracle userlist auth module to encrypt and compare the
+		supplied password, so a one-way password encryption works for
+		oracle_clear_password
+	fixed the postgresql_connectstrings auth module, which accepted a
+		one-way passwordencryption on a listener configured with
+		passwords="cleartext"
+	moved o5logon's sha-512 and aes onto rudiments, so the module no longer
+		includes an openssl header
+	got the tds protocol module working - a freetds, ct-lib, odbc or jdbc
+		client can log in, run queries and read results
+	added TLS support to the tds protocol module - a client that won't
+		negotiate it under tls="yes" is refused now, rather than logged
+		in in the clear
+	added rpc support to the tds protocol module, by proc id or by name
+	added server side cursors and positioned update, delete and insert to
+		the tds protocol module
+	added bulk load to the tds protocol module
+	added stored procedure output parameters and return values to the tds
+		protocol module
+	added tdsversion, packetsize and maxpacketsize attributes to the tds
+		protocol module
+	fixed an authentication bypass in the tds protocol module - nothing
+		recorded whether a session had logged in, so a client could send
+		a batch, bulk load or rpc as its first request
+	fixed a pile of buffer overruns, unbounded allocations and infinite
+		loops in the tds protocol module, most of them reachable before
+		authentication
+	the tds protocol module converts character data to and from ucs-2,
+		cp1252 and utf-8 now, and describes column types and sizes the
+		way a real sql server does
+	a multi-statement tds batch sends one result set per statement now
+	client cancel works against the tds protocol module now - the attention
+		packet was sent with type 0x05 rather than 0x06, so every cancel
+		was rejected and ended the session
+	fixed sqlr-import and sqlr-export options that take a value, where a
+		missing value was silently dropped
+	fixed sqlr-export -krbservice, which was read from the -krb option
+	fixed sqlr-import -table, which was ignored for xml, and segfaulted when
+		it was omitted and the file name didn't end in the importer's
+		extension
+	fixed sqlr-stop, which reported success before the processes had exited
+	added a sqlr-stop exit code - 1 when a process is still running after
+		SIGKILL, so an init script can tell a failed stop from a good
+		one
+	fixed a pre-authentication crash and an out of bounds type map read in
+		the mysql protocol module
+	bumped the sqlrclient protocol to version 3, so the reply that says
+		another result set is available carries its column metadata and
+		rows
+	fixed sqlrcursor::nextResultSet(), which never refreshed its cached
+		column metadata or row buffers, so odbc's SQLMoreResults(), php
+		pdo's getMoreResults() and sqlrsh all walked past the first
+		result set while still showing its stale header and data
+	fixed csv export in the c++ api to quote numeric fields containing a
+		comma, quote, newline or carriage return, and to keep embedded
+		nulls
+	fixed sqlrimportxml and sqlrimportcsv to report a null or empty file
+		name as an error instead of segfaulting
+	fixed the c# data reader, which read almost every column back as a byte
+		array
+	fixed the jdbc result set and result set metadata - wrong types,
+		NullPointerExceptions, and answers for columns that don't exist
+	fixed the odbc driver to report SHORT and TINY columns as SQL_SMALLINT
+		and SQL_TINYINT rather than SQL_CHAR
+	fixed SQLR_CLIENT_CONNECT_TIMEOUT, SQLR_CLIENT_RESPONSE_TIMEOUT and the
+		php pdo connecttime option to round the fraction of a second
+		rather than truncate it
+	added binarylobbind to the odbc connection module's connect string, so
+		an untested driver can be opted into the binary blob bind
+	implemented nextResultSet() in the odbc connection module, which was a
+		stub that always said no more result sets were available
+	the odbc connection module binds blobs as binary for ms sql server, sap
+		ase, db2 and informix now, and defers one over 32768 bytes with
+		SQL_LEN_DATA_AT_EXEC
+	the odbc connection module reports column types accurately now - date,
+		time and timestamp told apart, and datetime2, smalldatetime,
+		money, smallmoney and wide character sizes
+	fixed heap corruption in the odbc connection module's string output and
+		input-output binds
+	the odbc connection module exposes every result set of a query with
+		output binds now, and reads a stored procedure's output
+		parameters and return status after the result sets are drained
+	fixed the freetds connection module's rpc path, which sat behind a macro
+		that was never set, so an exec or {call ...} query never issued
+		an rpc command
+	the freetds connection module tells column types apart by the sybase
+		usertype now, though ms sql server sends no usertype, so
+		varchar, nchar and nvarchar still can't be told apart there
+	the freetds connection module reports character column sizes at their
+		real width rather than scaled by the client charset
+	fixed a null char bind in the freetds connection module, which went
+		through as an empty string
 	added setTranslateBindVariablesForThisQuery() and
 		getTranslateBindVariablesForThisQuery() to sqlrservercontroller
-		and sqlrservercursor, so a protocol module can run a single
-		query without bind variable translation, even when the
-		instance's translatebindvariables attribute is "yes"
-	fixed the tds protocol module - with translatebindvariables on, a
-		sql batch containing @-prefixed names had them rewritten as
-		bind variables and was then run with no bind values, so
-		"create procedure someproc @a int as ..." failed
-	documented that the freetds connection reports column types and sizes
-		less accurately than the odbc connection does against ms sql
-		server, and that the odbc connection is the better choice
-		when an application needs accurate column metadata - the
-		freetds odbc driver works as well as the microsoft one, so
-		that needs no vendor software
-	fixed the sap connection module - varchar, nchar, and nvarchar columns
-		were all reported as char, because ctlib collapses them into
-		CS_CHAR_TYPE, the sybase usertype is used to tell them apart
-		now
-	fixed the tds protocol module - a long varbinary column was described
-		as varbinary, so an image column was reported as binary
-		rather than image
-	fixed the freetds connection module - sybase unichar and univarchar
-		columns were reported as text, because ctlib collapses them
-		into CS_TEXT_TYPE, the sybase usertype is used to tell them
-		apart now and they're reported as nchar and nvarchar
-	fixed the tds protocol module - a decimal or numeric column's column
-		metadata size was the column's precision rather than the
-		widest the value can be on the wire, so a decimal(5,2) column
-		was described with a size of 5 instead of 17
-	fixed the tds protocol module - an rpc parameter declared char or nchar
-		was passed along at the length that came over the wire rather
-		than blank padded out to its declared size, so a char(20)
-		parameter carrying "one" was bound as 3 characters where a
-		real sql server would have padded it to 20
-	fixed the tds protocol module - date, time, datetime2 and
-		datetimeoffset columns were sent to a client that negotiated
-		a tds version older than 7.3, which is where those types were
-		introduced, a real sql server converts them to strings
-		server-side and sends nvarchar in the iso/odbc rendering
-		instead and the module does that now
-	fixed the tds protocol module - a date-only or time-only string left
-		the components it didn't supply at -1 and they were fed
-		straight into the writers' unsigned arithmetic, so a date
-		column went out with -1098300 three-hundredths of a second
-	fixed the tds protocol module - datetime::parse's return value was
-		ignored, so a string it couldn't parse was written from
-		whatever it happened to leave behind
-	fixed the tds protocol module - a datetimeoffset string's trailing
-		"+hh:mm" was read as a third date/time part, which made the
-		whole string unparseable, it's split off and parsed now
-	fixed the tds protocol module - a datetimeoffset was written with a
-		hardcoded zero timezone offset and with the local wall time
-		rather than the utc instant, both are written correctly now
-	fixed the odbc connection module - a SQL_TYPE_DATE column was
-		reported as a datetime rather than a date
-	fixed the tds protocol module - a stored procedure call with an
-		output parameter appended the t-sql "output" keyword after
-		the parameter's bind marker, and sql server rejects that
-		outright, the direction is already carried by the bind
-		itself - SQL_PARAM_OUTPUT in the odbc module and CS_RETURN in
-		the freetds and sap ones
-	fixed the firebird protocol module - the database parameter buffer
-		walk left the length and value of any item it had no use
-		for in the buffer, so a single unhandled item threw the
-		walk out of step, and its loop test compared pointers for
-		inequality rather than counting the bytes left, so an
-		out-of-step walk stepped over the end of the buffer and
-		spun forever - every item is framed and skipped by its
-		length now, the walk is bounded, and the dpb version byte
-		selects the item encoding
-	fixed the tds protocol module - an sp_executesql or sp_cursoropen
-		that supplied no bind values still had its statement run
-		through bind variable translation, so a single-@ local
-		variable or parameter declaration in it was rewritten as a
-		bind marker and then run with nothing bound, the same defect
-		that was fixed for a plain sql batch
-	fixed the tds protocol module - a stored procedure's output
-		parameter was sent back without its name, and as an 8 byte
-		integer whatever width the client declared, so a client that
-		read the name got an empty one and ct_describe reported
-		CS_LONG_TYPE for what was sent as a CS_INT_TYPE
-	fixed the tds protocol module - a stored procedure's return value was
-		never sent, the RETURNSTATUS token carried a hardcoded 0
-		where a real sql server sends what the procedure returned -
-		a named procedure is called through odbc call syntax now,
-		which gives the return value a bind of its own
-	fixed the firebird protocol module - every status vector element in
-		an op_response was written 64 bits wide rather than 32, the
-		low word of the response's blob id was never written, and no
-		vector was terminated with isc_arg_end, three faults that
-		cancelled each other out and left the attach and transaction
-		responses correct by accident - the elements are 32 bits
-		now, the whole blob id is written, and every vector ends
-		with isc_arg_end
-	fixed the firebird protocol module - a buffer written into a
-		response was never padded to a 4-byte boundary, and the info
-		database response made up for it with a hand-written trailer
-		that was only correct when the response buffer length was a
-		multiple of 4 plus 3 - buffers are padded now, and that
-		response is built like every other one
-	fixed the firebird protocol module - the op code, arch, protocol
-		version, ptype, dpb, tpb, and info item tables didn't match
-		firebird's own headers, PROTOCOL_VERSION2 didn't exist at all,
-		and 15 was called isc_arg_mach where firebird calls it
-		isc_arg_next_mach - the tables match firebird now, and every
-		debug decoder covers all of them
-	added the firebird protocol module's missing constant families -
-		CONNECT_VERSION, the CNCT_ user id tags, ptype_MASK and the
-		pflag_ bits, the dpb sub-namespaces, isc_info_tra_,
-		isc_info_blob_, isc_bpb_, fb_cancel_, the isc_info_sql_stmt_
-		statement types, P_FETCH, and the object handle, statement
-		flag, and cursor flag constants
-	added firebird protocol module debug output for the connect version
-		and for the tags inside the connect block's user id, both of
-		which were read and then thrown away
-	added the op codes firebird defines to the firebird protocol module's
-		dispatch switch, so one it knows about but hasn't implemented
-		is distinguishable from one nobody defines
-	fixed the firebird protocol module's connect handshake - it answered
-		every client with a hardcoded PROTOCOL_VERSION10, arch_generic,
-		ptype_rpc accept and threw away the protocol list the client
-		offered - the offered tuples are negotiated now, the way
-		firebird's own accept_connection() does it, capped at
-		PROTOCOL_VERSION12 and ptype_batch_send, which is as far as the
-		module can speak until it can drive the protocol 13 and up
-		authentication handshake
-	added an op_reject response to the firebird protocol module's connect
-		handshake, so a client that offers no protocol the module can
-		speak gets a rejection it can report rather than an accept it
-		can't use
-	fixed the odbc connection module - a stored procedure's output
-		parameters and return status were read before the result sets
-		were drained, so a procedure that returned rows as well as an
-		output parameter handed back the bind's initial value rather
-		than what the procedure set - the rows are buffered now, and
-		the result sets drained, before the output binds are read
-	fixed the php pdo connecttime option - the fraction of a second was
-		truncated rather than rounded, so connecttime=5.1 set 5
-		seconds and 99999 microseconds and never read back as what
-		was asked for, the same defect the c++ api had before this
-		release, and a fraction that rounds up now carries into the
-		seconds without wrapping them negative
-	fixed an out-of-bounds read in the oracle protocol module - its type
-		map was one entry shorter than the datatype list it's indexed
-		by, so an informix LVARCHAR column read past the end of the
-		array and reported whatever followed it as the column type,
-		and the index is bounds-checked now as well
-	fixed the cs api data reader - seventeen datatype names had no case
-		in one or both of its name-to-type chains, so an nvarchar or
-		xml column read back as a byte array and a smallfloat column
-		read back as bytes while it reported itself as a Single, and
-		all 192 datatype names are now handled in both chains, with
-		datetimeoffset reading back as a DateTimeOffset
-	fixed the cs api data reader - a boolean field was converted with
-		Convert.ToBoolean(), which throws on anything but "True" or
-		"False", so the 1 informix sends and the t postgresql sends
-		were both errors rather than values
+		and sqlrservercursor
+	added sqlrservercursor::inputBindBlob() and inputBindClob() overloads
+		that take the byte length of each segment the value arrived as
+	added sqlrservercursor::getInputBindCountFromPrepare(),
+		getInputBindType(), getInputBindSize(), getInputBindScale(),
+		getInputBindPrecision() and getInputBindIsNullable()
+	added sqlrserverconnection::setReadOnly()
+	fixed a sqlr-connection that spun at full cpu forever after SIGTERM when
+		its database had gone down
+	fixed a dangling pointer in the list api calls, which cleared the bind
+		variable mappings pool without clearing the mappings
+	fixed the two isDateTimeType() overloads, which disagreed about
+		DATETIMEOFFSET
+	fixed datatypes.h's float, number and binary type tests, which still
+		used the pre-2007 postgresql array type spellings
 	fixed sqlr-listener blaming directory permissions when a unix socket
-		name is simply too long - it now says the name is too long,
-		how long it is, and what the limit is, and points at the
-		instance id and localstatedir, which are what to shorten
-	fixed an authentication hole in the des password encryption module -
-		it kept one des instance for the life of the process and
-		never cleared it, and des appends rather than replaces, so
-		each encryption hashed every password the process had seen,
-		concatenated - and since des truncates at 8 characters, after
-		one successful login with a password of 8 or more characters,
-		any password at all authenticated on that connection
-	fixed the postgresql_connectstrings auth module - a one-way
-		passwordencryption rejected everyone, even on a listener
-		configured with passwords="cleartext", where the client sends
-		the password itself and a one-way module can check it, and
-		the combination that genuinely cannot work, a one-way
-		encryption with the md5 challenge/response method, now says
-		so in the debug output instead of failing every login
-		silently
-	documented that a one-way passwordencryption can't be used with a
-		challenge/response method, which covers the postgresql
-		protocol's default md5 and the firebird protocol's legacy
-		hash
-	added a firebird_connectstrings auth module, along with a
-		sqlrfirebirdcredentials class - it handles both the cleartext
-		password that isc_dpb_password carries and the legacy_auth
-		des hash that isc_dpb_password_enc carries, and the
-		credentials tell it which of the two it was given
-	fixed the firebird protocol module - its authenticate() was entirely
-		inside an #if 0 and nothing called it, so every user name and
-		password was accepted and the password read out of the db
-		parameter buffer was discarded - credentials now go through
-		the auth framework, and a failed login is answered with the
-		same isc_login response a real firebird server sends, rather
-		than being let through
-	fixed the firebird protocol module - an isc_database_info reply was a
-		run of bare item bytes with no lengths and no values, so a
-		client read the item bodies that followed one item as its
-		length and refused the whole buffer as a malformed clumplet -
-		each value is a real cluster now, item byte, 2 byte
-		little-endian length and value, an item the module can't
-		answer gets isc_info_error rather than a bare byte, seventeen
-		items it can answer are answered in the shapes a real
-		firebird sends on the wire, the response buffer length the
-		client asks for is honored and a reply that would exceed it
-		is cut short with isc_info_truncated, and the item walk's
-		loop test is bounded rather than comparing pointers for
-		inequality
-	fixed make install corrupting a running instance - it copied each
-		file over the installed one, which keeps the same inode and
-		so rewrites the memory-mapped pages of any process that has
-		the file open, leaving sqlr-listener and sqlr-connection
-		faulting and spinning until killed by hand - each file is
-		now written under a temporary name and renamed over the
-		installed one, so it gets a new inode and running processes
-		keep the file they already have, and an install that fails
-		part way leaves the previous version in place rather than
-		no file at all
-	added per-module install and uninstall targets for the protocol and
-		auth modules - src/protocols and src/auths installed their
-		base modules from a single group target, so installing one
-		module reinstalled all of them, each module now has its own
-		installsharedlib, installdll, and uninstall target and the
-		group targets just depend on those, which also fixes the
-		protocol uninstall target leaving the mysql, postgresql,
-		firebird, oracle, tds, and teradata modules behind when built
-		with a non-default module name prefix
-	fixed the firebird protocol module's attach() accepting any database -
-		the path the client sends was read and then never looked at,
-		so an attach naming a database that doesn't exist succeeded,
-		where a real firebird fails it - the path is now compared,
-		after authenticating rather than before, since a real firebird
-		checks the credentials first and the file second, against the
-		database the instance is configured for, and a mismatch is
-		answered with the status vector a real firebird sends for a
-		file it can't open - isc_io_error, the failed operation, the
-		file name, isc_io_open_err, and the errno text - which also
-		meant teaching the status vector builder and the response
-		writer to carry string arguments, since neither could before
-	fixed the two isDateTimeType overloads disagreeing about
-		DATETIMEOFFSET - the one that takes a type name counted it as
-		a date/time type and the one that takes a type id did not, so
-		the same column was a date/time type or not depending on
-		which one the caller happened to use, and a datetimeoffset
-		column now binds as a date rather than a string in a bulk
-		load, which keeps its offset in the bind's timezone field
-		instead of leaving it in an opaque string
-	fixed the sap connection module - varbinary columns were reported as
-		binary, because ctlib reports both as CS_BINARY_TYPE, and the
-		systypes usertype that tells them apart wasn't consulted
-	added per-module install and uninstall targets for the rest of the
-		modules and executables that installed as a group - the
-		directive, errortranslation, filter, logger, pwdenc, query,
-		querytranslation, router, and trigger modules, the sqlr-start,
-		sqlr-stop, sqlr-listener, sqlr-connection, sqlr-scaler,
-		sqlr-cachemanager, and sqlr-status executables, the sqlrsh,
-		sqlr-export, sqlr-import, and sqlr-pwdenc executables, and the
-		java and perl connection and cursor libraries, so installing
-		one reinstalled all of them, each now has its own install and
-		uninstall target and the group targets just depend on those,
-		which also fixes the pwdenc uninstall target leaving the sha1
-		and sha256 modules behind when built with a non-default module
-		name prefix
-	now requires rudiments 2.3.0 or newer
-	fixed the teradata protocol module's decryption of the connect
-		message - the first 20 bytes of the encrypted data were being
-		skipped as an hmac, but there is no hmac there, the mic is a
-		trailer inside the ciphertext instead, so the first block came
-		out as garbage and the login parcels were never found
-	fixed the teradata protocol module's shared key - the key is a slice
-		of the shared secret, chosen by the qop index in the token
-		header that the client appends, rather than always the first
-		16 bytes
-	added mic and token header verification to the teradata protocol
-		module's decryption of the connect message
-	fixed the teradata protocol module's framing of the encrypted connect
-		message - in an encrypted message the lan header stops after
-		the session number and the last 28 bytes of it are the first
-		bytes of the ciphertext, so decryption started 28 bytes too
-		late and the request auth, request number, gateway byte, and
-		host character set were read as ciphertext instead of being
-		decrypted
-	added parsing and debug for the teradata protocol module's logon,
-		session option, and sso username request parcels
-	documented the license the oracle protocol module carries - it's
-		part of the sql relay server, under the gpl version 2 or
-		later, and material taken from python-oracledb goes under
-		the universal permissive license 1.0 rather than its apache
-		2.0 option, which isn't gpl version 2 compatible
-	added per-module install and uninstall targets to the directories
-		that build a single module - the bindvariabletranslation,
-		config, moduledata, notification, parser,
-		resultsetheadertranslation, resultsetrowblocktranslation,
-		resultsetrowtranslation, resultsettranslation, and schedule
-		modules installed straight from a group target with no
-		per-module target behind it, so they now follow the same
-		pattern as the rest of the tree and there's a block to copy
-		when a second module is added to one of them
-	removed a stale module rename from the config module install - it
-		renamed an installed sqlrconfig_xml module to the platform
-		module suffix, but that module was removed years ago, and on
-		a platform whose module suffix isn't .so it could rename a
-		leftover copy back into a name the server would load
-	fixed configure - the chmods and plist fixups that followed AC_OUTPUT
-		weren't part of config.status, so regenerating with
-		config.status alone left the generated scripts
-		non-executable and left ${DESTDIR} in the launchd plists,
-		which pointed launchd at a path that doesn't exist - the
-		fixups are attached to the files themselves now, so
-		config.status carries them, and each of those files can
-		also be named individually on the config.status command
-		line now
-	fixed a dangling pointer in the server's list-api calls - the calls
-		that fake a prepare and execute (getCatalogList, getTableList,
-		etc.) cleared the bind variable mappings pool without clearing
-		the mappings themselves, and the mappings are allocated out of
-		that pool, so re-executing the query on that cursor afterward
-		read freed memory
-	fixed the reformatdatetime result set translation - the dateformat
-		and timeformat attributes didn't fall back to datetimeformat,
-		as the docs say they do, so with only datetimeformat
-		configured, a date-only or time-only field came back to the
-		client as an empty string
-	fixed the server's date/time reformatting - a field that had no
-		format configured for it was replaced with an empty string,
-		rather than being left alone
-	fixed the postgresql protocol module - none of the character lob
-		datatypes had a case in getColumnTypeOid(), so ntext, clob,
-		dbclob, longchar, longvarchar, tinytext, mediumtext, longtext,
-		json and xml columns were all described to the client as oid
-		705, unknown, rather than as text
-	fixed the postgresql protocol module - db2's graphic, vargraphic and
-		longvargraphic columns were described as oid 705, unknown,
-		rather than as text, they're double-byte character types even
-		though datatypes.h groups them with the blobs
-	fixed the odbc connection module - a string output bind of 4000 bytes
-		or more against sql server stored a bind buffer size of 0, so
-		subtracting the null terminator from it wrapped to SIZE_MAX,
-		which corrupted the heap, returned a truncated value, and
-		killed the connection
-	fixed the odbc connection module - an empty or zero-length
-		input-output string bind wrote its null terminator one byte
-		before the start of the bind buffer
-	fixed the odbc connection module - the input-output bind conversion
-		counted the null terminator twice, so the copy into the bind
-		buffer ran two bytes past the end of the converted string
-	fixed the odbc connection module's stringSize() - its fallback branch
-		didn't count the null terminator, though its other three
-		branches did, and its comment said it did
-	fixed sqlr-stop - it reported success as soon as it sent SIGTERM,
-		without waiting for the process to exit, so processes that
-		ignored or were too slow to handle the signal survived a
-		successful-looking stop, and their pid files were left behind
-		- sqlr-stop now signals every process at once, waits up to 3
-		seconds for them to exit, sends SIGKILL to whatever is left,
-		waits about another second, and reports success only for the
-		processes it saw exit, removing their pid files
-	added a nonzero sqlr-stop exit code - it now exits 1 when any process
-		is still running after SIGKILL, so init scripts can tell a
-		failed stop from a successful one
-	fixed sqlr-stop - it stopped the connections before the scaler, whose
-		job is to replace connections, so a connection spawned after
-		the pid directory had been scanned was never signalled and was
-		orphaned when the scaler exited - the scaler is now stopped
-		and confirmed dead first, and the sweep for everything else
-		runs twice, to catch a connection that hadn't created its pid
-		file yet when the first sweep ran
-	fixed the sqlr-connection shut down - a connection whose database went
-		down while it was running a query would spin at full cpu
-		forever, never exiting, after it was sent SIGTERM, because
-		reLogIn() logs the connection out and then returns without
-		logging back in when the shutdown flag is set, while the loop
-		that called it had no shutdown flag check of its own and just
-		retried the query against the logged-out connection over and
-		over
-	fixed sqlr-connection - the handoff path that receives the client file
-		descriptor didn't sleep before returning, though its comment
-		said it did, so a connection whose listener had died looped
-		over the failure at full speed
-	fixed the sap connection module - unichar, univarchar and unitext
-		columns were all reported as unknown, because ctlib's
-		CS_UNICHAR_TYPE and CS_UNITEXT_TYPE had no cases, they report
-		nchar, nvarchar and ntext now
-	fixed the sap connection module - date, time, bigtime and bigdatetime
-		columns were all reported as unknown, because ctlib's
-		CS_DATE_TYPE, CS_TIME_TYPE, CS_BIGTIME_TYPE and
-		CS_BIGDATETIME_TYPE had no cases, they report date, time, time
-		and timestamp now
-	fixed the cs api data reader - it compared datatype names
-		case-sensitively against the uppercase names in the datatype
-		list, but a connection module may report the database's own
-		spelling instead, and postgresql's are lowercase, so nothing
-		ever matched and every column read back as a byte array, even
-		a plain integer one
-	documented that the freetds connection's charset connect string
-		variable doesn't set the character set that data coming out of
-		the database is translated into - the faq had said it did, but
-		it sets the character set that freetds asks the server to use,
-		which is a different thing, and the one that matters comes
-		from the client charset setting in the freetds.conf file
-	documented that the sap connection's lang connect string variable
-		also selects the character set that data is translated into,
-		by way of the locale it names, that charset overrides it, that
-		charset takes the client library's own spellings, like utf8
-		and iso_1 rather than utf-8 and iso-8859-1, and that an
-		unrecognized name fails the login
-	fixed the tds protocol module - a failed rpc reported success, its
-		done never set the error bit, so the client read the response
-		one result out of step and eventually killed the connection
-	fixed the tds protocol module - a failed rpc sent 1 as its return
-		status where a real sql server sends the error's own number,
-		and sent one at all for a procedure that was never found,
-		where a real sql server sends none
-	fixed the tds protocol module - sp_prepare, sp_prepexec and
-		sp_executesql accepted a non-unicode statement or parameter
-		declaration argument, a real sql server rejects one with
-		error 214
-	fixed the tds protocol module - an rpc output parameter's return
-		value carried a nullable flag, which made the ct-lib client
-		report 65536 rather than 0 for the parameter's user type
-	fixed the sap and freetds connection modules - an exec or execute
-		query sent everything after the keyword as the rpc procedure
-		name, parameters included, and skipped exactly one whitespace
-		character after the keyword, so only a bare exec with a single
-		space came out right
-	fixed the firebird protocol module - readString() and readBuffer()
-		allocated a client-supplied 32 bit length with no upper
-		bound, so four bytes bought a 4gb allocation before the
-		client had authenticated, and readString's length+1 wrapped
-		to zero at 0xffffffff and read the body into an empty block;
-		the length is now capped at 65535, which is what firebird's
-		own api types these lengths as, and rejected before anything
-		is allocated
-	fixed the firebird protocol module - readString() and readBuffer()
-		returned false without freeing the buffer they had just
-		allocated, and no caller frees on a false return, so every
-		truncated packet leaked whatever the client asked for
-	fixed the firebird protocol module - readString() and readBuffer()
-		nulled the caller's pointer only after reading the length, so
-		a short read of the length left it holding whatever it had
-		before; attach() deletes db just before reading it, so a
-		truncated attach packet left db dangling and it was deleted a
-		second time when the session ended
-	fixed the firebird protocol module - readString() and readBuffer()
-		printed the length they read with %d, so a hostile 0xffffffff
-		logged as -1 rather than the value an operator would be
-		looking for
-	fixed the odbc connection module - a ms sql server datetime2 column
-		was reported as datetime, because the driver reports both with
-		the same sql type, length, precision and scale; the column's
-		type name is now read at describe time and used to tell them
-		apart
-	fixed the tds protocol module - preLogin() had no bounds checking at
-		all, so a pre-login packet with no terminator walked off the
-		end of the request buffer, and an option offset or size was
-		used as a copy source without being checked against the packet
-		length; a repeated instopt option also leaked its buffer
-	fixed the tds protocol module - allHeaders(), rpc() and params()
-		each decremented the remaining packet size without first
-		checking that there was that much left, so a short request
-		underflowed the count to a huge value and the parse ran on
-		past the end of the packet
-	fixed the odbc connection module - a blob bind couldn't reach a ms
-		sql server binary, varbinary or image column at all, because
-		blobs were bound as characters there, and sql server won't
-		convert a character parameter to a binary one; blobs are now
-		bound as binary for sql server
-	fixed the odbc connection module - the binary blob bind passed no
-		StrLen_or_IndPtr, so the driver looked for a null terminator
-		to find the end of the value and truncated any value
-		containing a 0 byte, and it ignored the null indicator, so a
-		null blob bind bound garbage
-	added positioned update, delete and insert to the tds protocol module -
-		sp_cursor answered with an error and return status 16957
-		before, because a positioned update needs "where current of"
-		and the server api has no equivalent; the statement is
-		synthesized instead, from the table name the rpc carries, the
-		values it names by column, and the primary key values of the
-		row the last sp_cursorfetch landed on, which is what an odbc
-		driver does for an optimistic cursor; a cursor over a table
-		with no primary key, or one that didn't select the key
-		columns, is still refused, and so are the operations that
-		need a scrollable cursor
-	removed the hex workaround from the tds protocol module's bulk load -
-		a binary value was sent as hex digits and converted back by
-		the insert, because a blob bind couldn't reach sql server;
-		the value is bound as a blob now, which halves the bytes sent
-		and lifts the varbinary(8000) cap that kept an image column
-		from being loaded at its full width
-	added the statement lifecycle to the firebird protocol module - a
-		firebird client can now connect, prepare, execute and fetch;
-		op_detach, op_commit, op_rollback, op_commit_retaining,
-		op_rollback_retaining, op_info_transaction,
-		op_allocate_statement, op_free_statement, op_set_cursor,
-		op_prepare_statement, op_info_sql, op_execute, op_execute2,
-		op_exec_immediate, op_exec_immediate2, op_fetch and op_cancel
-		all went from a bare "return false;" to real implementations,
-		with a sql relay datatype to firebird SQL_* type map, a blr
-		message parser and writer, and bind variable handling
-	fixed the firebird protocol module's response to an op it doesn't
-		implement - sendNotImplementedError() returned false, which
-		the session loop reads as "stop looping", so the socket closed
-		with no response packet ever written and the client reported a
-		lost connection rather than a firebird error
-	fixed the firebird protocol module's tpb walk - the loop test was
-		exact-equality against the end pointer, so an item whose
-		length walked past the end ran the loop off the buffer, and
-		the items that carry a length and a value were read as bare
-		bytes
-	fixed the firebird protocol module's error messages - the message from
-		the server api is a buffer with a size, and it was read as a
-		string, so an error a client printed ran off the end of the
-		text into whatever the buffer still held
-	added frb_info_att_charset to what the firebird protocol module
-		answers isc_database_info with - isql treats an
-		isc_info_error for any item but isc_info_firebird_version as
-		proof it's talking to a pre-interbase-6 server and resets its
-		sql dialect to 1
-	fixed the firebird protocol module's debug output - lengths, handles,
-		counts and status vector values are all unsigned, but they
-		were printed with %d, so any of them at or above 2147483648
-		printed as a negative number - exactly the value an operator
-		would be hunting for, misprinted
-	removed an unreachable test from the firebird protocol module's
-		readPadding() - the degenerate case guard above it already
-		returns for the only case in which the padding size can be 0
-	fixed the odbc api's column type mapping for the SHORT and TINY
-		datatypes - the two comparisons spelled the names the way the
-		datatype enum in datatypes.h spells them, "SHORT_DATATYPE"
-		and "TINY_DATATYPE", but the string they're compared against
-		comes from datatypestring[], which spells them "SHORT" and
-		"TINY", so neither branch could ever be taken and a column of
-		either type ran off the end of the chain and was reported as
-		SQL_CHAR rather than SQL_SMALLINT or SQL_TINYINT
-	fixed the jdbc api - it uppercased a column's datatype name with no
-		locale before matching it against the names in the datatype
-		list, so on a jvm running in a turkish locale "int4"
-		uppercased to a dotted capital I followed by NT4 and matched
-		nothing, and every postgresql column whose type name had an i
-		in it came back from the result set metadata with no type, no
-		class name, and the raw column length for its display size and
-		precision
-	fixed the firebird connection module's date rendering - a DATE column
-		was formatted with colons rather than dashes, so 1 January
-		2001 rendered as "2001:01:01" instead of "2001-01-01", though
-		the date part of a TIMESTAMP rendered correctly
-	fixed the firebird connection module's rendering of negative DECIMAL and
-		NUMERIC values - the value is a scaled integer, and the parts
-		to either side of the decimal point were formatted
-		separately, so each printed a sign of its own and -1.50
-		rendered as "-1.-50" - and when the integer part was zero it
-		had no sign to print at all, so -0.50 rendered as "0.-50"
-	fixed the firebird connection module's error messages - the error buffer
-		is reused for the life of the connection and is never
-		cleared, and the size was measured from the buffer rather
-		than from the message just copied into it, so a short error
-		following a longer one was reported with the tail of the
-		longer one stuck to the end of it, even when the two errors
-		belonged to different clients
-	capped the response buffer length the firebird protocol module takes
-		off the wire - the length a client declares is the ceiling
-		that truncates the response, and nothing bounded it, so a
-		client that declared a huge one never truncated and the
-		response buffer grew to whatever the requested items
-		produced - it's capped at 65535 now, which is the ceiling
-		firebird's own api implies
-	fixed the jdbc api - five result set metadata methods uppercased a
-		column's datatype name with no null check, and the name is null
-		for an out-of-range column, so asking the metadata about an
-		invalid column threw a NullPointerException out of
-		getColumnClassName(), getColumnDisplaySize(), getColumnType(),
-		getPrecision() or isCurrency() rather than falling through the
-		way the rest of the driver does
-	fixed the jdbc api's result set metadata for columns whose datatype is
-		named SHORT or TINY - two case labels in each of the class name
-		and jdbc type chains spelled the identifier in the datatype enum,
-		SHORT_DATATYPE and TINY_DATATYPE, rather than the name the server
-		sends, so neither could ever match, and with no bare SHORT or TINY
-		case to fall back on such a column reported a null class name and
-		java.sql.Types.NULL instead of java.lang.Short and Types.SMALLINT
-		or Types.TINYINT
-	answered more of the firebird protocol module's isc_database_info items -
-		it answered 18 of them and sent isc_info_error for the rest, and
-		an isc_info_error isn't harmless: isql treats one for any item
-		other than isc_info_firebird_version as proof it's talking to a
-		pre-interbase-6 server and resets its sql dialect to 1 - the
-		page, record and transaction counters, the size and memory
-		items, the creation date and the user names are all answered
-		now, in the shapes a real server sends them in, and the only
-		two items left getting an isc_info_error are
-		isc_info_window_turns and isc_info_license, which is what a
-		real server sends for those two as well
-	fixed two off-by-one reads in the oracle protocol module - the count
-		loops in getNullTerminatedArray() and getString() dereferenced
-		the read pointer before comparing it to the end of the packet,
-		so a packet with no null terminator read one byte past the end
-		of the buffer, and if that byte happened to be zero then the
-		malformed packet was accepted and the read pointer was left
-		past the end of the buffer for the next parse
-	fixed the jdbc api - maxFieldSize never truncated a postgresql char
-		array or varchar array column, because the two case labels for
-		those types spelled the identifiers in the datatype enum rather
-		than the CHAR_ARRAY and VARCHAR_ARRAY names the server sends -
-		both spellings are accepted now, since with typemangling=lookup
-		postgresql sends its own _char and _varchar instead
-	fixed an unbounded allocation in the oracle protocol module -
-		getAnoArrayField() read an array count off the wire and
-		allocated that many uint16_t's without checking it against
-		anything, so a count of 0xffffffff asked for 8gb, and since
-		nothing in the module catches std::bad_alloc, a failed
-		allocation aborted the connection process - the ano parse now
-		carries the end of the packet, the field size is checked
-		against the bytes left in the packet, the array count is
-		checked against the bytes left in the field, and a count that
-		doesn't fit fails the negotiation instead of allocating
-	added a challenge path to the sqlrauth module api - auth() was verify-
-		only, so a protocol whose challenge is derived from the
-		password, like oracle's o5logon, couldn't be implemented,
-		since only an auth module may see passwords - the new
-		challenge() takes the credentials and a buffer, and returns
-		true if it built the challenge, and it's exposed on
-		sqlrservercontroller for protocol modules to call - the
-		protocol module generates the verifier data and passes it in,
-		matching what the mysql protocol module already does with its
-		nonce, so the auth modules stay stateless - the default
-		implementation returns false, so no existing auth module
-		changes, and a password stored under a one-way password
-		encryption module can't be used, since building the challenge
-		requires the cleartext password
-	fixed a leak and unbounded reads in the oracle protocol module's
-		authentication request parse - recvAuthenticationRequest()
-		duplicated the user name, and a name and a value per field,
-		and never freed any of them, and the client chooses how many
-		fields there are, so one request could leak thousands of
-		blocks in a long-lived connection process - the strings are
-		freed now, the field loop is a while (rp<end) rather than a
-		do/while so a packet with no fields parses none instead of
-		one, and the header, the user name and every read in the loop
-		are checked against the end of the packet
-	fixed the jdbc api - result set metadata getColumnType() returned
-		java.sql.Types.NULL, which means "the sql NULL type", for a
-		datatype name it has no case for, rather than Types.OTHER,
-		which is what jdbc defines for a type the driver cannot
-		classify - and postgresql reports either its own type names
-		or bare oids depending on typemangling, so in the default
-		configuration every column of every postgresql result set
-		came back as Types.NULL
-	rewrote the oracle userlist auth module, which was a copy of the
-		mysql userlist module with the names changed - its
-		oracle_native_password method computed mysql's sha1-xor
-		scramble, which oracle doesn't do at any version, and its
-		supported method list still named mysql's
-		authentication_windows_client - it implements oracle's real
-		o5logon verifier exchange now, for both the 11g and the 12c
-		verifier types, using the challenge path that was just added
-		to the auth modules, and the method is called o5logon rather
-		than oracle_native_password
-	fixed the oracle userlist auth module - a password stored under a
-		one-way password encryption module never authenticated,
-		because the module only ever tried to decrypt the configured
-		password, which a one-way module can't do - it encrypts the
-		password that was passed in and compares now, the way the
-		sqlrclient userlist module already did, for the
-		oracle_clear_password method - one-way encryption still can't
-		work with o5logon, which derives its challenge from the
-		password and so needs the cleartext
-	fixed the oracle userlist auth module - it never set the password
-		path on the value parser, so a password written in the
-		configuration as an indirect value, such as a file reference,
-		had no base path to resolve against, although the same
-		password did in the mysql userlist module
-	fixed the firebird connection module - a decimal or numeric column's
-		scale divisor was computed as (int)pow(10.0,scale), and
-		firebird allows 18 digits of scale, so from scale 10 up the
-		divisor overflowed an int and every value of magnitude
-		2147483648 or more rendered as garbage - decimal(18,10)
-		holding 1.5 came back as 6.2115098112 - the divisor is now
-		accumulated by integer multiplication into a 64-bit integer,
-		which is exact at every scale firebird allows and also drops
-		the floating point round trip that could otherwise give a
-		divisor one less than a power of ten
-	made the firebird protocol module honor a read-only transaction - a tpb
-		asking for one got a read-write transaction, because SQL Relay
-		has no way to ask a backend for a read-only one, so a write
-		inside it succeeded when it should have failed - an insert,
-		update or delete is refused by the module now, with the bare
-		isc_read_only_trans a real server sends, which the client turns
-		into sqlcode -817, sqlstate 42000 and "attempted update during
-		read-only transaction" - isc_info_tra_access answers read-only
-		for such a transaction too, rather than always answering
-		read-write - what it still doesn't do: the transaction
-		underneath is read-write (#9109), ddl isn't refused (#9107), and
-		the tpb's isolation level is still dropped (#9108)
-	fixed the oracle protocol module - the protocol negotiation response
-		was incomplete, it never sent the server compile-time or
-		runtime capability arrays at all, and it hardcoded the
-		database and national character sets to us7ascii - the
-		response now carries capability arrays captured from a live
-		oracle 11.2 server, defaults to al32utf8 and al16utf16, and
-		takes charset and nationalcharset module parameters
-	fixed the jdbc api - the result set metadata class never validated
-		the column number, so all twenty of its accessors that take
-		one answered for a column that doesn't exist rather than
-		throwing - and answered plausibly, with isSearchable(),
-		isSigned() and isWritable() reporting true, isNullable()
-		reporting columnNoNulls, and eight others returning exactly
-		what a real column returns - they all throw an "invalid
-		column index" SQLException now, the way the result set class
-		already did
-	fixed the oracle protocol module - the ano request header and six of
-		the fixed-size ano field getters had no bounds checks, so a
-		short packet read past the end of the buffer, before
-		authentication - an 8-byte data packet left a zero-byte buffer
-		to read a 15-byte header out of - the header, the service
-		count and every fixed-size field are bounded against the end
-		of the packet now, and getAnoUnknownField(), which was dead
-		code that advanced the read pointer by a length taken off the
-		wire, is gone
-	fixed the jdbc api - result set findColumn() and the by-label
-		accessors called equalsIgnoreCase() on column names without
-		checking for null, and the names are null when the server
-		was told not to send column info, which an application can
-		do through unwrap().dontGetColumnInfo() - the column count
-		still comes back non-zero in that state, so both threw a
-		NullPointerException rather than the SQLException jdbc
-		requires
-	fixed the oracle protocol module - the ano negotiation ran on every
-		connection, but ano is optional, and oracle's own thin drivers
-		don't negotiate it - python-oracledb and node-oracledb send the
-		protocol negotiation as their first data packet, which the
-		module read as an ano request, failed on the missing 0xdeadbeef
-		marker, and dropped the connection - the connect packet's nsi
-		flags say whether the client wants ano, and the negotiation
-		only runs when they do
-	fixed the firebird protocol module - a debug line printed an ssize_t
-		with %d, which reads 4 bytes of an 8 byte argument, so the
-		byte count it showed dropped the high half on a little-endian
-		machine and was wrong outright on a big-endian one - it prints
-		with %lld and an explicit 64 bit cast now, which is what the
-		rest of the tree already does with the same value
-	fixed the firebird connection module - getError() left the error buffer
-		unterminated when the message was as long as the buffer or
-		longer, because it clamped the size to the buffer size, filled
-		the buffer to the brim, and then correctly declined to write a
-		terminator one byte past the end - a truncated message was
-		therefore not a c string, and the readers that walk it to a
-		terminator, such as the one that hands it to printf as a format
-		string, read past it - it clamps to one less than the buffer
-		size now and always terminates, so a byte of the buffer holds
-		the terminator rather than the byte past it, which isn't the
-		module's to write
-	the oracle protocol module now warns when a client asks for oracle
-		native network encryption or crypto-checksumming, which it
-		declines - the offered algorithm lists were read and thrown away
-		unread, so the decline was silent and an administrator whose
-		client failed got nothing from the server side - the module also
-		reads those lists correctly now, as one byte per algorithm id,
-		which is what the encryption and crypto-checksumming services
-		actually send - only SQLNET.ENCRYPTION_CLIENT=REQUIRED or
-		SQLNET.CRYPTO_CHECKSUM_CLIENT=REQUIRED fails, with ORA-12660,
-		and the limitation is documented in the config guide
-	fixed the firebird protocol module - a response buffer length that
-		arrived sign-extended from a 16 bit field was folded back down at
-		two of the five requests that carry one and not at the other
-		three, so a client that asked for 32768 bytes got a 65535 byte
-		ceiling at three of them - firebird folds it wherever the field
-		appears, and now so does this, in the same helper that caps it
-	fixed the firebird protocol module - the response buffer length on an
-		op_exec_immediate2 request was kept in the session, but that
-		request's reply is an sql response rather than an info response, so
-		the length governs nothing - firebird's own server ignores it and
-		its client sends zero - it's read and dropped now
-	documented the oracle protocol module's charset and nationalcharset
-		listener attributes in the config guide - what each one
-		advertises, the al32utf8 and al16utf16 defaults, that the module
-		advertises the character set ids rather than converting anything,
-		so they have to match what the back-end actually returns, and
-		that 178, we8mswin1252, is the fallback for a client that can't
-		decode a result set, since every byte decodes under cp1252
-	fixed the oracle protocol module - it only ever answered tti
-		protocol version 5, which no modern client can use - ojdbc
-		requires the server capability arrays, which only exist at
-		version 6, and python-oracledb offers version 6 alone, so
-		the module dropped its connection without answering - the
-		module now selects the highest version the client offers
-		that it implements, up to 6, sends the capability arrays
-		only at version 6, where a real server sends them, and
-		answers connect protocol version 11 (314) rather than 8
-		(310)
-	fixed the tds protocol module - nothing recorded whether a session had
-		logged in and nothing checked, so a client could send a sql
-		batch, bulk load or rpc as its very first request and have it
-		run, as whatever user the connection was configured for - the
-		listener doesn't authenticate, every protocol module owns
-		that, so there was nothing else in the way - the session
-		tracks its login now, and rejects a request that doesn't
-		belong in its state, in both directions, since a login
-		arriving a second time would re-auth the session under the
-		modules and renegotiate the wire format with the previous
-		user's cursors still open
-	fixed the firebird protocol module - a client that prepared a statement
-		and asked what its bind variables were got told every one of them
-		was a nullable string 4000 bytes wide, so a client that filled a
-		typed buffer from the answer sent the wrong bytes and the insert
-		failed - for an insert the module now works the types out from the
-		columns the binds feed, which is the same answer the backend would
-		give, and anything it can't resolve still describes as a string
-	fixed the tds protocol module - tds7Login() read 86 bytes of fixed
-		header, or 94 from tds 7.2 up, without ever checking that the
-		packet was that long, so a truncated login read past the end
-		of the buffer before any of the offset arithmetic began - the
-		request size is carried into the function now and checked
-		before the header reads, and again inside the 7.2 branch,
-		whose extra 8 bytes can't be checked with the rest because
-		the version that selects them comes off the wire
-	fixed the tds protocol module - a login field that exceeded its
-		maximum was dropped, but its length was kept, and the null
-		pointer and the nonzero length then travelled downstream
-		together - a language field longer than 128 characters killed
-		the connection in the environment-change response, and with
-		debug on an extension field longer than 255 bytes killed it
-		before the client had authenticated - the length is dropped
-		along with the field now
-	fixed the tds protocol module - readPassword() computed its byte
-		count into a 16 bit variable, from a character count that
-		nothing in the function bounded, so a large count truncated
-		and the decode read past the copy - it bounds the count
-		itself now and computes in a size_t
-	fixed the oracle protocol module - it authenticated nobody and
-		refused nobody: the session key it sent was a hardcoded
-		literal and cont->auth() was never called, so any password
-		was accepted - it runs the real o5logon exchange now, with
-		generated verifier data, a session key from an auth module,
-		AUTH_SVR_RESPONSE, and a real ORA-01017 or ORA-01005 on
-		failure, and the request parser was rewritten on the real
-		wire layout
-	added a verifiertype attribute to the oracle protocol module's
-		listener tag, 11g or 12c, defaulting to 12c
-	fixed the oracle protocol module - an unknown user was refused a
-		round trip earlier than a wrong password, and with a
-		different error, so a client could tell which user names
-		exist - it fabricates a challenge for a user no auth module
-		knows now, runs the whole exchange, and answers ORA-01017,
-		which is what a real server does
-	fixed the oracle protocol module - it refused every modern client's
-		datatype negotiation request: the two 16 bit values after
-		the ttc code are the client's character sets, in host byte
-		order, not the markers an 8.0.5 client happened to make
-		them look like, and the byte after them is a bit field of
-		encoding flags rather than a third marker - all three are
-		read as what they are now
-	fixed the tds protocol module - the login's sspi block was the one
-		field with no maximum, and its length can be 32 bits, so a
-		client asking for the whole range got a 4 gigabyte allocation
-		followed by a 4 gigabyte read out of a packet a few hundred
-		bytes long - the allocation succeeded and the copy then took
-		the connection down - it's bounded now, and bounded against
-		the packet as well, which also stops a tds 7.0 client asking
-		for 64k it never sent
-	fixed the tds protocol module - nothing checked that a login field's
-		offset was inside the packet, only that its length was within
-		its maximum, so an offset near the top of its 16 bit range
-		read up to 64k past the request, and whatever it found became
-		a user name, a database name or a line in the debug log -
-		every field's offset is checked now, sspi included, and a
-		field that doesn't fit is dropped the same way an over-long
-		one is
-	fixed the sap and freetds connection modules - a lang= the client
-		library doesn't recognize fails the login inside
-		cs_ctx_alloc, which is before the message callback exists, so
-		the library's own explanation went to stderr and all the log
-		said was that a context structure couldn't be allocated,
-		which reads like a memory or client library problem rather
-		than a typo in the connect string - the error names the
-		locale now, and says the details went to stderr
-	fixed the sap and freetds connection modules - a login error the
-		client library had no text for ended in a dangling colon
-	implemented data type negotiation in the oracle protocol module -
-		it echoed the client's request back, capability arrays and
-		all, which no client can read - it sends the data types a
-		real oracle 11.2 server sends now, and the db time zone,
-		time zone version and national character set that an oci
-		client asks for, and it reads the rest of the request:
-		both client capability arrays, the negotiated field
-		version, and the client's own type list
-	fixed the sap connection module - a char, varchar, nchar or nvarchar
-		column reported LONGCHAR, and a binary or varbinary column
-		reported LONGBINARY, whenever the column was wider than 255
-		bytes, or whenever charset= was one that expands - the client
-		library reports those as its long types, and the module read
-		only the type, not the systypes usertype that comes with it
-		and says what the column really is - so charset=utf8, which
-		is what the documentation tells people to set, turned every
-		character column into a clob to jdbc and into varbinary to a
-		tds client - the long arms split on the usertype now, the
-		same way the short ones already did
-	fixed the firebird protocol module - it ran a select at prepare time
-		to find out what columns the result set had, even when the
-		backend had just told it, so a client that prepared a select
-		and never executed it ran the query anyway and the backend's
-		cursor opened too early - it only runs the select now when
-		the columns aren't already known
-	fixed the tds protocol module - the list of packet types a client is
-		allowed to send included the one type only a server sends, so
-		the list said something untrue about the protocol - a client
-		that sent it got no further either way, but the next person
-		reasoning about which types can reach a parser had to work
-		out for themselves that it was a mistake
-	fixed the oracle protocol module - it cleared two capability bits
-		that its own footers depend on, so a client that logged in
-		successfully hung forever and one that got the module's
-		ORA-01017 saw a client-side exception instead - the footers
-		are captures of an 11.2 server that sets both bits, so the
-		module sets them too now, and a modern client can log in
-	fixed the odbc connection module - a null bind couldn't reach a sql
-		server binary or varbinary column at all, because the client
-		api flattens a null blob bind into a plain null bind and the
-		null bind is generic - one call serves every bind type and
-		every column type, and it bound a character parameter, which
-		sql server won't implicitly convert to binary - it asks the
-		driver what the parameter is aimed at now, for null binds
-		only, and binds binary only when the driver says binary, so
-		a parameter the driver can't describe keeps the character
-		bind it has always had
-	fixed the odbc connection module - smalldatetime, money and smallmoney
-		were reported as datetime and decimal, because sql server
-		reports each pair the same way and only the type name tells
-		them apart - they're distinguished by name now, the way
-		datetime2 already was
-	fixed the tds protocol module - it described smalldatetime, real,
-		money, smallmoney and uniqueidentifier columns wrongly on an
-		ordinary select: the narrow types got the wide type's width
-		because the only thing separating them is the column's type
-		and the module was going by the column's size, which is a
-		digit count on some back ends and a printed width on others -
-		money and smallmoney also carried a precision and scale that
-		a real server doesn't send, and a uniqueidentifier was
-		described as 36 bytes, the width of its printed form, rather
-		than the 16 it actually occupies
-	fixed the tds protocol module - it wrote a money value by removing the
-		decimal point and multiplying by a fixed 100, which is only
-		right when the back end renders exactly two decimal places -
-		mssql renders four, so the value went out a hundred times too
-		large - the fraction is padded or truncated to the four
-		places the protocol wants now, whatever the back end sent
-	documented when the odbc connection module's mars option is needed -
-		sql relay gives each cursor its own statement handle on one
-		connection, and ms sql server's odbc driver only allows one
-		statement to have results pending unless mars is on, so any
-		instance running more than one cursor at a time against it
-		wants mars=yes
-	fixed the oracle protocol module's query3 request parse - the sequence
-		number after the tti function code was never consumed, the
-		options word was read as two big endian shorts rather than
-		one ub4, and the query size was read as a little endian int
-		at a guessed offset, so a modern client's query size came out
-		as -252 and no query ran at all
-	rewrote the oracle protocol module's query3 and fetch responses - a
-		describe, a row header, the rows, a return parameters block
-		and a summary object, built field by field in the shape a
-		live oracle 11.2 server sends, in place of the 8i era byte
-		strings and the bare ok footer that a modern client can't
-		parse, with rows sent for the prefetch count the request asks
-		for rather than only when the fetch option is set, a fetch
-		request parser so a result set bigger than one prefetch
-		works, and an oracle number encoder so a numeric column can
-		be returned at all
-	changed the oracle protocol module's AUTH_VERSION_NO from 8.0.5 to
-		11.2.0.1.0, which is what its capability array, data type
-		table and field version already answer as - ojdbc picks its
-		result set reader from that number, and told 8.0.5 it read an
-		11.2 shaped describe with an 8.0 era reader
-	fixed the oracle protocol module's ano debug output - the encryption
-		service opened its block with a plain write rather than a
-		start, so it closed a block it never opened and everything
-		after it, including the whole ano response, was indented one
-		level too far left
-	fixed the tds protocol module - a decimal or numeric rpc parameter
-		carried a one byte length that nothing checked, and the
-		value was read into a 16 byte array on the stack, so a
-		client could write up to 254 bytes of its own choosing over
-		that array and over the saved registers and return address
-		behind it - a length of 0 was worse still, because the
-		length minus one became -1 and then a copy of the whole
-		address space - the length is bounded now, and 0 is read as
-		the null the protocol says it is
-	added a debug dump of an ano array field the oracle protocol module
-		can't recognize, so the shape gets captured rather than
-		silently ignored
-	fixed the oracle protocol module's refuse packet - it carried no body
-		at all, so a client that couldn't agree a protocol version
-		got a refusal with no reason in it, and it now carries the
-		two reason bytes, the length and the connect-string-shaped
-		message a real listener sends, with ORA-12564 in it, which
-		ojdbc reports as "TNS:connection refused"
-	fixed the oracle protocol module's tti version negotiation - it
-		dropped the connection without answering when it couldn't
-		agree a version, and it now sends an ORA-03134 error packet,
-		which is what a server can send after the accept - a refuse
-		packet is only valid before it
-	removed the oracle protocol module's unimplemented redirect packet,
-		which had no caller and whose body is a connect string
-		pointing at another listener, which sql relay has no use
-		for
-	fixed the oracle protocol module - it read the tns data flags in front
-		of every tti message, but they belong to the packet, so a
-		packet carrying more than one message desynced, and a client
-		that packs a close-cursors piggyback in front of its logoff
-		got no answer to the logoff and reported ORA-03113
-	decoded the oracle protocol module's close-cursors piggyback, which
-		was read as a fixed 11 bytes with no bounds check, and it now
-		reads the sequence number, pointer, cursor count and cursor
-		ids, and releases each cursor named
-	fixed the oracle protocol module's logoff response - it sent a
-		truncated status message, and it now sends the call status
-		and end-to-end sequence number a real server sends, so a
-		client's disconnect completes cleanly
-	the firebird connection module describes a query's result set when the
-		query is prepared now, rather than when it runs, and reports
-		its column info as valid after the prepare - so a select's
-		columns are known without running it, which is what the
-		firebird protocol module needs to answer op_prepare_statement
-		for a select with bind variables
-	fixed a memory leak in the firebird connection module - the per-column
-		text buffers were never freed, so a connect string setting
-		maxcolumncount=0 leaked one maxfieldsize+1 byte buffer per
-		column per query
-	fixed a crash in the firebird connection module - with maxcolumncount=0
-		in the connect string, re-executing a select walked a null
-		field array, because closing the result set freed the buffers
-		and the describe then sized itself from a column count that
-		was already gone - the buffers are kept across a close now,
-		and the describe grows them itself, which also stops the
-		column names the server caches from dangling
-	added the blob operations to the firebird protocol module - a client
-		can create a blob, fill it with segments, close it, bind its id
-		into an insert, select it back, open it, read it, seek in it,
-		and ask isc_blob_info how long it is, where every one of those
-		answered "feature is not supported" and dropped the connection
-		before
-	added the second wire encoding for the oracle protocol module's
-		authentication exchange - a client whose platform matches the
-		one the module names in its tti protocol response marshals the
-		request in its own memory layout, with 8 byte pointer
-		sentinels, little endian counts and a length prefixed user
-		name, rather than portably, and an oci client got ORA-03113 at
-		the first authentication packet because of it
-	fixed the firebird protocol module's attach - it demanded op_attach and
-		dropped the socket with no response on anything else, so a client
-		reaching the service manager, creating a database, or dropping one
-		got a lost connection rather than a firebird error, since that
-		runs ahead of the session loop that answers every other
-		unimplemented op
-	added connect protocol version 12 and the 32-bit tns packet header to
-		the oracle protocol module - at version 12 and above the
-		packet header carries a 32-bit length in place of the 16-bit
-		length and packet checksum, and the accept grows from 32 to 41
-		bytes with a 32-bit sdu and tdu, and python-oracledb and
-		node-oracledb refuse anything lower, so neither could connect
-		at all before
-	fixed the oracle protocol module - a connect string too long for the
-		connect packet arrives in a data packet behind it, and that
-		packet was never read, so the resend desynced and the session
-		ended before the accept, which is what stopped every thin
-		driver
-	fixed the oracle protocol module - the tti protocol negotiation echoed
-		the client's platform banner back as the server's, and that is
-		what an oci client picks its wire encoding from, so every
-		client saw a server on its own platform and marshalled
-		natively; a fixed banner naming no platform is sent now, which
-		puts every client in the portable encoding the module
-		implements
-	fixed the oracle protocol module - an oci client length prefixes the
-		user name and declares a buffer size for it in the portable
-		encoding too, not only in the native one, so its login was
-		refused once it was in the portable encoding
-	fixed the oracle protocol module - a 12c verifier was offered with only
-		one of the two logon type capability bits it takes, so an oci
-		client answered the challenge with 12c crypto and an 11g sized
-		session key and its login was refused with the right password
-	changed the oracle protocol module to report oracle 12.1.0.2.0 rather
-		than 11.2.0.1.0, since the verifier type it offers by default
-		arrived with 12.1 and cannot exist on an 11.2 database
-	fixed the oracle protocol module - the summary object that ends every
-		answer was always the oracle 11.2 shape, which stops two fields
-		short of the 12.1 one, so python-oracledb and node-oracledb
-		blocked on the socket waiting for them and never got past the
-		authentication challenge
-	added a serverversion attribute to the oracle protocol module's
-		listener, 11.2 or 12.1, defaulting to 12.1 - the capability
-		field version, the shape of every summary object, the version
-		reported to the client and the default verifier type all move
-		with it, and no one version serves every client, since
-		python-oracledb and node-oracledb need 12.1 or later and an oci
-		client reads the 11.2 shape only
-	fixed the oracle protocol module - an oci client packs a session switch
-		piggyback in front of every call, and the module answered it
-		with a server version string and lost the call behind it, so an
-		oci client's first query was never read
-	fixed the oracle protocol module - an oci client declares the size of
-		its query text as a buffer size rather than a byte count, the
-		same way it does for the user name in the login, so its query
-		text read as truncated
-	fixed the oracle protocol module - a column's scale was always written
-		as a count prefixed integer, but a client that asks for the
-		converted length encoding in its data type request reads it as a
-		single signed byte, which left python-oracledb, node-oracledb and
-		oci clients one byte out for the rest of the query answer
-	documented the oracle protocol module's serverversion and verifiertype
-		listener attributes in the config guide - what each setting
-		moves, that either one is a server that could really exist, and
-		which clients each serverversion setting serves: 12.1, the
-		default, serves the ojdbc, python-oracledb and node-oracledb
-		drivers, and 11.2 serves ojdbc and lets an oci client log in,
-		while the two thin drivers hang rather than reporting an error
-		against it - plus a limitations note that no setting lets an
-		oci client read a query's answer
-	fixed the tds protocol module - the login7 option flag bits overlapped
-		in optionflags1 and optionflags2, so fdumpload, fusedbwarn,
-		fusedbfatal, fsetlangwarn and fintsecurity were decoded from
-		the wrong bit and some read their neighbours' bits, and
-		optionflags3 skipped a bit, shifting fsendyukonbinaryxml,
-		funknowncollationhandling and fextension off by one; all three
-		bytes now match ms-tds 2.2.6.4
-	documented the tds protocol module in the config guide - a basic
-		configuration on port 1433, the tdsversion attribute and how
-		the version is auto-detected from the backend's version
-		string, that a client like freetds only sends a pre-login
-		packet, where encryption is negotiated, on tds 7.1 and later,
-		the packetsize and maxpacketsize attributes, that tls isn't
-		supported at all and the tls* attributes parse but do nothing,
-		and that an odbc backed instance needs mars=yes for cursors
-		and positioned updates
-	fixed the tds protocol module - recvPacket() reassembled a
-		multi-packet request with no cap on the total size, so a
-		pre-authentication client could grow the receive buffer
-		without bound just by never setting the eom status bit, and
-		could separately spin the reassembly loop with no memory
-		growth at all by sending header-only, zero-payload packets;
-		both shapes now close the connection instead
-	fixed the sap connection module - char, varchar, nchar, nvarchar,
-		sysname and text columns were reported at their byte width
-		rather than their declared width whenever charset= was one
-		that expands, because Open Client's ct_describe() reports
-		those types multiplied by @@client_csexpansion once it's
-		above 1; a char(20) came back as 40 under charset=utf8, for
-		example - a 1-character calibration query at login now
-		measures the expansion factor, mirroring how the freetds
-		module already does it, and the factor is divided back out
-		of just those types, since unichar, univarchar and the binary
-		types are never multiplied
-	fixed the tds protocol module - an rpc parameter was parsed with
-		almost no bounds checking, so a short or malformed parameter
-		read past the end of the request packet; the parameter name,
-		the type info, and every value type are now checked against
-		the remaining packet size before being read, the way the bulk
-		load path already does it - the worst of it was a text, ntext,
-		xml, image or sql_variant value, whose 32 bit length was
-		allocated and copied without being checked against what
-		actually arrived, so a 4gb length in a few bytes of packet
-		was enough
-	fixed the tds protocol module - a char or nchar rpc parameter was
-		blank padded out to the size the client declared, which
-		nothing bounded, so a tiny value with a huge declared size
-		drove an oversized allocation; the padding is capped at the
-		widest a char or nchar can really be
-	fixed the tds protocol module - a date rpc parameter read a fixed 2
-		bytes rather than the 3 its length says, and time, datetime2
-		and datetimeoffset parameters consumed nothing at all, so
-		every parameter after one of those was read from the wrong
-		offset
-	fixed the tds protocol module - an rpc parameter carrying a type
-		nothing parses, like a udt or a table valued parameter,
-		consumed nothing and the parse ran on over its body; those
-		are protocol errors now
-	fixed the tds protocol module - an rpc parameter's type info was
-		read as though a maxsize byte preceded the scale for a time,
-		datetime2 or datetimeoffset parameter, and preceded nothing
-		at all for a date parameter, when the wire never sends one
-		for any of the four; that byte was actually the next field,
-		so every one of those parameters, and everything after it,
-		was read from the wrong offset
-	fixed the tds protocol module - a multi-statement sql batch ran as one
-		query and sent exactly one result set with one final done, no
-		matter how many statements it contained, so a ct-lib client
-		walking the results with ct_results() ran out early and hung
-		in ct_fetch(); the batch now sends one result set per
-		statement, with done_more set on all but the last
-	implemented nextResultSet() in the odbc connection module - it was a
-		stub that always reported that no more result sets were
-		available
-	fixed the tds protocol module - a language batch containing an exec
-		statement never sent the return-status/done-proc pair that a
-		real server sends for it, so a ct-lib client's ct_results()
-		walk ran out of step and eventually blocked in ct_fetch(),
-		waiting on a response that was never coming, until the
-		connection timed out; each exec statement in a batch now gets
-		a synthesized return status
-	fixed the tds protocol module - a prepared statement handle obtained
-		from an exec sp_prepare inside a language batch was rejected
-		by a later, separate sp_execute or sp_unprepare rpc, because
-		the rpc path tracked handles in its own namespace and never
-		learned about ones the backend minted itself; sqlrelay-issued
-		handles now come from a disjoint range, and a handle it
-		doesn't own is passed through to the backend instead of
-		rejected
-	fixed the tds protocol module - a column metadata token written with
-		the "no metadata" flag set (freetds sets this on every
-		sp_cursorfetch rpc) wrote the real column count ahead of the
-		0xFFFF "no metadata" sentinel instead of in place of it,
-		leaving every byte from there on misread as column metadata;
-		a ct-lib client following a cursor's declare/open with a fetch
-		desynced immediately and the connection died
-	fixed the tds protocol module - a cursor could be declared against
-		any statement text, including one that wasn't a select or an
-		exec, and it just ran as an ordinary query instead of being
-		refused the way a real server refuses it; sp_cursoropen now
-		checks the statement's first keyword before running it
-	fixed the tds protocol module - a stored procedure's character and
-		datetime output parameters never got bound at all, since an
-		output-only parameter arrives null and a datetime parameter
-		wasn't decoded, so both were left with no bind type and the
-		backend rejected the call for parameters it was never given;
-		a character output parameter now gets a buffer the size the
-		client declared, and a datetime parameter is decoded into a
-		date bind
-	fixed the tds protocol module - an output parameter was sent back as
-		whatever SQL Relay's own bind type happened to be, rather than
-		as the type the client declared it, so a char(20) came back as
-		a varchar of 32767 and a datetime came back as a null int; a
-		character or datetime output parameter now goes back as the
-		type the client declared, the way a real sql server echoes one,
-		and a character one is blank padded to its declared width
-	fixed the tds protocol module - query text, procedure and parameter
-		names, and bulk load and rpc string values arrived as ucs-2
-		and were narrowed one byte per character, so every character
-		outside latin-1 became a '?' before the backend ever saw it;
-		all of those are now decoded to utf-8
-	fixed the tds protocol module - character values in a result set
-		went back to the client unconverted, so a char, varchar or
-		text value carried raw backend utf-8 while the wire declared
-		it cp1252, and an nchar, nvarchar, ntext or xml value was
-		widened a byte at a time rather than decoded; the non-unicode
-		types are now converted to cp1252, substituting '?' the way a
-		real sql server does, and the unicode types to ucs-2
-	fixed the tds protocol module - the login env change echoed the
-		client's own lcid back with no sort id, and every character
-		column's type info carried five zero bytes for its collation;
-		both now send the SQL_Latin1_General_CP1_CI_AS collation that
-		matches the cp1252 the character values are converted to
-	fixed the oracle userlist auth module - o5logon's sha-512 and
-		aes-cbc-with-no-padding needs went straight to openssl's evp
-		interface, because rudiments had neither; rudiments has both
-		now (sha512, aes192 and aes256, with a padding switch), so the
-		module uses those instead - only the cryptographically secure
-		random number generator, which rudiments still doesn't have,
-		still comes from openssl directly
-	fixed the oracle userlist auth module - the session key and salt
-		bytes for o5logon came from openssl's RAND_bytes() directly,
-		because rudiments' random number classes were seeded PRNGs, not
-		CSPRNGs; rudiments now has csprng (#9211), so the module gets
-		those bytes from that instead, and no longer includes any
-		openssl header (#9099)
-	fixed the postgresql protocol module - bind() leaked the
-		paramformatcodes array on two early returns that ran between
-		its allocation and its only delete[], one reachable by any
-		authenticated client sending a Bind message with more param
-		values than maxbindcount (#9044)
-	fixed the postgresql protocol module - bind() cleared the cursor's
-		bind pool long before it set the input bind count, and three
-		early returns sat in the gap; a client that hit one of them
-		left the cursor with a stale bind count over a freshly emptied
-		pool, so the next Execute on that cursor read stale or
-		dangling value pointers; the bind count is now zeroed in the
-		same breath as the pool clear (#9021)
-	fixed the postgresql protocol module - recvPacket() read the
-		declared packet size off the wire and subtracted the size
-		field's own width with no check, so a declared size below 4
-		underflowed to a huge value, and even a valid-looking size had
-		no upper bound before the allocation; reachable pre-auth via
-		the startup message and password message. reqpacketsize is now
-		rejected below 4 before the subtraction, and capped afterward -
-		against postgresql's own startup packet limit for the startup
-		message, and against maxquerysize for everything else (#9042)
-	fixed sqlrprotocol::readLenEncInt() - none of its switch cases
-		had a break, so every case fell through to default,
-		which always returned the raw marker byte; the 2 and 8
-		byte cases also did no endian conversion, so they were
-		wrong on big-endian hosts once the fallthrough was
-		removed. readLenEncInt() now takes the end of the packet
-		and returns false rather than reading past it, and the
-		mysql protocol module's six call sites (the handshake
-		response's challenge response size and connect
-		attributes, and COM_STMT_EXECUTE's blob/string bind
-		values) bound the result against the bytes remaining in
-		the packet before using it, rather than trusting an
-		attacker-controlled 64 bit length off the wire (#9047)
-	fixed the mysql protocol module - parseHandshakeResponse41()
-		read the challenge response length as a signed char on
-		the CLIENT_SECURE_CONNECTION branch, so a length byte of
-		0x80-0xff sign-extended into a huge 64 bit allocation,
-		throwing an uncaught std::bad_alloc and killing the
-		sqlr-connection process; reachable pre-authentication.
-		The length is now read unsigned and, like the
-		readLenEncInt() call sites above, bounded against the
-		bytes remaining in the packet (#9048)
-	fixed the postgresql protocol module - bind() read each bind
-		parameter's 32 bit size off the wire and used it directly to
-		allocate a buffer and copy out of the request packet, with
-		only a null-indicator check; a declared size near 4GB drove a
-		4GB allocation and an out-of-bounds copy from a much shorter
-		packet. paramsize is now bounded against the bytes remaining
-		in the packet before bindTextParameter() or
-		bindBinaryParameter() touch it. Also fixed two related bugs
-		found while auditing this code: the per-parameter format code
-		was indexed by the parameter index even when the client sent
-		a single format code for all parameters (violating the
-		protocol's 0/1/n rule and reading past the format code array
-		for clients that used it validly), and oids, needed for the
-		binary bind path, could be NULL or shorter than the declared
-		parameter value count and was indexed without a check (#9043)
-	fixed the postgresql protocol module - bindBinaryParameter()'s
-		unsupported-oid case sent an ErrorResponse but returned
-		true (the write succeeded), so bind() treated the
-		parameter as bound, went on to send BindComplete for the
-		same Bind message, and left bv->type unset for that
-		parameter. It now reports failure after sending the
-		error, matching bind()'s existing handling of a false
-		return (#9218)
-	fixed the firebird connection module - a result set abandoned with a
-		lob still open leaked the isc_blob_handle, client-side and on
-		the server. closeResultSet() now closes any lobs the cursor
-		still has open, and logOut() closes all of the connection's
-		result sets before detaching, so cursors reached outside the
-		controller's normal close path (e.g. selectCatalog()) get
-		their open lobs closed while the attachment is still live
-		(#9155)
-	fixed the firebird connection module - a blob column declared sub
-		type 1 (firebird's text blob) was reported as a plain binary
-		blob, so clients couldn't tell it from binary data and some,
-		like isql, refused to display it. describeResultSet() now
-		reports sub type 1 blobs as clobs, matching how the firebird
-		protocol module already classifies them (#9152)
-	fixed the firebird connection module - a maxcolumncount smaller than
-		a query's select list made describeResultSet() clamp the
-		column count and walk sqlvar entries that isc_dsql_describe()
-		never filled in (a describe into a too-small sqlda only sets
-		the count, not the descriptors), returning that many nameless,
-		zero-length, unknown-type columns instead of an error.
-		describeResultSet() now reports SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL
-		in that case, matching the mysql connection module (#9154)
-	fixed the postgresql protocol module - bindBinaryParameter()'s
-		fixed-width cases (bool, int2, int4, int8, float4, float8)
-		and the numeric case's digit loop read past the end of the
-		request packet when a binary bind's declared paramsize or
-		actual packet length was too short, and the numeric case
-		never wrote back through rpout, leaving bind() to resume
-		parsing the rest of the packet from the wrong offset. Each
-		case now checks the read size against both paramsize and
-		the bytes remaining in the packet before reading, and the
-		numeric case now advances the caller's pointer (#9217)
-	fixed comments in the oracle, tds, and mysql protocol modules' type
-		maps - the labels at indexes 65 and 66 named the datatype
-		enum identifiers (SHORT_DATATYPE, TINY_DATATYPE) instead of
-		the datatypestring[] entries (SHORT, TINY); comment only, no
-		behavior changed (#9077)
-	removed 8 dead type comparisons from the c# api's
-		SQLRelayDataReader - two chains each had a SHORT_DATATYPE
-		and TINY_DATATYPE branch spelled the way the datatype enum
-		in datatypes.h spells them, rather than "SHORT" and "TINY"
-		as datatypestring[] spells them, and a "Boolean " and
-		"Boolean _ARRAY" branch left over from a botched BOOL to
-		Boolean rename. All 8 were unreachable; each chain already
-		had correct, reachable SHORT, TINY, BOOL, and BOOL_ARRAY
-		branches further down (#9074)
-	fixed jdbc api's SQLRelayResultSetMetaData - getColumnClassName()
-		returned java.lang.Short for the USHORT, YEAR, SHORT, TINY,
-		and INT2 type names but java.lang.Integer for SMALLINT and
-		TINYINT, even though getColumnType() maps all seven to the
-		same jdbc type (Types.SMALLINT or Types.TINYINT); per the
-		jdbc spec's type mapping table, Integer is correct for the
-		whole family, so the five outliers now return Integer too
-		(#9086)
-	fixed jdbc api's SQLRelayResultSet.isCharBinaryType() - it recognized
-		far fewer char and binary datatype names than datatypestring[]
-		actually has, so setMaxFieldSize silently didn't apply to
-		columns of the missing types (BPCHAR, TEXT, the BLOB family,
-		and about two dozen others); also replaced a "LONGNVARCHAR"
-		case, which matched no datatypestring[] entry, with "NTEXT",
-		which is the entry that type actually uses (#9089)
-	fixed datatypes.h's isFloatTypeChar(), isNumberTypeChar(), and
-		isBinaryTypeChar() - they still compared against the pre-2007
-		postgresql array type spellings (e.g. "_MONEY"), which a 2007
-		rename replaced in datatypestring[] with "MONEY_ARRAY"-style
-		spellings; the old spellings are still reachable under
-		typemangling=2, so the *_ARRAY spellings were added alongside
-		them rather than replacing them (#9076)
+		name is simply too long
+	a field with no date/time format configured is left alone by the
+		server's date/time reformatting now, rather than replaced with
+		an empty string
+	the sap connection module reports column types accurately now, telling
+		them apart by the systypes usertype - under charset=utf8 every
+		character column wider than 255 bytes was reported LONGCHAR and
+		every binary one LONGBINARY
+	the sap connection module reports character column widths at their
+		declared width rather than scaled by the charset expansion
+		factor
+	got the firebird protocol module working - a firebird client can
+		connect, attach, prepare, execute, fetch, commit and detach
+	added the statement lifecycle to the firebird protocol module, with a
+		blr message parser and writer and bind variables
+	added blob operations to the firebird protocol module
+	fixed an authentication bypass in the firebird protocol module -
+		authenticate() was inside an #if 0 and nothing called it, so
+		every user name and password was accepted
+	fixed the firebird protocol module's attach, which read the database
+		path and never compared it
+	fixed pre-authentication unbounded allocations and buffer walks in the
+		firebird protocol module
+	the firebird protocol module negotiates a protocol version now, up to
+		12, and rejects a client it can't speak to
+	the firebird protocol module refuses a write inside a read-only
+		transaction now, and answers isc_database_info properly
+	the firebird protocol module answers an unimplemented request with an
+		error now, instead of dropping the socket
+	got the oracle protocol module working with modern clients - ojdbc,
+		python-oracledb and node-oracledb can connect, log in and run
+		queries, and an oci client can log in, though no setting lets it
+		read a query's answer
+	added connect protocol version 12 and the 32 bit tns packet header to
+		the oracle protocol module, without which python-oracledb and
+		node-oracledb couldn't connect at all
+	added charset, nationalcharset, verifiertype and serverversion
+		attributes to the oracle protocol module
+	fixed an authentication bypass in the oracle protocol module - the
+		session key was a hardcoded literal and the auth module was
+		never called, so any password was accepted
+	fixed user enumeration in the oracle protocol module - an unknown user
+		was refused a round trip earlier than a wrong password, and with
+		a different error
+	fixed unbounded allocations and out of bounds reads in the oracle
+		protocol module, most of them reachable before authentication
+	implemented data type negotiation in the oracle protocol module, and
+		rewrote its query and fetch responses in the shape a real oracle
+		server sends
+	the oracle protocol module reports oracle 12.1.0.2.0 now, and warns when
+		a client asks for native network encryption or
+		crypto-checksumming, which it declines
+	fixed the teradata protocol module's decryption of the encrypted connect
+		message, and added mic and token header verification
+	fixed a teradata protocol module bind pool that grew for the life of the
+		sqlr-connection process
+	fixed the reformatdatetime translation's dateformat and timeformat
+		attributes to fall back to datetimeformat the way the docs said
+		they did
+	fixed the replay trigger, which overwrote the values it had logged
+		instead of restoring them, and leaked every logged bind variable
+	the postgresql protocol module describes column types properly now - 65
+		kinds of column came back as oid 705, unknown, though the long
+		datatype still does
+	the postgresql protocol module sends lob column content now, and
+		hex-encodes bytea
+	fixed pre-authentication and post-authentication out of bounds reads and
+		unbounded allocations in the postgresql protocol module's packet
+		and bind parsing
+	fixed leaks and a stale bind count in the postgresql protocol module's
+		bind handling
+	the sap and freetds connection modules parse an exec or execute
+		procedure name and its literal parameters properly now - literal
+		parameters were silently dropped and a delimited name was
+		truncated at the first space
+	the sap and freetds connection modules report an unrecognized lang= by
+		name now
+	the firebird connection module describes a query's result set at prepare
+		time now, so a select's columns are known without running it
+	the firebird connection module reports a sub type 1 blob column as a
+		clob now
+	fixed the firebird connection module's rendering of DATE, DECIMAL and
+		NUMERIC values - a decimal(18,10) holding 1.5 came back as
+		6.2115098112
+	fixed the firebird connection module's error messages, which ran on into
+		stale buffer contents
+	fixed firebird connection module leaks and a crash around maxcolumncount
+		and open lobs
+	a maxcolumncount smaller than the select list reports
+		SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL now, rather than that many
+		nameless, zero-length columns
+	fixed sqlrprotocol::readLenEncInt(), whose switch cases all fell
+		through, so it always returned the raw marker byte and did no
+		endian conversion, and made it bounds check against the end of
+		the packet
+	fixed format string injection in debug output across the auth, protocol,
+		trigger and server side translation modules, where passwords,
+		query text and bind values were passed as the printf format
+		argument, and gave debugStart() and debugWrite() a printf format
+		attribute
+	session start queries run for clients connecting over the mysql,
+		postgresql, tds, oracle, teradata and firebird protocols now
 	added db2cursor::columnInfoIsValidAfterPrepare() and
-		informixcursor::columnInfoIsValidAfterPrepare() - both CLI
-		backends can describe a prepared statement's columns via
-		SQLNumResultCols()/SQLColAttribute() right after SQLPrepare(),
-		the same way odbc.cpp already does; factored that work out of
-		executeQuery() into a shared handleColumns() so prepareQuery()
-		can call it too, following the odbc.cpp precedent - a
-		per-cursor flag, not an unconditional true, since some query
-		shapes still can't describe their columns until execute
-		(#9168); left oracle, sqlite, sap, freetds, and router
-		unchanged - oracle's only describe mechanism requires an
-		extra execute and risks a documented statement-cache segfault
-		with unbound binds, sqlite can only give unreliable per-value
-		column types before a row is stepped to (and the controller
-		locks in whatever header it gets at prepare time, so a second,
-		more-accurate describe at execute time would never reach the
-		client anyway), sap and freetds only learn column info via
-		ct_results()/ct_describe() after ct_send(), and router's own
-		prepare never contacts the downstream server at all (#9168)
-	fixed the teradata protocol module - it never cleared the cursor's
-		bind pool after allocating bind variable names out of it, so
-		the pool grew for the life of the sqlr-connection process;
-		now cleared once at the start of each request's bind phase,
-		in parseUsing() and parseStatementInfoExtensions() (#9024)
-	fixed the replay trigger - copyBind's arguments were reversed on
-		the restore path, so a replay left the cursor's binds
-		untouched and overwrote the logged values with them instead,
-		corrupting the log for any later pass or replay (#9023)
-	fixed the replay trigger - it leaked every logged bind variable
-		for the life of the sqlr-connection process because its
-		linked lists never called setManageValues(true), so deleting
-		the log never reached the bind variables underneath it (#9022)
-	fixed four debugWrite() calls in the mysql, tds, and teradata
-		protocol modules whose arguments didn't match their format
-		strings - the mysql module's null bitmap dump passed no
-		argument for its %s, reading whatever followed on the stack;
-		the tds module's bind value dump passed the doubleval struct
-		by value where %f expects a double, it now passes
-		doubleval.value; and the teradata module's PBTIFDB dump used
-		%.s instead of %.*s, dropping the db name argument and
-		consuming its length as the pointer instead (#9116)
-	fixed the mysql, oracle, postgresql, sqlrclient, tds, and teradata
-		protocol modules, plus the sqlrprotocol base class - debugWrite()
-		and debugStart() calls whose printf conversion didn't match the
-		width of its argument (a 64 bit value through %d, %ld, or %x,
-		or a 32 bit value through %ld), found by compiling every
-		protocol module with a scratch copy of the debugWrite(),
-		debugStart(), and rudiments printf headers annotated with
-		__attribute__((format(printf,...))); on a mismatched ABI a 64
-		bit value truncates or a 32 bit value picks up whatever else
-		was on the stack; fixed by casting the argument to (long long)
-		or (unsigned long long) and using %lld, or by fixing the
-		conversion to match an argument that was already the right
-		width (#9115)
-	fixed the sqlrclient protocol module - clientSession() dispatched
-		every command in one long if/else chain with AUTH as just one
-		branch among the others, so a client could skip AUTH and send
-		a query as its first command and have it run under the pooled
-		connection's credentials; a flag now tracks whether the
-		session has authenticated, set where AUTH succeeds and checked
-		once at the top of the dispatch chain, exempting PING and
-		IDENTIFY (useful pre-login) and END_SESSION (so an
-		unauthenticated client can still hang up cleanly); the flag is
-		cleared at the top of each clientSession() call since the
-		module instance is reused across every client of a pooled
-		connection, except when sqlrservercontroller says the next
-		call is that same already-authenticated session resuming on a
-		new socket rather than a new client - added
-		sqlrservercontroller::isResumedSession() for this, backed by a
-		flag the controller sets right before a resumed client's
-		clientSession() call and clears in initSession(), which only
-		runs for a genuinely new client, so an abandoned suspend (the
-		client never reconnects and the resume socket times out) can't
-		leave the next, unrelated client pre-authenticated (#9135)
-		fixed the mysql, postgresql, tds, oracle, teradata and firebird
-			protocol modules - none of them called
-			sqlrservercontroller::beginSession(), so an instance's
-			session-start queries never ran for a client connecting
-			over any of those protocols, even though endSession() (and
-			its session-end queries) already ran for all of them;
-			beginSession() is now called as soon as each module commits
-			to the client's session - right after the handshake that
-			ends in a successful auth() for mysql, postgresql, oracle,
-			teradata and firebird, and right after auth() succeeds
-			within tds7Login() for tds (#9139)
-		fixed the same class of debugWrite()/debugStart() printf
-			conversion mismatch #9115 fixed in the protocol modules, this
-			time in the auths, triggers, querytranslations,
-			errortranslations, and directives modules - a %s against a
-			uint32_t salt in the postgresql_connectstrings and
-			postgresql_userlist auth modules, a %.*s precision argument
-			narrower than the size_t/ssize_t it was given in replay,
-			savepoints, and splitmultiinsert (triggers), and both
-			patterns.cpp files (querytranslations and errortranslations),
-			a %d against an int64_t errnum in splitmultiinsert and upsert,
-			a %lld against a uint64_t affected-row count with no cast in
-			splitmultiinsert, a %lld against an int64_t error number with
-			no cast in renumber (errortranslations), and a %s/%lld
-			mismatch against an int/int64_t argument in custom_wf
-			(directives); found the same way #9115 did, by compiling every
-			non-protocol module directory against a scratch copy of
-			sqlrserver.h with __attribute__((format(printf,...))) added
-			to debugStart()/debugWrite(); filters, loggers,
-			resultsettranslations, resultsetrowtranslations,
-			resultsetrowblocktranslations, resultsetheadertranslations,
-			bindvariabletranslations, routers, queries, moduledatas, and
-			src/server were already clean; added the format attribute for
-			real this time, as SQLR_PRINTF_FORMAT (a macro guarded on
-			__GNUC__) on the real debugStart()/debugWrite() declarations
-			in sqlrserver.h, and fixed the last mismatch it turned up - a
-			zero-length format string passed to debugWrite() five times
-			in the teradata protocol module, changed to "%s","" - so a
-			full -Werror build stays clean and the compiler now catches
-			the next one of these at compile time (#9220)
-		fixed the router pseudo-backend's outputBind() - it passed the
-			local buffer size (declared size+1, for the null
-			terminator) straight through as the declared size to the
-			next hop, so a string output bind grew by one byte per
-			router in the chain; it now passes the declared size, and
-			the remote adds its own +1 when it binds to its own
-			backend, as before; also, the copy-back from the remote's
-			result was bounded only by the length the remote reported,
-			with no check against the local buffer's actual size; it's
-			now clamped to that size and null-terminated within bounds
-			(#9026)
-		fixed the postgresql connection module - with typemangling
-			omitted, columnTypeFormat() still claimed the type was
-			sent as a name, but getColumnTypeName() just stringified
-			the raw oid, so every client-side type name comparison
-			failed; it now reports ids in that mode too, so clients
-			resolve a real name from the type id, which
-			getColumnType() already maps correctly regardless of
-			typemangling (#9090)
-		fixed a format-string injection risk in debugWrite()/
-			debugStart() calls across the auth, protocol, trigger,
-			and server-side translation modules - a number of
-			sites passed non-literal, data-derived text (passwords,
-			challenge/response values, query text, bind variable
-			names and values, error strings) directly as the
-			format argument instead of as a %s value, so a literal
-			'%' character in that data would be interpreted as a
-			conversion specifier; a different bug class than the
-			conversion-width mismatches fixed by #9115/#9220,
-			whose SQLR_PRINTF_FORMAT annotations catch a
-			conversion/argument mismatch but not a non-literal
-			format argument itself; fixed every site found by an
-			audit of every debugWrite()/debugStart() call under
-			src/ by passing the data as a %s argument instead
-			(#9221)
-		fixed the postgresql protocol module's getColumnTypeOid() - it was a
-			postgresql-native oid table with cases for only 128 of the 193
-			sqlrelay datatypes, so 65 kinds of column described as oid 705
-			(unknown); added cases for the remaining datatypes, including
-			the binary lob family (image, binary, varbinary, longbinary,
-			the various *blob types, raw, long_raw, bfile, geometry,
-			sdo_geometry, and informix's byte type), which map onto bytea;
-			sendDataRow() now hex-encodes bytea values to match postgresql's
-			text-format wire representation, and sends lob columns' actual
-			content instead of an empty field, following the same read-the-
-			whole-lob-into-a-buffer approach as the mysql protocol module;
-			sendRowDescription() now reports a real per-type pg_type.typlen
-			(-1 for the varlena types, a fixed width for the rest) instead
-			of the column's declared width for every type but bpchar/
-			varchar, and sets the numeric type's modifier (precision/scale)
-			as well; also fixed getColumnSize() truncating above 65535 when
-			computing the bpchar/varchar modifier; also fixed datatypes.h's
-			isBlobTypeChar()/isBlobTypeInt() and isBinaryTypeChar()/
-			isBinaryTypeInt() classifying db2's graphic/vargraphic/
-			longvargraphic (double-byte character types, not binary) as
-			blobs, and added informix's byte type, which they were missing;
-			left the long datatype unmapped (still oid 705) since oracle
-			returns it for character data while sap/freetds return it for
-			binary data, and it can't be told apart without splitting the
-			datatype (#9017)
-		fixed the postgresql protocol module's bind() - after the per-
-			parameter loop, it read the result format code count and
-			then that many result format codes with no bounds checks,
-			so a Bind message whose body legitimately ended right
-			after the last parameter drove those reads past the end
-			of the request packet buffer; added the same rp/rpend
-			bounds checks used earlier in bind() for the parameter
-			loop (#9219)
-		fixed the freetds connection module's char inputBind() - it
-			took an isnull argument but never read it, always
-			passing ct-lib a not-null indicator, so a null bind
-			went through as an empty string instead of null; it
-			now passes -1 when isnull is set, matching the sap
-			module, which binds through the same ct-lib call
-			(#9148)
-		fixed the odbc connection module's getColumnType() - it read a
-			column's type with SQL_DESC_TYPE, the "verbose" type,
-			which most drivers report as SQL_DATETIME alike for a
-			date, time or timestamp column, so all three came back
-			as datetime; now also reads SQL_DESC_CONCISE_TYPE, which
-			discriminates them on every driver tested, and falls
-			back to it after the existing MS SQL Server type name
-			checks (#9054)
-		fixed the odbc connection module's inputOutputBind() for
-			strings - under unicode, it converted the input value to
-			the backend's wide encoding in place, then used a byte
-			strlen on the converted buffer to tell the driver how
-			much input was valid, so an ascii value that converts to
-			2 bytes per character was reported as 1 byte long and the
-			driver saw only its first byte; it also truncated the
-			converted value down to the original (narrower, utf-8
-			sized) buffer when the wide form needed more room; now
-			converts into a scratch buffer sized for the wide form,
-			binds that instead, and reports its true converted
-			length, so unicode input-output string binds round-trip
-			without truncation (#9025)
-		fixed the freetds connection module's prepareQuery() - its
-			entire body sat behind FREETDS_SUPPORTS_CURSORS, a
-			define that was never set, so an "exec", "execute" or
-			ODBC/JDBC "{call ...}" query never actually issued an
-			rpc command; and even with that ifdef forced on,
-			executeQuery() unconditionally re-issued the query as a
-			plain language command, discarding whatever
-			prepareQuery() had set up; the rpc command path (and
-			native, ct_param()-based binds for it) is now always
-			on, verified against a live ASE via freetds; select
-			cursors and native binds for plain language commands
-			stay off, since freetds's ct-lib emulation doesn't
-			reliably support them (#9050)
-	fixed the odbc connection module - blob binds went out as character
-		strings for every backend but MS SQL Server and Teradata, so
-		raw bytes never reached binary/blob columns on SAP ASE (native
-		driver or FreeTDS), DB2 or Informix - a character bind into
-		those columns is a hard error on DB2 and Informix and silent
-		mangling on ASE; blobs now bind as SQL_C_BINARY on those
-		backends too, detected by SQL_DBMS_NAME the same way as MS SQL
-		Server; added a "binarylobbind" connect string option so a
-		site can opt any other, untested odbc driver into the same
-		binary bind rather than waiting on a built-in default for it
-		(#9062)
-	fixed the sap and freetds connection modules' rpc procedure name walk
-		- a delimited name (eg. "my proc" or [my proc]) was truncated at
-			the first embedded space rather than run to its matching
-			close delimiter, so it never resolved; the walk now
-			recognizes both delimiter styles and strips them
-		- literal parameters written straight into the query text (eg.
-			"exec someproc 1,2") were silently dropped instead of being
-			sent with the rpc, so the procedure ran with defaults
-			instead of the given values, or errored if the parameters
-			were required; they're now parsed and ct_param()'d, typed as
-			int, float or char to match the literal; a trailing
-			"@variable" reference still disables this parsing, since
-			those are bound by the client's own inputBind() calls,
-			matched by name
-		- a trailing ";" was left as part of the name; the walk now
-			stops there too
-		verified live against a real ASE via both sap and freetds (#9053)
-	fixed the odbc connection module - a query with output binds and more
-		than one result set still only ever exposed the first result
-		set to the client, because cacheRowsAndDrainResultSets() (added
-		for #8970) drained every result set behind the first with its
-		own SQLMoreResults() loop to make the driver write the output
-		bind buffers, without keeping anything from them; it now
-		buffers each of those result sets' own column metadata and
-		rows too (falling back to draining without buffering, same as
-		before, for one that's too big to buffer or contains lob
-		columns), and nextResultSet() replays them once the driver's
-		own SQLMoreResults() walk is exhausted; verified live against a
-		real mssql backend with output-bind procedures returning two
-		and three result sets (#9198)
-	fixed the c++ client api - sqlrcursor::nextResultSet() only read back
-		a bool from the server and never refreshed its cached column
-		metadata or row buffers, so odbc's SQLMoreResults(), phppdo's
-		getMoreResults() and sqlrsh's result set loop all walked past
-		the first result set of a multi-result-set query while still
-		showing its stale header and data; the sqlrclient wire protocol
-		(bumped to version 3) now sends the new result set's column
-		metadata and rows along with the "next result set available"
-		reply, and nextResultSet() parses them the same way the initial
-		query response is parsed; verified live against a real mssql
-		backend with two- and three-result-set batch queries via sqlrsh
-		(#9197)
-	fixed the server api - sqlrservercursor::inputBindBlob() and
-		inputBindClob() carried a bound blob/clob as a flat buffer, so
-		a value written to a backend that has its own notion of
-		segments (firebird) came out with different segment
-		boundaries than it went in with; added overloads that also
-		take the byte length of each segment the value arrived as, a
-		matching sqlrserverbindvar field, and firebird protocol module
-		and connection module support to fill and consume them, so a
-		blob written to sql relay's firebird protocol module as
-		several isc_put_segment() calls is now stored as that many
-		segments on the backend instead of being re-chunked at an
-		arbitrary size; every other backend and the default cursor
-		implementation fall back to the old flat-buffer behavior
-		unchanged (#9151)
-	added a server api for asking a backend what a prepared statement's
-		bind variables are - sqlrservercursor::getInputBindCountFromPrepare()
-		and getInputBindType()/getInputBindSize()/getInputBindScale()/
-		getInputBindPrecision()/getInputBindIsNullable(), with
-		sqlrservercontroller passthroughs, mirroring the existing
-		result-set column info api; the base cursor returns "don't
-		know" (a count of 0) and every backend keeps today's behavior
-		unless it overrides these; firebird now copies the bind
-		description isc_dsql_describe_bind() already fills into
-		inbindsqlda out of prepareQuery(), before inputBind() overwrites
-		it in place, and answers from that copy (#9140)
-	added a server api for hinting that the next transaction should be
-		read-only - sqlrserverconnection::setReadOnly(), with a
-		sqlrservercontroller passthrough; the base connection just
-		returns false ("don't know") and every backend keeps today's
-		behavior unless it overrides this; firebird now honors the
-		hint by starting the transaction with isc_tpb_read instead of
-		isc_tpb_write, so a read-only transaction gets the backend's
-		benefits (no sweep pressure on firebird) instead of just the
-		protocol module's client-visible refusal of writes (#9109)
-	fixed the odbc connection module's inputBindBlob() - the binary
-		bind added for SAP ASE, DB2 and Informix by #9062 sent the
-		whole value in one SQLBindParameter/SQLExecute pair, which
-		SAP ASE's own driver and FreeTDS (fronting ASE for the tds
-		protocol module) cap at 32768 bytes, truncating anything
-		longer instead of erroring; a bind over that size is now
-		deferred with SQL_LEN_DATA_AT_EXEC and sent in pieces via
-		SQLParamData/SQLPutData in executeQuery(), verified live
-		against a real ASE via both the native driver and FreeTDS
-		(#9226)
-	updated the oracle userlist auth module's O5LOGON aesCbc() helper
-		for rudiments' encryption::setPadding -> setUsePadding rename
-		(rudiments #9222) (#9236)
-	updated the oracle userlist auth module to offer O5LOGON at
-		runtime based on tls::isSupported() instead of a
-		compile-time check on RUDIMENTS_HAS_SSL (#9224)
-	fixed the tds protocol module's login7 typeflags decode -
-		freadonlyintent read bit 3 (inside fsqltype's own field)
-		instead of bit 5 per MS-TDS 2.2.6.4 (#9195)
-	fixed the tds protocol module's cursorExecute() and
-		cursorUnprepare() to recognize a backend-owned prepared-
-		statement handle (one minted by the backend's own exec
-		sp_prepare inside a raw batch) and forward the call there,
-		instead of rejecting it with RPC_NO_SUCH_STMT - the same
-		class of bug #9202 fixed for execute()/unprepare() (#9203)
-	fixed the tds protocol module's paramValue() to reject an
-		unrecognized rpc parameter wire type with a plain error
-		(mssql error 8009, "Data type 0xNN is unknown"), matching
-		how a real server keeps the connection alive, instead of
-		tearing the connection down outright (#9205)
-	fixed the tds protocol module - a failed rpc call could send two
-		complete response packets for one request, desyncing the
-		client's tds stream; and the module leaked cursor and
-		prepared-statement handles on an abandoned sp_cursoropen or
-		an sp_prepare/sp_execute followed by an ATTENTION with no
-		matching close/unprepare, starving the cursor pool and
-		eventually crashing the client deep inside a later, unrelated
-		rpc call - getCursor() failures now evict the oldest
-		abandoned handle and retry once, and an ATTENTION releases
-		the cursor it interrupted (#9248)
-	added TLS support to the tds protocol module - the pre-login now
-		negotiates encryption instead of always answering "not
-		supported", the handshake runs wrapped in tds packets the way
-		MS-TDS requires, and a client that asks for login-packet-only
-		encryption gets it, with the session dropping back to
-		cleartext after the login packet; a client that won't
-		negotiate TLS when tls="yes" is now refused instead of being
-		logged in in the clear (#8848)
-	updated the config guide's tds protocol section for TLS - it said the
-		module doesn't support TLS at all, quoted a startup warning
-		that no longer exists, and listed TLS under the module's
-		limitations (#8848)
-
-	fixed the tds protocol module's COLMETADATA writer to send a
-		minimal XMLTYPE_INFO (MS-TDS 2.2.5.4.3) for an xml column,
-		and its row writer to PLP-encode xml values and nulls,
-		instead of sending xml exactly like ntext (a plain length-
-		prefixed value with no XMLTYPE_INFO at all), which made
-		ct_describe() report a generic text type instead of the
-		longchar type a real server reports for xml (#9201)
-	clarified in a comment that the freetds connection module's
-		connect-string charset= option only asks the server which
-		charset to use - it is not the charset FreeTDS itself
-		decodes incoming data as, which only freetds.conf's
-		"client charset" setting controls, confirmed already
-		correct and already documented in configreference.wt and
-		configguide.wt (#9196)
-	fixed the tds protocol module's cursorOpen()/cursorPrepare()/
-		cursorPrepExec() to strip a trailing "for update [of
-		col,...]" clause from a client's cursor-declare statement
-		text before preparing it - mssql only accepts that clause
-		inside an actual DECLARE CURSOR statement, and this module
-		never issues one, so the client's raw text was rejected
-		outright (error 235) (#9249)
+		informixcursor::columnInfoIsValidAfterPrepare()
+	the postgresql connection module reports type ids rather than names when
+		typemangling is omitted
+	fixed the router pseudo-backend's outputBind(), which grew a string
+		output bind by one byte per router in the chain
+	fixed an authentication bypass in the sqlrclient protocol module - AUTH
+		was one branch of a long if/else chain, so a client could send a
+		query as its first command
+	added sqlrservercontroller::isResumedSession(), so an abandoned
+		suspended session can't leave the next, unrelated client
+		pre-authenticated
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
