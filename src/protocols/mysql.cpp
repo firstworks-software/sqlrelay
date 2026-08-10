@@ -2149,7 +2149,7 @@ bool sqlrprotocol_mysql::negotiateMoreData() {
 			// FIXME: send the actual rsa public key file...
 			moredata.append("...servers rsa public key file...");
 
-			if (!sendAuthMoreDataPacket() && recvAuthResponse()) {
+			if (!sendAuthMoreDataPacket() || !recvAuthResponse()) {
 				return false;
 			}
 		} else

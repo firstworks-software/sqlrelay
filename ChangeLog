@@ -298,6 +298,12 @@
 	fixed the odbc, jdbc and c# drivers to recognize postgresql's
 		underscore-prefixed array type names under typemangling=lookup,
 		not just sqlrelay's own X_ARRAY spelling
+	fixed the mysql protocol module's negotiateMoreData(), which spun
+		forever on an inverted && instead of ||, both when the send
+		succeeded (short-circuiting recvAuthResponse() so the loop
+		condition never changed) and when the send failed (the
+		resulting recv failure kept the loop going instead of
+		exiting)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
