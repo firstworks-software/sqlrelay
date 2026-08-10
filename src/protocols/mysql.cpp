@@ -723,6 +723,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 						uint64_t querysize);
 		bool	sendQueryResult(sqlrservercursor *cursor,
 						bool binary);
+		sqlrquerytype_t	refineInsertQueryType(sqlrservercursor *cursor);
+		void	appendInfoString(sqlrservercursor *cursor,
+						sqlrquerytype_t querytype,
+						uint64_t affectedrows,
+						stringbuffer *info);
 		bool	sendResultSet(sqlrservercursor *cursor,
 						uint32_t colcount,
 						bool binary);
@@ -3078,18 +3083,148 @@ bool sqlrprotocol_mysql::sendQueryResult(sqlrservercursor *cursor,
 	// db doesn't support it.  So, rather than return an error, we'll just
 	// leave id=0.
 
-	// FIXME: for the following queries, info should be set:
-	// 	insert into ... select ...
-	// 		Records: xxx Duplicates: xxx Warnings: xxx
-	// 	insert into ... values (...),(...),(...)...
-	// 		Records: xxx Duplicates: xxx Warnings: xxx
+	// FIXME: load data infile isn't handled:
 	// 	load data infile ...
 	// 		Records: xxx Deleted: xxx Skipped: xxx Warnings: xxx
-	// 	alter table
-	// 		Records: xxx Duplicates: xxx Warnings: xxx
-	// 	update
-	// 		Rows matched: xxx Changed: xxx Warnings: xxx
-	return sendOkPacket(true,cont->getAffectedRows(cursor),id,0,0,"",0,"");
+	uint64_t	affectedrows=cont->getAffectedRows(cursor);
+	stringbuffer	info;
+	appendInfoString(cursor,cursor->getQueryType(),affectedrows,&info);
+
+	return sendOkPacket(true,affectedrows,id,0,0,
+					info.getString(),0,"");
+}
+
+// Refines a generic SQLRQUERYTYPE_INSERT into SQLRQUERYTYPE_MULTIINSERT or
+// SQLRQUERYTYPE_INSERTSELECT, when the query is one of those, without the
+// table/column/autoincrement metadata lookups that
+// sqlrservercontroller::parseInsert() does - all that's needed here is
+// which shape of insert this is, not its columns.
+sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
+						sqlrservercursor *cursor) {
+
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+	const char	*start=cont->skipWhitespaceAndComments(query);
+	const char	*end=query+querysize;
+
+	// FIXME: assumes a normalized query, same as parseInsert()
+	if (querysize<12 || charstring::compareIgnoringCase(
+						start,"insert into ",12)) {
+		return SQLRQUERYTYPE_INSERT;
+	}
+
+	// skip "insert into " and the table name
+	const char	*ptr=charstring::findFirst(start+12,' ');
+	if (!ptr || ptr>=end) {
+		return SQLRQUERYTYPE_INSERT;
+	}
+	ptr++;
+
+	// skip an optional column list
+	if (ptr<end && *ptr=='(') {
+		const char	*close=charstring::findFirst(ptr,')');
+		if (!close || close>=end) {
+			return SQLRQUERYTYPE_INSERT;
+		}
+		ptr=close+1;
+		while (ptr<end && character::isWhitespace(*ptr)) {
+			ptr++;
+		}
+	}
+
+	// look for the "values (" keyword, same kludge as parseInsert(),
+	// to handle "values(" with no space
+	const char	*rawvalues=NULL;
+	if (end>ptr+7 && !charstring::compareIgnoringCase(ptr,"values(",7)) {
+		rawvalues=ptr+7;
+	} else if (end>ptr+8 && !charstring::compareIgnoringCase(
+							ptr,"values (",8)) {
+		rawvalues=ptr+8;
+	}
+
+	// No values(...) clause - if the next keyword is a select (or a
+	// "with" clause feeding one), this is an insert...select.  Anything
+	// else (eg. "insert into t set a=1", "... default values", an
+	// unrecognized syntax variant) falls back to a plain insert, since
+	// that's the safe default - it's what native mysql reports for
+	// anything that isn't actually an insert-select.
+	if (!rawvalues) {
+		if ((end>ptr+7 && !charstring::compareIgnoringCase(
+							ptr,"select ",7)) ||
+				(end>ptr+5 && !charstring::compareIgnoringCase(
+							ptr,"with ",5))) {
+			return SQLRQUERYTYPE_INSERTSELECT;
+		}
+		return SQLRQUERYTYPE_INSERT;
+	}
+
+	// scan the first parenthesized set of values; if a comma follows
+	// its closing paren (allowing for whitespace in between) then a
+	// second set follows too, making this a multi-row insert
+	const char	*c=rawvalues;
+	uint32_t	parens=0;
+	for (;;) {
+		if (c>=end) {
+			return SQLRQUERYTYPE_INSERT;
+		}
+		if (*c=='\'') {
+			c=charstring::findEndOfQuotedString(
+					c,end-c,'\'',true,true);
+			continue;
+		}
+		if (*c=='(') {
+			parens++;
+		} else if (*c==')') {
+			if (parens) {
+				parens--;
+			} else {
+				c++;
+				while (c<end && character::isWhitespace(*c)) {
+					c++;
+				}
+				return (c<end && *c==',')?
+					SQLRQUERYTYPE_MULTIINSERT:
+					SQLRQUERYTYPE_INSERT;
+			}
+		}
+		c++;
+	}
+}
+
+// Appends a mysql_info string to "info" for the query types that a native
+// mysql server populates it for.  Leaves "info" empty for everything else,
+// including a plain single-row insert, matching native behavior.
+void sqlrprotocol_mysql::appendInfoString(sqlrservercursor *cursor,
+						sqlrquerytype_t querytype,
+						uint64_t affectedrows,
+						stringbuffer *info) {
+
+	if (querytype==SQLRQUERYTYPE_INSERT) {
+		querytype=refineInsertQueryType(cursor);
+	}
+
+	switch (querytype) {
+		case SQLRQUERYTYPE_INSERTSELECT:
+		case SQLRQUERYTYPE_MULTIINSERT:
+		case SQLRQUERYTYPE_ALTER:
+			// FIXME: Duplicates and Warnings aren't tracked by
+			// the server API yet (see #9270), so they're always
+			// reported as 0
+			info->append("Records: ")->append(affectedrows);
+			info->append("  Duplicates: 0  Warnings: 0");
+			break;
+		case SQLRQUERYTYPE_UPDATE:
+			// FIXME: "Rows matched" (as opposed to "Rows
+			// affected") and "Changed" aren't tracked separately
+			// by the server API yet (see #9270), so both use the
+			// affected row count, and Warnings is always 0
+			info->append("Rows matched: ")->append(affectedrows);
+			info->append("  Changed: ")->append(affectedrows);
+			info->append("  Warnings: 0");
+			break;
+		default:
+			break;
+	}
 }
 
 bool sqlrprotocol_mysql::sendResultSet(sqlrservercursor *cursor,

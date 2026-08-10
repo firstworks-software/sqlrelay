@@ -309,6 +309,13 @@
 		short or zero length packet underflowed the count and drove
 		an oversized allocation and copy, crashing the sqlr-connection
 		process
+	fixed the mysql protocol module's mysql_info reporting - it was
+		never populated, so insert-select, multi-row insert, alter and
+		update all returned NULL where a native server reports
+		"Records: ..." or "Rows matched: ..." (Duplicates, Warnings and
+		the distinction between rows matched and rows changed aren't
+		tracked by the server api yet, so those always read 0 or the
+		affected row count - see #9270)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
