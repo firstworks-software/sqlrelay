@@ -162,6 +162,8 @@
 					<pattern type="regex" from="ORA-00923" to="ORA-01923"/>
 					<pattern type="regex" from="ORA-01923" to="ORA-10923"/>
 				</pattern>
+				<pattern type="regex" from="^(ORA-[0-9]+): (.*)$"
+						to="\1: \2 (code \1)" backrefs="yes"/>
 			</errortranslation>
 		</errortranslations>
 		<queries>

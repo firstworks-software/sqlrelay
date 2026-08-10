@@ -4205,6 +4205,19 @@ This example illustrates the use of several attributes of the pattern tag:
 * '''global''' - Only valid when type="regex".  Options include:
  * //yes// - find all matches - the default
  * //no// - only find the first match
+* '''backrefs''' - Only valid when type="regex" and using from/to (not match).  Options include:
+ * //no// - treat \1, \2, etc. in //to// as literal text - the default
+ * //yes// - treat \1, \2, etc. in //to// as backreferences to the capture groups in //from//, and \0 as the whole match
+
+With backrefs="yes", //to// can refer back to whatever a capture group in //from// matched.  For example:
+
+{{{#!blockquote
+{{{#!code
+<pattern type="regex" from="([a-z]+)\.([a-z]+)" to="\2.\1" backrefs="yes"/>
+}}}
+}}}
+
+swaps //table.column// to //column.table// wherever it occurs.  Without backrefs="yes", \1 and \2 in //to// would be inserted literally, rather than being replaced with what the capture groups matched.
 
 Note that in this example, the normalize query translation is loaded prior to the patterns query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [#normalize normalize] query translation for more information.
 
@@ -4617,6 +4630,19 @@ This example illustrates the use of several attributes of the pattern tag:
 * '''global''' - Only valid when type="regex".  Options include:
  * //yes// - find all matches - the default
  * //no// - only find the first match
+* '''backrefs''' - Only valid when type="regex" and using from/to (not match).  Options include:
+ * //no// - treat \1, \2, etc. in //to// as literal text - the default
+ * //yes// - treat \1, \2, etc. in //to// as backreferences to the capture groups in //from//, and \0 as the whole match
+
+With backrefs="yes", //to// can refer back to whatever a capture group in //from// matched.  For example:
+
+{{{#!blockquote
+{{{#!code
+<pattern type="regex" from="ORA-([0-9]+): (.*)" to="error \1: \2" backrefs="yes"/>
+}}}
+}}}
+
+rewrites an Oracle error string, keeping the error number and message but changing how they're phrased.  Without backrefs="yes", \1 and \2 in //to// would be inserted literally, rather than being replaced with what the capture groups matched.
 
 Another powerful feature of the patterns translation module is nested matching:
 

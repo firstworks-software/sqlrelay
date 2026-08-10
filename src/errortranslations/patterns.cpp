@@ -21,6 +21,7 @@ struct pattern_t {
 	const char		*from;
 	regularexpression	*fromre;
 	bool			replaceglobal;
+	bool			backrefs;
 	const char		*to;
 	bool			ignorecase;
 	scope_t			scope;
@@ -107,6 +108,7 @@ void sqlrerrortranslation_patterns::buildPatternsTree(domnode *root,
 		(*p)[i].from=from;
 		(*p)[i].fromre=NULL;
 		(*p)[i].replaceglobal=true;
+		(*p)[i].backrefs=false;
 		(*p)[i].to=c->getAttributeValue("to");
 		(*p)[i].ignorecase=false;
 		(*p)[i].scope=SCOPE_QUERY;
@@ -127,6 +129,9 @@ void sqlrerrortranslation_patterns::buildPatternsTree(domnode *root,
 				(*p)[i].replaceglobal=
 					!charstring::isNo(
 					c->getAttributeValue("global"));
+				(*p)[i].backrefs=
+					charstring::isYes(
+					c->getAttributeValue("backrefs"));
 			}
 		} else if (!charstring::compareIgnoringCase(type,"cistring")) {
 			(*p)[i].ignorecase=true;
@@ -289,6 +294,7 @@ void sqlrerrortranslation_patterns::applyPattern(const char *str,
 	}
 
 	char	*convstr=NULL;
+	char	*escapedto=NULL;
 
 	if (p->matchre) {
 
@@ -305,9 +311,26 @@ void sqlrerrortranslation_patterns::applyPattern(const char *str,
 		debugWrite("to:");
 		debugWrite("\"%.*s%s\"",(int)ptolen,p->to,toellipses);
 
+		// rudiments' regularexpression replace() always expands
+		// backslash-digit sequences in "to" as capture-group
+		// backrefs, so unless backrefs is enabled, double up any
+		// literal backslashes first so they come through as-is
+		const char	*to=p->to;
+		if (!p->backrefs && !charstring::isNullOrEmpty(p->to)) {
+			stringbuffer	tobuffer;
+			for (const char *ch=p->to; *ch; ch++) {
+				if (*ch=='\\') {
+					tobuffer.append('\\');
+				}
+				tobuffer.append(*ch);
+			}
+			escapedto=charstring::duplicate(tobuffer.getString());
+			to=escapedto;
+		}
+
 		convstr=charstring::replace(str,
 					p->fromre,
-					p->to,
+					to,
 					p->replaceglobal);
 		outb->append(convstr);
 
@@ -337,6 +360,7 @@ void sqlrerrortranslation_patterns::applyPattern(const char *str,
 	}
 
 	delete[] convstr;
+	delete[] escapedto;
 
 	if (getDebug() && p->scope!=SCOPE_INSIDE_QUOTES &&
 				p->scope!=SCOPE_OUTSIDE_QUOTES) {

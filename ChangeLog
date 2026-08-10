@@ -334,6 +334,11 @@
 		a match= regex with capture groups passed only the last capture
 		group down to nested pattern tags instead of the whole match,
 		consistent with the fix to charstring::replace() in rudiments
+	added a backrefs attribute to the querytranslations and
+		errortranslations patterns modules - when type="regex" and
+		backrefs="yes", to= can refer to from='s capture groups with
+		\1, \2, etc, and \0 for the whole match; defaults to "no", so
+		to= is taken literally unless backrefs is turned on
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

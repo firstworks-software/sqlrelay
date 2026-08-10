@@ -6282,7 +6282,25 @@ http://www.gnu.org/software/src-highlite -->
     <li><i>no</i> - only find the first match</li>
   </ul>
 
+  <li><b>backrefs</b> - Only valid when type="regex" and using from/to (not match).  Options include:</li>
+  <ul>
+    <li><i>no</i> - treat \1, \2, etc. in <i>to</i> as literal text - the default</li>
+    <li><i>yes</i> - treat \1, \2, etc. in <i>to</i> as backreferences to the capture groups in <i>from</i>, and \0 as the whole match</li>
+  </ul>
+
 </ul>
+
+<p>With backrefs="yes", <i>to</i> can refer back to whatever a capture group in <i>from</i> matched.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">&lt;</font><font color="#008080">pattern</font> type<font color="#990000">=</font><font color="#FF0000">"regex"</font> from<font color="#990000">=</font><font color="#FF0000">"([a-z]+)</font><font color="#CC33CC">\.</font><font color="#FF0000">([a-z]+)"</font> to<font color="#990000">=</font><font color="#FF0000">"</font><font color="#CC33CC">\2</font><font color="#FF0000">.</font><font color="#CC33CC">\1</font><font color="#FF0000">"</font> backrefs<font color="#990000">=</font><font color="#FF0000">"yes"</font><font color="#990000">/&gt;</font></tt></pre>
+
+</blockquote>
+<p>swaps <i>table.column</i> to <i>column.table</i> wherever it occurs.  Without backrefs="yes", \1 and \2 in <i>to</i> would be inserted literally, rather than being replaced with what the capture groups matched.</p>
 
 <p>Note that in this example, the normalize query translation is loaded prior to the patterns query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="#normalize">normalize</a> query translation for more information.</p>
 
@@ -6957,7 +6975,25 @@ http://www.gnu.org/software/src-highlite -->
     <li><i>no</i> - only find the first match</li>
   </ul>
 
+  <li><b>backrefs</b> - Only valid when type="regex" and using from/to (not match).  Options include:</li>
+  <ul>
+    <li><i>no</i> - treat \1, \2, etc. in <i>to</i> as literal text - the default</li>
+    <li><i>yes</i> - treat \1, \2, etc. in <i>to</i> as backreferences to the capture groups in <i>from</i>, and \0 as the whole match</li>
+  </ul>
+
 </ul>
+
+<p>With backrefs="yes", <i>to</i> can refer back to whatever a capture group in <i>from</i> matched.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">&lt;</font><font color="#008080">pattern</font> type<font color="#990000">=</font><font color="#FF0000">"regex"</font> from<font color="#990000">=</font><font color="#FF0000">"ORA-([0-9]+): (.*)"</font> to<font color="#990000">=</font><font color="#FF0000">"error </font><font color="#CC33CC">\1</font><font color="#FF0000">: </font><font color="#CC33CC">\2</font><font color="#FF0000">"</font> backrefs<font color="#990000">=</font><font color="#FF0000">"yes"</font><font color="#990000">/&gt;</font></tt></pre>
+
+</blockquote>
+<p>rewrites an Oracle error string, keeping the error number and message but changing how they're phrased.  Without backrefs="yes", \1 and \2 in <i>to</i> would be inserted literally, rather than being replaced with what the capture groups matched.</p>
 
 <p>Another powerful feature of the patterns translation module is nested matching:</p>
 

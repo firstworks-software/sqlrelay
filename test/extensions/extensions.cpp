@@ -537,7 +537,8 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("select 1"));
 	assertEquals(cur->errorNumber(),10923);
 	assertStartsWith(cur->errorMessage(),
-			"ORA-10923: fRoM kEyWoRd nOt fOuNd wHeRe eXpEcTeD");
+			"ORA-10923: fRoM kEyWoRd nOt fOuNd wHeRe eXpEcTeD"
+			" (code ORA-10923)");
 	stdoutput.printf("\n");
 
 	delete cur;
