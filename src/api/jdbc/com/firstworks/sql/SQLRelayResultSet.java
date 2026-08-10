@@ -301,7 +301,7 @@ public class SQLRelayResultSet implements ResultSet {
 		}
 		// uppercase with Locale.ROOT - a turkish locale maps i to a
 		// dotted capital I, which matches nothing below
-		// (some array types are spelled twice - X_ARRAY from the
+		// (the array types below are spelled twice - X_ARRAY from the
 		// datatype list, _X from postgresql with typemangling=lookup)
 		switch (type.toUpperCase(Locale.ROOT)) {
 			case "CHAR":
@@ -318,12 +318,14 @@ public class SQLRelayResultSet implements ResultSet {
 			case "_BPCHAR":
 			case "TEXT":
 			case "TEXT_ARRAY":
+			case "_TEXT":
 			case "TINYTEXT":
 			case "MEDIUMTEXT":
 			case "LONGTEXT":
 			case "NTEXT":
 			case "NAME":
 			case "NAME_ARRAY":
+			case "_NAME":
 			case "CSTRING":
 			case "LVARCHAR":
 			case "STRING":
@@ -339,6 +341,7 @@ public class SQLRelayResultSet implements ResultSet {
 			case "LONGVARBINARY":
 			case "BYTEA":
 			case "BYTEA_ARRAY":
+			case "_BYTEA":
 			case "BLOB":
 			case "TINYBLOB":
 			case "MEDIUMBLOB":

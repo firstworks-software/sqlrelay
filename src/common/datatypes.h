@@ -777,6 +777,7 @@ static bool isBinaryTypeInt(int16_t type) {
 		type==OID_DATATYPE ||
 		type==_OID_DATATYPE ||
 		type==OIDVECTOR_DATATYPE ||
+		type==BYTEA_DATATYPE ||
 		type==_BYTEA_DATATYPE ||
 		type==TIMESTAMP_DATATYPE ||
 		type==DATE_DATATYPE ||
