@@ -2250,6 +2250,16 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 		servertdsversion=740;
 	}
 
+	// this module only implements the LOGIN7-and-later (>=700) wire
+	// format, so never auto-negotiate down to a version it doesn't
+	// actually speak, even for backends (sybase/sap, old SQL Server)
+	// that are genuinely older - negotiateTdsVersion() would otherwise
+	// echo back a version the client didn't ask for, and the client
+	// hangs waiting for a response shaped like the version it requested
+	if (servertdsversion && servertdsversion<700) {
+		servertdsversion=700;
+	}
+
 	// the configured version wins, for backends that we can't
 	// work the version out from
 	if (configtdsversion) {

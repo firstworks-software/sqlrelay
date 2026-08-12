@@ -363,6 +363,9 @@
 		tdsfreetdssapprotocol tests whenever freetds was found, and the
 		tdssapprotocol test whenever sap was found, in place of the
 		retired tdsprotocol test
+	fixed the tds protocol module - it never completed login against a
+		sap/sybase backend, negotiating down to a tds version older
+		than the module actually implements and hanging the client
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
