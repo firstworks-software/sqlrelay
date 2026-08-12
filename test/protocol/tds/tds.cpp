@@ -5,6 +5,34 @@ extern "C" {
 	#include <ctpublic.h>
 	#include <bkpublic.h>
 }
+
+// SAP's native ct-lib headers don't declare these - they're mssql/tds
+// 7.x-only constants that FreeTDS declares regardless of which backend
+// it's actually talking to.  A fallback value here only needs to let
+// the SAP build compile, not be meaningful under ASE.
+//
+// CS_UNIQUE_TYPE and CS_TDS_70/CS_TDS_74 are safe placeholders: every
+// use of them below is on an issybase-guarded branch or in a struct
+// field a real ASE run never reaches.  CS_CLIENTCHARSET is not - the
+// calls around ct_con_props(...,CS_CLIENTCHARSET,...) run unconditionally,
+// so under a real ASE run they'll set/get CS_LOC_PROP (a CS_LOCALE*
+// property) with a plain string argument instead.  That's wrong, not
+// just unmeaningful; fixing it for real requires gating those call
+// sites on issybase, which is out of scope here (this build has no
+// live ASE to test against) - noted for whoever wires up #9274/#9275.
+#ifndef CS_UNIQUE_TYPE
+#define CS_UNIQUE_TYPE CS_CHAR_TYPE
+#endif
+#ifndef CS_CLIENTCHARSET
+#define CS_CLIENTCHARSET CS_LOC_PROP
+#endif
+#ifndef CS_TDS_70
+#define CS_TDS_70 CS_TDS_50
+#endif
+#ifndef CS_TDS_74
+#define CS_TDS_74 CS_TDS_50
+#endif
+
 #include <rudiments/sys.h>
 #include <rudiments/process.h>
 #include <rudiments/charstring.h>

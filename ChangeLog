@@ -356,6 +356,9 @@
 		connecttime's units (seconds, with a decimal fraction for
 		sub-second values); also removed columnnamecase, which was
 		documented there but isn't a php pdo dsn option
+	the tds protocol test suite now builds two binaries, tds-freetds and
+		tds-sap, in place of the single tds binary, each built only
+		if the matching client library was found at configure time
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

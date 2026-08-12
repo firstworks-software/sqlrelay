@@ -842,6 +842,14 @@ endif
 ifneq ($(HAVE_ERLANG),)
 TESTALLSUBDIRS += all-erlang
 endif
+TDSTESTALLTARGETS =
+ifneq ($(strip $(FREETDSLIBS)),)
+TDSTESTALLTARGETS += tds-freetds
+endif
+ifneq ($(strip $(SYBASELIBS)),)
+TDSTESTALLTARGETS += tds-sap
+endif
+
 TESTPROTOCOLSUBDIRS =
 ifneq ($(strip $(MYSQLLIBS)),)
 TESTPROTOCOLSUBDIRS += all-mysql
@@ -849,7 +857,7 @@ endif
 ifneq ($(strip $(POSTGRESQLLIBS)),)
 TESTPROTOCOLSUBDIRS += all-postgresql
 endif
-ifneq ($(strip $(FREETDSLIBS)),)
+ifneq ($(strip $(TDSTESTALLTARGETS)),)
 TESTPROTOCOLSUBDIRS += all-tds
 endif
 ifneq ($(strip $(FIREBIRDLIBS)),)
@@ -867,6 +875,16 @@ CTESTLIBS = -L$(libdir) -l$(SQLR)client -l$(SQLR)clientwrapper $(RUDIMENTSLIBS) 
 
 ODBCTESTCPPFLAGS = $(BASECPPFLAGS) -I$(includedir) $(ODBCINCLUDES)
 ODBCTESTLIBS = $(RUDIMENTSLIBS) $(ODBCLIBS) $(LIBEFENCE)
+
+# SAP's ctpublic.h declares ct_command()'s query buffer (and a few
+# similar ct-lib/bk-lib args) as CS_CHAR* rather than const CS_CHAR*,
+# unlike FreeTDS's - -fpermissive downgrades the resulting "invalid
+# conversion" errors on the many literal/const-char* call sites in
+# tds.cpp back to warnings rather than requiring a cast at each one.
+TDSTESTFREETDSCPPFLAGS = $(CPPTESTCPPFLAGS) $(FREETDSINCLUDES)
+TDSTESTFREETDSLIBS = $(FREETDSLIBS) $(RUDIMENTSLIBS)
+TDSTESTSAPCPPFLAGS = $(CPPTESTCPPFLAGS) $(SYBASEINCLUDES) -fpermissive
+TDSTESTSAPLIBS = $(SYBASELIBS) $(RUDIMENTSLIBS)
 
 
 # bench
