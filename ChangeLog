@@ -359,6 +359,10 @@
 	the tds protocol test suite now builds two binaries, tds-freetds and
 		tds-sap, in place of the single tds binary, each built only
 		if the matching client library was found at configure time
+	configure now enables the tdsfreetdsmssqlprotocol and
+		tdsfreetdssapprotocol tests whenever freetds was found, and the
+		tdssapprotocol test whenever sap was found, in place of the
+		retired tdsprotocol test
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

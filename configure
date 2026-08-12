@@ -41543,7 +41543,10 @@ if ( test -n "$POSTGRESQLLIBS" ); then
 	TESTDBS="$TESTDBS postgresqlprotocol"
 fi
 if ( test -n "$FREETDSLIBS" ); then
-	TESTDBS="$TESTDBS tdsprotocol"
+	TESTDBS="$TESTDBS tdsfreetdsmssqlprotocol tdsfreetdssapprotocol"
+fi
+if ( test -n "$SYBASELIBS" ); then
+	TESTDBS="$TESTDBS tdssapprotocol"
 fi
 if ( test -n "$FIREBIRDLIBS" ); then
 	TESTDBS="$TESTDBS firebirdprotocol"
