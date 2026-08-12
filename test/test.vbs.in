@@ -258,8 +258,20 @@ function pinginstance(db)
 			else
 				PING="0: Couldn't connect to the listener."
 			end if
-		elseif db="tdsprotocol" then
+		elseif db="tdsfreetdsmssqlprotocol" then
 			if portlistening("1433") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		elseif db="tdsfreetdssapprotocol" then
+			if portlistening("9030") then
+				PING="The database is up."
+			else
+				PING="0: Couldn't connect to the listener."
+			end if
+		elseif db="tdssapprotocol" then
+			if portlistening("9031") then
 				PING="The database is up."
 			else
 				PING="0: Couldn't connect to the listener."
@@ -418,12 +430,15 @@ end sub
 ' run a wire-protocol test (the listener speaks another database's protocol)
 function runprotocoltest(db)
 
-	dim dir, prog, cmd
+	dim dir, prog, server, cmd, args, result70, result74
 	runprotocoltest=0
 
-	' map the database to its protocol test directory and program
+	' map the database to its protocol test directory, test program, and
+	' (for the tds variants, which share one test program built two ways -
+	' see #9273) the server-name argument to pass on the command line
 	dir=""
 	prog=""
+	server=""
 	select case db
 		case "mysqlprotocol"
 			dir="protocol\mysql"
@@ -431,9 +446,17 @@ function runprotocoltest(db)
 		case "postgresqlprotocol"
 			dir="protocol\postgresql"
 			prog="postgresql"
-		case "tdsprotocol"
+		case "tdsfreetdsmssqlprotocol"
 			dir="protocol\tds"
-			prog="tds"
+			prog="tds-freetds"
+		case "tdsfreetdssapprotocol"
+			dir="protocol\tds"
+			prog="tds-freetds"
+			server="sqlrelaysap"
+		case "tdssapprotocol"
+			dir="protocol\tds"
+			prog="tds-sap"
+			server="sqlrelaysapct"
 		case "oracleprotocol"
 			dir="protocol\oracle"
 			prog="oracle"
@@ -444,15 +467,45 @@ function runprotocoltest(db)
 
 	WshShell.CurrentDirectory=dir
 	if fso.FileExists(prog & ".exe") then
-		set cmd=WshShell.Exec(prog & ".exe")
-		do until cmd.StdOut.AtEndOfStream
-			WScript.Echo(cmd.StdOut.ReadLine())
-		loop
-		if cmd.ExitCode<>0 then
-			WScript.Echo(db & " failed")
-			runprotocoltest=1
+
+		' tdsfreetdsmssqlprotocol runs tds-freetds twice against the same
+		' instance - once requesting tds 7.0 ([sqlrelay]) and once requesting
+		' tds 7.4 ([sqlrelay74]) - #9199 - so both wire-shape variants get
+		' covered.  both runs have to succeed for the db to pass
+		if db="tdsfreetdsmssqlprotocol" then
+			set cmd=WshShell.Exec(prog & ".exe sqlrelay")
+			do until cmd.StdOut.AtEndOfStream
+				WScript.Echo(cmd.StdOut.ReadLine())
+			loop
+			result70=cmd.ExitCode
+
+			set cmd=WshShell.Exec(prog & ".exe sqlrelay74")
+			do until cmd.StdOut.AtEndOfStream
+				WScript.Echo(cmd.StdOut.ReadLine())
+			loop
+			result74=cmd.ExitCode
+
+			if result70<>0 or result74<>0 then
+				WScript.Echo(db & " failed")
+				runprotocoltest=1
+			else
+				WScript.Echo("test complete")
+			end if
 		else
-			WScript.Echo("test complete")
+			args=prog & ".exe"
+			if server<>"" then
+				args=args & " " & server
+			end if
+			set cmd=WshShell.Exec(args)
+			do until cmd.StdOut.AtEndOfStream
+				WScript.Echo(cmd.StdOut.ReadLine())
+			loop
+			if cmd.ExitCode<>0 then
+				WScript.Echo(db & " failed")
+				runprotocoltest=1
+			else
+				WScript.Echo("test complete")
+			end if
 		end if
 	else
 		WScript.Echo("no test found for " & db)
@@ -492,7 +545,7 @@ sub rundbtests(db, apis)
 	WScript.Echo("")
 
 	select case db
-		case "mysqlprotocol","postgresqlprotocol","tdsprotocol","oracleprotocol","teradataprotocol"
+		case "mysqlprotocol","postgresqlprotocol","tdsfreetdsmssqlprotocol","tdsfreetdssapprotocol","tdssapprotocol","oracleprotocol","teradataprotocol"
 			failures=failures+runprotocoltest(db)
 		case else
 			runapitests db, apis
