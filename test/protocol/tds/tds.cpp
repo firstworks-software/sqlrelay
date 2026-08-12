@@ -26,11 +26,37 @@ extern "C" {
 #ifndef CS_CLIENTCHARSET
 #define CS_CLIENTCHARSET CS_LOC_PROP
 #endif
-#ifndef CS_TDS_70
+// CS_TDS_70 is an enum member in both FreeTDS's and SAP's ct-lib headers,
+// but neither header #defines it (unlike 71-74, see below), so plain
+// "#ifndef CS_TDS_70" can't tell which header is in use - it fires under
+// FreeTDS too, aliasing the real enum value away to CS_TDS_50 there.  That
+// was harmless while nothing compared CS_TDS_70 against a real negotiated
+// version, but #9199 now does (below), so gate this fallback on CS_TDS_71
+// instead (defined as a macro by FreeTDS, absent from SAP's headers - same
+// signal the CS_TDS_73 fallback further down uses).  Under FreeTDS, leave
+// CS_TDS_70 alone - it's already a valid enum constant there.
+#ifndef CS_TDS_71
 #define CS_TDS_70 CS_TDS_50
 #endif
 #ifndef CS_TDS_74
 #define CS_TDS_74 CS_TDS_50
+#endif
+// CS_TDS_73 is compared against the version the server negotiated, rather
+// than just stored or passed through, so its fallback has to sort above
+// CS_TDS_50 instead of aliasing it.  SAP's headers stop at CS_TDS_50=7364
+// and FreeTDS continues the same numbering (70=7365 ... 73=7368), so 7368
+// keeps the comparison false under SAP's ct-lib, which can't speak tds 7.x.
+#ifndef CS_TDS_73
+#define CS_TDS_73 ((CS_INT)7368)
+#endif
+// Whether this binary is linked against FreeTDS (which negotiates whatever
+// tds version its freetds.conf stanza asks for) rather than SAP's ct-lib
+// (which always speaks tds 5.0 regardless of stanza/interfaces settings) -
+// CS_TDS_71 doubles as that compile-time signal, per the comment above.
+#ifdef CS_TDS_71
+#define TDSTEST_LINKED_WITH_FREETDS 1
+#else
+#define TDSTEST_LINKED_WITH_FREETDS 0
 #endif
 
 #include <rudiments/sys.h>
@@ -270,6 +296,31 @@ int main(int argc, char **argv) {
 	if (connected!=CS_SUCCEED) {
 		reportTestStatus();
 		return status;
+	}
+
+
+	// Which tds version the server settled on decides the wire shape of
+	// several types below.  The relay is run twice - once through a
+	// freetds.conf stanza that pins 7.0 and once through one that takes
+	// 7.4 - so read the negotiated version back here and branch on it
+	// rather than on issqlrelay alone.
+	CS_INT	tdsversion=-1;
+	assertEquals(ct_con_props(dbconn,CS_GET,CS_TDS_VERSION,
+				(CS_VOID *)&tdsversion,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	bool	tds73plus=(issqlrelay && tdsversion>=CS_TDS_73);
+	// Confirm the negotiation actually landed on the version the chosen
+	// freetds.conf stanza requested, rather than just trusting it - if the
+	// listener's tdsversion= cap or the stanza's "tds version =" setting
+	// were ever ignored, the "sqlrelay74" run would silently renegotiate
+	// down to 7.0 and tds73plus above would come out false, leaving the
+	// >=7.2 wire-shape differences this ticket cares about unexercised
+	// even though every assertion below still passed.  Only meaningful for
+	// the FreeTDS-linked binary - SAP's ct-lib always negotiates tds 5.0
+	// regardless of which stanza/interfaces entry "server" names.
+	if (issqlrelay && TDSTEST_LINKED_WITH_FREETDS) {
+		assertEquals(tdsversion,(!charstring::compare(server,"sqlrelay74"))?
+					CS_TDS_74:CS_TDS_70);
 	}
 
 
@@ -824,12 +875,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[14].name);
 	assertEquals(column[14].name,"testdate");
 	// date, time, datetime2 and datetimeoffset were introduced in tds 7.3.
-	// [sqlrelay] pins 7.0 and [mssql] takes 7.4, and below 7.3 a real sql
-	// server converts these to strings server-side and sends nvarchar, so
-	// ct-lib sees a character column on the relay run and the real type on
-	// the native one
+	// Below 7.3 a real sql server converts these to strings server-side and
+	// sends nvarchar, so ct-lib sees a character column on the relay run
+	// that pins 7.0, and the real type both on the relay run that takes 7.4
+	// and on the native mssql run.  Native sybase has its own types.
 	assertEquals(column[14].datatype,
-			(issqlrelay)?CS_CHAR_TYPE:CS_DATE_TYPE);
+			(issqlrelay && !tds73plus)?CS_CHAR_TYPE:CS_DATE_TYPE);
 	assertEquals(column[14].format,CS_FMT_NULLTERM);
 	// FIXME: 64 direct, 16 via relay
 	//assertEquals(column[14].maxlength,64);
@@ -844,7 +895,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[15].name);
 	assertEquals(column[15].name,"testtime");
 	assertEquals(column[15].datatype,
-			(issqlrelay)?CS_CHAR_TYPE:
+			(issqlrelay && !tds73plus)?CS_CHAR_TYPE:
 			(issybase)?CS_TIME_TYPE:CS_BIGTIME_TYPE);
 	assertEquals(column[15].format,CS_FMT_NULLTERM);
 	// FIXME: 16/7/7 direct, 64/0/0 via relay
@@ -861,7 +912,7 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%s\n",column[16].name);
 		assertEquals(column[16].name,"testdatetime2");
 		assertEquals(column[16].datatype,
-				(issqlrelay)?CS_CHAR_TYPE:
+				(issqlrelay && !tds73plus)?CS_CHAR_TYPE:
 						CS_BIGDATETIME_TYPE);
 		assertEquals(column[16].format,CS_FMT_NULLTERM);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
@@ -871,7 +922,13 @@ int main(int argc, char **argv) {
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[16].status,CS_UNUSED);
 		assertEquals(column[16].count,1);
-		assertEquals(column[16].usertype,CS_CHAR_TYPE);
+		// once the column travels as a real datetime2 (tds 7.3 and up),
+		// the relay's userType() tags it 0x0050, the "timestamp types"
+		// usertype (see sqlrprotocol_tds::userType() in
+		// src/protocols/tds.cpp).  A real sql server sends 0 here.
+		// TODO(#9199): the 80 wants confirming against a live run.
+		assertEquals(column[16].usertype,
+				(issqlrelay && tds73plus)?80:CS_CHAR_TYPE);
 		stdoutput.printf("\n");
 	}
 
@@ -879,7 +936,7 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%s\n",column[17].name);
 		assertEquals(column[17].name,"testdatetimeoffset");
 		assertEquals(column[17].datatype,
-				(issqlrelay)?CS_CHAR_TYPE:
+				(issqlrelay && !tds73plus)?CS_CHAR_TYPE:
 						CS_BIGDATETIME_TYPE);
 		assertEquals(column[17].format,CS_FMT_NULLTERM);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
@@ -1097,13 +1154,13 @@ int main(int argc, char **argv) {
 	assertEquals(data[13],"1.50");
 	assertEquals(*(datalength[13]),5);
 	assertEquals(*(nullindicator[13]),0);
-	// The two runs negotiate different tds versions - [sqlrelay] pins 7.0
-	// and [mssql] takes 7.4 - and date, time, datetime2 and datetimeoffset
-	// were introduced in 7.3.  Below 7.3 a real sql server converts them to
-	// strings server-side and sends nvarchar in the iso/odbc rendering, so
-	// the two renderings below are both what a real server produces, each
-	// at its own version.
-	if (issqlrelay) {
+	// The runs negotiate different tds versions - one relay run pins 7.0,
+	// the other takes 7.4, as does [mssql] - and date, time, datetime2 and
+	// datetimeoffset were introduced in 7.3.  Below 7.3 a real sql server
+	// converts them to strings server-side and sends nvarchar in the
+	// iso/odbc rendering, so the two renderings below are both what a real
+	// server produces, each at its own version.
+	if (issqlrelay && !tds73plus) {
 		assertEquals(data[14],"2001-01-01");
 		assertEquals(*(datalength[14]),11);
 		assertEquals(*(nullindicator[14]),0);
@@ -1198,7 +1255,7 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(data[12],"2.50");
 	assertEquals(data[13],"2.50");
-	if (issqlrelay) {
+	if (issqlrelay && !tds73plus) {
 		assertEquals(data[14],"2002-02-02");
 		assertEquals(data[15],"14:02:02.0000000");
 		assertEquals(data[16],"2002-02-02 14:02:02.0000000");
@@ -1360,16 +1417,16 @@ int main(int argc, char **argv) {
 
 
 	// The tds version decides whether the n-types travel as ucs-2 or
-	// as server-charset bytes.  As above, [sqlrelay] pins 7.0 and
-	// [mssql] takes 7.4, and a real sql server acks back whatever
-	// version its client asked for.
+	// as server-charset bytes.  Which version that is depends on the
+	// run - one relay run pins 7.0, the other takes 7.4, [mssql] takes
+	// 7.4 and [sybase] 5.0 - so this just confirms the property still
+	// reads back what it read back right after login, above.
 	stdoutput.printf("ct_con_props: get tds version\n");
 	intval=-1;
 	assertEquals(ct_con_props(dbconn,CS_GET,CS_TDS_VERSION,
 				(CS_VOID *)&intval,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(intval,(issybase)?CS_TDS_50:
-				(issqlrelay)?CS_TDS_70:CS_TDS_74);
+	assertEquals(intval,tdsversion);
 	stdoutput.printf("\n");
 
 

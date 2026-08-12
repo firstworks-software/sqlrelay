@@ -590,6 +590,34 @@ run_protocol_test() {
 		export SYBASE
 	fi
 
+	# tdsfreetdsmssqlprotocol runs tds-freetds twice against the same
+	# instance - once requesting tds 7.0 ([sqlrelay]) and once requesting
+	# tds 7.4 ([sqlrelay74]) - #9199 - so both wire-shape variants get
+	# covered.  both runs have to succeed for the db to pass
+	if ( test "$db" = "tdsfreetdsmssqlprotocol" )
+	then
+		./$prog sqlrelay
+		result70="$?"
+		./$prog sqlrelay74
+		result74="$?"
+		if ( test "$result70" = "0" ) && ( test "$result74" = "0" )
+		then
+			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
+			cd ../..
+			return 0
+		fi
+		if ( test "$result70" != "0" )
+		then
+			printf "    % 8s: failed (tds 7.0)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$result74" != "0" )
+		then
+			printf "    % 8s: failed (tds 7.4)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		cd ../..
+		return 1
+	fi
+
 	./$prog $server
 	if ( test "$?" = "0" )
 	then
