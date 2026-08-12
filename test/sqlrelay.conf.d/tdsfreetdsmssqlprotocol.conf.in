@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="tdsfreetdsmssqlprotocoltest" dbase="odbc" translatebindvariables="yes">
+		<listeners>
+			<listener protocol="tds" port="1433"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;mars=yes"/>
+		</connections>
+	</instance>
+
+</instances>

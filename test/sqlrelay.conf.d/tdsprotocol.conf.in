@@ -1,14 +1,9 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="tdsprotocoltest" dbase="odbc" translatebindvariables="yes">
-		<listeners>
-			<listener protocol="tds" port="1433"/>
-		</listeners>
-		<connections>
-			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;mars=yes"/>
-		</connections>
-	</instance>
+	<!-- this file now holds only the TLS instance, driven by
+	     tdstls.sh / tdstlsserverauth.sh; the plain (non-TLS) tds-vs-mssql
+	     combo lives in tdsfreetdsmssqlprotocol.conf.in -->
 
 	<!-- freetds cannot present a client certificate, so there is no
 	     mutual-auth counterpart to this instance -->

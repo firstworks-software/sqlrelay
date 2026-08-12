@@ -27,6 +27,8 @@ usage() {
 	echo "    mysqlimportexport and mysqlprotocol all hit the mysql server"
 	echo "    the postgresql family likewise"
 	echo "    oracle, tls, krb, extensions, crud and oracleprotocol all hit oracle"
+	echo "    sap, tdsfreetdssapprotocol and tdssapprotocol all hit the sap server"
+	echo "    (tdsfreetdsmssqlprotocol hits mssql instead, and can run alongside them)"
 }
 
 # stop any instances left running from a previous run.  only the instances
@@ -79,8 +81,11 @@ db_applicable() {
 		postgresql*)
 			MODULE=postgresql
 			;;
-		tdsprotocol)
+		tdsfreetdsmssqlprotocol)
 			MODULE=odbc
+			;;
+		tdsfreetdssapprotocol|tdssapprotocol)
+			MODULE=sap
 			;;
 		firebirdprotocol)
 			MODULE=firebird
@@ -102,10 +107,37 @@ db_applicable() {
 		fi
 	fi
 
-	# the mssql and tdsprotocol tests also need an odbc config for it
-	if ( test "$db" = "mssql" -o "$db" = "tdsprotocol" )
+	# the mssql and tdsfreetdsmssqlprotocol tests also need an odbc config for it
+	if ( test "$db" = "mssql" -o "$db" = "tdsfreetdsmssqlprotocol" )
 	then
 		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
+		then
+			return 1
+		fi
+	fi
+
+	# tdsfreetdsmssqlprotocol and tdsfreetdssapprotocol need the FreeTDS-linked
+	# tds test client; tdssapprotocol needs the SAP-linked one.  Both are
+	# conditional on FREETDSLIBS/SYBASELIBS at configure time (see #9273).
+	if ( test "$db" = "tdsfreetdsmssqlprotocol" -o "$db" = "tdsfreetdssapprotocol" )
+	then
+		if ( test ! -x "$TESTDIR/protocol/tds/tds-freetds" )
+		then
+			return 1
+		fi
+	fi
+	if ( test "$db" = "tdssapprotocol" )
+	then
+		if ( test ! -x "$TESTDIR/protocol/tds/tds-sap" )
+		then
+			return 1
+		fi
+	fi
+
+	# tdssapprotocol also needs an interfaces entry for sqlrelaysapct
+	if ( test "$db" = "tdssapprotocol" )
+	then
+		if ( test -z "`grep sqlrelaysapct ${SYBASE:-/opt/sap}/interfaces 2> /dev/null`" )
 		then
 			return 1
 		fi
@@ -214,10 +246,24 @@ ping_instance() {
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "tdsprotocol" )
+		elif ( test "$db" = "tdsfreetdsmssqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 1433
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "tdsfreetdssapprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening 9030
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$db" = "tdssapprotocol" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening 9031
 			then
 				PING="The database is up."
 			fi
@@ -492,33 +538,59 @@ run_protocol_test() {
 
 	db="$1"
 
-	# map the database to its protocol test directory
+	# map the database to its protocol test directory, test program, and
+	# (for the tds variants, which share one test program built two ways -
+	# see #9273) the server-name argument to pass on the command line
 	dir=""
+	prog=""
+	server=""
 	case "$db" in
 		mysqlprotocol)
 			dir="protocol/mysql"
+			prog=`basename $dir`
 			;;
 		postgresqlprotocol)
 			dir="protocol/postgresql"
+			prog=`basename $dir`
 			;;
-		tdsprotocol)
+		tdsfreetdsmssqlprotocol)
 			dir="protocol/tds"
+			prog="tds-freetds"
+			;;
+		tdsfreetdssapprotocol)
+			dir="protocol/tds"
+			prog="tds-freetds"
+			server="sqlrelaysap"
+			;;
+		tdssapprotocol)
+			dir="protocol/tds"
+			prog="tds-sap"
+			server="sqlrelaysapct"
 			;;
 		firebirdprotocol)
 			dir="protocol/firebird"
+			prog=`basename $dir`
 			;;
 		oracleprotocol)
 			dir="protocol/oracle"
+			prog=`basename $dir`
 			;;
 		teradataprotocol)
 			dir="protocol/teradata"
+			prog=`basename $dir`
 			;;
 	esac
 
-	# the test program is named after the last path component
-	prog=`basename $dir`
 	cd $dir
-	./$prog
+
+	# ct-lib (used by tds-sap) needs SYBASE set to find the interfaces file
+	if ( test "$db" = "tdssapprotocol" )
+	then
+		SYBASE=${SYBASE:-/opt/sap}
+		export SYBASE
+	fi
+
+	./$prog $server
 	if ( test "$?" = "0" )
 	then
 		printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
@@ -564,7 +636,7 @@ run_db_tests() {
 	echo
 
 	case "$db" in
-		mysqlprotocol|postgresqlprotocol|tdsprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
+		mysqlprotocol|postgresqlprotocol|tdsfreetdsmssqlprotocol|tdsfreetdssapprotocol|tdssapprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
 			run_protocol_test "$db"
 			failures=`expr $failures + $?`
 			;;

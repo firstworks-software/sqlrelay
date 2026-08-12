@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- the client side of this combo is SAP ct-lib (the tds-sap test
+	     binary), which resolves the server name "sqlrelaysapct" via
+	     $SYBASE/interfaces rather than a freetds.conf stanza, so a test
+	     host running this combo needs an interfaces entry named
+	     sqlrelaysapct pointing at localhost:9031 -->
+	<instance id="tdssapprotocoltest" dbase="sap" translatebindvariables="yes">
+		<listeners>
+			<listener protocol="tds" port="9031"/>
+		</listeners>
+		<connections>
+			<connection string="sybase=/opt/sap;lang=en_US;server=SAP;user=testuser;password=testpassword;db=@HOSTNAME@"/>
+		</connections>
+	</instance>
+
+</instances>

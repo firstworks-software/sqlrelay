@@ -129,10 +129,13 @@ int main(int argc, char **argv) {
 	// pass "native" to test a real sql server or sybase instance
 	// instead of sqlrelay's tds protocol.  a second argument picks
 	// which one - "mssql" (the default) or "sybase".
+	// otherwise, the first argument (if any) names the freetds.conf
+	// stanza or sap/sybase interfaces entry for the sqlrelay tds
+	// listener to test - defaults to "sqlrelay".
 	bool	issqlrelay=!(argc>=2 && !charstring::compare(argv[1],"native"));
 	bool	issybase=false;
 	if (issqlrelay) {
-		server="sqlrelay";
+		server=(argc>=2)?argv[1]:"sqlrelay";
 		db="";
 	} else {
 		issybase=(argc>=3 && !charstring::compare(argv[2],"sybase"));
