@@ -494,6 +494,11 @@
 	fixed the c# api's SQLRelayDataReader.invalidColumnIndex() - an
 		off-by-one let an ordinal exactly one past the last column
 		pass validation instead of throwing IndexOutOfRangeException
+	fixed the firebird connection module - a scaled SQL_LONG column was
+		described as 4 bytes but bound to an 8-byte buffer, so only
+		the low 4 bytes were fetched and the high 4 came back stale;
+		the column is described as SQL_INT64 now, so the fetch fills
+		the whole buffer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

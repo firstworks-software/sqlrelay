@@ -3389,6 +3389,23 @@ bool firebirdcursor::describeResultSet() {
 				((outsqlda->sqlvar[i].sqltype==SQL_LONG ||
 				outsqlda->sqlvar[i].sqltype==SQL_LONG+1) &&
 				outsqlda->sqlvar[i].sqlscale)) {
+		#ifdef SQL_INT64
+			// the sqlvar is still describing this as a 4-byte
+			// SQL_LONG, but it's bound to the 8-byte int64buffer
+			// below.  isc_dsql_fetch only writes as many bytes
+			// as sqltype says, leaving int64buffer's upper half
+			// stale, so re-describe it as SQL_INT64 (preserving
+			// the low, nullability, bit) to get a real 8-byte
+			// fetch.
+			if (outsqlda->sqlvar[i].sqltype==SQL_LONG ||
+					outsqlda->sqlvar[i].sqltype==
+					SQL_LONG+1) {
+				outsqlda->sqlvar[i].sqltype=SQL_INT64|
+					(outsqlda->sqlvar[i].sqltype&1);
+				outsqlda->sqlvar[i].sqllen=
+						sizeof(ISC_INT64);
+			}
+		#endif
 			outsqlda->sqlvar[i].sqldata=
 					(char *)&field[i].int64buffer;
 			if (outsqlda->sqlvar[i].sqlsubtype==1) {
