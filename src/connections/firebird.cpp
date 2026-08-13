@@ -25,6 +25,14 @@
 // query's length would wrap
 #define MAX_STATEMENT_SIZE 65535
 
+// widest text rendering of a firebird 4 wide decimal (SQL_INT128,
+// SQL_DEC16, SQL_DEC34), which get fetched as text since there's no
+// native buffer for them here: a 38-digit DECIMAL/NUMERIC/INT128 needs up
+// to 41 characters (sign, up to 38 digits, decimal point), a DECFLOAT(34)
+// needs up to 43 (sign, digit, point, 33 digits, E, sign, up to 4-digit
+// exponent); leave some margin
+#define FIREBIRD_WIDEDECIMAL_TEXTLEN 46
+
 // fb_interpret (firebird 2.0+) supersedes the deprecated isc_interprete,
 // whose sizeless buffer walk can overflow msg
 static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
@@ -87,6 +95,11 @@ static uint32_t firebirdNumericPrecisionFromSqlType(short sqltype) {
 		return 18;
 	}
 	#endif
+	#ifdef SQL_INT128
+	else if (sqltype==SQL_INT128 || sqltype==SQL_INT128+1) {
+		return 38;
+	}
+	#endif
 	return 18;
 }
 
@@ -114,6 +127,18 @@ static int firebirdSqlTypeToDatatype(short sqltype,
 			((sqltype==SQL_LONG || sqltype==SQL_LONG+1) &&
 								sqlscale)) {
 		return (sqlsubtype==1)?NUMERIC_DATATYPE:DECIMAL_DATATYPE;
+	#ifdef SQL_INT128
+	} else if (sqltype==SQL_INT128 || sqltype==SQL_INT128+1) {
+		return (sqlsubtype==1)?NUMERIC_DATATYPE:DECIMAL_DATATYPE;
+	#endif
+	#ifdef SQL_DEC16
+	} else if (sqltype==SQL_DEC16 || sqltype==SQL_DEC16+1) {
+		return DOUBLE_PRECISION_DATATYPE;
+	#endif
+	#ifdef SQL_DEC34
+	} else if (sqltype==SQL_DEC34 || sqltype==SQL_DEC34+1) {
+		return DOUBLE_PRECISION_DATATYPE;
+	#endif
 	} else if (sqltype==SQL_FLOAT || sqltype==SQL_FLOAT+1) {
 		return FLOAT_DATATYPE;
 	} else if (sqltype==SQL_DOUBLE || sqltype==SQL_DOUBLE+1) {
@@ -3537,6 +3562,61 @@ bool firebirdcursor::describeResultSet() {
 				field[i].sqlrtype=BLOB_DATATYPE;
 			}
 			field[i].blobisopen=false;
+	#ifdef SQL_INT128
+		// firebird 4's storage for a NUMERIC/DECIMAL of precision
+		// 19-38.  There's no native 128-bit buffer here, but
+		// firebird will render the value to text for us, so fetch
+		// it as a wide-enough SQL_VARYING, the same way the
+		// catch-all below does for a type with no dedicated
+		// handling, but sized correctly and with the nullability
+		// bit preserved
+		} else if (outsqlda->sqlvar[i].sqltype==SQL_INT128 ||
+				outsqlda->sqlvar[i].sqltype==SQL_INT128+1) {
+			outsqlda->sqlvar[i].sqltype=SQL_VARYING|
+					(outsqlda->sqlvar[i].sqltype&1);
+			outsqlda->sqlvar[i].sqldata=field[i].textbuffer;
+			outsqlda->sqlvar[i].sqllen=
+					FIREBIRD_WIDEDECIMAL_TEXTLEN;
+			if ((uint32_t)outsqlda->sqlvar[i].sqllen>
+							maxfieldsize) {
+				outsqlda->sqlvar[i].sqllen=maxfieldsize;
+			}
+			field[i].sqlrtype=
+				(outsqlda->sqlvar[i].sqlsubtype==1)?
+				NUMERIC_DATATYPE:DECIMAL_DATATYPE;
+	#endif
+	#ifdef SQL_DEC16
+		// firebird 4's DECFLOAT(16), IEEE 754 decimal64; fetched
+		// as text, same as SQL_INT128 above
+		} else if (outsqlda->sqlvar[i].sqltype==SQL_DEC16 ||
+				outsqlda->sqlvar[i].sqltype==SQL_DEC16+1) {
+			outsqlda->sqlvar[i].sqltype=SQL_VARYING|
+					(outsqlda->sqlvar[i].sqltype&1);
+			outsqlda->sqlvar[i].sqldata=field[i].textbuffer;
+			outsqlda->sqlvar[i].sqllen=
+					FIREBIRD_WIDEDECIMAL_TEXTLEN;
+			if ((uint32_t)outsqlda->sqlvar[i].sqllen>
+							maxfieldsize) {
+				outsqlda->sqlvar[i].sqllen=maxfieldsize;
+			}
+			field[i].sqlrtype=DOUBLE_PRECISION_DATATYPE;
+	#endif
+	#ifdef SQL_DEC34
+		// firebird 4's DECFLOAT(34), IEEE 754 decimal128; fetched
+		// as text, same as SQL_INT128 above
+		} else if (outsqlda->sqlvar[i].sqltype==SQL_DEC34 ||
+				outsqlda->sqlvar[i].sqltype==SQL_DEC34+1) {
+			outsqlda->sqlvar[i].sqltype=SQL_VARYING|
+					(outsqlda->sqlvar[i].sqltype&1);
+			outsqlda->sqlvar[i].sqldata=field[i].textbuffer;
+			outsqlda->sqlvar[i].sqllen=
+					FIREBIRD_WIDEDECIMAL_TEXTLEN;
+			if ((uint32_t)outsqlda->sqlvar[i].sqllen>
+							maxfieldsize) {
+				outsqlda->sqlvar[i].sqllen=maxfieldsize;
+			}
+			field[i].sqlrtype=DOUBLE_PRECISION_DATATYPE;
+	#endif
 		} else {
 			outsqlda->sqlvar[i].sqltype=SQL_VARYING;
 			outsqlda->sqlvar[i].sqldata=field[i].textbuffer;
