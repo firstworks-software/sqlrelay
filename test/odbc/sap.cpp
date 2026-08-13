@@ -7457,6 +7457,12 @@ int main(int argc, char **argv) {
 	SQLCloseCursor(stmt);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	// ASE rejects a bind marker used as a bare select-list value with
+	// error 164, "The untyped variable ? is allowed only in a WHERE
+	// clause or the SET clause of an UPDATE statement or the VALUES
+	// list of an INSERT statement" - its own parser restriction, not a
+	// sqlrelay bug; the same query fails identically against every
+	// client language.
 	if (issqlrelay) {
 		erg=SQLPrepare(stmt,(SQLCHAR *)
 			"select @1",SQL_NTS);

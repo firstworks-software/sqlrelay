@@ -3647,13 +3647,13 @@ int main(int argc, char **argv) {
 	// variable ? is allowed only in a WHERE clause or the SET clause of
 	// an UPDATE statement or the VALUES list of an INSERT statement" -
 	// its own parser restriction on ct_dynamic(CS_PREPARE)'d text, not
-	// something sqlrelay introduces: the server rejects it identically
-	// regardless of which client language sends it (confirmed against
-	// other REEXECUTE-style tests hitting the sap backend), and
-	// rewriteBindMarkersToPositional() in src/connections/sap.cpp only
-	// swaps "@name" for "?" in place - it never moves or adds a marker.
-	// So this suite never exercises that shape; a select-list marker
-	// query would fail for reasons ASE controls, not sqlrelay.  #9287.
+	// something sqlrelay introduces (see the REEXECUTE tests in the sap
+	// client-API suites, e.g. test/perl/sap.pl, where that shape does
+	// get exercised and fails identically regardless of client
+	// language).  rewriteBindMarkersToPositional() in
+	// src/connections/sap.cpp only swaps "@name" for "?" in place - it
+	// never moves or adds a marker.  So this suite never exercises that
+	// shape.
 
 
 	stdoutput.printf("ct_dynamic: prepare insert\n");

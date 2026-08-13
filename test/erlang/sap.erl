@@ -1546,6 +1546,12 @@ main() ->
     assertEqualsInt(sqlrelay:rowCount(), 1),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), "1"),
     io:format("~n"),
+    %% ASE rejects a bind marker used as a bare select-list value with
+    %% error 164, "The untyped variable ? is allowed only in a WHERE
+    %% clause or the SET clause of an UPDATE statement or the VALUES
+    %% list of an INSERT statement" - its own parser restriction, not
+    %% a sqlrelay bug; the same query fails identically against every
+    %% client language.
     sqlrelay:prepareQuery("select cast(@1 as int)"),
     sqlrelay:inputBindLong("1", 1),
     assertTrue(sqlrelay:executeQuery()),

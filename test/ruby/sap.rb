@@ -1821,6 +1821,12 @@ assertTrue(cur.executeQuery())
 assertEqual(cur.rowCount(),1)
 assertEqual(cur.getField(0,0),"1")
 print "\n"
+# ASE rejects a bind marker used as a bare select-list value with
+# error 164, "The untyped variable ? is allowed only in a WHERE
+# clause or the SET clause of an UPDATE statement or the VALUES
+# list of an INSERT statement" - its own parser restriction, not a
+# sqlrelay bug; the same query fails identically against every
+# client language.
 cur.prepareQuery("select cast(@1 as int)")
 cur.inputBind("1",1)
 assertTrue(cur.executeQuery())

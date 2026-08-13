@@ -1951,6 +1951,12 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_rowCount(cur),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
 	printf("\n");
+	// ASE rejects a bind marker used as a bare select-list value with
+	// error 164, "The untyped variable ? is allowed only in a WHERE
+	// clause or the SET clause of an UPDATE statement or the VALUES
+	// list of an INSERT statement" - its own parser restriction, not a
+	// sqlrelay bug; the same query fails identically against every
+	// client language.
 	sqlrcur_prepareQuery(cur,"select cast(@1 as int)");
 	sqlrcur_inputBindLong(cur,"1",1);
 	assertTrue(sqlrcur_executeQuery(cur));
