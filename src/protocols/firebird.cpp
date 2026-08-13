@@ -1237,6 +1237,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint32_t *bytesread);
 		bool	readPadding(uint32_t *bytesread);
 
+		uint32_t	foldSignExtendedLength(uint32_t len,
+							const char *name);
+
 		void	describeBinds(sqlrservercursor *cursor,
 					sqlrfirebirdstatement *stmt,
 					const byte_t *items,
@@ -5172,6 +5175,8 @@ bool sqlrprotocol_firebird::getSegment() {
 	// the length is a USHORT that went over the wire sign-extended, and
 	// firebird's own length fixup doesn't run on this one, so a client
 	// asking for 32768 or more arrives negative
+	// (this fold is unconditional on purpose - it isn't the
+	// sign-extension-only rule that foldSignExtendedLength() applies)
 	buflen=buflen&0xffff;
 
 	sqlrfirebirdblob	*blob=getBlobByHandle(blobhandle);
@@ -6265,6 +6270,28 @@ bool sqlrprotocol_firebird::readInt(uint32_t *val,
 	return true;
 }
 
+uint32_t sqlrprotocol_firebird::foldSignExtendedLength(uint32_t len,
+							const char *name) {
+
+	// these fields were 16 bit shorts in older versions of the protocol,
+	// so an older client sends 32768 or more sign-extended into the 32 bit
+	// field, and firebird folds it back down wherever it appears - see
+	// fixupLength() in its src/remote/protocol.cpp
+	// (this has to run before any cap or reject, because 0xffff8000 means
+	// 32768, and capping or rejecting first would hand that client a 65535
+	// ceiling)
+	if ((len&0xffff0000)==0xffff0000) {
+		if (getDebug()) {
+			stdoutput.printf("	folded sign-extended %s "
+						"length - got %u, "
+						"folded to %u\n",
+						name,len,len&0xffff);
+		}
+		len&=0xffff;
+	}
+	return len;
+}
+
 bool sqlrprotocol_firebird::readString(char **val,
 					const char *name,
 					uint32_t *bytesread) {
@@ -6298,8 +6325,13 @@ bool sqlrprotocol_firebird::readString(char **val,
 	}
 	(*bytesread)+=sizeof(uint32_t);
 
+	vallen=foldSignExtendedLength(vallen,name);
+
 	// reject an out-of-bounds length, before it can size an allocation
 	// (vallen+1 would also wrap to 0 at 0xffffffff)
+	// (the fold above already ran, so an older client's sign-extended
+	// length lands in range here, and only a genuinely out-of-range
+	// length gets rejected)
 	if (vallen>MAX_CSTRING_LENGTH) {
 		if (getDebug()) {
 			stdoutput.printf("	invalid %s length - "
@@ -6383,7 +6415,12 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 	}
 	(*bytesread)+=sizeof(uint32_t);
 
+	vallen=foldSignExtendedLength(vallen,name);
+
 	// reject an out-of-bounds length, before it can size an allocation
+	// (the fold above already ran, so an older client's sign-extended
+	// length lands in range here, and only a genuinely out-of-range
+	// length gets rejected)
 	if (vallen>MAX_CSTRING_LENGTH) {
 		if (getDebug()) {
 			stdoutput.printf("	invalid %s length - "
@@ -6469,22 +6506,7 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 
 void sqlrprotocol_firebird::fixupRespBufferLen() {
 
-	// this field was a 16 bit short in older versions of the protocol, so
-	// an older client sends 32768 or more sign-extended into the 32 bit
-	// field, and firebird folds it back down wherever it appears - see
-	// fixupLength() in its src/remote/protocol.cpp
-	// (this has to run before the cap below, because 0xffff8000 means
-	// 32768, and capping first would hand that client a 65535 ceiling)
-	if ((respbufferlen&0xffff0000)==0xffff0000) {
-		if (getDebug()) {
-			stdoutput.printf("	folded sign-extended response "
-						"buffer length - got %u, "
-						"folded to %u\n",
-						respbufferlen,
-						respbufferlen&0xffff);
-		}
-		respbufferlen&=0xffff;
-	}
+	respbufferlen=foldSignExtendedLength(respbufferlen,"response buffer");
 
 	// the length never sizes an allocation here - it's only the ceiling
 	// that truncates the response - but a client that declares a huge one
