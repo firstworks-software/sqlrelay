@@ -224,7 +224,7 @@
 #define PROTOCOL_VERSION16	(0xffff8000|16)
 // 17 supports op_batch_sync, op_info_batch
 #define PROTOCOL_VERSION17	(0xffff8000|17)
-// 18 supports op_fetch_scroll
+// 18 supports op_fetch_scroll, op_info_cursor
 #define PROTOCOL_VERSION18	(0xffff8000|18)
 // 19 supports op_inline_blob
 #define PROTOCOL_VERSION19	(0xffff8000|19)
@@ -234,6 +234,7 @@
 // the highest version the module can negotiate
 // (13 and up must answer op_accept_data or op_cond_accept and drive the auth
 // plugin handshake, which the module doesn't implement)
+// this also keeps op_fetch_scroll and op_info_cursor (18) unreachable
 #define MAX_PROTOCOL_VERSION	PROTOCOL_VERSION12
 
 // how many offered protocols the connect block can carry
@@ -1667,6 +1668,10 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_repl_data:
 				case op_repl_req:
 				case op_info_batch:
+				// the scroll ops below need backward and
+				// absolute fetches, and the server api has
+				// only forward ones (fetchRow, nextRow,
+				// skipRow, skipRows), so they stay stubbed
 				case op_fetch_scroll:
 				case op_info_cursor:
 					loop=sendNotImplementedError();
