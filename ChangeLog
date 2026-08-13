@@ -515,6 +515,15 @@
 		op_service_info) answered the generic "feature is not supported"
 		error; they answer isc_service_att_err now, naming the service
 		manager specifically
+	fixed the c# api's SQLRelayDataReader.GetOrdinal() and
+		SQLRCursor.getColumnNames() - both mishandled column names
+		coming back null when the server was told not to send column
+		info; GetOrdinal() no longer compares against a null column
+		name, which fixes a case where a null lookup name matched a
+		withheld column name and returned ordinal 0 instead of
+		throwing; getColumnNames() now returns null in that state,
+		matching the c++, python and ruby apis, instead of an array
+		of nulls
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

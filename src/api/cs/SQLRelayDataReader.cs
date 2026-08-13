@@ -2025,7 +2025,12 @@ namespace SQLRClient
             UInt32 colcount = _sqlrcur.colCount();
             for (UInt32 i = 0; i < colcount; i++)
             {
-                if (cultureAwareCompare(name, _sqlrcur.getColumnName(i)) == 0)
+                // column names come back null when the server was
+                // told not to send column info (colCount() still
+                // reports the real count though) - skip rather than
+                // compare, so a null name can't match a withheld one
+                String colname = _sqlrcur.getColumnName(i);
+                if (colname != null && cultureAwareCompare(name, colname) == 0)
                 {
                     return (Int32)i;
                 }

@@ -1432,9 +1432,18 @@ public class SQLRCursor : IDisposable
     }
 
     /** Returns the column name list of the current
-     *  result set. */
+     *  result set, or null if column info wasn't sent
+     *  (see dontGetColumnInfo()). */
     public String[] getColumnNames()
     {
+        // the c++ layer returns NULL here when column info was
+        // withheld, even though colCount() still reports the real
+        // count - match that instead of synthesizing an array of
+        // nulls, so c# behaves like every other client api
+        if (sqlrcur_getColumnNames(sqlrcurref) == IntPtr.Zero)
+        {
+            return null;
+        }
         UInt32 colcount = sqlrcur_colCount(sqlrcurref);
         String[] retval = new String[colcount];
         for (UInt32 i = 0; i < colcount; i++)
@@ -2129,6 +2138,9 @@ public class SQLRCursor : IDisposable
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern UInt32 sqlrcur_getFieldLengthByName(IntPtr sqlrcurref, UInt64 row, String col);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcur_getColumnNames(IntPtr sqlrcurref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr sqlrcur_getColumnName(IntPtr sqlrcurref, UInt32 col);
