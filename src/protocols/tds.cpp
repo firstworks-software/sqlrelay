@@ -1446,6 +1446,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t	negotiatedpacketsize;
 
 		bool		dbistds;
+		bool		dbisase;
 
 		bool		loggedin;
 
@@ -1793,6 +1794,14 @@ void sqlrprotocol_tds::init() {
 	srvname=cont->getDbHostName();
 	dbversion=cont->getDbVersion();
 	getServerTdsVersion();
+
+	// A few divergences depend on which database is really back there,
+	// not on which connection module is in front of it - odbc and freetds
+	// each reach both an ASE and a SQL Server.  The sap module only ever
+	// talks to an ASE, and the others report one in the version string.
+	dbisase=(!charstring::compare(cont->getDbType(),"sap") ||
+			charstring::contains(dbversion,
+					"Adaptive Server Enterprise"));
 
 	clienttdsversion=700;
 	negotiatedtdsversion=700;
@@ -4050,9 +4059,14 @@ bool sqlrprotocol_tds::sqlBatch() {
 
 	} else {
 		appendQueryError(cursor);
-		// FIXME: this ought to be DONE_ERROR, but the ct-lib
-		// test asserts CS_CMD_SUCCEED for a failed statement
-		done();
+		// A real server closes a rejected batch with DONE_ERROR, which
+		// the ct-lib client turns into CS_CMD_FAIL.  Only an ASE back
+		// end gets the bit for now - an mssql back end reaches this
+		// same branch for a batch that ought to have succeeded (a
+		// "use db" batch is rejected as a syntax error, see #9286),
+		// and passing that on would change the mssql baseline for a
+		// reason that has nothing to do with this token.
+		done((dbisase)?DONE_ERROR:DONE_FINAL,0,0);
 	}
 
 	// send the response packet

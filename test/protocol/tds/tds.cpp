@@ -4711,9 +4711,8 @@ int main(int argc, char **argv) {
 		// the backend, and ASE has no sp_prepare of its own.  So a
 		// sqlrelay-fronted sap backend can produce no handle at
 		// all, and sp_execute and sp_unprepare cannot be driven.
-		// TODO(#9283): the batch is rejected by ASE but sqlrelay
-		// reports CS_CMD_SUCCEED for it anyway - the same
-		// failed-ddl-reports-success problem seen elsewhere here.
+		// That case gets the branch below, which asserts only the
+		// rejection.
 		stdoutput.printf("ct_command: sp_prepare in a "
 						"language batch\n");
 		query="declare @dynhandle int "
@@ -4941,6 +4940,34 @@ int main(int argc, char **argv) {
 		assertEquals(dyndata[0],"8179");
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+	} else {
+
+		// A sqlrelay-fronted sap backend gets the same batch, but
+		// ASE has no sp_prepare of its own and a language batch is
+		// just relayed on as sql text, so the batch is rejected and
+		// there is no handle to drive sp_execute and sp_unprepare
+		// with.  Only the rejection is asserted here.
+		stdoutput.printf("ct_command: sp_prepare in a "
+						"language batch\n");
+		query="declare @dynhandle int "
+			"exec sp_prepare @dynhandle output, "
+			"N'@P1 int', N'select @P1 as dynval', 1 "
+			"select convert(varchar(20),@dynhandle) as dynhandle";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_FAIL);
