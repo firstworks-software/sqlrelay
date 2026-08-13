@@ -165,9 +165,14 @@ int main(int argc, char **argv) {
 	bool	issybase=false;
 	if (issqlrelay) {
 		server=(argc>=2)?argv[1]:"sqlrelay";
-		db="";
 		issybase=(!charstring::compare(server,"sqlrelaysap") ||
 				!charstring::compare(server,"sqlrelaysapct"));
+		// the sqlrelay instance's own connection string names the
+		// database it's already connected to (see
+		// test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf and
+		// tdsfreetdsmssqlprotocol.conf) - "use" needs a real name,
+		// not an empty one
+		db=(issybase)?"dev":"testdb";
 	} else {
 		issybase=(argc>=3 && !charstring::compare(argv[2],"sybase"));
 		// short hostname, matching the db the native odbc tests use
@@ -1677,8 +1682,11 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 
+		// the client asks for utf-8 (see charset above) but ASE's
+		// own default charset is iso_1, so the session really is
+		// converting - @@char_convert is 1, not 0
 		stdoutput.printf("row data:\n");
-		assertEquals(csdata[0],"0");
+		assertEquals(csdata[0],"1");
 		assertEquals(csdata[1],"1");
 		assertEquals(csdata[2],"1");
 		stdoutput.printf("\n");
@@ -2515,22 +2523,21 @@ int main(int argc, char **argv) {
 		};
 
 
-		// Over a native ct-lib link ASE's server charset is iso_1, so
-		// freetds converts the utf-8 client charset down to it and
-		// drops the two characters with no iso_1 form.  That leaves
-		// the quotes unbalanced, so the mangled statement still goes
-		// out and ASE rejects it - the conversion fails client-side,
-		// the command fails server-side.  Nothing fails on mssql,
-		// which takes ucs-2 on tds 7.
+		// ASE's server charset is iso_1, so freetds converts the
+		// utf-8 client charset down to it and drops the two
+		// characters with no iso_1 form.  That leaves the quotes
+		// unbalanced, so the mangled statement still goes out and
+		// ASE rejects it - the conversion fails client-side, the
+		// command fails server-side.  Nothing fails on mssql, which
+		// takes ucs-2 on tds 7.
 		//
 		// Through sqlrelay the statement reaches the relay intact,
 		// but the relay's own ct-lib link to ASE is iso_1 too, so
 		// the conversion just moves - ASE answers "Error converting
-		// characters into server's character set", the command still
-		// reports CS_CMD_SUCCEED, and the row count comes back -1
-		// with no row stored.  So both ASE paths lose the two rows,
-		// just in different shapes, and only the shape is gated on
-		// nativease.
+		// characters into server's character set" and no row is
+		// stored.  Both ASE paths now report that failure as
+		// CS_CMD_FAIL, so the check is gated on issybase, not on
+		// whether the link is native.
 		stdoutput.printf("ct_command: insert\n");
 		for (CS_INT i=0; i<3; i++) {
 			query=charsetinserts2[i];
@@ -2540,7 +2547,7 @@ int main(int argc, char **argv) {
 			assertEquals(ct_send(cmd2),CS_SUCCEED);
 			results=ct_results(cmd2,&resultstype);
 			assertEquals(results,CS_SUCCEED);
-			if (nativease && i>0) {
+			if (issybase && i>0) {
 				assertEquals(resultstype,CS_CMD_FAIL);
 			} else {
 				assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -2548,8 +2555,7 @@ int main(int argc, char **argv) {
 						(CS_VOID *)&affectedrows,
 						CS_UNUSED,
 						(CS_INT *)NULL),CS_SUCCEED);
-				assertEquals(affectedrows,
-						(issybase && i>0)?-1:1);
+				assertEquals(affectedrows,1);
 			}
 			results=ct_results(cmd2,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6515,11 +6521,9 @@ int main(int argc, char **argv) {
 	// more.  ASE counts them and refuses to drop the table underneath
 	// them, server error 118, "Cannot drop or replace the table
 	// because it is currently in use".  MSSQL does not care and drops
-	// it either way.  Through sqlrelay ASE still refuses it and the
-	// error message still reaches the client, but the command comes
-	// back CS_CMD_SUCCEED - src/protocols/tds.cpp:4051 sends a plain
-	// done rather than DONE_ERROR for a failed batch, with a FIXME
-	// saying so.  So the first drop is asserted per transport.
+	// it either way.  Through sqlrelay the error reaches the client the
+	// same way it does natively, so the first drop is asserted per
+	// backend, not per transport.
 	stdoutput.printf("ct_command: drop\n");
 	query="drop table cursortable";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
@@ -6528,7 +6532,7 @@ int main(int argc, char **argv) {
 	assertEquals(ct_send(cmd),CS_SUCCEED);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,(nativease)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+	assertEquals(resultstype,(issybase)?CS_CMD_FAIL:CS_CMD_SUCCEED);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
