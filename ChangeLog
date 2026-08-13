@@ -366,6 +366,11 @@
 	fixed the tds protocol module - it never completed login against a
 		sap/sybase backend, negotiating down to a tds version older
 		than the module actually implements and hanging the client
+	configure.vbs, the windows build's configure script, now copies the
+		tdsfreetdsmssqlprotocol, tdsfreetdssapprotocol and
+		tdssapprotocol test conf files and enables the tdssapprotocol
+		test; freetds isn't built on windows, so the two freetds-driven
+		combos still don't run there
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1076,6 +1076,11 @@ end if
 if disablepostgresql=false then
 	TESTDBS=TESTDBs&"postgresqlprotocol "
 end if
+' freetds isn't built on windows (no freetds ct-lib), so only the
+' sap-driven tds combo can run here; see config_windows.mk
+if disablesap=false then
+	TESTDBS=TESTDBs&"tdssapprotocol "
+end if
 
 ' truncate the trailing space
 TESTDBS=left(TESTDBS,len(TESTDBS)-1)
@@ -1114,7 +1119,10 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\router.conf.in",_
 	"test\\sqlrelay.conf.d\\sap.conf.in",_
 	"test\\sqlrelay.conf.d\\sqlite.conf.in",_
+	"test\\sqlrelay.conf.d\\tdsfreetdsmssqlprotocol.conf.in",_
+	"test\\sqlrelay.conf.d\\tdsfreetdssapprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\tdsprotocol.conf.in",_
+	"test\\sqlrelay.conf.d\\tdssapprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\teradataprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\tls.conf.in"_
 	)
@@ -1150,7 +1158,10 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\router.conf",_
 	"test\\sqlrelay.conf.d\\sap.conf",_
 	"test\\sqlrelay.conf.d\\sqlite.conf",_
+	"test\\sqlrelay.conf.d\\tdsfreetdsmssqlprotocol.conf",_
+	"test\\sqlrelay.conf.d\\tdsfreetdssapprotocol.conf",_
 	"test\\sqlrelay.conf.d\\tdsprotocol.conf",_
+	"test\\sqlrelay.conf.d\\tdssapprotocol.conf",_
 	"test\\sqlrelay.conf.d\\teradataprotocol.conf",_
 	"test\\sqlrelay.conf.d\\tls.conf"_
 	)
