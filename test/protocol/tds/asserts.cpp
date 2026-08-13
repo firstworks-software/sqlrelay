@@ -14,14 +14,19 @@ const char *sometestsfailed="\n\033[38;5;208mSome tests failed\033[0m\n";
 void printErrors() {
 }
 
-void assertEquals(const char *actual, const char *expected) {
+// line-tag every assertion call site so failures in the (very long) test
+// driver can be mapped back to source, without touching each call site by
+// hand: assertEquals/assertTrue/assertFalse become macros (below) that
+// forward __LINE__ to the *Impl functions.
+void assertEqualsImpl(const char *actual, const char *expected, int line) {
 
 	if (!expected) {
 		if (!actual) {
 			stdoutput.printf("%s ",success);
 		} else {
 			stdoutput.printf("%s\n",failure);
-			stdoutput.printf("\"%s\"!=\"%s\"\n",actual,expected);
+			stdoutput.printf("tds.cpp:%d: \"%s\"!=\"%s\"\n",
+						line,actual,expected);
 			printErrors();
 			status=1;
 		}
@@ -32,44 +37,52 @@ void assertEquals(const char *actual, const char *expected) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("\"%s\"!=\"%s\"\n",actual,expected);
+		stdoutput.printf("tds.cpp:%d: \"%s\"!=\"%s\"\n",
+					line,actual,expected);
 		printErrors();
 		status=1;
 	}
 }
 
-void assertEquals(int actual, int expected) {
+void assertEqualsImpl(int actual, int expected, int line) {
 	if (actual==expected) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("\"%d\"!=\"%d\"\n",actual,expected);
+		stdoutput.printf("tds.cpp:%d: \"%d\"!=\"%d\"\n",
+					line,actual,expected);
 		printErrors();
 		status=1;
 	}
 }
 
-void assertTrue(bool actual) {
+void assertTrueImpl(bool actual, int line) {
 	if (actual) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%s!=true\n",(actual)?"true":"false");
+		stdoutput.printf("tds.cpp:%d: %s!=true\n",
+					line,(actual)?"true":"false");
 		printErrors();
 		status=1;
 	}
 }
 
-void assertFalse(bool actual) {
+void assertFalseImpl(bool actual, int line) {
 	if (!actual) {
 		stdoutput.printf("%s ",success);
 	} else {
 		stdoutput.printf("%s\n",failure);
-		stdoutput.printf("%s!=false\n",(actual)?"true":"false");
+		stdoutput.printf("tds.cpp:%d: %s!=false\n",
+					line,(actual)?"true":"false");
 		printErrors();
 		status=1;
 	}
 }
+
+#define assertEquals(actual,expected) assertEqualsImpl(actual,expected,__LINE__)
+#define assertTrue(actual) assertTrueImpl(actual,__LINE__)
+#define assertFalse(actual) assertFalseImpl(actual,__LINE__)
 
 void reportTestStatus() {
 	if (status==0) {

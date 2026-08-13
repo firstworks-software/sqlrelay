@@ -374,6 +374,17 @@
 	fixed the windows build - it never built tds-sap.exe, so the
 		tdssapprotocol test silently found it missing and skipped
 		itself instead of actually running
+	fixed the tds protocol module - a date, time, datetime2 or
+		datetimeoffset column sent to a client older than tds 7.3 goes
+		out as a rendered string, but the declared column width came
+		from the back end's binary width for the type - 4 bytes for a
+		sap date - so the client truncated the value to those few bytes
+	fixed the tds protocol module - a bulk load bound a decimal or numeric
+		value as a string, and sap refuses to convert a varchar to a
+		decimal on its own the way mssql does
+	added charset=utf8 to the tdsfreetdssapprotocol test's connection
+		string, without which ct-lib re-encoded the relay's utf-8 query
+		text as if it were iso_1
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1071,6 +1071,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		byte_t	nTypeSize(uint16_t coltype,
 					byte_t tdstype,
 					uint32_t colsize);
+		uint32_t	dateTimeStringSize(uint16_t coltype,
+							uint32_t colsize);
 		int64_t	moneyValue(const char *field);
 		uint64_t	rows(sqlrservercursor *cursor);
 		uint64_t	rows(sqlrservercursor *cursor,
@@ -4648,6 +4650,15 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				break;
 			case TDS_TYPE_NCHAR:
 			case TDS_TYPE_NVARCHAR:
+				// A date/time column that mapType()
+				// downgraded to nvarchar for a pre-7.3
+				// client travels as a rendered string, but
+				// the backend reports the size of the type's
+				// binary form - 4 bytes for an ase date - so
+				// the string has to be measured by its type
+				// instead, or the client truncates it to
+				// those few bytes.
+				size=dateTimeStringSize(coltype,size);
 				// the size must be sent in bytes, but the
 				// backend reports it in characters
 				if (size>16383) {
@@ -5034,6 +5045,30 @@ byte_t sqlrprotocol_tds::nTypeSize(uint16_t coltype,
 			return (colsize==4)?4:8;
 	}
 	return (byte_t)colsize;
+}
+
+uint32_t sqlrprotocol_tds::dateTimeStringSize(uint16_t coltype,
+						uint32_t colsize) {
+
+	// A date/time column only gets here when mapType() downgraded it to
+	// nvarchar, which it does for a client older than tds 7.3.  The
+	// value goes out as a rendered string then, but back ends report the
+	// size of the binary form - odbc says 10 for a date, ct-lib says 4 -
+	// and the wider renderings don't fit in either.  These are just wide
+	// enough for every rendering the back ends produce, including ase's
+	// "Jan  1 2001  1:01PM".
+	uint32_t	stringsize=0;
+	switch (coltype) {
+		case DATE_DATATYPE:
+		case TIME_DATATYPE:
+			stringsize=32;
+			break;
+		case TIMESTAMP_DATATYPE:
+		case DATETIMEOFFSET_DATATYPE:
+			stringsize=48;
+			break;
+	}
+	return (stringsize>colsize)?stringsize:colsize;
 }
 
 uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
@@ -7468,8 +7503,26 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			bulkDecimal(ispositive,rp,(size>8)?8:size,scale,&strb);
 			rp+=size;
 			rpsize-=size;
-			bulkString(bv,bindpool,strb.getString(),
-						strb.getStringLength());
+			// bound as a number rather than a string - mssql
+			// converts a varchar to a decimal on its own but ase
+			// refuses to ("Implicit conversion from datatype
+			// 'VARCHAR' to 'DECIMAL' is not allowed")
+			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+			bv->isnull=cont->getNonNullBindValue();
+			bv->value.doubleval.value=
+				(double)charstring::convertToFloat(
+							strb.getString());
+			// FIXME: kludgy, but the same thing bulkDouble()
+			// does - the column metadata carries no precision
+			bv->value.doubleval.precision=
+				(uint32_t)charstring::getLength(
+							strb.getString())-
+				((charstring::contains(
+					strb.getString(),'-'))?1:0)-
+				((charstring::contains(
+					strb.getString(),'.'))?1:0);
+			bv->value.doubleval.scale=scale;
+			debugWrite("value: %s",strb.getString());
 			}
 			break;
 		case TDS_TYPE_DATEN:
