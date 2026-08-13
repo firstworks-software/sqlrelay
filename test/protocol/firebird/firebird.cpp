@@ -1072,23 +1072,29 @@ int main(int argc, char **argv) {
 	// derive precision as 18+(-scale) and reports 16 rather than 10 (see
 	// test/odbc/firebird.cpp:5827-5828).  sqlsubtype tells decimal (2)
 	// from numeric (1).
-	assertColumn(&sqlda->sqlvar[0],"TESTINTEGER",SQL_LONG,4,0,0);
-	assertColumn(&sqlda->sqlvar[1],"TESTSMALLINT",SQL_SHORT,2,0,0);
-	assertColumn(&sqlda->sqlvar[2],"TESTDECIMAL",SQL_INT64,8,-2,2);
-	assertColumn(&sqlda->sqlvar[3],"TESTNUMERIC",SQL_INT64,8,-2,1);
-	assertColumn(&sqlda->sqlvar[4],"TESTFLOAT",SQL_FLOAT,4,0,0);
-	assertColumn(&sqlda->sqlvar[5],"TESTDOUBLE",SQL_DOUBLE,8,0,0);
-	assertColumn(&sqlda->sqlvar[6],"TESTDATE",SQL_TYPE_DATE,4,0,0);
-	assertColumn(&sqlda->sqlvar[7],"TESTTIME",SQL_TYPE_TIME,4,0,0);
-	// for SQL_TEXT and SQL_VARYING, sqlsubtype is the column's character
-	// set id, and 0 is NONE.  sqllen 50 and sqlsubtype 0 confirmed against
-	// firebird 2.5, 3.0 and 4.0 under #8954.
-	assertColumn(&sqlda->sqlvar[8],"TESTCHAR",SQL_TEXT,50,0,0);
-	assertColumn(&sqlda->sqlvar[9],"TESTVARCHAR",SQL_VARYING,50,0,0);
-	assertColumn(&sqlda->sqlvar[10],"TESTTIMESTAMP",SQL_TIMESTAMP,8,0,0);
-	// for SQL_BLOB, sqllen is the size of the blob id, not the data, and
-	// sqlsubtype 0 is a binary blob
-	assertColumn(&sqlda->sqlvar[11],"TESTBLOB",SQL_BLOB,8,0,0);
+	// only walk fixed indexes if the sqlda actually has all 12 columns -
+	// a prepare against a testtable recreated with fewer columns would
+	// otherwise read sqlvar entries past the allocation
+	if (colcount==12) {
+		assertColumn(&sqlda->sqlvar[0],"TESTINTEGER",SQL_LONG,4,0,0);
+		assertColumn(&sqlda->sqlvar[1],"TESTSMALLINT",SQL_SHORT,2,0,0);
+		assertColumn(&sqlda->sqlvar[2],"TESTDECIMAL",SQL_INT64,8,-2,2);
+		assertColumn(&sqlda->sqlvar[3],"TESTNUMERIC",SQL_INT64,8,-2,1);
+		assertColumn(&sqlda->sqlvar[4],"TESTFLOAT",SQL_FLOAT,4,0,0);
+		assertColumn(&sqlda->sqlvar[5],"TESTDOUBLE",SQL_DOUBLE,8,0,0);
+		assertColumn(&sqlda->sqlvar[6],"TESTDATE",SQL_TYPE_DATE,4,0,0);
+		assertColumn(&sqlda->sqlvar[7],"TESTTIME",SQL_TYPE_TIME,4,0,0);
+		// for SQL_TEXT and SQL_VARYING, sqlsubtype is the column's
+		// character set id, and 0 is NONE.  sqllen 50 and sqlsubtype 0
+		// confirmed against firebird 2.5, 3.0 and 4.0 under #8954.
+		assertColumn(&sqlda->sqlvar[8],"TESTCHAR",SQL_TEXT,50,0,0);
+		assertColumn(&sqlda->sqlvar[9],"TESTVARCHAR",SQL_VARYING,50,0,0);
+		assertColumn(&sqlda->sqlvar[10],"TESTTIMESTAMP",
+						SQL_TIMESTAMP,8,0,0);
+		// for SQL_BLOB, sqllen is the size of the blob id, not the
+		// data, and sqlsubtype 0 is a binary blob
+		assertColumn(&sqlda->sqlvar[11],"TESTBLOB",SQL_BLOB,8,0,0);
+	}
 	stdoutput.printf("\n\n");
 
 
@@ -1194,7 +1200,9 @@ int main(int argc, char **argv) {
 	stdoutput.printf("isc_dsql_fetch\n");
 	int		row=0;
 	ISC_STATUS	fetchresult=0;
-	while (row<8) {
+	// a describe that came back with fewer columns than expected leaves
+	// the later sqlvar sqldata unset - stop rather than read past it
+	while (row<8 && colcount==12) {
 
 		fetchresult=isc_dsql_fetch(fbstatus,&stmt,
 						SQL_DIALECT_V6,sqlda);
@@ -1443,31 +1451,37 @@ int main(int argc, char **argv) {
 						SQL_DIALECT_V6,NULL),0);
 	assertEquals((int)isc_dsql_fetch(fbstatus,&rtstmt,
 						SQL_DIALECT_V6,rtsqlda),0);
-	assertEquals((int)*((ISC_LONG *)rtsqlda->sqlvar[0].sqldata),7);
-	assertEquals((int)*((ISC_SHORT *)rtsqlda->sqlvar[1].sqldata),7);
-	assertEquals((int)*((ISC_INT64 *)rtsqlda->sqlvar[2].sqldata),750);
-	assertEquals((int)*((ISC_INT64 *)rtsqlda->sqlvar[3].sqldata),750);
-	assertTrue(*((float *)rtsqlda->sqlvar[4].sqldata)==(float)7.5);
-	assertTrue(*((double *)rtsqlda->sqlvar[5].sqldata)==7.5);
-	struct tm	rtdate;
-	isc_decode_sql_date((ISC_DATE *)rtsqlda->sqlvar[6].sqldata,&rtdate);
-	assertEquals(rtdate.tm_year+1900,2007);
-	assertEquals(rtdate.tm_mon+1,1);
-	assertEquals(rtdate.tm_mday,1);
-	struct tm	rttime;
-	isc_decode_sql_time((ISC_TIME *)rtsqlda->sqlvar[7].sqldata,&rttime);
-	assertEquals(rttime.tm_hour,7);
-	assertEquals(rttime.tm_min,0);
-	assertEquals(rttime.tm_sec,0);
-	assertEquals(rtsqlda->sqlvar[8].sqldata,bchar);
-	PARAMVARY	*rtvary=(PARAMVARY *)rtsqlda->sqlvar[9].sqldata;
-	assertEquals((int)rtvary->vary_length,12);
-	char	rtvarchar[64];
-	charstring::copy(rtvarchar,(char *)rtvary->vary_string,
-						rtvary->vary_length);
-	rtvarchar[rtvary->vary_length]='\0';
-	assertEquals(rtvarchar,"testvarchar7");
-	assertEquals((int)rtind[10],-1);
+	// only read the sqlda if the prepare filled it in - a failed
+	// prepare leaves every sqldata NULL
+	if (rtcolcount==12) {
+		assertEquals((int)*((ISC_LONG *)rtsqlda->sqlvar[0].sqldata),7);
+		assertEquals((int)*((ISC_SHORT *)rtsqlda->sqlvar[1].sqldata),7);
+		assertEquals((int)*((ISC_INT64 *)rtsqlda->sqlvar[2].sqldata),750);
+		assertEquals((int)*((ISC_INT64 *)rtsqlda->sqlvar[3].sqldata),750);
+		assertTrue(*((float *)rtsqlda->sqlvar[4].sqldata)==(float)7.5);
+		assertTrue(*((double *)rtsqlda->sqlvar[5].sqldata)==7.5);
+		struct tm	rtdate;
+		isc_decode_sql_date((ISC_DATE *)rtsqlda->sqlvar[6].sqldata,
+								&rtdate);
+		assertEquals(rtdate.tm_year+1900,2007);
+		assertEquals(rtdate.tm_mon+1,1);
+		assertEquals(rtdate.tm_mday,1);
+		struct tm	rttime;
+		isc_decode_sql_time((ISC_TIME *)rtsqlda->sqlvar[7].sqldata,
+								&rttime);
+		assertEquals(rttime.tm_hour,7);
+		assertEquals(rttime.tm_min,0);
+		assertEquals(rttime.tm_sec,0);
+		assertEquals(rtsqlda->sqlvar[8].sqldata,bchar);
+		PARAMVARY	*rtvary=(PARAMVARY *)rtsqlda->sqlvar[9].sqldata;
+		assertEquals((int)rtvary->vary_length,12);
+		char	rtvarchar[64];
+		charstring::copy(rtvarchar,(char *)rtvary->vary_string,
+							rtvary->vary_length);
+		rtvarchar[rtvary->vary_length]='\0';
+		assertEquals(rtvarchar,"testvarchar7");
+		assertEquals((int)rtind[10],-1);
+	}
 	// two rows now - the one the statements section inserted and the one
 	// just bound in
 	assertEquals((int)isc_dsql_fetch(fbstatus,&rtstmt,
@@ -1536,28 +1550,39 @@ int main(int argc, char **argv) {
 					SQL_DIALECT_V6,bindselinsqlda),0);
 	assertEquals((int)isc_dsql_fetch(fbstatus,&bselstmt,
 					SQL_DIALECT_V6,bselsqlda),0);
-	assertEquals((int)bseloutind[0],0);
-	assertEquals((int)*((ISC_LONG *)bselsqlda->sqlvar[0].sqldata),7);
-	assertEquals((int)bseloutind[1],0);
-	PARAMVARY	*bselvary=(PARAMVARY *)bselsqlda->sqlvar[1].sqldata;
-	char	bselvarchar[64];
-	charstring::copy(bselvarchar,(char *)bselvary->vary_string,
-					bselvary->vary_length);
-	bselvarchar[bselvary->vary_length]='\0';
-	assertEquals(bselvarchar,"testvarchar7");
+	// only read the sqlda if the prepare filled it in - a failed
+	// prepare leaves every sqldata NULL
+	if (bseloutcolcount==2) {
+		assertEquals((int)bseloutind[0],0);
+		assertEquals((int)*((ISC_LONG *)bselsqlda->sqlvar[0].sqldata),
+									7);
+		assertEquals((int)bseloutind[1],0);
+		PARAMVARY	*bselvary=
+				(PARAMVARY *)bselsqlda->sqlvar[1].sqldata;
+		char	bselvarchar[64];
+		charstring::copy(bselvarchar,(char *)bselvary->vary_string,
+						bselvary->vary_length);
+		bselvarchar[bselvary->vary_length]='\0';
+		assertEquals(bselvarchar,"testvarchar7");
+	}
 	// two rows now match testinteger=7 - the one the statements section
 	// inserted and the one the binds section's round trip bound in
 	// above, both with identical column values
 	assertEquals((int)isc_dsql_fetch(fbstatus,&bselstmt,
 					SQL_DIALECT_V6,bselsqlda),0);
-	assertEquals((int)bseloutind[0],0);
-	assertEquals((int)*((ISC_LONG *)bselsqlda->sqlvar[0].sqldata),7);
-	assertEquals((int)bseloutind[1],0);
-	bselvary=(PARAMVARY *)bselsqlda->sqlvar[1].sqldata;
-	charstring::copy(bselvarchar,(char *)bselvary->vary_string,
-					bselvary->vary_length);
-	bselvarchar[bselvary->vary_length]='\0';
-	assertEquals(bselvarchar,"testvarchar7");
+	if (bseloutcolcount==2) {
+		assertEquals((int)bseloutind[0],0);
+		assertEquals((int)*((ISC_LONG *)bselsqlda->sqlvar[0].sqldata),
+									7);
+		assertEquals((int)bseloutind[1],0);
+		PARAMVARY	*bselvary=
+				(PARAMVARY *)bselsqlda->sqlvar[1].sqldata;
+		char	bselvarchar[64];
+		charstring::copy(bselvarchar,(char *)bselvary->vary_string,
+						bselvary->vary_length);
+		bselvarchar[bselvary->vary_length]='\0';
+		assertEquals(bselvarchar,"testvarchar7");
+	}
 	assertEquals((int)isc_dsql_fetch(fbstatus,&bselstmt,
 					SQL_DIALECT_V6,bselsqlda),100);
 	freeOutputBuffers(bseloutcolcount,bseloutbuffer);
@@ -2034,7 +2059,12 @@ int main(int argc, char **argv) {
 						SQL_DIALECT_V6,NULL),0);
 	assertEquals((int)isc_dsql_fetch(fbstatus,&curstmt,
 						SQL_DIALECT_V6,cursqlda),0);
-	assertEquals((int)*((ISC_LONG *)cursqlda->sqlvar[0].sqldata),8);
+	// only read the sqlda if the prepare filled it in - a failed
+	// prepare leaves every sqldata NULL
+	if (curcolcount==2) {
+		assertEquals((int)*((ISC_LONG *)cursqlda->sqlvar[0].sqldata),
+									8);
+	}
 	stdoutput.printf("\n\n");
 
 
@@ -2076,13 +2106,19 @@ int main(int argc, char **argv) {
 						SQL_DIALECT_V6,NULL),0);
 	assertEquals((int)isc_dsql_fetch(fbstatus,&vfstmt,
 						SQL_DIALECT_V6,vfsqlda),0);
-	PARAMVARY	*vfvary=(PARAMVARY *)vfsqlda->sqlvar[0].sqldata;
-	char	vfvarchar[64];
-	charstring::copy(vfvarchar,(char *)vfvary->vary_string,
-						vfvary->vary_length);
-	vfvarchar[vfvary->vary_length]='\0';
-	// nothing half-applied - the row is untouched when the update failed
-	assertEquals(vfvarchar,(issqlrelay)?"testvarchar8":"updated8");
+	// only read the sqlda if the prepare filled it in - a failed
+	// prepare leaves every sqldata NULL
+	if (vfcolcount==1) {
+		PARAMVARY	*vfvary=
+				(PARAMVARY *)vfsqlda->sqlvar[0].sqldata;
+		char	vfvarchar[64];
+		charstring::copy(vfvarchar,(char *)vfvary->vary_string,
+							vfvary->vary_length);
+		vfvarchar[vfvary->vary_length]='\0';
+		// nothing half-applied - the row is untouched when the
+		// update failed
+		assertEquals(vfvarchar,(issqlrelay)?"testvarchar8":"updated8");
+	}
 	isc_dsql_free_statement(fbstatus,&vfstmt,DSQL_drop);
 	freeOutputBuffers(vfcolcount,vfbuffer);
 	delete[] (char *)vfsqlda;
