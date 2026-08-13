@@ -250,6 +250,7 @@
 #define TDS_TYPE_BIGCHAR		0xAF	// Char
 #define TDS_TYPE_NVARCHAR		0xE7	// NVarChar
 #define TDS_TYPE_NCHAR			0xEF	// NChar
+#define TDS_TYPE_LONGBINARY		0xE1	// LongBinary (sybase-specific)
 #define TDS_TYPE_XML			0xF1	// XML
 						// (introduced in TDS 7.2)
 #define TDS_TYPE_UDT			0xF0	// CLR UDT
@@ -4947,6 +4948,12 @@ bool sqlrprotocol_tds::isVarLenType(byte_t tdstype) {
 		case TDS_TYPE_NTEXT:
 		case TDS_TYPE_SSVARIANT:
 			return true;
+		case TDS_TYPE_LONGBINARY:
+			// longbinary is a sybase type that mssql doesn't
+			// have, so only take it when we're fronting an ase.
+			// against mssql it stays unknown, and the client
+			// gets the same 8009 a real mssql sends.
+			return dbisase;
 		default:
 			return false;
 	}
@@ -8583,14 +8590,15 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 		success=cont->executeQuery(cursor,true,true,true,true);
 	}
 
-	// build the response.  an ordinary procedure that never ran sends no
-	// return status at all, unlike the numbered procs.
+	// build the response.  the two servers disagree about a procedure
+	// that never ran: mssql sends no return status at all for it, unlike
+	// the numbered procs, but ase sends one anyway.
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
 		returnStatus(procReturnValue(cursor));
 		returnValues(cursor);
 	} else {
-		rpcError(cursor,false);
+		rpcError(cursor,dbisase);
 	}
 
 	// release the cursor
@@ -10774,6 +10782,20 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			rpsize-=size;
 			}
 			break;
+		case TDS_TYPE_LONGBINARY:
+			// A sybase longbinary sizes both its maxsize and its
+			// value with a single byte on tds 7, exactly like
+			// binary/varbinary do, so it just falls through to
+			// them here and to the maxsize switch's default case
+			// above.  (Only tds 5 gives it the 4-byte length its
+			// name suggests.)  isVarLenType() only accepts it
+			// when we're fronting an ase, and nothing read a
+			// maxsize for it otherwise, so refuse it here rather
+			// than misparse the rest of the packet.
+			if (!dbisase) {
+				return rpcUnsupportedTypeError(tdstype);
+			}
+			// fall through
 		case TDS_TYPE_BINARY:
 		case TDS_TYPE_VARBINARY:
 			{

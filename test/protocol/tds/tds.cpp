@@ -5001,29 +5001,37 @@ int main(int argc, char **argv) {
 	}
 
 
-	// A native ASE link answers an rpc for a procedure that does not
-	// exist with a status result of -6 before the CS_CMD_FAIL.  mssql
-	// sends no status result at all, and neither does sqlrelay for
-	// either backend, so this is a native-transport fact.
+	// ASE answers an rpc for a procedure that does not exist with a
+	// status result before the CS_CMD_FAIL, and sqlrelay relays that
+	// behavior for an ASE backend.  The number differs: a native link
+	// carries ASE's own -6, while the relay carries the sqlrelay error
+	// number for the failure, so only the native case checks the value.
+	// mssql sends no status result at all, either natively or through
+	// the relay.
 	stdoutput.printf("ct_command: rpc no such procedure\n");
 	assertEquals(ct_command(cmd,CS_RPC_CMD,
 				(CS_CHAR *)"dynnosuchproc",CS_NULLTERM,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (issybase) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_STATUS_RESULT);
-		bytestring::zero(dyndata[0],1024);
-		assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
+		if (nativease) {
+			bytestring::zero(dyndata[0],1024);
+			assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
 					(CS_VOID *)dyndata[0],
 					&(dyndatalength[0]),
 					&(dynnullindicator[0])),CS_SUCCEED);
-		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
-		assertEquals(dyndata[0],"-6");
-		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+			assertEquals(dyndata[0],"-6");
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
+		} else {
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_CURRENT),
+								CS_SUCCEED);
+		}
 	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -7674,16 +7682,21 @@ int main(int argc, char **argv) {
 	// has been sent to the server ... expecting token 1 but got the
 	// token 16", so it is not driven there at all.
 	//
-	// Those tds 5 types, plus CS_LONGBINARY_TYPE's 0xE1, only reach a
-	// server that speaks tds 5.  A native ct-lib link to ASE does.
-	// sqlrelay's tds protocol module is a tds 7 server whichever
-	// backend is behind it, so it answers the same "Data type 0xNN is
-	// unknown" mssql does - rpcUnsupportedTypeError() in
-	// src/protocols/tds.cpp - and the command fails.  That makes "ASE
-	// takes them" a native-transport fact, so bindtds5 below carries
-	// it rather than the sybase column saying bindtakes outright.  The
-	// relay names the byte at execute time rather than at prepare
-	// time, so even 0xE1 comes out as bindcmdfails through the relay.
+	// Those tds 5 types only reach a server that speaks tds 5.  A
+	// native ct-lib link to ASE does.  sqlrelay's tds protocol module
+	// is a tds 7 server whichever backend is behind it, so it answers
+	// the same "Data type 0xNN is unknown" mssql does -
+	// rpcUnsupportedTypeError() in src/protocols/tds.cpp - and the
+	// command fails.  That makes "ASE takes them" a native-transport
+	// fact, so bindtds5 below carries it rather than the sybase column
+	// saying bindtakes outright.  The relay names the byte at execute
+	// time rather than at prepare time, so they come out as
+	// bindcmdfails through the relay.
+	//
+	// CS_LONGBINARY_TYPE's 0xE1 is the exception.  It is a sybase type
+	// too, but the relay takes it for an ASE backend (its tds 7 form
+	// sizes both its maxsize and its value with a single byte, exactly
+	// like binary/varbinary), so the sybase column says bindtakes.
 	CS_INT	bindtds5=(nativease)?bindtakes:bindcmdfails;
 
 	struct bindcase {
@@ -7726,7 +7739,7 @@ int main(int argc, char **argv) {
 			bindprepfails,bindtakes,"010203",7,1,0,0},
 		{"CS_LONGBINARY_TYPE","bindbinary",CS_LONGBINARY_TYPE,
 			(CS_VOID *)bindbinaryvalue,3,36,0,0,
-			bindprepfails,bindtds5,"010203",7,1,0,0},
+			bindprepfails,bindtakes,"010203",7,1,0,0},
 		{"CS_VARBINARY_TYPE","bindbinary",CS_VARBINARY_TYPE,
 			(CS_VOID *)&bindvarbinaryvalue,
 			(CS_INT)sizeof(CS_VARBINARY),36,0,0,
@@ -8391,8 +8404,9 @@ int main(int argc, char **argv) {
 	// as rpc parameters, so what it will not take is freetds'
 	// varchar(4000) declaration rather than the bytes.  CS_BINARY_TYPE
 	// is zero padded out to maxlength there, exactly the way
-	// CS_CHAR_TYPE is blank padded.  CS_LONGBINARY_TYPE is refused
-	// either way - 8009, data type 0xE1 unknown.
+	// CS_CHAR_TYPE is blank padded.  CS_LONGBINARY_TYPE is a sybase
+	// type, so mssql refuses it either way - 8009, data type 0xE1
+	// unknown - while ASE takes it on both paths.
 	stdoutput.printf("ct_command: rpc with binary params\n");
 	CS_INT		bindrpcbintype[3]={
 				CS_BINARY_TYPE,CS_VARBINARY_TYPE,

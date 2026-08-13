@@ -461,6 +461,13 @@
 		never asked the backend to describe the statement's output
 		columns, so a client's CS_DESCRIBE_OUTPUT always got back 0
 		columns instead of the real count
+	fixed the tds protocol module - an rpc parameter of sybase's longbinary
+		type (0xE1) was rejected with "Data type 0xE1 is unknown" and
+		the procedure never ran.  It's taken now, in front of a sap
+		back end, and still refused in front of an mssql one
+	fixed the tds protocol module - a stored procedure call that failed in
+		front of a sap back end sent no return status, but a real ase
+		sends one even for a procedure that never ran
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
