@@ -11930,6 +11930,28 @@ uint16_t sqlrservercontroller::getColumnTableSize(sqlrservercursor *cursor,
 	return cursor->getColumnTableSizeFromBuffer(mapColumn(col));
 }
 
+const char *sqlrservercontroller::getColumnField(sqlrservercursor *cursor,
+								uint32_t col) {
+	// see comment in colCount()
+	if (!cursor->getColumnInfoIsValid()) {
+		return 0;
+	}
+	// unlike the column table, the column field isn't buffered
+	// with the rest of the column info, so get it from the cursor
+	return cursor->getColumnField(mapColumn(col));
+}
+
+uint16_t sqlrservercontroller::getColumnFieldSize(sqlrservercursor *cursor,
+								uint32_t col) {
+	// see comment in colCount()
+	if (!cursor->getColumnInfoIsValid()) {
+		return 0;
+	}
+	// unlike the column table, the column field isn't buffered
+	// with the rest of the column info, so get it from the cursor
+	return cursor->getColumnFieldSize(mapColumn(col));
+}
+
 bool sqlrservercontroller::getColumnNames(const char *query,
 					stringbuffer *output) {
 
@@ -12325,6 +12347,31 @@ bool sqlrservercontroller::getLobFieldSegment(sqlrservercursor *cursor,
 void sqlrservercontroller::closeLobField(sqlrservercursor *cursor,
 							uint32_t col) {
 	cursor->closeLobField(mapColumn(col));
+}
+
+bool sqlrservercontroller::getArrayFieldDescriptor(sqlrservercursor *cursor,
+							uint32_t col,
+							const unsigned char
+								**descriptor,
+							uint64_t *descriptorsize) {
+	return cursor->getArrayFieldDescriptor(mapColumn(col),
+						descriptor,descriptorsize);
+}
+
+bool sqlrservercontroller::getArrayFieldSlice(sqlrservercursor *cursor,
+							uint32_t col,
+							char *buffer,
+							uint64_t buffersize,
+							uint64_t offset,
+							uint64_t elementstoread,
+							uint64_t *elementsread) {
+	return cursor->getArrayFieldSlice(mapColumn(col),buffer,buffersize,
+					offset,elementstoread,elementsread);
+}
+
+void sqlrservercontroller::closeArrayField(sqlrservercursor *cursor,
+							uint32_t col) {
+	cursor->closeArrayField(mapColumn(col));
 }
 
 void sqlrservercontroller::suspendResultSet(sqlrservercursor *cursor) {

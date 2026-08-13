@@ -31,8 +31,9 @@ $(SQLR)protocol_mysql.$(LIBEXT): mysql.cpp mysql.$(OBJ)
 $(SQLR)protocol_postgresql.$(LIBEXT): postgresql.cpp postgresql.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ postgresql.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
-$(SQLR)protocol_firebird.$(LIBEXT): firebird.cpp firebird.$(OBJ)
-	$(LTLINK) $(LINK) $(OUT)$@ firebird.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+$(SQLR)protocol_firebird.$(LIBEXT): firebird.cpp firebird.$(OBJ) \
+					firebirdsdl.cpp firebirdsdl.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ firebird.$(OBJ) firebirdsdl.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
 $(SQLR)protocol_tds.$(LIBEXT): tds.cpp tds.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ tds.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)

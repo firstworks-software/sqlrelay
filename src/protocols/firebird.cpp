@@ -10,6 +10,8 @@
 
 #include <datatypes.h>
 
+#include "firebirdsdl.h"
+
 // NOTE:
 // Firebird Wire Protocol refers to:
 // Carlos Guzman Alvarez, Mark Rotteveel, version 0.18, 18 May 2025
@@ -810,6 +812,14 @@
 // under this, and their ids stop resolving.)
 #define MAX_BLOB_BUFFER		(64*1024*1024)
 
+// how many bytes of fetched array elements a session will hold at once
+// (an array is buffered whole at fetch time for the same reason a blob is -
+// see bufferArray() - and gets the same ceiling and the same trimming)
+#define MAX_ARRAY_BUFFER	(64*1024*1024)
+
+// how many elements getArrayFieldSlice() is asked for at a time
+#define ARRAY_SLICE_ELEMENTS	4096
+
 // the states of an op_get_segment response
 // (a bare 0, 1 or 2 in the response's object handle.  isc_segment and
 // isc_segstr_eof never go on the wire - firebird's client raises those itself,
@@ -865,6 +875,7 @@
 #define isc_imp_exc			335544381
 #define isc_random			335544382
 #define isc_sqlerr			335544436
+#define isc_invalid_sdl			335544456
 #define isc_login			335544472
 #define isc_bad_stmt_handle		335544485
 #define isc_dsql_error			335544569
@@ -1038,6 +1049,44 @@ struct sqlrfirebirdblob {
 	bool		isstream;
 };
 
+// ISC_ARRAY_DESC, laid out the way ibase.h lays it out.  When the backend
+// is firebird, that's what getArrayFieldDescriptor() hands back, and there's
+// no way to reach ibase.h from here - a protocol module builds without any
+// database client library - so the layout is mirrored instead.  It's only
+// read when the descriptor is exactly this big, and the ISC_ARRAY_DESC
+// layout has been fixed since interbase, so a descriptor that came from
+// something else won't be mistaken for one of these.
+struct sqlrfirebirdarraybound {
+	int16_t		lower;
+	int16_t		upper;
+};
+
+struct sqlrfirebirdarraydesc {
+	byte_t		dtype;
+	char		scale;
+	uint16_t	length;
+	char		fieldname[32];
+	char		relationname[32];
+	int16_t		dimensions;
+	int16_t		flags;
+	sqlrfirebirdarraybound	bounds[SQLRFIREBIRDSDL_MAX_DIMENSIONS];
+};
+
+// an array a fetch pulled out of the backend, held until the client asks
+// for a slice of it
+struct sqlrfirebirdarray {
+	uint32_t	id;
+	bytebuffer	data;
+	uint32_t	elementsize;
+	uint64_t	elementcount;
+	// the array's own bounds, out of its descriptor.  0 dimensions means
+	// the backend had no descriptor to give, and then the slice the
+	// client asks for has to be taken to cover the whole array.
+	uint16_t	dimensions;
+	int32_t		lower[SQLRFIREBIRDSDL_MAX_DIMENSIONS];
+	int32_t		upper[SQLRFIREBIRDSDL_MAX_DIMENSIONS];
+};
+
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
 		sqlrprotocol_firebird(sqlrservercontroller *cont,
@@ -1167,6 +1216,21 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint64_t valuesize,
 					bool lob,
 					uint32_t *id);
+
+		sqlrfirebirdarray	*newArray();
+		sqlrfirebirdarray	*getArrayById(uint32_t high,
+							uint32_t low);
+		void	clearArrays();
+		void	trimArrays();
+		void	bufferArray(sqlrservercursor *cursor,
+					uint32_t col,
+					uint32_t *id);
+		static uint32_t	arrayElementSize(byte_t blrtype,
+						uint16_t length);
+		bool	writeSliceElement(byte_t blrtype,
+					uint32_t elementsize,
+					const byte_t *element,
+					uint32_t *byteswritten);
 
 		uint32_t	statementType(const char *query);
 		bool	isTransactionStatement(uint32_t stmttype);
@@ -1422,6 +1486,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		uint32_t	nextblobid;
 		uint32_t	nextblobhandle;
 
+		// the arrays the session is holding, oldest first
+		linkedlist< sqlrfirebirdarray * >	arrays;
+		uint64_t	arraybytes;
+		uint32_t	nextarrayid;
+
 		// staging buffer for reading a blob out of the backend,
 		// allocated on the first blob a session fetches
 		char		*lobbuffer;
@@ -1508,6 +1577,8 @@ void sqlrprotocol_firebird::init() {
 	nextblobid=0;
 	nextblobhandle=0;
 	badblobid=false;
+	arraybytes=0;
+	nextarrayid=0;
 	errorsqlstate[0]='\0';
 	ddlobjectname[0]='\0';
 	respbufferlen=0;
@@ -1534,6 +1605,7 @@ void sqlrprotocol_firebird::free() {
 	delete[] wd;
 	clearStatements();
 	clearBlobs();
+	clearArrays();
 }
 
 clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
@@ -2873,6 +2945,7 @@ bool sqlrprotocol_firebird::detach() {
 	// session teardown rolls one back anyway)
 	clearStatements();
 	clearBlobs();
+	clearArrays();
 	if (intransaction) {
 		cont->rollback();
 		intransaction=false;
@@ -3578,8 +3651,9 @@ bool sqlrprotocol_firebird::commit() {
 	// the statements a transaction opened cursors for are done with
 	clearStatements();
 
-	// a blob id lives until the transaction that made it ends
+	// a blob or array id lives until the transaction that made it ends
 	clearBlobs();
+	clearArrays();
 
 	intransaction=false;
 	trautocommit=false;
@@ -3629,8 +3703,9 @@ bool sqlrprotocol_firebird::rollback() {
 
 	clearStatements();
 
-	// a blob id lives until the transaction that made it ends
+	// a blob or array id lives until the transaction that made it ends
 	clearBlobs();
+	clearArrays();
 
 	intransaction=false;
 	trautocommit=false;
@@ -5213,6 +5288,192 @@ void sqlrprotocol_firebird::bufferBlob(sqlrservercursor *cursor,
 	cont->closeLobField(cursor,col);
 }
 
+sqlrfirebirdarray *sqlrprotocol_firebird::newArray() {
+
+	// an id of 0 means "no array", so the counter skips it on a wrap
+	nextarrayid++;
+	if (!nextarrayid) {
+		nextarrayid++;
+	}
+
+	sqlrfirebirdarray	*array=new sqlrfirebirdarray;
+	array->id=nextarrayid;
+	array->elementsize=0;
+	array->elementcount=0;
+	array->dimensions=0;
+	for (uint16_t i=0; i<SQLRFIREBIRDSDL_MAX_DIMENSIONS; i++) {
+		array->lower[i]=0;
+		array->upper[i]=0;
+	}
+	arrays.append(array);
+	return array;
+}
+
+sqlrfirebirdarray *sqlrprotocol_firebird::getArrayById(uint32_t high,
+							uint32_t low) {
+
+	// the ids the module hands out all have a zero high word - see
+	// newArray()
+	if (high || !low) {
+		return NULL;
+	}
+	for (listnode< sqlrfirebirdarray * > *node=arrays.getFirst();
+						node; node=node->getNext()) {
+		if (node->getValue()->id==low) {
+			return node->getValue();
+		}
+	}
+	return NULL;
+}
+
+void sqlrprotocol_firebird::clearArrays() {
+	for (listnode< sqlrfirebirdarray * > *node=arrays.getFirst();
+						node; node=node->getNext()) {
+		delete node->getValue();
+	}
+	arrays.clear();
+	arraybytes=0;
+}
+
+void sqlrprotocol_firebird::trimArrays() {
+
+	// drop the oldest arrays until the session is back under budget
+	// (their ids stop resolving, so an over-budget client gets an error
+	// rather than an out-of-memory - the same bargain trimBlobs() makes)
+	listnode< sqlrfirebirdarray * >	*node=arrays.getFirst();
+	while (node && arraybytes>MAX_ARRAY_BUFFER) {
+		listnode< sqlrfirebirdarray * >	*next=node->getNext();
+		sqlrfirebirdarray		*array=node->getValue();
+		arraybytes=arraybytes-array->data.getSize();
+		delete array;
+		arrays.remove(node);
+		node=next;
+	}
+}
+
+uint32_t sqlrprotocol_firebird::arrayElementSize(byte_t blrtype,
+						uint16_t length) {
+
+	// How many bytes one element of an array takes up.  This is what
+	// firebird's sdl_desc() (common/sdl.cpp) works out from the same blr
+	// type and length, and it's the stride both ends of the wire use.
+	// Note that a varying element is described there as a cstring of
+	// length+2 bytes rather than as a varying, so it's stored
+	// null-terminated rather than length-prefixed.
+	// (0 means an element type this module can't stride over.)
+	switch (blrtype) {
+		case blr_text:
+		case blr_text2:
+		case blr_cstring:
+		case blr_cstring2:
+			return length;
+		case blr_varying:
+		case blr_varying2:
+			return length+sizeof(uint16_t);
+		case blr_bool:
+			return 1;
+		case blr_short:
+			return 2;
+		case blr_long:
+		case blr_float:
+		case blr_sql_date:
+		case blr_sql_time:
+			return 4;
+		case blr_int64:
+		case blr_quad:
+		case blr_double:
+		case blr_d_float:
+		case blr_timestamp:
+			return 8;
+		default:
+			return 0;
+	}
+}
+
+void sqlrprotocol_firebird::bufferArray(sqlrservercursor *cursor,
+					uint32_t col,
+					uint32_t *id) {
+
+	trimArrays();
+
+	sqlrfirebirdarray	*array=newArray();
+	*id=array->id;
+
+	// the descriptor says how the array is shaped and how wide an element
+	// is.  It's opaque as far as the server API is concerned, and only a
+	// firebird backend has one to give, so a descriptor that isn't an
+	// ISC_ARRAY_DESC leaves the bounds unknown - see getSlice(), which
+	// then has to take the client's slice as covering the whole array.
+	const unsigned char	*descriptor=NULL;
+	uint64_t		descriptorsize=0;
+	if (!cont->getArrayFieldDescriptor(cursor,col,
+					&descriptor,&descriptorsize) ||
+		!descriptor ||
+		descriptorsize!=sizeof(sqlrfirebirdarraydesc)) {
+		cont->closeArrayField(cursor,col);
+		return;
+	}
+
+	const sqlrfirebirdarraydesc	*desc=
+			(const sqlrfirebirdarraydesc *)descriptor;
+
+	if (desc->dimensions<1 ||
+		desc->dimensions>(int16_t)SQLRFIREBIRDSDL_MAX_DIMENSIONS) {
+		cont->closeArrayField(cursor,col);
+		return;
+	}
+
+	array->elementsize=arrayElementSize(desc->dtype,desc->length);
+	if (!array->elementsize) {
+		cont->closeArrayField(cursor,col);
+		return;
+	}
+
+	array->dimensions=(uint16_t)desc->dimensions;
+	for (uint16_t i=0; i<array->dimensions; i++) {
+		array->lower[i]=desc->bounds[i].lower;
+		array->upper[i]=desc->bounds[i].upper;
+	}
+
+	// pull the elements over in batches
+	// (the fetch loop has moved on to the next row by the time the client
+	// asks for a slice, so the whole array has to be buffered here - the
+	// same reason bufferBlob() buffers a blob whole)
+	// cap the batch so a wide element (eg. a large varchar) can't blow the
+	// staging buffer out past what the whole array is allowed to occupy
+	uint64_t	batchelements=ARRAY_SLICE_ELEMENTS;
+	if (batchelements*array->elementsize>MAX_ARRAY_BUFFER) {
+		batchelements=MAX_ARRAY_BUFFER/array->elementsize;
+	}
+	if (!batchelements) {
+		batchelements=1;
+	}
+	uint64_t	buffersize=batchelements*array->elementsize;
+	char		*buffer=new char[buffersize];
+	uint64_t	offset=0;
+	for (;;) {
+		uint64_t	elementsread=0;
+		if (!cont->getArrayFieldSlice(cursor,col,buffer,buffersize,
+						offset,batchelements,
+						&elementsread) ||
+						!elementsread) {
+			break;
+		}
+		uint64_t	bytes=elementsread*array->elementsize;
+		array->data.append((const byte_t *)buffer,(size_t)bytes);
+		arraybytes=arraybytes+bytes;
+		offset=offset+elementsread;
+		if (arraybytes>MAX_ARRAY_BUFFER) {
+			break;
+		}
+	}
+	delete[] buffer;
+
+	array->elementcount=offset;
+
+	cont->closeArrayField(cursor,col);
+}
+
 bool sqlrprotocol_firebird::createBlob() {
 	return createBlobCommon("create blob",false);
 }
@@ -5776,11 +6037,288 @@ bool sqlrprotocol_firebird::infoBlob() {
 				statusvectorlen);
 }
 
+bool sqlrprotocol_firebird::writeSliceElement(byte_t blrtype,
+						uint32_t elementsize,
+						const byte_t *element,
+						uint32_t *byteswritten) {
+
+	// One element of a slice, encoded the way firebird's xdr_datum()
+	// (common/xdr.cpp) encodes it.  The module always accepts
+	// arch_generic (see connect()), so the client keeps xdr on and reads
+	// the elements one at a time rather than as raw bytes.
+	// (nothing here is guaranteed to be aligned - the elements are
+	// packed - so each one is copied into a local before it's read)
+	switch (blrtype) {
+
+		case blr_short:
+			{
+			int16_t	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			return writeInt((uint32_t)(int32_t)v,
+					"slice element",byteswritten);
+			}
+
+		case blr_long:
+		case blr_sql_date:
+		case blr_sql_time:
+		case blr_float:
+			{
+			uint32_t	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			return writeInt(v,"slice element",byteswritten);
+			}
+
+		case blr_int64:
+		case blr_double:
+		case blr_d_float:
+			{
+			uint64_t	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			return writeInt64(v,"slice element",byteswritten);
+			}
+
+		case blr_quad:
+		case blr_timestamp:
+			{
+			// two longs, high word first, which is the order
+			// they're already in in memory
+			uint32_t	high=0;
+			uint32_t	low=0;
+			bytestring::copy(&high,element,sizeof(high));
+			bytestring::copy(&low,element+sizeof(high),
+						sizeof(low));
+			return writeInt(high,"slice element",byteswritten) &&
+				writeInt(low,"slice element",byteswritten);
+			}
+
+		case blr_bool:
+			return writeOpaque(element,1,
+					"slice element",byteswritten);
+
+		case blr_text:
+		case blr_text2:
+			return writeOpaque(element,elementsize,
+					"slice element",byteswritten);
+
+		case blr_cstring:
+		case blr_cstring2:
+		case blr_varying:
+		case blr_varying2:
+			{
+			// firebird's sdl_desc() describes a varying array
+			// element as a cstring, so both go over as one - a
+			// length, and that many bytes of a null-terminated
+			// value
+			uint32_t	len=0;
+			while (len+1<elementsize && element[len]) {
+				len++;
+			}
+			return writeInt(len,"slice element length",
+						byteswritten) &&
+				writeOpaque(element,len,
+						"slice element",byteswritten);
+			}
+
+		default:
+			return false;
+	}
+}
+
 bool sqlrprotocol_firebird::getSlice() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		transaction handle
+	// 	int32_t		array id, high word
+	// 	int32_t		array id, low word
+	// 	int32_t		how many bytes the client will take
+	// 	int32_t		sdl length
+	// 	byte_t[]	sdl
+	// 	byte_t[]	sdl padding
+	// 	int32_t		parameters length
+	// 	byte_t[]	parameters
+	// 	int32_t		slice length	(always 0 here)
+	// }
+	//
+	// (firebird's P_SLC - see FB4 src/remote/protocol.cpp:590.  The
+	// trailing slice is the request's own copy of the elements, which is
+	// empty on a get and only carries anything on a put.)
+
+	debugStart("get slice");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clienttrhandle;
+	uint32_t	high;
+	uint32_t	low;
+	uint32_t	clientbufferlen;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread) ||
+		!readInt(&high,"array id high word",&bytesread) ||
+		!readInt(&low,"array id low word",&bytesread) ||
+		!readInt(&clientbufferlen,"buffer length",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	sdllen=0;
+	byte_t		*sdl=NULL;
+	if (!readBuffer(&sdl,&sdllen,"sdl",&bytesread)) {
+		return false;
+	}
+
+	// the parameters carry values for any expressions in the sdl, and
+	// nothing that generates an sdl here puts an expression in one, so
+	// this is read and dropped
+	uint32_t	paramslen=0;
+	byte_t		*params=NULL;
+	if (!readBuffer(&params,&paramslen,"parameters",&bytesread)) {
+		delete[] sdl;
+		return false;
+	}
+	delete[] params;
+
+	uint32_t	slicelen=0;
+	if (!readInt(&slicelen,"slice length",&bytesread)) {
+		delete[] sdl;
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrfirebirdarray	*array=getArrayById(high,low);
+	if (!array) {
+		delete[] sdl;
+		// firebird has no code of its own for a bad array id - its
+		// own server reports one out of the same blob-id check
+		return errorResponse("get slice response",
+					isc_bad_segstr_id);
+	}
+
+	// work out what the client asked for
+	sqlrfirebirdsdl	parsedsdl;
+	if (!parsedsdl.parse(sdl,sdllen)) {
+		if (getDebug()) {
+			stdoutput.printf("	sdl parse failed: %s\n",
+						parsedsdl.getError());
+		}
+		delete[] sdl;
+		return errorResponse("get slice response",isc_invalid_sdl);
+	}
+	delete[] sdl;
+
+	// the element the client is expecting has to be the one that was
+	// buffered, or the bytes would be read at the wrong stride
+	byte_t		elementtype=parsedsdl.getElementType();
+	uint32_t	elementsize=arrayElementSize(elementtype,
+						parsedsdl.getElementLength());
+	if (!elementsize || elementsize!=array->elementsize) {
+		return errorResponse("get slice response",isc_invalid_sdl);
+	}
+
+	uint64_t	count=parsedsdl.getElementCount();
+	if (!count) {
+		return errorResponse("get slice response",isc_invalid_sdl);
+	}
+
+	// never answer with more than the client said it would take -
+	// firebird's own server caps it the same way, by only giving the
+	// engine a buffer that big
+	uint64_t	maxcount=clientbufferlen/elementsize;
+	if (count>maxcount) {
+		count=maxcount;
+	}
+
+	// gather the elements the slice asks for out of the buffered array
+	const byte_t	*data=array->data.getBuffer();
+
+	respbuffer.clear();
+
+	for (uint64_t i=0; i<count; i++) {
+
+		uint64_t	index=i;
+
+		// A slice can be a sub-range of the array, and then its own
+		// subscripts have to be mapped onto the array's.  When the
+		// backend gave no bounds to map onto, the slice is taken as
+		// covering the whole array, which is what a client that read
+		// the bounds with isc_array_lookup_bounds() asks for anyway.
+		if (array->dimensions) {
+
+			if (parsedsdl.getDimensionCount()!=
+							array->dimensions) {
+				return errorResponse("get slice response",
+							isc_invalid_sdl);
+			}
+
+			int32_t	subscripts[SQLRFIREBIRDSDL_MAX_DIMENSIONS];
+			if (!parsedsdl.getSubscripts(i,subscripts) ||
+				!parsedsdl.getArrayIndex(subscripts,
+							array->lower,
+							array->upper,
+							&index)) {
+				return errorResponse("get slice response",
+							isc_invalid_sdl);
+			}
+		}
+
+		if (index>=array->elementcount) {
+			return errorResponse("get slice response",
+						isc_invalid_sdl);
+		}
+
+		write(&respbuffer,data+index*elementsize,elementsize);
+	}
+
+	// response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_slice
+	// 	int32_t		slice length
+	// 	int32_t		slice length (again)
+	// 	byte_t[]	elements
+	// }
+	//
+	// (firebird's P_SLR - see FB4 src/remote/protocol.cpp:616.  The
+	// length is written twice because xdr_slice() writes one of its own,
+	// and both are the length of the slice in the client's own internal
+	// representation, not the length of what goes on the wire - the
+	// client divides it by the element width to know how many elements
+	// to read.)
+
+	debugStart("get slice response");
+
+	uint32_t	byteswritten=0;
+
+	opcode=op_slice;
+	if (!writeInt(opcode,"response op code",&byteswritten)) {
+		return false;
+	}
+	debugOpCode("response op code",opcode);
+
+	uint32_t	responselen=(uint32_t)(count*elementsize);
+	if (!writeInt(responselen,"slice length",&byteswritten) ||
+		!writeInt(responselen,"slice length",&byteswritten)) {
+		return false;
+	}
+
+	const byte_t	*elements=respbuffer.getBuffer();
+	for (uint64_t i=0; i<count; i++) {
+		if (!writeSliceElement(elementtype,elementsize,
+					elements+i*elementsize,
+					&byteswritten)) {
+			return false;
+		}
+	}
+
+	debugEnd();
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
 }
 
 bool sqlrprotocol_firebird::putSlice() {
+	// writing an array back is tracked separately
 	return sendNotImplementedError();
 }
 
@@ -7869,16 +8407,22 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_quad:
 		case blr_blob2:
 			{
-			// a fetched blob is answered with an id of the
-			// module's own, since the backend's isn't reachable
-			// through the server API
+			// a fetched blob or array is answered with an id of
+			// the module's own, since the backend's isn't
+			// reachable through the server API
 			// (the bytes are read here rather than when the
 			// client asks for them, because the fetch loop has
-			// moved on to the next row by then - see bufferBlob())
+			// moved on to the next row by then - see bufferBlob()
+			// and bufferArray())
 			uint32_t	low=0;
 			if (!null) {
-				bufferBlob(cursor,col,value,
-						valuesize,lob,&low);
+				if (cont->getColumnType(cursor,col)==
+							ARRAY_DATATYPE) {
+					bufferArray(cursor,col,&low);
+				} else {
+					bufferBlob(cursor,col,value,
+							valuesize,lob,&low);
+				}
 			}
 			return writeInt(0,"field",byteswritten) &&
 				writeInt(low,"field",byteswritten);

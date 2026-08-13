@@ -21,6 +21,88 @@
 #define MAX_BIND_VARS 512
 #define MAX_LOB_CHUNK_SIZE 65535
 
+// how big an array a single field is allowed to pull into memory at once
+#define MAX_ARRAY_BUFFER_SIZE (64*1024*1024)
+
+// blr type codes.  An ISC_ARRAY_DESC's array_desc_dtype is one of these -
+// isc_array_lookup_bounds() copies RDB$FIELDS.RDB$FIELD_TYPE straight into
+// it - and so is the element type in the SDL that isc_array_get_slice()
+// generates from the descriptor.  ibase.h doesn't pull in firebird's blr.h,
+// so the ones used here are defined locally, guarded in case a future
+// ibase.h does pull it in.
+#ifndef blr_short
+	#define blr_short		7
+#endif
+#ifndef blr_long
+	#define blr_long		8
+#endif
+#ifndef blr_quad
+	#define blr_quad		9
+#endif
+#ifndef blr_float
+	#define blr_float		10
+#endif
+#ifndef blr_d_float
+	#define blr_d_float		11
+#endif
+#ifndef blr_sql_date
+	#define blr_sql_date		12
+#endif
+#ifndef blr_sql_time
+	#define blr_sql_time		13
+#endif
+#ifndef blr_text
+	#define blr_text		14
+#endif
+#ifndef blr_text2
+	#define blr_text2		15
+#endif
+#ifndef blr_int64
+	#define blr_int64		16
+#endif
+#ifndef blr_bool
+	#define blr_bool		23
+#endif
+#ifndef blr_dec64
+	#define blr_dec64		24
+#endif
+#ifndef blr_dec128
+	#define blr_dec128		25
+#endif
+#ifndef blr_int128
+	#define blr_int128		26
+#endif
+#ifndef blr_double
+	#define blr_double		27
+#endif
+#ifndef blr_sql_time_tz
+	#define blr_sql_time_tz		28
+#endif
+#ifndef blr_timestamp_tz
+	#define blr_timestamp_tz	29
+#endif
+#ifndef blr_ex_time_tz
+	#define blr_ex_time_tz		30
+#endif
+#ifndef blr_ex_timestamp_tz
+	#define blr_ex_timestamp_tz	31
+#endif
+#ifndef blr_timestamp
+	#define blr_timestamp		35
+#endif
+#ifndef blr_varying
+	#define blr_varying		37
+#endif
+#ifndef blr_varying2
+	#define blr_varying2		38
+#endif
+#ifndef blr_cstring
+	#define blr_cstring		40
+#endif
+#ifndef blr_cstring2
+	#define blr_cstring2		41
+#endif
+
 // isc_dsql_prepare's length parameter is an unsigned short, so a longer
 // query's length would wrap
 #define MAX_STATEMENT_SIZE 65535
@@ -78,6 +160,220 @@ static ssize_t firebirdFormatScaledInt64(char *buffer, size_t buffersize,
 					"%s%lld.%0*lld",
 					sign,(int64_t)whole,
 					scale,(int64_t)frac);
+}
+
+// How many bytes one element of an array takes up in the buffer that
+// isc_array_get_slice() fills.  Firebird works this out in sdl_desc()
+// (common/sdl.cpp) from the same blr type and length that the descriptor
+// carries, and that's the stride its array walk uses.  Note that a varying
+// element is described there as a cstring of length+2 bytes, not as a
+// varying, so it's stored null-terminated rather than length-prefixed.
+// Returns 0 for a type this module can't stride over.
+static uint32_t firebirdArrayElementSize(byte_t dtype, uint16_t length) {
+	switch (dtype) {
+		case blr_text:
+		case blr_text2:
+		case blr_cstring:
+		case blr_cstring2:
+			return length;
+		case blr_varying:
+		case blr_varying2:
+			return length+sizeof(uint16_t);
+		case blr_bool:
+			return 1;
+		case blr_short:
+			return 2;
+		case blr_long:
+		case blr_float:
+		case blr_sql_date:
+		case blr_sql_time:
+			return 4;
+		case blr_sql_time_tz:
+			return 6;
+		case blr_int64:
+		case blr_quad:
+		case blr_double:
+		case blr_d_float:
+		case blr_dec64:
+		case blr_timestamp:
+		case blr_ex_time_tz:
+			return 8;
+		case blr_timestamp_tz:
+			return 10;
+		case blr_ex_timestamp_tz:
+			return 12;
+		case blr_dec128:
+		case blr_int128:
+			return 16;
+		default:
+			return 0;
+	}
+}
+
+// appends one element of an array, read out of the raw bytes
+// isc_array_get_slice() returned, to output.  Returns false for an element
+// type that has no text rendering here.
+static bool firebirdAppendArrayElement(stringbuffer *output,
+					const ISC_ARRAY_DESC *desc,
+					const byte_t *element,
+					uint32_t elementsize) {
+
+	// the elements are packed, so nothing about them is guaranteed to be
+	// aligned - each one is copied into a local before it's read
+	char	buffer[FIREBIRD_WIDEDECIMAL_TEXTLEN];
+
+	switch (desc->array_desc_dtype) {
+
+		case blr_short:
+			{
+			ISC_SHORT	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			if (desc->array_desc_scale) {
+				firebirdFormatScaledInt64(buffer,
+						sizeof(buffer),(ISC_INT64)v,
+						desc->array_desc_scale);
+				output->append(buffer);
+			} else {
+				output->append((int64_t)v);
+			}
+			return true;
+			}
+
+		case blr_long:
+			{
+			ISC_LONG	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			if (desc->array_desc_scale) {
+				firebirdFormatScaledInt64(buffer,
+						sizeof(buffer),(ISC_INT64)v,
+						desc->array_desc_scale);
+				output->append(buffer);
+			} else {
+				output->append((int64_t)v);
+			}
+			return true;
+			}
+
+		case blr_int64:
+			{
+			ISC_INT64	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			if (desc->array_desc_scale) {
+				firebirdFormatScaledInt64(buffer,
+						sizeof(buffer),v,
+						desc->array_desc_scale);
+				output->append(buffer);
+			} else {
+				output->append((int64_t)v);
+			}
+			return true;
+			}
+
+		case blr_float:
+			{
+			float	v=0.0;
+			bytestring::copy(&v,element,sizeof(v));
+			charstring::printf(buffer,sizeof(buffer),
+						"%.4f",(double)v);
+			output->append(buffer);
+			return true;
+			}
+
+		case blr_double:
+		case blr_d_float:
+			{
+			double	v=0.0;
+			bytestring::copy(&v,element,sizeof(v));
+			charstring::printf(buffer,sizeof(buffer),"%.4f",v);
+			output->append(buffer);
+			return true;
+			}
+
+		case blr_bool:
+			output->append((element[0])?'1':'0');
+			return true;
+
+		case blr_timestamp:
+			{
+			ISC_TIMESTAMP	v;
+			bytestring::copy(&v,element,sizeof(v));
+			tm	ts;
+			#ifdef SQL_TIMESTAMP
+			isc_decode_timestamp(&v,&ts);
+			#else
+			isc_decode_date(&v,&ts);
+			#endif
+			charstring::printf(buffer,sizeof(buffer),
+					"'%d-%02d-%02d %02d:%02d:%02d'",
+					ts.tm_year+1900,ts.tm_mon+1,ts.tm_mday,
+					ts.tm_hour,ts.tm_min,ts.tm_sec);
+			output->append(buffer);
+			return true;
+			}
+
+		#ifdef SQL_TIMESTAMP
+		case blr_sql_date:
+			{
+			ISC_DATE	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			tm	d;
+			isc_decode_sql_date(&v,&d);
+			charstring::printf(buffer,sizeof(buffer),
+					"'%d-%02d-%02d'",
+					d.tm_year+1900,d.tm_mon+1,d.tm_mday);
+			output->append(buffer);
+			return true;
+			}
+
+		case blr_sql_time:
+			{
+			ISC_TIME	v=0;
+			bytestring::copy(&v,element,sizeof(v));
+			tm	t;
+			isc_decode_sql_time(&v,&t);
+			charstring::printf(buffer,sizeof(buffer),
+					"'%02d:%02d:%02d'",
+					t.tm_hour,t.tm_min,t.tm_sec);
+			output->append(buffer);
+			return true;
+			}
+		#endif
+
+		case blr_text:
+		case blr_text2:
+			{
+			// a text element is blank padded out to its width
+			uint32_t	len=elementsize;
+			while (len && element[len-1]==' ') {
+				len--;
+			}
+			output->append('\'');
+			output->append((const char *)element,len);
+			output->append('\'');
+			return true;
+			}
+
+		case blr_cstring:
+		case blr_cstring2:
+		case blr_varying:
+		case blr_varying2:
+			{
+			// firebird's sdl_desc() describes a varying array
+			// element as a cstring, so both are stored
+			// null-terminated inside the element's width
+			uint32_t	len=0;
+			while (len<elementsize && element[len]) {
+				len++;
+			}
+			output->append('\'');
+			output->append((const char *)element,len);
+			output->append('\'');
+			return true;
+			}
+
+		default:
+			return false;
+	}
 }
 
 // the XSQLDA carries no declared precision for a NUMERIC/DECIMAL column,
@@ -184,6 +480,18 @@ struct fieldstruct {
 	ISC_QUAD	blobid;
 	isc_blob_handle	blobhandle;
 	bool		blobisopen;
+
+	// array support.  The descriptor describes the column, so it's
+	// looked up once and kept for the whole result set, but the elements
+	// belong to the row, so the buffer is dropped every time a new row
+	// is fetched.
+	ISC_ARRAY_DESC	arraydesc;
+	bool		arraydescvalid;
+	byte_t		*arraybuffer;
+	uint64_t	arraybuffersize;
+	uint64_t	arrayelementcount;
+	uint32_t	arrayelementsize;
+	bool		arraybuffervalid;
 
 	short		nullindicator;
 };
@@ -334,6 +642,8 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		uint16_t	getColumnIsNullable(uint32_t col);
 		const char	*getColumnTable(uint32_t col);
 		uint16_t	getColumnTableSize(uint32_t col);
+		const char	*getColumnField(uint32_t col);
+		uint16_t	getColumnFieldSize(uint32_t col);
 		bool		noRowsToReturn();
 		bool		fetchRow(bool *error);
 		void		getField(uint32_t col,
@@ -348,6 +658,16 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 					uint64_t offset, uint64_t charstoread,
 					uint64_t *charsread);
 		void		closeLobField(uint32_t col);
+		bool		getArrayFieldDescriptor(uint32_t col,
+					const unsigned char **descriptor,
+					uint64_t *descriptorsize);
+		bool		getArrayFieldSlice(uint32_t col,
+					char *buffer, uint64_t buffersize,
+					uint64_t offset,
+					uint64_t elementstoread,
+					uint64_t *elementsread);
+		void		closeArrayField(uint32_t col);
+		bool		fetchArrayField(uint32_t col);
 		void		closeResultSet();
 		bool		columnInfoIsValidAfterPrepare();
 		uint16_t	getInputBindCountFromPrepare();
@@ -2674,10 +2994,16 @@ void firebirdcursor::allocateResultSetBuffers(int32_t columncount) {
 			field[i].textbuffer=new char[
 					conn->cont->getMaxFieldSize()+1];
 			// init these so closeResultSet() can scan for open
-			// lobs on a slot describeResultSet() hasn't
-			// described yet
+			// lobs and buffered arrays on a slot
+			// describeResultSet() hasn't described yet
 			field[i].sqlrtype=UNKNOWN_DATATYPE;
 			field[i].blobisopen=false;
+			field[i].arraydescvalid=false;
+			field[i].arraybuffer=NULL;
+			field[i].arraybuffersize=0;
+			field[i].arrayelementcount=0;
+			field[i].arrayelementsize=0;
+			field[i].arraybuffervalid=false;
 		}
 		fieldcount=columncount;
 	}
@@ -2691,6 +3017,7 @@ void firebirdcursor::freeResultSetBuffers() {
 
 	for (int32_t i=0; i<fieldcount; i++) {
 		delete[] field[i].textbuffer;
+		delete[] field[i].arraybuffer;
 	}
 	delete[] field;
 	field=NULL;
@@ -3594,7 +3921,12 @@ bool firebirdcursor::describeResultSet() {
 			outsqlda->sqlvar[i].sqldata=
 					(char *)&field[i].quadbuffer;
 			field[i].sqlrtype=ARRAY_DATATYPE;
-		} else if (outsqlda->sqlvar[i].sqltype==SQL_QUAD || 
+			// this column's shape has to be looked up again -
+			// the cursor may have run a different query since
+			// the descriptor that's cached here was filled in
+			field[i].arraydescvalid=false;
+			field[i].arraybuffervalid=false;
+		} else if (outsqlda->sqlvar[i].sqltype==SQL_QUAD ||
 				outsqlda->sqlvar[i].sqltype==SQL_QUAD+1) {
 			outsqlda->sqlvar[i].sqldata=
 					(char *)&field[i].quadbuffer;
@@ -3945,6 +4277,17 @@ uint16_t firebirdcursor::getColumnTableSize(uint32_t col) {
 	return outsqlda->sqlvar[col].relname_length;
 }
 
+const char *firebirdcursor::getColumnField(uint32_t col) {
+	// sqlname is the field's own name in the table it came from -
+	// aliasname (which getColumnName() answers) is what the query
+	// called it
+	return outsqlda->sqlvar[col].sqlname;
+}
+
+uint16_t firebirdcursor::getColumnFieldSize(uint32_t col) {
+	return outsqlda->sqlvar[col].sqlname_length;
+}
+
 bool firebirdcursor::noRowsToReturn() {
 	// for exec procedure queries, outsqlda contains output bind values
 	// rather than a result set and there is no result set
@@ -3960,6 +4303,11 @@ bool firebirdcursor::fetchRow(bool *error) {
 
 	// success
 	if (!retcode) {
+		// whatever array elements were buffered belong to the row
+		// that just got left behind
+		for (int32_t i=0; i<fieldcount; i++) {
+			field[i].arraybuffervalid=false;
+		}
 		return true;
 	}
 
@@ -4097,11 +4445,71 @@ void firebirdcursor::getField(uint32_t col,
 		*fld=field[col].textbuffer;
 
 	} else if (outsqlda->sqlvar[col].sqltype==SQL_ARRAY ||
-		outsqlda->sqlvar[col].sqltype==SQL_ARRAY+1 ||
-		outsqlda->sqlvar[col].sqltype==SQL_QUAD ||
+		outsqlda->sqlvar[col].sqltype==SQL_ARRAY+1) {
+
+		// A generic client has no way to ask for an array's elements,
+		// so they're rendered here as a bracketed, comma-separated
+		// list.  A firebird client talking to the firebird protocol
+		// module gets the elements themselves, through
+		// getArrayFieldDescriptor()/getArrayFieldSlice().
+		if (fetchArrayField(col)) {
+
+			stringbuffer	elements;
+			elements.append('{');
+			bool	ok=true;
+			for (uint64_t i=0;
+				i<field[col].arrayelementcount && ok; i++) {
+				if (i) {
+					elements.append(',');
+				}
+				ok=firebirdAppendArrayElement(&elements,
+					&field[col].arraydesc,
+					field[col].arraybuffer+
+					i*field[col].arrayelementsize,
+					field[col].arrayelementsize);
+			}
+			elements.append('}');
+
+			if (ok) {
+				// an array can easily render longer than a
+				// field is allowed to be, and printf() would
+				// answer how long it would have been rather
+				// than how much of it fit, so the rendering
+				// is truncated by hand here
+				// (textbuffer is getMaxFieldSize()+1 bytes,
+				// so the terminator below always fits)
+				uint64_t	len=elements.getStringLength();
+				uint32_t	maxfieldsize=
+						conn->cont->getMaxFieldSize();
+				if (len>maxfieldsize) {
+					len=maxfieldsize;
+				}
+				bytestring::copy(field[col].textbuffer,
+						elements.getString(),
+						(size_t)len);
+				field[col].textbuffer[len]='\0';
+				*fldsize=len;
+				*fld=field[col].textbuffer;
+			} else {
+				// an element type with no text rendering -
+				// there's nothing useful to show for it
+				*null=true;
+			}
+
+		} else {
+			// isc_array_lookup_bounds() or isc_array_get_slice()
+			// failed, and the reason is in the connection's status
+			// vector, but getField() has nowhere to report a
+			// per-field error, so the field reads null
+			*null=true;
+		}
+
+	} else if (outsqlda->sqlvar[col].sqltype==SQL_QUAD ||
 		outsqlda->sqlvar[col].sqltype==SQL_QUAD+1) {
 
-		// FIXME: handle arrays for real here...
+		// a quad is an internal id rather than a value, and firebird
+		// has no user-visible column type that uses one, so there's
+		// nothing to render
 		*null=true;
 
 	#ifdef SQL_TIMESTAMP
@@ -4321,6 +4729,217 @@ void firebirdcursor::closeLobField(uint32_t col) {
 	}
 }
 
+bool firebirdcursor::getArrayFieldDescriptor(uint32_t col,
+					const unsigned char **descriptor,
+					uint64_t *descriptorsize) {
+
+	// ignore non-arrays
+	if (field[col].sqlrtype!=ARRAY_DATATYPE) {
+		return false;
+	}
+
+	// look the shape up, if we haven't already
+	// (it's a property of the column rather than of the row, so one
+	// lookup serves the whole result set - and it costs a query against
+	// RDB$RELATION_FIELDS/RDB$FIELDS/RDB$FIELD_DIMENSIONS, so it's worth
+	// not repeating)
+	if (!field[col].arraydescvalid) {
+
+		// isc_array_lookup_bounds() finds the column by name, so a
+		// column that isn't a plain field of a table (an expression,
+		// say) can't be looked up at all
+		if (!outsqlda->sqlvar[col].relname_length ||
+			!outsqlda->sqlvar[col].sqlname_length) {
+			return false;
+		}
+
+		// the names are copied out by their lengths rather than
+		// passed along as they are, since the sqlvar carries a length
+		// for each of them and isc_array_lookup_bounds() wants
+		// null-terminated strings
+		char	relname[sizeof(outsqlda->sqlvar[col].relname)+1];
+		char	sqlname[sizeof(outsqlda->sqlvar[col].sqlname)+1];
+		charstring::copy(relname,outsqlda->sqlvar[col].relname,
+					outsqlda->sqlvar[col].relname_length);
+		relname[outsqlda->sqlvar[col].relname_length]='\0';
+		charstring::copy(sqlname,outsqlda->sqlvar[col].sqlname,
+					outsqlda->sqlvar[col].sqlname_length);
+		sqlname[outsqlda->sqlvar[col].sqlname_length]='\0';
+
+		bytestring::zero(&field[col].arraydesc,
+					sizeof(field[col].arraydesc));
+
+		if (isc_array_lookup_bounds(firebirdconn->error,
+					&firebirdconn->db,
+					&firebirdconn->tr,
+					relname,sqlname,
+					&field[col].arraydesc)) {
+			// the reason is in the connection's status vector,
+			// which whoever fetches the error next will render
+			return false;
+		}
+
+		field[col].arraydescvalid=true;
+	}
+
+	*descriptor=(const unsigned char *)&field[col].arraydesc;
+	*descriptorsize=(uint64_t)sizeof(field[col].arraydesc);
+	return true;
+}
+
+bool firebirdcursor::fetchArrayField(uint32_t col) {
+
+	// ignore non-arrays
+	if (field[col].sqlrtype!=ARRAY_DATATYPE) {
+		return false;
+	}
+
+	// the elements of this row's array are already in hand
+	if (field[col].arraybuffervalid) {
+		return true;
+	}
+
+	// the descriptor says how many elements there are and how wide each
+	// one is
+	const unsigned char	*descriptor=NULL;
+	uint64_t		descriptorsize=0;
+	if (!getArrayFieldDescriptor(col,&descriptor,&descriptorsize)) {
+		return false;
+	}
+
+	ISC_ARRAY_DESC	*desc=&field[col].arraydesc;
+
+	if (desc->array_desc_dimensions<1 ||
+		desc->array_desc_dimensions>
+			(short)(sizeof(desc->array_desc_bounds)/
+				sizeof(desc->array_desc_bounds[0]))) {
+		return false;
+	}
+
+	uint64_t	elementcount=1;
+	for (short d=0; d<desc->array_desc_dimensions; d++) {
+		int32_t	lower=desc->array_desc_bounds[d].array_bound_lower;
+		int32_t	upper=desc->array_desc_bounds[d].array_bound_upper;
+		if (upper<lower) {
+			return false;
+		}
+		elementcount=elementcount*(uint64_t)(upper-lower+1);
+
+		// bail rather than let the count wrap around
+		// (an element is at least a byte wide, so a count past the
+		// ceiling can't turn into a buffer under it, and testing it
+		// here keeps the next dimension's multiply in range)
+		if (elementcount>MAX_ARRAY_BUFFER_SIZE) {
+			return false;
+		}
+	}
+
+	uint32_t	elementsize=firebirdArrayElementSize(
+					(byte_t)desc->array_desc_dtype,
+					desc->array_desc_length);
+	if (!elementcount || !elementsize) {
+		return false;
+	}
+
+	uint64_t	buffersize=elementcount*elementsize;
+	if (buffersize>MAX_ARRAY_BUFFER_SIZE) {
+		return false;
+	}
+
+	// grow the buffer if this array needs more room than the last one did
+	if (field[col].arraybuffer && field[col].arraybuffersize<buffersize) {
+		delete[] field[col].arraybuffer;
+		field[col].arraybuffer=NULL;
+		field[col].arraybuffersize=0;
+	}
+	if (!field[col].arraybuffer) {
+		field[col].arraybuffer=new byte_t[buffersize];
+		field[col].arraybuffersize=buffersize;
+	}
+
+	// isc_array_get_slice() generates a whole-array SDL from the
+	// descriptor itself, so there's nothing else to pass it, and it
+	// answers how many bytes it actually wrote in slicelength
+	ISC_LONG	slicelength=(ISC_LONG)buffersize;
+	if (isc_array_get_slice(firebirdconn->error,
+				&firebirdconn->db,
+				&firebirdconn->tr,
+				&field[col].quadbuffer,
+				desc,
+				field[col].arraybuffer,
+				&slicelength)) {
+		// the reason is in the connection's status vector
+		return false;
+	}
+
+	if (slicelength<0 || (uint64_t)slicelength>buffersize) {
+		slicelength=(ISC_LONG)buffersize;
+	}
+
+	field[col].arrayelementsize=elementsize;
+	field[col].arrayelementcount=((uint64_t)slicelength)/elementsize;
+	field[col].arraybuffervalid=true;
+
+	return true;
+}
+
+bool firebirdcursor::getArrayFieldSlice(uint32_t col,
+					char *buffer, uint64_t buffersize,
+					uint64_t offset,
+					uint64_t elementstoread,
+					uint64_t *elementsread) {
+
+	*elementsread=0;
+
+	if (!fetchArrayField(col)) {
+		return false;
+	}
+
+	// reading past the end isn't an error, it just reads nothing
+	if (offset>=field[col].arrayelementcount) {
+		return true;
+	}
+
+	// take the smallest of what was asked for, what's left, and what fits
+	uint64_t	count=field[col].arrayelementcount-offset;
+	if (count>elementstoread) {
+		count=elementstoread;
+	}
+	uint64_t	fits=buffersize/field[col].arrayelementsize;
+	if (count>fits) {
+		count=fits;
+	}
+
+	bytestring::copy(buffer,
+			field[col].arraybuffer+
+				offset*field[col].arrayelementsize,
+			(size_t)(count*field[col].arrayelementsize));
+
+	*elementsread=count;
+
+	return true;
+}
+
+void firebirdcursor::closeArrayField(uint32_t col) {
+
+	// don't gate this on the column still being an array - a cursor that
+	// ran a different query since (where this column isn't an array, or
+	// doesn't exist at this index the same way) shouldn't be left holding
+	// a stale, possibly large, array buffer.  freeing is harmless when
+	// nothing was ever allocated.
+	delete[] field[col].arraybuffer;
+	field[col].arraybuffer=NULL;
+	field[col].arraybuffersize=0;
+	field[col].arrayelementcount=0;
+	field[col].arrayelementsize=0;
+	field[col].arraybuffervalid=false;
+
+	// the descriptor is deliberately kept - it describes the column
+	// rather than the row, and re-looking it up costs a query against the
+	// system tables.  describeResultSet() drops it when the cursor runs
+	// something else.
+}
+
 void firebirdcursor::closeResultSet() {
 
 	// the result set buffers are deliberately left alone - the controller
@@ -4330,9 +4949,11 @@ void firebirdcursor::closeResultSet() {
 	// so nothing is held beyond the widest result set this cursor has
 	// returned)
 
-	// close any lobs that were left open by an abandoned fetch
+	// close any lobs, and drop any buffered array elements, that were
+	// left behind by an abandoned fetch
 	for (int32_t i=0; i<fieldcount; i++) {
 		closeLobField(i);
+		closeArrayField(i);
 	}
 
 	outbindcount=0;

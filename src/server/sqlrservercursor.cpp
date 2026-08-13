@@ -1138,6 +1138,14 @@ uint16_t sqlrservercursor::getColumnTableSize(uint32_t col) {
 	return charstring::getLength(getColumnTable(col));
 }
 
+const char *sqlrservercursor::getColumnField(uint32_t col) {
+	return NULL;
+}
+
+uint16_t sqlrservercursor::getColumnFieldSize(uint32_t col) {
+	return charstring::getLength(getColumnField(col));
+}
+
 bool sqlrservercursor::ignoreDateDdMmParameter(const char *data,
 							uint32_t size) {
 	return false;
@@ -1185,6 +1193,26 @@ bool sqlrservercursor::getLobFieldSegment(uint32_t col,
 }
 
 void sqlrservercursor::closeLobField(uint32_t col) {
+	// by default, do nothing
+}
+
+bool sqlrservercursor::getArrayFieldDescriptor(uint32_t col,
+					const unsigned char **descriptor,
+					uint64_t *descriptorsize) {
+	*descriptor=NULL;
+	*descriptorsize=0;
+	return false;
+}
+
+bool sqlrservercursor::getArrayFieldSlice(uint32_t col,
+					char *buffer, uint64_t buffersize,
+					uint64_t offset, uint64_t elementstoread,
+					uint64_t *elementsread) {
+	*elementsread=0;
+	return false;
+}
+
+void sqlrservercursor::closeArrayField(uint32_t col) {
 	// by default, do nothing
 }
 

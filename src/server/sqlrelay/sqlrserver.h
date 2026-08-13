@@ -2615,6 +2615,32 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		uint16_t	getColumnTableSize(sqlrservercursor *cursor,
 							uint32_t col);
 
+		/** Returns the name of the field that the column at position
+		 *  "col" in the current result set of "cursor" is from.  This
+		 *  is the true name of the field in the table that the column
+		 *  came from, rather than the alias that the column may have
+		 *  been given in the query.
+		 *
+		 *  Returns NULL if column info is not yet valid, if the
+		 *  query has no result set (eg. if it was a DML or DDL
+		 *  query), or if the database backend doesn't know what
+		 *  field the column came from. */
+		const char	*getColumnField(sqlrservercursor *cursor,
+							uint32_t col);
+
+		/** Returns the size (number of bytes) of the name of the field
+		 *  that the column at position "col" in the current result set
+		 *  of "cursor" is from.  This is the true name of the field in
+		 *  the table that the column came from, rather than the alias
+		 *  that the column may have been given in the query.
+		 *
+		 *  Returns NULL if column info is not yet valid, if the query
+		 *  has no result set (eg. if it was a DML or DDL query), or if
+		 *  the database backend doesn't know what field the column
+		 *  came from. */
+		uint16_t	getColumnFieldSize(sqlrservercursor *cursor,
+							uint32_t col);
+
 		/** Prepares and executes "query", but doesn't fetch any
 		 *  results, and appends a comma-separated list of the names of
 		 *  the columns in the result set to "output".
@@ -2798,6 +2824,67 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  current result set of "cursor" is a LOB then this method
 		 *  closes the LOB. */
 		void	closeLobField(sqlrservercursor *cursor,
+						uint32_t col);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set of "cursor" is an array, then this
+		 *  method sets "descriptor" to a buffer describing the shape
+		 *  of the array and "descriptorsize" to the number of bytes
+		 *  in that buffer.
+		 *
+		 *  The descriptor is opaque.  Its layout is specific to the
+		 *  database backend, and only the connection module that
+		 *  created it knows how to interpret it.  It generally
+		 *  describes the number of dimensions of the array, the bounds
+		 *  of each dimension, and the type and size of each element.
+		 *  For firebird, for example, it is a filled-in ISC_ARRAY_DESC.
+		 *
+		 *  The buffer is owned by the connection module (or by the
+		 *  cursor itself) and remains valid until the array field is
+		 *  closed with closeArrayField().  The caller must not modify
+		 *  or free it.
+		 *
+		 *  Returns true on success and false if an error occurred or
+		 *  if the field is not an array. */
+		bool	getArrayFieldDescriptor(sqlrservercursor *cursor,
+						uint32_t col,
+						const unsigned char **descriptor,
+						uint64_t *descriptorsize);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set of "cursor" is an array, then this
+		 *  method attempts to fetch "elementstoread" elements from
+		 *  element position "offset" into "buffer" of size
+		 *  "buffersize".  The actual number of elements that were read
+		 *  is returned in "elementsread".  "elementsread" may be less
+		 *  than "elementstoread" if "elementstoread" elements won't
+		 *  fit in "buffer" or if the end of the array was reached
+		 *  prior to fetching "elementstoread".  0 will be returned in
+		 *  "elementsread" if an attempt is made to read past the end
+		 *  of the array.
+		 *
+		 *  Note that "offset", "elementstoread", and "elementsread"
+		 *  all refer to numbers of elements, while "buffersize" refers
+		 *  to numbers of bytes.  The size of each element is part of
+		 *  the descriptor returned by getArrayFieldDescriptor().
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that attempting to read past the end of the array is
+		 *  not considered to be an error. */
+		bool	getArrayFieldSlice(sqlrservercursor *cursor,
+						uint32_t col,
+						char *buffer,
+						uint64_t buffersize,
+						uint64_t offset,
+						uint64_t elementstoread,
+						uint64_t *elementsread);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set of "cursor" is an array then this method
+		 *  closes the array, releasing any descriptor or buffer that
+		 *  was cached for the column. */
+		void	closeArrayField(sqlrservercursor *cursor,
 						uint32_t col);
 
 
@@ -5287,6 +5374,30 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  came from. */
 		virtual uint16_t	getColumnTableSize(uint32_t col);
 
+		/** Returns the name of the field that the column at position
+		 *  "col" in the current result set is from.  This is the true
+		 *  name of the field in the table that the column came from,
+		 *  rather than the alias that the column may have been given
+		 *  in the query.
+		 *
+		 *  Returns NULL if column info is not yet valid, if the query
+		 *  has no result set (eg. if it was a DML or DDL query), or if
+		 *  the database backend doesn't know what field the column
+		 *  came from. */
+		virtual const char	*getColumnField(uint32_t col);
+
+		/** Returns the size (number of bytes) of the name of the field
+		 *  that the column at position "col" in the current result set
+		 *  is from.  This is the true name of the field in the table
+		 *  that the column came from, rather than the alias that the
+		 *  column may have been given in the query.
+		 *
+		 *  Returns NULL if column info is not yet valid, if the query
+		 *  has no result set (eg. if it was a DML or DDL query), or if
+		 *  the database backend doesn't know what field the column
+		 *  came from. */
+		virtual uint16_t	getColumnFieldSize(uint32_t col);
+
 		/** Returns true if the dateddmm attribute of the instance tag
 		 *  in the sqlrelay config file should be ignored for "data" of
 		 *  "size" bytes.
@@ -5384,6 +5495,63 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		/** If the field in column "col" of the current row, of the
 		 *  current result is a LOB then this method closes the LOB. */
 		virtual void	closeLobField(uint32_t col);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set is an array, then this method sets
+		 *  "descriptor" to a buffer describing the shape of the array
+		 *  and "descriptorsize" to the number of bytes in that buffer.
+		 *
+		 *  The descriptor is opaque.  Its layout is specific to the
+		 *  database backend, and only the connection module that
+		 *  created it knows how to interpret it.  It generally
+		 *  describes the number of dimensions of the array, the bounds
+		 *  of each dimension, and the type and size of each element.
+		 *  For firebird, for example, it is a filled-in ISC_ARRAY_DESC.
+		 *
+		 *  The buffer is owned by the connection module (or by the
+		 *  cursor itself) and remains valid until the array field is
+		 *  closed with closeArrayField().  The caller must not modify
+		 *  or free it.
+		 *
+		 *  Returns true on success and false if an error occurred or
+		 *  if the field is not an array. */
+		virtual bool	getArrayFieldDescriptor(uint32_t col,
+						const unsigned char **descriptor,
+						uint64_t *descriptorsize);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result set is an array, then this method attempts
+		 *  to fetch "elementstoread" elements from element position
+		 *  "offset" into "buffer" of size "buffersize".  The actual
+		 *  number of elements that were read is returned in
+		 *  "elementsread".  "elementsread" may be less than
+		 *  "elementstoread" if "elementstoread" elements won't fit in
+		 *  "buffer" or if the end of the array was reached prior to
+		 *  fetching "elementstoread".  0 will be returned in
+		 *  "elementsread" if an attempt is made to read past the end
+		 *  of the array.
+		 *
+		 *  Note that "offset", "elementstoread", and "elementsread"
+		 *  all refer to numbers of elements, while "buffersize" refers
+		 *  to numbers of bytes.  The size of each element is part of
+		 *  the descriptor returned by getArrayFieldDescriptor().
+		 *
+		 *  Returns true on success and false if an error occurred.
+		 *
+		 *  Note that attempting to read past the end of the array is
+		 *  not considered to be an error. */
+		virtual bool	getArrayFieldSlice(uint32_t col,
+						char *buffer,
+						uint64_t buffersize,
+						uint64_t offset,
+						uint64_t elementstoread,
+						uint64_t *elementsread);
+
+		/** If the field in column "col" of the current row, of the
+		 *  current result is an array then this method closes the
+		 *  array, releasing any descriptor or buffer that was cached
+		 *  for the column. */
+		virtual void	closeArrayField(uint32_t col);
 
 		/** Closes the current result set. */
 		virtual	void	closeResultSet();

@@ -617,6 +617,18 @@
 			query on a spare cursor purely to learn the result set's
 			shape, and caches the columns from that; added
 			sqlrservercontroller::substituteNullForBindVariables()
+		the firebird connection module fetches array columns for real now,
+			rendering them as a bracketed, comma-separated element list
+			instead of always returning null; added getArrayFieldDescriptor(),
+			getArrayFieldSlice() and closeArrayField() to sqlrserverconnection
+			and sqlrservercontroller, alongside getColumnField() and
+			getColumnFieldSize() for a column's true underlying field name
+		the firebird protocol module implements op_get_slice now, backed by a
+			new sdl (slice description language) buffer interpreter; a native
+			firebird client can isc_get_slice() a whole array or a sub-range
+			of one and get real data back instead of an isc_wish_list error;
+			op_put_slice (writing a slice) is still unimplemented - it needs
+			a bind-side array type this ticket didn't add
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
