@@ -7082,6 +7082,10 @@ class SQLRSERVER_DLLSPEC sqlrfirebirdcredentials : public sqlrcredentials {
 		 *  firebird_legacy, etc.) to "method". */
 		void	setMethod(const char *method);
 
+		/** Sets the extra info required for the selected
+		 *  authentication method (eg. challenge) to "extra". */
+		void	setExtra(const char *extra);
+
 		/** Returns the user. */
 		const char	*getUser();
 
@@ -7093,6 +7097,9 @@ class SQLRSERVER_DLLSPEC sqlrfirebirdcredentials : public sqlrcredentials {
 
 		/** Returns the authentication method. */
 		const char	*getMethod();
+
+		/** Returns the extra info. */
+		const char	*getExtra();
 
 	#include <sqlrelay/private/sqlrfirebirdcredentials.h>
 };

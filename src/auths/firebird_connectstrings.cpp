@@ -4,10 +4,41 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/charstring.h>
 #include <rudiments/des.h>
+#include <rudiments/parameterstring.h>
 #include <rudiments/sensitivevalue.h>
+
+#include "../protocols/firebirdsrp.h"
 
 // the salt firebird's legacy_auth hashes every password with
 #define FIREBIRD_LEGACY_SALT	"9z"
+
+// The Srp and Srp256 plugins that firebird's wire protocol 13 and up
+// negotiate need two round trips, and the inputs of the second one have to
+// survive the first.  They ride in the credentials' "extra" field, as a
+// rudiments parameterstring, following the pattern that
+// src/auths/oracle_userlist.cpp documents at the top of that file: a wider
+// sqlrfirebirdcredentials would relink libsqlrserver.
+//
+//	challenge(), with method "firebird_srp" or "firebird_srp256":
+//		clientpublickey		the client's A, hex
+//		serverprivatekey	the b to use, hex
+//	  out:	salt			the salt this login got, hex
+//		serverpublickey		the B to answer with, hex
+//
+//	auth(), with method "firebird_srp" or "firebird_srp256":
+//		password		the client's proof M1, hex
+//		clientpublickey		as above
+//		serverprivatekey	as above
+//		salt			what challenge() returned
+//
+// The protocol module supplies b rather than getting it back from
+// challenge().  challenge() keeps no state, so the ephemeral private key has
+// to be held by the side that owns the session, and sqlrfirebirdsrp exposes
+// setServerPrivateKey() but no getter.  Feeding the same b back in at auth()
+// time reproduces the same B, and with it the same session key.
+//
+// Both phases derive the verifier from the password, so the cleartext
+// password is required, exactly as firebird_legacy already needs it.
 
 class SQLRSERVER_DLLSPEC sqlrauth_firebird_connectstrings : public sqlrauth {
 	public:
@@ -15,15 +46,26 @@ class SQLRSERVER_DLLSPEC sqlrauth_firebird_connectstrings : public sqlrauth {
 							domnode *parameters);
 		~sqlrauth_firebird_connectstrings();
 		const char	*auth(sqlrcredentials *cred);
+		bool		challenge(sqlrcredentials *cred,
+						stringbuffer *challenge);
 	private:
 		const char	*userPassword(const char *user,
 						const char *password,
 						const char *method,
+						const char *extra,
 						uint64_t index);
 		bool		compare(const char *suppliedpassword,
 						const char *validpassword,
-						const char *method);
+						const char *method,
+						const char *user,
+						const char *extra);
 		char		*legacyHash(const char *password);
+		char		*getClearTextPassword(const char *user);
+		bool		srpVerify(const char *user,
+						const char *password,
+						const char *proof,
+						const char *method,
+						const char *extra);
 
 		const char	**users;
 		char		**passwords;
@@ -84,9 +126,16 @@ sqlrauth_firebird_connectstrings::~sqlrauth_firebird_connectstrings() {
 	delete[] passwordencryptions;
 }
 
+#define FIREBIRD_CLEARTEXT	"firebird_cleartext"
+#define FIREBIRD_LEGACY		"firebird_legacy"
+#define FIREBIRD_SRP		"firebird_srp"
+#define FIREBIRD_SRP256		"firebird_srp256"
+
 static const char *supportedmethods[]={
-	"firebird_cleartext",
-	"firebird_legacy",
+	FIREBIRD_CLEARTEXT,
+	FIREBIRD_LEGACY,
+	FIREBIRD_SRP,
+	FIREBIRD_SRP256,
 	NULL
 };
 
@@ -104,11 +153,14 @@ const char *sqlrauth_firebird_connectstrings::auth(sqlrcredentials *cred) {
 			((sqlrfirebirdcredentials *)cred)->getPassword();
 	const char	*method=
 			((sqlrfirebirdcredentials *)cred)->getMethod();
+	const char	*extra=
+			((sqlrfirebirdcredentials *)cred)->getExtra();
 
 	if (getDebug()) {
 		debugStart("auth");
 		debugWrite("user: \"%s\"",user);
 		debugWrite("method: \"%s\"",method);
+		debugWrite("extra: \"%s\"",extra);
 		debugEnd();
 	}
 
@@ -120,7 +172,8 @@ const char *sqlrauth_firebird_connectstrings::auth(sqlrcredentials *cred) {
 
 	// run through the user/password arrays...
 	for (uint64_t i=0; i<usercount; i++) {
-		const char	*result=userPassword(user,password,method,i);
+		const char	*result=userPassword(user,password,
+							method,extra,i);
 		if (result) {
 			return result;
 		}
@@ -132,6 +185,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 						const char *user,
 						const char *password,
 						const char *method,
+						const char *extra,
 						uint64_t index) {
 
 	// bail if the user doesn't match
@@ -142,7 +196,8 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 	// if password encryption isn't being used, then compare against
 	// the password from the configuration as it stands
 	if (!charstring::getLength(passwordencryptions[index])) {
-		return (compare(password,passwords[index],method))?user:NULL;
+		return (compare(password,passwords[index],
+					method,user,extra))?user:NULL;
 	}
 
 	// get the module
@@ -156,11 +211,11 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 	char	*pwd=NULL;
 	if (pe->oneWay()) {
 
-		// One-way encryption can't be used with firebird_legacy.  The
-		// legacy hash can only be derived from the password itself,
-		// and a one-way module can't recover it from the
-		// configuration.
-		if (charstring::compare(method,"firebird_cleartext")) {
+		// One-way encryption can't be used with firebird_legacy or
+		// with either srp method.  The legacy hash and the srp
+		// verifier can only be derived from the password itself, and
+		// a one-way module can't recover it from the configuration.
+		if (charstring::compare(method,FIREBIRD_CLEARTEXT)) {
 			if (getDebug()) {
 				debugStart("auth");
 				debugWrite("one-way password encryption "
@@ -181,7 +236,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 		// decrypt the password from the configuration
 		// and compare it to the password that was passed in
 		pwd=pe->decrypt(passwords[index]);
-		result=compare(password,pwd,method);
+		result=compare(password,pwd,method,user,extra);
 	}
 
 	// clean up
@@ -193,12 +248,22 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 
 bool sqlrauth_firebird_connectstrings::compare(const char *suppliedpassword,
 						const char *validpassword,
-						const char *method) {
+						const char *method,
+						const char *user,
+						const char *extra) {
+
+	// the srp methods supply a proof rather than a password, and verifying
+	// it takes the whole first round trip back
+	if (!charstring::compare(method,FIREBIRD_SRP) ||
+			!charstring::compare(method,FIREBIRD_SRP256)) {
+		return srpVerify(user,validpassword,
+					suppliedpassword,method,extra);
+	}
 
 	// firebird_cleartext supplies the password itself,
 	// firebird_legacy supplies a hash of it
 	char	*expectedpassword=NULL;
-	if (!charstring::compare(method,"firebird_legacy")) {
+	if (!charstring::compare(method,FIREBIRD_LEGACY)) {
 		expectedpassword=legacyHash(validpassword);
 	}
 
@@ -237,6 +302,140 @@ char *sqlrauth_firebird_connectstrings::legacyHash(const char *password) {
 	return (charstring::getLength(hash)<saltsize)?
 			charstring::duplicate(hash):
 			charstring::duplicate(hash+saltsize);
+}
+
+char *sqlrauth_firebird_connectstrings::getClearTextPassword(
+						const char *user) {
+
+	for (uint64_t i=0; i<usercount; i++) {
+
+		if (charstring::compare(user,users[i])) {
+			continue;
+		}
+
+		if (!charstring::getLength(passwordencryptions[i])) {
+			return charstring::duplicate(passwords[i]);
+		}
+
+		sqlrpwdenc	*pe=cont->getPasswordEncryptionById(
+						passwordencryptions[i]);
+
+		// a password stored under a one-way password encryption
+		// module can't be recovered, so there's no verifier for it
+		if (!pe || pe->oneWay()) {
+			if (getDebug()) {
+				debugStart("challenge");
+				debugWrite("one-way password encryption "
+						"can't be used with the "
+						"srp methods");
+				debugEnd();
+			}
+			return NULL;
+		}
+
+		return pe->decrypt(passwords[i]);
+	}
+	return NULL;
+}
+
+static sqlrfirebirdsrphash_t srpHashType(const char *method) {
+	return (!charstring::compare(method,FIREBIRD_SRP256))?
+			SQLRFIREBIRDSRP_SRP256:SQLRFIREBIRDSRP_SRP;
+}
+
+bool sqlrauth_firebird_connectstrings::srpVerify(const char *user,
+						const char *password,
+						const char *proof,
+						const char *method,
+						const char *extra) {
+
+	parameterstring	p;
+	p.parse(extra);
+
+	// setServerPrivateKey() before generateServerPublicKey() makes the
+	// second round reproduce the B, and with it the session key, that the
+	// first round sent
+	sqlrfirebirdsrp	srp(srpHashType(method));
+	bool	result=(srp.setSalt(p.getValue("salt")) &&
+			srp.setClientPublicKey(p.getValue("clientpublickey")) &&
+			srp.setServerPrivateKey(
+					p.getValue("serverprivatekey")) &&
+			srp.generateServerPublicKey(user,password) &&
+			srp.computeServerSessionKey() &&
+			srp.verifyProof(user,proof));
+
+	if (getDebug()) {
+		debugStart("auth compare");
+		debugWrite("expected proof: \"%s\"",srp.getProof());
+		debugWrite("supplied proof: \"%s\"",proof);
+		if (!result) {
+			debugWrite("srp error: \"%s\"",srp.getError());
+		}
+		debugEnd();
+	}
+
+	return result;
+}
+
+bool sqlrauth_firebird_connectstrings::challenge(sqlrcredentials *cred,
+						stringbuffer *challenge) {
+
+	// this module only supports firebird credentials
+	if (charstring::compare(cred->getType(),"firebird")) {
+		return false;
+	}
+
+	const char	*user=
+			((sqlrfirebirdcredentials *)cred)->getUser();
+	const char	*method=
+			((sqlrfirebirdcredentials *)cred)->getMethod();
+	const char	*extra=
+			((sqlrfirebirdcredentials *)cred)->getExtra();
+
+	if (getDebug()) {
+		debugStart("challenge");
+		debugWrite("user: \"%s\"",user);
+		debugWrite("method: \"%s\"",method);
+		debugWrite("extra: \"%s\"",extra);
+		debugEnd();
+	}
+
+	// the srp methods are the only things this builds
+	if (charstring::compare(method,FIREBIRD_SRP) &&
+			charstring::compare(method,FIREBIRD_SRP256)) {
+		return false;
+	}
+
+	// the verifier is derived from the password, so the cleartext
+	// password is required
+	char	*validpassword=getClearTextPassword(user);
+	if (!validpassword) {
+		return false;
+	}
+
+	parameterstring	p;
+	p.parse(extra);
+
+	sqlrfirebirdsrp	srp(srpHashType(method));
+	bool	result=(srp.setClientPublicKey(p.getValue("clientpublickey")) &&
+			srp.setServerPrivateKey(
+					p.getValue("serverprivatekey")) &&
+			srp.generateSalt() &&
+			srp.generateServerPublicKey(user,validpassword));
+
+	if (result) {
+		challenge->append("salt=")->append(srp.getSalt());
+		challenge->append(";serverpublickey=")->
+					append(srp.getServerPublicKey());
+	} else if (getDebug()) {
+		debugStart("challenge");
+		debugWrite("srp error: \"%s\"",srp.getError());
+		debugEnd();
+	}
+
+	delete[] validpassword;
+
+	return result;
 }
 
 extern "C" {

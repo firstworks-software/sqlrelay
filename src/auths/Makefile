@@ -67,8 +67,18 @@ $(SQLR)auth_postgresql_userlist.$(LIBEXT): postgresql_userlist.cpp postgresql_us
 $(SQLR)auth_tds_connectstrings.$(LIBEXT): tds_connectstrings.cpp tds_connectstrings.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ tds_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
-$(SQLR)auth_firebird_connectstrings.$(LIBEXT): firebird_connectstrings.cpp firebird_connectstrings.$(OBJ)
-	$(LTLINK) $(LINK) $(OUT)$@ firebird_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+$(SQLR)auth_firebird_connectstrings.$(LIBEXT): firebird_connectstrings.cpp firebird_connectstrings.$(OBJ) firebirdsrp.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ firebird_connectstrings.$(OBJ) firebirdsrp.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
+# the srp crypto lives with the firebird protocol module, which needs it too,
+# so it's compiled here rather than duplicated
+# (one rule per object suffix, because the suffix rules above can't reach
+# outside of this directory)
+firebirdsrp.lo: ../protocols/firebirdsrp.cpp ../protocols/firebirdsrp.h
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(WERROR) $(AUTHCPPFLAGS) $(COMPILE) ../protocols/firebirdsrp.cpp $(OUT)$@
+
+firebirdsrp.obj: ../protocols/firebirdsrp.cpp ../protocols/firebirdsrp.h
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(WERROR) $(AUTHCPPFLAGS) $(COMPILE) ../protocols/firebirdsrp.cpp
 
 $(SQLR)auth_oracle_connectstrings.$(LIBEXT): oracle_connectstrings.cpp oracle_connectstrings.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ oracle_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)

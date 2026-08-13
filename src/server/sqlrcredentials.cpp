@@ -287,6 +287,7 @@ sqlrfirebirdcredentials::sqlrfirebirdcredentials() : sqlrcredentials() {
 	password=NULL;
 	passwordsize=0;
 	method=NULL;
+	extra=NULL;
 }
 
 sqlrfirebirdcredentials::~sqlrfirebirdcredentials() {
@@ -312,6 +313,10 @@ void sqlrfirebirdcredentials::setMethod(const char *method) {
 	this->method=method;
 }
 
+void sqlrfirebirdcredentials::setExtra(const char *extra) {
+	this->extra=extra;
+}
+
 const char *sqlrfirebirdcredentials::getUser() {
 	return user;
 }
@@ -326,6 +331,10 @@ uint64_t sqlrfirebirdcredentials::getPasswordSize() {
 
 const char *sqlrfirebirdcredentials::getMethod() {
 	return method;
+}
+
+const char *sqlrfirebirdcredentials::getExtra() {
+	return extra;
 }
 
 sqlrteradatacredentials::sqlrteradatacredentials() : sqlrcredentials() {

@@ -629,6 +629,30 @@
 			of one and get real data back instead of an isc_wish_list error;
 			op_put_slice (writing a slice) is still unimplemented - it needs
 			a bind-side array type this ticket didn't add
+		the firebird protocol module speaks the protocol 13 packed message
+			format now - the null indicators come first as one bit per
+			field, and a null field's value is left off the wire entirely -
+			chosen at run time by the negotiated protocol version, with the
+			unpacked protocol 12 format unchanged
+		added the SRP-6a crypto core that firebird's Srp and Srp256
+			authentication plugins use, in src/protocols/firebirdsrp.cpp
+			- both halves of the exchange, matching firebird's own
+			implementation, including the places where it deviates from
+			RFC 5054
+		the firebird protocol module can negotiate protocol 13 and up now -
+			it answers op_accept_data, runs the Srp256, Srp and Legacy_Auth
+			plugin handshake (continuing over op_cont_auth when a plugin
+			needs another round), and takes the plugin's data out of the
+			connect block and the attach dpb - gated behind a new
+			maxprotocolversion parameter that defaults to 12, so nothing
+			changes for an existing configuration; not yet proven against a
+			real client, so the default stays 12 until it is
+		the firebird_connectstrings authentication module supports the
+			firebird_srp and firebird_srp256 methods now, through a new
+			challenge() that builds the salt and server public key and an
+			auth() that verifies the client's proof - both need the
+			configured password in plaintext, as firebird_legacy already
+			does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

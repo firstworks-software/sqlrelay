@@ -4,6 +4,8 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/character.h>
 #include <rudiments/bytebuffer.h>
+#include <rudiments/csprng.h>
+#include <rudiments/parameterstring.h>
 #include <rudiments/process.h>
 #include <rudiments/file.h>
 #include <rudiments/error.h>
@@ -11,6 +13,7 @@
 #include <datatypes.h>
 
 #include "firebirdsdl.h"
+#include "firebirdsrp.h"
 
 // NOTE:
 // Firebird Wire Protocol refers to:
@@ -233,9 +236,10 @@
 // 20 supports prepare flags
 #define PROTOCOL_VERSION20	(0xffff8000|20)
 
-// the highest version the module can negotiate
-// (13 and up must answer op_accept_data or op_cond_accept and drive the auth
-// plugin handshake, which the module doesn't implement)
+// the highest version the module negotiates unless the maxprotocolversion
+// parameter raises it
+// (13 and up answer op_accept_data and drive the auth plugin handshake, which
+// no real client has been run against yet, so they stay opt-in)
 // this also keeps op_fetch_scroll and op_info_cursor (18) unreachable
 #define MAX_PROTOCOL_VERSION	PROTOCOL_VERSION12
 
@@ -973,9 +977,30 @@
 #define FIREBIRD_CREATION_DAY		1
 
 // authentication methods
-// (which dpb item the password came out of - see attach())
+// (which dpb item the password came out of, or which auth plugin protocol 13
+// and up negotiated - see attach() and selectAuthPlugin())
 #define FIREBIRD_CLEARTEXT	"firebird_cleartext"
 #define FIREBIRD_LEGACY		"firebird_legacy"
+#define FIREBIRD_SRP		"firebird_srp"
+#define FIREBIRD_SRP256		"firebird_srp256"
+
+// the auth plugins protocol 13 and up can negotiate, most preferred first
+// (the same three a stock firebird offers, in the same order - its
+// AuthServer setting defaults to "Srp256, Srp, Legacy_Auth")
+#define FIREBIRD_PLUGIN_SRP256	"Srp256"
+#define FIREBIRD_PLUGIN_SRP	"Srp"
+#define FIREBIRD_PLUGIN_LEGACY	"Legacy_Auth"
+#define FIREBIRD_PLUGIN_LIST	"Srp256,Srp,Legacy_Auth"
+
+// how many random bytes the srp server private key is built from
+// (RemotePassword::makePrivate() - srp.cpp:75-83 - uses SRP_KEY_SIZE, which
+// srp.h:108 sets to 128)
+#define FIREBIRD_SRP_PRIVATE_KEY_SIZE	128
+
+// SEGMENT_DATA_SIZE - server.cpp:511.  A CNCT_specific_data item is capped at
+// 255 bytes, of which the first is the sequence number, so each item after
+// the first starts 254 bytes further into the data.
+#define FIREBIRD_CNCT_SEGMENT_SIZE	254
 
 // connection type
 #define P_REQ_async	1
@@ -1103,6 +1128,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	initialHandshake();
 		bool	connect();
 		bool	attach();
+
+		void	parseUserId(const byte_t *userid, uint32_t useridlen);
+		bool	clientSupportsPlugin(const char *plugin);
+		bool	selectAuthPlugin(bytebuffer *acceptdata);
+		bool	srpChallenge(bytebuffer *acceptdata);
+		bool	acceptData(uint32_t acptversion,
+					uint32_t acptarchtype,
+					uint32_t acpttype,
+					uint32_t *byteswritten);
+		bool	continueAuthentication();
+		void	setAuthMethodFromPlugin(const char *plugin);
 
 		void	successStatusVector();
 		void	errorStatusVector(uint32_t gdscode);
@@ -1279,6 +1315,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
 					uint32_t *bytesread);
+		bool	readMessageFields(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					const byte_t *nullbits,
+					uint32_t *bytesread);
 		bool	writeMessage(sqlrservercursor *cursor,
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
@@ -1443,6 +1484,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
 
+		// the highest protocol version negotiation will accept
+		uint32_t	maxprotocolversion;
+
 		filedescriptor	*clientsock;
 
 		uint32_t	opcode;
@@ -1452,8 +1496,27 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		char		*db;
 		char		*username;
 		char		*password;
-		// which dpb item the password came out of (not owned)
+		// which dpb item the password came out of, or which auth
+		// plugin was negotiated (not owned)
 		const char	*authmethod;
+
+		// protocol 13+ auth handshake state...
+		// CNCT_login from the connect block
+		char		*clientlogin;
+		// the plugin the module told the client to continue with
+		char		*authplugin;
+		// the plugin the client led with, and the plugins it said
+		// it has
+		char		*clientplugin;
+		char		*clientpluginlist;
+		// the client's first plugin-specific message - for srp, its
+		// public key A as hex text
+		char		*authclientdata;
+		// the srp inputs that have to survive the round trip between
+		// the accept and the attach, both hex text
+		char		*srpserverprivatekey;
+		char		*srpsalt;
+
 		char		*wd;
 		uint32_t	dbhandle;
 
@@ -1517,7 +1580,28 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 
 	clientsock=NULL;
 
+	// maxprotocolversion - the highest wire protocol version negotiation
+	// will accept.  13 and up run the auth plugin handshake (Srp256, Srp
+	// or Legacy_Auth) and the packed sql message format, and are opt-in
+	// until they've been proven against real clients.  Anything else, and
+	// anything unparsable, leaves the ceiling where it has always been.
+	uint32_t	configmaxpv=(uint32_t)charstring::convertToInteger(
+			parameters->getAttributeValue("maxprotocolversion"));
+	if (!configmaxpv || configmaxpv>20) {
+		maxprotocolversion=MAX_PROTOCOL_VERSION;
+	} else if (configmaxpv<=PROTOCOL_VERSION10) {
+		// 10 and below are plain numbers, 11 and up carry the 0x8000
+		// bit - see the PROTOCOL_VERSION defines above
+		maxprotocolversion=configmaxpv;
+	} else {
+		maxprotocolversion=0xffff8000|configmaxpv;
+	}
+
 	debugStart("parameters");
+	if (getDebug()) {
+		stdoutput.printf("	maxprotocolversion: %u\n",
+						maxprotocolversion);
+	}
 	debugEnd();
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
@@ -1566,6 +1650,13 @@ void sqlrprotocol_firebird::init() {
 	username=NULL;
 	password=NULL;
 	authmethod=NULL;
+	clientlogin=NULL;
+	authplugin=NULL;
+	clientplugin=NULL;
+	clientpluginlist=NULL;
+	authclientdata=NULL;
+	srpserverprivatekey=NULL;
+	srpsalt=NULL;
 	wd=NULL;
 	dbhandle=0;
 	trhandle=0;
@@ -1602,6 +1693,13 @@ void sqlrprotocol_firebird::free() {
 	delete[] db;
 	delete[] username;
 	delete[] password;
+	delete[] clientlogin;
+	delete[] authplugin;
+	delete[] clientplugin;
+	delete[] clientpluginlist;
+	delete[] authclientdata;
+	delete[] srpserverprivatekey;
+	delete[] srpsalt;
 	delete[] wd;
 	clearStatements();
 	clearBlobs();
@@ -1957,7 +2055,7 @@ bool sqlrprotocol_firebird::connect() {
 		return false;
 	}
 	debugUserId(userid,useridlen);
-	// FIXME: do something with the user id
+	parseUserId(userid,useridlen);
 	delete[] userid;
 
 	// get protocols, keeping the best one we can speak
@@ -2018,7 +2116,7 @@ bool sqlrprotocol_firebird::connect() {
 		// skip versions we can't speak
 		if (protoversion!=PROTOCOL_VERSION10 &&
 			(protoversion<PROTOCOL_VERSION11 ||
-			protoversion>MAX_PROTOCOL_VERSION)) {
+			protoversion>maxprotocolversion)) {
 			continue;
 		}
 
@@ -2064,6 +2162,8 @@ bool sqlrprotocol_firebird::connect() {
 	// 	int32_t		p_acpt_type
 	// }
 	//
+	// or, at protocol 13 and up, op_accept_data - see acceptData()
+	//
 	// or, if nothing offered could be spoken:
 	//
 	// data {
@@ -2088,9 +2188,18 @@ bool sqlrprotocol_firebird::connect() {
 
 	protocolversion=acptversion;
 
-	// FIXME: PROTOCOL_VERSION13 and up must answer op_accept_data or
-	// op_cond_accept here, and drive the auth plugin handshake.
-	// MAX_PROTOCOL_VERSION keeps the negotiation below 13 until they can.
+	// protocol 13 and up answer op_accept_data and drive the auth plugin
+	// handshake
+	if (protocolversion>=PROTOCOL_VERSION13) {
+		if (!acceptData(acptversion,acptarchtype,
+					acpttype,&byteswritten)) {
+			return false;
+		}
+		debugEnd();
+		clientsock->flushWriteBuffer(-1,-1);
+		return true;
+	}
+
 	opcode=op_accept;
 	if (!writeInt(opcode,"accept op code",&byteswritten)) {
 		return false;
@@ -2115,6 +2224,529 @@ bool sqlrprotocol_firebird::connect() {
 	debugEnd();
 
 	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
+}
+
+// The user id block in the connect request is a sequence of tag/length/value
+// items, each length a single byte.  Protocol 13 and up carry the first round
+// of the auth plugin handshake in it - see ServerAuth::ServerAuth(),
+// server.cpp:568-627.
+void sqlrprotocol_firebird::parseUserId(const byte_t *userid,
+						uint32_t useridlen) {
+
+	// how much room the specific data needs
+	// (an item's value is capped at 255 bytes, so a longer plugin message
+	// arrives split across several items, each prefixed by its sequence
+	// number - see getMultiPartConnectParameter(), server.cpp:514-558)
+	uint32_t	datasize=0;
+
+	const byte_t	*ptr=userid;
+	const byte_t	*endptr=userid+useridlen;
+	while ((size_t)(endptr-ptr)>1) {
+
+		// get the tag and the value length
+		byte_t	tag=0;
+		read(ptr,&tag,&ptr);
+		byte_t	valuelen=0;
+		read(ptr,&valuelen,&ptr);
+
+		// bail if the value runs past the end of the buffer
+		if ((size_t)valuelen>(size_t)(endptr-ptr)) {
+			break;
+		}
+
+		// step over the value
+		const byte_t	*value=ptr;
+		ptr+=valuelen;
+
+		switch (tag) {
+			case CNCT_login:
+				readStringFromBuffer(value,valuelen,
+							"login",&clientlogin);
+				break;
+			case CNCT_plugin_name:
+				readStringFromBuffer(value,valuelen,
+							"plugin name",
+							&clientplugin);
+				break;
+			case CNCT_plugin_list:
+				readStringFromBuffer(value,valuelen,
+							"plugin list",
+							&clientpluginlist);
+				break;
+			case CNCT_specific_data:
+				if (valuelen>1) {
+					uint32_t	end=
+						value[0]*
+						FIREBIRD_CNCT_SEGMENT_SIZE+
+						valuelen-1;
+					if (end>datasize) {
+						datasize=end;
+					}
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (!datasize) {
+		return;
+	}
+
+	// reassemble the specific data
+	// (a missing chunk leaves a run of nulls, which every plugin's data -
+	// hex text for srp, a des hash for legacy_auth - fails to parse, so
+	// there's nothing more to check for here)
+	delete[] authclientdata;
+	authclientdata=new char[datasize+1];
+	bytestring::zero(authclientdata,datasize+1);
+
+	ptr=userid;
+	while ((size_t)(endptr-ptr)>1) {
+
+		byte_t	tag=0;
+		read(ptr,&tag,&ptr);
+		byte_t	valuelen=0;
+		read(ptr,&valuelen,&ptr);
+		if ((size_t)valuelen>(size_t)(endptr-ptr)) {
+			break;
+		}
+		const byte_t	*value=ptr;
+		ptr+=valuelen;
+
+		if (tag==CNCT_specific_data && valuelen>1) {
+			bytestring::copy(authclientdata+
+					value[0]*FIREBIRD_CNCT_SEGMENT_SIZE,
+					value+1,valuelen-1);
+		}
+	}
+
+	if (getDebug()) {
+		stdoutput.printf("	specific data: %s\n",authclientdata);
+	}
+}
+
+// Whether the client's CNCT_plugin_list names "plugin".  The list is
+// comma-separated, and firebird's ParsedList tolerates spaces around the
+// names.
+bool sqlrprotocol_firebird::clientSupportsPlugin(const char *plugin) {
+
+	if (charstring::isNullOrEmpty(clientpluginlist)) {
+		return false;
+	}
+
+	size_t		pluginlen=charstring::getLength(plugin);
+	const char	*p=clientpluginlist;
+	while (p && *p) {
+
+		// step over leading whitespace
+		while (*p==' ' || *p=='\t') {
+			p++;
+		}
+
+		// find the end of this name, ignoring trailing whitespace
+		const char	*comma=charstring::findFirst(p,',');
+		size_t		len=(comma)?(size_t)(comma-p):
+						charstring::getLength(p);
+		while (len && (p[len-1]==' ' || p[len-1]=='\t')) {
+			len--;
+		}
+
+		if (len==pluginlen && !charstring::compare(p,plugin,len)) {
+			return true;
+		}
+
+		p=(comma)?comma+1:NULL;
+	}
+	return false;
+}
+
+void sqlrprotocol_firebird::setAuthMethodFromPlugin(const char *plugin) {
+	if (!charstring::compare(plugin,FIREBIRD_PLUGIN_SRP256)) {
+		authmethod=FIREBIRD_SRP256;
+	} else if (!charstring::compare(plugin,FIREBIRD_PLUGIN_SRP)) {
+		authmethod=FIREBIRD_SRP;
+	} else if (!charstring::compare(plugin,FIREBIRD_PLUGIN_LEGACY)) {
+		authmethod=FIREBIRD_LEGACY;
+	} else {
+		authmethod=NULL;
+	}
+}
+
+// SrpServer::authenticate() packs each half of its answer as a 2-byte
+// little-endian length and that many bytes of hex text - SrpServer.cpp:
+// 330-338.
+static void appendSrpData(bytebuffer *data, const char *value) {
+	size_t	len=charstring::getLength(value);
+	data->append((char)(len&0xff));
+	data->append((char)((len>>8)&0xff));
+	data->append(value,len);
+}
+
+// Runs the server's half of the srp exchange's first round and formats the
+// answer the way SrpServer::authenticate() does - SrpServer.cpp:328-340:
+//
+//	int16_t		salt length, little endian
+//	char[]		salt, as hex text
+//	int16_t		server public key length, little endian
+//	char[]		server public key B, as hex text
+bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
+
+	// the client's public key A came in as hex text
+	if (charstring::isNullOrEmpty(authclientdata)) {
+		return false;
+	}
+
+	// The ephemeral private key b belongs to the session rather than to
+	// the auth module.  challenge() keeps no state, so handing the same b
+	// back at verify time is what reproduces B, and with it the session
+	// key.  See the contract at the top of
+	// src/auths/firebird_connectstrings.cpp.
+	byte_t	privatekey[FIREBIRD_SRP_PRIVATE_KEY_SIZE];
+	csprng	rng;
+	if (!rng.generateBytes(privatekey,sizeof(privatekey))) {
+		return false;
+	}
+	delete[] srpserverprivatekey;
+	srpserverprivatekey=charstring::hexEncode(privatekey,
+						sizeof(privatekey));
+	bytestring::zero(privatekey,sizeof(privatekey));
+
+	stringbuffer	extra;
+	extra.append("clientpublickey=")->append(authclientdata);
+	extra.append(";serverprivatekey=")->append(srpserverprivatekey);
+
+	sqlrfirebirdcredentials	cred;
+	cred.setUser(username);
+	cred.setMethod(authmethod);
+	cred.setExtra(extra.getString());
+
+	// A false return means no auth module knows the user, or has its
+	// password under a one-way encryption, or supports the method.
+	// Firebird's srp plugin answers AUTH_CONTINUE in the same situation
+	// and the server moves on to the next plugin - SrpServer.cpp:400-410
+	// and server.cpp:2166-2176 - so the caller does that here too.
+	stringbuffer	challenge;
+	if (!cont->challenge(&cred,&challenge)) {
+		if (getDebug()) {
+			stdoutput.write("	srp challenge failed\n");
+		}
+		return false;
+	}
+
+	parameterstring	p;
+	p.parse(challenge.getString());
+
+	delete[] srpsalt;
+	srpsalt=charstring::duplicate(p.getValue("salt"));
+	const char	*serverpublickey=p.getValue("serverpublickey");
+	if (charstring::isNullOrEmpty(srpsalt) ||
+			charstring::isNullOrEmpty(serverpublickey)) {
+		return false;
+	}
+
+	appendSrpData(data,srpsalt);
+	appendSrpData(data,serverpublickey);
+
+	if (getDebug()) {
+		stdoutput.printf("	srp salt: %s\n",srpsalt);
+		stdoutput.printf("	srp server public key: %s\n",
+							serverpublickey);
+	}
+
+	return true;
+}
+
+// Picks the plugin to continue the handshake with, and builds whatever data
+// goes back with it.  Mirrors accept_connection(), server.cpp:2126-2190.
+bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
+
+	delete[] authplugin;
+	authplugin=NULL;
+	authmethod=NULL;
+
+	// CNCT_login is the same value the attach dpb sends as
+	// isc_dpb_user_name, and the plugins need it now rather than then -
+	// srp hashes it into the verifier and into the proof
+	// (only 13 and up gets here, so nothing below it changes)
+	if (!charstring::isNullOrEmpty(clientlogin)) {
+		delete[] username;
+		username=charstring::duplicate(clientlogin);
+	}
+
+	bool	srpfailed=false;
+
+	// the client led with a plugin we have...
+	setAuthMethodFromPlugin(clientplugin);
+	if (authmethod) {
+
+		authplugin=charstring::duplicate(clientplugin);
+
+		// legacy_auth's first message is the des hash of the
+		// password, and the client sends that again in the attach
+		// dpb, so there's nothing to answer with here
+		if (!charstring::compare(authmethod,FIREBIRD_LEGACY)) {
+			return true;
+		}
+
+		if (srpChallenge(data)) {
+			return true;
+		}
+
+		// the challenge couldn't be built, so fall through and offer
+		// a plugin that doesn't need it
+		srpfailed=true;
+		data->clear();
+		delete[] authplugin;
+		authplugin=NULL;
+		authmethod=NULL;
+	}
+
+	// Otherwise, name the best plugin we have that the client also has,
+	// and let it start over with that one.  An empty p_acpt_data next to
+	// a plugin name is what tells the client to do that -
+	// server.cpp:2177-2181.
+	//
+	// The srp plugins are skipped when the challenge above already failed,
+	// because both of them derive the verifier from the same configured
+	// password and would fail for the same reason.  Firebird would walk
+	// its whole list here; there is nothing to be gained from the extra
+	// round trips.
+	static const char	*plugins[]={
+		FIREBIRD_PLUGIN_SRP256,
+		FIREBIRD_PLUGIN_SRP,
+		FIREBIRD_PLUGIN_LEGACY,
+		NULL
+	};
+	for (const char * const *plugin=plugins; *plugin; plugin++) {
+		if (srpfailed && charstring::compare(*plugin,
+						FIREBIRD_PLUGIN_LEGACY)) {
+			continue;
+		}
+		if (clientSupportsPlugin(*plugin)) {
+			authplugin=charstring::duplicate(*plugin);
+			setAuthMethodFromPlugin(authplugin);
+			return true;
+		}
+	}
+
+	// nothing in common - the accept goes out with no plugin at all, and
+	// the attach below fails the login
+	return false;
+}
+
+bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
+					uint32_t acptarchtype,
+					uint32_t acpttype,
+					uint32_t *byteswritten) {
+
+	// response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_accept_data
+	// 	int32_t		p_acpt_version
+	// 	int32_t		p_acpt_architecture
+	// 	int32_t		p_acpt_type
+	// 	int32_t		p_acpt_data length
+	// 	byte_t[]	p_acpt_data
+	// 	int32_t		p_acpt_plugin length
+	// 	char[]		p_acpt_plugin
+	// 	int32_t		p_acpt_authenticated
+	// 	int32_t		p_acpt_keys length
+	// 	byte_t[]	p_acpt_keys
+	// }
+	//
+	// (p_acpd, protocol.h - the field order is the xdr order at
+	// protocol.cpp:365-376.  p_acpt_authenticated is a USHORT, and xdr
+	// puts a short on the wire as 4 bytes, the same as every other length
+	// and op code here.)
+	//
+	// op_cond_accept carries exactly the same fields, and firebird uses it
+	// in place of op_accept_data only when wire encryption is being
+	// negotiated - the AUTH_COND_ACCEPT path at server.cpp:2084-2098 and
+	// 764-772.  This module doesn't do wire encryption, so it always sends
+	// op_accept_data.
+
+	bytebuffer	data;
+	selectAuthPlugin(&data);
+
+	// an empty buffer's getBuffer() and a null plugin name are both
+	// written as a zero length and no bytes, so they need something
+	// non-null to point at
+	static const byte_t	empty[1]={0};
+
+	opcode=op_accept_data;
+	if (!writeInt(opcode,"accept data op code",byteswritten)) {
+		return false;
+	}
+	debugOpCode("accept data op code",opcode);
+
+	if (!writeInt(acptversion,"protocol version",byteswritten)) {
+		return false;
+	}
+	debugProtocolVersion(acptversion);
+
+	if (!writeInt(acptarchtype,"arch type",byteswritten)) {
+		return false;
+	}
+	debugArchType(acptarchtype);
+
+	if (!writeInt(acpttype,"accept type",byteswritten)) {
+		return false;
+	}
+	debugProtocolType("accept type",acpttype);
+
+	uint32_t	datalen=(uint32_t)data.getSize();
+	if (!writeBuffer((datalen)?data.getBuffer():empty,datalen,
+					"plugin data",byteswritten)) {
+		return false;
+	}
+
+	uint32_t	pluginlen=(uint32_t)charstring::getLength(authplugin);
+	if (!writeBuffer((pluginlen)?(const byte_t *)authplugin:empty,
+				pluginlen,"plugin name",byteswritten)) {
+		return false;
+	}
+
+	// not authenticated yet - the attach below runs the auth modules
+	// (a real firebird can finish a login inside the accept, but only for
+	// a plugin that needs no round trip at all, and none of the three
+	// here is one)
+	if (!writeInt(0,"authenticated",byteswritten)) {
+		return false;
+	}
+
+	// no keys - the module offers no wire encryption, and an empty list
+	// is what firebird sends when it has none either
+	if (!writeBuffer(empty,0,"keys",byteswritten)) {
+		return false;
+	}
+
+	return true;
+}
+
+// The second and later rounds of the plugin handshake, when the client's
+// first message didn't arrive with the connect request.  The server sends
+// op_cont_auth and the client answers with one - ServerAuth::authenticate()
+// at server.cpp:773-780 and continue_authentication() at
+// server.cpp:5446-5452.
+//
+// Only the srp plugins ever get here, and only when the client had to start
+// them over on the plugin the accept named.  In the ordinary case the client
+// leads with a plugin the module has, its public key rides in
+// CNCT_specific_data, and the whole exchange is done by the time the attach
+// arrives.
+bool sqlrprotocol_firebird::continueAuthentication() {
+
+	// nothing to continue - either the plugin needs no more rounds, or
+	// the challenge already ran during the connect
+	if ((charstring::compare(authmethod,FIREBIRD_SRP) &&
+		charstring::compare(authmethod,FIREBIRD_SRP256)) || srpsalt) {
+		return true;
+	}
+
+	debugStart("continue auth");
+
+	// what arrived in the attach dpb is the client's public key, not its
+	// proof, so answer the challenge for it
+	delete[] authclientdata;
+	authclientdata=password;
+	password=NULL;
+
+	bytebuffer	data;
+	if (!srpChallenge(&data)) {
+		debugEnd();
+		return false;
+	}
+
+	// request/response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_cont_auth
+	// 	int32_t		p_data length
+	// 	byte_t[]	p_data
+	// 	int32_t		p_name length
+	// 	char[]		p_name
+	// 	int32_t		p_list length
+	// 	char[]		p_list
+	// 	int32_t		p_keys length
+	// 	byte_t[]	p_keys
+	// }
+	//
+	// (P_AUTH_CONT, protocol.h - the field order is the xdr order at
+	// protocol.cpp:813-822)
+
+	uint32_t	byteswritten=0;
+
+	opcode=op_cont_auth;
+	if (!writeInt(opcode,"cont auth op code",&byteswritten)) {
+		debugEnd();
+		return false;
+	}
+	debugOpCode("cont auth op code",opcode);
+
+	static const byte_t	empty[1]={0};
+
+	uint32_t	datalen=(uint32_t)data.getSize();
+	uint32_t	pluginlen=(uint32_t)charstring::getLength(authplugin);
+	if (!writeBuffer((datalen)?data.getBuffer():empty,datalen,
+				"plugin data",&byteswritten) ||
+		!writeBuffer((pluginlen)?(const byte_t *)authplugin:empty,
+				pluginlen,"plugin name",&byteswritten) ||
+		!writeBuffer((const byte_t *)FIREBIRD_PLUGIN_LIST,
+				(uint32_t)charstring::getLength(
+						FIREBIRD_PLUGIN_LIST),
+				"plugin list",&byteswritten) ||
+		!writeBuffer(empty,0,"keys",&byteswritten)) {
+		debugEnd();
+		return false;
+	}
+
+	debugEnd();
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	// get the client's answer
+	debugStart("cont auth");
+
+	uint32_t	bytesread=0;
+
+	if (!readInt(&opcode,"cont auth op code",op_cont_auth,&bytesread)) {
+		debugEnd();
+		return false;
+	}
+	debugOpCode("cont auth op code",opcode);
+
+	// the proof replaces whatever the attach dpb had
+	delete[] password;
+	if (!readString(&password,"plugin data",&bytesread)) {
+		debugEnd();
+		return false;
+	}
+
+	// the plugin name, plugin list and keys come back too, but the
+	// exchange is already committed to a plugin, so they're read and
+	// discarded
+	char	*discard=NULL;
+	if (!readString(&discard,"plugin name",&bytesread)) {
+		debugEnd();
+		return false;
+	}
+	delete[] discard;
+	if (!readString(&discard,"plugin list",&bytesread)) {
+		debugEnd();
+		return false;
+	}
+	delete[] discard;
+	if (!readString(&discard,"keys",&bytesread)) {
+		debugEnd();
+		return false;
+	}
+	delete[] discard;
+
+	debugEnd();
 
 	return true;
 }
@@ -2168,6 +2800,14 @@ bool sqlrprotocol_firebird::attach() {
 	if (!readBuffer(&dpb,&dpblen,"db param buffer",&bytesread)) {
 		return false;
 	}
+
+	// the plugin the dpb says its auth data belongs to, if any
+	char	*dpbplugin=NULL;
+
+	// whether the dpb carried plugin auth data, which wins over the
+	// password items the way ServerAuth::ServerAuth() prefers it -
+	// server.cpp:597-628
+	bool	haveauthdata=false;
 
 	// process db parameters buffer...
 	const byte_t	*dpbptr=dpb;
@@ -2342,8 +2982,20 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			case isc_dpb_user_name:
-				readStringFromBuffer(dpbvalue,dpbvaluelen,
-							"user name",&username);
+				// at 13 and up, username is already set from
+				// CNCT_login, and an auth plugin's verifier and
+				// proof were built from that value - overwriting
+				// it here would make the two disagree and every
+				// srp login would fail its proof check
+				if (protocolversion<PROTOCOL_VERSION13) {
+					readStringFromBuffer(dpbvalue,dpbvaluelen,
+								"user name",&username);
+				} else {
+					char	*discard=NULL;
+					readStringFromBuffer(dpbvalue,dpbvaluelen,
+								"user name",&discard);
+					delete[] discard;
+				}
 				break;
 
 			// isc_dpb_password is the password itself and
@@ -2353,12 +3005,18 @@ bool sqlrprotocol_firebird::attach() {
 			// only a client that builds its own dpb sends the
 			// password)
 			case isc_dpb_password:
+				if (haveauthdata) {
+					break;
+				}
 				readStringFromBuffer(dpbvalue,dpbvaluelen,
 							"password",&password);
 				authmethod=FIREBIRD_CLEARTEXT;
 				break;
 
 			case isc_dpb_password_enc:
+				if (haveauthdata) {
+					break;
+				}
 				readStringFromBuffer(dpbvalue,dpbvaluelen,
 							"password",&password);
 				authmethod=FIREBIRD_LEGACY;
@@ -2578,8 +3236,21 @@ bool sqlrprotocol_firebird::attach() {
 				// FIXME: do something...
 				break;
 
+			// the auth plugin handshake continues here at
+			// protocol 13 and up - the plugin's next message is
+			// the specific auth data, and the plugin it belongs
+			// to is the plugin name
+			// (below 13 no client sends these, and the module
+			// ignores them rather than letting one steer the
+			// authentication method)
 			case isc_dpb_specific_auth_data:
-				// FIXME: do something...
+				if (protocolversion>=PROTOCOL_VERSION13) {
+					readStringFromBuffer(dpbvalue,
+							dpbvaluelen,
+							"specific auth data",
+							&password);
+					haveauthdata=true;
+				}
 				break;
 
 			case isc_dpb_auth_plugin_list:
@@ -2587,7 +3258,12 @@ bool sqlrprotocol_firebird::attach() {
 				break;
 
 			case isc_dpb_auth_plugin_name:
-				// FIXME: do something...
+				if (protocolversion>=PROTOCOL_VERSION13) {
+					readStringFromBuffer(dpbvalue,
+							dpbvaluelen,
+							"auth plugin name",
+							&dpbplugin);
+				}
 				break;
 
 			case isc_dpb_config:
@@ -2640,6 +3316,34 @@ bool sqlrprotocol_firebird::attach() {
 
 	// clean up
 	delete[] dpb;
+
+	// at protocol 13 and up the plugin the dpb names wins over whichever
+	// dpb item the password came out of
+	// (a client that fell back to a different plugin than the accept
+	// asked for names the one it actually used)
+	if (protocolversion>=PROTOCOL_VERSION13 && dpbplugin) {
+		if (charstring::compare(dpbplugin,authplugin)) {
+			delete[] authplugin;
+			authplugin=charstring::duplicate(dpbplugin);
+			// a plugin switch invalidates the challenge the
+			// accept sent
+			delete[] srpsalt;
+			srpsalt=NULL;
+		}
+		setAuthMethodFromPlugin(dpbplugin);
+	}
+	delete[] dpbplugin;
+
+	// finish the plugin handshake, if it needs more rounds
+	if (protocolversion>=PROTOCOL_VERSION13 && !continueAuthentication()) {
+		errorStatusVector(isc_login);
+		genericResponse("attach failure response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+		return false;
+	}
 
 	// authenticate
 	// (the credentials came out of the dpb above)
@@ -2815,12 +3519,26 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 
 bool sqlrprotocol_firebird::authenticate() {
 
+	// the srp methods verify a proof rather than a password, and need the
+	// inputs of the round that produced it back
+	// (see the contract at the top of
+	// src/auths/firebird_connectstrings.cpp)
+	stringbuffer	extra;
+	if (!charstring::compare(authmethod,FIREBIRD_SRP) ||
+			!charstring::compare(authmethod,FIREBIRD_SRP256)) {
+		extra.append("clientpublickey=")->append(authclientdata);
+		extra.append(";serverprivatekey=")->
+					append(srpserverprivatekey);
+		extra.append(";salt=")->append(srpsalt);
+	}
+
 	// build auth credentials
 	sqlrfirebirdcredentials	cred;
 	cred.setUser(username);
 	cred.setPassword(password);
 	cred.setPasswordSize(charstring::getLength(password));
 	cred.setMethod(authmethod);
+	cred.setExtra(extra.getString());
 
 	// authenticate
 	bool	retval=cont->auth(&cred);
@@ -7975,6 +8693,38 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 					uint16_t fieldcount,
 					uint32_t *bytesread) {
 
+	// protocol 13 and up packs the message - the null indicators come
+	// first, as one bit per field, and a field flagged null sends no
+	// value at all.  before 13 each value is sent in full, whether it is
+	// null or not, each one followed by its own 4-byte null indicator.
+	byte_t	*nullbits=NULL;
+	if (protocolversion>=PROTOCOL_VERSION13 && fieldcount) {
+
+		uint32_t	flagbytes=((uint32_t)fieldcount+7)/8;
+		nullbits=new byte_t[flagbytes];
+		bytestring::zero(nullbits,flagbytes);
+
+		if (!readOpaque(nullbits,flagbytes,
+					"null indicators",bytesread)) {
+			delete[] nullbits;
+			return false;
+		}
+	}
+
+	bool	retval=readMessageFields(cursor,fields,fieldcount,
+						nullbits,bytesread);
+
+	delete[] nullbits;
+
+	return retval;
+}
+
+bool sqlrprotocol_firebird::readMessageFields(sqlrservercursor *cursor,
+					sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					const byte_t *nullbits,
+					uint32_t *bytesread) {
+
 	// everything the blr describes has to come off the socket, cursor or
 	// no cursor, or the connection desynchronizes - only the binding is
 	// conditional
@@ -8006,150 +8756,175 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 		uint32_t	blobhigh=0;
 		uint32_t	bloblow=0;
 
-		switch (fld->blrtype) {
+		// in the packed format the bitmap read up front is what says
+		// whether the field is null, and a null field sends no value
+		// at all - in the unpacked format the value always comes off
+		// the wire and the indicator that follows it says
+		bool	isnull=(nullbits && (nullbits[i>>3]&(1<<(i&7))));
 
-			case blr_short:
-			case blr_long:
-				{
-				uint32_t	val=0;
-				if (!readInt(&val,"parameter",bytesread)) {
-					return false;
-				}
-				intval=(int32_t)val;
-				}
-				break;
+		if (!isnull) {
 
-			case blr_int64:
-				{
-				uint64_t	val=0;
-				if (!readInt64(&val,"parameter",bytesread)) {
-					return false;
-				}
-				intval=(int64_t)val;
-				}
-				break;
+			switch (fld->blrtype) {
 
-			case blr_quad:
-			case blr_blob2:
-				// a blob parameter is an id naming a blob the
-				// client built with op_create_blob and filled
-				// with op_put_segment
-				if (!readInt(&blobhigh,"parameter",
-							bytesread) ||
-					!readInt(&bloblow,"parameter",
+				case blr_short:
+				case blr_long:
+					{
+					uint32_t	val=0;
+					if (!readInt(&val,"parameter",
+								bytesread)) {
+						return false;
+					}
+					intval=(int32_t)val;
+					}
+					break;
+
+				case blr_int64:
+					{
+					uint64_t	val=0;
+					if (!readInt64(&val,"parameter",
+								bytesread)) {
+						return false;
+					}
+					intval=(int64_t)val;
+					}
+					break;
+
+				case blr_quad:
+				case blr_blob2:
+					// a blob parameter is an id naming a
+					// blob the client built with
+					// op_create_blob and filled with
+					// op_put_segment
+					if (!readInt(&blobhigh,"parameter",
+								bytesread) ||
+						!readInt(&bloblow,"parameter",
+								bytesread)) {
+						return false;
+					}
+					isblob=true;
+					break;
+
+				case blr_float:
+					{
+					uint32_t	val=0;
+					if (!readInt(&val,"parameter",
+								bytesread)) {
+						return false;
+					}
+					float	f=0.0;
+					bytestring::copy(&f,&val,sizeof(f));
+					dblval=f;
+					}
+					break;
+
+				case blr_double:
+				case blr_d_float:
+					{
+					uint64_t	val=0;
+					if (!readInt64(&val,"parameter",
+								bytesread)) {
+						return false;
+					}
+					bytestring::copy(&dblval,&val,
+							sizeof(dblval));
+					}
+					break;
+
+				case blr_sql_date:
+					if (!readInt(&dateval,"parameter",
+								bytesread)) {
+						return false;
+					}
+					isdate=true;
+					break;
+
+				case blr_sql_time:
+					if (!readInt(&timeval,"parameter",
+								bytesread)) {
+						return false;
+					}
+					istime=true;
+					break;
+
+				case blr_timestamp:
+					if (!readInt(&dateval,"parameter",
+								bytesread) ||
+						!readInt(&timeval,"parameter",
+								bytesread)) {
+						return false;
+					}
+					isdate=true;
+					istime=true;
+					break;
+
+				case blr_bool:
+					{
+					byte_t	val=0;
+					if (!readOpaque(&val,1,"parameter",
+								bytesread)) {
+						return false;
+					}
+					intval=val;
+					}
+					break;
+
+				case blr_text:
+				case blr_text2:
+				case blr_cstring:
+				case blr_cstring2:
+					strvallen=fld->length;
+					strval=new char[strvallen+1];
+					if (!readOpaque((byte_t *)strval,
+							strvallen,
+							"parameter",
 							bytesread)) {
-					return false;
-				}
-				isblob=true;
-				break;
+						delete[] strval;
+						return false;
+					}
+					strval[strvallen]='\0';
+					break;
 
-			case blr_float:
-				{
-				uint32_t	val=0;
-				if (!readInt(&val,"parameter",bytesread)) {
-					return false;
-				}
-				float	f=0.0;
-				bytestring::copy(&f,&val,sizeof(f));
-				dblval=f;
-				}
-				break;
+				case blr_varying:
+				case blr_varying2:
+					{
+					uint32_t	len=0;
+					if (!readInt(&len,"parameter length",
+								bytesread)) {
+						return false;
+					}
+					if (len>fld->length) {
+						len=fld->length;
+					}
+					strvallen=len;
+					strval=new char[strvallen+1];
+					if (!readOpaque((byte_t *)strval,
+							strvallen,
+							"parameter",
+							bytesread)) {
+						delete[] strval;
+						return false;
+					}
+					strval[strvallen]='\0';
+					}
+					break;
 
-			case blr_double:
-			case blr_d_float:
-				{
-				uint64_t	val=0;
-				if (!readInt64(&val,"parameter",bytesread)) {
+				default:
+					// parseBlr() rejects anything else,
+					// so this can't be reached
 					return false;
-				}
-				bytestring::copy(&dblval,&val,sizeof(dblval));
-				}
-				break;
-
-			case blr_sql_date:
-				if (!readInt(&dateval,"parameter",bytesread)) {
-					return false;
-				}
-				isdate=true;
-				break;
-
-			case blr_sql_time:
-				if (!readInt(&timeval,"parameter",bytesread)) {
-					return false;
-				}
-				istime=true;
-				break;
-
-			case blr_timestamp:
-				if (!readInt(&dateval,"parameter",bytesread) ||
-					!readInt(&timeval,
-						"parameter",bytesread)) {
-					return false;
-				}
-				isdate=true;
-				istime=true;
-				break;
-
-			case blr_bool:
-				{
-				byte_t	val=0;
-				if (!readOpaque(&val,1,
-						"parameter",bytesread)) {
-					return false;
-				}
-				intval=val;
-				}
-				break;
-
-			case blr_text:
-			case blr_text2:
-			case blr_cstring:
-			case blr_cstring2:
-				strvallen=fld->length;
-				strval=new char[strvallen+1];
-				if (!readOpaque((byte_t *)strval,strvallen,
-						"parameter",bytesread)) {
-					delete[] strval;
-					return false;
-				}
-				strval[strvallen]='\0';
-				break;
-
-			case blr_varying:
-			case blr_varying2:
-				{
-				uint32_t	len=0;
-				if (!readInt(&len,
-						"parameter length",bytesread)) {
-					return false;
-				}
-				if (len>fld->length) {
-					len=fld->length;
-				}
-				strvallen=len;
-				strval=new char[strvallen+1];
-				if (!readOpaque((byte_t *)strval,strvallen,
-						"parameter",bytesread)) {
-					delete[] strval;
-					return false;
-				}
-				strval[strvallen]='\0';
-				}
-				break;
-
-			default:
-				// parseBlr() rejects anything else, so this
-				// can't be reached
-				return false;
+			}
 		}
 
 		// null indicator
-		uint32_t	indicator=0;
-		if (!readInt(&indicator,"null indicator",bytesread)) {
-			delete[] strval;
-			return false;
+		if (!nullbits) {
+			uint32_t	indicator=0;
+			if (!readInt(&indicator,
+					"null indicator",bytesread)) {
+				delete[] strval;
+				return false;
+			}
+			isnull=((int32_t)indicator<0);
 		}
-		bool	isnull=((int32_t)indicator<0);
 
 		if (!inbinds || bindcount>=maxbindcount) {
 			delete[] strval;
@@ -8296,6 +9071,47 @@ bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
 
 	uint32_t	colcount=cont->colCount(cursor);
 
+	// protocol 13 and up packs the message - the null indicators go
+	// first, as one bit per field, and a field flagged null sends no
+	// value at all.  before 13 each value is sent in full, whether it is
+	// null or not, each one followed by its own 4-byte null indicator.
+	bool	packed=(protocolversion>=PROTOCOL_VERSION13);
+
+	// null indicator bitmap
+	if (packed && fieldcount) {
+
+		uint32_t	flagbytes=((uint32_t)fieldcount+7)/8;
+		byte_t		*nullbits=new byte_t[flagbytes];
+		bytestring::zero(nullbits,flagbytes);
+
+		for (uint16_t i=0; i<fieldcount; i++) {
+
+			const char	*field=NULL;
+			uint64_t	fieldsize=0;
+			bool		lob=false;
+			bool		null=true;
+
+			if (i<colcount && !cont->getField(cursor,i,&field,
+						&fieldsize,&lob,&null)) {
+				delete[] nullbits;
+				return false;
+			}
+
+			if (null) {
+				nullbits[i>>3]|=(byte_t)(1<<(i&7));
+			}
+		}
+
+		bool	retval=writeOpaque(nullbits,flagbytes,
+					"null indicators",byteswritten);
+
+		delete[] nullbits;
+
+		if (!retval) {
+			return false;
+		}
+	}
+
 	for (uint16_t i=0; i<fieldcount; i++) {
 
 		const char	*field=NULL;
@@ -8308,6 +9124,12 @@ bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
 			return false;
 		}
 
+		// in the packed format the bitmap above already said the
+		// field is null, and nothing at all goes on the wire for it
+		if (packed && null) {
+			continue;
+		}
+
 		if (!writeField(cursor,i,&fields[i],field,fieldsize,
 					lob,null,byteswritten)) {
 			return false;
@@ -8315,7 +9137,7 @@ bool sqlrprotocol_firebird::writeMessage(sqlrservercursor *cursor,
 
 		// a null value still occupies its full width above - this is
 		// what actually says it is null
-		if (!writeInt((null)?0xffffffff:0,
+		if (!packed && !writeInt((null)?0xffffffff:0,
 					"null indicator",byteswritten)) {
 			return false;
 		}
