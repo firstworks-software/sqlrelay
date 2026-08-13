@@ -481,6 +481,10 @@
 	fixed sqlrservercursor::getError() - a cursor's own saved error was
 		always overwritten by the connection's error because the method
 		fell through to conn->getError() instead of returning
+	fixed the firebird protocol module's keepReading() debugging aid -
+		a tail shorter than its read buffer timed out and was dropped
+		instead of being dumped; noted in a comment that it's a
+		hand-wired aid with no callers
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

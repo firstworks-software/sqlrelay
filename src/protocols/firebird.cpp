@@ -1200,6 +1200,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					int16_t *second,
 					int32_t *microsecond);
 
+		// debugging aid, wired in by hand when reverse-engineering
+		// a wire exchange; no callers
 		void	keepReading(int32_t sec, int32_t usec);
 
 		void	readStringFromBuffer(const byte_t *in,
@@ -6121,9 +6123,13 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 }
 
 void sqlrprotocol_firebird::keepReading(int32_t sec, int32_t usec) {
+	// allow a short final read so a tail shorter than the buffer
+	// still gets dumped, instead of timing out and being discarded
+	bool	allowshort=clientsock->getAllowShortReads();
+	clientsock->setAllowShortReads(true);
 	for (;;) {
 		byte_t	buffer[1024];
-		ssize_t	r=clientsock->read(&buffer,1024,sec,usec);
+		ssize_t	r=clientsock->read(&buffer,sizeof(buffer),sec,usec);
 		if (getDebug()) {
 			stdoutput.printf("read %lld more bytes...\n",
 							(long long)r);
@@ -6133,6 +6139,7 @@ void sqlrprotocol_firebird::keepReading(int32_t sec, int32_t usec) {
 		}
 		debugHexDump(buffer,r);
 	}
+	clientsock->setAllowShortReads(allowshort);
 }
 
 void sqlrprotocol_firebird::readStringFromBuffer(const byte_t *in,
