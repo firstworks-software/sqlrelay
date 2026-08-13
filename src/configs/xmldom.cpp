@@ -2137,7 +2137,14 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxerrorsize");
 	if (!attr->isNullNode()) {
-		maxerrorsize=charstring::convertToInteger(attr->getValue());
+		// clamp below 1 before narrowing to uint32_t - the error
+		// buffer is allocated as maxerrorsize+1 bytes and connection
+		// modules index it up to errorbuffersize-1, so a value of 0
+		// would leave them writing off the end of the buffer, and a
+		// negative value would wrap to a huge one if narrowed first
+		int64_t	parsedmaxerrorsize=
+			charstring::convertToInteger(attr->getValue());
+		maxerrorsize=(parsedmaxerrorsize<1)?1:parsedmaxerrorsize;
 	}
 	attr=instance->getAttribute("idleclienttimeout");
 	if (!attr->isNullNode()) {

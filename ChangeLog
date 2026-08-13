@@ -532,6 +532,34 @@
 		throwing; getColumnNames() now returns null in that state,
 		matching the c++, python and ruby apis, instead of an array
 		of nulls
+	fixed maxerrorsize="0" - it produced a 1-byte error buffer and was
+		passed straight through to connection modules as the buffer
+		size, so getError() indexed errorbuffer[-1] on some backends;
+		the config parser now raises a value below 1 up to 1
+	fixed a related out-of-bounds access in the oracle connection
+		module's getError() - trimming a trailing newline from an
+		empty error message read and wrote one byte before the buffer
+	fixed the jdbc api's SQLRelayResultSetMetaData.getColumnClassName() -
+		it returned null for a datatype name it had no case for, and
+		jdbc defines no null return for that method, so callers doing
+		Class.forName() on the result got a NullPointerException; it
+		answers java.lang.Object now, matching the java.sql.Types.OTHER
+		that getColumnType() answers for the same names
+	fixed the firebird protocol module - a counted string or buffer length
+		that an older client sent sign-extended into the 32 bit field is
+		folded back down now, matching firebird's own protocol decoder,
+		rather than rejected, which dropped the session on a 32KB or
+		larger request
+	fixed the firebird connection module - firebird 4's INT128, DECFLOAT(16)
+		and DECFLOAT(34) columns, which back a DECIMAL or NUMERIC of
+		precision 19 through 38, fell through to a catch-all that asked
+		firebird for the value as a string no wider than the column's
+		storage size and dropped its nullability bit; any value whose
+		text form didn't fit failed the whole fetch with "string right
+		truncation" and a null value came back as an empty string; they
+		get enough room now, are reported as NUMERIC, DECIMAL or DOUBLE
+		PRECISION columns instead of unknown ones, and a null one is
+		reported as null
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

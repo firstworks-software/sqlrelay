@@ -1673,9 +1673,11 @@ void oracleconnection::getError(char *errorbuffer,
 
 	// truncate the trailing \n
 	*errorsize=charstring::getLength((char *)errorbuffer);
-	char	*last=errorbuffer+(*errorsize)-1;
-	if (*last=='\n') {
-		*last='\0';
+	if (*errorsize) {
+		char	*last=errorbuffer+(*errorsize)-1;
+		if (*last=='\n') {
+			*last='\0';
+		}
 	}
 
 	// set return values
