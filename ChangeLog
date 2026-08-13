@@ -485,6 +485,12 @@
 		a tail shorter than its read buffer timed out and was dropped
 		instead of being dumped; noted in a comment that it's a
 		hand-wired aid with no callers
+	fixed the jdbc api's result set metadata - getColumnClassName() and
+		getColumnType() on a date column threw a
+		NullPointerException when called after the result set or
+		statement was closed, since it walked the closed statement
+		to get the connection instead of using the metadata
+		object's own connection field
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -11,7 +11,6 @@ import com.firstworks.sqlrelay.*;
 public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	private	SQLRelayDriver		drv;
-	private	SQLRelayResultSet	resultset;
 	private	SQLRelayConnection	conn;
 
 	private	SQLRCursor		sqlrcur;
@@ -22,7 +21,6 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		this.drv=driver;
 		drv.debugFunction(this);
 		sqlrcur=null;
-		resultset=null;
 		conn=null;
 		drv.debugEnd();
 	}
@@ -33,7 +31,6 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	void setResultSet(SQLRelayResultSet resultset)
 						throws SQLException {
-		this.resultset=resultset;
 		// capture the connection now
 		// (the statement is nulled on close, and this outlives it)
 		this.conn=resultset.getStatement().getConnection();
@@ -1041,9 +1038,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 
 	private
 	boolean getDateToTimestamp() throws SQLException {
-		return resultset.getStatement().
-					getConnection().
-					getDateToTimestamp();
+		return conn.getDateToTimestamp();
 	}
 
 	public
