@@ -478,6 +478,9 @@
 		upstream as a bare float
 	java api - getColumnNames() no longer allocates its return array before
 		checking whether there are any column names to put in it
+	fixed sqlrservercursor::getError() - a cursor's own saved error was
+		always overwritten by the connection's error because the method
+		fell through to conn->getError() instead of returning
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

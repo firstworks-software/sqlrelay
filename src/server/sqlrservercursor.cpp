@@ -1029,6 +1029,7 @@ void sqlrservercursor::getError(char *errorbuffer,
 		}
 		*errorcode=pvt->_errnum;
 		*liveconnection=pvt->_liveconnection;
+		return;
 	}
 
 	// otherwise return the connection's error
