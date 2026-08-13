@@ -704,6 +704,23 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  as it would have anyway). */
 		bool	setReadOnly(bool readonly);
 
+		/** Hints that the next transaction the backend starts should
+		 *  use "isolevel", given in the specified format, if the
+		 *  backend has a per-transaction way to ask for that.
+		 *
+		 *  Unlike setIsolationLevel(), this does not run a query, so
+		 *  it's safe to call before a transaction has been started.
+		 *  NULL means no override - the transaction starts at the
+		 *  connection's currently configured isolation level.
+		 *
+		 *  Returns true if the backend honored the hint and false if
+		 *  it doesn't know how (in which case the transaction starts
+		 *  at the connection's currently configured isolation
+		 *  level). */
+		bool	setTransactionIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t fromformat);
+
 		/** Sets a flag indicating whether a DML query has been run and
 		 *  thus whether a commit or rollback is needed under certain
 		 *  circumstances.
@@ -3494,6 +3511,29 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  wasn't (in which case the transaction starts as it would
 		 *  have anyway). */
 		virtual bool	setReadOnly(bool readonly);
+
+		/** Hints that the next transaction this connection starts
+		 *  should use "isolevel" (in the database's native format),
+		 *  if the database has a per-transaction way to ask for that
+		 *  (eg. firebird's tpb isolation bytes). NULL means no
+		 *  override - the transaction starts at the connection's
+		 *  currently configured isolation level.
+		 *
+		 *  Unlike setIsolationLevel(), this does not run a query - a
+		 *  database whose only lever is a query (which would run
+		 *  against whatever transaction is already open) can't
+		 *  usefully implement this per-transaction, so it should
+		 *  just return false.
+		 *
+		 *  This implementation just returns false, but may be
+		 *  overridden by a child class to honor the hint in a
+		 *  database-specific manner.
+		 *
+		 *  Returns true if the hint was honored and false if it
+		 *  wasn't (in which case the transaction starts at the
+		 *  connection's currently configured isolation level). */
+		virtual bool	setTransactionIsolationLevel(
+					const char *isolevel);
 
 		/** Returns true if the database supports auto-commit (ie. if
 		 *  setAutoCommitOn() and setAutoCommitOff() are implemented in

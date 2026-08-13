@@ -595,6 +595,20 @@
 		isc_read_only_trans a write gets; "execute block" and other
 		statements statementType() can't tell from ddl are still allowed,
 		since a real server allows a read-only one that only selects
+	the firebird protocol module now honors the tpb's isolation level
+		(isc_tpb_consistency, isc_tpb_concurrency, isc_tpb_read_committed)
+		instead of reading and dropping it; added a new per-transaction
+		setTransactionIsolationLevel() hint on sqlrserverconnection and
+		sqlrservercontroller, alongside the existing per-transaction
+		setReadOnly() hint - unlike the connection-scoped, query-based
+		setIsolationLevel(), it doesn't run a query, so a protocol module
+		can call it before a transaction starts; the firebird connection
+		module now builds its tpb dynamically from the requested
+		isolation level and read-only state, restarting the backend
+		transaction immediately when either changes, and only includes
+		isc_tpb_rec_version under read committed, where it's actually
+		meaningful; isc_transaction_info now answers the isolation level
+		that was actually requested instead of a hardcoded read committed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

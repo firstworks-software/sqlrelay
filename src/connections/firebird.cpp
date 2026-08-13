@@ -409,6 +409,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		bool	setAutoCommitOn();
 		bool	setAutoCommitOff();
 		bool	setReadOnly(bool readonly);
+		bool	setTransactionIsolationLevel(const char *isolevel);
 		bool	supportsAutoCommit();
 		bool	commit();
 		bool	rollback();
@@ -467,6 +468,7 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		const char	*getNextvalFormat();
 		const char	*getCurrentUserQuery();
 		const char	*getLastInsertIdQuery();
+		bool		setIsolationLevel(const char *isolevel);
 		const char	*setIsolationLevelQuery();
 		const char	*getIsolationLevelQuery();
 		const char	*mapIsolationLevel(
@@ -475,6 +477,16 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 				sqlrserverisolationlevelformat_t toformat);
 		const char * const	*getDatabaseFeatures();
 		const char	*getNoopQuery();
+
+		// builds a tpb into "buf" for the current isolation level
+		// (curtxisolevel) and the given readonly/autocommit flags,
+		// and returns its length
+		uint16_t	buildTpb(char *buf, bool readonly,
+						bool autocommitflag);
+
+		// commits whatever transaction is open and starts a new one
+		// with a tpb built from buildTpb()
+		bool	restartTransaction(bool readonly, bool autocommitflag);
 
 		char		dpb[256];
 		short		dpbsize;
@@ -510,46 +522,14 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 		bool		autocommit;
 		bool		nextreadonly;
 
+		// the isolation level the currently-open (or about to be
+		// (re)started) transaction uses, as a tpb byte - one of
+		// isc_tpb_consistency, isc_tpb_concurrency or
+		// isc_tpb_read_committed
+		char		curtxisolevel;
+
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
-};
-
-static char tpb[] = {
-	isc_tpb_version3,
-	isc_tpb_write,
-	isc_tpb_read_committed,
-	isc_tpb_rec_version,
-	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
-	isc_tpb_wait
-};
-
-static char tpbac[] = {
-	isc_tpb_version3,
-	isc_tpb_write,
-	isc_tpb_read_committed,
-	isc_tpb_rec_version,
-	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
-	isc_tpb_wait,
-	isc_tpb_autocommit
-};
-
-static char tpbreadonly[] = {
-	isc_tpb_version3,
-	isc_tpb_read,
-	isc_tpb_read_committed,
-	isc_tpb_rec_version,
-	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
-	isc_tpb_wait
-};
-
-static char tpbacreadonly[] = {
-	isc_tpb_version3,
-	isc_tpb_read,
-	isc_tpb_read_committed,
-	isc_tpb_rec_version,
-	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
-	isc_tpb_wait,
-	isc_tpb_autocommit
 };
 
 firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
@@ -560,6 +540,7 @@ firebirdconnection::firebirdconnection(sqlrservercontroller *cont) :
 	host=NULL;
 	autocommit=false;
 	nextreadonly=false;
+	curtxisolevel=isc_tpb_read_committed;
 	initDatabaseFeatures();
 }
 
@@ -1134,7 +1115,9 @@ bool firebirdconnection::logIn(const char **err, const char **warning) {
 	}
 
 	// start a transaction
-	if (isc_start_transaction(error,&tr,1,&db,(uint16_t)sizeof(tpb),&tpb)) {
+	char	logintpb[8];
+	uint16_t	logintpblen=buildTpb(logintpb,false,false);
+	if (isc_start_transaction(error,&tr,1,&db,logintpblen,logintpb)) {
 
 		tr=0L;
 
@@ -1179,16 +1162,40 @@ sqlrtxmodel_t firebirdconnection::getNativeTransactionModel() {
 	return SQLRTXMODEL_IMPLICIT;
 }
 
+uint16_t firebirdconnection::buildTpb(char *buf, bool readonly,
+						bool autocommitflag) {
+	uint16_t	len=0;
+	buf[len++]=isc_tpb_version3;
+	buf[len++]=(readonly)?isc_tpb_read:isc_tpb_write;
+	buf[len++]=curtxisolevel;
+	// isc_tpb_rec_version is a read-committed sub-option - it isn't
+	// meaningful under consistency (snapshot table stability) or
+	// concurrency (snapshot), so only include it under read committed
+	if (curtxisolevel==isc_tpb_read_committed) {
+		buf[len++]=isc_tpb_rec_version;
+	}
+	// FIXME: vladimir changed this to isc_tpb_nowait.  why?
+	buf[len++]=isc_tpb_wait;
+	if (autocommitflag) {
+		buf[len++]=isc_tpb_autocommit;
+	}
+	return len;
+}
+
+bool firebirdconnection::restartTransaction(bool readonly,
+						bool autocommitflag) {
+	char		tpbbuf[8];
+	uint16_t	tpblen=buildTpb(tpbbuf,readonly,autocommitflag);
+	return !isc_commit_transaction(error,&tr) &&
+		!isc_start_transaction(error,&tr,1,&db,tpblen,tpbbuf);
+}
+
 bool firebirdconnection::setAutoCommitOn() {
 	autocommit=true;
 	// consume the read-only hint, so it applies to this transaction only
 	bool	ro=nextreadonly;
 	nextreadonly=false;
-	return !isc_commit_transaction(error,&tr) &&
-		!isc_start_transaction(error,&tr,1,&db,
-			(uint16_t)((ro)?sizeof(tpbacreadonly):
-					sizeof(tpbac)),
-			(ro)?&tpbacreadonly:&tpbac);
+	return restartTransaction(ro,true);
 }
 
 bool firebirdconnection::setAutoCommitOff() {
@@ -1196,14 +1203,64 @@ bool firebirdconnection::setAutoCommitOff() {
 	// consume the read-only hint, so it applies to this transaction only
 	bool	ro=nextreadonly;
 	nextreadonly=false;
-	return !isc_commit_transaction(error,&tr) &&
-		!isc_start_transaction(error,&tr,1,&db,
-			(uint16_t)((ro)?sizeof(tpbreadonly):sizeof(tpb)),
-			(ro)?&tpbreadonly:&tpb);
+	return restartTransaction(ro,false);
 }
 
 bool firebirdconnection::setReadOnly(bool readonly) {
 	nextreadonly=readonly;
+	return true;
+}
+
+bool firebirdconnection::setTransactionIsolationLevel(
+						const char *isolevel) {
+
+	// map the native isolation level name to a tpb byte, using the same
+	// vocabulary as mapIsolationLevel() below; NULL/empty falls back to
+	// read committed, firebird's own default, exactly as if nothing had
+	// been requested at all
+	char	target=isc_tpb_read_committed;
+	if (isolevel && isolevel[0]) {
+		if (!charstring::compareIgnoringCase(
+				isolevel,"snapshot table stability")) {
+			target=isc_tpb_consistency;
+		} else if (!charstring::compareIgnoringCase(
+				isolevel,"snapshot")) {
+			target=isc_tpb_concurrency;
+		} else if (!charstring::compareIgnoringCase(
+				isolevel,"read committed") ||
+			!charstring::compareIgnoringCase(isolevel,
+				"read committed no record version") ||
+			!charstring::compareIgnoringCase(
+				isolevel,"read consistency")) {
+			target=isc_tpb_read_committed;
+		} else {
+			// unrecognized - not honored, the current
+			// transaction continues at its current level
+			return false;
+		}
+	}
+
+	// nothing to do if the level isn't actually changing
+	if (target==curtxisolevel) {
+		return true;
+	}
+
+	// there's no query-based lever for this (see
+	// setIsolationLevelQuery()'s comment) and no client-visible
+	// substitute the way read-only has, so the only way to honor a
+	// per-transaction isolation request is to restart the transaction
+	// right now, before the caller runs any query against it - use (but
+	// don't consume) the pending read-only hint here too, so a
+	// readonly() call made moments earlier for the same transaction
+	// isn't lost; leave it pending so setAutoCommitOn()/Off() still
+	// apply it too, exactly as they did before this transaction ever
+	// asked for a specific isolation level
+	char	previous=curtxisolevel;
+	curtxisolevel=target;
+	if (!restartTransaction(nextreadonly,autocommit)) {
+		curtxisolevel=previous;
+		return false;
+	}
 	return true;
 }
 
@@ -1215,9 +1272,7 @@ bool firebirdconnection::commit() {
 	if (autocommit) {
 		return !isc_commit_retaining(error,&tr);
 	} else {
-		return !isc_commit_transaction(error,&tr) &&
-			!isc_start_transaction(error,&tr,1,&db,
-					(uint16_t)sizeof(tpb),&tpb);
+		return restartTransaction(false,false);
 	}
 }
 
@@ -1225,9 +1280,11 @@ bool firebirdconnection::rollback() {
 	if (autocommit) {
 		return !isc_rollback_retaining(error,&tr);
 	} else {
+		char		tpbbuf[8];
+		uint16_t	tpblen=buildTpb(tpbbuf,false,false);
 		return !isc_rollback_transaction(error,&tr) &&
 			!isc_start_transaction(error,&tr,1,&db,
-					(uint16_t)sizeof(tpb),&tpb);
+							tpblen,tpbbuf);
 	}
 }
 
@@ -2408,6 +2465,21 @@ const char *firebirdconnection::getCurrentUserQuery() {
 
 const char *firebirdconnection::getLastInsertIdQuery() {
 	return lastinsertidquery;
+}
+
+bool firebirdconnection::setIsolationLevel(const char *isolevel) {
+
+	// the base implementation would run setIsolationLevelQuery() as a
+	// query, but "set transaction %s" starts a transaction in firebird
+	// rather than altering the current one - the same problem the
+	// per-transaction hint below exists to avoid.  Route the connection-
+	// wide default through the same mechanism instead, so curtxisolevel
+	// (what buildTpb() actually uses) never falls out of sync with what
+	// was last requested here.
+	if (!charstring::getLength(isolevel)) {
+		return false;
+	}
+	return setTransactionIsolationLevel(isolevel);
 }
 
 const char *firebirdconnection::setIsolationLevelQuery() {

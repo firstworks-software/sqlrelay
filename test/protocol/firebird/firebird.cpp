@@ -141,6 +141,31 @@ static char tpbro[]={
 	isc_tpb_wait
 };
 
+// isolation-level variants of tpb - isc_tpb_rec_version only applies under
+// read committed (see src/connections/firebird.cpp's buildTpb()), so it's
+// omitted for consistency and concurrency
+static char tpbconsistency[]={
+	isc_tpb_version3,
+	isc_tpb_write,
+	isc_tpb_consistency,
+	isc_tpb_wait
+};
+
+static char tpbconcurrency[]={
+	isc_tpb_version3,
+	isc_tpb_write,
+	isc_tpb_concurrency,
+	isc_tpb_wait
+};
+
+static char tpbreadcommitted[]={
+	isc_tpb_version3,
+	isc_tpb_write,
+	isc_tpb_read_committed,
+	isc_tpb_rec_version,
+	isc_tpb_wait
+};
+
 // count the rows in a table, so a commit or rollback can be shown to
 // have taken
 static int countRows(const char *table) {
@@ -184,6 +209,44 @@ static int countRows(const char *table) {
 	delete[] (char *)sqlda;
 
 	return count;
+}
+
+// run a query that selects a single integer column, in the current
+// transaction, and return it (or -1 on error) - used to ask the backend
+// itself, via mon$transactions, what it actually did
+static int selectInt(const char *query) {
+
+	XSQLDA	*sqlda=(XSQLDA *)new char[XSQLDA_LENGTH(1)];
+	bytestring::zero(sqlda,XSQLDA_LENGTH(1));
+	sqlda->version=SQLDA_VERSION1;
+	sqlda->sqln=1;
+
+	isc_stmt_handle	stmt=0;
+	if (isc_dsql_allocate_statement(fbstatus,&db,&stmt) ||
+		isc_dsql_prepare(fbstatus,&tr,&stmt,0,
+					query,SQL_DIALECT_V6,sqlda)) {
+		delete[] (char *)sqlda;
+		return -1;
+	}
+
+	ISC_INT64	valbuffer=0;
+	short		valind=0;
+	sqlda->sqlvar[0].sqldata=(char *)&valbuffer;
+	sqlda->sqlvar[0].sqlind=&valind;
+
+	int	val=-1;
+	if (!isc_dsql_execute(fbstatus,&tr,&stmt,SQL_DIALECT_V6,NULL) &&
+		!isc_dsql_fetch(fbstatus,&stmt,SQL_DIALECT_V6,sqlda)) {
+		val=((sqlda->sqlvar[0].sqltype&~1)==SQL_LONG)?
+					(int)*((ISC_LONG *)&valbuffer):
+					(int)valbuffer;
+	}
+
+	isc_dsql_free_statement(fbstatus,&stmt,DSQL_drop);
+
+	delete[] (char *)sqlda;
+
+	return val;
 }
 
 // point every column of an output sqlda at a correctly sized buffer and an
@@ -862,6 +925,109 @@ int main(int argc, char **argv) {
 				(short)sizeof(roinfobuffer),roinfobuffer),0);
 	assertEquals((int)roinfobuffer[3],(int)isc_info_tra_readwrite);
 	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("isc_start_transaction - isolation level\n");
+	{
+	char	isoinfoitems[]={
+			isc_info_tra_isolation,
+			isc_info_end
+			};
+	char	isoinfobuffer[64];
+
+	// consistency (snapshot table stability) - one transaction, then a
+	// second and third at different levels in the same session, to prove
+	// each isc_start_transaction is honored on its own, not just the
+	// first one of the session
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+			(unsigned short)sizeof(tpbconsistency),
+			tpbconsistency),0);
+	bytestring::zero(isoinfobuffer,sizeof(isoinfobuffer));
+	assertEquals((int)isc_transaction_info(fbstatus,&tr,
+				(short)sizeof(isoinfoitems),isoinfoitems,
+				(short)sizeof(isoinfobuffer),isoinfobuffer),0);
+	assertEquals((int)isoinfobuffer[0],(int)isc_info_tra_isolation);
+	assertEquals((int)isoinfobuffer[3],(int)isc_info_tra_consistency);
+	// ask the backend itself, not just the module, what it got
+	assertEquals(selectInt("select mon$isolation_mode from "
+				"mon$transactions where "
+				"mon$transaction_id=current_transaction"),0);
+	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+
+	// concurrency (snapshot)
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+			(unsigned short)sizeof(tpbconcurrency),
+			tpbconcurrency),0);
+	bytestring::zero(isoinfobuffer,sizeof(isoinfobuffer));
+	assertEquals((int)isc_transaction_info(fbstatus,&tr,
+				(short)sizeof(isoinfoitems),isoinfoitems,
+				(short)sizeof(isoinfobuffer),isoinfobuffer),0);
+	assertEquals((int)isoinfobuffer[3],(int)isc_info_tra_concurrency);
+	assertEquals(selectInt("select mon$isolation_mode from "
+				"mon$transactions where "
+				"mon$transaction_id=current_transaction"),1);
+	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+
+	// read committed (record version) - the default, requested
+	// explicitly this time
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+			(unsigned short)sizeof(tpbreadcommitted),
+			tpbreadcommitted),0);
+	bytestring::zero(isoinfobuffer,sizeof(isoinfobuffer));
+	assertEquals((int)isc_transaction_info(fbstatus,&tr,
+				(short)sizeof(isoinfoitems),isoinfoitems,
+				(short)sizeof(isoinfobuffer),isoinfobuffer),0);
+	assertEquals((int)isoinfobuffer[3],(int)isc_info_tra_read_committed);
+	assertEquals((int)isoinfobuffer[4],(int)isc_info_tra_rec_version);
+	assertEquals(selectInt("select mon$isolation_mode from "
+				"mon$transactions where "
+				"mon$transaction_id=current_transaction"),2);
+	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+
+	// readonly and a non-default isolation level combine
+	char	tpbroconsistency[]={
+		isc_tpb_version3,
+		isc_tpb_read,
+		isc_tpb_consistency,
+		isc_tpb_wait
+		};
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+			(unsigned short)sizeof(tpbroconsistency),
+			tpbroconsistency),0);
+	char	roisoinfoitems[]={
+			isc_info_tra_access,
+			isc_info_tra_isolation,
+			isc_info_end
+			};
+	bytestring::zero(isoinfobuffer,sizeof(isoinfobuffer));
+	assertEquals((int)isc_transaction_info(fbstatus,&tr,
+				(short)sizeof(roisoinfoitems),roisoinfoitems,
+				(short)sizeof(isoinfobuffer),isoinfobuffer),0);
+	assertEquals((int)isoinfobuffer[0],(int)isc_info_tra_access);
+	assertEquals((int)isoinfobuffer[3],(int)isc_info_tra_readonly);
+	assertEquals((int)isoinfobuffer[4],(int)isc_info_tra_isolation);
+	assertEquals((int)isoinfobuffer[7],(int)isc_info_tra_consistency);
+	assertEquals(selectInt("select mon$isolation_mode from "
+				"mon$transactions where "
+				"mon$transaction_id=current_transaction"),0);
+	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+
+	// back to a plain write transaction, with no isolation level in the
+	// tpb at all - falls back to read committed, same as before any of
+	// this ran
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+			(unsigned short)sizeof(tpb),tpb),0);
+	assertEquals(selectInt("select mon$isolation_mode from "
+				"mon$transactions where "
+				"mon$transaction_id=current_transaction"),2);
+	assertEquals((int)isc_rollback_transaction(fbstatus,&tr),0);
+	}
 	stdoutput.printf("\n\n");
 
 

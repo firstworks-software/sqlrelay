@@ -2730,6 +2730,16 @@ bool sqlrservercontroller::setReadOnly(bool readonly) {
 	return pvt->_conn->setReadOnly(readonly);
 }
 
+bool sqlrservercontroller::setTransactionIsolationLevel(
+				const char *isolevel,
+				sqlrserverisolationlevelformat_t fromformat) {
+	const char	*mappedisolevel=
+			pvt->_conn->mapIsolationLevel(
+					isolevel,fromformat,
+					SQLRSERVERISOLATIONLEVELFORMAT_NATIVE);
+	return pvt->_conn->setTransactionIsolationLevel(mappedisolevel);
+}
+
 bool sqlrservercontroller::begin() {
 
 	if (pvt->_debugsql) {
@@ -7924,6 +7934,14 @@ void sqlrservercontroller::endSession() {
 
 	// reset initial autocommit behavior
 	setAutoCommit(pvt->_initialautocommit);
+
+	// clear any per-transaction hints a protocol module left pending, so
+	// they can't leak into the next session this pooled connection
+	// serves - do this before reapplying the configured isolation level
+	// below, so that (for a connection module where both actually take
+	// effect immediately) the configured level wins
+	pvt->_conn->setReadOnly(false);
+	pvt->_conn->setTransactionIsolationLevel(NULL);
 
 	// set isolation level
 	pvt->_conn->setIsolationLevel(pvt->_isolationlevel);

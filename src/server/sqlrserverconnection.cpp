@@ -218,6 +218,11 @@ bool sqlrserverconnection::setReadOnly(bool readonly) {
 	return false;
 }
 
+bool sqlrserverconnection::setTransactionIsolationLevel(
+						const char *isolevel) {
+	return false;
+}
+
 bool sqlrserverconnection::supportsAutoCommit() {
 	return false;
 }

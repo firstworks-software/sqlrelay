@@ -1385,6 +1385,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool		intransaction;
 		bool		trautocommit;
 		bool		trreadonly;
+		// the isolation level actually honored for the current
+		// transaction, as a tpb byte (isc_tpb_consistency,
+		// isc_tpb_concurrency or isc_tpb_read_committed), or 0 if
+		// none was requested/honored and the connection's default
+		// applies
+		byte_t		trisolevel;
 
 		uint16_t	maxcursorcount;
 		sqlrfirebirdstatement	*statements;
@@ -1477,6 +1483,7 @@ void sqlrprotocol_firebird::init() {
 	intransaction=false;
 	trautocommit=false;
 	trreadonly=false;
+	trisolevel=0;
 	blobbytes=0;
 	nextblobid=0;
 	nextblobhandle=0;
@@ -2849,6 +2856,7 @@ bool sqlrprotocol_firebird::detach() {
 		intransaction=false;
 		trautocommit=false;
 		trreadonly=false;
+		trisolevel=0;
 		trhandle=0;
 	}
 
@@ -3370,6 +3378,7 @@ bool sqlrprotocol_firebird::transaction() {
 	// what the tpb asked for
 	bool	readonly=false;
 	bool	autocommit=false;
+	byte_t	isolevel=0;
 
 	// get each parameter...
 	// (the test is < rather than != because an item whose length walks
@@ -3397,6 +3406,13 @@ bool sqlrprotocol_firebird::transaction() {
 				autocommit=true;
 				break;
 
+			case isc_tpb_consistency:
+			case isc_tpb_concurrency:
+			case isc_tpb_read_committed:
+				// last one wins, same as isc_tpb_read/write
+				isolevel=tpbparam;
+				break;
+
 			case isc_tpb_lock_read:
 			case isc_tpb_lock_write:
 			case isc_tpb_lock_timeout:
@@ -3416,11 +3432,9 @@ bool sqlrprotocol_firebird::transaction() {
 				break;
 
 			default:
-				// isc_tpb_consistency, isc_tpb_concurrency,
-				// isc_tpb_read_committed and the rest are bare
-				// bytes.  SQL Relay has no way to ask the
-				// backend for a particular isolation level per
-				// transaction, so they are read and dropped.
+				// the rest are bare bytes with no per-
+				// transaction handling on this side, and are
+				// just read and dropped
 				break;
 		}
 	}
@@ -3441,6 +3455,26 @@ bool sqlrprotocol_firebird::transaction() {
 		// client-visible refusal of writes below
 		cont->setReadOnly(readonly);
 
+		// hint the isolation level too - unlike read-only, there's no
+		// client-visible substitute for this, so whether it actually
+		// takes effect depends entirely on whether the backend honors
+		// the hint
+		const char	*isolevelname=NULL;
+		switch (isolevel) {
+			case isc_tpb_consistency:
+				isolevelname="TRANSACTION_SERIALIZABLE";
+				break;
+			case isc_tpb_concurrency:
+				isolevelname="TRANSACTION_REPEATABLE_READ";
+				break;
+			case isc_tpb_read_committed:
+				isolevelname="TRANSACTION_READ_COMMITTED";
+				break;
+		}
+		bool	isolevelhonored=cont->setTransactionIsolationLevel(
+					isolevelname,
+					SQLRSERVERISOLATIONLEVELFORMAT_JDBC);
+
 		// autocommit and an explicit transaction are alternatives, so
 		// a tpb that asks for autocommit begins nothing
 		bool	started=(autocommit)?
@@ -3454,6 +3488,7 @@ bool sqlrprotocol_firebird::transaction() {
 		intransaction=true;
 		trautocommit=autocommit;
 		trreadonly=readonly;
+		trisolevel=(isolevelhonored)?isolevel:0;
 	}
 
 	// a client only ever compares a handle against 0, but distinct ones
@@ -3464,6 +3499,14 @@ bool sqlrprotocol_firebird::transaction() {
 		stdoutput.printf("	transaction handle: %u\n",trhandle);
 		stdoutput.printf("	read only: %s\n",(readonly)?"yes":"no");
 		stdoutput.printf("	autocommit: %s\n",(autocommit)?"yes":"no");
+		stdoutput.printf("	isolation level: %s\n",
+			(trisolevel==isc_tpb_consistency)?
+				"consistency" :
+			(trisolevel==isc_tpb_concurrency)?
+				"concurrency" :
+			(trisolevel==isc_tpb_read_committed)?
+				"read committed" :
+				"connection default");
 	}
 
 	// status vector...
@@ -3519,6 +3562,7 @@ bool sqlrprotocol_firebird::commit() {
 	intransaction=false;
 	trautocommit=false;
 	trreadonly=false;
+	trisolevel=0;
 
 	successStatusVector();
 
@@ -3569,6 +3613,7 @@ bool sqlrprotocol_firebird::rollback() {
 	intransaction=false;
 	trautocommit=false;
 	trreadonly=false;
+	trisolevel=0;
 
 	successStatusVector();
 
@@ -3741,8 +3786,32 @@ bool sqlrprotocol_firebird::transactionInfo() {
 				break;
 
 			case isc_info_tra_isolation:
-				fits=appendInfoByte(trinfoitem,
-						isc_info_tra_read_committed);
+				{
+				// map the tpb-space isolation byte the
+				// transaction was actually started with (or
+				// 0, meaning the connection's default, which
+				// is read committed) to the separate
+				// isc_info_tra_isolation value space
+				byte_t	infolevel=isc_info_tra_read_committed;
+				if (trisolevel==isc_tpb_consistency) {
+					infolevel=isc_info_tra_consistency;
+				} else if (trisolevel==isc_tpb_concurrency) {
+					infolevel=isc_info_tra_concurrency;
+				}
+				if (infolevel==isc_info_tra_read_committed) {
+					// read committed carries a second byte
+					// naming the record-version sub-option
+					byte_t	isolevelbuf[2]={
+						infolevel,
+						isc_info_tra_rec_version
+						};
+					fits=appendInfoItem(trinfoitem,
+							isolevelbuf,2);
+				} else {
+					fits=appendInfoByte(trinfoitem,
+							infolevel);
+				}
+				}
 				break;
 
 			case isc_info_tra_access:
@@ -6476,6 +6545,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			intransaction=true;
 			trautocommit=false;
 			trreadonly=false;
+			trisolevel=0;
 			trhandle++;
 			return true;
 
@@ -6490,6 +6560,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			intransaction=false;
 			trautocommit=false;
 			trreadonly=false;
+			trisolevel=0;
 			return true;
 
 		case isc_info_sql_stmt_rollback:
@@ -6503,6 +6574,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			intransaction=false;
 			trautocommit=false;
 			trreadonly=false;
+			trisolevel=0;
 			return true;
 
 		default:
