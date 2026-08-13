@@ -157,12 +157,17 @@ int main(int argc, char **argv) {
 	// which one - "mssql" (the default) or "sybase".
 	// otherwise, the first argument (if any) names the freetds.conf
 	// stanza or sap/sybase interfaces entry for the sqlrelay tds
-	// listener to test - defaults to "sqlrelay".
+	// listener to test - defaults to "sqlrelay".  "sqlrelaysap" and
+	// "sqlrelaysapct" name sqlrelay instances fronting a sap/sybase
+	// backend rather than mssql, so they need the same ase-flavored
+	// dialect as the native sybase case below.
 	bool	issqlrelay=!(argc>=2 && !charstring::compare(argv[1],"native"));
 	bool	issybase=false;
 	if (issqlrelay) {
 		server=(argc>=2)?argv[1]:"sqlrelay";
 		db="";
+		issybase=(!charstring::compare(server,"sqlrelaysap") ||
+				!charstring::compare(server,"sqlrelaysapct"));
 	} else {
 		issybase=(argc>=3 && !charstring::compare(argv[2],"sybase"));
 		// short hostname, matching the db the native odbc tests use
@@ -1167,10 +1172,18 @@ int main(int argc, char **argv) {
 		assertEquals(data[15],"13:01:01.0000000");
 		assertEquals(*(datalength[15]),17);
 		assertEquals(*(nullindicator[15]),0);
-		assertEquals(data[16],"2001-01-01 13:01:01.0000000");
-		assertEquals(data[17],"2001-01-01 13:01:01.0000000 +00:00");
-		assertEquals(*(datalength[17]),35);
-		assertEquals(*(nullindicator[17]),0);
+		// sybase has no datetime2/datetimeoffset - present[16] and
+		// present[17] are cleared for it, and data[16]/data[17] are
+		// never populated
+		if (present[16]) {
+			assertEquals(data[16],"2001-01-01 13:01:01.0000000");
+		}
+		if (present[17]) {
+			assertEquals(data[17],
+					"2001-01-01 13:01:01.0000000 +00:00");
+			assertEquals(*(datalength[17]),35);
+			assertEquals(*(nullindicator[17]),0);
+		}
 	} else {
 		assertEquals(data[14],"Jan  1 2001 12:00:00:000AM");
 		assertEquals(*(datalength[14]),27);
@@ -1258,8 +1271,16 @@ int main(int argc, char **argv) {
 	if (issqlrelay && !tds73plus) {
 		assertEquals(data[14],"2002-02-02");
 		assertEquals(data[15],"14:02:02.0000000");
-		assertEquals(data[16],"2002-02-02 14:02:02.0000000");
-		assertEquals(data[17],"2002-02-02 14:02:02.0000000 +00:00");
+		// sybase has no datetime2/datetimeoffset - present[16] and
+		// present[17] are cleared for it, and data[16]/data[17] are
+		// never populated
+		if (present[16]) {
+			assertEquals(data[16],"2002-02-02 14:02:02.0000000");
+		}
+		if (present[17]) {
+			assertEquals(data[17],
+					"2002-02-02 14:02:02.0000000 +00:00");
+		}
 	} else {
 		assertEquals(data[14],"Feb  2 2002 12:00:00:000AM");
 		// sybase renders time fractional seconds to millisecond
@@ -3615,14 +3636,18 @@ int main(int argc, char **argv) {
 	assertEquals(ncols,(issybase)?4:0);
 
 	// ct_describe on a result whose column count is zero segfaults
-	// inside libct, so the mssql side stops at the count above rather
-	// than describing nothing.
+	// inside libct, so the loop below is bounded by the column count
+	// ct_res_info actually measured above, not by issybase - a
+	// sqlrelay-fronted sap backend is still issybase (it needs ase's ddl
+	// dialect), but ct-lib only ships this unsolicited parameter-format
+	// metadata over a real tds 5 connection, which sqlrelay's tds
+	// protocol module doesn't speak, so ncols comes back 0 there too.
 	if (issybase) {
 		CS_INT	dyninfmttype[4]={
 				CS_INT_TYPE,CS_CHAR_TYPE,
 				CS_CHAR_TYPE,CS_INT_TYPE};
 		CS_INT	dyninfmtmaxlength[4]={4,20,20,4};
-		for (CS_INT i=0; i<4; i++) {
+		for (CS_INT i=0; i<ncols && i<4; i++) {
 			bytestring::zero(&(dyndesc[i]),sizeof(CS_DATAFMT));
 			assertEquals(ct_describe(cmd,i+1,&(dyndesc[i])),
 								CS_SUCCEED);
@@ -3869,7 +3894,10 @@ int main(int argc, char **argv) {
 					(CS_VOID *)&ncols,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);
 	assertEquals(ncols,(issybase)?1:0);
-	if (issybase) {
+	// ct_describe on a result whose column count is zero segfaults inside
+	// libct - gate on the measured ncols, not issybase, for the same
+	// reason as the insert case above
+	if (issybase && ncols>0) {
 		bytestring::zero(&(dyndesc[0]),sizeof(CS_DATAFMT));
 		assertEquals(ct_describe(cmd,1,&(dyndesc[0])),CS_SUCCEED);
 		assertEquals(dyndesc[0].name,"");
