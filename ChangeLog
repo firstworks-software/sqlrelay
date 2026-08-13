@@ -491,6 +491,9 @@
 		statement was closed, since it walked the closed statement
 		to get the connection instead of using the metadata
 		object's own connection field
+	fixed the c# api's SQLRelayDataReader.invalidColumnIndex() - an
+		off-by-one let an ordinal exactly one past the last column
+		pass validation instead of throwing IndexOutOfRangeException
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

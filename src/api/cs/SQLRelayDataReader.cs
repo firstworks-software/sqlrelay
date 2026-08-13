@@ -2172,7 +2172,7 @@ namespace SQLRClient
 
         private void invalidColumnIndex(Int32 i)
         {
-            if (i < 0 || i > FieldCount)
+            if (i < 0 || i >= FieldCount)
             {
                 throw new IndexOutOfRangeException();
             }
