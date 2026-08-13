@@ -10,7 +10,8 @@ import com.firstworks.sqlrelay.*;
 
 public class SQLRelayParameterMetaData implements ParameterMetaData {
 
-	private	SQLRelayDriver	drv;
+	private	SQLRelayDriver		drv;
+	private	SQLRelayConnection	conn;
 
 	private HashMap<String,SQLRelayParameter>	inparams;
 	private HashMap<String,SQLRelayParameter>	outparams;
@@ -20,8 +21,15 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	SQLRelayParameterMetaData(SQLRelayDriver driver) {
 		this.drv=driver;
 		drv.debugFunction(this);
+		conn=null;
 		inparams=null;
 		outparams=null;
+		drv.debugEnd();
+	}
+
+	void setConn(SQLRelayConnection conn) {
+		drv.debugFunction(this);
+		this.conn=conn;
 		drv.debugEnd();
 	}
 
@@ -65,6 +73,19 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 		drv.debugPrintln("param: "+param);
 		drv.debugEnd();
 		return p;
+	}
+
+	// jdbc's ParameterMetaData only promises to throw on a database
+	// access error, and every reference driver default here is at
+	// least honest ("unknown", not a plausible-looking answer) -
+	// except isSigned(), which has no "unknown" value to fall back on
+	// and would otherwise affirmatively lie about a parameter that
+	// does not exist.  So only isSigned() validates.
+	private
+	void validateParameter(SQLRelayParameter p) throws SQLException {
+		if (p==null) {
+			conn.throwException("invalid parameter index");
+		}
 	}
 
 	public
@@ -159,10 +180,11 @@ public class SQLRelayParameterMetaData implements ParameterMetaData {
 	}
 
 	public
-	boolean isSigned(int param) {
+	boolean isSigned(int param) throws SQLException {
 		drv.debugFunction(this);
 		SQLRelayParameter	p=getParameter(param);
-		boolean	is=(p!=null)?p.getIsSigned():true;
+		validateParameter(p);
+		boolean	is=p.getIsSigned();
 		drv.debugPrintln("param: "+param);
 		drv.debugPrintln("is signed: "+((is)?"yes":"no"));
 		drv.debugEnd();

@@ -846,6 +846,7 @@ public class SQLRelayPreparedStatement
 		throwExceptionIfClosed();
 		SQLRelayParameterMetaData	pmd=
 				new SQLRelayParameterMetaData(drv);
+		pmd.setConn(conn);
 		if (batch.size()==0) {
 			pmd.setInParams(inparams);
 		} else {
