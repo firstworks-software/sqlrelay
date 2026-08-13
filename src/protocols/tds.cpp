@@ -1101,6 +1101,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	dateTimeValue(int32_t dayssince1900,
 					uint32_t threehundredths,
 					sqlrserverbindvar *bv);
+		void	moneyValue(int64_t tenthousandths,
+					sqlrserverbindvar *bv);
 		uint32_t	daysSince1(int16_t year,
 						int16_t month,
 						int16_t day);
@@ -5888,6 +5890,30 @@ void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
 	debugWrite("value: %s",strb.getString());
 }
 
+void sqlrprotocol_tds::moneyValue(int64_t tenthousandths,
+					sqlrserverbindvar *bv) {
+
+	stringbuffer	strb;
+	bulkMoney(tenthousandths,&strb);
+
+	// bound as a number rather than a string - mssql converts a varchar
+	// to money on its own but ase refuses to ("Implicit conversion from
+	// datatype 'VARCHAR' to 'MONEY' is not allowed")
+	bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+	bv->isnull=cont->getNonNullBindValue();
+	bv->value.doubleval.value=
+		(double)charstring::convertToFloat(strb.getString());
+	// FIXME: kludgy, but the same thing bulkDouble() does
+	bv->value.doubleval.precision=
+		(uint32_t)charstring::getLength(strb.getString())-
+		((charstring::contains(strb.getString(),'-'))?1:0)-
+		((charstring::contains(strb.getString(),'.'))?1:0);
+	// money is always scaled to four decimal places
+	bv->value.doubleval.scale=4;
+
+	debugWrite("value: %s",strb.getString());
+}
+
 static bool isLeapYear(int16_t year) {
 	// * years divisible by 4 are leap years
 	//  * unless they are divisible by 100
@@ -10414,7 +10440,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			readLE(rp,&high,&rp);
 			readLE(rp,&low,&rp);
 			rpsize-=2*sizeof(uint32_t);
-			// FIXME: actually implement this
+
+			if (bv) {
+				moneyValue((int64_t)((((uint64_t)high)<<32)|
+								low),bv);
+			}
 			}
 			break;
 		case TDS_TYPE_DATETIME:
@@ -10482,7 +10512,10 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			int32_t	val;
 			readLE(rp,(uint32_t *)&val,&rp);
 			rpsize-=sizeof(uint32_t);
-			// FIXME: actually implement this
+
+			if (bv) {
+				moneyValue(val,bv);
+			}
 			}
 			break;
 		case TDS_TYPE_INT8:
@@ -10531,6 +10564,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 			byte_t	ispositive;
 			byte_t	val[TDS_DECIMAL_MAX_SIZE-1];
+			byte_t	valsize;
 			if (tdstype==TDS_TYPE_DECIMALN ||
 				tdstype==TDS_TYPE_NUMERICN) {
 				if (!rpsize) {
@@ -10557,6 +10591,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				read(rp,&ispositive,&rp);
 				read(rp,val,size-1,&rp);
 				rpsize-=size;
+				valsize=size-1;
 			} else {
 				if (rpsize<1+sizeof(val)) {
 					return false;
@@ -10564,8 +10599,40 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				read(rp,&ispositive,&rp);
 				read(rp,val,sizeof(val),&rp);
 				rpsize-=1+sizeof(val);
+				valsize=(byte_t)sizeof(val);
 			}
-			// FIXME: actually implement this
+
+			if (bv) {
+
+				// FIXME: anything wider than 8 bytes
+				// overflows
+				stringbuffer	strb;
+				bulkDecimal(ispositive,val,
+						(valsize>8)?8:valsize,
+						scale,&strb);
+
+				// bound as a number rather than a string -
+				// mssql converts a varchar to a decimal on
+				// its own but ase refuses to ("Implicit
+				// conversion from datatype 'VARCHAR' to
+				// 'DECIMAL' is not allowed")
+				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+				bv->isnull=cont->getNonNullBindValue();
+				bv->value.doubleval.value=
+					(double)charstring::convertToFloat(
+							strb.getString());
+				// FIXME: kludgy, but the same thing
+				// bulkDouble() does
+				bv->value.doubleval.precision=
+					(uint32_t)charstring::getLength(
+							strb.getString())-
+					((charstring::contains(
+						strb.getString(),'-'))?1:0)-
+					((charstring::contains(
+						strb.getString(),'.'))?1:0);
+				bv->value.doubleval.scale=scale;
+				debugWrite("value: %s",strb.getString());
+			}
 			}
 			break;
 		case TDS_TYPE_DATEN:
@@ -10637,7 +10704,10 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			if (rpsize<size) {
 				return false;
 			}
-			// FIXME: actually implement this
+			if (bv) {
+				bulkString(bv,&rpcparampool,
+						(const char *)rp,size);
+			}
 			rp+=size;
 			rpsize-=size;
 			}
@@ -10654,7 +10724,9 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			if (rpsize<size) {
 				return false;
 			}
-			// FIXME: actually implement this
+			if (bv) {
+				bulkBinary(bv,&rpcparampool,rp,size);
+			}
 			rp+=size;
 			rpsize-=size;
 			}
@@ -10675,7 +10747,9 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			if (rpsize<size) {
 				return false;
 			}
-			// FIXME: actually implement this
+			if (bv) {
+				bulkBinary(bv,&rpcparampool,rp,size);
+			}
 			rp+=size;
 			rpsize-=size;
 			}
@@ -10912,7 +10986,9 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			if (rpsize<size) {
 				return false;
 			}
-			// FIXME: actually implement this
+			if (bv && tdstype==TDS_TYPE_IMAGE) {
+				bulkBinary(bv,&rpcparampool,rp,size);
+			}
 			rp+=size;
 			rpsize-=size;
 			}

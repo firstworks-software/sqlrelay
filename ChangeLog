@@ -403,6 +403,10 @@
 	fixed the sap connection module - an image column's bytes came back
 		wrong, because getField() hex-decoded the value ct-lib already
 		returned as the column's real bytes, corrupting it
+	fixed the tds protocol module - an rpc parameter of a binary, image,
+		money, smallmoney, decimal, numeric, char or varchar type was
+		parsed off the wire but thrown away, so a prepared insert
+		bound one of those types stored a null instead of the value
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

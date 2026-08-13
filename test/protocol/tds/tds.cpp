@@ -2521,10 +2521,16 @@ int main(int argc, char **argv) {
 		// the quotes unbalanced, so the mangled statement still goes
 		// out and ASE rejects it - the conversion fails client-side,
 		// the command fails server-side.  Nothing fails on mssql,
-		// which takes ucs-2 on tds 7, and nothing fails through
-		// sqlrelay either, whichever backend is behind it - the
-		// client talks tds 7 to the relay, and the relay's own
-		// connection to ASE is not restricted to iso_1.
+		// which takes ucs-2 on tds 7.
+		//
+		// Through sqlrelay the statement reaches the relay intact,
+		// but the relay's own ct-lib link to ASE is iso_1 too, so
+		// the conversion just moves - ASE answers "Error converting
+		// characters into server's character set", the command still
+		// reports CS_CMD_SUCCEED, and the row count comes back -1
+		// with no row stored.  So both ASE paths lose the two rows,
+		// just in different shapes, and only the shape is gated on
+		// nativease.
 		stdoutput.printf("ct_command: insert\n");
 		for (CS_INT i=0; i<3; i++) {
 			query=charsetinserts2[i];
@@ -2542,7 +2548,8 @@ int main(int argc, char **argv) {
 						(CS_VOID *)&affectedrows,
 						CS_UNUSED,
 						(CS_INT *)NULL),CS_SUCCEED);
-				assertEquals(affectedrows,1);
+				assertEquals(affectedrows,
+						(issybase && i>0)?-1:1);
 			}
 			results=ct_results(cmd2,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -2618,7 +2625,9 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 
-		if (!nativease) {
+		// neither ASE path stored rows 2 and 3, so only mssql has
+		// them to read back
+		if (!issybase) {
 
 			stdoutput.printf("ct_fetch:\n");
 			assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
@@ -4936,12 +4945,16 @@ int main(int argc, char **argv) {
 	}
 
 
+	// A native ASE link answers an rpc for a procedure that does not
+	// exist with a status result of -6 before the CS_CMD_FAIL.  mssql
+	// sends no status result at all, and neither does sqlrelay for
+	// either backend, so this is a native-transport fact.
 	stdoutput.printf("ct_command: rpc no such procedure\n");
 	assertEquals(ct_command(cmd,CS_RPC_CMD,
 				(CS_CHAR *)"dynnosuchproc",CS_NULLTERM,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_STATUS_RESULT);
@@ -5102,6 +5115,11 @@ int main(int argc, char **argv) {
 	// CS_CMD_SUCCEED and CS_CMD_DONE pairs come from.  Per-call
 	// ct_send works too, and gives the same split.
 	//
+	// So the split is the wire version, not the backend.  Sqlrelay
+	// never speaks tds 5, so an ASE reached through it produces the
+	// tds 7 shape with no extra pairs.  That is why every cursor block
+	// below gates the extra pairs on nativease rather than issybase.
+	//
 	// CS_READ_ONLY and CS_UNUSED behave identically here on both
 	// backends, so freetds.cpp:4072 having CS_READ_ONLY commented out
 	// while src/connections/sap.cpp:2855 passes it costs nothing on
@@ -5120,7 +5138,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -5139,8 +5157,11 @@ int main(int argc, char **argv) {
 
 
 	// Two splits in the cursor result's column metadata.  status is
-	// CS_UPDATABLE|CS_CANBENULL on mssql and CS_CANBENULL alone on
-	// ASE, so only mssql marks a read-only cursor's columns updatable.
+	// CS_UPDATABLE|CS_CANBENULL on mssql and CS_CANBENULL alone on a
+	// native ASE link, so only mssql marks a read-only cursor's
+	// columns updatable.  Through sqlrelay it is
+	// CS_UPDATABLE|CS_CANBENULL either way, since the flag comes out
+	// of the tds 7 column metadata sqlrelay writes.
 	// usertype is 0 on every mssql column and the ASE syscolumns id on
 	// a native sybase link - int 7, varchar 2 - which is the same split
 	// #8779 recorded for language commands.  Through sqlrelay it is 0
@@ -5167,7 +5188,7 @@ int main(int argc, char **argv) {
 		assertEquals(cursdesc[i].precision,0);
 		assertEquals(cursdesc[i].scale,0);
 		assertEquals(cursdesc[i].status,
-				(issybase)?CS_CANBENULL:
+				(nativease)?CS_CANBENULL:
 					(CS_UPDATABLE|CS_CANBENULL));
 		assertEquals(cursdesc[i].count,1);
 		assertEquals(cursdesc[i].usertype,
@@ -5178,7 +5199,8 @@ int main(int argc, char **argv) {
 
 
 	// CS_ROW_COUNT is not a row count on a cursor result.  mssql says
-	// 0 before the first fetch, ASE says -1, and both say 0 once the
+	// 0 before the first fetch, a native ASE link says -1, sqlrelay
+	// says 0 for either backend, and all of them say 0 once the
 	// fetch loop has run out.  A plain language select gives -1
 	// throughout on both, so nothing here can be read as a count.
 	stdoutput.printf("ct_res_info: cursor row count before fetch\n");
@@ -5186,7 +5208,7 @@ int main(int argc, char **argv) {
 	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
 					(CS_VOID *)&affectedrows,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(affectedrows,(issybase)?-1:0);
+	assertEquals(affectedrows,(nativease)?-1:0);
 	stdoutput.printf("\n");
 
 
@@ -5284,7 +5306,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -5326,7 +5348,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -5385,7 +5407,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -5421,7 +5443,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -5456,7 +5478,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -5487,7 +5509,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -5530,7 +5552,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -5598,7 +5620,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_FAIL);
@@ -5645,7 +5667,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -5677,7 +5699,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -5844,7 +5866,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -5898,7 +5920,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6096,7 +6118,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6136,7 +6158,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6235,7 +6257,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6271,7 +6293,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6311,7 +6333,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6368,7 +6390,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(curscmd),CS_FAIL);
-	if (issybase) {
+	if (nativease) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6408,7 +6430,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (issybase) {
+	if (nativease) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6457,7 +6479,11 @@ int main(int argc, char **argv) {
 	// more.  ASE counts them and refuses to drop the table underneath
 	// them, server error 118, "Cannot drop or replace the table
 	// because it is currently in use".  MSSQL does not care and drops
-	// it either way.  So the first drop is asserted per backend.
+	// it either way.  Through sqlrelay ASE still refuses it and the
+	// error message still reaches the client, but the command comes
+	// back CS_CMD_SUCCEED - src/protocols/tds.cpp:4051 sends a plain
+	// done rather than DONE_ERROR for a failed batch, with a FIXME
+	// saying so.  So the first drop is asserted per transport.
 	stdoutput.printf("ct_command: drop\n");
 	query="drop table cursortable";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
@@ -6466,7 +6492,7 @@ int main(int argc, char **argv) {
 	assertEquals(ct_send(cmd),CS_SUCCEED);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,(issybase)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+	assertEquals(resultstype,(nativease)?CS_CMD_FAIL:CS_CMD_SUCCEED);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -7547,9 +7573,16 @@ int main(int argc, char **argv) {
 	// padding and ASE shows as one byte of extra length.  bindblank is
 	// what is left when the value is thrown away, which is blanks out
 	// to maxlength on mssql and a single blank on ASE.
+	//
+	// Only a native ct-lib link puts the terminator on the wire.  On the
+	// tds 7 wire freetds sends a CS_CHAR_TYPE parameter as a bigchar of
+	// strlen bytes and drops the extra byte, whatever datalen said, so
+	// through sqlrelay the row is the plain "abc" the padded case leaves
+	// and the length matches bindpadlength.  mssql pads either way, so
+	// only the ASE side of this can tell.
 	const char	*bindpadexpect=(issybase)?"abc":"abc                 ";
 	CS_INT		bindpadlength=(issybase)?4:21;
-	CS_INT		bindtermlength=(issybase)?5:21;
+	CS_INT		bindtermlength=(issybase)?((nativease)?5:4):21;
 	const char	*bindblankexpect=(issybase)?" ":"                    ";
 	CS_INT		bindblanklength=(issybase)?2:21;
 
@@ -7576,6 +7609,19 @@ int main(int argc, char **argv) {
 	// merely fail - ASE answers with error 3811, "A wrong datastream
 	// has been sent to the server ... expecting token 1 but got the
 	// token 16", so it is not driven there at all.
+	//
+	// Those tds 5 types, plus CS_LONGBINARY_TYPE's 0xE1, only reach a
+	// server that speaks tds 5.  A native ct-lib link to ASE does.
+	// sqlrelay's tds protocol module is a tds 7 server whichever
+	// backend is behind it, so it answers the same "Data type 0xNN is
+	// unknown" mssql does - rpcUnsupportedTypeError() in
+	// src/protocols/tds.cpp - and the command fails.  That makes "ASE
+	// takes them" a native-transport fact, so bindtds5 below carries
+	// it rather than the sybase column saying bindtakes outright.  The
+	// relay names the byte at execute time rather than at prepare
+	// time, so even 0xE1 comes out as bindcmdfails through the relay.
+	CS_INT	bindtds5=(nativease)?bindtakes:bindcmdfails;
+
 	struct bindcase {
 		const char	*label;
 		const char	*column;
@@ -7616,7 +7662,7 @@ int main(int argc, char **argv) {
 			bindprepfails,bindtakes,"010203",7,1,0,0},
 		{"CS_LONGBINARY_TYPE","bindbinary",CS_LONGBINARY_TYPE,
 			(CS_VOID *)bindbinaryvalue,3,36,0,0,
-			bindprepfails,bindtakes,"010203",7,1,0,0},
+			bindprepfails,bindtds5,"010203",7,1,0,0},
 		{"CS_VARBINARY_TYPE","bindbinary",CS_VARBINARY_TYPE,
 			(CS_VOID *)&bindvarbinaryvalue,
 			(CS_INT)sizeof(CS_VARBINARY),36,0,0,
@@ -7643,7 +7689,7 @@ int main(int argc, char **argv) {
 		{"CS_LONG_TYPE","bindbigint",CS_LONG_TYPE,
 			(CS_VOID *)&bindlongvalue,
 			(CS_INT)sizeof(CS_LONG),(CS_INT)sizeof(CS_LONG),0,0,
-			bindcmdfails,bindtakes,"7",2,1,0,0},
+			bindcmdfails,bindtds5,"7",2,1,0,0},
 		{"CS_USHORT_TYPE","bindint",CS_USHORT_TYPE,
 			(CS_VOID *)&bindushortvalue,
 			(CS_INT)sizeof(CS_USHORT),2,0,0,
@@ -7651,15 +7697,15 @@ int main(int argc, char **argv) {
 		{"CS_USMALLINT_TYPE","bindint",CS_USMALLINT_TYPE,
 			(CS_VOID *)&bindusmallintvalue,
 			(CS_INT)sizeof(CS_USMALLINT),2,0,0,
-			bindcmdfails,bindtakes,"7",2,1,0,0},
+			bindcmdfails,bindtds5,"7",2,1,0,0},
 		{"CS_UINT_TYPE","bindbigint",CS_UINT_TYPE,
 			(CS_VOID *)&binduintvalue,
 			(CS_INT)sizeof(CS_UINT),4,0,0,
-			bindcmdfails,bindtakes,"7",2,1,0,0},
+			bindcmdfails,bindtds5,"7",2,1,0,0},
 		{"CS_UBIGINT_TYPE","bindnumeric",CS_UBIGINT_TYPE,
 			(CS_VOID *)&bindubigintvalue,
 			(CS_INT)sizeof(CS_UBIGINT),8,0,0,
-			bindcmdfails,bindtakes,"7.0000",7,1,0,0},
+			bindcmdfails,bindtds5,"7.0000",7,1,0,0},
 		{"CS_REAL_TYPE","bindreal",CS_REAL_TYPE,
 			(CS_VOID *)&bindrealvalue,
 			(CS_INT)sizeof(CS_REAL),4,0,0,
@@ -7685,22 +7731,22 @@ int main(int argc, char **argv) {
 		{"CS_BIGDATETIME_TYPE","binddatetime",CS_BIGDATETIME_TYPE,
 			(CS_VOID *)&bindbigdatetimevalue,
 			(CS_INT)sizeof(CS_BIGDATETIME),8,0,0,
-			bindcmdfails,bindtakes,
+			bindcmdfails,bindtds5,
 			"Jan  1 2001 12:00:00:000PM",27,1,0,0},
 		{"CS_DATE_TYPE","binddate",CS_DATE_TYPE,
 			(CS_VOID *)&binddatevalue,
 			(CS_INT)sizeof(CS_DATE),4,0,0,
-			bindcmdfails,bindtakes,
+			bindcmdfails,bindtds5,
 			"Jan  1 2001 12:00:00:000AM",27,1,0,0},
 		{"CS_TIME_TYPE","bindtime",CS_TIME_TYPE,
 			(CS_VOID *)&bindtimevalue,
 			(CS_INT)sizeof(CS_TIME),4,0,0,
-			bindcmdfails,bindtakes,
+			bindcmdfails,bindtds5,
 			"Jan  1 1900 12:00:00:000PM",27,1,0,0},
 		{"CS_BIGTIME_TYPE","bindtime",CS_BIGTIME_TYPE,
 			(CS_VOID *)&bindbigtimevalue,
 			(CS_INT)sizeof(CS_BIGTIME),8,0,0,
-			bindcmdfails,bindtakes,
+			bindcmdfails,bindtds5,
 			"Jan  1 1900 12:00:00:000PM",27,1,0,0},
 		{"CS_MONEY_TYPE","bindmoney",CS_MONEY_TYPE,
 			(CS_VOID *)&bindmoneyvalue,
