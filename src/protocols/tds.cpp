@@ -1310,6 +1310,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	evictOldestHandle(sqlrservercursor *keep);
 		sqlrservercursor	*availableCursor(
 					sqlrservercursor *keep=NULL);
+		void	releaseCursor(sqlrservercursor *cursor);
 
 		char	*callSyntaxToExec(const char *stmt);
 
@@ -3937,7 +3938,7 @@ bool sqlrprotocol_tds::sqlBatch() {
 	if (sqllength>maxquerysize) {
 		debugWrite("query too large: %lld",(long long)sqllength);
 		debugEnd();
-		cont->release(cursor);
+		releaseCursor(cursor);
 		return sendQueryTooLargeError(sqllength);
 	}
 
@@ -3954,7 +3955,7 @@ bool sqlrprotocol_tds::sqlBatch() {
 	// rather than failing
 	if (sql8size>maxquerysize) {
 		delete[] sql8;
-		cont->release(cursor);
+		releaseCursor(cursor);
 		return sendQueryTooLargeError(sql8size);
 	}
 
@@ -3963,7 +3964,7 @@ bool sqlrprotocol_tds::sqlBatch() {
 	if (insertBulk(sql8)) {
 
 		delete[] sql8;
-		cont->release(cursor);
+		releaseCursor(cursor);
 
 		resppacket.clear();
 
@@ -4074,7 +4075,7 @@ bool sqlrprotocol_tds::sqlBatch() {
 
 	// release the cursor
 	// FIXME: kludgy
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	return retval;
 }
@@ -6547,7 +6548,7 @@ bool sqlrprotocol_tds::bulkLoad() {
 		delete[] query;
 		debugWrite("query too large: %lld",(long long)querylen);
 		debugEnd();
-		cont->release(cursor);
+		releaseCursor(cursor);
 		return sendQueryTooLargeError(querylen);
 	}
 	cont->setOutputBindCount(cursor,0);
@@ -6574,7 +6575,7 @@ bool sqlrprotocol_tds::bulkLoad() {
 	debugEnd();
 
 	if (badrow) {
-		cont->release(cursor);
+		releaseCursor(cursor);
 		return sendError(0,1,16,"Malformed bulk load row",1);
 	}
 
@@ -6594,7 +6595,7 @@ bool sqlrprotocol_tds::bulkLoad() {
 	bool	retval=sendPacket();
 
 	// release the cursor
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	return retval;
 }
@@ -8237,7 +8238,7 @@ void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
 		}
 		executeflag.remove(cursor);
 		releasePositionRows(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 	}
 	handles->clear();
 }
@@ -8278,7 +8279,7 @@ void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
 
 	executeflag.remove(cursor);
 	releasePositionRows(cursor);
-	cont->release(cursor);
+	releaseCursor(cursor);
 }
 
 void sqlrprotocol_tds::evictOldestHandle(sqlrservercursor *keep) {
@@ -8328,6 +8329,23 @@ sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
 	}
 
 	return cursor;
+}
+
+void sqlrprotocol_tds::releaseCursor(sqlrservercursor *cursor) {
+
+	if (!cursor) {
+		return;
+	}
+
+	// close the result set before putting the cursor back.  release()
+	// only marks the cursor available - it leaves whatever the backend
+	// opened for the query still open.  on a backend that runs every
+	// select as a real database cursor (sap, since it declares a cursor
+	// per select), that cursor keeps holding the table until the sqlrelay
+	// cursor happens to get reused, and a later drop of that table fails
+	// with "currently in use".
+	cont->closeResultSet(cursor);
+	cont->release(cursor);
 }
 
 char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
@@ -8569,7 +8587,7 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	}
 
 	// release the cursor
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	return true;
 }
@@ -8623,7 +8641,7 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 	}
 
 	// release the cursor
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	return true;
 }
@@ -8687,7 +8705,7 @@ bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 	}
 
 	// release the cursor
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	return true;
 }
@@ -8749,7 +8767,7 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	}
 
 	// release the cursor
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	return true;
 }
@@ -8808,7 +8826,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	if (cursor) {
 		// drop the cursor a live handle was holding
 		stmthandles.remove(handle);
-		cont->release(cursor);
+		releaseCursor(cursor);
 	}
 
 	// get an available cursor
@@ -8836,7 +8854,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 
 	if (!success) {
 		rpcError(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 		// the handle never became valid
 		returnValueInteger(1,0,true);
 		return true;
@@ -8925,7 +8943,7 @@ bool sqlrprotocol_tds::unprepare() {
 	stmthandles.remove(handle);
 	executeflag.remove(cursor);
 	releasePositionRows(cursor);
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
@@ -9110,7 +9128,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 			cont->nextRow(pkcursor);
 		}
 	}
-	cont->release(pkcursor);
+	releaseCursor(pkcursor);
 
 	delete[] currentcatalog;
 	delete[] currentschema;
@@ -9194,7 +9212,7 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 
 		const char	*colname=positionedColumn(cursor,i);
 		if (!colname) {
-			cont->release(dmlcursor);
+			releaseCursor(dmlcursor);
 			return rpcInvalidColumnError(i);
 		}
 
@@ -9208,14 +9226,14 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 	}
 
 	if (!bindcount) {
-		cont->release(dmlcursor);
+		releaseCursor(dmlcursor);
 		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
 				"sp_cursor update requires a column to set");
 	}
 
 	if (!positionedWhere(cursor,table,row,&query,
 					bindpool,binds,&bindcount)) {
-		cont->release(dmlcursor);
+		releaseCursor(dmlcursor);
 		return rpcNumberedError(RPC_CURSOR_READ_ONLY,
 				"The cursor is read only - a positioned "
 				"update needs a primary key that the "
@@ -9247,7 +9265,7 @@ bool sqlrprotocol_tds::positionedDelete(sqlrservercursor *cursor,
 
 	if (!positionedWhere(cursor,table,row,&query,
 					bindpool,binds,&bindcount)) {
-		cont->release(dmlcursor);
+		releaseCursor(dmlcursor);
 		return rpcNumberedError(RPC_CURSOR_READ_ONLY,
 				"The cursor is read only - a positioned "
 				"delete needs a primary key that the "
@@ -9283,7 +9301,7 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 
 		const char	*colname=positionedColumn(cursor,i);
 		if (!colname) {
-			cont->release(dmlcursor);
+			releaseCursor(dmlcursor);
 			return rpcInvalidColumnError(i);
 		}
 
@@ -9298,7 +9316,7 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 	}
 
 	if (!bindcount) {
-		cont->release(dmlcursor);
+		releaseCursor(dmlcursor);
 		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
 				"sp_cursor insert requires a column value");
 	}
@@ -9329,7 +9347,7 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 	debugWrite("binds: %d",bindcount);
 
 	if (querysize>maxquerysize) {
-		cont->release(cursor);
+		releaseCursor(cursor);
 		return rpcQueryTooLargeError(querysize);
 	}
 
@@ -9342,13 +9360,13 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 
 	if (!success) {
 		rpcError(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 		return true;
 	}
 
 	uint64_t	affectedrows=cont->getAffectedRows(cursor);
 
-	cont->release(cursor);
+	releaseCursor(cursor);
 
 	debugWrite("affected rows: %lld",(long long)affectedrows);
 
@@ -9484,7 +9502,7 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 
 	if (!success) {
 		rpcError(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 		returnValueInteger(1,0,true);
 		return true;
 	}
@@ -9550,7 +9568,7 @@ bool sqlrprotocol_tds::cursorPrepare() {
 							true,true,true,true);
 	if (!success) {
 		rpcError(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 		returnValueInteger(1,0,true);
 		return true;
 	}
@@ -9674,7 +9692,7 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 
 	if (!success) {
 		rpcError(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 		returnValueInteger(1,0,true);
 		returnValueInteger(2,0,true);
 		return true;
@@ -9731,7 +9749,7 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 	if (!handlesContain(&cursorhandles,cursor)) {
 		executeflag.remove(cursor);
 		releasePositionRows(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 	}
 
 	returnStatus(RPC_STATUS_SUCCESS);
@@ -9866,7 +9884,7 @@ bool sqlrprotocol_tds::cursorClose() {
 	if (!handlesContain(&stmthandles,cursor)) {
 		executeflag.remove(cursor);
 		releasePositionRows(cursor);
-		cont->release(cursor);
+		releaseCursor(cursor);
 	}
 
 	returnStatus(RPC_STATUS_SUCCESS);

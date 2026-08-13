@@ -443,6 +443,11 @@
 		truncates; and a row that fails mid-buffering is tolerated,
 		returning the rows buffered so far, instead of failing the
 		whole query - matching the streaming path's existing tolerance
+	fixed the tds protocol module - it released cursors without closing
+		their result sets, so on a backend that runs every select as a
+		real database cursor, that cursor stayed open until the sqlrelay
+		cursor was reused, and a later drop of the table failed with
+		"currently in use"
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
