@@ -515,6 +515,14 @@
 		op_service_info) answered the generic "feature is not supported"
 		error; they answer isc_service_att_err now, naming the service
 		manager specifically
+	fixed the firebird protocol module - a blr buffer the module couldn't
+		parse (a bad version, a bad message header, an odd item count,
+		a truncated item, or a datatype the module doesn't recognize,
+		like firebird 4's DECFLOAT, INT128 and time-zone types) closed
+		the socket with no response at all; it answers
+		isc_dsql_datatype_err for an unrecognized datatype and
+		isc_dsql_error for the structural failures now, before the
+		session ends
 	fixed the c# api's SQLRelayDataReader.GetOrdinal() and
 		SQLRCursor.getColumnNames() - both mishandled column names
 		coming back null when the server was told not to send column

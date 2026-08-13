@@ -1128,11 +1128,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	readBlr(sqlrfirebirdfield **fields,
 					uint16_t *fieldcount,
 					const char *name,
-					uint32_t *bytesread);
+					uint32_t *bytesread,
+					uint32_t *gdscode);
 		bool	parseBlr(const byte_t *blr,
 					uint32_t blrlen,
 					sqlrfirebirdfield **fields,
-					uint16_t *fieldcount);
+					uint16_t *fieldcount,
+					uint32_t *gdscode);
 		bool	readMessage(sqlrservercursor *cursor,
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
@@ -4174,6 +4176,9 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 
 	debugStart((isexecute2)?"execute2":"execute");
 
+	const char	*title=(isexecute2)?"execute2 response":
+						"execute response";
+
 	uint32_t	bytesread=0;
 
 	uint32_t	stmthandle;
@@ -4188,7 +4193,14 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 
 	sqlrfirebirdfield	*infields=NULL;
 	uint16_t		infieldcount=0;
-	if (!readBlr(&infields,&infieldcount,"input blr",&bytesread)) {
+	uint32_t		blrgdscode=0;
+	if (!readBlr(&infields,&infieldcount,"input blr",
+					&bytesread,&blrgdscode)) {
+		// the rest of the request is still on the socket, so the
+		// session ends either way - but the client hears why first
+		if (blrgdscode) {
+			errorResponse(title,blrgdscode);
+		}
 		return false;
 	}
 
@@ -4235,7 +4247,10 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	uint16_t		outfieldcount=0;
 	if (isexecute2) {
 		if (!readBlr(&outfields,&outfieldcount,
-					"output blr",&bytesread)) {
+					"output blr",&bytesread,&blrgdscode)) {
+			if (blrgdscode) {
+				errorResponse(title,blrgdscode);
+			}
 			return false;
 		}
 		uint32_t	outmsgnumber;
@@ -4247,9 +4262,6 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	}
 
 	debugEnd();
-
-	const char	*title=(isexecute2)?"execute2 response":
-						"execute response";
 
 	if (!stmt || !stmt->prepared) {
 		delete[] outfields;
@@ -4373,7 +4385,12 @@ bool sqlrprotocol_firebird::execImmediate2() {
 
 	sqlrfirebirdfield	*infields=NULL;
 	uint16_t		infieldcount=0;
-	if (!readBlr(&infields,&infieldcount,"input blr",&bytesread)) {
+	uint32_t		blrgdscode=0;
+	if (!readBlr(&infields,&infieldcount,"input blr",
+					&bytesread,&blrgdscode)) {
+		if (blrgdscode) {
+			errorResponse("exec immediate2 response",blrgdscode);
+		}
 		return false;
 	}
 
@@ -4419,8 +4436,12 @@ bool sqlrprotocol_firebird::execImmediate2() {
 
 	sqlrfirebirdfield	*outfields=NULL;
 	uint16_t		outfieldcount=0;
-	if (!readBlr(&outfields,&outfieldcount,"output blr",&bytesread)) {
+	if (!readBlr(&outfields,&outfieldcount,"output blr",
+					&bytesread,&blrgdscode)) {
 		cont->release(cursor);
+		if (blrgdscode) {
+			errorResponse("exec immediate2 response",blrgdscode);
+		}
 		return false;
 	}
 
@@ -4543,7 +4564,12 @@ bool sqlrprotocol_firebird::fetch() {
 
 	sqlrfirebirdfield	*fields=NULL;
 	uint16_t		fieldcount=0;
-	if (!readBlr(&fields,&fieldcount,"output blr",&bytesread)) {
+	uint32_t		blrgdscode=0;
+	if (!readBlr(&fields,&fieldcount,"output blr",
+					&bytesread,&blrgdscode)) {
+		if (blrgdscode) {
+			errorResponse("fetch response",blrgdscode);
+		}
 		return false;
 	}
 
@@ -6652,18 +6678,22 @@ bool sqlrprotocol_firebird::readOpaque(byte_t *val,
 bool sqlrprotocol_firebird::readBlr(sqlrfirebirdfield **fields,
 					uint16_t *fieldcount,
 					const char *name,
-					uint32_t *bytesread) {
+					uint32_t *bytesread,
+					uint32_t *gdscode) {
 
 	*fields=NULL;
 	*fieldcount=0;
+	*gdscode=0;
 
 	uint32_t	blrlen=0;
 	byte_t		*blr=NULL;
 	if (!readBuffer(&blr,&blrlen,name,bytesread)) {
+		// a real socket failure, not a malformed blr - nothing to
+		// answer, the connection is already gone
 		return false;
 	}
 
-	bool	retval=parseBlr(blr,blrlen,fields,fieldcount);
+	bool	retval=parseBlr(blr,blrlen,fields,fieldcount,gdscode);
 
 	delete[] blr;
 
@@ -6673,7 +6703,8 @@ bool sqlrprotocol_firebird::readBlr(sqlrfirebirdfield **fields,
 bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 					uint32_t blrlen,
 					sqlrfirebirdfield **fields,
-					uint16_t *fieldcount) {
+					uint16_t *fieldcount,
+					uint32_t *gdscode) {
 
 	// blr data structure:
 	//
@@ -6693,6 +6724,9 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 
 	*fields=NULL;
 	*fieldcount=0;
+	// 0 means the caller should just close - anything else is a real
+	// firebird error code the caller should answer with
+	*gdscode=0;
 
 	// an empty blr just means the client had nothing to describe
 	if (!blr || blrlen<6) {
@@ -6709,12 +6743,14 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 			stdoutput.printf("	invalid blr version: %u\n",
 								version);
 		}
+		*gdscode=isc_dsql_error;
 		return false;
 	}
 	if (*p!=blr_begin || *(p+1)!=blr_message) {
 		if (getDebug()) {
 			stdoutput.write("	invalid blr message header\n");
 		}
+		*gdscode=isc_dsql_error;
 		return false;
 	}
 	p+=2;
@@ -6732,6 +6768,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 			stdoutput.printf("	odd blr item count: %u\n",
 								itemcount);
 		}
+		*gdscode=isc_dsql_error;
 		return false;
 	}
 
@@ -6746,6 +6783,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 
 		if (p>=end) {
 			delete[] f;
+			*gdscode=isc_dsql_error;
 			return false;
 		}
 
@@ -6762,6 +6800,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 			case blr_cstring:
 				if (p+2>end) {
 					delete[] f;
+					*gdscode=isc_dsql_error;
 					return false;
 				}
 				fld.length=(uint16_t)(p[0]|(p[1]<<8));
@@ -6773,6 +6812,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 			case blr_cstring2:
 				if (p+4>end) {
 					delete[] f;
+					*gdscode=isc_dsql_error;
 					return false;
 				}
 				fld.subtype=(uint16_t)(p[0]|(p[1]<<8));
@@ -6785,6 +6825,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 				// scale, not a length
 				if (p+4>end) {
 					delete[] f;
+					*gdscode=isc_dsql_error;
 					return false;
 				}
 				fld.subtype=(uint16_t)(p[0]|(p[1]<<8));
@@ -6798,6 +6839,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 			case blr_int64:
 				if (p>=end) {
 					delete[] f;
+					*gdscode=isc_dsql_error;
 					return false;
 				}
 				fld.scale=(int16_t)((int8_t)*p);
@@ -6820,6 +6862,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 							fld.blrtype);
 				}
 				delete[] f;
+				*gdscode=isc_dsql_datatype_err;
 				return false;
 		}
 
