@@ -453,6 +453,10 @@
 		with the previous parameters still queued on it, and the server
 		rejected the leftover parameters; every later statement on that
 		cursor failed too
+	fixed the tds protocol module - sp_execute passed every parameter the
+		client sent to the back end, even if the prepared statement
+		had fewer bind markers.  The extra parameters are dropped now,
+		matching what a real server does with them
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1490,6 +1490,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// more rows doesn't run the query again
 		dictionary<sqlrservercursor *, bool>		executeflag;
 
+		// how many bind markers each prepared statement has, so
+		// that sp_execute can ignore parameters past the last one
+		dictionary<sqlrservercursor *, uint16_t>	bindmarkercount;
+
 		dictionary<sqlrservercursor *, tdsrows *>	positionrows;
 };
 
@@ -1852,6 +1856,7 @@ void sqlrprotocol_tds::free() {
 	cursorhandles.clear();
 	pendingcursor=NULL;
 	executeflag.clear();
+	bindmarkercount.clear();
 	releaseAllPositionRows();
 }
 
@@ -8237,6 +8242,7 @@ void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
 			continue;
 		}
 		executeflag.remove(cursor);
+		bindmarkercount.remove(cursor);
 		releasePositionRows(cursor);
 		releaseCursor(cursor);
 	}
@@ -8278,6 +8284,7 @@ void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
 	}
 
 	executeflag.remove(cursor);
+	bindmarkercount.remove(cursor);
 	releasePositionRows(cursor);
 	releaseCursor(cursor);
 }
@@ -8844,6 +8851,13 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	delete[] query;
 
 	if (success) {
+		// remember how many bind markers the statement has, so that
+		// sp_execute can ignore any parameters past the last one
+		// (see execute())
+		bindmarkercount.setValue(cursor,
+					cont->countBindVariables(
+						cont->getQueryBuffer(cursor),
+						cont->getQuerySize(cursor)));
 		executeflag.setValue(cursor,true);
 		if (prepexec) {
 			bindParams(cursor,firstvalue);
@@ -8906,6 +8920,21 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 
 	// bind and run the prepared query
 	bindParams(cursor,1);
+
+	// A client can send more values than the statement has bind markers.
+	// Sql server fails the call ("Procedure or function has too many
+	// arguments specified") but sybase just ignores the extras, and a
+	// backend that runs the statement as plain sql with positional
+	// parameters (sap.cpp) has no way to ignore them - it hands every
+	// bind to the database, which then rejects the whole statement.
+	// So drop the extras here instead, before they reach the backend.
+	uint16_t	markers=0;
+	if (bindmarkercount.getValue(cursor,&markers) &&
+			cont->getInputBindCount(cursor)>markers) {
+		debugWrite("capping input binds at %d marker(s)",markers);
+		cont->setInputBindCount(cursor,markers);
+	}
+
 	bool	success=cont->executeQuery(cursor,true,true,true,true);
 	executeflag.setValue(cursor,false);
 
@@ -8942,6 +8971,7 @@ bool sqlrprotocol_tds::unprepare() {
 
 	stmthandles.remove(handle);
 	executeflag.remove(cursor);
+	bindmarkercount.remove(cursor);
 	releasePositionRows(cursor);
 	releaseCursor(cursor);
 
