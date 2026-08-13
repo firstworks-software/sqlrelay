@@ -38,6 +38,40 @@ static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
 #endif
 }
 
+// int64's are weird.  To the left of the decimal point is the
+// value/10^scale, to the right is value%10^scale
+static ssize_t firebirdFormatScaledInt64(char *buffer, size_t buffersize,
+						ISC_INT64 v, short sqlscale) {
+
+	ISC_SHORT	scale=-sqlscale;
+
+	// Firebird allows 18 digits of scale, and 10^10 already
+	// overflows an int, so the divisor is built with integer
+	// math rather than with pow().
+	ISC_INT64	p=1;
+	for (ISC_SHORT i=0; i<scale; i++) {
+		p*=10;
+	}
+
+	// Integer division truncates toward zero and the remainder
+	// carries the sign, so formatting the halves separately would
+	// put a sign on each of them, and lose it entirely when the
+	// integer part is zero.
+	ISC_INT64	whole=v/p;
+	ISC_INT64	frac=v%p;
+	const char	*sign=(v<0)?"-":"";
+	if (whole<0) {
+		whole=-whole;
+	}
+	if (frac<0) {
+		frac=-frac;
+	}
+	return charstring::printf(buffer,buffersize,
+					"%s%lld.%0*lld",
+					sign,(int64_t)whole,
+					scale,(int64_t)frac);
+}
+
 static int firebirdSqlTypeToDatatype(short sqltype,
 					short sqlsubtype, short sqlscale) {
 	// mirrors the coercion describeResultSet() applies to output
@@ -46,8 +80,10 @@ static int firebirdSqlTypeToDatatype(short sqltype,
 		return CHAR_DATATYPE;
 	} else if (sqltype==SQL_VARYING || sqltype==SQL_VARYING+1) {
 		return VARCHAR_DATATYPE;
-	} else if (sqltype==SQL_SHORT || sqltype==SQL_SHORT+1) {
+	} else if ((sqltype==SQL_SHORT || sqltype==SQL_SHORT+1) && !sqlscale) {
 		return SMALLINT_DATATYPE;
+	} else if ((sqltype==SQL_SHORT || sqltype==SQL_SHORT+1) && sqlscale) {
+		return (sqlsubtype==1)?NUMERIC_DATATYPE:DECIMAL_DATATYPE;
 	// Looks like sometimes firebird returns INT64's as SQL_LONG type.
 	// These can be identified because the sqlscale gets set too.  Treat
 	// SQL_LONG's with an sqlscale as INT64's.
@@ -3367,9 +3403,19 @@ bool firebirdcursor::describeResultSet() {
 			}
 		} else if (outsqlda->sqlvar[i].sqltype==SQL_SHORT ||
 				outsqlda->sqlvar[i].sqltype==SQL_SHORT+1) {
+			// sqllen is already 2 bytes here, matching
+			// shortbuffer exactly, so a scaled column (firebird
+			// stores a 1-4 digit NUMERIC/DECIMAL as a SMALLINT)
+			// needs no buffer widening, just the right type
 			outsqlda->sqlvar[i].sqldata=
 					(char *)&field[i].shortbuffer;
-			field[i].sqlrtype=SMALLINT_DATATYPE;
+			if (outsqlda->sqlvar[i].sqlscale) {
+				field[i].sqlrtype=
+					(outsqlda->sqlvar[i].sqlsubtype==1)?
+					NUMERIC_DATATYPE:DECIMAL_DATATYPE;
+			} else {
+				field[i].sqlrtype=SMALLINT_DATATYPE;
+			}
 
 		// Looks like sometimes firebird returns INT64's as
 		// SQL_LONG type.  These can be identified because
@@ -3774,9 +3820,18 @@ void firebirdcursor::getField(uint32_t col,
 			outsqlda->sqlvar[col].
 				sqltype==SQL_SHORT+1) {
 
-		*fldsize=charstring::printf(field[col].textbuffer,
-						conn->cont->getMaxFieldSize(),
-						"%hd",field[col].shortbuffer);
+		if (outsqlda->sqlvar[col].sqlscale) {
+			*fldsize=firebirdFormatScaledInt64(
+					field[col].textbuffer,
+					conn->cont->getMaxFieldSize(),
+					(ISC_INT64)field[col].shortbuffer,
+					outsqlda->sqlvar[col].sqlscale);
+		} else {
+			*fldsize=charstring::printf(
+					field[col].textbuffer,
+					conn->cont->getMaxFieldSize(),
+					"%hd",field[col].shortbuffer);
+		}
 		*fld=field[col].textbuffer;
 
 	} else if (outsqlda->sqlvar[col].
@@ -3845,40 +3900,12 @@ void firebirdcursor::getField(uint32_t col,
 				sqltype==SQL_LONG+1) &&
 			outsqlda->sqlvar[col].sqlscale)) {
 
-		// int64's are weird.  To the left of the decimal
-		// point is the value/10^scale, to the right is
-		// value%10^scale
 		ISC_INT64	v=field[col].int64buffer;
 		if (outsqlda->sqlvar[col].sqlscale) {
-			ISC_SHORT	scale=-outsqlda->sqlvar[col].sqlscale;
-
-			// Firebird allows 18 digits of scale, and 10^10
-			// already overflows an int, so the divisor is built
-			// with integer math rather than with pow().
-			ISC_INT64	p=1;
-			for (ISC_SHORT i=0; i<scale; i++) {
-				p*=10;
-			}
-
-			// Integer division truncates toward zero and the
-			// remainder carries the sign, so formatting the
-			// halves separately would put a sign on each of them,
-			// and lose it entirely when the integer part is zero.
-			ISC_INT64	whole=v/p;
-			ISC_INT64	frac=v%p;
-			const char	*sign=(v<0)?"-":"";
-			if (whole<0) {
-				whole=-whole;
-			}
-			if (frac<0) {
-				frac=-frac;
-			}
-			*fldsize=charstring::printf(
+			*fldsize=firebirdFormatScaledInt64(
 					field[col].textbuffer,
 					conn->cont->getMaxFieldSize(),
-					"%s%lld.%0*lld",
-					sign,(int64_t)whole,
-					scale,(int64_t)frac);
+					v,outsqlda->sqlvar[col].sqlscale);
 		} else {
 			*fldsize=charstring::printf(
 					field[col].textbuffer,

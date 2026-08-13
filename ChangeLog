@@ -499,6 +499,11 @@
 		the low 4 bytes were fetched and the high 4 came back stale;
 		the column is described as SQL_INT64 now, so the fetch fills
 		the whole buffer
+	fixed the firebird connection module - a SQL_SHORT column (a narrow
+		NUMERIC or DECIMAL, which firebird stores as a SMALLINT)
+		ignored its scale, so it rendered as an unscaled integer and
+		was reported as a SMALLINT column instead of a NUMERIC or
+		DECIMAL one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
