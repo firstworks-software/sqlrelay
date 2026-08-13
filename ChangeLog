@@ -435,6 +435,14 @@
 		to the client.  The done token carries DONE_ERROR now, so a
 		ct-lib client sees CS_CMD_FAIL, for a back end that is really
 		an ASE.  An mssql back end keeps the old behavior for now
+	hardened the sap connection module's result-set buffering: a
+		maxbufferedrows of 0 (including a non-numeric connect string
+		value) now means unlimited instead of buffering nothing; the
+		buffering cap trims to the exact row limit instead of dropping
+		a whole fetch batch, and logs a debug message when it
+		truncates; and a row that fails mid-buffering is tolerated,
+		returning the rows buffered so far, instead of failing the
+		whole query - matching the streaming path's existing tolerance
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

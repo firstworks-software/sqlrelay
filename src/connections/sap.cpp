@@ -16,7 +16,10 @@
 
 // default cap on the number of rows that executeQuery() will buffer for a
 // query that returns rows and also has output binds - see bufferRows().
-// override it with the maxbufferedrows connect string parameter.
+// override it with the maxbufferedrows connect string parameter.  a value
+// of 0 (including a non-numeric value, which parses as 0) means unlimited,
+// consistent with maxcolumncount/maxfieldsize and the other sqlrelay
+// config options that use 0 to mean "no cap".
 #define DEFAULT_MAX_BUFFERED_ROWS	1000
 
 #ifdef SYBASE_AT_RUNTIME
@@ -876,6 +879,9 @@ void sapconnection::handleConnectString() {
 	packetsize=cont->getConnectStringValue("packetsize");
 	csversion=cont->getConnectStringValue("csversion");
 
+	// if unset, use the default cap.  if set, use whatever value it
+	// parses to - including 0 for either an explicit "0" or a
+	// non-numeric value - since bufferRows() treats 0 as unlimited.
 	const char	*mbr=cont->getConnectStringValue("maxbufferedrows");
 	maxbufferedrows=(charstring::isNullOrEmpty(mbr))?
 				DEFAULT_MAX_BUFFERED_ROWS:
@@ -4189,7 +4195,8 @@ bool sapcursor::fetchOutputParams() {
 bool sapcursor::bufferRows() {
 
 	// fetch and buffer the entire result set, so that executeQuery()'s
-	// loop can get on to the status/parameter result sets that follow it
+	// loop can get on to the status/parameter result sets that follow it.
+	// a maxbufferedrows of 0 means unlimited (see DEFAULT_MAX_BUFFERED_ROWS).
 	uint64_t	maxbufferedrows=sapconn->maxbufferedrows;
 	for (;;) {
 
@@ -4201,15 +4208,45 @@ bool sapcursor::bufferRows() {
 				(result==CS_SUCCEED && !rowsread)) {
 			return true;
 		}
+
+		// a bad row shouldn't fail the whole query - it's tolerated
+		// the same way fetchRow() tolerates it on the streaming path
+		// (see fetchRow() below) - so just stop buffering and return
+		// whatever rows were successfully buffered so far.
+		if (result==CS_ROW_FAIL) {
+			if (conn->cont->getDebug()) {
+				conn->cont->raiseDebugWriteEvent(
+					"sap: CS_ROW_FAIL while buffering "
+					"rows, returning the %lld row(s) "
+					"buffered so far",
+					(long long)bufferedrows);
+			}
+			return true;
+		}
 		if (result!=CS_SUCCEED) {
 			return false;
 		}
 
-		// if the result set is too big to buffer, then discard the
-		// rest of it and return the rows that we have.  the query
-		// still succeeds, it just returns a truncated result set,
-		// rather than using an unbounded amount of memory.
-		if (bufferedrows+rowsread>maxbufferedrows) {
+		// if the result set is too big to buffer, then trim this
+		// batch down to the precise number of rows that still fit,
+		// discard the rest of the result set, and return the rows
+		// that we have.  the query still succeeds, it just returns
+		// a truncated result set, rather than using an unbounded
+		// amount of memory.
+		if (maxbufferedrows && bufferedrows+rowsread>maxbufferedrows) {
+			CS_INT	keep=(CS_INT)(maxbufferedrows-bufferedrows);
+			if (keep>0 && !appendRowBatch(keep)) {
+				return false;
+			}
+			bufferedrows=bufferedrows+keep;
+			if (conn->cont->getDebug()) {
+				conn->cont->raiseDebugWriteEvent(
+					"sap: result set exceeded "
+					"maxbufferedrows (%lld), truncating "
+					"to %lld row(s)",
+					(long long)maxbufferedrows,
+					(long long)bufferedrows);
+			}
 			return drainResultSet();
 		}
 
