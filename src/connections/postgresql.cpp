@@ -1031,8 +1031,14 @@ void postgresqlconnection::getError(char *errorbuffer,
 					bool *liveconnection) {
 	const char	*errorstring=PQerrorMessage(pgconn);
 	*errorsize=charstring::getLength(errorstring);
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 					errorstring,*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	// PostgreSQL doesn't have an error number per-se.  We'll set it
 	// to 1 though, because 0 typically means "no error has occurred"
 	// and some apps respond that way if errorcode is set to 0.
@@ -3154,8 +3160,14 @@ void postgresqlcursor::getError(char *errorbuffer,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING:
 				PQerrorMessage(postgresqlconn->pgconn);
 	*errorsize=charstring::getLength(errorstring);
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 					errorstring,*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	// PostgreSQL doesn't have an error number per-se.  We'll set it
 	// to 1 though, because 0 typically means "no error has occurred"
 	// and some apps respond that way if errorcode is set to 0.

@@ -5658,9 +5658,15 @@ void freetdsconnection::getError(char *errorbuffer,
 					uint32_t *errorsize,
 					int64_t *errorcode,
 					bool *liveconnection) {
-	*errorsize=this->errorstring.getSize();
+	*errorsize=this->errorstring.getStringLength();
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 				this->errorstring.getString(),*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	*liveconnection=this->liveconnection;
 	*errorcode=this->errorcode;
 }

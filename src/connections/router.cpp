@@ -1182,12 +1182,24 @@ void routerconnection::getError(char *errorbuffer,
 					int64_t *errorcode,
 					bool *liveconnection) {
 
+	*errorsize=0;
+	*errorcode=0;
+	if (errorbuffersize) {
+		errorbuffer[0]='\0';
+	}
 	for (uint16_t index=0; index<concount; index++) {
 		const char	*errormessage=cons[index]->errorMessage();
-		if (!charstring::getLength(errormessage)) {
+		if (charstring::getLength(errormessage)) {
 			*errorsize=charstring::getLength(errormessage);
+			if (*errorsize>=errorbuffersize) {
+				*errorsize=(errorbuffersize)?
+						errorbuffersize-1:0;
+			}
 			charstring::safeCopy(errorbuffer,errorbuffersize,
 						errormessage,*errorsize);
+			if (errorbuffersize) {
+				errorbuffer[*errorsize]='\0';
+			}
 			*errorcode=cons[index]->errorNumber();
 			break;
 		}
@@ -2218,8 +2230,14 @@ void routercursor::getError(char *errorbuffer,
 	const char	*errormessage=
 			(currentcur)?currentcur->errorMessage():"";
 	*errorsize=charstring::getLength(errormessage);
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 					errormessage,*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	*errorcode=(currentcur)?currentcur->errorNumber():0;
 	*liveconnection=true;
 }

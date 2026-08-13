@@ -3641,10 +3641,16 @@ void firebirdcursor::getError(char *errorbuffer,
 	if (bindformaterror) {
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+		}
 		charstring::safeCopy(errorbuffer,
 				errorbuffersize,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
 				*errorsize);
+		if (errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
+		}
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
 		*liveconnection=true;
 		return;
@@ -3654,10 +3660,16 @@ void firebirdcursor::getError(char *errorbuffer,
 	if (querytoolarge) {
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_MAXQUERYSIZE_STRING);
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+		}
 		charstring::safeCopy(errorbuffer,
 				errorbuffersize,
 				SQLR_ERROR_MAXQUERYSIZE_STRING,
 				*errorsize);
+		if (errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
+		}
 		*errorcode=SQLR_ERROR_MAXQUERYSIZE;
 		*liveconnection=true;
 		return;

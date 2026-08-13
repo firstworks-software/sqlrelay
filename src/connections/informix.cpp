@@ -1011,6 +1011,9 @@ void informixconnection::getError(char *errorbuffer,
 
 	// set return values
 	*errorsize=errsize;
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	*errorcode=nativeerrnum;
 	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errsize);
 }
@@ -3576,10 +3579,15 @@ void informixcursor::getError(char *errorbuffer,
 		// handle bind format errors
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
-		charstring::safeCopy(errorbuffer,
-				errorbuffersize,
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+		}
+		charstring::safeCopy(errorbuffer,errorbuffersize,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
 				*errorsize);
+		if (errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
+		}
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
 		*liveconnection=true;
 		return;
@@ -3595,6 +3603,9 @@ void informixcursor::getError(char *errorbuffer,
 
 	// set return values
 	*errorsize=errsize;
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	// leave it to informix to have negative numbers for error codes...
 	// the best we can do for now is turn it into a positive number
 	*errorcode=-nativeerrnum;

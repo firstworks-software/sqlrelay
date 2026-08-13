@@ -4974,10 +4974,16 @@ void oraclecursor::getError(char *errorbuffer,
 		// handle bind format errors
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+		}
 		charstring::safeCopy(errorbuffer,
 				errorbuffersize,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
 				*errorsize);
+		if (errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
+		}
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
 		*liveconnection=true;
 

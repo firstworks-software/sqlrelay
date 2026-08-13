@@ -571,6 +571,23 @@
 		affirmative claim indistinguishable from a real answer with
 		no "unknown" value to fall back on; it throws an "invalid
 		parameter index" SQLException now
+	fixed getError() in every connection module and in the server's
+		cursor and controller wrappers - each one reported an error
+		size larger than the number of bytes it actually copied into
+		the caller's error buffer, so the wire path could read and
+		send bytes past the end of that buffer; they clamp and
+		NUL-terminate what they copy now, matching the documented
+		contract
+	fixed the firebird protocol module - it left the client's "?" bind
+		markers in the query text verbatim, so binds failed against
+		any backend that doesn't also use "?" (eg. postgresql wants
+		"$1", "$2", ...); added sqlrservercursor/sqlrservercontroller
+		setRequireBindVariableTranslation(), which lets a protocol
+		module force sqlrservercontroller's existing bind variable
+		translation on for a cursor regardless of the instance's
+		"translatebindvariables" setting, and the firebird protocol
+		module now sets it, since its wire format has no marker style
+		of its own to offer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

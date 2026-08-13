@@ -1043,6 +1043,9 @@ void db2connection::getError(char *errorbuffer,
 
 	// set return values
 	*errorsize=errsize;
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	*errorcode=nativeerrnum;
 	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errsize);
 }
@@ -3255,10 +3258,16 @@ void db2cursor::getError(char *errorbuffer,
 		// handle bind format errors
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+		}
 		charstring::safeCopy(errorbuffer,
 				errorbuffersize,
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING,
 				*errorsize);
+		if (errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
+		}
 		*errorcode=SQLR_ERROR_INVALIDBINDVARIABLEFORMAT;
 		*liveconnection=true;
 		return;
@@ -3274,6 +3283,9 @@ void db2cursor::getError(char *errorbuffer,
 
 	// set return values
 	*errorsize=errsize;
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	*errorcode=nativeerrnum;
 	*liveconnection=db2conn->liveConnection(nativeerrnum,
 						errorbuffer,errsize);

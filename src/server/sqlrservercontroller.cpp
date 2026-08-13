@@ -3467,10 +3467,13 @@ void sqlrservercontroller::getError(char *errorbuffer,
 	getError(&errorstring,errorsize,errorcode,liveconnection);
 
 	// copy the error out
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 				errorstring,*errorsize);
-	if (*errorsize>errorbuffersize) {
-		*errorsize=errorbuffersize;
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
 	}
 }
 
@@ -11625,10 +11628,13 @@ void sqlrservercontroller::getError(sqlrservercursor *cursor,
 	getError(cursor,&errorstring,errorsize,errorcode,liveconnection);
 
 	// copy the error out
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 				errorstring,*errorsize);
-	if (*errorsize>errorbuffersize) {
-		*errorsize=errorbuffersize;
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
 	}
 }
 

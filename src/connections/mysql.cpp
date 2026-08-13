@@ -2799,8 +2799,14 @@ void mysqlconnection::getError(char *errorbuffer,
 					bool *liveconnection) {
 	const char	*errorstring=mysql_error(mysqlptr);
 	*errorsize=charstring::getLength(errorstring);
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 					errorstring,*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	*errorcode=mysql_errno(mysqlptr);
 	*liveconnection=(!charstring::compare(errorstring,"") ||
 		!charstring::compareIgnoringCase(errorstring,
@@ -3524,7 +3530,13 @@ void mysqlcursor::getError(char *errorbuffer,
 
 	// set return values
 	*errorsize=charstring::getLength(err);
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,err,*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	*errorcode=errn;
 }
 

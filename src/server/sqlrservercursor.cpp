@@ -1021,11 +1021,14 @@ void sqlrservercursor::getError(char *errorbuffer,
 
 	// if the cursor happens to have an error, then return that
 	if (pvt->_errorsize) {
-		charstring::safeCopy(errorbuffer,errorbuffersize,
-					pvt->_errorbuffer,pvt->_errorsize);
 		*errorsize=pvt->_errorsize;
-		if (*errorsize>errorbuffersize) {
-			*errorsize=errorbuffersize;
+		if (*errorsize>=errorbuffersize) {
+			*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+		}
+		charstring::safeCopy(errorbuffer,errorbuffersize,
+					pvt->_errorbuffer,*errorsize);
+		if (errorbuffersize) {
+			errorbuffer[*errorsize]='\0';
 		}
 		*errorcode=pvt->_errnum;
 		*liveconnection=pvt->_liveconnection;

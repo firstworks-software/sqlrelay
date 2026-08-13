@@ -1851,8 +1851,14 @@ void sqliteconnection::getError(char *errorbuffer,
 					bool *liveconnection) {
 	// set return values
 	*errorsize=charstring::getLength(errmesg);
+	if (*errorsize>=errorbuffersize) {
+		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
+	}
 	charstring::safeCopy(errorbuffer,errorbuffersize,
 					errmesg,*errorsize);
+	if (errorbuffersize) {
+		errorbuffer[*errorsize]='\0';
+	}
 	*errorcode=errcode;
 	*liveconnection=true;
 	if (errmesg &&
