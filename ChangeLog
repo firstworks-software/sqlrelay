@@ -476,6 +476,8 @@
 	fixed the sap connection module - an output bind's precision and scale
 		were never filled in, so a numeric(10,4) parameter arrived
 		upstream as a bare float
+	java api - getColumnNames() no longer allocates its return array before
+		checking whether there are any column names to put in it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

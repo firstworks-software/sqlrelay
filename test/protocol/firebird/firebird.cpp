@@ -572,6 +572,15 @@ int main(int argc, char **argv) {
 	int		usernamecount=0;
 	int		limbocount=0;
 	int		errorcount=0;
+	// the isc_info_user_names and isc_info_active_transactions clusters
+	// repeat once per attachment and per active transaction, both of
+	// which vary with whatever else is connected to the server at the
+	// time - asserting inside the walk would make the number of
+	// assertions this section runs non-reproducible between runs, so
+	// instead track whether every cluster was well-formed here and
+	// assert that once, after the walk
+	bool		usernamesok=true;
+	bool		activetransactionsok=true;
 	while (repinfoptr<repinfoendptr &&
 			*repinfoptr!=(char)isc_info_end &&
 			*repinfoptr!=(char)isc_info_truncated) {
@@ -586,9 +595,10 @@ int main(int argc, char **argv) {
 				// a counted string, and the whole cluster is
 				// repeated per attached user - there's no
 				// count at the front
-				assertEquals((int)repinfolen,
-						(int)repinfoptr[0]+1);
-				assertTrue(repinfoptr[0]>0);
+				if (repinfolen!=(short)(repinfoptr[0]+1) ||
+						repinfoptr[0]<=0) {
+					usernamesok=false;
+				}
 				usernamecount++;
 				break;
 			case isc_info_limbo:
@@ -596,7 +606,9 @@ int main(int argc, char **argv) {
 				break;
 			case isc_info_active_transactions:
 				// one transaction id per cluster
-				assertEquals((int)repinfolen,4);
+				if (repinfolen!=4) {
+					activetransactionsok=false;
+				}
 				break;
 			case isc_info_error:
 				// a real server refuses these two, and only
@@ -619,6 +631,8 @@ int main(int argc, char **argv) {
 		repinfoptr+=repinfolen;
 	}
 	assertTrue(usernamecount>=1);
+	assertTrue(usernamesok);
+	assertTrue(activetransactionsok);
 	// a server with nothing in limbo sends no cluster at all rather than
 	// an empty one
 	assertEquals(limbocount,0);

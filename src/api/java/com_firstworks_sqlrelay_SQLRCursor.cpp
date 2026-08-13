@@ -2234,6 +2234,10 @@ JNIEXPORT jlongArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getRowLengt
 JNIEXPORT jobjectArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnNames
   (JNIEnv *env, jobject self) {
 	int	colcount=getSqlrCursor(env,self)->colCount();
+	const char * const *colnames=getSqlrCursor(env,self)->getColumnNames();
+	if (!colnames) {
+		return 0;
+	}
 	jobjectArray	retarray=
 #ifdef CAST_NEW_OBJECT_ARRAY
 		// NewObjectArray returns jarray, not jobjectArray, and must be
@@ -2243,10 +2247,6 @@ JNIEXPORT jobjectArray JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumn
 			env->NewObjectArray(colcount,
 					env->FindClass("java/lang/String"),
 					curNewStringUTF(env,""));
-	const char * const *colnames=getSqlrCursor(env,self)->getColumnNames();
-	if (!colnames) {
-		return 0;
-	}
 	for (int i=0; i<colcount; i++) {
 		env->SetObjectArrayElement(retarray,i,
 				curNewStringUTF(env,colnames[i]));
