@@ -201,6 +201,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		bool		close();
 		bool		prepareQuery(const char *query,
 						uint32_t size);
+		bool		columnInfoIsValidAfterPrepare();
 		void		encodeBlob(stringbuffer *buffer,
 						const char *data,
 						uint32_t datasize);
@@ -310,6 +311,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		void		deflateColumnSize(CS_INT index);
 		bool		drainResultSet();
 		bool		bindResultSetColumns();
+		bool		describeResultSetColumns();
 		bool		fetchOutputParams();
 		bool		bufferRows();
 		bool		appendRowBatch(CS_INT rows);
@@ -325,6 +327,11 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		// true when the cursor was declared on a prepared dynamic
 		// statement rather than on the select text
 		bool		dynamiccursor;
+
+		// true when prepareDynamic()'s CS_DESCRIBE_OUTPUT block
+		// populated ncols/column[] with the prepared statement's real
+		// output columns - see columnInfoIsValidAfterPrepare()
+		bool		outputdescribed;
 		CS_INT		results;
 		CS_INT		resultstype;
 		// executeQuery()'s loop overwrites resultstype as it walks the
@@ -2770,6 +2777,7 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	cursorcmd=NULL;
 	dynamicprepared=false;
 	dynamiccursor=false;
+	outputdescribed=false;
 
 	rowresultstype=0;
 	rowsbuffered=false;
@@ -3099,6 +3107,46 @@ bool sapcursor::prepareDynamic() {
 	}
 	dynamicprepared=true;
 
+	// ask ct-lib to describe the prepared statement's output columns.
+	// Nothing downstream of prepareQuery() populates ncols/column[] for
+	// a dynamic-cursor select otherwise - bindResultSetColumns() only
+	// runs against a real result set, from executeQuery() - so without
+	// this, colCount() stays 0 for a prepared select and a client's own
+	// CS_DESCRIBE_OUTPUT (relayed via sqlrprotocol_tds::prepare(), which
+	// is gated on colCount()) sees no columns.
+	if (ct_dynamic(cursorcmd,CS_DESCRIBE_OUTPUT,
+			(CS_CHAR *)dynamicname,(CS_INT)dynamicnamesize,
+			NULL,CS_UNUSED)!=CS_SUCCEED) {
+		return false;
+	}
+	if (ct_send(cursorcmd)!=CS_SUCCEED) {
+		return false;
+	}
+	CS_INT	describeres;
+	CS_INT	describerestype;
+	bool	describesuccess=true;
+	while ((describeres=ct_results(cursorcmd,&describerestype))==
+							CS_SUCCEED) {
+		if (describerestype==CS_CMD_FAIL) {
+			describesuccess=false;
+		} else if (describerestype==CS_DESCRIBE_RESULT) {
+			if (!describeResultSetColumns()) {
+				describesuccess=false;
+			}
+		}
+		// every result set has to be run out to the end before the
+		// next ct_results() (see drainResultSet())
+		if (ct_cancel(NULL,cursorcmd,CS_CANCEL_CURRENT)==CS_FAIL) {
+			sapconn->liveconnection=false;
+			return false;
+		}
+	}
+	if (describeres!=CS_END_RESULTS || !describesuccess ||
+						sapconn->errorcode) {
+		return false;
+	}
+	outputdescribed=true;
+
 	// ...then declare a cursor on the prepared statement, rather than
 	// on the select text.  From here on the flow is the ordinary cursor
 	// flow - ct_param() placeholders, then ct_cursor(CS_CURSOR_ROWS),
@@ -3117,6 +3165,19 @@ bool sapcursor::prepareDynamic() {
 	return true;
 }
 
+bool sapcursor::columnInfoIsValidAfterPrepare() {
+
+	// Only prepareDynamic()'s CS_DESCRIBE_OUTPUT block (see outputdescribed)
+	// actually populates ncols/column[] at prepare time, for a select
+	// prepared with bind markers. Every other prepare - DML/DDL, or a
+	// select declared as a cursor over its own text - leaves ncols at 0
+	// until execute, and the framework's handleResultSetHeader() latches
+	// the column info the first time it's told it's valid, so returning
+	// true unconditionally here would latch a stale 0 for those and never
+	// pick up the real post-execute column count.
+	return outputdescribed;
+}
+
 bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// clear out any errors, so that a failed prepare reports its own
@@ -3126,6 +3187,7 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// initialize column count
 	ncols=0;
+	outputdescribed=false;
 
 	clean=true;
 
@@ -4074,6 +4136,42 @@ bool sapcursor::bindResultSetColumns() {
 			}
 			deflateColumnSize(i);
 		}
+	}
+
+	return true;
+}
+
+bool sapcursor::describeResultSetColumns() {
+
+	// same as the CS_NUMDATA/ct_describe half of bindResultSetColumns(),
+	// but against a CS_DESCRIBE_RESULT result set rather than a real one -
+	// this is metadata only, no rows are being fetched, so there's no
+	// ct_bind call and no need for data/nullindicator buffers.
+
+	// get the column count
+	if (ct_res_info(cmd,CS_NUMDATA,(CS_VOID *)&ncols,
+			CS_UNUSED,(CS_INT *)NULL)!=CS_SUCCEED) {
+		return false;
+	}
+
+	// allocate buffers and limit column count if necessary - same
+	// convention as bindResultSetColumns(): an unbounded column count
+	// means the buffers weren't sized at connect time, so size them for
+	// this query now
+	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
+	if (!maxcolumncount) {
+		allocateResultSetBuffers(ncols);
+	} else if ((uint32_t)ncols>maxcolumncount) {
+		ncols=maxcolumncount;
+	}
+
+	// describe the columns
+	for (CS_INT i=0; i<ncols; i++) {
+		column[i]=templatecolumn;
+		if (ct_describe(cmd,i+1,&column[i])!=CS_SUCCEED) {
+			return false;
+		}
+		deflateColumnSize(i);
 	}
 
 	return true;

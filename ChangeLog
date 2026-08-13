@@ -457,6 +457,10 @@
 		client sent to the back end, even if the prepared statement
 		had fewer bind markers.  The extra parameters are dropped now,
 		matching what a real server does with them
+	fixed the sap connection module - preparing a select with bind markers
+		never asked the backend to describe the statement's output
+		columns, so a client's CS_DESCRIBE_OUTPUT always got back 0
+		columns instead of the real count
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
