@@ -54,6 +54,7 @@
 #define NEED_IS_BIND_DELIMITER 1
 #define NEED_AFTER_BIND_VARIABLE 1
 #define NEED_COUNT_BIND_VARIABLES 1
+#define NEED_SUBSTITUTE_NULL_FOR_BIND_VARIABLES 1
 #include <bindvariables.h>
 
 #define ACK	6
@@ -3869,6 +3870,18 @@ uint16_t sqlrservercontroller::countBindVariables(const char *query,
 				pvt->_colonsupported,
 				pvt->_atsignsupported,
 				pvt->_dollarsignsupported);
+}
+
+uint16_t sqlrservercontroller::substituteNullForBindVariables(
+							const char *query,
+							uint32_t querysize,
+							stringbuffer *output) {
+	return ::substituteNullForBindVariables(query,querysize,
+				pvt->_questionmarksupported,
+				pvt->_colonsupported,
+				pvt->_atsignsupported,
+				pvt->_dollarsignsupported,
+				output);
 }
 
 uint16_t sqlrservercontroller::getInputBindCountFromPrepare(

@@ -178,4 +178,145 @@ static uint16_t countBindVariables(const char *query,
 }
 #endif
 
+#ifdef NEED_SUBSTITUTE_NULL_FOR_BIND_VARIABLES
+#include <rudiments/stringbuffer.h>
+// (requires NEED_COUNT_BIND_VARIABLES)
+static uint16_t substituteNullForBindVariables(const char *query,
+						uint32_t querylen,
+						bool questionmark,
+						bool colon,
+						bool atsign,
+						bool dollarsign,
+						stringbuffer *output) {
+
+	if (!query || !querylen || !output) {
+		return 0;
+	}
+
+	// only one kind of marker gets substituted - the same one
+	// countBindVariables() would have counted, found by running the
+	// counter for one kind at a time, in the order it prefers them
+	bool	q=false;
+	bool	c=false;
+	bool	a=false;
+	bool	d=false;
+	if (dollarsign &&
+		countBindVariables(query,querylen,false,false,false,true)) {
+		d=true;
+	} else if (questionmark &&
+		countBindVariables(query,querylen,true,false,false,false)) {
+		q=true;
+	} else if (colon &&
+		countBindVariables(query,querylen,false,true,false,false)) {
+		c=true;
+	} else if (atsign &&
+		countBindVariables(query,querylen,false,false,true,false)) {
+		a=true;
+	} else {
+		// nothing to substitute
+		output->append(query,querylen);
+		return 0;
+	}
+
+	uint16_t	count=0;
+
+	queryparsestate_t	parsestate=IN_QUERY;
+
+	const char	*ptr=query;
+	const char	*endptr=query+querylen;
+	char		prev='\0';
+	do {
+
+		// if we're in the query...
+		if (parsestate==IN_QUERY) {
+
+			// if we find a quote, we're in quotes
+			if (*ptr=='\'') {
+				parsestate=IN_QUOTES;
+			}
+
+			// if we find whitespace or a couple of other things
+			// then the next thing could be a bind variable
+			if (beforeBindVariable(ptr)) {
+				parsestate=BEFORE_BIND;
+			}
+
+			// copy it through and move on
+			output->append(*ptr);
+			if (*ptr=='\\' && prev=='\\') {
+				prev='\0';
+			} else {
+				prev=*ptr;
+			}
+			ptr++;
+			continue;
+		}
+
+		// ignore anything in quotes
+		if (parsestate==IN_QUOTES) {
+
+			// if we find a quote, but not an escaped quote,
+			// then we're back in the query
+			// (or we're in between one of these: '...''...'
+			// which is functionally the same)
+			if (*ptr=='\'' && prev!='\\') {
+				parsestate=IN_QUERY;
+			}
+
+			// copy it through and move on
+			output->append(*ptr);
+			if (*ptr=='\\' && prev=='\\') {
+				prev='\0';
+			} else {
+				prev=*ptr;
+			}
+			ptr++;
+			continue;
+		}
+
+		if (parsestate==BEFORE_BIND) {
+
+			// if we find a bind variable then NULL goes in its
+			// place, and the marker itself is skipped below
+			if (isBindDelimiter(ptr,q,c,a,d)) {
+				output->append("NULL");
+				count++;
+				parsestate=IN_BIND;
+				continue;
+			}
+
+			// if we didn't find a bind variable then we're just
+			// back in the query
+			parsestate=IN_QUERY;
+			continue;
+		}
+
+		// if we're in a bind variable...
+		if (parsestate==IN_BIND) {
+
+			// If we find whitespace or a few other things
+			// then we're done with the bind variable.
+			if (afterBindVariable(ptr)) {
+
+				parsestate=IN_QUERY;
+
+			} else {
+
+				// skip it and move on
+				if (*ptr=='\\' && prev=='\\') {
+					prev='\0';
+				} else {
+					prev=*ptr;
+				}
+				ptr++;
+			}
+			continue;
+		}
+
+	} while (ptr<endptr);
+
+	return count;
+}
+#endif
+
 #endif

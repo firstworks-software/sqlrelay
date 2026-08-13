@@ -990,6 +990,16 @@ struct sqlrfirebirdbind {
 	uint32_t	colscale;
 };
 
+// what one output column describes as, when describeOutputColumns() had to
+// work the result set's shape out on a cursor of its own
+struct sqlrfirebirdprobecolumn {
+	char		*name;
+	char		*table;
+	uint16_t	coltype;
+	uint32_t	colsize;
+	uint32_t	colscale;
+};
+
 // what the module knows about a statement the client allocated
 struct sqlrfirebirdstatement {
 	uint32_t		stmttype;
@@ -1004,6 +1014,10 @@ struct sqlrfirebirdstatement {
 	sqlrfirebirdbind	*binds;
 	uint16_t		bindcount;
 	bool			bindsdescribed;
+	// NULL unless describeOutputColumns() had to probe for the shape of
+	// the result set
+	sqlrfirebirdprobecolumn	*probecols;
+	uint32_t		probecolcount;
 };
 
 // a blob the session is holding, either built by the client or fetched
@@ -1311,6 +1325,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint16_t *bindcount);
 		bool	isBindMarker(const char *value);
 
+		bool	describeOutputColumns(sqlrservercursor *cursor,
+					sqlrfirebirdstatement *stmt);
+		void	clearProbeColumns(sqlrfirebirdstatement *stmt);
+
 		void	fixupRespBufferLen();
 
 		bool	writeInt(uint32_t val,
@@ -1445,6 +1463,8 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		statements[i].binds=NULL;
 		statements[i].bindcount=0;
 		statements[i].bindsdescribed=false;
+		statements[i].probecols=NULL;
+		statements[i].probecolcount=0;
 	}
 
 	lobbuffer=NULL;
@@ -1502,6 +1522,8 @@ void sqlrprotocol_firebird::init() {
 		statements[i].binds=NULL;
 		statements[i].bindcount=0;
 		statements[i].bindsdescribed=false;
+		statements[i].probecols=NULL;
+		statements[i].probecolcount=0;
 	}
 }
 
@@ -3900,6 +3922,7 @@ bool sqlrprotocol_firebird::allocateStatement() {
 	stmt->binds=NULL;
 	stmt->bindcount=0;
 	stmt->bindsdescribed=false;
+	clearProbeColumns(stmt);
 
 	if (getDebug()) {
 		stdoutput.printf("	statement handle: %u\n",stmthandle);
@@ -4184,6 +4207,7 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 		stmt->binds=NULL;
 		stmt->bindcount=0;
 		stmt->bindsdescribed=false;
+		clearProbeColumns(stmt);
 	}
 
 	// copy the query into the cursor's own buffer
@@ -4263,6 +4287,25 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 			return retval;
 		}
 		executed=true;
+	}
+
+	// a select with binds can't be pre-executed above, and with faked
+	// binds there is no prepared statement at the backend to describe
+	// either, so the shape of the result set is worked out here instead,
+	// on a cursor of its own, from a copy of the query with NULL in place
+	// of every bind
+	// (the client's own cursor is left alone, and executes the real query
+	// with the real binds later.  the intercept path prepareQuery() also
+	// returns early from needs no test of its own - it only ever takes
+	// begin/commit/rollback/autocommit/set, never a select)
+	if (!execimmediate && !executed && stmt &&
+		(stmttype==isc_info_sql_stmt_select ||
+			stmttype==isc_info_sql_stmt_select_for_upd) &&
+		!cont->colCount(cursor) &&
+		cont->countBindVariables(querybuffer,querylen) &&
+		cont->getFakeInputBindsForThisQuery(cursor)) {
+
+		describeOutputColumns(cursor,stmt);
 	}
 
 	if (stmt) {
@@ -6208,6 +6251,102 @@ bool sqlrprotocol_firebird::isBindMarker(const char *value) {
 	return !*p;
 }
 
+bool sqlrprotocol_firebird::describeOutputColumns(sqlrservercursor *cursor,
+						sqlrfirebirdstatement *stmt) {
+
+	// build the probe query
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querylen=cont->getQuerySize(cursor);
+
+	stringbuffer	probe;
+	if (!cont->substituteNullForBindVariables(query,querylen,&probe)) {
+		return false;
+	}
+
+	const char	*probequery=probe.getString();
+	uint32_t	probequerylen=(uint32_t)probe.getSize();
+
+	if (getDebug()) {
+		stdoutput.printf("	column describe probe: \"%s\"\n",
+							probequery);
+	}
+
+	// NULL is 4 bytes where the marker it replaced was 1, so a query that
+	// just fit can come out of the substitution too large for the cursor's
+	// buffer (which is maxquerysize+1)
+	if (probequerylen>maxquerysize) {
+		if (getDebug()) {
+			stdoutput.printf("	column describe probe too "
+						"large - got %u, max %u\n",
+						probequerylen,maxquerysize);
+		}
+		return false;
+	}
+
+	// run it on a cursor of its own, so the client's own cursor is left
+	// for the real execute
+	sqlrservercursor	*probecursor=cont->getCursor();
+	if (!probecursor) {
+		return false;
+	}
+	cont->setRequireBindVariableTranslation(probecursor,true);
+
+	// a pooled cursor comes back with whatever binds its last user left
+	// on it, and nothing between release() and prepare clears them
+	cont->getBindPool(probecursor)->clear();
+	cont->setInputBindCount(probecursor,0);
+
+	char	*querybuffer=cont->getQueryBuffer(probecursor);
+	bytestring::copy(querybuffer,probequery,probequerylen);
+	querybuffer[probequerylen]='\0';
+	cont->setQuerySize(probecursor,probequerylen);
+
+	// the probe has to execute, not just prepare - its own prepare is
+	// deferred for the same reason the client's was
+	bool	success=false;
+	if (cont->prepareQuery(probecursor,querybuffer,probequerylen,
+					true,true,true,true) &&
+		cont->executeQuery(probecursor,true,true,true,true) &&
+		cont->colCount(probecursor)) {
+
+		uint32_t	colcount=cont->colCount(probecursor);
+
+		stmt->probecols=new sqlrfirebirdprobecolumn[colcount];
+		stmt->probecolcount=colcount;
+		for (uint32_t i=0; i<colcount; i++) {
+			stmt->probecols[i].name=charstring::duplicate(
+					cont->getColumnName(probecursor,i));
+			stmt->probecols[i].table=charstring::duplicate(
+					cont->getColumnTable(probecursor,i));
+			stmt->probecols[i].coltype=
+					cont->getColumnType(probecursor,i);
+			stmt->probecols[i].colsize=
+					cont->getColumnSize(probecursor,i);
+			stmt->probecols[i].colscale=
+					cont->getColumnScale(probecursor,i);
+		}
+		success=true;
+
+	} else if (getDebug()) {
+		stdoutput.printf("	column describe probe failed\n");
+	}
+
+	cont->closeResultSet(probecursor);
+	cont->release(probecursor);
+
+	return success;
+}
+
+void sqlrprotocol_firebird::clearProbeColumns(sqlrfirebirdstatement *stmt) {
+	for (uint32_t i=0; i<stmt->probecolcount; i++) {
+		delete[] stmt->probecols[i].name;
+		delete[] stmt->probecols[i].table;
+	}
+	delete[] stmt->probecols;
+	stmt->probecols=NULL;
+	stmt->probecolcount=0;
+}
+
 sqlrfirebirdstatement *sqlrprotocol_firebird::getStatement(
 						uint32_t stmthandle,
 						sqlrservercursor **cursor) {
@@ -6248,6 +6387,7 @@ void sqlrprotocol_firebird::clearStatement(uint16_t cursorid) {
 	stmt->binds=NULL;
 	stmt->bindcount=0;
 	stmt->bindsdescribed=false;
+	clearProbeColumns(stmt);
 }
 
 void sqlrprotocol_firebird::clearStatements() {
@@ -8014,11 +8154,19 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 						const byte_t *items,
 						uint32_t itemslen) {
 
+	// when the backend has nothing prepared to describe, the shape
+	// describeOutputColumns() probed for stands in for it - a real
+	// describe, from a prepare or from an execute that already ran, always
+	// wins
+	bool	probed=!bind && !cont->colCount(cursor) &&
+				stmt && stmt->probecols;
+
 	// how many columns the result set has, or how many parameters the
 	// query binds
 	uint32_t	count=(bind)?
 			cont->countBindVariables(cont->getQueryBuffer(cursor),
 						cont->getQuerySize(cursor)):
+			(probed)?stmt->probecolcount:
 			cont->colCount(cursor);
 
 	// the count is always the whole set, even when the groups below start
@@ -8052,25 +8200,31 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 		// convert from
 		bool	described=bind && stmt && stmt->binds &&
 					col<stmt->bindcount;
-		uint16_t	coltype=(!bind)?
-					cont->getColumnType(cursor,col):
-					(described)?stmt->binds[col].coltype:
-					UNKNOWN_DATATYPE;
+		uint16_t	coltype=UNKNOWN_DATATYPE;
+		uint32_t	colsize=FIREBIRD_BIND_LENGTH;
+		int32_t		colscale=0;
+		const char	*colname="";
+		const char	*coltable="";
+		if (bind) {
+			if (described) {
+				coltype=stmt->binds[col].coltype;
+				colsize=stmt->binds[col].colsize;
+				colscale=-((int32_t)stmt->binds[col].colscale);
+			}
+		} else if (probed) {
+			coltype=stmt->probecols[col].coltype;
+			colsize=stmt->probecols[col].colsize;
+			colscale=-((int32_t)stmt->probecols[col].colscale);
+			colname=stmt->probecols[col].name;
+			coltable=stmt->probecols[col].table;
+		} else {
+			coltype=cont->getColumnType(cursor,col);
+			colsize=cont->getColumnSize(cursor,col);
+			colscale=-((int32_t)cont->getColumnScale(cursor,col));
+			colname=cont->getColumnName(cursor,col);
+			coltable=cont->getColumnTable(cursor,col);
+		}
 		uint16_t	sqltype=sqlType(coltype);
-		uint32_t	colsize=(!bind)?
-					cont->getColumnSize(cursor,col):
-					(described)?stmt->binds[col].colsize:
-					FIREBIRD_BIND_LENGTH;
-		int32_t		colscale=(!bind)?
-					-((int32_t)
-					cont->getColumnScale(cursor,col)):
-					(described)?
-					-((int32_t)stmt->binds[col].colscale):
-					0;
-		const char	*colname=(bind)?"":
-					cont->getColumnName(cursor,col);
-		const char	*coltable=(bind)?"":
-					cont->getColumnTable(cursor,col);
 		if (!colname) {
 			colname="";
 		}

@@ -296,6 +296,64 @@ static void freeOutputBuffers(int colcount, char **buffer) {
 	}
 }
 
+// point an input parameter at a newly allocated buffer holding the value,
+// in whatever type the bind describe came back with, and hand the buffer
+// back for the caller to delete[].
+//
+// the type has to be taken rather than assumed: a native firebird types a
+// select's parameters from the columns they compare against, but sql relay's
+// firebird protocol module works a bind's type out only for an insert (see
+// describeBinds() in src/protocols/firebird.cpp), so a select's parameters
+// come back as its generic stand-in - a wide nullable string - instead.
+static char *bindInputValue(XSQLVAR *var, short *ind,
+					ISC_LONG intval, const char *strval) {
+
+	int	type=var->sqltype&~1;
+
+	int	len=var->sqllen;
+	if (len<1) {
+		len=1;
+	}
+
+	int	strvallen=(int)charstring::getLength(strval);
+	if (strvallen>len) {
+		strvallen=len;
+	}
+
+	char	*buffer=NULL;
+	if (type==SQL_LONG) {
+		// ISC_LONG, not C long - on LP64 a plain long is 8 bytes
+		// where SQL_LONG is 4, and the execute then fails with a
+		// message-length error that looks like a module defect
+		buffer=new char[sizeof(ISC_LONG)];
+		*((ISC_LONG *)buffer)=intval;
+	} else if (type==SQL_SHORT) {
+		buffer=new char[sizeof(ISC_SHORT)];
+		*((ISC_SHORT *)buffer)=(ISC_SHORT)intval;
+	} else if (type==SQL_VARYING) {
+		// a 2-byte host-order length ahead of the data
+		buffer=new char[len+3];
+		bytestring::zero(buffer,len+3);
+		PARAMVARY	*vary=(PARAMVARY *)buffer;
+		vary->vary_length=(ISC_USHORT)strvallen;
+		charstring::copy((char *)vary->vary_string,strval,strvallen);
+	} else {
+		// SQL_TEXT, and anything else, as a blank-padded string
+		buffer=new char[len+1];
+		bytestring::set(buffer,' ',len);
+		buffer[len]='\0';
+		charstring::copy(buffer,strval,strvallen);
+	}
+
+	var->sqldata=buffer;
+	var->sqlind=ind;
+	// force the nullable bit on, so the indicator is honoured
+	var->sqltype|=1;
+	*ind=0;
+
+	return buffer;
+}
+
 // pin a result-set column's metadata
 static void assertColumn(XSQLVAR *var, const char *name, int type,
 					int len, int scale, int subtype) {
@@ -1791,6 +1849,162 @@ int main(int argc, char **argv) {
 	isc_dsql_free_statement(fbstatus,&bselstmt,DSQL_drop);
 	delete[] (char *)bindselinsqlda;
 	delete[] (char *)bselsqlda;
+	stdoutput.printf("\n\n");
+
+
+	// #9167: the same shape with two bind variables.  Under
+	// fakeinputbindvariables=yes the server prepares nothing at prepare
+	// time, so the protocol module has to probe the shape (with NULL
+	// substituted for every bind) to answer this at all.  The default
+	// instance answers it from the real prepare (#9144), and a native
+	// firebird from its own, so the block reads the same against all
+	// three - the probe only widens where a correct describe comes back.
+	stdoutput.printf("select with two bind variables - "
+					"prepare and describe\n");
+	const char	*bindselect2query=
+			"select testinteger, testvarchar from testtable "
+			"where testinteger=? and testvarchar=?";
+	XSQLDA	*bsel2sqlda=(XSQLDA *)new char[XSQLDA_LENGTH(2)];
+	bytestring::zero(bsel2sqlda,XSQLDA_LENGTH(2));
+	bsel2sqlda->version=SQLDA_VERSION1;
+	bsel2sqlda->sqln=2;
+	isc_stmt_handle	bsel2stmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,
+							&bsel2stmt),0);
+	assertEquals((int)isc_dsql_prepare(fbstatus,&tr,&bsel2stmt,0,
+					bindselect2query,SQL_DIALECT_V6,
+					bsel2sqlda),0);
+	assertEquals(bsel2sqlda->sqld,2);
+	assertEquals(bsel2sqlda->sqlvar[0].aliasname,"TESTINTEGER");
+	assertEquals(bsel2sqlda->sqlvar[0].sqltype&~1,SQL_LONG);
+	assertEquals(bsel2sqlda->sqlvar[1].aliasname,"TESTVARCHAR");
+	assertEquals(bsel2sqlda->sqlvar[1].sqltype&~1,SQL_VARYING);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select with two bind variables - describe_bind\n");
+	XSQLDA	*bsel2insqlda=(XSQLDA *)new char[XSQLDA_LENGTH(2)];
+	bytestring::zero(bsel2insqlda,XSQLDA_LENGTH(2));
+	bsel2insqlda->version=SQLDA_VERSION1;
+	bsel2insqlda->sqln=2;
+	assertEquals((int)isc_dsql_describe_bind(fbstatus,&bsel2stmt,
+					SQL_DIALECT_V6,bsel2insqlda),0);
+	assertEquals(bsel2insqlda->sqld,2);
+	// no assert on the parameters' own types - see bindInputValue()
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select with two bind variables - execute and fetch\n");
+	short	bsel2inind[2];
+	bytestring::zero(bsel2inind,sizeof(bsel2inind));
+	char	*bsel2inbuffer[2];
+	bsel2inbuffer[0]=bindInputValue(&bsel2insqlda->sqlvar[0],
+						&bsel2inind[0],7,"7");
+	bsel2inbuffer[1]=bindInputValue(&bsel2insqlda->sqlvar[1],
+						&bsel2inind[1],0,"testvarchar7");
+	short	bsel2outind[2];
+	char	*bsel2outbuffer[2];
+	int	bsel2outcolcount=bindOutputBuffers(bsel2sqlda,bsel2outind,
+							bsel2outbuffer);
+	assertEquals(bsel2outcolcount,2);
+	assertEquals((int)isc_dsql_execute(fbstatus,&tr,&bsel2stmt,
+					SQL_DIALECT_V6,bsel2insqlda),0);
+	// two rows match testinteger=7 and testvarchar='testvarchar7' - the
+	// one the statements section inserted and the one the round trip
+	// above bound in, both with identical column values
+	for (int row=0; row<2; row++) {
+		assertEquals((int)isc_dsql_fetch(fbstatus,&bsel2stmt,
+						SQL_DIALECT_V6,bsel2sqlda),0);
+		// only read the sqlda if the prepare filled it in - a failed
+		// prepare leaves every sqldata NULL
+		if (bsel2outcolcount==2) {
+			assertEquals((int)bsel2outind[0],0);
+			assertEquals((int)*((ISC_LONG *)
+					bsel2sqlda->sqlvar[0].sqldata),7);
+			assertEquals((int)bsel2outind[1],0);
+			PARAMVARY	*bsel2vary=
+				(PARAMVARY *)bsel2sqlda->sqlvar[1].sqldata;
+			char	bsel2varchar[64];
+			charstring::copy(bsel2varchar,
+					(char *)bsel2vary->vary_string,
+					bsel2vary->vary_length);
+			bsel2varchar[bsel2vary->vary_length]='\0';
+			assertEquals(bsel2varchar,"testvarchar7");
+		}
+	}
+	assertEquals((int)isc_dsql_fetch(fbstatus,&bsel2stmt,
+					SQL_DIALECT_V6,bsel2sqlda),100);
+	freeOutputBuffers(bsel2outcolcount,bsel2outbuffer);
+	isc_dsql_free_statement(fbstatus,&bsel2stmt,DSQL_drop);
+	delete[] bsel2inbuffer[0];
+	delete[] bsel2inbuffer[1];
+	delete[] (char *)bsel2insqlda;
+	delete[] (char *)bsel2sqlda;
+	stdoutput.printf("\n\n");
+
+
+	// #9167: a bind variable in the select list itself is the one shape
+	// the probe cannot handle - firebird rejects a bare untyped NULL
+	// there, so the NULL-substituted probe fails to prepare, nothing gets
+	// cached, and the describe still answers 0 columns.  That is accepted,
+	// so nothing is asserted about the prepare itself: a native firebird
+	// and the default instance fail it outright with a datatype error,
+	// while the faked-bind instance has nothing prepared to fail.  What
+	// this pins is only that it degrades rather than killing the session -
+	// no crash, no hang, and an ordinary query still runs afterwards.
+	stdoutput.printf("select with a bind variable in the select list\n");
+	XSQLDA	*slsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(2)];
+	bytestring::zero(slsqlda,XSQLDA_LENGTH(2));
+	slsqlda->version=SQLDA_VERSION1;
+	slsqlda->sqln=2;
+	isc_stmt_handle	slstmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,&slstmt),0);
+	ISC_STATUS	slprepared=isc_dsql_prepare(fbstatus,&tr,&slstmt,0,
+			"select ?, testvarchar from testtable "
+			"where testinteger=1",
+			SQL_DIALECT_V6,slsqlda);
+	stdoutput.printf("	prepare returned %d, describes %d columns\n",
+					(int)slprepared,(int)slsqlda->sqld);
+	if (slprepared) {
+		char	slerrmsg[512];
+		firstErrorMessage(slerrmsg,sizeof(slerrmsg));
+		stdoutput.printf("	error: %s\n",slerrmsg);
+	}
+	isc_dsql_free_statement(fbstatus,&slstmt,DSQL_drop);
+	delete[] (char *)slsqlda;
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("ordinary query after the select-list bind\n");
+	XSQLDA	*aftersqlda=(XSQLDA *)new char[XSQLDA_LENGTH(1)];
+	bytestring::zero(aftersqlda,XSQLDA_LENGTH(1));
+	aftersqlda->version=SQLDA_VERSION1;
+	aftersqlda->sqln=1;
+	isc_stmt_handle	afterstmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,
+							&afterstmt),0);
+	assertEquals((int)isc_dsql_prepare(fbstatus,&tr,&afterstmt,0,
+			"select testinteger from testtable where testinteger=1",
+			SQL_DIALECT_V6,aftersqlda),0);
+	assertEquals(aftersqlda->sqld,1);
+	short	afterind[1];
+	char	*afterbuffer[1];
+	int	aftercolcount=bindOutputBuffers(aftersqlda,afterind,afterbuffer);
+	assertEquals(aftercolcount,1);
+	assertEquals((int)isc_dsql_execute(fbstatus,&tr,&afterstmt,
+						SQL_DIALECT_V6,NULL),0);
+	assertEquals((int)isc_dsql_fetch(fbstatus,&afterstmt,
+						SQL_DIALECT_V6,aftersqlda),0);
+	if (aftercolcount==1) {
+		assertEquals((int)*((ISC_LONG *)aftersqlda->sqlvar[0].sqldata),
+										1);
+	}
+	// only row 1 has testinteger=1
+	assertEquals((int)isc_dsql_fetch(fbstatus,&afterstmt,
+						SQL_DIALECT_V6,aftersqlda),100);
+	freeOutputBuffers(aftercolcount,afterbuffer);
+	isc_dsql_free_statement(fbstatus,&afterstmt,DSQL_drop);
+	delete[] (char *)aftersqlda;
 	stdoutput.printf("\n\n");
 
 

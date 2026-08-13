@@ -10,4 +10,16 @@
 		</connections>
 	</instance>
 
+	<!-- same as firebirdprotocoltest, but with fakeinputbindvariables="yes",
+	     to exercise a select-with-binds describe when the server defers
+	     the prepare and fakes the input binds itself -->
+	<instance id="firebirdprotocolfakebindstest" dbase="firebird" debug="protocols" fakeinputbindvariables="yes">
+		<listeners>
+			<listener protocol="firebird" port="3051"/>
+		</listeners>
+		<connections>
+			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
+		</connections>
+	</instance>
+
 </instances>

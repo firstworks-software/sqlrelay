@@ -609,6 +609,14 @@
 		isc_tpb_rec_version under read committed, where it's actually
 		meaningful; isc_transaction_info now answers the isolation level
 		that was actually requested instead of a hardcoded read committed
+		the firebird protocol module now describes a select's output
+			columns correctly even when the server defers the prepare and
+			fakes the input binds itself (fakeinputbindvariables="yes", or
+			a query that can't take native binds); it substitutes NULL for
+			each bind variable, prepares and executes that substituted
+			query on a spare cursor purely to learn the result set's
+			shape, and caches the columns from that; added
+			sqlrservercontroller::substituteNullForBindVariables()
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -58,6 +58,13 @@ stop_instances() {
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdmaxerrorsize
 		fi
 
+		# the firebirdprotocol test also has a fakeinputbindvariables
+		# instance, to exercise the faked-bind describe probe
+		if ( test "$_db" = "firebirdprotocol" )
+		then
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdprotocolfakebindstest
+		fi
+
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
 	done
 	sleep 2
@@ -169,6 +176,15 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the firebirdprotocol test needs a second instance, with
+	# fakeinputbindvariables="yes", to exercise the faked-bind describe
+	# probe
+	if ( test "$db" = "firebirdprotocol" )
+	then
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# start the instance
 	$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id ${db}test -backtrace $BACKTRACEDIR
 	sleep 2
@@ -190,6 +206,11 @@ stop_instance() {
 	then
 		sleep 2
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdmaxerrorsize
+	fi
+	if ( test "$db" = "firebirdprotocol" )
+	then
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest
 	fi
 	sleep 2
 	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test
@@ -613,6 +634,36 @@ run_protocol_test() {
 		if ( test "$result74" != "0" )
 		then
 			printf "    % 8s: failed (tds 7.4)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		cd ../..
+		return 1
+	fi
+
+	# firebirdprotocol runs the firebird test twice against two listeners
+	# on the same instance's config - once against the default instance
+	# (no argument, port 3050) and once against the
+	# firebirdprotocolfakebindstest instance (127.0.0.1/3051), which sets
+	# fakeinputbindvariables="yes" to exercise the faked-bind describe
+	# probe.  both runs have to succeed for the db to pass
+	if ( test "$db" = "firebirdprotocol" )
+	then
+		./$prog
+		resultdefault="$?"
+		./$prog 127.0.0.1/3051
+		resultfakebinds="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$resultfakebinds" = "0" )
+		then
+			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
+			cd ../..
+			return 0
+		fi
+		if ( test "$resultdefault" != "0" )
+		then
+			printf "    % 8s: failed (default)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultfakebinds" != "0" )
+		then
+			printf "    % 8s: failed (fakeinputbindvariables)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1

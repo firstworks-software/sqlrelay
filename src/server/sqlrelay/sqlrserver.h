@@ -3062,6 +3062,16 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		uint16_t	countBindVariables(const char *query,
 							uint32_t querysize);
 
+		/** Appends the first "querysize" bytes of "query" to
+		 *  "output", with the literal NULL in place of each bind
+		 *  variable, and returns the number of bind variables that
+		 *  were replaced.  The bind variables are found the same way
+		 *  countBindVariables() finds them. */
+		uint16_t	substituteNullForBindVariables(
+							const char *query,
+							uint32_t querysize,
+							stringbuffer *output);
+
 		/** Returns the number of input bind variables that "cursor"'s
 		 *  backend reported after the query was prepared, or 0 if
 		 *  the backend doesn't know (either because it can't
