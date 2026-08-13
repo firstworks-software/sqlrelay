@@ -14,6 +14,11 @@
 #include <datatypes.h>
 #include <defines.h>
 
+// default cap on the number of rows that executeQuery() will buffer for a
+// query that returns rows and also has output binds - see bufferRows().
+// override it with the maxbufferedrows connect string parameter.
+#define DEFAULT_MAX_BUFFERED_ROWS	1000
+
 #ifdef SYBASE_AT_RUNTIME
 	#include "sapatruntime.cpp"
 #else
@@ -116,6 +121,10 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		const char	*packetsize;
 		const char	*csversion;
 
+		// maximum number of rows that executeQuery() will buffer for
+		// a query that also has output binds - see bufferRows()
+		uint64_t	maxbufferedrows;
+
 		bool		dbused;
 
 		// charset expansion factor - see deflateColumnSize()
@@ -152,6 +161,18 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
+};
+
+// one batch of buffered rows - see bufferRows().  each batch holds a copy of
+// the per-column data/datasize/nullindicator triple that one ct_fetch()
+// filled in, for as many rows as that fetch returned.
+struct sapresultsetbatch {
+	char			**data;
+	CS_INT			**datasize;
+	CS_SMALLINT		**nullindicator;
+	CS_INT			cols;
+	CS_INT			rows;
+	sapresultsetbatch	*next;
 };
 
 struct datebind {
@@ -277,12 +298,23 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 						CS_SMALLINT indicator);
 		bool		parseRpcParams(const char *p);
 		void		deflateColumnSize(CS_INT index);
+		bool		drainResultSet();
+		bool		bindResultSetColumns();
+		bool		fetchOutputParams();
+		bool		bufferRows();
+		bool		appendRowBatch(CS_INT rows);
+		void		freeRowBatches();
 
 		CS_COMMAND	*languagecmd;
 		CS_COMMAND	*cursorcmd;
 		CS_COMMAND	*cmd;
 		CS_INT		results;
 		CS_INT		resultstype;
+		// executeQuery()'s loop overwrites resultstype as it walks the
+		// sequence of result sets that a query generated.  this one
+		// remembers the type of the result set that carried the rows
+		// (if any), which is the one that the client sees.
+		CS_INT		rowresultstype;
 		CS_INT		ncols;
 		CS_INT		affectedrows;
 
@@ -313,6 +345,18 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		char		**data;
 		CS_INT		**datasize;
 		CS_SMALLINT	**nullindicator;
+
+		// when a query has output binds, the rows can't be streamed
+		// straight to the client - the status and parameter result
+		// sets that fill the output binds come after the rows, and the
+		// client protocol modules send the output binds before the row
+		// data.  so the rows get buffered here during executeQuery()
+		// and handed out by fetchRow()/getField() afterward.
+		bool			rowsbuffered;
+		sapresultsetbatch	*firstbatch;
+		sapresultsetbatch	*lastbatch;
+		sapresultsetbatch	*currentbatch;
+		uint64_t		bufferedrows;
 
 		const char	*query;
 		uint32_t	size;
@@ -817,6 +861,11 @@ void sapconnection::handleConnectString() {
 	hostname=cont->getConnectStringValue("hostname");
 	packetsize=cont->getConnectStringValue("packetsize");
 	csversion=cont->getConnectStringValue("csversion");
+
+	const char	*mbr=cont->getConnectStringValue("maxbufferedrows");
+	maxbufferedrows=(charstring::isNullOrEmpty(mbr))?
+				DEFAULT_MAX_BUFFERED_ROWS:
+				charstring::convertToUnsignedInteger(mbr);
 
 	if (cont->getMaxColumnCount()==1) {
 		// if max column count is set to 1 then force it
@@ -2700,6 +2749,13 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	languagecmd=NULL;
 	cursorcmd=NULL;
 
+	rowresultstype=0;
+	rowsbuffered=false;
+	firstbatch=NULL;
+	lastbatch=NULL;
+	currentbatch=NULL;
+	bufferedrows=0;
+
 	cursornamesize=charstring::getIntegerLength(id);
 	cursorname=charstring::parseNumber(id);
 
@@ -2760,6 +2816,8 @@ sapcursor::~sapcursor() {
 	delete[] outbinddoubles;
 	delete[] outbinddates;
 	delete[] outbindisnulls;
+
+	freeRowBatches();
 
 	deallocateResultSetBuffers();
 }
@@ -3605,6 +3663,10 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 	maxrow=0;
 	totalrows=0;
 
+	// initialize the result set state
+	rowresultstype=0;
+	freeRowBatches();
+
 	if (cmd==cursorcmd) {
 		if (ct_cursor(cursorcmd,CS_CURSOR_ROWS,
 					NULL,CS_UNUSED,
@@ -3668,11 +3730,23 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 		// or CS_COMPUTE_RESULT result sets, in any combination or
 		// order.
 		//
-		// Currently SQL Relay only supports 1 result set per query, so
-		// for a given query, we only really care about one result set,
-		// the CS_PARAM_RESULT, CS_ROW_RESULT, CS_CURSOR_RESULT, or
-		// CS_COMPUTE_RESULT.  We'll grab whichever of those we get
-		// first, and ignore the rest.
+		// SQL Relay only returns 1 result set per query to the client,
+		// so of the result sets that can carry rows - CS_ROW_RESULT,
+		// CS_CURSOR_RESULT, CS_COMPUTE_RESULT and CS_PARAM_RESULT -
+		// we only use the first one and ignore the rest.
+		//
+		// The CS_STATUS_RESULT and CS_PARAM_RESULT sets are different
+		// though.  They don't carry the query's rows, they carry the
+		// stored procedure's RETURN value and output parameters, and
+		// ASE always sends them after the rows.  So they have to be
+		// processed too, in the same pass, rather than breaking out of
+		// this loop at the first result set that carries rows.
+		//
+		// Note that every result set that we consume has to be run out
+		// to the end (see drainResultSet()) before the next
+		// ct_results(), or ASE fails the next call with "cannot be
+		// called until all fetchable results have been completely
+		// processed".
 
 		if (resultstype==CS_CMD_SUCCEED) {
 			// If we got CS_CMD_SUCCEED, then try to get the
@@ -3687,11 +3761,50 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 				CS_UNUSED,(CS_INT *)NULL)!=CS_SUCCEED) {
 				return false;
 			}
-		}  else if (resultstype==CS_PARAM_RESULT ||
-				resultstype==CS_ROW_RESULT ||
+		} else if ((resultstype==CS_ROW_RESULT ||
 				resultstype==CS_CURSOR_RESULT ||
-				resultstype==CS_COMPUTE_RESULT) {
-			break;
+				resultstype==CS_COMPUTE_RESULT) &&
+				!rowresultstype) {
+
+			rowresultstype=resultstype;
+
+			if (!bindResultSetColumns()) {
+				return false;
+			}
+
+			// if the query has no output binds then the rows can
+			// just be streamed to the client as it fetches them,
+			// which is the common case by far, so stop here and
+			// let fetchRow() take it from here
+			if (!hasreturnvalue && !outbindindex) {
+				break;
+			}
+
+			// otherwise the result sets that fill the output
+			// binds are still to come - ASE sends them after the
+			// rows - so buffer the rows and keep going
+			if (!bufferRows()) {
+				return false;
+			}
+			rowsbuffered=true;
+			currentbatch=firstbatch;
+			row=0;
+			continue;
+
+		} else if (resultstype==CS_PARAM_RESULT &&
+					(hasreturnvalue || outbindindex)) {
+
+			// this carries the stored procedure's output
+			// parameters.  it isn't the cursor's result set, it
+			// just populates the output binds.
+			if (!fetchOutputParams()) {
+				return false;
+			}
+			if (!drainResultSet()) {
+				return false;
+			}
+			continue;
+
 		} else if (resultstype==CS_STATUS_RESULT && hasreturnvalue) {
 
 			// this carries the stored procedure's RETURN value.
@@ -3727,13 +3840,14 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 					*(outbindisnulls[0])=0;
 				}
 			}
+			if (!drainResultSet()) {
+				return false;
+			}
 			continue;
 		}
 
 		// the result set was a type that we want to ignore
-		if (ct_cancel(NULL,cmd,CS_CANCEL_CURRENT)==CS_FAIL) {
-			sapconn->liveconnection=false;
-			// FIXME: call ct_close(CS_FORCE_CLOSE)
+		if (!drainResultSet()) {
 			return false;
 		}
 	}
@@ -3743,106 +3857,166 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 	// reset the prepared flag
 	prepared=false;
 
-	// For queries which return rows or parameters (output bind variables),
-	// get the column count and bind columns.
-	if (resultstype==CS_ROW_RESULT ||
-			resultstype==CS_CURSOR_RESULT ||
-			resultstype==CS_COMPUTE_RESULT ||
-			resultstype==CS_PARAM_RESULT) {
+	// return success only if no error was generated
+	return (!sapconn->errorcode);
+}
 
-		// get the column count
-		if (ct_res_info(cmd,CS_NUMDATA,(CS_VOID *)&ncols,
-				CS_UNUSED,(CS_INT *)NULL)!=CS_SUCCEED) {
-			return false;
-		}
+bool sapcursor::drainResultSet() {
 
-		// allocate buffers and limit column count if necessary
-		uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
-		if (!maxcolumncount) {
-			allocateResultSetBuffers(ncols);
-		} else if ((uint32_t)ncols>maxcolumncount) {
-			ncols=maxcolumncount;
-		}
+	// every result set that gets consumed has to be run out to the end
+	// before the next ct_results(), or ASE fails that call with "cannot
+	// be called until all fetchable results have been completely
+	// processed"
+	if (ct_cancel(NULL,cmd,CS_CANCEL_CURRENT)==CS_FAIL) {
+		sapconn->liveconnection=false;
+		// FIXME: call ct_close(CS_FORCE_CLOSE)
+		return false;
+	}
+	return true;
+}
 
-		// bind columns
-		for (CS_INT i=0; i<ncols; i++) {
+bool sapcursor::bindResultSetColumns() {
 
-			// reset the column-bind
-			column[i]=templatecolumn;
-
-			// actually...
-			// if we're getting the output bind variables of a
-			// stored procedure that returns dates, then use
-			// the datetime type instead...
-			if (resultstype==CS_PARAM_RESULT &&
-				outbindtype[i]==CS_DATETIME_TYPE) {
-				column[i].datatype=CS_DATETIME_TYPE;
-				column[i].format=CS_FMT_UNUSED;
-				column[i].maxlength=sizeof(CS_DATETIME);
-			}
-	
-			// bind the columns for the fetches
-			if (ct_bind(cmd,i+1,
-					&column[i],
-					(CS_VOID *)data[i],
-					datasize[i],
-					nullindicator[i])!=CS_SUCCEED) {
-				break;
-			}
-
-			// describe the columns
-			if (conn->cont->getSendColumnInfo()) {
-				if (ct_describe(cmd,i+1,
-						&column[i])!=CS_SUCCEED) {
-					break;
-				}
-				deflateColumnSize(i);
-			}
-		}
-
+	// get the column count
+	if (ct_res_info(cmd,CS_NUMDATA,(CS_VOID *)&ncols,
+			CS_UNUSED,(CS_INT *)NULL)!=CS_SUCCEED) {
+		return false;
 	}
 
-	// if we're doing an rpc query, the result set should be a single
-	// row of output parameter results, fetch it and populate the output
-	// bind variables...
-	if (resultstype==CS_PARAM_RESULT) {
+	// allocate buffers and limit column count if necessary
+	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
+	if (!maxcolumncount) {
+		allocateResultSetBuffers(ncols);
+	} else if ((uint32_t)ncols>maxcolumncount) {
+		ncols=maxcolumncount;
+	}
 
-		if (ct_fetch(cmd,CS_UNUSED,
-					CS_UNUSED,
-					CS_UNUSED,
-					&rowsread)!=CS_SUCCEED || !rowsread) {
-			return false;
+	// bind columns
+	for (CS_INT i=0; i<ncols; i++) {
+
+		// reset the column-bind
+		column[i]=templatecolumn;
+
+		// bind the columns for the fetches
+		if (ct_bind(cmd,i+1,
+				&column[i],
+				(CS_VOID *)data[i],
+				datasize[i],
+				nullindicator[i])!=CS_SUCCEED) {
+			break;
 		}
-		
-		// copy data into output bind values.  when hasreturnvalue is
-		// set, outbind slot 0 is the reserved RETURN-value slot,
-		// already populated from CS_STATUS_RESULT above - it isn't a
-		// real rpc parameter, so ASE's CS_PARAM_RESULT row doesn't
-		// include a column for it.  offset past it when mapping the
-		// row's columns to outbind slots.
-		CS_INT	outbindoffset=(hasreturnvalue)?1:0;
+
+		// describe the columns
+		if (conn->cont->getSendColumnInfo()) {
+			if (ct_describe(cmd,i+1,&column[i])!=CS_SUCCEED) {
+				break;
+			}
+			deflateColumnSize(i);
+		}
+	}
+
+	return true;
+}
+
+bool sapcursor::fetchOutputParams() {
+
+	// The CS_PARAM_RESULT result set is a single row with one column per
+	// output parameter.  It's not the cursor's result set, it just fills
+	// in the output binds, so it gets its own buffers here rather than
+	// using the ones that the row result set uses.
+
+	// get the column count
+	CS_INT	paramcols=0;
+	if (ct_res_info(cmd,CS_NUMDATA,(CS_VOID *)&paramcols,
+			CS_UNUSED,(CS_INT *)NULL)!=CS_SUCCEED) {
+		return false;
+	}
+	if (paramcols<1) {
+		return true;
+	}
+
+	// When hasreturnvalue is set, outbind slot 0 is the reserved
+	// RETURN-value slot, already populated from CS_STATUS_RESULT - it
+	// isn't a real rpc parameter, so ASE's CS_PARAM_RESULT row doesn't
+	// include a column for it.  Offset past it when mapping the row's
+	// columns to outbind slots.
+	CS_INT	outbindoffset=(hasreturnvalue)?1:0;
+
+	// allocate buffers
+	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
+	CS_DATAFMT	*paramcolumn=new CS_DATAFMT[paramcols];
+	char		**paramdata=new char *[paramcols];
+	CS_INT		**paramdatasize=new CS_INT *[paramcols];
+	CS_SMALLINT	**paramnullindicator=new CS_SMALLINT *[paramcols];
+	for (CS_INT i=0; i<paramcols; i++) {
+		paramdata[i]=new char[maxfieldsize];
+		paramdatasize[i]=new CS_INT[1];
+		paramnullindicator[i]=new CS_SMALLINT[1];
+	}
+
+	// bind columns
+	bool	success=true;
+	for (CS_INT i=0; i<paramcols; i++) {
+
+		paramcolumn[i]=templatecolumn;
+		paramcolumn[i].count=1;
+
+		// if the stored procedure returns dates, then use the
+		// datetime type instead of the template's char type
+		CS_INT	outidx=i+outbindoffset;
+		if (outidx<(CS_INT)outbindindex &&
+			outbindtype[outidx]==CS_DATETIME_TYPE) {
+			paramcolumn[i].datatype=CS_DATETIME_TYPE;
+			paramcolumn[i].format=CS_FMT_UNUSED;
+			paramcolumn[i].maxlength=sizeof(CS_DATETIME);
+		}
+
+		if (ct_bind(cmd,i+1,&paramcolumn[i],
+				(CS_VOID *)paramdata[i],
+				paramdatasize[i],
+				paramnullindicator[i])!=CS_SUCCEED) {
+			success=false;
+			break;
+		}
+	}
+
+	// fetch the single row
+	CS_INT	paramrows=0;
+	if (success && (ct_fetch(cmd,CS_UNUSED,
+					CS_UNUSED,
+					CS_UNUSED,
+					&paramrows)!=CS_SUCCEED || !paramrows)) {
+		success=false;
+	}
+
+	// copy data into the output bind values
+	if (success) {
+
 		CS_INT	availableoutbinds=outbindindex-outbindoffset;
 		CS_INT	maxindex=availableoutbinds;
-		if (ncols<availableoutbinds) {
+		if (paramcols<availableoutbinds) {
 			// this shouldn't happen...
-			maxindex=ncols;
+			maxindex=paramcols;
 		}
 		for (CS_INT i=0; i<maxindex; i++) {
 			CS_INT	outidx=i+outbindoffset;
 			if (outbindtype[outidx]==CS_CHAR_TYPE) {
-				*(outbindisnulls[outidx])=*nullindicator[i];
+				*(outbindisnulls[outidx])=
+						*paramnullindicator[i];
 				CS_INT	size=outbindstringsizes[outidx];
-				if (datasize[i][0]<size) {
-					size=datasize[i][0];
+				if (paramdatasize[i][0]<size) {
+					size=paramdatasize[i][0];
 				}
 				bytestring::copy(outbindstrings[outidx],
-							data[i],size);
+							paramdata[i],size);
 			} else if (outbindtype[outidx]==CS_INT_TYPE) {
 				*outbindints[outidx]=
-					charstring::convertToInteger(data[i]);
+					charstring::convertToInteger(
+								paramdata[i]);
 			} else if (outbindtype[outidx]==CS_FLOAT_TYPE) {
 				*outbinddoubles[outidx]=
-					charstring::convertToFloatC(data[i]);
+					charstring::convertToFloatC(
+								paramdata[i]);
 			} else if (outbindtype[outidx]==CS_DATETIME_TYPE) {
 
 				// convert to a CS_DATEREC
@@ -3850,7 +4024,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 				bytestring::zero(&dr,sizeof(CS_DATEREC));
 				cs_dt_crack(sapconn->context,
 						CS_DATETIME_TYPE,
-						(CS_VOID *)data[i],&dr);
+						(CS_VOID *)paramdata[i],&dr);
 
 				datebind	*db=&outbinddates[outidx];
 				*(db->year)=dr.dateyear;
@@ -3864,13 +4038,110 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 				*(db->isnegative)=false;
 			}
 		}
-
-		discardResults();
-		ncols=0;
 	}
 
-	// return success only if no error was generated
-	return (!sapconn->errorcode);
+	// clean up
+	for (CS_INT i=0; i<paramcols; i++) {
+		delete[] paramdata[i];
+		delete[] paramdatasize[i];
+		delete[] paramnullindicator[i];
+	}
+	delete[] paramcolumn;
+	delete[] paramdata;
+	delete[] paramdatasize;
+	delete[] paramnullindicator;
+
+	return success;
+}
+
+bool sapcursor::bufferRows() {
+
+	// fetch and buffer the entire result set, so that executeQuery()'s
+	// loop can get on to the status/parameter result sets that follow it
+	uint64_t	maxbufferedrows=sapconn->maxbufferedrows;
+	for (;;) {
+
+		CS_RETCODE	result=ct_fetch(cmd,CS_UNUSED,
+							CS_UNUSED,
+							CS_UNUSED,
+							&rowsread);
+		if (result==CS_END_DATA ||
+				(result==CS_SUCCEED && !rowsread)) {
+			return true;
+		}
+		if (result!=CS_SUCCEED) {
+			return false;
+		}
+
+		// if the result set is too big to buffer, then discard the
+		// rest of it and return the rows that we have.  the query
+		// still succeeds, it just returns a truncated result set,
+		// rather than using an unbounded amount of memory.
+		if (bufferedrows+rowsread>maxbufferedrows) {
+			return drainResultSet();
+		}
+
+		if (!appendRowBatch(rowsread)) {
+			return false;
+		}
+		bufferedrows=bufferedrows+rowsread;
+	}
+}
+
+bool sapcursor::appendRowBatch(CS_INT rows) {
+
+	uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
+
+	sapresultsetbatch	*batch=new sapresultsetbatch;
+	batch->cols=ncols;
+	batch->rows=rows;
+	batch->next=NULL;
+	batch->data=new char *[ncols];
+	batch->datasize=new CS_INT *[ncols];
+	batch->nullindicator=new CS_SMALLINT *[ncols];
+	for (CS_INT i=0; i<ncols; i++) {
+		batch->data[i]=new char[rows*maxfieldsize];
+		bytestring::copy(batch->data[i],data[i],rows*maxfieldsize);
+		batch->datasize[i]=new CS_INT[rows];
+		bytestring::copy(batch->datasize[i],datasize[i],
+						rows*sizeof(CS_INT));
+		batch->nullindicator[i]=new CS_SMALLINT[rows];
+		bytestring::copy(batch->nullindicator[i],nullindicator[i],
+						rows*sizeof(CS_SMALLINT));
+	}
+
+	if (lastbatch) {
+		lastbatch->next=batch;
+	} else {
+		firstbatch=batch;
+	}
+	lastbatch=batch;
+
+	return true;
+}
+
+void sapcursor::freeRowBatches() {
+
+	sapresultsetbatch	*batch=firstbatch;
+	while (batch) {
+		sapresultsetbatch	*next=batch->next;
+		for (CS_INT i=0; i<batch->cols; i++) {
+			delete[] batch->data[i];
+			delete[] batch->datasize[i];
+			delete[] batch->nullindicator[i];
+		}
+		delete[] batch->data;
+		delete[] batch->datasize;
+		delete[] batch->nullindicator;
+		delete batch;
+		batch=next;
+	}
+
+	firstbatch=NULL;
+	lastbatch=NULL;
+	currentbatch=NULL;
+	bufferedrows=0;
+	rowsbuffered=false;
 }
 
 uint64_t sapcursor::getAffectedRows() {
@@ -4111,9 +4382,9 @@ uint16_t sapcursor::getColumnIsAutoIncrement(uint32_t col) {
 
 bool sapcursor::noRowsToReturn() {
 	// unless the query was a successful select, send no data
-	return (resultstype!=CS_ROW_RESULT &&
-			resultstype!=CS_CURSOR_RESULT &&
-			resultstype!=CS_COMPUTE_RESULT);
+	return (rowresultstype!=CS_ROW_RESULT &&
+			rowresultstype!=CS_CURSOR_RESULT &&
+			rowresultstype!=CS_COMPUTE_RESULT);
 }
 
 bool sapcursor::skipRow(bool *error) {
@@ -4128,6 +4399,16 @@ bool sapcursor::fetchRow(bool *error) {
 
 	*error=false;
 	// FIXME: set error if an error occurs
+
+	// if the rows were buffered during executeQuery(), then just walk
+	// the list of batches
+	if (rowsbuffered) {
+		if (currentbatch && row==currentbatch->rows) {
+			currentbatch=currentbatch->next;
+			row=0;
+		}
+		return (currentbatch!=NULL);
+	}
 
 	if (row==(CS_INT)getFetchAtOnce()) {
 		row=0;
@@ -4156,15 +4437,30 @@ void sapcursor::getField(uint32_t col,
 				const char **field, uint64_t *fieldsize,
 				bool *lob, bool *null) {
 
+	// if the rows were buffered during executeQuery(), then read from
+	// the current batch rather than from the ct_bind() buffers
+	char		**rowdata=data;
+	CS_INT		**rowdatasize=datasize;
+	CS_SMALLINT	**rownullindicator=nullindicator;
+	if (rowsbuffered) {
+		if (!currentbatch) {
+			*null=true;
+			return;
+		}
+		rowdata=currentbatch->data;
+		rowdatasize=currentbatch->datasize;
+		rownullindicator=currentbatch->nullindicator;
+	}
+
 	// handle NULLs
-	if (nullindicator[col][row]==-1) {
+	if (rownullindicator[col][row]==-1) {
 		*null=true;
 		return;
 	}
 
 	// handle normal datatypes
-	char		*d=&data[col][row*conn->cont->getMaxFieldSize()];
-	uint64_t	ds=datasize[col][row]-1;
+	char		*d=&rowdata[col][row*conn->cont->getMaxFieldSize()];
+	uint64_t	ds=rowdatasize[col][row]-1;
 
 	// Note: image columns are fetched with the same CS_CHAR_TYPE/
 	// CS_FMT_NULLTERM ct_bind() format as everything else (see
@@ -4188,6 +4484,8 @@ void sapcursor::nextRow() {
 
 void sapcursor::closeResultSet() {
 
+
+	freeRowBatches();
 
 	if (clean) {
 		return;
