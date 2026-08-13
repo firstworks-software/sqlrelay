@@ -371,6 +371,9 @@
 		tdssapprotocol test conf files and enables the tdssapprotocol
 		test; freetds isn't built on windows, so the two freetds-driven
 		combos still don't run there
+	fixed the windows build - it never built tds-sap.exe, so the
+		tdssapprotocol test silently found it missing and skipped
+		itself instead of actually running
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

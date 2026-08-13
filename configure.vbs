@@ -532,6 +532,13 @@ configureDatabase "SAP/SYBASE","sap",disablesap,_
 			SYBASEPREFIX,SYBASEINCLUDES,SYBASELIBS,_
 			ALLSYBASE,INSTALLSYBASE
 
+' the tds protocol test's sap ct-lib target needs the same sybase libs
+' as the sap connection, so gate it the same way
+ALLTDS=""
+if ALLSYBASE<>"" then
+	ALLTDS="all-tds"
+end if
+
 WScript.Echo("******************************")
 
 
@@ -1282,6 +1289,7 @@ for i=lbound(infiles) to ubound(infiles)
 	content=replace(content,"@SYBASELIBS@",SYBASELIBS,1,-1,0)
 	content=replace(content,"@ALLSYBASE@",ALLSYBASE,1,-1,0)
 	content=replace(content,"@INSTALLSYBASE@",INSTALLSYBASE,1,-1,0)
+	content=replace(content,"@ALLTDS@",ALLTDS,1,-1,0)
 
 	content=replace(content,"@ODBCINCLUDES@",ODBCINCLUDES,1,-1,0)
 	content=replace(content,"@ODBCLIBS@",ODBCLIBS,1,-1,0)

@@ -434,11 +434,13 @@ PROTOCOLSINSTALLTARGETS = installdll-tds
 TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-odbc all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
 # mysql (connector c) and postgresql (libpq) are always built on windows, so
 # always build their wire-protocol tests; unix sets this conditionally in
-# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  firebird is conditional, so it
-# reuses @ALLFIREBIRD@, which configure.vbs sets to all-firebird when it finds
-# ibase.h and fbclient_ms.lib.  all-tds is not listed here because the tds
-# protocol test needs freetds ct-lib, which windows doesn't build
-TESTPROTOCOLSUBDIRS = all-mysql all-postgresql @ALLFIREBIRD@
+# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  firebird and tds are
+# conditional, so they reuse @ALLFIREBIRD@ and @ALLTDS@, which configure.vbs
+# sets to all-firebird / all-tds when it finds ibase.h/fbclient_ms.lib or
+# ctpublic.h/libsybct64.lib respectively.  the tds protocol test's freetds
+# ct-lib target is never built here since windows doesn't build freetds; only
+# its sap ct-lib target is
+TESTPROTOCOLSUBDIRS = all-mysql all-postgresql @ALLFIREBIRD@ @ALLTDS@
 
 CPPTESTCPPFLAGS = $(BASECPPFLAGS) /I $(includedir) $(RUDIMENTSINCLUDES) /I $(top_builddir)
 CPPTESTLIBS = /LIBPATH:$(libdir) lib$(SQLR)client.lib $(RUDIMENTSLIBS)
@@ -448,6 +450,12 @@ CTESTLIBS = /LIBPATH:$(libdir) lib$(SQLR)client.lib lib$(SQLR)clientwrapper.lib 
 
 ODBCTESTCPPFLAGS = $(BASECPPFLAGS) /I $(includedir) $(ODBCINCLUDES)
 ODBCTESTLIBS = $(RUDIMENTSLIBS) $(ODBCLIBS)
+
+# the tds protocol test only builds its sap ct-lib target on windows;
+# freetds ct-lib isn't built here
+TDSTESTALLTARGETS = tds-sap
+TDSTESTSAPCPPFLAGS = $(CPPTESTCPPFLAGS) $(SYBASEINCLUDES)
+TDSTESTSAPLIBS = $(SYBASELIBS) $(RUDIMENTSLIBS)
 
 
 # bench
