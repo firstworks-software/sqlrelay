@@ -504,6 +504,12 @@
 		ignored its scale, so it rendered as an unscaled integer and
 		was reported as a SMALLINT column instead of a NUMERIC or
 		DECIMAL one
+	fixed the firebird connection module - a NUMERIC or DECIMAL column's
+		precision was reported as the count of digits to the left of
+		the decimal point instead of the precision, so a column could
+		report a precision smaller than its own scale; it now reports
+		the max precision of the storage type (SMALLINT, INTEGER, or
+		BIGINT) firebird chose for the column
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

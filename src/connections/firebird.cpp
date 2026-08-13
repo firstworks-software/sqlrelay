@@ -72,6 +72,24 @@ static ssize_t firebirdFormatScaledInt64(char *buffer, size_t buffersize,
 					scale,(int64_t)frac);
 }
 
+// the XSQLDA carries no declared precision for a NUMERIC/DECIMAL column,
+// only the storage type firebird chose to fit it (the narrowest of
+// SMALLINT/INTEGER/BIGINT), so this reports that storage type's max
+// precision as an upper bound rather than the true declared precision
+static uint32_t firebirdNumericPrecisionFromSqlType(short sqltype) {
+	if (sqltype==SQL_SHORT || sqltype==SQL_SHORT+1) {
+		return 4;
+	} else if (sqltype==SQL_LONG || sqltype==SQL_LONG+1) {
+		return 9;
+	}
+	#ifdef SQL_INT64
+	else if (sqltype==SQL_INT64 || sqltype==SQL_INT64+1) {
+		return 18;
+	}
+	#endif
+	return 18;
+}
+
 static int firebirdSqlTypeToDatatype(short sqltype,
 					short sqlsubtype, short sqlscale) {
 	// mirrors the coercion describeResultSet() applies to output
@@ -3713,13 +3731,13 @@ uint32_t firebirdcursor::getColumnPrecision(uint32_t col) {
 		case INTEGER_DATATYPE:
 			return 11;
 		case NUMERIC_DATATYPE:
-			// FIXME: can be from 1 to 18
-			// (oddly, scale is given as a negative number)
-			return 18+outsqlda->sqlvar[col].sqlscale;
 		case DECIMAL_DATATYPE:
-			// FIXME: can be from 1 to 18
-			// (oddly, scale is given as a negative number)
-			return 18+outsqlda->sqlvar[col].sqlscale;
+			// field[col].type, not sqlvar[col].sqltype -
+			// describeResultSet() rewrites sqlvar's sqltype/
+			// sqllen for a scaled SQL_LONG, but field[col].type
+			// still holds the original describe type
+			return firebirdNumericPrecisionFromSqlType(
+							field[col].type);
 		case FLOAT_DATATYPE:
 			return 0;
 		case DOUBLE_PRECISION_DATATYPE:
@@ -4210,9 +4228,8 @@ uint32_t firebirdcursor::getInputBindPrecision(uint16_t index) {
 			return 11;
 		case NUMERIC_DATATYPE:
 		case DECIMAL_DATATYPE:
-			// FIXME: can be from 1 to 18
-			// (oddly, scale is given as a negative number)
-			return 18+inbinddescribe[index].sqlscale;
+			return firebirdNumericPrecisionFromSqlType(
+					inbinddescribe[index].sqltype);
 		case TIME_DATATYPE:
 			return 8;
 		case DATE_DATATYPE:
