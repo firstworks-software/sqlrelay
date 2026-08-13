@@ -1625,6 +1625,9 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_service_info:
 					loop=serviceInfo();
 					break;
+				// event notification's second socket and the
+				// event itself to deliver on it don't exist -
+				// see the comment above connectRequest()
 				case op_connect_request:
 					loop=connectRequest();
 					break;
@@ -5609,6 +5612,19 @@ bool sqlrprotocol_firebird::serviceInfo() {
 	return sendNotImplementedError();
 }
 
+// connectRequest(), queEvents() and cancelEvents() are firebird's
+// asynchronous event notification: a trigger or procedure posts an event,
+// and a client that queued one gets told. Answering op_connect_request
+// would mean opening a second, server-owned socket and accepting the
+// client's connection to it alongside the live session - a generalization
+// of suspendSession() (see sqlrclient.cpp), not a call to it. But nothing
+// generates an event to deliver even if that channel existed: the firebird
+// connection module never registers for one (no isc_wait_for_event /
+// isc_que_events), and the server api has no registration, callback, or
+// path of its own to carry a database event to a protocol module -
+// sqlrevent_t is unrelated, it's server-side logging and alerting, not a
+// database event a backend posts. Refusing here is correct until that
+// plumbing exists.
 bool sqlrprotocol_firebird::connectRequest() {
 	return sendNotImplementedError();
 }
