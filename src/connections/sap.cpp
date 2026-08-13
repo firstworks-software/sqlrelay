@@ -312,6 +312,20 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		bool		prepared;
 		bool		clean;
 
+		// holds the select text rewritten for ct_cursor(CS_CURSOR_
+		// DECLARE) - see rewriteBindMarkersForCursor()
+		stringbuffer	cursorquerybuffer;
+
+		// true for a "{ X=call proc(...) }" rpc query - X is a
+		// reserved bind that carries the proc's RETURN value back to
+		// the client, rather than a real rpc parameter (see
+		// src/protocols/tds.cpp's namedProc()).  it's populated from
+		// the CS_STATUS_RESULT result set in executeQuery(), so
+		// outputBind() must not send it to ct_param(), and the
+		// CS_PARAM_RESULT handling must skip past it when mapping
+		// real output params back to outbind slots.
+		bool		hasreturnvalue;
+
 		sapconnection	*sapconn;
 };
 
@@ -2895,6 +2909,49 @@ static const char *getRpcName(const char *p, const char **namestart,
 	return p;
 }
 
+static void rewriteBindMarkersForCursor(const char *query, uint32_t size,
+							stringbuffer *out) {
+
+	// translateBindVariables() already rewrote the query to use sap's
+	// native "@*" bind format (getBindFormat()) by the time it gets
+	// here.  That format is right for rpc/language commands, but
+	// ct_cursor(CS_CURSOR_DECLARE) rejects named "@N" placeholders in
+	// the select text with "no host variable corresponding to ... '@1'"
+	// - ASE cursors want positional "?" markers instead.  The values
+	// are still supplied via ct_param() in bind-variable order either
+	// way, so swapping the marker here doesn't change how binding
+	// works, only what's written into the declared cursor's SQL text.
+	const char	*p=query;
+	const char	*end=query+size;
+	bool		inquotes=false;
+	char		prev='\0';
+	while (p<end) {
+		char	c=*p;
+		if (!inquotes && c=='@' && (p==query ||
+				character::isWhitespace(prev) ||
+				prev=='(' || prev==',' || prev=='=')) {
+			const char	*namestart=p+1;
+			const char	*np=namestart;
+			while (np<end && (character::isAlphanumeric(*np) ||
+							*np=='_')) {
+				np++;
+			}
+			if (np>namestart) {
+				out->append('?');
+				prev='?';
+				p=np;
+				continue;
+			}
+		}
+		if (c=='\'' && prev!='\\') {
+			inquotes=!inquotes;
+		}
+		out->append(c);
+		prev=c;
+		p++;
+	}
+}
+
 bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	// initialize column count
@@ -2907,6 +2964,7 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	paramindex=0;
 	outbindindex=0;
+	hasreturnvalue=false;
 
 	if ((!charstring::compare(query,"select",6) ||
 		!charstring::compare(query,"SELECT",6)) &&
@@ -2916,12 +2974,14 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 		// (don't use CS_NULLTERM for the 4th parameter, it randomly
 		// causes weird things to happen)
 		cmd=cursorcmd;
+		cursorquerybuffer.clear();
+		rewriteBindMarkersForCursor(query,size,&cursorquerybuffer);
 		if (ct_cursor(cursorcmd,
 				CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursorname,
 				(CS_INT)cursornamesize,
-				(CS_CHAR *)query,
-				size,
+				(CS_CHAR *)cursorquerybuffer.getString(),
+				(CS_INT)cursorquerybuffer.getSize(),
 				CS_READ_ONLY)!=CS_SUCCEED) {
 			return false;
 		}
@@ -2985,11 +3045,16 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 		// handle ODBC/JDBC procedure-call syntax:
 		// {call proc(...)} or {?=call proc(...)}
 
-		// find "call"
+		// find "call", noting whether a bind variable appears before
+		// it - that's the reserved return-value form ("{ @1=call
+		// proc(...) }", built by src/protocols/tds.cpp's namedProc())
 		const char	*p=query+1;
 		while (*p && *p!='}' &&
 				charstring::compare(p,"call",4) &&
 				charstring::compare(p,"CALL",4)) {
+			if (*p=='=') {
+				hasreturnvalue=true;
+			}
 			p++;
 		}
 
@@ -3217,7 +3282,12 @@ bool sapcursor::inputBind(const char *variable,
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3243,7 +3313,12 @@ bool sapcursor::inputBind(const char *variable,
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3270,7 +3345,12 @@ bool sapcursor::inputBind(const char *variable,
 	checkRePrepare();
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3353,14 +3433,29 @@ bool sapcursor::outputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
+	// the reserved first output bind of a "{ X=call proc(...) }" rpc
+	// query isn't a real rpc parameter - see the hasreturnvalue comment
+	// on its declaration - so record it and skip ct_param() entirely.
+	// it gets filled in from the CS_STATUS_RESULT in executeQuery().
+	bool	isreturnvalue=(hasreturnvalue && !outbindindex);
+
 	outbindtype[outbindindex]=CS_CHAR_TYPE;
 	outbindstrings[outbindindex]=value;
 	outbindstringsizes[outbindindex]=valuesize;
 	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
+	if (isreturnvalue) {
+		return true;
+	}
+
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3387,13 +3482,25 @@ bool sapcursor::outputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
+	// see the outputBind() overload above for why this matters
+	bool	isreturnvalue=(hasreturnvalue && !outbindindex);
+
 	outbindtype[outbindindex]=CS_INT_TYPE;
 	outbindints[outbindindex]=value;
 	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
+	if (isreturnvalue) {
+		return true;
+	}
+
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3422,13 +3529,25 @@ bool sapcursor::outputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
+	// see sapcursor::outputBind(...,char *value,...) for why this matters
+	bool	isreturnvalue=(hasreturnvalue && !outbindindex);
+
 	outbindtype[outbindindex]=CS_FLOAT_TYPE;
 	outbinddoubles[outbindindex]=value;
 	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
+	if (isreturnvalue) {
+		return true;
+	}
+
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3463,6 +3582,9 @@ bool sapcursor::outputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
+	// see sapcursor::outputBind(...,char *value,...) for why this matters
+	bool	isreturnvalue=(hasreturnvalue && !outbindindex);
+
 	outbindtype[outbindindex]=CS_DATETIME_TYPE;
 	outbinddates[outbindindex].year=year;
 	outbinddates[outbindindex].month=month;
@@ -3476,8 +3598,17 @@ bool sapcursor::outputBind(const char *variable,
 	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
+	if (isreturnvalue) {
+		return true;
+	}
+
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	if (cmd!=cursorcmd &&
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
 		parameter[paramindex].name[0]='\0';
 		parameter[paramindex].namelen=0;
@@ -3599,6 +3730,42 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 				resultstype==CS_CURSOR_RESULT ||
 				resultstype==CS_COMPUTE_RESULT) {
 			break;
+		} else if (resultstype==CS_STATUS_RESULT && hasreturnvalue) {
+
+			// this carries the stored procedure's RETURN value.
+			// ct-lib reports it as its own 1-column result set
+			// rather than folding it into the CS_PARAM_RESULT
+			// row, so fetch it directly into the reserved first
+			// output bind (see the hasreturnvalue comment on its
+			// declaration) instead of canceling it like the other
+			// result set types we don't care about.
+			CS_DATAFMT	returnfmt;
+			bytestring::zero(&returnfmt,sizeof(returnfmt));
+			returnfmt.datatype=CS_INT_TYPE;
+			returnfmt.format=CS_FMT_UNUSED;
+			returnfmt.maxlength=sizeof(CS_INT);
+			returnfmt.count=1;
+			CS_INT		returnvalue=0;
+			CS_INT		returnvaluelen=0;
+			CS_SMALLINT	returnvalueind=0;
+			if (ct_bind(cmd,1,&returnfmt,
+					(CS_VOID *)&returnvalue,
+					&returnvaluelen,
+					&returnvalueind)!=CS_SUCCEED) {
+				return false;
+			}
+			CS_INT	rr=0;
+			if (ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rr)!=CS_SUCCEED) {
+				return false;
+			}
+			if (outbindindex && outbindtype[0]==CS_INT_TYPE) {
+				*outbindints[0]=(int64_t)returnvalue;
+				if (outbindisnulls[0]) {
+					*(outbindisnulls[0])=0;
+				}
+			}
+			continue;
 		}
 
 		// the result set was a type that we want to ignore
@@ -3685,28 +3852,36 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 			return false;
 		}
 		
-		// copy data into output bind values
-		CS_INT	maxindex=outbindindex;
-		if (ncols<outbindindex) {
+		// copy data into output bind values.  when hasreturnvalue is
+		// set, outbind slot 0 is the reserved RETURN-value slot,
+		// already populated from CS_STATUS_RESULT above - it isn't a
+		// real rpc parameter, so ASE's CS_PARAM_RESULT row doesn't
+		// include a column for it.  offset past it when mapping the
+		// row's columns to outbind slots.
+		CS_INT	outbindoffset=(hasreturnvalue)?1:0;
+		CS_INT	availableoutbinds=outbindindex-outbindoffset;
+		CS_INT	maxindex=availableoutbinds;
+		if (ncols<availableoutbinds) {
 			// this shouldn't happen...
 			maxindex=ncols;
 		}
 		for (CS_INT i=0; i<maxindex; i++) {
-			if (outbindtype[i]==CS_CHAR_TYPE) {
-				*(outbindisnulls[i])=*nullindicator[i];
-				CS_INT	size=outbindstringsizes[i];
+			CS_INT	outidx=i+outbindoffset;
+			if (outbindtype[outidx]==CS_CHAR_TYPE) {
+				*(outbindisnulls[outidx])=*nullindicator[i];
+				CS_INT	size=outbindstringsizes[outidx];
 				if (datasize[i][0]<size) {
 					size=datasize[i][0];
 				}
-				bytestring::copy(outbindstrings[i],
+				bytestring::copy(outbindstrings[outidx],
 							data[i],size);
-			} else if (outbindtype[i]==CS_INT_TYPE) {
-				*outbindints[i]=
+			} else if (outbindtype[outidx]==CS_INT_TYPE) {
+				*outbindints[outidx]=
 					charstring::convertToInteger(data[i]);
-			} else if (outbindtype[i]==CS_FLOAT_TYPE) {
-				*outbinddoubles[i]=
+			} else if (outbindtype[outidx]==CS_FLOAT_TYPE) {
+				*outbinddoubles[outidx]=
 					charstring::convertToFloatC(data[i]);
-			} else if (outbindtype[i]==CS_DATETIME_TYPE) {
+			} else if (outbindtype[outidx]==CS_DATETIME_TYPE) {
 
 				// convert to a CS_DATEREC
 				CS_DATEREC	dr;
@@ -3715,7 +3890,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 						CS_DATETIME_TYPE,
 						(CS_VOID *)data[i],&dr);
 
-				datebind	*db=&outbinddates[i];
+				datebind	*db=&outbinddates[outidx];
 				*(db->year)=dr.dateyear;
 				*(db->month)=dr.datemonth+1;
 				*(db->day)=dr.datedmonth;
@@ -4029,13 +4204,16 @@ void sapcursor::getField(uint32_t col,
 	char		*d=&data[col][row*conn->cont->getMaxFieldSize()];
 	uint64_t	ds=datasize[col][row]-1;
 
-	// decode text-encoded binary data
-	// (unless the user has opted out via decodeblobs=no)
-	if (column[col].datatype==CS_IMAGE_TYPE && sapconn->getDecodeBlobs()) {
-		uint32_t	blobsize=(uint32_t)ds;
-		decodeBlob(&d,&blobsize);
-		ds=(uint64_t)blobsize;
-	}
+	// Note: image columns are fetched with the same CS_CHAR_TYPE/
+	// CS_FMT_NULLTERM ct_bind() format as everything else (see
+	// templatecolumn in open()), and ct-lib's own binary-to-char
+	// conversion already hands back the column's real bytes - it does
+	// not hex-encode them.  decodeBlob() (a hex decode, the counterpart
+	// of encodeBlob()'s hex-encode used for embedding blob literals in
+	// query text) must not be run on that data - doing so corrupts the
+	// value by decoding literal text as if it were hex.  binary and
+	// varbinary columns are already handled the same way, with no
+	// decode step, so this just brings image in line with them.
 
 	// return the field and field size
 	*field=d;

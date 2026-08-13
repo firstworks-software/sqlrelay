@@ -385,6 +385,24 @@
 	added charset=utf8 to the tdsfreetdssapprotocol test's connection
 		string, without which ct-lib re-encoded the relay's utf-8 query
 		text as if it were iso_1
+	fixed the sap connection module - a stored procedure's RETURN value
+		and real output parameters came back as 0, because the module
+		canceled the CS_STATUS_RESULT that carries the RETURN value
+		instead of reading it, and sent the reserved output bind that
+		carries that value to ct_param() as if it were a real rpc
+		parameter, shifting every actual parameter's position by one;
+		a call whose proc also returns rows still can't report all
+		three, since the module only reads one result set per query
+	fixed the sap connection module - a prepared or cursor-based select
+		with a bind variable failed with "no host variable
+		corresponding to the one specified by the PARAM datastream" -
+		ASE cursors take positional ? placeholders, not the named @*
+		markers the connection module normally uses for rpc calls, so
+		cursor commands now rewrite the declared select text and bind
+		positionally to match
+	fixed the sap connection module - an image column's bytes came back
+		wrong, because getField() hex-decoded the value ct-lib already
+		returned as the column's real bytes, corrupting it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
