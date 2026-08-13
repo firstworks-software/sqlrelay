@@ -859,10 +859,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Returns the error message and code by:
 		 *
-		 *  Copying at most "errorbuffersize" bytes from the
-		 *  connection-level error buffer into "errorbuffer".
-		 *  Populating "errorsize" with the number of bytes in the
-		 *  error buffer.
+		 *  Copying at most "errorbuffersize" bytes, including a
+		 *  NUL terminator, from the connection-level error buffer
+		 *  into "errorbuffer".  The copy is always
+		 *  NUL-terminated, and may be used as a C string.
+		 *  Populating "errorsize" with the length of the error
+		 *  message, not including the NUL terminator.
 		 *  Populating "errorcode" with the connection-level numeric
 		 *  error code.
 		 *  Populating "liveconnection" with true if the connection to
@@ -2796,10 +2798,12 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Returns the error message and code by:
 		 *
-		 *  Copying at most "errorbuffersize" bytes from the
-		 *  cursor-level error buffer into "errorbuffer".
-		 *  Populating "errorsize" with the number of bytes in the
-		 *  error buffer.
+		 *  Copying at most "errorbuffersize" bytes, including a
+		 *  NUL terminator, from the cursor-level error buffer
+		 *  into "errorbuffer".  The copy is always
+		 *  NUL-terminated, and may be used as a C string.
+		 *  Populating "errorsize" with the length of the error
+		 *  message, not including the NUL terminator.
 		 *  Populating "errorcode" with the cursor-level numeric
 		 *  error code.
 		 *  Populating "liveconnection" with true if the connection to
@@ -3523,10 +3527,12 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 
 		/** Returns the error message and code by:
 		 *
-		 *  Copying at most "errorbuffersize" bytes from the
-		 *  connection-level error buffer into "errorbuffer".
-		 *  Populating "errorsize" with the number of bytes in the
-		 *  error buffer.
+		 *  Copying at most "errorbuffersize" bytes, including a
+		 *  NUL terminator, from the connection-level error buffer
+		 *  into "errorbuffer".  The copy is always
+		 *  NUL-terminated, and may be used as a C string.
+		 *  Populating "errorsize" with the length of the error
+		 *  message, not including the NUL terminator.
 		 *  Populating "errorcode" with the connection-level numeric
 		 *  error code.
 		 *  Populating "liveconnection" with true if the connection to
@@ -5001,10 +5007,12 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 
 		/** Returns the error message and code by:
 		 *
-		 *  Copying at most "errorbuffersize" bytes from the
-		 *  cursor-level error buffer into "errorbuffer".
-		 *  Populating "errorsize" with the number of bytes in the
-		 *  error buffer.
+		 *  Copying at most "errorbuffersize" bytes, including a
+		 *  NUL terminator, from the cursor-level error buffer
+		 *  into "errorbuffer".  The copy is always
+		 *  NUL-terminated, and may be used as a C string.
+		 *  Populating "errorsize" with the length of the error
+		 *  message, not including the NUL terminator.
 		 *  Populating "errorcode" with the cursor-level numeric
 		 *  error code.
 		 *  Populating "liveconnection" with true if the connection to
