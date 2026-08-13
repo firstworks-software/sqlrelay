@@ -662,6 +662,51 @@
 #define isc_bpb_storage_main		0x0
 #define isc_bpb_storage_temp		0x2
 
+// batch parameters
+// (IBatch in firebird's IdlFbInterfaces.h - a batch parameter buffer is a
+// version byte that has to be BATCH_version1, then items of a tag byte, a
+// 4-byte little-endian length, and that many value bytes)
+#define BATCH_version1			1
+
+#define BATCH_tag_multierror		1
+#define BATCH_tag_record_counts		2
+#define BATCH_tag_buffer_bytes_size	3
+#define BATCH_tag_blob_policy		4
+#define BATCH_tag_detailed_errors	5
+
+// what firebird's DsqlBatch caps those two at
+#define BATCH_hard_buffer_limit		(256U*1024U*1024U)
+#define BATCH_detailed_limit		(64U*4U)
+
+// how many errors firebird's DsqlBatch details when the batch parameter
+// buffer didn't say
+#define BATCH_detailed_default		64U
+
+// what a blob's bytes are aligned to in an op_batch_blob_stream, and what a
+// segment header is aligned to inside one
+// (BLOB_STREAM_ALIGN and BATCH_SEGHDR_ALIGN in firebird's IdlFbInterfaces.h)
+#define BATCH_blob_stream_align		4
+#define BATCH_blob_seghdr_align		2
+
+// how much of the client's stream buffer a blob header and a segment header
+// take up
+// (Rsr::BatchStream::SIZEOF_BLOB_HEAD in firebird's src/remote/remote.h -
+// an 8-byte blob id and two 4-byte lengths - and the sizeof(USHORT) that
+// xdr_blob_stream() steps a segment header by.  a segment header is wider
+// than that on the wire - see parseBatchBlobStream())
+#define BATCH_blob_hdr_size		16
+#define BATCH_blob_seghdr_size		2
+
+// op_info_batch item codes
+// (the INF_* enum in firebird's IdlFbInterfaces.h - a distinct namespace
+// from the BATCH_tag_* parameter-buffer values above, used only in an
+// op_info_batch response)
+#define BATCH_inf_buffer_bytes_size	10
+#define BATCH_inf_data_size		11
+#define BATCH_inf_blobs_size		12
+#define BATCH_inf_element_alignment	13
+#define BATCH_inf_blob_header		14
+
 // event parameters
 #define EPB_version1			1
 
@@ -894,6 +939,10 @@
 #define isc_unique_key_violation	335544665
 #define isc_io_open_err			335544734
 #define isc_service_att_err		335544792
+#define isc_bad_batch_handle		335545159
+#define isc_batch_param_version		335545182
+#define isc_batch_open			335545184
+#define isc_batch_too_big		335545198
 
 // dyn error codes
 // (a second code space, carried after isc_no_meta_update in the compound
@@ -1036,6 +1085,85 @@ struct sqlrfirebirdprobecolumn {
 	uint32_t	colscale;
 };
 
+// one field of a message, as it came off the wire, before anything has been
+// done with it
+struct sqlrfirebirdvalue {
+	bool		isnull;
+	int64_t		intval;
+	double		dblval;
+	uint32_t	dateval;
+	uint32_t	timeval;
+	char		*strval;
+	uint32_t	strvallen;
+	bool		isdate;
+	bool		istime;
+	bool		isblob;
+	uint32_t	blobhigh;
+	uint32_t	bloblow;
+};
+
+// one message the client added to a batch with op_batch_msg
+struct sqlrfirebirdbatchmessage {
+	sqlrfirebirdvalue	*values;
+	uint16_t		valuecount;
+};
+
+// a blob the client made known to a batch, either by registering one it
+// already built (op_batch_regblob) or by streaming one into the batch
+// (op_batch_blob_stream).  the id the messages refer to is the client's own,
+// which is why it can't just be the module's blob id.
+struct sqlrfirebirdbatchblob {
+	uint32_t	temphigh;
+	uint32_t	templow;
+	// what the module's own blob is called - see newBlob()
+	uint32_t	blobid;
+};
+
+// one message of a batch that failed, held until the completion state that
+// reports it has been written
+struct sqlrfirebirdbatcherror {
+	uint32_t	position;
+	uint32_t	gdscode;
+	int32_t		sqlcode;
+	// NULL when the gds code says it all
+	char		*message;
+};
+
+// what the module knows about a batch the client created on a statement
+struct sqlrfirebirdbatch {
+	bool			open;
+	// the message format op_batch_create described
+	sqlrfirebirdfield	*fields;
+	uint16_t		fieldcount;
+	// what the batch parameter buffer asked for
+	// (the blob policy isn't kept - a real firebird rewrites it to
+	// BLOB_STREAM whatever the client sent, so a batch is always streamed)
+	bool			multierror;
+	bool			recordcounts;
+	uint32_t		detailederrors;
+	uint32_t		buffersize;
+	// what the bpb op_batch_set_bpb left behind, for blobs the batch
+	// registers later
+	bool			blobsegmented;
+	// the messages op_batch_msg has queued, none of them run yet
+	linkedlist< sqlrfirebirdbatchmessage * >	messages;
+	uint64_t		queuedbytes;
+	// the blobs the messages can refer to, by the client's id
+	linkedlist< sqlrfirebirdbatchblob * >	blobs;
+	// where the last op_batch_blob_stream left off, since a blob can
+	// span one op and carry on in the next - see parseBatchBlobStream()
+	// (the module's own id of the blob being filled, 0 between blobs)
+	uint32_t		blobstreamblobid;
+	uint32_t		blobstreamremaining;
+	uint32_t		blobstreambpbremaining;
+	uint32_t		blobstreamsegremaining;
+	bool			blobstreamsegmented;
+	// a parameter buffer or a segment that arrived in pieces, held until
+	// the last piece makes it whole
+	bytebuffer		blobstreambpb;
+	bytebuffer		blobstreamdata;
+};
+
 // what the module knows about a statement the client allocated
 struct sqlrfirebirdstatement {
 	uint32_t		stmttype;
@@ -1054,6 +1182,9 @@ struct sqlrfirebirdstatement {
 	// the result set
 	sqlrfirebirdprobecolumn	*probecols;
 	uint32_t		probecolcount;
+	// only open between an op_batch_create and the op_batch_rls that
+	// ends it
+	sqlrfirebirdbatch	batch;
 };
 
 // a blob the session is holding, either built by the client or fetched
@@ -1193,6 +1324,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	cancelBlob();
 		bool	closeBlob();
 		bool	infoBlob();
+		bool	infoBatch();
 		bool	getSlice();
 		bool	putSlice();
 		bool	cancel();
@@ -1231,6 +1363,41 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 						sqlrservercursor **cursor);
 		void	clearStatement(uint16_t cursorid);
 		void	clearStatements();
+
+		void	initBatch(sqlrfirebirdbatch *batch);
+		void	clearBatch(sqlrfirebirdbatch *batch);
+		void	clearBatchMessages(sqlrfirebirdbatch *batch);
+		void	clearBatchBlobs(sqlrfirebirdbatch *batch);
+		bool	parseBatchPb(const byte_t *pb,
+					uint32_t pblen,
+					sqlrfirebirdbatch *batch,
+					uint32_t *gdscode);
+		sqlrfirebirdbatchblob	*getBatchBlob(
+					sqlrfirebirdbatch *batch,
+					uint32_t high,
+					uint32_t low);
+		void	setBatchBlob(sqlrfirebirdbatch *batch,
+					uint32_t high,
+					uint32_t low,
+					uint32_t blobid);
+		bool	parseBatchBlobStream(sqlrfirebirdbatch *batch,
+					uint32_t streamlen,
+					uint32_t *bytesread);
+		bool	execBatchMessage(sqlrservercursor *cursor,
+					sqlrfirebirdbatch *batch,
+					sqlrfirebirdbatchmessage *msg,
+					uint32_t position,
+					uint32_t *affected,
+					linkedlist< sqlrfirebirdbatcherror *>
+								*errors);
+		bool	batchCompletionState(const char *title,
+					uint32_t stmthandle,
+					sqlrfirebirdbatch *batch,
+					uint32_t reccount,
+					uint32_t *updates,
+					linkedlist< sqlrfirebirdbatcherror *>
+								*errors);
+		bool	batchRelease(const char *title, bool cancel);
 
 		sqlrfirebirdblob	*newBlob();
 		uint32_t	newBlobHandle();
@@ -1315,11 +1482,24 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
 					uint32_t *bytesread);
+		bool	readMessageNullBits(uint16_t fieldcount,
+					byte_t **nullbits,
+					uint32_t *bytesread);
 		bool	readMessageFields(sqlrservercursor *cursor,
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
 					const byte_t *nullbits,
 					uint32_t *bytesread);
+		bool	readMessageValue(const sqlrfirebirdfield *fld,
+					const byte_t *nullbits,
+					uint16_t index,
+					sqlrfirebirdvalue *value,
+					uint32_t *bytesread);
+		void	bindMessageValue(memorypool *bindpool,
+					sqlrserverbindvar *bv,
+					uint16_t bindindex,
+					const sqlrfirebirdfield *fld,
+					const sqlrfirebirdvalue *val);
 		bool	writeMessage(sqlrservercursor *cursor,
 					sqlrfirebirdfield *fields,
 					uint16_t fieldcount,
@@ -1416,6 +1596,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint32_t *len,
 					const char *name,
 					uint32_t *bytesread);
+		bool	readBytes(bytebuffer *val,
+					uint32_t len,
+					const char *name,
+					uint32_t *bytesread);
 		bool	readPadding(uint32_t *bytesread);
 
 		uint32_t	foldSignExtendedLength(uint32_t len,
@@ -1442,6 +1626,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	writeBuffer(const byte_t *val,
 					uint32_t len,
 					const char *name,
+					uint32_t *byteswritten);
+		bool	writeStatusVector(uint32_t *sv,
+					const char **svstr,
+					uint8_t svlen,
 					uint32_t *byteswritten);
 
 		bool	appendInfoItem(byte_t item,
@@ -1618,6 +1806,7 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		statements[i].bindsdescribed=false;
 		statements[i].probecols=NULL;
 		statements[i].probecolcount=0;
+		initBatch(&statements[i].batch);
 	}
 
 	lobbuffer=NULL;
@@ -1686,6 +1875,7 @@ void sqlrprotocol_firebird::init() {
 		statements[i].bindsdescribed=false;
 		statements[i].probecols=NULL;
 		statements[i].probecolcount=0;
+		initBatch(&statements[i].batch);
 	}
 }
 
@@ -1885,6 +2075,9 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_batch_blob_stream:
 					loop=batchBlobStream();
 					break;
+				case op_info_batch:
+					loop=infoBatch();
+					break;
 				case op_service_attach:
 					loop=serviceAttach();
 					break;
@@ -1942,7 +2135,6 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_crypt_key_callback:
 				case op_repl_data:
 				case op_repl_req:
-				case op_info_batch:
 				// the scroll ops below need backward and
 				// absolute fetches, and the server api has
 				// only forward ones (fetchRow, nextRow,
@@ -3483,31 +3675,8 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 	}
 
 	// write the status vector
-	// (an argument string is written the same way any other buffer is -
-	// a length, the bytes, and padding to a 4-byte boundary)
-	for (uint8_t i=0; i<svlen; i++) {
-		if (svstr[i]) {
-			if (!writeBuffer((const byte_t *)svstr[i],
-					charstring::getLength(svstr[i]),
-					"status vector string",
-					&byteswritten)) {
-				return false;
-			}
-			continue;
-		}
-		if (clientsock->write(sv[i])!=sizeof(uint32_t)) {
-			if (getDebug()) {
-				stdoutput.printf("	write status "
-						"vector [%u] failed\n",i);
-				debugSystemError();
-				debugEnd();
-			}
-			return false;
-		}
-		byteswritten+=sizeof(uint32_t);
-	}
-	if (getDebug()) {
-		debugStatusVector(sv,svstr,svlen);
+	if (!writeStatusVector(sv,svstr,svlen,&byteswritten)) {
+		return false;
 	}
 
 	debugEnd();
@@ -4716,6 +4885,7 @@ bool sqlrprotocol_firebird::allocateStatement() {
 	stmt->bindcount=0;
 	stmt->bindsdescribed=false;
 	clearProbeColumns(stmt);
+	clearBatch(&stmt->batch);
 
 	if (getDebug()) {
 		stdoutput.printf("	statement handle: %u\n",stmthandle);
@@ -5163,6 +5333,7 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	// 	byte_t[]	input message	(only if the count is non-zero)
 	// 	byte_t[]	output message blr	(op_execute2 only)
 	// 	int32_t		output message number	(op_execute2 only)
+	// 	int32_t		statement timeout	(protocol 16 and up)
 	// }
 
 	debugStart((isexecute2)?"execute2":"execute");
@@ -5247,6 +5418,19 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 		uint32_t	outmsgnumber;
 		if (!readInt(&outmsgnumber,
 				"output message number",&bytesread)) {
+			delete[] outfields;
+			return false;
+		}
+	}
+
+	// get statement timeout
+	// (protocol 16 appended it to op_execute/op_execute2 - see firebird's
+	// src/remote/protocol.cpp, PROTOCOL_STMT_TOUT in the op_execute case.
+	// it has to be read even though nothing here honors it, or the rest of
+	// the packet would be misread as the next request)
+	if (protocolversion>=PROTOCOL_VERSION16) {
+		uint32_t	stmttimeout;
+		if (!readInt(&stmttimeout,"statement timeout",&bytesread)) {
 			delete[] outfields;
 			return false;
 		}
@@ -6755,6 +6939,115 @@ bool sqlrprotocol_firebird::infoBlob() {
 				statusvectorlen);
 }
 
+bool sqlrprotocol_firebird::infoBatch() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		incarnation
+	// 	int32_t		requested batch info items length
+	// 	byte_t[]	requested batch info items
+	// 	int32_t		response buffer length
+	// }
+	//
+	// (a batch has no handle of its own - see op_batch_create - so this
+	// is the statement handle, the same as every other op_batch_* op)
+
+	debugStart("info batch");
+
+	const char	*title="info batch response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	uint32_t	incarnation;
+	if (!readInt(&stmthandle,"statement handle",&bytesread) ||
+		!readInt(&incarnation,"incarnation",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	itemslen;
+	byte_t		*items;
+	if (!readBuffer(&items,&itemslen,
+			"requested batch info items",&bytesread)) {
+		return false;
+	}
+
+	if (!readInt(&respbufferlen,"response buffer length",&bytesread)) {
+		delete[] items;
+		return false;
+	}
+	fixupRespBufferLen();
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->batch.open) {
+		delete[] items;
+		return errorResponse(title,isc_bad_batch_handle);
+	}
+
+	sqlrfirebirdbatch	*batch=&stmt->batch;
+
+	respbuffer.clear();
+
+	bool	fits=true;
+	for (uint32_t i=0; i<itemslen && fits; i++) {
+
+		byte_t	item=items[i];
+
+		if (getDebug()) {
+			stdoutput.printf("	item: %d\n",item);
+		}
+
+		if (item==isc_info_end) {
+			break;
+		}
+
+		switch (item) {
+			case BATCH_inf_buffer_bytes_size:
+				fits=appendInfoInt(item,batch->buffersize);
+				break;
+			case BATCH_inf_data_size:
+				fits=appendInfoInt(item,
+						(uint32_t)batch->queuedbytes);
+				break;
+			case BATCH_inf_element_alignment:
+				fits=appendInfoInt(item,
+						BATCH_blob_stream_align);
+				break;
+			case BATCH_inf_blob_header:
+				fits=appendInfoInt(item,
+						BATCH_blob_hdr_size);
+				break;
+			// blob bytes queued aren't tracked separately from
+			// the rest of a message's data (see queuedbytes) -
+			// nothing backs this item
+			case BATCH_inf_blobs_size:
+			default:
+				fits=appendInfoError(item);
+				break;
+		}
+	}
+
+	delete[] items;
+
+	if (fits && respbuffer.getSize()<respbufferlen) {
+		write(&respbuffer,(byte_t)isc_info_end);
+	}
+
+	successStatusVector();
+
+	return genericResponse(title,
+				stmthandle,0,
+				respbuffer.getBuffer(),
+				respbuffer.getSize(),
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
 bool sqlrprotocol_firebird::writeSliceElement(byte_t blrtype,
 						uint32_t elementsize,
 						const byte_t *element,
@@ -7066,39 +7359,1047 @@ bool sqlrprotocol_firebird::cancel() {
 }
 
 bool sqlrprotocol_firebird::batchCreate() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	cstring		blr describing the message
+	// 	int32_t		message length
+	// 	cstring		batch parameter buffer
+	// }
+
+	debugStart("batch create");
+
+	const char	*title="batch create response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	sqlrfirebirdfield	*fields=NULL;
+	uint16_t		fieldcount=0;
+	uint32_t		blrgdscode=0;
+	if (!readBlr(&fields,&fieldcount,"message blr",
+					&bytesread,&blrgdscode)) {
+		// the rest of the request is still on the socket, so the
+		// session ends either way - but the client hears why first
+		if (blrgdscode) {
+			errorResponse(title,blrgdscode);
+		}
+		return false;
+	}
+
+	// the length of one message in the client's buffer, which means
+	// nothing here - the wire format is packed, and the blr says what it
+	// contains
+	uint32_t	msglen;
+	if (!readInt(&msglen,"message length",&bytesread)) {
+		delete[] fields;
+		return false;
+	}
+
+	uint32_t	pblen=0;
+	byte_t		*pb=NULL;
+	if (!readBuffer(&pb,&pblen,"batch param buffer",&bytesread)) {
+		delete[] fields;
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt) {
+		delete[] fields;
+		delete[] pb;
+		return errorResponse(title,isc_bad_stmt_handle);
+	}
+
+	// a statement can only run one batch at a time
+	if (stmt->batch.open) {
+		delete[] fields;
+		delete[] pb;
+		return errorResponse(title,isc_batch_open);
+	}
+
+	clearBatch(&stmt->batch);
+
+	uint32_t	pbgdscode=0;
+	bool		pbparsed=parseBatchPb(pb,pblen,
+						&stmt->batch,&pbgdscode);
+
+	delete[] pb;
+
+	if (!pbparsed) {
+		clearBatch(&stmt->batch);
+		delete[] fields;
+		return errorResponse(title,pbgdscode);
+	}
+
+	stmt->batch.fields=fields;
+	stmt->batch.fieldcount=fieldcount;
+	stmt->batch.open=true;
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::batchMsg() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		message count
+	// 	message[]	that many packed messages
+	// }
+	//
+	// The messages run back-to-back, each one packed the way
+	// readMessage() reads it, rather than being wrapped in a counted
+	// buffer of their own - see the op_batch_msg case in firebird's
+	// src/remote/protocol.cpp, which decodes them with the same
+	// xdr_packed_message() a fetch uses.
+
+	debugStart("batch msg");
+
+	const char	*title="batch msg response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	msgcount;
+	if (!readInt(&msgcount,"message count",&bytesread)) {
+		return false;
+	}
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+
+	// without the batch's message format there is no way to tell where
+	// the messages end, so the connection can't be resynchronized - a
+	// real firebird fails the same way, in its decoder, and drops the
+	// connection
+	if (!stmt || !stmt->batch.open) {
+		errorResponse(title,isc_bad_batch_handle);
+		return false;
+	}
+
+	sqlrfirebirdbatch	*batch=&stmt->batch;
+
+	for (uint32_t m=0; m<msgcount; m++) {
+
+		byte_t	*nullbits=NULL;
+		if (!readMessageNullBits(batch->fieldcount,
+						&nullbits,&bytesread)) {
+			return false;
+		}
+
+		sqlrfirebirdvalue	*values=
+				new sqlrfirebirdvalue[batch->fieldcount];
+		for (uint16_t i=0; i<batch->fieldcount; i++) {
+			values[i].strval=NULL;
+		}
+
+		bool	valuesread=true;
+		for (uint16_t i=0; i<batch->fieldcount; i++) {
+			if (!readMessageValue(&batch->fields[i],
+						nullbits,i,&values[i],
+						&bytesread)) {
+				valuesread=false;
+				break;
+			}
+		}
+
+		delete[] nullbits;
+
+		if (!valuesread) {
+			for (uint16_t i=0; i<batch->fieldcount; i++) {
+				delete[] values[i].strval;
+			}
+			delete[] values;
+			return false;
+		}
+
+		sqlrfirebirdbatchmessage	*msg=
+					new sqlrfirebirdbatchmessage;
+		msg->values=values;
+		msg->valuecount=batch->fieldcount;
+		batch->messages.append(msg);
+	}
+
+	// what the batch has cost so far, against the ceiling the batch
+	// parameter buffer set
+	batch->queuedbytes=batch->queuedbytes+bytesread;
+
+	if (getDebug()) {
+		stdoutput.printf("	queued %u message(s), "
+					"%lld byte(s) in all\n",
+					msgcount,
+					(long long)batch->queuedbytes);
+	}
+
+	debugEnd();
+
+	if (batch->queuedbytes>batch->buffersize) {
+		clearBatchMessages(batch);
+		return errorResponse(title,isc_batch_too_big);
+	}
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::batchExec() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		transaction handle
+	// }
+
+	debugStart("batch exec");
+
+	const char	*title="batch exec response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->batch.open) {
+		return errorResponse(title,isc_bad_batch_handle);
+	}
+	if (!cursor || !stmt->prepared) {
+		return errorResponse(title,isc_bad_stmt_handle);
+	}
+
+	// refuse a write in a read-only transaction, the same way an ordinary
+	// execute does - a batch is only ever a write
+	if (trreadonly) {
+		return errorResponse(title,isc_read_only_trans);
+	}
+
+	sqlrfirebirdbatch	*batch=&stmt->batch;
+
+	uint32_t	msgcount=(uint32_t)batch->messages.getCount();
+
+	// per-message row counts, kept only when the batch asked for them
+	uint32_t	*updates=NULL;
+	if (batch->recordcounts && msgcount) {
+		updates=new uint32_t[msgcount];
+	}
+
+	linkedlist< sqlrfirebirdbatcherror * >	errors;
+
+	// run the queued messages, in the order they were queued
+	// (there's no array bind in the server api, so a batch is a loop of
+	// ordinary executes over the statement the client already prepared)
+	uint32_t	position=0;
+	for (listnode< sqlrfirebirdbatchmessage * > *node=
+					batch->messages.getFirst();
+					node; node=node->getNext()) {
+
+		uint32_t	affected=0;
+		bool		ran=execBatchMessage(cursor,batch,
+						node->getValue(),
+						position,&affected,&errors);
+
+		if (updates) {
+			updates[position]=affected;
+		}
+
+		position++;
+
+		// without multierror the first failure ends the run, and the
+		// messages behind it are never tried
+		if (!ran && !batch->multierror) {
+			break;
+		}
+	}
+
+	if (getDebug()) {
+		stdoutput.printf("	ran %u message(s), %u failed\n",
+					position,
+					(uint32_t)errors.getCount());
+	}
+
+	// execute consumes the queue, whether or not everything in it ran -
+	// the batch itself stays open, and the client can queue more
+	clearBatchMessages(batch);
+
+	bool	sent=batchCompletionState(title,stmthandle,batch,
+						position,updates,&errors);
+
+	delete[] updates;
+	for (listnode< sqlrfirebirdbatcherror * > *node=errors.getFirst();
+						node; node=node->getNext()) {
+		delete[] node->getValue()->message;
+		delete node->getValue();
+	}
+
+	return sent;
+}
+
+bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
+					sqlrfirebirdbatch *batch,
+					sqlrfirebirdbatchmessage *msg,
+					uint32_t position,
+					uint32_t *affected,
+					linkedlist< sqlrfirebirdbatcherror * >
+								*errors) {
+
+	*affected=0;
+
+	// the binds are about to be refilled - see executeStatement()
+	memorypool		*bindpool=cont->getBindPool(cursor);
+	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
+	bindpool->clear();
+
+	badblobid=false;
+
+	uint16_t	bindcount=0;
+	for (uint16_t i=0; i<msg->valuecount && bindcount<maxbindcount; i++) {
+
+		// a message names a blob by the id the client gave the batch,
+		// which has to be translated to the module's own id before
+		// the bind can find the bytes
+		sqlrfirebirdvalue	val=msg->values[i];
+		if (val.isblob) {
+			sqlrfirebirdbatchblob	*bb=getBatchBlob(batch,
+							val.blobhigh,
+							val.bloblow);
+			if (bb) {
+				val.blobhigh=0;
+				val.bloblow=bb->blobid;
+			}
+		}
+
+		bindMessageValue(bindpool,&(inbinds[bindcount]),bindcount,
+						&batch->fields[i],&val);
+		bindcount++;
+	}
+
+	cont->setInputBindCount(cursor,bindcount);
+
+	if (getDebug()) {
+		stdoutput.printf("	message %u: bound %u parameter(s)\n",
+							position,bindcount);
+	}
+
+	sqlrfirebirdbatcherror	*err=NULL;
+
+	if (badblobid) {
+
+		err=new sqlrfirebirdbatcherror;
+		err->position=position;
+		err->gdscode=isc_bad_segstr_id;
+		err->sqlcode=-901;
+		err->message=NULL;
+
+	} else if (!cont->executeQuery(cursor,true,true,true,true)) {
+
+		const char	*errorstring=NULL;
+		uint32_t	errorsize=0;
+		int64_t		errnum=0;
+		bool		liveconnection=true;
+		cont->getError(cursor,&errorstring,&errorsize,
+					&errnum,&liveconnection);
+
+		// see sendCursorError() for what makes a sql code out of
+		// whatever number the backend reported
+		int32_t	sqlcode=(int32_t)errnum;
+		if (sqlcode>=0) {
+			sqlcode=-901;
+		}
+
+		err=new sqlrfirebirdbatcherror;
+		err->position=position;
+		err->gdscode=isc_random;
+		err->sqlcode=sqlcode;
+		err->message=charstring::duplicate(errorstring,errorsize);
+	}
+
+	if (err) {
+		errors->append(err);
+		return false;
+	}
+
+	if (cont->knowsAffectedRows(cursor)) {
+		*affected=(uint32_t)cont->getAffectedRows(cursor);
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::batchCompletionState(const char *title,
+					uint32_t stmthandle,
+					sqlrfirebirdbatch *batch,
+					uint32_t reccount,
+					uint32_t *updates,
+					linkedlist< sqlrfirebirdbatcherror * >
+								*errors) {
+
+	// response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_batch_cs
+	// 	int32_t		statement handle
+	// 	int32_t		message count
+	// 	int32_t		update count count
+	// 	int32_t		detailed failure count
+	// 	int32_t		plain failure count
+	// 	int32_t[]	one update count per message
+	// 	{int32_t,int32_t[]}[]	position, status vector
+	// 	int32_t[]	the position of each plain failure
+	// }
+	//
+	// (a batch answers this instead of an op_response - the errors it
+	// reports belong to individual messages, and a status vector of the
+	// whole request has nowhere to put them.  the two failure counts
+	// name disjoint sets - a failure is either detailed by a status
+	// vector or named by position alone, never both)
+
+	debugStart(title);
+
+	uint32_t	byteswritten=0;
+
+	uint32_t	updatecount=(updates)?reccount:0;
+	uint32_t	errorcount=(uint32_t)errors->getCount();
+
+	// only as many failures are detailed as the batch parameter buffer
+	// asked to hear about - the rest are named by position alone
+	uint32_t	vectorcount=(errorcount<batch->detailederrors)?
+					errorcount:batch->detailederrors;
+	uint32_t	plaincount=errorcount-vectorcount;
+
+	opcode=op_batch_cs;
+	if (!writeInt(opcode,"response op code",&byteswritten)) {
+		return false;
+	}
+	debugOpCode("response op code",opcode);
+
+	if (!writeInt(stmthandle,"statement handle",&byteswritten) ||
+		!writeInt(reccount,"message count",&byteswritten) ||
+		!writeInt(updatecount,"update count count",&byteswritten) ||
+		!writeInt(vectorcount,
+				"detailed failure count",&byteswritten) ||
+		!writeInt(plaincount,
+				"plain failure count",&byteswritten)) {
+		return false;
+	}
+
+	// the update counts
+	for (uint32_t i=0; i<updatecount; i++) {
+		if (!writeInt(updates[i],"update count",&byteswritten)) {
+			return false;
+		}
+	}
+
+	// a status vector for each failure that gets detailed
+	uint32_t	detailed=0;
+	for (listnode< sqlrfirebirdbatcherror * > *node=errors->getFirst();
+				node && detailed<vectorcount;
+				node=node->getNext()) {
+
+		sqlrfirebirdbatcherror	*err=node->getValue();
+
+		if (!writeInt(err->position,
+				"status vector position",&byteswritten)) {
+			return false;
+		}
+
+		// what errorResponse() builds, built here instead because
+		// several of them go out in one response
+		uint32_t	sv[12];
+		const char	*svstr[12];
+		bytestring::zero(sv,sizeof(sv));
+		bytestring::zero(svstr,sizeof(svstr));
+
+		uint8_t	i=0;
+		sv[i++]=isc_arg_gds;
+		sv[i++]=err->gdscode;
+		if (err->message) {
+			sv[i++]=isc_arg_string;
+			svstr[i++]=err->message;
+		}
+		sv[i++]=isc_arg_sql_state;
+		svstr[i++]=sqlStateForSqlCode(err->sqlcode);
+		sv[i++]=isc_arg_gds;
+		sv[i++]=isc_sqlerr;
+		sv[i++]=isc_arg_number;
+		sv[i++]=(uint32_t)err->sqlcode;
+		sv[i++]=isc_arg_end;
+
+		if (!writeStatusVector(sv,svstr,i,&byteswritten)) {
+			return false;
+		}
+
+		detailed++;
+	}
+
+	// the position of each failure that didn't get one, skipping the ones
+	// that did
+	uint32_t	skipped=0;
+	for (listnode< sqlrfirebirdbatcherror * > *node=errors->getFirst();
+						node; node=node->getNext()) {
+		if (skipped<vectorcount) {
+			skipped++;
+			continue;
+		}
+		if (!writeInt(node->getValue()->position,
+					"error position",&byteswritten)) {
+			return false;
+		}
+	}
+
+	debugEnd();
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
 }
 
 bool sqlrprotocol_firebird::batchRls() {
-	return sendNotImplementedError();
+	return batchRelease("batch rls response",false);
 }
 
+// a batch has nothing in flight of its own to abort - the messages it holds
+// haven't run, and the ones a previous op_batch_exec did run are part of the
+// transaction, which only a commit or rollback can undo.  So cancelling and
+// releasing come to the same thing here, and only the op the client sent
+// tells them apart.
 bool sqlrprotocol_firebird::batchCancel() {
-	return sendNotImplementedError();
+	return batchRelease("batch cancel response",true);
+}
+
+bool sqlrprotocol_firebird::batchRelease(const char *title, bool cancel) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// }
+
+	debugStart((cancel)?"batch cancel":"batch rls");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->batch.open) {
+		return errorResponse(title,isc_bad_batch_handle);
+	}
+
+	// only the batch goes - the statement stays prepared, and the client
+	// can keep executing it without a batch
+	clearBatch(&stmt->batch);
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::batchSync() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// }
+	//
+	// The op carries nothing at all, not even a statement handle - it
+	// asks the session to answer everything it still owes, and the
+	// answer is an ordinary response.  Nothing here defers a response,
+	// so there is never anything outstanding to flush.
+
+	debugStart("batch sync");
+	debugEnd();
+
+	successStatusVector();
+
+	return genericResponse("batch sync response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::batchSetBpb() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	cstring		blob parameter buffer
+	// }
+	//
+	// The buffer is a plain bpb, not a batch parameter buffer - it sets
+	// the default the batch gives blobs the client registers with it.
+
+	debugStart("batch set bpb");
+
+	const char	*title="batch set bpb response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	bpblen=0;
+	byte_t		*bpb=NULL;
+	if (!readBuffer(&bpb,&bpblen,"blob param buffer",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->batch.open) {
+		delete[] bpb;
+		return errorResponse(title,isc_bad_batch_handle);
+	}
+
+	// parseBpb() only ever sets isstream, and a blob is segmented unless
+	// the bpb says otherwise
+	sqlrfirebirdblob	tmpblob;
+	tmpblob.isstream=false;
+	parseBpb(bpb,bpblen,&tmpblob);
+	stmt->batch.blobsegmented=!tmpblob.isstream;
+
+	delete[] bpb;
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::batchRegBlob() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	int32_t		existing blob id, high word
+	// 	int32_t		existing blob id, low word
+	// 	int32_t		batch blob id, high word
+	// 	int32_t		batch blob id, low word
+	// }
+	//
+	// The client is saying "inside this batch, the blob I already built
+	// is called this" - the messages it queues refer to the blob by the
+	// second id, which it made up itself, and which means nothing outside
+	// the batch.
+
+	debugStart("batch regblob");
+
+	const char	*title="batch regblob response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	existhigh;
+	uint32_t	existlow;
+	if (!readInt(&existhigh,"existing blob id high word",&bytesread) ||
+		!readInt(&existlow,"existing blob id low word",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	temphigh;
+	uint32_t	templow;
+	if (!readInt(&temphigh,"batch blob id high word",&bytesread) ||
+		!readInt(&templow,"batch blob id low word",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->batch.open) {
+		return errorResponse(title,isc_bad_batch_handle);
+	}
+
+	sqlrfirebirdblob	*blob=getBlobById(existhigh,existlow);
+	if (!blob) {
+		return errorResponse(title,isc_bad_segstr_id);
+	}
+
+	setBatchBlob(&stmt->batch,temphigh,templow,blob->id);
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::batchBlobStream() {
-	return sendNotImplementedError();
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		statement handle
+	// 	cstring		blob stream
+	// }
+
+	debugStart("batch blob stream");
+
+	const char	*title="batch blob stream response";
+
+	uint32_t	bytesread=0;
+
+	uint32_t	stmthandle;
+	if (!readInt(&stmthandle,"statement handle",&bytesread)) {
+		return false;
+	}
+
+	// the stream isn't read as a buffer, because the length that follows
+	// isn't the number of bytes that follow it - see
+	// parseBatchBlobStream()
+	uint32_t	streamlen=0;
+	if (!readInt(&streamlen,"blob stream length",&bytesread)) {
+		return false;
+	}
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(stmthandle,&cursor);
+	if (!stmt || !stmt->batch.open) {
+		// the stream can't be decoded, let alone skipped, without the
+		// batch's state, so there's no way to find where the next op
+		// starts and carry on.  a real firebird fails the packet here
+		// too, which drops the connection.
+		if (getDebug()) {
+			stdoutput.write("	no such batch\n");
+			debugEnd();
+		}
+		return false;
+	}
+
+	// same again - a stream that didn't decode leaves the session part
+	// way through an op, with nothing to resynchronize on
+	if (!parseBatchBlobStream(&stmt->batch,streamlen,&bytesread)) {
+		if (getDebug()) {
+			stdoutput.write("	invalid blob stream\n");
+			debugEnd();
+		}
+		return false;
+	}
+
+	debugEnd();
+
+	successStatusVector();
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::parseBatchBlobStream(sqlrfirebirdbatch *batch,
+						uint32_t streamlen,
+						uint32_t *bytesread) {
+
+	// A stream is one blob after another, each of them a header - an
+	// 8-byte batch blob id, a 4-byte length and a 4-byte blob parameter
+	// buffer length, all of them big-endian, with the id's high word
+	// first - then that many parameter buffer bytes, then the blob's own
+	// bytes.  A stream blob's bytes are one run, a segmented blob's are
+	// segments, each of them a length and that many bytes.  The length in
+	// the header covers the parameter buffer and the segment lengths as
+	// well as the bytes.
+	//
+	// The length the op carries isn't the number of bytes that follow it.
+	// It's the length of the buffer the client laid the stream out in,
+	// and the wire only carries the parts of that buffer that mean
+	// something:
+	//
+	// - the bytes that pad a blob header or a segment length back into
+	//   alignment are in the buffer, but never sent
+	// - a segment length takes 2 bytes of the buffer, but 4 on the wire,
+	//   because xdr sends even a 16-bit value as a 4-byte big-endian one
+	// - a header that would run off the end of the buffer isn't sent at
+	//   all.  The client holds it back and sends it whole at the front of
+	//   the next op, so the buffer's last few bytes just go missing.
+	//
+	// So the stream has to be decoded as it's read, counting buffer bytes
+	// and bytes off the wire separately, and nothing here can read ahead.
+	// See xdr_blob_stream() in firebird's src/remote/protocol.cpp.
+	//
+	// A blob, a parameter buffer or a segment can also break where the
+	// buffer ends and carry on in the next op, which is why how far the
+	// last one got is kept on the batch rather than here.
+
+	// what the client's buffer holds is a whole number of alignment units
+	if (streamlen%BATCH_blob_stream_align) {
+		return false;
+	}
+
+	// how much of the client's buffer is left, and how far into it we
+	// are, which is what alignment is measured against, since the buffer
+	// itself starts out aligned
+	uint32_t	remains=streamlen;
+	uint32_t	offset=0;
+
+	while (remains) {
+
+		// the next blob's header
+		if (!batch->blobstreamremaining) {
+
+			// align
+			uint32_t	pad=offset%BATCH_blob_stream_align;
+			if (pad) {
+				pad=BATCH_blob_stream_align-pad;
+				if (pad>remains) {
+					return false;
+				}
+				remains=remains-pad;
+				offset=offset+pad;
+				continue;
+			}
+
+			// a header that wouldn't fit is one the client held
+			// back - what's left of the buffer was never sent
+			if (remains<BATCH_blob_hdr_size) {
+				break;
+			}
+
+			uint32_t	temphigh=0;
+			uint32_t	templow=0;
+			uint32_t	bloblen=0;
+			uint32_t	bpblen=0;
+			if (!readInt(&temphigh,"batch blob id high word",
+								bytesread) ||
+				!readInt(&templow,"batch blob id low word",
+								bytesread) ||
+				!readInt(&bloblen,"batch blob length",
+								bytesread) ||
+				!readInt(&bpblen,"batch blob bpb length",
+								bytesread)) {
+				return false;
+			}
+			remains=remains-BATCH_blob_hdr_size;
+			offset=offset+BATCH_blob_hdr_size;
+
+			if (bpblen>bloblen) {
+				return false;
+			}
+
+			// the blob the batch's messages will bind
+			sqlrfirebirdblob	*blob=newBlob();
+			blob->iswrite=true;
+			setBatchBlob(batch,temphigh,templow,blob->id);
+
+			batch->blobstreamblobid=blob->id;
+			batch->blobstreamremaining=bloblen;
+			batch->blobstreambpbremaining=bpblen;
+			batch->blobstreamsegremaining=0;
+			batch->blobstreambpb.clear();
+			batch->blobstreamdata.clear();
+
+			// without a parameter buffer of its own, the blob is
+			// whatever op_batch_set_bpb left behind
+			if (!bpblen) {
+				batch->blobstreamsegmented=
+						batch->blobsegmented;
+			}
+			continue;
+		}
+
+		// the blob the header started, which the ops before this one
+		// may have started instead
+		sqlrfirebirdblob	*blob=
+				getBlobById(0,batch->blobstreamblobid);
+		if (!blob) {
+			return false;
+		}
+
+		// the blob's parameter buffer
+		if (batch->blobstreambpbremaining) {
+
+			uint32_t	size=
+				(batch->blobstreambpbremaining<remains)?
+					batch->blobstreambpbremaining:remains;
+			if (!readBytes(&batch->blobstreambpb,size,
+						"batch blob bpb",bytesread)) {
+				return false;
+			}
+			batch->blobstreambpbremaining=
+				batch->blobstreambpbremaining-size;
+			batch->blobstreamremaining=
+				batch->blobstreamremaining-size;
+			remains=remains-size;
+			offset=offset+size;
+
+			// the blob's own parameter buffer wins over the one
+			// op_batch_set_bpb left behind, for this blob only
+			if (!batch->blobstreambpbremaining) {
+				sqlrfirebirdblob	tmpblob;
+				tmpblob.isstream=false;
+				parseBpb(batch->blobstreambpb.getBuffer(),
+					(uint32_t)batch->
+						blobstreambpb.getSize(),
+					&tmpblob);
+				batch->blobstreamsegmented=!tmpblob.isstream;
+				batch->blobstreambpb.clear();
+			}
+			continue;
+		}
+
+		if (batch->blobstreamsegmented) {
+
+			// the next segment's length
+			if (!batch->blobstreamsegremaining) {
+
+				// align
+				uint32_t	pad=
+					offset%BATCH_blob_seghdr_align;
+				if (pad) {
+					pad=BATCH_blob_seghdr_align-pad;
+					if (pad>remains ||
+						pad>batch->
+						blobstreamremaining) {
+						return false;
+					}
+					remains=remains-pad;
+					offset=offset+pad;
+					batch->blobstreamremaining=
+						batch->blobstreamremaining-
+									pad;
+					continue;
+				}
+
+				if (BATCH_blob_seghdr_size>remains ||
+					BATCH_blob_seghdr_size>
+						batch->blobstreamremaining) {
+					return false;
+				}
+
+				// only the low 16 bits are the length - the
+				// other 2 bytes are the padding that xdr
+				// sends a 16-bit value in
+				uint32_t	seglen=0;
+				if (!readInt(&seglen,
+						"batch blob segment length",
+						bytesread)) {
+					return false;
+				}
+				seglen=seglen&0xffff;
+
+				remains=remains-BATCH_blob_seghdr_size;
+				offset=offset+BATCH_blob_seghdr_size;
+				batch->blobstreamremaining=
+					batch->blobstreamremaining-
+						BATCH_blob_seghdr_size;
+
+				if (seglen>batch->blobstreamremaining) {
+					return false;
+				}
+				batch->blobstreamsegremaining=seglen;
+				continue;
+			}
+
+			// the segment's bytes
+			uint32_t	size=
+				(batch->blobstreamsegremaining<remains)?
+					batch->blobstreamsegremaining:remains;
+			if (!readBytes(&batch->blobstreamdata,size,
+					"batch blob segment",bytesread)) {
+				return false;
+			}
+			batch->blobstreamsegremaining=
+				batch->blobstreamsegremaining-size;
+			batch->blobstreamremaining=
+				batch->blobstreamremaining-size;
+			remains=remains-size;
+			offset=offset+size;
+
+			if (!batch->blobstreamsegremaining) {
+				appendBlobSegment(blob,
+					batch->blobstreamdata.getBuffer(),
+					(uint32_t)batch->
+						blobstreamdata.getSize());
+				batch->blobstreamdata.clear();
+			}
+			continue;
+		}
+
+		// a stream blob's bytes, which the module holds as a single
+		// segment, so they're gathered up until the blob ends
+		uint32_t	size=(batch->blobstreamremaining<remains)?
+					batch->blobstreamremaining:remains;
+		if (!readBytes(&batch->blobstreamdata,size,
+					"batch blob data",bytesread)) {
+			return false;
+		}
+		batch->blobstreamremaining=batch->blobstreamremaining-size;
+		remains=remains-size;
+		offset=offset+size;
+
+		if (!batch->blobstreamremaining) {
+			appendBlobSegment(blob,
+				batch->blobstreamdata.getBuffer(),
+				(uint32_t)batch->blobstreamdata.getSize());
+			batch->blobstreamdata.clear();
+		}
+	}
+
+	trimBlobs();
+
+	return true;
 }
 
 // nothing backs the service manager - no backup, restore, repair, or
@@ -7644,12 +8945,210 @@ void sqlrprotocol_firebird::clearStatement(uint16_t cursorid) {
 	stmt->bindcount=0;
 	stmt->bindsdescribed=false;
 	clearProbeColumns(stmt);
+	clearBatch(&stmt->batch);
 }
 
 void sqlrprotocol_firebird::clearStatements() {
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		clearStatement(i);
 	}
+}
+
+void sqlrprotocol_firebird::initBatch(sqlrfirebirdbatch *batch) {
+	batch->open=false;
+	batch->fields=NULL;
+	batch->fieldcount=0;
+	batch->multierror=false;
+	batch->recordcounts=false;
+	batch->detailederrors=BATCH_detailed_default;
+	batch->buffersize=BATCH_hard_buffer_limit;
+	batch->blobsegmented=false;
+	batch->queuedbytes=0;
+	batch->blobstreamblobid=0;
+	batch->blobstreamremaining=0;
+	batch->blobstreambpbremaining=0;
+	batch->blobstreamsegremaining=0;
+	batch->blobstreamsegmented=false;
+	batch->blobstreambpb.clear();
+	batch->blobstreamdata.clear();
+}
+
+void sqlrprotocol_firebird::clearBatch(sqlrfirebirdbatch *batch) {
+	clearBatchMessages(batch);
+	clearBatchBlobs(batch);
+	delete[] batch->fields;
+	initBatch(batch);
+}
+
+void sqlrprotocol_firebird::clearBatchMessages(sqlrfirebirdbatch *batch) {
+	for (listnode< sqlrfirebirdbatchmessage * > *node=
+					batch->messages.getFirst();
+					node; node=node->getNext()) {
+		sqlrfirebirdbatchmessage	*msg=node->getValue();
+		for (uint16_t i=0; i<msg->valuecount; i++) {
+			delete[] msg->values[i].strval;
+		}
+		delete[] msg->values;
+		delete msg;
+	}
+	batch->messages.clear();
+	batch->queuedbytes=0;
+}
+
+void sqlrprotocol_firebird::clearBatchBlobs(sqlrfirebirdbatch *batch) {
+
+	// only the mapping goes - the blobs themselves belong to the session,
+	// which trims them on its own budget (see trimBlobs()).  a blob the
+	// batch streamed in was held against trimming while the batch could
+	// still bind it, and nothing can now.
+	for (listnode< sqlrfirebirdbatchblob * > *node=batch->blobs.getFirst();
+						node; node=node->getNext()) {
+		sqlrfirebirdbatchblob	*bb=node->getValue();
+		sqlrfirebirdblob	*blob=getBlobById(0,bb->blobid);
+		if (blob && !blob->handle) {
+			blob->iswrite=false;
+		}
+		delete bb;
+	}
+	batch->blobs.clear();
+	trimBlobs();
+}
+
+sqlrfirebirdbatchblob *sqlrprotocol_firebird::getBatchBlob(
+						sqlrfirebirdbatch *batch,
+						uint32_t high,
+						uint32_t low) {
+	for (listnode< sqlrfirebirdbatchblob * > *node=batch->blobs.getFirst();
+						node; node=node->getNext()) {
+		sqlrfirebirdbatchblob	*bb=node->getValue();
+		if (bb->temphigh==high && bb->templow==low) {
+			return bb;
+		}
+	}
+	return NULL;
+}
+
+void sqlrprotocol_firebird::setBatchBlob(sqlrfirebirdbatch *batch,
+						uint32_t high,
+						uint32_t low,
+						uint32_t blobid) {
+
+	// re-registering an id replaces what it pointed at, which is what a
+	// client that reuses one means
+	sqlrfirebirdbatchblob	*bb=getBatchBlob(batch,high,low);
+	if (!bb) {
+		bb=new sqlrfirebirdbatchblob;
+		bb->temphigh=high;
+		bb->templow=low;
+		batch->blobs.append(bb);
+	}
+	bb->blobid=blobid;
+}
+
+bool sqlrprotocol_firebird::parseBatchPb(const byte_t *pb,
+					uint32_t pblen,
+					sqlrfirebirdbatch *batch,
+					uint32_t *gdscode) {
+
+	*gdscode=0;
+
+	// an empty parameter buffer just means the client asked for the
+	// defaults
+	if (!pb || !pblen) {
+		return true;
+	}
+
+	const byte_t	*p=pb;
+	const byte_t	*end=pb+pblen;
+
+	// the version byte
+	// (a real firebird refuses any version but this one rather than
+	// guessing at the framing - server.cpp:3544-3546)
+	byte_t	version=0;
+	read(p,&version,&p);
+	if (getDebug()) {
+		stdoutput.printf("	batch pb version: %d\n",version);
+	}
+	if (version!=BATCH_version1) {
+		*gdscode=isc_batch_param_version;
+		return false;
+	}
+
+	// get each parameter...
+	// (a batch parameter is a tag byte, a 4-byte little-endian value
+	// length, and that many value bytes - unlike a dpb or bpb item, whose
+	// length is a single byte)
+	while ((size_t)(end-p)>4) {
+
+		byte_t	tag=0;
+		read(p,&tag,&p);
+
+		uint32_t	valuelen=0;
+		readLE(p,&valuelen,&p);
+
+		if (getDebug()) {
+			stdoutput.printf("	batch pb tag: %d, "
+						"value length: %u\n",
+						tag,valuelen);
+		}
+
+		// bail if the value runs past the end of the buffer
+		if (valuelen>(size_t)(end-p)) {
+			if (getDebug()) {
+				stdoutput.write("	batch pb value runs "
+						"past the end of the "
+						"buffer\n");
+			}
+			break;
+		}
+
+		// every value is a little-endian integer
+		uint32_t	value=0;
+		for (uint32_t i=0; i<valuelen && i<4; i++) {
+			value=value|(((uint32_t)p[i])<<(8*i));
+		}
+
+		p=p+valuelen;
+
+		// process the parameter...
+		switch (tag) {
+			case BATCH_tag_multierror:
+				batch->multierror=(value!=0);
+				break;
+
+			case BATCH_tag_record_counts:
+				batch->recordcounts=(value!=0);
+				break;
+
+			case BATCH_tag_buffer_bytes_size:
+				// 0 means no ceiling, which firebird's own
+				// batch implements as the hard limit -
+				// DsqlBatch.cpp:114-119
+				batch->buffersize=
+					(!value ||
+					value>BATCH_hard_buffer_limit)?
+						BATCH_hard_buffer_limit:value;
+				break;
+
+			case BATCH_tag_detailed_errors:
+				batch->detailederrors=
+					(value>BATCH_detailed_limit)?
+						BATCH_detailed_limit:value;
+				break;
+
+			case BATCH_tag_blob_policy:
+				// nothing to keep - a real firebird rewrites
+				// the policy to BLOB_STREAM whatever the
+				// client asked for, so a batch always streams
+				// its blobs
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	return true;
 }
 
 uint32_t sqlrprotocol_firebird::statementType(const char *query) {
@@ -8254,6 +9753,36 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 	return true;
 }
 
+bool sqlrprotocol_firebird::readBytes(bytebuffer *val,
+					uint32_t len,
+					const char *name,
+					uint32_t *bytesread) {
+
+	// read in chunks, since the caller's length is whatever the client
+	// said, and appending as we go keeps a piece that arrived in an
+	// earlier packet in front of this one
+	byte_t		buffer[8192];
+	uint32_t	total=len;
+	while (len) {
+		uint32_t	chunk=(len<sizeof(buffer))?len:sizeof(buffer);
+		if (clientsock->read(buffer,chunk)!=(ssize_t)chunk) {
+			if (getDebug()) {
+				stdoutput.printf("	read %s failed\n",name);
+				debugSystemError();
+				debugEnd();
+			}
+			return false;
+		}
+		val->append(buffer,chunk);
+		(*bytesread)+=chunk;
+		len=len-chunk;
+	}
+	if (getDebug()) {
+		stdoutput.printf("	%s: %u byte(s)\n",name,total);
+	}
+	return true;
+}
+
 bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 
 	// handle degenerate case
@@ -8384,6 +9913,40 @@ bool sqlrprotocol_firebird::writeBuffer(const byte_t *val,
 	(*byteswritten)+=pad;
 	if (getDebug()) {
 		stdoutput.printf("	(%u bytes of padding)\n",pad);
+	}
+	return true;
+}
+
+bool sqlrprotocol_firebird::writeStatusVector(uint32_t *sv,
+					const char **svstr,
+					uint8_t svlen,
+					uint32_t *byteswritten) {
+
+	// an argument string is written the same way any other buffer is - a
+	// length, the bytes, and padding to a 4-byte boundary
+	for (uint8_t i=0; i<svlen; i++) {
+		if (svstr[i]) {
+			if (!writeBuffer((const byte_t *)svstr[i],
+					charstring::getLength(svstr[i]),
+					"status vector string",
+					byteswritten)) {
+				return false;
+			}
+			continue;
+		}
+		if (clientsock->write(sv[i])!=sizeof(uint32_t)) {
+			if (getDebug()) {
+				stdoutput.printf("	write status "
+						"vector [%u] failed\n",i);
+				debugSystemError();
+				debugEnd();
+			}
+			return false;
+		}
+		(*byteswritten)+=sizeof(uint32_t);
+	}
+	if (getDebug()) {
+		debugStatusVector(sv,svstr,svlen);
 	}
 	return true;
 }
@@ -8693,22 +10256,9 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 					uint16_t fieldcount,
 					uint32_t *bytesread) {
 
-	// protocol 13 and up packs the message - the null indicators come
-	// first, as one bit per field, and a field flagged null sends no
-	// value at all.  before 13 each value is sent in full, whether it is
-	// null or not, each one followed by its own 4-byte null indicator.
 	byte_t	*nullbits=NULL;
-	if (protocolversion>=PROTOCOL_VERSION13 && fieldcount) {
-
-		uint32_t	flagbytes=((uint32_t)fieldcount+7)/8;
-		nullbits=new byte_t[flagbytes];
-		bytestring::zero(nullbits,flagbytes);
-
-		if (!readOpaque(nullbits,flagbytes,
-					"null indicators",bytesread)) {
-			delete[] nullbits;
-			return false;
-		}
+	if (!readMessageNullBits(fieldcount,&nullbits,bytesread)) {
+		return false;
 	}
 
 	bool	retval=readMessageFields(cursor,fields,fieldcount,
@@ -8717,6 +10267,33 @@ bool sqlrprotocol_firebird::readMessage(sqlrservercursor *cursor,
 	delete[] nullbits;
 
 	return retval;
+}
+
+bool sqlrprotocol_firebird::readMessageNullBits(uint16_t fieldcount,
+						byte_t **nullbits,
+						uint32_t *bytesread) {
+
+	// protocol 13 and up packs the message - the null indicators come
+	// first, as one bit per field, and a field flagged null sends no
+	// value at all.  before 13 each value is sent in full, whether it is
+	// null or not, each one followed by its own 4-byte null indicator.
+	*nullbits=NULL;
+	if (protocolversion<PROTOCOL_VERSION13 || !fieldcount) {
+		return true;
+	}
+
+	uint32_t	flagbytes=((uint32_t)fieldcount+7)/8;
+	byte_t		*nb=new byte_t[flagbytes];
+	bytestring::zero(nb,flagbytes);
+
+	if (!readOpaque(nb,flagbytes,"null indicators",bytesread)) {
+		delete[] nb;
+		return false;
+	}
+
+	*nullbits=nb;
+
+	return true;
 }
 
 bool sqlrprotocol_firebird::readMessageFields(sqlrservercursor *cursor,
@@ -8743,312 +10320,21 @@ bool sqlrprotocol_firebird::readMessageFields(sqlrservercursor *cursor,
 
 		const sqlrfirebirdfield	*fld=&fields[i];
 
-		// what came off the wire, in whichever of these the type uses
-		int64_t		intval=0;
-		double		dblval=0.0;
-		uint32_t	dateval=0;
-		uint32_t	timeval=0;
-		char		*strval=NULL;
-		uint32_t	strvallen=0;
-		bool		isdate=false;
-		bool		istime=false;
-		bool		isblob=false;
-		uint32_t	blobhigh=0;
-		uint32_t	bloblow=0;
-
-		// in the packed format the bitmap read up front is what says
-		// whether the field is null, and a null field sends no value
-		// at all - in the unpacked format the value always comes off
-		// the wire and the indicator that follows it says
-		bool	isnull=(nullbits && (nullbits[i>>3]&(1<<(i&7))));
-
-		if (!isnull) {
-
-			switch (fld->blrtype) {
-
-				case blr_short:
-				case blr_long:
-					{
-					uint32_t	val=0;
-					if (!readInt(&val,"parameter",
-								bytesread)) {
-						return false;
-					}
-					intval=(int32_t)val;
-					}
-					break;
-
-				case blr_int64:
-					{
-					uint64_t	val=0;
-					if (!readInt64(&val,"parameter",
-								bytesread)) {
-						return false;
-					}
-					intval=(int64_t)val;
-					}
-					break;
-
-				case blr_quad:
-				case blr_blob2:
-					// a blob parameter is an id naming a
-					// blob the client built with
-					// op_create_blob and filled with
-					// op_put_segment
-					if (!readInt(&blobhigh,"parameter",
-								bytesread) ||
-						!readInt(&bloblow,"parameter",
-								bytesread)) {
-						return false;
-					}
-					isblob=true;
-					break;
-
-				case blr_float:
-					{
-					uint32_t	val=0;
-					if (!readInt(&val,"parameter",
-								bytesread)) {
-						return false;
-					}
-					float	f=0.0;
-					bytestring::copy(&f,&val,sizeof(f));
-					dblval=f;
-					}
-					break;
-
-				case blr_double:
-				case blr_d_float:
-					{
-					uint64_t	val=0;
-					if (!readInt64(&val,"parameter",
-								bytesread)) {
-						return false;
-					}
-					bytestring::copy(&dblval,&val,
-							sizeof(dblval));
-					}
-					break;
-
-				case blr_sql_date:
-					if (!readInt(&dateval,"parameter",
-								bytesread)) {
-						return false;
-					}
-					isdate=true;
-					break;
-
-				case blr_sql_time:
-					if (!readInt(&timeval,"parameter",
-								bytesread)) {
-						return false;
-					}
-					istime=true;
-					break;
-
-				case blr_timestamp:
-					if (!readInt(&dateval,"parameter",
-								bytesread) ||
-						!readInt(&timeval,"parameter",
-								bytesread)) {
-						return false;
-					}
-					isdate=true;
-					istime=true;
-					break;
-
-				case blr_bool:
-					{
-					byte_t	val=0;
-					if (!readOpaque(&val,1,"parameter",
-								bytesread)) {
-						return false;
-					}
-					intval=val;
-					}
-					break;
-
-				case blr_text:
-				case blr_text2:
-				case blr_cstring:
-				case blr_cstring2:
-					strvallen=fld->length;
-					strval=new char[strvallen+1];
-					if (!readOpaque((byte_t *)strval,
-							strvallen,
-							"parameter",
-							bytesread)) {
-						delete[] strval;
-						return false;
-					}
-					strval[strvallen]='\0';
-					break;
-
-				case blr_varying:
-				case blr_varying2:
-					{
-					uint32_t	len=0;
-					if (!readInt(&len,"parameter length",
-								bytesread)) {
-						return false;
-					}
-					if (len>fld->length) {
-						len=fld->length;
-					}
-					strvallen=len;
-					strval=new char[strvallen+1];
-					if (!readOpaque((byte_t *)strval,
-							strvallen,
-							"parameter",
-							bytesread)) {
-						delete[] strval;
-						return false;
-					}
-					strval[strvallen]='\0';
-					}
-					break;
-
-				default:
-					// parseBlr() rejects anything else,
-					// so this can't be reached
-					return false;
-			}
-		}
-
-		// null indicator
-		if (!nullbits) {
-			uint32_t	indicator=0;
-			if (!readInt(&indicator,
-					"null indicator",bytesread)) {
-				delete[] strval;
-				return false;
-			}
-			isnull=((int32_t)indicator<0);
+		// get the value
+		sqlrfirebirdvalue	val;
+		if (!readMessageValue(fld,nullbits,i,&val,bytesread)) {
+			return false;
 		}
 
 		if (!inbinds || bindcount>=maxbindcount) {
-			delete[] strval;
+			delete[] val.strval;
 			continue;
 		}
 
-		sqlrserverbindvar	*bv=&(inbinds[bindcount]);
-		bv->variable=bindvarnames[bindcount];
-		bv->variablesize=bindvarnamesizes[bindcount];
+		bindMessageValue(bindpool,&(inbinds[bindcount]),
+						bindcount,fld,&val);
 
-		if (isnull) {
-			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			bv->isnull=cont->getNullBindValue();
-		} else if (isblob) {
-			sqlrfirebirdblob	*blob=
-					getBlobById(blobhigh,bloblow);
-			if (!blob) {
-				badblobid=true;
-				bv->type=SQLRSERVERBINDVARTYPE_NULL;
-				bv->isnull=cont->getNullBindValue();
-			} else {
-				// what gets bound is the bytes, since the
-				// backend's blob id is its own and the
-				// module's means nothing to it
-				uint64_t	size=blob->data.getSize();
-				if (size>0xffffffffULL) {
-					size=0xffffffffULL;
-				}
-				bv->type=(fld->subtype==1)?
-					SQLRSERVERBINDVARTYPE_CLOB:
-					SQLRSERVERBINDVARTYPE_BLOB;
-				bv->valuesize=(uint32_t)size;
-				bv->value.stringval=
-					(char *)bindpool->allocate(size+1);
-				if (size) {
-					bytestring::copy(bv->value.stringval,
-							blob->data.getBuffer(),
-							size);
-				}
-				bv->value.stringval[size]='\0';
-				bv->isnull=cont->getNonNullBindValue();
-
-				// hand the segment boundaries the client
-				// wrote along with the bytes, so a backend
-				// with its own notion of segments (eg.
-				// firebird) can preserve them instead of
-				// re-chunking the flat buffer
-				uint32_t	segcount=blob->segcount;
-				bv->segmentcount=(uint16_t)
-					((segcount>0xffff)?0xffff:segcount);
-				if (bv->segmentcount) {
-					size_t	seglenbytes=
-						(size_t)bv->segmentcount*
-						sizeof(uint32_t);
-					uint32_t	*seglens=(uint32_t *)
-						bindpool->allocate(
-							seglenbytes);
-					bytestring::copy(seglens,
-						blob->seglengths.getBuffer(),
-						seglenbytes);
-					bv->segmentlengths=seglens;
-				}
-			}
-		} else if (strval) {
-			bv->type=SQLRSERVERBINDVARTYPE_STRING;
-			bv->valuesize=strvallen;
-			bv->value.stringval=
-				(char *)bindpool->allocate(strvallen+1);
-			bytestring::copy(bv->value.stringval,
-						strval,strvallen);
-			bv->value.stringval[strvallen]='\0';
-			bv->isnull=cont->getNonNullBindValue();
-		} else if (isdate || istime) {
-			bv->type=SQLRSERVERBINDVARTYPE_DATE;
-			bv->value.dateval.year=1;
-			bv->value.dateval.month=1;
-			bv->value.dateval.day=1;
-			bv->value.dateval.hour=0;
-			bv->value.dateval.minute=0;
-			bv->value.dateval.second=0;
-			bv->value.dateval.microsecond=0;
-			bv->value.dateval.tz=NULL;
-			bv->value.dateval.isnegative=false;
-			if (isdate) {
-				decodeDate(dateval,
-						&bv->value.dateval.year,
-						&bv->value.dateval.month,
-						&bv->value.dateval.day);
-			}
-			if (istime) {
-				decodeTime(timeval,
-						&bv->value.dateval.hour,
-						&bv->value.dateval.minute,
-						&bv->value.dateval.second,
-						&bv->value.dateval.microsecond);
-			}
-			bv->isnull=cont->getNonNullBindValue();
-		} else if (fld->blrtype==blr_float ||
-				fld->blrtype==blr_double ||
-				fld->blrtype==blr_d_float) {
-			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-			bv->value.doubleval.value=dblval;
-			bv->value.doubleval.precision=0;
-			bv->value.doubleval.scale=0;
-			bv->isnull=cont->getNonNullBindValue();
-		} else if (fld->scale) {
-			// a scaled integer is a decimal whose point the wire
-			// format leaves out
-			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-			double	divisor=1.0;
-			for (int16_t s=fld->scale; s<0; s++) {
-				divisor*=10.0;
-			}
-			bv->value.doubleval.value=(double)intval/divisor;
-			bv->value.doubleval.precision=18;
-			bv->value.doubleval.scale=-fld->scale;
-			bv->isnull=cont->getNonNullBindValue();
-		} else {
-			bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
-			bv->value.integerval=intval;
-			bv->isnull=cont->getNonNullBindValue();
-		}
-
-		delete[] strval;
+		delete[] val.strval;
 
 		bindcount++;
 	}
@@ -9060,6 +10346,337 @@ bool sqlrprotocol_firebird::readMessageFields(sqlrservercursor *cursor,
 								bindcount);
 		}
 	}
+
+	return true;
+}
+
+void sqlrprotocol_firebird::bindMessageValue(memorypool *bindpool,
+					sqlrserverbindvar *bv,
+					uint16_t bindindex,
+					const sqlrfirebirdfield *fld,
+					const sqlrfirebirdvalue *val) {
+
+	bv->variable=bindvarnames[bindindex];
+	bv->variablesize=bindvarnamesizes[bindindex];
+
+	if (val->isnull) {
+		bv->type=SQLRSERVERBINDVARTYPE_NULL;
+		bv->isnull=cont->getNullBindValue();
+	} else if (val->isblob) {
+		sqlrfirebirdblob	*blob=
+				getBlobById(val->blobhigh,
+						val->bloblow);
+		if (!blob) {
+			badblobid=true;
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			bv->isnull=cont->getNullBindValue();
+		} else {
+			// what gets bound is the bytes, since the
+			// backend's blob id is its own and the
+			// module's means nothing to it
+			uint64_t	size=blob->data.getSize();
+			if (size>0xffffffffULL) {
+				size=0xffffffffULL;
+			}
+			bv->type=(fld->subtype==1)?
+				SQLRSERVERBINDVARTYPE_CLOB:
+				SQLRSERVERBINDVARTYPE_BLOB;
+			bv->valuesize=(uint32_t)size;
+			bv->value.stringval=
+				(char *)bindpool->allocate(size+1);
+			if (size) {
+				bytestring::copy(bv->value.stringval,
+						blob->data.getBuffer(),
+						size);
+			}
+			bv->value.stringval[size]='\0';
+			bv->isnull=cont->getNonNullBindValue();
+
+			// hand the segment boundaries the client
+			// wrote along with the bytes, so a backend
+			// with its own notion of segments (eg.
+			// firebird) can preserve them instead of
+			// re-chunking the flat buffer
+			uint32_t	segcount=blob->segcount;
+			bv->segmentcount=(uint16_t)
+				((segcount>0xffff)?0xffff:segcount);
+			if (bv->segmentcount) {
+				size_t	seglenbytes=
+					(size_t)bv->segmentcount*
+					sizeof(uint32_t);
+				uint32_t	*seglens=(uint32_t *)
+					bindpool->allocate(
+						seglenbytes);
+				bytestring::copy(seglens,
+					blob->seglengths.getBuffer(),
+					seglenbytes);
+				bv->segmentlengths=seglens;
+			}
+		}
+	} else if (val->strval) {
+		bv->type=SQLRSERVERBINDVARTYPE_STRING;
+		bv->valuesize=val->strvallen;
+		bv->value.stringval=
+			(char *)bindpool->allocate(val->strvallen+1);
+		bytestring::copy(bv->value.stringval,
+					val->strval,val->strvallen);
+		bv->value.stringval[val->strvallen]='\0';
+		bv->isnull=cont->getNonNullBindValue();
+	} else if (val->isdate || val->istime) {
+		bv->type=SQLRSERVERBINDVARTYPE_DATE;
+		bv->value.dateval.year=1;
+		bv->value.dateval.month=1;
+		bv->value.dateval.day=1;
+		bv->value.dateval.hour=0;
+		bv->value.dateval.minute=0;
+		bv->value.dateval.second=0;
+		bv->value.dateval.microsecond=0;
+		bv->value.dateval.tz=NULL;
+		bv->value.dateval.isnegative=false;
+		if (val->isdate) {
+			decodeDate(val->dateval,
+					&bv->value.dateval.year,
+					&bv->value.dateval.month,
+					&bv->value.dateval.day);
+		}
+		if (val->istime) {
+			decodeTime(val->timeval,
+					&bv->value.dateval.hour,
+					&bv->value.dateval.minute,
+					&bv->value.dateval.second,
+					&bv->value.dateval.microsecond);
+		}
+		bv->isnull=cont->getNonNullBindValue();
+	} else if (fld->blrtype==blr_float ||
+			fld->blrtype==blr_double ||
+			fld->blrtype==blr_d_float) {
+		bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+		bv->value.doubleval.value=val->dblval;
+		bv->value.doubleval.precision=0;
+		bv->value.doubleval.scale=0;
+		bv->isnull=cont->getNonNullBindValue();
+	} else if (fld->scale) {
+		// a scaled integer is a decimal whose point the wire
+		// format leaves out
+		bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+		double	divisor=1.0;
+		for (int16_t s=fld->scale; s<0; s++) {
+			divisor*=10.0;
+		}
+		bv->value.doubleval.value=(double)val->intval/divisor;
+		bv->value.doubleval.precision=18;
+		bv->value.doubleval.scale=-fld->scale;
+		bv->isnull=cont->getNonNullBindValue();
+	} else {
+		bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+		bv->value.integerval=val->intval;
+		bv->isnull=cont->getNonNullBindValue();
+	}
+}
+
+bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
+					const byte_t *nullbits,
+					uint16_t index,
+					sqlrfirebirdvalue *value,
+					uint32_t *bytesread) {
+
+	// what came off the wire, in whichever of these the type uses
+	int64_t		intval=0;
+	double		dblval=0.0;
+	uint32_t	dateval=0;
+	uint32_t	timeval=0;
+	char		*strval=NULL;
+	uint32_t	strvallen=0;
+	bool		isdate=false;
+	bool		istime=false;
+	bool		isblob=false;
+	uint32_t	blobhigh=0;
+	uint32_t	bloblow=0;
+
+	// in the packed format the bitmap read up front is what says
+	// whether the field is null, and a null field sends no value
+	// at all - in the unpacked format the value always comes off
+	// the wire and the indicator that follows it says
+	bool	isnull=(nullbits && (nullbits[index>>3]&(1<<(index&7))));
+
+	if (!isnull) {
+
+		switch (fld->blrtype) {
+
+			case blr_short:
+			case blr_long:
+				{
+				uint32_t	val=0;
+				if (!readInt(&val,"parameter",
+							bytesread)) {
+					return false;
+				}
+				intval=(int32_t)val;
+				}
+				break;
+
+			case blr_int64:
+				{
+				uint64_t	val=0;
+				if (!readInt64(&val,"parameter",
+							bytesread)) {
+					return false;
+				}
+				intval=(int64_t)val;
+				}
+				break;
+
+			case blr_quad:
+			case blr_blob2:
+				// a blob parameter is an id naming a
+				// blob the client built with
+				// op_create_blob and filled with
+				// op_put_segment
+				if (!readInt(&blobhigh,"parameter",
+							bytesread) ||
+					!readInt(&bloblow,"parameter",
+							bytesread)) {
+					return false;
+				}
+				isblob=true;
+				break;
+
+			case blr_float:
+				{
+				uint32_t	val=0;
+				if (!readInt(&val,"parameter",
+							bytesread)) {
+					return false;
+				}
+				float	f=0.0;
+				bytestring::copy(&f,&val,sizeof(f));
+				dblval=f;
+				}
+				break;
+
+			case blr_double:
+			case blr_d_float:
+				{
+				uint64_t	val=0;
+				if (!readInt64(&val,"parameter",
+							bytesread)) {
+					return false;
+				}
+				bytestring::copy(&dblval,&val,
+						sizeof(dblval));
+				}
+				break;
+
+			case blr_sql_date:
+				if (!readInt(&dateval,"parameter",
+							bytesread)) {
+					return false;
+				}
+				isdate=true;
+				break;
+
+			case blr_sql_time:
+				if (!readInt(&timeval,"parameter",
+							bytesread)) {
+					return false;
+				}
+				istime=true;
+				break;
+
+			case blr_timestamp:
+				if (!readInt(&dateval,"parameter",
+							bytesread) ||
+					!readInt(&timeval,"parameter",
+							bytesread)) {
+					return false;
+				}
+				isdate=true;
+				istime=true;
+				break;
+
+			case blr_bool:
+				{
+				byte_t	val=0;
+				if (!readOpaque(&val,1,"parameter",
+							bytesread)) {
+					return false;
+				}
+				intval=val;
+				}
+				break;
+
+			case blr_text:
+			case blr_text2:
+			case blr_cstring:
+			case blr_cstring2:
+				strvallen=fld->length;
+				strval=new char[strvallen+1];
+				if (!readOpaque((byte_t *)strval,
+						strvallen,
+						"parameter",
+						bytesread)) {
+					delete[] strval;
+					return false;
+				}
+				strval[strvallen]='\0';
+				break;
+
+			case blr_varying:
+			case blr_varying2:
+				{
+				uint32_t	len=0;
+				if (!readInt(&len,"parameter length",
+							bytesread)) {
+					return false;
+				}
+				if (len>fld->length) {
+					len=fld->length;
+				}
+				strvallen=len;
+				strval=new char[strvallen+1];
+				if (!readOpaque((byte_t *)strval,
+						strvallen,
+						"parameter",
+						bytesread)) {
+					delete[] strval;
+					return false;
+				}
+				strval[strvallen]='\0';
+				}
+				break;
+
+			default:
+				// parseBlr() rejects anything else,
+				// so this can't be reached
+				return false;
+		}
+	}
+
+	// null indicator
+	if (!nullbits) {
+		uint32_t	indicator=0;
+		if (!readInt(&indicator,
+				"null indicator",bytesread)) {
+			delete[] strval;
+			return false;
+		}
+		isnull=((int32_t)indicator<0);
+	}
+
+	// hand it all back
+	// (the caller owns strval, and has to delete[] it)
+	value->isnull=isnull;
+	value->intval=intval;
+	value->dblval=dblval;
+	value->dateval=dateval;
+	value->timeval=timeval;
+	value->strval=strval;
+	value->strvallen=strvallen;
+	value->isdate=isdate;
+	value->istime=istime;
+	value->isblob=isblob;
+	value->blobhigh=blobhigh;
+	value->bloblow=bloblow;
 
 	return true;
 }

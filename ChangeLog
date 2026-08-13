@@ -653,6 +653,28 @@
 			auth() that verifies the client's proof - both need the
 			configured password in plaintext, as firebird_legacy already
 			does
+		the firebird protocol module reads the statement timeout that
+			protocol 16 appended to op_execute and op_execute2 now - it
+			isn't honored, but a client negotiating 16 or higher sends it,
+			and skipping it would misread the rest of the packet
+		the firebird protocol module implements the batch ops now -
+			op_batch_create, op_batch_msg, op_batch_set_bpb,
+			op_batch_regblob, op_batch_blob_stream, op_batch_exec,
+			op_batch_rls, op_batch_cancel, op_batch_sync and
+			op_info_batch - queueing the client's messages and running
+			them one at a time against the statement it already
+			prepared, since the server api has no array bind, and
+			answering the completion state a batch reports instead of
+			an ordinary response; op_batch_sync carries no request
+			data and just acknowledges, since nothing here defers a
+			response; gated behind maxprotocolversion, same as the
+			rest of the batch ops, so nothing changes for an existing
+			configuration; op_batch_blob_stream decodes the stream as
+			it reads it, since the length the op carries is the
+			length of the client's buffer rather than of the bytes
+			that follow, and carries what a blob still needs on the
+			batch, since a blob can span ops; none of it is yet
+			proven against a real client
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
