@@ -83,13 +83,16 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 		drv.debugFunction(this);
 		validateColumn(column);
 		drv.debugPrintln("column: "+column);
-		String	retval=null;
+		// java.lang.Object rather than null, as it is what jdbc
+		// pairs with Types.OTHER, which is what getColumnType()
+		// answers for these same case labels
+		String	retval="java.lang.Object";
 		String	ctype=normalizeTypeName(
 					sqlrcur.getColumnType(column-1));
 		drv.debugPrintln("ctype: "+ctype);
 		switch (ctype) {
 			case "UNKNOWN":
-				retval=null;
+				retval="java.lang.Object";
 				break;
 			case "CHAR":
 				retval="java.lang.String";
@@ -175,7 +178,7 @@ public class SQLRelayResultSetMetaData implements ResultSetMetaData {
 	
 			// added by lago
 			case "UNDEFINED":
-				retval=null;
+				retval="java.lang.Object";
 				break;
 			case "DOUBLE":
 				retval="java.lang.Double";
