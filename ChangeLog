@@ -448,6 +448,11 @@
 		real database cursor, that cursor stayed open until the sqlrelay
 		cursor was reused, and a later drop of the table failed with
 		"currently in use"
+	fixed the sap connection module - a query that failed left the cursor
+		marked prepared, so the next execute re-sent the same command
+		with the previous parameters still queued on it, and the server
+		rejected the leftover parameters; every later statement on that
+		cursor failed too
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

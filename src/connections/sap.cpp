@@ -3119,6 +3119,11 @@ bool sapcursor::prepareDynamic() {
 
 bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
+	// clear out any errors, so that a failed prepare reports its own
+	// error rather than one left over from an earlier query
+	sapconn->errorcode=0;
+	sapconn->liveconnection=true;
+
 	// initialize column count
 	ncols=0;
 
@@ -3789,11 +3794,12 @@ bool sapcursor::outputBind(const char *variable,
 
 bool sapcursor::executeQuery(const char *query, uint32_t size) {
 
-	checkRePrepare();
-
-	// clear out any errors
+	// clear out any errors.  do this before the re-prepare below, so
+	// that if the re-prepare fails, its error survives to be reported.
 	sapconn->errorcode=0;
 	sapconn->liveconnection=true;
+
+	checkRePrepare();
 
 	// initialize row counts
 	affectedrows=0;
@@ -3810,12 +3816,14 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 					NULL,CS_UNUSED,
 					NULL,CS_UNUSED,
 					(CS_INT)getFetchAtOnce())!=CS_SUCCEED) {
+			closeResultSet();
 			return false;
 		}
 		if (ct_cursor(cursorcmd,CS_CURSOR_OPEN,
 					NULL,CS_UNUSED,
 					NULL,CS_UNUSED,
 					CS_UNUSED)!=CS_SUCCEED) {
+			closeResultSet();
 			return false;
 		}
 
@@ -3824,10 +3832,16 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 			if (ct_param(cursorcmd,&parameter[i],
 					inbindvalue[i],inbinddatasize[i],
 					inbindindicator[i])!=CS_SUCCEED) {
+				closeResultSet();
 				return false;
 			}
 		}
 	}
+
+	// the command is dirty from here on - it has parameters queued on
+	// it and is about to be sent - so make sure closeResultSet() will
+	// actually clean it up rather than short-circuiting on "clean"
+	clean=false;
 
 	if (ct_send(cmd)!=CS_SUCCEED) {
 		closeResultSet();
@@ -3897,6 +3911,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 			if (ct_res_info(cmd,CS_ROW_COUNT,
 				(CS_VOID *)&affectedrows,
 				CS_UNUSED,(CS_INT *)NULL)!=CS_SUCCEED) {
+				closeResultSet();
 				return false;
 			}
 		} else if ((resultstype==CS_ROW_RESULT ||
@@ -3907,6 +3922,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 			rowresultstype=resultstype;
 
 			if (!bindResultSetColumns()) {
+				closeResultSet();
 				return false;
 			}
 
@@ -3922,6 +3938,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 			// binds are still to come - ASE sends them after the
 			// rows - so buffer the rows and keep going
 			if (!bufferRows()) {
+				closeResultSet();
 				return false;
 			}
 			rowsbuffered=true;
@@ -3936,9 +3953,11 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 			// parameters.  it isn't the cursor's result set, it
 			// just populates the output binds.
 			if (!fetchOutputParams()) {
+				closeResultSet();
 				return false;
 			}
 			if (!drainResultSet()) {
+				closeResultSet();
 				return false;
 			}
 			continue;
@@ -3965,11 +3984,13 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 					(CS_VOID *)&returnvalue,
 					&returnvaluelen,
 					&returnvalueind)!=CS_SUCCEED) {
+				closeResultSet();
 				return false;
 			}
 			CS_INT	rr=0;
 			if (ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rr)!=CS_SUCCEED) {
+				closeResultSet();
 				return false;
 			}
 			if (outbindindex && outbindtype[0]==CS_INT_TYPE) {
@@ -3979,6 +4000,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 				}
 			}
 			if (!drainResultSet()) {
+				closeResultSet();
 				return false;
 			}
 			continue;
@@ -3986,6 +4008,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 
 		// the result set was a type that we want to ignore
 		if (!drainResultSet()) {
+			closeResultSet();
 			return false;
 		}
 	}
@@ -4653,6 +4676,14 @@ void sapcursor::nextRow() {
 
 void sapcursor::closeResultSet() {
 
+	// Reset the prepared flag here, rather than only on executeQuery()'s
+	// success path.  Sybase doesn't allow a command to be re-sent
+	// without being re-prepared (see checkRePrepare()), and this runs on
+	// every cleanup path, including the failure paths.  If it were left
+	// set after a failed execute, then the next execute would re-send
+	// the same command object, with the previous ct_param()s still
+	// queued on it, and ASE would reject the leftover PARAM datastream.
+	prepared=false;
 
 	freeRowBatches();
 
