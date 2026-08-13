@@ -510,6 +510,11 @@
 		report a precision smaller than its own scale; it now reports
 		the max precision of the storage type (SMALLINT, INTEGER, or
 		BIGINT) firebird chose for the column
+	fixed the firebird protocol module - the service manager ops
+		(op_service_attach, op_service_detach, op_service_start,
+		op_service_info) answered the generic "feature is not supported"
+		error; they answer isc_service_att_err now, naming the service
+		manager specifically
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

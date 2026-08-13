@@ -877,6 +877,7 @@
 #define isc_dsql_token_unk_err		335544634
 #define isc_unique_key_violation	335544665
 #define isc_io_open_err			335544734
+#define isc_service_att_err		335544792
 
 // what the module answers isc_database_info with
 // (connect() caps protocol negotiation at 12, so the module presents itself
@@ -1058,6 +1059,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	queEvents();
 		bool	cancelEvents();
 		bool	sendNotImplementedError();
+		bool	sendServiceAttachError();
 
 		bool	errorResponse(const char *title, uint32_t gdscode);
 		bool	errorResponse(const char *title,
@@ -5596,20 +5598,26 @@ bool sqlrprotocol_firebird::batchBlobStream() {
 	return sendNotImplementedError();
 }
 
+// nothing backs the service manager - no backup, restore, repair, or
+// statistics entry point on any backend - so answering these ops for real
+// would let a client believe an operation completed when nothing happened
+// behind it. Refuse, but with isc_service_att_err rather than the generic
+// isc_wish_list, so the error names the service manager instead of just
+// "feature is not supported".
 bool sqlrprotocol_firebird::serviceAttach() {
-	return sendNotImplementedError();
+	return sendServiceAttachError();
 }
 
 bool sqlrprotocol_firebird::serviceDetach() {
-	return sendNotImplementedError();
+	return sendServiceAttachError();
 }
 
 bool sqlrprotocol_firebird::serviceStart() {
-	return sendNotImplementedError();
+	return sendServiceAttachError();
 }
 
 bool sqlrprotocol_firebird::serviceInfo() {
-	return sendNotImplementedError();
+	return sendServiceAttachError();
 }
 
 // connectRequest(), queEvents() and cancelEvents() are firebird's
@@ -5645,6 +5653,13 @@ bool sqlrprotocol_firebird::sendNotImplementedError() {
 	errorResponse("not implemented response",
 			isc_wish_list,"0A000",-901,
 			"Feature is not supported",24);
+	return false;
+}
+
+bool sqlrprotocol_firebird::sendServiceAttachError() {
+	errorResponse("service manager not implemented",
+			isc_service_att_err,"HY000",-904,
+			"Cannot attach to services manager",33);
 	return false;
 }
 
