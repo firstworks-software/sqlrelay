@@ -859,6 +859,7 @@
 #define isc_infunk			335544341
 #define isc_io_error			335544344
 #define isc_no_dup			335544349
+#define isc_no_meta_update		335544351
 #define isc_read_only_trans		335544361
 #define isc_wish_list			335544378
 #define isc_imp_exc			335544381
@@ -878,6 +879,60 @@
 #define isc_unique_key_violation	335544665
 #define isc_io_open_err			335544734
 #define isc_service_att_err		335544792
+
+// dyn error codes
+// (a second code space, carried after isc_no_meta_update in the compound
+// status vector a real server sends when ddl fails.  one code per ddl verb,
+// each with a message template of its own - "CREATE TABLE @1 failed" and so
+// on - whose @1 is the object name, sent as the isc_arg_string element that
+// follows the code.  the numbers come from iberror.h and the templates from
+// firebird.msg, both shipped with firebird itself - see ddlDynCode().)
+#define isc_dsql_create_proc_failed		336397265
+#define isc_dsql_alter_proc_failed		336397266
+#define isc_dsql_create_alter_proc_failed	336397267
+#define isc_dsql_drop_proc_failed		336397268
+#define isc_dsql_recreate_proc_failed		336397269
+#define isc_dsql_create_trigger_failed		336397270
+#define isc_dsql_alter_trigger_failed		336397271
+#define isc_dsql_create_alter_trigger_failed	336397272
+#define isc_dsql_drop_trigger_failed		336397273
+#define isc_dsql_recreate_trigger_failed	336397274
+#define isc_dsql_create_domain_failed		336397277
+#define isc_dsql_alter_domain_failed		336397278
+#define isc_dsql_drop_domain_failed		336397279
+#define isc_dsql_create_except_failed		336397280
+#define isc_dsql_alter_except_failed		336397281
+#define isc_dsql_recreate_except_failed		336397283
+#define isc_dsql_drop_except_failed		336397284
+#define isc_dsql_create_sequence_failed		336397285
+#define isc_dsql_create_table_failed		336397286
+#define isc_dsql_alter_table_failed		336397287
+#define isc_dsql_drop_table_failed		336397288
+#define isc_dsql_recreate_table_failed		336397289
+#define isc_dsql_create_view_failed		336397298
+#define isc_dsql_alter_view_failed		336397299
+#define isc_dsql_create_alter_view_failed	336397300
+#define isc_dsql_recreate_view_failed		336397301
+#define isc_dsql_drop_view_failed		336397302
+#define isc_dsql_drop_sequence_failed		336397303
+#define isc_dsql_recreate_sequence_failed	336397304
+#define isc_dsql_drop_index_failed		336397305
+#define isc_dsql_drop_role_failed		336397308
+#define isc_dsql_drop_user_failed		336397309
+#define isc_dsql_create_role_failed		336397310
+#define isc_dsql_alter_role_failed		336397311
+#define isc_dsql_alter_index_failed		336397312
+#define isc_dsql_create_index_failed		336397316
+#define isc_dsql_create_user_failed		336397317
+#define isc_dsql_alter_user_failed		336397318
+#define isc_dsql_alter_sequence_failed		336397323
+#define isc_dsql_create_generator_failed	336397324
+
+// how much room the module keeps for a ddl statement's object name
+// (a firebird identifier is 31 bytes in dialect 3 through 3.0 and 63 from 4.0
+// on, so this is generous either way, and a longer one is truncated rather
+// than overrunning)
+#define FIREBIRD_MAX_OBJECT_NAME_LENGTH	255
 
 // what the module answers isc_database_info with
 // (connect() caps protocol negotiation at 12, so the module presents itself
@@ -1102,6 +1157,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		uint32_t	statementType(const char *query);
 		bool	isTransactionStatement(uint32_t stmttype);
 		bool	isWriteStatement(uint32_t stmttype);
+		const char	*matchDdlKeyword(const char *query,
+						const char *keyword);
+		void	parseDdlObjectName(const char *query);
+		bool	ddlDynCode(const char *query, uint32_t *dyncode);
+		bool	readOnlyMetaUpdateResponse(const char *title,
+						uint32_t dyncode,
+						const char *objname);
 		bool	runTransactionStatement(uint32_t stmttype);
 
 		bool	prepareOrExecImmediate(bool execimmediate);
@@ -1346,6 +1408,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		// backs the text statusvectorstr doesn't own
 		stringbuffer	errormessage;
 		char		errorsqlstate[6];
+		// the object name ddlDynCode() parsed out of a ddl statement,
+		// which readOnlyMetaUpdateResponse() points the vector at
+		char		ddlobjectname[FIREBIRD_MAX_OBJECT_NAME_LENGTH+1];
 
 		bytebuffer	respbuffer;
 
@@ -1417,6 +1482,7 @@ void sqlrprotocol_firebird::init() {
 	nextblobhandle=0;
 	badblobid=false;
 	errorsqlstate[0]='\0';
+	ddlobjectname[0]='\0';
 	respbufferlen=0;
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		statements[i].stmttype=0;
@@ -4087,10 +4153,20 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	// and is refused here.  it sends nothing but the bare
 	// isc_read_only_trans, and the client turns that one code into sqlcode
 	// -817, sqlstate 42000 and "attempted update during read-only
-	// transaction" out of its own tables.)
-	if (execimmediate && trreadonly && isWriteStatement(stmttype)) {
-		cont->release(cursor);
-		return errorResponse(title,isc_read_only_trans);
+	// transaction" out of its own tables.  recognized ddl is refused here
+	// too, but with the compound reply a real server sends for it - see
+	// readOnlyMetaUpdateResponse().)
+	if (execimmediate && trreadonly) {
+		uint32_t	dyncode=0;
+		if (ddlDynCode(query,&dyncode)) {
+			cont->release(cursor);
+			return readOnlyMetaUpdateResponse(title,dyncode,
+							ddlobjectname);
+		}
+		if (isWriteStatement(stmttype)) {
+			cont->release(cursor);
+			return errorResponse(title,isc_read_only_trans);
+		}
 	}
 
 	// a firebird client expects op_prepare_statement to answer with the
@@ -4284,9 +4360,20 @@ bool sqlrprotocol_firebird::executeStatement(bool isexecute2) {
 	}
 
 	// refuse a write in a read-only transaction - see runPreparedQuery()
-	if (trreadonly && isWriteStatement(stmt->stmttype)) {
-		delete[] outfields;
-		return errorResponse(title,isc_read_only_trans);
+	// (the statement's text is still in the cursor's query buffer, where
+	// the prepare put it, which is what the ddl test needs)
+	if (trreadonly) {
+		uint32_t	dyncode=0;
+		if (cursor && ddlDynCode(cont->getQueryBuffer(cursor),
+							&dyncode)) {
+			delete[] outfields;
+			return readOnlyMetaUpdateResponse(title,dyncode,
+							ddlobjectname);
+		}
+		if (isWriteStatement(stmt->stmttype)) {
+			delete[] outfields;
+			return errorResponse(title,isc_read_only_trans);
+		}
 	}
 
 	// run it, unless prepareStatement() already did
@@ -4533,8 +4620,15 @@ bool sqlrprotocol_firebird::runOnCursor(sqlrservercursor *cursor,
 	}
 
 	// refuse a write in a read-only transaction - see runPreparedQuery()
-	if (trreadonly && isWriteStatement(statementType(query))) {
-		return errorResponse(title,isc_read_only_trans);
+	if (trreadonly) {
+		uint32_t	dyncode=0;
+		if (ddlDynCode(query,&dyncode)) {
+			return readOnlyMetaUpdateResponse(title,dyncode,
+							ddlobjectname);
+		}
+		if (isWriteStatement(statementType(query))) {
+			return errorResponse(title,isc_read_only_trans);
+		}
 	}
 
 	if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -6135,6 +6229,9 @@ uint32_t sqlrprotocol_firebird::statementType(const char *query) {
 	}
 
 	// create, alter, drop, grant, revoke and the rest
+	// (this is a catch-all, so "execute block" and anything else the tests
+	// above miss lands here too - a caller that has to know a statement
+	// really is ddl asks ddlDynCode(), which matches the verb itself)
 	return isc_info_sql_stmt_ddl;
 }
 
@@ -6148,13 +6245,216 @@ bool sqlrprotocol_firebird::isWriteStatement(uint32_t stmttype) {
 
 	// only these three, and deliberately not ddl - statementType() uses
 	// ddl as its catch-all, so "execute block", which a real server runs
-	// read-only, lands there.  refusing real ddl needs the compound reply
-	// a real server sends, carrying a dyn code per verb and the object
-	// name, and "set generator" is allowed anyway, since generators are
-	// outside transaction control.
+	// read-only, lands there.  ddl is refused separately, by ddlDynCode(),
+	// which recognizes the verb itself rather than trusting the catch-all,
+	// and answers with the compound reply a real server sends.  "set
+	// generator" is allowed anyway, since generators are outside
+	// transaction control.
 	return (stmttype==isc_info_sql_stmt_insert ||
 		stmttype==isc_info_sql_stmt_update ||
 		stmttype==isc_info_sql_stmt_delete);
+}
+
+// the ddl statements the module recognizes, keyed by the verb and the object
+// type keyword that open them, each with the dyn code a real server refuses
+// that statement with
+// (this is the whole of what a read-only transaction refuses - a ddl statement
+// that isn't here runs, the same way "execute block" and everything else in
+// statementType()'s ddl catch-all runs.  left out on purpose: grant and revoke,
+// whose templates take no object name and whose exact wire shape isn't
+// confirmed here, "comment on", "alter character set", "create collation",
+// "create package"/"create function" and their alter, drop and recreate forms,
+// "drop generator", "declare external function", "alter database", "set
+// statistics", and an index created with a "unique", "ascending" or
+// "descending" modifier between the verb and the "index" keyword.  adding one
+// is a row here plus its code above.)
+struct sqlrfirebirdddlverb {
+	const char	*verb;
+	const char	*object;
+	uint32_t	dyncode;
+};
+
+static const sqlrfirebirdddlverb sqlrfirebirdddlverbs[]={
+	{"create","table",isc_dsql_create_table_failed},
+	{"alter","table",isc_dsql_alter_table_failed},
+	{"drop","table",isc_dsql_drop_table_failed},
+	{"recreate","table",isc_dsql_recreate_table_failed},
+	{"create or alter","view",isc_dsql_create_alter_view_failed},
+	{"create","view",isc_dsql_create_view_failed},
+	{"alter","view",isc_dsql_alter_view_failed},
+	{"drop","view",isc_dsql_drop_view_failed},
+	{"recreate","view",isc_dsql_recreate_view_failed},
+	{"create or alter","procedure",isc_dsql_create_alter_proc_failed},
+	{"create","procedure",isc_dsql_create_proc_failed},
+	{"alter","procedure",isc_dsql_alter_proc_failed},
+	{"drop","procedure",isc_dsql_drop_proc_failed},
+	{"recreate","procedure",isc_dsql_recreate_proc_failed},
+	{"create or alter","trigger",isc_dsql_create_alter_trigger_failed},
+	{"create","trigger",isc_dsql_create_trigger_failed},
+	{"alter","trigger",isc_dsql_alter_trigger_failed},
+	{"drop","trigger",isc_dsql_drop_trigger_failed},
+	{"recreate","trigger",isc_dsql_recreate_trigger_failed},
+	{"create","domain",isc_dsql_create_domain_failed},
+	{"alter","domain",isc_dsql_alter_domain_failed},
+	{"drop","domain",isc_dsql_drop_domain_failed},
+	{"create","exception",isc_dsql_create_except_failed},
+	{"alter","exception",isc_dsql_alter_except_failed},
+	{"drop","exception",isc_dsql_drop_except_failed},
+	{"recreate","exception",isc_dsql_recreate_except_failed},
+	{"create","sequence",isc_dsql_create_sequence_failed},
+	{"alter","sequence",isc_dsql_alter_sequence_failed},
+	{"drop","sequence",isc_dsql_drop_sequence_failed},
+	{"recreate","sequence",isc_dsql_recreate_sequence_failed},
+	{"create","generator",isc_dsql_create_generator_failed},
+	{"create","index",isc_dsql_create_index_failed},
+	{"alter","index",isc_dsql_alter_index_failed},
+	{"drop","index",isc_dsql_drop_index_failed},
+	{"create","role",isc_dsql_create_role_failed},
+	{"alter","role",isc_dsql_alter_role_failed},
+	{"drop","role",isc_dsql_drop_role_failed},
+	{"create","user",isc_dsql_create_user_failed},
+	{"alter","user",isc_dsql_alter_user_failed},
+	{"drop","user",isc_dsql_drop_user_failed},
+	{NULL,NULL,0}
+};
+
+const char *sqlrprotocol_firebird::matchDdlKeyword(const char *query,
+						const char *keyword) {
+
+	// a keyword can be several words - "create or alter" - and whitespace
+	// or a comment can sit between any two of them
+	const char	*q=query;
+	const char	*k=keyword;
+	while (*k) {
+
+		size_t	len=0;
+		while (k[len] && k[len]!=' ') {
+			len++;
+		}
+
+		if (charstring::compareIgnoringCase(q,k,len)) {
+			return NULL;
+		}
+
+		// the word in the query has to end where the keyword's does,
+		// so "created" doesn't match "create"
+		char	c=q[len];
+		if (character::isAlphanumeric(c) || c=='_' || c=='$') {
+			return NULL;
+		}
+
+		q=cont->skipWhitespaceAndComments(q+len);
+
+		k=k+len;
+		if (*k==' ') {
+			k++;
+		}
+	}
+	return q;
+}
+
+void sqlrprotocol_firebird::parseDdlObjectName(const char *query) {
+
+	const char	*q=query;
+
+	// a quoted name is the object's name verbatim, case and all, and an
+	// unquoted one is upcased the way firebird upcases it
+	bool	quoted=(*q=='"');
+	if (quoted) {
+		q++;
+	}
+
+	uint16_t	i=0;
+	while (*q && i<FIREBIRD_MAX_OBJECT_NAME_LENGTH) {
+		if (quoted) {
+			if (*q=='"') {
+				break;
+			}
+		} else if (!character::isAlphanumeric(*q) &&
+					*q!='_' && *q!='$') {
+			break;
+		}
+		ddlobjectname[i++]=*q++;
+	}
+	ddlobjectname[i]='\0';
+
+	if (!quoted) {
+		charstring::upper(ddlobjectname);
+	}
+}
+
+bool sqlrprotocol_firebird::ddlDynCode(const char *query, uint32_t *dyncode) {
+
+	ddlobjectname[0]='\0';
+
+	const char	*q=cont->skipWhitespaceAndComments(query);
+
+	for (const sqlrfirebirdddlverb *v=sqlrfirebirdddlverbs;
+						v->verb; v++) {
+
+		const char	*p=matchDdlKeyword(q,v->verb);
+		if (!p) {
+			continue;
+		}
+		p=matchDdlKeyword(p,v->object);
+		if (!p) {
+			continue;
+		}
+
+		// "if exists" or "if not exists" can sit between the object
+		// type and the name
+		const char	*e=matchDdlKeyword(p,"if not exists");
+		if (!e) {
+			e=matchDdlKeyword(p,"if exists");
+		}
+		if (e) {
+			p=e;
+		}
+
+		parseDdlObjectName(p);
+
+		*dyncode=v->dyncode;
+		return true;
+	}
+
+	return false;
+}
+
+bool sqlrprotocol_firebird::readOnlyMetaUpdateResponse(const char *title,
+						uint32_t dyncode,
+						const char *objname) {
+
+	// what a real server refuses ddl in a read-only transaction with - a
+	// compound vector rather than the bare one an insert, update or delete
+	// gets, and again nothing the client can't render itself
+	// (the client turns the leading isc_no_meta_update into sqlcode -607,
+	// sqlstate 42000 and "unsuccessful metadata update", the dyn code into
+	// its own template with the object name substituted for @1, and
+	// isc_read_only_trans into "attempted update during read-only
+	// transaction" - three lines, out of its own tables, the same way it
+	// gets one line out of a bare isc_read_only_trans)
+	bytestring::zero(statusvector,sizeof(statusvector));
+	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
+	// the outer error...
+	statusvector[0]=isc_arg_gds;
+	statusvector[1]=isc_no_meta_update;
+	// which ddl failed, and on what object...
+	statusvector[2]=isc_arg_gds;
+	statusvector[3]=dyncode;
+	statusvector[4]=isc_arg_string;
+	statusvectorstr[5]=objname;
+	// why it failed...
+	statusvector[6]=isc_arg_gds;
+	statusvector[7]=isc_read_only_trans;
+	// end of vector...
+	statusvector[8]=isc_arg_end;
+	statusvectorlen=9;
+
+	return genericResponse(title,
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
 }
 
 bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {

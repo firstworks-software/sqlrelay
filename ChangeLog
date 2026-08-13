@@ -588,6 +588,13 @@
 		"translatebindvariables" setting, and the firebird protocol
 		module now sets it, since its wire format has no marker style
 		of its own to offer
+	the firebird protocol module refuses ddl inside a read-only transaction
+		now too, with the compound reply a real server sends for it -
+		isc_no_meta_update, a dyn code specific to the verb carrying the
+		object name, then isc_read_only_trans - rather than the bare
+		isc_read_only_trans a write gets; "execute block" and other
+		statements statementType() can't tell from ddl are still allowed,
+		since a real server allows a read-only one that only selects
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

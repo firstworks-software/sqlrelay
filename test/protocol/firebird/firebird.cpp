@@ -802,6 +802,42 @@ int main(int argc, char **argv) {
 	assertEquals((int)isc_sqlcode(fbstatus),-204);
 	// reads still work, and nothing was written
 	assertEquals(countRows("testtran"),1);
+	// ddl fails too, but with the compound reply a real server sends for
+	// it - isc_no_meta_update, then a dyn code specific to the verb
+	// carrying the object name, then isc_read_only_trans - rather than
+	// the bare isc_read_only_trans a write gets
+	assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"create table t9107tmp (a integer)",
+					SQL_DIALECT_V6,NULL)!=0);
+	char	ddlmsg1[512];
+	char	ddlmsg2[512];
+	char	ddlmsg3[512];
+	const ISC_STATUS	*ddlsv=fbstatus;
+	fbInterpret(ddlmsg1,sizeof(ddlmsg1),&ddlsv);
+	fbInterpret(ddlmsg2,sizeof(ddlmsg2),&ddlsv);
+	fbInterpret(ddlmsg3,sizeof(ddlmsg3),&ddlsv);
+	assertEquals(ddlmsg1,"unsuccessful metadata update");
+	assertEquals(ddlmsg2,"CREATE TABLE T9107TMP failed");
+	assertEquals(ddlmsg3,"attempted update during read-only transaction");
+	assertEquals((int)isc_sqlcode(fbstatus),-607);
+	char	ddlsqlstate[6];
+	fb_sqlstate(ddlsqlstate,fbstatus);
+	assertEquals(ddlsqlstate,"42000");
+	// a different verb gets its own dyn code and its own message
+	assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"drop table testtran",
+					SQL_DIALECT_V6,NULL)!=0);
+	ddlsv=fbstatus;
+	fbInterpret(ddlmsg1,sizeof(ddlmsg1),&ddlsv);
+	fbInterpret(ddlmsg2,sizeof(ddlmsg2),&ddlsv);
+	assertEquals(ddlmsg2,"DROP TABLE TESTTRAN failed");
+	assertEquals((int)isc_sqlcode(fbstatus),-607);
+	// an "execute block" that only selects isn't refused - it lands in
+	// statementType()'s ddl catch-all, but a real server allows a
+	// read-only one, and so does the module
+	assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"execute block as begin end",
+					SQL_DIALECT_V6,NULL),0);
 	// isc_info_tra_access says read only
 	char	roinfoitems[]={
 			isc_info_tra_access,
