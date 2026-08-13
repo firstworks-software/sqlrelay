@@ -286,11 +286,18 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		void		closeResultSet();
 		void		discardResults();
 		void		discardCursor();
+		void		discardDynamic();
 
 		char		*cursorname;
 		size_t		cursornamesize;
 
+		// name of the ct_dynamic(CS_PREPARE) statement that this
+		// cursor prepares parameterized selects as
+		char		dynamicname[32];
+		size_t		dynamicnamesize;
+
 		void		checkRePrepare();
+		bool		prepareDynamic();
 		void		setParameterName(const char *variable,
 						uint16_t variablesize);
 		bool		inputBind(CS_VOID *value,
@@ -308,6 +315,13 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		CS_COMMAND	*languagecmd;
 		CS_COMMAND	*cursorcmd;
 		CS_COMMAND	*cmd;
+
+		// true between ct_dynamic(CS_PREPARE) and ct_dynamic(CS_DEALLOC)
+		bool		dynamicprepared;
+
+		// true when the cursor was declared on a prepared dynamic
+		// statement rather than on the select text
+		bool		dynamiccursor;
 		CS_INT		results;
 		CS_INT		resultstype;
 		// executeQuery()'s loop overwrites resultstype as it walks the
@@ -363,9 +377,9 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		bool		prepared;
 		bool		clean;
 
-		// holds the select text rewritten for ct_cursor(CS_CURSOR_
-		// DECLARE) - see rewriteBindMarkersForCursor()
-		stringbuffer	cursorquerybuffer;
+		// holds the select text rewritten with positional bind
+		// markers - see rewriteBindMarkersToPositional()
+		stringbuffer	positionalquerybuffer;
 
 		// true for a "{ X=call proc(...) }" rpc query - X is a
 		// reserved bind that carries the proc's RETURN value back to
@@ -2748,6 +2762,8 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	cmd=NULL;
 	languagecmd=NULL;
 	cursorcmd=NULL;
+	dynamicprepared=false;
+	dynamiccursor=false;
 
 	rowresultstype=0;
 	rowsbuffered=false;
@@ -2758,6 +2774,12 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 
 	cursornamesize=charstring::getIntegerLength(id);
 	cursorname=charstring::parseNumber(id);
+
+	// the dynamic statement name has to be unique within the connection,
+	// and distinct from the cursor name
+	charstring::printf(dynamicname,sizeof(dynamicname),
+					"sqlrdyn%d",(int32_t)id);
+	dynamicnamesize=charstring::getLength(dynamicname);
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
@@ -2940,6 +2962,7 @@ bool sapcursor::close() {
 		languagecmd=NULL;
 	}
 	if (cursorcmd) {
+		discardDynamic();
 		retval=(retval && (ct_cmd_drop(cursorcmd)==CS_SUCCEED));
 		cursorcmd=NULL;
 	}
@@ -2974,18 +2997,26 @@ static const char *getRpcName(const char *p, const char **namestart,
 	return p;
 }
 
-static void rewriteBindMarkersForCursor(const char *query, uint32_t size,
+static bool rewriteBindMarkersToPositional(const char *query, uint32_t size,
 							stringbuffer *out) {
 
 	// translateBindVariables() already rewrote the query to use sap's
 	// native "@*" bind format (getBindFormat()) by the time it gets
-	// here.  That format is right for rpc/language commands, but
-	// ct_cursor(CS_CURSOR_DECLARE) rejects named "@N" placeholders in
-	// the select text with "no host variable corresponding to ... '@1'"
-	// - ASE cursors want positional "?" markers instead.  The values
-	// are still supplied via ct_param() in bind-variable order either
-	// way, so swapping the marker here doesn't change how binding
-	// works, only what's written into the declared cursor's SQL text.
+	// here.  That format is right for rpc/language commands, but not
+	// for a select that gets prepared with ct_dynamic(CS_PREPARE) or
+	// declared with ct_cursor(CS_CURSOR_DECLARE) - both of those want
+	// positional "?" markers instead.  The values are still supplied
+	// via ct_param() in bind-variable order either way, so swapping the
+	// marker here doesn't change how binding works, only what's written
+	// into the prepared statement's SQL text.
+	//
+	// Note that "@@name" (a global variable like @@version or
+	// @@identity) isn't a bind marker and is left alone - the name that
+	// follows the first "@" has to start with an alphanumeric or an
+	// underscore.
+	//
+	// Returns true if any bind marker was found.
+	bool		foundmarker=false;
 	const char	*p=query;
 	const char	*end=query+size;
 	bool		inquotes=false;
@@ -3003,6 +3034,7 @@ static void rewriteBindMarkersForCursor(const char *query, uint32_t size,
 			}
 			if (np>namestart) {
 				out->append('?');
+				foundmarker=true;
 				prev='?';
 				p=np;
 				continue;
@@ -3015,6 +3047,68 @@ static void rewriteBindMarkersForCursor(const char *query, uint32_t size,
 		prev=c;
 		p++;
 	}
+	return foundmarker;
+}
+
+bool sapcursor::prepareDynamic() {
+
+	cmd=cursorcmd;
+
+	// clear out any errors, so that a failed prepare reports its own
+	// error rather than one left over from an earlier query
+	sapconn->errorcode=0;
+	sapconn->liveconnection=true;
+
+	// drop whatever statement this cursor prepared last
+	discardDynamic();
+
+	// prepare the statement...
+	if (ct_dynamic(cursorcmd,CS_PREPARE,
+			(CS_CHAR *)dynamicname,(CS_INT)dynamicnamesize,
+			(CS_CHAR *)positionalquerybuffer.getString(),
+			(CS_INT)positionalquerybuffer.getSize())!=CS_SUCCEED) {
+		return false;
+	}
+	if (ct_send(cursorcmd)!=CS_SUCCEED) {
+		return false;
+	}
+
+	// ...and run the prepare's own result sets out.  ASE parses the
+	// statement at this point, so a syntax error surfaces here rather
+	// than at execute time.
+	CS_INT	res;
+	CS_INT	restype;
+	bool	success=true;
+	while ((res=ct_results(cursorcmd,&restype))==CS_SUCCEED) {
+		if (restype==CS_CMD_FAIL) {
+			success=false;
+		}
+		if (ct_cancel(NULL,cursorcmd,CS_CANCEL_CURRENT)==CS_FAIL) {
+			sapconn->liveconnection=false;
+			return false;
+		}
+	}
+	if (res!=CS_END_RESULTS || !success || sapconn->errorcode) {
+		return false;
+	}
+	dynamicprepared=true;
+
+	// ...then declare a cursor on the prepared statement, rather than
+	// on the select text.  From here on the flow is the ordinary cursor
+	// flow - ct_param() placeholders, then ct_cursor(CS_CURSOR_ROWS),
+	// ct_cursor(CS_CURSOR_OPEN), ct_param() values and ct_send() in
+	// executeQuery().
+	if (ct_dynamic(cursorcmd,CS_CURSOR_DECLARE,
+			(CS_CHAR *)dynamicname,(CS_INT)dynamicnamesize,
+			(CS_CHAR *)cursorname,
+			(CS_INT)cursornamesize)!=CS_SUCCEED) {
+		return false;
+	}
+	dynamiccursor=true;
+
+	clean=false;
+	prepared=true;
+	return true;
 }
 
 bool sapcursor::prepareQuery(const char *query, uint32_t size) {
@@ -3030,23 +3124,51 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 	paramindex=0;
 	outbindindex=0;
 	hasreturnvalue=false;
+	dynamiccursor=false;
 
 	if ((!charstring::compare(query,"select",6) ||
 		!charstring::compare(query,"SELECT",6)) &&
 		character::isWhitespace(query[6])) {
 
+		positionalquerybuffer.clear();
+		bool	hasbindmarkers=rewriteBindMarkersToPositional(
+						query,size,
+						&positionalquerybuffer);
+
+		if (hasbindmarkers) {
+
+			// A select with bind markers can't be declared as a
+			// cursor over its own text.  ASE doesn't parse a
+			// ct_cursor(CS_CURSOR_DECLARE) statement until the
+			// cursor is opened - the declare returns CS_SUCCEED
+			// either way - and when it finally does parse it, it
+			// rejects the positional "?" markers, failing the
+			// ct_send() with "Incorrect syntax near '?'".
+			// Markers are only valid in dynamic SQL.
+			//
+			// So a select with binds gets prepared with
+			// ct_dynamic(CS_PREPARE) and the cursor gets declared
+			// on the prepared statement instead of on the text
+			// (see prepareDynamic()).  Everything downstream of
+			// the declare is the same either way, and it stays a
+			// cursor - which matters, since ct-lib only allows one
+			// non-cursor command per connection to have results
+			// pending, and the other cursors of the same session
+			// share this connection.
+			return prepareDynamic();
+		}
+
 		// initiate a cursor command
 		// (don't use CS_NULLTERM for the 4th parameter, it randomly
 		// causes weird things to happen)
 		cmd=cursorcmd;
-		cursorquerybuffer.clear();
-		rewriteBindMarkersForCursor(query,size,&cursorquerybuffer);
+		dynamiccursor=false;
 		if (ct_cursor(cursorcmd,
 				CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursorname,
 				(CS_INT)cursornamesize,
-				(CS_CHAR *)cursorquerybuffer.getString(),
-				(CS_INT)cursorquerybuffer.getSize(),
+				(CS_CHAR *)positionalquerybuffer.getString(),
+				(CS_INT)positionalquerybuffer.getSize(),
 				CS_READ_ONLY)!=CS_SUCCEED) {
 			return false;
 		}
@@ -3305,8 +3427,8 @@ void sapcursor::setParameterName(const char *variable,
 
 	// numeric-named binds (@1, etc) are matched by position, not
 	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
+	// rewriteBindMarkersToPositional() replaced every bind marker in
+	// the cursor's SQL with ? regardless of its name
 	// (real bind var names are like @P1, not purely numeric)
 	if (cmd==cursorcmd ||
 		charstring::isInteger(variable+1,variablesize-1)) {
@@ -3346,10 +3468,20 @@ bool sapcursor::inputBind(CS_VOID *value, CS_INT valuesize,
 		// So, at this phase, stash the value, valuesize, and indicator,
 		// and declare a placeholder for the parameter.  We'll call
 		// ct_param() again in executeQuery() to supply the values.
+		//
+		// A cursor declared on a prepared dynamic statement (see
+		// prepareDynamic()) is the exception - it already knows its
+		// parameters from the prepare, and ASE rejects the datastream
+		// that the placeholder ct_param() generates for it ("The
+		// datastream for token 32 should only be sent after other
+		// datastreams"), so it just gets the values after the open.
 
 		inbindvalue[paramindex]=value;
 		inbinddatasize[paramindex]=valuesize;
 		inbindindicator[paramindex]=indicator;
+		if (dynamiccursor) {
+			return true;
+		}
 		return ct_param(cmd,&parameter[paramindex],
 					NULL,CS_UNUSED,0)==CS_SUCCEED;
 	}
@@ -4493,6 +4625,7 @@ void sapcursor::closeResultSet() {
 
 	discardResults();
 	discardCursor();
+	discardDynamic();
 
 	clean=true;
 }
@@ -4521,6 +4654,33 @@ void sapcursor::discardResults() {
 	}
 }
 
+
+void sapcursor::discardDynamic() {
+
+	// drop the statement that prepareDynamic() prepared, if there is
+	// one.  the command has to be idle at this point - discardResults()
+	// runs first when this is called from closeResultSet().
+	if (!dynamicprepared) {
+		return;
+	}
+	dynamicprepared=false;
+
+	if (ct_dynamic(cursorcmd,CS_DEALLOC,
+			(CS_CHAR *)dynamicname,(CS_INT)dynamicnamesize,
+			(CS_CHAR *)NULL,CS_UNUSED)!=CS_SUCCEED ||
+			ct_send(cursorcmd)!=CS_SUCCEED) {
+		return;
+	}
+
+	CS_INT	res;
+	CS_INT	restype;
+	while ((res=ct_results(cursorcmd,&restype))==CS_SUCCEED) {
+		if (ct_cancel(NULL,cursorcmd,CS_CANCEL_CURRENT)==CS_FAIL) {
+			sapconn->liveconnection=false;
+			return;
+		}
+	}
+}
 
 void sapcursor::discardCursor() {
 	if (cmd==cursorcmd) {

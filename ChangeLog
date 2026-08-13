@@ -425,6 +425,12 @@
 		stored procedure with a RETURN value was fetched as text
 		instead of as a datetime, because the code that decides the
 		fetch type didn't skip past the reserved RETURN-value bind
+	fixed the sap connection module - a select with bind variables failed
+		with "Incorrect syntax near '?'", because the cursor was
+		declared over the select text, and ASE only accepts positional
+		bind markers in dynamic sql.  Such a select is prepared with
+		ct_dynamic(CS_PREPARE) now, and the cursor is declared on the
+		prepared statement instead of on the text
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
