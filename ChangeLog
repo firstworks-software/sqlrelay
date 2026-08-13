@@ -675,6 +675,15 @@
 			that follow, and carries what a blob still needs on the
 			batch, since a blob can span ops; none of it is yet
 			proven against a real client
+		the firebird protocol module implements op_compile,
+			op_start_and_receive and op_start_send_and_receive now - a
+			compiled request's blr is translated to a select that runs on
+			a cursor of its own, and the rows go back in the message the
+			request declared, so isql's show commands work; a message item
+			that the request named as a value's null indicator carries -1
+			for a null value and 0 for anything else, and a cstring item
+			goes over length-first rather than at its declared width, the
+			way firebird's own xdr writes one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

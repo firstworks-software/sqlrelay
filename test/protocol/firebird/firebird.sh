@@ -34,10 +34,63 @@ then
 	if ( echo "$OUTPUT" | grep -qE "^ *1 *\$" )
 	then
 		echo "success"
-		exit 0
+	else
+		echo "unknown"
+		echo "$OUTPUT"
+		exit 1
 	fi
+else
+	echo "unknown"
+	echo "$OUTPUT"
+	exit 1
 fi
 
-echo "unknown"
-echo "$OUTPUT"
-exit 1
+# show commands compile a blr request and stream it back through
+# op_compile/op_start_and_receive/op_start_send_and_receive rather than dsql -
+# a database with no user tables still exercises the request/response path
+OUTPUT=`printf 'show tables;\n' | $ISQL \
+	-user testuser \
+	-password testpassword \
+	localhost:/u02/$HOST.gdb 2>&1`
+
+if ( echo "$OUTPUT" | grep -q "Statement failed" )
+then
+	echo "failed"
+	echo "$OUTPUT"
+	exit 1
+fi
+
+if ( echo "$OUTPUT" | grep -q "There are no tables in this database" )
+then
+	echo "success"
+else
+	echo "unknown"
+	echo "$OUTPUT"
+	exit 1
+fi
+
+# show table <name> is the heaviest show variant - joins RDB$RELATION_FIELDS,
+# RDB$FIELDS, RDB$INDICES, RDB$INDEX_SEGMENTS, RDB$RELATION_CONSTRAINTS,
+# RDB$CHECK_CONSTRAINTS and RDB$TRIGGERS onto a single system table lookup
+OUTPUT=`printf 'show table rdb\$relations;\n' | $ISQL \
+	-user testuser \
+	-password testpassword \
+	localhost:/u02/$HOST.gdb 2>&1`
+
+if ( echo "$OUTPUT" | grep -q "Statement failed" )
+then
+	echo "failed"
+	echo "$OUTPUT"
+	exit 1
+fi
+
+if ( echo "$OUTPUT" | grep -q "RDB\$RELATION_NAME" )
+then
+	echo "success"
+else
+	echo "unknown"
+	echo "$OUTPUT"
+	exit 1
+fi
+
+exit 0

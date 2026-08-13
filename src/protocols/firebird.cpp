@@ -806,8 +806,12 @@
 #define SQL_BOOLEAN	32764
 
 // blr
-// (only the message-format subset.  the module never sends or receives a
-// request blr, just the message blr that describes a row or a parameter set.)
+// (the module reads two kinds of blr - the message blr that describes a row
+// or a parameter set, and the request blr an op_compile carries.  each has a
+// value space of its own, read in a context of its own, so a number below
+// can mean one thing as a message item and another as a request verb.)
+
+// message layout verbs and the data type codes their items carry
 #define blr_begin	2
 #define blr_message	4
 #define blr_version4	4
@@ -832,6 +836,53 @@
 #define blr_cstring2	41
 #define blr_eoc		76
 #define blr_end		255
+
+// request verbs
+// (the subset parseBlrRequest() understands - see the comment there)
+#define blr_assignment	1
+#define blr_for		7
+#define blr_receive	12
+#define blr_send	14
+#define blr_literal	21
+#define blr_field	23
+#define blr_fid		24
+#define blr_parameter	25
+#define blr_parameter2	41
+#define blr_null	45
+#define blr_eql		47
+#define blr_neq		48
+#define blr_gtr		49
+#define blr_geq		50
+#define blr_lss		51
+#define blr_leq		52
+#define blr_containing	53
+#define blr_starting	55
+#define blr_between	56
+#define blr_or		57
+#define blr_and		58
+#define blr_not		59
+#define blr_missing	61
+#define blr_like	63
+#define blr_rse		67
+#define blr_first	68
+#define blr_sort	70
+#define blr_boolean	71
+#define blr_ascending	72
+#define blr_descending	73
+#define blr_relation	74
+#define blr_rid		75
+#define blr_join_type	80
+#define blr_relation2	146
+
+// the widest request blr parseBlrRequest() will take
+// (the requests isql's SHOW commands compile stay well inside these - one
+// that doesn't is refused rather than translated into a query that only
+// half means what it said)
+#define FIREBIRD_MAX_BLR_CONTEXTS	16
+#define FIREBIRD_MAX_BLR_MESSAGES	8
+#define FIREBIRD_MAX_BLR_RELATIONS	2
+#define FIREBIRD_MAX_BLR_PARAMS		32
+#define FIREBIRD_MAX_BLR_DEPTH		32
 
 // how many 1/10000ths of a second an ISC_TIME counts to the second
 #define FIREBIRD_TIME_PRECISION	10000
@@ -911,6 +962,7 @@
 
 // gds error codes
 #define isc_arith_except		335544321
+#define isc_bad_req_handle		335544327
 #define isc_bad_segstr_handle		335544328
 #define isc_bad_segstr_id		335544329
 #define isc_bad_trans_handle		335544332
@@ -1164,6 +1216,69 @@ struct sqlrfirebirdbatch {
 	bytebuffer		blobstreamdata;
 };
 
+// how one item of a compiled request's message gets filled
+struct sqlrfirebirdblrslot {
+	// which column of the translated select fills the item, or -1 when
+	// the request assigned it a constant instead
+	int32_t		column;
+	// the constant, as text, or NULL when the item takes a column or
+	// nothing at all
+	char		*literal;
+	// which column of the translated select the item is the null
+	// indicator for, or -1 when the item isn't an indicator at all
+	int32_t		indicator;
+};
+
+// what op_compile made of a request blr
+// (the boolean, sort and first clauses are kept as the sql they translated
+// to rather than as a tree of their own - nothing needs them in any other
+// form, and the walk that reads them can emit the text as it goes)
+struct sqlrfirebirdblrrequest {
+	bool		compiled;
+	// the relations the rse pulls from, indexed by the context number a
+	// field reference names them by
+	char		*relations[FIREBIRD_MAX_BLR_CONTEXTS];
+	uint8_t		relationcount;
+	// the messages the request declared, by message number
+	sqlrfirebirdfield	*msgfields[FIREBIRD_MAX_BLR_MESSAGES];
+	uint16_t		msgfieldcount[FIREBIRD_MAX_BLR_MESSAGES];
+	// which message carries the rows back, and which one the client
+	// sends its input parameters in
+	uint16_t	outmsg;
+	uint16_t	inmsg;
+	bool		hasinmsg;
+	// how the send inside the for loop fills the output message, and how
+	// the send after the loop does - the second is what tells the client
+	// the stream ended
+	sqlrfirebirdblrslot	*rowslots;
+	sqlrfirebirdblrslot	*eofslots;
+	uint16_t		slotcount;
+	bool			haseof;
+	// which item of the input message each ? in the query binds to, in
+	// the order the ?s appear
+	uint16_t	inparams[FIREBIRD_MAX_BLR_PARAMS];
+	uint16_t	inparamcount;
+	// the select the request translated to
+	char		*query;
+	uint32_t	querylen;
+};
+
+// where parseBlrRequest()'s walk has got to
+struct sqlrfirebirdblrwalk {
+	stringbuffer	selectclause;
+	stringbuffer	fromclause;
+	stringbuffer	whereclause;
+	stringbuffer	orderbyclause;
+	stringbuffer	firstclause;
+	uint16_t	selectcount;
+	// whether the walk is inside the for loop, which is what tells the
+	// send that carries a row from the send that ends the stream
+	bool		inloop;
+	// the message items the send being walked fills
+	sqlrfirebirdblrslot	*slots;
+	uint16_t	depth;
+};
+
 // what the module knows about a statement the client allocated
 struct sqlrfirebirdstatement {
 	uint32_t		stmttype;
@@ -1185,6 +1300,9 @@ struct sqlrfirebirdstatement {
 	// only open between an op_batch_create and the op_batch_rls that
 	// ends it
 	sqlrfirebirdbatch	batch;
+	// only filled in when op_compile made the statement, rather than
+	// op_allocate_statement
+	sqlrfirebirdblrrequest	request;
 };
 
 // a blob the session is holding, either built by the client or fetched
@@ -1308,6 +1426,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	execute();
 		bool	execute2();
 		bool	fetch();
+		bool	compile();
+		bool	startAndReceive();
+		bool	startSendAndReceive();
 		bool	setCursor();
 		bool	infoSql();
 		bool	createBlob();
@@ -1468,6 +1589,83 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					sqlrfirebirdstatement *stmt,
 					uint32_t msgcount);
 
+		bool	startRequest(bool send);
+		bool	sendStartResponse(uint32_t msgnumber);
+		bool	sendRequestRows(uint32_t reqhandle,
+					uint32_t incarnation,
+					sqlrservercursor *cursor,
+					sqlrfirebirdblrrequest *req);
+		bool	sendRequestMessage(uint32_t reqhandle,
+					uint32_t incarnation,
+					uint32_t msgcount,
+					sqlrservercursor *cursor,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrslot *slots);
+		bool	writeRequestMessage(sqlrservercursor *cursor,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrslot *slots,
+					uint32_t *byteswritten);
+		bool	readRequestMessage(sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					sqlrfirebirdvalue *values,
+					uint32_t *bytesread);
+
+		void	initBlrRequest(sqlrfirebirdblrrequest *req);
+		void	clearBlrRequest(sqlrfirebirdblrrequest *req);
+		static sqlrfirebirdblrslot	*newBlrSlots(uint16_t count);
+		static void	clearBlrSlots(sqlrfirebirdblrslot *slots,
+						uint16_t count);
+		bool	parseBlrRequest(const byte_t *blr,
+					uint32_t blrlen,
+					sqlrfirebirdblrrequest *req,
+					uint32_t *gdscode);
+		bool	parseBlrStatement(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode);
+		bool	parseBlrAssignment(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode);
+		bool	parseBlrRse(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode);
+		bool	parseBlrRelation(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode);
+		bool	parseBlrSort(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode);
+		bool	parseBlrBoolean(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					stringbuffer *sql,
+					uint16_t depth,
+					uint32_t *gdscode);
+		bool	parseBlrValue(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					stringbuffer *sql,
+					stringbuffer *raw,
+					byte_t *kind,
+					uint32_t *gdscode);
+		bool	parseBlrLiteral(const byte_t **blr,
+					const byte_t *end,
+					stringbuffer *sql,
+					stringbuffer *raw,
+					uint32_t *gdscode);
+		bool	buildBlrRequestQuery(sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode);
+
 		bool	readBlr(sqlrfirebirdfield **fields,
 					uint16_t *fieldcount,
 					const char *name,
@@ -1475,6 +1673,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint32_t *gdscode);
 		bool	parseBlr(const byte_t *blr,
 					uint32_t blrlen,
+					sqlrfirebirdfield **fields,
+					uint16_t *fieldcount,
+					uint32_t *gdscode);
+		bool	parseBlrItems(const byte_t **blr,
+					const byte_t *end,
+					uint16_t itemcount,
+					bool paired,
 					sqlrfirebirdfield **fields,
 					uint16_t *fieldcount,
 					uint32_t *gdscode);
@@ -1493,6 +1698,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	readMessageValue(const sqlrfirebirdfield *fld,
 					const byte_t *nullbits,
 					uint16_t index,
+					bool nullindicator,
 					sqlrfirebirdvalue *value,
 					uint32_t *bytesread);
 		void	bindMessageValue(memorypool *bindpool,
@@ -1807,6 +2013,7 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		statements[i].probecols=NULL;
 		statements[i].probecolcount=0;
 		initBatch(&statements[i].batch);
+		initBlrRequest(&statements[i].request);
 	}
 
 	lobbuffer=NULL;
@@ -1876,6 +2083,7 @@ void sqlrprotocol_firebird::init() {
 		statements[i].probecols=NULL;
 		statements[i].probecolcount=0;
 		initBatch(&statements[i].batch);
+		initBlrRequest(&statements[i].request);
 	}
 }
 
@@ -2000,6 +2208,15 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_fetch:
 					loop=fetch();
 					break;
+				case op_compile:
+					loop=compile();
+					break;
+				case op_start_and_receive:
+					loop=startAndReceive();
+					break;
+				case op_start_send_and_receive:
+					loop=startSendAndReceive();
+					break;
 				case op_set_cursor:
 					loop=setCursor();
 					break;
@@ -2105,7 +2322,6 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 
 				// known, but not implemented yet
 				case op_exit:
-				case op_compile:
 				case op_start:
 				case op_start_and_send:
 				case op_send:
@@ -2120,8 +2336,6 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_aux_connect:
 				case op_ddl:
 				case op_dummy:
-				case op_start_and_receive:
-				case op_start_send_and_receive:
 				case op_insert:
 				case op_transact:
 				case op_update_account_info:
@@ -4886,6 +5100,7 @@ bool sqlrprotocol_firebird::allocateStatement() {
 	stmt->bindsdescribed=false;
 	clearProbeColumns(stmt);
 	clearBatch(&stmt->batch);
+	clearBlrRequest(&stmt->request);
 
 	if (getDebug()) {
 		stdoutput.printf("	statement handle: %u\n",stmthandle);
@@ -5876,6 +6091,453 @@ bool sqlrprotocol_firebird::sendFetchResponse(sqlrservercursor *cursor,
 
 	clientsock->flushWriteBuffer(-1,-1);
 
+	return true;
+}
+
+bool sqlrprotocol_firebird::compile() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		db handle
+	// 	byte_t[]	request blr
+	// }
+
+	debugStart("compile");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	clientdbhandle;
+	if (!readInt(&clientdbhandle,"db handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	blrlen=0;
+	byte_t		*blr=NULL;
+	if (!readBuffer(&blr,&blrlen,"request blr",&bytesread)) {
+		return false;
+	}
+
+	debugEnd();
+
+	// a compiled request runs on a cursor of its own, the same way a
+	// prepared statement does
+	sqlrservercursor	*cursor=cont->getCursor();
+	if (!cursor) {
+		delete[] blr;
+		return errorResponse("compile response",
+					isc_dsql_error,"HY000",-901,
+					"Out of cursors",14);
+	}
+
+	// the wire format only ever binds by "?", so a query has to be
+	// translated to whatever format the backend actually requires
+	cont->setRequireBindVariableTranslation(cursor,true);
+
+	uint16_t	cursorid=cont->getId(cursor);
+
+	clearStatement(cursorid);
+
+	sqlrfirebirdstatement	*stmt=&statements[cursorid];
+
+	uint32_t	gdscode=0;
+	bool		parsed=parseBlrRequest(blr,blrlen,
+						&stmt->request,&gdscode);
+
+	delete[] blr;
+
+	// the whole request has already come off the socket, so a blr the
+	// walker couldn't make sense of is just an error to answer, not a
+	// reason to end the session
+	if (!parsed) {
+		clearBlrRequest(&stmt->request);
+		cont->release(cursor);
+		return errorResponse("compile response",
+					(gdscode)?gdscode:isc_wish_list);
+	}
+
+	// the handle is the cursor id plus one, so it is never 0 - the client
+	// treats a 0 handle as unallocated
+	uint32_t	reqhandle=cursorid+1;
+
+	if (getDebug()) {
+		stdoutput.printf("	request handle: %u\n",reqhandle);
+		stdoutput.printf("	query: %s\n",stmt->request.query);
+	}
+
+	successStatusVector();
+
+	return genericResponse("compile response",
+				reqhandle,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+bool sqlrprotocol_firebird::startAndReceive() {
+	return startRequest(false);
+}
+
+bool sqlrprotocol_firebird::startSendAndReceive() {
+	return startRequest(true);
+}
+
+bool sqlrprotocol_firebird::startRequest(bool send) {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		request handle
+	// 	int32_t		incarnation
+	// 	int32_t		transaction handle
+	// 	int32_t		message number
+	// 	int32_t		how many messages the client will take
+	// 	byte_t[]	input message	(op_start_send_and_receive only)
+	// }
+
+	const char	*title=(send)?"start send and receive response":
+					"start and receive response";
+
+	debugStart((send)?"start send and receive":"start and receive");
+
+	uint32_t	bytesread=0;
+
+	uint32_t	reqhandle;
+	if (!readInt(&reqhandle,"request handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	incarnation;
+	if (!readInt(&incarnation,"incarnation",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	clienttrhandle;
+	if (!readInt(&clienttrhandle,"transaction handle",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	msgnumber;
+	if (!readInt(&msgnumber,"message number",&bytesread)) {
+		return false;
+	}
+
+	uint32_t	msgcount;
+	if (!readInt(&msgcount,"message count",&bytesread)) {
+		return false;
+	}
+
+	sqlrservercursor	*cursor=NULL;
+	sqlrfirebirdstatement	*stmt=getStatement(reqhandle,&cursor);
+	sqlrfirebirdblrrequest	*req=(stmt)?&stmt->request:NULL;
+
+	// the input message is laid out the way the request said it would
+	// be, so without the request there is no way to take it off the
+	// socket, and no way to go on to the next packet either
+	if (send && (!req || !req->compiled || !req->hasinmsg ||
+					msgnumber!=req->inmsg)) {
+		debugEnd();
+		errorResponse(title,isc_bad_req_handle);
+		return false;
+	}
+
+	uint16_t		valuecount=0;
+	sqlrfirebirdvalue	*values=NULL;
+	if (send) {
+		valuecount=req->msgfieldcount[req->inmsg];
+		values=new sqlrfirebirdvalue[valuecount];
+		for (uint16_t i=0; i<valuecount; i++) {
+			values[i].strval=NULL;
+		}
+		if (!readRequestMessage(req->msgfields[req->inmsg],
+					valuecount,values,&bytesread)) {
+			for (uint16_t i=0; i<valuecount; i++) {
+				delete[] values[i].strval;
+			}
+			delete[] values;
+			return false;
+		}
+	}
+
+	debugEnd();
+
+	if (!req || !req->compiled) {
+		return errorResponse(title,isc_bad_req_handle);
+	}
+
+	// a start on a request that already ran rewinds it
+	cont->closeResultSet(cursor);
+	stmt->cursoropen=false;
+	stmt->preexecuted=false;
+
+	// bind whatever the input message carried, in the order the ?s the
+	// translation left in the query expect it
+	cont->getBindPool(cursor)->clear();
+	cont->setInputBindCount(cursor,0);
+	if (send) {
+		memorypool		*bindpool=cont->getBindPool(cursor);
+		sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
+		uint16_t		bindcount=0;
+		for (uint16_t i=0; i<req->inparamcount &&
+					bindcount<maxbindcount; i++) {
+			uint16_t	index=req->inparams[i];
+			if (index>=valuecount) {
+				continue;
+			}
+			bindMessageValue(bindpool,&(inbinds[bindcount]),
+					bindcount,
+					&(req->msgfields[req->inmsg][index]),
+					&(values[index]));
+			bindcount++;
+		}
+		cont->setInputBindCount(cursor,bindcount);
+		for (uint16_t i=0; i<valuecount; i++) {
+			delete[] values[i].strval;
+		}
+		delete[] values;
+		if (getDebug()) {
+			stdoutput.printf("	bound %u parameter(s)\n",
+								bindcount);
+		}
+	}
+
+	// run the query op_compile translated the request to
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	bytestring::copy(querybuffer,req->query,req->querylen);
+	querybuffer[req->querylen]='\0';
+	cont->setQuerySize(cursor,req->querylen);
+
+	if (!cont->prepareQuery(cursor,querybuffer,req->querylen,
+					true,true,true,true)) {
+		return sendCursorError(title,cursor,true);
+	}
+
+	if (!cont->executeQuery(cursor,true,true,true,true)) {
+		return sendCursorError(title,cursor,false);
+	}
+
+	stmt->prepared=true;
+	stmt->cursoropen=(cont->colCount(cursor)>0);
+
+	if (!sendStartResponse(req->outmsg)) {
+		return false;
+	}
+
+	return sendRequestRows(reqhandle,incarnation,cursor,req);
+}
+
+bool sqlrprotocol_firebird::sendStartResponse(uint32_t msgnumber) {
+
+	// response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_response_piggyback
+	// 	int32_t		the message number the rows come back in
+	// 	int32_t		object id
+	// 	int32_t		blob id, low word
+	// 	int32_t		buffer length
+	// 	int32_t[]	status vector
+	// }
+	//
+	// It is the same reply op_response carries, sent under an op code
+	// that tells the client the rows are right behind it rather than
+	// waiting for an op_receive to ask for them.
+
+	debugStart("start response");
+
+	uint32_t	byteswritten=0;
+
+	opcode=op_response_piggyback;
+	if (!writeInt(opcode,"response op code",&byteswritten)) {
+		return false;
+	}
+	debugOpCode("response op code",opcode);
+
+	successStatusVector();
+
+	if (!writeInt(msgnumber,"message number",&byteswritten) ||
+		!writeInt(0,"object id",&byteswritten) ||
+		!writeInt(0,"blob id low word",&byteswritten) ||
+		!writeBuffer(NULL,0,"buffer",&byteswritten) ||
+		!writeStatusVector(statusvector,statusvectorstr,
+					statusvectorlen,&byteswritten)) {
+		return false;
+	}
+
+	debugEnd();
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::sendRequestRows(uint32_t reqhandle,
+					uint32_t incarnation,
+					sqlrservercursor *cursor,
+					sqlrfirebirdblrrequest *req) {
+
+	// The whole result set goes back in one batch.  A real server sends
+	// what fits in a batch and waits for an op_receive to ask for the
+	// rest, but every request isql compiles ends with a send that runs
+	// after the loop, and the client stops reading at the message that
+	// one fills, so it never asks for more.
+
+	debugStart("start rows");
+
+	uint32_t	sent=0;
+
+	for (;;) {
+
+		bool	error=false;
+		if (!cont->fetchRow(cursor,&error)) {
+			if (error) {
+				debugEnd();
+				return sendCursorError("start rows",
+							cursor,false);
+			}
+			break;
+		}
+
+		if (!sendRequestMessage(reqhandle,incarnation,1,
+					cursor,req,req->rowslots)) {
+			return false;
+		}
+
+		// FIXME: kludgy
+		cont->nextRow(cursor);
+
+		sent++;
+	}
+
+	// what the request assigns after its loop ends is what the client
+	// reads as the end of the stream, and the 0 count says the same
+	// thing at the packet level
+	if (!sendRequestMessage(reqhandle,incarnation,0,
+					cursor,req,req->eofslots)) {
+		return false;
+	}
+
+	if (getDebug()) {
+		stdoutput.printf("	rows sent: %u\n",sent);
+	}
+
+	debugEnd();
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::sendRequestMessage(uint32_t reqhandle,
+					uint32_t incarnation,
+					uint32_t msgcount,
+					sqlrservercursor *cursor,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrslot *slots) {
+
+	// response packet data structure:
+	//
+	// data {
+	// 	int32_t		op_send
+	// 	int32_t		request handle
+	// 	int32_t		incarnation
+	// 	int32_t		transaction handle
+	// 	int32_t		message number
+	// 	int32_t		how many more messages follow
+	// 	byte_t[]	message
+	// }
+	//
+	// The message is on the wire either way - the count only says
+	// whether another packet is coming after this one.
+
+	uint32_t	byteswritten=0;
+
+	opcode=op_send;
+
+	return writeInt(opcode,"response op code",&byteswritten) &&
+		writeInt(reqhandle,"request handle",&byteswritten) &&
+		writeInt(incarnation,"incarnation",&byteswritten) &&
+		writeInt(trhandle,"transaction handle",&byteswritten) &&
+		writeInt(req->outmsg,"message number",&byteswritten) &&
+		writeInt(msgcount,"message count",&byteswritten) &&
+		writeRequestMessage(cursor,req,slots,&byteswritten);
+}
+
+bool sqlrprotocol_firebird::writeRequestMessage(sqlrservercursor *cursor,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrslot *slots,
+					uint32_t *byteswritten) {
+
+	// A request message is never packed, and carries no null indicator
+	// of its own - the request declared an item for every value it
+	// assigns, indicators included, so each item goes on the wire in
+	// full and in order.
+
+	sqlrfirebirdfield	*fields=req->msgfields[req->outmsg];
+	uint16_t		fieldcount=req->msgfieldcount[req->outmsg];
+
+	uint32_t	colcount=cont->colCount(cursor);
+
+	for (uint16_t i=0; i<fieldcount; i++) {
+
+		const sqlrfirebirdblrslot	*slot=&slots[i];
+
+		const char	*value=NULL;
+		uint64_t	valuesize=0;
+		bool		lob=false;
+		bool		null=true;
+		uint32_t	col=0;
+
+		if (slot->literal) {
+			value=slot->literal;
+			valuesize=charstring::getLength(slot->literal);
+			null=false;
+		} else if (slot->column>=0 &&
+				(uint32_t)slot->column<colcount) {
+			col=(uint32_t)slot->column;
+			if (!cont->getField(cursor,col,&value,
+						&valuesize,&lob,&null)) {
+				return false;
+			}
+		} else if (slot->indicator>=0 &&
+				(uint32_t)slot->indicator<colcount) {
+			// an indicator item carries -1 for a null value and
+			// 0 for anything else, rather than a value of its own
+			const char	*indvalue=NULL;
+			uint64_t	indvaluesize=0;
+			bool		indlob=false;
+			bool		indnull=false;
+			if (!cont->getField(cursor,
+					(uint32_t)slot->indicator,
+					&indvalue,&indvaluesize,
+					&indlob,&indnull)) {
+				return false;
+			}
+			value=(indnull)?"-1":"0";
+			valuesize=charstring::getLength(value);
+			null=false;
+		}
+
+		if (!writeField(cursor,col,&fields[i],value,valuesize,
+					lob,null,byteswritten)) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::readRequestMessage(sqlrfirebirdfield *fields,
+					uint16_t fieldcount,
+					sqlrfirebirdvalue *values,
+					uint32_t *bytesread) {
+
+	// the format a request message goes out in is the format it comes in
+	// in - see writeRequestMessage()
+	for (uint16_t i=0; i<fieldcount; i++) {
+		if (!readMessageValue(&fields[i],NULL,i,false,
+					&values[i],bytesread)) {
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -7516,7 +8178,7 @@ bool sqlrprotocol_firebird::batchMsg() {
 		bool	valuesread=true;
 		for (uint16_t i=0; i<batch->fieldcount; i++) {
 			if (!readMessageValue(&batch->fields[i],
-						nullbits,i,&values[i],
+						nullbits,i,true,&values[i],
 						&bytesread)) {
 				valuesread=false;
 				break;
@@ -8946,6 +9608,7 @@ void sqlrprotocol_firebird::clearStatement(uint16_t cursorid) {
 	stmt->bindsdescribed=false;
 	clearProbeColumns(stmt);
 	clearBatch(&stmt->batch);
+	clearBlrRequest(&stmt->request);
 }
 
 void sqlrprotocol_firebird::clearStatements() {
@@ -10140,11 +10803,31 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 		return false;
 	}
 
-	uint16_t	count=itemcount/2;
+	return parseBlrItems(&p,end,itemcount,true,fields,fieldcount,gdscode);
+}
+
+bool sqlrprotocol_firebird::parseBlrItems(const byte_t **blr,
+					const byte_t *end,
+					uint16_t itemcount,
+					bool paired,
+					sqlrfirebirdfield **fields,
+					uint16_t *fieldcount,
+					uint32_t *gdscode) {
+
+	// A message blr pairs each value with a null indicator, and only the
+	// value describes a field.  A request blr's message lists every item
+	// on its own instead, indicator or not, so every one of them is a
+	// field.
+
+	*fields=NULL;
+	*fieldcount=0;
+
+	uint16_t	count=(paired)?itemcount/2:itemcount;
 	if (!count) {
 		return true;
 	}
 
+	const byte_t		*p=*blr;
 	sqlrfirebirdfield	*f=new sqlrfirebirdfield[count];
 
 	for (uint16_t i=0; i<itemcount; i++) {
@@ -10234,19 +10917,1144 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 				return false;
 		}
 
-		// the odd items are the null indicators, which are always a
-		// blr_short, and carry nothing the module needs
-		if (!(i%2)) {
-			f[i/2]=fld;
+		// the odd items of a paired list are the null indicators,
+		// which are always a blr_short, and carry nothing the module
+		// needs
+		if (paired) {
+			if (!(i%2)) {
+				f[i/2]=fld;
+			}
+		} else {
+			f[i]=fld;
 		}
 	}
 
+	*blr=p;
 	*fields=f;
 	*fieldcount=count;
 
 	if (getDebug()) {
 		stdoutput.printf("	blr describes %u field(s)\n",count);
 	}
+
+	return true;
+}
+
+void sqlrprotocol_firebird::initBlrRequest(sqlrfirebirdblrrequest *req) {
+	req->compiled=false;
+	for (uint16_t i=0; i<FIREBIRD_MAX_BLR_CONTEXTS; i++) {
+		req->relations[i]=NULL;
+	}
+	req->relationcount=0;
+	for (uint16_t i=0; i<FIREBIRD_MAX_BLR_MESSAGES; i++) {
+		req->msgfields[i]=NULL;
+		req->msgfieldcount[i]=0;
+	}
+	req->outmsg=0;
+	req->inmsg=0;
+	req->hasinmsg=false;
+	req->rowslots=NULL;
+	req->eofslots=NULL;
+	req->slotcount=0;
+	req->haseof=false;
+	req->inparamcount=0;
+	req->query=NULL;
+	req->querylen=0;
+}
+
+void sqlrprotocol_firebird::clearBlrRequest(sqlrfirebirdblrrequest *req) {
+	for (uint16_t i=0; i<FIREBIRD_MAX_BLR_CONTEXTS; i++) {
+		delete[] req->relations[i];
+	}
+	for (uint16_t i=0; i<FIREBIRD_MAX_BLR_MESSAGES; i++) {
+		delete[] req->msgfields[i];
+	}
+	clearBlrSlots(req->rowslots,req->slotcount);
+	clearBlrSlots(req->eofslots,req->slotcount);
+	delete[] req->query;
+	initBlrRequest(req);
+}
+
+sqlrfirebirdblrslot *sqlrprotocol_firebird::newBlrSlots(uint16_t count) {
+	sqlrfirebirdblrslot	*slots=new sqlrfirebirdblrslot[count];
+	for (uint16_t i=0; i<count; i++) {
+		slots[i].column=-1;
+		slots[i].literal=NULL;
+		slots[i].indicator=-1;
+	}
+	return slots;
+}
+
+void sqlrprotocol_firebird::clearBlrSlots(sqlrfirebirdblrslot *slots,
+						uint16_t count) {
+	for (uint16_t i=0; i<count; i++) {
+		delete[] slots[i].literal;
+	}
+	delete[] slots;
+}
+
+bool sqlrprotocol_firebird::parseBlrRequest(const byte_t *blr,
+					uint32_t blrlen,
+					sqlrfirebirdblrrequest *req,
+					uint32_t *gdscode) {
+
+	// request blr data structure:
+	//
+	// data {
+	// 	byte_t		blr version
+	// 	byte_t[]	statement
+	// 	byte_t		blr_eoc
+	// }
+	//
+	// The server API takes sql and nothing else, so rather than run the
+	// request the module translates it to a select and runs that.  Only
+	// the shape isql's SHOW commands compile is understood - a begin
+	// block declaring a message per parameter set, a receive around the
+	// body when the request takes input parameters, a for loop over a
+	// one or two relation rse with a send inside it, and a second send
+	// after the loop whose message tells the client the stream ended.
+	// Anything else is refused rather than guessed at, since a request
+	// half understood would answer rows that aren't the ones it asked
+	// for.
+
+	*gdscode=0;
+
+	clearBlrRequest(req);
+
+	if (!blr || blrlen<2) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	const byte_t	*p=blr;
+	const byte_t	*end=blr+blrlen;
+
+	byte_t	version=*p;
+	p++;
+	if (version!=blr_version4 && version!=blr_version5) {
+		if (getDebug()) {
+			stdoutput.printf("	invalid blr version: %u\n",
+								version);
+		}
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	sqlrfirebirdblrwalk	walk;
+	walk.selectcount=0;
+	walk.inloop=false;
+	walk.slots=NULL;
+	walk.depth=0;
+
+	if (!parseBlrStatement(&p,end,req,&walk,gdscode) ||
+			!buildBlrRequestQuery(req,&walk,gdscode)) {
+		clearBlrRequest(req);
+		return false;
+	}
+
+	req->compiled=true;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrStatement(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode) {
+
+	// statement verbs:
+	//
+	// blr_begin		<statement>... blr_end
+	// blr_message		<message number> <item count> <items>
+	// blr_receive		<message number> <statement>
+	// blr_for		<rse> <statement>
+	// blr_send		<message number> <statement>
+	// blr_assignment	<value> <parameter>
+
+	if (walk->depth>=FIREBIRD_MAX_BLR_DEPTH) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+	walk->depth++;
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	byte_t	verb=*p;
+	p++;
+
+	switch (verb) {
+
+		case blr_begin:
+			for (;;) {
+				if (p>=end) {
+					*gdscode=isc_dsql_error;
+					return false;
+				}
+				if (*p==blr_end) {
+					p++;
+					break;
+				}
+				*blr=p;
+				if (!parseBlrStatement(blr,end,req,
+							walk,gdscode)) {
+					return false;
+				}
+				p=*blr;
+			}
+			break;
+
+		case blr_message:
+			{
+			if (p+3>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			byte_t	msgnumber=*p;
+			p++;
+			uint16_t	itemcount=(uint16_t)(p[0]|(p[1]<<8));
+			p+=2;
+			if (msgnumber>=FIREBIRD_MAX_BLR_MESSAGES ||
+					req->msgfields[msgnumber]) {
+				*gdscode=isc_wish_list;
+				return false;
+			}
+			if (!parseBlrItems(&p,end,itemcount,false,
+					&(req->msgfields[msgnumber]),
+					&(req->msgfieldcount[msgnumber]),
+					gdscode)) {
+				return false;
+			}
+			}
+			break;
+
+		case blr_receive:
+			{
+			if (p>=end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			byte_t	msgnumber=*p;
+			p++;
+			// what the request receives is what the client sends
+			// with op_start_send_and_receive
+			if (msgnumber>=FIREBIRD_MAX_BLR_MESSAGES ||
+					!req->msgfields[msgnumber]) {
+				*gdscode=isc_wish_list;
+				return false;
+			}
+			req->inmsg=msgnumber;
+			req->hasinmsg=true;
+			*blr=p;
+			if (!parseBlrStatement(blr,end,req,walk,gdscode)) {
+				return false;
+			}
+			p=*blr;
+			}
+			break;
+
+		case blr_for:
+			{
+			*blr=p;
+			if (!parseBlrRse(blr,end,req,walk,gdscode)) {
+				return false;
+			}
+			walk->inloop=true;
+			bool	parsed=parseBlrStatement(blr,end,req,
+							walk,gdscode);
+			walk->inloop=false;
+			if (!parsed) {
+				return false;
+			}
+			p=*blr;
+			}
+			break;
+
+		case blr_send:
+			{
+			if (p>=end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			byte_t	msgnumber=*p;
+			p++;
+			if (msgnumber>=FIREBIRD_MAX_BLR_MESSAGES ||
+					!req->msgfields[msgnumber]) {
+				*gdscode=isc_wish_list;
+				return false;
+			}
+			// the send inside the loop is what carries a row -
+			// the one after it fills the same message with
+			// whatever tells the client the rows ran out
+			if (walk->inloop) {
+				if (req->rowslots) {
+					*gdscode=isc_wish_list;
+					return false;
+				}
+				req->outmsg=msgnumber;
+				req->slotcount=req->msgfieldcount[msgnumber];
+				req->rowslots=newBlrSlots(req->slotcount);
+				req->eofslots=newBlrSlots(req->slotcount);
+				walk->slots=req->rowslots;
+			} else {
+				if (!req->rowslots ||
+					msgnumber!=req->outmsg ||
+					req->haseof) {
+					*gdscode=isc_wish_list;
+					return false;
+				}
+				req->haseof=true;
+				walk->slots=req->eofslots;
+			}
+			*blr=p;
+			bool	parsed=parseBlrStatement(blr,end,req,
+							walk,gdscode);
+			walk->slots=NULL;
+			if (!parsed) {
+				return false;
+			}
+			p=*blr;
+			}
+			break;
+
+		case blr_assignment:
+			*blr=p;
+			if (!parseBlrAssignment(blr,end,req,walk,gdscode)) {
+				return false;
+			}
+			p=*blr;
+			break;
+
+		default:
+			if (getDebug()) {
+				stdoutput.printf("	unsupported blr "
+						"statement verb: %u\n",verb);
+			}
+			*gdscode=isc_wish_list;
+			return false;
+	}
+
+	walk->depth--;
+
+	*blr=p;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrAssignment(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode) {
+
+	// blr_assignment <source value> <destination parameter>
+
+	stringbuffer	sql;
+	stringbuffer	raw;
+	byte_t		kind=0;
+	if (!parseBlrValue(blr,end,req,&sql,&raw,&kind,gdscode)) {
+		return false;
+	}
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	// a request only ever assigns into its own message
+	byte_t	verb=*p;
+	p++;
+	if (verb!=blr_parameter && verb!=blr_parameter2) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	if (p+3>end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+	byte_t	msgnumber=*p;
+	p++;
+	uint16_t	paramnumber=(uint16_t)(p[0]|(p[1]<<8));
+	p+=2;
+	bool		hasindicator=(verb==blr_parameter2);
+	uint16_t	indicatornumber=0;
+	if (hasindicator) {
+		// the value's null indicator gets an item of the message all
+		// its own
+		if (p+2>end) {
+			*gdscode=isc_dsql_error;
+			return false;
+		}
+		indicatornumber=(uint16_t)(p[0]|(p[1]<<8));
+		p+=2;
+	}
+
+	*blr=p;
+
+	if (!walk->slots || msgnumber!=req->outmsg ||
+			paramnumber>=req->slotcount ||
+			(hasindicator && indicatornumber>=req->slotcount)) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	sqlrfirebirdblrslot	*slot=&(walk->slots[paramnumber]);
+
+	if (kind==blr_field) {
+		// a column can only come from a row, and only the send inside
+		// the loop has one
+		if (!walk->inloop) {
+			*gdscode=isc_wish_list;
+			return false;
+		}
+		if (walk->selectcount) {
+			walk->selectclause.append(",");
+		}
+		walk->selectclause.append(sql.getString());
+		slot->column=(int32_t)walk->selectcount;
+		// the indicator item reports on the same column the value
+		// came from
+		if (hasindicator) {
+			walk->slots[indicatornumber].indicator=slot->column;
+		}
+		walk->selectcount++;
+	} else if (kind==blr_literal) {
+		delete[] slot->literal;
+		slot->literal=charstring::duplicate(raw.getString());
+	} else if (kind!=blr_null) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrRse(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode) {
+
+	// blr_rse <relation count> <relation>... <clause>... blr_end
+	//
+	// A relation's position in the list is not what a field reference
+	// names it by - each relation carries a context number of its own,
+	// and that is what blr_field uses.
+
+	const byte_t	*p=*blr;
+
+	if (p>=end || *p!=blr_rse) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+	p++;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+	byte_t	relcount=*p;
+	p++;
+
+	// two relations is an inner join, and is as wide as the requests
+	// isql compiles ever get - the join condition is just another
+	// predicate in the boolean, so a comma join says exactly what the
+	// rse says
+	if (!relcount || relcount>FIREBIRD_MAX_BLR_RELATIONS) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	for (byte_t i=0; i<relcount; i++) {
+		*blr=p;
+		if (!parseBlrRelation(blr,end,req,walk,gdscode)) {
+			return false;
+		}
+		p=*blr;
+	}
+
+	for (;;) {
+
+		if (p>=end) {
+			*gdscode=isc_dsql_error;
+			return false;
+		}
+
+		byte_t	verb=*p;
+		if (verb==blr_end) {
+			p++;
+			break;
+		}
+		p++;
+
+		switch (verb) {
+
+			case blr_boolean:
+				*blr=p;
+				if (!parseBlrBoolean(blr,end,req,
+						&walk->whereclause,
+						0,gdscode)) {
+					return false;
+				}
+				p=*blr;
+				break;
+
+			case blr_first:
+				{
+				// the ?s bind in the order they appear in
+				// the query, and the row limit ends up at
+				// the end of it rather than where the rse
+				// puts it, so a parameter here would bind
+				// out of turn
+				uint16_t	inparamcount=
+							req->inparamcount;
+				*blr=p;
+				if (!parseBlrValue(blr,end,req,
+						&walk->firstclause,
+						NULL,NULL,gdscode)) {
+					return false;
+				}
+				if (req->inparamcount!=inparamcount) {
+					*gdscode=isc_wish_list;
+					return false;
+				}
+				p=*blr;
+				}
+				break;
+
+			case blr_sort:
+				*blr=p;
+				if (!parseBlrSort(blr,end,req,walk,gdscode)) {
+					return false;
+				}
+				p=*blr;
+				break;
+
+			case blr_join_type:
+				// the only join two relations in one rse can
+				// express is an inner one, which is what the
+				// from clause's comma join already is
+				if (p>=end) {
+					*gdscode=isc_dsql_error;
+					return false;
+				}
+				p++;
+				break;
+
+			default:
+				if (getDebug()) {
+					stdoutput.printf("	unsupported "
+							"blr rse clause: "
+							"%u\n",verb);
+				}
+				*gdscode=isc_wish_list;
+				return false;
+		}
+	}
+
+	*blr=p;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrRelation(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode) {
+
+	// blr_relation	 <name length> <name> <context>
+	// blr_relation2 <name length> <name> <alias length> <alias> <context>
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	byte_t	verb=*p;
+	p++;
+	if (verb!=blr_relation && verb!=blr_relation2) {
+		if (getDebug()) {
+			stdoutput.printf("	unsupported blr relation "
+						"verb: %u\n",verb);
+		}
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+	byte_t	namelen=*p;
+	p++;
+	if (p+namelen>end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+	const byte_t	*name=p;
+	p+=namelen;
+
+	// the alias the request gave it doesn't survive the translation -
+	// see below
+	if (verb==blr_relation2) {
+		if (p>=end) {
+			*gdscode=isc_dsql_error;
+			return false;
+		}
+		byte_t	aliaslen=*p;
+		p++;
+		if (p+aliaslen>end) {
+			*gdscode=isc_dsql_error;
+			return false;
+		}
+		p+=aliaslen;
+	}
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+	byte_t	context=*p;
+	p++;
+
+	if (context>=FIREBIRD_MAX_BLR_CONTEXTS || req->relations[context]) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	req->relations[context]=charstring::duplicate((const char *)name,
+								namelen);
+
+	// the alias the from clause gives it is the context number, which is
+	// what a field reference names it by anyway
+	if (req->relationcount) {
+		walk->fromclause.append(",");
+	}
+	walk->fromclause.append(req->relations[context])->
+				append(" C")->append((uint32_t)context);
+
+	req->relationcount++;
+
+	*blr=p;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrSort(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode) {
+
+	// blr_sort <key count> (<direction> <value>)...
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+	byte_t	keycount=*p;
+	p++;
+
+	for (byte_t i=0; i<keycount; i++) {
+
+		if (p>=end) {
+			*gdscode=isc_dsql_error;
+			return false;
+		}
+
+		bool	descending=false;
+		if (*p==blr_ascending || *p==blr_descending) {
+			descending=(*p==blr_descending);
+			p++;
+		}
+
+		if (i) {
+			walk->orderbyclause.append(",");
+		}
+
+		// a parameter here would bind out of turn - see the first
+		// clause in parseBlrRse()
+		uint16_t	inparamcount=req->inparamcount;
+
+		*blr=p;
+		if (!parseBlrValue(blr,end,req,&walk->orderbyclause,
+						NULL,NULL,gdscode)) {
+			return false;
+		}
+		if (req->inparamcount!=inparamcount) {
+			*gdscode=isc_wish_list;
+			return false;
+		}
+		p=*blr;
+
+		if (descending) {
+			walk->orderbyclause.append(" DESC");
+		}
+	}
+
+	*blr=p;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrBoolean(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					stringbuffer *sql,
+					uint16_t depth,
+					uint32_t *gdscode) {
+
+	// boolean verbs:
+	//
+	// blr_and, blr_or			<boolean> <boolean>
+	// blr_not				<boolean>
+	// blr_missing				<value>
+	// blr_between				<value> <value> <value>
+	// blr_eql and the other comparisons	<value> <value>
+
+	if (depth>=FIREBIRD_MAX_BLR_DEPTH) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	byte_t	verb=*p;
+	p++;
+	*blr=p;
+
+	const char	*op=NULL;
+	switch (verb) {
+		case blr_and:
+			op=" AND ";
+			break;
+		case blr_or:
+			op=" OR ";
+			break;
+		case blr_eql:
+			op="=";
+			break;
+		case blr_neq:
+			op="<>";
+			break;
+		case blr_gtr:
+			op=">";
+			break;
+		case blr_geq:
+			op=">=";
+			break;
+		case blr_lss:
+			op="<";
+			break;
+		case blr_leq:
+			op="<=";
+			break;
+		case blr_like:
+			op=" LIKE ";
+			break;
+		case blr_starting:
+			op=" STARTING WITH ";
+			break;
+		case blr_containing:
+			op=" CONTAINING ";
+			break;
+		default:
+			break;
+	}
+
+	switch (verb) {
+
+		case blr_and:
+		case blr_or:
+			sql->append("(");
+			if (!parseBlrBoolean(blr,end,req,sql,
+						depth+1,gdscode)) {
+				return false;
+			}
+			sql->append(op);
+			if (!parseBlrBoolean(blr,end,req,sql,
+						depth+1,gdscode)) {
+				return false;
+			}
+			sql->append(")");
+			break;
+
+		case blr_not:
+			sql->append("(NOT ");
+			if (!parseBlrBoolean(blr,end,req,sql,
+						depth+1,gdscode)) {
+				return false;
+			}
+			sql->append(")");
+			break;
+
+		case blr_missing:
+			sql->append("(");
+			if (!parseBlrValue(blr,end,req,sql,
+						NULL,NULL,gdscode)) {
+				return false;
+			}
+			sql->append(" IS NULL)");
+			break;
+
+		case blr_between:
+			sql->append("(");
+			if (!parseBlrValue(blr,end,req,sql,
+						NULL,NULL,gdscode)) {
+				return false;
+			}
+			sql->append(" BETWEEN ");
+			if (!parseBlrValue(blr,end,req,sql,
+						NULL,NULL,gdscode)) {
+				return false;
+			}
+			sql->append(" AND ");
+			if (!parseBlrValue(blr,end,req,sql,
+						NULL,NULL,gdscode)) {
+				return false;
+			}
+			sql->append(")");
+			break;
+
+		case blr_eql:
+		case blr_neq:
+		case blr_gtr:
+		case blr_geq:
+		case blr_lss:
+		case blr_leq:
+		case blr_like:
+		case blr_starting:
+		case blr_containing:
+			sql->append("(");
+			if (!parseBlrValue(blr,end,req,sql,
+						NULL,NULL,gdscode)) {
+				return false;
+			}
+			sql->append(op);
+			if (!parseBlrValue(blr,end,req,sql,
+						NULL,NULL,gdscode)) {
+				return false;
+			}
+			sql->append(")");
+			break;
+
+		default:
+			if (getDebug()) {
+				stdoutput.printf("	unsupported blr "
+						"boolean verb: %u\n",verb);
+			}
+			*gdscode=isc_wish_list;
+			return false;
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrValue(const byte_t **blr,
+					const byte_t *end,
+					sqlrfirebirdblrrequest *req,
+					stringbuffer *sql,
+					stringbuffer *raw,
+					byte_t *kind,
+					uint32_t *gdscode) {
+
+	// value verbs:
+	//
+	// blr_field		<context> <name length> <name>
+	// blr_literal		<data type> <type arguments> <value>
+	// blr_parameter	<message number> <parameter number>
+	// blr_parameter2	<message number> <parameter number>
+	// 			<null indicator parameter number>
+	// blr_null
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	byte_t	verb=*p;
+	p++;
+
+	if (kind) {
+		*kind=verb;
+	}
+
+	switch (verb) {
+
+		case blr_field:
+			{
+			if (p+2>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			byte_t	context=*p;
+			p++;
+			byte_t	namelen=*p;
+			p++;
+			if (p+namelen>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			if (context>=FIREBIRD_MAX_BLR_CONTEXTS ||
+					!req->relations[context]) {
+				*gdscode=isc_wish_list;
+				return false;
+			}
+			sql->append("C")->append((uint32_t)context)->
+								append(".");
+			sql->append((const char *)p,(size_t)namelen);
+			p+=namelen;
+			}
+			break;
+
+		case blr_literal:
+			*blr=p;
+			if (!parseBlrLiteral(blr,end,sql,raw,gdscode)) {
+				return false;
+			}
+			p=*blr;
+			break;
+
+		case blr_parameter:
+		case blr_parameter2:
+			{
+			if (p+3>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			byte_t	msgnumber=*p;
+			p++;
+			uint16_t	paramnumber=(uint16_t)(p[0]|(p[1]<<8));
+			p+=2;
+			if (verb==blr_parameter2) {
+				if (p+2>end) {
+					*gdscode=isc_dsql_error;
+					return false;
+				}
+				p+=2;
+			}
+			// a parameter in an expression is a value the client
+			// sends with op_start_send_and_receive, so the query
+			// takes it as a bind and startRequest() fills it in
+			if (!req->hasinmsg || msgnumber!=req->inmsg ||
+				paramnumber>=req->msgfieldcount[msgnumber] ||
+				req->inparamcount>=FIREBIRD_MAX_BLR_PARAMS) {
+				*gdscode=isc_wish_list;
+				return false;
+			}
+			req->inparams[req->inparamcount]=paramnumber;
+			req->inparamcount++;
+			sql->append("?");
+			}
+			break;
+
+		case blr_null:
+			sql->append("NULL");
+			break;
+
+		default:
+			if (getDebug()) {
+				stdoutput.printf("	unsupported blr "
+						"value verb: %u\n",verb);
+			}
+			*gdscode=isc_wish_list;
+			return false;
+	}
+
+	*blr=p;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::parseBlrLiteral(const byte_t **blr,
+					const byte_t *end,
+					stringbuffer *sql,
+					stringbuffer *raw,
+					uint32_t *gdscode) {
+
+	// blr_literal <data type> <type arguments> <value>
+	//
+	// The type arguments and the width of the value are the data type's
+	// own - a scale byte and a fixed width integer, or a length and that
+	// many characters.
+
+	const byte_t	*p=*blr;
+
+	if (p>=end) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	byte_t	dtype=*p;
+	p++;
+
+	switch (dtype) {
+
+		case blr_short:
+		case blr_long:
+		case blr_int64:
+			{
+			if (p>=end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			int8_t	scale=(int8_t)*p;
+			p++;
+			uint16_t	width=(dtype==blr_short)?2:
+					((dtype==blr_long)?4:8);
+			if (p+width>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			int64_t	val=0;
+			for (uint16_t i=0; i<width; i++) {
+				val|=((int64_t)p[i])<<(i*8);
+			}
+			// the value came off the wire in its own width, so
+			// anything narrower than an int64 has to carry its
+			// sign the rest of the way up
+			if (width<8 &&
+				(val&((int64_t)1<<(width*8-1)))) {
+				val|=~(((int64_t)1<<(width*8))-1);
+			}
+			p+=width;
+			// a scaled integer would have to be rendered against
+			// the type it is going into, which the module doesn't
+			// know here
+			if (scale) {
+				*gdscode=isc_wish_list;
+				return false;
+			}
+			sql->append(val);
+			if (raw) {
+				raw->append(val);
+			}
+			}
+			break;
+
+		case blr_text:
+		case blr_text2:
+			{
+			if (dtype==blr_text2) {
+				// character set
+				if (p+2>end) {
+					*gdscode=isc_dsql_error;
+					return false;
+				}
+				p+=2;
+			}
+			if (p+2>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			uint16_t	len=(uint16_t)(p[0]|(p[1]<<8));
+			p+=2;
+			if (p+len>end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			sql->append("'");
+			for (uint16_t i=0; i<len; i++) {
+				// a quote inside the text would end the
+				// string it sits in unless it is doubled
+				if (p[i]=='\'') {
+					sql->append('\'');
+				}
+				sql->append((char)p[i]);
+			}
+			sql->append("'");
+			if (raw) {
+				raw->append((const char *)p,(size_t)len);
+			}
+			p+=len;
+			}
+			break;
+
+		case blr_bool:
+			{
+			if (p>=end) {
+				*gdscode=isc_dsql_error;
+				return false;
+			}
+			byte_t	val=*p;
+			p++;
+			sql->append((val)?"TRUE":"FALSE");
+			if (raw) {
+				raw->append((val)?"1":"0");
+			}
+			}
+			break;
+
+		default:
+			if (getDebug()) {
+				stdoutput.printf("	unsupported blr "
+						"literal type: %u\n",dtype);
+			}
+			*gdscode=isc_wish_list;
+			return false;
+	}
+
+	*blr=p;
+
+	return true;
+}
+
+bool sqlrprotocol_firebird::buildBlrRequestQuery(
+					sqlrfirebirdblrrequest *req,
+					sqlrfirebirdblrwalk *walk,
+					uint32_t *gdscode) {
+
+	// a request that pulls from nothing, or sends nothing back, isn't
+	// one there is a select to write for
+	if (!walk->selectcount || !req->relationcount || !req->rowslots) {
+		*gdscode=isc_wish_list;
+		return false;
+	}
+
+	stringbuffer	query;
+	query.append("SELECT ")->append(walk->selectclause.getString());
+	query.append(" FROM ")->append(walk->fromclause.getString());
+	if (walk->whereclause.getStringLength()) {
+		query.append(" WHERE ")->
+			append(walk->whereclause.getString());
+	}
+	if (walk->orderbyclause.getStringLength()) {
+		query.append(" ORDER BY ")->
+			append(walk->orderbyclause.getString());
+	}
+	if (walk->firstclause.getStringLength()) {
+		query.append(" ROWS ")->
+			append(walk->firstclause.getString());
+	}
+
+	uint32_t	querylen=(uint32_t)query.getStringLength();
+	if (querylen>maxquerysize) {
+		*gdscode=isc_dsql_error;
+		return false;
+	}
+
+	req->query=charstring::duplicate(query.getString());
+	req->querylen=querylen;
 
 	return true;
 }
@@ -10322,7 +12130,7 @@ bool sqlrprotocol_firebird::readMessageFields(sqlrservercursor *cursor,
 
 		// get the value
 		sqlrfirebirdvalue	val;
-		if (!readMessageValue(fld,nullbits,i,&val,bytesread)) {
+		if (!readMessageValue(fld,nullbits,i,true,&val,bytesread)) {
 			return false;
 		}
 
@@ -10477,6 +12285,7 @@ void sqlrprotocol_firebird::bindMessageValue(memorypool *bindpool,
 bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 					const byte_t *nullbits,
 					uint16_t index,
+					bool nullindicator,
 					sqlrfirebirdvalue *value,
 					uint32_t *bytesread) {
 
@@ -10607,8 +12416,6 @@ bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 
 			case blr_text:
 			case blr_text2:
-			case blr_cstring:
-			case blr_cstring2:
 				strvallen=fld->length;
 				strval=new char[strvallen+1];
 				if (!readOpaque((byte_t *)strval,
@@ -10619,6 +12426,36 @@ bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 					return false;
 				}
 				strval[strvallen]='\0';
+				break;
+
+			case blr_cstring:
+			case blr_cstring2:
+				{
+				// a cstring goes over length-first, like a
+				// varying, rather than at its declared
+				// width - see writeField()
+				uint32_t	len=0;
+				if (!readInt(&len,"parameter length",
+							bytesread)) {
+					return false;
+				}
+				// a length past the declared width would
+				// leave the rest of the message misaligned,
+				// so there's no reading on past it
+				if (len>fld->length) {
+					return false;
+				}
+				strvallen=len;
+				strval=new char[strvallen+1];
+				if (!readOpaque((byte_t *)strval,
+						strvallen,
+						"parameter",
+						bytesread)) {
+					delete[] strval;
+					return false;
+				}
+				strval[strvallen]='\0';
+				}
 				break;
 
 			case blr_varying:
@@ -10653,7 +12490,7 @@ bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 	}
 
 	// null indicator
-	if (!nullbits) {
+	if (!nullbits && nullindicator) {
 		uint32_t	indicator=0;
 		if (!readInt(&indicator,
 				"null indicator",bytesread)) {
@@ -10888,18 +12725,17 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_cstring:
 		case blr_cstring2:
 			{
-			// the width includes the terminator, so a declared
-			// width of 0 leaves no room for any value at all
+			// A cstring is stored null-terminated but goes over
+			// length-first, like a varying, and only the bytes
+			// up to the terminator go at all.  The declared
+			// width includes the terminator, so a value can only
+			// be one byte shorter than it.
 			uint32_t	width=fld->length;
 			uint32_t	max=(width)?width-1:0;
-			byte_t		*buf=new byte_t[(width)?width:1];
 			uint32_t	len=(vlen<max)?vlen:max;
-			bytestring::zero(buf,(width)?width:1);
-			bytestring::copy(buf,v,len);
-			bool	retval=writeOpaque(buf,width,
-							"field",byteswritten);
-			delete[] buf;
-			return retval;
+			return writeInt(len,"field length",byteswritten) &&
+				writeOpaque((const byte_t *)v,len,
+						"field",byteswritten);
 			}
 
 		case blr_varying:
