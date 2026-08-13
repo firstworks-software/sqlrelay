@@ -858,33 +858,41 @@ int main(int argc, char **argv) {
 	isc_start_transaction(fbstatus,&tr,1,&db,
 					(unsigned short)sizeof(tpb),tpb);
 
-	// unchecked - the table may not be there yet
-	isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
-					"drop table testtable",
-					SQL_DIALECT_V6,NULL);
-	isc_commit_transaction(fbstatus,&tr);
-	tr=0;
-	isc_start_transaction(fbstatus,&tr,1,&db,
-					(unsigned short)sizeof(tpb),tpb);
-
 	stdoutput.printf("isc_dsql_execute_immediate - create table\n");
-	// the table test/c++/firebird.cpp, test/c/firebird.c and
-	// test/odbc/firebird.cpp share, so this test is diffable against them
-	assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
-			"create table testtable ("
-				"testinteger integer, "
-				"testsmallint smallint, "
-				"testdecimal decimal(10,2), "
-				"testnumeric numeric(10,2), "
-				"testfloat float, "
-				"testdouble double precision, "
-				"testdate date, "
-				"testtime time, "
-				"testchar char(50), "
-				"testvarchar varchar(50), "
-				"testtimestamp timestamp, "
-				"testblob blob)",
-			SQL_DIALECT_V6,NULL),0);
+	// The table can't just be dropped and recreated.  Pooled
+	// sqlr-connection backends autocommit with isc_commit_retaining
+	// (src/connections/firebird.cpp:1171-1173), which keeps testtable
+	// "in use" for DDL until they truly commit, roll back or detach, and
+	// they stay attached indefinitely.  So a rerun against a live
+	// instance would fail the create with -607.  Plain DML isn't blocked
+	// that way, so probe with a delete instead: it clears the table if a
+	// previous run left it behind, and says -204 if it isn't there yet,
+	// which is the only case that needs the DDL.  Both paths run the same
+	// two assertions, so the score doesn't move (#9153).
+	int	tableresult=(int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+					"delete from testtable",
+					SQL_DIALECT_V6,NULL);
+	if (tableresult && isc_sqlcode(fbstatus)==-204) {
+		// the table test/c++/firebird.cpp, test/c/firebird.c and
+		// test/odbc/firebird.cpp share, so this test is diffable
+		// against them
+		tableresult=(int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+				"create table testtable ("
+					"testinteger integer, "
+					"testsmallint smallint, "
+					"testdecimal decimal(10,2), "
+					"testnumeric numeric(10,2), "
+					"testfloat float, "
+					"testdouble double precision, "
+					"testdate date, "
+					"testtime time, "
+					"testchar char(50), "
+					"testvarchar varchar(50), "
+					"testtimestamp timestamp, "
+					"testblob blob)",
+				SQL_DIALECT_V6,NULL);
+	}
+	assertEquals(tableresult,0);
 	assertEquals((int)isc_commit_transaction(fbstatus,&tr),0);
 	stdoutput.printf("\n\n");
 
