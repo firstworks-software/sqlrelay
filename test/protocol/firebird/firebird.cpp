@@ -1472,6 +1472,93 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #9069 and #9144: a select with a bind variable used to describe as
+	// 0 columns, because nothing ran it at prepare time.  isc_dsql_prepare
+	// now has to answer with the real shape.
+	stdoutput.printf("select with bind variable - prepare and describe\n");
+	const char	*bindselectquery=
+			"select testinteger, testvarchar from testtable "
+			"where testinteger=?";
+	XSQLDA	*bselsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(2)];
+	bytestring::zero(bselsqlda,XSQLDA_LENGTH(2));
+	bselsqlda->version=SQLDA_VERSION1;
+	bselsqlda->sqln=2;
+	isc_stmt_handle	bselstmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,
+							&bselstmt),0);
+	assertEquals((int)isc_dsql_prepare(fbstatus,&tr,&bselstmt,0,
+					bindselectquery,SQL_DIALECT_V6,
+					bselsqlda),0);
+	assertEquals(bselsqlda->sqld,2);
+	assertEquals(bselsqlda->sqlvar[0].aliasname,"TESTINTEGER");
+	assertEquals(bselsqlda->sqlvar[0].sqltype&~1,SQL_LONG);
+	assertEquals(bselsqlda->sqlvar[1].aliasname,"TESTVARCHAR");
+	assertEquals(bselsqlda->sqlvar[1].sqltype&~1,SQL_VARYING);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select with bind variable - describe_bind\n");
+	XSQLDA	*bindselinsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(1)];
+	bytestring::zero(bindselinsqlda,XSQLDA_LENGTH(1));
+	bindselinsqlda->version=SQLDA_VERSION1;
+	bindselinsqlda->sqln=1;
+	assertEquals((int)isc_dsql_describe_bind(fbstatus,&bselstmt,
+					SQL_DIALECT_V6,bindselinsqlda),0);
+	assertEquals(bindselinsqlda->sqld,1);
+	assertEquals(bindselinsqlda->sqlvar[0].sqltype&~1,SQL_LONG);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select with bind variable - execute and fetch\n");
+	// bind buffers have to be ISC_LONG, not C long - on LP64 a plain
+	// long is 8 bytes where SQL_LONG is 4, and the fetch then fails
+	// with a message-length error that looks like a module defect
+	ISC_LONG	bselval=7;
+	short		bselvalind=0;
+	bindselinsqlda->sqlvar[0].sqldata=(char *)&bselval;
+	bindselinsqlda->sqlvar[0].sqlind=&bselvalind;
+	// force the nullable bit on, so the indicator is honoured
+	bindselinsqlda->sqlvar[0].sqltype|=1;
+	short	bseloutind[2];
+	char	*bseloutbuffer[2];
+	int	bseloutcolcount=bindOutputBuffers(bselsqlda,bseloutind,
+							bseloutbuffer);
+	assertEquals(bseloutcolcount,2);
+	assertEquals((int)isc_dsql_execute(fbstatus,&tr,&bselstmt,
+					SQL_DIALECT_V6,bindselinsqlda),0);
+	assertEquals((int)isc_dsql_fetch(fbstatus,&bselstmt,
+					SQL_DIALECT_V6,bselsqlda),0);
+	assertEquals((int)bseloutind[0],0);
+	assertEquals((int)*((ISC_LONG *)bselsqlda->sqlvar[0].sqldata),7);
+	assertEquals((int)bseloutind[1],0);
+	PARAMVARY	*bselvary=(PARAMVARY *)bselsqlda->sqlvar[1].sqldata;
+	char	bselvarchar[64];
+	charstring::copy(bselvarchar,(char *)bselvary->vary_string,
+					bselvary->vary_length);
+	bselvarchar[bselvary->vary_length]='\0';
+	assertEquals(bselvarchar,"testvarchar7");
+	// two rows now match testinteger=7 - the one the statements section
+	// inserted and the one the binds section's round trip bound in
+	// above, both with identical column values
+	assertEquals((int)isc_dsql_fetch(fbstatus,&bselstmt,
+					SQL_DIALECT_V6,bselsqlda),0);
+	assertEquals((int)bseloutind[0],0);
+	assertEquals((int)*((ISC_LONG *)bselsqlda->sqlvar[0].sqldata),7);
+	assertEquals((int)bseloutind[1],0);
+	bselvary=(PARAMVARY *)bselsqlda->sqlvar[1].sqldata;
+	charstring::copy(bselvarchar,(char *)bselvary->vary_string,
+					bselvary->vary_length);
+	bselvarchar[bselvary->vary_length]='\0';
+	assertEquals(bselvarchar,"testvarchar7");
+	assertEquals((int)isc_dsql_fetch(fbstatus,&bselstmt,
+					SQL_DIALECT_V6,bselsqlda),100);
+	freeOutputBuffers(bseloutcolcount,bseloutbuffer);
+	isc_dsql_free_statement(fbstatus,&bselstmt,DSQL_drop);
+	delete[] (char *)bindselinsqlda;
+	delete[] (char *)bselsqlda;
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("isc_dsql_execute - null binds\n");
 	for (int col=0; col<12; col++) {
 		// null this column, leave the rest as row 7's values
