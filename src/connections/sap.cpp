@@ -359,6 +359,8 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		uint32_t	*outbindstringsizes;
 		int64_t		**outbindints;
 		double		**outbinddoubles;
+		uint32_t	**outbindprecisions;
+		uint32_t	**outbindscales;
 		datebind	*outbinddates;
 		int16_t		**outbindisnulls;
 		uint16_t	outbindindex;
@@ -2809,6 +2811,8 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	outbindstringsizes=new uint32_t[maxbindcount];
 	outbindints=new int64_t *[maxbindcount];
 	outbinddoubles=new double *[maxbindcount];
+	outbindprecisions=new uint32_t *[maxbindcount];
+	outbindscales=new uint32_t *[maxbindcount];
 	outbinddates=new datebind[maxbindcount];
 	outbindisnulls=new int16_t *[maxbindcount];
 
@@ -2850,6 +2854,8 @@ sapcursor::~sapcursor() {
 	delete[] outbindstringsizes;
 	delete[] outbindints;
 	delete[] outbinddoubles;
+	delete[] outbindprecisions;
+	delete[] outbindscales;
 	delete[] outbinddates;
 	delete[] outbindisnulls;
 
@@ -3785,6 +3791,12 @@ bool sapcursor::outputBind(const char *variable,
 
 	outbindtype[outbindindex]=CS_FLOAT_TYPE;
 	outbinddoubles[outbindindex]=value;
+	// the precision and scale are outputs too - the server reports them
+	// with the value, and fetchOutputParams() writes them back through
+	// these.  A numeric or decimal parameter loses its scale otherwise,
+	// and nothing downstream can tell 5.0000 from 5.
+	outbindprecisions[outbindindex]=precision;
+	outbindscales[outbindindex]=scale;
 	outbindisnulls[outbindindex]=isnull;
 	outbindindex++;
 
@@ -4276,6 +4288,37 @@ bool sapcursor::fetchOutputParams() {
 				*outbinddoubles[outidx]=
 					charstring::convertToFloatC(
 								paramdata[i]);
+
+				// The value is bound as a float, whatever the
+				// parameter really is, so it's the only thing
+				// that comes back through it.  The server's
+				// own description of the parameter still has
+				// the precision and scale, and a numeric or
+				// decimal needs them - 5.0000 is a
+				// numeric(10,4), not a float 5.
+				if (outbindprecisions[outidx] ||
+						outbindscales[outidx]) {
+					CS_DATAFMT	paramfmt;
+					bytestring::zero(&paramfmt,
+							sizeof(CS_DATAFMT));
+					if (ct_describe(cmd,i+1,&paramfmt)==
+								CS_SUCCEED) {
+						if (outbindprecisions
+								[outidx]) {
+							*outbindprecisions
+								[outidx]=
+								(uint32_t)
+								paramfmt.
+								precision;
+						}
+						if (outbindscales[outidx]) {
+							*outbindscales
+								[outidx]=
+								(uint32_t)
+								paramfmt.scale;
+						}
+					}
+				}
 			} else if (outbindtype[outidx]==CS_DATETIME_TYPE) {
 
 				// convert to a CS_DATEREC

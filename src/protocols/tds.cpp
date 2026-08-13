@@ -681,8 +681,11 @@ static byte_t	tdstypemap[]={
 
 // the widest a decimal or numeric can be on the wire - 1 sign byte plus up
 // to 16 bytes of magnitude
-#define TDS_DECIMAL_MAX_SIZE	17 
-#define SP_UNPREPARE		15 
+#define TDS_DECIMAL_MAX_SIZE	17
+
+// the most digits a decimal or numeric can carry
+#define TDS_DECIMAL_MAX_PRECISION	38
+#define SP_UNPREPARE		15
 
 #define SP_MAX_PROCID		15
 
@@ -1127,6 +1130,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					byte_t *ispositive,
 					byte_t *size,
 					byte_t *val);
+		byte_t	decimalSize(byte_t precision);
 		void	guid(const char *field, byte_t *g);
 		byte_t	charsToHex(const char *chars);
 
@@ -1387,12 +1391,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	returnValueDateTime(sqlrserverbindvar *bv,
 					byte_t tdstype,
 					uint32_t maxsize);
+		void	returnValueDecimal(sqlrserverbindvar *bv,
+					byte_t tdstype,
+					byte_t precision,
+					byte_t scale);
 		void	returnValueInteger(uint16_t ordinal,
 					int32_t value,
 					bool isnull);
 		void	returnValueHeader(uint16_t ordinal,
 						const char *name,
-						uint16_t namesize);
+						uint16_t namesize,
+						uint32_t usertype);
 		void	writeIntN(int64_t value, byte_t size);
 		void	doneProc(uint16_t status,
 					uint16_t curcmd,
@@ -1460,6 +1469,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint16_t		*rpcparamnamesizes;
 		byte_t			*rpcparamtdstypes;
 		uint32_t		*rpcparammaxsizes;
+		byte_t			*rpcparamprecisions;
+		byte_t			*rpcparamscales;
 		uint16_t		*outbindparams;
 		uint16_t		rpcparamcount;
 
@@ -1562,6 +1573,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	rpcparamnamesizes=new uint16_t[maxbindcount];
 	rpcparamtdstypes=new byte_t[maxbindcount];
 	rpcparammaxsizes=new uint32_t[maxbindcount];
+	rpcparamprecisions=new byte_t[maxbindcount];
+	rpcparamscales=new byte_t[maxbindcount];
 	outbindparams=new uint16_t[maxbindcount];
 	rpcparamcount=0;
 
@@ -1598,6 +1611,8 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] rpcparamnamesizes;
 	delete[] rpcparamtdstypes;
 	delete[] rpcparammaxsizes;
+	delete[] rpcparamprecisions;
+	delete[] rpcparamscales;
 	delete[] outbindparams;
 
 	delete[] bulkcolumns;
@@ -6241,6 +6256,22 @@ void sqlrprotocol_tds::decimal(const char *field,
 	delete[] copy;
 }
 
+byte_t sqlrprotocol_tds::decimalSize(byte_t precision) {
+
+	// How many bytes a decimal of a given precision occupies on the
+	// wire, counting the sign byte.  The client works this out from the
+	// precision it was sent, rather than from the length byte, so a
+	// value written at any other width decodes to garbage.
+	static const byte_t	size[]={
+		1,
+		2,  2,  3,  3,  4,  4,  4,  5,  5,
+		6,  6,  6,  7,  7,  8,  8,  9,  9,  9,
+		10, 10, 11, 11, 11, 12, 12, 13, 13, 14,
+		14, 14, 15, 15, 16, 16, 16, 17, 17
+	};
+	return (precision<sizeof(size))?size[precision]:TDS_DECIMAL_MAX_SIZE;
+}
+
 void sqlrprotocol_tds::guid(const char *field, byte_t *g) {
 
 	// convert string into 16 hex values...
@@ -10206,6 +10237,8 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	if (bv) {
 		rpcparamtdstypes[param]=tdstype;
 		rpcparammaxsizes[param]=maxsize;
+		rpcparamprecisions[param]=precision;
+		rpcparamscales[param]=scale;
 	}
 
 	// param data...
@@ -11425,7 +11458,8 @@ void sqlrprotocol_tds::returnValues(sqlrservercursor *cursor) {
 
 void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 						const char *name,
-						uint16_t namesize) {
+						uint16_t namesize,
+						uint32_t usertype) {
 
 	byte_t	token=TOKEN_RETURNVALUE;
 	write(&resppacket,token);
@@ -11451,9 +11485,9 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 
 	// user type
 	if (negotiatedtdsversion<720) {
-		writeLE(&resppacket,(uint16_t)0);
+		writeLE(&resppacket,(uint16_t)usertype);
 	} else {
-		writeLE(&resppacket,(uint32_t)0);
+		writeLE(&resppacket,usertype);
 	}
 
 	// flags - a real sql server sends none set, and the ct-lib client
@@ -11463,6 +11497,7 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 	writeLE(&resppacket,(uint16_t)0x0000);
 
 	debugWrite("ordinal: %d",ordinal);
+	debugWrite("usertype: %d",usertype);
 }
 
 void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
@@ -11471,7 +11506,7 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 
 	debugStart("return-value");
 
-	returnValueHeader(ordinal,NULL,0);
+	returnValueHeader(ordinal,NULL,0,0);
 
 	// type info - typeInfo() describes a column of a result set, so it
 	// can't be reused for a scalar like this
@@ -11640,6 +11675,95 @@ void sqlrprotocol_tds::returnValueDateTime(sqlrserverbindvar *bv,
 	debugWrite("value: %s",datetime);
 }
 
+void sqlrprotocol_tds::returnValueDecimal(sqlrserverbindvar *bv,
+						byte_t tdstype,
+						byte_t precision,
+						byte_t scale) {
+
+	// The nullable forms are the only ones a real server sends back,
+	// and the legacy fixed-size forms have no length byte to say null
+	// with, so a legacy declaration goes back as its nullable twin.
+	byte_t	outtype=(tdstype==TDS_TYPE_DECIMAL ||
+				tdstype==TDS_TYPE_DECIMALN)?
+				TDS_TYPE_DECIMALN:TDS_TYPE_NUMERICN;
+
+	// a client that declared no precision still gets a usable one
+	if (!precision) {
+		precision=18;
+	} else if (precision>TDS_DECIMAL_MAX_PRECISION) {
+		precision=TDS_DECIMAL_MAX_PRECISION;
+	}
+	if (scale>precision) {
+		scale=precision;
+	}
+
+	// type info - the size is the widest the value can be on the wire,
+	// not the precision, the same way typeInfo() sends it for a column
+	write(&resppacket,outtype);
+	write(&resppacket,(byte_t)TDS_DECIMAL_MAX_SIZE);
+	write(&resppacket,precision);
+	write(&resppacket,scale);
+	debugWrite("precision: %d",precision);
+	debugWrite("scale: %d",scale);
+
+	// the value, rendered at the declared scale.  the backend hands
+	// these back as doubles (see sapcursor::outputBind()), but take a
+	// string or an integer too, in case another backend doesn't.
+	char	field[64];
+	field[0]='\0';
+	bool	isnull=cont->getBindValueIsNull(bv->isnull);
+	if (!isnull) {
+		switch (bv->type) {
+			case SQLRSERVERBINDVARTYPE_DOUBLE:
+				charstring::printf(field,sizeof(field),
+					"%.*f",(int32_t)scale,
+					bv->value.doubleval.value);
+				break;
+			case SQLRSERVERBINDVARTYPE_INTEGER:
+				charstring::printf(field,sizeof(field),
+					"%.*f",(int32_t)scale,
+					(double)bv->value.integerval);
+				break;
+			case SQLRSERVERBINDVARTYPE_STRING:
+				charstring::printf(field,sizeof(field),
+					"%.*f",(int32_t)scale,
+					charstring::convertToFloatC(
+						(bv->value.stringval)?
+						bv->value.stringval:"0"));
+				break;
+			default:
+				isnull=true;
+				break;
+		}
+	}
+
+	// a length of 0 is how the protocol says null
+	if (isnull) {
+		write(&resppacket,(byte_t)0);
+		debugWrite("value: (null)");
+		return;
+	}
+
+	byte_t	ispositive;
+	byte_t	size;
+	byte_t	val[TDS_DECIMAL_MAX_SIZE-1];
+	bytestring::zero(val,sizeof(val));
+	decimal(field,&ispositive,&size,val);
+
+	// The width on the wire comes from the declared precision rather
+	// than from the value.  The client reads the sign byte and then as
+	// many magnitude bytes as that precision calls for, whatever length
+	// it was sent, so anything else decodes to garbage.  The magnitude
+	// is little-endian, so writing fewer bytes than decimal() produced
+	// only drops leading zeros, and writing more only adds them.
+	byte_t	wiresize=decimalSize(precision);
+	write(&resppacket,wiresize);
+	write(&resppacket,ispositive);
+	write(&resppacket,val,wiresize-1);
+
+	debugWrite("value: %s",field);
+}
+
 void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 						uint16_t param,
 						uint16_t ordinal) {
@@ -11652,15 +11776,38 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 	// the type the client declared
 	uint16_t	rpcparam=outbindparams[param];
 
-	returnValueHeader(ordinal,rpcparamnames[rpcparam],
-					rpcparamnamesizes[rpcparam]);
-
-	// a character or datetime output parameter goes back as the type the
-	// client declared, the way a real sql server echoes one - sql relay's
-	// own bind type can't tell a char(20) from a varchar(max), and
-	// ct_describe() reports whatever type arrives
+	// a character, datetime or decimal output parameter goes back as the
+	// type the client declared, the way a real sql server echoes one -
+	// sql relay's own bind type can't tell a char(20) from a
+	// varchar(max), or a numeric(10,4) from a float, and ct_describe()
+	// reports whatever type arrives
 	byte_t		declaredtype=rpcparamtdstypes[rpcparam];
 	uint32_t	declaredmaxsize=rpcparammaxsizes[rpcparam];
+	bool		isdecimal=(declaredtype==TDS_TYPE_NUMERIC ||
+					declaredtype==TDS_TYPE_NUMERICN ||
+					declaredtype==TDS_TYPE_DECIMAL ||
+					declaredtype==TDS_TYPE_DECIMALN);
+
+	// A real ase echoes a decimal output parameter's systypes usertype
+	// (28 for numeric, 27 for decimal) and the client asserts it.  It
+	// sends 0 for every other type, as mssql does for all of them, so
+	// nothing else needs one.
+	uint32_t	usertype=0;
+	if (isdecimal && dbisase) {
+		usertype=(declaredtype==TDS_TYPE_DECIMAL ||
+				declaredtype==TDS_TYPE_DECIMALN)?27:28;
+	}
+
+	returnValueHeader(ordinal,rpcparamnames[rpcparam],
+					rpcparamnamesizes[rpcparam],usertype);
+
+	if (isdecimal) {
+		returnValueDecimal(bv,declaredtype,
+					rpcparamprecisions[rpcparam],
+					rpcparamscales[rpcparam]);
+		debugEnd();
+		return;
+	}
 	if (isCharType(declaredtype)) {
 		returnValueChar(bv,declaredtype,declaredmaxsize);
 		debugEnd();

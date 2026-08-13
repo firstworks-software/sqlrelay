@@ -468,6 +468,14 @@
 	fixed the tds protocol module - a stored procedure call that failed in
 		front of a sap back end sent no return status, but a real ase
 		sends one even for a procedure that never ran
+	fixed the tds protocol module - a numeric or decimal rpc output
+		parameter came back as an 8 byte float with no precision or
+		scale.  The precision and scale the client declared are kept
+		now, and the value goes back as a numeric at the width that
+		precision calls for
+	fixed the sap connection module - an output bind's precision and scale
+		were never filled in, so a numeric(10,4) parameter arrived
+		upstream as a bare float
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
