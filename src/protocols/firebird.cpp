@@ -1643,6 +1643,9 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_receive:
 				case op_unwind:
 				case op_release:
+				// reconnecting to a limbo transaction needs
+				// a prepare to have succeeded first, and none
+				// ever do
 				case op_reconnect:
 				case op_info_request:
 				case op_aux_connect:
@@ -3582,6 +3585,9 @@ bool sqlrprotocol_firebird::rollbackRetaining() {
 				statusvectorlen);
 }
 
+// op_prepare and op_prepare2 are two-phase commit's first phase, a durable
+// promise that the second phase can't fail. The server api has no
+// distributed-transaction support to back that promise with.
 bool sqlrprotocol_firebird::prepare() {
 	return sendNotImplementedError();
 }
