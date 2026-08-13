@@ -1877,6 +1877,19 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		bool	getTranslateBindVariablesForThisQuery(
 						sqlrservercursor *cursor);
 
+		/** Sets whether bind variable translation is required for
+		 *  "cursor", to "require".  See
+		 *  sqlrservercursor::setRequireBindVariableTranslation(). */
+		void	setRequireBindVariableTranslation(
+						sqlrservercursor *cursor,
+						bool require);
+
+		/** Returns whether or not bind variable translation is
+		 *  required for "cursor".  See
+		 *  setRequireBindVariableTranslation(). */
+		bool	getRequireBindVariableTranslation(
+						sqlrservercursor *cursor);
+
 
 
 		// input bind variables...
@@ -5786,6 +5799,31 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  query will be translated.  See
 		 *  setTranslateBindVariablesForThisQuery(). */
 		bool	getTranslateBindVariablesForThisQuery();
+
+		/** Sets whether bind variable translation is required for this
+		 *  cursor, to "require", regardless of the value of the
+		 *  "translatebindvariables" attribute of the instance tag in
+		 *  the config file.
+		 *
+		 *  Some protocol modules can only ever emit one bind variable
+		 *  format on the wire (eg. the firebird protocol always uses
+		 *  "?"), so translating to whatever format the database
+		 *  actually requires isn't an optional migration aid for them,
+		 *  it's mandatory.  This lets such a module force translation
+		 *  on without the instance operator having to know to set
+		 *  "translatebindvariables" in the config file.
+		 *
+		 *  Like setTranslateBindVariablesForThisQuery(), this is reset
+		 *  (to false, in this case) each time this cursor is returned
+		 *  by sqlrservercontroller::getCursor(), since a pooled cursor
+		 *  may have last been used by a different protocol module that
+		 *  doesn't require translation.  A protocol module that
+		 *  requires it must call this again after every getCursor(). */
+		void	setRequireBindVariableTranslation(bool require);
+
+		/** Returns whether or not bind variable translation is required
+		 *  for this cursor.  See setRequireBindVariableTranslation(). */
+		bool	getRequireBindVariableTranslation();
 
 		/** Sets the type of the current query to "querytype". */
 		void	setQueryType(sqlrquerytype_t querytype);

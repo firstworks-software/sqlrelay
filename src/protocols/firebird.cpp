@@ -3741,6 +3741,10 @@ bool sqlrprotocol_firebird::allocateStatement() {
 					"Out of cursors",14);
 	}
 
+	// the wire format only ever binds by "?", so a query has to be
+	// translated to whatever format the backend actually requires
+	cont->setRequireBindVariableTranslation(cursor,true);
+
 	uint16_t	cursorid=cont->getId(cursor);
 
 	// the handle is the cursor id plus one, so it is never 0 - the client
@@ -4026,6 +4030,9 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 			return errorResponse(title,isc_dsql_error,"HY000",-901,
 						"Out of cursors",14);
 		}
+		// the wire format only ever binds by "?", so a query has to
+		// be translated to whatever format the backend requires
+		cont->setRequireBindVariableTranslation(cursor,true);
 	} else {
 		stmt=getStatement(stmthandle,&cursor);
 		if (!stmt) {
@@ -4420,6 +4427,9 @@ bool sqlrprotocol_firebird::execImmediate2() {
 					isc_dsql_error,"HY000",-901,
 					"Out of cursors",14);
 	}
+	// the wire format only ever binds by "?", so a query has to be
+	// translated to whatever format the backend actually requires
+	cont->setRequireBindVariableTranslation(cursor,true);
 	cont->getBindPool(cursor)->clear();
 	cont->setInputBindCount(cursor,0);
 
@@ -5911,6 +5921,7 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 	if (!probecursor) {
 		return;
 	}
+	cont->setRequireBindVariableTranslation(probecursor,true);
 
 	// a pooled cursor comes back with whatever binds its last user left
 	// on it, and nothing between release() and prepare clears them
@@ -6051,6 +6062,10 @@ sqlrfirebirdstatement *sqlrprotocol_firebird::getStatement(
 	if (!*cursor) {
 		return NULL;
 	}
+
+	// the wire format only ever binds by "?", so a query has to be
+	// translated to whatever format the backend actually requires
+	cont->setRequireBindVariableTranslation(*cursor,true);
 
 	return &statements[cursorid];
 }

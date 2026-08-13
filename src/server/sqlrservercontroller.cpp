@@ -2353,9 +2353,11 @@ sqlrservercursor *sqlrservercontroller::getCursor(uint16_t id) {
 	for (uint16_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]->getId()==id) {
 			incrementTimesCursorReused();
-			// reset the bind variable translation veto
+			// reset the bind variable translation veto and any
+			// requirement a previous user left behind
 			pvt->_cur[i]->
 				setTranslateBindVariablesForThisQuery(true);
+			pvt->_cur[i]->setRequireBindVariableTranslation(false);
 			return pvt->_cur[i];
 		}
 	}
@@ -2377,9 +2379,11 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 			debugWrite("available cursor: %hd",i);
 			pvt->_cur[i]->setState(SQLRCURSORSTATE_BUSY);
 			incrementTimesNewCursorUsed();
-			// reset the bind variable translation veto
+			// reset the bind variable translation veto and any
+			// requirement a previous user left behind
 			pvt->_cur[i]->
 				setTranslateBindVariablesForThisQuery(true);
+			pvt->_cur[i]->setRequireBindVariableTranslation(false);
 			debugEnd();
 			return pvt->_cur[i];
 		}
@@ -2423,8 +2427,10 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 	// return the first new cursor that we created
 	pvt->_cur[firstnewcursor]->setState(SQLRCURSORSTATE_BUSY);
 	incrementTimesNewCursorUsed();
-	// reset the bind variable translation veto
+	// reset the bind variable translation veto and any requirement a
+	// previous user left behind
 	pvt->_cur[firstnewcursor]->setTranslateBindVariablesForThisQuery(true);
+	pvt->_cur[firstnewcursor]->setRequireBindVariableTranslation(false);
 	debugEnd();
 	return pvt->_cur[firstnewcursor];
 }
@@ -5713,7 +5719,8 @@ bool sqlrservercontroller::prepareQuery(sqlrservercursor *cursor,
 	}
 
 	// translate bind variables
-	if (pvt->_translatebinds &&
+	if ((pvt->_translatebinds ||
+			cursor->getRequireBindVariableTranslation()) &&
 			cursor->getTranslateBindVariablesForThisQuery()) {
 		translateBindVariables(cursor);
 	}
@@ -5950,7 +5957,8 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		}
 
 		// translate bind variables
-		if (pvt->_translatebinds &&
+		if ((pvt->_translatebinds ||
+				cursor->getRequireBindVariableTranslation()) &&
 				cursor->
 				getTranslateBindVariablesForThisQuery()) {
 			translateBindVariables(cursor);
@@ -12440,6 +12448,17 @@ void sqlrservercontroller::setTranslateBindVariablesForThisQuery(
 bool sqlrservercontroller::getTranslateBindVariablesForThisQuery(
 					sqlrservercursor *cursor) {
 	return cursor->getTranslateBindVariablesForThisQuery();
+}
+
+void sqlrservercontroller::setRequireBindVariableTranslation(
+					sqlrservercursor *cursor,
+					bool require) {
+	cursor->setRequireBindVariableTranslation(require);
+}
+
+bool sqlrservercontroller::getRequireBindVariableTranslation(
+					sqlrservercursor *cursor) {
+	return cursor->getRequireBindVariableTranslation();
 }
 
 void sqlrservercontroller::setInputBindCount(sqlrservercursor *cursor,
