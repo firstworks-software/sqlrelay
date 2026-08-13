@@ -70,7 +70,9 @@ enum sqlrserverbindvartype_t {
 
 	// special types for bulk load
 	SQLRSERVERBINDVARTYPE_DELIMITER,
-	SQLRSERVERBINDVARTYPE_NEWLINE
+	SQLRSERVERBINDVARTYPE_NEWLINE,
+
+	SQLRSERVERBINDVARTYPE_ARRAY
 };
 
 enum sqlrserverlistformat_t {
@@ -4759,6 +4761,25 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 						uint32_t valuesize,
 						const uint32_t *segmentlengths,
 						uint16_t segmentcount,
+						int16_t *isnull);
+
+		/** Binds array value "value", of "valuesize" bytes, with
+		 *  null indicator "isnull" to input bind variable "variable"
+		 *  of "variablesize" bytes.  "value" is the array's elements,
+		 *  rendered as a bracketed, comma-separated list,
+		 *  eg. "{1,2,3}".
+		 *
+		 *  Returns true if the bind succeeded and false otherwise.
+		 *
+		 *  This method just calls the inputBind() method for strings,
+		 *  but may be overridden by a child class whose database API
+		 *  supports arrays natively.  A backend connection module with
+		 *  no native array support may just leave it alone and let the
+		 *  value be bound as a string. */
+		virtual	bool	inputBindArray(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
 						int16_t *isnull);
 
 		/** Binds character buffer "value", of "valuesize" bytes, and

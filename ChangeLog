@@ -626,9 +626,7 @@
 		the firebird protocol module implements op_get_slice now, backed by a
 			new sdl (slice description language) buffer interpreter; a native
 			firebird client can isc_get_slice() a whole array or a sub-range
-			of one and get real data back instead of an isc_wish_list error;
-			op_put_slice (writing a slice) is still unimplemented - it needs
-			a bind-side array type this ticket didn't add
+			of one and get real data back instead of an isc_wish_list error
 		the firebird protocol module speaks the protocol 13 packed message
 			format now - the null indicators come first as one bit per
 			field, and a null field's value is left off the wire entirely -
@@ -684,6 +682,69 @@
 			for a null value and 0 for anything else, and a cstring item
 			goes over length-first rather than at its declared width, the
 			way firebird's own xdr writes one
+		added an array bind variable type to the server api -
+			SQLRSERVERBINDVARTYPE_ARRAY and
+			sqlrservercursor::inputBindArray(), which takes the array's
+			elements as a bracketed, comma-separated list, eg. "{1,2,3}",
+			and falls back to a plain string bind for a connection module
+			with no native array support
+		added sqlrcursor::inputBindArray() to the c++ client api, which
+			sends the array's elements as a bracketed,
+			comma-separated list, eg. "{1,2,3}", tagged with the new
+			array bind type that the sqlrclient protocol module
+			hands to the connection module
+		the firebird connection module implements
+			inputBindArray() now - it looks the column's shape up
+			with isc_array_lookup_bounds(), converts the
+			bracketed, comma-separated elements to the column's
+			native element representation, and writes them with
+			isc_array_put_slice(), binding the array id it gets
+			back; the element types it converts are the ones the
+			read side renders, so the wide decimal types (dec64,
+			dec128, int128) and the timezone-bearing types aren't
+			among them
+		the firebird protocol module implements op_put_slice now, so a
+			native firebird client can isc_array_put_slice() an
+			array and bind it into an insert or update; an array
+			id carries a high word of its own now, since a bind
+			parameter's blr_quad says nothing about whether the id
+			names an array or a blob and the two counters could
+			otherwise hand out the same id
+		fixed the firebird connection module - the prepare left the input
+			sqlda's sqln at that statement's parameter count, so the next
+			statement's isc_dsql_describe_bind() reported the parameter
+			count but quietly left the sqlvar entries describing the
+			previous statement; an array bind reads that description to
+			find the column whose shape it looks up, so an array bind
+			right after a statement with fewer parameters fell back to a
+			string bind and failed with "Unsupported conversion to target
+			type ARRAY"
+		fixed the firebird connection module's array bind - an element
+			that didn't parse as a number (garbage text, or a bind
+			value with no surrounding braces at all) was silently
+			written as 0 instead of failing the bind; it now checks
+			that the numeric conversion actually consumed the text and
+			rejects a value that isn't bracketed, while still accepting
+			the forms that already worked, like a leading "+", exponent
+			notation, and whitespace around an element
+		fixed the firebird connection module's array bind - a failure
+			with no preceding isc_* call, like an element count that
+			doesn't match the column's declared bounds or the new
+			invalid-element check above, left the client with whatever
+			isc status an earlier successful call happened to leave
+			behind instead of a real error message
+		fixed the firebird protocol module's op_put_slice - several
+			early-return error paths, and the case where a client sent
+			more slice elements than the array could hold, left the
+			bytes the client had already promised unread on the wire,
+			desynchronizing every op that followed; they're drained
+			now, and a path with no way to know the wire width of what
+			it needs to drain closes the connection instead of
+			guessing
+		a native firebird client writing a floating-point or
+			timestamp array through op_put_slice is limited to the
+			same precision the read side already renders - four
+			decimal places, and no sub-second timestamp component
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

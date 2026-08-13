@@ -376,6 +376,399 @@ static bool firebirdAppendArrayElement(stringbuffer *output,
 	}
 }
 
+// strips the quotes firebirdAppendArrayElement() put around a text, date, or
+// time element, if they're there
+static void firebirdTrimArrayElementQuotes(const char **text,
+						uint32_t *textlen) {
+	if (*textlen>=2 && (*text)[0]=='\'' && (*text)[*textlen-1]=='\'') {
+		(*text)++;
+		(*textlen)=(*textlen)-2;
+	}
+}
+
+// the inverse of firebirdFormatScaledInt64() - reads a decimal number out of
+// text and scales it back up to the int64 firebird stores
+static bool firebirdParseScaledInt64(const char *text, uint32_t textlen,
+					short sqlscale, ISC_INT64 *value) {
+
+	ISC_SHORT	scale=-sqlscale;
+
+	uint32_t	pos=0;
+	bool		negative=false;
+	if (pos<textlen && (text[pos]=='-' || text[pos]=='+')) {
+		negative=(text[pos]=='-');
+		pos++;
+	}
+
+	// the digits to the left of the decimal point
+	ISC_INT64	v=0;
+	bool		gotdigit=false;
+	while (pos<textlen && text[pos]>='0' && text[pos]<='9') {
+		v=v*10+(text[pos]-'0');
+		gotdigit=true;
+		pos++;
+	}
+
+	// the digits to the right of it, padded out to the scale with zeros,
+	// or truncated to it if the value came in with more precision than
+	// the column has
+	ISC_SHORT	fracdigits=0;
+	if (pos<textlen && text[pos]=='.') {
+		pos++;
+		while (pos<textlen && text[pos]>='0' && text[pos]<='9') {
+			if (fracdigits<scale) {
+				v=v*10+(text[pos]-'0');
+				fracdigits++;
+			}
+			gotdigit=true;
+			pos++;
+		}
+	}
+	while (fracdigits<scale) {
+		v=v*10;
+		fracdigits++;
+	}
+
+	if (!gotdigit || pos!=textlen) {
+		return false;
+	}
+
+	*value=(negative)?-v:v;
+	return true;
+}
+
+// reads count decimal digits out of text at *pos
+static bool firebirdParseArrayDigits(const char *text, uint32_t textlen,
+					uint32_t *pos, uint8_t count,
+					int32_t *value) {
+	int32_t	v=0;
+	for (uint8_t i=0; i<count; i++) {
+		if (*pos>=textlen || text[*pos]<'0' || text[*pos]>'9') {
+			return false;
+		}
+		v=v*10+(text[*pos]-'0');
+		(*pos)++;
+	}
+	*value=v;
+	return true;
+}
+
+// the inverse of the date/time/timestamp rendering in
+// firebirdAppendArrayElement() - reads yyyy-mm-dd, hh:mm:ss, or both
+static bool firebirdParseArrayDateTime(const char *text, uint32_t textlen,
+					bool wantdate, bool wanttime, tm *ts) {
+
+	firebirdTrimArrayElementQuotes(&text,&textlen);
+
+	bytestring::zero(ts,sizeof(tm));
+	ts->tm_mday=1;
+	ts->tm_isdst=-1;
+
+	uint32_t	pos=0;
+
+	if (wantdate) {
+		int32_t	year=0;
+		int32_t	month=0;
+		int32_t	day=0;
+		if (!firebirdParseArrayDigits(text,textlen,&pos,4,&year) ||
+			pos>=textlen || text[pos]!='-') {
+			return false;
+		}
+		pos++;
+		if (!firebirdParseArrayDigits(text,textlen,&pos,2,&month) ||
+			pos>=textlen || text[pos]!='-') {
+			return false;
+		}
+		pos++;
+		if (!firebirdParseArrayDigits(text,textlen,&pos,2,&day)) {
+			return false;
+		}
+		ts->tm_year=year-1900;
+		ts->tm_mon=month-1;
+		ts->tm_mday=day;
+	}
+
+	if (wantdate && wanttime) {
+		// a space or a T between the two halves
+		if (pos<textlen && (text[pos]==' ' || text[pos]=='T')) {
+			pos++;
+		} else if (pos==textlen) {
+			// a date with no time of day is midnight
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	if (wanttime) {
+		int32_t	hour=0;
+		int32_t	minute=0;
+		int32_t	second=0;
+		if (!firebirdParseArrayDigits(text,textlen,&pos,2,&hour) ||
+			pos>=textlen || text[pos]!=':') {
+			return false;
+		}
+		pos++;
+		if (!firebirdParseArrayDigits(text,textlen,&pos,2,&minute) ||
+			pos>=textlen || text[pos]!=':') {
+			return false;
+		}
+		pos++;
+		if (!firebirdParseArrayDigits(text,textlen,&pos,2,&second)) {
+			return false;
+		}
+		ts->tm_hour=hour;
+		ts->tm_min=minute;
+		ts->tm_sec=second;
+
+		// a fractional second, if there is one, is dropped - the
+		// rendering that this parses back never writes one
+		if (pos<textlen && text[pos]=='.') {
+			pos++;
+			while (pos<textlen && text[pos]>='0' &&
+						text[pos]<='9') {
+				pos++;
+			}
+		}
+	}
+
+	return (pos==textlen);
+}
+
+// convertToInteger()/convertToFloat() both return 0 for text that isn't a
+// number at all, the same as they'd return for a literal "0" - so a 0 result
+// can't be trusted on its own.  This checks that the conversion actually
+// consumed the text (rather than stopping at the first character) and that
+// nothing but trailing whitespace is left over, so garbage input is caught
+// instead of silently becoming zero.
+static bool firebirdValidArrayNumber(const char *buffer, const char *endptr) {
+	if (endptr==buffer) {
+		return false;
+	}
+	while (*endptr==' ' || *endptr=='\t') {
+		endptr++;
+	}
+	return (*endptr=='\0');
+}
+
+// The inverse of firebirdAppendArrayElement() - converts one element's text
+// into the raw bytes isc_array_put_slice() expects, at the stride
+// firebirdArrayElementSize() reports.  Returns false for an element type
+// with no text rendering here, or for text that doesn't parse, so that a
+// value that can't be converted fails the bind rather than getting written
+// as garbage.  The types covered are exactly the ones
+// firebirdAppendArrayElement() renders - the wide decimal types (dec64,
+// dec128, int128) and the timezone-bearing types are not among them.
+static bool firebirdParseArrayElement(const ISC_ARRAY_DESC *desc,
+					byte_t *element,
+					uint32_t elementsize,
+					const char *text,
+					uint32_t textlen) {
+
+	// the elements are packed, so nothing about them is guaranteed to be
+	// aligned - each one is built in a local and copied out
+	char	buffer[FIREBIRD_WIDEDECIMAL_TEXTLEN];
+
+	// the numeric types all parse out of a null-terminated copy
+	switch (desc->array_desc_dtype) {
+		case blr_short:
+		case blr_long:
+		case blr_int64:
+		case blr_float:
+		case blr_double:
+		case blr_d_float:
+		case blr_bool:
+			if (textlen>=sizeof(buffer)) {
+				return false;
+			}
+			charstring::copy(buffer,text,textlen);
+			buffer[textlen]='\0';
+			break;
+		default:
+			break;
+	}
+
+	switch (desc->array_desc_dtype) {
+
+		case blr_short:
+			{
+			ISC_INT64	v=0;
+			if (desc->array_desc_scale) {
+				if (!firebirdParseScaledInt64(text,textlen,
+						desc->array_desc_scale,&v)) {
+					return false;
+				}
+			} else {
+				const char	*endptr=NULL;
+				v=(ISC_INT64)charstring::
+					convertToInteger(buffer,&endptr);
+				if (!firebirdValidArrayNumber(
+							buffer,endptr)) {
+					return false;
+				}
+			}
+			ISC_SHORT	s=(ISC_SHORT)v;
+			bytestring::copy(element,&s,sizeof(s));
+			return true;
+			}
+
+		case blr_long:
+			{
+			ISC_INT64	v=0;
+			if (desc->array_desc_scale) {
+				if (!firebirdParseScaledInt64(text,textlen,
+						desc->array_desc_scale,&v)) {
+					return false;
+				}
+			} else {
+				const char	*endptr=NULL;
+				v=(ISC_INT64)charstring::
+					convertToInteger(buffer,&endptr);
+				if (!firebirdValidArrayNumber(
+							buffer,endptr)) {
+					return false;
+				}
+			}
+			ISC_LONG	l=(ISC_LONG)v;
+			bytestring::copy(element,&l,sizeof(l));
+			return true;
+			}
+
+		case blr_int64:
+			{
+			ISC_INT64	v=0;
+			if (desc->array_desc_scale) {
+				if (!firebirdParseScaledInt64(text,textlen,
+						desc->array_desc_scale,&v)) {
+					return false;
+				}
+			} else {
+				const char	*endptr=NULL;
+				v=(ISC_INT64)charstring::
+					convertToInteger(buffer,&endptr);
+				if (!firebirdValidArrayNumber(
+							buffer,endptr)) {
+					return false;
+				}
+			}
+			bytestring::copy(element,&v,sizeof(v));
+			return true;
+			}
+
+		case blr_float:
+			{
+			const char	*endptr=NULL;
+			float	v=(float)charstring::
+					convertToFloat(buffer,&endptr);
+			if (!firebirdValidArrayNumber(buffer,endptr)) {
+				return false;
+			}
+			bytestring::copy(element,&v,sizeof(v));
+			return true;
+			}
+
+		case blr_double:
+		case blr_d_float:
+			{
+			const char	*endptr=NULL;
+			double	v=charstring::convertToFloat(buffer,&endptr);
+			if (!firebirdValidArrayNumber(buffer,endptr)) {
+				return false;
+			}
+			bytestring::copy(element,&v,sizeof(v));
+			return true;
+			}
+
+		case blr_bool:
+			element[0]=(charstring::compare(buffer,"0") &&
+					charstring::compareIgnoringCase(
+							buffer,"false") &&
+					buffer[0])?1:0;
+			return true;
+
+		case blr_timestamp:
+			{
+			tm	ts;
+			if (!firebirdParseArrayDateTime(text,textlen,
+							true,true,&ts)) {
+				return false;
+			}
+			ISC_TIMESTAMP	v;
+			#ifdef SQL_TIMESTAMP
+			isc_encode_timestamp(&ts,&v);
+			#else
+			isc_encode_date(&ts,&v);
+			#endif
+			bytestring::copy(element,&v,sizeof(v));
+			return true;
+			}
+
+		#ifdef SQL_TIMESTAMP
+		case blr_sql_date:
+			{
+			tm	d;
+			if (!firebirdParseArrayDateTime(text,textlen,
+							true,false,&d)) {
+				return false;
+			}
+			ISC_DATE	v=0;
+			isc_encode_sql_date(&d,&v);
+			bytestring::copy(element,&v,sizeof(v));
+			return true;
+			}
+
+		case blr_sql_time:
+			{
+			tm	t;
+			if (!firebirdParseArrayDateTime(text,textlen,
+							false,true,&t)) {
+				return false;
+			}
+			ISC_TIME	v=0;
+			isc_encode_sql_time(&t,&v);
+			bytestring::copy(element,&v,sizeof(v));
+			return true;
+			}
+		#endif
+
+		case blr_text:
+		case blr_text2:
+			{
+			// a text element is stored blank padded out to its
+			// width, and anything longer than that is truncated
+			firebirdTrimArrayElementQuotes(&text,&textlen);
+			uint32_t	len=textlen;
+			if (len>elementsize) {
+				len=elementsize;
+			}
+			bytestring::copy(element,text,len);
+			bytestring::set(element+len,' ',elementsize-len);
+			return true;
+			}
+
+		case blr_cstring:
+		case blr_cstring2:
+		case blr_varying:
+		case blr_varying2:
+			{
+			// firebird's sdl_desc() describes a varying array
+			// element as a cstring, so both are stored
+			// null-terminated inside the element's width
+			firebirdTrimArrayElementQuotes(&text,&textlen);
+			uint32_t	len=textlen;
+			if (len>elementsize-1) {
+				len=elementsize-1;
+			}
+			bytestring::copy(element,text,len);
+			bytestring::zero(element+len,elementsize-len);
+			return true;
+			}
+
+		default:
+			return false;
+	}
+}
+
 // the XSQLDA carries no declared precision for a NUMERIC/DECIMAL column,
 // only the storage type firebird chose to fit it (the narrowest of
 // SMALLINT/INTEGER/BIGINT), so this reports that storage type's max
@@ -501,6 +894,13 @@ struct inbinddescribestruct {
 	short		sqlscale;
 	short		sqlsubtype;
 	short		sqllen;
+	// the relation and field the parameter refers to, which is what an
+	// array bind has to look the column's shape up by - see
+	// inputBindArray()
+	short		relnamelength;
+	char		relname[sizeof(((XSQLVAR *)NULL)->relname)+1];
+	short		sqlnamelength;
+	char		sqlname[sizeof(((XSQLVAR *)NULL)->sqlname)+1];
 };
 
 struct datebind {
@@ -562,6 +962,11 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 						uint32_t valuesize,
 						const uint32_t *segmentlengths,
 						uint16_t segmentcount,
+						int16_t *isnull);
+		bool		inputBindArray(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
 						int16_t *isnull);
 		bool		inputBindClob(const char *variable,
 						uint16_t variablesize,
@@ -685,6 +1090,7 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		XSQLDA	ISC_FAR	*inbindsqlda;
 		ISC_TIMESTAMP	*inbindts;
 		ISC_QUAD	*inbindblobid;
+		ISC_QUAD	*inbindarrayid;
 		isc_blob_handle	*inbindblobhandle;
 		inbinddescribestruct	*inbinddescribe;
 		uint16_t	inbindcountfromprepare;
@@ -2930,6 +3336,7 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	inbindsqlda->sqln=maxbindcount;
 	inbindts=new ISC_TIMESTAMP[maxbindcount];
 	inbindblobid=new ISC_QUAD[maxbindcount];
+	inbindarrayid=new ISC_QUAD[maxbindcount];
 	inbindblobhandle=new isc_blob_handle[maxbindcount];
 	inbinddescribe=new inbinddescribestruct[maxbindcount];
 	inbindcountfromprepare=0;
@@ -2961,6 +3368,7 @@ firebirdcursor::~firebirdcursor() {
 	delete[] inbindsqlda;
 	delete[] inbindts;
 	delete[] inbindblobid;
+	delete[] inbindarrayid;
 	delete[] inbindblobhandle;
 	delete[] inbinddescribe;
 
@@ -3088,8 +3496,14 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 	ISC_LONG	len=isc_vax_integer((char *)(resbuffer+1),2);
 	querytype=isc_vax_integer((char *)(resbuffer+3),len);
 
-	// find bind parameters, if any
+	// find bind parameters, if any.  sqln is how many sqlvar entries
+	// isc_dsql_describe_bind() may fill in, so it has to be reset to the
+	// number allocated first.  The previous statement's prepare left it
+	// at that statement's parameter count, and a lower count here makes
+	// describe_bind report sqld but quietly leave the sqlvar entries
+	// alone, so they'd still describe the previous statement.
 	inbindsqlda->sqld=0;
+	inbindsqlda->sqln=maxbindcount;
 	if (isc_dsql_describe_bind(firebirdconn->error,&stmt,1,inbindsqlda)) {
 		return false;
 	}
@@ -3103,6 +3517,32 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		inbinddescribe[i].sqlscale=inbindsqlda->sqlvar[i].sqlscale;
 		inbinddescribe[i].sqlsubtype=inbindsqlda->sqlvar[i].sqlsubtype;
 		inbinddescribe[i].sqllen=inbindsqlda->sqlvar[i].sqllen;
+
+		// the names too - an array bind needs them to look the
+		// column's shape up, and inputBind() blanks them
+		short	relnamelength=inbindsqlda->sqlvar[i].relname_length;
+		if (relnamelength<0 ||
+			relnamelength>(short)
+				sizeof(inbindsqlda->sqlvar[i].relname)) {
+			relnamelength=0;
+		}
+		inbinddescribe[i].relnamelength=relnamelength;
+		charstring::copy(inbinddescribe[i].relname,
+					inbindsqlda->sqlvar[i].relname,
+					relnamelength);
+		inbinddescribe[i].relname[relnamelength]='\0';
+
+		short	sqlnamelength=inbindsqlda->sqlvar[i].sqlname_length;
+		if (sqlnamelength<0 ||
+			sqlnamelength>(short)
+				sizeof(inbindsqlda->sqlvar[i].sqlname)) {
+			sqlnamelength=0;
+		}
+		inbinddescribe[i].sqlnamelength=sqlnamelength;
+		charstring::copy(inbinddescribe[i].sqlname,
+					inbindsqlda->sqlvar[i].sqlname,
+					sqlnamelength);
+		inbinddescribe[i].sqlname[sqlnamelength]='\0';
 	}
 
 	// describe the result set now, so the column info is valid straight
@@ -3332,6 +3772,191 @@ bool firebirdcursor::inputBindBlob(const char *variable,
 	inbindsqlda->sqlvar[index].sqlsubtype=0;
 	inbindsqlda->sqlvar[index].sqllen=sizeof(ISC_QUAD);
 	inbindsqlda->sqlvar[index].sqldata=(char *)&inbindblobid[index];
+	inbindsqlda->sqlvar[index].sqlind=isnull;
+	inbindsqlda->sqlvar[index].sqlname_length=0;
+	inbindsqlda->sqlvar[index].sqlname[0]='\0';
+	inbindsqlda->sqlvar[index].relname_length=0;
+	inbindsqlda->sqlvar[index].relname[0]='\0';
+	inbindsqlda->sqlvar[index].ownname_length=0;
+	inbindsqlda->sqlvar[index].ownname[0]='\0';
+	inbindsqlda->sqlvar[index].aliasname_length=0;
+	inbindsqlda->sqlvar[index].aliasname[0]='\0';
+	return true;
+}
+
+bool firebirdcursor::inputBindArray(const char *variable,
+					uint16_t variablesize,
+					const char *value,
+					uint32_t valuesize,
+					int16_t *isnull) {
+
+	// make bind vars 1 based like all other db's
+	long	index=charstring::convertToInteger(variable+1)-1;
+	if (index<0) {
+		bindformaterror=true;
+		return false;
+	}
+
+	// A null, a parameter the prepare didn't describe as an array, and a
+	// parameter with no relation/field name to look the shape up by all
+	// bind the value as plain text instead.  isc_array_lookup_bounds()
+	// finds the column by name, so there is nothing else to try, and a
+	// shape this module didn't expect is better reported by the backend
+	// than guessed at here.
+	if ((isnull && *isnull==(int16_t)-1) ||
+		index>=(long)inbindcountfromprepare ||
+		(inbinddescribe[index].sqltype!=SQL_ARRAY &&
+			inbinddescribe[index].sqltype!=SQL_ARRAY+1) ||
+		!inbinddescribe[index].relnamelength ||
+		!inbinddescribe[index].sqlnamelength) {
+		return inputBind(variable,variablesize,
+					value,valuesize,(short *)isnull);
+	}
+
+	// look up the column's shape
+	ISC_ARRAY_DESC	desc;
+	bytestring::zero(&desc,sizeof(desc));
+	if (isc_array_lookup_bounds(firebirdconn->error,
+					&firebirdconn->db,
+					&firebirdconn->tr,
+					inbinddescribe[index].relname,
+					inbinddescribe[index].sqlname,
+					&desc)) {
+		return false;
+	}
+
+	if (desc.array_desc_dimensions<1 ||
+		desc.array_desc_dimensions>
+			(short)(sizeof(desc.array_desc_bounds)/
+				sizeof(desc.array_desc_bounds[0]))) {
+		bindformaterror=true;
+		return false;
+	}
+
+	// how many elements the column holds, and how wide each one is
+	uint64_t	elementcount=1;
+	for (short d=0; d<desc.array_desc_dimensions; d++) {
+		int32_t	lower=desc.array_desc_bounds[d].array_bound_lower;
+		int32_t	upper=desc.array_desc_bounds[d].array_bound_upper;
+		if (upper<lower) {
+			bindformaterror=true;
+			return false;
+		}
+		elementcount=elementcount*(uint64_t)(upper-lower+1);
+
+		// bail rather than let the count wrap around - see
+		// fetchArrayField()
+		if (elementcount>MAX_ARRAY_BUFFER_SIZE) {
+			bindformaterror=true;
+			return false;
+		}
+	}
+
+	uint32_t	elementsize=firebirdArrayElementSize(
+					(byte_t)desc.array_desc_dtype,
+					desc.array_desc_length);
+	if (!elementcount || !elementsize) {
+		bindformaterror=true;
+		return false;
+	}
+
+	uint64_t	buffersize=elementcount*elementsize;
+	if (buffersize>MAX_ARRAY_BUFFER_SIZE) {
+		bindformaterror=true;
+		return false;
+	}
+
+	// the value must be a bracketed, comma-separated list - the same
+	// rendering getField() produces for an array column - anything else
+	// (no braces at all, or text that just happens to start and end with
+	// one) is not an array literal and must fail the bind rather than
+	// get parsed as if it were one
+	if (valuesize<2 || value[0]!='{' || value[valuesize-1]!='}') {
+		bindformaterror=true;
+		return false;
+	}
+	const char	*elements=value+1;
+	uint32_t	elementslen=valuesize-2;
+
+	// An element the value didn't supply still occupies its slot in the
+	// buffer, so the slots start out empty rather than uninitialized -
+	// blanks for a text element, since that's how firebird pads one, and
+	// zeros for everything else.
+	byte_t	*buffer=new byte_t[buffersize];
+	if (desc.array_desc_dtype==blr_text ||
+		desc.array_desc_dtype==blr_text2) {
+		bytestring::set(buffer,' ',(size_t)buffersize);
+	} else {
+		bytestring::zero(buffer,(size_t)buffersize);
+	}
+
+	uint64_t	parsed=0;
+	uint32_t	pos=0;
+	while (pos<elementslen) {
+
+		// this element runs to the next comma that isn't inside
+		// quotes
+		uint32_t	start=pos;
+		bool		inquotes=false;
+		while (pos<elementslen && (inquotes || elements[pos]!=',')) {
+			if (elements[pos]=='\'') {
+				inquotes=!inquotes;
+			}
+			pos++;
+		}
+		uint32_t	len=pos-start;
+		if (pos<elementslen) {
+			pos++;
+		}
+
+		// more elements than the column holds
+		if (parsed>=elementcount) {
+			delete[] buffer;
+			bindformaterror=true;
+			return false;
+		}
+
+		if (!firebirdParseArrayElement(&desc,
+					buffer+parsed*elementsize,
+					elementsize,
+					elements+start,len)) {
+			delete[] buffer;
+			bindformaterror=true;
+			return false;
+		}
+
+		parsed++;
+	}
+
+	// A zeroed id makes isc_array_put_slice() create a new array and hand
+	// back its id.  The array is temporary until the transaction the
+	// statement runs in commits, which is why this has to happen here,
+	// at bind time, rather than anywhere further out.
+	bytestring::zero(&inbindarrayid[index],sizeof(ISC_QUAD));
+
+	ISC_LONG	slicelength=(ISC_LONG)buffersize;
+	if (isc_array_put_slice(firebirdconn->error,
+				&firebirdconn->db,
+				&firebirdconn->tr,
+				&inbindarrayid[index],
+				&desc,
+				buffer,
+				&slicelength)) {
+		// the reason is in the connection's status vector.  Unlike
+		// the read side, this doesn't fall back to null - a write
+		// that failed must not look like a successful insert of an
+		// empty array.
+		delete[] buffer;
+		return false;
+	}
+
+	delete[] buffer;
+
+	inbindsqlda->sqlvar[index].sqltype=SQL_ARRAY+1;
+	inbindsqlda->sqlvar[index].sqlscale=0;
+	inbindsqlda->sqlvar[index].sqlsubtype=0;
+	inbindsqlda->sqlvar[index].sqllen=sizeof(ISC_QUAD);
+	inbindsqlda->sqlvar[index].sqldata=(char *)&inbindarrayid[index];
 	inbindsqlda->sqlvar[index].sqlind=isnull;
 	inbindsqlda->sqlvar[index].sqlname_length=0;
 	inbindsqlda->sqlvar[index].sqlname[0]='\0';

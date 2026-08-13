@@ -2535,7 +2535,14 @@ bool sqlrprotocol_sqlrclient::getInputBinds(sqlrservercursor *cursor) {
 				debugEnd();
 				return false;
 			}
-		}		  
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_ARRAY) {
+			// an array bind arrives as text - the elements
+			// rendered as a bracketed, comma-separated list
+			if (!getStringBind(cursor,bv,bindpool)) {
+				debugEnd();
+				return false;
+			}
+		}
 	}
 
 	debugEnd();
@@ -3128,7 +3135,8 @@ bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,
 						sqlrserverbindvar *bv,
 						memorypool *bindpool) {
 
-	debugWrite("STRING");
+	debugWrite("%s",(bv->type==SQLRSERVERBINDVARTYPE_ARRAY)?
+							"ARRAY":"STRING");
 
 	// init
 	bv->value.stringval=NULL;

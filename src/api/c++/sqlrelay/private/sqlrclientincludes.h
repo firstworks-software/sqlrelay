@@ -27,7 +27,13 @@ enum sqlrclientbindvartype_t {
 	SQLRCLIENTBINDVARTYPE_BLOB,
 	SQLRCLIENTBINDVARTYPE_CLOB,
 	SQLRCLIENTBINDVARTYPE_CURSOR,
-	SQLRCLIENTBINDVARTYPE_DATE
+	SQLRCLIENTBINDVARTYPE_DATE,
+
+	// These values are sent over the wire as-is and must match the
+	// corresponding sqlrserverbindvartype_t values.  8 and 9 are
+	// skipped because they are server-side bulk-load-only types
+	// (DELIMITER and NEWLINE) that the client never sends.
+	SQLRCLIENTBINDVARTYPE_ARRAY=10
 };
 
 enum sqlrclientlistformat_t {

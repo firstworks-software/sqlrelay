@@ -1282,6 +1282,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 						const char *value,
 						uint32_t size);
 
+		/** Defines an array input bind variable.  "value" is the
+		 *  array's elements, rendered as a bracketed,
+		 *  comma-separated list, eg. "{1,2,3}". */
+		void	inputBindArray(const char *variable,
+						const char *value,
+						uint32_t size);
+
 		/** Defines an array of string input bind variables. */
 		void	inputBinds(const char **variables, const char **values);
 

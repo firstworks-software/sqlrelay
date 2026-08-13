@@ -5421,6 +5421,15 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 			if (!result) {
 				return false;
 			}
+		} else if (bind->type==SQLRSERVERBINDVARTYPE_ARRAY) {
+			if (!cursor->inputBindArray(
+					bind->variable,
+					bind->variablesize,
+					bind->value.stringval,
+					bind->valuesize,
+					&bind->isnull)) {
+				return false;
+			}
 		}
 	}
 
@@ -12492,7 +12501,8 @@ void sqlrservercontroller::copyBind(sqlrserverbindvar *source,
 	charstring::copy(dest->variable,source->variable);
 	
 	// (re)copy strings
-	if (source->type==SQLRSERVERBINDVARTYPE_STRING) {
+	if (source->type==SQLRSERVERBINDVARTYPE_STRING ||
+			source->type==SQLRSERVERBINDVARTYPE_ARRAY) {
 		dest->value.stringval=
 			(char *)destpool->allocate(source->valuesize+1);
 		charstring::copy(dest->value.stringval,

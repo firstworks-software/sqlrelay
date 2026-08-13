@@ -786,6 +786,15 @@ bool sqlrservercursor::inputBindClob(const char *variable,
 	return inputBindClob(variable,variablesize,value,valuesize,isnull);
 }
 
+bool sqlrservercursor::inputBindArray(const char *variable,
+					uint16_t variablesize,
+					const char *value,
+					uint32_t valuesize,
+					int16_t *isnull) {
+	// fall back to string bind implementation
+	return inputBind(variable,variablesize,value,valuesize,isnull);
+}
+
 bool sqlrservercursor::outputBind(const char *variable,
 					uint16_t variablesize,
 					char *value, 
@@ -1392,7 +1401,8 @@ void sqlrservercursor::performSubstitution(stringbuffer *buffer,
 							int16_t index) {
 
 	if (pvt->_inbindvars[index].type==SQLRSERVERBINDVARTYPE_STRING ||
-		pvt->_inbindvars[index].type==SQLRSERVERBINDVARTYPE_CLOB) {
+		pvt->_inbindvars[index].type==SQLRSERVERBINDVARTYPE_CLOB ||
+		pvt->_inbindvars[index].type==SQLRSERVERBINDVARTYPE_ARRAY) {
 
 		if (conn->cont->getConfig()->
 			getFakeInputBindVariablesUnicodeStrings()) {

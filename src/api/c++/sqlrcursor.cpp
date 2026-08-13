@@ -1507,7 +1507,9 @@ void sqlrcursor::deleteInputBindVariables() {
 			if ((*pvt->_inbindvars)[i].type==
 					SQLRCLIENTBINDVARTYPE_BLOB ||
 				(*pvt->_inbindvars)[i].type==
-					SQLRCLIENTBINDVARTYPE_CLOB) {
+					SQLRCLIENTBINDVARTYPE_CLOB ||
+				(*pvt->_inbindvars)[i].type==
+					SQLRCLIENTBINDVARTYPE_ARRAY) {
 				delete[] (*pvt->_inbindvars)[i].value.lobval;
 			}
 			if ((*pvt->_inbindvars)[i].type==
@@ -1653,6 +1655,23 @@ void sqlrcursor::inputBindClob(const char *variable, const char *value,
 	}
 	initVar(bv,variable,preexisting);
 	lobVar(bv,variable,value,size,SQLRCLIENTBINDVARTYPE_CLOB);
+	bv->send=true;
+	pvt->_dirtybinds=true;
+}
+
+void sqlrcursor::inputBindArray(const char *variable, const char *value,
+							uint32_t size) {
+	if (charstring::isNullOrEmpty(variable)) {
+		return;
+	}
+	bool			preexisting=true;
+	sqlrclientbindvar	*bv=pvt->findVar(variable,pvt->_inbindvars);
+	if (!bv) {
+		bv=&(*pvt->_inbindvars)[pvt->_inbindvars->getCount()];
+		preexisting=false;
+	}
+	initVar(bv,variable,preexisting);
+	lobVar(bv,variable,value,size,SQLRCLIENTBINDVARTYPE_ARRAY);
 	bv->send=true;
 	pvt->_dirtybinds=true;
 }
@@ -1889,7 +1908,9 @@ void sqlrcursor::initVar(sqlrclientbindvar *var,
 			if (var->type==SQLRCLIENTBINDVARTYPE_STRING) {
 				delete[] var->value.stringval;
 			} else if (var->type==SQLRCLIENTBINDVARTYPE_BLOB ||
-					var->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+					var->type==SQLRCLIENTBINDVARTYPE_CLOB ||
+					var->type==
+						SQLRCLIENTBINDVARTYPE_ARRAY) {
 				delete[] var->value.lobval;
 			}
 		}
@@ -3300,7 +3321,9 @@ void sqlrcursor::sendInputBinds() {
 		} else if ((*pvt->_inbindvars)[i].type==
 					SQLRCLIENTBINDVARTYPE_BLOB ||
 				(*pvt->_inbindvars)[i].type==
-					SQLRCLIENTBINDVARTYPE_CLOB) {
+					SQLRCLIENTBINDVARTYPE_CLOB ||
+				(*pvt->_inbindvars)[i].type==
+					SQLRCLIENTBINDVARTYPE_ARRAY) {
 
 			pvt->_cs->write((*pvt->_inbindvars)[i].valuesize);
 			if ((*pvt->_inbindvars)[i].valuesize>0) {
@@ -3322,6 +3345,14 @@ void sqlrcursor::sendInputBinds() {
 				} else if ((*pvt->_inbindvars)[i].type==
 						SQLRCLIENTBINDVARTYPE_CLOB) {
 					pvt->_sqlrc->debugPrint(":CLOB)=");
+					pvt->_sqlrc->debugPrintClob(
+						(*pvt->_inbindvars)[i].
+								value.lobval,
+						(*pvt->_inbindvars)[i].
+								valuesize);
+				} else if ((*pvt->_inbindvars)[i].type==
+						SQLRCLIENTBINDVARTYPE_ARRAY) {
+					pvt->_sqlrc->debugPrint(":ARRAY)=");
 					pvt->_sqlrc->debugPrintClob(
 						(*pvt->_inbindvars)[i].
 								value.lobval,
@@ -3421,6 +3452,9 @@ void sqlrcursor::sendOutputBinds() {
 					break;
 				case SQLRCLIENTBINDVARTYPE_CURSOR:
 					bindtype="(CURSOR)";
+					break;
+				case SQLRCLIENTBINDVARTYPE_ARRAY:
+					bindtype="(ARRAY)";
 					break;
 			}
 			pvt->_sqlrc->debugPrint(bindtype);
@@ -3570,6 +3604,9 @@ void sqlrcursor::sendInputOutputBinds() {
 					break;
 				case SQLRCLIENTBINDVARTYPE_CURSOR:
 					bindtype="(CURSOR)";
+					break;
+				case SQLRCLIENTBINDVARTYPE_ARRAY:
+					bindtype="(ARRAY)";
 					break;
 			}
 			pvt->_sqlrc->debugPrint(bindtype);
