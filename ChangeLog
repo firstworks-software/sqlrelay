@@ -560,6 +560,12 @@
 		get enough room now, are reported as NUMERIC, DECIMAL or DOUBLE
 		PRECISION columns instead of unknown ones, and a null one is
 		reported as null
+	fixed sqlrservercontroller::raiseDbErrorEvent() and
+		raiseDbWarningEvent() - they ran a database error or warning
+		message through printf as the format string, so a percent sign
+		coming from a table name, column name or quoted value in the
+		message was read as a conversion specifier; they take a plain
+		string now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

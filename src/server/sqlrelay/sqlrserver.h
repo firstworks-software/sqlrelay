@@ -1440,13 +1440,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseDbErrorEvent(sqlrservercursor *cursor,
-							const char *info, ...);
+							const char *info);
 
 		/** Raises a database-warning event on cursor "cursor", with
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseDbWarningEvent(sqlrservercursor *cursor,
-							const char *info, ...);
+							const char *info);
 
 		/** Raises a query-received event on cursor "cursor", which may
 		 *  be logged, or which may trigger a notification. */

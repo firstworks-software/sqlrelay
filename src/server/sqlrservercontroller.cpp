@@ -10911,17 +10911,14 @@ void sqlrservercontroller::raiseDbLogOutEvent() {
 }
 
 void sqlrservercontroller::raiseDbErrorEvent(sqlrservercursor *cursor,
-							const char *info, ...) {
+							const char *info) {
 
 	if (!pvt->_sqlrlg && !pvt->_sqlrn) {
 		return;
 	}
 
 	pvt->_infobuffer.clear();
-	va_list	argp;
-	va_start(argp,info);
-	pvt->_infobuffer.printf(info,&argp);
-	va_end(argp);
+	pvt->_infobuffer.append(info);
 
 	if (pvt->_sqlrlg) {
 		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
@@ -10937,17 +10934,14 @@ void sqlrservercontroller::raiseDbErrorEvent(sqlrservercursor *cursor,
 }
 
 void sqlrservercontroller::raiseDbWarningEvent(sqlrservercursor *cursor,
-							const char *info, ...) {
+							const char *info) {
 
 	if (!pvt->_sqlrlg && !pvt->_sqlrn) {
 		return;
 	}
 
 	pvt->_infobuffer.clear();
-	va_list	argp;
-	va_start(argp,info);
-	pvt->_infobuffer.printf(info,&argp);
-	va_end(argp);
+	pvt->_infobuffer.append(info);
 
 	if (pvt->_sqlrlg) {
 		pvt->_sqlrlg->write(NULL,pvt->_conn,cursor,
