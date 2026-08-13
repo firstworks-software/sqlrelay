@@ -3641,6 +3641,20 @@ int main(int argc, char **argv) {
 					"testint from dyntable "
 					"where testid = ?";
 
+	// Every bind marker prepared in this suite sits in a where/set/values
+	// position, on purpose.  ASE rejects one used as a bare select-list
+	// value (e.g. "select cast(? as int)") with error 164, "The untyped
+	// variable ? is allowed only in a WHERE clause or the SET clause of
+	// an UPDATE statement or the VALUES list of an INSERT statement" -
+	// its own parser restriction on ct_dynamic(CS_PREPARE)'d text, not
+	// something sqlrelay introduces: the server rejects it identically
+	// regardless of which client language sends it (confirmed against
+	// other REEXECUTE-style tests hitting the sap backend), and
+	// rewriteBindMarkersToPositional() in src/connections/sap.cpp only
+	// swaps "@name" for "?" in place - it never moves or adds a marker.
+	// So this suite never exercises that shape; a select-list marker
+	// query would fail for reasons ASE controls, not sqlrelay.  #9287.
+
 
 	stdoutput.printf("ct_dynamic: prepare insert\n");
 	assertEquals(ct_dynamic(cmd,CS_PREPARE,
