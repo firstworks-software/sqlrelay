@@ -207,6 +207,11 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 						const char *tz,
 						bool isnegative,
 						int16_t *isnull);
+		bool		inputBindBlob(const char *variable,
+						uint16_t variablesize,
+						const char *value,
+						uint32_t valuesize,
+						int16_t *isnull);
 		bool		outputBind(const char *variable, 
 						uint16_t variablesize,
 						char *value, 
@@ -265,6 +270,8 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		size_t		cursornamesize;
 
 		void		checkRePrepare();
+		void		setParameterName(const char *variable,
+						uint16_t variablesize);
 		bool		inputBind(CS_VOID *value,
 						CS_INT valuesize,
 						CS_SMALLINT indicator);
@@ -3233,6 +3240,26 @@ bool sapcursor::parseRpcParams(const char *p) {
 	return true;
 }
 
+void sapcursor::setParameterName(const char *variable,
+					uint16_t variablesize) {
+
+	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
+
+	// numeric-named binds (@1, etc) are matched by position, not
+	// by name.  cursorcmd is always positional here too, since
+	// rewriteBindMarkersForCursor() replaced every bind marker in
+	// the declared cursor's SQL with ? regardless of its name
+	// (real bind var names are like @P1, not purely numeric)
+	if (cmd==cursorcmd ||
+		charstring::isInteger(variable+1,variablesize-1)) {
+		parameter[paramindex].name[0]='\0';
+		parameter[paramindex].namelen=0;
+	} else {
+		charstring::copy(parameter[paramindex].name,variable);
+		parameter[paramindex].namelen=variablesize;
+	}
+}
+
 bool sapcursor::inputBind(CS_VOID *value, CS_INT valuesize,
 						CS_SMALLINT indicator) {
 
@@ -3281,21 +3308,34 @@ bool sapcursor::inputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_CHAR_TYPE;
+	parameter[paramindex].maxlength=CS_UNUSED;
+	parameter[paramindex].status=CS_INPUTVALUE;
+	parameter[paramindex].locale=NULL;
+	if (!inputBind((CS_VOID *)value,valuesize,
+		(*isnull==conn->cont->getNullBindValue())?-1:0)) {
+		return false;
+	}
+	paramindex++;
+	return true;
+}
+
+bool sapcursor::inputBindBlob(const char *variable,
+				uint16_t variablesize,
+				const char *value,
+				uint32_t valuesize,
+				int16_t *isnull) {
+	checkRePrepare();
+
+	setParameterName(variable,variablesize);
+	// bind blobs as binary, not as character data.  the server would
+	// otherwise try to convert the bytes to its own character set and
+	// fail on any byte that isn't valid in the client's character set.
+	// binary/varbinary tops out at 255 bytes, longer values have to
+	// be sent as image.
+	parameter[paramindex].datatype=
+			(valuesize>255)?CS_IMAGE_TYPE:CS_BINARY_TYPE;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
 	parameter[paramindex].locale=NULL;
@@ -3312,20 +3352,7 @@ bool sapcursor::inputBind(const char *variable,
 				int64_t *value) {
 	checkRePrepare();
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_INT_TYPE;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
@@ -3344,20 +3371,7 @@ bool sapcursor::inputBind(const char *variable,
 				uint32_t scale) {
 	checkRePrepare();
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_FLOAT_TYPE;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_INPUTVALUE;
@@ -3449,20 +3463,7 @@ bool sapcursor::outputBind(const char *variable,
 		return true;
 	}
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_CHAR_TYPE;
 	parameter[paramindex].maxlength=valuesize;
 	parameter[paramindex].status=CS_RETURN;
@@ -3494,20 +3495,7 @@ bool sapcursor::outputBind(const char *variable,
 		return true;
 	}
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_INT_TYPE;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_RETURN;
@@ -3541,20 +3529,7 @@ bool sapcursor::outputBind(const char *variable,
 		return true;
 	}
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_FLOAT_TYPE;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_RETURN;
@@ -3602,20 +3577,7 @@ bool sapcursor::outputBind(const char *variable,
 		return true;
 	}
 
-	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
-	// numeric-named binds (@1, etc) are matched by position, not
-	// by name.  cursorcmd is always positional here too, since
-	// rewriteBindMarkersForCursor() replaced every bind marker in
-	// the declared cursor's SQL with ? regardless of its name
-	// (real bind var names are like @P1, not purely numeric)
-	if (cmd==cursorcmd ||
-		charstring::isInteger(variable+1,variablesize-1)) {
-		parameter[paramindex].name[0]='\0';
-		parameter[paramindex].namelen=0;
-	} else {
-		charstring::copy(parameter[paramindex].name,variable);
-		parameter[paramindex].namelen=variablesize;
-	}
+	setParameterName(variable,variablesize);
 	parameter[paramindex].datatype=CS_DATETIME_TYPE;
 	parameter[paramindex].maxlength=CS_UNUSED;
 	parameter[paramindex].status=CS_RETURN;

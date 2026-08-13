@@ -3143,8 +3143,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// a char source bound to a binary column is parsed as hex digits,
-	// not bytes, so "0123456789" lands as five bytes zero padded to ten
 	stdoutput.printf("row data:\n");
 	assertEquals(blkreaddata[0],"1");
 	assertEquals(blkreadindicator[2],-1);
@@ -3152,8 +3150,19 @@ int main(int argc, char **argv) {
 	assertEquals(blkreaddata[3],"1.25");
 	assertEquals(blkreaddata[4],"123.45");
 	assertEquals(blkreaddata[5],"Jan  1 2001 12:00:00:000PM");
-	assertEquals(blkreaddata[6],"01234567890000000000");
 	assertEquals(blkreaddata[7],"texttexttext");
+	stdoutput.printf("\n");
+
+
+	// a char source bound to a binary column is parsed as hex digits,
+	// not bytes, so "0123456789" lands as five bytes.  ASE stores a
+	// nullable binary as a varbinary, so only mssql zero pads to ten
+	stdoutput.printf("row data: binary padding\n");
+	if (issybase) {
+		assertEquals(blkreaddata[6],"0123456789");
+	} else {
+		assertEquals(blkreaddata[6],"01234567890000000000");
+	}
 	stdoutput.printf("\n");
 
 

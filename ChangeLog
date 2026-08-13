@@ -407,6 +407,11 @@
 		money, smallmoney, decimal, numeric, char or varchar type was
 		parsed off the wire but thrown away, so a prepared insert
 		bound one of those types stored a null instead of the value
+	fixed the sap connection module - it sent a binary bind value to the
+		server as character data, so a bulk copy or blob bind whose
+		bytes weren't valid in the connection's character set failed
+		with "Error converting characters into server's character
+		set"; binary bind values are sent as binary or image now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
