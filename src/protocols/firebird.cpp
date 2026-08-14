@@ -14,6 +14,7 @@
 
 #include "firebirdsdl.h"
 #include "firebirdsrp.h"
+#include "firebirdarc4.h"
 
 // NOTE:
 // Firebird Wire Protocol refers to:
@@ -290,6 +291,22 @@
 #define CNCT_login		9
 #define CNCT_plugin_list	10
 #define CNCT_client_crypt	11
+
+// wire encryption levels
+// (the values CNCT_client_crypt carries, and the same three a server picks
+// from for itself - WireCrypt in firebird.conf.  A missing tag, or a value
+// outside this range, means ENABLED, which is what a stock client asks for)
+#define WIRE_CRYPT_DISABLED	0
+#define WIRE_CRYPT_ENABLED	1
+#define WIRE_CRYPT_REQUIRED	2
+
+// key block tags
+// (the block rides in p_acpt_keys on the accept and in p_resp_data on the
+// attach response.  TAG_PLUGIN_SPECIFIC, which carries a plugin's extra
+// parameters, isn't written here - the only plugin the module offers needs
+// none, and the clients that read it only do so at protocol 16 and up)
+#define TAG_KEY_TYPE		0
+#define TAG_KEY_PLUGINS		1
 
 // object handles
 #define INVALID_OBJECT		0xffff
@@ -1001,6 +1018,10 @@
 #define isc_unique_key_violation	335544665
 #define isc_io_open_err			335544734
 #define isc_service_att_err		335544792
+#define isc_wirecrypt_incompatible	335545064
+#define isc_miss_wirecrypt		335545065
+#define isc_wirecrypt_key		335545066
+#define isc_wirecrypt_plugin		335545067
 #define isc_bad_batch_handle		335545159
 #define isc_batch_param_version		335545182
 #define isc_batch_open			335545184
@@ -1102,6 +1123,22 @@
 #define FIREBIRD_PLUGIN_SRP	"Srp"
 #define FIREBIRD_PLUGIN_LEGACY	"Legacy_Auth"
 #define FIREBIRD_PLUGIN_LIST	"Srp256,Srp,Legacy_Auth"
+
+// what the key block advertises - the kind of key the module has, and the
+// wire encryption plugins that can use it
+// (a stock firebird offers "ChaCha64, ChaCha, Arc4".  Both ChaCha plugins
+// take their initialization vector from a TAG_PLUGIN_SPECIFIC item, which
+// only protocol 16 and up sends, so only Arc4 is offered here)
+#define FIREBIRD_KEY_TYPE	"Symmetric"
+#define FIREBIRD_KEY_PLUGINS	"Arc4"
+
+// the one plugin in the list above that op_crypt can actually name
+// (the two are separate on purpose.  FIREBIRD_KEY_PLUGINS is a
+// comma-separated list, and the client picks one entry out of it, so the
+// two are only interchangeable while the list has exactly one entry.
+// adding ChaCha means adding it to the list above and giving cryptRequest()
+// a name-to-cipher lookup here, not comparing against the list)
+#define FIREBIRD_KEY_PLUGIN_ARC4	"Arc4"
 
 // how many random bytes the srp server private key is built from
 // (RemotePassword::makePrivate() - srp.cpp:75-83 - uses SRP_KEY_SIZE, which
@@ -1378,6 +1415,244 @@ struct sqlrfirebirdarray {
 	int32_t		upper[SQLRFIREBIRDSDL_MAX_DIMENSIONS];
 };
 
+// a filedescriptor that shares another one's descriptor, without ever
+// closing it out from under whoever really owns it.  the no-op
+// lowLevelClose() covers an explicit close(); the destructor has to unbind
+// the descriptor as well, because by the time ~filedescriptor() runs this
+// sub-object is gone and the virtual call lands on the base class close.
+// (the same thing tds.cpp does for its tls stream)
+class firebirdsharedfd : public filedescriptor {
+	public:
+			~firebirdsharedfd();
+	protected:
+		int32_t	lowLevelClose();
+};
+
+firebirdsharedfd::~firebirdsharedfd() {
+	setFileDescriptor(-1);
+}
+
+int32_t firebirdsharedfd::lowLevelClose() {
+	return 0;
+}
+
+// The wire encryption that op_crypt turns on.  It goes under the client
+// socket's own reads and writes, as a rudiments socket layer - the same
+// place a tls context goes in mysql.cpp - so that every read and write the
+// module already does is encrypted without any of them changing.  Bytes are
+// encrypted on their way out and decrypted on their way in, right at the
+// socket, which is the only place both directions are still in wire order.
+// (the module's typed reads and writes byte-swap above this, and rc4 runs
+// over the bytes in the order they cross the wire)
+//
+// The layer is only installed once op_crypt has agreed on a cipher, and
+// each direction switches over at a different moment:
+//
+//	- reads - the op_crypt request itself comes in cleartext, and
+//		everything after it is encrypted
+//	- writes - the response to op_crypt is already encrypted
+//
+// so installing the layer between the two - after the request has been
+// read, before the response is written - is exactly that switch.  Firebird
+// switches at the same point: start_crypt() (server.cpp) sets
+// port_crypt_complete before it sends its response, and packet_send() /
+// packet_receive() (inet.cpp) encrypt everything from there on.  Its client
+// is the mirror image - it sends op_crypt in the clear, then switches, so
+// the response is the first thing it decrypts.
+//
+// Nothing here is installed at all unless op_crypt succeeded, so a session
+// that never negotiates encryption reads and writes exactly the way it did
+// before.
+class firebirdcryptlayer : public socketlayer {
+	public:
+			firebirdcryptlayer();
+			~firebirdcryptlayer();
+
+		// the ciphers to run, one per direction (not owned)
+		void	setCiphers(firebirdarc4 *readcipher,
+					firebirdarc4 *writecipher);
+
+		// hands the layer bytes that came off the socket before it
+		// was installed, which it serves ahead of anything it reads
+		// itself.  "encrypted" says whether they still need to be
+		// decrypted - bytes read while no layer was installed do,
+		// bytes an earlier layer already decrypted don't.
+		void	setPendingBytes(const byte_t *buf, size_t size,
+							bool encrypted);
+
+		// socketlayer interface...
+		void		setFileDescriptor(filedescriptor *fd);
+		filedescriptor	*getFileDescriptor();
+		bool		connect();
+		bool		accept();
+		ssize_t		read(void *buf, size_t size);
+		ssize_t		write(const void *buf, size_t size);
+		size_t		getPendingSize();
+		bool		close();
+		size_t		getSizeMax();
+
+	private:
+		// the socket the layer is installed on (not owned)
+		filedescriptor	*fd;
+		// the same descriptor, unbuffered and with no layer of its
+		// own, which is how the layer gets at the wire without
+		// going back through the socket it sits under
+		firebirdsharedfd	rawsock;
+
+		firebirdarc4	*readcipher;
+		firebirdarc4	*writecipher;
+
+		// bytes that arrived before the layer was installed, whether
+		// they still need decrypting, and how far into them read()
+		// has gotten
+		byte_t		*pending;
+		bool		pendingencrypted;
+		size_t		pendingposition;
+		size_t		pendingsize;
+
+		// write() encrypts into this rather than the caller's buffer
+		byte_t		*scratch;
+		size_t		scratchsize;
+};
+
+firebirdcryptlayer::firebirdcryptlayer() : socketlayer() {
+	fd=NULL;
+	readcipher=NULL;
+	writecipher=NULL;
+	pending=NULL;
+	pendingencrypted=false;
+	pendingposition=0;
+	pendingsize=0;
+	scratch=NULL;
+	scratchsize=0;
+	// the layer above does its own blocking-until-count, so reads here
+	// return whatever the socket has, the way a lowLevelRead() would
+	rawsock.setAllowShortReads(true);
+}
+
+firebirdcryptlayer::~firebirdcryptlayer() {
+	delete[] pending;
+	delete[] scratch;
+}
+
+void firebirdcryptlayer::setCiphers(firebirdarc4 *readcipher,
+					firebirdarc4 *writecipher) {
+	this->readcipher=readcipher;
+	this->writecipher=writecipher;
+}
+
+void firebirdcryptlayer::setPendingBytes(const byte_t *buf, size_t size,
+							bool encrypted) {
+	delete[] pending;
+	pending=NULL;
+	pendingencrypted=false;
+	pendingposition=0;
+	pendingsize=0;
+	if (!buf || !size) {
+		return;
+	}
+	pending=new byte_t[size];
+	bytestring::copy(pending,buf,size);
+	pendingencrypted=encrypted;
+	pendingsize=size;
+}
+
+void firebirdcryptlayer::setFileDescriptor(filedescriptor *fd) {
+	this->fd=fd;
+	rawsock.setFileDescriptor((fd)?fd->getFileDescriptor():-1);
+}
+
+filedescriptor *firebirdcryptlayer::getFileDescriptor() {
+	return fd;
+}
+
+bool firebirdcryptlayer::connect() {
+	return true;
+}
+
+bool firebirdcryptlayer::accept() {
+	return true;
+}
+
+ssize_t firebirdcryptlayer::read(void *buf, size_t size) {
+
+	if (!buf || !size) {
+		return 0;
+	}
+
+	byte_t	*b=(byte_t *)buf;
+
+	// serve what arrived before the layer was installed first - those
+	// bytes come earlier in the stream than anything read below, and
+	// rc4 only decrypts them correctly in that order
+	if (pendingsize) {
+		size_t	count=(size<pendingsize)?size:pendingsize;
+		bytestring::copy(b,pending+pendingposition,count);
+		pendingposition+=count;
+		pendingsize-=count;
+		bool	encrypted=pendingencrypted;
+		if (!pendingsize) {
+			delete[] pending;
+			pending=NULL;
+			pendingencrypted=false;
+			pendingposition=0;
+		}
+		if (encrypted && readcipher) {
+			readcipher->crypt((unsigned char *)b,count);
+		}
+		return (ssize_t)count;
+	}
+
+	ssize_t	result=rawsock.read(b,size);
+	if (result>0 && readcipher) {
+		readcipher->crypt((unsigned char *)b,(size_t)result);
+	}
+	return result;
+}
+
+ssize_t firebirdcryptlayer::write(const void *buf, size_t size) {
+
+	if (!buf || !size) {
+		return 0;
+	}
+
+	if (!writecipher) {
+		return rawsock.write(buf,size);
+	}
+
+	// the cipher runs in place, and the caller's buffer isn't the
+	// layer's to modify, so encrypt a copy of it
+	if (size>scratchsize) {
+		delete[] scratch;
+		scratch=new byte_t[size];
+		scratchsize=size;
+	}
+	bytestring::copy(scratch,buf,size);
+	writecipher->crypt((unsigned char *)scratch,size);
+
+	// write all of it, rather than however much the socket takes at
+	// once - the keystream has already run past the whole buffer, and
+	// there's no rewinding it for a partial write
+	// (short writes are off on rawsock, so this only comes up short on
+	// an error, which ends the session anyway)
+	return rawsock.write((const void *)scratch,size);
+}
+
+size_t firebirdcryptlayer::getPendingSize() {
+	return pendingsize;
+}
+
+bool firebirdcryptlayer::close() {
+	return true;
+}
+
+size_t firebirdcryptlayer::getSizeMax() {
+	// the layer caps nothing of its own, so this is just the cap the
+	// socket uses when it has no layer at all - the largest ssize_t
+	// (spelled out rather than SSIZE_MAX, which isn't everywhere)
+	return (size_t)((~((size_t)0))>>1);
+}
+
 class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 	public:
 		sqlrprotocol_firebird(sqlrservercontroller *cont,
@@ -1405,6 +1680,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 					uint32_t *byteswritten);
 		bool	continueAuthentication();
 		void	setAuthMethodFromPlugin(const char *plugin);
+
+		void	negotiateWireCrypt();
+		void	appendKeyBlock(bytebuffer *keys);
+		bool	cryptRequest();
+		bool	startWireCrypt();
+		void	stopWireCrypt();
+		bool	allowedBeforeWireCrypt();
+		bool	sendMissingWireCryptError();
 
 		void	successStatusVector();
 		void	errorStatusVector(uint32_t gdscode);
@@ -1941,6 +2224,32 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		char		*srpserverprivatekey;
 		char		*srpsalt;
 
+		// wire encryption state...
+		// the level the module is configured for
+		uint32_t	serverwirecryptlevel;
+		// the level CNCT_client_crypt asked for
+		uint32_t	clientwirecryptlevel;
+		// the level the two agreed on
+		uint32_t	wirecryptlevel;
+		// whether they couldn't agree at all
+		bool		wirecryptincompatible;
+		// the key the cipher uses, and its size
+		// (the srp exchange that produces it runs inside the auth
+		// module rather than here, and authenticate() copies it out
+		// of the credentials - see srpChallenge() and
+		// sqlrauth_firebird_connectstrings)
+		byte_t		*wirecryptkey;
+		uint64_t	wirecryptkeysize;
+		// the ciphers op_crypt installed, one per direction, or NULL
+		// until it does
+		// (rc4 keystreams run independently of each other, so reads
+		// and writes can't share one)
+		firebirdarc4	*wirecryptreadcipher;
+		firebirdarc4	*wirecryptwritecipher;
+		// the layer those ciphers run in, under the client socket,
+		// or NULL while the session is still in the clear
+		firebirdcryptlayer	*wirecryptlayer;
+
 		char		*wd;
 		uint32_t	dbhandle;
 
@@ -2004,6 +2313,14 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 
 	clientsock=NULL;
 
+	// this protocol module doesn't support tls yet, so warn if it
+	// was requested
+	if (useTls()) {
+		stderror.printf("Warning: TLS support requested but the "
+				"firebird protocol module doesn't support "
+				"TLS yet\n");
+	}
+
 	// maxprotocolversion - the highest wire protocol version negotiation
 	// will accept.  Defaults to MAX_PROTOCOL_VERSION - see the comment
 	// there for which versions that covers.  Anything unparsable, or out
@@ -2020,10 +2337,27 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		maxprotocolversion=0xffff8000|configmaxpv;
 	}
 
+	// wirecrypt - the wire encryption level the module asks for, which
+	// negotiation combines with the level the client asks for.  Defaults
+	// to "enabled" - the same default a stock firebird has - encrypt
+	// whenever the client can, but don't insist on it
+	const char	*configwirecrypt=
+			parameters->getAttributeValue("wirecrypt");
+	if (!charstring::compareIgnoringCase(configwirecrypt,"disabled")) {
+		serverwirecryptlevel=WIRE_CRYPT_DISABLED;
+	} else if (!charstring::compareIgnoringCase(
+						configwirecrypt,"required")) {
+		serverwirecryptlevel=WIRE_CRYPT_REQUIRED;
+	} else {
+		serverwirecryptlevel=WIRE_CRYPT_ENABLED;
+	}
+
 	debugStart("parameters");
 	if (getDebug()) {
 		stdoutput.printf("	maxprotocolversion: %u\n",
 						maxprotocolversion);
+		stdoutput.printf("	wirecryptlevel: %u\n",
+						serverwirecryptlevel);
 	}
 	debugEnd();
 
@@ -2082,6 +2416,14 @@ void sqlrprotocol_firebird::init() {
 	authclientdata=NULL;
 	srpserverprivatekey=NULL;
 	srpsalt=NULL;
+	clientwirecryptlevel=WIRE_CRYPT_ENABLED;
+	wirecryptlevel=WIRE_CRYPT_DISABLED;
+	wirecryptincompatible=false;
+	wirecryptkey=NULL;
+	wirecryptkeysize=0;
+	wirecryptreadcipher=NULL;
+	wirecryptwritecipher=NULL;
+	wirecryptlayer=NULL;
 	wd=NULL;
 	dbhandle=0;
 	trhandle=0;
@@ -2127,6 +2469,13 @@ void sqlrprotocol_firebird::free() {
 	delete[] authclientdata;
 	delete[] srpserverprivatekey;
 	delete[] srpsalt;
+	if (wirecryptkey) {
+		bytestring::zero(wirecryptkey,wirecryptkeysize);
+	}
+	delete[] wirecryptkey;
+	stopWireCrypt();
+	delete wirecryptreadcipher;
+	delete wirecryptwritecipher;
 	delete[] wd;
 	clearStatements();
 	clearBlobs();
@@ -2169,6 +2518,16 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 			if (!getOpCode()) {
 				status=
 				CLIENTSESSIONEXITSTATUS_CLOSED_CONNECTION;
+				break;
+			}
+
+			// wire encryption was agreed to be required, but
+			// it isn't up, so only the ops that lead to it or
+			// end the session can run
+			if (wirecryptlevel==WIRE_CRYPT_REQUIRED &&
+					!wirecryptlayer &&
+					!allowedBeforeWireCrypt()) {
+				sendMissingWireCryptError();
 				break;
 			}
 
@@ -2348,6 +2707,9 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_cancel_events:
 					loop=cancelEvents();
 					break;
+				case op_crypt:
+					loop=cryptRequest();
+					break;
 
 				// known, but not implemented yet
 				case op_exit:
@@ -2374,7 +2736,9 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 				case op_cont_auth:
 				case op_ping:
 				case op_abort_aux_connection:
-				case op_crypt:
+				// op_crypt_key_callback is the server asking
+				// the client for a database crypt key, and a
+				// client never sends it unsolicited
 				case op_crypt_key_callback:
 				case op_repl_data:
 				case op_repl_req:
@@ -2400,6 +2764,10 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 
 		} while (loop);
 	}
+
+	// take the wire encryption back off the socket, which outlives the
+	// session
+	stopWireCrypt();
 
 	// close the client connection
 	cont->closeClientConnection(0);
@@ -2623,6 +2991,10 @@ bool sqlrprotocol_firebird::connect() {
 
 	protocolversion=acptversion;
 
+	// settle on a wire encryption level, now that both the level the
+	// client asked for and the protocol version are known
+	negotiateWireCrypt();
+
 	// protocol 13 and up answer op_accept_data and drive the auth plugin
 	// handshake
 	if (protocolversion>=PROTOCOL_VERSION13) {
@@ -2661,6 +3033,29 @@ bool sqlrprotocol_firebird::connect() {
 	clientsock->flushWriteBuffer(-1,-1);
 
 	return true;
+}
+
+// CNCT_client_crypt carries the client's wire encryption level as a little
+// endian integer, in as few bytes as the value needs - the client builds it
+// with ClumpletWriter::insertInt(), which trims the leading zero bytes, so
+// it arrives 1 to 4 bytes long.  Anything else, or a value no level uses,
+// means ENABLED, the level a client that sends no tag at all gets.
+static uint32_t readClientCryptLevel(const byte_t *value, byte_t valuelen) {
+
+	if (!valuelen || valuelen>4) {
+		return WIRE_CRYPT_ENABLED;
+	}
+
+	uint32_t	level=0;
+	for (byte_t i=0; i<valuelen; i++) {
+		level|=((uint32_t)value[i])<<(i*8);
+	}
+
+	if (level>WIRE_CRYPT_REQUIRED) {
+		return WIRE_CRYPT_ENABLED;
+	}
+
+	return level;
 }
 
 // The user id block in the connect request is a sequence of tag/length/value
@@ -2709,6 +3104,16 @@ void sqlrprotocol_firebird::parseUserId(const byte_t *userid,
 				readStringFromBuffer(value,valuelen,
 							"plugin list",
 							&clientpluginlist);
+				break;
+			case CNCT_client_crypt:
+				clientwirecryptlevel=
+					readClientCryptLevel(value,valuelen);
+				if (getDebug()) {
+					stdoutput.printf(
+						"	client crypt "
+						"level: %u\n",
+						clientwirecryptlevel);
+				}
 				break;
 			case CNCT_specific_data:
 				if (valuelen>1) {
@@ -2972,6 +3377,324 @@ bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
 	return false;
 }
 
+// Combines the level the client asked for with the level the module asks
+// for, the way accept_connection() does:
+//
+//	                DISABLED(srv)  ENABLED(srv)  REQUIRED(srv)
+//	client DISABLED   DISABLED       DISABLED      broken
+//	client ENABLED    DISABLED       ENABLED       REQUIRED
+//	client REQUIRED   broken         REQUIRED      REQUIRED
+//
+// "broken" is one side insisting on encryption while the other refuses it,
+// which leaves nothing to negotiate - attach() answers
+// isc_wirecrypt_incompatible and the session ends.
+void sqlrprotocol_firebird::negotiateWireCrypt() {
+
+	wirecryptincompatible=false;
+
+	// only protocol 13 and up has anywhere to put the key block, so
+	// anything below it is unencrypted, whatever either side wanted -
+	// and a side that required encryption can't accept that
+	// (refusing an old client outright is the only way "required" can
+	// mean anything against one, since there's no key block to offer it
+	// and no op_crypt for it to send)
+	if (protocolversion<PROTOCOL_VERSION13) {
+		wirecryptlevel=WIRE_CRYPT_DISABLED;
+		wirecryptincompatible=
+			(clientwirecryptlevel==WIRE_CRYPT_REQUIRED ||
+			serverwirecryptlevel==WIRE_CRYPT_REQUIRED);
+	} else if (clientwirecryptlevel==WIRE_CRYPT_DISABLED) {
+		wirecryptlevel=WIRE_CRYPT_DISABLED;
+		wirecryptincompatible=
+			(serverwirecryptlevel==WIRE_CRYPT_REQUIRED);
+	} else if (clientwirecryptlevel==WIRE_CRYPT_REQUIRED) {
+		wirecryptlevel=WIRE_CRYPT_REQUIRED;
+		wirecryptincompatible=
+			(serverwirecryptlevel==WIRE_CRYPT_DISABLED);
+	} else {
+		// the client will encrypt if we will, so our own level
+		// decides
+		wirecryptlevel=serverwirecryptlevel;
+	}
+
+	if (getDebug()) {
+		debugStart("wire crypt");
+		stdoutput.printf("	client level: %u\n",
+						clientwirecryptlevel);
+		stdoutput.printf("	server level: %u\n",
+						serverwirecryptlevel);
+		stdoutput.printf("	negotiated level: %u\n",
+						wirecryptlevel);
+		stdoutput.printf("	incompatible: %s\n",
+					(wirecryptincompatible)?
+						"true":"false");
+		debugEnd();
+	}
+}
+
+static void appendKeyItem(bytebuffer *keys, byte_t tag, const char *value) {
+	size_t	len=charstring::getLength(value);
+	keys->append((unsigned char)tag);
+	keys->append((unsigned char)(len&0xff));
+	keys->append(value,len);
+}
+
+// The key block names the kind of key the module has and the wire encryption
+// plugins that can use it, in that order - the same pair
+// ServerAuth::authenticate() builds.  It's a sequence of tag/length/value
+// items, each length a single byte, the same encoding the connect block's
+// user id uses.
+//
+// Nothing at all goes out when the negotiated level is DISABLED, which is
+// also what firebird sends when it has no plugin to offer.
+void sqlrprotocol_firebird::appendKeyBlock(bytebuffer *keys) {
+
+	if (wirecryptlevel==WIRE_CRYPT_DISABLED) {
+		return;
+	}
+
+	appendKeyItem(keys,TAG_KEY_TYPE,FIREBIRD_KEY_TYPE);
+	appendKeyItem(keys,TAG_KEY_PLUGINS,FIREBIRD_KEY_PLUGINS);
+}
+
+// The client answers the key block by naming the plugin it picked out of it
+// and the kind of key that plugin should use, which is what firebird's
+// start_crypt() (server.cpp) checks against the keys it handed out.  Only
+// the plugin and key the key block advertised are accepted; anything else
+// gets the same errors firebird raises - isc_wirecrypt_plugin for a plugin
+// that wasn't offered, isc_wirecrypt_key for a key that isn't there.
+//
+// The request itself is still in the clear, but the response to it is not -
+// encryption starts with the response, and with everything read after the
+// request.  So the ciphers are built here and startWireCrypt() puts them
+// under the socket in between the two - see firebirdcryptlayer.
+bool sqlrprotocol_firebird::cryptRequest() {
+
+	// request packet data structure:
+	//
+	// data {
+	// 	int32_t		plugin name length
+	// 	char[]		plugin name
+	// 	int32_t		key name length
+	// 	char[]		key name
+	// }
+	//
+	// (P_CRYPT, protocol.h - two cstrings, in the order xdr_protocol()
+	// writes them)
+
+	debugStart("crypt");
+
+	uint32_t	bytesread=0;
+
+	char	*plugin=NULL;
+	if (!readString(&plugin,"plugin name",&bytesread)) {
+		debugEnd();
+		return false;
+	}
+
+	char	*keyname=NULL;
+	if (!readString(&keyname,"key name",&bytesread)) {
+		delete[] plugin;
+		debugEnd();
+		return false;
+	}
+
+	debugEnd();
+
+	// only the plugin and key the key block offered can be used, and
+	// neither is any use without the key material behind it
+	// (nothing but the srp methods produces a key, so a client that
+	// logged in with Legacy_Auth and asked for encryption anyway lands
+	// here)
+	uint32_t	gdscode=0;
+	if (charstring::compare(plugin,FIREBIRD_KEY_PLUGIN_ARC4)) {
+		gdscode=isc_wirecrypt_plugin;
+	} else if (charstring::compare(keyname,FIREBIRD_KEY_TYPE) ||
+			!wirecryptkey || !wirecryptkeysize) {
+		gdscode=isc_wirecrypt_key;
+	}
+
+	delete[] plugin;
+	delete[] keyname;
+
+	if (gdscode) {
+
+		errorStatusVector(gdscode);
+
+		// the response is sent, but the session still ends - a
+		// client that asked for encryption and didn't get it can't
+		// carry on in the clear
+		genericResponse("crypt failure response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+		return false;
+	}
+
+	// switch the socket over, between the request that just came in
+	// cleartext and the response below, which goes out encrypted
+	if (!startWireCrypt()) {
+		return false;
+	}
+
+	successStatusVector();
+
+	return genericResponse("crypt response",
+				0,0,
+				NULL,0,
+				statusvector,statusvectorstr,
+				statusvectorlen);
+}
+
+// Builds the ciphers and puts them under the client socket's reads and
+// writes.  Called from cryptRequest(), after the op_crypt request has been
+// read and before the response to it is written, which is where the two
+// directions switch over - see firebirdcryptlayer for why exactly there.
+bool sqlrprotocol_firebird::startWireCrypt() {
+
+	debugStart("start wire crypt");
+
+	// everything written so far is cleartext, and the socket's write
+	// buffer may still be holding some of it.  it has to go out before
+	// the layer goes in, or the layer would encrypt it on the way out.
+	//
+	// rudiments' flushWriteBuffer() also returns false, with no error
+	// set, when the buffer was already clean - which is the common case
+	// here, since the accept response is usually already on the wire by
+	// the time a real client's op_crypt arrives.  treat that case as
+	// success; only a flush that actually failed (errno set) aborts the
+	// switch-over.
+	//
+	// errno is sticky, and plenty of earlier i/o in this session could
+	// have left one behind, so it has to be cleared first or a leftover
+	// value would make a clean flush look fatal.
+	error::clearError();
+	if (!clientsock->flushWriteBuffer(-1,-1) && error::getErrorNumber()) {
+		if (getDebug()) {
+			stdoutput.write("	flush failed\n");
+			debugSystemError();
+			debugEnd();
+		}
+		return false;
+	}
+
+	// anything the socket read past the end of the op_crypt request is
+	// encrypted traffic, sitting in a read buffer the layer will never
+	// see.  pull it back out - still encrypted - and hand it to the
+	// layer, which serves it, decrypting it, ahead of what it reads
+	// itself.
+	// (a byte at a time, and never waiting, so this takes only what is
+	// already there.  firebird's own client waits for the response to
+	// op_crypt before sending anything else, so there is usually
+	// nothing here at all, but a client that didn't wait would desync
+	// without this.)
+	bytebuffer	pending;
+	byte_t		b;
+	while (clientsock->read(&b,sizeof(b),0,0)==(ssize_t)sizeof(b)) {
+		pending.append(b);
+	}
+	if (getDebug()) {
+		stdoutput.printf("	%lld byte(s) read ahead\n",
+					(long long)pending.getSize());
+	}
+
+	// those bytes only need decrypting if nothing was decrypting them
+	// already, which is the only case a client that sends op_crypt once
+	// ever gets into
+	bool	pendingencrypted=!wirecryptlayer;
+
+	// take any earlier layer off the socket before the ciphers behind
+	// it go away
+	stopWireCrypt();
+
+	// Firebird uses the srp session key as the rc4 key directly, and
+	// both directions start from it - the keystreams diverge only
+	// because each side consumes its own.
+	delete wirecryptreadcipher;
+	delete wirecryptwritecipher;
+	wirecryptreadcipher=new firebirdarc4(
+				(const unsigned char *)wirecryptkey,
+				(size_t)wirecryptkeysize);
+	wirecryptwritecipher=new firebirdarc4(
+				(const unsigned char *)wirecryptkey,
+				(size_t)wirecryptkeysize);
+
+	wirecryptlayer=new firebirdcryptlayer();
+	wirecryptlayer->setFileDescriptor(clientsock);
+	wirecryptlayer->setCiphers(wirecryptreadcipher,wirecryptwritecipher);
+	wirecryptlayer->setPendingBytes((const byte_t *)pending.getBuffer(),
+							pending.getSize(),
+							pendingencrypted);
+	clientsock->setSocketLayer(wirecryptlayer);
+
+	if (getDebug()) {
+		stdoutput.write("	encrypted\n");
+		debugEnd();
+	}
+
+	return true;
+}
+
+// Takes the layer back off the socket at the end of the session.  A no-op
+// unless op_crypt actually turned encryption on.
+void sqlrprotocol_firebird::stopWireCrypt() {
+	if (!wirecryptlayer) {
+		return;
+	}
+	if (clientsock) {
+		clientsock->setSocketLayer(NULL);
+	}
+	delete wirecryptlayer;
+	wirecryptlayer=NULL;
+}
+
+// Whether the op that just came in may run while wire encryption is
+// required but not actually on yet.  Firebird's own server keeps a list
+// like this - process_packet() (server.cpp) refuses everything else with
+// isc_miss_wirecrypt while port_crypt_level is WIRE_CRYPT_REQUIRED and
+// port_crypt_complete is still false - and without it "required" means
+// nothing, since a client can agree to it in the connect and then just
+// never send op_crypt.
+//
+// The list is the ops that can't be encrypted by definition - op_crypt
+// itself, and the auth traffic that surrounds it - plus the ones that only
+// end the session or keep it alive.  Nothing that carries data is on it.
+//
+// (op_attach isn't on the list and doesn't need to be.  It runs during the
+// initial handshake, ahead of the loop this gates, and a client sends
+// op_crypt only after the response to it - see cryptRequest().)
+bool sqlrprotocol_firebird::allowedBeforeWireCrypt() {
+	switch (opcode) {
+		// turning encryption on, and the key callback that can
+		// come with it
+		case op_crypt:
+		case op_crypt_key_callback:
+		// authentication that hasn't finished yet
+		case op_cont_auth:
+		case op_trusted_auth:
+		case op_update_account_info:
+		case op_authenticate_user:
+		// keepalives and teardown - none of them carry data
+		case op_ping:
+		case op_dummy:
+		case op_detach:
+		case op_disconnect:
+		case op_exit:
+			return true;
+		default:
+			return false;
+	}
+}
+
+bool sqlrprotocol_firebird::sendMissingWireCryptError() {
+	// the rest of the request is still on the socket, so the session
+	// ends either way, but it ends after the client has been told what
+	// went wrong
+	errorResponse("missing wire crypt response",isc_miss_wirecrypt);
+	return false;
+}
+
 bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
 					uint32_t acptarchtype,
 					uint32_t acpttype,
@@ -2999,10 +3722,10 @@ bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
 	// and op code here.)
 	//
 	// op_cond_accept carries exactly the same fields, and firebird uses it
-	// in place of op_accept_data only when wire encryption is being
-	// negotiated - the AUTH_COND_ACCEPT path at server.cpp:2084-2098 and
-	// 764-772.  This module doesn't do wire encryption, so it always sends
-	// op_accept_data.
+	// in place of op_accept_data only when the login finished inside the
+	// accept - the AUTH_COND_ACCEPT path at server.cpp:2084-2098 and
+	// 764-772.  Nothing here finishes a login that early, so it always
+	// sends op_accept_data.
 
 	bytebuffer	data;
 	selectAuthPlugin(&data);
@@ -3053,9 +3776,13 @@ bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
 		return false;
 	}
 
-	// no keys - the module offers no wire encryption, and an empty list
-	// is what firebird sends when it has none either
-	if (!writeBuffer(empty,0,"keys",byteswritten)) {
+	// the wire encryption plugins the module offers, or nothing at all
+	// when the negotiated level is DISABLED
+	bytebuffer	keys;
+	appendKeyBlock(&keys);
+	uint32_t	keyslen=(uint32_t)keys.getSize();
+	if (!writeBuffer((keyslen)?keys.getBuffer():empty,keyslen,
+						"keys",byteswritten)) {
 		return false;
 	}
 
@@ -3769,6 +4496,20 @@ bool sqlrprotocol_firebird::attach() {
 	}
 	delete[] dpbplugin;
 
+	// one side insisted on wire encryption and the other refused it, so
+	// there's no way to carry on
+	// (this is the first packet with a status vector to answer in, the
+	// accept above having no room for an error)
+	if (wirecryptincompatible) {
+		errorStatusVector(isc_wirecrypt_incompatible);
+		genericResponse("wire crypt failure response",
+					0,0,
+					NULL,0,
+					statusvector,statusvectorstr,
+					statusvectorlen);
+		return false;
+	}
+
 	// finish the plugin handshake, if it needs more rounds
 	if (protocolversion>=PROTOCOL_VERSION13 && !continueAuthentication()) {
 		errorStatusVector(isc_login);
@@ -3801,12 +4542,18 @@ bool sqlrprotocol_firebird::attach() {
 	// FIXME: no idea what the object id is
 	uint32_t	objectid=0;
 
+	// the key block goes out again with the attach response - a client
+	// that didn't take it off of the accept looks for it here
+	bytebuffer	keys;
+	appendKeyBlock(&keys);
+	uint32_t	keyslen=(uint32_t)keys.getSize();
+
 	// status vector...
 	successStatusVector();
 
 	return genericResponse("attach response",
 				objecthandle,((uint64_t)objectid)<<32,
-				NULL,0,
+				(keyslen)?keys.getBuffer():NULL,keyslen,
 				statusvector,statusvectorstr,
 				statusvectorlen);
 }
@@ -3963,6 +4710,34 @@ bool sqlrprotocol_firebird::authenticate() {
 
 	// success
 	if (retval) {
+
+		// The srp exchange runs inside the auth module, so the key
+		// the wire encryption needs comes back on the credentials,
+		// which go out of scope at the end of this method.  It's
+		// there only for the srp methods; the others derive nothing
+		// that could key a cipher, and op_crypt fails without it.
+		if (wirecryptkey) {
+			bytestring::zero(wirecryptkey,wirecryptkeysize);
+			delete[] wirecryptkey;
+			wirecryptkey=NULL;
+			wirecryptkeysize=0;
+		}
+		const byte_t	*sessionkey=cred.getSessionKey();
+		uint64_t	sessionkeysize=cred.getSessionKeySize();
+		if (sessionkey && sessionkeysize) {
+			wirecryptkey=new byte_t[sessionkeysize];
+			bytestring::copy(wirecryptkey,sessionkey,
+						sessionkeysize);
+			wirecryptkeysize=sessionkeysize;
+		}
+
+		if (getDebug()) {
+			debugStart("authenticate");
+			stdoutput.printf("	session key: %s\n",
+					(wirecryptkey)?"yes":"no");
+			debugEnd();
+		}
+
 		return true;
 	}
 

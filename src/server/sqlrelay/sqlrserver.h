@@ -7107,6 +7107,18 @@ class SQLRSERVER_DLLSPEC sqlrfirebirdcredentials : public sqlrcredentials {
 		 *  authentication method (eg. challenge) to "extra". */
 		void	setExtra(const char *extra);
 
+		/** Sets the session key that the authentication method
+		 *  derived (eg. the srp session key that firebird's wire
+		 *  encryption uses) to a copy of the "sessionkeysize" bytes
+		 *  at "sessionkey".
+		 *
+		 *  The auth module sets this, and the protocol module reads
+		 *  it back after authentication succeeds.  Unlike the other
+		 *  members, the copy belongs to this instance, and is zeroed
+		 *  and freed when this instance is deleted. */
+		void	setSessionKey(const byte_t *sessionkey,
+						uint64_t sessionkeysize);
+
 		/** Returns the user. */
 		const char	*getUser();
 
@@ -7121,6 +7133,13 @@ class SQLRSERVER_DLLSPEC sqlrfirebirdcredentials : public sqlrcredentials {
 
 		/** Returns the extra info. */
 		const char	*getExtra();
+
+		/** Returns the session key, or NULL if the authentication
+		 *  method didn't derive one. */
+		const byte_t	*getSessionKey();
+
+		/** Returns the number of bytes in the session key. */
+		uint64_t	getSessionKeySize();
 
 	#include <sqlrelay/private/sqlrfirebirdcredentials.h>
 };

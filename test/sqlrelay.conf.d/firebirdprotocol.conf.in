@@ -25,4 +25,17 @@
 		</connections>
 	</instance>
 
+	<!-- same as firebirdprotocoltest, but with wirecrypt="required", to
+	     exercise the Arc4 wire-crypt negotiation end to end - a client
+	     that can't or won't negotiate crypt is refused outright, so any
+	     query that succeeds here proves a real encrypted round trip -->
+	<instance id="firebirdprotocolwirecrypttest" dbase="firebird" debug="protocols" maxcursors="64">
+		<listeners>
+			<listener protocol="firebird" port="3052" wirecrypt="required"/>
+		</listeners>
+		<connections>
+			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
+		</connections>
+	</instance>
+
 </instances>

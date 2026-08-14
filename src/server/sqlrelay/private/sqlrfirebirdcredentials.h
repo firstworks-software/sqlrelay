@@ -7,3 +7,6 @@
 		uint64_t	passwordsize;
 		const char	*method;
 		const char	*extra;
+		// unlike the members above, this one is owned
+		byte_t		*sessionkey;
+		uint64_t	sessionkeysize;

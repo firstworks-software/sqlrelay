@@ -183,6 +183,11 @@ http://www.gnu.org/software/src-highlite -->
       <li><b>maxpacketsize</b> - The largest tds packet size, in bytes, that a connecting client is allowed to negotiate.  Defaults to 65535, which is also the maximum allowed value; values of 0 or greater than 65535 are treated as 65535.</li>
     </ul>
 
+    <li>firebird options - These options only apply when protocol="firebird".</li>
+    <ul>
+      <li><b>wirecrypt</b> - Sets the server's wire encryption level for the firebird wire protocol.  Valid values are "disabled" (never encrypt), "enabled" (encrypt if the client is willing to), and "required" (refuse to proceed unless the connection is encrypted).  The client's own requested level is negotiated against this one; either side asking for "required" forces encryption, and either side asking for "disabled" forces it off, provided the other side doesn't require it.  When the negotiated level is "required", the connection is held to it: until encryption is actually running, only the handshake, authentication and session-teardown operations are answered, and anything else is refused with an error, so a client that agrees to "required" and then never turns encryption on can't carry on in the clear.  Defaults to "enabled".  Only the Arc4 cipher is currently implemented, not ChaCha or ChaCha64; this doesn't affect compatibility with a stock Firebird 4 or 5 client, which advertises ChaCha64, ChaCha and Arc4 in that order but falls back cleanly to whichever of those the server actually offers.  The generic <b>tls</b> listener option (see below) is not supported for protocol="firebird" - wire encryption is configured with <b>wirecrypt</b> instead.</li>
+    </ul>
+
     <li>Kerberos options - Use these options to configure Kerberos encryption and authentication.</li>
     <ul>
       <li><b>krb</b> - Set to "yes" to enable Kerberos encryption and authentication.  Set to "no" to disable Kerberos encryption and authentication.  Defaults to "no".</li>

@@ -33,6 +33,12 @@
 //		serverprivatekey	as above
 //		salt			what challenge() returned
 //
+// The srp session key goes the other way, and "extra" is an input the
+// protocol module owns, so it rides back on the credentials themselves -
+// sqlrfirebirdcredentials::setSessionKey(), which srpVerify() calls once the
+// proof checks out.  Firebird's wire encryption keys its cipher with it, and
+// nothing else here can produce it.
+//
 // The protocol module supplies b rather than getting it back from
 // challenge().  challenge() keeps no state, so the ephemeral private key has
 // to be held by the side that owns the session, and sqlrfirebirdsrp exposes
@@ -51,19 +57,22 @@ class SQLRSERVER_DLLSPEC sqlrauth_firebird_connectstrings : public sqlrauth {
 		bool		challenge(sqlrcredentials *cred,
 						stringbuffer *challenge);
 	private:
-		const char	*userPassword(const char *user,
+		const char	*userPassword(sqlrfirebirdcredentials *cred,
+						const char *user,
 						const char *password,
 						const char *method,
 						const char *extra,
 						uint64_t index);
-		bool		compare(const char *suppliedpassword,
+		bool		compare(sqlrfirebirdcredentials *cred,
+						const char *suppliedpassword,
 						const char *validpassword,
 						const char *method,
 						const char *user,
 						const char *extra);
 		char		*legacyHash(const char *password);
 		char		*getClearTextPassword(const char *user);
-		bool		srpVerify(const char *user,
+		bool		srpVerify(sqlrfirebirdcredentials *cred,
+						const char *user,
 						const char *password,
 						const char *proof,
 						const char *method,
@@ -279,8 +288,10 @@ const char *sqlrauth_firebird_connectstrings::auth(sqlrcredentials *cred) {
 
 	// run through the user/password arrays...
 	for (uint64_t i=0; i<usercount; i++) {
-		const char	*result=userPassword(user,password,
-							method,extra,i);
+		const char	*result=userPassword(
+						(sqlrfirebirdcredentials *)cred,
+						user,password,
+						method,extra,i);
 		if (result) {
 			return result;
 		}
@@ -289,6 +300,7 @@ const char *sqlrauth_firebird_connectstrings::auth(sqlrcredentials *cred) {
 }
 
 const char *sqlrauth_firebird_connectstrings::userPassword(
+						sqlrfirebirdcredentials *cred,
 						const char *user,
 						const char *password,
 						const char *method,
@@ -303,7 +315,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 	// if password encryption isn't being used, then compare against
 	// the password from the configuration as it stands
 	if (!charstring::getLength(passwordencryptions[index])) {
-		return (compare(password,passwords[index],
+		return (compare(cred,password,passwords[index],
 					method,user,extra))?user:NULL;
 	}
 
@@ -343,7 +355,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 		// decrypt the password from the configuration
 		// and compare it to the password that was passed in
 		pwd=pe->decrypt(passwords[index]);
-		result=compare(password,pwd,method,user,extra);
+		result=compare(cred,password,pwd,method,user,extra);
 	}
 
 	// clean up
@@ -353,7 +365,9 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 	return (result)?user:NULL;
 }
 
-bool sqlrauth_firebird_connectstrings::compare(const char *suppliedpassword,
+bool sqlrauth_firebird_connectstrings::compare(
+						sqlrfirebirdcredentials *cred,
+						const char *suppliedpassword,
 						const char *validpassword,
 						const char *method,
 						const char *user,
@@ -363,7 +377,7 @@ bool sqlrauth_firebird_connectstrings::compare(const char *suppliedpassword,
 	// it takes the whole first round trip back
 	if (!charstring::compare(method,FIREBIRD_SRP) ||
 			!charstring::compare(method,FIREBIRD_SRP256)) {
-		return srpVerify(user,validpassword,
+		return srpVerify(cred,user,validpassword,
 					suppliedpassword,method,extra);
 	}
 
@@ -450,7 +464,9 @@ static sqlrfirebirdsrphash_t srpHashType(const char *method) {
 			SQLRFIREBIRDSRP_SRP256:SQLRFIREBIRDSRP_SRP;
 }
 
-bool sqlrauth_firebird_connectstrings::srpVerify(const char *user,
+bool sqlrauth_firebird_connectstrings::srpVerify(
+						sqlrfirebirdcredentials *cred,
+						const char *user,
 						const char *password,
 						const char *proof,
 						const char *method,
@@ -476,6 +492,16 @@ bool sqlrauth_firebird_connectstrings::srpVerify(const char *user,
 			srp.verifyProof(account,proof));
 
 	delete[] account;
+
+	// The session key the exchange just produced is what firebird's wire
+	// encryption keys its cipher with, and the srp object that holds it
+	// goes out of scope at the end of this method.  Hand it back through
+	// the credentials, which the protocol module reads once auth()
+	// returns.
+	if (result) {
+		cred->setSessionKey(srp.getSessionKey(),
+					srp.getSessionKeySize());
+	}
 
 	if (getDebug()) {
 		debugStart("auth compare");

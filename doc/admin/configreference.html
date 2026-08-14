@@ -182,7 +182,7 @@ http://www.gnu.org/software/src-highlite -->
     <li><b>maxstringbindvaluesize</b> - Sets the maximum number of bytes that the SQL Relay server will accept for a string bind value, if the client tries to send a longer string bind value, the server will close the connection.  Defaults to 32768 (32k) bytes.</li>
     <li><b>maxlobbindvaluesize</b> - Sets the maximum number of bytes that the SQL Relay server will accept for a LOB/CLOB bind value, if the client tries to send a longer LOB/CLOB bind value, the server will close the connection.  Defaults to 71680 (70k) bytes.</li>
     <li><b>maxclientinfosize</b> - Sets the maximum number of bytes that the SQL Relay server will accept for a client info string.  Defaults to 512.</li>
-    <li><b>maxerrorsize</b> - Sets the maximum number of bytes that the SQL Relay server will accept from the database for an error string.  Defaults to 2048.</li>
+    <li><b>maxerrorsize</b> - Sets the maximum number of bytes that the SQL Relay server will accept from the database for an error string.  Defaults to 2048.  Values less than 1 are raised to 1.</li>
     <li><b>idleclienttimeout</b> - Sets the number of seconds that a client can sit idle while logged into the SQL Relay server before it will be disconnected.  Defaults to -1, which means to wait forever.</li>
     <li><b>maxlisteners</b> - When a client connects to the listener but no connections are available, a child listener is forked off to wait for an available connection.  Since these can pile up and consume system resources, this parameter allows you to limit the number of child listeners that can be running simultaneously before an error will be returned to the client.  Defaults to -1, which means to run without a limit.</li>
     <li><b>listenertimeout</b> - Sets the number of seconds that a listener will wait for an avaialable connection before giving up.  Defaults to 0, which means to wait forever.</li>
@@ -227,6 +227,11 @@ http://www.gnu.org/software/src-highlite -->
       <li><b>tdsversion</b> - Overrides the TDS protocol version that SQL Relay advertises to tds clients, for back-ends whose version string it can't automatically map to a TDS version.  Accepts a TDS version number as a plain decimal integer in the form used internally: 420 (TDS 4.2), 500 (5.0), 700 (7.0), 710 (7.1), 711 (7.1 SP1), 720 (7.2), 730 (7.3), 731 (7.31), 740 (7.4).  When unset (or 0), SQL Relay guesses the version from the back-end database's version string, falling back further to whatever version the client itself requests if the guess fails.  The value matters beyond just a handshake number: clients such as FreeTDS only send a PRELOGIN packet (where encryption is negotiated) when using TDS 7.1 or later - below that, they go straight to the login packet and any encryption settings are silently never applied.  Defaults to unset (auto-detect).</li>
       <li><b>packetsize</b> - The tds packet size, in bytes, used until a connecting client negotiates a different size.  Defaults to 4096.  Must not exceed maxpacketsize.</li>
       <li><b>maxpacketsize</b> - The largest tds packet size, in bytes, that a connecting client is allowed to negotiate.  Defaults to 65535, which is also the maximum allowed value; values of 0 or greater than 65535 are treated as 65535.</li>
+    </ul>
+
+    <li>firebird options - These options only apply when protocol="firebird".</li>
+    <ul>
+      <li><b>wirecrypt</b> - Sets the server's wire encryption level for the firebird wire protocol.  Valid values are "disabled" (never encrypt), "enabled" (encrypt if the client is willing to), and "required" (refuse to proceed unless the connection is encrypted).  The client's own requested level is negotiated against this one; either side asking for "required" forces encryption, and either side asking for "disabled" forces it off, provided the other side doesn't require it.  When the negotiated level is "required", the connection is held to it: until encryption is actually running, only the handshake, authentication and session-teardown operations are answered, and anything else is refused with an error, so a client that agrees to "required" and then never turns encryption on can't carry on in the clear.  Defaults to "enabled".  Only the Arc4 cipher is currently implemented, not ChaCha or ChaCha64; this doesn't affect compatibility with a stock Firebird 4 or 5 client, which advertises ChaCha64, ChaCha and Arc4 in that order but falls back cleanly to whichever of those the server actually offers.  The generic <b>tls</b> listener option (see below) is not supported for protocol="firebird" - wire encryption is configured with <b>wirecrypt</b> instead.</li>
     </ul>
 
     <li>Kerberos options - Use these options to configure Kerberos encryption and authentication.</li>
@@ -320,7 +325,7 @@ or a tnsnames-style expression such as:
   <li><b>dbtype</b>: Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).</li>
 </ul>
 
-<br/><a name="sap"/><p>For <b>sap</b> (or <b>sybase</b>) databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;csversion=CSVERSION;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;decodeblobs=yes/no;dbtype=ID"</p>
+<br/><a name="sap"/><p>For <b>sap</b> (or <b>sybase</b>) databases, the connect string syntax is "sybase=SYBASE;lang=LANG;user=USER;password=PASSWORD;server=SERVER;db=DATABASE;autocommit=yes/no/default;charset=CHARSET;language=LANGUAGE;hostname=HOSTNAME;packetsize=PACKETSIZE;csversion=CSVERSION;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxbufferedrows=MAXBUFFEREDROWS;decodeblobs=yes/no;dbtype=ID"</p>
 
 <ul>
   <li><b>sybase</b>: The directory containing the "interfaces" file.  Optional if the SYBASE environment variable is set.  Overrides the SYBASE environment variable.  If SQL Relay was built to load the SAP/Sybase libraries at runtime, then the lib subdirectory of this directory will be searched for the SAP/Sybase client libraries.</li>
@@ -338,6 +343,7 @@ or a tnsnames-style expression such as:
   <li><b>fetchatonce</b>: The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
   <li><b>maxcolumncount</b>: The maximum number of columns that can be fetched in a query.  Defaults to 256.  Setting this parameter to -1 causes result set buffers to be dynamically allocated, allowing any number of columns to be fetched.  Using -1 is flexible and conserves memory but there is a performance penalty.  (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
   <li><b>maxfieldsize</b>: The maximum size, in bytes, of a non-lob field.  Non-lob fields longer than this will be truncated.  Defaults to 32768. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>
+  <li><b>maxbufferedrows</b>: When a stored procedure call returns rows and also has output parameters, SQL Relay has to read the rows into memory before it can read the result sets that carry the RETURN value and output parameters, because SAP/Sybase sends those after the rows.  This parameter caps how many rows are buffered.  Past the cap, the rest of the rows are discarded and the query returns a truncated result set.  Defaults to 1000.  Ordinary queries stream their rows and are not affected by this parameter.</li>
   <li><b>decodeblobs</b>: Blob field values are returned by the SAP/Sybase client library to SQL Relay in a text-encoded form.  By default SQL Relay decodes these to raw binary before passing them to the client.  Set to "no" to leave the values text-encoded and let the client decode them itself.  Optional, defaults to yes.</li>
   <li><b>dbtype</b>: Overrides the default value returned when a client request the database type using the identify() method (or similar method/function).</li>
 </ul>
@@ -457,7 +463,7 @@ or a tnsnames-style expression such as:
   <li><b>busytimeoutms</b>: The number of milliseconds to wait for a contended write lock to clear before returning an error.  Set to 0 to fail immediately when a write lock is contended.  Optional, defaults to 5000 (5 seconds).</li>
 </ul>
 
-<br/><a name="odbc"/><p>For <b>odbc</b> databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA"</p>
+<br/><a name="odbc"/><p>For <b>odbc</b> databases, the connect string syntax is "user=USER;password=PASSWORD;dsn=DSN;lang=LANG;autocommit=yes/no/default;connecttimeout=CONNECTTIMEOUT;odbcversion=ODBCVERSION;ncharencoding=NCHARENCODING;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;maxoutlobbindsize=MAXOUTLOBBINDSIZE;dbtype=ID;mars=yes/no;trace=yes/no/default;tracefile=TRACEFILE;detachbeforelogin=yes/no;overrideschema=SCHEMA;binarylobbind=yes/no"</p>
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
@@ -477,6 +483,7 @@ or a tnsnames-style expression such as:
   <li><b>tracefile</b>: Allows you to override the default ODBC trace file name, or the trace file name specified in the DSN.  If omitted then the trace file name specified in the DSN will be used.  If that is omitted then the default trace file name will be used.</li>
   <li><b>detachbeforelogin</b>: Whether or not to detach from the controlling terminal before login.  When set to yes, the process ID's in the ODBC trace file will match the process ID of the sqlr-connection process.  Otherwise they will not.  Defaults to no.</li>
   <li><b>overrideschema</b>: Overrides the schema that the database believes that it is in when requesting lists of tables, columns, procedures, etc.  Useful for specific databases (eg. Apache Hive) that misreport the schema.</li>
+  <li><b>binarylobbind</b>: Whether to bind blob values as raw binary rather than as a character string.  SQL Relay already does this automatically for MS SQL Server, SAP ASE, DB2, Informix and Teradata, whose drivers were tested and don't implicitly convert a character bind into a binary/blob column.  For any other driver, set this to yes only after testing it: switching to a binary bind means a blob can no longer be bound into a character (char/varchar/text) column.  Optional, defaults to no.</li>
 </ul>
 
 <br/><a name="advanced"/><h2>Advanced Configuration</h2>

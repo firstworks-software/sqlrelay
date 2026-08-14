@@ -766,6 +766,40 @@
 			real client (Srp, Srp256 and Legacy_Auth all authenticate
 			successfully); 14 and up stay opt-in via maxprotocolversion,
 			since nothing past 13 has been run against a real client yet
+		the firebird protocol module negotiates wire encryption now - it
+			reads the level the client asks for out of the connect
+			block's CNCT_client_crypt, combines it with its own,
+			advertises the Arc4 plugin in the key block on the accept
+			and on the attach response, and answers
+			isc_wirecrypt_incompatible when one side insists on
+			encryption and the other refuses it
+		added a wirecrypt= listener attribute for the firebird protocol
+			module, to set the server's own wire encryption level
+			("disabled", "enabled" or "required") instead of always
+			asking for "enabled"
+		the firebird protocol module encrypts the wire now - once
+			op_crypt has settled on the Arc4 plugin, the srp session
+			key drives an rc4 cipher that sits under the client
+			socket's reads and writes, switching over where firebird
+			switches: the op_crypt request arrives in the clear, and
+			the response to it is the first encrypted packet out;
+			only Arc4 is implemented so far, not ChaCha/ChaCha64 -
+			those need wire protocol 16, which SQL Relay doesn't
+			negotiate yet, but a stock Firebird 4/5 client still
+			falls back to Arc4 cleanly since it offers ChaCha64,
+			ChaCha and Arc4 in that order and takes whichever of
+			those the server advertises; verified against a real
+			Firebird 4 client (isql-fb) with wirecrypt="required" -
+			the switch-over no longer misfires when the accept
+			response was already flushed by the time op_crypt
+			arrives
+		the firebird protocol module enforces wirecrypt="required" now -
+			while the negotiated level is "required" and encryption
+			isn't actually running yet, only the handshake,
+			authentication and session-teardown ops are answered and
+			everything else gets isc_miss_wirecrypt, so a client that
+			agrees to "required" and then never sends op_crypt can no
+			longer carry on in the clear
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

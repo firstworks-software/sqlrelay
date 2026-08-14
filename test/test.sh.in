@@ -63,6 +63,7 @@ stop_instances() {
 		if ( test "$_db" = "firebirdprotocol" )
 		then
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdprotocolfakebindstest
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdprotocolwirecrypttest
 		fi
 
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
@@ -183,6 +184,8 @@ start_instance() {
 	then
 		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest -backtrace $BACKTRACEDIR
 		sleep 2
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdprotocolwirecrypttest -backtrace $BACKTRACEDIR
+		sleep 2
 	fi
 
 	# start the instance
@@ -211,6 +214,8 @@ stop_instance() {
 	then
 		sleep 2
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolwirecrypttest
 	fi
 	sleep 2
 	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test

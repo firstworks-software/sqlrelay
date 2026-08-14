@@ -93,4 +93,39 @@ else
 	exit 1
 fi
 
+# firebirdprotocolwirecrypttest (port 3052) has wirecrypt="required" - a
+# stock fbclient defaults to WireCrypt=Enabled and negotiates Arc4
+# automatically, so a query succeeding here is a real encrypted round
+# trip, not just a successful negotiation start.  a client that refused
+# or couldn't do wire crypt would be rejected outright by this listener,
+# and so would one that agreed to wire crypt and then never turned it on,
+# so there's no cleartext fallback to accidentally pass against
+OUTPUT=`printf 'select 1 from rdb$database;\n' | $ISQL \
+	-user testuser \
+	-password testpassword \
+	localhost/3052:/u02/$HOST.gdb 2>&1`
+
+if ( echo "$OUTPUT" | grep -q "Statement failed" )
+then
+	echo "failed"
+	echo "$OUTPUT"
+	exit 1
+fi
+
+if ( echo "$OUTPUT" | grep -q "CONSTANT" )
+then
+	if ( echo "$OUTPUT" | grep -qE "^ *1 *\$" )
+	then
+		echo "success"
+	else
+		echo "unknown"
+		echo "$OUTPUT"
+		exit 1
+	fi
+else
+	echo "unknown"
+	echo "$OUTPUT"
+	exit 1
+fi
+
 exit 0

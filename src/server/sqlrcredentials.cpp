@@ -2,6 +2,7 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
+#include <rudiments/bytestring.h>
 
 #include <config.h>
 
@@ -288,9 +289,15 @@ sqlrfirebirdcredentials::sqlrfirebirdcredentials() : sqlrcredentials() {
 	passwordsize=0;
 	method=NULL;
 	extra=NULL;
+	sessionkey=NULL;
+	sessionkeysize=0;
 }
 
 sqlrfirebirdcredentials::~sqlrfirebirdcredentials() {
+	if (sessionkey) {
+		bytestring::zero(sessionkey,sessionkeysize);
+	}
+	delete[] sessionkey;
 }
 
 const char *sqlrfirebirdcredentials::getType() {
@@ -317,6 +324,28 @@ void sqlrfirebirdcredentials::setExtra(const char *extra) {
 	this->extra=extra;
 }
 
+void sqlrfirebirdcredentials::setSessionKey(const byte_t *sessionkey,
+						uint64_t sessionkeysize) {
+
+	// the key the auth module derived lives inside whatever the
+	// derivation ran in, which is gone by the time the protocol module
+	// looks at this, so a copy is kept here
+	if (this->sessionkey) {
+		bytestring::zero(this->sessionkey,this->sessionkeysize);
+	}
+	delete[] this->sessionkey;
+	this->sessionkey=NULL;
+	this->sessionkeysize=0;
+
+	if (!sessionkey || !sessionkeysize) {
+		return;
+	}
+
+	this->sessionkey=new byte_t[sessionkeysize];
+	bytestring::copy(this->sessionkey,sessionkey,sessionkeysize);
+	this->sessionkeysize=sessionkeysize;
+}
+
 const char *sqlrfirebirdcredentials::getUser() {
 	return user;
 }
@@ -335,6 +364,14 @@ const char *sqlrfirebirdcredentials::getMethod() {
 
 const char *sqlrfirebirdcredentials::getExtra() {
 	return extra;
+}
+
+const byte_t *sqlrfirebirdcredentials::getSessionKey() {
+	return sessionkey;
+}
+
+uint64_t sqlrfirebirdcredentials::getSessionKeySize() {
+	return sessionkeysize;
 }
 
 sqlrteradatacredentials::sqlrteradatacredentials() : sqlrcredentials() {
