@@ -237,11 +237,14 @@
 #define PROTOCOL_VERSION20	(0xffff8000|20)
 
 // the highest version the module negotiates unless the maxprotocolversion
-// parameter raises it
-// (13 and up answer op_accept_data and drive the auth plugin handshake, which
-// no real client has been run against yet, so they stay opt-in)
+// parameter raises or lowers it
+// (13's op_accept_data/auth plugin handshake and packed message codec are
+// proven against a real client - Srp, Srp256 and Legacy_Auth all authenticate
+// successfully.  14 and up add op_ping, batch ops, op_repl_data, statement
+// timeouts and more, none of which have been run against a real client yet,
+// so they stay opt-in)
 // this also keeps op_fetch_scroll and op_info_cursor (18) unreachable
-#define MAX_PROTOCOL_VERSION	PROTOCOL_VERSION12
+#define MAX_PROTOCOL_VERSION	PROTOCOL_VERSION13
 
 // how many offered protocols the connect block can carry
 // (10 before firebird 6; anything past this count is ignored)
@@ -1058,8 +1061,8 @@
 #define FIREBIRD_MAX_OBJECT_NAME_LENGTH	255
 
 // what the module answers isc_database_info with
-// (connect() caps protocol negotiation at 12, so the module presents itself
-// as a firebird 2.5-era server - see MAX_PROTOCOL_VERSION)
+// (these values are firebird 2.5-era regardless of the negotiated wire
+// protocol version - unrelated to MAX_PROTOCOL_VERSION)
 #define FIREBIRD_PAGE_SIZE		4096
 #define FIREBIRD_NUM_BUFFERS		75
 #define FIREBIRD_ODS_VERSION		11
@@ -2002,10 +2005,9 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 	clientsock=NULL;
 
 	// maxprotocolversion - the highest wire protocol version negotiation
-	// will accept.  13 and up run the auth plugin handshake (Srp256, Srp
-	// or Legacy_Auth) and the packed sql message format, and are opt-in
-	// until they've been proven against real clients.  Anything else, and
-	// anything unparsable, leaves the ceiling where it has always been.
+	// will accept.  Defaults to MAX_PROTOCOL_VERSION - see the comment
+	// there for which versions that covers.  Anything unparsable, or out
+	// of range, falls back to that same default.
 	uint32_t	configmaxpv=(uint32_t)charstring::convertToInteger(
 			parameters->getAttributeValue("maxprotocolversion"));
 	if (!configmaxpv || configmaxpv>20) {

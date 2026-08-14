@@ -750,6 +750,22 @@
 			catch-all branch, which reported it as VARCHAR and lost
 			the null indicator, so a null BOOLEAN always came back as
 			false instead of null
+		fixed the firebird_connectstrings authentication module - it used
+			the login as typed where firebird uses the login run
+			through its sql identifier rules (unquoted logins are
+			upcased, quoted logins lose their quotes), so the srp
+			verifier and proof were built from a different account
+			string than the client's, and every srp login whose user
+			name wasn't already uppercase failed its proof check; the
+			same rules apply to matching the login against the
+			configured connect string user now, so any case of a login
+			matches, the way it does against a real firebird
+		the firebird protocol module now negotiates up to wire protocol 13 by
+			default, rather than capping at 12 - 13's op_accept_data/auth
+			plugin handshake and packed message codec are proven against a
+			real client (Srp, Srp256 and Legacy_Auth all authenticate
+			successfully); 14 and up stay opt-in via maxprotocolversion,
+			since nothing past 13 has been run against a real client yet
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

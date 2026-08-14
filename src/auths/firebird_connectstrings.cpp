@@ -2,8 +2,10 @@
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
+#include <rudiments/character.h>
 #include <rudiments/charstring.h>
 #include <rudiments/des.h>
+#include <rudiments/stringbuffer.h>
 #include <rudiments/parameterstring.h>
 #include <rudiments/sensitivevalue.h>
 
@@ -139,6 +141,111 @@ static const char *supportedmethods[]={
 	NULL
 };
 
+// fb_utils::sqlSymbolChar() - utils.cpp:1560-1565
+static bool accountSymbolChar(char c, bool first) {
+	if (c&0x80) {
+		return false;
+	}
+	return ((character::isDigit(c) && !first) ||
+			character::isAlphabetical(c) ||
+			c=='_' || c=='$');
+}
+
+// The login the srp math hashes is not the login as typed.  Both sides run
+// it through firebird's login rules first - fb_utils::dpbItemUpper(),
+// utils.cpp:1567-1611 - the client in ClntAuthBlock::loadClnt()
+// (interface.cpp:10272-10281) before SrpClient::authenticate() hashes
+// cb->getLogin() (SrpClient.cpp:149,152), and the server in
+// SrvAuthBlock::load() (server.cpp:7520-7524) as it reads CNCT_login.
+//
+// The rules:
+//	* a quoted login loses its quotes, and doubled quotes inside it
+//	  collapse to one.  It is upcased only if it was single-quoted and
+//	  what was inside was all sql symbol characters.
+//	* an unquoted login is upcased, unless it has anything in it but sql
+//	  symbol characters, in which case it is left exactly as it came in
+//	  (which is also what firebird does with a utf-8 login)
+//	* sql symbol characters are the ascii letters, _, $, and the digits
+//	  in any but the first position, so the upcasing is always ascii
+//
+// Malformed quoting raises isc_quoted_str_bad/isc_quoted_str_miss inside
+// firebird.  Here the login is just left alone, and the proof fails on its
+// own.
+//
+// Returns a new string in every case.
+static char *accountName(const char *login) {
+
+	size_t	len=charstring::getLength(login);
+
+	// quoted login - strip the quotes
+	if (len && (login[0]=='"' || login[0]=='\'')) {
+
+		char		endquote=login[0];
+		bool		ascii=true;
+		stringbuffer	buf;
+
+		for (size_t i=1; i<len; i++) {
+
+			if (login[i]==endquote) {
+
+				if (++i>=len) {
+					char	*account=buf.detachString();
+					if (ascii && endquote=='\'') {
+						charstring::upper(account);
+					}
+					return account;
+				}
+
+				// a quote that isn't doubled ends the login
+				// early - it's malformed
+				if (login[i]!=endquote) {
+					return charstring::duplicate(login);
+				}
+
+				// skipped the escape quote, keep going
+
+			} else if (!accountSymbolChar(login[i],i==1)) {
+				ascii=false;
+			}
+
+			buf.append(login[i]);
+		}
+
+		// ran off the end without a closing quote
+		return charstring::duplicate(login);
+	}
+
+	// unquoted login - upcase it, but only if it's all sql symbol
+	// characters
+	for (size_t i=0; i<len; i++) {
+		if (!accountSymbolChar(login[i],i==0)) {
+			return charstring::duplicate(login);
+		}
+	}
+
+	char	*account=charstring::duplicate(login);
+	charstring::upper(account);
+	return account;
+}
+
+// A firebird login is an sql identifier, so "testuser", "TestUser" and
+// TESTUSER are all the same login - the server runs whatever came in through
+// the rules above and looks that up (SrvAuthBlock::load(),
+// server.cpp:7520-7524, and ServerAuth::ServerAuth(), server.cpp:584-594,
+// which also refuses a dpb user name that disagrees with CNCT_login once
+// both have been through them).  The configured connect string user plays
+// the part of the name a "create user" wrote, which firebird would have run
+// through the same rules, so both sides go through them here before being
+// compared.
+static bool sameAccount(const char *user, const char *configuser) {
+	char	*useraccount=accountName(user);
+	char	*configaccount=accountName(configuser);
+	bool	same=!charstring::compare(useraccount,configaccount);
+	delete[] useraccount;
+	delete[] configaccount;
+	return same;
+}
+
 const char *sqlrauth_firebird_connectstrings::auth(sqlrcredentials *cred) {
 
 	// this module only supports firebird credentials
@@ -189,7 +296,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 						uint64_t index) {
 
 	// bail if the user doesn't match
-	if (charstring::compare(user,users[index])) {
+	if (!sameAccount(user,users[index])) {
 		return NULL;
 	}
 
@@ -309,7 +416,7 @@ char *sqlrauth_firebird_connectstrings::getClearTextPassword(
 
 	for (uint64_t i=0; i<usercount; i++) {
 
-		if (charstring::compare(user,users[i])) {
+		if (!sameAccount(user,users[i])) {
 			continue;
 		}
 
@@ -352,6 +459,10 @@ bool sqlrauth_firebird_connectstrings::srpVerify(const char *user,
 	parameterstring	p;
 	p.parse(extra);
 
+	// the account the proof was built from, rather than the login as
+	// typed - see accountName() above
+	char	*account=accountName(user);
+
 	// setServerPrivateKey() before generateServerPublicKey() makes the
 	// second round reproduce the B, and with it the session key, that the
 	// first round sent
@@ -360,9 +471,11 @@ bool sqlrauth_firebird_connectstrings::srpVerify(const char *user,
 			srp.setClientPublicKey(p.getValue("clientpublickey")) &&
 			srp.setServerPrivateKey(
 					p.getValue("serverprivatekey")) &&
-			srp.generateServerPublicKey(user,password) &&
+			srp.generateServerPublicKey(account,password) &&
 			srp.computeServerSessionKey() &&
-			srp.verifyProof(user,proof));
+			srp.verifyProof(account,proof));
+
+	delete[] account;
 
 	if (getDebug()) {
 		debugStart("auth compare");
@@ -416,12 +529,18 @@ bool sqlrauth_firebird_connectstrings::challenge(sqlrcredentials *cred,
 	parameterstring	p;
 	p.parse(extra);
 
+	// the verifier has to be built from the same account the client will
+	// build its proof from - see accountName() above
+	char	*account=accountName(user);
+
 	sqlrfirebirdsrp	srp(srpHashType(method));
 	bool	result=(srp.setClientPublicKey(p.getValue("clientpublickey")) &&
 			srp.setServerPrivateKey(
 					p.getValue("serverprivatekey")) &&
 			srp.generateSalt() &&
-			srp.generateServerPublicKey(user,validpassword));
+			srp.generateServerPublicKey(account,validpassword));
+
+	delete[] account;
 
 	if (result) {
 		challenge->append("salt=")->append(srp.getSalt());
