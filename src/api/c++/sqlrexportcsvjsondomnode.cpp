@@ -84,10 +84,12 @@ bool sqlrexportcsvjsondomnode::exportField(bool first) {
 					(int32_t)getCurrentFieldLength());
 	if (isnumber) {
 		field->setAttributeValue("t","n");
-		field->setAttributeValue("v",getCurrentField());
+		field->setAttributeValue("v",getCurrentField(),
+					(size_t)getCurrentFieldLength());
 	} else {
 		field->setAttributeValue("t","s");
-		field->setAttributeValue("v",getCurrentField());
+		field->setAttributeValue("v",getCurrentField(),
+					(size_t)getCurrentFieldLength());
 	}
 	return true;
 }
