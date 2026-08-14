@@ -7,6 +7,7 @@
 		bool	headerEnd();
 		bool	bodyStart();
 		bool	recordStart();
-		bool	field(const char *value, bool quoted);
+		bool	field(const char *value, size_t valuelength,
+								bool quoted);
 		bool	recordEnd();
 		bool	bodyEnd();

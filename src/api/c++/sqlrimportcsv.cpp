@@ -60,8 +60,11 @@ bool sqlrimportcsv::recordStart() {
 	return startProcessingRow();
 }
 
-bool sqlrimportcsv::field(const char *value, bool quoted) {
-	setFieldBuffer(value);
+bool sqlrimportcsv::field(const char *value, size_t valuelength,
+							bool quoted) {
+	// field data can contain embedded nulls, so use the length
+	// the parser derived for it, rather than measuring it here
+	setFieldBuffer(value,(uint32_t)valuelength);
 	// NOTE: processField() calls the field-start and field-end events
 	return processField();
 }

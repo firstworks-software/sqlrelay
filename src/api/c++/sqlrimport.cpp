@@ -6,6 +6,7 @@
 #include <rudiments/file.h>
 #include <rudiments/datetime.h>
 #include <rudiments/error.h>
+#include <rudiments/bytestring.h>
 
 #define NEED_IS_NUMBER_TYPE_CHAR
 #define NEED_IS_DATETIME_TYPE_CHAR
@@ -52,6 +53,7 @@ sqlrimport::sqlrimport() {
 
 	colnamebuffer=NULL;
 	fieldbuffer=NULL;
+	fieldbufferlength=0;
 
 	clearFlagsAndCounts();
 
@@ -489,10 +491,21 @@ char *sqlrimport::getCurrentColumnName() {
 
 void sqlrimport::setCurrentField(char *currentfield) {
 	this->currentfield=currentfield;
+	this->currentfieldlength=charstring::getLength(currentfield);
+}
+
+void sqlrimport::setCurrentField(char *currentfield,
+					uint32_t currentfieldlength) {
+	this->currentfield=currentfield;
+	this->currentfieldlength=currentfieldlength;
 }
 
 char *sqlrimport::getCurrentField() {
 	return currentfield;
+}
+
+uint32_t sqlrimport::getCurrentFieldLength() {
+	return currentfieldlength;
 }
 
 void sqlrimport::setIsNumericColumn(uint64_t index, bool value) {
@@ -531,6 +544,7 @@ void sqlrimport::clearFlagsAndCounts() {
 	numericcolumn.clear();
 	datetimecolumn.clear();
 	currentfield=NULL;
+	currentfieldlength=0;
 	emptyrow=true;
 	importedrowcount=0;
 	commitcount=0;
@@ -579,27 +593,63 @@ void sqlrimport::clearColumnNames() {
 
 void sqlrimport::setFieldBuffer(const char *value) {
 	fieldbuffer=charstring::duplicate(value);
+	fieldbufferlength=charstring::getLength(fieldbuffer);
+}
+
+void sqlrimport::setFieldBuffer(const char *value, uint32_t length) {
+	// NOTE: charstring::duplicate(value,length) can't be used here.  It's
+	// implemented with strncpy(), which (despite what its "duplicate the
+	// first length characters" doc comment promises) stops copying at
+	// the first embedded null in "value" and zero-pads the rest, rather
+	// than copying "length" bytes verbatim.  Field data can contain
+	// embedded nulls, so duplicate it with bytestring::copy() instead,
+	// which is a plain, length-driven memcpy().
+	if (!value) {
+		fieldbuffer=NULL;
+		fieldbufferlength=0;
+		return;
+	}
+	fieldbuffer=new char[length+1];
+	bytestring::copy(fieldbuffer,value,length);
+	fieldbuffer[length]='\0';
+	fieldbufferlength=length;
 }
 
 char *sqlrimport::getFieldBuffer() {
 	return fieldbuffer;
 }
 
+uint32_t sqlrimport::getFieldBufferLength() {
+	return fieldbufferlength;
+}
+
 void sqlrimport::clearFieldBuffer() {
 	fieldbuffer=NULL;
+	fieldbufferlength=0;
 }
 
 void sqlrimport::freeFieldBuffer() {
 	delete[] fieldbuffer;
 	fieldbuffer=NULL;
+	fieldbufferlength=0;
 }
 
 void sqlrimport::setField(uint64_t index, char *value) {
 	fields[index]=value;
+	fieldlengths[index]=charstring::getLength(value);
+}
+
+void sqlrimport::setField(uint64_t index, char *value, uint32_t length) {
+	fields[index]=value;
+	fieldlengths[index]=length;
 }
 
 char *sqlrimport::getField(uint64_t index) {
 	return fields[index];
+}
+
+uint32_t sqlrimport::getFieldLength(uint64_t index) {
+	return fieldlengths[index];
 }
 
 uint64_t sqlrimport::getFieldCount() {
@@ -608,6 +658,7 @@ uint64_t sqlrimport::getFieldCount() {
 
 void sqlrimport::clearFields() {
 	fields.clear();
+	fieldlengths.clear();
 }
 
 void sqlrimport::setQuoteField(uint64_t index, bool quote) {
@@ -626,12 +677,23 @@ void sqlrimport::appendToQueryBuffer(const char *str) {
 	query.append(str);
 }
 
+void sqlrimport::appendToQueryBuffer(const char *str, size_t length) {
+	query.append(str,length);
+}
+
 void sqlrimport::appendToQueryBuffer(const char ch) {
 	query.append(ch);
 }
 
 const char *sqlrimport::getQueryBufferString() {
 	return query.getString();
+}
+
+size_t sqlrimport::getQueryBufferLength() {
+	// (the query text can contain embedded nulls, from a field's
+	// value, so use getSize() rather than getStringLength(), which
+	// is null-terminated)
+	return query.getSize();
 }
 
 void sqlrimport::clearQueryBuffer() {
@@ -1201,7 +1263,11 @@ bool sqlrimport::processField() {
 	setCurrentColumnName(getColumnName(getCurrentColumn()));
 
 	// if this value has a mapping, then get that
-	const char	*v=getMappedFieldValue(getFieldBuffer());
+	// (a mapping key can't contain an embedded null, so only look one
+	// up if the field itself doesn't have one)
+	const char	*v=(getFieldBufferLength()==
+				charstring::getLength(getFieldBuffer()))?
+			getMappedFieldValue(getFieldBuffer()):NULL;
 	if (v) {
 		freeFieldBuffer();
 		setFieldBuffer(v);
@@ -1210,7 +1276,10 @@ bool sqlrimport::processField() {
 	// check for a non-empty field
 	// (do this AFTER remapping the field in case some set
 	// of values get mapped to empty strings or NULLs)
-	if (getEmptyRow() && !charstring::isNullOrEmpty(getFieldBuffer())) {
+	// (field data can contain embedded nulls, so a field starting with
+	// a null byte isn't necessarily empty; check the length instead of
+	// using charstring::isNullOrEmpty())
+	if (getEmptyRow() && getFieldBuffer() && getFieldBufferLength()) {
 		setEmptyRow(false);
 	}
 
@@ -1219,9 +1288,11 @@ bool sqlrimport::processField() {
 	bool	isdatetime=getIsDateTimeColumn(getCurrentColumn());
 
 	// set the current field
-	char	*tmp=massageValue(getFieldBuffer(),isnumeric,isdatetime);
+	uint32_t	tmplen=0;
+	char	*tmp=massageValue(getFieldBuffer(),getFieldBufferLength(),
+					isnumeric,isdatetime,&tmplen);
 	freeFieldBuffer();
-	setCurrentField(tmp);
+	setCurrentField(tmp,tmplen);
 
 	// call the field-start event
 	if (!fieldStart()) {
@@ -1234,7 +1305,7 @@ bool sqlrimport::processField() {
 	if (getCurrentField()!=tmp) {
 		delete[] tmp;
 	}
-	setField(getFieldCount(),getCurrentField());
+	setField(getFieldCount(),getCurrentField(),getCurrentFieldLength());
 
 	// quote these if they are non-numeric
 	setQuoteField(getCurrentColumn(),!isnumeric);
@@ -1253,29 +1324,53 @@ bool sqlrimport::processField() {
 char *sqlrimport::massageValue(const char *value,
 					bool isnumeric,
 					bool isdatetime) {
+	// (only for null-terminated values, field data
+	// has to use the version below)
+	return massageValue(value,charstring::getLength(value),
+					isnumeric,isdatetime,NULL);
+}
+
+char *sqlrimport::massageValue(const char *value,
+					uint32_t valuelength,
+					bool isnumeric,
+					bool isdatetime,
+					uint32_t *outlength) {
 
 	// handle null values
 	// (do this here so implemenations of unescapeValue()
 	// don't have to worry about handling NULLs)
 	if (!value) {
+		if (outlength) {
+			*outlength=0;
+		}
 		return NULL;
 	}
 
 	// unescape the value
-	char	*unescaped=unescapeValue(value);
+	uint32_t	unescapedlength=valuelength;
+	char	*unescaped=unescapeValue(value,valuelength,&unescapedlength);
 	if (unescaped) {
 		value=unescaped;
+		valuelength=unescapedlength;
 	}
 
 	// handle null/empty values (again, after unescaping)
-	if (charstring::isNullOrEmpty(value)) {
+	// (field data can contain embedded nulls, so check the length
+	// rather than using charstring::isNullOrEmpty())
+	if (!valuelength) {
 		delete[] unescaped;
+		if (outlength) {
+			*outlength=0;
+		}
 		return NULL;
 	}
 
 	// handle non-numbers in numeric columns
-	if (isnumeric && !charstring::isNumber(value)) {
+	if (isnumeric && !charstring::isNumber(value,(int32_t)valuelength)) {
 		delete[] unescaped;
+		if (outlength) {
+			*outlength=0;
+		}
 		return NULL;
 	}
 
@@ -1337,15 +1432,27 @@ char *sqlrimport::massageValue(const char *value,
 		strb.append(dt);
 		delete[] dt;
 
+		if (outlength) {
+			*outlength=(uint32_t)strb.getSize();
+		}
 		delete[] unescaped;
 		return strb.detachString();
 	}
 
 	// handle normal values
-	stringbuffer	strb;
-	for (uint32_t index=0; value[index]; index++) {
 
-		if (value[index]=='\\' &&
+	// A value with an embedded null can't be embedded as a sql literal
+	// (there's no way to escape a null byte inside one), so insertRow()
+	// binds it instead of quoting/escaping and embedding it in the
+	// query text.  Escaping it here (doubling quotes, doubling
+	// backslashes) would corrupt it for that bind, so skip escaping for
+	// exactly the values insertRow() will end up binding.
+	bool	hasembeddednull=(valuelength!=charstring::getLength(value));
+
+	stringbuffer	strb;
+	for (uint32_t index=0; index<valuelength; index++) {
+
+		if (!hasembeddednull && value[index]=='\\' &&
 			(!charstring::compare(getDbType(),"postgresql") ||
 			!charstring::compare(getDbType(),"mysql"))) {
 
@@ -1357,7 +1464,7 @@ char *sqlrimport::massageValue(const char *value,
 			char	ch=value[index];
 
 			// double-up any single-quotes
-			if (ch=='\'') {
+			if (!hasembeddednull && ch=='\'') {
 				strb.append('\'');
 			}
 
@@ -1366,12 +1473,32 @@ char *sqlrimport::massageValue(const char *value,
 		}
 	}
 
+	// (field data can contain embedded nulls, so use getSize()
+	// rather than getStringLength(), which is null-terminated)
+	if (outlength) {
+		*outlength=(uint32_t)strb.getSize();
+	}
 	delete[] unescaped;
 	return strb.detachString();
 }
 
 char *sqlrimport::unescapeValue(const char *value) {
 	return NULL;
+}
+
+char *sqlrimport::unescapeValue(const char *value,
+					uint32_t valuelength,
+					uint32_t *outlength) {
+	// default implementation for importers (e.g. xml) whose values
+	// are always null-terminated and don't need to preserve embedded
+	// nulls; a length-aware importer (e.g. csv) that needs to preserve
+	// them should override this version instead
+	char	*result=unescapeValue(value);
+	if (outlength) {
+		*outlength=(result)?
+			(uint32_t)charstring::getLength(result):valuelength;
+	}
+	return result;
 }
 
 bool sqlrimport::endProcessingRow() {
@@ -1481,6 +1608,19 @@ bool sqlrimport::insertRow() {
 	// values...
 	appendToQueryBuffer(" values (");
 
+	// A field containing an embedded null can't be embedded as a
+	// literal in the query text - there's no way to escape a null
+	// byte inside a SQL string literal - so those fields are bound
+	// instead.  Track which ones need a bind, and under what name,
+	// here, then bind them (by name) below, after the query text
+	// (with a bind placeholder in place of each of their values) has
+	// been built.
+	dynamicarray<uint64_t>	bindfieldindices;
+	dynamicarray<char *>	bindnames;
+	bindnames.setManageArrayValues(true);
+	const char	*bindformat=getSqlrConnection()->bindFormat();
+	char	bf=(!charstring::isNullOrEmpty(bindformat))?bindformat[0]:':';
+
 	// run through the fields...
 	bool	first=true;
 	for (uint64_t i=0; i<getFieldCount(); i++) {
@@ -1510,9 +1650,34 @@ bool sqlrimport::insertRow() {
 		// get the field
 		const char	*field=getField(i);
 
-		if (field) {
+		if (!field) {
 
-			// for non-NULL fields...
+			// for NULL fields...
+			appendToQueryBuffer("NULL");
+
+		} else if (getFieldLength(i)!=charstring::getLength(field)) {
+
+			// for non-NULL fields with an embedded null...
+
+			// bind it instead of embedding it as a literal,
+			// and append a placeholder for it to the query
+			uint64_t	bindnum=bindnames.getCount();
+			char	*bindname=charstring::parseNumber(bindnum+1);
+			bindnames[bindnum]=bindname;
+			bindfieldindices[bindnum]=i;
+			if (bf=='?') {
+				appendToQueryBuffer('?');
+			} else if (bf=='$') {
+				appendToQueryBuffer('$');
+				appendToQueryBuffer(bindname);
+			} else {
+				appendToQueryBuffer(bf);
+				appendToQueryBuffer(bindname);
+			}
+
+		} else {
+
+			// for other non-NULL fields...
 
 			// open-quote the field, if necessary
 			if (getQuoteField(i)) {
@@ -1520,25 +1685,32 @@ bool sqlrimport::insertRow() {
 			}
 
 			// append the field
-			appendToQueryBuffer(field);
+			appendToQueryBuffer(field,getFieldLength(i));
 
 			// close-quote the field, if necessary
 			if (getQuoteField(i)) {
 				appendToQueryBuffer('\'');
 			}
-
-		} else {
-
-			// for NULL fields...
-
-			// append the field
-			appendToQueryBuffer("NULL");
 		}
 	}
 	appendToQueryBuffer(')');
 
-	// send the query
-	if (!getSqlrCursor()->sendQuery(getQueryBufferString())) {
+	// prepare the query
+	// (the query text can contain embedded nulls, from a field's
+	// value, so prepare it with its length rather than relying on a
+	// null terminator)
+	getSqlrCursor()->prepareQuery(getQueryBufferString(),
+					(uint32_t)getQueryBufferLength());
+
+	// bind any fields that couldn't be embedded as literals
+	for (uint64_t b=0; b<bindnames.getCount(); b++) {
+		uint64_t	i=bindfieldindices[b];
+		getSqlrCursor()->inputBind(bindnames[b],
+						getField(i),getFieldLength(i));
+	}
+
+	// execute the query
+	if (!getSqlrCursor()->executeQuery()) {
 		if (!error(getSqlrCursor()->errorNumber(),
 				getSqlrCursor()->errorMessage())) {
 			return false;

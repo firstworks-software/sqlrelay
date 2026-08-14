@@ -940,9 +940,28 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  passed in to it, and that buffer will eventually be
 		 *  deallocated by this class.  Plan accordingly.
 		 *
+		 *  The length of the field is derived from the null
+		 *  terminator, so this version should only be used for
+		 *  values that are known to be null-terminated.
+		 *
 		 *  Not commonly called by implementations of the *Start/End()
 		 *  methods. */
 		void	setCurrentField(char *currentfield);
+
+		/** Sets the value of the field that is currently being
+		 *  imported, and its length in bytes.  Field data can contain
+		 *  embedded nulls, so the length must be passed in rather
+		 *  than derived from the value itself.
+		 *
+		 *  Note that "currentfield" is a char *, not a const char *
+		 *  argument.  A buffer must be allocated, populated, and
+		 *  passed in to it, and that buffer will eventually be
+		 *  deallocated by this class.  Plan accordingly.
+		 *
+		 *  Not commonly called by implementations of the *Start/End()
+		 *  methods. */
+		void	setCurrentField(char *currentfield,
+						uint32_t currentfieldlength);
 
 		/** Gets the value of the field that is currently being
 		 *  imported.
@@ -950,6 +969,15 @@ class SQLRCLIENT_DLLSPEC sqlrimport {
 		 *  May be called by implementations of the *Start/End()
 		 *  methods. */
 		char	*getCurrentField();
+
+		/** Gets the length, in bytes, of the field that is currently
+		 *  being imported.  Field data can contain embedded nulls, so
+		 *  implementations should use this length rather than
+		 *  measuring the value returned by getCurrentField().
+		 *
+		 *  May be called by implementations of the *Start/End()
+		 *  methods. */
+		uint32_t	getCurrentFieldLength();
 
 		/** Sets whether the data type of the column in position
 		 *  "index" is a numeric type or not.  If "numeric" is true

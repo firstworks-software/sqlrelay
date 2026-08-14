@@ -814,6 +814,13 @@
 			whether to write a value as a json number or string from
 			the value's content now, rather than from the column's
 			declared type
+		fixed sqlrimportcsv - it couldn't import a csv field containing an
+			embedded null, so csv export's output (fixed above) couldn't
+			round-trip back through it; the field's length is carried
+			through the c++ import api now instead of walking it as a
+			null-terminated string, and a field with an embedded null is
+			bound as a query parameter instead of being embedded as a sql
+			literal, since there's no way to escape a null byte inside one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
