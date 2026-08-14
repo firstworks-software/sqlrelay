@@ -597,13 +597,10 @@ void sqlrimport::setFieldBuffer(const char *value) {
 }
 
 void sqlrimport::setFieldBuffer(const char *value, uint32_t length) {
-	// NOTE: charstring::duplicate(value,length) can't be used here.  It's
-	// implemented with strncpy(), which (despite what its "duplicate the
-	// first length characters" doc comment promises) stops copying at
-	// the first embedded null in "value" and zero-pads the rest, rather
-	// than copying "length" bytes verbatim.  Field data can contain
-	// embedded nulls, so duplicate it with bytestring::copy() instead,
-	// which is a plain, length-driven memcpy().
+	// NOTE: charstring::duplicate(value,length) can't be used here.  It
+	// treats "value" as a C string and stops at the first embedded null.
+	// Field data can contain embedded nulls, so duplicate it with
+	// bytestring::copy() instead, which is a plain, length-driven memcpy().
 	if (!value) {
 		fieldbuffer=NULL;
 		fieldbufferlength=0;
