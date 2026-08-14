@@ -151,67 +151,6 @@ class sqlrfirebirdsrpprivate {
 };
 
 
-// A non-negative modulus.  bignumber's % takes the sign of the dividend, the
-// way C++'s % does, so a negative value gives a negative remainder.  Modular
-// arithmetic wants the remainder in [0,modulus).
-static void sqlrfirebirdsrpNnMod(bignumber *result,
-					bignumber &value,
-					bignumber &modulus) {
-	*result=value%modulus;
-	if (result->isNegative()) {
-		result->add(modulus);
-	}
-}
-
-// A modular exponentiation.  bignumber has no modPow, so do
-// square-and-multiply, reducing after every step to keep the intermediate
-// values from growing without bound.
-static bool sqlrfirebirdsrpModExp(bignumber *result,
-					bignumber &base,
-					bignumber &exponent,
-					bignumber &modulus) {
-
-	if (modulus.isZero() || exponent.isNegative()) {
-		return false;
-	}
-
-	bignumber	one((int32_t)1);
-
-	// b=base%modulus
-	bignumber	b;
-	sqlrfirebirdsrpNnMod(&b,base,modulus);
-
-	// r=1%modulus - 1 rather than 0 unless the modulus is 1
-	bignumber	r(one);
-	sqlrfirebirdsrpNnMod(&r,r,modulus);
-
-	bignumber	e(exponent);
-
-	while (!e.isZero()) {
-
-		// if the low bit is set then fold in the current square
-		bignumber	bit(e);
-		bit.bitwiseAnd(one);
-		if (!bit.isZero()) {
-			r=r*b;
-			sqlrfirebirdsrpNnMod(&r,r,modulus);
-		}
-
-		e.rightShift(1);
-		if (e.isZero()) {
-			break;
-		}
-
-		// square
-		b=b*b;
-		sqlrfirebirdsrpNnMod(&b,b,modulus);
-	}
-
-	*result=r;
-	return true;
-}
-
-
 // Firebird's BigInteger::getText() is mp_to_radix(), which writes uppercase
 // hex with no leading zeros (BigInteger.cpp:205-212).  bignumber::getString(16)
 // writes uppercase hex too, but always pads out to a whole number of bytes,
@@ -391,8 +330,9 @@ static bool sqlrfirebirdsrpSetKey(bignumber *key, const char *keystr,
 		return false;
 	}
 
-	bignumber	mod;
-	sqlrfirebirdsrpNnMod(&mod,*key,n);
+	// reduce a copy - the key itself is kept as it came in
+	bignumber	mod(*key);
+	mod.nonNegativeModulo(n);
 	bool	trivial=(mod.compare(bignumber((int32_t)1))<=0);
 
 	return !trivial;
@@ -430,8 +370,7 @@ bool sqlrfirebirdsrp::setClientPrivateKey(const char *clientprivatekey) {
 	if (!pvt->_clientprivatekey.setValue(clientprivatekey,16)) {
 		return setError("invalid client private key");
 	}
-	sqlrfirebirdsrpNnMod(&pvt->_clientprivatekey,
-				pvt->_clientprivatekey,pvt->_n);
+	pvt->_clientprivatekey.nonNegativeModulo(pvt->_n);
 	return true;
 }
 
@@ -439,8 +378,7 @@ bool sqlrfirebirdsrp::setServerPrivateKey(const char *serverprivatekey) {
 	if (!pvt->_serverprivatekey.setValue(serverprivatekey,16)) {
 		return setError("invalid server private key");
 	}
-	sqlrfirebirdsrpNnMod(&pvt->_serverprivatekey,
-				pvt->_serverprivatekey,pvt->_n);
+	pvt->_serverprivatekey.nonNegativeModulo(pvt->_n);
 	return true;
 }
 
@@ -454,7 +392,7 @@ static bool sqlrfirebirdsrpMakePrivate(bignumber *privatekey, bignumber &n) {
 		return false;
 	}
 	privatekey->setValue(bytes,SQLRFIREBIRDSRP_KEY_SIZE);
-	sqlrfirebirdsrpNnMod(privatekey,*privatekey,n);
+	privatekey->nonNegativeModulo(n);
 	bytestring::zero(bytes,sizeof(bytes));
 	return true;
 }
@@ -511,7 +449,8 @@ bool sqlrfirebirdsrp::computeVerifier(const char *username,
 	sqlrfirebirdsrpGetUserHash(&x,username,pvt->_salt,password);
 
 	// v=g^x mod N - srp.cpp:106
-	if (!sqlrfirebirdsrpModExp(&pvt->_verifier,pvt->_g,x,pvt->_n)) {
+	pvt->_verifier=pvt->_g;
+	if (!pvt->_verifier.modPow(x,pvt->_n)) {
 		return setError("failed to compute verifier");
 	}
 
@@ -543,7 +482,8 @@ bool sqlrfirebirdsrp::generateClientPublicKey() {
 			}
 		}
 
-		if (!sqlrfirebirdsrpModExp(&pvt->_clientpublickey,pvt->_g,
+		pvt->_clientpublickey=pvt->_g;
+		if (!pvt->_clientpublickey.modPow(
 					pvt->_clientprivatekey,pvt->_n)) {
 			return setError("failed to generate "
 					"client public key");
@@ -598,20 +538,19 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 		}
 
 		// g^b - srp.cpp:131
-		if (!sqlrfirebirdsrpModExp(&gb,pvt->_g,
-					pvt->_serverprivatekey,pvt->_n)) {
+		gb=pvt->_g;
+		if (!gb.modPow(pvt->_serverprivatekey,pvt->_n)) {
 			setError("failed to generate server public key");
 			break;
 		}
 
 		// (k*v)%N - srp.cpp:134
-		kv=pvt->_k*pvt->_verifier;
-		sqlrfirebirdsrpNnMod(&kv,kv,pvt->_n);
+		kv=pvt->_k;
+		kv.modMul(pvt->_verifier,pvt->_n);
 
 		// (kv+g^b)%N - srp.cpp:136
-		pvt->_serverpublickey=kv+gb;
-		sqlrfirebirdsrpNnMod(&pvt->_serverpublickey,
-					pvt->_serverpublickey,pvt->_n);
+		pvt->_serverpublickey=kv;
+		pvt->_serverpublickey.modAdd(gb,pvt->_n);
 
 		if (pvt->_serverpublickey.compare(bignumber((int32_t)1))>0) {
 			delete[] pvt->_serverpublickeystr;
@@ -680,16 +619,18 @@ bool sqlrfirebirdsrp::computeServerSessionKey() {
 						pvt->_serverpublickey);
 
 	// v^u - srp.cpp:186
-	if (!sqlrfirebirdsrpModExp(&vu,pvt->_verifier,u,pvt->_n)) {
+	vu=pvt->_verifier;
+	if (!vu.modPow(u,pvt->_n)) {
 		return setError("failed to compute server session key");
 	}
 
 	// (A*v^u)%N - srp.cpp:187
-	avu=pvt->_clientpublickey*vu;
-	sqlrfirebirdsrpNnMod(&avu,avu,pvt->_n);
+	avu=pvt->_clientpublickey;
+	avu.modMul(vu,pvt->_n);
 
 	// (A*v^u)^b mod N - srp.cpp:189
-	if (!sqlrfirebirdsrpModExp(&s,avu,pvt->_serverprivatekey,pvt->_n)) {
+	s=avu;
+	if (!s.modPow(pvt->_serverprivatekey,pvt->_n)) {
 		return setError("failed to compute server session key");
 	}
 
@@ -734,30 +675,32 @@ bool sqlrfirebirdsrp::computeClientSessionKey(const char *username,
 	sqlrfirebirdsrpGetUserHash(&x,username,pvt->_salt,password);
 
 	// g^x - srp.cpp:165
-	if (!sqlrfirebirdsrpModExp(&gx,pvt->_g,x,pvt->_n)) {
+	gx=pvt->_g;
+	if (!gx.modPow(x,pvt->_n)) {
 		return setError("failed to compute client session key");
 	}
 
 	// (k*g^x)%N - srp.cpp:166
-	kgx=pvt->_k*gx;
-	sqlrfirebirdsrpNnMod(&kgx,kgx,pvt->_n);
+	kgx=pvt->_k;
+	kgx.modMul(gx,pvt->_n);
 
 	// (B - k*g^x)%N - srp.cpp:168.  Firebird's % is libtommath's mp_mod,
-	// which is never negative, so use sqlrfirebirdsrpNnMod() rather than
-	// a plain % here.
-	diff=pvt->_serverpublickey-kgx;
-	sqlrfirebirdsrpNnMod(&diff,diff,pvt->_n);
+	// which is never negative, so use modSub() rather than a plain -
+	// followed by a plain % here.
+	diff=pvt->_serverpublickey;
+	diff.modSub(kgx,pvt->_n);
 
 	// (u*x)%N - srp.cpp:169
-	ux=u*x;
-	sqlrfirebirdsrpNnMod(&ux,ux,pvt->_n);
+	ux=u;
+	ux.modMul(x,pvt->_n);
 
 	// (a+u*x)%N - srp.cpp:170
-	aux=pvt->_clientprivatekey+ux;
-	sqlrfirebirdsrpNnMod(&aux,aux,pvt->_n);
+	aux=pvt->_clientprivatekey;
+	aux.modAdd(ux,pvt->_n);
 
 	// (B - k*g^x) ^ (a+u*x) mod N - srp.cpp:173
-	if (!sqlrfirebirdsrpModExp(&s,diff,aux,pvt->_n)) {
+	s=diff;
+	if (!s.modPow(aux,pvt->_n)) {
 		return setError("failed to compute client session key");
 	}
 
@@ -838,7 +781,7 @@ bool sqlrfirebirdsrp::computeProof(const char *username) {
 	sha1digest.getInt(&n2);
 
 	// n1=n1^n2 mod N - srp.cpp:210
-	if (!sqlrfirebirdsrpModExp(&n1,n1,n2,pvt->_n)) {
+	if (!n1.modPow(n2,pvt->_n)) {
 		return setError("failed to compute proof");
 	}
 
