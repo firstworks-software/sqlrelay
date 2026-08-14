@@ -803,6 +803,9 @@
 		the firebird protocol module uses rudiments' arc4 class for its
 			Arc4 wirecrypt cipher now, instead of its own from-scratch
 			implementation
+		the firebird protocol module uses rudiments' bignumber class for
+			its SRP authentication math now, instead of calling
+			OpenSSL's BIGNUM functions directly
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

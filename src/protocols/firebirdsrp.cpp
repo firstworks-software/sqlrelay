@@ -8,8 +8,7 @@
 #include <rudiments/sha1.h>
 #include <rudiments/sha256.h>
 #include <rudiments/csprng.h>
-
-#include <openssl/bn.h>
+#include <rudiments/bignumber.h>
 
 // The group.  This is NOT one of the RFC 5054 groups.  It is a 1024-bit
 // prime that firebird picked for itself.  See srp.cpp:14-19, where it appears
@@ -46,17 +45,17 @@ class sqlrfirebirdsrpdigest {
 		// SecureHash::processInt() - srp.h:65-70.  Firebird's
 		// BigInteger::getBytes() is mp_to_ubin(), so the bytes are
 		// big-endian and minimal - no leading zero, no sign byte.
-		void	processInt(const BIGNUM *bn);
+		void	processInt(bignumber &bn);
 
 		// SecureHash::processStrippedInt() - srp.h:72-81.  Drops a
 		// leading zero byte if there is one.  Given how getBytes()
 		// works there never is one, so this only differs from
 		// processInt() for the value zero.  Kept anyway, to match.
-		void	processStrippedInt(const BIGNUM *bn);
+		void	processStrippedInt(bignumber &bn);
 
 		// SecureHash::getInt() - srp.h:58-63.  The digest bytes read
 		// as a big-endian integer.
-		void	getInt(BIGNUM *bn);
+		void	getInt(bignumber *bn);
 
 		const byte_t	*getHash();
 		uint64_t	getHashSize();
@@ -86,32 +85,34 @@ void sqlrfirebirdsrpdigest::process(const char *str) {
 	h->append((const byte_t *)str,charstring::getLength(str));
 }
 
-void sqlrfirebirdsrpdigest::processInt(const BIGNUM *bn) {
-	int	size=BN_num_bytes(bn);
-	if (size<=0) {
+// Firebird's getBytes() gives no bytes at all for the value zero, but
+// bignumber::getMagnitude() writes a single 0 byte for it.  So zero gets
+// skipped explicitly here, rather than falling out of a zero length.
+void sqlrfirebirdsrpdigest::processInt(bignumber &bn) {
+	if (bn.isZero()) {
 		return;
 	}
+	size_t	size=bn.getMagnitudeSize();
 	byte_t	*bytes=new byte_t[size];
-	BN_bn2bin(bn,bytes);
+	bn.getMagnitude(bytes,size);
 	h->append(bytes,(uint32_t)size);
 	delete[] bytes;
 }
 
-void sqlrfirebirdsrpdigest::processStrippedInt(const BIGNUM *bn) {
-	int	size=BN_num_bytes(bn);
-	if (size<=0) {
+void sqlrfirebirdsrpdigest::processStrippedInt(bignumber &bn) {
+	if (bn.isZero()) {
 		return;
 	}
+	size_t	size=bn.getMagnitudeSize();
 	byte_t	*bytes=new byte_t[size];
-	BN_bn2bin(bn,bytes);
+	bn.getMagnitude(bytes,size);
 	uint32_t	skip=(bytes[0]==0)?1:0;
 	h->append(bytes+skip,(uint32_t)size-skip);
 	delete[] bytes;
 }
 
-void sqlrfirebirdsrpdigest::getInt(BIGNUM *bn) {
-	const byte_t	*hashbytes=h->getHash();
-	BN_bin2bn(hashbytes,(int)h->getHashSize(),bn);
+void sqlrfirebirdsrpdigest::getInt(bignumber *bn) {
+	bn->setValue(h->getHash(),(size_t)h->getHashSize());
 }
 
 const byte_t *sqlrfirebirdsrpdigest::getHash() {
@@ -127,17 +128,15 @@ class sqlrfirebirdsrpprivate {
 	public:
 		sqlrfirebirdsrphash_t	_hash;
 
-		BN_CTX	*_ctx;
+		bignumber	_n;
+		bignumber	_g;
+		bignumber	_k;
 
-		BIGNUM	*_n;
-		BIGNUM	*_g;
-		BIGNUM	*_k;
-
-		BIGNUM	*_clientprivatekey;
-		BIGNUM	*_clientpublickey;
-		BIGNUM	*_serverprivatekey;
-		BIGNUM	*_serverpublickey;
-		BIGNUM	*_verifier;
+		bignumber	_clientprivatekey;
+		bignumber	_clientpublickey;
+		bignumber	_serverprivatekey;
+		bignumber	_serverpublickey;
+		bignumber	_verifier;
 
 		char	*_salt;
 		char	*_clientpublickeystr;
@@ -152,24 +151,83 @@ class sqlrfirebirdsrpprivate {
 };
 
 
+// A non-negative modulus.  bignumber's % takes the sign of the dividend, the
+// way C++'s % does, so a negative value gives a negative remainder.  Modular
+// arithmetic wants the remainder in [0,modulus).
+static void sqlrfirebirdsrpNnMod(bignumber *result,
+					bignumber &value,
+					bignumber &modulus) {
+	*result=value%modulus;
+	if (result->isNegative()) {
+		result->add(modulus);
+	}
+}
+
+// A modular exponentiation.  bignumber has no modPow, so do
+// square-and-multiply, reducing after every step to keep the intermediate
+// values from growing without bound.
+static bool sqlrfirebirdsrpModExp(bignumber *result,
+					bignumber &base,
+					bignumber &exponent,
+					bignumber &modulus) {
+
+	if (modulus.isZero() || exponent.isNegative()) {
+		return false;
+	}
+
+	bignumber	one((int32_t)1);
+
+	// b=base%modulus
+	bignumber	b;
+	sqlrfirebirdsrpNnMod(&b,base,modulus);
+
+	// r=1%modulus - 1 rather than 0 unless the modulus is 1
+	bignumber	r(one);
+	sqlrfirebirdsrpNnMod(&r,r,modulus);
+
+	bignumber	e(exponent);
+
+	while (!e.isZero()) {
+
+		// if the low bit is set then fold in the current square
+		bignumber	bit(e);
+		bit.bitwiseAnd(one);
+		if (!bit.isZero()) {
+			r=r*b;
+			sqlrfirebirdsrpNnMod(&r,r,modulus);
+		}
+
+		e.rightShift(1);
+		if (e.isZero()) {
+			break;
+		}
+
+		// square
+		b=b*b;
+		sqlrfirebirdsrpNnMod(&b,b,modulus);
+	}
+
+	*result=r;
+	return true;
+}
+
+
 // Firebird's BigInteger::getText() is mp_to_radix(), which writes uppercase
-// hex with no leading zeros (BigInteger.cpp:205-212).  OpenSSL's BN_bn2hex()
+// hex with no leading zeros (BigInteger.cpp:205-212).  bignumber::getString(16)
 // writes uppercase hex too, but always pads out to a whole number of bytes,
 // so a value whose top nibble is zero comes out one digit longer.  That
 // difference matters, because the salt and the public keys are hashed as
 // text, not as bytes.  So, strip the leading zeros.
-static char *sqlrfirebirdsrpBnToHex(const BIGNUM *bn) {
-	char	*hex=BN_bn2hex(bn);
+static char *sqlrfirebirdsrpBnToHex(bignumber &bn) {
+	const char	*hex=bn.getString(16);
 	if (!hex) {
 		return NULL;
 	}
-	char	*start=hex;
+	const char	*start=hex;
 	while (*start=='0' && *(start+1)) {
 		start++;
 	}
-	char	*retval=charstring::duplicate(start);
-	OPENSSL_free(hex);
-	return retval;
+	return charstring::duplicate(start);
 }
 
 
@@ -179,19 +237,8 @@ sqlrfirebirdsrp::sqlrfirebirdsrp(sqlrfirebirdsrphash_t hashtype) {
 
 	pvt->_hash=hashtype;
 
-	pvt->_ctx=BN_CTX_new();
-
-	pvt->_n=BN_new();
-	pvt->_g=BN_new();
-	pvt->_k=BN_new();
-	BN_hex2bn(&pvt->_n,_sqlrfirebirdsrp_prime);
-	BN_hex2bn(&pvt->_g,_sqlrfirebirdsrp_generator);
-
-	pvt->_clientprivatekey=BN_new();
-	pvt->_clientpublickey=BN_new();
-	pvt->_serverprivatekey=BN_new();
-	pvt->_serverpublickey=BN_new();
-	pvt->_verifier=BN_new();
+	pvt->_n.setValue(_sqlrfirebirdsrp_prime,16);
+	pvt->_g.setValue(_sqlrfirebirdsrp_generator,16);
 
 	pvt->_salt=NULL;
 	pvt->_clientpublickeystr=NULL;
@@ -216,17 +263,17 @@ sqlrfirebirdsrp::sqlrfirebirdsrp(sqlrfirebirdsrphash_t hashtype) {
 		sqlrfirebirdsrpdigest	digest(false);
 		digest.reset();
 		digest.processInt(pvt->_n);
-		int	nlen=BN_num_bytes(pvt->_n);
-		int	glen=BN_num_bytes(pvt->_g);
+		size_t	nlen=pvt->_n.getMagnitudeSize();
+		size_t	glen=pvt->_g.getMagnitudeSize();
 		if (nlen>glen) {
-			int	pad=nlen-glen;
+			size_t	pad=nlen-glen;
 			byte_t	*zeros=new byte_t[pad];
 			bytestring::zero(zeros,pad);
 			digest.process(zeros,(uint32_t)pad);
 			delete[] zeros;
 		}
 		digest.processInt(pvt->_g);
-		digest.getInt(pvt->_k);
+		digest.getInt(&pvt->_k);
 	}
 }
 
@@ -238,18 +285,6 @@ sqlrfirebirdsrp::~sqlrfirebirdsrp() {
 	delete[] pvt->_verifierstr;
 	delete[] pvt->_proof;
 	delete[] pvt->_sessionkey;
-
-	BN_clear_free(pvt->_clientprivatekey);
-	BN_clear_free(pvt->_clientpublickey);
-	BN_clear_free(pvt->_serverprivatekey);
-	BN_clear_free(pvt->_serverpublickey);
-	BN_clear_free(pvt->_verifier);
-
-	BN_free(pvt->_n);
-	BN_free(pvt->_g);
-	BN_free(pvt->_k);
-
-	BN_CTX_free(pvt->_ctx);
 
 	delete pvt;
 }
@@ -270,11 +305,13 @@ void sqlrfirebirdsrp::clear() {
 	pvt->_sessionkey=NULL;
 	pvt->_sessionkeysize=0;
 
-	BN_clear(pvt->_clientprivatekey);
-	BN_clear(pvt->_clientpublickey);
-	BN_clear(pvt->_serverprivatekey);
-	BN_clear(pvt->_serverpublickey);
-	BN_clear(pvt->_verifier);
+	// Note that this just sets the values to zero.  bignumber has no
+	// equivalent of BN_clear(), so the old bytes are not securely erased.
+	pvt->_clientprivatekey.setValue((int32_t)0);
+	pvt->_clientpublickey.setValue((int32_t)0);
+	pvt->_serverprivatekey.setValue((int32_t)0);
+	pvt->_serverpublickey.setValue((int32_t)0);
+	pvt->_verifier.setValue((int32_t)0);
 
 	pvt->_error=NULL;
 }
@@ -314,13 +351,12 @@ bool sqlrfirebirdsrp::generateSalt() {
 		return setError("failed to generate salt");
 	}
 
-	BIGNUM	*salt=BN_new();
-	BN_bin2bn(bytes,SQLRFIREBIRDSRP_SALT_SIZE,salt);
+	bignumber	salt(bytes,SQLRFIREBIRDSRP_SALT_SIZE);
 
 	delete[] pvt->_salt;
 	pvt->_salt=sqlrfirebirdsrpBnToHex(salt);
 
-	BN_clear_free(salt);
+	bytestring::zero(bytes,sizeof(bytes));
 
 	return (pvt->_salt!=NULL)?true:setError("failed to generate salt");
 }
@@ -344,29 +380,27 @@ const char *sqlrfirebirdsrp::getSalt() const {
 
 // RemotePassword::setKey() - srp.cpp:222-229.  A key that is 0 or 1 mod the
 // prime is rejected outright.
-static bool sqlrfirebirdsrpSetKey(BIGNUM *key, const char *keystr,
-					const BIGNUM *n, BN_CTX *ctx) {
+static bool sqlrfirebirdsrpSetKey(bignumber *key, const char *keystr,
+						bignumber &n) {
 
 	if (!keystr || !keystr[0]) {
 		return false;
 	}
 
-	BIGNUM	*k=key;
-	if (!BN_hex2bn(&k,keystr)) {
+	if (!key->setValue(keystr,16)) {
 		return false;
 	}
 
-	BIGNUM	*mod=BN_new();
-	BN_nnmod(mod,key,n,ctx);
-	bool	trivial=(BN_cmp(mod,BN_value_one())<=0);
-	BN_free(mod);
+	bignumber	mod;
+	sqlrfirebirdsrpNnMod(&mod,*key,n);
+	bool	trivial=(mod.compare(bignumber((int32_t)1))<=0);
 
 	return !trivial;
 }
 
 bool sqlrfirebirdsrp::setClientPublicKey(const char *clientpublickey) {
-	if (!sqlrfirebirdsrpSetKey(pvt->_clientpublickey,clientpublickey,
-						pvt->_n,pvt->_ctx)) {
+	if (!sqlrfirebirdsrpSetKey(&pvt->_clientpublickey,clientpublickey,
+								pvt->_n)) {
 		return setError("trivial or invalid client public key");
 	}
 	delete[] pvt->_clientpublickeystr;
@@ -379,8 +413,8 @@ const char *sqlrfirebirdsrp::getClientPublicKey() const {
 }
 
 bool sqlrfirebirdsrp::setServerPublicKey(const char *serverpublickey) {
-	if (!sqlrfirebirdsrpSetKey(pvt->_serverpublickey,serverpublickey,
-						pvt->_n,pvt->_ctx)) {
+	if (!sqlrfirebirdsrpSetKey(&pvt->_serverpublickey,serverpublickey,
+								pvt->_n)) {
 		return setError("trivial or invalid server public key");
 	}
 	delete[] pvt->_serverpublickeystr;
@@ -393,37 +427,34 @@ const char *sqlrfirebirdsrp::getServerPublicKey() const {
 }
 
 bool sqlrfirebirdsrp::setClientPrivateKey(const char *clientprivatekey) {
-	BIGNUM	*k=pvt->_clientprivatekey;
-	if (!BN_hex2bn(&k,clientprivatekey)) {
+	if (!pvt->_clientprivatekey.setValue(clientprivatekey,16)) {
 		return setError("invalid client private key");
 	}
-	BN_nnmod(pvt->_clientprivatekey,pvt->_clientprivatekey,
-						pvt->_n,pvt->_ctx);
+	sqlrfirebirdsrpNnMod(&pvt->_clientprivatekey,
+				pvt->_clientprivatekey,pvt->_n);
 	return true;
 }
 
 bool sqlrfirebirdsrp::setServerPrivateKey(const char *serverprivatekey) {
-	BIGNUM	*k=pvt->_serverprivatekey;
-	if (!BN_hex2bn(&k,serverprivatekey)) {
+	if (!pvt->_serverprivatekey.setValue(serverprivatekey,16)) {
 		return setError("invalid server private key");
 	}
-	BN_nnmod(pvt->_serverprivatekey,pvt->_serverprivatekey,
-						pvt->_n,pvt->_ctx);
+	sqlrfirebirdsrpNnMod(&pvt->_serverprivatekey,
+				pvt->_serverprivatekey,pvt->_n);
 	return true;
 }
 
 // RemotePassword::makePrivate() - srp.cpp:75-83.  128 random bytes, reduced
 // mod the prime.
-static bool sqlrfirebirdsrpMakePrivate(BIGNUM *privatekey,
-					const BIGNUM *n, BN_CTX *ctx) {
+static bool sqlrfirebirdsrpMakePrivate(bignumber *privatekey, bignumber &n) {
 
 	byte_t	bytes[SQLRFIREBIRDSRP_KEY_SIZE];
 	csprng	rng;
 	if (!rng.generateBytes(bytes,sizeof(bytes))) {
 		return false;
 	}
-	BN_bin2bn(bytes,SQLRFIREBIRDSRP_KEY_SIZE,privatekey);
-	BN_nnmod(privatekey,privatekey,n,ctx);
+	privatekey->setValue(bytes,SQLRFIREBIRDSRP_KEY_SIZE);
+	sqlrfirebirdsrpNnMod(privatekey,*privatekey,n);
 	bytestring::zero(bytes,sizeof(bytes));
 	return true;
 }
@@ -445,7 +476,7 @@ static bool sqlrfirebirdsrpMakePrivate(BIGNUM *privatekey,
 // Second, the hash here is sha-1 for both plugins.  It comes from
 // RemotePassword::hash, declared SecureHash<Firebird::Sha1> at srp.h:91,
 // not from the plugin's template parameter.
-static void sqlrfirebirdsrpGetUserHash(BIGNUM *x,
+static void sqlrfirebirdsrpGetUserHash(bignumber *x,
 					const char *username,
 					const char *salt,
 					const char *password) {
@@ -476,13 +507,13 @@ bool sqlrfirebirdsrp::computeVerifier(const char *username,
 		return setError("no salt");
 	}
 
-	BIGNUM	*x=BN_new();
-	sqlrfirebirdsrpGetUserHash(x,username,pvt->_salt,password);
+	bignumber	x;
+	sqlrfirebirdsrpGetUserHash(&x,username,pvt->_salt,password);
 
 	// v=g^x mod N - srp.cpp:106
-	BN_mod_exp(pvt->_verifier,pvt->_g,x,pvt->_n,pvt->_ctx);
-
-	BN_clear_free(x);
+	if (!sqlrfirebirdsrpModExp(&pvt->_verifier,pvt->_g,x,pvt->_n)) {
+		return setError("failed to compute verifier");
+	}
 
 	delete[] pvt->_verifierstr;
 	pvt->_verifierstr=sqlrfirebirdsrpBnToHex(pvt->_verifier);
@@ -504,26 +535,32 @@ bool sqlrfirebirdsrp::generateClientPublicKey() {
 
 	for (uint16_t i=0; i<16; i++) {
 
-		if (BN_is_zero(pvt->_clientprivatekey)) {
-			if (!sqlrfirebirdsrpMakePrivate(pvt->_clientprivatekey,
-						pvt->_n,pvt->_ctx)) {
+		if (pvt->_clientprivatekey.isZero()) {
+			if (!sqlrfirebirdsrpMakePrivate(
+					&pvt->_clientprivatekey,pvt->_n)) {
 				return setError("failed to generate "
 						"client private key");
 			}
 		}
 
-		BN_mod_exp(pvt->_clientpublickey,pvt->_g,
-				pvt->_clientprivatekey,pvt->_n,pvt->_ctx);
+		if (!sqlrfirebirdsrpModExp(&pvt->_clientpublickey,pvt->_g,
+					pvt->_clientprivatekey,pvt->_n)) {
+			return setError("failed to generate "
+					"client public key");
+		}
 
-		if (BN_cmp(pvt->_clientpublickey,BN_value_one())>0) {
+		if (pvt->_clientpublickey.compare(bignumber((int32_t)1))>0) {
 			delete[] pvt->_clientpublickeystr;
 			pvt->_clientpublickeystr=
 				sqlrfirebirdsrpBnToHex(pvt->_clientpublickey);
 			return true;
 		}
 
-		// srp.cpp:122 - try again with a different private key
-		BN_clear(pvt->_clientprivatekey);
+		// srp.cpp:122 - try again with a different private key.
+		// Note that this just sets the value to zero.  bignumber has
+		// no equivalent of BN_clear(), so the old bytes are not
+		// securely erased.
+		pvt->_clientprivatekey.setValue((int32_t)0);
 	}
 
 	return setError("failed to generate client public key");
@@ -544,16 +581,16 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 		return false;
 	}
 
-	BIGNUM	*gb=BN_new();
-	BIGNUM	*kv=BN_new();
+	bignumber	gb;
+	bignumber	kv;
 
 	bool	success=false;
 
 	for (uint16_t i=0; i<16; i++) {
 
-		if (BN_is_zero(pvt->_serverprivatekey)) {
-			if (!sqlrfirebirdsrpMakePrivate(pvt->_serverprivatekey,
-						pvt->_n,pvt->_ctx)) {
+		if (pvt->_serverprivatekey.isZero()) {
+			if (!sqlrfirebirdsrpMakePrivate(
+					&pvt->_serverprivatekey,pvt->_n)) {
 				setError("failed to generate "
 						"server private key");
 				break;
@@ -561,18 +598,22 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 		}
 
 		// g^b - srp.cpp:131
-		BN_mod_exp(gb,pvt->_g,pvt->_serverprivatekey,
-						pvt->_n,pvt->_ctx);
+		if (!sqlrfirebirdsrpModExp(&gb,pvt->_g,
+					pvt->_serverprivatekey,pvt->_n)) {
+			setError("failed to generate server public key");
+			break;
+		}
 
 		// (k*v)%N - srp.cpp:134
-		BN_mod_mul(kv,pvt->_k,pvt->_verifier,pvt->_n,pvt->_ctx);
+		kv=pvt->_k*pvt->_verifier;
+		sqlrfirebirdsrpNnMod(&kv,kv,pvt->_n);
 
 		// (kv+g^b)%N - srp.cpp:136
-		BN_add(pvt->_serverpublickey,kv,gb);
-		BN_nnmod(pvt->_serverpublickey,pvt->_serverpublickey,
-						pvt->_n,pvt->_ctx);
+		pvt->_serverpublickey=kv+gb;
+		sqlrfirebirdsrpNnMod(&pvt->_serverpublickey,
+					pvt->_serverpublickey,pvt->_n);
 
-		if (BN_cmp(pvt->_serverpublickey,BN_value_one())>0) {
+		if (pvt->_serverpublickey.compare(bignumber((int32_t)1))>0) {
 			delete[] pvt->_serverpublickeystr;
 			pvt->_serverpublickeystr=
 				sqlrfirebirdsrpBnToHex(pvt->_serverpublickey);
@@ -580,12 +621,12 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 			break;
 		}
 
-		// srp.cpp:143 - try again with a different private key
-		BN_clear(pvt->_serverprivatekey);
+		// srp.cpp:143 - try again with a different private key.
+		// Note that this just sets the value to zero.  bignumber has
+		// no equivalent of BN_clear(), so the old bytes are not
+		// securely erased.
+		pvt->_serverprivatekey.setValue((int32_t)0);
 	}
-
-	BN_clear_free(gb);
-	BN_clear_free(kv);
 
 	if (!success && !pvt->_error) {
 		setError("failed to generate server public key");
@@ -600,9 +641,9 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 //
 // sha-1 for both plugins, and the operands go in stripped - see
 // processStrippedInt() above.
-static void sqlrfirebirdsrpComputeScramble(BIGNUM *u,
-					const BIGNUM *clientpublickey,
-					const BIGNUM *serverpublickey) {
+static void sqlrfirebirdsrpComputeScramble(bignumber *u,
+					bignumber &clientpublickey,
+					bignumber &serverpublickey) {
 	sqlrfirebirdsrpdigest	digest(false);
 	digest.reset();
 	digest.processStrippedInt(clientpublickey);
@@ -613,7 +654,7 @@ static void sqlrfirebirdsrpComputeScramble(BIGNUM *u,
 // The session key is H(S), sha-1 for both plugins - srp.cpp:176-178 and
 // srp.cpp:193-195.  So it is always 20 bytes, even for Srp256.
 void sqlrfirebirdsrpSetSessionKey(sqlrfirebirdsrpprivate *pvt,
-					const BIGNUM *sessionsecret);
+					bignumber &sessionsecret);
 
 
 // RemotePassword::serverSessionKey() - srp.cpp:181-196.
@@ -623,36 +664,36 @@ void sqlrfirebirdsrpSetSessionKey(sqlrfirebirdsrpprivate *pvt,
 //	K=H(S)
 bool sqlrfirebirdsrp::computeServerSessionKey() {
 
-	if (BN_is_zero(pvt->_clientpublickey)) {
+	if (pvt->_clientpublickey.isZero()) {
 		return setError("no client public key");
 	}
-	if (BN_is_zero(pvt->_serverprivatekey)) {
+	if (pvt->_serverprivatekey.isZero()) {
 		return setError("no server private key");
 	}
 
-	BIGNUM	*u=BN_new();
-	BIGNUM	*vu=BN_new();
-	BIGNUM	*avu=BN_new();
-	BIGNUM	*s=BN_new();
+	bignumber	u;
+	bignumber	vu;
+	bignumber	avu;
+	bignumber	s;
 
-	sqlrfirebirdsrpComputeScramble(u,pvt->_clientpublickey,
+	sqlrfirebirdsrpComputeScramble(&u,pvt->_clientpublickey,
 						pvt->_serverpublickey);
 
 	// v^u - srp.cpp:186
-	BN_mod_exp(vu,pvt->_verifier,u,pvt->_n,pvt->_ctx);
+	if (!sqlrfirebirdsrpModExp(&vu,pvt->_verifier,u,pvt->_n)) {
+		return setError("failed to compute server session key");
+	}
 
 	// (A*v^u)%N - srp.cpp:187
-	BN_mod_mul(avu,pvt->_clientpublickey,vu,pvt->_n,pvt->_ctx);
+	avu=pvt->_clientpublickey*vu;
+	sqlrfirebirdsrpNnMod(&avu,avu,pvt->_n);
 
 	// (A*v^u)^b mod N - srp.cpp:189
-	BN_mod_exp(s,avu,pvt->_serverprivatekey,pvt->_n,pvt->_ctx);
+	if (!sqlrfirebirdsrpModExp(&s,avu,pvt->_serverprivatekey,pvt->_n)) {
+		return setError("failed to compute server session key");
+	}
 
 	sqlrfirebirdsrpSetSessionKey(pvt,s);
-
-	BN_clear_free(u);
-	BN_clear_free(vu);
-	BN_clear_free(avu);
-	BN_clear_free(s);
 
 	return true;
 }
@@ -667,68 +708,66 @@ bool sqlrfirebirdsrp::computeServerSessionKey() {
 bool sqlrfirebirdsrp::computeClientSessionKey(const char *username,
 						const char *password) {
 
-	if (BN_is_zero(pvt->_serverpublickey)) {
+	if (pvt->_serverpublickey.isZero()) {
 		return setError("no server public key");
 	}
-	if (BN_is_zero(pvt->_clientprivatekey)) {
+	if (pvt->_clientprivatekey.isZero()) {
 		return setError("no client private key");
 	}
 	if (!pvt->_salt) {
 		return setError("no salt");
 	}
 
-	BIGNUM	*u=BN_new();
-	BIGNUM	*x=BN_new();
-	BIGNUM	*gx=BN_new();
-	BIGNUM	*kgx=BN_new();
-	BIGNUM	*diff=BN_new();
-	BIGNUM	*ux=BN_new();
-	BIGNUM	*aux=BN_new();
-	BIGNUM	*s=BN_new();
+	bignumber	u;
+	bignumber	x;
+	bignumber	gx;
+	bignumber	kgx;
+	bignumber	diff;
+	bignumber	ux;
+	bignumber	aux;
+	bignumber	s;
 
-	sqlrfirebirdsrpComputeScramble(u,pvt->_clientpublickey,
+	sqlrfirebirdsrpComputeScramble(&u,pvt->_clientpublickey,
 						pvt->_serverpublickey);
 
 	// x - srp.cpp:163
-	sqlrfirebirdsrpGetUserHash(x,username,pvt->_salt,password);
+	sqlrfirebirdsrpGetUserHash(&x,username,pvt->_salt,password);
 
 	// g^x - srp.cpp:165
-	BN_mod_exp(gx,pvt->_g,x,pvt->_n,pvt->_ctx);
+	if (!sqlrfirebirdsrpModExp(&gx,pvt->_g,x,pvt->_n)) {
+		return setError("failed to compute client session key");
+	}
 
 	// (k*g^x)%N - srp.cpp:166
-	BN_mod_mul(kgx,pvt->_k,gx,pvt->_n,pvt->_ctx);
+	kgx=pvt->_k*gx;
+	sqlrfirebirdsrpNnMod(&kgx,kgx,pvt->_n);
 
 	// (B - k*g^x)%N - srp.cpp:168.  Firebird's % is libtommath's mp_mod,
-	// which is never negative, so use BN_nnmod rather than BN_mod here.
-	BN_sub(diff,pvt->_serverpublickey,kgx);
-	BN_nnmod(diff,diff,pvt->_n,pvt->_ctx);
+	// which is never negative, so use sqlrfirebirdsrpNnMod() rather than
+	// a plain % here.
+	diff=pvt->_serverpublickey-kgx;
+	sqlrfirebirdsrpNnMod(&diff,diff,pvt->_n);
 
 	// (u*x)%N - srp.cpp:169
-	BN_mod_mul(ux,u,x,pvt->_n,pvt->_ctx);
+	ux=u*x;
+	sqlrfirebirdsrpNnMod(&ux,ux,pvt->_n);
 
 	// (a+u*x)%N - srp.cpp:170
-	BN_add(aux,pvt->_clientprivatekey,ux);
-	BN_nnmod(aux,aux,pvt->_n,pvt->_ctx);
+	aux=pvt->_clientprivatekey+ux;
+	sqlrfirebirdsrpNnMod(&aux,aux,pvt->_n);
 
 	// (B - k*g^x) ^ (a+u*x) mod N - srp.cpp:173
-	BN_mod_exp(s,diff,aux,pvt->_n,pvt->_ctx);
+	if (!sqlrfirebirdsrpModExp(&s,diff,aux,pvt->_n)) {
+		return setError("failed to compute client session key");
+	}
 
 	sqlrfirebirdsrpSetSessionKey(pvt,s);
-
-	BN_clear_free(u);
-	BN_clear_free(x);
-	BN_clear_free(gx);
-	BN_clear_free(kgx);
-	BN_clear_free(diff);
-	BN_clear_free(ux);
-	BN_clear_free(aux);
-	BN_clear_free(s);
 
 	return true;
 }
 
 void sqlrfirebirdsrpSetSessionKey(sqlrfirebirdsrpprivate *pvt,
-					const BIGNUM *sessionsecret) {
+					bignumber &sessionsecret) {
 	sqlrfirebirdsrpdigest	digest(false);
 	digest.reset();
 	digest.processStrippedInt(sessionsecret);
@@ -785,26 +824,28 @@ bool sqlrfirebirdsrp::computeProof(const char *username) {
 	// n1 and n2 - sha-1 in both plugins
 	sqlrfirebirdsrpdigest	sha1digest(false);
 
-	BIGNUM	*n1=BN_new();
-	BIGNUM	*n2=BN_new();
+	bignumber	n1;
+	bignumber	n2;
 
 	// n1=H(N) - srp.cpp:201-204
 	sha1digest.reset();
 	sha1digest.processInt(pvt->_n);
-	sha1digest.getInt(n1);
+	sha1digest.getInt(&n1);
 
 	// n2=H(g) - srp.cpp:206-209
 	sha1digest.reset();
 	sha1digest.processInt(pvt->_g);
-	sha1digest.getInt(n2);
+	sha1digest.getInt(&n2);
 
 	// n1=n1^n2 mod N - srp.cpp:210
-	BN_mod_exp(n1,n1,n2,pvt->_n,pvt->_ctx);
+	if (!sqlrfirebirdsrpModExp(&n1,n1,n2,pvt->_n)) {
+		return setError("failed to compute proof");
+	}
 
 	// n2=H(username) - srp.cpp:212-214
 	sha1digest.reset();
 	sha1digest.process(username);
-	sha1digest.getInt(n2);
+	sha1digest.getInt(&n2);
 
 	// the proof itself - srp.h:140-149
 	sqlrfirebirdsrpdigest	digest(pvt->_hash==SQLRFIREBIRDSRP_SRP256);
@@ -816,15 +857,11 @@ bool sqlrfirebirdsrp::computeProof(const char *username) {
 	digest.processInt(pvt->_serverpublickey);
 	digest.process(pvt->_sessionkey,(uint32_t)pvt->_sessionkeysize);
 
-	BIGNUM	*proof=BN_new();
-	digest.getInt(proof);
+	bignumber	proof;
+	digest.getInt(&proof);
 
 	delete[] pvt->_proof;
 	pvt->_proof=sqlrfirebirdsrpBnToHex(proof);
-
-	BN_free(n1);
-	BN_free(n2);
-	BN_clear_free(proof);
 
 	return (pvt->_proof!=NULL)?true:setError("failed to compute proof");
 }
@@ -845,19 +882,15 @@ bool sqlrfirebirdsrp::verifyProof(const char *username, const char *proof) {
 		return setError("empty proof");
 	}
 
-	BIGNUM	*theirs=NULL;
-	if (!BN_hex2bn(&theirs,proof)) {
-		BN_free(theirs);
+	bignumber	theirs;
+	if (!theirs.setValue(proof,16)) {
 		return setError("invalid proof");
 	}
 
-	BIGNUM	*ours=NULL;
-	BN_hex2bn(&ours,pvt->_proof);
+	bignumber	ours;
+	ours.setValue(pvt->_proof,16);
 
-	bool	match=(BN_cmp(theirs,ours)==0);
-
-	BN_free(theirs);
-	BN_free(ours);
+	bool	match=(theirs.compare(ours)==0);
 
 	return (match)?true:setError("proof mismatch");
 }
