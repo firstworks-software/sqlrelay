@@ -115,6 +115,10 @@
 // exponent); leave some margin
 #define FIREBIRD_WIDEDECIMAL_TEXTLEN 46
 
+// widest text rendering of a firebird 3+ BOOLEAN ("FALSE"), which gets
+// fetched as text the same way, since there's no native buffer for it here
+#define FIREBIRD_BOOLEAN_TEXTLEN 8
+
 // fb_interpret (firebird 2.0+) supersedes the deprecated isc_interprete,
 // whose sizeless buffer walk can overflow msg
 static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
@@ -827,6 +831,10 @@ static int firebirdSqlTypeToDatatype(short sqltype,
 	#ifdef SQL_DEC34
 	} else if (sqltype==SQL_DEC34 || sqltype==SQL_DEC34+1) {
 		return DOUBLE_PRECISION_DATATYPE;
+	#endif
+	#ifdef SQL_BOOLEAN
+	} else if (sqltype==SQL_BOOLEAN || sqltype==SQL_BOOLEAN+1) {
+		return BOOL_DATATYPE;
 	#endif
 	} else if (sqltype==SQL_FLOAT || sqltype==SQL_FLOAT+1) {
 		return FLOAT_DATATYPE;
@@ -4645,6 +4653,22 @@ bool firebirdcursor::describeResultSet() {
 				outsqlda->sqlvar[i].sqllen=maxfieldsize;
 			}
 			field[i].sqlrtype=DOUBLE_PRECISION_DATATYPE;
+	#endif
+	#ifdef SQL_BOOLEAN
+		// firebird 3+'s BOOLEAN; fetched as text, same as
+		// SQL_INT128 above
+		} else if (outsqlda->sqlvar[i].sqltype==SQL_BOOLEAN ||
+				outsqlda->sqlvar[i].sqltype==SQL_BOOLEAN+1) {
+			outsqlda->sqlvar[i].sqltype=SQL_VARYING|
+					(outsqlda->sqlvar[i].sqltype&1);
+			outsqlda->sqlvar[i].sqldata=field[i].textbuffer;
+			outsqlda->sqlvar[i].sqllen=
+					FIREBIRD_BOOLEAN_TEXTLEN;
+			if ((uint32_t)outsqlda->sqlvar[i].sqllen>
+							maxfieldsize) {
+				outsqlda->sqlvar[i].sqllen=maxfieldsize;
+			}
+			field[i].sqlrtype=BOOL_DATATYPE;
 	#endif
 		} else {
 			outsqlda->sqlvar[i].sqltype=SQL_VARYING;

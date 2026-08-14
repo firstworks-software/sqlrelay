@@ -745,6 +745,11 @@
 			timestamp array through op_put_slice is limited to the
 			same precision the read side already renders - four
 			decimal places, and no sub-second timestamp component
+		fixed the firebird connection module - a nullable BOOLEAN column
+			had no dedicated fetch handling and fell into the
+			catch-all branch, which reported it as VARCHAR and lost
+			the null indicator, so a null BOOLEAN always came back as
+			false instead of null
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
