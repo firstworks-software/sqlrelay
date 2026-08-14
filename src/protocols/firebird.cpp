@@ -14,7 +14,8 @@
 
 #include "firebirdsdl.h"
 #include "firebirdsrp.h"
-#include "firebirdarc4.h"
+
+#include <rudiments/arc4.h>
 
 // NOTE:
 // Firebird Wire Protocol refers to:
@@ -1469,8 +1470,8 @@ class firebirdcryptlayer : public socketlayer {
 			~firebirdcryptlayer();
 
 		// the ciphers to run, one per direction (not owned)
-		void	setCiphers(firebirdarc4 *readcipher,
-					firebirdarc4 *writecipher);
+		void	setCiphers(arc4 *readcipher,
+					arc4 *writecipher);
 
 		// hands the layer bytes that came off the socket before it
 		// was installed, which it serves ahead of anything it reads
@@ -1499,8 +1500,8 @@ class firebirdcryptlayer : public socketlayer {
 		// going back through the socket it sits under
 		firebirdsharedfd	rawsock;
 
-		firebirdarc4	*readcipher;
-		firebirdarc4	*writecipher;
+		arc4	*readcipher;
+		arc4	*writecipher;
 
 		// bytes that arrived before the layer was installed, whether
 		// they still need decrypting, and how far into them read()
@@ -1535,8 +1536,8 @@ firebirdcryptlayer::~firebirdcryptlayer() {
 	delete[] scratch;
 }
 
-void firebirdcryptlayer::setCiphers(firebirdarc4 *readcipher,
-					firebirdarc4 *writecipher) {
+void firebirdcryptlayer::setCiphers(arc4 *readcipher,
+					arc4 *writecipher) {
 	this->readcipher=readcipher;
 	this->writecipher=writecipher;
 }
@@ -1597,15 +1598,15 @@ ssize_t firebirdcryptlayer::read(void *buf, size_t size) {
 			pendingencrypted=false;
 			pendingposition=0;
 		}
-		if (encrypted && readcipher) {
-			readcipher->crypt((unsigned char *)b,count);
+		if (encrypted && readcipher && !readcipher->crypt(b,count)) {
+			return -1;
 		}
 		return (ssize_t)count;
 	}
 
 	ssize_t	result=rawsock.read(b,size);
-	if (result>0 && readcipher) {
-		readcipher->crypt((unsigned char *)b,(size_t)result);
+	if (result>0 && readcipher && !readcipher->crypt(b,(size_t)result)) {
+		return -1;
 	}
 	return result;
 }
@@ -1628,7 +1629,9 @@ ssize_t firebirdcryptlayer::write(const void *buf, size_t size) {
 		scratchsize=size;
 	}
 	bytestring::copy(scratch,buf,size);
-	writecipher->crypt((unsigned char *)scratch,size);
+	if (!writecipher->crypt(scratch,size)) {
+		return -1;
+	}
 
 	// write all of it, rather than however much the socket takes at
 	// once - the keystream has already run past the whole buffer, and
@@ -2244,8 +2247,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		// until it does
 		// (rc4 keystreams run independently of each other, so reads
 		// and writes can't share one)
-		firebirdarc4	*wirecryptreadcipher;
-		firebirdarc4	*wirecryptwritecipher;
+		arc4	*wirecryptreadcipher;
+		arc4	*wirecryptwritecipher;
 		// the layer those ciphers run in, under the client socket,
 		// or NULL while the session is still in the clear
 		firebirdcryptlayer	*wirecryptlayer;
@@ -3613,12 +3616,8 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 	// because each side consumes its own.
 	delete wirecryptreadcipher;
 	delete wirecryptwritecipher;
-	wirecryptreadcipher=new firebirdarc4(
-				(const unsigned char *)wirecryptkey,
-				(size_t)wirecryptkeysize);
-	wirecryptwritecipher=new firebirdarc4(
-				(const unsigned char *)wirecryptkey,
-				(size_t)wirecryptkeysize);
+	wirecryptreadcipher=new arc4(wirecryptkey,(size_t)wirecryptkeysize);
+	wirecryptwritecipher=new arc4(wirecryptkey,(size_t)wirecryptkeysize);
 
 	wirecryptlayer=new firebirdcryptlayer();
 	wirecryptlayer->setFileDescriptor(clientsock);

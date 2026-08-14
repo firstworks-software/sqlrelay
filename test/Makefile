@@ -47,9 +47,6 @@ all-crud:
 all-stress:
 	cd stress $(AND) $(MAKE) all
 
-all-arc4:
-	cd arc4 $(AND) $(MAKE) all
-
 clean:
 	cd ado.net $(AND) $(MAKE) clean
 	cd c $(AND) $(MAKE) clean
@@ -68,7 +65,6 @@ clean:
 	cd tcl $(AND) $(MAKE) clean
 	cd bench $(AND) $(MAKE) clean
 	cd crud $(AND) $(MAKE) clean
-	cd arc4 $(AND) $(MAKE) clean
 	cd legacy $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd stress $(AND) $(MAKE) clean
@@ -76,7 +72,6 @@ clean:
 	$(RMTREE) log
 
 tests: all
-	cd arc4 $(AND) ./arc4test
 	$(SCRIPTINT) $(THISDIR)test$(SCRIPTEXT)
 
 testscripts: $(TESTSCRIPTS)

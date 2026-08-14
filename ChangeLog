@@ -800,6 +800,9 @@
 			everything else gets isc_miss_wirecrypt, so a client that
 			agrees to "required" and then never sends op_crypt can no
 			longer carry on in the clear
+		the firebird protocol module uses rudiments' arc4 class for its
+			Arc4 wirecrypt cipher now, instead of its own from-scratch
+			implementation
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

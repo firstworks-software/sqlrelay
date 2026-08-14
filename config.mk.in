@@ -822,7 +822,7 @@ endif
 
 
 # tests
-TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-protocol all-stress all-tcl all-crud all-arc4
+TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-protocol all-stress all-tcl all-crud
 ifeq ($(SQLRELAY_ENABLE_SHARED),yes)
 ifneq ($(ENABLE_ODBC_DRIVER),)
 ifneq ($(ODBCLIBS),)

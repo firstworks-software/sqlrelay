@@ -33,9 +33,8 @@ $(SQLR)protocol_postgresql.$(LIBEXT): postgresql.cpp postgresql.$(OBJ)
 
 $(SQLR)protocol_firebird.$(LIBEXT): firebird.cpp firebird.$(OBJ) \
 					firebirdsdl.cpp firebirdsdl.$(OBJ) \
-					firebirdsrp.cpp firebirdsrp.$(OBJ) \
-					firebirdarc4.cpp firebirdarc4.$(OBJ)
-	$(LTLINK) $(LINK) $(OUT)$@ firebird.$(OBJ) firebirdsdl.$(OBJ) firebirdsrp.$(OBJ) firebirdarc4.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+					firebirdsrp.cpp firebirdsrp.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ firebird.$(OBJ) firebirdsdl.$(OBJ) firebirdsrp.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
 $(SQLR)protocol_tds.$(LIBEXT): tds.cpp tds.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ tds.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
