@@ -75,9 +75,14 @@ bool sqlrexportcsvjsondomnode::exportField(bool first) {
 
 	// export the field
 	// "v" for value, all jsondom arrays consist of "v"alues
+	// (decide "n" vs "s" from the content, not the column type - a
+	// numeric-typed column can still hold a value that isn't a valid
+	// json number)
 	domnode	*field=getCurrentRowDomNode()->appendTag("v");
 	setCurrentFieldDomNode(field);
-	if (getIsNumericColumn(getCurrentColumn())) {
+	bool	isnumber=charstring::isNumber(getCurrentField(),
+					(int32_t)getCurrentFieldLength());
+	if (isnumber) {
 		field->setAttributeValue("t","n");
 		field->setAttributeValue("v",getCurrentField());
 	} else {

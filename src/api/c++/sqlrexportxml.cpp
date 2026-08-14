@@ -73,10 +73,12 @@ bool sqlrexportxml::exportColumnName(bool first) {
 	filedescriptor	*fd=getFileDescriptor();
 
 	// export the column name and type
+	// (column names are null-terminated, so the length that
+	// setCurrentField() derived for it is the right one)
 	if (fd->write("	<column name=\"")!=15) {
 		return systemError();
 	}
-	if (!escapeValue(fd,getCurrentField())) {
+	if (!escapeValue(fd,getCurrentField(),getCurrentFieldLength())) {
 		return false;
 	}
 	if (fd->write("\" type=\"")!=8) {
@@ -148,10 +150,13 @@ bool sqlrexportxml::exportField(bool first) {
 	filedescriptor	*fd=getFileDescriptor();
 
 	// export the field
+	// (field data can contain embedded nulls, so use the
+	// length that came from the cursor, rather than
+	// measuring the field itself)
 	if (fd->write("	<field>")!=8) {
 		return systemError();
 	}
-	if (!escapeValue(fd,getCurrentField())) {
+	if (!escapeValue(fd,getCurrentField(),getCurrentFieldLength())) {
 		return false;
 	}
 	if (fd->write("</field>\n")!=9) {
@@ -204,18 +209,28 @@ bool sqlrexportxml::endProcessingExport() {
 }
 
 bool sqlrexportxml::escapeValue(filedescriptor *fd, const char *field) {
+	// (only for null-terminated values, field data
+	// has to use the version below)
+	return escapeValue(fd,field,(uint32_t)charstring::getLength(field));
+}
+
+bool sqlrexportxml::escapeValue(filedescriptor *fd,
+					const char *field, uint32_t length) {
 	if (!field) {
 		return true;
 	}
-	for (const char *f=field; *f; f++) {
-		if (*f=='"' || *f<' ' || *f>'~' ||
-				*f=='&' || *f=='<' || *f=='>') {
-			if (fd->printf("&%d;",(uint8_t)*f)!=
-						((*f<=9)?3:((*f>=100)?5:4))) {
+	for (uint32_t i=0; i<length; i++) {
+		// (compare as unsigned so bytes >=0x80 are treated as
+		// >'~' rather than as negative and <' ')
+		uint8_t	ch=(uint8_t)field[i];
+		if (ch=='"' || ch<' ' || ch>'~' ||
+				ch=='&' || ch=='<' || ch=='>') {
+			if (fd->printf("&%d;",ch)!=
+						((ch<=9)?3:((ch>=100)?5:4))) {
 				return systemError();
 			}
 		} else {
-			if (fd->write(*f)!=sizeof(char)) {
+			if (fd->write((char)ch)!=sizeof(char)) {
 				return systemError();
 			}
 		}

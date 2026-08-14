@@ -237,7 +237,11 @@ bool sqlrexporttable::exportField(bool first) {
 	}
 
 	// bind the current field
-	exportcur->inputBind(bindnames[bindindex],getCurrentField());
+	// (field data can contain embedded nulls, so use the
+	// length that came from the cursor, rather than
+	// measuring the field itself)
+	exportcur->inputBind(bindnames[bindindex],
+				getCurrentField(),getCurrentFieldLength());
 
 	// next...
 	bindindex++;

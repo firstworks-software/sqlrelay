@@ -14,3 +14,5 @@
 		bool	endProcessingExport();
 
 		bool	escapeValue(filedescriptor *fd, const char *field);
+		bool	escapeValue(filedescriptor *fd,
+					const char *field, uint32_t length);
