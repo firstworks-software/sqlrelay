@@ -1,4 +1,4 @@
-// Copyright (c) 2016  David Muse
+// Copyright (c) David Muse
 // See the file COPYING for more information
 
 #include <sqlrelay/sqlrserver.h>
@@ -49,10 +49,9 @@
 #define	DEFAULT_PACKET_SIZE		4096
 #define	MAX_PACKET_SIZE			65535
 
-// a floor under maxrequestsize, the coarse ceiling that recvPacket() puts on
-// a reassembled request, which has no size of its own on the wire.
-// maxquerysize downstream bounds the query text rather than the whole
-// request, so it can't cap this, but it remains the real, user-facing limit.
+// a floor under maxrequestsize, the ceiling recvPacket() puts on a
+// reassembled request.  maxquerysize can't cap this, since it bounds the
+// query text rather than the whole request.
 #define	MIN_MAX_REQUEST_SIZE		(16*1024*1024)
 
 // login7's fixed header, before the variable length fields it points into.
@@ -150,10 +149,8 @@
 #define OLEDB_ON	0x01
 
 // the collation a real sql server running SQL_Latin1_General_CP1_CI_AS
-// sends: lcid 0x0409 (en-US), flags 0x0d (ignore case, width and kana)
-// and sort id 0x34.  no back end reports a sql server collation, so this
-// isn't derived from one, but it does have to agree with
-// TDS_NONUNICODE_CHARSET below.
+// sends.  no back end reports a sql server collation, so this is hard
+// coded, but it has to agree with TDS_NONUNICODE_CHARSET below.
 #define TDS_COLLATION_LCID	0x00D00409
 #define TDS_COLLATION_SORTID	0x34
 
@@ -816,13 +813,13 @@ class tdsrow {
 		uint64_t	*sizes;
 };
 
+class sqlrprotocol_tds;
+
 // the rows the most recent sp_cursorfetch returned for one cursor.  the
 // values have to be copied while the row is read for the ROW token -
 // sp_cursor arrives as a request of its own, by which time
 // sqlrservercontroller's field pointers have been re-aimed at whichever
 // cursor fetched last
-class sqlrprotocol_tds;
-
 class tdsrows {
 	public:
 				tdsrows(sqlrprotocol_tds *tds);
