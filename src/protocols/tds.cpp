@@ -10929,9 +10929,8 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 	// FIXME: handle output binds too
 
-	// handle variable size types by getting the size, then
-	// changing the type so the switch below will get the data.
-	// a size of 0 means the value is null.
+	// get size, resolve *n type to a concrete type
+	// a size of 0 means the value is null
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
@@ -11631,8 +11630,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 			if (bv) {
 
-				// copy the value out of the request packet,
-				// blank filling the rest
+				// copy value in, blank-fill the pad
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
 				bv->valuesize=valuesize;
 				bv->value.stringval=(char *)
