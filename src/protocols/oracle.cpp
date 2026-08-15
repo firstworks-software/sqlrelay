@@ -2077,18 +2077,31 @@ char *sqlrprotocol_oracle::generateHex(uint16_t bytes) {
 }
 
 bool sqlrprotocol_oracle::initialHandshake() {
-	return connect() &&
+
+	debugStart("initial handshake");
+
+	bool	result=connect() &&
 		anoNegotiation() &&
 		ttiNegotiation() &&
 		dataTypeNegotiation() &&
 		authenticate();
+
+	debugWrite("result: %d",result);
+	debugEnd();
+
+	return result;
 }
 
 bool sqlrprotocol_oracle::connect() {
+
+	debugStart("connect");
+
 	if (!recvConnectRequest() ||
 		// the database always requests a resend here, for some reason
 		!sendResend() ||
 		!recvConnectRequest()) {
+		debugWrite("failed receiving connect request");
+		debugEnd();
 		return false;
 	}
 
@@ -2096,11 +2109,18 @@ bool sqlrprotocol_oracle::connect() {
 	// for gets refused here, the same way a real listener would, rather
 	// than being let through to whatever backend connection is on hand
 	if (!requestedServiceKnown()) {
+		debugWrite("requested service unknown, refusing");
+		debugEnd();
 		sendRefuse(TNS_NO_SUCH_SERVICE);
 		return false;
 	}
 
-	return sendConnectResponse();
+	bool	result=sendConnectResponse();
+
+	debugWrite("result: %d",result);
+	debugEnd();
+
+	return result;
 }
 
 bool sqlrprotocol_oracle::requestedServiceKnown() {
@@ -2135,6 +2155,13 @@ bool sqlrprotocol_oracle::requestedServiceKnown() {
 		delete[] sidlist[i];
 	}
 	delete[] sidlist;
+
+	debugStart("requested service known");
+	debugWrite("requested service: \"%s\"",
+			(requestedservice)?requestedservice:"(none)");
+	debugWrite("configured sids: \"%s\"",(sids)?sids:"(none)");
+	debugWrite("known: %d",known);
+	debugEnd();
 
 	return known;
 }
@@ -2330,6 +2357,8 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 
 bool sqlrprotocol_oracle::sendConnectResponse() {
 
+	debugStart("connect response");
+
 	// answer with the highest protocol version we support that the client
 	// can speak
 	// (python-oracledb and node-oracledb refuse anything under
@@ -2337,16 +2366,23 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 	if (connectlowestversion<=PROTOCOL_VERSION_12 &&
 			connectversion>=PROTOCOL_VERSION_12) {
 		connectversion=PROTOCOL_VERSION_12;
+		debugWrite("negotiated version: 0x%04x (12)",connectversion);
 	} else if (connectlowestversion<=PROTOCOL_VERSION_11 &&
 			connectversion>=PROTOCOL_VERSION_11) {
 		connectversion=PROTOCOL_VERSION_11;
+		debugWrite("negotiated version: 0x%04x (11)",connectversion);
 	} else if (connectlowestversion<=PROTOCOL_VERSION_8) {
 		connectversion=PROTOCOL_VERSION_8;
+		debugWrite("negotiated version: 0x%04x (8)",connectversion);
 	} else {
 		debugWrite("no supported connect protocol version found");
+		debugEnd();
 		sendRefuse(TNS_CONNECTION_REFUSED);
 		return false;
 	}
+
+	debugWrite("sending accept");
+	debugEnd();
 
 	return sendAccept();
 }
@@ -2371,6 +2407,7 @@ bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 	// debug
 	debugStart("accept");
 	debugWrite("version: 0x%04x",connectversion);
+	debugWrite("large header: %d",large);
 	debugWrite("gso: 0x%04x",gso);
 	debugWrite("sdu: %d",sdu);
 	debugWrite("tdu: %d",tdu);
@@ -2418,6 +2455,8 @@ bool sqlrprotocol_oracle::sendResend() {
 
 	// debug
 	debugStart("resend");
+	debugWrite("packet type: %d",PACKET_RESEND);
+	debugWrite("packet size: %d (no body)",0);
 	debugEnd();
 
 	// build packet
@@ -2443,7 +2482,13 @@ bool sqlrprotocol_oracle::sendRefuse(uint32_t tnserror) {
 
 	// debug
 	debugStart("refuse");
-	debugWrite("error: %d",tnserror);
+	debugWrite("error: 0x%08x (%d)",tnserror,tnserror);
+	debugWrite("meaning: %s",
+		(tnserror==TNS_NO_SUCH_SERVICE)?
+			"no such service/sid" :
+		(tnserror==TNS_CONNECTION_REFUSED)?
+			"connection refused" :
+			"unknown");
 	debugWrite("message: %s",message.getString());
 	debugEnd();
 
@@ -2469,11 +2514,15 @@ bool sqlrprotocol_oracle::anoNegotiation() {
 	// NSI_SUP_SEC_RENEG|NSI_NA_DISABLED, and node-oracledb sends 0x08,
 	// NSI_NA_NO_SERVICES, and both go straight to the tti negotiation.
 	if (!(((anoflags>>8)|anoflags)&NSI_NA_WANTED)) {
-		debugStart("ano");
+		debugStart("ano negotiation");
 		debugWrite("client didn't ask for ano, skipping it");
 		debugEnd();
 		return true;
 	}
+
+	debugStart("ano negotiation");
+	debugWrite("client requested ano, negotiating");
+	debugEnd();
 
 	if (!recvAnoRequest()) {
 		return false;
@@ -2481,10 +2530,18 @@ bool sqlrprotocol_oracle::anoNegotiation() {
 
 	warnAnoDeclined();
 
-	return sendAnoResponse();
+	bool	result=sendAnoResponse();
+
+	debugStart("ano negotiation");
+	debugWrite("result: %d",result);
+	debugEnd();
+
+	return result;
 }
 
 void sqlrprotocol_oracle::warnAnoDeclined() {
+
+	debugStart("ano declined");
 
 	// through the logger modules rather than stderror.printf(), because
 	// this fires per connection rather than once at construction.  there's
@@ -2492,6 +2549,8 @@ void sqlrprotocol_oracle::warnAnoDeclined() {
 	uint32_t	encdrivers=anoDriversOffered(encryptiondrivers,
 							encryptiondrivercount);
 	if (encdrivers) {
+		debugWrite("declining %d offered encryption driver(s)",
+								encdrivers);
 		cont->raiseInternalWarningEvent(NULL,
 			"client requested oracle native network encryption "
 			"(%d algorithms).  this module doesn't implement it "
@@ -2505,6 +2564,8 @@ void sqlrprotocol_oracle::warnAnoDeclined() {
 						cryptochecksummingdrivers,
 						cryptochecksummingdrivercount);
 	if (csdrivers) {
+		debugWrite("declining %d offered crypto-checksumming "
+						"driver(s)",csdrivers);
 		cont->raiseInternalWarningEvent(NULL,
 			"client requested oracle crypto-checksumming "
 			"(%d algorithms).  this module doesn't implement it "
@@ -2514,6 +2575,13 @@ void sqlrprotocol_oracle::warnAnoDeclined() {
 			"REJECTED.",
 			csdrivers);
 	}
+
+	if (!encdrivers && !csdrivers) {
+		debugWrite("nothing declined - client offered no "
+					"encryption or checksumming drivers");
+	}
+
+	debugEnd();
 }
 
 uint32_t sqlrprotocol_oracle::anoDriversOffered(uint16_t *drivers,
@@ -2524,6 +2592,10 @@ uint32_t sqlrprotocol_oracle::anoDriversOffered(uint16_t *drivers,
 	uint32_t	offered=0;
 	for (uint32_t i=0; i<drivercount; i++) {
 		if (drivers[i]) {
+			debugStart("ano driver offered");
+			debugWrite("index: %d",i);
+			debugWrite("driver id: 0x%04x",drivers[i]);
+			debugEnd();
 			offered++;
 		}
 	}
