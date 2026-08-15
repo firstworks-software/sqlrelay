@@ -182,6 +182,9 @@ int main(int argc, char **argv) {
 	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelay12c")) {
 		sid="sqlrelay12c";
 		badsid="sqlrelay12cbad";
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayconnectstrings")) {
+		sid="sqlrelayconnectstrings";
+		badsid="sqlrelayconnectstringsbad";
 	} else {
 		sid=(issqlrelay)?"sqlrelay":"ora1";
 		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
@@ -285,14 +288,21 @@ int main(int argc, char **argv) {
 	// a mismatch surfaces as ORA-01017 even for a correct password, and
 	// there is no separate api for asking which type was used.
 
+	// Run against the sqlrelayconnectstrings target, this section covers
+	// #9309: oracleprotocolconnectstringstest has no <auths> block, so
+	// the listener falls back to oracle_connectstrings, the module that
+	// used to be the un-rewritten mysql clone.  A correct-password login
+	// succeeding there is the regression check for that fix.
+
 	// This section does not cover oracle_clear_password (implemented in
-	// src/auths/oracle_userlist.cpp). The oracle protocol module only ever
-	// calls setMethod("O5LOGON") or setMethod("O5LOGON-SERVER-RESPONSE") -
-	// there is no config switch to a cleartext auth path, and no real
-	// Oracle client offers a cleartext password on the wire (O5LOGON is
-	// mandatory in modern OCI). So that method has no reachable path to
-	// drive from a real client, and is not testable here without
-	// protocol-module changes that are out of scope for this ticket.
+	// src/auths/oracle_userlist.cpp). #9308 confirmed it has no reachable
+	// path: the oracle protocol module only ever calls
+	// setMethod("O5LOGON") or setMethod("O5LOGON-SERVER-RESPONSE"), and
+	// the native SQLRClient protocol never builds an oracle-typed
+	// credential at all, so no shipped protocol module can select it.
+	// That's documented in the config guide's Oracle Protocol Limitations
+	// section and in oracle_userlist.cpp, rather than fixed, since no real
+	// Oracle client offers a cleartext password on the wire either.
 
 	// a handle set of its own, so a failed login here cannot disturb the
 	// session the rest of the test runs on

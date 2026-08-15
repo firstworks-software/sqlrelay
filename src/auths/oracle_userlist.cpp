@@ -29,6 +29,12 @@
 // rudiments' pbkdf2-hmac-sha512 (needed for 12c verifiers) has no
 // non-openssl fallback and fails outright without it.  Where it isn't
 // supported, oracle_clear_password still works; O5LOGON just isn't offered.
+//
+// That said, no protocol module SQL Relay ships - including src/protocols/
+// oracle.cpp and the native SQLRClient protocol - ever builds a credential
+// with method "oracle_clear_password", so this module's support for it has
+// no reachable caller today.  It's kept as a hook for a protocol module
+// that needs password-based auth without O5LOGON, not for current use.
 
 // verifier types, from python-oracledb's constants.pxi
 #define VERIFIER_TYPE_11G_1	0xb152

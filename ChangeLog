@@ -829,6 +829,11 @@
 		connectstrings, userlist and database auth modules were built
 		but never installed, so protocol="oracle" couldn't be used from
 		a normal install
+	documented that oracle_clear_password (in the oracle_userlist and
+		oracle_database auth modules) has no reachable caller through
+		any protocol module SQL Relay ships - noted in the config
+		guide's Oracle Protocol Limitations section and in the auth
+		modules themselves
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
