@@ -1880,10 +1880,9 @@ void sqlrprotocol_tds::init() {
 	dbversion=cont->getDbVersion();
 	getServerTdsVersion();
 
-	// A few divergences depend on which database is really back there,
-	// not on which connection module is in front of it - odbc and freetds
-	// each reach both an ASE and a SQL Server.  The sap module only ever
-	// talks to an ASE, and the others report one in the version string.
+	// The database in play, not the connection module, decides some
+	// divergences - odbc and freetds each reach both an ASE and a SQL
+	// Server, so check the version string; sap always means ASE.
 	dbisase=(!charstring::compare(cont->getDbType(),"sap") ||
 			charstring::contains(dbversion,
 					"Adaptive Server Enterprise"));
@@ -2138,8 +2137,8 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// sanity checks (TABULAR_RESULT isn't in the list - a client
-		// never sends the type sendPacket() frames responses as)
+		// Sanity checks. TABULAR_RESULT is omitted because clients
+		// never send it; it's only the type sendPacket() uses.
 		if (*packettype!=SQL_BATCH &&
 			*packettype!=PRE_TDS7_LOGIN &&
 			*packettype!=RPC &&
@@ -2163,19 +2162,16 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		// bump the packet size down
 		packetsize-=PACKET_HEADER_SIZE;
 
-		// a zero-byte payload is only legal on the last packet of a
-		// request (eg. ATTENTION_SIGNAL) - anywhere else it's a client
-		// spinning this loop forever with header-only packets
+		// A zero-byte payload is legal only on the final packet;
+		// otherwise a client could spin this loop with empty packets.
 		if (!packetsize && !(packetstatus&STATUS_EOM)) {
 			debugWrite("empty non-eom packet");
 			debugSystemError();
 			return false;
 		}
 
-		// cap the total size of the reassembled request - STATUS_EOM is
-		// entirely up to the client, so without this it can grow
-		// reqpacket without bound by never setting it.  checked before
-		// the read below, so an over-cap packet is never allocated.
+		// Cap the reassembled request size; STATUS_EOM is set by the
+		// client, so without this check reqpacket could grow unbounded.
 		if ((uint64_t)reqpacket.getSize()+(uint64_t)packetsize>
 							maxrequestsize) {
 			debugWrite("request too large: %lld",
@@ -2184,9 +2180,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// get the packet data
-		// (into a reused memorypool - the data is copied into
-		// reqpacket immediately below)
+		// get the packet data (reqpacketpool is reused each time)
 		reqpacketpool.clear();
 		byte_t	*packet=reqpacketpool.allocate(packetsize);
 		if (clientsock->read(packet,packetsize)!=packetsize) {
@@ -2327,16 +2321,14 @@ bool sqlrprotocol_tds::sendPacket() {
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
 
-	// note: the decoded password itself is never debugWrite()'n, callers
-	// log it as "(hidden)" - only its length and whether decoding
-	// succeeded are logged here
+	// The decoded password itself is never logged; callers log it as
+	// "(hidden)" and only its length and decode status appear here.
 	debugStart("read password");
 	debugWrite("charcount: %lld",(long long)charcount);
 
-	// the callers cap this too, but they're far enough away that it has
-	// to stand on its own.  size and i below both have to be size_t's -
-	// a 16-bit size truncates and over-reads the copy, and a 16-bit i
-	// with a 64-bit size never terminates
+	// Callers also cap charcount, but this has to stand on its own:
+	// size and i must be size_t, or a 16-bit size truncates the copy
+	// and a 16-bit i with a 64-bit size never terminates the loop.
 	if (charcount>MAX_LOGIN_CHARS) {
 		debugWrite("charcount exceeds max login chars");
 		debugEnd();
@@ -2408,12 +2400,9 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 		servertdsversion=740;
 	}
 
-	// this module only implements the LOGIN7-and-later (>=700) wire
-	// format, so never auto-negotiate down to a version it doesn't
-	// actually speak, even for backends (sybase/sap, old SQL Server)
-	// that are genuinely older - negotiateTdsVersion() would otherwise
-	// echo back a version the client didn't ask for, and the client
-	// hangs waiting for a response shaped like the version it requested
+	// This module only speaks the LOGIN7+ (>=700) wire format, so never
+	// report a lower version even for genuinely older backends -
+	// negotiateTdsVersion() would echo it back and hang the client.
 	if (servertdsversion && servertdsversion<700) {
 		servertdsversion=700;
 	}
@@ -2601,10 +2590,8 @@ uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 
 void sqlrprotocol_tds::negotiateTdsVersion() {
 
-	// if we couldn't work out the backend's tds version then go with
-	// whatever the client asked for - falling back to an older one hangs
-	// the client, which sizes some fields from the version it requested
-	// rather than the one we send back
+	// If the backend's version is unknown, go with what the client
+	// asked for; falling back to an older version hangs the client.
 	uint32_t	stv=(servertdsversion)?servertdsversion:
 					(clienttdsversion)?clienttdsversion:700;
 
@@ -2652,10 +2639,8 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 			break;
 		}
 
-		// exactly one set of requests is legal in each state, so reject
-		// the mismatch in both directions - a login-phase request that
-		// arrives a second time re-auths the session and renegotiates
-		// the wire format while the previous user's cursors are open
+		// Reject login/non-login requests in the wrong state - a repeat
+		// login request would re-auth and renegotiate mid-session.
 		bool	loginrequest=(packettype==PRE_LOGIN ||
 					packettype==PRE_TDS7_LOGIN ||
 					packettype==TDS7_LOGIN ||
@@ -2731,9 +2716,8 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				break;
 		}
 
-		// the request is done and answered, so there's nothing left for
-		// an attention to cancel.  a cursor it meant to leave open is
-		// still in its handle dictionary.
+		// Nothing is left for an attention to cancel once the request
+		// is answered; a cursor meant to stay open is in its handle map.
 		pendingcursor=NULL;
 
 	} while (loop);
