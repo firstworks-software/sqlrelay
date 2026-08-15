@@ -5542,8 +5542,7 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		return;
 	}
 
-	// handle variable size types by appending the size, then
-	// changing the type so the switch below will append the data
+	// append size, normalize type for data switch below
 	switch (tdstype) {
 		case TDS_TYPE_INTN:
 			{
@@ -5795,10 +5794,8 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_BINARY:
 		case TDS_TYPE_VARBINARY:
 			{
-			// FIXME: TDS backends encode these as text, where
-			// each pair of characters are the hex value of a
-			// byte.  However, other databases may encode them
-			// differently.
+			// FIXME: assumes hex-pair text encoding; other
+			// backends may encode this differently
 			write(&resppacket,(byte_t)(fieldsize/2));
 			const char	*f=field;
 			for (byte_t i=0; i<fieldsize/2; i++) {
@@ -5813,10 +5810,8 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_BIGBINARY:
 		case TDS_TYPE_BIGVARBIN:
 			{
-			// FIXME: TDS backends encode these as text, where
-			// each pair of characters are the hex value of a
-			// byte.  However, other databases may encode them
-			// differently.
+			// FIXME: assumes hex-pair text encoding; other
+			// backends may encode this differently
 			writeLE(&resppacket,(uint16_t)(fieldsize/2));
 			const char	*f=field;
 			for (uint16_t i=0; i<(fieldsize/2); i++) {
@@ -5895,13 +5890,12 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			break;
 		case TDS_TYPE_XML:
 			{
-			// PLP (MS-TDS 2.2.5.2.3.2): an 8-byte total length,
-			// then the data as one chunk (a 4-byte chunk length
-			// and the bytes), then a 4-byte zero length chunk to
-			// terminate.  a zero length chunk *is* the
-			// terminator, so an empty value skips the data chunk
-			// entirely - sending one would be 4 bytes the client
-			// doesn't expect, corrupting whatever follows.
+			// PLP encoding (MS-TDS 2.2.5.2.3.2): 8-byte total
+			// length, then chunks of (4-byte length, bytes),
+			// ending in a 4-byte zero-length chunk. Skip the data
+			// chunk for an empty value - the terminator alone
+			// means empty, and an extra chunk would corrupt what
+			// follows.
 			size_t	field16length;
 			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
 							&field16length);
@@ -5922,10 +5916,8 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_IMAGE:
 		case TDS_TYPE_SSVARIANT:
 			{
-			// FIXME: TDS backends encode these as text, where
-			// each pair of characters are the hex value of a
-			// byte.  However, other databases may encode them
-			// differently.
+			// FIXME: assumes hex-pair text encoding; other
+			// backends may encode this differently
 			writeLE(&resppacket,(uint32_t)(fieldsize/2));
 			const char	*f=field;
 			for (uint32_t i=0; i<fieldsize/2; i++) {
@@ -6638,12 +6630,10 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	char	*errorbuffer=charstring::duplicate(errorstring,errorsize);
 	char	*errptr=errorbuffer;
 
-	// if the server is mssql/sap then parse the various parts
-	// out of the errorbuffer, which looks like:
+	// mssql/sap error format:
 	// Server message: ... severity(...) number(...) state(...) line(...)
 	// Server Name:... Procedure Name:...
-	// (note 2 spaces between line(...) and Server Name and no spaces after
-	// the colons after Server Name and Procedure Name)
+	// (2 spaces before "Server Name", no space after the colons)
 	byte_t		state=1;
 	byte_t		errclass=0;
 	uint32_t	linenumber=1;
