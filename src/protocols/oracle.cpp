@@ -8564,15 +8564,26 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 }
 
 bool sqlrprotocol_oracle::cancel(const byte_t *rp) {
+
 	// FIXME: implement this
+
+	uint16_t	cursorid=hackcursorid;
+
+	debugStart("cancel request");
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
 	return false;
 }
 
 bool sqlrprotocol_oracle::version(const byte_t *rp) {
-	
+
 	// FIXME: decode this...
 
 	debugStart("version request");
+	if (rp && rp<resppacket+resppacketsize) {
+		debugWrite("requested version: 0x%02x",*rp);
+	}
 	debugEnd();
 
 	return sendVersionResponse();
@@ -8604,6 +8615,7 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	debugTtcCode(ttccode);
 	debugWrite("server version:");
 	debugWrite("%s",serverversion);
+	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
 
 	return sendPacket(true);
@@ -8700,6 +8712,7 @@ bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 	debugWrite("seq number: %d",seqnumber);
 	debugWrite("session id: %d",sessionid);
 	debugWrite("serial number: %d",serialnumber);
+	debugWrite("unknown: 0x%08x",unknown);
 	debugEnd();
 
 	*rpout=rp;
@@ -8714,6 +8727,9 @@ bool sqlrprotocol_oracle::logonUnknown(const byte_t *rp) {
 	// FIXME: decode this...
 
 	debugStart("logon unknown request");
+	if (rp && rp<resppacket+resppacketsize) {
+		debugWrite("function code: 0x%02x",*rp);
+	}
 	debugEnd();
 
 	return sendLogonUnknownResponse();
@@ -8741,6 +8757,7 @@ bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
 	debugStart("logon unknown response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
 
 	return sendPacket(true);
@@ -8776,6 +8793,10 @@ void sqlrprotocol_oracle::putGenericFooter() {
 	};
 
 	reqpacket.append(footer,sizeof(footer));
+
+	debugStart("footer");
+	debugHexDump(footer,sizeof(footer));
+	debugEnd();
 }
 
 bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
