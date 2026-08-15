@@ -2751,6 +2751,7 @@ bool sqlrprotocol_oracle::getSupervisorService(const byte_t *rp,
 						const byte_t **rpout) {
 
 	debugStart("supervisor");
+	debugWrite("service: ANO Supervisor");
 
 	uint32_t	pid;
 	uint32_t	connectiontype;
@@ -2779,6 +2780,7 @@ bool sqlrprotocol_oracle::getAuthenticationService(const byte_t *rp,
 						const byte_t **rpout) {
 
 	debugStart("authentication");
+	debugWrite("service: ANO Authentication");
 
 	uint16_t	constant;
 	uint16_t	status;
@@ -2802,6 +2804,7 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 						const byte_t **rpout) {
 
 	debugStart("encryption");
+	debugWrite("service: ANO Encryption");
 
 	uint16_t	*drivers=NULL;
 	uint32_t	drivercount;
@@ -2840,6 +2843,7 @@ bool sqlrprotocol_oracle::getCryptoChecksummingService(
 						const byte_t **rpout) {
 
 	debugStart("crypto-checksumming");
+	debugWrite("service: ANO Crypto-Checksumming");
 
 	uint16_t	*drivers=NULL;
 	uint32_t	drivercount;
@@ -2870,10 +2874,13 @@ bool sqlrprotocol_oracle::getAnoVersionField(const byte_t *rp,
 		return false;
 	}
 
+	debugStart("version");
+
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",4,&rp) ||
 		!readBE(rp,&type,"type",5,&rp)) {
+		debugEnd();
 		return false;
 	}
 	readBE(rp,version,&rp);
@@ -2882,6 +2889,8 @@ bool sqlrprotocol_oracle::getAnoVersionField(const byte_t *rp,
 		debugWrite("version: 0x%08x",*version);
 		// 8.0 -> 10g send a version string, 11i+ sends all 0's
 	}
+
+	debugEnd();
 
 	*rpout=rp;
 
@@ -2898,10 +2907,13 @@ bool sqlrprotocol_oracle::getAnoConnectionInfoField(
 		return false;
 	}
 
+	debugStart("connection info");
+
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",8,&rp) ||
 		!readBE(rp,&type,"type",1,&rp)) {
+		debugEnd();
 		return false;
 	}
 	readBE(rp,pid,&rp);
@@ -2915,6 +2927,8 @@ bool sqlrprotocol_oracle::getAnoConnectionInfoField(
 		debugWrite("pid: %d",*pid);
 		debugWrite("connection type: 0x%08x",*connectiontype);
 	}
+
+	debugEnd();
 
 	*rpout=rp;
 
@@ -3031,16 +3045,20 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 		return false;
 	}
 
+	debugStart("driver list");
+
 	uint16_t	size;
 	readBE(rp,&size,&rp);
 
 	uint16_t	type;
 	if (!readBE(rp,&type,"type",1,&rp)) {
+		debugEnd();
 		return false;
 	}
 
 	// the size counts the bytes after the size and type
 	if (!anoBoundsCheck(rp,end,size,"driver list field")) {
+		debugEnd();
 		return false;
 	}
 
@@ -3059,6 +3077,7 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 	if (size>=4 && rp[0]==0xde && rp[1]==0xad &&
 					rp[2]==0xbe && rp[3]==0xef) {
 		debugWrite("driver list is a ub2 array, not decoded");
+		debugEnd();
 		*rpout=rp+size;
 		return true;
 	}
@@ -3074,6 +3093,8 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 		}
 	}
 
+	debugEnd();
+
 	*rpout=rp;
 
 	return true;
@@ -3087,15 +3108,20 @@ bool sqlrprotocol_oracle::getAnoConstantField(const byte_t *rp,
 		return false;
 	}
 
+	debugStart("constant");
+
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",2,&rp) ||
 		!readBE(rp,&type,"type",3,&rp)) {
+		debugEnd();
 		return false;
 	}
 	readBE(rp,constant,&rp);
 
 	debugWrite("constant: 0x%04x",*constant);
+
+	debugEnd();
 
 	*rpout=rp;
 
@@ -3110,15 +3136,20 @@ bool sqlrprotocol_oracle::getAnoConstantField(const byte_t *rp,
 		return false;
 	}
 
+	debugStart("constant");
+
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",1,&rp) ||
 		!readBE(rp,&type,"type",2,&rp)) {
+		debugEnd();
 		return false;
 	}
 	read(rp,constant,&rp);
 
 	debugWrite("constant: 0x%02x",*constant);
+
+	debugEnd();
 
 	*rpout=rp;
 
@@ -3133,15 +3164,20 @@ bool sqlrprotocol_oracle::getAnoStatusField(const byte_t *rp,
 		return false;
 	}
 
+	debugStart("status");
+
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",2,&rp) ||
 		!readBE(rp,&type,"type",6,&rp)) {
+		debugEnd();
 		return false;
 	}
 	readBE(rp,status,&rp);
 
 	debugWrite("status: 0x%04x",*status);
+
+	debugEnd();
 
 	*rpout=rp;
 
@@ -3203,6 +3239,7 @@ bool sqlrprotocol_oracle::sendAnoResponse() {
 uint16_t sqlrprotocol_oracle::putSupervisorService() {
 
 	debugStart("supervisor");
+	debugWrite("service: ANO Supervisor");
 
 	uint16_t drivers[]={0x0004,0x0001};
 
@@ -3218,6 +3255,7 @@ uint16_t sqlrprotocol_oracle::putSupervisorService() {
 uint16_t sqlrprotocol_oracle::putAuthenticationService() {
 
 	debugStart("authentication");
+	debugWrite("service: ANO Authentication");
 
 	uint16_t	size=putAnoServiceHeader(1,2)+
 				putAnoVersionField(authenticationversion)+
@@ -3230,6 +3268,7 @@ uint16_t sqlrprotocol_oracle::putAuthenticationService() {
 uint16_t sqlrprotocol_oracle::putEncryptionService() {
 
 	debugStart("encryption");
+	debugWrite("service: ANO Encryption");
 
 	// oracle's native network encryption is a diffie-hellman key
 	// agreement whose shared secret keys aes, rc4 or 3des for every tns
@@ -3254,6 +3293,7 @@ uint16_t sqlrprotocol_oracle::putEncryptionService() {
 uint16_t sqlrprotocol_oracle::putCryptoChecksummingService() {
 
 	debugStart("crypto-checksumming");
+	debugWrite("service: ANO Crypto-Checksumming");
 
 	// declined for the reasons in putEncryptionService()
 	uint16_t	size=putAnoServiceHeader(3,2)+
@@ -3270,6 +3310,22 @@ uint16_t sqlrprotocol_oracle::putAnoServiceHeader(uint16_t service,
 	debugStart("ano service header");
 	debugWrite("service: %d",service);
 	debugWrite("field count: %d",fieldcount);
+	switch (service) {
+		case 1:
+			debugWrite("service name: ANO Authentication");
+			break;
+		case 2:
+			debugWrite("service name: ANO Encryption");
+			break;
+		case 3:
+			debugWrite("service name: ANO Crypto-Checksumming");
+			break;
+		case 4:
+			debugWrite("service name: ANO Supervisor");
+			break;
+		default:
+			break;
+	}
 	debugEnd();
 
 	// service, field count, marker, return total size
@@ -3282,7 +3338,9 @@ uint16_t sqlrprotocol_oracle::putAnoServiceHeader(uint16_t service,
 
 uint16_t sqlrprotocol_oracle::putAnoVersionField(uint32_t version) {
 
+	debugStart("version");
 	debugWrite("version: 0x%08x",version);
+	debugEnd();
 
 	// data size, field type, version, return total size
 	writeBE(&reqpacket,(uint16_t)4);
@@ -3293,7 +3351,9 @@ uint16_t sqlrprotocol_oracle::putAnoVersionField(uint32_t version) {
 
 uint16_t sqlrprotocol_oracle::putAnoStatusField(uint16_t status) {
 
+	debugStart("status");
 	debugWrite("status: 0x%04x",status);
+	debugEnd();
 
 	// data size, field type, status, return total size
 	writeBE(&reqpacket,(uint16_t)2);
@@ -3304,7 +3364,9 @@ uint16_t sqlrprotocol_oracle::putAnoStatusField(uint16_t status) {
 
 uint16_t sqlrprotocol_oracle::putAnoConstant(byte_t constant) {
 
+	debugStart("constant");
 	debugWrite("constant: 0x%02x",constant);
+	debugEnd();
 
 	// data size, field type, constant, return total size
 	writeBE(&reqpacket,(uint16_t)1);
@@ -3316,12 +3378,14 @@ uint16_t sqlrprotocol_oracle::putAnoConstant(byte_t constant) {
 uint16_t sqlrprotocol_oracle::putAnoArrayField(uint16_t *array,
 						uint32_t arraycount) {
 
+	debugStart("array field");
+
 	// data size, field type
 	uint16_t datasize=((arraycount)?(4+2+4+arraycount*2):1);
 	writeBE(&reqpacket,(uint16_t)((arraycount)?(4+2+4+arraycount*2):1));
 	writeBE(&reqpacket,(uint16_t)1);
 
-	debugWrite("arraycount: %d",arraycount);
+	debugWrite("array count: %d",arraycount);
 
 	if (arraycount) {
 
@@ -3339,6 +3403,8 @@ uint16_t sqlrprotocol_oracle::putAnoArrayField(uint16_t *array,
 		// null terminator
 		write(&reqpacket,(byte_t)0x00);
 	}
+
+	debugEnd();
 
 	// return total size
 	return 4+datasize;
