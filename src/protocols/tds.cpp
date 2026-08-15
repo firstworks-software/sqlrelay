@@ -2764,7 +2764,6 @@ bool sqlrprotocol_tds::preLogin() {
 	debugStart("pre-login");
 	debugWrite("receiving...");
 
-	// some useful variables
 	byte_t		plopttok;
 	uint16_t	ploptoff;
 	uint16_t	ploptsize;
@@ -2951,17 +2950,15 @@ bool sqlrprotocol_tds::preLogin() {
 	resppacket.clear();
 	bytebuffer	packetdata;
 
-	// Ha!  You have to know ahead of time how many tokens you plan on
-	// sending to set this correctly.
-	// Update this accordingly if you add tokens!!!
+	// ploptoff must be sized for the number of tokens sent below -
+	// update it if a token is added
 	ploptoff=5*(sizeof(byte_t)+
 				sizeof(uint16_t)+
 				sizeof(uint16_t))+
 			sizeof(byte_t);
 
-	// respond in the same format as the request...
-	// (the option offsets and sizes are big-endian, the option
-	// data itself is little-endian)
+	// the option offsets and sizes are big-endian, the option
+	// data itself is little-endian
 
 	// version
 	write(&resppacket,(byte_t)PL_VERSION);
@@ -3031,7 +3028,7 @@ bool sqlrprotocol_tds::preLogin() {
 	// terminator
 	write(&resppacket,(byte_t)PL_TERMINATOR);
 
-	// append the packet data to the resppacket
+	// append packet data
 	write(&resppacket,packetdata.getBuffer(),packetdata.getSize());
 
 	// send the response packet
@@ -3097,9 +3094,8 @@ bool sqlrprotocol_tds::startTls() {
 	debugStart("tls");
 
 	// cap the version, unless the operator pinned one - freetds's gnutls
-	// build doesn't flush what's left in its buffers after the handshake,
-	// and tls 1.3 leaves post-handshake records there, which corrupts the
-	// stream that follows
+	// build doesn't flush leftover buffered records after the handshake,
+	// and tls 1.3's post-handshake records corrupt the stream that follows
 	if (charstring::isNullOrEmpty(
 				getTlsContext()->getProtocolVersion())) {
 		getTlsContext()->setProtocolVersion("TLS1.2");
@@ -3262,7 +3258,7 @@ bool sqlrprotocol_tds::tds7Login() {
 		return false;
 	}
 
-	// initialize values...
+	// initialize values
 	uint32_t	size=0;
 	uint32_t	tdsversion=0;
 	clienttdsversion=700;
@@ -3331,7 +3327,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	wchar_t		*changepassword=NULL;
 	byte_t		*sspi=NULL;
 
-	// copy values out of the recv packet...
+	// copy values out of the recv packet
 	readLE(rp,&size,&rp);
 	readBE(rp,&tdsversion,&rp);
 	clienttdsversion=tdsVersionHexToDec(tdsversion);
@@ -3344,7 +3340,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	read(rp,&typeflags,&rp);
 	read(rp,&optionflags3,&rp);
 
-	// set option/type flags...
+	// set option/type flags
 	fusedbwarn=(optionflags1&(0x01<<5))>>5;
 	fusedbfatal=(optionflags1&(0x01<<6))>>6;
 	fsetlangwarn=(optionflags1&(0x01<<7))>>7;
@@ -3489,11 +3485,10 @@ bool sqlrprotocol_tds::tds7Login() {
 		sspisize=cbsspilong;
 	}
 
-	// this one isn't bounded by the packet on its own - recvPacket() only
-	// caps the total request at maxrequestsize, which is far looser than
-	// MAX_LOGIN_SSPI_BYTES, so the maximum has to come first.  the size
-	// has to be dropped along with the pointer, because the hex dump
-	// below walks the length whether or not there's a buffer.
+	// not bounded by fitsInPacket alone - recvPacket() only caps the
+	// whole request at maxrequestsize, far looser than MAX_LOGIN_SSPI_BYTES,
+	// so this check has to run first. the size is dropped along with the
+	// pointer since the hex dump below walks the length either way
 	if (sspisize>MAX_LOGIN_SSPI_BYTES) {
 		debugStart("tds7 login");
 		debugWrite("sspi: %u exceeds the %d maximum, "
@@ -3580,12 +3575,11 @@ bool sqlrprotocol_tds::tds7Login() {
 
 	bool	retval=true;
 
-	// auth the user...
+	// auth the user
 	if (retval) {
 		if (auth(username,cchusername,password,cchpassword)) {
 			loggedin=true;
-			// run session-start queries, now that the client
-			// is authenticated
+			// run session-start queries
 			cont->beginSession();
 			loginAck();
 		} else {
@@ -3594,7 +3588,7 @@ bool sqlrprotocol_tds::tds7Login() {
 		}
 	}
 
-	// change database...
+	// change database
 	if (retval && cchdatabase) {
 
 		char		*olddatabase=cont->getCurrentDatabase();
@@ -3626,7 +3620,7 @@ bool sqlrprotocol_tds::tds7Login() {
 		delete[] olddatabase;
 	}
 
-	// change collation...
+	// change collation
 	// (a real server answers with the collation it actually uses rather
 	// than echoing the client's lcid back)
 	if (retval) {
@@ -3636,7 +3630,7 @@ bool sqlrprotocol_tds::tds7Login() {
 		}
 	}
 
-	// change language...
+	// change language
 	if (retval && cchlanguage) {
 		if (changeLanguage(language,cchlanguage)) {
 
