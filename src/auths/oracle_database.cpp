@@ -25,8 +25,8 @@ sqlrauth_oracle_database::sqlrauth_oracle_database(
 
 const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 
-	// This module only supports the "oracle_clear_password" method
-	// (see the sanity check below).  No protocol module SQL Relay
+	// this module only supports the "oracle_clear_password" method
+	// (see the sanity check below).  no protocol module SQL Relay
 	// ships ever sends that method, so it has no reachable caller
 	// today - see oracle_userlist.cpp's note on oracle_clear_password
 	// for why it's kept anyway.

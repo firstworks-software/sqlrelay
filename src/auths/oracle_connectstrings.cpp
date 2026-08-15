@@ -648,7 +648,7 @@ const char *sqlrauth_oracle_connectstrings::auth(sqlrcredentials *cred) {
 		}
 
 		// one-way encryption: encrypt and compare
-		// Only oracle_clear_password passes the password itself in -
+		// only oracle_clear_password passes the password itself in -
 		// O5LOGON needs the cleartext to derive its challenge.
 		if (pe->oneWay()) {
 			if (charstring::compare(method,
@@ -686,7 +686,7 @@ char *sqlrauth_oracle_connectstrings::getClearTextPassword(const char *user) {
 		sqlrpwdenc	*pe=cont->getPasswordEncryptionById(
 						passwordencryptions[i]);
 
-		// A password stored under a one-way encryption module can't
+		// a password stored under a one-way encryption module can't
 		// be recovered, so there's no challenge for it.
 		if (!pe || pe->oneWay()) {
 			return NULL;
@@ -776,7 +776,7 @@ bool sqlrauth_oracle_connectstrings::challenge(sqlrcredentials *cred,
 		return false;
 	}
 
-	// Both phases are derived from the password, so the cleartext
+	// both phases are derived from the password, so the cleartext
 	// password is required.
 	char	*validpassword=getClearTextPassword(user);
 	bool	retval=false;
