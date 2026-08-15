@@ -895,6 +895,8 @@
 	fixed the tds protocol module's debug output - the LOGIN7 password and
 		changepassword fields, and the decoded password logged in
 		auth(), were printed in the clear, they're hidden now
+	fixed the teradata protocol module's debug output - the password parsed
+		out of the logon string was printed in the clear, it's hidden now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

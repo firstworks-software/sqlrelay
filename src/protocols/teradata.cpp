@@ -4041,14 +4041,12 @@ bool sqlrprotocol_teradata::parseLogonParcel(
 
 	// password - up to the next comma
 	const char	*password=NULL;
-	uint32_t	passwordsize=0;
 	if (ptr<end) {
 		ptr++;
 		password=ptr;
 		while (ptr<end && *ptr!=',') {
 			ptr++;
 		}
-		passwordsize=ptr-password;
 	}
 
 	// account - the rest, single-quoted
@@ -4074,7 +4072,7 @@ bool sqlrprotocol_teradata::parseLogonParcel(
 		debugWrite("mech: %.*s",mechsize,mech);
 	}
 	if (password) {
-		debugWrite("password: %.*s",passwordsize,password);
+		debugWrite("password: (hidden)");
 	}
 	if (account) {
 		debugWrite("account: %.*s",accountsize,account);
