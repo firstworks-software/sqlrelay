@@ -878,6 +878,11 @@
 		pre-login options, encryption options, LOGIN7 flags, env-change
 		types, DONE status, ALL_HEADERS types, column types, collation,
 		and RPC proc ids
+	refactored the firebird protocol module's debug output to go through
+		the module debug facility instead of raw stdoutput.printf calls,
+		and brought its coverage up to about as much of the module as the
+		mysql protocol module's debug output covers; fixed several
+		pre-existing debugStart/debugEnd balance bugs found along the way
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
