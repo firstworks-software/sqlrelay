@@ -25,11 +25,11 @@ sqlrauth_oracle_database::sqlrauth_oracle_database(
 
 const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 
-	// this module only supports the "oracle_clear_password" method (see
-	// the sanity check below), and no protocol module SQL Relay ships
-	// ever sends that method, so it has no reachable caller today - see
-	// oracle_userlist.cpp's note on oracle_clear_password for why it's
-	// kept anyway
+	// This module only supports the "oracle_clear_password" method
+	// (see the sanity check below).  No protocol module SQL Relay
+	// ships ever sends that method, so it has no reachable caller
+	// today - see oracle_userlist.cpp's note on oracle_clear_password
+	// for why it's kept anyway.
 
 	// this module only supports oracle credentials
 	if (charstring::compare(cred->getType(),"oracle")) {
@@ -61,17 +61,14 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 		return NULL;
 	}
 
-	// if this is the first time, initialize the lastuser/lastpassword
-	// from the user/password that was originally used to log in to the
-	// database
+	// seed lastuser/lastpassword from the original login
 	if (first) {
 		lastuser.append(cont->getLoginUser());
 		lastpassword.append(cont->getLoginPassword());
 		first=false;
 	}
 
-	// if the user we want to change to is different from the user
-	// that's currently logged in, then try to change to that user
+	// change user if it differs from the one currently logged in
 	bool	success=true;
 	if ((lastuser.getSize()==0 &&
 		lastpassword.getSize()==0) ||
@@ -85,8 +82,7 @@ const char *sqlrauth_oracle_database::auth(sqlrcredentials *cred) {
 		// change user
 		success=cont->changeUser(user,password);
 
-		// keep a record of which user we're changing to
-		// and whether that user was successful in auth
+		// record whether the change succeeded
 		lastuser.clear();
 		lastpassword.clear();
 		if (success) {

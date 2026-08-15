@@ -634,8 +634,7 @@ const char *sqlrauth_oracle_connectstrings::auth(sqlrcredentials *cred) {
 			continue;
 		}
 
-		// if password encryption isn't being used, return the user
-		// if the passwords match
+		// no encryption: compare passwords directly
 		if (!charstring::getLength(passwordencryptions[i])) {
 			return (compare(password,passwordsize,passwords[i],
 						method,extra))?user:NULL;
@@ -648,11 +647,9 @@ const char *sqlrauth_oracle_connectstrings::auth(sqlrcredentials *cred) {
 			return NULL;
 		}
 
-		// for one-way encryption, encrypt the password that was
-		// passed in and compare it to the encrypted password in the
-		// configuration
-		// (only oracle_clear_password passes the password itself in -
-		// O5LOGON needs the cleartext to derive its challenge)
+		// one-way encryption: encrypt and compare
+		// Only oracle_clear_password passes the password itself in -
+		// O5LOGON needs the cleartext to derive its challenge.
 		if (pe->oneWay()) {
 			if (charstring::compare(method,
 						"oracle_clear_password")) {
@@ -664,9 +661,7 @@ const char *sqlrauth_oracle_connectstrings::auth(sqlrcredentials *cred) {
 			return (retval)?user:NULL;
 		}
 
-		// for two-way encryption, decrypt the password from the
-		// configuration and compare it to the password that was
-		// passed in...
+		// two-way encryption: decrypt and compare
 		char	*pwd=pe->decrypt(passwords[i]);
 		bool	retval=compare(password,passwordsize,
 						pwd,method,extra);
@@ -691,8 +686,8 @@ char *sqlrauth_oracle_connectstrings::getClearTextPassword(const char *user) {
 		sqlrpwdenc	*pe=cont->getPasswordEncryptionById(
 						passwordencryptions[i]);
 
-		// a password stored under a one-way password encryption
-		// module can't be recovered, so there's no challenge for it
+		// A password stored under a one-way encryption module can't
+		// be recovered, so there's no challenge for it.
 		if (!pe || pe->oneWay()) {
 			return NULL;
 		}
@@ -708,7 +703,7 @@ bool sqlrauth_oracle_connectstrings::compare(const char *suppliedresponse,
 						const char *method,
 						const char *extra) {
 
-	// oracle_clear_password is really simple
+	// oracle_clear_password: compare directly
 	if (!charstring::compare(method,"oracle_clear_password")) {
 		if (getDebug()) {
 			debugStart("auth compare");
@@ -781,8 +776,8 @@ bool sqlrauth_oracle_connectstrings::challenge(sqlrcredentials *cred,
 		return false;
 	}
 
-	// both phases are derived from the password, so the cleartext
-	// password is required
+	// Both phases are derived from the password, so the cleartext
+	// password is required.
 	char	*validpassword=getClearTextPassword(user);
 	bool	retval=false;
 	if (validpassword) {
