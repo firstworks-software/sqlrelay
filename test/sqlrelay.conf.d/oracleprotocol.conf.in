@@ -55,4 +55,18 @@
 		</connections>
 	</instance>
 
+	<!-- same as oracleprotocoltest, but with no explicit <auths> block,
+	     to exercise the default oracle_connectstrings auth path (#9309)
+	     - the client authenticates directly against the connect
+	     string's user/password rather than an explicit users list.  the
+	     tnsnames.ora alias sqlrelayconnectstrings points here. -->
+	<instance id="oracleprotocolconnectstringstest" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="1524" serverversion="11.2"/>
+		</listeners>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=testuser;password=testpassword"/>
+		</connections>
+	</instance>
+
 </instances>

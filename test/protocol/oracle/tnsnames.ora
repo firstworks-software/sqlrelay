@@ -22,6 +22,12 @@ sqlrelay12c =
     (CONNECT_DATA = (SID = ora1))
   )
 
+sqlrelayconnectstrings =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1524))
+    (CONNECT_DATA = (SID = ora1))
+  )
+
 # the same, naming a service that is not there, for the authentication
 # section's attach failure case
 
@@ -46,5 +52,11 @@ sqlrelay11gbad =
 sqlrelay12cbad =
   (DESCRIPTION =
     (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1523))
+    (CONNECT_DATA = (SID = nosuchsid))
+  )
+
+sqlrelayconnectstringsbad =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1524))
     (CONNECT_DATA = (SID = nosuchsid))
   )

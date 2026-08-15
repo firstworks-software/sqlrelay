@@ -67,11 +67,13 @@ stop_instances() {
 		fi
 
 		# the oracleprotocol test also has 11g and 12c
-		# verifier-type instances
+		# verifier-type instances, and a connectstrings-default-auth
+		# instance
 		if ( test "$_db" = "oracleprotocol" )
 		then
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocol11gtest
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocol12ctest
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocolconnectstringstest
 		fi
 
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
@@ -198,12 +200,16 @@ start_instance() {
 
 	# the oracleprotocol test needs two more instances, one per o5logon
 	# verifier type, since the verifier type is chosen at listener
-	# configuration time and can't be varied per connection
+	# configuration time and can't be varied per connection, plus one
+	# more with no <auths> block, to cover the default oracle_connectstrings
+	# auth path (#9309)
 	if ( test "$db" = "oracleprotocol" )
 	then
 		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocol11gtest -backtrace $BACKTRACEDIR
 		sleep 2
 		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocol12ctest -backtrace $BACKTRACEDIR
+		sleep 2
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocolconnectstringstest -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -242,6 +248,8 @@ stop_instance() {
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocol11gtest
 		sleep 2
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocol12ctest
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocolconnectstringstest
 	fi
 	sleep 2
 	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test
@@ -700,12 +708,14 @@ run_protocol_test() {
 		return 1
 	fi
 
-	# oracleprotocol runs the oracle test three times, against the three
+	# oracleprotocol runs the oracle test four times, against the four
 	# instances in its config - the default one (tnsnames alias sqlrelay,
-	# port 1521), the verifiertype="11g" one (sqlrelay11g, port 1522) and
-	# the verifiertype="12c" one (sqlrelay12c, port 1523) - so both
-	# o5logon verifier types get covered.  all three runs have to succeed
-	# for the db to pass
+	# port 1521), the verifiertype="11g" one (sqlrelay11g, port 1522), the
+	# verifiertype="12c" one (sqlrelay12c, port 1523) - so both o5logon
+	# verifier types get covered - and the no-<auths>-block one
+	# (sqlrelayconnectstrings, port 1524), which covers the default
+	# oracle_connectstrings auth path (#9309).  all four runs have to
+	# succeed for the db to pass
 	if ( test "$db" = "oracleprotocol" )
 	then
 		./$prog
@@ -714,7 +724,9 @@ run_protocol_test() {
 		result11g="$?"
 		./$prog sqlrelay12c
 		result12c="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" )
+		./$prog sqlrelayconnectstrings
+		resultconnectstrings="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -731,6 +743,10 @@ run_protocol_test() {
 		if ( test "$result12c" != "0" )
 		then
 			printf "    % 8s: failed (12c verifier)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultconnectstrings" != "0" )
+		then
+			printf "    % 8s: failed (connectstrings)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1

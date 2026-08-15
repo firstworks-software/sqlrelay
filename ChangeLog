@@ -834,6 +834,14 @@
 		any protocol module SQL Relay ships - noted in the config
 		guide's Oracle Protocol Limitations section and in the auth
 		modules themselves
+	fixed the oracle_connectstrings auth module - it was still the
+		un-rewritten mysql clone it was originally based on, with no
+		O5LOGON support, so every login through it failed ORA-01017;
+		since it's the auth module an oracle-protocol listener falls
+		back to when no explicit <auths> block is configured, this
+		meant the default oracle-protocol setup couldn't authenticate
+		anyone; rewritten to speak O5LOGON, mirroring the already
+		correct oracle_userlist module
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
