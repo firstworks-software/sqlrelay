@@ -76,6 +76,7 @@
   * [#tdslimitations Limitations]
  * [#oracleprotocol Oracle Protocol]
   * [#oraclesid SID / Service Name]
+  * [#oracleloginattempts Login Attempts]
   * [#oracleserverversion Server Version]
   * [#oracleverifiertype Password Verifier Type]
   * [#oraclecharsets Character Set Options]
@@ -2616,6 +2617,13 @@ Leaving //sid// unset accepts any SID/SERVICE_NAME a client asks for, which is t
 @parts/sqlrelay-oraclefesid.conf@
 }}}
 }}}
+
+[=#oracleloginattempts]
+=== Login Attempts ===
+
+A real Oracle server lets a client retry a failed login on the same connection - the wrong-password-then-correct-password flow OCI clients and sqlplus expect - up to a limit before it drops the connection.
+
+The Oracle protocol module does the same.  After a failed login it sends the error and waits for another attempt on the same connection, rather than tearing the connection down.  The //maxloginattempts// option sets how many attempts one connection gets before the module gives up and drops it; it defaults to 3, matching a real server's default SEC_MAX_FAILED_LOGIN_ATTEMPTS.
 
 [=#oracleserverversion]
 === Server Version ===

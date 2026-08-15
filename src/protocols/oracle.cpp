@@ -911,6 +911,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendDataTypeResponse();
 
 		bool	authenticate();
+		void	resetLoginAttempt();
 		bool	getUb4(const byte_t *rp,
 						const byte_t *end,
 						uint32_t *value,
@@ -1149,6 +1150,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// listener attribute, comma-separated; NULL means accept anything
 		char		*sids;
 
+		// how many logins one connection may fail before it's
+		// dropped, from the "maxloginattempts" listener attribute
+		uint16_t	maxloginattempts;
+
 		// the SID/SERVICE_NAME the client's CONNECT_DATA asked for, parsed
 		// out by recvConnectRequest(); NULL if it didn't name one
 		char		*requestedservice;
@@ -1204,6 +1209,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		gotauthpassword;
 		bool		fabricatedchallenge;
 
+		// whether the login was refused, as opposed to the exchange
+		// failing some other way, which decides whether another
+		// login may be attempted on the same connection
+		bool		loginrefused;
+
 		uint16_t	maxcursorcount;
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
@@ -1240,6 +1250,15 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	sids=(charstring::isNullOrEmpty(sidattr))?
 				NULL:charstring::duplicate(sidattr);
 	requestedservice=NULL;
+
+	// how many times a client may fail to log in before the connection is
+	// dropped.  3 is what a real server allows by default, its
+	// SEC_MAX_FAILED_LOGIN_ATTEMPTS.
+	maxloginattempts=(uint16_t)charstring::convertToUnsignedInteger(
+			parameters->getAttributeValue("maxloginattempts"));
+	if (!maxloginattempts) {
+		maxloginattempts=3;
+	}
 
 	charset=charstring::convertToInteger(
 				parameters->getAttributeValue("charset"));
@@ -1307,6 +1326,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugWrite("server version: %s",serverversionno);
 		debugWrite("server field version: %d",serverfieldversion);
 		debugWrite("sid: %s",(sids)?sids:"(any)");
+		debugWrite("max login attempts: %d",maxloginattempts);
 		debugEnd();
 	}
 
@@ -1429,6 +1449,7 @@ void sqlrprotocol_oracle::init() {
 	authpassword=NULL;
 	gotauthpassword=false;
 	fabricatedchallenge=false;
+	loginrefused=false;
 
 	nativeencoding=false;
 	lastttccode=0;
@@ -4141,10 +4162,49 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 }
 
 bool sqlrprotocol_oracle::authenticate() {
-	return recvAuthenticationRequest(false) &&
-		sendAuthenticationChallenge() &&
-		recvAuthenticationRequest(true) &&
-		sendAuthenticationResponse();
+
+	for (uint16_t attempt=1;; attempt++) {
+
+		loginrefused=false;
+
+		if (recvAuthenticationRequest(false) &&
+			sendAuthenticationChallenge() &&
+			recvAuthenticationRequest(true) &&
+			sendAuthenticationResponse()) {
+			return true;
+		}
+
+		// A refused login gets another try, like a real server gives.
+		// Any other failure doesn't - the exchange broke down partway
+		// through, so what the client sends next isn't a login.
+		if (!loginrefused || attempt>=maxloginattempts) {
+			return false;
+		}
+
+		resetLoginAttempt();
+	}
+}
+
+void sqlrprotocol_oracle::resetLoginAttempt() {
+
+	// only what one login built - the connection's negotiated state
+	// carries over to the next attempt
+	delete[] username;
+	username=NULL;
+	delete[] response;
+	response=NULL;
+	delete[] authvfrdata;
+	authvfrdata=NULL;
+	delete[] authpbkdf2csksalt;
+	authpbkdf2csksalt=NULL;
+	delete[] serverauthsesskey;
+	serverauthsesskey=NULL;
+	delete[] clientauthsesskey;
+	clientauthsesskey=NULL;
+	delete[] authpassword;
+	authpassword=NULL;
+	gotauthpassword=false;
+	fabricatedchallenge=false;
 }
 
 bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
@@ -4919,6 +4979,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 						const char *message) {
+	loginrefused=true;
 	return sendErrorPacket("authentication error",oranum,message);
 }
 
@@ -4999,7 +5060,7 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 
 	sendPacket(true);
 
-	// the error is sent, but the session still ends
+	// the error is sent, but the exchange it interrupted has failed
 	return false;
 }
 bool sqlrprotocol_oracle::open(const byte_t *rp) {

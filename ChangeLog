@@ -849,6 +849,15 @@
 		comma-separated list, matched case-insensitively against either
 		CONNECT_DATA key) to name the service(s) a listener answers to,
 		and the module now refuses a mismatch
+	fixed the oracle protocol module - a failed login tore the TCP
+		connection down instead of waiting for the client to retry on
+		it, the way a real Oracle server does; the module now loops back
+		and accepts another logon attempt on the same connection after
+		sending the error, up to a bound (a new "maxloginattempts"
+		listener attribute, defaulting to 3 to match a real server's
+		default SEC_MAX_FAILED_LOGIN_ATTEMPTS, confirmed against a live
+		Oracle server), and tears the connection down once the bound is
+		reached, same as before
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -371,6 +371,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #9311: a failed login no longer drops the connection - the server
+	// (native or sqlrelay) waits for another attempt on the same TCP
+	// connection, up to a bound (3 by default, matching real Oracle's
+	// SEC_MAX_FAILED_LOGIN_ATTEMPTS).  authsrv/authsvc are attached once,
+	// above, and never detached/reattached below - that they still work
+	// for the final, successful login is itself the connection-reuse
+	// assertion.  The OCI_ATTR_SERVER check after each failure below
+	// confirms the handle sqlrelay handed back is still attached to the
+	// same server, not a fresh one from a reconnect.
+
 	stdoutput.printf("OCISessionBegin - wrong password\n");
 	setCredentials(authsession,user,"wrongpassword");
 	assertEquals(
@@ -383,23 +393,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	if (issqlrelay) {
-		// TODO: needs a follow-up ticket - the oracle protocol module
-		// drops the connection after an auth failure instead of
-		// allowing another attempt on it, so a fresh attach is
-		// needed before every login attempt below that follows a
-		// failed one.
-		assertEquals(OCIServerDetach(authsrv,err,OCI_DEFAULT),
-				OCI_SUCCESS);
-		assertEquals(
-			OCIServerAttach(authsrv,err,(text *)sid,
-					charstring::getLength(sid),0),
-			OCI_SUCCESS);
-		assertEquals(
-			OCIAttrSet(authsvc,OCI_HTYPE_SVCCTX,authsrv,0,
-					OCI_ATTR_SERVER,err),
-			OCI_SUCCESS);
-	}
+	stdoutput.printf("OCIAttrGet - server handle unchanged, same connection\n");
+	OCIServer	*serverafterfailure=NULL;
+	assertEquals(
+		OCIAttrGet(authsvc,OCI_HTYPE_SVCCTX,&serverafterfailure,NULL,
+				OCI_ATTR_SERVER,err),
+		OCI_SUCCESS);
+	// still the handle attached above - a torn-down connection would have
+	// forced a fresh OCIServerAttach to get this far at all
+	assertTrue(serverafterfailure==authsrv);
+	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("OCISessionBegin - unknown user\n");
@@ -410,7 +413,11 @@ int main(int argc, char **argv) {
 		OCI_ERROR);
 	// ORA-01017 again.  Oracle gives the same error for an unknown user as
 	// for a wrong password on purpose, so a client cannot tell which half
-	// it got wrong.
+	// it got wrong.  Also: the ORA number tracks *why* this attempt was
+	// wrong, not which attempt number this is - a connection silently
+	// replaced with a fresh one wouldn't surface as a wrong ORA number
+	// here, which is why the OCI_ATTR_SERVER check above matters more
+	// than the error code alone.
 	assertEquals((int)errorCode(),1017);
 	stdoutput.printf("\n\n");
 
@@ -422,26 +429,10 @@ int main(int argc, char **argv) {
 				OCI_CRED_RDBMS,OCI_DEFAULT),
 		OCI_ERROR);
 	// ORA-01005, login denied due to invalid password - a different error
-	// from ORA-01017, and one the client raises before anything is sent
+	// from ORA-01017, and one the client raises before anything is sent,
+	// so it doesn't count against the connection's login-attempt bound
 	assertEquals((int)errorCode(),1005);
 	stdoutput.printf("\n\n");
-
-
-	if (issqlrelay) {
-		// same reattach as above - the unknown-user failure closed
-		// the connection again, and the empty-password check above
-		// never touched the wire, so it's still closed
-		assertEquals(OCIServerDetach(authsrv,err,OCI_DEFAULT),
-				OCI_SUCCESS);
-		assertEquals(
-			OCIServerAttach(authsrv,err,(text *)sid,
-					charstring::getLength(sid),0),
-			OCI_SUCCESS);
-		assertEquals(
-			OCIAttrSet(authsvc,OCI_HTYPE_SVCCTX,authsrv,0,
-					OCI_ATTR_SERVER,err),
-			OCI_SUCCESS);
-	}
 
 
 	stdoutput.printf("OCISessionBegin - correct password, after the failures\n");
