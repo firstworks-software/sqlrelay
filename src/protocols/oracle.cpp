@@ -247,11 +247,11 @@
 #define RCAP_TTC_32K			0x04
 #define RCAP_TTC_SESSION_STATE_OPS	0x10
 
-// The platform banner in the tti protocol negotiation response.  It names no
+// the platform banner in the tti protocol negotiation response.  it names no
 // platform on purpose - see putTtiResponse().
 #define SERVER_BANNER			"SQLRelay/PortableTTC"
 
-// The two oracle versions the module can imitate, as the listener's
+// the two oracle versions the module can imitate, as the listener's
 // serverversion attribute selects them.  AUTH_VERSION_NO's nibbles are the
 // version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
 // reports 0x0c200100, so 0x0c100200 is 12.1.0.2.0.  AUTH_VERSION_SQL is 22 on
@@ -271,7 +271,7 @@
 #define LONG_LENGTH_INDICATOR		0xfe
 #define CHUNK_SIZE			32767
 
-// describe info constants.  The last three are advisory - a client is free to
+// describe info constants.  the last three are advisory - a client is free to
 // ignore them - and these are what a live 11.2 server sends.
 #define AL8O4_COUNT			6
 #define DCB_MAX_DATA_BLOCK_SIZE		8168
@@ -1273,17 +1273,17 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		nationalcharset=CHARSET_AL16UTF16;
 	}
 
-	// Which oracle version the module imitates.  Everything a client picks
+	// which oracle version the module imitates.  everything a client picks
 	// a reader from moves with it: the capability field version, the shape
 	// of every summary object, the version the module reports, and the
-	// default verifier type.  Answering one client as one version and
+	// default verifier type.  answering one client as one version and
 	// another as another is what breaks the login and the first query.
 	//
-	// No one version serves every client.  python-oracledb and
+	// no one version serves every client.  python-oracledb and
 	// node-oracledb don't support a server older than 12.1 and read the
 	// two extra fields of a 12.1 summary object unconditionally, OCI 23.26
 	// in the portable encoding reads the 11.2 shape and nothing else, and
-	// ojdbc 23.26 works either way.  So 12.1 is the default, and 11.2 is
+	// ojdbc 23.26 works either way.  so 12.1 is the default, and 11.2 is
 	// there for a deployment whose clients are OCI.
 	const char	*sv=parameters->getAttributeValue("serverversion");
 	if (!charstring::compare(sv,"11.2")) {
@@ -7003,11 +7003,11 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 	// verified against a live 12.2 server: it answers the scale of a
 	// number(10,2) with 02 when the flag is set and 01 02 when it is not,
 	// and the precision with 0a either way, regardless of field version.
-	// most clients set the flag; ojdbc 23.26 doesn't, and a server that
-	// gets this wrong desyncs it by one byte for the rest of the packet -
-	// node-oracledb reports "read integer of length 127 when expecting
-	// integer of no more than length 4", and python-oracledb and OCI
-	// just hang.
+	// most clients set the flag; ojdbc 23.26 doesn't, and a client that
+	// gets the form it did not ask for is one byte out for the rest of
+	// the packet - node-oracledb reports "read integer of length 127
+	// when expecting integer of no more than length 4", and
+	// python-oracledb and OCI answer with a marker packet and close.
 	if (encodingflags&ENCODING_CONV_LENGTH) {
 		write(&reqpacket,(byte_t)scale);
 	} else {
