@@ -4026,9 +4026,9 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// on - a real server answers every client with its own table, so a
 	// short or empty list is counted and reported rather than refused
 	//
-	// NOTE: When talking to the db directly, 8.0.5 sends/receives almost
-	// nothing, but when talking to relay it sends/receives a ton of stuff.
-	// It's not exactly clear what triggers this.
+	// talking to the db directly, 8.0.5 sends/receives almost nothing, but
+	// talking to relay it sends/receives a ton of stuff - what triggers
+	// the difference isn't clear
 	datatypes=rp;
 	datatypessize=end-rp;
 	datatypecount=countDataTypes(rp,end);
@@ -4078,14 +4078,14 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 
 // the data types the module supports, captured from a live oracle 11.2 server
 // - the same server the capability arrays above came from, and the version the
-// module answers as.  Each row is the type, the type it converts to, and the
-// representation of that type, 1 universal or 10 native.  A conversion type of
+// module answers as.  each row is the type, the type it converts to, and the
+// representation of that type, 1 universal or 10 native.  a conversion type of
 // 0 means the type is not exchanged, and its row is 4 bytes on the wire rather
 // than 8.
 //
-// A 12.2 server sends 50 more types than this and disagrees about 11 of them,
+// a 12.2 server sends 50 more types than this and disagrees about 11 of them,
 // and python-oracledb's client-side table is different again, so this is one
-// server's answer rather than a canonical list.  It covers every column type
+// server's answer rather than a canonical list.  it covers every column type
 // the module names.
 static const uint16_t	ttidatatypes[][3]={
 	// VARCHAR
@@ -4502,8 +4502,8 @@ bool sqlrprotocol_oracle::authenticate() {
 			return true;
 		}
 
-		// A refused login gets another try, like a real server gives.
-		// Any other failure doesn't - the exchange broke down partway
+		// a refused login gets another try, like a real server gives.
+		// any other failure doesn't - the exchange broke down partway
 		// through, so what the client sends next isn't a login.
 		if (!loginrefused || attempt>=maxloginattempts) {
 			debugWrite("outcome: %s",(loginrefused)?
@@ -5011,18 +5011,18 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	debugWrite("auth mode: 0x%08x",authmode);
 	debugWrite("field count: %d",fieldcount);
 
-	// Whether the user name is length prefixed is a client difference, not
+	// whether the user name is length prefixed is a client difference, not
 	// an encoding one.  python-oracledb, node-oracledb and OCI prefix it,
 	// and ojdbc writes it raw and takes its length from the count above.
-	// Nor is the count the same thing for all of them: for the first three
+	// nor is the count the same thing for all of them: for the first three
 	// it is the name's byte count, and for OCI it is a buffer size - the
 	// character count times the bytes per character of its charset - so an
-	// 8 character name in AL32UTF8 is declared as 24.  These are OCI
+	// 8 character name in AL32UTF8 is declared as 24.  these are OCI
 	// properties, not native encoding properties, and OCI does them in
 	// the portable encoding too, which is where every client ends up now
 	// that the module answers a banner none of them match.
 	//
-	// So the prefix is taken when the next byte can be one: the bytes are
+	// so the prefix is taken when the next byte can be one: the bytes are
 	// there for it, and either it is below a space - no user name starts
 	// with a control character - or the count in front of it is that byte
 	// times the 1, 2, 3 or 4 bytes per character a charset can have, which
@@ -5135,10 +5135,10 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	cred.setMethod("O5LOGON");
 	cred.setExtra(extra.getString());
 
-	// A false return means no auth module knows the user, or has its
+	// a false return means no auth module knows the user, or has its
 	// password under a one-way encryption, or supports the method.
-	// Answering the error here would end the exchange a round trip early
-	// and tell a client which user names exist.  Real oracle fabricates a
+	// answering the error here would end the exchange a round trip early
+	// and tell a client which user names exist.  real oracle fabricates a
 	// verifier for a user it doesn't have and runs the whole exchange
 	// anyway, so an unknown user looks exactly like a wrong password.
 	stringbuffer	challenge;
