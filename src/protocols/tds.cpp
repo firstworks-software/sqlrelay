@@ -2330,8 +2330,9 @@ bool sqlrprotocol_tds::sendPacket() {
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
 
-	// note: the decoded password is deliberately never debugWrite()'n -
-	// only its length and whether decoding succeeded are logged
+	// note: the decoded password itself is never debugWrite()'n, callers
+	// log it as "(hidden)" - only its length and whether decoding
+	// succeeded are logged here
 	debugStart("read password");
 	debugWrite("charcount: %lld",(long long)charcount);
 
@@ -3559,8 +3560,8 @@ bool sqlrprotocol_tds::tds7Login() {
 					ibhostname,cchhostname,hostname);
 		debugWrite("username: (%hd,%hd) %S",
 					ibusername,cchusername,username);
-		debugWrite("password: (%hd,%hd) %S",
-					ibpassword,cchpassword,password);
+		debugWrite("password: (%hd,%hd) (hidden)",
+					ibpassword,cchpassword);
 		debugWrite("appname: (%hd,%hd) %S",
 					ibappname,cchappname,appname);
 		debugWrite("servername: (%hd,%hd) %S",
@@ -3580,9 +3581,8 @@ bool sqlrprotocol_tds::tds7Login() {
 					clientid[3],clientid[4],clientid[5]);
 		debugWrite("atchdbfile: (%hd,%hd) %S",
 					ibatchdbfile,cchatchdbfile,atchdbfile);
-		debugWrite("changepassword: (%hd,%hd) %S",
-					ibchangepassword,cchchangepassword,
-					changepassword);
+		debugWrite("changepassword: (%hd,%hd) (hidden)",
+					ibchangepassword,cchchangepassword);
 		debugWrite("sspi: (%hd,%hd,%d)",ibsspi,cbsspi,cbsspilong);
 		debugHexDump((byte_t *)sspi,sspisize);
 		debugEnd();
@@ -3730,7 +3730,7 @@ bool sqlrprotocol_tds::auth(const wchar_t *username,
 
 	debugStart("authenticate");
 	debugWrite("username: %s",username8);
-	debugWrite("password: %s",password8);
+	debugWrite("password: (hidden)");
 	debugWrite((authsuccess)?"success":"failed");
 	debugEnd();
 
