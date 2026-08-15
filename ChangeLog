@@ -6,7 +6,8 @@
 	fixed several make install bugs (missing tds protocol module, doc/ on a
 		host without wt, launchd/config.status chmod fixups)
 	added sqlrsh json/jsonl output, full command/option coverage of the
-		client apis, -continueonerror, -fieldsas, and distinct exit codes
+		client apis, -continueonerror, -fieldsas, and distinct exit
+		codes
 	fixed a pile of sqlrsh bugs (csv output, bind variable commands, connect
 		and response timeouts, -id password encryption handling)
 	documented sqlrsh fully on the website; added a README.md for the github
@@ -16,23 +17,23 @@
 	added the tds_connectstrings and firebird_connectstrings auth modules
 	added sqlrauth::challenge() for protocol modules to call
 	fixed an authentication hole in the des password encryption module
-	rewrote the oracle userlist auth module for real o5logon verification and
-		fixed its one-way password encryption handling; moved o5logon's
-		sha-512/aes onto rudiments
+	rewrote the oracle userlist auth module for real o5logon verification
+		and fixed its one-way password encryption handling; moved
+		o5logon's sha-512/aes onto rudiments
 	fixed the postgresql_connectstrings auth module accepting a one-way
 		password encryption under cleartext passwords
 	tds protocol module generally works now - freetds, ct-lib, odbc and jdbc
 		clients can log in, run queries, use rpc, cursors, bulk load and
-		output parameters, and cancel; fixed an authentication bypass and a
-		pile of pre-auth buffer overruns and unbounded allocations
+		output parameters, and cancel; fixed an authentication bypass
+		and a pile of pre-auth buffer overruns and unbounded allocations
 	fixed sqlr-import/sqlr-export/sqlr-stop cli bugs (dropped option values,
 		-krbservice, -table, missing exit codes)
 	fixed a pre-auth crash and an oob type map read in the mysql protocol
 		module
 	bumped the sqlrclient protocol to version 3 (extra result sets carry
-		their column metadata and rows now); fixed sqlrcursor::nextResultSet()
-		not refreshing cached metadata/buffers, which broke odbc, php pdo and
-		sqlrsh
+		their column metadata and rows now); fixed
+		sqlrcursor::nextResultSet() not refreshing cached
+		metadata/buffers, which broke odbc, php pdo and sqlrsh
 	fixed csv export quoting and embedded nulls in the c++ api
 	fixed sqlrimportxml/sqlrimportcsv segfaulting on a missing or empty file
 		name
@@ -41,8 +42,8 @@
 	fixed the odbc driver misreporting SHORT/TINY columns
 	fixed timeout rounding in the client apis (c client macros, php pdo)
 	odbc connection module: added binarylobbind, implemented
-		nextResultSet(), fixed blob binding and heap corruption, improved
-		type reporting, exposed output binds/params
+		nextResultSet(), fixed blob binding and heap corruption,
+		improved type reporting, exposed output binds/params
 	fixed the freetds connection module's rpc path, character sizing, and a
 		null char bind bug
 	added translate-bind-variable and read-only/isolation-level controls to
@@ -50,17 +51,20 @@
 	fixed a sqlr-connection cpu spin after SIGTERM against a dead database
 	fixed a dangling pointer in the list api, a DATETIMEOFFSET disagreement,
 		and stale postgresql array type spellings in datatypes.h
-	fixed sqlr-listener blaming permissions for an oversized unix socket name
+	fixed sqlr-listener blaming permissions for an oversized unix socket
+		name
 	date/time reformatting now leaves an unformatted field alone
 	sap connection module: accurate column type/width reporting
 	oracle protocol module generally works against modern clients now -
-		ojdbc, python-oracledb, node-oracledb and oci can connect, log in and
-		run queries; fixed an authentication bypass, user enumeration, and a
-		pile of pre-auth unbounded allocations and oob reads
+		ojdbc, python-oracledb, node-oracledb and oci can connect, log
+		in and run queries; fixed an authentication bypass, user
+		enumeration, and a pile of pre-auth unbounded allocations and
+		oob reads
 	firebird protocol module generally works now - connect, attach, prepare,
-		execute, fetch, commit and detach, plus blobs, arrays, slices, batch
-		ops, and protocol 13+ with SRP auth and Arc4 wire encryption; fixed
-		an authentication bypass and a pile of pre-auth bugs
+		execute, fetch, commit and detach, plus blobs, arrays, slices,
+		batch ops, and protocol 13+ with SRP auth and Arc4 wire
+		encryption; fixed an authentication bypass and a pile of
+		pre-auth bugs
 	fixed teradata protocol module connect-message decryption and a growing
 		bind pool
 	fixed the reformatdatetime translation's dateformat/timeformat fallback
@@ -70,7 +74,8 @@
 	sap/freetds connection modules: fixed exec/execute procedure parameter
 		parsing and unrecognized lang= reporting
 	firebird connection module: describes result sets at prepare time; fixed
-		DATE/DECIMAL/NUMERIC rendering, error message and leak/crash bugs
+		DATE/DECIMAL/NUMERIC rendering, error message and leak/crash
+		bugs
 	added SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL for an undersized maxcolumncount
 	fixed sqlrprotocol::readLenEncInt()'s broken switch/endian handling
 	fixed format string injection in module debug output across the auth,
@@ -89,22 +94,24 @@
 	fixed the mysql protocol module's negotiateMoreData() infinite loop,
 		packet size clamping, user-defined-variable bind rewriting, and
 		several integer underflow/oversized allocation bugs; fixed
-		mysql_info reporting (see #9270 for remaining gaps)
+		mysql_info reporting
 	added backrefs to the pattern query/error translations, and fixed a
 		zero-length-match hang and a capture-group bug in them
 	fixed assorted config guide doc typos and broken anchors
 	documented the php pdo driver's dsn options
 	tds protocol test suite split into tds-freetds/tds-sap binaries, with
-		matching configure and windows build support; fixed tds/sap login
-		negotiation, date/time and decimal bulk load bugs, and windows never
-		building tds-sap.exe
+		matching configure and windows build support; fixed tds/sap
+		login negotiation, date/time and decimal bulk load bugs, and
+		windows never building tds-sap.exe
 	sap connection module: fixed RETURN value/output parameter handling,
-		cursor bind styles, image column corruption, binary bind character
-		set errors, result set buffering/ordering (added maxbufferedrows),
-		datetime output params, and a stuck-prepared-cursor bug
+		cursor bind styles, image column corruption, binary bind
+		character set errors, result set buffering/ordering (added
+		maxbufferedrows), datetime output params, and a
+		stuck-prepared-cursor bug
 	tds protocol module: fixed cursor/result-set leaks, sp_execute extra
-		parameter handling, DONE_ERROR reporting, longbinary rpc parameters,
-		missing return status, and numeric/decimal output parameter precision
+		parameter handling, DONE_ERROR reporting, longbinary rpc
+		parameters, missing return status, and numeric/decimal output
+		parameter precision
 	java api: getColumnNames() avoids an unneeded allocation
 	fixed sqlrservercursor::getError() returning the connection's error
 		instead of its own
@@ -113,7 +120,8 @@
 		getColumnClassName()'s null return
 	fixed an off-by-one in the c# api's column index validation
 	firebird connection module: fixed SQL_LONG/SQL_SHORT/NUMERIC/DECIMAL
-		fetch and metadata bugs, and added firebird 4 INT128/DECFLOAT support
+		fetch and metadata bugs, and added firebird 4 INT128/DECFLOAT
+		support
 	firebird protocol module: proper errors for service manager ops and
 		unparseable blr, instead of dropping the connection
 	fixed the c# api's GetOrdinal()/getColumnNames() null column name
