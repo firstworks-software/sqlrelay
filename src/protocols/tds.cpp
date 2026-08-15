@@ -2137,7 +2137,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// Sanity checks. TABULAR_RESULT is omitted because clients
+		// Sanity checks.  TABULAR_RESULT is omitted because clients
 		// never send it; it's only the type sendPacket() uses.
 		if (*packettype!=SQL_BATCH &&
 			*packettype!=PRE_TDS7_LOGIN &&
@@ -3487,7 +3487,7 @@ bool sqlrprotocol_tds::tds7Login() {
 
 	// not bounded by fitsInPacket alone - recvPacket() only caps the
 	// whole request at maxrequestsize, far looser than MAX_LOGIN_SSPI_BYTES,
-	// so this check has to run first. the size is dropped along with the
+	// so this check has to run first.  the size is dropped along with the
 	// pointer since the hex dump below walks the length either way
 	if (sspisize>MAX_LOGIN_SSPI_BYTES) {
 		debugStart("tds7 login");
@@ -4875,10 +4875,10 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				break;
 			case TDS_TYPE_NCHAR:
 			case TDS_TYPE_NVARCHAR:
-				// a date/time column downgraded to nvarchar
+				// A date/time column downgraded to nvarchar
 				// reports its binary-form size (e.g. 4 bytes
 				// for an ase date), so measure it by type
-				// instead or the client truncates it
+				// instead or the client truncates it.
 				size=dateTimeStringSize(coltype,size);
 				// the size must be sent in bytes, but the
 				// backend reports it in characters
@@ -5892,7 +5892,7 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			{
 			// PLP encoding (MS-TDS 2.2.5.2.3.2): 8-byte total
 			// length, then chunks of (4-byte length, bytes),
-			// ending in a 4-byte zero-length chunk. Skip the data
+			// ending in a 4-byte zero-length chunk.  Skip the data
 			// chunk for an empty value - the terminator alone
 			// means empty, and an extra chunk would corrupt what
 			// follows.
@@ -9484,12 +9484,12 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 	// bind and run the prepared query
 	bindParams(cursor,1);
 
-	// a client can send more values than the statement has bind markers.
-	// sql server rejects the call outright, but sybase just ignores the
+	// A client can send more values than the statement has bind markers.
+	// Sql server rejects the call outright, but sybase just ignores the
 	// extras, and a backend that runs the statement as plain sql with
 	// positional parameters (sap.cpp) has no way to ignore them - it
 	// hands every bind to the database, which then rejects the whole
-	// statement.  so drop the extras here instead, before they reach
+	// statement.  So drop the extras here instead, before they reach
 	// the backend.
 	uint16_t	markers=0;
 	if (bindmarkercount.getValue(cursor,&markers) &&
@@ -9555,7 +9555,7 @@ bool sqlrprotocol_tds::cursorPositioned() {
 
 	// sp_cursor @cursor, @optype, @rownum, @table [, @column...]
 	//
-	// the positioned update/delete/insert proc. a real sql server uses
+	// the positioned update/delete/insert proc.  a real sql server uses
 	// "where current of", which the server API can't do, so the statement
 	// is synthesized from the row's primary key values kept by
 	// sp_cursorfetch - the same thing an odbc driver does for an
