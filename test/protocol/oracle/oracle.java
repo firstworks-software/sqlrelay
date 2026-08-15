@@ -9,8 +9,15 @@ class oracle {
 
 		Class.forName("oracle.jdbc.OracleDriver");
 
+		// port defaults to 1522 (what the existing jdbc*test scripts
+		// expect); an optional first arg overrides it, so a script
+		// can point this at an oraproxy instance listening on some
+		// other port
+		String	port=(args.length>0)?args[0]:"1522";
+
 		Connection	con=DriverManager.getConnection(
-					"jdbc:oracle:thin:@localhost:1522:ora1",
+					"jdbc:oracle:thin:@localhost:"+port+
+						":ora1",
 					"testuser","testpassword");
 
 		Statement	stmt=con.createStatement();

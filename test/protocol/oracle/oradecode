@@ -272,10 +272,81 @@ def decode_ttipro_body(body):
 	return "\n".join(out), consumed, total
 
 
+def read_ub4(data, offset):
+	# putUb4()/getUb4() in src/protocols/oracle.cpp, portable encoding: a
+	# length byte (0, 1, 2 or 4) followed by that many big-endian bytes,
+	# with a zero length byte meaning the value 0 and nothing more.
+	lensize = data[offset]
+	offset += 1
+	value = 0
+	for i in range(lensize):
+		value = (value << 8) | data[offset + i]
+	return value, offset + lensize
+
+
+def decode_auth_pairs(body):
+	# the auth challenge's key/value pair stream: putAuthField() in
+	# src/protocols/oracle.cpp writes a ub4 pair count, then per pair a
+	# ub4 name length + length-prefixed name, a ub4 value length +
+	# (if nonzero) a length-prefixed value, and a ub4 flags word. Real
+	# 11g/12c servers use this same portable ub4 encoding here regardless
+	# of what getAuthField()'s "native encoding" heuristic decided for
+	# the request that provoked it - confirmed against
+	# samples/oracle122-login-select.cap (AUTH_VFR_DATA flags 0x4815,
+	# AUTH_SESSKEY 64 hex chars) and
+	# samples/oracle112-login-expiredpwd.cap (flags 0x1b25, 96 hex
+	# chars). Only that portable encoding is decoded here; a native
+	# encoded response would use fixed-width counts instead (see
+	# getAuthCount()) and isn't handled.
+	out = []
+	pos = 0
+
+	paircount, pos = read_ub4(body, pos)
+	out.append("      %-28s %d" % ("pair count:", paircount))
+
+	for i in range(paircount):
+		namesize, pos = read_ub4(body, pos)
+		namelen = body[pos]
+		pos += 1
+		name = body[pos:pos + namelen].decode("latin-1")
+		pos += namelen
+
+		valuesize, pos = read_ub4(body, pos)
+		value = ""
+		if valuesize:
+			valuelen = body[pos]
+			pos += 1
+			value = body[pos:pos + valuelen].decode("latin-1")
+			pos += valuelen
+
+		flags, pos = read_ub4(body, pos)
+
+		out.append("      [%d] %s = %r (flags 0x%08x)" %
+				(i, name, value, flags))
+
+		if name == "AUTH_VFR_DATA":
+			out.append("          -> verifier type "
+					"(AUTH_VFR_DATA flags): 0x%04x" %
+					flags)
+		elif name == "AUTH_SESSKEY":
+			out.append("          -> AUTH_SESSKEY length: "
+					"%d hex chars" % len(value))
+
+	consumed = pos
+	total = len(body)
+	if consumed < total:
+		out.append("      trailer/undecoded (%d bytes):" %
+				(total - consumed))
+		out.append(hexdump(body[consumed:total], "        "))
+		consumed = total
+
+	return "\n".join(out), consumed, total
+
+
 ANO_MARKER = b"\xde\xad\xbe\xef"
 
 
-def decode_data_payload(body, is_server_to_client):
+def decode_data_payload(body, is_server_to_client, authstate):
 	if len(body) < 3:
 		return ["    (data payload too short to have data flags "
 			"+ ttc code)"]
@@ -309,6 +380,32 @@ def decode_data_payload(body, is_server_to_client):
 		ttiname = TTI_CODES.get(tticode, "unknown")
 		lines.append("    tti code:   0x%02x (%s)" %
 				(tticode, ttiname))
+		if not is_server_to_client and tticode in (
+				0x76, 0x52):
+			# TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY /
+			# TTI_LOGON_PRESENT_USER: the client's phase-1 logon
+			# request. The server's answer (a TTC_OK carrying
+			# AUTH_SESSKEY/AUTH_VFR_DATA) follows as the next
+			# server -> client DATA packet.
+			authstate["awaiting_challenge"] = True
+	elif (ttccode == 0x08 and is_server_to_client and
+			authstate.get("awaiting_challenge")):
+		# TTC_OK answering the phase-1 logon request: the auth
+		# challenge's key/value pair stream (AUTH_SESSKEY,
+		# AUTH_VFR_DATA, and - for a 12c/pbkdf2 verifier - the
+		# AUTH_PBKDF2_* fields), per sendAuthenticationChallenge() /
+		# putAuthField() in src/protocols/oracle.cpp.
+		authstate["awaiting_challenge"] = False
+		try:
+			decoded, consumed, total = decode_auth_pairs(rest)
+		except (struct.error, IndexError,
+				UnicodeDecodeError) as e:
+			lines.append("    ** auth pair decode failed (%s); "
+					"falling back to hex dump **" % e)
+		else:
+			lines.append("    auth challenge:")
+			lines.append(decoded)
+			return lines
 	elif ttccode == 0x01 and rest and is_server_to_client:
 		# TTC_PROTOCOL_NEGOTIATION, server -> client: a TTIPRO
 		# response body, laid out the way putTtiResponse() writes
@@ -348,6 +445,7 @@ def main():
 	}
 
 	seqno = 0
+	authstate = {"awaiting_challenge": False}
 	for direction, payload in read_chunks(sys.argv[1]):
 		stream = streams.get(direction)
 		if stream is None:
@@ -391,7 +489,8 @@ def main():
 
 			if pkttype == 6:  # DATA
 				for line in decode_data_payload(
-						body, direction == b"S"):
+						body, direction == b"S",
+						authstate):
 					print(line)
 
 	# a non-empty buffer here is a trailing partial TNS packet that

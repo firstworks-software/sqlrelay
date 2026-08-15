@@ -825,6 +825,10 @@
 		silently truncated because rudiments' domnode had no length-aware
 		setAttributeValue(); now that rudiments 2.3.0 adds one, the field's
 		length is passed through and the value round-trips intact
+	fixed make install - the oracle protocol module and the oracle
+		connectstrings, userlist and database auth modules were built
+		but never installed, so protocol="oracle" couldn't be used from
+		a normal install
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

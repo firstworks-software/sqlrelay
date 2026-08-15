@@ -1,12 +1,57 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="oracleprotocoltest" dbase="oracle">
+	<!-- serverversion="11.2" is required here.  OCI 23.26, in the
+	     portable encoding, reads the 11.2 summary-object shape and
+	     nothing else, so at the module's 12.1 default the OCI client
+	     the test uses drops the connection outright (ORA-03113). -->
+	<instance id="oracleprotocoltest" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="1521"/>
+			<listener protocol="oracle" port="1521" serverversion="11.2"/>
 		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+			</auth>
+		</auths>
 		<connections>
-                        <connection string="user=scott;password=tiger;oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle11g)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));"/>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
+		</connections>
+	</instance>
+
+	<!-- same as oracleprotocoltest, but with verifiertype="11g", to
+	     exercise the 11g O5LOGON verifier - a 48-byte session key and
+	     an sha1 verifier.  the tnsnames.ora alias sqlrelay11g points
+	     here. -->
+	<instance id="oracleprotocol11gtest" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="1522" serverversion="11.2" verifiertype="11g"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
+		</connections>
+	</instance>
+
+	<!-- same as oracleprotocoltest, but with verifiertype="12c", to
+	     exercise the 12c O5LOGON verifier - a 32-byte session key and
+	     a pbkdf2-hmac-sha512 verifier.  the tnsnames.ora alias
+	     sqlrelay12c points here. -->
+	<instance id="oracleprotocol12ctest" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="1523" serverversion="11.2" verifiertype="12c"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword"/>
 		</connections>
 	</instance>
 

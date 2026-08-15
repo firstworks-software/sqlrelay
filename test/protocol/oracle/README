@@ -32,16 +32,21 @@ Reads a capture file back and decodes it as a stream of TNS packets: the
 8-byte TNS header, the packet type (CONNECT, ACCEPT, DATA, ...), and, for
 DATA packets, the TTC function code and (for protocol negotiation) a full
 field-by-field decode of the TTIPRO response - version, banner, charset,
-graph elements, FDO block, capability arrays. It reports how many of a
-packet's bytes it accounted for, so a short or wrong decode shows up
-instead of being silently swallowed.
+graph elements, FDO block, capability arrays. It also decodes the auth
+key/value pair stream that follows a client's phase-1 logon request
+(AUTH_SESSKEY, AUTH_VFR_DATA, and - for a 12c/pbkdf2 verifier - the
+AUTH_PBKDF2_* fields), calling out AUTH_VFR_DATA's flags (the verifier
+type - 0x1b25 for 11g, 0x4815 for 12c) and AUTH_SESSKEY's length (96 hex
+chars for 11g, 64 for 12c) explicitly. It reports how many of a packet's
+bytes it accounted for, so a short or wrong decode shows up instead of
+being silently swallowed.
 
     ./oradecode CAPTUREFILE
 
-The packet type, TTC code and TTI code tables, and the TTIPRO body
-layout, are all taken directly from src/protocols/oracle.cpp in this
-repository (see the PACKET_*, TTC_* and TTI_* defines, and
-putTtiResponse()).
+The packet type, TTC code and TTI code tables, the TTIPRO body layout,
+and the auth key/value pair layout are all taken directly from
+src/protocols/oracle.cpp in this repository (see the PACKET_*, TTC_* and
+TTI_* defines, putTtiResponse(), and putAuthField()/getAuthField()).
 
 Running a capture
 ------------------
@@ -51,6 +56,18 @@ against the oracle122 real server (the one with a working login) and
 decodes the result. jdbcsqlrelaytest does the same against a local
 sqlr-listener speaking the oracle protocol. Both need java, javac and
 `make` to have built oracle.class first (`make` in this directory).
+
+jdbcauthkvtest drives oracle.java through oraproxy against the local
+oracleprotocol11gtest and oracleprotocol12ctest sqlrelay instances
+(test/sqlrelay.conf.d/oracleprotocol.conf, ports 1522 and 1523) and
+greps the decoded captures for the AUTH_VFR_DATA flags and AUTH_SESSKEY
+length each verifier type is expected to put on the wire. This is direct
+wire-level evidence for the same thing oracle.cpp's Authentication
+section proves indirectly (a correct-password login only succeeds if the
+matching verifier crypto ran) - here the verifier type and session key
+length are read straight off the wire instead of inferred from login
+success. The two sqlrelay instances need to be started first (sqlr-start
+against oracleprotocol.conf, or test.sh -db oracleprotocol).
 
 Sample captures, already known-good, are checked in under samples/ so
 the decoder can be exercised without live server access:

@@ -66,6 +66,14 @@ stop_instances() {
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdprotocolwirecrypttest
 		fi
 
+		# the oracleprotocol test also has 11g and 12c
+		# verifier-type instances
+		if ( test "$_db" = "oracleprotocol" )
+		then
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocol11gtest
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocol12ctest
+		fi
+
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
 	done
 	sleep 2
@@ -188,6 +196,17 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the oracleprotocol test needs two more instances, one per o5logon
+	# verifier type, since the verifier type is chosen at listener
+	# configuration time and can't be varied per connection
+	if ( test "$db" = "oracleprotocol" )
+	then
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocol11gtest -backtrace $BACKTRACEDIR
+		sleep 2
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocol12ctest -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# start the instance
 	$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id ${db}test -backtrace $BACKTRACEDIR
 	sleep 2
@@ -216,6 +235,13 @@ stop_instance() {
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest
 		sleep 2
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolwirecrypttest
+	fi
+	if ( test "$db" = "oracleprotocol" )
+	then
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocol11gtest
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocol12ctest
 	fi
 	sleep 2
 	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test
@@ -669,6 +695,42 @@ run_protocol_test() {
 		if ( test "$resultfakebinds" != "0" )
 		then
 			printf "    % 8s: failed (fakeinputbindvariables)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		cd ../..
+		return 1
+	fi
+
+	# oracleprotocol runs the oracle test three times, against the three
+	# instances in its config - the default one (tnsnames alias sqlrelay,
+	# port 1521), the verifiertype="11g" one (sqlrelay11g, port 1522) and
+	# the verifiertype="12c" one (sqlrelay12c, port 1523) - so both
+	# o5logon verifier types get covered.  all three runs have to succeed
+	# for the db to pass
+	if ( test "$db" = "oracleprotocol" )
+	then
+		./$prog
+		resultdefault="$?"
+		./$prog sqlrelay11g
+		result11g="$?"
+		./$prog sqlrelay12c
+		result12c="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" )
+		then
+			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
+			cd ../..
+			return 0
+		fi
+		if ( test "$resultdefault" != "0" )
+		then
+			printf "    % 8s: failed (default)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$result11g" != "0" )
+		then
+			printf "    % 8s: failed (11g verifier)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$result12c" != "0" )
+		then
+			printf "    % 8s: failed (12c verifier)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1

@@ -105,7 +105,10 @@ installdll: installdll-sqlrclient_connectstrings \
 		installdll-postgresql_connectstrings \
 		installdll-postgresql_userlist \
 		installdll-tds_connectstrings \
-		installdll-firebird_connectstrings
+		installdll-firebird_connectstrings \
+		installdll-oracle_connectstrings \
+		installdll-oracle_userlist \
+		installdll-oracle_database
 
 installdll-sqlrclient_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
@@ -155,6 +158,18 @@ installdll-firebird_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_connectstrings.$(LIBEXT) $(libexecdir)
 
+installdll-oracle_connectstrings:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_connectstrings.$(LIBEXT) $(libexecdir)
+
+installdll-oracle_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_userlist.$(LIBEXT) $(libexecdir)
+
+installdll-oracle_database:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_database.$(LIBEXT) $(libexecdir)
+
 installlib: $(INSTALLSHAREDLIB) $(AUTHINSTALLSHAREDLIBOPTIONALTARGETS)
 
 installsharedlib: installsharedlib-sqlrclient_connectstrings \
@@ -167,7 +182,10 @@ installsharedlib: installsharedlib-sqlrclient_connectstrings \
 		installsharedlib-postgresql_connectstrings \
 		installsharedlib-postgresql_userlist \
 		installsharedlib-tds_connectstrings \
-		installsharedlib-firebird_connectstrings
+		installsharedlib-firebird_connectstrings \
+		installsharedlib-oracle_connectstrings \
+		installsharedlib-oracle_userlist \
+		installsharedlib-oracle_database
 
 installsharedlib-sqlrclient_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)

@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# capture a JDBC login against the local oracleprotocol11gtest and
+# oracleprotocol12ctest sqlrelay instances (test/sqlrelay.conf.d/
+# oracleprotocol.conf, ports 1522 and 1523), through oraproxy, then
+# decode each capture and check that oradecode's auth key/value pair
+# decoder (see #9000) reports the verifier type and session key length
+# that sendAuthenticationChallenge() in src/protocols/oracle.cpp
+# actually put on the wire:
+#
+#   11g (verifiertype="11g"): AUTH_VFR_DATA flags 0x1b25,
+#                              AUTH_SESSKEY 96 hex chars
+#   12c (verifiertype="12c"): AUTH_VFR_DATA flags 0x4815,
+#                              AUTH_SESSKEY 64 hex chars
+#
+# The oracleprotocol11gtest / oracleprotocol12ctest instances must
+# already be running (test.sh -db oracleprotocol starts them, or by
+# hand, from the test/ directory:
+#   sqlr-start -config sqlrelay.conf.d/oracleprotocol.conf \
+#       -id oracleprotocol11gtest
+#   sqlr-start -config sqlrelay.conf.d/oracleprotocol.conf \
+#       -id oracleprotocol12ctest
+#
+# oraproxy can't listen on 1522/1523 itself - the sqlr-listeners already
+# own those ports - so it listens on a spare port instead and forwards
+# to the real one; oracle.java takes that spare port as an argument
+# (defaulting to 1522 when none is given, for the existing
+# jdbcoracletest/jdbcsqlrelaytest scripts).
+
+status=0
+
+checkcapture() {
+	_label=$1
+	_listenport=$2
+	_destport=$3
+	_capfile=$4
+	_expectedflags=$5
+	_expectedsesskeylen=$6
+
+	rm -f $_capfile
+
+	./oraproxy $_listenport localhost $_destport $_capfile &
+	_proxypid=$!
+
+	sleep 1
+
+	java -cp ojdbc8.jar:. oracle $_listenport
+
+	kill $_proxypid 2>/dev/null
+	wait
+
+	_decoded=`./oradecode $_capfile`
+
+	if ( echo "$_decoded" | grep -q "verifier type (AUTH_VFR_DATA flags): $_expectedflags" )
+	then
+		echo "PASS: $_label: AUTH_VFR_DATA flags $_expectedflags"
+	else
+		echo "FAIL: $_label: expected AUTH_VFR_DATA flags $_expectedflags not found in $_capfile"
+		status=1
+	fi
+
+	if ( echo "$_decoded" | grep -q "AUTH_SESSKEY length: $_expectedsesskeylen hex chars" )
+	then
+		echo "PASS: $_label: AUTH_SESSKEY length $_expectedsesskeylen hex chars"
+	else
+		echo "FAIL: $_label: expected AUTH_SESSKEY length $_expectedsesskeylen not found in $_capfile"
+		status=1
+	fi
+}
+
+checkcapture 11g 25221 1522 oracle11gauth.cap 0x1b25 96
+checkcapture 12c 25222 1523 oracle12cauth.cap 0x4815 64
+
+exit $status

@@ -51,7 +51,8 @@ installdll: $(PROTOCOLSINSTALLTARGETS) \
 		installdll-sqlrclient \
 		installdll-mysql \
 		installdll-postgresql \
-		installdll-firebird
+		installdll-firebird \
+		installdll-oracle
 
 installdll-sqlrclient:
 	$(MKINSTALLDIRS) $(libexecdir)
@@ -69,6 +70,10 @@ installdll-firebird:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_firebird.$(LIBEXT) $(libexecdir)
 
+installdll-oracle:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)protocol_oracle.$(LIBEXT) $(libexecdir)
+
 installdll-tds:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)protocol_tds.$(LIBEXT) $(libexecdir)
@@ -79,7 +84,8 @@ installsharedlib: $(PROTOCOLSINSTALLTARGETS) \
 		installsharedlib-sqlrclient \
 		installsharedlib-mysql \
 		installsharedlib-postgresql \
-		installsharedlib-firebird
+		installsharedlib-firebird \
+		installsharedlib-oracle
 
 installsharedlib-sqlrclient:
 	$(MKINSTALLDIRS) $(libexecdir)
