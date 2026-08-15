@@ -2173,7 +2173,7 @@ const char *sqlrprotocol_oracle::findConnectDataKey(const char *haystack,
 	// immediately preceded by '(' (skipping whitespace) and immediately
 	// followed by '=' (skipping whitespace) - the shape every key takes
 	// in a tns connect descriptor, eg. "(SID = ora1)" or
-	// "(SERVICE_NAME=ora1)".  Without those checks, "SID" also matches
+	// "(SERVICE_NAME=ora1)".  without those checks, "SID" also matches
 	// inside "westside" or "PROTOCOL_VERSION_12", refusing a client whose
 	// descriptor just happens to contain the substring.
 	size_t	keylen=charstring::getLength(key);
