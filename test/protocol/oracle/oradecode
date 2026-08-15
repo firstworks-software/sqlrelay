@@ -1,0 +1,411 @@
+#!/usr/bin/env python3
+# Copyright (c) David Muse
+# See the file COPYING for more information.
+
+# Decoder for capture files written by ./oraproxy.  Walks the TNS packet
+# stream in both directions, labels each packet by its TNS packet type and
+# (for TTC_TTI_FUNCTION / TTC_PROTOCOL_NEGOTIATION) its TTC/TTI code, and
+# reports how many of a packet's bytes it was able to account for, so a
+# short or wrong decode is visible instead of silently swallowed.
+#
+# The packet type, TTC code and TTI code tables, the 8-byte TNS header
+# layout (a 2/2/1/1/2 split before PROTOCOL_VERSION_12 is negotiated, a
+# 4/1/1/2 split - "large header" - from the ACCEPT packet onward once it
+# is), and the TTIPRO (protocol negotiation response) body layout are all
+# taken from src/protocols/oracle.cpp in this repository - see the
+# TNS_PACKET_TYPE/TTC_*/TTI_* defines and putTtiResponse() there.  See
+# #9098 and #8978.
+#
+# Usage:
+#   ./oradecode CAPTUREFILE
+
+import struct
+import sys
+
+DIR_NAMES = {
+	b"C": "client -> server",
+	b"S": "server -> client",
+}
+
+PACKET_TYPES = {
+	1: "CONNECT",
+	2: "ACCEPT",
+	3: "ACKNOWLEDGE",
+	4: "REFUSE",
+	5: "REDIRECT",
+	6: "DATA",
+	7: "NULL",
+	9: "ABORT",
+	11: "RESEND",
+	12: "MARKER",
+	13: "ATTENTION",
+	14: "CONTROL_INFO",
+}
+
+TTC_CODES = {
+	0x01: "TTC_PROTOCOL_NEGOTIATION",
+	0x02: "TTC_DATATYPE_NEGOTIATION",
+	0x03: "TTC_TTI_FUNCTION",
+	0x04: "TTC_ERROR",
+	0x06: "TTC_ROW_HEADER",
+	0x07: "TTC_ROW_DATA",
+	0x08: "TTC_OK",
+	0x09: "TTC_STATUS",
+	0x10: "TTC_DESCRIBE_INFO",
+	0x11: "TTC_EXTENDED_TTI_FUNCTION",
+	0x15: "TTC_BIT_VECTOR",
+	0x20: "TTC_EXTPROC1",
+	0x44: "TTC_EXTPROC2",
+}
+
+TTI_CODES = {
+	0x02: "TTI_OPEN",
+	0x03: "TTI_QUERY",
+	0x04: "TTI_EXECUTE",
+	0x05: "TTI_FETCH",
+	0x08: "TTI_CLOSE",
+	0x09: "TTI_DISCONNECT",
+	0x0C: "TTI_AUTOCOMMIT_ON",
+	0x0D: "TTI_AUTOCOMMIT_OFF",
+	0x0E: "TTI_COMMIT",
+	0x0F: "TTI_ROLLBACK",
+	0x14: "TTI_CANCEL",
+	0x2B: "TTI_DESCRIBE",
+	0x30: "TTI_STARTUP",
+	0x31: "TTI_SHUTDOWN",
+	0x3B: "TTI_VERSION",
+	0x43: "TTI_K2_TRANSACTIONS",
+	0x47: "TTI_QUERY2",
+	0x4A: "TTI_OSQL7",
+	0x51: "TTI_LOGON_PRESENT_PWD",
+	0x52: "TTI_LOGON_PRESENT_USER",
+	0x54: "TTI_LOGON_UNKNOWN",
+	0x5C: "TTI_OKOD",
+	0x5E: "TTI_QUERY3",
+	0x60: "TTI_LOB_OPERATIONS",
+	0x62: "TTI_ODNY",
+	0x67: "TTI_TRANSACTION_END",
+	0x68: "TTI_TRANSACTION_BEGIN",
+	0x69: "TTI_OCCA",
+	0x6B: "TTI_SWITCH_SESSION",
+	0x6D: "TTI_STARTUP2",
+	0x73: "TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD",
+	0x76: "TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY",
+	0x77: "TTI_DESCRIBE2",
+	0x78: "TTI_CLOSE2",
+	0x7F: "TTI_OOTCM",
+	0x87: "TTI_OSCID",
+	0x8B: "TTI_OKPFC",
+	0x9A: "TTI_OSKEYVAL",
+}
+
+PROTOCOL_VERSION_12 = 0x013B
+
+
+def read_chunks(path):
+	# yields (direction, payload) for each chunk oraproxy wrote
+	with open(path, "rb") as f:
+		while True:
+			header = f.read(5)
+			if not header:
+				return
+			if len(header) < 5:
+				sys.stderr.write(
+					"oradecode: truncated chunk header "
+					"at end of file, stopping\n")
+				return
+			direction = header[0:1]
+			(length,) = struct.unpack(">I", header[1:5])
+			payload = f.read(length)
+			if len(payload) < length:
+				sys.stderr.write(
+					"oradecode: truncated chunk payload "
+					"at end of file, stopping\n")
+				return
+			yield direction, payload
+
+
+class Stream:
+	# reassembles the byte stream for one direction out of possibly many
+	# chunks, and tracks whether TNS packets on it use the small (pre
+	# PROTOCOL_VERSION_12) or large (post) header
+	def __init__(self, name):
+		self.name = name
+		self.buf = b""
+		self.largeheader = False
+
+	def feed(self, data):
+		self.buf += data
+
+	def take_packets(self):
+		# yields complete TNS packets as they become available;
+		# leaves a trailing partial packet in self.buf for the next
+		# feed()
+		while True:
+			if len(self.buf) < 8:
+				return
+			pkttype = self.buf[4]
+			flags = self.buf[5]
+			if self.largeheader:
+				(length,) = struct.unpack(">I", self.buf[0:4])
+			else:
+				(length,) = struct.unpack(">H", self.buf[0:2])
+			if length < 8 or len(self.buf) < length:
+				return
+			packet = self.buf[0:length]
+			self.buf = self.buf[length:]
+			yield pkttype, flags, packet[8:]
+
+
+def hexdump(data, indent="    "):
+	lines = []
+	for off in range(0, len(data), 16):
+		chunk = data[off:off + 16]
+		hexpart = " ".join("%02x" % b for b in chunk)
+		asciipart = "".join(
+			chr(b) if 0x20 <= b < 0x7f else "." for b in chunk)
+		lines.append("%s%04x  %-47s  %s" %
+				(indent, off, hexpart, asciipart))
+	return "\n".join(lines)
+
+
+def read_cstring(data, offset):
+	end = data.index(b"\x00", offset)
+	return data[offset:end].decode("latin-1"), end + 1
+
+
+def decode_ttipro_body(body):
+	# putTtiResponse() in src/protocols/oracle.cpp - the server's
+	# protocol-negotiation response (also documented byte-by-byte on
+	# #8978, cross-checked against python-oracledb).
+	out = []
+	pos = 0
+
+	version = body[pos]
+	out.append("      %-28s %s" % ("version:", version))
+	pos += 1
+
+	out.append("      zero byte")
+	pos += 1
+
+	banner, newpos = read_cstring(body, pos)
+	out.append("      %-28s %r" % ("server banner:", banner))
+	pos = newpos
+
+	charset, = struct.unpack_from("<H", body, pos)
+	out.append("      %-28s %s" % ("charset:", charset))
+	pos += 2
+
+	serverflags = body[pos]
+	out.append("      %-28s %s" % ("server flags:", serverflags))
+	pos += 1
+
+	graphcount, = struct.unpack_from("<H", body, pos)
+	pos += 2
+	out.append("      %-28s %d" % ("graph element count:", graphcount))
+	graphbytes = graphcount * 5
+	if graphbytes:
+		out.append("      charset graph elements (%d bytes):" %
+				graphbytes)
+		out.append(hexdump(body[pos:pos + graphbytes], "        "))
+	pos += graphbytes
+
+	fdosize, = struct.unpack_from(">H", body, pos)
+	pos += 2
+	out.append("      %-28s %d" % ("fdo length:", fdosize))
+	fdostart = pos
+	fdodatasize, = struct.unpack_from(">I", body, pos)
+	out.append("      %-28s %d" % ("fdo datasize:", fdodatasize))
+	pos += 4
+	pos += 1  # the constant 0x01 byte
+	part1size = body[pos]
+	pos += 1
+	part2size = body[pos]
+	pos += 1
+	out.append("      %-28s %d" % ("fdo part1 size:", part1size))
+	out.append("      %-28s %d" % ("fdo part2 size:", part2size))
+	part1 = body[pos:pos + part1size]
+	pos += part1size
+	part2 = body[pos:pos + part2size]
+	pos += part2size
+	out.append("      fdo part1:")
+	out.append(hexdump(part1, "        "))
+	out.append("      fdo part2:")
+	out.append(hexdump(part2, "        "))
+
+	fdocharset, = struct.unpack_from(">H", body, pos)
+	pos += 2
+	fdoncharset, = struct.unpack_from(">H", body, pos)
+	pos += 2
+	out.append("      %-28s %d" % ("fdo charset:", fdocharset))
+	out.append("      %-28s %d" % ("fdo national charset:", fdoncharset))
+	pos += 1  # trailer byte (0x03 on real servers)
+
+	fdoend = fdostart + fdosize
+	padsize = fdoend - pos
+	if padsize > 0:
+		out.append("      %-28s %d bytes" %
+				("fdo padding:", padsize))
+	pos = fdoend
+
+	if pos < len(body):
+		compilecapssize = body[pos]
+		pos += 1
+		compilecaps = body[pos:pos + compilecapssize]
+		pos += compilecapssize
+		out.append("      %-28s %d" %
+				("compile caps size:", compilecapssize))
+		out.append(hexdump(compilecaps, "        "))
+
+		runtimecapssize = body[pos]
+		pos += 1
+		runtimecaps = body[pos:pos + runtimecapssize]
+		pos += runtimecapssize
+		out.append("      %-28s %d" %
+				("runtime caps size:", runtimecapssize))
+		out.append(hexdump(runtimecaps, "        "))
+
+	consumed = pos
+	total = len(body)
+	out.append("      -- consumed %d of %d TTIPRO body bytes --" %
+			(consumed, total))
+	return "\n".join(out), consumed, total
+
+
+ANO_MARKER = b"\xde\xad\xbe\xef"
+
+
+def decode_data_payload(body, is_server_to_client):
+	if len(body) < 3:
+		return ["    (data payload too short to have data flags "
+			"+ ttc code)"]
+
+	if len(body) >= 6 and body[2:6] == ANO_MARKER:
+		# ANO (advanced networking option) negotiation: not
+		# TTC-coded, it carries its own 0xdeadbeef-marked framing
+		# (oracle.cpp anoNegotiation()/recvAnoRequest(), ~line 2187-
+		# 2286).  Not decoded field by field here - just labeled and
+		# dumped.
+		dataflags, = struct.unpack_from(">H", body, 0)
+		lines = ["    data flags: 0x%04x" % dataflags,
+			"    ANO negotiation frame (undecoded, marked by "
+			"0xdeadbeef)",
+			"    payload (%d bytes):" % len(body),
+			hexdump(body)]
+		return lines
+
+	dataflags, = struct.unpack_from(">H", body, 0)
+	ttccode = body[2]
+	ttcname = TTC_CODES.get(ttccode, "unknown")
+	lines = []
+	lines.append("    data flags: 0x%04x" % dataflags)
+	lines.append("    ttc code:   0x%02x (%s)" % (ttccode, ttcname))
+
+	rest = body[3:]
+	if ttccode in (0x03, 0x11) and rest:
+		# TTC_TTI_FUNCTION / TTC_EXTENDED_TTI_FUNCTION: next byte is
+		# the TTI function code
+		tticode = rest[0]
+		ttiname = TTI_CODES.get(tticode, "unknown")
+		lines.append("    tti code:   0x%02x (%s)" %
+				(tticode, ttiname))
+	elif ttccode == 0x01 and rest and is_server_to_client:
+		# TTC_PROTOCOL_NEGOTIATION, server -> client: a TTIPRO
+		# response body, laid out the way putTtiResponse() writes
+		# it.  The client -> server direction carries a request in
+		# a different, much simpler layout (version, client flag
+		# list, banner) that this does not attempt to decode.
+		try:
+			decoded, consumed, total = \
+					decode_ttipro_body(rest)
+		except (struct.error, IndexError, ValueError) as e:
+			lines.append("    ** TTIPRO decode failed (%s); "
+					"falling back to hex dump **" % e)
+		else:
+			lines.append("    TTIPRO response:")
+			lines.append(decoded)
+			if consumed != total:
+				lines.append(
+					"    ** WARNING: %d bytes left "
+					"over after decode **" %
+					(total - consumed))
+			return lines
+
+	if rest:
+		lines.append("    payload (%d bytes):" % len(rest))
+		lines.append(hexdump(rest))
+	return lines
+
+
+def main():
+	if len(sys.argv) != 2:
+		sys.stderr.write("usage: %s CAPTUREFILE\n" % sys.argv[0])
+		return 1
+
+	streams = {
+		b"C": Stream("client -> server"),
+		b"S": Stream("server -> client"),
+	}
+
+	seqno = 0
+	for direction, payload in read_chunks(sys.argv[1]):
+		stream = streams.get(direction)
+		if stream is None:
+			sys.stderr.write(
+				"oradecode: unknown direction byte %r, "
+				"skipping chunk\n" % direction)
+			continue
+		stream.feed(payload)
+		for pkttype, flags, body in stream.take_packets():
+			seqno += 1
+			typename = PACKET_TYPES.get(pkttype, "unknown")
+			print("[%04d] %-18s PACKET_%s (type=%d, flags=0x%02x, "
+				"%d body bytes)" %
+				(seqno, stream.name, typename, pkttype,
+					flags, len(body)))
+
+			if pkttype == 1:  # CONNECT: read the negotiated
+						# version to know when to
+						# switch header formats
+				if len(body) >= 2:
+					version, = struct.unpack_from(
+							">H", body, 0)
+					print("    connect version: 0x%04x" %
+						version)
+
+			if pkttype == 2:  # ACCEPT: server has now committed
+						# to a header size for the
+						# rest of the connection
+				if len(body) >= 2:
+					acceptversion, = struct.unpack_from(
+							">H", body, 0)
+					print("    accept version: 0x%04x" %
+						acceptversion)
+					if acceptversion >= PROTOCOL_VERSION_12:
+						for s in streams.values():
+							s.largeheader = True
+						print("    -> switching to "
+							"large (32-bit "
+							"length) TNS header "
+							"from here on")
+
+			if pkttype == 6:  # DATA
+				for line in decode_data_payload(
+						body, direction == b"S"):
+					print(line)
+
+	# a non-empty buffer here is a trailing partial TNS packet that
+	# never completed - report it instead of silently dropping it, the
+	# same way a short TTC/TTIPRO decode is reported above rather than
+	# swallowed
+	for stream in streams.values():
+		if stream.buf:
+			sys.stderr.write(
+				"oradecode: %d undecoded trailing bytes on "
+				"%s\n" % (len(stream.buf), stream.name))
+
+	return 0
+
+
+if __name__ == "__main__":
+	sys.exit(main())

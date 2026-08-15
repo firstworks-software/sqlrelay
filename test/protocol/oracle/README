@@ -1,0 +1,74 @@
+Capturing and decoding real Oracle wire-protocol traffic
+==========================================================
+
+Several tickets in the oracle protocol milestone can only be settled
+against the bytes a real Oracle server actually sends - guessing at a
+FIXME in src/protocols/oracle.cpp is no substitute for watching a live
+handshake. oraproxy and oradecode, in this directory, are the tools for
+that.
+
+jnettrace.jar, which used to do this job, is gone (see #9098). It was
+from 2009 and threw an IndexOutOfBoundsException partway through the
+handshake on modern JDKs, so a capture never reached the interesting
+part - a tool that fails mid-handshake is worse than no tool, since the
+failure looks like a protocol bug rather than a broken jar.
+
+oraproxy
+--------
+
+A small TCP proxy: it listens locally, connects to a real Oracle
+host:port, relays one client connection through in both directions, and
+writes every byte it sees, tagged by direction, to a capture file.
+
+    ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE
+
+It handles exactly one connection, then exits - no need to kill it off
+afterward the way jnettrace.jar had to be.
+
+oradecode
+---------
+
+Reads a capture file back and decodes it as a stream of TNS packets: the
+8-byte TNS header, the packet type (CONNECT, ACCEPT, DATA, ...), and, for
+DATA packets, the TTC function code and (for protocol negotiation) a full
+field-by-field decode of the TTIPRO response - version, banner, charset,
+graph elements, FDO block, capability arrays. It reports how many of a
+packet's bytes it accounted for, so a short or wrong decode shows up
+instead of being silently swallowed.
+
+    ./oradecode CAPTUREFILE
+
+The packet type, TTC code and TTI code tables, and the TTIPRO body
+layout, are all taken directly from src/protocols/oracle.cpp in this
+repository (see the PACKET_*, TTC_* and TTI_* defines, and
+putTtiResponse()).
+
+Running a capture
+------------------
+
+jdbcoracletest drives oracle.java (via ojdbc8.jar) through oraproxy
+against the oracle122 real server (the one with a working login) and
+decodes the result. jdbcsqlrelaytest does the same against a local
+sqlr-listener speaking the oracle protocol. Both need java, javac and
+`make` to have built oracle.class first (`make` in this directory).
+
+Sample captures, already known-good, are checked in under samples/ so
+the decoder can be exercised without live server access:
+
+    oracle122-login-select.cap       full login + select, Oracle 12.2
+    oracle112-login-expiredpwd.cap   login through an ORA-28001 error,
+                                      Oracle 11.2
+
+The two real Oracle test servers on this network
+--------------------------------------------------
+
+Not discoverable anywhere else in this tree:
+
+    oracle122centos7x64.firstworks.com   10.0.2.1:1521   Oracle 12.2
+    oracle112centos5x64.firstworks.com   10.0.2.2:1521   Oracle 11.2
+
+Both take user testuser / password testpassword against SID ora1 (see
+oracle.java). As of this writing, the 11.2 server's testuser account has
+an expired password (ORA-28001) - that needs a DBA to reset it before a
+full login can be captured there again; it is unrelated to oraproxy or
+oradecode, both of which handle the error path correctly regardless.

@@ -1,9 +1,26 @@
-rm -f cli*.trc
+#!/bin/sh
 
-java -cp `pwd`/jnettrace.jar oracle.net.trace.OracleJavaNetTrace oracle112centos5x64 1521 1522 &
+# capture a JDBC login+query against the real oracle122 test server,
+# through oraproxy (jnettrace.jar is dead, see #9098), then decode it.
+#
+# oracle122 is the server with a working testuser login; oracle112's
+# testuser password is expired (ORA-28001) as of this writing - see the
+# README.
 
-java -cp `pwd`/ojdbc8.jar:/home/dmuse/src/sqlrelay/test/dropin oracle
+rm -f oracle122.cap
 
-mv client_*.trc jdbcoracle.trc
+./oraproxy 1522 oracle122centos7x64.firstworks.com 1521 oracle122.cap &
+proxypid=$!
 
-kill `ps -efa | grep jnettrace | grep -v grep | cut -c10-15`
+sleep 1
+
+java -cp ojdbc8.jar:. oracle
+
+# oraproxy exits on its own once the one connection it handles closes;
+# this kill only matters if java failed before ever connecting, so wait
+# does not hang forever
+kill $proxypid 2>/dev/null
+
+wait
+
+./oradecode oracle122.cap

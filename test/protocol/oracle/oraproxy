@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+# Copyright (c) David Muse
+# See the file COPYING for more information.
+
+# Dumping TCP proxy for capturing Oracle TNS/TTC wire-protocol traffic
+# between a JDBC (or any TNS) client and a real Oracle server.  Replaces
+# jnettrace.jar, which is dead on modern JDKs (see #9098).
+#
+# Usage:
+#   ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE
+#
+# Point a client (e.g. oracle.java, via a tnsnames.ora entry using
+# localhost:LISTENPORT) at this proxy instead of the real server, and it
+# forwards every byte in both directions to DESTHOST:DESTPORT while writing
+# a copy of the traffic, tagged by direction, to CAPTUREFILE.  Decode the
+# result with ./oradecode.
+#
+# Capture file format: a sequence of chunks, each
+#   1 byte   direction: 'C' (client->server) or 'S' (server->client)
+#   4 bytes  payload length, big-endian
+#   N bytes  payload, exactly as read off the socket
+# with chunks in the order they occurred, interleaved across directions.
+
+import socket
+import struct
+import sys
+import threading
+
+DIR_CLIENT_TO_SERVER = b"C"
+DIR_SERVER_TO_CLIENT = b"S"
+
+
+def relay(src, dst, direction, capturefile, capturelock):
+	# read from src, forward to dst, tee into the capture file
+	while True:
+		try:
+			chunk = src.recv(65536)
+		except OSError:
+			break
+		if not chunk:
+			break
+		try:
+			dst.sendall(chunk)
+		except OSError:
+			pass
+		with capturelock:
+			capturefile.write(direction)
+			capturefile.write(struct.pack(">I", len(chunk)))
+			capturefile.write(chunk)
+			capturefile.flush()
+	# half-close so the other relay thread sees eof too
+	try:
+		dst.shutdown(socket.SHUT_WR)
+	except OSError:
+		pass
+
+
+def handle_connection(clientsock, desthost, destport, capturefile, capturelock):
+	serversock = socket.create_connection((desthost, destport))
+	try:
+		t1 = threading.Thread(target=relay, args=(
+				clientsock, serversock,
+				DIR_CLIENT_TO_SERVER,
+				capturefile, capturelock))
+		t2 = threading.Thread(target=relay, args=(
+				serversock, clientsock,
+				DIR_SERVER_TO_CLIENT,
+				capturefile, capturelock))
+		t1.start()
+		t2.start()
+		t1.join()
+		t2.join()
+	finally:
+		clientsock.close()
+		serversock.close()
+
+
+def main():
+	if len(sys.argv) != 5:
+		sys.stderr.write(
+			"usage: %s LISTENPORT DESTHOST DESTPORT "
+			"CAPTUREFILE\n" % sys.argv[0])
+		return 1
+
+	listenport = int(sys.argv[1])
+	desthost = sys.argv[2]
+	destport = int(sys.argv[3])
+	capturepath = sys.argv[4]
+
+	capturelock = threading.Lock()
+	with open(capturepath, "wb") as capturefile:
+
+		listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		listener.setsockopt(socket.SOL_SOCKET,
+					socket.SO_REUSEADDR, 1)
+		listener.bind(("0.0.0.0", listenport))
+		listener.listen(5)
+
+		sys.stderr.write(
+			"oraproxy: listening on %d, forwarding to "
+			"%s:%d, capturing to %s\n" %
+			(listenport, desthost, destport, capturepath))
+
+		# one connection is all a capture run needs: accept it,
+		# relay it to completion, then exit
+		clientsock, clientaddr = listener.accept()
+		sys.stderr.write("oraproxy: connection from %s:%d\n" %
+					clientaddr)
+		handle_connection(clientsock, desthost, destport,
+					capturefile, capturelock)
+		sys.stderr.write("oraproxy: connection closed, capture "
+					"written to %s\n" % capturepath)
+
+	return 0
+
+
+if __name__ == "__main__":
+	sys.exit(main())

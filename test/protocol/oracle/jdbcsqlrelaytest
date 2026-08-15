@@ -1,9 +1,23 @@
-rm -f cli*.trc
+#!/bin/sh
 
-java -cp `pwd`/jnettrace.jar oracle.net.trace.OracleJavaNetTrace localhost 1521 1522 &
+# capture a JDBC login+query against a local sqlr-listener speaking the
+# oracle protocol, through oraproxy (jnettrace.jar is dead, see #9098),
+# then decode it
 
-java -cp `pwd`/ojdbc8.jar:/home/dmuse/src/sqlrelay/test/dropin oracle
+rm -f sqlrelay.cap
 
-mv client_*.trc jdbcsqlrelay.trc
+./oraproxy 1522 localhost 1521 sqlrelay.cap &
+proxypid=$!
 
-kill `ps -efa | grep jnettrace | grep -v grep | cut -c10-15`
+sleep 1
+
+java -cp ojdbc8.jar:. oracle
+
+# oraproxy exits on its own once the one connection it handles closes;
+# this kill only matters if java failed before ever connecting, so wait
+# does not hang forever
+kill $proxypid 2>/dev/null
+
+wait
+
+./oradecode sqlrelay.cap
