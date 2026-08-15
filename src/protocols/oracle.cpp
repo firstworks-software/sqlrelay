@@ -6991,6 +6991,11 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 							int8_t scale) {
 
+	debugStart("precision/scale");
+	debugWrite("precision: %d",(int32_t)precision);
+	debugWrite("scale: %d",(int32_t)scale);
+	debugEnd();
+
 	write(&reqpacket,(byte_t)precision);
 
 	// the scale is the one place the two integer encodings differ - a
@@ -7016,19 +7021,31 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 }
 
 uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
+
+	uint16_t	wiretype;
 	switch (columntype) {
 		case ORACLE_TYPE_NUMBER:
 		case ORACLE_TYPE_VARNUM:
-			return ORACLE_TYPE_NUMBER;
+			wiretype=ORACLE_TYPE_NUMBER;
+			break;
 		case ORACLE_TYPE_CHAR:
 		case ORACLE_TYPE_FIXED_CHAR:
-			return ORACLE_TYPE_CHAR;
+			wiretype=ORACLE_TYPE_CHAR;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
 			// type and sending text desyncs the client
-			return ORACLE_TYPE_VARCHAR;
+			wiretype=ORACLE_TYPE_VARCHAR;
+			break;
 	}
+
+	debugStart("wire column type");
+	debugWrite("input type: 0x%02x",(uint32_t)(0x000000ff&columntype));
+	debugColumnType(wiretype);
+	debugEnd();
+
+	return wiretype;
 }
 
 uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
@@ -7036,6 +7053,11 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 						uint16_t wiretype) {
 
 	if (wiretype==ORACLE_TYPE_NUMBER) {
+		debugStart("wire column size");
+		debugWrite("column: %d",column);
+		debugColumnType(wiretype);
+		debugWrite("size: %d",MAX_NUMBER_SIZE);
+		debugEnd();
 		return MAX_NUMBER_SIZE;
 	}
 
@@ -7043,6 +7065,13 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 	if (!size || size>MAX_VARCHAR_SIZE) {
 		size=MAX_VARCHAR_SIZE;
 	}
+
+	debugStart("wire column size");
+	debugWrite("column: %d",column);
+	debugColumnType(wiretype);
+	debugWrite("size: %d",size);
+	debugEnd();
+
 	return size;
 }
 
@@ -7064,6 +7093,12 @@ void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 	putUb4(0);
 
 	putUb4(0);
+
+	debugStart("row header");
+	debugWrite("flags: 0x%02x",(uint32_t)flags);
+	debugWrite("column count: %d",colcount);
+	debugWrite("prefetch rows: %d",prefetchrows);
+	debugEnd();
 }
 
 void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
@@ -7115,6 +7150,13 @@ void sqlrprotocol_oracle::putReturnParameters() {
 	putUb4(0);
 	putUb4(0);
 	putUb4(0);
+
+	debugStart("return parameters");
+	debugWrite("count: %d",(uint32_t)AL8O4_COUNT);
+	for (uint16_t i=0; i<AL8O4_COUNT; i++) {
+		debugWrite("param %d: 0",i);
+	}
+	debugEnd();
 }
 
 void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
@@ -7137,12 +7179,19 @@ void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 	// else in the object: 11.2 ends at the message, and 12.2 puts
 	// 02 05 7b 01 01 in front of it for an ORA-01403 after one row, and
 	// 02 03 f9 00 for an ORA-01017.
+	debugStart("summary extension");
 	if (fieldversion<CCAP_FIELD_VERSION_12_1) {
+		debugWrite("field version below 12.1, omitted");
+		debugEnd();
 		return;
 	}
 
 	putUb4(oranum);
 	putUb4(rowcount);
+
+	debugWrite("error: %d",oranum);
+	debugWrite("row count: %d",rowcount);
+	debugEnd();
 }
 
 void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
@@ -7217,6 +7266,9 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 void sqlrprotocol_oracle::putNumberField(const char *field,
 						uint32_t fieldsize) {
 
+	debugStart("number field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
 	// oracle's number format: an exponent byte, then up to 20 base 100
 	// mantissa digits.  a positive number's exponent byte is 193+e and its
 	// digits are each digit+1; a negative number's is 62-e, its digits are
@@ -7272,8 +7324,10 @@ void sqlrprotocol_oracle::putNumberField(const char *field,
 	}
 
 	if (first==digitcount) {
+		debugWrite("zero");
 		write(&reqpacket,(byte_t)1);
 		write(&reqpacket,(byte_t)0x80);
+		debugEnd();
 		return;
 	}
 
@@ -7297,6 +7351,7 @@ void sqlrprotocol_oracle::putNumberField(const char *field,
 		debugWrite("number out of range: %.*s",(int)fieldsize,field);
 		write(&reqpacket,(byte_t)1);
 		write(&reqpacket,(byte_t)0x80);
+		debugEnd();
 		return;
 	}
 
@@ -7316,6 +7371,9 @@ void sqlrprotocol_oracle::putNumberField(const char *field,
 	if (negative && mantissacount<MAX_NUMBER_MANTISSA) {
 		out[outcount++]=0x66;
 	}
+
+	debugHexDump(out,outcount);
+	debugEnd();
 
 	putLenBytes((const char *)out,outcount);
 }
@@ -7385,6 +7443,7 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 	debugStart("execute response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
 
 	return sendPacket(true);
@@ -7492,6 +7551,7 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 	if (getDebug()) {
 		debugStart("fetch response");
 		debugWrite("data flags: 0x%04x",dataflags);
+		debugWrite("column count: %d",colcount);
 		debugWrite("rows: %d",rowsfetched);
 		debugWrite("end of rows: %s",(endofrows)?"true":"false");
 		debugEnd();
@@ -7523,6 +7583,7 @@ cursorid=hackcursorid;
 	if (getDebug()) {
 		debugStart("fetch request");
 		debugOptions(options,moreoptions);
+		debugWrite("cursor id: %d",cursorid);
 		debugEnd();
 	}
 
@@ -7599,12 +7660,23 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 			// send "iov" (whatever that is)...
 			if (sndiov) {
+				if (getDebug()) {
+					debugStart("fetch response header");
+					debugWrite("iov");
+					debugEnd();
+				}
 				putIov();
 			} else {
 				const byte_t	unknown[]={
 					0x00, 0x00,
 				};
 				reqpacket.append(unknown,sizeof(unknown));
+				if (getDebug()) {
+					debugStart("fetch response header");
+					debugWrite("no iov");
+					debugHexDump(unknown,sizeof(unknown));
+					debugEnd();
+				}
 			}
 
 			// always appears to be the same...
@@ -7619,6 +7691,13 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			};
 			reqpacket.append(unknown3,sizeof(unknown3));
 
+			if (getDebug()) {
+				debugStart("fetch response header");
+				debugHexDump(unknown2,sizeof(unknown2));
+				debugHexDump(unknown3,sizeof(unknown3));
+				debugEnd();
+			}
+
 			write(&reqpacket,(byte_t)colcount);
 
 			// always appears to be the same...
@@ -7627,12 +7706,20 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				0x01, 0x00, 0x00, 0x00
 			};
 			reqpacket.append(unknown4,sizeof(unknown4));
+
+			if (getDebug()) {
+				debugStart("fetch response header");
+				debugWrite("column count: %d",colcount);
+				debugHexDump(unknown4,sizeof(unknown4));
+				debugEnd();
+			}
 		}
 
 		// no idea...
 		write(&reqpacket,(byte_t)7);
 
 		debugStart("fetch response row");
+		debugWrite("row marker: 0x07");
 
 		putRow(cursor,colcount,exactfetch);
 
@@ -7717,9 +7804,24 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			reqpacket.append(unknown9,sizeof(unknown9));
 			reqpacket.append(unknown10,sizeof(unknown10));
 			reqpacket.append(unknown11,sizeof(unknown11));
-	
+
+			if (getDebug()) {
+				debugStart("fetch response footer");
+				debugWrite("exact fetch");
+				debugHexDump(unknown5,sizeof(unknown5));
+				debugHexDump(unknown6[colcount-1],
+						sizeof(unknown6[colcount-1]));
+				debugHexDump(unknown7,sizeof(unknown7));
+				debugHexDump(unknown8[colcount-1],
+						sizeof(unknown8[colcount-1]));
+				debugHexDump(unknown9,sizeof(unknown9));
+				debugHexDump(unknown10,sizeof(unknown10));
+				debugHexDump(unknown11,sizeof(unknown11));
+				debugEnd();
+			}
+
 		} else {
-	
+
 			const byte_t	unknown[]={
 				0x04, 0x01, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -7729,14 +7831,22 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00,
 				0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 			};
-	
+
 			reqpacket.append(unknown,sizeof(unknown));
+
+			if (getDebug()) {
+				debugStart("fetch response footer");
+				debugWrite("not exact fetch");
+				debugHexDump(unknown,sizeof(unknown));
+				debugEnd();
+			}
 		}
 
 	} else {
 
 		// if we hit the end of the result set then we need to send
 		// ORA-01403; no data found
+		debugWrite("no rows fetched");
 		putError("ORA-01403: no data found");
 	}
 
