@@ -5493,11 +5493,14 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 
 	uint16_t	cursorid=cont->getId(cursor);
 hackcursorid=cursorid;
-	
-	// FIXME: decode this...
+
+	// FIXME: decode the rest of this...
+	uint16_t	options=0;
+	readBE(rp,&options,&rp);
 
 	debugStart("open request");
 	debugWrite("cursor id: %d",cursorid);
+	debugOptions(options);
 	debugEnd();
 
 	return sendOpenResponse(cursor);
@@ -5517,9 +5520,15 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	write(&reqpacket,ttccode);
 	reqpacket.append(unknown,sizeof(unknown));
 
+	uint16_t	cursorid=cont->getId(cursor);
+
 	debugStart("open response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("unknown: %02x %02x %02x %02x %02x",
+			unknown[0],unknown[1],unknown[2],
+			unknown[3],unknown[4]);
 	debugEnd();
 
 	return sendPacket(true);
@@ -5666,6 +5675,9 @@ void sqlrprotocol_oracle::debugTtiFunction(byte_t ttifunction) {
 			break;
 		case TTI_LOGON_PRESENT_USER:
 			func="TTI_LOGON_PRESENT_USER";
+			break;
+		case TTI_LOGON_UNKNOWN:
+			func="TTI_LOGON_UNKNOWN";
 			break;
 		case TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD:
 			func="TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD";
@@ -5858,6 +5870,9 @@ void sqlrprotocol_oracle::debugColumnType(uint16_t columntype) {
 			break;
 		case ORACLE_TYPE_PLSQL_INDEX_TABLE:
 			debugWrite("ORACLE_TYPE_PLSQL_INDEX_TABLE");
+			break;
+		case ORACLE_TYPE_FIXED_CHAR:
+			debugWrite("ORACLE_TYPE_FIXED_CHAR");
 			break;
 		default:
 			debugWrite("unknown ORACLE_TYPE");
