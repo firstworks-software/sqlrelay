@@ -821,9 +821,11 @@ class tdsrow {
 // sp_cursor arrives as a request of its own, by which time
 // sqlrservercontroller's field pointers have been re-aimed at whichever
 // cursor fetched last
+class sqlrprotocol_tds;
+
 class tdsrows {
 	public:
-				tdsrows();
+				tdsrows(sqlrprotocol_tds *tds);
 
 		void		reset(uint32_t colcount);
 		tdsrow		*newRow();
@@ -836,70 +838,16 @@ class tdsrows {
 
 		uint32_t	getColCount();
 	private:
+		sqlrprotocol_tds	*tds;
+
 		memorypool		pool;
 		linkedlist<tdsrow *>	rows;
 		uint32_t		colcount;
 };
 
-tdsrows::tdsrows() {
-	colcount=0;
-}
+// tdsrows' methods are defined below, after sqlrprotocol_tds is fully
+// declared - they call debug methods on it through the tds pointer above
 
-void tdsrows::reset(uint32_t cc) {
-	rows.clear();
-	pool.clear();
-	colcount=cc;
-}
-
-tdsrow *tdsrows::newRow() {
-
-	if (!colcount || rows.getCount()>=CURSOR_MAX_POSITION_ROWS) {
-		return NULL;
-	}
-
-	tdsrow	*row=(tdsrow *)pool.allocate(sizeof(tdsrow));
-	row->values=(char **)pool.allocate(sizeof(char *)*colcount);
-	row->sizes=(uint64_t *)pool.allocate(sizeof(uint64_t)*colcount);
-	for (uint32_t i=0; i<colcount; i++) {
-		row->values[i]=NULL;
-		row->sizes[i]=0;
-	}
-	rows.append(row);
-	return row;
-}
-
-void tdsrows::setField(tdsrow *row, uint32_t col,
-				const char *value, uint64_t size, bool null) {
-
-	if (!row || col>=colcount || null || !value) {
-		return;
-	}
-
-	char	*copy=(char *)pool.allocate(size+1);
-	bytestring::copy(copy,value,size);
-	copy[size]='\0';
-	row->values[col]=copy;
-	row->sizes[col]=size;
-}
-
-tdsrow *tdsrows::getRow(uint64_t rownum) {
-	// rownum is 1-based, the way sp_cursor numbers rows
-	if (!rownum || rownum>rows.getCount()) {
-		return NULL;
-	}
-	listnode<tdsrow *>	*node=rows.getFirst();
-	for (uint64_t i=1; node && i<rownum; i++) {
-		node=node->getNext();
-	}
-	return (node)?node->getValue():NULL;
-}
-
-uint32_t tdsrows::getColCount() {
-	return colcount;
-}
-
-
-class sqlrprotocol_tds;
 
 // a filedescriptor that shares another one's descriptor, without ever
 // closing it out from under whoever really owns it.  the no-op
@@ -1409,6 +1357,22 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		void	debugSystemError();
 
+		void	debugPacketType(const char *name, byte_t type);
+		void	debugPacketStatus(byte_t status);
+		void	debugTokenType(byte_t token);
+		void	debugPreLoginOption(byte_t opt);
+		void	debugEncryptionOption(const char *name, byte_t enc);
+		void	debugLogin7OptionFlags(byte_t optionflags1,
+						byte_t optionflags2,
+						byte_t typeflags,
+						byte_t optionflags3);
+		void	debugEnvChangeType(byte_t type);
+		void	debugDoneStatus(uint16_t status);
+		void	debugAllHeadersType(uint16_t type);
+		void	debugColumnType(byte_t type);
+		void	debugCollation(uint32_t lcid, byte_t sortid);
+		void	debugProcId(uint16_t procid);
+
 		// the same socket until tls is negotiated, after which
 		// clientsock points at tlsstream
 		filedescriptor	*rawclientsock;
@@ -1621,6 +1585,91 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] bulkscales;
 }
 
+tdsrows::tdsrows(sqlrprotocol_tds *tds) {
+	this->tds=tds;
+	colcount=0;
+}
+
+void tdsrows::reset(uint32_t cc) {
+	tds->debugStart("position rows reset");
+	tds->debugWrite("colcount: %d",cc);
+	tds->debugEnd();
+	rows.clear();
+	pool.clear();
+	colcount=cc;
+}
+
+tdsrow *tdsrows::newRow() {
+
+	tds->debugStart("position rows new row");
+
+	if (!colcount || rows.getCount()>=CURSOR_MAX_POSITION_ROWS) {
+		tds->debugWrite("failed");
+		tds->debugEnd();
+		return NULL;
+	}
+
+	tdsrow	*row=(tdsrow *)pool.allocate(sizeof(tdsrow));
+	row->values=(char **)pool.allocate(sizeof(char *)*colcount);
+	row->sizes=(uint64_t *)pool.allocate(sizeof(uint64_t)*colcount);
+	for (uint32_t i=0; i<colcount; i++) {
+		row->values[i]=NULL;
+		row->sizes[i]=0;
+	}
+	rows.append(row);
+
+	tds->debugWrite("row: %lld",(long long)rows.getCount());
+	tds->debugEnd();
+
+	return row;
+}
+
+void tdsrows::setField(tdsrow *row, uint32_t col,
+				const char *value, uint64_t size, bool null) {
+
+	if (tds->getDebug()) {
+		tds->debugStart("position rows set field");
+		tds->debugWrite("col: %d",col);
+		tds->debugWrite("size: %lld",(long long)size);
+		tds->debugWrite("null: %d",null);
+		tds->debugEnd();
+	}
+
+	if (!row || col>=colcount || null || !value) {
+		return;
+	}
+
+	char	*copy=(char *)pool.allocate(size+1);
+	bytestring::copy(copy,value,size);
+	copy[size]='\0';
+	row->values[col]=copy;
+	row->sizes[col]=size;
+}
+
+tdsrow *tdsrows::getRow(uint64_t rownum) {
+	tds->debugStart("position rows get row");
+	tds->debugWrite("rownum: %lld",(long long)rownum);
+
+	// rownum is 1-based, the way sp_cursor numbers rows
+	if (!rownum || rownum>rows.getCount()) {
+		tds->debugWrite("failed");
+		tds->debugEnd();
+		return NULL;
+	}
+	listnode<tdsrow *>	*node=rows.getFirst();
+	for (uint64_t i=1; node && i<rownum; i++) {
+		node=node->getNext();
+	}
+
+	tds->debugEnd();
+
+	return (node)?node->getValue():NULL;
+}
+
+uint32_t tdsrows::getColCount() {
+	return colcount;
+}
+
 tdstlsframer::tdstlsframer(sqlrprotocol_tds *tds) : tdssharedfd() {
 	this->tds=tds;
 	framing=false;
@@ -1635,6 +1684,10 @@ tdstlsframer::~tdstlsframer() {
 }
 
 void tdstlsframer::setFraming(bool framing) {
+
+	tds->debugStart("tls set framing");
+	tds->debugWrite("framing: %d",framing);
+	tds->debugEnd();
 
 	// only a fresh handshake discards what's staged - the client's last
 	// handshake packet can carry bytes past the end of the handshake,
@@ -1652,6 +1705,8 @@ ssize_t tdstlsframer::lowLevelRead(void *buf, size_t count) {
 	// pass through, once the handshake is out of the way
 	if (!framing) {
 
+		ssize_t	result;
+
 		// anything the handshake left staged comes first
 		if (readposition<readbuffersize) {
 			uint32_t	available=readbuffersize-readposition;
@@ -1660,10 +1715,19 @@ ssize_t tdstlsframer::lowLevelRead(void *buf, size_t count) {
 			}
 			bytestring::copy(buf,readbuffer+readposition,count);
 			readposition+=(uint32_t)count;
-			return (ssize_t)count;
+			result=(ssize_t)count;
+		} else {
+			result=tds->rawclientsock->read((byte_t *)buf,count);
 		}
 
-		return tds->rawclientsock->read((byte_t *)buf,count);
+		if (tds->getDebug()) {
+			tds->debugStart("tls read");
+			tds->debugWrite("count: %lld",(long long)count);
+			tds->debugWrite("result: %lld",(long long)result);
+			tds->debugEnd();
+		}
+
+		return result;
 	}
 
 	// get another packet, if the last one has been used up
@@ -1718,8 +1782,8 @@ bool tdstlsframer::readPacket() {
 		}
 
 		tds->debugStart("tls recv");
-		tds->debugWrite("packet type: 0x%02x",header[0]);
-		tds->debugWrite("packet status: 0x%02x",header[1]);
+		tds->debugPacketType("packet type",header[0]);
+		tds->debugPacketStatus(header[1]);
 		tds->debugWrite("packet size: %d",packetsize);
 		tds->debugHexDump(readbuffer,datasize);
 		tds->debugEnd();
@@ -1775,8 +1839,8 @@ ssize_t tdstlsframer::lowLevelWrite(const void *buf, size_t count) {
 		header[7]=0;
 
 		tds->debugStart("tls send");
-		tds->debugWrite("packet type: 0x%02x",header[0]);
-		tds->debugWrite("packet status: 0x%02x",header[1]);
+		tds->debugPacketType("packet type",header[0]);
+		tds->debugPacketStatus(header[1]);
 		tds->debugWrite("packet size: %d",packetsize);
 		tds->debugHexDump(data,datasize);
 		tds->debugEnd();
@@ -1807,6 +1871,9 @@ ssize_t tdstlsframer::lowLevelWrite(const void *buf, size_t count) {
 }
 
 void sqlrprotocol_tds::init() {
+
+	debugStart("init");
+	debugEnd();
 
 	packetid=0;
 
@@ -1856,6 +1923,10 @@ void sqlrprotocol_tds::init() {
 }
 
 void sqlrprotocol_tds::free() {
+
+	debugStart("free");
+	debugEnd();
+
 	reqpacketpool.clear();
 	reqpacket.clear();
 	resppacket.clear();
@@ -1877,6 +1948,8 @@ void sqlrprotocol_tds::free() {
 }
 
 void sqlrprotocol_tds::reInit() {
+	debugStart("reinit");
+	debugEnd();
 	free();
 	init();
 }
@@ -1886,6 +1959,11 @@ byte_t *sqlrprotocol_tds::convertCharset(const byte_t *inbuf,
 						const char *inenc,
 						const char *outenc,
 						size_t *outsize) {
+
+	debugStart("convert charset");
+	debugWrite("inenc: %s",inenc);
+	debugWrite("outenc: %s",outenc);
+	debugWrite("insize: %lld",(long long)insize);
 
 	// size the output buffer - 4 bytes per input byte covers every
 	// conversion done here, plus room for a 1 or 2 byte null terminator
@@ -1904,6 +1982,7 @@ byte_t *sqlrprotocol_tds::convertCharset(const byte_t *inbuf,
 	if (!ic.convert()) {
 		debugWrite("charset conversion from %s to %s failed",
 							inenc,outenc);
+		debugEnd();
 		delete[] outbuf;
 		return NULL;
 	}
@@ -1914,6 +1993,9 @@ byte_t *sqlrprotocol_tds::convertCharset(const byte_t *inbuf,
 	outbuf[*outsize]='\0';
 	outbuf[(*outsize)+1]='\0';
 
+	debugWrite("outsize: %lld",(long long)(*outsize));
+	debugEnd();
+
 	return outbuf;
 }
 
@@ -1921,12 +2003,17 @@ char *sqlrprotocol_tds::ucs2ToUtf8(const ucs2_t *str,
 					size_t chars,
 					size_t *size) {
 
+	debugStart("ucs2 to utf8");
+	debugWrite("chars: %lld",(long long)chars);
+
 	char	*out=(char *)convertCharset((const byte_t *)str,
 						chars*sizeof(ucs2_t),
 						TDS_UNICODE_CHARSET,
 						TDS_BACKEND_CHARSET,
 						size);
 	if (out) {
+		debugWrite("size: %lld",(long long)(*size));
+		debugEnd();
 		return out;
 	}
 
@@ -1934,12 +2021,20 @@ char *sqlrprotocol_tds::ucs2ToUtf8(const ucs2_t *str,
 	// ascii that most statements are made of
 	out=charstring::duplicateUcs2(str,chars);
 	*size=charstring::getLength(out);
+
+	debugWrite("fell back to narrowing copy");
+	debugWrite("size: %lld",(long long)(*size));
+	debugEnd();
+
 	return out;
 }
 
 ucs2_t *sqlrprotocol_tds::utf8ToUcs2(const char *str,
 					size_t size,
 					size_t *chars) {
+
+	debugStart("utf8 to ucs2");
+	debugWrite("size: %lld",(long long)size);
 
 	size_t	outsize;
 	ucs2_t	*out=(ucs2_t *)convertCharset((const byte_t *)str,size,
@@ -1948,12 +2043,19 @@ ucs2_t *sqlrprotocol_tds::utf8ToUcs2(const char *str,
 						&outsize);
 	if (out) {
 		*chars=outsize/sizeof(ucs2_t);
+		debugWrite("chars: %lld",(long long)(*chars));
+		debugEnd();
 		return out;
 	}
 
 	// fall back to a widening copy
 	out=ucs2charstring::duplicate(str,size);
 	*chars=size;
+
+	debugWrite("fell back to widening copy");
+	debugWrite("chars: %lld",(long long)(*chars));
+	debugEnd();
+
 	return out;
 }
 
@@ -1961,17 +2063,27 @@ char *sqlrprotocol_tds::utf8ToCp1252(const char *str,
 					size_t size,
 					size_t *outsize) {
 
+	debugStart("utf8 to cp1252");
+	debugWrite("size: %lld",(long long)size);
+
 	char	*out=(char *)convertCharset((const byte_t *)str,size,
 						TDS_BACKEND_CHARSET,
 						TDS_NONUNICODE_CHARSET,
 						outsize);
 	if (out) {
+		debugWrite("outsize: %lld",(long long)(*outsize));
+		debugEnd();
 		return out;
 	}
 
 	// fall back to passing the bytes through
 	out=charstring::duplicate(str,size);
 	*outsize=size;
+
+	debugWrite("fell back to passing bytes through");
+	debugWrite("outsize: %lld",(long long)(*outsize));
+	debugEnd();
+
 	return out;
 }
 
@@ -2041,7 +2153,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			*packettype!=TDS7_LOGIN &&
 			*packettype!=SSPI &&
 			*packettype!=PRE_LOGIN) {
-			debugWrite("invalid packet type: 0x%02x",*packettype);
+			debugPacketType("invalid packet type",*packettype);
 			debugSystemError();
 			return false;
 		}
@@ -2090,8 +2202,8 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		reqpacket.append(packet,packetsize);
 
 		debugStart("recv");
-		debugWrite("packet type: 0x%02x",*packettype);
-		debugWrite("packet status: 0x%02x",packetstatus);
+		debugPacketType("packet type",*packettype);
+		debugPacketStatus(packetstatus);
 		debugWrite("packet size: %d",
 				packetsize+PACKET_HEADER_SIZE);
 		debugWrite("spid: %d",spid);
@@ -2136,8 +2248,8 @@ bool sqlrprotocol_tds::sendPacket() {
 		byte_t		packetwindow=0;
 
 		debugStart("send");
-		debugWrite("packet type: 0x%02x",packettype);
-		debugWrite("packet status: 0x%02x",packetstatus);
+		debugPacketType("packet type",packettype);
+		debugPacketStatus(packetstatus);
 		debugWrite("packet size: %d",packetsize);
 		debugWrite("spid: %d",spid);
 		debugWrite("packet id: %d",packetid);
@@ -2218,17 +2330,26 @@ bool sqlrprotocol_tds::sendPacket() {
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
 
+	// note: the decoded password is deliberately never debugWrite()'n -
+	// only its length and whether decoding succeeded are logged
+	debugStart("read password");
+	debugWrite("charcount: %lld",(long long)charcount);
+
 	// the callers cap this too, but they're far enough away that it has
 	// to stand on its own.  size and i below both have to be size_t's -
 	// a 16-bit size truncates and over-reads the copy, and a 16-bit i
 	// with a 64-bit size never terminates
 	if (charcount>MAX_LOGIN_CHARS) {
+		debugWrite("charcount exceeds max login chars");
+		debugEnd();
 		return NULL;
 	}
 
 	size_t	size=charcount*sizeof(uint16_t);
 	byte_t	*temp=(byte_t *)bytestring::duplicate(rp,size);
 	if (!temp) {
+		debugWrite("duplicate failed");
+		debugEnd();
 		return NULL;
 	}
 	byte_t	*ch=temp;
@@ -2240,6 +2361,10 @@ wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 	wchar_t	*password=wcharstring::duplicateUcs2((const ucs2_t *)temp,
 								charcount);
 	delete[] temp;
+
+	debugWrite("password received and decoded");
+	debugEnd();
+
 	return password;
 }
 
@@ -2308,121 +2433,172 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 }
 
 uint32_t sqlrprotocol_tds::tdsVersionHexToDec(uint32_t tdsversion) {
+
+	debugStart("tds version hex to dec");
+	debugWrite("tdsversion: 0x%08x",tdsversion);
+
+	uint32_t	result;
 	switch (tdsversion) {
 		case 0x00000042:
 		case 0x42000000:
 			// Sybase < 10
 			// SQL Server 6.x
-			return 420;
+			result=420;
+			break;
 		case 0x00000050:
 		case 0x05000000:
 			// Sybase 10+
 			// Sybase SQL Anywhere (all versions)
-			return 500;
+			result=500;
+			break;
 		case 0x00000070:
 		case 0x07000000:
 			// SQL Server 7.0
-			return 700;
+			result=700;
+			break;
 		case 0x00000071:
 		case 0x07010000:
 			// SQL Server 2000
-			return 710;
+			result=710;
+			break;
 		case 0x01000071:
 		case 0x71000001:
 			// SQL Server 2000 SP1
-			return 711;
+			result=711;
+			break;
 		case 0x02000972:
 		case 0x72090002:
 			// SQL Server 2005
-			return 720;
+			result=720;
+			break;
 		case 0x03000A73:
 		case 0x730A0003:
 			// SQL Server 2008
-			return 730;
+			result=730;
+			break;
 		case 0x03000B73:
 		case 0x730B0003:
 			// SQL Server 2008 R2
-			return 731;
+			result=731;
+			break;
 		case 0x04000074:
 		case 0x74000004:
 			// SQL Server 2012, 2014, 2016
-			return 740;
+			result=740;
+			break;
 		default:
-			return 700;
+			result=700;
+			break;
 	}
+
+	debugWrite("result: %d",result);
+	debugEnd();
+
+	return result;
 }
 
 uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 							bool toclient) {
+
+	debugStart("tds version dec to hex");
+	debugWrite("tdsversion: %d",tdsversion);
+	debugWrite("toclient: %d",toclient);
+
+	uint32_t	result;
 	if (toclient) {
 		switch (tdsversion) {
 			case 420:
 				// Sybase < 10
 				// SQL Server 6.x
-				return 0x42000000;
+				result=0x42000000;
+				break;
 			case 500:
 				// Sybase 10+
 				// Sybase SQL Anywhere (all versions)
-				return 0x05000000;
+				result=0x05000000;
+				break;
 			case 700:
 				// SQL Server 7.0
-				return 0x07000000;
+				result=0x07000000;
+				break;
 			case 710:
 				// SQL Server 2000
-				return 0x07010000;
+				result=0x07010000;
+				break;
 			case 711:
 				// SQL Server 2000 SP1
-				return 0x71000001;
+				result=0x71000001;
+				break;
 			case 720:
 				// SQL Server 2005
-				return 0x72090002;
+				result=0x72090002;
+				break;
 			case 730:
 				// SQL Server 2008
-				return 0x730A0003;
+				result=0x730A0003;
+				break;
 			case 731:
 				// SQL Server 2008 R2
-				return 0x730B0003;
+				result=0x730B0003;
+				break;
 			case 740:
 				// SQL Server 2012, 2014, 2016
-				return 0x74000004;
+				result=0x74000004;
+				break;
 			default:
-				return 0x07000000;
+				result=0x07000000;
+				break;
 		}
 	} else {
 		switch (tdsversion) {
 			case 420:
 				// Sybase < 10
 				// SQL Server 6.x
-				return 0x00000042;
+				result=0x00000042;
+				break;
 			case 500:
 				// Sybase 10+
 				// Sybase SQL Anywhere (all versions)
-				return 0x00000050;
+				result=0x00000050;
+				break;
 			case 700:
 				// SQL Server 7.0
-				return 0x00000070;
+				result=0x00000070;
+				break;
 			case 710:
 				// SQL Server 2000
-				return 0x00000071;
+				result=0x00000071;
+				break;
 			case 711:
 				// SQL Server 2000 SP1
-				return 0x01000071;
+				result=0x01000071;
+				break;
 			case 720:
 				// SQL Server 2005
-				return 0x02000972;
+				result=0x02000972;
+				break;
 			case 730:
 				// SQL Server 2008
-				return 0x03000A73;
+				result=0x03000A73;
+				break;
 			case 731:
 				// SQL Server 2008 R2
-				return 0x03000B73;
+				result=0x03000B73;
+				break;
 			case 740:
 				// SQL Server 2012, 2014, 2016
-				return 0x04000074;
+				result=0x04000074;
+				break;
 			default:
-				return 0x00000070;
+				result=0x00000070;
+				break;
 		}
 	}
+
+	debugWrite("result: 0x%08x",result);
+	debugEnd();
+
+	return result;
 }
 
 void sqlrprotocol_tds::negotiateTdsVersion() {
@@ -2446,6 +2622,9 @@ void sqlrprotocol_tds::negotiateTdsVersion() {
 
 clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 							filedescriptor *cs) {
+
+	debugStart("client session");
+	debugEnd();
 
 	rawclientsock=cs;
 	clientsock=cs;
@@ -2569,6 +2748,10 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 		cont->endSession();
 	}
 
+	debugStart("client session");
+	debugWrite("status: %d",(int)status);
+	debugEnd();
+
 	// return the status
 	return status;
 }
@@ -2616,7 +2799,7 @@ bool sqlrprotocol_tds::preLogin() {
 		}
 		read(rp,&plopttok,&rp);
 		rpsize--;
-		debugWrite("token: 0x%02x",plopttok);
+		debugPreLoginOption(plopttok);
 		if (plopttok==PL_TERMINATOR) {
 			break;
 		}
@@ -2674,7 +2857,7 @@ bool sqlrprotocol_tds::preLogin() {
 				read(startrp+ploptoff,&encryption,&dummy);
 				sawencryption=true;
 				debugWrite("pl_encryption");
-				debugWrite("encryption:	0x%02x",encryption);
+				debugEncryptionOption("encryption",encryption);
 				break;
 
 			case PL_INSTOPT:
@@ -2824,7 +3007,7 @@ bool sqlrprotocol_tds::preLogin() {
 			(sawencryption)?encryption:(byte_t)ENCRYPT_NOT_SUP);
 	write(&packetdata,encryption);
 	debugWrite("pl_encryption");
-	debugWrite("encryption: 0x%02x",encryption);
+	debugEncryptionOption("encryption",encryption);
 
 	// instopt
 	write(&resppacket,(byte_t)PL_INSTOPT);
@@ -2887,30 +3070,44 @@ bool sqlrprotocol_tds::preLogin() {
 
 byte_t sqlrprotocol_tds::negotiateEncryption(byte_t clientencryption) {
 
+	debugStart("negotiate encryption");
+	debugEncryptionOption("clientencryption",clientencryption);
+
 	tlsmode=TLS_MODE_NONE;
 	tlsrefused=false;
 
 	if (!useTls()) {
+		debugWrite("tls not in use");
+		debugEnd();
 		return ENCRYPT_NOT_SUP;
 	}
 
+	byte_t	result;
 	switch (clientencryption) {
 		case ENCRYPT_OFF:
 			// encrypt the login packet only
 			tlsmode=TLS_MODE_LOGIN;
-			return ENCRYPT_OFF;
+			result=ENCRYPT_OFF;
+			break;
 		case ENCRYPT_ON:
 		case ENCRYPT_REQ:
 			// encrypt the whole session
 			tlsmode=TLS_MODE_SESSION;
-			return ENCRYPT_ON;
+			result=ENCRYPT_ON;
+			break;
 		default:
 			// tls="yes" has no "optional" mode, and a client
 			// that says it doesn't support encryption can't be
 			// pushed into a handshake, so refuse the login
 			tlsrefused=true;
-			return ENCRYPT_NOT_SUP;
+			result=ENCRYPT_NOT_SUP;
+			break;
 	}
+
+	debugEncryptionOption("result",result);
+	debugEnd();
+
+	return result;
 }
 
 bool sqlrprotocol_tds::startTls() {
@@ -2976,7 +3173,16 @@ bool sqlrprotocol_tds::fitsInPacket(uint16_t offset,
 	// subtraction rather than offset+size<=packetsize, which can wrap -
 	// the sspi block's size is 32 bits, and on a 32-bit build that sum
 	// overflows
-	return (offset<=packetsize && size<=packetsize-offset);
+	bool	result=(offset<=packetsize && size<=packetsize-offset);
+
+	debugStart("fits in packet");
+	debugWrite("offset: %hd",offset);
+	debugWrite("size: %lld",(long long)size);
+	debugWrite("packetsize: %lld",(long long)packetsize);
+	debugWrite("result: %d",result);
+	debugEnd();
+
+	return result;
 }
 
 bool sqlrprotocol_tds::loginFieldFits(const char *name,
@@ -3116,29 +3322,18 @@ bool sqlrprotocol_tds::tds7Login() {
 	uint16_t	cchchangepassword=0;
 	uint32_t	cbsspilong=0;
 
-	char		fbyteorder=0;
-	char		fcharset=0;
-	uint16_t	ffloattype=0;
-	char		fdumpload=0;
+	// only the flags this module acts on are pulled out here -
+	// debugLogin7OptionFlags() decodes the rest of the bitmaps
 	char		fusedbwarn=0;
 	char		fusedbfatal=0;
 	char		fsetlangwarn=0;
 
 	char		fsetlangfatal=0;
 	char		fodbc=0;
-	bool		ftranboundary=false;
-	bool		fcachecontent=false;
-	uint32_t	fusertype=0;
-	char		fintsecurity=0;
 
-	uint32_t	fsqltype=SQL_DFLT;
 	char		foledb=0;
-	bool		freadonlyintent=false;
 
 	bool		fchangepassword=false;
-	bool		fuserinstance=false;
-	bool		fsendyukonbinaryxml=false;
-	bool		funknowncollationhandling=false;
 	bool		fextension=false;
 
 	wchar_t		*hostname=NULL;
@@ -3168,29 +3363,16 @@ bool sqlrprotocol_tds::tds7Login() {
 	read(rp,&optionflags3,&rp);
 
 	// set option/type flags...
-	fbyteorder=(optionflags1&(0x01));
-	fcharset=(optionflags1&(0x01<<1))>>1;
-	ffloattype=(optionflags1&(0x03<<2))>>2;
-	fdumpload=(optionflags1&(0x01<<4))>>4;
 	fusedbwarn=(optionflags1&(0x01<<5))>>5;
 	fusedbfatal=(optionflags1&(0x01<<6))>>6;
 	fsetlangwarn=(optionflags1&(0x01<<7))>>7;
 
 	fsetlangfatal=(optionflags2&(0x01));
 	fodbc=(optionflags2&(0x01<<1))>>1;
-	ftranboundary=(optionflags2&(0x01<<2))>>2;
-	fcachecontent=(optionflags2&(0x01<<3))>>3;
-	fusertype=(optionflags2&(0x07<<4))>>4;
-	fintsecurity=(optionflags2&(0x01<<7))>>7;
 
-	fsqltype=(typeflags&(0x0F));
 	foledb=(typeflags&(0x01<<4))>>4;
-	freadonlyintent=(typeflags&(0x01<<5))>>5;
 
 	fchangepassword=(optionflags3&(0x01));
-	fsendyukonbinaryxml=(optionflags3&(0x01<<1))>>1;
-	fuserinstance=(optionflags3&(0x01<<2))>>2;
-	funknowncollationhandling=(optionflags3&(0x01<<3))>>3;
 	fextension=(optionflags3&(0x01<<4))>>4;
 
 	readLE(rp,&clienttimzone,&rp);
@@ -3367,42 +3549,10 @@ bool sqlrprotocol_tds::tds7Login() {
 					clientprogver,clientprogver);
 		debugWrite("clientpid: %d",clientpid);
 		debugWrite("connectionid: %d",connectionid);
-		stringbuffer	b;
-		b.printBits(optionflags1);
-		debugWrite("optionflags1: %s",b.getString());
-		debugWrite("fbyteorder: %d",fbyteorder);
-		debugWrite("fcharset: %d",fcharset);
-		debugWrite("ffloattype: %d",ffloattype);
-		debugWrite("fdumpload: %d",fdumpload);
-		debugWrite("fusedbwarn: %d",fusedbwarn);
-		debugWrite("fusedbfatal: %d",fusedbfatal);
-		debugWrite("fsetlangwarn: %d",fsetlangwarn);
-		b.clear();
-		b.printBits(optionflags2);
-		debugWrite("optionflags2: %s",b.getString());
-		debugWrite("fsetlangfatal: %d",fsetlangfatal);
-		debugWrite("fodbc: %d",fodbc);
-		debugWrite("ftranboundary: %d",ftranboundary);
-		debugWrite("fcachecontent: %d",fcachecontent);
-		debugWrite("fusertype: %d",fusertype);
-		debugWrite("fintsecurity: %d",fintsecurity);
-		b.clear();
-		b.printBits(typeflags);
-		debugWrite("typeflags: %s",b.getString());
-		debugWrite("fsqltype: %d",fsqltype);
-		debugWrite("foledb: %d",foledb);
-		debugWrite("freadonlyintent: %d",freadonlyintent);
-		b.clear();
-		b.printBits(optionflags3);
-		debugWrite("optionflags3: %s",b.getString());
-		debugWrite("fchangepassword: %d",fchangepassword);
-		debugWrite("fuserinstance: %d",fuserinstance);
-		debugWrite("fsendyukonbinaryxml: %d",fsendyukonbinaryxml);
-		debugWrite("funknowncollationhandling: %d",
-					funknowncollationhandling);
-		debugWrite("fextension: %d",fextension);
+		debugLogin7OptionFlags(optionflags1,optionflags2,
+						typeflags,optionflags3);
 		debugWrite("clienttimzone: %d",clienttimzone);
-		b.clear();
+		stringbuffer	b;
 		b.printBits(clientlcid);
 		debugWrite("clientlcid: %s",b.getString());
 		debugWrite("hostname: (%hd,%hd) %S",
@@ -3618,7 +3768,7 @@ void sqlrprotocol_tds::loginAck() {
 					sizeof(byte_t);
 	
 	debugStart("login ack");
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
 	debugWrite("interface: %d",iface);
 	debugWrite("tdsversion: 0x%08x (%d)",tdsversion,negotiatedtdsversion);
@@ -3646,6 +3796,10 @@ void sqlrprotocol_tds::authError(const wchar_t *username,
 					size_t usernamelen) {
 
 	char	*username8=charstring::duplicate(username,usernamelen);
+
+	debugStart("auth error");
+	debugWrite("username: %s",username8);
+	debugEnd();
 
 	stringbuffer	err;
 	err.append("Login failed for user '");
@@ -3679,6 +3833,10 @@ void sqlrprotocol_tds::changeDatabaseInfo(const wchar_t *database,
 
 	char	*database8=charstring::duplicate(database,databaselen);
 
+	debugStart("change db info");
+	debugWrite("db: %s",database8);
+	debugEnd();
+
 	stringbuffer	inf;
 	inf.append("Changed database context to '");
 	inf.append(database8)->append("'.");
@@ -3693,6 +3851,11 @@ void sqlrprotocol_tds::changeDatabaseError(const wchar_t *database,
 						bool warning) {
 
 	char	*database8=charstring::duplicate(database,databaselen);
+
+	debugStart("change db error");
+	debugWrite("db: %s",database8);
+	debugWrite("warning: %d",warning);
+	debugEnd();
 
 	// FIXME: verify this message for warning
 	stringbuffer	err;
@@ -3757,9 +3920,9 @@ void sqlrprotocol_tds::envChangeSqlCollation(uint32_t lcid,
 
 	if (getDebug()) {
 		debugStart("env change");
-		debugWrite("token: 0x%02x",token);
+		debugTokenType(token);
 		debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
-		debugWrite("type: %d",type);
+		debugEnvChangeType(type);
 		debugWrite("newvaluesize: %lld",
 				(long long)(sizeof(uint32_t)+sizeof(byte_t)));
 		stringbuffer	b;
@@ -3806,6 +3969,10 @@ void sqlrprotocol_tds::changeLanguageInfo(const wchar_t *language,
 
 	char	*language8=charstring::duplicate(language,languagelen);
 
+	debugStart("change lang info");
+	debugWrite("lang: %s",language8);
+	debugEnd();
+
 	stringbuffer	inf;
 	inf.append("Changed language setting to ");
 	inf.append(language8)->append(".");
@@ -3820,6 +3987,11 @@ void sqlrprotocol_tds::changeLanguageError(const wchar_t *language,
 						bool warning) {
 
 	char	*language8=charstring::duplicate(language,languagelen);
+
+	debugStart("change lang error");
+	debugWrite("lang: %s",language8);
+	debugWrite("warning: %d",warning);
+	debugEnd();
 
 	// FIXME: verify this message for error and warning
 	stringbuffer	err;
@@ -3855,6 +4027,11 @@ void sqlrprotocol_tds::negotiatePacketSize(uint32_t packetsize) {
 }
 
 void sqlrprotocol_tds::envChangePacketSize() {
+
+	debugStart("env change packet size");
+	debugWrite("negotiatedpacketsize: %d",negotiatedpacketsize);
+	debugWrite("oldpacketsize: %d",oldpacketsize);
+	debugEnd();
 
 	char		*npsize=charstring::parseNumber(negotiatedpacketsize);
 	uint32_t	npsizelength=charstring::getLength(npsize);
@@ -4110,6 +4287,9 @@ uint16_t sqlrprotocol_tds::batchExecResultSets(const char *sql,
 						uint16_t *rsindex,
 						uint16_t maxcount) {
 
+	debugStart("batch exec result sets");
+	debugWrite("sql: %s",sql);
+
 	uint16_t	count=0;
 	uint16_t	rscount=0;
 	uint32_t	depth=0;
@@ -4243,6 +4423,12 @@ uint16_t sqlrprotocol_tds::batchExecResultSets(const char *sql,
 		}
 	}
 
+	for (uint16_t i=0; i<count; i++) {
+		debugWrite("exec result set index: %d",rsindex[i]);
+	}
+	debugWrite("count: %d",count);
+	debugEnd();
+
 	return count;
 }
 
@@ -4251,11 +4437,14 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 					const byte_t **rpout,
 					size_t *rpsizeout) {
 
+	debugStart("all headers");
+
 	// skip the headers entirely if the packet is too short to hold
 	// even the size of them
 	uint32_t	allheaderssize;
 	if (rpsize<sizeof(allheaderssize)) {
 		debugWrite("truncated all-headers size");
+		debugEnd();
 		*rpout=rp;
 		if (rpsizeout) {
 			*rpsizeout=rpsize;
@@ -4297,7 +4486,7 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 		readLE(rp,&headertype,&rp);
 
 		debugWrite("header size: %d",headersize);
-		debugWrite("header type: 0x%04x",headertype);
+		debugAllHeadersType(headertype);
 
 		// bail on a bogus header size, otherwise we'd loop forever
 		if (headersize<sizeof(headersize)+sizeof(headertype) ||
@@ -4418,6 +4607,8 @@ void sqlrprotocol_tds::allHeaders(const byte_t *rp,
 	if (rpsizeout) {
 		*rpsizeout=rpsize;
 	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
@@ -4433,7 +4624,7 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 	write(&resppacket,token);
 
 	debugStart("col meta data");
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 
 	// count doubles as the "no metadata" signal - 0xFFFF alone, with
 	// nothing else in the token, rather than the real count followed by
@@ -4457,6 +4648,9 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 
 void sqlrprotocol_tds::cekTable() {
 
+	debugStart("cek table");
+	debugEnd();
+
 	if (negotiatedtdsversion<730) {
 		return;
 	}
@@ -4479,9 +4673,13 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 
 	// FIXME: just use multiple type maps instead of the switch/ifs...
 
+	debugStart("map type");
+	debugWrite("type: %hd",type);
+
 	// bail on a type that the map doesn't cover
 	if (type>=sizeof(tdstypemap)/sizeof(tdstypemap[0])) {
 		debugWrite("invalid column type: %hd",type);
+		debugEnd();
 		return TDS_TYPE_NULL;
 	}
 
@@ -4517,6 +4715,10 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 				break;
 		}
 	}
+
+	debugColumnType(tdstype);
+	debugEnd();
+
 	return tdstype;
 }
 
@@ -4539,6 +4741,9 @@ void sqlrprotocol_tds::colData(sqlrservercursor *cursor, uint16_t col) {
 
 void sqlrprotocol_tds::userType(byte_t tdstype) {
 
+	debugStart("user type");
+	debugColumnType(tdstype);
+
 	uint32_t	usertype=0;
 
 	// * = 0x0000 by default
@@ -4555,11 +4760,15 @@ void sqlrprotocol_tds::userType(byte_t tdstype) {
 	}
 
 	debugWrite("usertype: %d",usertype);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 						uint16_t col,
 						byte_t tdstype) {
+
+	debugStart("col flags");
+	debugColumnType(tdstype);
 
 	uint16_t	flags=0;
 
@@ -4615,6 +4824,7 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 		b.printBits(flags);
 		debugWrite("flags: %s",b.getString());
 	}
+	debugEnd();
 }
 
 void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
@@ -4622,9 +4832,11 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 						uint16_t coltype,
 						byte_t tdstype) {
 
+	debugStart("type info");
+
 	write(&resppacket,tdstype);
 
-	debugWrite("tdstype: 0x%02x",tdstype);
+	debugColumnType(tdstype);
 
 	// XMLTYPE_INFO (MS-TDS 2.2.5.4.3) is just a SchemaPresent byte, never
 	// the size/collation a varlentype gets, so this bypasses the
@@ -4799,6 +5011,8 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
 	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::writeCollation() {
@@ -4808,19 +5022,19 @@ void sqlrprotocol_tds::writeCollation() {
 	writeLE(&resppacket,(uint32_t)TDS_COLLATION_LCID);
 	write(&resppacket,(byte_t)TDS_COLLATION_SORTID);
 
-	if (getDebug()) {
-		stringbuffer	b;
-		b.printBits((uint32_t)TDS_COLLATION_LCID);
-		debugWrite("collation: %s %d",
-				b.getString(),TDS_COLLATION_SORTID);
-	}
+	debugCollation((uint32_t)TDS_COLLATION_LCID,
+					(byte_t)TDS_COLLATION_SORTID);
 }
 
 void sqlrprotocol_tds::tableName(byte_t tdstype) {
 
+	debugStart("table name");
+	debugColumnType(tdstype);
+
 	if (tdstype!=TDS_TYPE_TEXT &&
 			tdstype!=TDS_TYPE_NTEXT &&
 			tdstype!=TDS_TYPE_IMAGE) {
+		debugEnd();
 		return;
 	}
 
@@ -4854,9 +5068,14 @@ void sqlrprotocol_tds::tableName(byte_t tdstype) {
 
 		debugWrite("part name: %s",partname8);
 	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::cryptoMetaData() {
+
+	debugStart("crypto meta data");
+	debugEnd();
 
 	if (negotiatedtdsversion<740) {
 		return;
@@ -4875,6 +5094,8 @@ void sqlrprotocol_tds::cryptoMetaData() {
 void sqlrprotocol_tds::colName(sqlrservercursor *cursor,
 						uint16_t col) {
 
+	debugStart("col name");
+
 	size_t 		namelen=cont->getColumnNameSize(cursor,col);
 	const char	*name=cont->getColumnName(cursor,col);
 	ucs2_t		*name16=ucs2charstring::duplicate(name,namelen);
@@ -4885,6 +5106,8 @@ void sqlrprotocol_tds::colName(sqlrservercursor *cursor,
 	debugWrite("name: %s",name);
 
 	delete[] name16;
+
+	debugEnd();
 }
 
 bool sqlrprotocol_tds::isCaseSensitiveType(byte_t tdstype) {
@@ -5007,9 +5230,16 @@ bool sqlrprotocol_tds::isCharType(byte_t tdstype) {
 
 int64_t sqlrprotocol_tds::moneyValue(const char *field) {
 
+	debugStart("money value");
+
 	if (charstring::isNullOrEmpty(field)) {
+		debugWrite("field: null or empty");
+		debugWrite("value: 0");
+		debugEnd();
 		return 0;
 	}
+
+	debugWrite("field: %s",field);
 
 	const char	*ch=field;
 	bool		negative=false;
@@ -5041,31 +5271,44 @@ int64_t sqlrprotocol_tds::moneyValue(const char *field) {
 		places++;
 	}
 
-	return (negative)?-value:value;
+	int64_t	retval=(negative)?-value:value;
+	debugWrite("value: %lld",(long long)retval);
+	debugEnd();
+	return retval;
 }
 
 byte_t sqlrprotocol_tds::nTypeSize(uint16_t coltype,
 					byte_t tdstype,
 					uint32_t colsize) {
 
+	debugStart("n type size");
+	debugWrite("coltype: %d",coltype);
+	debugColumnType(tdstype);
+	debugWrite("colsize: %d",colsize);
+
+	byte_t	retval=colsize;
 	switch (tdstype) {
 		case TDS_TYPE_BITN:
-			return 1;
+			retval=1;
+			break;
 		case TDS_TYPE_INTN:
 			// storage widths pass through
 			if (colsize==1 || colsize==2 ||
 					colsize==4 || colsize==8) {
-				return (byte_t)colsize;
+				retval=(byte_t)colsize;
+				break;
 			}
 			// otherwise it's a digit count
 			if (colsize<=3) {
-				return 1;
+				retval=1;
 			} else if (colsize<=5) {
-				return 2;
+				retval=2;
 			} else if (colsize<=10) {
-				return 4;
+				retval=4;
+			} else {
+				retval=8;
 			}
-			return 8;
+			break;
 		case TDS_TYPE_FLTN:
 		case TDS_TYPE_MONEYN:
 		case TDS_TYPE_DATETIMN:
@@ -5077,22 +5320,35 @@ byte_t sqlrprotocol_tds::nTypeSize(uint16_t coltype,
 				case SMALLDATETIME_DATATYPE:
 				case REAL_DATATYPE:
 				case SMALLMONEY_DATATYPE:
-					return 4;
+					retval=4;
+					break;
 				case DATETIME_DATATYPE:
 				case FLOAT_DATATYPE:
 				case DOUBLE_DATATYPE:
 				case MONEY_DATATYPE:
-					return 8;
+					retval=8;
+					break;
+				default:
+					// fall back on the storage width, for
+					// a back end that reports one and for
+					// uncovered types
+					retval=(colsize==4)?4:8;
+					break;
 			}
-			// fall back on the storage width, for a back end
-			// that reports one and for uncovered types
-			return (colsize==4)?4:8;
+			break;
 	}
-	return (byte_t)colsize;
+
+	debugWrite("size: %d",retval);
+	debugEnd();
+	return retval;
 }
 
 uint32_t sqlrprotocol_tds::dateTimeStringSize(uint16_t coltype,
 						uint32_t colsize) {
+
+	debugStart("date time string size");
+	debugWrite("coltype: %d",coltype);
+	debugWrite("colsize: %d",colsize);
 
 	// A date/time column only gets here when mapType() downgraded it to
 	// nvarchar, which it does for a client older than tds 7.3.  The
@@ -5112,7 +5368,11 @@ uint32_t sqlrprotocol_tds::dateTimeStringSize(uint16_t coltype,
 			stringsize=48;
 			break;
 	}
-	return (stringsize>colsize)?stringsize:colsize;
+	uint32_t	retval=(stringsize>colsize)?stringsize:colsize;
+
+	debugWrite("size: %d",retval);
+	debugEnd();
+	return retval;
 }
 
 uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor) {
@@ -5156,7 +5416,7 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
 		write(&resppacket,token);
 
 		debugStart("row");
-		debugWrite("token: 0x%02x",token);
+		debugTokenType(token);
 
 		tdsrow	*positionrow=(position)?position->newRow():NULL;
 
@@ -5170,7 +5430,7 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
 			byte_t		tdstype=mapType(coltype);
 
 			debugStart("col %d",col);
-			debugWrite("tdstype: 0x%02x",tdstype);
+			debugColumnType(tdstype);
 
 			lobData(tdstype);
 
@@ -5222,6 +5482,8 @@ void sqlrprotocol_tds::lobData(byte_t tdstype) {
 		return;
 	}
 
+	debugStart("lob data");
+
 	// I have no idea what these are or how to get them.  SQL Server itself
 	// appears to send dummy versions of them though, so we'll do the same.
 
@@ -5238,6 +5500,8 @@ void sqlrprotocol_tds::lobData(byte_t tdstype) {
 	debugWrite("textptrsize: %d",textptrsize);
 	debugWrite("textptr: %s",textptr);
 	debugWrite("ts: %s",ts);
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::field(uint16_t coltype,
@@ -5247,6 +5511,8 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 				const char *field,
 				uint64_t fieldsize,
 				bool null) {
+
+	debugStart("field");
 
 	// the scale of a time is limited to 7 decimal places
 	byte_t	scale=(colscale>7)?7:(byte_t)colscale;
@@ -5302,6 +5568,7 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 				break;
 		}
 
+		debugEnd();
 		return;
 	}
 
@@ -5701,6 +5968,8 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			}
 			break;
 	}
+
+	debugEnd();
 }
 
 static uint16_t mdays[]={31,28,31,30,31,30,31,31,30,31,30,31};
@@ -5897,6 +6166,10 @@ void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
 					uint32_t threehundredths,
 					sqlrserverbindvar *bv) {
 
+	debugStart("date time value");
+	debugWrite("days since 1900: %d",dayssince1900);
+	debugWrite("300ths since 12AM: %d",threehundredths);
+
 	stringbuffer	strb;
 	bulkDateTime(dayssince1900,threehundredths,&strb);
 
@@ -5913,6 +6186,7 @@ void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
 				&hour,&minute,&second,
 				&usec,&tzoffset)) {
 		debugWrite("unparseable datetime: %s",strb.getString());
+		debugEnd();
 		return;
 	}
 
@@ -5930,6 +6204,7 @@ void sqlrprotocol_tds::dateTimeValue(int32_t dayssince1900,
 	bv->isnull=cont->getNonNullBindValue();
 
 	debugWrite("value: %s",strb.getString());
+	debugEnd();
 }
 
 void sqlrprotocol_tds::moneyValue(int64_t tenthousandths,
@@ -6125,21 +6400,28 @@ void sqlrprotocol_tds::appendTime(uint64_t increments, byte_t size) {
 }
 
 void sqlrprotocol_tds::daten(const char *field) {
+	debugStart("date n");
 	uint32_t	dayssince1;
 	date(field,&dayssince1);
 	write(&resppacket,(byte_t)3);
 	appendDate(dayssince1);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::timen(const char *field, byte_t scale) {
+	debugStart("time n");
 	uint64_t	increments;
 	time(field,scale,&increments);
 	byte_t	size=timeSize(scale);
+	debugWrite("size: %d",size);
 	write(&resppacket,size);
 	appendTime(increments,size);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::datetime2n(const char *field, byte_t scale) {
+
+	debugStart("datetime2 n");
 
 	// a datetime2 is a time followed by a date,
 	// under a single size
@@ -6149,12 +6431,19 @@ void sqlrprotocol_tds::datetime2n(const char *field, byte_t scale) {
 	date(field,&dayssince1);
 
 	byte_t	size=timeSize(scale);
+	debugWrite("size: %d",size);
 	write(&resppacket,(byte_t)(size+3));
 	appendTime(increments,size);
 	appendDate(dayssince1);
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::datetimeoffsetn(const char *field, byte_t scale) {
+
+	debugStart("datetimeoffset n");
+	debugWrite("field: %s",field);
+	debugWrite("scale: %d",scale);
 
 	// a datetimeoffset is a datetime2 followed by a timezone
 	// offset, under a single size
@@ -6195,6 +6484,16 @@ void sqlrprotocol_tds::datetimeoffsetn(const char *field, byte_t scale) {
 						(secssince12am%3600)/60,
 						secssince12am%60,
 						usec,scale);
+		debugWrite("year: %d",year);
+		debugWrite("month: %d",month);
+		debugWrite("day: %d",day);
+		debugWrite("hour: %d",hour);
+		debugWrite("minute: %d",minute);
+		debugWrite("second: %d",second);
+		debugWrite("usec: %d",usec);
+		debugWrite("raw tz offset in minutes: %d",tzoffset);
+		debugWrite("days since 1: %d",dayssince1);
+		debugWrite("increments since 12AM: %lld",(long long)increments);
 	} else {
 		debugWrite("unparseable datetimeoffset: %s",field);
 	}
@@ -6208,18 +6507,23 @@ void sqlrprotocol_tds::datetimeoffsetn(const char *field, byte_t scale) {
 	}
 
 	byte_t	size=timeSize(scale);
+	debugWrite("size: %d",size);
 	write(&resppacket,(byte_t)(size+3+sizeof(uint16_t)));
 	appendTime(increments,size);
 	appendDate(dayssince1);
 	writeLE(&resppacket,(uint16_t)tzoffset);
 
 	debugWrite("utc offset in minutes: %d",tzoffset);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::decimal(const char *field,
 				byte_t *ispositive,
 				byte_t *size,
 				byte_t *val) {
+
+	debugStart("decimal");
+	debugWrite("field: %s",field);
 
 	uint32_t	precision=charstring::getLength(field);
 
@@ -6254,6 +6558,11 @@ void sqlrprotocol_tds::decimal(const char *field,
 	}
 
 	delete[] copy;
+
+	debugWrite("precision: %d",precision);
+	debugWrite("ispositive: %d",*ispositive);
+	debugWrite("size: %d",*size);
+	debugEnd();
 }
 
 byte_t sqlrprotocol_tds::decimalSize(byte_t precision) {
@@ -6273,6 +6582,9 @@ byte_t sqlrprotocol_tds::decimalSize(byte_t precision) {
 }
 
 void sqlrprotocol_tds::guid(const char *field, byte_t *g) {
+
+	debugStart("guid");
+	debugWrite("field: %s",field);
 
 	// convert string into 16 hex values...
 	for (uint16_t i=0; i<16; i++) {
@@ -6302,6 +6614,8 @@ void sqlrprotocol_tds::guid(const char *field, byte_t *g) {
 	g[7]=tmp;
 
 	// leave the rest alone (apparently)
+
+	debugEnd();
 }
 
 byte_t sqlrprotocol_tds::charsToHex(const char *chars) {
@@ -6339,6 +6653,8 @@ byte_t sqlrprotocol_tds::charsToHex(const char *chars) {
 }
 
 uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
+
+	debugStart("query error");
 
 	// get the error
 	const char	*errorstring;
@@ -6396,6 +6712,14 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 		*severityptr='\0';
 	}
 
+	debugWrite("errorcode: %lld",(long long)errorcode);
+	debugWrite("state: %d",state);
+	debugWrite("errclass: %d",errclass);
+	debugWrite("linenumber: %d",linenumber);
+	debugWrite("server: %s",(srvn)?srvn:srvname);
+	debugWrite("procedure: %s",(procn)?procn:"");
+	debugWrite("message: %s",errptr);
+
 	// append the error to the send packet
 	appendError(errorcode,
 		state,errclass,
@@ -6415,6 +6739,7 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	delete[] procn;
 	delete[] errorbuffer;
 
+	debugEnd();
 	return (uint32_t)errorcode;
 }
 
@@ -6661,7 +6986,7 @@ bool sqlrprotocol_tds::bulkColMetaData(const byte_t **rpinout,
 	byte_t	token;
 	read(rp,&token,&rp);
 	rpsize--;
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 	if (token!=TOKEN_COLMETADATA) {
 		debugEnd();
 		return false;
@@ -6790,13 +7115,17 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
 
+	debugStart("type info");
+
 	if (!rpsize) {
+		debugWrite("short packet");
+		debugEnd();
 		return false;
 	}
 	byte_t	tdstype;
 	read(rp,&tdstype,&rp);
 	rpsize--;
-	debugWrite("tdstype: 0x%02x",tdstype);
+	debugColumnType(tdstype);
 
 	bulktypes[col]=tdstype;
 	bulksizes[col]=0;
@@ -6818,6 +7147,8 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 			case TDS_TYPE_NUMERICN:
 				{
 				if (rpsize<3) {
+					debugWrite("short packet");
+					debugEnd();
 					return false;
 				}
 				byte_t	size;
@@ -6838,6 +7169,8 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
 				if (!rpsize) {
+					debugWrite("short packet");
+					debugEnd();
 					return false;
 				}
 				read(rp,&(bulkscales[col]),&rp);
@@ -6850,6 +7183,8 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 			case TDS_TYPE_IMAGE:
 				{
 				if (rpsize<sizeof(uint32_t)) {
+					debugWrite("short packet");
+					debugEnd();
 					return false;
 				}
 				uint32_t	size;
@@ -6869,6 +7204,8 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 			case TDS_TYPE_UDT:
 				{
 				if (rpsize<sizeof(uint16_t)) {
+					debugWrite("short packet");
+					debugEnd();
 					return false;
 				}
 				uint16_t	size;
@@ -6881,6 +7218,8 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 			default:
 				{
 				if (!rpsize) {
+					debugWrite("short packet");
+					debugEnd();
 					return false;
 				}
 				byte_t	size;
@@ -6904,6 +7243,8 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 					{
 					// FIXME: do something with this
 					if (rpsize<5) {
+						debugWrite("short packet");
+						debugEnd();
 						return false;
 					}
 					byte_t	coll[5];
@@ -6924,11 +7265,14 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
 		debugWrite("unsupported type");
+		debugEnd();
 		return false;
 	}
 
 	*rpinout=rp;
 	*rpsizeinout=rpsize;
+
+	debugEnd();
 
 	return true;
 }
@@ -6974,7 +7318,7 @@ bool sqlrprotocol_tds::bulkRow(const byte_t **rpinout,
 	read(rp,&token,&rp);
 	rpsize--;
 
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 
 	if (token!=TOKEN_ROW) {
 		debugWrite("unexpected token");
@@ -7012,6 +7356,7 @@ void sqlrprotocol_tds::bulkString(sqlrserverbindvar *bv,
 					memorypool *bindpool,
 					const char *value,
 					size_t valuesize) {
+	debugStart("string");
 	bv->type=SQLRSERVERBINDVARTYPE_STRING;
 	bv->valuesize=(uint32_t)valuesize;
 	bv->value.stringval=(char *)bindpool->allocate(valuesize+1);
@@ -7019,12 +7364,14 @@ void sqlrprotocol_tds::bulkString(sqlrserverbindvar *bv,
 	bv->value.stringval[valuesize]='\0';
 	bv->isnull=cont->getNonNullBindValue();
 	debugWrite("value: %.*s",(int32_t)valuesize,bv->value.stringval);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::bulkBinary(sqlrserverbindvar *bv,
 					memorypool *bindpool,
 					const byte_t *value,
 					size_t valuesize) {
+	debugStart("binary");
 	bv->type=SQLRSERVERBINDVARTYPE_BLOB;
 	bv->valuesize=(uint32_t)valuesize;
 	bv->value.stringval=(char *)bindpool->allocate(valuesize+1);
@@ -7032,9 +7379,12 @@ void sqlrprotocol_tds::bulkBinary(sqlrserverbindvar *bv,
 	bv->value.stringval[valuesize]='\0';
 	bv->isnull=cont->getNonNullBindValue();
 	debugWrite("value: %d bytes of binary",(int32_t)valuesize);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::bulkDouble(sqlrserverbindvar *bv, double value) {
+
+	debugStart("double");
 
 	bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
 	bv->isnull=cont->getNonNullBindValue();
@@ -7050,6 +7400,8 @@ void sqlrprotocol_tds::bulkDouble(sqlrserverbindvar *bv, double value) {
 			(num+size)-charstring::findFirstOrEnd(num,'.')-1;
 	debugWrite("value: %s",num);
 	delete[] num;
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::bulkDecimal(byte_t ispositive,
@@ -7057,6 +7409,11 @@ void sqlrprotocol_tds::bulkDecimal(byte_t ispositive,
 					byte_t size,
 					byte_t scale,
 					stringbuffer *strb) {
+
+	debugStart("decimal");
+	debugWrite("ispositive: %d",ispositive);
+	debugWrite("size: %d",size);
+	debugWrite("scale: %d",scale);
 
 	// the magnitude is little-endian, and the sign is 1 for positive,
 	// the opposite of what the sql standard uses
@@ -7075,6 +7432,8 @@ void sqlrprotocol_tds::bulkDecimal(byte_t ispositive,
 	size_t	digitcount=charstring::getLength(digits);
 	if (!scale) {
 		strb->append(digits);
+		debugWrite("value: %s",strb->getString());
+		debugEnd();
 		return;
 	}
 	if (digitcount>scale) {
@@ -7087,9 +7446,16 @@ void sqlrprotocol_tds::bulkDecimal(byte_t ispositive,
 		strb->append('0');
 	}
 	strb->append(digits+((digitcount>scale)?digitcount-scale:0));
+
+	debugWrite("value: %s",strb->getString());
+	debugEnd();
 }
 
 void sqlrprotocol_tds::bulkMoney(int64_t tenthousandths, stringbuffer *strb) {
+
+	debugStart("money");
+	debugWrite("tenthousandths: %lld",(long long)tenthousandths);
+
 	if (tenthousandths<0) {
 		strb->append('-');
 		tenthousandths=-tenthousandths;
@@ -7099,6 +7465,9 @@ void sqlrprotocol_tds::bulkMoney(int64_t tenthousandths, stringbuffer *strb) {
 	charstring::printf(fraction,sizeof(fraction),"%04lld",
 					(long long)(tenthousandths%10000));
 	strb->append(fraction);
+
+	debugWrite("value: %s",strb->getString());
+	debugEnd();
 }
 
 void sqlrprotocol_tds::bulkYmd(int32_t days,
@@ -7143,6 +7512,10 @@ void sqlrprotocol_tds::bulkDateTime(int32_t dayssince1900,
 					uint32_t threehundredths,
 					stringbuffer *strb) {
 
+	debugStart("date time");
+	debugWrite("days since 1900: %d",dayssince1900);
+	debugWrite("300ths since 12AM: %d",threehundredths);
+
 	bulkYmd(dayssince1900,1900,strb);
 
 	// the time, counted in three-hundredths of a second since 12AM
@@ -7156,6 +7529,9 @@ void sqlrprotocol_tds::bulkDateTime(int32_t dayssince1900,
 				(int32_t)(seconds%60),
 				(int32_t)milliseconds);
 	strb->append(buffer);
+
+	debugWrite("value: %s",strb->getString());
+	debugEnd();
 }
 
 void sqlrprotocol_tds::bulkTime(uint64_t increments,
@@ -7190,6 +7566,8 @@ void sqlrprotocol_tds::bulkTime(uint64_t increments,
 
 void sqlrprotocol_tds::bulkGuid(const byte_t *g, stringbuffer *strb) {
 
+	debugStart("guid");
+
 	// the first three groups are little-endian, the rest big-endian
 	char	buffer[40];
 	charstring::printf(buffer,sizeof(buffer),
@@ -7198,6 +7576,9 @@ void sqlrprotocol_tds::bulkGuid(const byte_t *g, stringbuffer *strb) {
 		g[3],g[2],g[1],g[0],g[5],g[4],g[7],g[6],
 		g[8],g[9],g[10],g[11],g[12],g[13],g[14],g[15]);
 	strb->append(buffer);
+
+	debugWrite("value: %s",strb->getString());
+	debugEnd();
 }
 
 bool sqlrprotocol_tds::bulkField(const byte_t **rpinout,
@@ -7234,6 +7615,9 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 	byte_t		tdstype=bulktypes[col];
 	byte_t		scale=bulkscales[col];
 
+	debugStart("value");
+	debugColumnType(tdstype);
+
 	// a text, ntext or image value arrives behind a text pointer and
 	// timestamp, both filled with 0xFF by a bulk load.  a single zero
 	// length in place of the pointer means null.
@@ -7241,6 +7625,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		tdstype==TDS_TYPE_NTEXT ||
 		tdstype==TDS_TYPE_IMAGE) {
 		if (!rpsize) {
+			debugEnd();
 			return false;
 		}
 		byte_t	ptrsize;
@@ -7248,10 +7633,12 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		rpsize--;
 		if (!ptrsize) {
 			debugWrite("value: (null)");
+			debugEnd();
 			return true;
 		}
 		size_t	prefixsize=(size_t)ptrsize+sizeof(uint64_t);
 		if (rpsize<prefixsize) {
+			debugEnd();
 			return false;
 		}
 		rp+=prefixsize;
@@ -7264,6 +7651,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_INTN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7271,6 +7659,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			switch (size) {
@@ -7288,6 +7677,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -7295,6 +7685,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_BITN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7302,10 +7693,12 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (size!=1) {
 				debugWrite("invalid size: %d",size);
+				debugEnd();
 				return false;
 			}
 			tdstype=TDS_TYPE_BIT;
@@ -7314,6 +7707,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_FLTN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7321,6 +7715,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			switch (size) {
@@ -7332,6 +7727,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -7339,6 +7735,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_MONEYN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7346,6 +7743,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			switch (size) {
@@ -7357,6 +7755,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -7364,6 +7763,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_DATETIMN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7371,6 +7771,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			switch (size) {
@@ -7382,6 +7783,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -7394,6 +7796,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_BIT:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	val;
@@ -7409,6 +7812,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_INT2:
 			{
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			int16_t	val;
@@ -7424,6 +7828,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_INT4:
 			{
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			int32_t	val;
@@ -7439,6 +7844,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_INT8:
 			{
 			if (rpsize<sizeof(uint64_t)) {
+				debugEnd();
 				return false;
 			}
 			int64_t	val;
@@ -7454,6 +7860,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_FLT4:
 			{
 			if (rpsize<sizeof(float)) {
+				debugEnd();
 				return false;
 			}
 			float	val;
@@ -7465,6 +7872,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_FLT8:
 			{
 			if (rpsize<sizeof(double)) {
+				debugEnd();
 				return false;
 			}
 			double	val;
@@ -7476,6 +7884,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_MONEY:
 			{
 			if (rpsize<2*sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	high;
@@ -7492,6 +7901,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_MONEY4:
 			{
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			int32_t	val;
@@ -7506,6 +7916,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_DATETIM4:
 			{
 			if (rpsize<2*sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	days;
@@ -7523,6 +7934,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_DATETIME:
 			{
 			if (rpsize<2*sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			int32_t		dayssince1900;
@@ -7539,12 +7951,14 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_GUID:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			if (size==16) {
@@ -7566,6 +7980,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			{
 			// the length counts the sign byte too
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7573,9 +7988,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			byte_t	ispositive;
@@ -7612,6 +8029,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_DATEN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7619,9 +8037,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	dayssince1=0;
@@ -7641,6 +8061,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_DATETIMEOFFSETN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -7648,9 +8069,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize--;
 			if (!size) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			// a datetime2 is a time followed by a date, and a
@@ -7684,12 +8107,14 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_VARCHAR:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			bulkString(bv,bindpool,(const char *)rp,size);
@@ -7701,12 +8126,14 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_VARBINARY:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			bulkBinary(bv,bindpool,rp,size);
@@ -7718,6 +8145,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_BIGVARCHR:
 			{
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	size;
@@ -7725,9 +8153,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize-=sizeof(uint16_t);
 			if (size==0xFFFF) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			bulkString(bv,bindpool,(const char *)rp,size);
@@ -7739,6 +8169,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_BIGVARBIN:
 			{
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	size;
@@ -7746,9 +8177,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize-=sizeof(uint16_t);
 			if (size==0xFFFF) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			bulkBinary(bv,bindpool,rp,size);
@@ -7761,6 +8194,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			{
 			// the size is in bytes, but the data is ucs-2
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	size;
@@ -7768,9 +8202,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize-=sizeof(uint16_t);
 			if (size==0xFFFF) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	length=size/sizeof(ucs2_t);
@@ -7795,6 +8231,7 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 		case TDS_TYPE_SSVARIANT:
 			{
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	size;
@@ -7802,9 +8239,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			rpsize-=sizeof(uint32_t);
 			if (size==0xFFFFFFFF) {
 				debugWrite("value: (null)");
+				debugEnd();
 				return true;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			if (tdstype==TDS_TYPE_NTEXT) {
@@ -7834,9 +8273,11 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			// followed by chunks, which nothing sends yet
 			// because typeInfo() never declares one
 			debugWrite("unsupported type");
+			debugEnd();
 			return false;
 	}
 
+	debugEnd();
 	return true;
 }
 
@@ -7883,8 +8324,11 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	*more=false;
 	rpcunsupportedtype=false;
 
+	debugStart("rpc-call");
+
 	// nothing left to do
 	if (rpsize<sizeof(uint16_t)) {
+		debugEnd();
 		return true;
 	}
 
@@ -7902,14 +8346,13 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 		// get the proc id
 		if (rpsize<sizeof(procid)) {
 			debugWrite("truncated proc id");
+			debugEnd();
 			return false;
 		}
 		readLE(rp,&procid,&rp);
 		rpsize-=sizeof(procid);
 
-		debugWrite("procid: %hd (%s)",
-				procid,procids[(procid<=SP_MAX_PROCID)?
-								procid:0]);
+		debugProcId(procid);
 
 	} else {
 
@@ -7917,6 +8360,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 		if (procnamelen*sizeof(ucs2_t)>rpsize ||
 					procnamelen>maxquerysize) {
 			debugWrite("invalid proc name length: %hd",procnamelen);
+			debugEnd();
 			return false;
 		}
 
@@ -7934,7 +8378,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 		// a client can send any of the numbered procs by name
 		procid=procNameToProcId(procname);
 		if (procid) {
-			debugWrite("procid: %hd (%s)",procid,procids[procid]);
+			debugProcId(procid);
 		}
 	}
 
@@ -7944,6 +8388,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	if (rpsize<sizeof(optionflags)) {
 		debugWrite("truncated option flags");
 		delete[] procname;
+		debugEnd();
 		return false;
 	}
 	readLE(rp,&optionflags,&rp);
@@ -7974,8 +8419,10 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 			// queued, so end this rpc cleanly rather than
 			// dropping the connection
 			doneProc(DONE_FINAL|DONE_ERROR,0,0);
+			debugEnd();
 			return true;
 		}
+		debugEnd();
 		return false;
 	}
 
@@ -8053,6 +8500,8 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	*rpinout=rp;
 	*rpsizeinout=rpsize;
 
+	debugEnd();
+
 	return retval;
 }
 
@@ -8070,6 +8519,8 @@ void sqlrprotocol_tds::batchFlags(const byte_t *rp,
 					const byte_t **rpout,
 					size_t *rpsizeout,
 					bool *more) {
+
+	debugStart("batch-flags");
 
 	// the flags are optional, and only a batch flag means another
 	// rpc follows
@@ -8093,6 +8544,8 @@ void sqlrprotocol_tds::batchFlags(const byte_t *rp,
 			break;
 		}
 	}
+
+	debugEnd();
 
 	// copy out pointer and size
 	*rpout=rp;
@@ -8131,6 +8584,8 @@ const char *sqlrprotocol_tds::paramString(uint16_t param) {
 
 void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
 							bool returnvalue) {
+
+	debugStart("bind-params");
 
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
@@ -8223,6 +8678,8 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
 
 	debugWrite("input binds: %d",inbindcount);
 	debugWrite("output binds: %d",outbindcount);
+
+	debugEnd();
 }
 
 uint32_t sqlrprotocol_tds::newHandle() {
@@ -8266,6 +8723,8 @@ void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
 					dictionary<uint32_t,
 					sqlrservercursor *> *other) {
 
+	debugStart("release-handles");
+
 	// a cursor can be referred to by a prepared statement handle and a
 	// cursor handle at the same time, so don't release one that the
 	// other dictionary still refers to
@@ -8277,19 +8736,27 @@ void sqlrprotocol_tds::releaseHandles(dictionary<uint32_t,
 			continue;
 		}
 		if (other && handlesContain(other,cursor)) {
+			debugWrite("handle: %d (shared, kept)",
+							node->getValue());
 			continue;
 		}
+		debugWrite("handle: %d (released)",node->getValue());
 		executeflag.remove(cursor);
 		bindmarkercount.remove(cursor);
 		releasePositionRows(cursor);
 		releaseCursor(cursor);
 	}
 	handles->clear();
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
 
+	debugStart("release-cursor-handles");
+
 	if (!cursor) {
+		debugEnd();
 		return;
 	}
 
@@ -8325,9 +8792,13 @@ void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
 	bindmarkercount.remove(cursor);
 	releasePositionRows(cursor);
 	releaseCursor(cursor);
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::evictOldestHandle(sqlrservercursor *keep) {
+
+	debugStart("evict-oldest-handle");
 
 	// the dictionaries track insertion order, so the first key is the
 	// oldest handle.  cursor handles go before prepared statement
@@ -8344,18 +8815,28 @@ void sqlrprotocol_tds::evictOldestHandle(sqlrservercursor *keep) {
 			sqlrservercursor	*cursor=NULL;
 			if (!handles[i]->getValue(node->getValue(),&cursor) ||
 								!cursor) {
+				debugWrite("handle: %d (stale, dropped)",
+							node->getValue());
 				handles[i]->remove(node->getValue());
+				debugEnd();
 				return;
 			}
 			if (cursor!=keep) {
+				debugWrite("handle: %d (evicted)",
+							node->getValue());
 				releaseCursorHandles(cursor);
+				debugEnd();
 				return;
 			}
 		}
 	}
+
+	debugEnd();
 }
 
 sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
+
+	debugStart("available-cursor");
 
 	sqlrservercursor	*cursor=cont->getCursor();
 
@@ -8363,6 +8844,7 @@ sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
 	// handle open, and each one holds a cursor forever, so evict the
 	// oldest rather than starving the session
 	if (!cursor) {
+		debugWrite("none available, evicting");
 		evictOldestHandle(keep);
 		cursor=cont->getCursor();
 	}
@@ -8373,12 +8855,19 @@ sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
 		pendingcursor=cursor;
 	}
 
+	debugWrite((cursor)?"got cursor":"no cursor available");
+
+	debugEnd();
+
 	return cursor;
 }
 
 void sqlrprotocol_tds::releaseCursor(sqlrservercursor *cursor) {
 
+	debugStart("release-cursor");
+
 	if (!cursor) {
+		debugEnd();
 		return;
 	}
 
@@ -8391,6 +8880,8 @@ void sqlrprotocol_tds::releaseCursor(sqlrservercursor *cursor) {
 	// with "currently in use".
 	cont->closeResultSet(cursor);
 	cont->release(cursor);
+
+	debugEnd();
 }
 
 char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
@@ -8399,8 +8890,13 @@ char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
 	// {call procname(?,?)} or {? = call procname(?,?)} - rather than
 	// as plain sql
 
+	debugStart("call-syntax-to-exec");
+	debugWrite("stmt: %s",stmt);
+
 	const char	*ptr=cont->skipWhitespaceAndComments(stmt);
 	if (*ptr!='{') {
+		debugWrite("not call syntax");
+		debugEnd();
 		return charstring::duplicate(stmt);
 	}
 	ptr++;
@@ -8409,6 +8905,8 @@ char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
 	const char	*eq=charstring::findFirst(ptr,'=');
 	const char	*call=charstring::findFirstIgnoringCase(ptr,"call");
 	if (!call) {
+		debugWrite("no call keyword");
+		debugEnd();
 		return charstring::duplicate(stmt);
 	}
 	if (eq && eq<call) {
@@ -8423,6 +8921,8 @@ char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
 	const char	*open=charstring::findFirst(ptr,'(');
 	const char	*close=charstring::findLast(ptr,'}');
 	if (!close) {
+		debugWrite("no closing brace");
+		debugEnd();
 		return charstring::duplicate(stmt);
 	}
 
@@ -8440,6 +8940,10 @@ char *sqlrprotocol_tds::callSyntaxToExec(const char *stmt) {
 		query.append(ptr,close-ptr);
 	}
 
+	debugWrite("exec: %s",query.getString());
+
+	debugEnd();
+
 	return query.detachString();
 }
 
@@ -8450,7 +8954,9 @@ bool sqlrprotocol_tds::rpcInvalidHandleError(uint32_t number,
 	stringbuffer	err;
 	err.append("Invalid ")->append(what)->append(' ')->append(handle);
 
+	debugStart("rpc-invalid-handle-error");
 	debugWrite("%s",err.getString());
+	debugEnd();
 
 	appendError(number,1,16,err.getString(),srvname,NULL,1);
 
@@ -8473,7 +8979,9 @@ bool sqlrprotocol_tds::rpcParamTypeError(const char *procname,
 	err.append("Procedure expects parameter '")->append(param);
 	err.append("' of type 'ntext/nchar/nvarchar'.");
 
+	debugStart("rpc-param-type-error");
 	debugWrite("%s",err.getString());
+	debugEnd();
 
 	appendError(RPC_WRONG_PARAM_TYPE,3,16,
 			err.getString(),srvname,procname,1);
@@ -8496,7 +9004,9 @@ bool sqlrprotocol_tds::rpcUnsupportedTypeError(byte_t tdstype) {
 	err.append("Data type 0x")->append(hex)->append(" is unknown.");
 	delete[] hex;
 
+	debugStart("rpc-unsupported-type-error");
 	debugWrite("%s",err.getString());
+	debugEnd();
 
 	appendError(RPC_UNKNOWN_DATA_TYPE,1,16,
 			err.getString(),srvname,NULL,1);
@@ -8517,7 +9027,9 @@ bool sqlrprotocol_tds::rpcUnnumberedError(byte_t state,
 	// rpcUnsupportedTypeError(), these carry no return status - the proc
 	// never ran.
 
+	debugStart("rpc-unnumbered-error");
 	debugWrite("%s",msgtext);
+	debugEnd();
 
 	appendError(0,state,errclass,msgtext,srvname,NULL,1);
 	rpcfailed=true;
@@ -8550,26 +9062,39 @@ bool sqlrprotocol_tds::paramIsUnicode(uint16_t param) {
 }
 
 void sqlrprotocol_tds::rpcError(sqlrservercursor *cursor, bool returnstatus) {
+
+	debugStart("rpc-error");
+
 	uint32_t	number=appendQueryError(cursor);
+	debugWrite("number: %d",number);
+	debugWrite("returnstatus: %d",returnstatus);
 	if (returnstatus) {
 		returnStatus(number);
 	}
 	rpcfailed=true;
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
 						bool nometadata,
 						uint64_t maxrows) {
 
+	debugStart("rpc-result-set");
+
 	// a statement that returns no columns still has to report how many
 	// rows it affected
 	if (!cont->colCount(cursor)) {
+		debugWrite("no columns");
 		doneInProc(DONE_COUNT,0,cont->getAffectedRows(cursor));
+		debugEnd();
 		return;
 	}
 
 	colMetaData(cursor,nometadata);
 	doneInProc(DONE_COUNT,0,rows(cursor,maxrows));
+
+	debugEnd();
 }
 
 bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
@@ -8577,13 +9102,19 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	// this is an ordinary stored procedure call, rather than one of the
 	// numbered procs
 
+	debugStart("named-proc");
+
 	if (!procname) {
+		debugEnd();
 		return rpcUnimplementedFeatureError();
 	}
+
+	debugWrite("procname: %s",procname);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -8635,6 +9166,8 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	// release the cursor
 	releaseCursor(cursor);
 
+	debugEnd();
+
 	return true;
 }
 
@@ -8651,9 +9184,14 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 	// normal bound-parameter path.  this assumes the backend really has
 	// sp_execute/sp_unprepare, which sql server and sybase do.
 
+	debugStart("backend-handle-proc");
+	debugWrite("procname: %s",procname);
+	debugWrite("handle: %d",handle);
+
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -8689,6 +9227,8 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 	// release the cursor
 	releaseCursor(cursor);
 
+	debugEnd();
+
 	return true;
 }
 
@@ -8709,11 +9249,13 @@ bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 	// raw backend cursor, not one sqlrelay tracks a sqlrservercursor
 	// under, so there's no way to fetch from it afterward yet.
 
+	debugStart("backend-cursor-execute");
 	debugWrite("prepared handle: %d",handle);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -8753,6 +9295,8 @@ bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 	// release the cursor
 	releaseCursor(cursor);
 
+	debugEnd();
+
 	return true;
 }
 
@@ -8760,16 +9304,21 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 
 	// sp_executesql @stmt, [@params, [values...]]
 
+	debugStart("execute-sql");
+
 	const char	*stmt=paramString(0);
 	if (!stmt) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
 	// these two arguments are declared nvarchar
 	if (!paramIsUnicode(0)) {
+		debugEnd();
 		return rpcParamTypeError("sp_executesql","@statement");
 	}
 	if (rpcparamcount>1 && !paramIsUnicode(1)) {
+		debugEnd();
 		return rpcParamTypeError("sp_executesql","@params");
 	}
 
@@ -8778,12 +9327,14 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
+		debugEnd();
 		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -8815,6 +9366,8 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	// release the cursor
 	releaseCursor(cursor);
 
+	debugEnd();
+
 	return true;
 }
 
@@ -8831,8 +9384,11 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	uint16_t	stmtparam=(rpcsyntax)?1:2;
 	uint16_t	firstvalue=stmtparam+1;
 
+	debugStart("prepare");
+
 	const char	*stmt=paramString(stmtparam);
 	if (!stmt) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
@@ -8843,11 +9399,13 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	if (!rpcsyntax && !paramIsUnicode(1)) {
 		rpcParamTypeError(pn,"params");
 		returnValueInteger(1,0,true);
+		debugEnd();
 		return true;
 	}
 	if (!paramIsUnicode(stmtparam)) {
 		rpcParamTypeError(pn,"stmt");
 		returnValueInteger(1,0,true);
+		debugEnd();
 		return true;
 	}
 
@@ -8862,6 +9420,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	size_t	querylen=charstring::getLength(query);
 	if (querylen>maxquerysize) {
 		delete[] query;
+		debugEnd();
 		return rpcQueryTooLargeError(querylen);
 	}
 
@@ -8879,6 +9438,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	cursor=availableCursor();
 	if (!cursor) {
 		delete[] query;
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -8910,6 +9470,7 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		releaseCursor(cursor);
 		// the handle never became valid
 		returnValueInteger(1,0,true);
+		debugEnd();
 		return true;
 	}
 
@@ -8934,6 +9495,8 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 	// the client reads the handle out of the first return value
 	returnValueInteger(1,(int32_t)handle,false);
 
+	debugEnd();
+
 	return true;
 }
 
@@ -8941,15 +9504,19 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 
 	// sp_execute @handle, [values...]
 
+	debugStart("execute");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
 		// a handle below the base is the backend's own, from an
 		// sp_prepare inside a raw batch - run it there
 		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			debugEnd();
 			return backendHandleProc("sp_execute",handle,
 							true,nometadata);
 		}
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);
@@ -8985,6 +9552,8 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 		rpcError(cursor);
 	}
 
+	debugEnd();
+
 	return true;
 }
 
@@ -8992,15 +9561,19 @@ bool sqlrprotocol_tds::unprepare() {
 
 	// sp_unprepare @handle
 
+	debugStart("unprepare");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
 		// a handle below the base is the backend's own, from an
 		// sp_prepare inside a raw batch - unprepare it there
 		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			debugEnd();
 			return backendHandleProc("sp_unprepare",handle,
 							false,false);
 		}
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);
@@ -9015,6 +9588,8 @@ bool sqlrprotocol_tds::unprepare() {
 	releaseCursor(cursor);
 
 	returnStatus(RPC_STATUS_SUCCESS);
+
+	debugEnd();
 
 	return true;
 }
@@ -9032,9 +9607,12 @@ bool sqlrprotocol_tds::cursorPositioned() {
 	// the values to set arrive as one parameter per column, named for the
 	// column with a leading @, and a real server rejects any other form.
 
+	debugStart("cursor-positioned");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
 						"cursor handle",handle);
 	}
@@ -9049,6 +9627,7 @@ bool sqlrprotocol_tds::cursorPositioned() {
 	debugWrite("table: %s",(table)?table:"(none)");
 
 	if (charstring::isNullOrEmpty(table)) {
+		debugEnd();
 		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
 					"sp_cursor requires a table name");
 	}
@@ -9059,6 +9638,7 @@ bool sqlrprotocol_tds::cursorPositioned() {
 		tdsrows	*position=positionRows(cursor,false);
 		row=(position)?position->getRow((uint64_t)rownum):NULL;
 		if (!row) {
+			debugEnd();
 			return rpcNumberedError(RPC_NO_SUCH_ROW,
 					"The cursor is not on a row that "
 					"can be updated");
@@ -9067,14 +9647,18 @@ bool sqlrprotocol_tds::cursorPositioned() {
 
 	switch (optype) {
 		case CURSOR_OP_UPDATE:
+			debugEnd();
 			return positionedUpdate(cursor,table,row);
 		case CURSOR_OP_DELETE:
+			debugEnd();
 			return positionedDelete(cursor,table,row);
 		case CURSOR_OP_INSERT:
+			debugEnd();
 			return positionedInsert(cursor,table);
 	}
 
 	debugWrite("unsupported optype: 0x%04x",optype);
+	debugEnd();
 
 	return rpcNumberedError(RPC_OP_UNSUPPORTED,
 			"Only positioned update, delete and insert "
@@ -9084,7 +9668,10 @@ bool sqlrprotocol_tds::cursorPositioned() {
 bool sqlrprotocol_tds::rpcNumberedError(uint32_t number,
 					const char *msgtext) {
 
+	debugStart("rpc-numbered-error");
+	debugWrite("number: %d",number);
 	debugWrite("%s",msgtext);
+	debugEnd();
 
 	appendError(number,1,16,msgtext,srvname,NULL,1);
 	returnStatus(number);
@@ -9151,6 +9738,9 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 					sqlrserverbindvar *binds,
 					uint16_t *bindcount) {
 
+	debugStart("positioned-where");
+	debugWrite("table: %s",table);
+
 	// split the table name into the parts getPrimaryKeysList() wants - it
 	// matches on the schema exactly, so an unqualified table has to be
 	// filled out with the current schema rather than left empty, which
@@ -9171,6 +9761,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 	if (!pkcursor) {
 		delete[] currentcatalog;
 		delete[] currentschema;
+		debugEnd();
 		return false;
 	}
 
@@ -9206,6 +9797,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 
 	if (!keycolcount) {
 		debugWrite("no primary key on %s",table);
+		debugEnd();
 		return false;
 	}
 
@@ -9225,6 +9817,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 		if (col==colcount) {
 			debugWrite("key column %s isn't in the result set",
 								keycol);
+			debugEnd();
 			return false;
 		}
 
@@ -9238,6 +9831,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 			query->append(" is null");
 		} else if (*bindcount>=maxbindcount) {
 			debugWrite("out of bind variables");
+			debugEnd();
 			return false;
 		} else {
 			query->append('=');
@@ -9252,6 +9846,8 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 		keycol+=charstring::getLength(keycol)+1;
 	}
 
+	debugEnd();
+
 	return true;
 }
 
@@ -9261,11 +9857,15 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 
 	// update <table> set <col>=@n, ... where <key>=@n and ...
 
+	debugStart("positioned-update");
+	debugWrite("table: %s",table);
+
 	// a cursor of its own, held from here so the primary key lookup can't
 	// take it.  the cursor the update is positioned on is off limits to
 	// eviction - row points into its rows.
 	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -9282,6 +9882,7 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 		const char	*colname=positionedColumn(cursor,i);
 		if (!colname) {
 			releaseCursor(dmlcursor);
+			debugEnd();
 			return rpcInvalidColumnError(i);
 		}
 
@@ -9296,6 +9897,7 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 
 	if (!bindcount) {
 		releaseCursor(dmlcursor);
+		debugEnd();
 		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
 				"sp_cursor update requires a column to set");
 	}
@@ -9303,11 +9905,14 @@ bool sqlrprotocol_tds::positionedUpdate(sqlrservercursor *cursor,
 	if (!positionedWhere(cursor,table,row,&query,
 					bindpool,binds,&bindcount)) {
 		releaseCursor(dmlcursor);
+		debugEnd();
 		return rpcNumberedError(RPC_CURSOR_READ_ONLY,
 				"The cursor is read only - a positioned "
 				"update needs a primary key that the "
 				"cursor selected");
 	}
+
+	debugEnd();
 
 	return positionedExecute(dmlcursor,query.getString(),
 					query.getStringLength(),bindcount);
@@ -9319,8 +9924,12 @@ bool sqlrprotocol_tds::positionedDelete(sqlrservercursor *cursor,
 
 	// delete from <table> where <key>=@n and ...
 
+	debugStart("positioned-delete");
+	debugWrite("table: %s",table);
+
 	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -9335,11 +9944,14 @@ bool sqlrprotocol_tds::positionedDelete(sqlrservercursor *cursor,
 	if (!positionedWhere(cursor,table,row,&query,
 					bindpool,binds,&bindcount)) {
 		releaseCursor(dmlcursor);
+		debugEnd();
 		return rpcNumberedError(RPC_CURSOR_READ_ONLY,
 				"The cursor is read only - a positioned "
 				"delete needs a primary key that the "
 				"cursor selected");
 	}
+
+	debugEnd();
 
 	return positionedExecute(dmlcursor,query.getString(),
 					query.getStringLength(),bindcount);
@@ -9353,8 +9965,12 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 	// an insert isn't positioned on anything, so the cursor is only
 	// used to work out which columns the client is allowed to name
 
+	debugStart("positioned-insert");
+	debugWrite("table: %s",table);
+
 	sqlrservercursor	*dmlcursor=availableCursor(cursor);
 	if (!dmlcursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -9371,6 +9987,7 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 		const char	*colname=positionedColumn(cursor,i);
 		if (!colname) {
 			releaseCursor(dmlcursor);
+			debugEnd();
 			return rpcInvalidColumnError(i);
 		}
 
@@ -9386,6 +10003,7 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 
 	if (!bindcount) {
 		releaseCursor(dmlcursor);
+		debugEnd();
 		return rpcNumberedError(RPC_WRONG_PARAM_TYPE,
 				"sp_cursor insert requires a column value");
 	}
@@ -9395,15 +10013,25 @@ bool sqlrprotocol_tds::positionedInsert(sqlrservercursor *cursor,
 	query.append(" (")->append(cols.getString())->append(')');
 	query.append(" values (")->append(values.getString())->append(')');
 
+	debugEnd();
+
 	return positionedExecute(dmlcursor,query.getString(),
 					query.getStringLength(),bindcount);
 }
 
 bool sqlrprotocol_tds::rpcInvalidColumnError(uint16_t param) {
+
+	debugStart("rpc-invalid-column-error");
+
 	stringbuffer	msg;
 	msg.append("Invalid column name '");
 	msg.append((rpcparamnames[param])?rpcparamnames[param]:"");
 	msg.append('\'');
+
+	debugWrite("%s",msg.getString());
+
+	debugEnd();
+
 	return rpcNumberedError(RPC_INVALID_COLUMN,msg.getString());
 }
 
@@ -9412,11 +10040,13 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 					size_t querysize,
 					uint16_t bindcount) {
 
+	debugStart("positioned-execute");
 	debugWrite("query: %s",query);
 	debugWrite("binds: %d",bindcount);
 
 	if (querysize>maxquerysize) {
 		releaseCursor(cursor);
+		debugEnd();
 		return rpcQueryTooLargeError(querysize);
 	}
 
@@ -9430,6 +10060,7 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 	if (!success) {
 		rpcError(cursor);
 		releaseCursor(cursor);
+		debugEnd();
 		return true;
 	}
 
@@ -9442,6 +10073,7 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 	// a positioned operation that matched nothing means the row is
 	// gone, which is a failure rather than a no-op
 	if (!affectedrows) {
+		debugEnd();
 		return rpcNumberedError(RPC_NO_ROWS_AFFECTED,
 					"No rows were updated or deleted");
 	}
@@ -9449,32 +10081,57 @@ bool sqlrprotocol_tds::positionedExecute(sqlrservercursor *cursor,
 	doneInProc(DONE_COUNT,0,affectedrows);
 	returnStatus(RPC_STATUS_SUCCESS);
 
+	debugEnd();
+
 	return true;
 }
 
 tdsrows *sqlrprotocol_tds::positionRows(sqlrservercursor *cursor,
 							bool create) {
+
+	debugStart("position-rows");
+
 	tdsrows	*position=NULL;
 	if (positionrows.getValue(cursor,&position) && position) {
+		debugWrite("existing");
+		debugEnd();
 		return position;
 	}
 	if (!create) {
+		debugWrite("none, not creating");
+		debugEnd();
 		return NULL;
 	}
-	position=new tdsrows();
+	position=new tdsrows(this);
 	positionrows.setValue(cursor,position);
+
+	debugWrite("created");
+
+	debugEnd();
+
 	return position;
 }
 
 void sqlrprotocol_tds::releasePositionRows(sqlrservercursor *cursor) {
+
+	debugStart("release-position-rows");
+
 	tdsrows	*position=NULL;
 	if (positionrows.getValue(cursor,&position)) {
+		debugWrite("released");
 		delete position;
 		positionrows.remove(cursor);
+	} else {
+		debugWrite("none to release");
 	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::releaseAllPositionRows() {
+
+	debugStart("release-all-position-rows");
+
 	linkedlist<sqlrservercursor *>	*keys=positionrows.getKeys();
 	for (listnode<sqlrservercursor *> *node=keys->getFirst();
 					node; node=node->getNext()) {
@@ -9484,6 +10141,8 @@ void sqlrprotocol_tds::releaseAllPositionRows() {
 		}
 	}
 	positionrows.clear();
+
+	debugEnd();
 }
 
 bool sqlrprotocol_tds::isCursorStatement(const char *stmt) {
@@ -9517,8 +10176,11 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// sp_cursoropen @cursor output, @stmt, [@scrollopt output,
 	//		[@ccopt output, [@rowcount output, [values...]]]]
 
+	debugStart("cursor-open");
+
 	const char	*stmt=paramString(1);
 	if (!stmt) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
@@ -9527,6 +10189,7 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
+		debugEnd();
 		return rpcQueryTooLargeError(stmtlen);
 	}
 
@@ -9534,16 +10197,20 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// statement - without this check, an update would just run as an
 	// ordinary query below, turning a cursor declare into a live write
 	if (!isCursorStatement(stmt)) {
+		debugWrite("not a cursor statement, rejecting");
+		debugEnd();
 		return rpcNumberedError(RPC_OP_UNSUPPORTED,
 				"A cursor may only be declared for a select "
 				"or an exec statement");
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
+	debugWrite("stripped stmt: %.*s",(int)stmtlen,stmt);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -9573,6 +10240,7 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 		rpcError(cursor);
 		releaseCursor(cursor);
 		returnValueInteger(1,0,true);
+		debugEnd();
 		return true;
 	}
 
@@ -9604,6 +10272,7 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 	// forward-only cursor reports
 	returnValueInteger(4,-1,false);
 
+	debugEnd();
 	return true;
 }
 
@@ -9612,8 +10281,11 @@ bool sqlrprotocol_tds::cursorPrepare() {
 	// sp_cursorprepare @handle output, @params, @stmt, @options
 	//			[, @scrollopt output [, @ccopt output]]
 
+	debugStart("cursor-prepare");
+
 	const char	*stmt=paramString(2);
 	if (!stmt) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
@@ -9622,14 +10294,17 @@ bool sqlrprotocol_tds::cursorPrepare() {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
+		debugEnd();
 		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
+	debugWrite("stripped stmt: %.*s",(int)stmtlen,stmt);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -9639,6 +10314,7 @@ bool sqlrprotocol_tds::cursorPrepare() {
 		rpcError(cursor);
 		releaseCursor(cursor);
 		returnValueInteger(1,0,true);
+		debugEnd();
 		return true;
 	}
 
@@ -9654,6 +10330,7 @@ bool sqlrprotocol_tds::cursorPrepare() {
 	returnValueInteger(2,CURSOR_SCROLLOPT_FORWARD_ONLY,false);
 	returnValueInteger(3,CURSOR_CCOPT_READ_ONLY,false);
 
+	debugEnd();
 	return true;
 }
 
@@ -9663,14 +10340,19 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	//			[@scrollopt output, [@ccopt output,
 	//			[@rowcount output, [values...]]]]
 
+	debugStart("cursor-execute");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
 		// a handle below the base is the backend's own, from an
 		// sp_prepare inside a raw batch - run it there
 		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			debugWrite("backend handle: %d",handle);
+			debugEnd();
 			return backendCursorExecute(handle,nometadata);
 		}
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);
@@ -9693,6 +10375,7 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	if (!success) {
 		rpcError(cursor);
 		returnValueInteger(1,0,true);
+		debugEnd();
 		return true;
 	}
 
@@ -9716,6 +10399,7 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	returnValueInteger(3,CURSOR_CCOPT_READ_ONLY,false);
 	returnValueInteger(4,-1,false);
 
+	debugEnd();
 	return true;
 }
 
@@ -9725,8 +10409,11 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 	//			[@scrollopt output, [@ccopt output,
 	//			[@rowcount output, [values...]]]]
 
+	debugStart("cursor-prep-exec");
+
 	const char	*stmt=paramString(3);
 	if (!stmt) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,"statement",0);
 	}
 
@@ -9735,14 +10422,17 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 	// bounds checking
 	size_t	stmtlen=charstring::getLength(stmt);
 	if (stmtlen>maxquerysize) {
+		debugEnd();
 		return rpcQueryTooLargeError(stmtlen);
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
+	debugWrite("stripped stmt: %.*s",(int)stmtlen,stmt);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
+		debugEnd();
 		return rpcNoCursorAvailableError();
 	}
 
@@ -9764,6 +10454,7 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 		releaseCursor(cursor);
 		returnValueInteger(1,0,true);
 		returnValueInteger(2,0,true);
+		debugEnd();
 		return true;
 	}
 
@@ -9789,6 +10480,7 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 	returnValueInteger(4,CURSOR_CCOPT_READ_ONLY,false);
 	returnValueInteger(5,-1,false);
 
+	debugEnd();
 	return true;
 }
 
@@ -9796,15 +10488,20 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 
 	// sp_cursorunprepare @handle
 
+	debugStart("cursor-unprepare");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
 	if (!cursor) {
 		// a handle below the base is the backend's own, from an
 		// sp_prepare inside a raw batch - unprepare it there
 		if (handle && handle<SQLRELAY_HANDLE_BASE) {
+			debugWrite("backend handle: %d",handle);
+			debugEnd();
 			return backendHandleProc("sp_cursorunprepare",handle,
 							false,false);
 		}
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_STMT,
 					"prepared statement handle",
 								handle);
@@ -9823,6 +10520,7 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
+	debugEnd();
 	return true;
 }
 
@@ -9830,9 +10528,12 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 
 	// sp_cursorfetch @cursor, [@fetchtype, [@rownum, [@nrows]]]
 
+	debugStart("cursor-fetch");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
 						"cursor handle",handle);
 	}
@@ -9853,6 +10554,7 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 	if (executeflag.getValue(cursor)) {
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
 			rpcError(cursor);
+			debugEnd();
 			return true;
 		}
 		executeflag.setValue(cursor,false);
@@ -9875,6 +10577,7 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 			// fall through
 		default:
 			debugWrite("unsupported fetch type: 0x%04x",fetchtype);
+			debugEnd();
 			return rpcNumberedError(RPC_FETCH_UNSUPPORTED,
 					"Only forward-only cursors "
 					"are supported");
@@ -9884,6 +10587,7 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 	if (fetchtype==CURSOR_FETCH_INFO) {
 		doneInProc(DONE_COUNT,0,0);
 		returnStatus(RPC_STATUS_SUCCESS);
+		debugEnd();
 		return true;
 	}
 
@@ -9900,6 +10604,7 @@ bool sqlrprotocol_tds::cursorFetch(bool nometadata) {
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
+	debugEnd();
 	return true;
 }
 
@@ -9907,9 +10612,12 @@ bool sqlrprotocol_tds::cursorOption() {
 
 	// sp_cursoroption @cursor, @code, @value
 
+	debugStart("cursor-option");
+
 	uint32_t		handle=(uint32_t)paramInteger(0);
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
 						"cursor handle",handle);
 	}
@@ -9923,12 +10631,15 @@ bool sqlrprotocol_tds::cursorOption() {
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
+	debugEnd();
 	return true;
 }
 
 bool sqlrprotocol_tds::cursorClose() {
 
 	// sp_cursorclose @cursor
+
+	debugStart("cursor-close");
 
 	uint32_t	handle=(uint32_t)paramInteger(0);
 
@@ -9938,11 +10649,13 @@ bool sqlrprotocol_tds::cursorClose() {
 	if (handle==CURSOR_CLOSE_ALL) {
 		releaseHandles(&cursorhandles,&stmthandles);
 		returnStatus(RPC_STATUS_SUCCESS);
+		debugEnd();
 		return true;
 	}
 
 	sqlrservercursor	*cursor=handleCursor(&cursorhandles,handle);
 	if (!cursor) {
+		debugEnd();
 		return rpcInvalidHandleError(RPC_NO_SUCH_CURSOR,
 						"cursor handle",handle);
 	}
@@ -9958,6 +10671,7 @@ bool sqlrprotocol_tds::cursorClose() {
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
+	debugEnd();
 	return true;
 }
 
@@ -9965,6 +10679,8 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 					size_t rpsize,
 					const byte_t **rpout,
 					size_t *rpsizeout) {
+
+	debugStart("params");
 
 	// reset the pool that parameter values get copied into
 	rpcparampool.clear();
@@ -9984,6 +10700,7 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 
 		if (!param(rpcparamcount,&rp,&rpsize,exceeded)) {
 			// protocol error
+			debugEnd();
 			return false;
 		}
 
@@ -9999,6 +10716,7 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 		// forever
 		if (rpsize>=oldrpsize) {
 			debugWrite("parameter consumed nothing");
+			debugEnd();
 			return false;
 		}
 	}
@@ -10009,6 +10727,7 @@ bool sqlrprotocol_tds::params(const byte_t *rp,
 	*rpout=rp;
 	*rpsizeout=rpsize;
 
+	debugEnd();
 	return true;
 }
 
@@ -10119,14 +10838,18 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	const byte_t	*&rp=*rpinout;
 	size_t		&rpsize=*rpsizeinout;
 
+	debugStart("param-value");
+	debugWrite("param: %d",param);
+
 	// type info...
 	if (!rpsize) {
+		debugEnd();
 		return false;
 	}
 	byte_t	tdstype;
 	read(rp,&tdstype,&rp);
 	rpsize--;
-	debugWrite("tdstype: 0x%02x",tdstype);
+	debugColumnType(tdstype);
 
 	uint32_t	maxsize=0;
 	byte_t		precision=0;
@@ -10147,6 +10870,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_NTEXT:
 			case TDS_TYPE_IMAGE:
 				if (rpsize<sizeof(uint32_t)) {
+					debugEnd();
 					return false;
 				}
 				readLE(rp,&maxsize,&rp);
@@ -10161,6 +10885,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_BIGVARBIN:
 				{
 				if (rpsize<sizeof(uint16_t)) {
+					debugEnd();
 					return false;
 				}
 				uint16_t	size;
@@ -10180,6 +10905,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			default:
 				{
 				if (!rpsize) {
+					debugEnd();
 					return false;
 				}
 				byte_t	size;
@@ -10198,6 +10924,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_DECIMAL:
 			case TDS_TYPE_DECIMALN:
 				if (!rpsize) {
+					debugEnd();
 					return false;
 				}
 				read(rp,&precision,&rp);
@@ -10216,6 +10943,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			case TDS_TYPE_DATETIME2N:
 			case TDS_TYPE_DATETIMEOFFSETN:
 				if (!rpsize) {
+					debugEnd();
 					return false;
 				}
 				read(rp,&scale,&rp);
@@ -10229,6 +10957,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		debugWrite("partlentype...");
 
 		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
+		debugEnd();
 		return rpcUnsupportedTypeError(tdstype);
 	}
 
@@ -10252,6 +10981,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_INTN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10275,6 +11005,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -10282,6 +11013,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_BITN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10293,6 +11025,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				tdstype=TDS_TYPE_BIT;
 			} else {
 				debugWrite("invalid size: %d",size);
+				debugEnd();
 				return false;
 			}
 			}
@@ -10300,6 +11033,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_FLTN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10317,6 +11051,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -10324,6 +11059,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_MONEYN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10341,6 +11077,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -10348,6 +11085,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_DATETIMN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10365,6 +11103,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 					break;
 				default:
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 			}
 			}
@@ -10388,6 +11127,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				{
 				// FIXME: do something with this
 				if (rpsize<5) {
+					debugEnd();
 					return false;
 				}
 				byte_t	coll[5];
@@ -10412,6 +11152,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_BIT:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			char	val;
@@ -10435,6 +11176,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			int16_t	val;
@@ -10458,6 +11200,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			int32_t	val;
@@ -10480,6 +11223,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_DATETIM4:
 			{
 			if (rpsize<2*sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	days;
@@ -10497,6 +11241,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 
 			if (rpsize<sizeof(float)) {
+				debugEnd();
 				return false;
 			}
 			float	val;
@@ -10536,6 +11281,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_MONEY:
 			{
 			if (rpsize<2*sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	high;
@@ -10553,6 +11299,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_DATETIME:
 			{
 			if (rpsize<2*sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			int32_t		dayssince1900;
@@ -10571,6 +11318,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 
 			if (rpsize<sizeof(double)) {
+				debugEnd();
 				return false;
 			}
 			double	val;
@@ -10610,6 +11358,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_MONEY4:
 			{
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			int32_t	val;
@@ -10625,6 +11374,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 
 			if (rpsize<sizeof(uint64_t)) {
+				debugEnd();
 				return false;
 			}
 			int64_t	val;
@@ -10647,12 +11397,14 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_GUID:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			// FIXME: actually implement this
@@ -10671,6 +11423,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			if (tdstype==TDS_TYPE_DECIMALN ||
 				tdstype==TDS_TYPE_NUMERICN) {
 				if (!rpsize) {
+					debugEnd();
 					return false;
 				}
 				byte_t	size;
@@ -10686,9 +11439,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				// up to 254 bytes over a 16 byte stack array
 				if (size>sizeof(val)+1) {
 					debugWrite("invalid size: %d",size);
+					debugEnd();
 					return false;
 				}
 				if (rpsize<size) {
+					debugEnd();
 					return false;
 				}
 				read(rp,&ispositive,&rp);
@@ -10697,6 +11452,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				valsize=size-1;
 			} else {
 				if (rpsize<1+sizeof(val)) {
+					debugEnd();
 					return false;
 				}
 				read(rp,&ispositive,&rp);
@@ -10741,6 +11497,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_DATEN:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10751,6 +11508,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	dayssince1=0;
@@ -10778,6 +11536,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			// int16_t - timezone offset - minutes from utc
 			// 				(between -840 and 840)
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
@@ -10788,6 +11547,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			rp+=size;
@@ -10799,12 +11559,14 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_VARCHAR:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			if (bv) {
@@ -10826,6 +11588,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			// maxsize for it otherwise, so refuse it here rather
 			// than misparse the rest of the packet.
 			if (!dbisase) {
+				debugEnd();
 				return rpcUnsupportedTypeError(tdstype);
 			}
 			// fall through
@@ -10833,12 +11596,14 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_VARBINARY:
 			{
 			if (!rpsize) {
+				debugEnd();
 				return false;
 			}
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			if (bv) {
@@ -10852,6 +11617,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_BIGVARBIN:
 			{
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	size;
@@ -10862,6 +11628,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			if (bv) {
@@ -10875,6 +11642,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_BIGVARCHR:
 			{
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	size;
@@ -10892,6 +11660,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			}
 
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 
@@ -10934,6 +11703,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			{
 			// the size is in bytes, but the data is ucs-2
 			if (rpsize<sizeof(uint16_t)) {
+				debugEnd();
 				return false;
 			}
 			uint16_t	size;
@@ -10951,6 +11721,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			}
 
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 
@@ -11009,6 +11780,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			break;
 		case TDS_TYPE_UDT:
 			// FIXME: nothing parses a udt body yet
+			debugEnd();
 			return rpcUnsupportedTypeError(tdstype);
 		case TDS_TYPE_XML:
 		case TDS_TYPE_TEXT:
@@ -11018,6 +11790,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			// way, including the statement and parameter
 			// declaration strings the sp_ procs take
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	size;
@@ -11031,6 +11804,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			}
 
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 
@@ -11091,6 +11865,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		case TDS_TYPE_SSVARIANT:
 			{
 			if (rpsize<sizeof(uint32_t)) {
+				debugEnd();
 				return false;
 			}
 			uint32_t	size;
@@ -11101,6 +11876,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 			}
 			if (rpsize<size) {
+				debugEnd();
 				return false;
 			}
 			if (bv && tdstype==TDS_TYPE_IMAGE) {
@@ -11120,8 +11896,10 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			// *TVP_ROW
 			// TVP_END_TOKEN
 			// FIXME: nothing parses a tvp body yet
+			debugEnd();
 			return rpcUnsupportedTypeError(tdstype);
 		default:
+			debugEnd();
 			return rpcUnsupportedTypeError(tdstype);
 	}
 
@@ -11136,6 +11914,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 		//   	NormVersion - byte      (tds 7.4+)
 	}
 
+	debugEnd();
 	return true;
 }
 
@@ -11166,9 +11945,9 @@ void sqlrprotocol_tds::envChange(byte_t type,
 				oldvaluelen*sizeof(uint16_t);
 
 	debugStart("env change");
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
-	debugWrite("type: %d",type);
+	debugEnvChangeType(type);
 	debugWrite("newvaluelensize:%d",newvaluelensize);
 	debugWrite("newvaluelen: %lld",(long long)newvaluelen);
 	debugWrite("newvalue: %S",newvalue);
@@ -11265,7 +12044,7 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 				(fixedsize+msgtextlen*sizeof(ucs2_t));
 
 	debugStart((token==TOKEN_INFO)?"info":"error");
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
 	debugWrite("number: %d",number);
 	debugWrite("state: %d",state);
@@ -11299,6 +12078,15 @@ bool sqlrprotocol_tds::sendError(uint32_t number,
 					byte_t errclass,
 					const char *msgtext,
 					uint32_t linenumber) {
+
+	debugStart("send error");
+	debugWrite("number: %d",number);
+	debugWrite("state: %d",state);
+	debugWrite("class: %d",errclass);
+	debugWrite("msgtext: %s",msgtext);
+	debugWrite("linenumber: %d",linenumber);
+	debugEnd();
+
 	resppacket.clear();
 	appendError(number,state,errclass,msgtext,srvname,NULL,linenumber);
 	done(DONE_ERROR,0,0);
@@ -11382,8 +12170,8 @@ void sqlrprotocol_tds::done(byte_t token,
 			debugStart("done");
 			break;
 	}
-	debugWrite("token: 0x%02x",token);
-	debugWrite("status: 0x%02x",status);
+	debugTokenType(token);
+	debugDoneStatus(status);
 	debugWrite("curcmd: 0x%02x",curcmd);
 	debugWrite("donerowcount: %lld",(long long)donerowcount);
 	debugEnd();
@@ -11417,7 +12205,7 @@ void sqlrprotocol_tds::returnStatus(uint32_t value) {
 	writeLE(&resppacket,value);
 
 	debugStart("return-status");
-	debugWrite("token: 0x%02x",token);
+	debugTokenType(token);
 	debugWrite("status: %d",value);
 	debugEnd();
 }
@@ -11440,20 +12228,26 @@ uint32_t sqlrprotocol_tds::procReturnValue(sqlrservercursor *cursor) {
 
 void sqlrprotocol_tds::returnValues(sqlrservercursor *cursor) {
 
+	debugStart("return-values");
+
 	// for each output bind...
 	uint16_t	outbindcount=cont->getOutputBindCount(cursor);
+	debugWrite("outbindcount: %d",outbindcount);
 	uint16_t	ordinal=1;
 	for (uint16_t i=0; i<outbindcount; i++) {
 
 		// the return value went out in the RETURNSTATUS token, so it
 		// isn't one of these, and it doesn't take up an ordinal
 		if (outbindparams[i]==RPC_RETURN_VALUE_PARAM) {
+			debugWrite("param %d: (return value, skipped)",i);
 			continue;
 		}
 
 		returnValue(cursor,i,ordinal);
 		ordinal++;
 	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
@@ -11461,8 +12255,11 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 						uint16_t namesize,
 						uint32_t usertype) {
 
+	debugStart("return-value-header");
+
 	byte_t	token=TOKEN_RETURNVALUE;
 	write(&resppacket,token);
+	debugTokenType(token);
 
 	// param ordinal
 	writeLE(&resppacket,ordinal);
@@ -11478,6 +12275,7 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 		debugWrite("name: %s",name);
 	} else {
 		write(&resppacket,(byte_t)0);
+		debugWrite("name: (none)");
 	}
 
 	// status - 0x01 means it's an output parameter
@@ -11498,6 +12296,8 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 
 	debugWrite("ordinal: %d",ordinal);
 	debugWrite("usertype: %d",usertype);
+
+	debugEnd();
 }
 
 void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
@@ -11547,6 +12347,9 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 					byte_t tdstype,
 					uint32_t maxsize) {
 
+	debugStart("return-value-char");
+	debugColumnType(tdstype);
+
 	// unicode types go back as ucs-2, everything else as the "big"
 	// (2-byte-length) form of what the client declared - the legacy
 	// 1-byte forms and text/ntext fall back to the closest "big" type
@@ -11559,16 +12362,20 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 	byte_t	outtype=(unicode)?
 			((blankpad)?TDS_TYPE_NCHAR:TDS_TYPE_NVARCHAR):
 			((blankpad)?TDS_TYPE_BIGCHAR:TDS_TYPE_BIGVARCHR);
+	debugWrite("unicode: %d",unicode);
+	debugWrite("blankpad: %d",blankpad);
 
 	// the client will read the declared size as signed, and a text or
 	// varchar(max) parameter declares more than that fits
 	if (maxsize>32767) {
 		maxsize=32767;
 	}
+	debugWrite("maxsize: %d",maxsize);
 
 	bool	isnull=(bv->type!=SQLRSERVERBINDVARTYPE_STRING ||
 				!bv->value.stringval ||
 				cont->getBindValueIsNull(bv->isnull));
+	debugWrite("isnull: %d",isnull);
 
 	// the value is whatever the backend put in the buffer, decoded into
 	// what the client's declared type takes and blank padded if that
@@ -11603,6 +12410,7 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 	if (isnull) {
 		writeLE(&resppacket,(uint16_t)0xFFFF);
 		debugWrite("value: (null)");
+		debugEnd();
 		return;
 	}
 
@@ -11623,16 +12431,22 @@ void sqlrprotocol_tds::returnValueChar(sqlrserverbindvar *bv,
 	}
 
 	debugWrite("value: %.*s",(int32_t)valuelength,value);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::returnValueDateTime(sqlrserverbindvar *bv,
 						byte_t tdstype,
 						uint32_t maxsize) {
 
+	debugStart("return-value-date-time");
+	debugColumnType(tdstype);
+	debugWrite("maxsize: %d",maxsize);
+
 	// a client that declared smalldatetime gets 4 bytes back, one that
 	// declared datetime gets 8 - the same widths datetimn allows.  the
 	// fixed length types carry no maxsize, so they go by type alone.
 	byte_t	size=(tdstype==TDS_TYPE_DATETIM4 || maxsize==4)?4:8;
+	debugWrite("size: %d",size);
 
 	// type info
 	write(&resppacket,(byte_t)TDS_TYPE_DATETIMN);
@@ -11643,6 +12457,7 @@ void sqlrprotocol_tds::returnValueDateTime(sqlrserverbindvar *bv,
 			cont->getBindValueIsNull(bv->isnull)) {
 		write(&resppacket,(byte_t)0);
 		debugWrite("value: (null)");
+		debugEnd();
 		return;
 	}
 
@@ -11673,12 +12488,16 @@ void sqlrprotocol_tds::returnValueDateTime(sqlrserverbindvar *bv,
 	}
 
 	debugWrite("value: %s",datetime);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::returnValueDecimal(sqlrserverbindvar *bv,
 						byte_t tdstype,
 						byte_t precision,
 						byte_t scale) {
+
+	debugStart("return-value-decimal");
+	debugColumnType(tdstype);
 
 	// The nullable forms are the only ones a real server sends back,
 	// and the legacy fixed-size forms have no length byte to say null
@@ -11741,6 +12560,7 @@ void sqlrprotocol_tds::returnValueDecimal(sqlrserverbindvar *bv,
 	if (isnull) {
 		write(&resppacket,(byte_t)0);
 		debugWrite("value: (null)");
+		debugEnd();
 		return;
 	}
 
@@ -11762,6 +12582,7 @@ void sqlrprotocol_tds::returnValueDecimal(sqlrserverbindvar *bv,
 	write(&resppacket,val,wiresize-1);
 
 	debugWrite("value: %s",field);
+	debugEnd();
 }
 
 void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
@@ -11886,6 +12707,621 @@ void sqlrprotocol_tds::debugSystemError() {
 	char	*err=error::getErrorString();
 	debugWrite("%s",err);
 	delete[] err;
+}
+
+void sqlrprotocol_tds::debugPacketType(const char *name, byte_t type) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (type) {
+		case SQL_BATCH:
+			typestring="SQL_BATCH";
+			break;
+		case PRE_TDS7_LOGIN:
+			typestring="PRE_TDS7_LOGIN";
+			break;
+		case RPC:
+			typestring="RPC";
+			break;
+		case TABULAR_RESULT:
+			typestring="TABULAR_RESULT";
+			break;
+		case ATTENTION_SIGNAL:
+			typestring="ATTENTION_SIGNAL";
+			break;
+		case BULK_LOAD_DATA:
+			typestring="BULK_LOAD_DATA";
+			break;
+		case FEDERATED_AUTHENTICATION_TOKEN:
+			typestring="FEDERATED_AUTHENTICATION_TOKEN";
+			break;
+		case TRANSACTION_MANAGER_REQUEST:
+			typestring="TRANSACTION_MANAGER_REQUEST";
+			break;
+		case TDS7_LOGIN:
+			typestring="TDS7_LOGIN";
+			break;
+		case SSPI:
+			typestring="SSPI";
+			break;
+		case PRE_LOGIN:
+			typestring="PRE_LOGIN";
+			break;
+		default:
+			typestring="unknown packet type";
+			break;
+	}
+	debugWrite("%s: 0x%02x (%s)",
+			(name)?name:"packet type",
+			(uint32_t)(0x000000ff&type),
+			typestring);
+}
+
+void sqlrprotocol_tds::debugPacketStatus(byte_t status) {
+	if (!getDebug()) {
+		return;
+	}
+	debugWrite("packet status: 0x%02x",(uint32_t)(0x000000ff&status));
+	stringbuffer	b;
+	b.printBits(status);
+	debugWrite("%s",b.getString());
+	if (status==STATUS_NORMAL) {
+		debugWrite("STATUS_NORMAL");
+	}
+	if (status&STATUS_EOM) {
+		debugWrite("STATUS_EOM");
+	}
+	if (status&STATUS_IGNORE) {
+		debugWrite("STATUS_IGNORE");
+	}
+	if (status&STATUS_RESETCONNECTION) {
+		debugWrite("STATUS_RESETCONNECTION");
+	}
+	if (status&STATUS_RESETCONNECTIONSKIPTRAN) {
+		debugWrite("STATUS_RESETCONNECTIONSKIPTRAN");
+	}
+}
+
+void sqlrprotocol_tds::debugTokenType(byte_t token) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*tokenstring=NULL;
+	switch (token) {
+		case TOKEN_LOGIN_ACK:
+			tokenstring="TOKEN_LOGIN_ACK";
+			break;
+		case TOKEN_COLMETADATA:
+			tokenstring="TOKEN_COLMETADATA";
+			break;
+		case TOKEN_ROW:
+			tokenstring="TOKEN_ROW";
+			break;
+		case TOKEN_ENV_CHANGE:
+			tokenstring="TOKEN_ENV_CHANGE";
+			break;
+		case TOKEN_INFO:
+			tokenstring="TOKEN_INFO";
+			break;
+		case TOKEN_ERROR:
+			tokenstring="TOKEN_ERROR";
+			break;
+		case TOKEN_DONE:
+			tokenstring="TOKEN_DONE";
+			break;
+		case TOKEN_DONEPROC:
+			tokenstring="TOKEN_DONEPROC";
+			break;
+		case TOKEN_DONEINPROC:
+			tokenstring="TOKEN_DONEINPROC";
+			break;
+		case TOKEN_RETURNSTATUS:
+			tokenstring="TOKEN_RETURNSTATUS";
+			break;
+		case TOKEN_RETURNVALUE:
+			tokenstring="TOKEN_RETURNVALUE";
+			break;
+		default:
+			tokenstring="unknown token";
+			break;
+	}
+	debugWrite("token: 0x%02x (%s)",
+			(uint32_t)(0x000000ff&token),tokenstring);
+}
+
+void sqlrprotocol_tds::debugPreLoginOption(byte_t opt) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*optstring=NULL;
+	switch (opt) {
+		case PL_VERSION:
+			optstring="PL_VERSION";
+			break;
+		case PL_ENCRYPTION:
+			optstring="PL_ENCRYPTION";
+			break;
+		case PL_INSTOPT:
+			optstring="PL_INSTOPT";
+			break;
+		case PL_THREADID:
+			optstring="PL_THREADID";
+			break;
+		case PL_MARS:
+			optstring="PL_MARS";
+			break;
+		case PL_TRACEID:
+			optstring="PL_TRACEID";
+			break;
+		case PL_FEDAUTHREQUIRED:
+			optstring="PL_FEDAUTHREQUIRED";
+			break;
+		case PL_NONCEOPT:
+			optstring="PL_NONCEOPT";
+			break;
+		case PL_TERMINATOR:
+			optstring="PL_TERMINATOR";
+			break;
+		default:
+			optstring="unknown pre-login option";
+			break;
+	}
+	debugWrite("token: 0x%02x (%s)",
+			(uint32_t)(0x000000ff&opt),optstring);
+}
+
+void sqlrprotocol_tds::debugEncryptionOption(const char *name, byte_t enc) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*encstring=NULL;
+	switch (enc) {
+		case ENCRYPT_OFF:
+			encstring="ENCRYPT_OFF";
+			break;
+		case ENCRYPT_ON:
+			encstring="ENCRYPT_ON";
+			break;
+		case ENCRYPT_NOT_SUP:
+			encstring="ENCRYPT_NOT_SUP";
+			break;
+		case ENCRYPT_REQ:
+			encstring="ENCRYPT_REQ";
+			break;
+		default:
+			encstring="unknown encryption option";
+			break;
+	}
+	debugWrite("%s: 0x%02x (%s)",
+			(name)?name:"encryption",
+			(uint32_t)(0x000000ff&enc),encstring);
+}
+
+void sqlrprotocol_tds::debugLogin7OptionFlags(byte_t optionflags1,
+						byte_t optionflags2,
+						byte_t typeflags,
+						byte_t optionflags3) {
+	if (!getDebug()) {
+		return;
+	}
+
+	stringbuffer	b;
+
+	// option flags 1
+	byte_t	fbyteorder=(optionflags1&(0x01));
+	byte_t	fcharset=(optionflags1&(0x01<<1))>>1;
+	byte_t	ffloattype=(optionflags1&(0x03<<2))>>2;
+	byte_t	fdumpload=(optionflags1&(0x01<<4))>>4;
+	byte_t	fusedbwarn=(optionflags1&(0x01<<5))>>5;
+	byte_t	fusedbfatal=(optionflags1&(0x01<<6))>>6;
+	byte_t	fsetlangwarn=(optionflags1&(0x01<<7))>>7;
+
+	b.printBits(optionflags1);
+	debugWrite("optionflags1: %s",b.getString());
+	debugWrite("fbyteorder: %d (%s)",fbyteorder,
+			(fbyteorder==ORDER_X86)?"ORDER_X86":
+			(fbyteorder==ORDER_68000)?"ORDER_68000":
+			"unknown byte order");
+	debugWrite("fcharset: %d (%s)",fcharset,
+			(fcharset==CHARSET_ASCII)?"CHARSET_ASCII":
+			(fcharset==CHARSET_EBDDIC)?"CHARSET_EBDDIC":
+			"unknown character set");
+	debugWrite("ffloattype: %d (%s)",ffloattype,
+			(ffloattype==FLOAT_IEEE_754)?"FLOAT_IEEE_754":
+			(ffloattype==FLOAT_VAX)?"FLOAT_VAX":
+			(ffloattype==FLOAT_ND5000)?"FLOAT_ND5000":
+			"unknown floating point type");
+	debugWrite("fdumpload: %d (%s)",fdumpload,
+			(fdumpload==DUMPLOAD_ON)?"DUMPLOAD_ON":
+			(fdumpload==DUMPLOAD_OFF)?"DUMPLOAD_OFF":
+			"unknown dump/load");
+	debugWrite("fusedbwarn: %d (%s)",fusedbwarn,
+			(fusedbwarn==USE_DB_WARN_OFF)?"USE_DB_WARN_OFF":
+			(fusedbwarn==USE_DB_WARN_ON)?"USE_DB_WARN_ON":
+			"unknown use db warning");
+	debugWrite("fusedbfatal: %d (%s)",fusedbfatal,
+			(fusedbfatal==USE_DB_WARN)?"USE_DB_WARN":
+			(fusedbfatal==USE_DB_FATAL)?"USE_DB_FATAL":
+			"unknown use db flag");
+	debugWrite("fsetlangwarn: %d (%s)",fsetlangwarn,
+			(fsetlangwarn==SET_LANG_WARN_OFF)?"SET_LANG_WARN_OFF":
+			(fsetlangwarn==SET_LANG_WARN_ON)?"SET_LANG_WARN_ON":
+			"unknown set language warning");
+
+	// option flags 2
+	byte_t	fsetlangfatal=(optionflags2&(0x01));
+	byte_t	fodbc=(optionflags2&(0x01<<1))>>1;
+	byte_t	ftranboundary=(optionflags2&(0x01<<2))>>2;
+	byte_t	fcachecontent=(optionflags2&(0x01<<3))>>3;
+	byte_t	fusertype=(optionflags2&(0x07<<4))>>4;
+	byte_t	fintsecurity=(optionflags2&(0x01<<7))>>7;
+
+	b.clear();
+	b.printBits(optionflags2);
+	debugWrite("optionflags2: %s",b.getString());
+	debugWrite("fsetlangfatal: %d (%s)",fsetlangfatal,
+			(fsetlangfatal==SET_LANG_WARN)?"SET_LANG_WARN":
+			(fsetlangfatal==SET_LANG_FATAL)?"SET_LANG_FATAL":
+			"unknown set language flag");
+	debugWrite("fodbc: %d (%s)",fodbc,
+			(fodbc==ODBC_OFF)?"ODBC_OFF":
+			(fodbc==ODBC_ON)?"ODBC_ON":
+			"unknown odbc flag");
+	debugWrite("ftranboundary: %d",ftranboundary);
+	debugWrite("fcachecontent: %d",fcachecontent);
+	debugWrite("fusertype: %d (%s)",fusertype,
+			(fusertype==USER_NORMAL)?"USER_NORMAL":
+			(fusertype==USER_SERVER)?"USER_SERVER":
+			(fusertype==USER_REMUSER)?"USER_REMUSER":
+			(fusertype==USER_SQLREPL)?"USER_SQLREPL":
+			"unknown user type");
+	debugWrite("fintsecurity: %d (%s)",fintsecurity,
+			(fintsecurity==INTEGRATED_SECURITY_OFF)?
+					"INTEGRATED_SECURITY_OFF":
+			(fintsecurity==INTEGRATED_SECURITY_ON)?
+					"INTEGRATED_SECURITY_ON":
+			"unknown integrated security flag");
+
+	// type flags
+	byte_t	fsqltype=(typeflags&(0x0F));
+	byte_t	foledb=(typeflags&(0x01<<4))>>4;
+	byte_t	freadonlyintent=(typeflags&(0x01<<5))>>5;
+
+	b.clear();
+	b.printBits(typeflags);
+	debugWrite("typeflags: %s",b.getString());
+	debugWrite("fsqltype: %d (%s)",fsqltype,
+			(fsqltype==SQL_DFLT)?"SQL_DFLT":
+			(fsqltype==SQL_TSQL)?"SQL_TSQL":
+			"unknown sql type");
+	debugWrite("foledb: %d (%s)",foledb,
+			(foledb==OLEDB_OFF)?"OLEDB_OFF":
+			(foledb==OLEDB_ON)?"OLEDB_ON":
+			"unknown oledb flag");
+	debugWrite("freadonlyintent: %d",freadonlyintent);
+
+	// option flags 3
+	byte_t	fchangepassword=(optionflags3&(0x01));
+	byte_t	fsendyukonbinaryxml=(optionflags3&(0x01<<1))>>1;
+	byte_t	fuserinstance=(optionflags3&(0x01<<2))>>2;
+	byte_t	funknowncollationhandling=(optionflags3&(0x01<<3))>>3;
+	byte_t	fextension=(optionflags3&(0x01<<4))>>4;
+
+	b.clear();
+	b.printBits(optionflags3);
+	debugWrite("optionflags3: %s",b.getString());
+	debugWrite("fchangepassword: %d",fchangepassword);
+	debugWrite("fsendyukonbinaryxml: %d",fsendyukonbinaryxml);
+	debugWrite("fuserinstance: %d",fuserinstance);
+	debugWrite("funknowncollationhandling: %d",funknowncollationhandling);
+	debugWrite("fextension: %d",fextension);
+}
+
+void sqlrprotocol_tds::debugEnvChangeType(byte_t type) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (type) {
+		case ENV_CHANGE_DATABASE:
+			typestring="ENV_CHANGE_DATABASE";
+			break;
+		case ENV_CHANGE_LANGUAGE:
+			typestring="ENV_CHANGE_LANGUAGE";
+			break;
+		case ENV_CHANGE_CHARSET:
+			typestring="ENV_CHANGE_CHARSET";
+			break;
+		case ENV_CHANGE_PACKET_SIZE:
+			typestring="ENV_CHANGE_PACKET_SIZE";
+			break;
+		case ENV_CHANGE_UNICODE_DATA_SORTING_LOCAL_ID:
+			typestring="ENV_CHANGE_UNICODE_DATA_"
+					"SORTING_LOCAL_ID";
+			break;
+		case ENV_CHANGE_UNICODE_DATA_SORTING_COMPARISON_FLAGS:
+			typestring="ENV_CHANGE_UNICODE_DATA_"
+					"SORTING_COMPARISON_FLAGS";
+			break;
+		case ENV_CHANGE_SQL_COLLATION:
+			typestring="ENV_CHANGE_SQL_COLLATION";
+			break;
+		case ENV_CHANGE_BEGIN_TRANSACTION:
+			typestring="ENV_CHANGE_BEGIN_TRANSACTION";
+			break;
+		case ENV_CHANGE_COMMIT_TRANSACTION:
+			typestring="ENV_CHANGE_COMMIT_TRANSACTION";
+			break;
+		case ENV_CHANGE_ROLLBACK_TRANSACTION:
+			typestring="ENV_CHANGE_ROLLBACK_TRANSACTION";
+			break;
+		case ENV_CHANGE_ENLIST_DTC_TRANSACTION:
+			typestring="ENV_CHANGE_ENLIST_DTC_TRANSACTION";
+			break;
+		case ENV_CHANGE_DEFECT_TRANSACTION:
+			typestring="ENV_CHANGE_DEFECT_TRANSACTION";
+			break;
+		case ENV_CHANGE_REAL_TIME_LOG_SHIPPING:
+			typestring="ENV_CHANGE_REAL_TIME_LOG_SHIPPING";
+			break;
+		case ENV_CHANGE_PROMOTE_TRANSACTION:
+			typestring="ENV_CHANGE_PROMOTE_TRANSACTION";
+			break;
+		case ENV_CHANGE_TRANSACTION_MANAGER_ADDRESS:
+			typestring="ENV_CHANGE_TRANSACTION_MANAGER_ADDRESS";
+			break;
+		case ENV_CHANGE_TRANSACTION_ENDED:
+			typestring="ENV_CHANGE_TRANSACTION_ENDED";
+			break;
+		case ENV_CHANGE_RESETCONNECTION_COMPLETION_ACKNOWLEDGEMENT:
+			typestring="ENV_CHANGE_RESETCONNECTION_"
+					"COMPLETION_ACKNOWLEDGEMENT";
+			break;
+		case ENV_GET_USER_INSTANCE:
+			typestring="ENV_GET_USER_INSTANCE";
+			break;
+		case ENV_GET_ROUTING_INFORMATION:
+			typestring="ENV_GET_ROUTING_INFORMATION";
+			break;
+		default:
+			typestring="unknown env change type";
+			break;
+	}
+	debugWrite("type: %d (%s)",
+			(uint32_t)(0x000000ff&type),typestring);
+}
+
+void sqlrprotocol_tds::debugDoneStatus(uint16_t status) {
+	if (!getDebug()) {
+		return;
+	}
+	debugWrite("status: 0x%04x",status);
+	stringbuffer	b;
+	b.printBits(status);
+	debugWrite("%s",b.getString());
+	if (status==DONE_FINAL) {
+		debugWrite("DONE_FINAL");
+	}
+	if (status&DONE_MORE) {
+		debugWrite("DONE_MORE");
+	}
+	if (status&DONE_ERROR) {
+		debugWrite("DONE_ERROR");
+	}
+	if (status&DONE_INXACT) {
+		debugWrite("DONE_INXACT");
+	}
+	if (status&DONE_COUNT) {
+		debugWrite("DONE_COUNT");
+	}
+	if (status&DONE_ATTN) {
+		debugWrite("DONE_ATTN");
+	}
+	if (status&DONE_RPCINBATCH) {
+		debugWrite("DONE_RPCINBATCH");
+	}
+	if (status&DONE_SRVERROR) {
+		debugWrite("DONE_SRVERROR");
+	}
+}
+
+void sqlrprotocol_tds::debugAllHeadersType(uint16_t type) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (type) {
+		case ALL_HEADERS_QUERY_NOTIFICATIONS:
+			typestring="ALL_HEADERS_QUERY_NOTIFICATIONS";
+			break;
+		case ALL_HEADERS_TRANSACTION_DESCRIPTOR:
+			typestring="ALL_HEADERS_TRANSACTION_DESCRIPTOR";
+			break;
+		case ALL_HEADERS_TRACE_ACTIVITY:
+			typestring="ALL_HEADERS_TRACE_ACTIVITY";
+			break;
+		default:
+			typestring="unknown stream header type";
+			break;
+	}
+	debugWrite("header type: 0x%04x (%s)",type,typestring);
+}
+
+void sqlrprotocol_tds::debugColumnType(byte_t type) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (type) {
+		case TDS_TYPE_NULL:
+			typestring="TDS_TYPE_NULL";
+			break;
+		case TDS_TYPE_INT1:
+			typestring="TDS_TYPE_INT1";
+			break;
+		case TDS_TYPE_BIT:
+			typestring="TDS_TYPE_BIT";
+			break;
+		case TDS_TYPE_INT2:
+			typestring="TDS_TYPE_INT2";
+			break;
+		case TDS_TYPE_INT4:
+			typestring="TDS_TYPE_INT4";
+			break;
+		case TDS_TYPE_DATETIM4:
+			typestring="TDS_TYPE_DATETIM4";
+			break;
+		case TDS_TYPE_FLT4:
+			typestring="TDS_TYPE_FLT4";
+			break;
+		case TDS_TYPE_MONEY:
+			typestring="TDS_TYPE_MONEY";
+			break;
+		case TDS_TYPE_DATETIME:
+			typestring="TDS_TYPE_DATETIME";
+			break;
+		case TDS_TYPE_FLT8:
+			typestring="TDS_TYPE_FLT8";
+			break;
+		case TDS_TYPE_MONEY4:
+			typestring="TDS_TYPE_MONEY4";
+			break;
+		case TDS_TYPE_INT8:
+			typestring="TDS_TYPE_INT8";
+			break;
+		case TDS_TYPE_GUID:
+			typestring="TDS_TYPE_GUID";
+			break;
+		case TDS_TYPE_INTN:
+			typestring="TDS_TYPE_INTN";
+			break;
+		case TDS_TYPE_DECIMAL:
+			typestring="TDS_TYPE_DECIMAL";
+			break;
+		case TDS_TYPE_NUMERIC:
+			typestring="TDS_TYPE_NUMERIC";
+			break;
+		case TDS_TYPE_BITN:
+			typestring="TDS_TYPE_BITN";
+			break;
+		case TDS_TYPE_DECIMALN:
+			typestring="TDS_TYPE_DECIMALN";
+			break;
+		case TDS_TYPE_NUMERICN:
+			typestring="TDS_TYPE_NUMERICN";
+			break;
+		case TDS_TYPE_FLTN:
+			typestring="TDS_TYPE_FLTN";
+			break;
+		case TDS_TYPE_MONEYN:
+			typestring="TDS_TYPE_MONEYN";
+			break;
+		case TDS_TYPE_DATETIMN:
+			typestring="TDS_TYPE_DATETIMN";
+			break;
+		case TDS_TYPE_DATEN:
+			typestring="TDS_TYPE_DATEN";
+			break;
+		case TDS_TYPE_TIMEN:
+			typestring="TDS_TYPE_TIMEN";
+			break;
+		case TDS_TYPE_DATETIME2N:
+			typestring="TDS_TYPE_DATETIME2N";
+			break;
+		case TDS_TYPE_DATETIMEOFFSETN:
+			typestring="TDS_TYPE_DATETIMEOFFSETN";
+			break;
+		case TDS_TYPE_CHAR:
+			typestring="TDS_TYPE_CHAR";
+			break;
+		case TDS_TYPE_VARCHAR:
+			typestring="TDS_TYPE_VARCHAR";
+			break;
+		case TDS_TYPE_BINARY:
+			typestring="TDS_TYPE_BINARY";
+			break;
+		case TDS_TYPE_VARBINARY:
+			typestring="TDS_TYPE_VARBINARY";
+			break;
+		case TDS_TYPE_BIGVARBIN:
+			typestring="TDS_TYPE_BIGVARBIN";
+			break;
+		case TDS_TYPE_BIGVARCHR:
+			typestring="TDS_TYPE_BIGVARCHR";
+			break;
+		case TDS_TYPE_BIGBINARY:
+			typestring="TDS_TYPE_BIGBINARY";
+			break;
+		case TDS_TYPE_BIGCHAR:
+			typestring="TDS_TYPE_BIGCHAR";
+			break;
+		case TDS_TYPE_NVARCHAR:
+			typestring="TDS_TYPE_NVARCHAR";
+			break;
+		case TDS_TYPE_NCHAR:
+			typestring="TDS_TYPE_NCHAR";
+			break;
+		case TDS_TYPE_LONGBINARY:
+			typestring="TDS_TYPE_LONGBINARY";
+			break;
+		case TDS_TYPE_XML:
+			typestring="TDS_TYPE_XML";
+			break;
+		case TDS_TYPE_UDT:
+			typestring="TDS_TYPE_UDT";
+			break;
+		case TDS_TYPE_TEXT:
+			typestring="TDS_TYPE_TEXT";
+			break;
+		case TDS_TYPE_IMAGE:
+			typestring="TDS_TYPE_IMAGE";
+			break;
+		case TDS_TYPE_NTEXT:
+			typestring="TDS_TYPE_NTEXT";
+			break;
+		case TDS_TYPE_SSVARIANT:
+			typestring="TDS_TYPE_SSVARIANT";
+			break;
+		case TDS_TYPE_TVP:
+			typestring="TDS_TYPE_TVP";
+			break;
+		default:
+			typestring="unknown TDS_TYPE";
+			break;
+	}
+	debugWrite("tdstype: 0x%02x (%s)",
+			(uint32_t)(0x000000ff&type),typestring);
+}
+
+void sqlrprotocol_tds::debugCollation(uint32_t lcid, byte_t sortid) {
+	if (!getDebug()) {
+		return;
+	}
+	stringbuffer	b;
+	b.printBits(lcid);
+	debugWrite("collation: %s %d",b.getString(),
+					(uint32_t)(0x000000ff&sortid));
+	// lcid occupies the low 20 bits, the sort flags the next 8,
+	// and the version the high 4 (MS-TDS 2.2.5.1.2)
+	debugWrite("lcid: 0x%05x",lcid&0x000FFFFF);
+	debugWrite("ignorecase: %d",(lcid&(0x01<<20))>>20);
+	debugWrite("ignoreaccent: %d",(lcid&(0x01<<21))>>21);
+	debugWrite("ignorewidth: %d",(lcid&(0x01<<22))>>22);
+	debugWrite("ignorekana: %d",(lcid&(0x01<<23))>>23);
+	debugWrite("binary: %d",(lcid&(0x01<<24))>>24);
+	debugWrite("binary2: %d",(lcid&(0x01<<25))>>25);
+	debugWrite("utf8: %d",(lcid&(0x01<<26))>>26);
+	debugWrite("version: %d",(lcid&(0x0FU<<28))>>28);
+	debugWrite("sortid: 0x%02x",(uint32_t)(0x000000ff&sortid));
+}
+
+void sqlrprotocol_tds::debugProcId(uint16_t procid) {
+	if (!getDebug()) {
+		return;
+	}
+	debugWrite("procid: %hd (%s)",procid,
+			procids[(procid<=SP_MAX_PROCID)?procid:0]);
 }
 
 extern "C" {
