@@ -9555,14 +9555,14 @@ bool sqlrprotocol_tds::cursorPositioned() {
 
 	// sp_cursor @cursor, @optype, @rownum, @table [, @column...]
 	//
-	// the positioned update/delete/insert proc.  a real sql server does
-	// it with "where current of", which the server API has no equivalent
-	// for, so the statement is synthesized from the row's primary key
-	// values, which were kept when sp_cursorfetch sent it - the same
-	// thing an odbc driver does for an optimistic cursor.
+	// the positioned update/delete/insert proc. a real sql server uses
+	// "where current of", which the server API can't do, so the statement
+	// is synthesized from the row's primary key values kept by
+	// sp_cursorfetch - the same thing an odbc driver does for an
+	// optimistic cursor.
 	//
-	// the values to set arrive as one parameter per column, named for the
-	// column with a leading @, and a real server rejects any other form.
+	// values arrive one parameter per column, named for the column with
+	// a leading @; anything else is rejected.
 
 	debugStart("cursor-positioned");
 
@@ -9699,9 +9699,9 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 	debugWrite("table: %s",table);
 
 	// split the table name into the parts getPrimaryKeysList() wants - it
-	// matches on the schema exactly, so an unqualified table has to be
-	// filled out with the current schema rather than left empty, which
-	// means "tables with no schema" and matches nothing
+	// matches the schema exactly, so an unqualified table is filled out
+	// with the current schema rather than left empty, which matches
+	// nothing
 	char		*currentcatalog=cont->getCurrentCatalog();
 	char		*currentschema=cont->getCurrentSchema();
 	const char	*catalog=NULL;
@@ -9758,8 +9758,7 @@ bool sqlrprotocol_tds::positionedWhere(sqlrservercursor *cursor,
 		return false;
 	}
 
-	// match each key column back to a column of the cursor, so its
-	// value can be taken from the row that was fetched
+	// match key columns back to cursor columns
 	const char	*keycol=keycols.getString();
 	uint32_t	colcount=cont->colCount(cursor);
 	bool		first=true;
@@ -10117,11 +10116,10 @@ bool sqlrprotocol_tds::isCursorStatement(const char *stmt) {
 
 size_t sqlrprotocol_tds::stripForUpdateOf(const char *stmt, size_t stmtlen) {
 
-	// mssql only accepts "for update [of col,...]" inside an actual
-	// DECLARE CURSOR statement, and this module never issues one - it
-	// prepares the client's cursor-declare text as an ordinary statement
-	// and tracks positioned-update state itself, so the clause has to be
-	// stripped or the backend rejects it outright
+	// mssql only accepts "for update [of col,...]" inside a DECLARE
+	// CURSOR statement; this module prepares the cursor-declare text as
+	// an ordinary statement instead, so the clause has to be stripped or
+	// the backend rejects it
 	if (forupdateof.match(stmt,stmtlen)) {
 		return (size_t)(forupdateof.getSubstringStartOffset(0));
 	}
