@@ -3469,6 +3469,8 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 			ttiversion=ttiversions[i];
 		}
 	}
+	debugWrite("selected tti version: %d",ttiversion);
+
 	if (!ttiversion) {
 		debugWrite("no supported tti protocol version found");
 
@@ -3483,21 +3485,27 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 
 	switch (ttiversion) {
 		case 6:
+			debugWrite("calling putTti6Response");
 			putTti6Response();
 			break;
 		case 5:
+			debugWrite("calling putTti5Response");
 			putTti5Response();
 			break;
 		case 4:
+			debugWrite("calling putTti4Response");
 			putTti4Response();
 			break;
 		case 3:
+			debugWrite("calling putTti3Response");
 			putTti3Response();
 			break;
 		case 2:
+			debugWrite("calling putTti2Response");
 			putTti2Response();
 			break;
 		case 1:
+			debugWrite("calling putTti1Response");
 			putTti1Response();
 			break;
 	}
@@ -3720,6 +3728,23 @@ void sqlrprotocol_oracle::putTti6Response() {
 	}
 	compilecaps[CCAP_FIELD_VERSION]=serverfieldversion;
 
+	if (getDebug()) {
+		debugStart("tti 6 response");
+		debugWrite("protocol version: %d",ttiversion);
+		debugWrite("charset: %d",charset);
+		debugWrite("national charset: %d",nationalcharset);
+		debugWrite("server flags: 0x%02x",(byte_t)1);
+		debugWrite("logon types: 0x%02x",
+					compilecaps[CCAP_LOGON_TYPES]);
+		debugWrite("field version: 0x%02x",
+					compilecaps[CCAP_FIELD_VERSION]);
+		debugWrite("compile caps size: %d",
+					(int)sizeof(compilecaps));
+		debugWrite("runtime caps size: %d",
+					(int)sizeof(ttiserverruntimecaps));
+		debugEnd();
+	}
+
 	putTtiResponse(ttiversion,
 			compilecaps,(byte_t)sizeof(compilecaps),
 			ttiserverruntimecaps,
@@ -3732,6 +3757,16 @@ void sqlrprotocol_oracle::putTti5Response() {
 	// (no capability arrays - they are a version 6 field, and appending
 	// them anyway gets ORA-28547 from OCI 23.26 and ORA-17401 from ojdbc
 	// 23.26)
+	if (getDebug()) {
+		debugStart("tti 5 response");
+		debugWrite("protocol version: %d",ttiversion);
+		debugWrite("charset: %d",charset);
+		debugWrite("national charset: %d",nationalcharset);
+		debugWrite("server flags: 0x%02x",(byte_t)1);
+		debugWrite("no compile or runtime caps sent "
+						"(version 5 field)");
+		debugEnd();
+	}
 	putTtiResponse(ttiversion,NULL,0,NULL,0);
 }
 
@@ -3739,24 +3774,48 @@ void sqlrprotocol_oracle::putTti4Response() {
 
 	// oracle ??? supports TTI 4 (and lower)
 	// FIXME: implement this...
+	if (getDebug()) {
+		debugStart("tti 4 response");
+		debugWrite("protocol version: %d",ttiversion);
+		debugWrite("not implemented");
+		debugEnd();
+	}
 }
 
 void sqlrprotocol_oracle::putTti3Response() {
 
 	// oracle ??? supports TTI 3 (and lower)
 	// FIXME: implement this...
+	if (getDebug()) {
+		debugStart("tti 3 response");
+		debugWrite("protocol version: %d",ttiversion);
+		debugWrite("not implemented");
+		debugEnd();
+	}
 }
 
 void sqlrprotocol_oracle::putTti2Response() {
 
 	// oracle ??? supports TTI 2 (and lower)
 	// FIXME: implement this...
+	if (getDebug()) {
+		debugStart("tti 2 response");
+		debugWrite("protocol version: %d",ttiversion);
+		debugWrite("not implemented");
+		debugEnd();
+	}
 }
 
 void sqlrprotocol_oracle::putTti1Response() {
 
 	// oracle ??? supports TTI 1 (and lower)
 	// FIXME: implement this...
+	if (getDebug()) {
+		debugStart("tti 1 response");
+		debugWrite("protocol version: %d",ttiversion);
+		debugWrite("not implemented");
+		debugEnd();
+	}
 }
 
 // The layout of this exchange - the request header, the two length-prefixed
@@ -3788,7 +3847,24 @@ static const byte_t	dbtimezone[]={
 #define DB_TIMEZONE_VERSION	11
 
 bool sqlrprotocol_oracle::dataTypeNegotiation() {
-	return recvDataTypeRequest() && sendDataTypeResponse();
+
+	debugStart("data type negotiation");
+
+	if (!recvDataTypeRequest()) {
+		debugWrite("outcome: failed receiving datatype request");
+		debugEnd();
+		return false;
+	}
+
+	if (!sendDataTypeResponse()) {
+		debugWrite("outcome: failed sending datatype response");
+		debugEnd();
+		return false;
+	}
+
+	debugWrite("outcome: succeeded");
+	debugEnd();
+	return true;
 }
 
 bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
@@ -3818,6 +3894,12 @@ bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
 	*caps=rp;
 	*capssize=size;
 
+	if (getDebug()) {
+		for (byte_t i=0; i<size; i++) {
+			debugWrite("capability[%d]: 0x%02x",i,rp[i]);
+		}
+	}
+
 	*rpout=rp+size;
 
 	return true;
@@ -3830,30 +3912,33 @@ uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
 	for (;;) {
 
 		if (end-rp<2) {
-			return count;
+			break;
 		}
 
 		uint16_t	datatype;
 		readBE(rp,&datatype,&rp);
 		if (!datatype) {
-			return count;
+			break;
 		}
 
 		if (end-rp<2) {
-			return count;
+			break;
 		}
 
 		uint16_t	convdatatype;
 		readBE(rp,&convdatatype,&rp);
 		if (convdatatype) {
 			if (end-rp<4) {
-				return count;
+				break;
 			}
 			rp+=4;
 		}
 
 		count++;
 	}
+
+	debugWrite("total data type count: %d",count);
+	return count;
 }
 
 bool sqlrprotocol_oracle::recvDataTypeRequest() {
@@ -4393,6 +4478,7 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 						DB_TIMEZONE_VERSION);
 			}
 		}
+		debugWrite("negotiated field version: %d",fieldversion);
 		debugWrite("data types: %d",count);
 		debugEnd();
 	}
