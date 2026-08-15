@@ -39,9 +39,8 @@ sqlrauth_tds_connectstrings::sqlrauth_tds_connectstrings(
 		return;
 	}
 
-	// create an array of users and passwords and store the
-	// users and passwords from the configuration in them
-	// this is faster than running through the xml over and over
+	// cache users/passwords from the config; faster than
+	// walking the xml repeatedly
 	users=new const char *[usercount];
 	passwords=new char *[usercount];
 	passwordencryptions=new const char *[usercount];
@@ -122,34 +121,29 @@ const char *sqlrauth_tds_connectstrings::userPassword(
 		char	*pwd=NULL;
 		if (pe->oneWay()) {
 
-			// encrypt the password
-			// that was passed in
+			// encrypt the password that was passed in
 			pwd=pe->encrypt(password);
 
-			// compare it to the encrypted
-			// password from the configuration
+			// compare to the encrypted password
+			// from the configuration
 			result=!charstring::compare(pwd,passwords[index]);
 
 		} else {
 
-			// decrypt the password
-			// from the configuration
+			// decrypt the password from the configuration
 			pwd=pe->decrypt(passwords[index]);
 
-			// compare it to the password
-			// that was passed in
+			// compare to the password that was passed in
 			result=!charstring::compare(password,pwd);
 		}
 
 		// clean up
 		delete[] pwd;
 
-		// return the result
 		return (result)?user:NULL;
 	}
 
-	// if password encryption isn't being used,
-	// then return the user if the passwords match
+	// no encryption: return user if passwords match
 	return (!charstring::compare(password,passwords[index]))?user:NULL;
 }
 
