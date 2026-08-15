@@ -952,8 +952,7 @@ sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
 			getTlsContext()->getCertificateChainFile());
 		debugWrite("tls key: %s",
 			getTlsContext()->getPrivateKeyFile());
-		debugWrite("tls password: %s",
-			getTlsContext()->getPrivateKeyPassword());
+		debugWrite("tls password: (hidden)");
 		debugWrite("tls validate: %d",
 			getTlsContext()->getValidatePeer());
 		debugWrite("tls ca: %s",
@@ -1760,9 +1759,12 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 
 	if (getDebug()) {
 		debugWrite("challenge response size: %lld",(long long)responsesize);
-		stringbuffer	b;
-		b.safePrint(response,responsesize);
-		debugWrite("challenge response: \"%s\"",b.getString());
+		// the auth plugin name isn't parsed until later in this
+		// function, from a field that comes after the response
+		// bytes, so we don't yet know whether this response is a
+		// one-way hash or (for mysql_clear_password) the client's
+		// literal plaintext password, hide it to be safe
+		debugWrite("challenge response: (hidden)");
 		if (rp==end) {
 			if (clientcapabilityflags&CLIENT_CONNECT_WITH_DB) {
 				debugWrite("short packet, db missing");
@@ -2148,9 +2150,18 @@ bool sqlrprotocol_mysql::recvAuthResponse() {
 	if (getDebug()) {
 		debugStart("auth response");
 		debugWrite("challenge response size: %lld",(long long)responsesize);
-		stringbuffer	b;
-		b.safePrint(response,responsesize);
-		debugWrite("challenge response: \"%s\"",b.getString());
+		// mysql_clear_password sends the client's literal
+		// plaintext password as the response, hide it
+		if (charstring::isNullOrEmpty(clientauthpluginname) ||
+			!charstring::compare(clientauthpluginname,
+						"mysql_clear_password")) {
+			debugWrite("challenge response: (hidden)");
+		} else {
+			stringbuffer	b;
+			b.safePrint(response,responsesize);
+			debugWrite("challenge response: \"%s\"",
+							b.getString());
+		}
 		debugEnd();
 	}
 

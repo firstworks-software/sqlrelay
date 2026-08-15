@@ -887,6 +887,11 @@
 		key password and the client-supplied password from a
 		PasswordMessage were printed in the clear, they're replaced with
 		a fixed placeholder now
+	fixed the mysql protocol module's debug output - the tls private key
+		password was printed in the clear, and the client's auth
+		challenge response was printed in the clear even when it was a
+		mysql_clear_password plaintext password rather than a one-way
+		hash, both are hidden now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
