@@ -5277,10 +5277,10 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
-	// The unknown-user answer comes first, ahead of the empty-password
+	// the unknown-user answer comes first, ahead of the empty-password
 	// one, because that's the order a real server uses: an unknown user
 	// with an empty AUTH_PASSWORD gets ORA-01017 where a known one gets
-	// ORA-01005.  Checking the other way round would hand back the
+	// ORA-01005.  checking the other way round would hand back the
 	// distinction between an unknown user and a wrong password.
 	if (fabricatedchallenge) {
 		debugWrite("fabricated challenge, refusing");
@@ -5359,7 +5359,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	debugWrite("server version sql: %s",serverversionsql);
 	debugWrite("server version no: %s",serverversionno);
 
-	// A real server sends 39 to 44 pairs here, mostly nls settings.  Only
+	// a real server sends 39 to 44 pairs here, mostly nls settings.  only
 	// AUTH_SVR_RESPONSE is known to be required.
 	putAuthCount(9,2);
 
@@ -5369,10 +5369,10 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_VERSION_SQL",serverversionsql);
 	putAuthField("AUTH_XACTION_TRAITS","3");
 
-	// The version a client reports as the server's, and it is not cosmetic.
+	// the version a client reports as the server's, and it is not cosmetic.
 	// ojdbc 23.26 picks its result set reader from it - told 8.0.5, it
 	// reads the module's 11.2 shaped describe with an 8.0 era reader and
-	// throws ORA-17401 on the first query.  It moves with the field version
+	// throws ORA-17401 on the first query.  it moves with the field version
 	// and the verifier type, since telling a client one version and
 	// answering it as another breaks the login and the first query.
 	putAuthField("AUTH_VERSION_NO",serverversionno);
@@ -5970,8 +5970,6 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// sqlplus 8.0.5, 8i, 9i
 	// call this to prepare some initial queries
 	// sqlplus 10g+ use query3
-
-	// prepares the specified query
 
 	// parse the request...
 	uint16_t	options;
