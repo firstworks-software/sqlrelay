@@ -7837,8 +7837,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	} else {
 
-		// if we hit the end of the result set then we need to send
-		// ORA-01403; no data found
+		// end of result set
 		debugWrite("no rows fetched");
 		putError("ORA-01403: no data found");
 	}
@@ -8038,24 +8037,22 @@ uint16_t sqlrprotocol_oracle::getColumnType(const char *columntypestring,
 
 			uint16_t	retval=oracletypemap[index];
 
-			// Some DB's, like oracle, don't distinguish between
-			// decimal and integer types, they just have a numeric
-			// field which may or may not have decimal points.
-			// Those fields types get translated to "decimal"
-			// but if there are 0 decimal points, then we need to
-			// translate them to an integer type here.
+			// some db's, like oracle, don't distinguish decimal
+			// from integer types - a numeric field may or may not
+			// have decimal points. those fields get translated to
+			// "decimal" here; with 0 decimal points they should
+			// translate to an integer type instead.
 			// FIXME:
 			/*if ((retval==MYSQL_TYPE_DECIMAL ||
 				retval==MYSQL_TYPE_NEWDECIMAL) && !scale) {
 				retval=MYSQL_TYPE_LONG;
 			}*/
 
-			// Some DB's, like oracle, don't have separate DATE
-			// and DATETIME types.  Rather, a DATE can store the
-			// date and time, but which components it reports
-			// depends on something like the NLS_DATE_FORMAT.  By
-			// default, we map DATE to MYSQL_TYPE_DATE, but we also
-			// provide the option of mapping it to
+			// some db's, like oracle, don't have separate DATE and
+			// DATETIME types - a DATE can store both date and time,
+			// and which components it reports depends on something
+			// like NLS_DATE_FORMAT. by default we map DATE to
+			// MYSQL_TYPE_DATE, but also offer mapping it to
 			// MYSQL_TYPE_DATETIME.
 			// FIXME:
 			/*if (retval==MYSQL_TYPE_DATE && datetodatetime) {
@@ -8344,7 +8341,7 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 	debugStart("lob field");
 
-	// Get lob size.  If this fails, send a NULL field.
+	// get lob size
 	uint64_t	loblength;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		debugWrite("null");
@@ -8379,9 +8376,7 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 					offset,charstoread,&charsread) ||
 					!charsread) {
 
-			// if we fail to get a segment or got nothing...
-			// if we haven't started sending yet, then send a NULL,
-			// otherwise just end normally
+			// no data - send null if nothing sent yet, else end
 			if (start) {
 				debugWrite("null");
 				// send NULL as 0xfb
@@ -8393,7 +8388,7 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 		} else {
 
-			// if we haven't started sending yet, then do that now
+			// start sending
 			if (start) {
 				writeLenEncInt(&reqpacket,loblength);
 				start=false;
@@ -8413,9 +8408,6 @@ void sqlrprotocol_oracle::putError(const char *error) {
 }
 
 void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
-
-	// if we hit the end of the result set then we need to send
-	// ORA-01403; no data found
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTI_EXECUTE;
