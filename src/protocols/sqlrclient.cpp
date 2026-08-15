@@ -321,8 +321,7 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 			getTlsContext()->getCertificateChainFile());
 		debugWrite("tls key: %s",
 			getTlsContext()->getPrivateKeyFile());
-		debugWrite("tls password: %s",
-			getTlsContext()->getPrivateKeyPassword());
+		debugWrite("tls password: %s","(hidden)");
 		debugWrite("tls validate: %d",
 			getTlsContext()->getValidatePeer());
 		debugWrite("tls ca: %s",
@@ -1108,7 +1107,7 @@ bool sqlrprotocol_sqlrclient::getPasswordFromClient() {
 		return false;
 	}
 	passwordbuffer[size]='\0';
-	debugWrite("password: \"%s\"",passwordbuffer);
+	debugWrite("password: \"%s\"","(hidden)");
 	return true;
 }
 

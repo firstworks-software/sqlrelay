@@ -897,6 +897,9 @@
 		auth(), were printed in the clear, they're hidden now
 	fixed the teradata protocol module's debug output - the password parsed
 		out of the logon string was printed in the clear, it's hidden now
+	fixed the sqlrclient protocol module's debug output - the tls private
+		key password and the client-supplied password were printed in
+		the clear, they're hidden now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
