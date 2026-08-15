@@ -9080,16 +9080,13 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 
 	// build the query, naming a bind variable per parameter.  a by-ref
 	// parameter gets no T-SQL "output" keyword - the bind itself carries
-	// the direction (SQL_PARAM_OUTPUT in the odbc module, CS_RETURN in
-	// the freetds and sap ones), and sql server rejects "output" after a
-	// parameter marker outright.  odbc call syntax rather than "exec
-	// procname ...", because that has nowhere to put the return value the
-	// client expects in the RETURNSTATUS token - the bind variable before
-	// "=call" is it, which is why the client's parameters start at
-	// bindvarnames[1].  the space after the brace is load-bearing:
-	// beforeBindVariable() in src/common/bindvariables.h doesn't treat '{'
-	// as something a bind variable can follow, so without it the return
-	// value's marker is never translated.
+	// the direction, and sql server rejects "output" after a parameter
+	// marker outright.  odbc call syntax is used instead of "exec
+	// procname ...", since only it has somewhere to put the return
+	// value, via the bind variable before "=call" - which is why the
+	// client's parameters start at bindvarnames[1].  the space after
+	// the brace is required for beforeBindVariable() to recognize the
+	// return value's marker.
 	stringbuffer	query;
 	query.append("{ ")->append(bindvarnames[0])->append("=call ");
 	query.append(procname)->append('(');
@@ -9137,12 +9134,12 @@ bool sqlrprotocol_tds::backendHandleProc(const char *procname,
 						bool nometadata) {
 
 	// runs "exec <procname> <handle> [,values...]" for a handle the
-	// backend minted itself - one the client got by running
-	// "exec sp_prepare ..." inside a raw batch, which sqlBatch() passes
-	// straight through, so it was never recorded in stmthandles.  only
-	// the handle has to be a literal; the trailing values go through the
-	// normal bound-parameter path.  this assumes the backend really has
-	// sp_execute/sp_unprepare, which sql server and sybase do.
+	// backend minted itself, from an "exec sp_prepare ..." inside a raw
+	// batch that sqlBatch() passed straight through - so it was never
+	// recorded in stmthandles.  only the handle has to be a literal;
+	// the trailing values go through the normal bound-parameter path.
+	// assumes the backend has sp_execute/sp_unprepare, which sql server
+	// and sybase do.
 
 	debugStart("backend-handle-proc");
 	debugWrite("procname: %s",procname);
@@ -9487,13 +9484,13 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 	// bind and run the prepared query
 	bindParams(cursor,1);
 
-	// A client can send more values than the statement has bind markers.
-	// Sql server fails the call ("Procedure or function has too many
-	// arguments specified") but sybase just ignores the extras, and a
-	// backend that runs the statement as plain sql with positional
-	// parameters (sap.cpp) has no way to ignore them - it hands every
-	// bind to the database, which then rejects the whole statement.
-	// So drop the extras here instead, before they reach the backend.
+	// a client can send more values than the statement has bind markers.
+	// sql server rejects the call outright, but sybase just ignores the
+	// extras, and a backend that runs the statement as plain sql with
+	// positional parameters (sap.cpp) has no way to ignore them - it
+	// hands every bind to the database, which then rejects the whole
+	// statement.  so drop the extras here instead, before they reach
+	// the backend.
 	uint16_t	markers=0;
 	if (bindmarkercount.getValue(cursor,&markers) &&
 			cont->getInputBindCount(cursor)>markers) {
