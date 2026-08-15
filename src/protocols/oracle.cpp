@@ -138,6 +138,10 @@
 	"ORA-03134: Connections to this server version are no longer " \
 	"supported.\n"
 
+// what a real listener refuses an attach with, when the client's
+// CONNECT_DATA names a SID/SERVICE_NAME the listener isn't configured for
+#define TNS_NO_SUCH_SERVICE		12514
+
 // the version the module reports as its own - oracle 11.2.0.1.0, 0x0b200100,
 // which is the version the rest of it answers as.
 #define SERVER_VERSION_NUMBER		"186646784"
@@ -797,6 +801,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	initialHandshake();
 		bool	connect();
 		bool	recvConnectRequest();
+		const char	*findConnectDataKey(const char *haystack,
+							const char *key);
+		bool	requestedServiceKnown();
 		bool	sendConnectResponse();
 		bool	sendAccept();
 		bool	sendAccept(const byte_t *data, uint16_t datasize);
@@ -1138,6 +1145,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	nationalcharset;
 		uint32_t	verifiertype;
 
+		// the SID/SERVICE_NAME(s) this listener answers to, from the "sid"
+		// listener attribute, comma-separated; NULL means accept anything
+		char		*sids;
+
+		// the SID/SERVICE_NAME the client's CONNECT_DATA asked for, parsed
+		// out by recvConnectRequest(); NULL if it didn't name one
+		char		*requestedservice;
+
 		// the oracle version the module imitates
 		byte_t		serverfieldversion;
 		const char	*serverversionno;
@@ -1218,6 +1233,14 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 
 	clientsock=NULL;
 
+	// the SID/SERVICE_NAME(s) this listener presents itself as, so an
+	// attach naming anything else can be refused with ORA-12514; unset
+	// (the pre-existing default) accepts whatever the client asks for
+	const char	*sidattr=parameters->getAttributeValue("sid");
+	sids=(charstring::isNullOrEmpty(sidattr))?
+				NULL:charstring::duplicate(sidattr);
+	requestedservice=NULL;
+
 	charset=charstring::convertToInteger(
 				parameters->getAttributeValue("charset"));
 	if (!charset) {
@@ -1283,6 +1306,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugWrite("verifiertype: 0x%04x",verifiertype);
 		debugWrite("server version: %s",serverversionno);
 		debugWrite("server field version: %d",serverfieldversion);
+		debugWrite("sid: %s",(sids)?sids:"(any)");
 		debugEnd();
 	}
 
@@ -1321,6 +1345,9 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 
 sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	free();
+
+	delete[] sids;
+	delete[] requestedservice;
 
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete[] bindvarnames[i];
@@ -1940,11 +1967,96 @@ bool sqlrprotocol_oracle::initialHandshake() {
 }
 
 bool sqlrprotocol_oracle::connect() {
-	return recvConnectRequest() &&
+	if (!recvConnectRequest() ||
 		// the database always requests a resend here, for some reason
-		sendResend() &&
-		recvConnectRequest() &&
-		sendConnectResponse();
+		!sendResend() ||
+		!recvConnectRequest()) {
+		return false;
+	}
+
+	// a client naming a SID/SERVICE_NAME this listener isn't configured
+	// for gets refused here, the same way a real listener would, rather
+	// than being let through to whatever backend connection is on hand
+	if (!requestedServiceKnown()) {
+		sendRefuse(TNS_NO_SUCH_SERVICE);
+		return false;
+	}
+
+	return sendConnectResponse();
+}
+
+bool sqlrprotocol_oracle::requestedServiceKnown() {
+
+	// nothing configured to check against - accept whatever was asked for
+	if (!sids) {
+		return true;
+	}
+
+	// the client's descriptor didn't name a SID/SERVICE_NAME at all -
+	// nothing to compare, so let it through
+	if (!requestedservice) {
+		return true;
+	}
+
+	char		**sidlist=NULL;
+	uint64_t	sidcount=0;
+	charstring::split(sids,",",true,&sidlist,&sidcount);
+
+	bool	known=false;
+	for (uint64_t i=0; i<sidcount; i++) {
+		// tolerate "ora1, ora2" as well as "ora1,ora2"
+		charstring::bothTrim(sidlist[i]);
+		if (!charstring::compareIgnoringCase(
+					sidlist[i],requestedservice)) {
+			known=true;
+			break;
+		}
+	}
+
+	for (uint64_t i=0; i<sidcount; i++) {
+		delete[] sidlist[i];
+	}
+	delete[] sidlist;
+
+	return known;
+}
+
+const char *sqlrprotocol_oracle::findConnectDataKey(const char *haystack,
+							const char *key) {
+
+	// finds "key" in "haystack", but only a standalone occurrence -
+	// immediately preceded by '(' (skipping whitespace) and immediately
+	// followed by '=' (skipping whitespace) - the shape every key takes
+	// in a tns connect descriptor, eg. "(SID = ora1)" or
+	// "(SERVICE_NAME=ora1)".  Without those checks, "SID" also matches
+	// inside "westside" or "PROTOCOL_VERSION_12", refusing a client whose
+	// descriptor just happens to contain the substring.
+	size_t	keylen=charstring::getLength(key);
+	const char	*p=haystack;
+	while (p && *p) {
+		const char	*hit=charstring::findFirstIgnoringCase(p,key);
+		if (!hit) {
+			return NULL;
+		}
+
+		const char	*before=hit;
+		while (before>haystack &&
+				character::isWhitespace(*(before-1))) {
+			before--;
+		}
+
+		const char	*after=hit+keylen;
+		while (character::isWhitespace(*after)) {
+			after++;
+		}
+
+		if (before>haystack && *(before-1)=='(' && *after=='=') {
+			return hit;
+		}
+
+		p=hit+1;
+	}
+	return NULL;
 }
 
 bool sqlrprotocol_oracle::recvConnectRequest() {
@@ -2050,6 +2162,49 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	debugWrite("trace unique connection id 2: 0x%016llx",
 					(unsigned long long)traceuniqueconnectionid2);
 	debugWrite("connect data: %*s",connectdatasize,connectdata);
+
+	// pull the SID/SERVICE_NAME the client asked for out of the connect
+	// descriptor (they're interchangeable to a client - it names whichever
+	// one its tnsnames.ora entry used), bounded to connectdatasize since
+	// connectdata isn't necessarily NUL-terminated
+	delete[] requestedservice;
+	requestedservice=NULL;
+	if (connectdata && connectdatasize) {
+		char	*cd=charstring::duplicate(connectdata,connectdatasize);
+
+		// SID/SERVICE_NAME only mean anything inside the CONNECT_DATA
+		// clause - search there, not the whole descriptor, so a host,
+		// program, or user name that happens to contain "sid" (eg.
+		// "westside") can't be mistaken for the key
+		const char	*searchstart=findConnectDataKey(cd,"CONNECT_DATA");
+		if (!searchstart) {
+			searchstart=cd;
+		}
+
+		const char	*key=findConnectDataKey(searchstart,"SERVICE_NAME");
+		if (!key) {
+			key=findConnectDataKey(searchstart,"SID");
+		}
+		const char	*eq=(key)?charstring::findFirst(key,'='):NULL;
+		if (eq) {
+			eq++;
+			while (character::isWhitespace(*eq)) {
+				eq++;
+			}
+			const char	*valend=eq;
+			while (*valend && *valend!=')' &&
+					!character::isWhitespace(*valend)) {
+				valend++;
+			}
+			if (valend>eq) {
+				requestedservice=charstring::duplicate(
+							eq,(size_t)(valend-eq));
+			}
+		}
+		delete[] cd;
+	}
+	debugWrite("requested service: %s",
+			(requestedservice)?requestedservice:"(none)");
 	debugEnd();
 
 	return true;

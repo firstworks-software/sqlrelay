@@ -328,23 +328,15 @@ int main(int argc, char **argv) {
 		OCI_SUCCESS);
 	sword	badattached=OCIServerAttach(badsrv,err,(text *)badsid,
 					charstring::getLength(badsid),0);
-	if (issqlrelay) {
-		// TODO: needs a follow-up ticket - the oracle protocol module
-		// never reads CONNECT_DATA's SID/SERVICE_NAME, so it accepts
-		// an attach to a service that isn't there rather than
-		// refusing it with ORA-12514.  Pinned to the current accept
-		// behavior until that is fixed.
-		assertEquals(badattached,OCI_SUCCESS);
-		assertEquals(OCIServerDetach(badsrv,err,OCI_DEFAULT),
-				OCI_SUCCESS);
-	} else {
-		assertEquals(badattached,OCI_ERROR);
-		// ORA-12514, the listener does not know the service being
-		// asked for.  This one has to come back as a refusal from the
-		// far end - a dropped socket gives ORA-12537 or ORA-03113
-		// instead.
-		assertEquals((int)errorCode(),12514);
-	}
+	// #9310: the oracle protocol module now reads CONNECT_DATA's
+	// SID/SERVICE_NAME and refuses an unconfigured one with ORA-12514,
+	// same as native, so this runs the same assertion either way
+	assertEquals(badattached,OCI_ERROR);
+	// ORA-12514, the listener does not know the service being
+	// asked for.  This one has to come back as a refusal from the
+	// far end - a dropped socket gives ORA-12537 or ORA-03113
+	// instead.
+	assertEquals((int)errorCode(),12514);
 	assertEquals(OCIHandleFree(badsrv,OCI_HTYPE_SERVER),OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 

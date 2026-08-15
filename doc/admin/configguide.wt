@@ -75,6 +75,7 @@
   * [#tdstls TLS/SSL Encryption and Authentication]
   * [#tdslimitations Limitations]
  * [#oracleprotocol Oracle Protocol]
+  * [#oraclesid SID / Service Name]
   * [#oracleserverversion Server Version]
   * [#oracleverifiertype Password Verifier Type]
   * [#oraclecharsets Character Set Options]
@@ -2600,6 +2601,21 @@ SQL Relay can be configured to speak the native Oracle protocol, enabling client
 If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
 
 The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The options below are the exception.  They decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set.
+
+[=#oraclesid]
+=== SID / Service Name ===
+
+An Oracle client's connect descriptor names a SID or SERVICE_NAME - either is just an alias for the database it wants, taken from its tnsnames.ora entry or built into its connect string.  A real Oracle listener checks that name against the services it knows about and refuses the connection with ORA-12514 if it doesn't recognize it.
+
+The //sid// option gives the Oracle protocol module the same check.  Set it to the SID/SERVICE_NAME (or a comma-separated list of them) this instance should accept; a client naming anything else is refused with ORA-12514 before it gets as far as a login prompt.  Matching is case-insensitive, and either CONNECT_DATA key - SID or SERVICE_NAME - is accepted from the client, since a client only ever sends whichever one its own connect descriptor used.
+
+Leaving //sid// unset accepts any SID/SERVICE_NAME a client asks for, which is the default.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefesid.conf@
+}}}
+}}}
 
 [=#oracleserverversion]
 === Server Version ===

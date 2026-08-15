@@ -842,6 +842,13 @@
 		meant the default oracle-protocol setup couldn't authenticate
 		anyone; rewritten to speak O5LOGON, mirroring the already
 		correct oracle_userlist module
+	fixed the oracle protocol module - it never read the SID/SERVICE_NAME out
+		of a client's CONNECT_DATA, so an attach naming a service the
+		listener wasn't configured for was silently accepted instead of
+		being refused with ORA-12514; added a "sid" listener attribute (a
+		comma-separated list, matched case-insensitively against either
+		CONNECT_DATA key) to name the service(s) a listener answers to,
+		and the module now refuses a mismatch
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

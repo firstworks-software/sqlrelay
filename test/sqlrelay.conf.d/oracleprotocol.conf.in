@@ -7,7 +7,7 @@
 	     the test uses drops the connection outright (ORA-03113). -->
 	<instance id="oracleprotocoltest" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="1521" serverversion="11.2"/>
+			<listener protocol="oracle" port="1521" serverversion="11.2" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -25,7 +25,7 @@
 	     here. -->
 	<instance id="oracleprotocol11gtest" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="1522" serverversion="11.2" verifiertype="11g"/>
+			<listener protocol="oracle" port="1522" serverversion="11.2" verifiertype="11g" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -43,7 +43,7 @@
 	     sqlrelay12c points here. -->
 	<instance id="oracleprotocol12ctest" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="1523" serverversion="11.2" verifiertype="12c"/>
+			<listener protocol="oracle" port="1523" serverversion="11.2" verifiertype="12c" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
@@ -62,7 +62,7 @@
 	     tnsnames.ora alias sqlrelayconnectstrings points here. -->
 	<instance id="oracleprotocolconnectstringstest" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="1524" serverversion="11.2"/>
+			<listener protocol="oracle" port="1524" serverversion="11.2" sid="ora1"/>
 		</listeners>
 		<connections>
 			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=testuser;password=testpassword"/>
