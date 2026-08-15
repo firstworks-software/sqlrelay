@@ -2655,7 +2655,6 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 	bool	success=true;
 	for (uint16_t i=0; i<servicecount; i++) {
 
-		// reset success flag...
 		success=false;
 
 		uint16_t	service;
@@ -2919,9 +2918,9 @@ bool sqlrprotocol_oracle::getAnoConnectionInfoField(
 	readBE(rp,pid,&rp);
 	readBE(rp,connectiontype,&rp);
 
-	// NOTE: We consistently get 0x1788dda1 or 0x1784574b for the
-	// connection type, but 8.0.5 (at least) consistently sends 0x1784574b
-	// to the real db.
+	// we consistently get 0x1788dda1 or 0x1784574b for the connection
+	// type, but 8.0.5 (at least) consistently sends 0x1784574b to the
+	// real db.
 
 	if (getDebug()) {
 		debugWrite("pid: %d",*pid);
@@ -2984,20 +2983,20 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		!readMarker32(rp,0xdeadbeef,&rp) ||
 		!readMarker16(rp,0x0003,&rp)) {
 
-		// A field sometimes has an array marker and no deadbeef, and
-		// sometimes neither.  Both shapes are the encryption and
+		// a field sometimes has an array marker and no deadbeef, and
+		// sometimes neither.  both shapes are the encryption and
 		// crypto-checksumming services' driver lists - one byte per
 		// algorithm id, with a field header identical to this one -
 		// and they have their own reader now, so neither reaches this
-		// function.  The two differ only in whether the first two
+		// function.  the two differ only in whether the first two
 		// algorithm ids happen to spell the array marker: ojdbc 23.26
 		// offers 0, 3, 4, 5 and 6 for crypto-checksumming, and the
 		// first two of those are the bytes 00 03.
 		//
-		// The one caller left is getSupervisorService(), and both
+		// the one caller left is getSupervisorService(), and both
 		// clients that reach ano here send a real deadbeef ub2 array,
 		// so this is a guard rather than a decoder - hence the dump.
-		// Returning NULL/0 without failing is deliberate: a supervisor
+		// returning NULL/0 without failing is deliberate: a supervisor
 		// list nobody can read is not worth refusing a connection over.
 		debugStart("unrecognized array field");
 		debugHexDump(fieldend-size,size);
@@ -3067,12 +3066,12 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 	// array getAnoArrayField() reads - and a field of this shape could
 	// carry that instead, so skip it rather than report nonsense
 	//
-	// Three sources agree on the byte form.  Redfern's 8i capture on the
+	// three sources agree on the byte form.  Redfern's 8i capture on the
 	// Oracle Protocol wiki page sends "00 01 00 01 00" for the encryption
 	// service, one byte, annotated "AlgID (0=none)".  node-oracledb's
 	// EncryptionService and DataIntegrityService both send that same
 	// single byte through sendRaw(), which writes a size, a type of 1,
-	// and then raw bytes.  And ojdbc8 sends "00 04 00 01 00 0f 10 11",
+	// and then raw bytes.  and ojdbc8 sends "00 04 00 01 00 0f 10 11",
 	// which is none, aes128, aes192 and aes256.
 	if (size>=4 && rp[0]==0xde && rp[1]==0xad &&
 					rp[2]==0xbe && rp[3]==0xef) {
@@ -3519,22 +3518,22 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // CCAP_TTC1 bit 0x01 and CCAP_OCI1 bit 0x01 are that server's, 0x7f and 0xff,
 // and they have to stay that way.  go-ora reads them as end-of-call-status and
 // fast-session-propagate, and then reads an extra field for each off the front
-// of every summary object.  They must not be cleared on the grounds that the
+// of every summary object.  they must not be cleared on the grounds that the
 // module sends neither field: the module doesn't build its footers field by
 // field, it appends byte strings captured from that same server, so both
-// fields are in them, unnamed.  Measured, with the bits clear: ojdbc 23.26
+// fields are in them, unnamed.  measured, with the bits clear: ojdbc 23.26
 // hangs forever on a correct login and reports the module's ORA-01017 as an
-// ArrayIndexOutOfBoundsException.  The two move together - clearing either bit
+// ArrayIndexOutOfBoundsException.  the two move together - clearing either bit
 // means taking the fields out of every footer.
 //
-// The array is 42 bytes rather than the 39 a real 11.2 server sends, because
+// the array is 42 bytes rather than the 39 a real 11.2 server sends, because
 // python-oracledb reads CCAP_TTC4 with bounds checking disabled and no length
-// guard.  Zero there is also the value we want: it leaves CCAP_END_OF_RESPONSE
+// guard.  zero there is also the value we want: it leaves CCAP_END_OF_RESPONSE
 // and CCAP_EXPLICIT_BOUNDARY clear, so the client uses the older framing.
 //
 // CCAP_FIELD_VERSION is a ceiling on what any client will ask of the module
 // rather than a promise to it, and putTti6Response() overwrites the value here
-// with the version the listener is configured to imitate.  Nothing above
+// with the version the listener is configured to imitate.  nothing above
 // CCAP_FIELD_VERSION_12_1 is offered: it would oblige an oaccolid in every
 // describe-info column and five more fields in every execute, and it breaks
 // ojdbc 23.26, which logs in at 8 or 9 and then fails in the describe with
@@ -3556,7 +3555,7 @@ static const byte_t	ttiserverruntimecaps[]={
 	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
 };
 
-// The layout of this response - the field order, and the ix=6+fdo[5]+fdo[6]
+// the layout of this response - the field order, and the ix=6+fdo[5]+fdo[6]
 // rule for finding the character set ids inside the fdo block - follows
 // python-oracledb, src/oracledb/impl/thin/messages/protocol.pyx,
 // _process_protocol_info(), and the capability array index names follow its
@@ -3580,26 +3579,26 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 	// protocol version and server banner...
 	//
-	// This is the server's platform, and it is what an OCI client picks
+	// this is the server's platform, and it is what an OCI client picks
 	// its wire encoding from: one whose own platform matches marshals
 	// every request in its own memory layout - 8 byte pointer sentinels,
 	// fixed width little endian counts, buffer sizes rather than byte
 	// counts - and one whose platform doesn't marshals portably, for the
-	// whole session.  This module implements the portable encoding
+	// whole session.  this module implements the portable encoding
 	// everywhere, so the string it sends has to be one that can never
 	// match, and naming a platform SQL Relay merely isn't - solaris, say -
 	// is a promise it can't keep, since it builds there.
 	//
-	// A real server's is its platform - a live 11.2 on centos 5 x64 and a
+	// a real server's is its platform - a live 11.2 on centos 5 x64 and a
 	// live 12.2 on centos 7 x64 both send "x86_64/Linux 2.4.xx", an 8i,
 	// 9i, 10g or 11g on x86 sends "Linuxi386/Linux-2.0.34-8.1.0", and an
 	// 8.0.5 sends "Linuxi386/Linux-2.0.34 ", where dropping the trailing
 	// space makes the client send a marker after the first phase of
-	// authentication.  Sending any of them brings the problem back for a
+	// authentication.  sending any of them brings the problem back for a
 	// client on the same platform, which on a typical deployment is most
 	// of them.
 	//
-	// A client compares this string; it doesn't parse it.  Measured:
+	// a client compares this string; it doesn't parse it.  measured:
 	// OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for "SQLRelay"
 	// and for "SQL Relay 2.3.0" alike, and ojdbc, python-oracledb and
 	// node-oracledb take a non-platform string too - their own are
@@ -3713,12 +3712,12 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// CCAP_LOGON_TYPES has to track the verifier type the challenge is
 	// going to carry.  ojdbc 23.26 picks its logon code path from the bit
 	// and its crypto from the verifier type, and refuses the login when
-	// they disagree.  It takes two bits, not one: OCI 23.26 reads
+	// they disagree.  it takes two bits, not one: OCI 23.26 reads
 	// CCAP_O5LOGON_NP as well, and with only one of the two set it takes
 	// the 11g path for the session key size while taking the 12c path for
-	// the crypto, which no auth module can verify.  Measured one bit at a
+	// the crypto, which no auth module can verify.  measured one bit at a
 	// time: 0x2d and 0x0f both give ORA-01017 for a password that is
-	// right, and 0x2f logs in.  A live 12.2 server sets both, and a live
+	// right, and 0x2f logs in.  a live 12.2 server sets both, and a live
 	// 11.2 server sets neither.
 	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
 	bytestring::copy(compilecaps,ttiservercompilecaps,
@@ -3818,7 +3817,7 @@ void sqlrprotocol_oracle::putTti1Response() {
 	}
 }
 
-// The layout of this exchange - the request header, the two length-prefixed
+// the layout of this exchange - the request header, the two length-prefixed
 // capability arrays, and the type list, where an entry is a uint16 type and a
 // uint16 conversion type, followed by a uint16 representation and a uint16 0
 // only when the conversion type is not 0, and the list ends at a type of 0 -
@@ -3830,7 +3829,7 @@ void sqlrprotocol_oracle::putTti1Response() {
 // python-oracledb's Apache 2.0 option.  See https://oss.oracle.com/licenses/upl
 // and COPYING.
 //
-// The db time zone group is not in python-oracledb, which leaves the runtime
+// the db time zone group is not in python-oracledb, which leaves the runtime
 // capability that asks for it clear and so never sees it.  go-ora,
 // v2/data_type_nego.go, reads it, and OCI 23.26 asks for it.
 
