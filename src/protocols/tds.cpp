@@ -4236,10 +4236,10 @@ bool sqlrprotocol_tds::sqlBatch() {
 		// A real server closes a rejected batch with DONE_ERROR, which
 		// the ct-lib client turns into CS_CMD_FAIL.  Only an ASE back
 		// end gets the bit for now - an mssql back end reaches this
-		// same branch for a batch that ought to have succeeded (a
-		// "use db" batch is rejected as a syntax error, see #9286),
-		// and passing that on would change the mssql baseline for a
-		// reason that has nothing to do with this token.
+		// same branch for a batch that ought to have succeeded (e.g. a
+		// "use db" batch rejected as a syntax error), and passing that
+		// on would change the mssql baseline for a reason that has
+		// nothing to do with this token.
 		done((dbisase)?DONE_ERROR:DONE_FINAL,0,0);
 	}
 
@@ -4875,14 +4875,10 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 				break;
 			case TDS_TYPE_NCHAR:
 			case TDS_TYPE_NVARCHAR:
-				// A date/time column that mapType()
-				// downgraded to nvarchar for a pre-7.3
-				// client travels as a rendered string, but
-				// the backend reports the size of the type's
-				// binary form - 4 bytes for an ase date - so
-				// the string has to be measured by its type
-				// instead, or the client truncates it to
-				// those few bytes.
+				// a date/time column downgraded to nvarchar
+				// reports its binary-form size (e.g. 4 bytes
+				// for an ase date), so measure it by type
+				// instead or the client truncates it
 				size=dateTimeStringSize(coltype,size);
 				// the size must be sent in bytes, but the
 				// backend reports it in characters
@@ -5326,11 +5322,10 @@ uint32_t sqlrprotocol_tds::dateTimeStringSize(uint16_t coltype,
 	debugWrite("colsize: %d",colsize);
 
 	// A date/time column only gets here when mapType() downgraded it to
-	// nvarchar, which it does for a client older than tds 7.3.  The
-	// value goes out as a rendered string then, but back ends report the
-	// size of the binary form - odbc says 10 for a date, ct-lib says 4 -
-	// and the wider renderings don't fit in either.  These are just wide
-	// enough for every rendering the back ends produce, including ase's
+	// nvarchar for a pre-7.3 client.  Back ends report the size of the
+	// binary form (odbc says 10 for a date, ct-lib says 4), which is too
+	// small for the rendered string - these sizes are wide enough for
+	// every rendering the back ends produce, including ase's
 	// "Jan  1 2001  1:01PM".
 	uint32_t	stringsize=0;
 	switch (coltype) {
