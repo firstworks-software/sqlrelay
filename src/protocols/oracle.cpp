@@ -129,7 +129,7 @@
 #define ORA_NO_DATA_FOUND		1403
 #define ORA_NO_DATA_FOUND_MESSAGE	"ORA-01403: no data found\n"
 
-// the two ways the handshake can say no.  A refuse packet carries a tns error
+// the two ways the handshake can say no.  a refuse packet carries a tns error
 // number, which is what a listener reports; an error packet after the accept
 // carries an oracle error number, which is what a server reports.
 #define TNS_CONNECTION_REFUSED		12564
@@ -296,16 +296,16 @@
 #define CHARSET_AL16UTF16		2000
 
 // options
-#define OPTION_PARSE		(1<<0) // 1
-#define OPTION_BIND		(1<<3) // 8
-#define OPTION_DEFINE		(1<<4) // 16
-#define OPTION_EXECUTE		(1<<5) // 32
-#define OPTION_FETCH		(1<<6) // 64
-#define OPTION_CANCEL		(1<<7) // 128
-#define OPTION_COMMIT		(1<<8) // 254
-#define OPTION_EXACTFETCH	(1<<9) // 512
-#define OPTION_SNDIOV		(1<<10) // 1024
-#define OPTION_NOPLSQL		(1<<15) // 32768
+#define OPTION_PARSE		(1<<0)
+#define OPTION_BIND		(1<<3)
+#define OPTION_DEFINE		(1<<4)
+#define OPTION_EXECUTE		(1<<5)
+#define OPTION_FETCH		(1<<6)
+#define OPTION_CANCEL		(1<<7)
+#define OPTION_COMMIT		(1<<8)
+#define OPTION_EXACTFETCH	(1<<9)
+#define OPTION_SNDIOV		(1<<10)
+#define OPTION_NOPLSQL		(1<<15)
 
 // data types
 #define DATA_TYPE_STRING	0
