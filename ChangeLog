@@ -858,6 +858,9 @@
 		default SEC_MAX_FAILED_LOGIN_ATTEMPTS, confirmed against a live
 		Oracle server), and tears the connection down once the bound is
 		reached, same as before
+	the firebird protocol module's debug output goes through the module
+		debug facility now, and covers about as much of the module as
+		the mysql protocol module's debug output does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
