@@ -265,7 +265,7 @@
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
 
-// A length byte over 252 isn't a length.  0xfe introduces the chunked long
+// a length byte over 252 isn't a length.  0xfe introduces the chunked long
 // form and 0xff marks a null.
 #define MAX_SHORT_LENGTH		252
 #define LONG_LENGTH_INDICATOR		0xfe
