@@ -56,6 +56,13 @@
 #define AUTH_SASL_CONT		11
 #define AUTH_SASL_FINAL		12
 
+// startup packet protocol versions/special request codes
+#define PROTOCOL_VERSION_2_0		131072
+#define PROTOCOL_VERSION_3_0		196608
+#define CANCEL_REQUEST_CODE		80877102
+#define SSL_REQUEST_CODE		80877103
+#define GSSENC_REQUEST_CODE		80877104
+
 // (error) field types
 #define FIELD_TYPE_SEVERITY		'S'
 #define FIELD_TYPE_SEVERITYV		'V'
@@ -74,6 +81,15 @@
 #define FIELD_TYPE_FILE			'F'
 #define FIELD_TYPE_LINE			'L'
 #define FIELD_TYPE_ROUTINE		'R'
+
+// transaction status indicator (ReadyForQuery)
+#define TX_STATUS_IDLE			'I'
+#define TX_STATUS_INTRANS		'T'
+#define TX_STATUS_FAILED		'E'
+
+// param/result format codes
+#define FORMAT_CODE_TEXT		0
+#define FORMAT_CODE_BINARY		1
 
 class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 	public:
@@ -174,8 +190,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_postgresql : public sqlrprotocol {
 		bool	sendCursorNotOpenError();
 		bool	sendTooManyBindsError();
 
+		void	debugRequestMessageType(unsigned char type);
+		void	debugResponseMessageType(unsigned char type);
 		void	debugRecvTypeError();
 		void	debugSystemError();
+		void	debugErrorFieldType(unsigned char fieldtype);
+		void	debugAuthType(uint32_t authtype);
+		void	debugProtocolVersion(uint32_t version);
+		void	debugTypeOid(const char *name, uint32_t oid);
+		void	debugTransactionStatus(char status);
+		void	debugFormatCode(const char *name, uint16_t formatcode);
+		void	debugStatementOrPortal(char sorp);
 
 		void	readString(const byte_t *rp,
 					const byte_t *rpend,
@@ -387,6 +412,8 @@ clientsessionexitstatus_t sqlrprotocol_postgresql::clientSession(
 				case MESSAGE_TERMINATE:
 					// just end the session and
 					// close the connection
+					debugStart("Terminate");
+					debugEnd();
 					loop=false;
 					endsession=true;
 					status=
@@ -414,6 +441,9 @@ clientsessionexitstatus_t sqlrprotocol_postgresql::clientSession(
 					loop=close();
 					break;
 				default:
+					debugStart("unknown message type");
+					debugRequestMessageType(reqtype);
+					debugEnd();
 					loop=sendNotImplementedError();
 					break;
 			}
@@ -498,7 +528,7 @@ bool sqlrprotocol_postgresql::recvPacket(bool gettype) {
 
 	// debug
 	debugStart("recv");
-	debugWrite("type: %c",reqtype);
+	debugRequestMessageType(reqtype);
 	debugWrite("size: %d",reqpacketsize);
 	debugHexDump(reqpacket,reqpacketsize);
 	debugEnd();
@@ -520,11 +550,7 @@ bool sqlrprotocol_postgresql::sendPacket(byte_t type) {
 
 	// debug
 	debugStart("send");
-	if (type!=MESSAGE_NULL) {
-		debugWrite("type: %c",type);
-	} else {
-		debugWrite("type: (null)");
-	}
+	debugResponseMessageType(type);
 	debugWrite("size: %lld",(long long)resppacket.getSize());
 	debugHexDump(resppacket.getBuffer(),resppacket.getSize());
 	debugEnd();
@@ -606,7 +632,7 @@ bool sqlrprotocol_postgresql::recvStartupMessage() {
 		// protocol version
 		readBE(rp,&protocolversion,&rp);
 
-		if (protocolversion==80877103) {
+		if (protocolversion==SSL_REQUEST_CODE) {
 
 			// handle SSL request...
 
@@ -617,7 +643,7 @@ bool sqlrprotocol_postgresql::recvStartupMessage() {
 			}
 
 			debugStart("StartupMessage");
-			debugWrite("protocol version: %d",protocolversion);
+			debugProtocolVersion(protocolversion);
 			debugEnd();
 
 			// Yes=S, No=N
@@ -641,7 +667,7 @@ bool sqlrprotocol_postgresql::recvStartupMessage() {
 				usingtls=true;
 			}
 
-		} else if (protocolversion==196608) {
+		} else if (protocolversion==PROTOCOL_VERSION_3_0) {
 
 			// handle protocol 3.0 request
 
@@ -658,7 +684,7 @@ bool sqlrprotocol_postgresql::recvStartupMessage() {
 
 			break;
 
-		} else if (protocolversion==131072) {
+		} else if (protocolversion==PROTOCOL_VERSION_2_0) {
 
 			// FIXME: support protocol 2.0
 			sendErrorResponse("FATAL","88P01",
@@ -705,7 +731,7 @@ bool sqlrprotocol_postgresql::recvStartupMessage() {
 	// debug
 	if (getDebug()) {
 		debugStart("StartupMessage");
-		debugWrite("protocol version: %d",protocolversion);
+		debugProtocolVersion(protocolversion);
 		debugWrite("user: %s",user);
 		debugWrite("database: %s",database);
 		debugWrite("replication: %s",replication);
@@ -748,6 +774,9 @@ bool sqlrprotocol_postgresql::handleTlsRequest() {
 
 void sqlrprotocol_postgresql::parseOptions(const char *opts) {
 
+	debugStart("parseOptions");
+	debugWrite("opts: %s",opts);
+
 	// skip leading whitespace
 	while (character::isWhitespace(*opts)) {
 		opts++;
@@ -760,6 +789,9 @@ void sqlrprotocol_postgresql::parseOptions(const char *opts) {
 	stringbuffer	*strb=&name;
 	for (const char *ch=opts; ch; ch++) {
 		if (*ch==' ') {
+			debugWrite("%s: %s",
+					name.getString(),
+					value.getString());
 			options.setValue(name.detachString(),
 						value.detachString());
 			strb=&name;
@@ -780,17 +812,27 @@ void sqlrprotocol_postgresql::parseOptions(const char *opts) {
 		}
 	}
 	if (name.getSize()) {
+		debugWrite("%s: %s",name.getString(),value.getString());
 		options.setValue(name.detachString(),value.detachString());
 	}
+
+	debugEnd();
 }
 
 bool sqlrprotocol_postgresql::sendStartupMessageResponse() {
 
+	debugStart("sendStartupMessageResponse");
+	debugWrite("authmethod: %s",authmethod);
+
 	// fail if the user wasn't sent (it's required)
 	if (!user) {
+		debugWrite("user required");
+		debugEnd();
 		sendErrorResponse("FATAL","88P01","user required");
 		return false;
 	}
+
+	debugEnd();
 
 	return (!charstring::compare(authmethod,"postgresql_md5"))?
 				sendAuthenticationMD5Password():
@@ -812,7 +854,7 @@ bool sqlrprotocol_postgresql::sendAuthenticationCleartextPassword() {
 
 	// debug
 	debugStart("AuthenticationCleartextPassword");
-	debugWrite("auth type: %d",authtype);
+	debugAuthType(authtype);
 	debugEnd();
 
 	// build response packet
@@ -840,7 +882,7 @@ bool sqlrprotocol_postgresql::sendAuthenticationMD5Password() {
 
 	// debug
 	debugStart("AuthenticationMD5Password");
-	debugWrite("auth type: %d",authtype);
+	debugAuthType(authtype);
 	debugWrite("salt: %d",salt);
 	debugEnd();
 
@@ -933,7 +975,7 @@ bool sqlrprotocol_postgresql::sendAuthenticationOk() {
 
 	// debug
 	debugStart("AuthenticationOk");
-	debugWrite("success: %d",success);
+	debugAuthType(success);
 	debugEnd();
 
 	// build response packet
@@ -974,11 +1016,15 @@ bool sqlrprotocol_postgresql::sendBackendKeyData() {
 
 bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 
+	debugStart("sendStartupParameterStatuses");
+
 	if (!sv.getSize()) {
 
 		// get the dbversion
 		const char	*dbtype=cont->getDbType();
 		const char	*dbversion=cont->getDbVersion();
+		debugWrite("dbtype: %s",dbtype);
+		debugWrite("dbversion: %s",dbversion);
 		if (!charstring::compare(dbtype,"postgresql")) {
 
 			// massage the dbversion
@@ -996,6 +1042,13 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 			minor=charstring::duplicate(ptr,2);
 			ptr+=2;
 			patch=charstring::duplicate(ptr,2);
+			debugWrite("major: %s",major);
+			debugWrite("minor: %lld",
+					(long long)charstring::
+						convertToInteger(minor));
+			debugWrite("patch: %lld",
+					(long long)charstring::
+						convertToInteger(patch));
 			sv.append(major)->append('.');
 			sv.append(charstring::convertToInteger(minor))->append('.');
 			sv.append(charstring::convertToInteger(patch));
@@ -1048,6 +1101,10 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 							&fieldsize,
 							&lob,
 							&null)) {
+					debugWrite(
+						"%s failed, "
+						"falling back to \"\"",
+						q.getString());
 					field="";
 					fieldsize=0;
 				}
@@ -1077,6 +1134,8 @@ bool sqlrprotocol_postgresql::sendStartupParameterStatuses() {
 			stdconfstr=charstring::duplicate("on");
 		}
 	}
+
+	debugEnd();
 
 	return sendParameterStatus("server_version",sv.getString()) &&
 		sendParameterStatus("server_encoding",serverencoding) &&
@@ -1129,11 +1188,12 @@ bool sqlrprotocol_postgresql::sendReadyForQuery() {
 	// }
 
 	// set values to send
-	char	txblockstatus=(cont->getInTransaction())?'T':'I';
+	char	txblockstatus=(cont->getInTransaction())?
+					TX_STATUS_INTRANS:TX_STATUS_IDLE;
 
 	// debug
 	debugStart("ReadyForQuery");
-	debugWrite("tx block status: %c",txblockstatus);
+	debugTransactionStatus(txblockstatus);
 	debugEnd();
 
 	// build response packet
@@ -1190,13 +1250,13 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 
 	// debug
 	debugStart("error");
-	debugWrite("field type: S");
+	debugErrorFieldType(FIELD_TYPE_SEVERITY);
 	debugWrite("string: %s",severity);
-	debugWrite("field type: C");
+	debugErrorFieldType(FIELD_TYPE_CODE);
 	debugWrite("string: %s",sqlstate);
-	debugWrite("field type: M");
+	debugErrorFieldType(FIELD_TYPE_MESSAGE);
 	debugWrite("string: %.*s",errorstringsize,errorstring);
-	debugWrite("field type: (null)");
+	debugErrorFieldType((unsigned char)'\0');
 	debugEnd();
 
 	// build response packet
@@ -1222,10 +1282,20 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 
 bool sqlrprotocol_postgresql::query() {
 
+	// debug
+	if (getDebug()) {
+		debugStart("query");
+		debugWrite("packet size: %d",reqpacketsize);
+	}
+
 	// get an available cursor
 	sqlrservercursor	*cursor=cont->getCursor();
 	if (!cursor) {
-		return sendErrorResponse("Out of cursors");
+		if (getDebug()) {
+			debugWrite("out of cursors");
+			debugEnd();
+		}
+		return sendOutOfCursorsError();
 	}
 
 	// request packet data structure:
@@ -1241,11 +1311,12 @@ bool sqlrprotocol_postgresql::query() {
 	uint32_t	querysize=reqpacketsize;
 
 	// debug
-	debugStart("query");
-	debugWrite("cursor id: %d",cursor->getId());
-	debugWrite("query size: %d",querysize);
-	debugWrite("queries: %.*s",querysize,query);
-	debugEnd();
+	if (getDebug()) {
+		debugWrite("cursor id: %d",cursor->getId());
+		debugWrite("query size: %d",querysize);
+		debugWrite("queries: %.*s",querysize,query);
+		debugEnd();
+	}
 
 	// clear binds
 	cont->getBindPool(cursor)->clear();
@@ -1340,6 +1411,8 @@ void sqlrprotocol_postgresql::getQuery(const char *query,
 					const char **start,
 					const char **end) {
 
+	debugStart("getQuery");
+
 	*start=cont->skipWhitespaceAndComments(query);
 
 	const char	*ch=*start;
@@ -1361,6 +1434,12 @@ void sqlrprotocol_postgresql::getQuery(const char *query,
 		}
 	}
 	*end=ch;
+
+	debugWrite("statement offset: %d",(int)(*start-query));
+	debugWrite("statement length: %d",(int)(*end-*start));
+	debugWrite("statement: %.*s",(int)(*end-*start),*start);
+
+	debugEnd();
 }
 
 const char *sqlrprotocol_postgresql::skipWhitespace(const char *str) {
@@ -1374,20 +1453,39 @@ const char *sqlrprotocol_postgresql::skipWhitespace(const char *str) {
 bool sqlrprotocol_postgresql::sendQueryResult(sqlrservercursor *cursor,
 						bool sendrowdescription,
 						uint32_t maxrows) {
+
+	debugStart("sendQueryResult");
+
 	uint16_t	colcount=cont->colCount(cursor);
+	debugWrite("colcount: %d",colcount);
+	debugWrite("sendrowdescription: %d",(int)sendrowdescription);
+	debugWrite("maxrows: %d",maxrows);
+
 	if (colcount) {
 		if (sendrowdescription &&
 			!sendRowDescription(cursor,colcount)) {
+			debugWrite("sendRowDescription failed");
+			debugEnd();
 			return false;
 		}
-		return sendResultSet(cursor,colcount,maxrows);
+		debugWrite("sending result set");
+		bool	retval=sendResultSet(cursor,colcount,maxrows);
+		debugEnd();
+		return retval;
 	}
-	return sendCommandComplete(cursor);
+	debugWrite("no columns, sending command complete");
+	bool	retval=sendCommandComplete(cursor);
+	debugEnd();
+	return retval;
 }
 
 bool sqlrprotocol_postgresql::sendResultSet(sqlrservercursor *cursor,
 							uint16_t colcount,
 							uint32_t maxrows) {
+
+	debugStart("sendResultSet");
+	debugWrite("colcount: %d",colcount);
+	debugWrite("maxrows: %d",maxrows);
 
 	uint32_t	fetched=0;
 	for (;;) {
@@ -1395,6 +1493,9 @@ bool sqlrprotocol_postgresql::sendResultSet(sqlrservercursor *cursor,
 		bool	error;
 		if (!cont->fetchRow(cursor,&error)) {
 			if (error) {
+				debugWrite("rows fetched: %d",fetched);
+				debugWrite("fetchRow failed");
+				debugEnd();
 				return sendCursorError(cursor);
 			} else {
 				break;
@@ -1402,6 +1503,9 @@ bool sqlrprotocol_postgresql::sendResultSet(sqlrservercursor *cursor,
 		}
 
 		if (!sendDataRow(cursor,colcount)) {
+			debugWrite("rows fetched: %d",fetched);
+			debugWrite("sendDataRow failed");
+			debugEnd();
 			return false;
 		}
 
@@ -1414,13 +1518,17 @@ bool sqlrprotocol_postgresql::sendResultSet(sqlrservercursor *cursor,
 		}
 	}
 
+	debugWrite("rows fetched: %d",fetched);
+	debugWrite("rows sent: %d",fetched);
+	debugEnd();
+
 	return sendCommandComplete(cursor);
 }
 
 bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 							uint16_t colcount) {
 
-	debugStart("RowDecription");
+	debugStart("RowDescription");
 
 	// build response packet
 	resppacket.clear();
@@ -1488,19 +1596,19 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 
 		// format code text=0, binary=1
 		// for now, we always return text, even if binary was requested
-		writeBE(&resppacket,(uint16_t)0);
+		uint16_t	resultformatcode=FORMAT_CODE_TEXT;
+		writeBE(&resppacket,resultformatcode);
 
-		
 		debugStart("column %d",i);
 		debugWrite("name: %s",columnname);
 		debugWrite("table name: %s",tablename);
 		debugWrite("table oid: %d",tableoid);
 		debugWrite("attribute number: 0");
 		debugWrite("column type name: %s",coltypename);
-		debugWrite("data type oid: %d",coltypeoid);
+		debugTypeOid("data type oid",coltypeoid);
 		debugWrite("data type size: %d",datatypesize);
 		debugWrite("type modifier: %d",datatypemodifier);
-		debugWrite("format code: 0");
+		debugFormatCode("format code",resultformatcode);
 		debugEnd();
 	}
 
@@ -2071,19 +2179,35 @@ bool sqlrprotocol_postgresql::sendDataRow(sqlrservercursor *cursor,
 
 bool sqlrprotocol_postgresql::blobAlreadyHex() {
 
+	debugStart("blobAlreadyHex");
+
+	const char	*dbtype=cont->getDbType();
+	const char	*decodeblobs=cont->getConnectStringValue("decodeblobs");
+	debugWrite("dbtype: %s",(dbtype)?dbtype:"");
+	debugWrite("decodeblobs: %s",(decodeblobs)?decodeblobs:"");
+
 	// the postgresql backend's own getField() already hands back a hex
 	// string for bytea columns when decodeblobs=no
-	return (!charstring::compare(cont->getDbType(),"postgresql") &&
-			charstring::isNo(
-				cont->getConnectStringValue("decodeblobs")));
+	bool	retval=(!charstring::compare(dbtype,"postgresql") &&
+				charstring::isNo(decodeblobs));
+
+	debugWrite("already hex: %d",(int)retval);
+	debugEnd();
+
+	return retval;
 }
 
 void sqlrprotocol_postgresql::writeByteaField(const char *data,
 							uint64_t size) {
 
+	debugStart("writeByteaField");
+	debugWrite("size: %lld",(long long)size);
+
 	if (blobAlreadyHex()) {
+		debugWrite("already hex, skipping encoding");
 		writeBE(&resppacket,(uint32_t)size);
 		write(&resppacket,data,size);
+		debugEnd();
 		return;
 	}
 
@@ -2092,26 +2216,37 @@ void sqlrprotocol_postgresql::writeByteaField(const char *data,
 	char		*hex=NULL;
 	uint64_t	hexsize=0;
 	charstring::hexEncode((const byte_t *)data,size,&hex,&hexsize);
+	debugWrite("hex size: %lld",(long long)hexsize);
 	writeBE(&resppacket,(uint32_t)(hexsize+2));
 	write(&resppacket,"\\x",2);
 	write(&resppacket,hex,hexsize);
 	delete[] hex;
+
+	debugEnd();
 }
 
 void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
 							uint32_t col,
 							bool isbytea) {
 
+	debugStart("buildLobField");
+	debugWrite("column: %d",col);
+	debugWrite("isbytea: %d",(int)isbytea);
+
 	// get the lob length, sending a -1 (NULL) field if that fails
 	uint64_t	loblength=0;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
+		debugWrite("getLobFieldLength failed, sending NULL field");
 		int32_t		negone=-1;
 		uint32_t	unegone=0;
 		bytestring::copy(&unegone,&negone,sizeof(int32_t));
 		writeBE(&resppacket,unegone);
 		cont->closeLobField(cursor,col);
+		debugEnd();
 		return;
 	}
+
+	debugWrite("lob length: %lld",(long long)loblength);
 
 	// read the whole lob into a temp buffer before appending it
 	// (postgresql's DataRow field has to be prefixed with its final
@@ -2135,6 +2270,8 @@ void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
 	}
 	cont->closeLobField(cursor,col);
 
+	debugWrite("total bytes read: %lld",(long long)temp.getSize());
+
 	if (isbytea) {
 		writeByteaField((const char *)temp.getBuffer(),
 						temp.getSize());
@@ -2143,6 +2280,8 @@ void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
 		write(&resppacket,(const char *)temp.getBuffer(),
 						temp.getSize());
 	}
+
+	debugEnd();
 }
 
 bool sqlrprotocol_postgresql::sendCommandComplete(sqlrservercursor *cursor) {
@@ -2250,16 +2389,31 @@ bool sqlrprotocol_postgresql::parse() {
 	const byte_t	*rp=reqpacket;
 	const byte_t	*rpend=rp+reqpacketsize;
 
+	// debug
+	if (getDebug()) {
+		debugStart("Parse");
+		debugWrite("packet size: %d",reqpacketsize);
+	}
+
 	// get stmt name
 	const char	*stmtname=(const char *)rp;
 	while (*rp && rp!=rpend) {
 		rp++;
 	}
 	if (rp==rpend) {
+		if (getDebug()) {
+			debugWrite("invalid request: unterminated "
+						"stmt name");
+			debugEnd();
+		}
 		return sendErrorResponse("Invalid request");
 	}
 	rp++;
-	
+
+	if (getDebug()) {
+		debugWrite("stmt name: %s",stmtname);
+	}
+
 	// get the requested cursor (or an available one)
 	sqlrservercursor	*cursor=NULL;
 	if (!stmtcursormap.getValue((char *)stmtname,&cursor)) {
@@ -2267,11 +2421,19 @@ bool sqlrprotocol_postgresql::parse() {
 		// get an available cursor
 		cursor=cont->getCursor();
 		if (!cursor) {
-			return sendErrorResponse("Out of cursors");
+			if (getDebug()) {
+				debugWrite("out of cursors");
+				debugEnd();
+			}
+			return sendOutOfCursorsError();
 		}
 
 		// map stmt -> cursor
 		stmtcursormap.setValue(charstring::duplicate(stmtname),cursor);
+	}
+
+	if (getDebug()) {
+		debugWrite("cursor id: %d",cursor->getId());
 	}
 
 	// set the execute flag true
@@ -2284,15 +2446,29 @@ bool sqlrprotocol_postgresql::parse() {
 		rp++;
 	}
 	if (rp==rpend) {
+		if (getDebug()) {
+			debugWrite("invalid request: unterminated query");
+			debugEnd();
+		}
 		return sendErrorResponse("Invalid request");
 	}
 	uint32_t	querysize=((const char *)rp)-query;
 	rp++;
-	
+
+	if (getDebug()) {
+		debugWrite("query size: %d",querysize);
+		debugWrite("query: %.*s",querysize,query);
+	}
+
 	// get param types
 	uint16_t	paramcount;
 	readBE(rp,&paramcount,&rp);
 	if (paramcount>maxbindcount) {
+		if (getDebug()) {
+			debugWrite("param count: %d",paramcount);
+			debugWrite("too many binds");
+			debugEnd();
+		}
 		return sendTooManyBindsError();
 	}
 	uint32_t	*paramtypes=new uint32_t[paramcount];
@@ -2305,14 +2481,13 @@ bool sqlrprotocol_postgresql::parse() {
 
 	// debug
 	if (getDebug()) {
-		debugStart("Parse");
-		debugWrite("stmt name: %s",stmtname);
-		debugWrite("cursor id: %d",cursor->getId());
-		debugWrite("query size: %d",querysize);
-		debugWrite("query: %.*s",querysize,query);
 		debugWrite("param count: %d",paramcount);
 		for (uint16_t i=0; i<paramcount; i++) {
-			debugWrite("param %d type: %d",i,paramtypes[i]);
+			stringbuffer	paramname;
+			paramname.append("param ");
+			paramname.append(i);
+			paramname.append(" type oid");
+			debugTypeOid(paramname.getString(),paramtypes[i]);
 		}
 		debugEnd();
 	}
@@ -2388,6 +2563,7 @@ bool sqlrprotocol_postgresql::bind() {
 	// get the requested cursor
 	sqlrservercursor	*cursor=NULL;
 	if (!stmtcursormap.getValue((char *)stmtname.getString(),&cursor)) {
+		debugEnd();
 		return sendErrorResponse("ERROR","26000",
 					"Invalid statement name");
 	}
@@ -2421,6 +2597,7 @@ bool sqlrprotocol_postgresql::bind() {
 	uint16_t	paramformatcodecount;
 	readBE(rp,&paramformatcodecount,&rp);
 	if (paramformatcodecount>maxbindcount) {
+		debugEnd();
 		return sendTooManyBindsError();
 	}
 	uint16_t	*paramformatcodes=NULL;
@@ -2437,12 +2614,10 @@ bool sqlrprotocol_postgresql::bind() {
 
 	// debug
 	if (getDebug()) {
-		stringbuffer	b;
-		b.printf("param format codes: (%d) ",paramformatcodecount);
+		debugWrite("param format code count: %d",paramformatcodecount);
 		for (uint16_t i=0; i<paramformatcodecount; i++) {
-			b.append(paramformatcodes[i]);
+			debugFormatCode("param format",paramformatcodes[i]);
 		}
-		debugWrite("%s",b.getString());
 	}
 
 	// param values...
@@ -2450,6 +2625,7 @@ bool sqlrprotocol_postgresql::bind() {
 	readBE(rp,&paramvaluecount,&rp);
 	if (paramvaluecount>maxbindcount) {
 		delete[] paramformatcodes;
+		debugEnd();
 		return sendTooManyBindsError();
 	}
 
@@ -2460,6 +2636,7 @@ bool sqlrprotocol_postgresql::bind() {
 	// bounds
 	if (paramformatcodecount>1 && paramformatcodecount!=paramvaluecount) {
 		delete[] paramformatcodes;
+		debugEnd();
 		return sendErrorResponse("ERROR","22023",
 					"Invalid parameter format code count");
 	}
@@ -2486,6 +2663,8 @@ bool sqlrprotocol_postgresql::bind() {
 		// paramsize bounds check below
 		if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(uint32_t)) {
 			delete[] paramformatcodes;
+			debugEnd();
+			debugEnd();
 			return sendErrorResponse("ERROR","22003",
 						"Invalid parameter size");
 		}
@@ -2514,16 +2693,20 @@ bool sqlrprotocol_postgresql::bind() {
 			// request packet - don't let it drive an allocation
 			// and copy past the end of the buffer
 			delete[] paramformatcodes;
+			debugEnd();
+			debugEnd();
 			return sendErrorResponse("ERROR","22003",
 						"Invalid parameter size");
 
 		} else if (!paramformatcodecount || !paramformatcodes[fcindex]) {
-			debugWrite("format: text");
+			debugFormatCode("param format",FORMAT_CODE_TEXT);
 			bindTextParameter(rp,paramsize,bindpool,bv,&rp);
 		} else {
-			debugWrite("format: binary");
+			debugFormatCode("param format",paramformatcodes[fcindex]);
 			if (!oids || i>=oidcount) {
 				delete[] paramformatcodes;
+				debugEnd();
+				debugEnd();
 				return sendErrorResponse("ERROR","26000",
 						"Invalid bind parameters");
 			}
@@ -2545,6 +2728,7 @@ bool sqlrprotocol_postgresql::bind() {
 	// result format codes...
 	// FIXME: do something with these...
 	if (rp>rpend || (uint32_t)(rpend-rp)<sizeof(uint16_t)) {
+		debugEnd();
 		return sendErrorResponse("ERROR","22003",
 					"Invalid result format code count");
 	}
@@ -2554,6 +2738,7 @@ bool sqlrprotocol_postgresql::bind() {
 	if (resultformatcodecount) {
 		if ((uint32_t)(resultformatcodecount*sizeof(uint16_t))>
 					(uint32_t)(rpend-rp)) {
+			debugEnd();
 			return sendErrorResponse("ERROR","22003",
 					"Invalid result format codes");
 		}
@@ -2565,12 +2750,11 @@ bool sqlrprotocol_postgresql::bind() {
 
 	// debug
 	if (getDebug()) {
-		stringbuffer	b;
-		b.printf("result format codes: (%d) ",resultformatcodecount);
+		debugWrite("result format code count: %d",
+						resultformatcodecount);
 		for (uint16_t i=0; i<resultformatcodecount; i++) {
-			b.append(resultformatcodes[i]);
+			debugFormatCode("result format",resultformatcodes[i]);
 		}
-		debugWrite("%s",b.getString());
 	}
 	debugEnd();
 
@@ -2616,7 +2800,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						sqlrserverbindvar *bv,
 						const byte_t **rpout) {
 
-	debugWrite("oid: %d",oid);
+	debugTypeOid("oid",oid);
 
 	bv->valuesize=0;
 	bv->isnull=cont->getNonNullBindValue();
@@ -2630,6 +2814,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<sizeof(byte_t)) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			byte_t	value=0;
@@ -2647,6 +2833,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<sizeof(int16_t)) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			int16_t	value=0;
@@ -2664,6 +2852,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<sizeof(int32_t)) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			int32_t	value=0;
@@ -2681,6 +2871,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<sizeof(int64_t)) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			int64_t	value=0;
@@ -2698,6 +2890,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<sizeof(uint32_t)) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
@@ -2719,6 +2913,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<sizeof(uint64_t)) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
@@ -2777,6 +2973,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 						paramsize<headersize) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			uint16_t	ndigits;
@@ -2794,6 +2992,8 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 					paramsize-headersize<digitssize) {
 				sendErrorResponse("ERROR","22003",
 							"Invalid parameter size");
+				debugEnd();
+				debugEnd();
 				return false;
 			}
 			stringbuffer	str;
@@ -2935,6 +3135,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 		case 2283: //anyelement
 		case 705: //unknown
 		default:
+			debugTypeOid("unsupported param type oid",oid);
 			debugEnd();
 			debugEnd();
 			stringbuffer	err;
@@ -2968,7 +3169,12 @@ bool sqlrprotocol_postgresql::describe() {
 
 	stringbuffer	name;
 	readString(rp,rpend,&name,&rp);
-	
+
+	// debug
+	debugStart("Describe");
+	debugStatementOrPortal(sorp);
+	debugWrite("name: %s",name.getString());
+
 	// decide whether to use stmt/portal -> cursor map
 	dictionary<char *, sqlrservercursor *>	*dict=
 			(sorp=='S')?&stmtcursormap:&portalcursormap;
@@ -2976,14 +3182,12 @@ bool sqlrprotocol_postgresql::describe() {
 	// get the requested cursor
 	sqlrservercursor	*cursor=NULL;
 	if (!dict->getValue((char *)name.getString(),&cursor)) {
+		debugWrite("invalid statement/portal name");
+		debugEnd();
 		return sendErrorResponse("ERROR","26000",
 					"Invalid statement/portal name");
 	}
 
-	// debug
-	debugStart("Describe");
-	debugWrite("S or P: %c",sorp);
-	debugWrite("name: %s",name.getString());
 	debugWrite("cursor id: %d",cursor->getId());
 	debugEnd();
 
@@ -3026,13 +3230,19 @@ bool sqlrprotocol_postgresql::execute() {
 
 	stringbuffer	portal;
 	readString(rp,rpend,&portal,&rp);
-	
+
 	uint32_t	maxrows;
 	readBE(rp,&maxrows,&rp);
+
+	// debug
+	debugStart("Execute");
+	debugWrite("portal name: %s",portal.getString());
 
 	// get the requested cursor
 	sqlrservercursor	*cursor=NULL;
 	if (!portalcursormap.getValue((char *)portal.getString(),&cursor)) {
+		debugWrite("invalid portal name");
+		debugEnd();
 		return sendErrorResponse("ERROR","26000","Invalid portal name");
 	}
 
@@ -3047,8 +3257,6 @@ bool sqlrprotocol_postgresql::execute() {
 	// rows, rather than actually re-execute the query.
 	bool	exec=executeflag.getValue(cursor);
 
-	debugStart("Execute");
-	debugWrite("portal name: %s",portal.getString());
 	debugWrite("cursor id: %d",cursor->getId());
 	debugWrite("max rows: %d",maxrows);
 	if (exec) {
@@ -3129,21 +3337,24 @@ bool sqlrprotocol_postgresql::close() {
 	stringbuffer	name;
 	readString(rp,rpend,&name,&rp);
 
+	// debug
+	debugStart("Close");
+	debugStatementOrPortal(sorp);
+	debugWrite("name: %s",name.getString());
+
 	// decide whether to use stmt/portal -> cursor map
 	dictionary<char *, sqlrservercursor *>	*dict=
 			(sorp=='S')?&stmtcursormap:&portalcursormap;
-	
+
 	// get the requested cursor
 	sqlrservercursor	*cursor=NULL;
 	if (!dict->getValue((char *)name.getString(),&cursor)) {
+		debugWrite("invalid statement/portal name");
+		debugEnd();
 		return sendErrorResponse("ERROR","26000",
 					"Invalid statement/portal name");
 	}
 
-	// debug
-	debugStart("Close");
-	debugWrite("S or P: %c",sorp);
-	debugWrite("name: %s",name.getString());
 	debugWrite("cursor id: %d",cursor->getId());
 	debugEnd();
 
@@ -3176,34 +3387,556 @@ bool sqlrprotocol_postgresql::sendCursorError(sqlrservercursor *cursor) {
 			&errnum,
 			&liveconnection);
 
+	// debug
+	debugStart("cursor error");
+	debugWrite("cursor id: %d",cursor->getId());
+	debugWrite("errnum: %lld",(long long)errnum);
+	debugWrite("errorsize: %d",errorsize);
+	debugWrite("liveconnection: %d",(int)liveconnection);
+	debugEnd();
+
 	// send an error response packet
 	return sendErrorResponse(errorstring,errorsize);
 }
 
 bool sqlrprotocol_postgresql::sendNotImplementedError() {
+	debugStart("not implemented error");
+	debugEnd();
 	return sendErrorResponse("ERROR","0A000","Feature not supported");
 }
 
 bool sqlrprotocol_postgresql::sendOutOfCursorsError() {
+	debugStart("out of cursors error");
+	debugEnd();
 	return sendErrorResponse("Out of cursors");
 }
 
 bool sqlrprotocol_postgresql::sendCursorNotOpenError() {
+	debugStart("cursor not open error");
+	debugEnd();
 	return sendErrorResponse("Cursor is not open");
 }
 
 bool sqlrprotocol_postgresql::sendTooManyBindsError() {
+	debugStart("too many binds error");
+	debugEnd();
 	return sendErrorResponse("Too many bind variables");
 }
 
+void sqlrprotocol_postgresql::debugRequestMessageType(unsigned char type) {
+	if (!getDebug()) {
+		return;
+	}
+	if (type==MESSAGE_NULL) {
+		debugWrite("type: (null)");
+		return;
+	}
+	// frontend (request) message types
+	const char	*typestring=NULL;
+	switch (type) {
+		case MESSAGE_BIND:
+			typestring="Bind";
+			break;
+		case MESSAGE_CLOSE:
+			typestring="Close";
+			break;
+		case 'd':
+			typestring="CopyData";
+			break;
+		case 'c':
+			typestring="CopyDone";
+			break;
+		case 'f':
+			typestring="CopyFail";
+			break;
+		case MESSAGE_DESCRIBE:
+			typestring="Describe";
+			break;
+		case MESSAGE_EXECUTE:
+			typestring="Execute";
+			break;
+		case 'H':
+			typestring="Flush";
+			break;
+		case 'F':
+			typestring="FunctionCall";
+			break;
+		case MESSAGE_PARSE:
+			typestring="Parse";
+			break;
+		case MESSAGE_PASSWORD:
+			typestring="PasswordMessage";
+			break;
+		case MESSAGE_QUERY:
+			typestring="Query";
+			break;
+		case MESSAGE_SYNC:
+			typestring="Sync";
+			break;
+		case MESSAGE_TERMINATE:
+			typestring="Terminate";
+			break;
+		default:
+			typestring="unknown";
+			break;
+	}
+	debugWrite("type: %c (0x%02x) %s",type,type,typestring);
+}
+
+void sqlrprotocol_postgresql::debugResponseMessageType(unsigned char type) {
+	if (!getDebug()) {
+		return;
+	}
+	if (type==MESSAGE_NULL) {
+		debugWrite("type: (null)");
+		return;
+	}
+	// backend (response) message types
+	const char	*typestring=NULL;
+	switch (type) {
+		case MESSAGE_AUTHENTICATION:
+			typestring="Authentication";
+			break;
+		case MESSAGE_BACKENDKEYDATA:
+			typestring="BackendKeyData";
+			break;
+		case MESSAGE_BINDCOMPLETE:
+			typestring="BindComplete";
+			break;
+		case MESSAGE_CLOSECOMPLETE:
+			typestring="CloseComplete";
+			break;
+		case MESSAGE_COMMANDCOMPLETE:
+			typestring="CommandComplete";
+			break;
+		case 'd':
+			typestring="CopyData";
+			break;
+		case 'c':
+			typestring="CopyDone";
+			break;
+		case 'G':
+			typestring="CopyInResponse";
+			break;
+		case 'H':
+			typestring="CopyOutResponse";
+			break;
+		case 'W':
+			typestring="CopyBothResponse";
+			break;
+		case MESSAGE_DATAROW:
+			typestring="DataRow";
+			break;
+		case MESSAGE_EMPTYQUERYRESPONSE:
+			typestring="EmptyQueryResponse";
+			break;
+		case MESSAGE_ERRORRESPONSE:
+			typestring="ErrorResponse";
+			break;
+		case 'V':
+			typestring="FunctionCallResponse";
+			break;
+		case 'v':
+			typestring="NegotiateProtocolVersion";
+			break;
+		case MESSAGE_NODATA:
+			typestring="NoData";
+			break;
+		case 'N':
+			typestring="NoticeResponse";
+			break;
+		case 'A':
+			typestring="NotificationResponse";
+			break;
+		case 't':
+			typestring="ParameterDescription";
+			break;
+		case MESSAGE_PARAMETERSTATUS:
+			typestring="ParameterStatus";
+			break;
+		case MESSAGE_PARSECOMPLETE:
+			typestring="ParseComplete";
+			break;
+		case 's':
+			typestring="PortalSuspended";
+			break;
+		case MESSAGE_READYFORQUERY:
+			typestring="ReadyForQuery";
+			break;
+		case MESSAGE_ROWDESCRIPTION:
+			typestring="RowDescription";
+			break;
+		default:
+			typestring="unknown";
+			break;
+	}
+	debugWrite("type: %c (0x%02x) %s",type,type,typestring);
+}
+
 void sqlrprotocol_postgresql::debugRecvTypeError() {
-	debugWrite("invalid packet type: %c",reqtype);
+	if (!getDebug()) {
+		return;
+	}
+	debugWrite("invalid packet type...");
+	debugRequestMessageType(reqtype);
 }
 
 void sqlrprotocol_postgresql::debugSystemError() {
+	if (!getDebug()) {
+		return;
+	}
 	char	*err=error::getErrorString();
 	debugWrite("%s",err);
 	delete[] err;
+}
+
+void sqlrprotocol_postgresql::debugAuthType(uint32_t authtype) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (authtype) {
+		case AUTH_NONE:
+			typestring="AUTH_NONE";
+			break;
+		case AUTH_KRB5:
+			typestring="AUTH_KRB5";
+			break;
+		case AUTH_CLEARTEXT:
+			typestring="AUTH_CLEARTEXT";
+			break;
+		case AUTH_MD5:
+			typestring="AUTH_MD5";
+			break;
+		case AUTH_SCM:
+			typestring="AUTH_SCM";
+			break;
+		case AUTH_GSS:
+			typestring="AUTH_GSS";
+			break;
+		case AUTH_GSS_CONT:
+			typestring="AUTH_GSS_CONT";
+			break;
+		case AUTH_SSPI:
+			typestring="AUTH_SSPI";
+			break;
+		case AUTH_SASL:
+			typestring="AUTH_SASL";
+			break;
+		case AUTH_SASL_CONT:
+			typestring="AUTH_SASL_CONT";
+			break;
+		case AUTH_SASL_FINAL:
+			typestring="AUTH_SASL_FINAL";
+			break;
+		default:
+			typestring="unknown";
+			break;
+	}
+	debugWrite("auth type: %u (%s)",authtype,typestring);
+}
+
+void sqlrprotocol_postgresql::debugProtocolVersion(uint32_t version) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (version) {
+		case CANCEL_REQUEST_CODE:
+			typestring="CancelRequest";
+			break;
+		case SSL_REQUEST_CODE:
+			typestring="SSLRequest";
+			break;
+		case GSSENC_REQUEST_CODE:
+			typestring="GSSENCRequest";
+			break;
+		default:
+			typestring=NULL;
+			break;
+	}
+	if (typestring) {
+		debugWrite("protocol version: %u (%s)",version,typestring);
+	} else {
+		debugWrite("protocol version: %u (%u.%u)",
+				version,
+				(version>>16),
+				(version&0xffff));
+	}
+}
+
+void sqlrprotocol_postgresql::debugTypeOid(const char *name, uint32_t oid) {
+	if (!getDebug()) {
+		return;
+	}
+
+	// pg_type.oid -> pg_type.typname, for the builtin types that this
+	// module maps to or accepts.  Names beginning with an underscore are
+	// postgresql's array types (_int4 is an array of int4, and so on).
+	static const struct {
+		uint32_t	oid;
+		const char	*typname;
+	} typenames[]={
+		// 0 isn't a type at all - in a Parse message it means
+		// "infer the type", and in a RowDescription it means
+		// "not known"
+		{0,"unspecified"},
+		{16,"bool"},
+		{17,"bytea"},
+		{18,"char"},
+		{19,"name"},
+		{20,"int8"},
+		{21,"int2"},
+		{22,"int2vector"},
+		{23,"int4"},
+		{24,"regproc"},
+		{25,"text"},
+		{26,"oid"},
+		{27,"tid"},
+		{28,"xid"},
+		{29,"cid"},
+		{30,"oidvector"},
+		{71,"pg_type"},
+		{75,"pg_attribute"},
+		{81,"pg_proc"},
+		{83,"pg_class"},
+		{210,"smgr"},
+		{600,"point"},
+		{601,"lseg"},
+		{602,"path"},
+		{603,"box"},
+		{604,"polygon"},
+		{628,"line"},
+		{629,"_line"},
+		{650,"cidr"},
+		{651,"_cidr"},
+		{700,"float4"},
+		{701,"float8"},
+		{702,"abstime"},
+		{703,"reltime"},
+		{704,"tinterval"},
+		{705,"unknown"},
+		{718,"circle"},
+		{719,"_circle"},
+		{790,"money"},
+		{791,"_money"},
+		{829,"macaddr"},
+		{869,"inet"},
+		{1000,"_bool"},
+		{1001,"_bytea"},
+		{1002,"_char"},
+		{1003,"_name"},
+		{1005,"_int2"},
+		{1006,"_int2vector"},
+		{1007,"_int4"},
+		{1008,"_regproc"},
+		{1009,"_text"},
+		{1010,"_tid"},
+		{1011,"_xid"},
+		{1012,"_cid"},
+		{1013,"_oidvector"},
+		{1014,"_bpchar"},
+		{1015,"_varchar"},
+		{1016,"_int8"},
+		{1017,"_point"},
+		{1018,"_lseg"},
+		{1019,"_path"},
+		{1020,"_box"},
+		{1021,"_float4"},
+		{1022,"_float8"},
+		{1023,"_abstime"},
+		{1024,"_reltime"},
+		{1025,"_tinterval"},
+		{1027,"_polygon"},
+		{1028,"_oid"},
+		{1033,"aclitem"},
+		{1034,"_aclitem"},
+		{1040,"_macaddr"},
+		{1041,"_inet"},
+		{1042,"bpchar"},
+		{1043,"varchar"},
+		{1082,"date"},
+		{1083,"time"},
+		{1114,"timestamp"},
+		{1115,"_timestamp"},
+		{1182,"_date"},
+		{1183,"_time"},
+		{1184,"timestamptz"},
+		{1185,"_timestamptz"},
+		{1186,"interval"},
+		{1187,"_interval"},
+		{1231,"_numeric"},
+		{1266,"timetz"},
+		{1270,"_timetz"},
+		{1560,"bit"},
+		{1561,"_bit"},
+		{1562,"varbit"},
+		{1563,"_varbit"},
+		{1700,"numeric"},
+		{1790,"refcursor"},
+		{2201,"_refcursor"},
+		{2202,"regprocedure"},
+		{2203,"regoper"},
+		{2204,"regoperator"},
+		{2205,"regclass"},
+		{2206,"regtype"},
+		{2207,"_regprocedure"},
+		{2208,"_regoper"},
+		{2209,"_regoperator"},
+		{2210,"_regclass"},
+		{2211,"_regtype"},
+		{2249,"record"},
+		{2275,"cstring"},
+		{2276,"any"},
+		{2277,"anyarray"},
+		{2278,"void"},
+		{2279,"trigger"},
+		{2280,"language_handler"},
+		{2281,"internal"},
+		{2282,"opaque"},
+		{2283,"anyelement"},
+		{2950,"uuid"},
+		{2951,"_uuid"},
+		{0,NULL}
+	};
+
+	const char	*typestring="unknown oid";
+	for (uint16_t i=0; typenames[i].typname; i++) {
+		if (typenames[i].oid==oid) {
+			typestring=typenames[i].typname;
+			break;
+		}
+	}
+
+	debugWrite("%s: %u (%s)",name,oid,typestring);
+}
+
+void sqlrprotocol_postgresql::debugErrorFieldType(unsigned char fieldtype) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (fieldtype) {
+		case FIELD_TYPE_SEVERITY:
+			typestring="FIELD_TYPE_SEVERITY";
+			break;
+		case FIELD_TYPE_SEVERITYV:
+			typestring="FIELD_TYPE_SEVERITYV";
+			break;
+		case FIELD_TYPE_CODE:
+			typestring="FIELD_TYPE_CODE";
+			break;
+		case FIELD_TYPE_MESSAGE:
+			typestring="FIELD_TYPE_MESSAGE";
+			break;
+		case FIELD_TYPE_DETAIL:
+			typestring="FIELD_TYPE_DETAIL";
+			break;
+		case FIELD_TYPE_HINT:
+			typestring="FIELD_TYPE_HINT";
+			break;
+		case FIELD_TYPE_POSITION:
+			typestring="FIELD_TYPE_POSITION";
+			break;
+		case FIELD_TYPE_INTERNAL_POSITION:
+			typestring="FIELD_TYPE_INTERNAL_POSITION";
+			break;
+		case FIELD_TYPE_INTERNAL_QUERY:
+			typestring="FIELD_TYPE_INTERNAL_QUERY";
+			break;
+		case FIELD_TYPE_WHERE:
+			typestring="FIELD_TYPE_WHERE";
+			break;
+		case FIELD_TYPE_TABLE:
+			typestring="FIELD_TYPE_TABLE";
+			break;
+		case FIELD_TYPE_COLUMN:
+			typestring="FIELD_TYPE_COLUMN";
+			break;
+		case FIELD_TYPE_DATA_TYPE:
+			typestring="FIELD_TYPE_DATA_TYPE";
+			break;
+		case FIELD_TYPE_CONSTRAINT:
+			typestring="FIELD_TYPE_CONSTRAINT";
+			break;
+		case FIELD_TYPE_FILE:
+			typestring="FIELD_TYPE_FILE";
+			break;
+		case FIELD_TYPE_LINE:
+			typestring="FIELD_TYPE_LINE";
+			break;
+		case FIELD_TYPE_ROUTINE:
+			typestring="FIELD_TYPE_ROUTINE";
+			break;
+		case '\0':
+			typestring="terminator";
+			break;
+		default:
+			typestring="unknown";
+			break;
+	}
+	debugWrite("field type: %c (0x%02x) %s",fieldtype,fieldtype,typestring);
+}
+
+void sqlrprotocol_postgresql::debugTransactionStatus(char status) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*statusstring=NULL;
+	switch (status) {
+		case TX_STATUS_IDLE:
+			statusstring="idle";
+			break;
+		case TX_STATUS_INTRANS:
+			statusstring="in transaction";
+			break;
+		case TX_STATUS_FAILED:
+			statusstring="failed transaction";
+			break;
+		default:
+			statusstring="unknown";
+			break;
+	}
+	debugWrite("transaction status: %c (%s)",status,statusstring);
+}
+
+void sqlrprotocol_postgresql::debugFormatCode(const char *name,
+						uint16_t formatcode) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*formatstring=NULL;
+	switch (formatcode) {
+		case FORMAT_CODE_TEXT:
+			formatstring="text";
+			break;
+		case FORMAT_CODE_BINARY:
+			formatstring="binary";
+			break;
+		default:
+			formatstring="unknown";
+			break;
+	}
+	debugWrite("%s: %u (%s)",name,formatcode,formatstring);
+}
+
+void sqlrprotocol_postgresql::debugStatementOrPortal(char sorp) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*sorpstring=NULL;
+	switch (sorp) {
+		case 'S':
+			sorpstring="statement";
+			break;
+		case 'P':
+			sorpstring="portal";
+			break;
+		default:
+			sorpstring="unknown";
+			break;
+	}
+	debugWrite("S or P: %c (%s)",sorp,sorpstring);
 }
 
 void sqlrprotocol_postgresql::readString(const byte_t *rp,

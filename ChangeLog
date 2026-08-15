@@ -858,6 +858,14 @@
 		default SEC_MAX_FAILED_LOGIN_ATTEMPTS, confirmed against a live
 		Oracle server), and tears the connection down once the bound is
 		reached, same as before
+	brought the postgresql protocol module's debug instrumentation up to
+		parity with the mysql protocol module - traced the remaining
+		untraced functions (including several early-return error paths
+		that previously bypassed tracing entirely), fixed a bug where
+		bind() and bindBinaryParameter() left debugStart() sections open
+		on several error returns, and added decoders for postgres message
+		types, auth types, protocol versions, error field types,
+		transaction status, parameter/result format codes, and type oids
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
