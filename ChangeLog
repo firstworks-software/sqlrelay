@@ -883,6 +883,10 @@
 		and brought its coverage up to about as much of the module as the
 		mysql protocol module's debug output covers; fixed several
 		pre-existing debugStart/debugEnd balance bugs found along the way
+	fixed the postgresql protocol module's debug output - the tls private
+		key password and the client-supplied password from a
+		PasswordMessage were printed in the clear, they're replaced with
+		a fixed placeholder now
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

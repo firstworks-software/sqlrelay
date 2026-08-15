@@ -294,8 +294,7 @@ sqlrprotocol_postgresql::sqlrprotocol_postgresql(sqlrservercontroller *cont,
 			getTlsContext()->getCertificateChainFile());
 		debugWrite("tls key: %s",
 			getTlsContext()->getPrivateKeyFile());
-		debugWrite("tls password: %s",
-			getTlsContext()->getPrivateKeyPassword());
+		debugWrite("tls password: (hidden)");
 		debugWrite("tls validate: %d",
 			getTlsContext()->getValidatePeer());
 		debugWrite("tls ca: %s",
@@ -921,7 +920,7 @@ bool sqlrprotocol_postgresql::recvPasswordMessage() {
 
 	// debug
 	debugStart("PasswordMessage");
-	debugWrite("password: %s",password);
+	debugWrite("password: (hidden)");
 	debugEnd();
 
 	return true;
