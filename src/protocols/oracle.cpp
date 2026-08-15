@@ -7000,16 +7000,14 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 	// and one that didn't reads it as a count prefixed integer.  the
 	// precision is a raw signed byte to both.
 	//
-	// Measured against a live 12.2 server through a proxy that rewrote
-	// only that flag in the client's request: it answers the scale of a
+	// verified against a live 12.2 server: it answers the scale of a
 	// number(10,2) with 02 when the flag is set and 01 02 when it is not,
-	// and the precision with 0a either way.  Nothing else moves it - not
-	// the negotiated field version, which was 9 in both.  Of the four
-	// clients on this host only ojdbc 23.26 leaves the flag clear.  Given
-	// the form it did not ask for, a client is one byte out for the rest
-	// of the packet: node-oracledb reports "read integer of length 127
-	// when expecting integer of no more than length 4", and
-	// python-oracledb and OCI answer with a marker packet and close.
+	// and the precision with 0a either way, regardless of field version.
+	// most clients set the flag; ojdbc 23.26 doesn't, and a server that
+	// gets this wrong desyncs it by one byte for the rest of the packet -
+	// node-oracledb reports "read integer of length 127 when expecting
+	// integer of no more than length 4", and python-oracledb and OCI
+	// just hang.
 	if (encodingflags&ENCODING_CONV_LENGTH) {
 		write(&reqpacket,(byte_t)scale);
 	} else {
@@ -7172,7 +7170,7 @@ void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 	// socket forever.  so this owes every ttc 0x04 the module writes: both
 	// authentication trailers, the error packet and putSummary().
 	//
-	// Checked against both live servers, which differ here and nowhere
+	// checked against both live servers, which differ here and nowhere
 	// else in the object: 11.2 ends at the message, and 12.2 puts
 	// 02 05 7b 01 01 in front of it for an ORA-01403 after one row, and
 	// 02 03 f9 00 for an ORA-01017.
@@ -7560,8 +7558,6 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 
 	// all versions call this to fetch
-
-	// fetches the specified number of rows
 
 	if (query3session) {
 		return fetch3(rp);
