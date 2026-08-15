@@ -7858,11 +7858,13 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 							uint32_t colcount) {
 	debugStart("cache column definitions");
+	debugWrite("column count: %d",colcount);
 	if (!colcount) {
 		debugWrite("no columns");
 	}
 
 	uint16_t	curid=cont->getId(cursor);
+	debugWrite("cursor id: %d",curid);
 
 	if (columntypescached[curid]) {
 		debugWrite("already cached");
@@ -7914,6 +7916,7 @@ void sqlrprotocol_oracle::putColumnDefinitions(sqlrservercursor *cursor,
 	debugEnd();
 
 	debugStart("column definitions");
+	debugWrite("query3: %d",(int)query3);
 
 	for (uint32_t i=0; i<colcount; i++) {
 		putColumnDefinition(cursor,i,query3);
@@ -8159,6 +8162,8 @@ uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
 
 void sqlrprotocol_oracle::putIov() {
 
+	debugStart("iov");
+
 	// always appears to be the same...
 	const byte_t	unknown[]={
 		0x07, 0x00, 0x00, 0x00,
@@ -8167,6 +8172,7 @@ void sqlrprotocol_oracle::putIov() {
 		0x07, 0x78, 0x75, 0x0A
 	};
 	reqpacket.append(unknown,sizeof(unknown));
+	debugHexDump(unknown,sizeof(unknown));
 
 	// this appears to be a seconds-since timestamp
 	// what's the significance of this date?
@@ -8179,6 +8185,9 @@ void sqlrprotocol_oracle::putIov() {
 	dt.initFromSystemDateTime();
 	uint32_t	timestamp=dt.getEpoch()-dtsince.getEpoch();
 	writeBE(&reqpacket,timestamp);
+	debugWrite("timestamp: %u",timestamp);
+
+	debugEnd();
 }
 
 void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
@@ -8223,7 +8232,10 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 				} else {
 					writeBE(&reqpacket,(uint32_t)0);
 				}
+				debugWrite("terminator");
 			}
+		} else {
+			debugWrite("null");
 		}
 
 		debugEnd();
@@ -8240,69 +8252,92 @@ void sqlrprotocol_oracle::putField(const char *field,
 			// what about fields longer than 255 chars?
 			write(&reqpacket,(byte_t)fieldsize);
 			write(&reqpacket,field,fieldsize);
+			debugWrite("field size: %d",(byte_t)fieldsize);
+			debugWrite("field: \"%.*s\"",(int)fieldsize,field);
 			break;
 		case ORACLE_TYPE_NUMBER:
 			// FIXME: implement this
+			debugWrite("number (not implemented)");
 			break;
 		case ORACLE_TYPE_VARNUM:
 			// FIXME: implement this
+			debugWrite("varnum (not implemented)");
 			break;
 		case ORACLE_TYPE_LONG:
 			// FIXME: implement this
+			debugWrite("long (not implemented)");
 			break;
 		case ORACLE_TYPE_ROWID_DEPRECATED:
 			// FIXME: implement this
+			debugWrite("rowid (deprecated) (not implemented)");
 			break;
 		case ORACLE_TYPE_DATE:
 			// FIXME: implement this
+			debugWrite("date (not implemented)");
 			break;
 		case ORACLE_TYPE_RAW:
 			// FIXME: implement this
+			debugWrite("raw (not implemented)");
 			break;
 		case ORACLE_TYPE_LONG_RAW:
 			// FIXME: implement this
+			debugWrite("long raw (not implemented)");
 			break;
 		case ORACLE_TYPE_RESULT_SET:
 			// FIXME: implement this
+			debugWrite("result set (not implemented)");
 			break;
 		case ORACLE_TYPE_ROWID:
 			// FIXME: implement this
+			debugWrite("rowid (not implemented)");
 			break;
 		case ORACLE_TYPE_NAMED_TYPE:
 			// FIXME: implement this
+			debugWrite("named type (not implemented)");
 			break;
 		case ORACLE_TYPE_REF_TYPE:
 			// FIXME: implement this
+			debugWrite("ref type (not implemented)");
 			break;
 		case ORACLE_TYPE_CLOB:
 			// FIXME: implement this
+			debugWrite("clob (not implemented)");
 			break;
 		case ORACLE_TYPE_BLOB:
 			// FIXME: implement this
+			debugWrite("blob (not implemented)");
 			break;
 		case ORACLE_TYPE_BFILE:
 			// FIXME: implement this
+			debugWrite("bfile (not implemented)");
 			break;
 		case ORACLE_TYPE_TIMESTAMP:
 			// FIXME: implement this
+			debugWrite("timestamp (not implemented)");
 			break;
 		case ORACLE_TYPE_TIMESTAMPTZ:
 			// FIXME: implement this
+			debugWrite("timestamp tz (not implemented)");
 			break;
 		case ORACLE_TYPE_INTERVALYM:
 			// FIXME: implement this
+			debugWrite("interval year-month (not implemented)");
 			break;
 		case ORACLE_TYPE_INTERVALDS:
 			// FIXME: implement this
+			debugWrite("interval day-second (not implemented)");
 			break;
 		case ORACLE_TYPE_TIMESTAMPLTZ:
 			// FIXME: implement this
+			debugWrite("timestamp ltz (not implemented)");
 			break;
 		case ORACLE_TYPE_PLSQL_INDEX_TABLE:
 			// FIXME: implement this
+			debugWrite("plsql index table (not implemented)");
 			break;
 		case ORACLE_TYPE_FIXED_CHAR:
 			// FIXME: implement this
+			debugWrite("fixed char (not implemented)");
 			break;
 		default:
 			debugWrite("unknown column type: %d",columntype);
@@ -8314,19 +8349,26 @@ void sqlrprotocol_oracle::putField(const char *field,
 
 void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
+	debugStart("lob field");
+
 	// Get lob size.  If this fails, send a NULL field.
 	uint64_t	loblength;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
+		debugWrite("null");
 		// send NULL as 0xfb
 		reqpacket.append((char)0xfb);
 		cont->closeLobField(cursor,col);
+		debugEnd();
 		return;
 	}
+
+	debugWrite("lob length: %lld",(long long)loblength);
 
 	// for lobs of 0 length
 	if (!loblength) {
 		writeLenEncInt(&reqpacket,0);
 		cont->closeLobField(cursor,col);
+		debugEnd();
 		return;
 	}
 
@@ -8348,10 +8390,12 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 			// if we haven't started sending yet, then send a NULL,
 			// otherwise just end normally
 			if (start) {
+				debugWrite("null");
 				// send NULL as 0xfb
 				reqpacket.append((char)0xfb);
 			}
 			cont->closeLobField(cursor,col);
+			debugEnd();
 			return;
 
 		} else {
@@ -8364,6 +8408,7 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 			// put the segment we just got
 			reqpacket.append(lobbuffer,charsread);
+			debugWrite("chunk size: %lld",(long long)charsread);
 
 			offset=offset+charstoread;
 		}
@@ -8410,6 +8455,7 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 	debugStart("error response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugWrite("error size: %u",errorsize);
 	debugWrite("error: %*s",errorsize,error);
 	debugEnd();
 }
