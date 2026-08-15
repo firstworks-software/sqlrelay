@@ -4492,10 +4492,14 @@ bool sqlrprotocol_oracle::authenticate() {
 
 		loginrefused=false;
 
+		debugStart("authentication attempt %d",attempt);
+
 		if (recvAuthenticationRequest(false) &&
 			sendAuthenticationChallenge() &&
 			recvAuthenticationRequest(true) &&
 			sendAuthenticationResponse()) {
+			debugWrite("outcome: authenticated");
+			debugEnd();
 			return true;
 		}
 
@@ -4503,14 +4507,24 @@ bool sqlrprotocol_oracle::authenticate() {
 		// Any other failure doesn't - the exchange broke down partway
 		// through, so what the client sends next isn't a login.
 		if (!loginrefused || attempt>=maxloginattempts) {
+			debugWrite("outcome: %s",(loginrefused)?
+					"refused, no attempts left":
+					"exchange failed");
+			debugEnd();
 			return false;
 		}
+
+		debugWrite("outcome: refused, retrying");
+		debugEnd();
 
 		resetLoginAttempt();
 	}
 }
 
 void sqlrprotocol_oracle::resetLoginAttempt() {
+
+	debugStart("reset login attempt");
+	debugEnd();
 
 	// only what one login built - the connection's negotiated state
 	// carries over to the next attempt
@@ -4540,7 +4554,7 @@ bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
 	*value=0;
 
 	if (end-rp<1) {
-		debugWrite("truncated ub4");
+		debugWrite("malformed ub4: truncated");
 		return false;
 	}
 
@@ -4548,11 +4562,11 @@ bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
 	read(rp,&count,&rp);
 
 	if (count>sizeof(uint32_t)) {
-		debugWrite("bad ub4 size: %d",count);
+		debugWrite("malformed ub4: bad size %d",count);
 		return false;
 	}
 	if ((size_t)(end-rp)<(size_t)count) {
-		debugWrite("truncated ub4");
+		debugWrite("malformed ub4: truncated");
 		return false;
 	}
 
@@ -4563,6 +4577,8 @@ bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
 	}
 
 	*rpout=rp;
+
+	debugWrite("ub4: %d",*value);
 
 	return true;
 }
@@ -4577,7 +4593,7 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	*size=0;
 
 	if (end-rp<1) {
-		debugWrite("truncated string size");
+		debugWrite("malformed string: truncated size");
 		return false;
 	}
 
@@ -4587,11 +4603,11 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	// 0xfe introduces a chunked long form that nothing in the
 	// authentication exchange uses, so bail rather than desync
 	if (length==0xfe) {
-		debugWrite("chunked string, not supported");
+		debugWrite("malformed string: chunked, not supported");
 		return false;
 	}
 	if ((size_t)(end-rp)<(size_t)length) {
-		debugWrite("truncated string");
+		debugWrite("malformed string: truncated");
 		return false;
 	}
 
@@ -4599,6 +4615,8 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	getString(rp,string,length,&rp);
 
 	*rpout=rp;
+
+	debugWrite("string: %s",*string);
 
 	return true;
 }
@@ -4616,7 +4634,7 @@ bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
 	*value=0;
 
 	if ((size_t)(end-rp)<(size_t)nativesize) {
-		debugWrite("truncated count");
+		debugWrite("malformed count: truncated");
 		return false;
 	}
 
@@ -4630,6 +4648,8 @@ bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
 
 	*rpout=rp;
 
+	debugWrite("count: %d",*value);
+
 	return true;
 }
 
@@ -4640,7 +4660,7 @@ bool sqlrprotocol_oracle::getAuthPointer(const byte_t *rp,
 	byte_t	size=(nativeencoding)?8:1;
 
 	if ((size_t)(end-rp)<(size_t)size) {
-		debugWrite("truncated pointer");
+		debugWrite("malformed pointer: truncated");
 		return false;
 	}
 
@@ -4650,6 +4670,8 @@ bool sqlrprotocol_oracle::getAuthPointer(const byte_t *rp,
 }
 
 void sqlrprotocol_oracle::putAuthCount(uint32_t value, byte_t nativesize) {
+
+	debugWrite("count: %d",value);
 
 	if (!nativeencoding) {
 		putUb4(value);
@@ -4675,11 +4697,15 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 	*fieldsize=0;
 	*flags=0;
 
+	debugStart("auth field");
+
 	uint32_t	fieldnamesize=0;
 	uint32_t	namesize=0;
 	if (!getAuthCount(rp,end,&fieldnamesize,4,&rp) ||
 		!getLenString(rp,end,fieldname,&namesize,&rp) ||
 		!getAuthCount(rp,end,fieldsize,4,&rp)) {
+		debugWrite("malformed auth field: name/size");
+		debugEnd();
 		return false;
 	}
 
@@ -4689,14 +4715,22 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 	// counts, so the string's own length byte is the one that matters.
 	uint32_t	valuesize=0;
 	if (*fieldsize && !getLenString(rp,end,field,&valuesize,&rp)) {
+		debugWrite("malformed auth field: value");
+		debugEnd();
 		return false;
 	}
 
 	if (!getAuthCount(rp,end,flags,4,&rp)) {
+		debugWrite("malformed auth field: flags");
+		debugEnd();
 		return false;
 	}
 
 	*rpout=rp;
+
+	debugWrite("%s: %s (flags 0x%04x)",
+			*fieldname,(*field)?*field:"",*flags);
+	debugEnd();
 
 	return true;
 }
@@ -4706,16 +4740,22 @@ bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 					byte_t *value,
 					const byte_t **rpout) {
 
+	debugStart("pointer");
+
 	*value=0;
 
 	if (end-rp<1) {
-		debugWrite("truncated pointer");
+		debugWrite("malformed pointer: truncated");
+		debugEnd();
 		return false;
 	}
 
 	read(rp,value,&rp);
 
 	*rpout=rp;
+
+	debugWrite("pointer: 0x%02x",*value);
+	debugEnd();
 
 	return true;
 }
@@ -4788,6 +4828,8 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 
 void sqlrprotocol_oracle::putBytesWithLength(const char *bytes,
 							uint32_t size) {
+	debugWrite("bytes with length: %d",size);
+	debugHexDump((const byte_t *)bytes,size);
 	putUb4(size);
 	if (size) {
 		putLenBytes(bytes,size);
@@ -4808,11 +4850,17 @@ void sqlrprotocol_oracle::putOracleDate(byte_t *out) {
 	out[4]=(byte_t)(dt.getHour()+1);
 	out[5]=(byte_t)(dt.getMinute()+1);
 	out[6]=(byte_t)(dt.getSecond()+1);
+
+	debugWrite("date: %04d-%02d-%02d %02d:%02d:%02d",
+			year,dt.getMonth(),dt.getDayOfMonth(),
+			dt.getHour(),dt.getMinute(),dt.getSecond());
 }
 
 void sqlrprotocol_oracle::putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags) {
+
+	debugStart("auth field");
 
 	uint32_t	fieldnamesize=charstring::getLength(fieldname);
 	uint32_t	fieldsize=charstring::getLength(field);
@@ -4827,6 +4875,7 @@ void sqlrprotocol_oracle::putAuthField(const char *fieldname,
 
 	debugWrite("%s: %s (flags 0x%04x)",
 			fieldname,(field)?field:"",flags);
+	debugEnd();
 }
 
 void sqlrprotocol_oracle::putAuthField(const char *fieldname,
@@ -4841,14 +4890,22 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	// contract is documented at the top of src/auths/oracle_userlist.cpp.
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
 
+	debugStart("auth extra (phase %d)",(secondphase)?2:1);
+	debugWrite("field count: %d",(secondphase)?
+			((pbkdf2)?7:5):((pbkdf2)?3:2));
+
 	extra->append("verifiertype=")->append(verifiertype);
+	debugWrite("verifiertype: %d",verifiertype);
 	extra->append(";authvfrdata=")->append(authvfrdata);
+	debugWrite("authvfrdata: %s",authvfrdata);
 	if (pbkdf2) {
 		extra->append(";authpbkdf2vgencount=")->
 						append(PBKDF2_VGEN_COUNT);
+		debugWrite("authpbkdf2vgencount: %s",PBKDF2_VGEN_COUNT);
 	}
 
 	if (!secondphase) {
+		debugEnd();
 		return;
 	}
 
@@ -4856,12 +4913,18 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	// back.  challenge() keeps no state, so decrypting what it produced is
 	// the only way the auth module can recover session key part A.
 	extra->append(";serverauthsesskey=")->append(serverauthsesskey);
+	debugWrite("serverauthsesskey: %s",serverauthsesskey);
 	extra->append(";clientauthsesskey=")->append(clientauthsesskey);
+	debugWrite("clientauthsesskey: %s",clientauthsesskey);
 	if (pbkdf2) {
 		extra->append(";authpbkdf2csksalt=")->append(authpbkdf2csksalt);
+		debugWrite("authpbkdf2csksalt: %s",authpbkdf2csksalt);
 		extra->append(";authpbkdf2sdercount=")->
 						append(PBKDF2_SDER_COUNT);
+		debugWrite("authpbkdf2sdercount: %s",PBKDF2_SDER_COUNT);
 	}
+
+	debugEnd();
 }
 
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
@@ -5115,6 +5178,15 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugStart("authentication challenge");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugWrite("verifier type: %d (%s)",
+			verifiertype,(pbkdf2)?"12c":"11g");
+	debugWrite("authvfrdata: %s",authvfrdata);
+	if (pbkdf2) {
+		debugWrite("authpbkdf2csksalt: %s",authpbkdf2csksalt);
+	}
+	debugWrite("serverauthsesskey: %s",serverauthsesskey);
+	debugWrite("fabricated challenge: %s",
+			(fabricatedchallenge)?"yes":"no");
 
 	// a request's pair count is 8 bytes in the native encoding, a
 	// response's is 2
@@ -5150,11 +5222,17 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 						size_t portablesize,
 						bool secondphase) {
 
+	debugStart("auth trailer (phase %d)",(secondphase)?2:1);
+	debugWrite("encoding: %s",(nativeencoding)?"native":"portable");
+
 	// the portable trailer is a summary object, so it owes the two fields
 	// a 12.1 server adds
 	if (!nativeencoding) {
+		debugWrite("bytes: %d",(uint32_t)portablesize);
+		debugHexDump(portable,portablesize);
 		reqpacket.append(portable,portablesize);
 		putSummaryExtension(0,0);
+		debugEnd();
 		return;
 	}
 
@@ -5185,11 +5263,17 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 	// the two bytes that differ between the phases
 	byte_t	phase=(secondphase)?3:2;
 
+	debugWrite("bytes: %d",(uint32_t)sizeof(nativetrailer));
+	debugWrite("phase byte: 0x%02x",phase);
+	debugHexDump(nativetrailer,sizeof(nativetrailer));
+
 	reqpacket.append(nativetrailer,5);
 	write(&reqpacket,phase);
 	reqpacket.append(nativetrailer+6,43);
 	write(&reqpacket,phase);
 	reqpacket.append(nativetrailer+50,sizeof(nativetrailer)-50);
+
+	debugEnd();
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
@@ -5234,6 +5318,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 				"ORA-01017: invalid username/password; "
 				"logon denied\n");
 	}
+	debugWrite("auth succeeded");
 
 	// AUTH_SVR_RESPONSE proves to the client that the server knew the
 	// password too, and a real client refuses the login without it.  the
@@ -5271,6 +5356,9 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	debugStart("authentication response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugWrite("user: %s",username);
+	debugWrite("server version sql: %s",serverversionsql);
+	debugWrite("server version no: %s",serverversionno);
 
 	// A real server sends 39 to 44 pairs here, mostly nls settings.  Only
 	// AUTH_SVR_RESPONSE is known to be required.
@@ -5364,6 +5452,14 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
+
+	debugStart(what);
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("encoding: %s",(nativeencoding)?"native":"portable");
+	debugWrite("error: %d",oranum);
+	debugWrite("message: %s",message);
+
 	if (nativeencoding) {
 		reqpacket.append(nativeprefix,sizeof(nativeprefix));
 		putAuthCount(oranum,4);
@@ -5376,11 +5472,6 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	}
 	putLenString(message,charstring::getLength(message));
 
-	debugStart(what);
-	debugWrite("data flags: 0x%04x",dataflags);
-	debugTtcCode(ttccode);
-	debugWrite("error: %d",oranum);
-	debugWrite("message: %s",message);
 	debugEnd();
 
 	sendPacket(true);
