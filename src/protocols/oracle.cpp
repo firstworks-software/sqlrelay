@@ -1556,29 +1556,57 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_AUTOCOMMIT_ON:
+					debugWrite("unimplemented tti "
+						"function TTI_AUTOCOMMIT_ON, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_AUTOCOMMIT_OFF:
+					debugWrite("unimplemented tti "
+						"function TTI_AUTOCOMMIT_OFF, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_COMMIT:
+					debugWrite("unimplemented tti "
+						"function TTI_COMMIT, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_ROLLBACK:
+					debugWrite("unimplemented tti "
+						"function TTI_ROLLBACK, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_CANCEL:
+					debugWrite("unimplemented tti "
+						"function TTI_CANCEL, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_DESCRIBE:
 				case TTI_DESCRIBE2:
+					debugWrite("unimplemented tti "
+						"function TTI_DESCRIBE"
+						"%s, ending session",
+						(ttifunction==TTI_DESCRIBE2)?
+							"2":"");
 					loop=false;
 					break;
 				case TTI_STARTUP:
 				case TTI_STARTUP2:
+					debugWrite("unimplemented tti "
+						"function TTI_STARTUP"
+						"%s, ending session",
+						(ttifunction==TTI_STARTUP2)?
+							"2":"");
 					loop=false;
 					break;
 				case TTI_SHUTDOWN:
+					debugWrite("unimplemented tti "
+						"function TTI_SHUTDOWN, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_VERSION:
@@ -1586,33 +1614,66 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_K2_TRANSACTIONS:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_K2_TRANSACTIONS, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_OSQL7:
+					debugWrite("unimplemented tti "
+						"function TTI_OSQL7, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_OKOD:
+					debugWrite("unimplemented tti "
+						"function TTI_OKOD, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_LOB_OPERATIONS:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_LOB_OPERATIONS, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_ODNY:
+					debugWrite("unimplemented tti "
+						"function TTI_ODNY, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_TRANSACTION_END:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_TRANSACTION_END, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_TRANSACTION_BEGIN:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_TRANSACTION_BEGIN, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_OCCA:
 					loop=occa(rp,&rp);
 					break;
 				case TTI_LOGON_PRESENT_PWD:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_LOGON_PRESENT_PWD, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_LOGON_PRESENT_USER:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_LOGON_PRESENT_USER, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_LOGON_UNKNOWN:
@@ -1620,15 +1681,31 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_LOGON_PRESENT_PWD_"
+						"SEND_AUTH_PASSWORD, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY:
+					debugWrite("unimplemented tti "
+						"function "
+						"TTI_LOGON_PRESENT_USER_"
+						"REQ_AUTH_SESSKEY, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_OOTCM:
+					debugWrite("unimplemented tti "
+						"function TTI_OOTCM, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_OKPFC:
+					debugWrite("unimplemented tti "
+						"function TTI_OKPFC, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_SWITCH_SESSION:
@@ -1646,13 +1723,23 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					}
 					break;
 				case TTI_OSCID:
+					debugWrite("unimplemented tti "
+						"function TTI_OSCID, "
+						"ending session");
 					loop=false;
 					break;
 				case TTI_OSKEYVAL:
+					debugWrite("unimplemented tti "
+						"function TTI_OSKEYVAL, "
+						"ending session");
 					loop=false;
 					break;
 				default:
 					// FIXME: bad options...
+					debugWrite("unrecognized tti "
+						"function 0x%02x, "
+						"ending session",
+						ttifunction);
 					loop=false;
 					break;
 			}
@@ -1710,6 +1797,7 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 
 	if (getDebug()) {
 		debugStart("send");
+		debugWrite("large header: %s",largeheader?"yes":"no");
 		debugWrite("packet size: %d",reqpacketsize);
 		if (!largeheader) {
 			debugWrite("packet checksum: %d",packetchecksum);
@@ -1717,6 +1805,7 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 		debugWrite("packet type: %d",reqpackettype);
 		debugWrite("packet flags: 0x%04x",packetflags);
 		debugWrite("header checksum: %d",headerchecksum);
+		debugWrite("body size: %d",reqpacketsize-8);
 		debugHexDump(reqpacket.getBuffer()+8,reqpacketsize-8);
 		debugEnd();
 	}
@@ -1729,6 +1818,7 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 		debugSystemError();
 		return false;
 	}
+	debugWrite("wrote %d bytes",(uint32_t)reqpacket.getSize());
 
 	if (flush) {
 		clientsock->flushWriteBuffer(-1,-1);
@@ -1828,6 +1918,7 @@ bool sqlrprotocol_oracle::recvPacket() {
 
 	if (getDebug()) {
 		debugStart("recv");
+		debugWrite("large header: %s",largeheader?"yes":"no");
 		debugWrite("packet size: %d",resppacketsize+8);
 		if (!largeheader) {
 			debugWrite("packet checksum: %d",packetchecksum);
@@ -1835,6 +1926,7 @@ bool sqlrprotocol_oracle::recvPacket() {
 		debugWrite("packet type: %d",resppackettype);
 		debugWrite("packet flags: %d",packetflags);
 		debugWrite("header checksum: %d",headerchecksum);
+		debugWrite("body size: %d",resppacketsize);
 		debugHexDump(resppacket,resppacketsize);
 		debugEnd();
 	}
@@ -1904,8 +1996,10 @@ bool sqlrprotocol_oracle::getNullTerminatedArray(const byte_t *rp,
 
 	// skip the null terminator
 	rp++;
-	
+
 	*rpout=rp;
+
+	debugWrite("null terminated array count: %d",*arraycount);
 
 	return true;
 }
@@ -1944,8 +2038,10 @@ bool sqlrprotocol_oracle::getString(const byte_t *rp,
 
 	// skip the null terminator
 	rp++;
-	
+
 	*rpout=rp;
+
+	debugWrite("string: \"%s\"",*string);
 
 	return true;
 }
@@ -1956,6 +2052,7 @@ bool sqlrprotocol_oracle::getString(const byte_t *rp,
 					const byte_t **rpout) {
 	*string=charstring::duplicate((const char *)rp,size);
 	*rpout=rp+size;
+	debugWrite("string: \"%s\", size: %d",*string,size);
 	return true;
 }
 
@@ -2539,9 +2636,13 @@ bool sqlrprotocol_oracle::anoBoundsCheck(const byte_t *rp,
 	// the rp>end test is belt and braces - if rp ever did get past end
 	// then end-rp would be negative and the unsigned comparison would pass
 	if (rp>end || (size_t)(end-rp)<size) {
-		debugWrite("bad ano %s, truncated",name);
+		debugWrite("bad ano %s, truncated, needed %d bytes, "
+				"%d available",
+				name,(uint32_t)size,
+				(rp>end)?(uint32_t)0:(uint32_t)(end-rp));
 		return false;
 	}
+	debugWrite("ano %s bounds ok, needed %d bytes",name,(uint32_t)size);
 	return true;
 }
 
