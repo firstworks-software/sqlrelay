@@ -902,6 +902,8 @@
 		the clear, they're hidden now
 	cleaned up the source code comments in the tds protocol module and its
 		auth module
+	cleaned up the source code comments in the firebird protocol module,
+		its srp helper class, and its auth module
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

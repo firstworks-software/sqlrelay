@@ -244,8 +244,8 @@ void sqlrfirebirdsrp::clear() {
 	pvt->_sessionkey=NULL;
 	pvt->_sessionkeysize=0;
 
-	// Note that this just sets the values to zero.  bignumber has no
-	// equivalent of BN_clear(), so the old bytes are not securely erased.
+	// This just sets the values to zero.  bignumber has no equivalent of
+	// BN_clear(), so the old bytes are not securely erased.
 	pvt->_clientprivatekey.setValue((int32_t)0);
 	pvt->_clientpublickey.setValue((int32_t)0);
 	pvt->_serverprivatekey.setValue((int32_t)0);
@@ -279,9 +279,8 @@ const char *sqlrfirebirdsrp::getGenerator() {
 // wire, and getUserHash() - uses that text.  So do the same here: make the
 // bytes, run them through a bignum, and keep the text.
 //
-// One consequence, inherited from firebird: a salt that happens to start with
-// a zero byte loses it, and the text is shorter.  That is fine.  Both sides
-// only ever see the text.
+// One consequence, inherited from firebird: a salt that starts with a zero
+// byte loses it, and the text is shorter.  Both sides only ever see the text.
 bool sqlrfirebirdsrp::generateSalt() {
 
 	byte_t	bytes[SQLRFIREBIRDSRP_SALT_SIZE];
@@ -404,14 +403,12 @@ static bool sqlrfirebirdsrpMakePrivate(bignumber *privatekey, bignumber &n) {
 //	x=H(salt,H(username:password))
 //	v=g^x mod N
 //
-// Two things to notice.
-//
-// First, this is not RFC 5054's x.  RFC 5054 hashes the username into the
+// This is not RFC 5054's x.  RFC 5054 hashes the username into the
 // inner hash and the salt as raw bytes.  Firebird hashes the salt as its hex
 // TEXT (srp.cpp:88-96 takes a const char * and runs it through
 // SHA::process(const char *), which is strlen-based - sha.h:62-65).
 //
-// Second, the hash here is sha-1 for both plugins.  It comes from
+// The hash here is sha-1 for both plugins.  It comes from
 // RemotePassword::hash, declared SecureHash<Firebird::Sha1> at srp.h:91,
 // not from the plugin's template parameter.
 static void sqlrfirebirdsrpGetUserHash(bignumber *x,
@@ -496,10 +493,7 @@ bool sqlrfirebirdsrp::generateClientPublicKey() {
 			return true;
 		}
 
-		// srp.cpp:122 - try again with a different private key.
-		// Note that this just sets the value to zero.  bignumber has
-		// no equivalent of BN_clear(), so the old bytes are not
-		// securely erased.
+		// srp.cpp:122 - try again with a different private key
 		pvt->_clientprivatekey.setValue((int32_t)0);
 	}
 
@@ -560,10 +554,7 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 			break;
 		}
 
-		// srp.cpp:143 - try again with a different private key.
-		// Note that this just sets the value to zero.  bignumber has
-		// no equivalent of BN_clear(), so the old bytes are not
-		// securely erased.
+		// srp.cpp:143 - try again with a different private key
 		pvt->_serverprivatekey.setValue((int32_t)0);
 	}
 
@@ -739,15 +730,14 @@ uint64_t sqlrfirebirdsrp::getSessionKeySize() const {
 //	n2=H(username)
 //	M=HASH(n1, n2, salt, A, B, K)
 //
-// Two deviations from textbook SRP-6a to be careful about.
+// Two deviations from textbook SRP-6a.
 //
-// First, classic SRP-6a computes H(N) XOR H(g).  Firebird does not xor.  It
-// does a modular exponentiation - srp.cpp:210 is n1.modPow(n2,prime).  The
-// comment at srp.cpp:198 still says "^", which reads as xor, but the code is
-// modPow.  This is deliberate on their end and has been that way since the
-// plugin shipped, so follow the code.
+// Classic SRP-6a computes H(N) XOR H(g).  Firebird does not xor.  It does a
+// modular exponentiation - srp.cpp:210 is n1.modPow(n2,prime).  The comment
+// at srp.cpp:198 still says "^", which reads as xor, but the code is modPow.
+// Follow the code.
 //
-// Second, only this final digest uses the plugin's hash.  n1 and n2 are
+// Also, only this final digest uses the plugin's hash.  n1 and n2 are
 // built with RemotePassword::hash, which srp.h:91 fixes at sha-1.  So Srp256
 // differs from Srp in one hash and one hash only - the one right here.  The
 // verifier, the scramble, and the session key are sha-1 in both.

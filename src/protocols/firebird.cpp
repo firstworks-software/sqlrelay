@@ -17,15 +17,11 @@
 
 #include <rudiments/arc4.h>
 
-// NOTE:
 // Firebird Wire Protocol refers to:
 // Carlos Guzman Alvarez, Mark Rotteveel, version 0.18, 18 May 2025
 // https://firebirdsql.org/file/documentation/html/en/firebirddocs/wireprotocol/firebird-wire-protocol.html
 //
 // It only covers protocol version 10 and up, and 11 and up only partially.
-// An archived copy of 0.18, an op code coverage matrix, an audit of the
-// constants below, and a list of what the document leaves out are at:
-// http://trac.firstworks.com/trac/wiki/Firebird%20Wire%20Protocol
 
 // operation codes
 // (firebird's P_OP, in numeric order.  the gaps are numbers firebird
@@ -82,7 +78,8 @@
 #define op_slice		60
 #define op_seek_blob		61
 #define op_allocate_statement	62
-#define op_execute		63	// for DDL/DML
+// for ddl/dml
+#define op_execute		63
 #define op_exec_immediate	64
 #define op_fetch		65
 #define op_fetch_response	66
@@ -95,7 +92,8 @@
 #define op_start_and_receive	73
 #define op_start_send_and_receive	74
 #define op_exec_immediate2	75
-#define op_execute2		76	// for Stored procedures
+// for stored procedures
+#define op_execute2		76
 #define op_insert		77
 #define op_sql_response		78
 #define op_transact		79
@@ -2330,18 +2328,16 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 
 	clientsock=NULL;
 
-	// this protocol module doesn't support tls yet, so warn if it
-	// was requested
+	// warn if tls was requested
 	if (useTls()) {
 		stderror.printf("Warning: TLS support requested but the "
 				"firebird protocol module doesn't support "
 				"TLS yet\n");
 	}
 
-	// maxprotocolversion - the highest wire protocol version negotiation
-	// will accept.  Defaults to MAX_PROTOCOL_VERSION - see the comment
-	// there for which versions that covers.  Anything unparsable, or out
-	// of range, falls back to that same default.
+	// get the highest wire protocol version to negotiate
+	// (anything unparsable, or out of range, falls back to
+	// MAX_PROTOCOL_VERSION)
 	uint32_t	configmaxpv=(uint32_t)charstring::convertToInteger(
 			parameters->getAttributeValue("maxprotocolversion"));
 	if (!configmaxpv || configmaxpv>20) {
@@ -2354,10 +2350,9 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 		maxprotocolversion=0xffff8000|configmaxpv;
 	}
 
-	// wirecrypt - the wire encryption level the module asks for, which
-	// negotiation combines with the level the client asks for.  Defaults
-	// to "enabled" - the same default a stock firebird has - encrypt
-	// whenever the client can, but don't insist on it
+	// get the wire encryption level to ask for
+	// (the default is the one a stock firebird has - encrypt whenever the
+	// client can, but don't insist on it)
 	const char	*configwirecrypt=
 			parameters->getAttributeValue("wirecrypt");
 	if (!charstring::compareIgnoringCase(configwirecrypt,"disabled")) {
@@ -3602,8 +3597,6 @@ bool sqlrprotocol_firebird::cryptRequest() {
 		debugWrite("unusable crypt key");
 	}
 
-	// (the key itself is never logged - only whether there is one, and
-	// how big it is)
 	debugWrite("key available: %s",(wirecryptkey)?"true":"false");
 	debugWrite("key size: %lld",(long long)wirecryptkeysize);
 
@@ -3655,15 +3648,10 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 	// the layer goes in, or the layer would encrypt it on the way out.
 	//
 	// rudiments' flushWriteBuffer() also returns false, with no error
-	// set, when the buffer was already clean - which is the common case
-	// here, since the accept response is usually already on the wire by
-	// the time a real client's op_crypt arrives.  treat that case as
-	// success; only a flush that actually failed (errno set) aborts the
-	// switch-over.
-	//
-	// errno is sticky, and plenty of earlier i/o in this session could
-	// have left one behind, so it has to be cleared first or a leftover
-	// value would make a clean flush look fatal.
+	// set, when the buffer was already clean, so only a flush that
+	// actually failed (errno set) aborts the switch-over.  errno is
+	// sticky, and earlier i/o in this session could have left one
+	// behind, so it has to be cleared first.
 	error::clearError();
 	if (!clientsock->flushWriteBuffer(-1,-1) && error::getErrorNumber()) {
 		debugWrite("flush failed");
@@ -3676,12 +3664,9 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 	// encrypted traffic, sitting in a read buffer the layer will never
 	// see.  pull it back out - still encrypted - and hand it to the
 	// layer, which serves it, decrypting it, ahead of what it reads
-	// itself.
-	// (a byte at a time, and never waiting, so this takes only what is
-	// already there.  firebird's own client waits for the response to
-	// op_crypt before sending anything else, so there is usually
-	// nothing here at all, but a client that didn't wait would desync
-	// without this.)
+	// itself.  firebird's own client waits for the response to op_crypt
+	// before sending anything else, so there is usually nothing here at
+	// all, but a client that didn't wait would desync without this.
 	bytebuffer	pending;
 	byte_t		b;
 	while (clientsock->read(&b,sizeof(b),0,0)==(ssize_t)sizeof(b)) {
@@ -3718,7 +3703,6 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 							pendingencrypted);
 	clientsock->setSocketLayer(wirecryptlayer);
 
-	// (only the size of the key is logged, never the key itself)
 	debugWrite("cipher: %s",FIREBIRD_KEY_PLUGIN_ARC4);
 	debugWrite("key size: %lld",(long long)wirecryptkeysize);
 	debugWrite("encrypted");
@@ -6241,8 +6225,8 @@ bool sqlrprotocol_firebird::freeStatement() {
 	debugWrite("cursor id: %u",cont->getId(cursor));
 	debugWrite("cursor open: %s",(stmt->cursoropen)?"yes":"no");
 
-	// DSQL_close on a statement with no open cursor is an error rather
-	// than a no-op, which is what a real firebird answers
+	// a real firebird answers an error, not a no-op, for DSQL_close on a
+	// statement with no open cursor
 	if ((option&DSQL_close) && !(option&DSQL_drop) && !stmt->cursoropen) {
 		debugWrite("close requested, but no cursor is open");
 		debugEnd();
@@ -8217,10 +8201,9 @@ void sqlrprotocol_firebird::trimArrays() {
 uint32_t sqlrprotocol_firebird::arrayElementSize(byte_t blrtype,
 						uint16_t length) {
 
-	// How many bytes one element of an array takes up.  This is what
-	// firebird's sdl_desc() (common/sdl.cpp) works out from the same blr
-	// type and length, and it's the stride both ends of the wire use.
-	// Note that a varying element is described there as a cstring of
+	// This is the stride both ends of the wire use, worked out from the
+	// same blr type and length firebird's sdl_desc() (common/sdl.cpp)
+	// works from.  A varying element is described there as a cstring of
 	// length+2 bytes rather than as a varying, so it's stored
 	// null-terminated rather than length-prefixed.
 	// (0 means an element type this module can't stride over.)
@@ -8267,10 +8250,11 @@ void sqlrprotocol_firebird::bufferArray(sqlrservercursor *cursor,
 	debugWrite("array id: %u",*id);
 
 	// the descriptor says how the array is shaped and how wide an element
-	// is.  It's opaque as far as the server API is concerned, and only a
+	// is
+	// (it's opaque as far as the server API is concerned, and only a
 	// firebird backend has one to give, so a descriptor that isn't an
 	// ISC_ARRAY_DESC leaves the bounds unknown - see getSlice(), which
-	// then has to take the client's slice as covering the whole array.
+	// then has to take the client's slice as covering the whole array)
 	const unsigned char	*descriptor=NULL;
 	uint64_t		descriptorsize=0;
 	if (!cont->getArrayFieldDescriptor(cursor,col,
@@ -8316,8 +8300,8 @@ void sqlrprotocol_firebird::bufferArray(sqlrservercursor *cursor,
 	// (the fetch loop has moved on to the next row by the time the client
 	// asks for a slice, so the whole array has to be buffered here - the
 	// same reason bufferBlob() buffers a blob whole)
-	// cap the batch so a wide element (eg. a large varchar) can't blow the
-	// staging buffer out past what the whole array is allowed to occupy
+	// (the batch is capped so a wide element can't push the staging buffer
+	// past what the whole array is allowed to occupy)
 	uint64_t	batchelements=ARRAY_SLICE_ELEMENTS;
 	if (batchelements*array->elementsize>MAX_ARRAY_BUFFER) {
 		batchelements=MAX_ARRAY_BUFFER/array->elementsize;
@@ -9094,12 +9078,11 @@ bool sqlrprotocol_firebird::appendArrayElement(stringbuffer *output,
 	debugWrite("scale: %d",scale);
 	debugWrite("element size: %u",elementsize);
 
-	// One element of an array, rendered the way the firebird connection
-	// module renders one - see firebirdAppendArrayElement() there.  The
-	// two have to agree, since this is what gets bound back to the
-	// backend as an array bind, and that is what parses it.
-	// (nothing here is guaranteed to be aligned - the elements are
-	// packed - so each one is copied into a local before it's read)
+	// renders an element the way firebirdAppendArrayElement() in the
+	// firebird connection module does, since that is what parses it
+	// back as an array bind
+	// (the elements are packed, so nothing is guaranteed to be aligned -
+	// each one is copied into a local before it's read)
 	char	buffer[64];
 
 	switch (blrtype) {
@@ -9278,11 +9261,10 @@ bool sqlrprotocol_firebird::readSliceElement(byte_t blrtype,
 	debugWrite("element size: %u",elementsize);
 	debugWrite("offset: %u",*bytesread);
 
-	// The inverse of writeSliceElement() - one element of a slice, read
-	// off the wire in the encoding firebird's xdr_datum()
-	// (common/xdr.cpp) uses, into the packed bytes an array is held as.
-	// (the elements are packed, so nothing about them is guaranteed to
-	// be aligned - each one is built in a local and copied out)
+	// the inverse of writeSliceElement() - one element, read off the wire
+	// in the encoding firebird's xdr_datum() (common/xdr.cpp) uses
+	// (the elements are packed, so nothing is guaranteed to be aligned -
+	// each one is built in a local and copied out)
 
 	switch (blrtype) {
 
@@ -9404,11 +9386,10 @@ bool sqlrprotocol_firebird::drainSliceElements(byte_t blrtype,
 	debugWrite("count: %lld",(long long)elementcount);
 	debugWrite("offset: %u",*bytesread);
 
-	// read and discard elements the caller isn't keeping, so the socket
-	// ends up where the client's slice length said it would - each
-	// element still has to go through readSliceElement() since its wire
-	// width isn't just elementsize (a short costs a full 4-byte xdr
-	// slot, for instance)
+	// discard elements the caller isn't keeping, so the socket ends up
+	// where the client's slice length said it would
+	// (an element's wire width isn't elementsize - a short costs a full
+	// 4-byte xdr slot - so each still goes through readSliceElement())
 	if (!elementcount) {
 		debugEnd();
 		return true;
@@ -9438,12 +9419,12 @@ bool sqlrprotocol_firebird::writeSliceElement(byte_t blrtype,
 	debugWrite("element size: %u",elementsize);
 	debugWrite("offset: %u",*byteswritten);
 
-	// One element of a slice, encoded the way firebird's xdr_datum()
-	// (common/xdr.cpp) encodes it.  The module always accepts
-	// arch_generic (see connect()), so the client keeps xdr on and reads
-	// the elements one at a time rather than as raw bytes.
-	// (nothing here is guaranteed to be aligned - the elements are
-	// packed - so each one is copied into a local before it's read)
+	// One element, encoded the way firebird's xdr_datum() (common/xdr.cpp)
+	// encodes it.  The module always accepts arch_generic (see connect()),
+	// so the client keeps xdr on and reads the elements one at a time
+	// rather than as raw bytes.
+	// (the elements are packed, so nothing is guaranteed to be aligned -
+	// each one is copied into a local before it's read)
 	switch (blrtype) {
 
 		case blr_short:
@@ -9659,11 +9640,10 @@ bool sqlrprotocol_firebird::getSlice() {
 
 		uint64_t	index=i;
 
-		// A slice can be a sub-range of the array, and then its own
-		// subscripts have to be mapped onto the array's.  When the
-		// backend gave no bounds to map onto, the slice is taken as
-		// covering the whole array, which is what a client that read
-		// the bounds with isc_array_lookup_bounds() asks for anyway.
+		// A slice can be a sub-range of the array, so its subscripts
+		// have to be mapped onto the array's.  With no bounds from the
+		// backend to map onto, the slice is taken as covering the
+		// whole array.
 		if (array->dimensions) {
 
 			if (parsedsdl.getDimensionCount()!=
@@ -9808,12 +9788,10 @@ bool sqlrprotocol_firebird::putSlice() {
 	if (!parsedsdl.parse(sdl,sdllen)) {
 		debugWrite("sdl parse failed: %s",parsedsdl.getError());
 		delete[] sdl;
-		// the elements are xdr-encoded per the sdl's element type
-		// (a short still costs a full 4-byte slot, a bool or text
-		// element carries its own padding, and so on) - with no
-		// type to decode by, there's no way to know how many bytes
-		// of slice still have to come off the wire, so the
-		// connection can't be trusted for another request
+		// The elements are xdr-encoded per the sdl's element type, so
+		// with no type to decode by there's no way to know how many
+		// bytes of slice still have to come off the wire.  The
+		// connection can't be trusted for another request.
 		debugEnd();
 		return false;
 	}
@@ -9823,10 +9801,9 @@ bool sqlrprotocol_firebird::putSlice() {
 	uint32_t	elementsize=arrayElementSize(elementtype,
 						parsedsdl.getElementLength());
 	if (!elementsize) {
-		// an element type this module has no xdr decoding for -
-		// same problem as an unparseable sdl, above: no way to know
-		// how many wire bytes the slice still owes, so the
-		// connection can't be trusted for another request
+		// an element type with no xdr decoding here - the same problem
+		// as an unparseable sdl above, so the connection can't be
+		// trusted for another request
 		debugEnd();
 		return false;
 	}
@@ -9846,19 +9823,15 @@ bool sqlrprotocol_firebird::putSlice() {
 		return errorResponse(title,isc_invalid_sdl);
 	}
 
-	// The slice length the client wrote says how many bytes it is
-	// sending, in its own representation, so it says how many elements
-	// to read.  It can't be trusted past what the sdl describes, and it
-	// can't be allowed to allocate whatever it likes either.
+	// the slice length is in the client's own representation, so it says
+	// how many elements to read - but no more than the sdl describes
 	uint64_t	sentcount=slicelen/elementsize;
 	if (sentcount>count) {
 		sentcount=count;
 	}
-	// count and elementsize are both attacker-controlled (the sdl came
-	// off the wire), so this has to check for overflow rather than just
-	// multiplying and comparing - count*elementsize can wrap a 64-bit
-	// int and slip an undersized buffer past a straightforward "is the
-	// product too big" check
+	// Count and elementsize both come off the wire, so count*elementsize
+	// can wrap a 64-bit int and slip an undersized buffer past a check on
+	// the product.  Divide instead.
 	if (count>MAX_ARRAY_BUFFER/elementsize) {
 		if (!drainSliceElements(elementtype,elementsize,
 					slicelen/elementsize,&bytesread)) {
@@ -10248,7 +10221,7 @@ bool sqlrprotocol_firebird::batchExec() {
 
 	linkedlist< sqlrfirebirdbatcherror * >	errors;
 
-	// run the queued messages, in the order they were queued
+	// run the queued messages
 	// (there's no array bind in the server api, so a batch is a loop of
 	// ordinary executes over the statement the client already prepared)
 	uint32_t	position=0;
@@ -10554,11 +10527,10 @@ bool sqlrprotocol_firebird::batchRls() {
 	return batchRelease("batch rls response",false);
 }
 
-// a batch has nothing in flight of its own to abort - the messages it holds
-// haven't run, and the ones a previous op_batch_exec did run are part of the
-// transaction, which only a commit or rollback can undo.  So cancelling and
-// releasing come to the same thing here, and only the op the client sent
-// tells them apart.
+// A batch has nothing in flight to abort - the messages it holds haven't run,
+// and the ones a previous op_batch_exec ran belong to the transaction, which
+// only a commit or rollback can undo.  So cancelling and releasing come to the
+// same thing here.
 bool sqlrprotocol_firebird::batchCancel() {
 	return batchRelease("batch cancel response",true);
 }
@@ -11157,18 +11129,13 @@ bool sqlrprotocol_firebird::serviceInfo() {
 }
 
 // connectRequest(), queEvents() and cancelEvents() are firebird's
-// asynchronous event notification: a trigger or procedure posts an event,
-// and a client that queued one gets told. Answering op_connect_request
-// would mean opening a second, server-owned socket and accepting the
-// client's connection to it alongside the live session - a generalization
-// of suspendSession() (see sqlrclient.cpp), not a call to it. But nothing
-// generates an event to deliver even if that channel existed: the firebird
-// connection module never registers for one (no isc_wait_for_event /
-// isc_que_events), and the server api has no registration, callback, or
-// path of its own to carry a database event to a protocol module -
-// sqlrevent_t is unrelated, it's server-side logging and alerting, not a
-// database event a backend posts. Refusing here is correct until that
-// plumbing exists.
+// asynchronous event notification: a trigger or procedure posts an event, and
+// a client that queued one gets told.  Nothing here can generate an event to
+// deliver - the firebird connection module never registers for one, and the
+// server api has no path to carry a database event to a protocol module.
+// (sqlrevent_t is unrelated - it's server-side logging and alerting.)
+// Answering op_connect_request would also mean opening a second, server-owned
+// socket alongside the live session.
 bool sqlrprotocol_firebird::connectRequest() {
 	debugStart("connect request");
 	debugWrite("not implemented");
@@ -12028,13 +11995,10 @@ bool sqlrprotocol_firebird::isTransactionStatement(uint32_t stmttype) {
 
 bool sqlrprotocol_firebird::isWriteStatement(uint32_t stmttype) {
 
-	// only these three, and deliberately not ddl - statementType() uses
-	// ddl as its catch-all, so "execute block", which a real server runs
-	// read-only, lands there.  ddl is refused separately, by ddlDynCode(),
-	// which recognizes the verb itself rather than trusting the catch-all,
-	// and answers with the compound reply a real server sends.  "set
-	// generator" is allowed anyway, since generators are outside
-	// transaction control.
+	// deliberately not ddl - statementType() uses ddl as its catch-all, so
+	// "execute block", which a real server runs read-only, lands there.
+	// ddl is refused separately, by ddlDynCode(), which matches the verb
+	// itself.
 	bool	write=(stmttype==isc_info_sql_stmt_insert ||
 			stmttype==isc_info_sql_stmt_update ||
 			stmttype==isc_info_sql_stmt_delete);
@@ -12050,16 +12014,10 @@ bool sqlrprotocol_firebird::isWriteStatement(uint32_t stmttype) {
 // the ddl statements the module recognizes, keyed by the verb and the object
 // type keyword that open them, each with the dyn code a real server refuses
 // that statement with
-// (this is the whole of what a read-only transaction refuses - a ddl statement
-// that isn't here runs, the same way "execute block" and everything else in
-// statementType()'s ddl catch-all runs.  left out on purpose: grant and revoke,
-// whose templates take no object name and whose exact wire shape isn't
-// confirmed here, "comment on", "alter character set", "create collation",
-// "create package"/"create function" and their alter, drop and recreate forms,
-// "drop generator", "declare external function", "alter database", "set
-// statistics", and an index created with a "unique", "ascending" or
-// "descending" modifier between the verb and the "index" keyword.  adding one
-// is a row here plus its code above.)
+// (a ddl statement that isn't here runs, the same way everything else in
+// statementType()'s ddl catch-all runs.  left out on purpose: grant, revoke,
+// "comment on", and the other forms whose exact wire shape isn't confirmed
+// here.  adding one is a row here plus its code above.)
 struct sqlrfirebirdddlverb {
 	const char	*verb;
 	const char	*object;
@@ -12223,13 +12181,8 @@ bool sqlrprotocol_firebird::readOnlyMetaUpdateResponse(const char *title,
 
 	// what a real server refuses ddl in a read-only transaction with - a
 	// compound vector rather than the bare one an insert, update or delete
-	// gets, and again nothing the client can't render itself
-	// (the client turns the leading isc_no_meta_update into sqlcode -607,
-	// sqlstate 42000 and "unsuccessful metadata update", the dyn code into
-	// its own template with the object name substituted for @1, and
-	// isc_read_only_trans into "attempted update during read-only
-	// transaction" - three lines, out of its own tables, the same way it
-	// gets one line out of a bare isc_read_only_trans)
+	// gets, and again nothing the client can't render itself out of its own
+	// tables
 	bytestring::zero(statusvector,sizeof(statusvector));
 	bytestring::zero(statusvectorstr,sizeof(statusvectorstr));
 	// the outer error...
@@ -12262,11 +12215,10 @@ bool sqlrprotocol_firebird::readOnlyMetaUpdateResponse(const char *title,
 
 bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 
-	// a client can ask for a transaction in sql rather than with
-	// op_transaction - isql sends "set transaction" first and reads the
-	// new handle out of the response
-	// (these never reach the backend - SQL Relay drives its transaction
-	// through the controller)
+	// A client can ask for a transaction in sql rather than with
+	// op_transaction - isql sends "set transaction" first and reads the new
+	// handle out of the response.  These never reach the backend - SQL
+	// Relay drives its transaction through the controller.
 
 	debugStart("run transaction statement");
 	debugWrite("stmt type: %u",stmttype);
@@ -12459,9 +12411,6 @@ bool sqlrprotocol_firebird::readString(char **val,
 
 	// reject an out-of-bounds length, before it can size an allocation
 	// (vallen+1 would also wrap to 0 at 0xffffffff)
-	// (the fold above already ran, so an older client's sign-extended
-	// length lands in range here, and only a genuinely out-of-range
-	// length gets rejected)
 	if (vallen>MAX_CSTRING_LENGTH) {
 		debugWrite("invalid %s length - "
 					"got %u, max %u",
@@ -12538,9 +12487,6 @@ bool sqlrprotocol_firebird::readBuffer(byte_t **val,
 	vallen=foldSignExtendedLength(vallen,name);
 
 	// reject an out-of-bounds length, before it can size an allocation
-	// (the fold above already ran, so an older client's sign-extended
-	// length lands in range here, and only a genuinely out-of-range
-	// length gets rejected)
 	if (vallen>MAX_CSTRING_LENGTH) {
 		debugWrite("invalid %s length - "
 					"got %u, max %u",
@@ -12590,9 +12536,7 @@ bool sqlrprotocol_firebird::readBytes(bytebuffer *val,
 					const char *name,
 					uint32_t *bytesread) {
 
-	// read in chunks, since the caller's length is whatever the client
-	// said, and appending as we go keeps a piece that arrived in an
-	// earlier packet in front of this one
+	// read in chunks, since the caller's length is whatever the client said
 	byte_t		buffer[8192];
 	uint32_t	total=len;
 	while (len) {
@@ -12619,8 +12563,7 @@ bool sqlrprotocol_firebird::readPadding(uint32_t *bytesread) {
 		return true;
 	}
 
-	// how much padding do we need to read?
-	// (pad to a 4-byte boundary)
+	// pad to a 4-byte boundary
 	uint32_t	pad=((((*bytesread)/4)+1)*4)-(*bytesread);
 
 	// read the padding
@@ -12642,16 +12585,12 @@ void sqlrprotocol_firebird::fixupRespBufferLen() {
 
 	respbufferlen=foldSignExtendedLength(respbufferlen,"response buffer");
 
-	// the length never sizes an allocation here - it's only the ceiling
-	// that truncates the response - but a client that declares a huge one
-	// never truncates, so the response buffer grows to whatever the
-	// requested items produce
-	// (firebird's api types this length as a short, so a cap costs a real
-	// client nothing, and clamping rather than failing leaves the
-	// protocol's own truncation as the answer to too large an ask.
-	// firebird itself allocates whatever the client declares, twice for
-	// op_info_database, with no ceiling - see rem_port::info() in its
-	// src/remote/server/server.cpp.)
+	// The length is only the ceiling that truncates the response, so a
+	// client that declares a huge one never truncates and the response
+	// buffer grows to whatever the requested items produce.  Firebird's api
+	// types this length as a short, so a cap costs a real client nothing,
+	// and clamping rather than failing leaves the protocol's own truncation
+	// as the answer to too large an ask.
 	if (respbufferlen<=MAX_CSTRING_LENGTH) {
 		return;
 	}
@@ -13178,15 +13117,10 @@ bool sqlrprotocol_firebird::parseBlrRequest(const byte_t *blr,
 	// }
 	//
 	// The server API takes sql and nothing else, so rather than run the
-	// request the module translates it to a select and runs that.  Only
-	// the shape isql's SHOW commands compile is understood - a begin
-	// block declaring a message per parameter set, a receive around the
-	// body when the request takes input parameters, a for loop over a
-	// one or two relation rse with a send inside it, and a second send
-	// after the loop whose message tells the client the stream ended.
-	// Anything else is refused rather than guessed at, since a request
-	// half understood would answer rows that aren't the ones it asked
-	// for.
+	// request the module translates it to a select and runs that.  Only the
+	// shape isql's SHOW commands compile is understood; anything else is
+	// refused rather than guessed at, since a request half understood would
+	// answer rows that aren't the ones it asked for.
 
 	debugStart("parse blr request");
 	debugWrite("blr length: %u",blrlen);
@@ -13596,10 +13530,9 @@ bool sqlrprotocol_firebird::parseBlrRse(const byte_t **blr,
 	p++;
 	debugWrite("relation count: %u",relcount);
 
-	// two relations is an inner join, and is as wide as the requests
-	// isql compiles ever get - the join condition is just another
-	// predicate in the boolean, so a comma join says exactly what the
-	// rse says
+	// two relations is as wide as the requests isql compiles ever get - the
+	// join condition is just another predicate in the boolean, so a comma
+	// join says exactly what the rse says
 	if (!relcount || relcount>FIREBIRD_MAX_BLR_RELATIONS) {
 		*gdscode=isc_wish_list;
 		debugEnd();
@@ -14719,10 +14652,8 @@ bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 	uint32_t	blobhigh=0;
 	uint32_t	bloblow=0;
 
-	// in the packed format the bitmap read up front is what says
-	// whether the field is null, and a null field sends no value
-	// at all - in the unpacked format the value always comes off
-	// the wire and the indicator that follows it says
+	// in the packed format the bitmap read up front says whether the field
+	// is null - in the unpacked format the indicator below does
 	bool	isnull=(nullbits && (nullbits[index>>3]&(1<<(index&7))));
 
 	if (!isnull) {
@@ -14755,14 +14686,12 @@ bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 				break;
 
 			case blr_quad:
-				// An array parameter is an id naming an
-				// array the client built with
-				// op_put_slice.  A blr_quad also turns up
-				// for a blob parameter that an older
-				// client described that way, though, and
-				// the id itself is all there is to tell
-				// the two apart - see ARRAY_ID_HIGH and
-				// bindMessageValue().
+				// An array parameter is an id naming an array
+				// the client built with op_put_slice.  A
+				// blr_quad also turns up for a blob parameter
+				// an older client described that way, and the
+				// id itself is all there is to tell the two
+				// apart - see ARRAY_ID_HIGH.
 				if (!readInt(&blobhigh,"parameter",
 							bytesread) ||
 					!readInt(&bloblow,"parameter",
@@ -15205,13 +15134,11 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_quad:
 		case blr_blob2:
 			{
-			// a fetched blob or array is answered with an id of
-			// the module's own, since the backend's isn't
-			// reachable through the server API
-			// (the bytes are read here rather than when the
+			// The backend's blob id isn't reachable through the
+			// server API, so the module answers with an id of its
+			// own.  The bytes are read now rather than when the
 			// client asks for them, because the fetch loop has
-			// moved on to the next row by then - see bufferBlob()
-			// and bufferArray())
+			// moved past the row by then.
 			uint32_t	high=0;
 			uint32_t	low=0;
 			if (!null) {
@@ -15238,8 +15165,7 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_text:
 		case blr_text2:
 			{
-			// a fixed-width field is blank padded out to its
-			// declared width
+			// blank pad out to the declared width
 			byte_t	*buf=new byte_t[(fld->length)?fld->length:1];
 			uint32_t	len=(vlen<fld->length)?
 						vlen:fld->length;
@@ -15260,11 +15186,10 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_cstring:
 		case blr_cstring2:
 			{
-			// A cstring is stored null-terminated but goes over
-			// length-first, like a varying, and only the bytes
-			// up to the terminator go at all.  The declared
-			// width includes the terminator, so a value can only
-			// be one byte shorter than it.
+			// A cstring is null-terminated in storage but goes
+			// over length-first, like a varying, and only the
+			// bytes before the terminator go at all.  Its declared
+			// width includes the terminator.
 			uint32_t	width=fld->length;
 			uint32_t	max=(width)?width-1:0;
 			uint32_t	len=(vlen<max)?vlen:max;
@@ -15391,8 +15316,7 @@ uint16_t sqlrprotocol_firebird::sqlType(uint16_t coltype) {
 		case QUAD_DATATYPE:
 			return SQL_QUAD;
 
-		// varchar, and anything the module has no better answer for -
-		// a string is the one thing every backend can render
+		// varchar, and the fallback for anything with no better answer
 		default:
 			return SQL_VARYING;
 	}
@@ -15537,15 +15461,11 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 	debugWrite("bind: %d",bind);
 	debugWrite("start: %u",start);
 
-	// when the backend has nothing prepared to describe, the shape
-	// describeOutputColumns() probed for stands in for it - a real
-	// describe, from a prepare or from an execute that already ran, always
-	// wins
+	// a probed shape stands in when the backend has nothing to describe
 	bool	probed=!bind && !cont->colCount(cursor) &&
 				stmt && stmt->probecols;
 
-	// how many columns the result set has, or how many parameters the
-	// query binds
+	// column count, or bind variable count
 	uint32_t	count=(bind)?
 			cont->countBindVariables(cont->getQueryBuffer(cursor),
 						cont->getQuerySize(cursor)):
@@ -15561,13 +15481,11 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 		return false;
 	}
 
-	// isc_info_sql_sqlda_start names the first column to describe, 1
-	// based.  a client that had to ask twice asks the second time from
-	// where the first reply left off.
+	// isc_info_sql_sqlda_start names the first column to describe, 1 based
 	uint32_t	first=(start)?start-1:0;
 
-	// SQL Relay carries no owner for a column, and the value is only ever
-	// displayed, so the session's user stands in for it
+	// SQL Relay carries no owner for a column, so the session's user
+	// stands in for it
 	const char	*owner=(charstring::isNullOrEmpty(username))?
 					"SYSDBA":username;
 
@@ -15581,10 +15499,8 @@ bool sqlrprotocol_firebird::appendInfoDescribe(sqlrservercursor *cursor,
 			return false;
 		}
 
-		// describeBinds() works a bind's type out for an insert - a
-		// bind whose type it couldn't work out describes as a nullable
-		// string of a generous width, the one shape every backend can
-		// convert from
+		// a bind whose type describeBinds() couldn't work out
+		// describes as a nullable string of a generous width
 		bool	described=bind && stmt && stmt->binds &&
 					col<stmt->bindcount;
 		uint16_t	coltype=UNKNOWN_DATATYPE;

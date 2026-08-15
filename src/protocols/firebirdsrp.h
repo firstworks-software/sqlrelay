@@ -78,7 +78,7 @@ class sqlrfirebirdsrp {
 		sqlrfirebirdsrp(sqlrfirebirdsrphash_t hashtype);
 		~sqlrfirebirdsrp();
 
-		// Resets everything but the hash choice.
+		// resets everything but the hash choice
 		void	clear();
 
 
@@ -123,7 +123,7 @@ class sqlrfirebirdsrp {
 		// what went wrong, or NULL
 		const char	*getError() const;
 
-		// The group parameters, for tests and diagnostics.
+		// group parameters, for tests and diagnostics
 		static const char	*getPrime();
 		static const char	*getGenerator();
 

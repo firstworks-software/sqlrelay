@@ -102,9 +102,8 @@ sqlrauth_firebird_connectstrings::sqlrauth_firebird_connectstrings(
 		return;
 	}
 
-	// create an array of users and passwords and store the
-	// users and passwords from the configuration in them
-	// this is faster than running through the xml over and over
+	// cache the config's users/passwords in arrays instead of
+	// rereading the xml every time
 	users=new const char *[usercount];
 	passwords=new char *[usercount];
 	passwordencryptions=new const char *[usercount];
@@ -312,8 +311,7 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 		return NULL;
 	}
 
-	// if password encryption isn't being used, then compare against
-	// the password from the configuration as it stands
+	// no encryption configured, compare directly
 	if (!charstring::getLength(passwordencryptions[index])) {
 		return (compare(cred,password,passwords[index],
 					method,user,extra))?user:NULL;
@@ -345,15 +343,13 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 			return NULL;
 		}
 
-		// encrypt the password that was passed in and compare it
-		// to the encrypted password from the configuration
+		// encrypt and compare
 		pwd=pe->encrypt(password);
 		result=!charstring::compare(pwd,passwords[index]);
 
 	} else {
 
-		// decrypt the password from the configuration
-		// and compare it to the password that was passed in
+		// decrypt and compare
 		pwd=pe->decrypt(passwords[index]);
 		result=compare(cred,password,pwd,method,user,extra);
 	}
@@ -361,7 +357,6 @@ const char *sqlrauth_firebird_connectstrings::userPassword(
 	// clean up
 	delete[] pwd;
 
-	// return the result
 	return (result)?user:NULL;
 }
 
