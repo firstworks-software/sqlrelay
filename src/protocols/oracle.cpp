@@ -912,10 +912,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool	authenticate();
 		void	resetLoginAttempt();
-		bool	getUb4(const byte_t *rp,
-						const byte_t *end,
-						uint32_t *value,
-						const byte_t **rpout);
 		bool	getLenString(const byte_t *rp,
 						const byte_t *end,
 						char **string,
@@ -941,8 +937,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t nativesize,
 						const byte_t **rpout);
 		void	putAuthCount(uint32_t value, byte_t nativesize);
-		void	putUb4(uint32_t value);
-		void	putSb4(int32_t value);
 		void	putLenString(const char *string, uint32_t size);
 		void	putLenBytes(const char *bytes, uint32_t size);
 		void	putBytesWithLength(const char *bytes, uint32_t size);
@@ -4547,43 +4541,6 @@ void sqlrprotocol_oracle::resetLoginAttempt() {
 	fabricatedchallenge=false;
 }
 
-bool sqlrprotocol_oracle::getUb4(const byte_t *rp,
-					const byte_t *end,
-					uint32_t *value,
-					const byte_t **rpout) {
-
-	*value=0;
-
-	if (end-rp<1) {
-		debugWrite("malformed ub4: truncated");
-		return false;
-	}
-
-	byte_t	count;
-	read(rp,&count,&rp);
-
-	if (count>sizeof(uint32_t)) {
-		debugWrite("malformed ub4: bad size %d",count);
-		return false;
-	}
-	if ((size_t)(end-rp)<(size_t)count) {
-		debugWrite("malformed ub4: truncated");
-		return false;
-	}
-
-	for (byte_t i=0; i<count; i++) {
-		byte_t	b;
-		read(rp,&b,&rp);
-		*value=((*value)<<8)|b;
-	}
-
-	*rpout=rp;
-
-	debugWrite("ub4: %d",*value);
-
-	return true;
-}
-
 bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 					const byte_t *end,
 					char **string,
@@ -4629,7 +4586,7 @@ bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
 					const byte_t **rpout) {
 
 	if (!nativeencoding) {
-		return getUb4(rp,end,value,rpout);
+		return readLenPreInt(rp,end,value,rpout);
 	}
 
 	*value=0;
@@ -4675,7 +4632,7 @@ void sqlrprotocol_oracle::putAuthCount(uint32_t value, byte_t nativesize) {
 	debugWrite("count: %d",value);
 
 	if (!nativeencoding) {
-		putUb4(value);
+		writeLenPreInt(&reqpacket,value);
 		return;
 	}
 
@@ -4761,39 +4718,6 @@ bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 	return true;
 }
 
-void sqlrprotocol_oracle::putUb4(uint32_t value) {
-	if (!value) {
-		write(&reqpacket,(byte_t)0);
-	} else if (value<=0xff) {
-		write(&reqpacket,(byte_t)1);
-		write(&reqpacket,(byte_t)value);
-	} else if (value<=0xffff) {
-		write(&reqpacket,(byte_t)2);
-		writeBE(&reqpacket,(uint16_t)value);
-	} else {
-		write(&reqpacket,(byte_t)4);
-		writeBE(&reqpacket,value);
-	}
-}
-
-void sqlrprotocol_oracle::putSb4(int32_t value) {
-	if (value>=0) {
-		putUb4((uint32_t)value);
-		return;
-	}
-	uint32_t	magnitude=(uint32_t)(-value);
-	if (magnitude<=0xff) {
-		write(&reqpacket,(byte_t)0x81);
-		write(&reqpacket,(byte_t)magnitude);
-	} else if (magnitude<=0xffff) {
-		write(&reqpacket,(byte_t)0x82);
-		writeBE(&reqpacket,(uint16_t)magnitude);
-	} else {
-		write(&reqpacket,(byte_t)0x84);
-		writeBE(&reqpacket,magnitude);
-	}
-}
-
 void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
 	write(&reqpacket,(byte_t)size);
 	write(&reqpacket,string,(size_t)size);
@@ -4820,18 +4744,18 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		if (chunk>CHUNK_SIZE) {
 			chunk=CHUNK_SIZE;
 		}
-		putUb4(chunk);
+		writeLenPreInt(&reqpacket,chunk);
 		write(&reqpacket,bytes+offset,(size_t)chunk);
 		offset+=chunk;
 	}
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
 }
 
 void sqlrprotocol_oracle::putBytesWithLength(const char *bytes,
 							uint32_t size) {
 	debugWrite("bytes with length: %d",size);
 	debugHexDump((const byte_t *)bytes,size);
-	putUb4(size);
+	writeLenPreInt(&reqpacket,size);
 	if (size) {
 		putLenBytes(bytes,size);
 	}
@@ -5467,7 +5391,7 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		reqpacket.append(nativesuffix,sizeof(nativesuffix));
 	} else {
 		reqpacket.append(prefix,sizeof(prefix));
-		putUb4(oranum);
+		writeLenPreInt(&reqpacket,oranum);
 		reqpacket.append(suffix,sizeof(suffix));
 		putSummaryExtension(oranum,0);
 	}
@@ -6706,34 +6630,34 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	uint32_t	unused=0;
 
 	if (!getPointer(rp,end,&sequence,&rp) ||
-		!getUb4(rp,end,options,&rp) ||
-		!getUb4(rp,end,cursorid,&rp) ||
+		!readLenPreInt(rp,end,options,&rp) ||
+		!readLenPreInt(rp,end,cursorid,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,querysize,&rp) ||
+		!readLenPreInt(rp,end,querysize,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&vectorsize,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&prefetchbuffersize,&rp) ||
-		!getUb4(rp,end,prefetchrows,&rp) ||
-		!getUb4(rp,end,&maxlongsize,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&bindcount,&rp) ||
+		!readLenPreInt(rp,end,&vectorsize,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
+		!readLenPreInt(rp,end,&prefetchbuffersize,&rp) ||
+		!readLenPreInt(rp,end,prefetchrows,&rp) ||
+		!readLenPreInt(rp,end,&maxlongsize,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!readLenPreInt(rp,end,&bindcount,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&definecount,&rp) ||
-		!getUb4(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!readLenPreInt(rp,end,&definecount,&rp) ||
+		!readLenPreInt(rp,end,&unused,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&unused,&rp) ||
+		!readLenPreInt(rp,end,&unused,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&unused,&rp) ||
-		!getUb4(rp,end,&unused,&rp)) {
+		!readLenPreInt(rp,end,&unused,&rp) ||
+		!readLenPreInt(rp,end,&unused,&rp)) {
 		debugWrite("truncated query3 request");
 		return false;
 	}
@@ -6913,8 +6837,8 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 			getWireColumnType(columntypes[cont->getId(cursor)][i]));
 	}
 
-	putUb4(maxrowsize);
-	putUb4(colcount);
+	writeLenPreInt(&reqpacket,maxrowsize);
+	writeLenPreInt(&reqpacket,colcount);
 	if (colcount) {
 		write(&reqpacket,(byte_t)0x51);
 	}
@@ -6933,11 +6857,11 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 	putOracleDate(date);
 	putBytesWithLength((const char *)date,sizeof(date));
 
-	putUb4(0);
-	putUb4(DCB_MAX_DATA_BLOCK_SIZE);
-	putUb4(DCB_MIN_PREFETCH);
-	putUb4(DCB_MAX_PREFETCH);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,DCB_MAX_DATA_BLOCK_SIZE);
+	writeLenPreInt(&reqpacket,DCB_MIN_PREFETCH);
+	writeLenPreInt(&reqpacket,DCB_MAX_PREFETCH);
+	writeLenPreInt(&reqpacket,0);
 }
 
 void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
@@ -6963,22 +6887,22 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 
 	// a buffer size of 0 means "this column is null by describe", so it
 	// can never be sent as 0 for a column that has values
-	putUb4(size);
+	writeLenPreInt(&reqpacket,size);
 
-	putUb4(0);
-	putUb4(0);
-	putUb4(0);
-	putUb4(0);
-	putUb4((character)?charset:0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,(character)?charset:0);
 	write(&reqpacket,(byte_t)((character)?1:0));
-	putUb4((character)?size:0);
+	writeLenPreInt(&reqpacket,(character)?size:0);
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)namesize);
 	putBytesWithLength(name,namesize);
-	putUb4(0);
-	putUb4(0);
-	putUb4(column);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,column);
+	writeLenPreInt(&reqpacket,0);
 
 	debugStart("column %d",column);
 	debugColumnType(columntypestring,wiretype);
@@ -7013,7 +6937,7 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 	if (encodingflags&ENCODING_CONV_LENGTH) {
 		write(&reqpacket,(byte_t)scale);
 	} else {
-		putSb4(scale);
+		writeLenPreInt(&reqpacket,scale);
 	}
 }
 
@@ -7080,16 +7004,16 @@ void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 
 	// 0x22 in the answer to an execute and 0x02 in the answer to a fetch
 	write(&reqpacket,flags);
-	putUb4(colcount);
-	putUb4(0);
-	putUb4(prefetchrows);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,colcount);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,prefetchrows);
+	writeLenPreInt(&reqpacket,0);
 
 	// no bit vector.  a real server sends one to say which columns repeat
 	// the previous row's value; without one every column is sent in full.
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
 
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
 
 	debugStart("row header");
 	debugWrite("flags: 0x%02x",(uint32_t)flags);
@@ -7139,14 +7063,14 @@ void sqlrprotocol_oracle::putReturnParameters() {
 	// session state key/value pairs here and a live 12.2 server puts none
 	write(&reqpacket,(byte_t)TTC_OK);
 
-	putUb4(AL8O4_COUNT);
+	writeLenPreInt(&reqpacket,AL8O4_COUNT);
 	for (uint16_t i=0; i<AL8O4_COUNT; i++) {
-		putUb4(0);
+		writeLenPreInt(&reqpacket,0);
 	}
 
-	putUb4(0);
-	putUb4(0);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
 
 	debugStart("return parameters");
 	debugWrite("count: %d",(uint32_t)AL8O4_COUNT);
@@ -7183,8 +7107,8 @@ void sqlrprotocol_oracle::putSummaryExtension(uint32_t oranum,
 		return;
 	}
 
-	putUb4(oranum);
-	putUb4(rowcount);
+	writeLenPreInt(&reqpacket,oranum);
+	writeLenPreInt(&reqpacket,rowcount);
 
 	debugWrite("error: %d",oranum);
 	debugWrite("row count: %d",rowcount);
@@ -7203,14 +7127,14 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// has to send them because it sets those bits
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
-	putUb4(1);
-	putUb4(0);
-	putUb4(rowcount);
-	putUb4(oranum);
-	putUb4(0);
-	putUb4(0);
-	putUb4(cursorid);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,1);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,rowcount);
+	writeLenPreInt(&reqpacket,oranum);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,cursorid);
+	writeLenPreInt(&reqpacket,0);
 	write(&reqpacket,(byte_t)3);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,(byte_t)0);
@@ -7219,29 +7143,29 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	write(&reqpacket,(byte_t)0);
 
 	// rowid: a ub4, a ub2, one raw byte, a ub4 and a ub2
-	putUb4(0);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
 	write(&reqpacket,(byte_t)0);
-	putUb4(0);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
 
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
 	write(&reqpacket,(byte_t)0);
 
 	// the sequence number of the request being answered - a client matches
 	// the answer to the call it made with it
 	write(&reqpacket,callnumber);
 
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
 
 	// success iterations, which is one execution rather than one row - a
 	// live server sends 1 for a fetch of 10 rows and for a fetch of none
-	putUb4(1);
+	writeLenPreInt(&reqpacket,1);
 
-	putUb4(0);
-	putUb4(0);
-	putUb4(0);
-	putUb4(0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
 
 	putSummaryExtension(oranum,rowcount);
 
@@ -7455,8 +7379,8 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 	uint32_t	rowstofetch=0;
 
 	if (!getPointer(rp,end,&sequence,&rp) ||
-		!getUb4(rp,end,&cursorid,&rp) ||
-		!getUb4(rp,end,&rowstofetch,&rp)) {
+		!readLenPreInt(rp,end,&cursorid,&rp) ||
+		!readLenPreInt(rp,end,&rowstofetch,&rp)) {
 		debugWrite("truncated fetch request");
 		return false;
 	}
@@ -8537,8 +8461,8 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	putUb4(callstatus);
-	putUb4(endtoendseqnumber);
+	writeLenPreInt(&reqpacket,callstatus);
+	writeLenPreInt(&reqpacket,endtoendseqnumber);
 
 	debugStart("disconnect response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -8628,7 +8552,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 	read(rp,&seqnumber,&rp);
 
 	if (!getPointer(rp,end,&pointer,&rp) ||
-		!getUb4(rp,end,&cursorcount,&rp)) {
+		!readLenPreInt(rp,end,&cursorcount,&rp)) {
 		return false;
 	}
 
@@ -8639,7 +8563,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 	for (uint32_t i=0; i<cursorcount; i++) {
 
 		uint32_t	cursorid=0;
-		if (!getUb4(rp,end,&cursorid,&rp)) {
+		if (!readLenPreInt(rp,end,&cursorid,&rp)) {
 			debugEnd();
 			return false;
 		}
@@ -8689,9 +8613,9 @@ bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 	}
 	read(rp,&seqnumber,&rp);
 
-	if (!getUb4(rp,end,&sessionid,&rp) ||
-		!getUb4(rp,end,&serialnumber,&rp) ||
-		!getUb4(rp,end,&unknown,&rp)) {
+	if (!readLenPreInt(rp,end,&sessionid,&rp) ||
+		!readLenPreInt(rp,end,&serialnumber,&rp) ||
+		!readLenPreInt(rp,end,&unknown,&rp)) {
 		return false;
 	}
 

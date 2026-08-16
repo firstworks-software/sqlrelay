@@ -510,6 +510,39 @@ bool sqlrprotocol::readBerEncInt(const byte_t *rp, uint64_t *value,
 	return true;
 }
 
+bool sqlrprotocol::readLenPreInt(const byte_t *rp, const byte_t *end,
+							uint32_t *value,
+							const byte_t **rpout) {
+
+	*value=0;
+
+	// nothing to read
+	if (end-rp<1) {
+		*rpout=rp;
+		return false;
+	}
+
+	const byte_t	*start=rp;
+	byte_t		count;
+	read(rp,&count,&rp);
+
+	// bail if the count is too large to fit in a 32-bit integer, or if
+	// the bytes it claims run past "end"
+	if (count>sizeof(uint32_t) || (size_t)(end-rp)<(size_t)count) {
+		*rpout=start;
+		return false;
+	}
+
+	// shift in the next "count" bytes
+	for (byte_t i=0; i<count; i++) {
+		byte_t	b;
+		read(rp,&b,&rp);
+		*value=((*value)<<8)|b;
+	}
+	*rpout=rp;
+	return true;
+}
+
 void sqlrprotocol::write(bytebuffer *buffer, char value) {
 	buffer->append(value);
 }
@@ -644,6 +677,39 @@ void sqlrprotocol::writeBerEncInt(bytebuffer *buffer, uint64_t value) {
 	}
 	// FIXME: implement 0x85+
 	return;
+}
+
+void sqlrprotocol::writeLenPreInt(bytebuffer *buffer, uint32_t value) {
+	if (!value) {
+		buffer->append((byte_t)0);
+	} else if (value<=0xff) {
+		buffer->append((byte_t)1);
+		buffer->append((byte_t)value);
+	} else if (value<=0xffff) {
+		buffer->append((byte_t)2);
+		buffer->append(hostToBE((uint16_t)value));
+	} else {
+		buffer->append((byte_t)4);
+		buffer->append(hostToBE(value));
+	}
+}
+
+void sqlrprotocol::writeLenPreInt(bytebuffer *buffer, int32_t value) {
+	if (value>=0) {
+		writeLenPreInt(buffer,(uint32_t)value);
+		return;
+	}
+	uint32_t	magnitude=(uint32_t)(-value);
+	if (magnitude<=0xff) {
+		buffer->append((byte_t)0x81);
+		buffer->append((byte_t)magnitude);
+	} else if (magnitude<=0xffff) {
+		buffer->append((byte_t)0x82);
+		buffer->append(hostToBE((uint16_t)magnitude));
+	} else {
+		buffer->append((byte_t)0x84);
+		buffer->append(hostToBE(magnitude));
+	}
 }
 
 uint16_t sqlrprotocol::toHost(uint16_t value) {

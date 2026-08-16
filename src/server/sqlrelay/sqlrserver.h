@@ -6678,6 +6678,27 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 					uint64_t *value,
 					const byte_t **rpout);
 
+		/** Reads a length-prefixed integer from byte string
+		 *  "rp" into buffer "value", and sets "rpout" to the
+		 *  byte following the end of the length-prefixed
+		 *  integer.  "end" points just past the last valid
+		 *  byte in "rp"; the read (including any additional
+		 *  bytes the encoding requires) is bounds-checked
+		 *  against it.
+		 *
+		 *  In this encoding, the first byte is a count of the
+		 *  significant big-endian bytes of magnitude that
+		 *  follow (0 to 4).
+		 *
+		 *  Returns true if a complete length-prefixed integer
+		 *  was read without running past "end", and false
+		 *  otherwise.  On false, "value" is set to 0 and
+		 *  "rpout" is set back to "rp". */
+		bool	readLenPreInt(const byte_t *rp,
+					const byte_t *end,
+					uint32_t *value,
+					const byte_t **rpout);
+
 		/** Writes "value" to byte buffer "buffer". */
 		void	write(bytebuffer *buffer, char value);
 
@@ -6766,6 +6787,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		/** Writes BER-encoded-integer "value" to byte buffer
 		 *  "buffer". */
 		void	writeBerEncInt(bytebuffer *buffer, uint64_t value);
+
+		/** Writes length-prefixed-integer "value" to byte buffer
+		 *  "buffer". */
+		void	writeLenPreInt(bytebuffer *buffer, uint32_t value);
+
+		/** Writes length-prefixed-integer "value" to byte buffer
+		 *  "buffer".  A negative value is written as a length byte
+		 *  with its top bit set, followed by the magnitude, rather
+		 *  than as two's-complement. */
+		void	writeLenPreInt(bytebuffer *buffer, int32_t value);
 
 		/** Converts "value" from host byte order to big-endian, then
 		 *  writes the first 3 bytes of it to byte buffer "buffer". */

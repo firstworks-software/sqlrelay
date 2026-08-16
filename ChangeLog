@@ -152,6 +152,9 @@
 		teradata and sqlrclient protocol module debug output
 	cleaned up source code comments in the tds, firebird and oracle protocol
 		modules and their auth modules
+	moved the oracle protocol module's length-prefixed integer read/write
+		into sqlrprotocol as readLenPreInt()/writeLenPreInt(), next to
+		readBerEncInt()/writeBerEncInt()
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
