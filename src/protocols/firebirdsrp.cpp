@@ -85,10 +85,12 @@ void sqlrfirebirdsrpdigest::process(const char *str) {
 	h->append((const byte_t *)str,charstring::getLength(str));
 }
 
-// Firebird's getBytes() gives no bytes at all for the value zero, but
-// bignumber::getMagnitude() writes a single 0 byte for it.  So zero gets
-// skipped explicitly here, rather than falling out of a zero length.
 void sqlrfirebirdsrpdigest::processInt(bignumber &bn) {
+
+	// Firebird's getBytes() gives no bytes at all for the value zero, but
+	// bignumber::getMagnitude() writes a single 0 byte for it.  So zero
+	// gets skipped explicitly here, rather than falling out of a zero
+	// length.
 	if (bn.isZero()) {
 		return;
 	}
@@ -273,15 +275,18 @@ const char *sqlrfirebirdsrp::getGenerator() {
 }
 
 
-// The salt is 32 random bytes, but it never travels or gets hashed as bytes.
-// SrpServer.cpp:323-326 reads it out of the security database, runs it
-// through a BigInteger, and takes the hex text.  Everything downstream - the
-// wire, and getUserHash() - uses that text.  So do the same here: make the
-// bytes, run them through a bignum, and keep the text.
-//
-// One consequence, inherited from firebird: a salt that starts with a zero
-// byte loses it, and the text is shorter.  Both sides only ever see the text.
 bool sqlrfirebirdsrp::generateSalt() {
+
+	// The salt is 32 random bytes, but it never travels or gets hashed as
+	// bytes.  SrpServer.cpp:323-326 reads it out of the security
+	// database, runs it through a BigInteger, and takes the hex text.
+	// Everything downstream - the wire, and getUserHash() - uses that
+	// text.  So do the same here: make the bytes, run them through a
+	// bignum, and keep the text.
+	//
+	// One consequence, inherited from firebird: a salt that starts with a
+	// zero byte loses it, and the text is shorter.  Both sides only ever
+	// see the text.
 
 	byte_t	bytes[SQLRFIREBIRDSRP_SALT_SIZE];
 	csprng	rng;
@@ -462,12 +467,13 @@ const char *sqlrfirebirdsrp::getVerifier() const {
 }
 
 
-// RemotePassword::genClientKey() - srp.cpp:109-124.
-//
-//	A=g^a mod N
-//
-// Retried until A>1.
 bool sqlrfirebirdsrp::generateClientPublicKey() {
+
+	// RemotePassword::genClientKey() - srp.cpp:109-124.
+	//
+	//	A=g^a mod N
+	//
+	// Retried until A>1.
 
 	for (uint16_t i=0; i<16; i++) {
 
@@ -501,15 +507,16 @@ bool sqlrfirebirdsrp::generateClientPublicKey() {
 }
 
 
-// RemotePassword::genServerKey() - srp.cpp:126-145.
-//
-//	B=(k*v + g^b) mod N
-//
-// Retried until B>1.  The verifier is computed here rather than looked up,
-// since sqlrelay has the configured password in hand and firebird's server
-// has only a verifier in its security database.
 bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 						const char *password) {
+
+	// RemotePassword::genServerKey() - srp.cpp:126-145.
+	//
+	//	B=(k*v + g^b) mod N
+	//
+	// Retried until B>1.  The verifier is computed here rather than
+	// looked up, since sqlrelay has the configured password in hand and
+	// firebird's server has only a verifier in its security database.
 
 	if (!computeVerifier(username,password)) {
 		return false;
@@ -587,12 +594,13 @@ void sqlrfirebirdsrpSetSessionKey(sqlrfirebirdsrpprivate *pvt,
 					bignumber &sessionsecret);
 
 
-// RemotePassword::serverSessionKey() - srp.cpp:181-196.
-//
-//	u=H(A,B)
-//	S=(A * v^u) ^ b mod N
-//	K=H(S)
 bool sqlrfirebirdsrp::computeServerSessionKey() {
+
+	// RemotePassword::serverSessionKey() - srp.cpp:181-196.
+	//
+	//	u=H(A,B)
+	//	S=(A * v^u) ^ b mod N
+	//	K=H(S)
 
 	if (pvt->_clientpublickey.isZero()) {
 		return setError("no client public key");
@@ -631,14 +639,15 @@ bool sqlrfirebirdsrp::computeServerSessionKey() {
 }
 
 
-// RemotePassword::clientSessionKey() - srp.cpp:157-179.
-//
-//	u=H(A,B)
-//	x=H(salt,H(username:password))
-//	S=(B - k*g^x) ^ (a + u*x) mod N
-//	K=H(S)
 bool sqlrfirebirdsrp::computeClientSessionKey(const char *username,
 						const char *password) {
+
+	// RemotePassword::clientSessionKey() - srp.cpp:157-179.
+	//
+	//	u=H(A,B)
+	//	x=H(salt,H(username:password))
+	//	S=(B - k*g^x) ^ (a + u*x) mod N
+	//	K=H(S)
 
 	if (pvt->_serverpublickey.isZero()) {
 		return setError("no server public key");
@@ -721,31 +730,33 @@ uint64_t sqlrfirebirdsrp::getSessionKeySize() const {
 }
 
 
-// RemotePassword::clientProof() - srp.cpp:199-217 - and
-// RemotePasswordImpl::makeProof() - srp.h:137-151.
-//
-//	n1=H(N)
-//	n2=H(g)
-//	n1=n1^n2 mod N
-//	n2=H(username)
-//	M=HASH(n1, n2, salt, A, B, K)
-//
-// Two deviations from textbook SRP-6a.
-//
-// Classic SRP-6a computes H(N) XOR H(g).  Firebird does not xor.  It does a
-// modular exponentiation - srp.cpp:210 is n1.modPow(n2,prime).  The comment
-// at srp.cpp:198 still says "^", which reads as xor, but the code is modPow.
-// Follow the code.
-//
-// Also, only this final digest uses the plugin's hash.  n1 and n2 are
-// built with RemotePassword::hash, which srp.h:91 fixes at sha-1.  So Srp256
-// differs from Srp in one hash and one hash only - the one right here.  The
-// verifier, the scramble, and the session key are sha-1 in both.
-//
-// Both sides compute this same value.  Firebird calls it the client proof:
-// the client sends it (SrpClient.cpp:152-156) and the server recomputes it
-// and compares (SrpServer.cpp:359-365).
 bool sqlrfirebirdsrp::computeProof(const char *username) {
+
+	// RemotePassword::clientProof() - srp.cpp:199-217 - and
+	// RemotePasswordImpl::makeProof() - srp.h:137-151.
+	//
+	//	n1=H(N)
+	//	n2=H(g)
+	//	n1=n1^n2 mod N
+	//	n2=H(username)
+	//	M=HASH(n1, n2, salt, A, B, K)
+	//
+	// Two deviations from textbook SRP-6a.
+	//
+	// Classic SRP-6a computes H(N) XOR H(g).  Firebird does not xor.  It
+	// does a modular exponentiation - srp.cpp:210 is n1.modPow(n2,prime).
+	// The comment at srp.cpp:198 still says "^", which reads as xor, but
+	// the code is modPow.  Follow the code.
+	//
+	// Also, only this final digest uses the plugin's hash.  n1 and n2 are
+	// built with RemotePassword::hash, which srp.h:91 fixes at sha-1.  So
+	// Srp256 differs from Srp in one hash and one hash only - the one
+	// right here.  The verifier, the scramble, and the session key are
+	// sha-1 in both.
+	//
+	// Both sides compute this same value.  Firebird calls it the client
+	// proof: the client sends it (SrpClient.cpp:152-156) and the server
+	// recomputes it and compares (SrpServer.cpp:359-365).
 
 	if (!pvt->_sessionkey) {
 		return setError("no session key");
@@ -803,9 +814,11 @@ const char *sqlrfirebirdsrp::getProof() const {
 	return pvt->_proof;
 }
 
-// SrpServer.cpp:357-365 compares the proofs as numbers, not as text, so that
-// leading zeros or a difference in case can't matter.  Do the same.
 bool sqlrfirebirdsrp::verifyProof(const char *username, const char *proof) {
+
+	// SrpServer.cpp:357-365 compares the proofs as numbers, not as text,
+	// so that leading zeros or a difference in case can't matter.  Do the
+	// same.
 
 	if (!computeProof(username)) {
 		return false;

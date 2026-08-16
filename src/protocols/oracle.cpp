@@ -3555,21 +3555,23 @@ static const byte_t	ttiserverruntimecaps[]={
 	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
 };
 
-// the layout of this response - the field order, and the ix=6+fdo[5]+fdo[6]
-// rule for finding the character set ids inside the fdo block - follows
-// python-oracledb, src/oracledb/impl/thin/messages/protocol.pyx,
-// _process_protocol_info(), and the capability array index names follow its
-// src/oracledb/impl/thin/constants.pxi.
-//
-// Copyright (c) 2020, 2026, Oracle and/or its affiliates.
-// Taken under the Universal Permissive License 1.0 only, not under
-// python-oracledb's Apache 2.0 option.  See https://oss.oracle.com/licenses/upl
-// and COPYING.
 void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 					const byte_t *compilecaps,
 					byte_t compilecapssize,
 					const byte_t *runtimecaps,
 					byte_t runtimecapssize) {
+
+	// the layout of this response - the field order, and the
+	// ix=6+fdo[5]+fdo[6] rule for finding the character set ids inside
+	// the fdo block - follows python-oracledb,
+	// src/oracledb/impl/thin/messages/protocol.pyx,
+	// _process_protocol_info(), and the capability array index names
+	// follow its src/oracledb/impl/thin/constants.pxi.
+	//
+	// Copyright (c) 2020, 2026, Oracle and/or its affiliates.
+	// Taken under the Universal Permissive License 1.0 only, not under
+	// python-oracledb's Apache 2.0 option.  See
+	// https://oss.oracle.com/licenses/upl and COPYING.
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_PROTOCOL_NEGOTIATION;

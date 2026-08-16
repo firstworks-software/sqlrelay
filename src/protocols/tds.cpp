@@ -6206,7 +6206,8 @@ static bool isLeapYear(int16_t year) {
 	return !(year%400);
 }
 
-uint32_t sqlrprotocol_tds::daysSince1(int16_t year, int16_t month, int16_t day) {
+uint32_t sqlrprotocol_tds::daysSince1(int16_t year,
+						int16_t month, int16_t day) {
 
 	// days in the years before this one
 	int32_t	prevyears=year-1;

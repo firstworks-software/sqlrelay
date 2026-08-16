@@ -19,7 +19,8 @@
 
 // Firebird Wire Protocol refers to:
 // Carlos Guzman Alvarez, Mark Rotteveel, version 0.18, 18 May 2025
-// https://firebirdsql.org/file/documentation/html/en/firebirddocs/wireprotocol/firebird-wire-protocol.html
+// https://firebirdsql.org/file/documentation/html/en/firebirddocs/
+//     wireprotocol/firebird-wire-protocol.html
 //
 // It only covers protocol version 10 and up, and 11 and up only partially.
 
@@ -3091,12 +3092,13 @@ static uint32_t readClientCryptLevel(const byte_t *value, byte_t valuelen) {
 	return level;
 }
 
-// The user id block in the connect request is a sequence of tag/length/value
-// items, each length a single byte.  Protocol 13 and up carry the first round
-// of the auth plugin handshake in it - see ServerAuth::ServerAuth(),
-// server.cpp:568-627.
 void sqlrprotocol_firebird::parseUserId(const byte_t *userid,
 						uint32_t useridlen) {
+
+	// The user id block in the connect request is a sequence of
+	// tag/length/value items, each length a single byte.  Protocol 13
+	// and up carry the first round of the auth plugin handshake in it -
+	// see ServerAuth::ServerAuth(), server.cpp:568-627.
 
 	// dump the raw tag/length/value items
 	debugUserId(userid,useridlen);
@@ -3207,10 +3209,11 @@ void sqlrprotocol_firebird::parseUserId(const byte_t *userid,
 	debugEnd();
 }
 
-// Whether the client's CNCT_plugin_list names "plugin".  The list is
-// comma-separated, and firebird's ParsedList tolerates spaces around the
-// names.
 bool sqlrprotocol_firebird::clientSupportsPlugin(const char *plugin) {
+
+	// Whether the client's CNCT_plugin_list names "plugin".  The list is
+	// comma-separated, and firebird's ParsedList tolerates spaces around
+	// the names.
 
 	if (charstring::isNullOrEmpty(clientpluginlist)) {
 		return false;
@@ -3269,14 +3272,16 @@ static void appendSrpData(bytebuffer *data, const char *value) {
 	data->append(value,len);
 }
 
-// Runs the server's half of the srp exchange's first round and formats the
-// answer the way SrpServer::authenticate() does - SrpServer.cpp:328-340:
-//
-//	int16_t		salt length, little endian
-//	char[]		salt, as hex text
-//	int16_t		server public key length, little endian
-//	char[]		server public key B, as hex text
 bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
+
+	// Runs the server's half of the srp exchange's first round and
+	// formats the answer the way SrpServer::authenticate() does -
+	// SrpServer.cpp:328-340:
+	//
+	//	int16_t		salt length, little endian
+	//	char[]		salt, as hex text
+	//	int16_t		server public key length, little endian
+	//	char[]		server public key B, as hex text
 
 	debugStart("srp challenge");
 
@@ -3356,9 +3361,11 @@ bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
 	return true;
 }
 
-// Picks the plugin to continue the handshake with, and builds whatever data
-// goes back with it.  Mirrors accept_connection(), server.cpp:2126-2190.
 bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
+
+	// Picks the plugin to continue the handshake with, and builds
+	// whatever data goes back with it.  Mirrors accept_connection(),
+	// server.cpp:2126-2190.
 
 	debugStart("select auth plugin");
 
@@ -3451,18 +3458,19 @@ bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
 	return false;
 }
 
-// Combines the level the client asked for with the level the module asks
-// for, the way accept_connection() does:
-//
-//	                DISABLED(srv)  ENABLED(srv)  REQUIRED(srv)
-//	client DISABLED   DISABLED       DISABLED      broken
-//	client ENABLED    DISABLED       ENABLED       REQUIRED
-//	client REQUIRED   broken         REQUIRED      REQUIRED
-//
-// "broken" is one side insisting on encryption while the other refuses it,
-// which leaves nothing to negotiate - attach() answers
-// isc_wirecrypt_incompatible and the session ends.
 void sqlrprotocol_firebird::negotiateWireCrypt() {
+
+	// Combines the level the client asked for with the level the module
+	// asks for, the way accept_connection() does:
+	//
+	//	                DISABLED(srv)  ENABLED(srv)  REQUIRED(srv)
+	//	client DISABLED   DISABLED       DISABLED      broken
+	//	client ENABLED    DISABLED       ENABLED       REQUIRED
+	//	client REQUIRED   broken         REQUIRED      REQUIRED
+	//
+	// "broken" is one side insisting on encryption while the other
+	// refuses it, which leaves nothing to negotiate - attach() answers
+	// isc_wirecrypt_incompatible and the session ends.
 
 	wirecryptincompatible=false;
 
@@ -3514,15 +3522,16 @@ static void appendKeyItem(bytebuffer *keys, byte_t tag, const char *value) {
 	keys->append(value,len);
 }
 
-// The key block names the kind of key the module has and the wire encryption
-// plugins that can use it, in that order - the same pair
-// ServerAuth::authenticate() builds.  It's a sequence of tag/length/value
-// items, each length a single byte, the same encoding the connect block's
-// user id uses.
-//
-// Nothing at all goes out when the negotiated level is DISABLED, which is
-// also what firebird sends when it has no plugin to offer.
 void sqlrprotocol_firebird::appendKeyBlock(bytebuffer *keys) {
+
+	// The key block names the kind of key the module has and the wire
+	// encryption plugins that can use it, in that order - the same pair
+	// ServerAuth::authenticate() builds.  It's a sequence of
+	// tag/length/value items, each length a single byte, the same
+	// encoding the connect block's user id uses.
+	//
+	// Nothing at all goes out when the negotiated level is DISABLED,
+	// which is also what firebird sends when it has no plugin to offer.
 
 	debugStart("key block");
 
@@ -3542,18 +3551,21 @@ void sqlrprotocol_firebird::appendKeyBlock(bytebuffer *keys) {
 	debugEnd();
 }
 
-// The client answers the key block by naming the plugin it picked out of it
-// and the kind of key that plugin should use, which is what firebird's
-// start_crypt() (server.cpp) checks against the keys it handed out.  Only
-// the plugin and key the key block advertised are accepted; anything else
-// gets the same errors firebird raises - isc_wirecrypt_plugin for a plugin
-// that wasn't offered, isc_wirecrypt_key for a key that isn't there.
-//
-// The request itself is still in the clear, but the response to it is not -
-// encryption starts with the response, and with everything read after the
-// request.  So the ciphers are built here and startWireCrypt() puts them
-// under the socket in between the two - see firebirdcryptlayer.
 bool sqlrprotocol_firebird::cryptRequest() {
+
+	// The client answers the key block by naming the plugin it picked
+	// out of it and the kind of key that plugin should use, which is
+	// what firebird's start_crypt() (server.cpp) checks against the keys
+	// it handed out.  Only the plugin and key the key block advertised
+	// are accepted; anything else gets the same errors firebird raises -
+	// isc_wirecrypt_plugin for a plugin that wasn't offered,
+	// isc_wirecrypt_key for a key that isn't there.
+	//
+	// The request itself is still in the clear, but the response to it
+	// is not - encryption starts with the response, and with everything
+	// read after the request.  So the ciphers are built here and
+	// startWireCrypt() puts them under the socket in between the two -
+	// see firebirdcryptlayer.
 
 	// request packet data structure:
 	//
@@ -3635,11 +3647,13 @@ bool sqlrprotocol_firebird::cryptRequest() {
 				statusvectorlen);
 }
 
-// Builds the ciphers and puts them under the client socket's reads and
-// writes.  Called from cryptRequest(), after the op_crypt request has been
-// read and before the response to it is written, which is where the two
-// directions switch over - see firebirdcryptlayer for why exactly there.
 bool sqlrprotocol_firebird::startWireCrypt() {
+
+	// Builds the ciphers and puts them under the client socket's reads
+	// and writes.  Called from cryptRequest(), after the op_crypt request
+	// has been read and before the response to it is written, which is
+	// where the two directions switch over - see firebirdcryptlayer for
+	// why exactly there.
 
 	debugStart("start wire crypt");
 
@@ -3712,9 +3726,11 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 	return true;
 }
 
-// Takes the layer back off the socket at the end of the session.  A no-op
-// unless op_crypt actually turned encryption on.
 void sqlrprotocol_firebird::stopWireCrypt() {
+
+	// Takes the layer back off the socket at the end of the session.  A
+	// no-op unless op_crypt actually turned encryption on.
+
 	if (!wirecryptlayer) {
 		return;
 	}
@@ -3730,22 +3746,26 @@ void sqlrprotocol_firebird::stopWireCrypt() {
 	debugEnd();
 }
 
-// Whether the op that just came in may run while wire encryption is
-// required but not actually on yet.  Firebird's own server keeps a list
-// like this - process_packet() (server.cpp) refuses everything else with
-// isc_miss_wirecrypt while port_crypt_level is WIRE_CRYPT_REQUIRED and
-// port_crypt_complete is still false - and without it "required" means
-// nothing, since a client can agree to it in the connect and then just
-// never send op_crypt.
-//
-// The list is the ops that can't be encrypted by definition - op_crypt
-// itself, and the auth traffic that surrounds it - plus the ones that only
-// end the session or keep it alive.  Nothing that carries data is on it.
-//
-// (op_attach isn't on the list and doesn't need to be.  It runs during the
-// initial handshake, ahead of the loop this gates, and a client sends
-// op_crypt only after the response to it - see cryptRequest().)
 bool sqlrprotocol_firebird::allowedBeforeWireCrypt() {
+
+	// Whether the op that just came in may run while wire encryption is
+	// required but not actually on yet.  Firebird's own server keeps a
+	// list like this - process_packet() (server.cpp) refuses everything
+	// else with isc_miss_wirecrypt while port_crypt_level is
+	// WIRE_CRYPT_REQUIRED and port_crypt_complete is still false - and
+	// without it "required" means nothing, since a client can agree to
+	// it in the connect and then just never send op_crypt.
+	//
+	// The list is the ops that can't be encrypted by definition -
+	// op_crypt itself, and the auth traffic that surrounds it - plus the
+	// ones that only end the session or keep it alive.  Nothing that
+	// carries data is on it.
+	//
+	// (op_attach isn't on the list and doesn't need to be.  It runs
+	// during the initial handshake, ahead of the loop this gates, and a
+	// client sends op_crypt only after the response to it - see
+	// cryptRequest().)
+
 	switch (opcode) {
 		// turning encryption on, and the key callback that can
 		// come with it
@@ -3878,18 +3898,19 @@ bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
 	return true;
 }
 
-// The second and later rounds of the plugin handshake, when the client's
-// first message didn't arrive with the connect request.  The server sends
-// op_cont_auth and the client answers with one - ServerAuth::authenticate()
-// at server.cpp:773-780 and continue_authentication() at
-// server.cpp:5446-5452.
-//
-// Only the srp plugins ever get here, and only when the client had to start
-// them over on the plugin the accept named.  In the ordinary case the client
-// leads with a plugin the module has, its public key rides in
-// CNCT_specific_data, and the whole exchange is done by the time the attach
-// arrives.
 bool sqlrprotocol_firebird::continueAuthentication() {
+
+	// The second and later rounds of the plugin handshake, when the
+	// client's first message didn't arrive with the connect request.
+	// The server sends op_cont_auth and the client answers with one -
+	// ServerAuth::authenticate() at server.cpp:773-780 and
+	// continue_authentication() at server.cpp:5446-5452.
+	//
+	// Only the srp plugins ever get here, and only when the client had to
+	// start them over on the plugin the accept named.  In the ordinary
+	// case the client leads with a plugin the module has, its public key
+	// rides in CNCT_specific_data, and the whole exchange is done by the
+	// time the attach arrives.
 
 	// nothing to continue - either the plugin needs no more rounds, or
 	// the challenge already ran during the connect
@@ -5947,14 +5968,21 @@ bool sqlrprotocol_firebird::rollbackRetaining() {
 				statusvectorlen);
 }
 
-// op_prepare and op_prepare2 are two-phase commit's first phase, a durable
-// promise that the second phase can't fail. The server api has no
-// distributed-transaction support to back that promise with.
 bool sqlrprotocol_firebird::prepare() {
+
+	// op_prepare and op_prepare2 are two-phase commit's first phase, a
+	// durable promise that the second phase can't fail. The server api
+	// has no distributed-transaction support to back that promise with.
+
 	return sendNotImplementedError();
 }
 
 bool sqlrprotocol_firebird::prepare2() {
+
+	// op_prepare and op_prepare2 are two-phase commit's first phase, a
+	// durable promise that the second phase can't fail. The server api
+	// has no distributed-transaction support to back that promise with.
+
 	return sendNotImplementedError();
 }
 
@@ -10527,11 +10555,13 @@ bool sqlrprotocol_firebird::batchRls() {
 	return batchRelease("batch rls response",false);
 }
 
-// A batch has nothing in flight to abort - the messages it holds haven't run,
-// and the ones a previous op_batch_exec ran belong to the transaction, which
-// only a commit or rollback can undo.  So cancelling and releasing come to the
-// same thing here.
 bool sqlrprotocol_firebird::batchCancel() {
+
+	// A batch has nothing in flight to abort - the messages it holds
+	// haven't run, and the ones a previous op_batch_exec ran belong to
+	// the transaction, which only a commit or rollback can undo.  So
+	// cancelling and releasing come to the same thing here.
+
 	return batchRelease("batch cancel response",true);
 }
 
@@ -11094,13 +11124,15 @@ bool sqlrprotocol_firebird::parseBatchBlobStream(sqlrfirebirdbatch *batch,
 	return true;
 }
 
-// nothing backs the service manager - no backup, restore, repair, or
-// statistics entry point on any backend - so answering these ops for real
-// would let a client believe an operation completed when nothing happened
-// behind it. Refuse, but with isc_service_att_err rather than the generic
-// isc_wish_list, so the error names the service manager instead of just
-// "feature is not supported".
 bool sqlrprotocol_firebird::serviceAttach() {
+
+	// nothing backs the service manager - no backup, restore, repair, or
+	// statistics entry point on any backend - so answering these ops for
+	// real would let a client believe an operation completed when
+	// nothing happened behind it. Refuse, but with isc_service_att_err
+	// rather than the generic isc_wish_list, so the error names the
+	// service manager instead of just "feature is not supported".
+
 	debugStart("service attach");
 	debugWrite("not implemented");
 	debugEnd();
@@ -11128,15 +11160,18 @@ bool sqlrprotocol_firebird::serviceInfo() {
 	return sendServiceAttachError();
 }
 
-// connectRequest(), queEvents() and cancelEvents() are firebird's
-// asynchronous event notification: a trigger or procedure posts an event, and
-// a client that queued one gets told.  Nothing here can generate an event to
-// deliver - the firebird connection module never registers for one, and the
-// server api has no path to carry a database event to a protocol module.
-// (sqlrevent_t is unrelated - it's server-side logging and alerting.)
-// Answering op_connect_request would also mean opening a second, server-owned
-// socket alongside the live session.
 bool sqlrprotocol_firebird::connectRequest() {
+
+	// connectRequest(), queEvents() and cancelEvents() are firebird's
+	// asynchronous event notification: a trigger or procedure posts an
+	// event, and a client that queued one gets told.  Nothing here can
+	// generate an event to deliver - the firebird connection module
+	// never registers for one, and the server api has no path to carry a
+	// database event to a protocol module.  (sqlrevent_t is unrelated -
+	// it's server-side logging and alerting.)  Answering
+	// op_connect_request would also mean opening a second, server-owned
+	// socket alongside the live session.
+
 	debugStart("connect request");
 	debugWrite("not implemented");
 	debugEnd();
