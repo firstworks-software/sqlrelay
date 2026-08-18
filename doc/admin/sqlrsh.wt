@@ -95,7 +95,7 @@ id descr         price
 
 Everything ends with the delimiter, which is a semicolon unless -delimiter or the delimiter command changes it.  A query may be split over as many lines as it takes.  The prompt counts the lines, so a query that runs onto a second line is prompted with 1, a third with 2, and so on.
 
-Type help; at the prompt for the command reference, which is the same list as the [#commands Commands] section below.  Type help brief; for a shorter, curated list of the commands used most.
+Type help; at the prompt for the command reference, which is the same list as the [#commands Commands] section below.  Type help brief; for a shorter, curated list of the commands used most.  Type help json; for the same reference as a json array, for a program to read.
 
 A genuinely interactive session always exits 0, even when a query at the prompt failed - it is not a batch.
 
@@ -459,6 +459,7 @@ To run a query, type it and end it with the delimiter.  Everything below is a co
 * '''continueonerror''' on|off - carries on past a statement that failed, rather than stopping at the first one
 * '''help''' - writes the command reference
 * '''help brief''' - writes a shorter, curated command reference covering the commands used most
+* '''help json''' - writes the command reference as a json array of {name, args, description} objects, for a program to read
 * '''exit''', '''quit''' - exits
 
 === Output Settings ===

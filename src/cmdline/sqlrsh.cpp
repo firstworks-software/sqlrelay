@@ -703,6 +703,7 @@ class	sqlrsh {
 							const char *command);
 		void	displayHelp(sqlrshenv *env);
 		void	displayBriefHelp(sqlrshenv *env);
+		void	displayJsonHelp(sqlrshenv *env);
 		void	interactWithUser(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
 						sqlrshenv *env);
@@ -1224,6 +1225,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		charstring::bothTrim(arg);
 		if (!charstring::compareIgnoringCase(arg,"brief")) {
 			displayBriefHelp(env);
+		} else if (!charstring::compareIgnoringCase(arg,"json")) {
+			displayJsonHelp(env);
 		} else {
 			displayHelp(env);
 		}
@@ -5317,6 +5320,265 @@ bool sqlrsh::openCache(sqlrshenv *env,
 	displayStats(sqlrcur,env);
 
 	return true;
+}
+
+// The catalog that "help json" writes.  It's a standalone list, not a
+// shared source with displayHelp() and displayBriefHelp() above - those
+// remain hand-written prose, this is the same information in a form a
+// program can read.  Keep it in step with displayHelp() when a command is
+// added, removed or changed.
+struct sqlrshhelpentry {
+	const char	*name;
+	const char	*args;
+	const char	*description;
+};
+
+static const sqlrshhelpentry sqlrshhelpcatalog[]={
+	// queries, scripts and files
+	{"reexecute","","runs the previous query again"},
+	{"filequery","[path] [file]","runs the whole file as one query"},
+	{"preparefilequery","[path] [file]",
+		"prepares the whole file as one query, but does not "
+		"run it; reexecute runs it"},
+	{"run","[file]","runs the sqlrsh commands in the file"},
+	{"@","[file]","same as run"},
+	{"continueonerror","on|off",
+		"carries on past a statement that failed, rather than "
+		"stopping at the first one"},
+	{"help","","the full command list"},
+	{"help","brief","a shorter, curated command reference"},
+	{"help","json","this catalog, as json"},
+	{"exit","","exits"},
+	{"quit","","same as exit"},
+	// output settings
+	{"format","plain|csv|json|jsonl","sets the output format"},
+	{"headers","on|off",
+		"the column names above the result set (plain format "
+		"only)"},
+	{"divider","on|off",
+		"the line of = signs under the column names (plain "
+		"format only)"},
+	{"stats","on|off","the statistics below the result set"},
+	{"quiet","on|off",
+		"shorthand - quiet on turns headers and stats off, "
+		"quiet off turns them back on"},
+	{"noelapsed","on|off","leaves the elapsed time out of the stats"},
+	{"fieldsas","raw|number|boolean|date",
+		"fetches fields with the matching getFieldAs method, "
+		"where the column suits it"},
+	{"getasnumber","on|off",
+		"an alias - on is fieldsas number, off is fieldsas raw"},
+	{"nullsasnulls","on|off",
+		"gets nulls as nulls, rather than as empty strings"},
+	{"delimiter","[character]",
+		"sets the delimiter, and echoes it back"},
+	{"debug","on|off","client library debug messages, to stdout"},
+	{"debug","[file]","client library debug messages, to the file"},
+	{"getdebug","","whether debug is on"},
+	// result sets
+	{"setresultsetbuffersize","[rows]",
+		"fetches rows at a time, rather than all at once; 0 "
+		"means all at once"},
+	{"getresultsetbuffersize","",
+		"the number of rows fetched at a time"},
+	{"lazyfetch","on|off",
+		"fetches rows as they are asked for, rather than when "
+		"the query runs"},
+	{"nextresultset","on|off",
+		"fetches every result set a query returns, rather than "
+		"just the first"},
+	{"columninfo","",
+		"all of the column metadata of the current result set"},
+	{"columninfo","on|off",
+		"whether column metadata is fetched at all"},
+	{"columncase","mixed|upper|lower","the case of the column names"},
+	{"totalrows","",
+		"the total row count, if the database gives one, and 0 "
+		"if it does not"},
+	{"firstrowindex","","the index of the first buffered row"},
+	{"endofresultset","","whether the whole result set has arrived"},
+	{"suspendresultset","",
+		"leaves the result set open for another session to "
+		"resume"},
+	{"resultsetid","","the id of the suspended result set"},
+	{"resumeresultset","[id]",
+		"resumes the result set, and writes the rest of it; no "
+		"id means this cursor's own"},
+	{"closeresultset","","closes the result set"},
+	{"querytree","","the parsed query, as xml"},
+	{"translatedquery","","the query, after translation"},
+	{"lastinsertid","",
+		"the value of the most recently updated auto-increment "
+		"or identity column, if the database has one"},
+	// caching
+	{"cache","[file] [ttl]",
+		"caches the next result set to the file, with a "
+		"time-to-live of ttl seconds; 600 if left out"},
+	{"cacheoff","","stops caching"},
+	{"cachefilename","",
+		"the file the result set is being cached to"},
+	{"opencache","[file]","opens a cached result set and writes it"},
+	{"resumecachedresultset","[id] [file]",
+		"resumes a suspended result set and keeps caching it "
+		"to the file"},
+	// bind variables
+	{"inputbind","[variable] = [value]",
+		"defines an input bind variable"},
+	{"inputbindblob","[variable] = [value]",
+		"defines a blob input bind variable"},
+	{"inputbindclob","[variable] = [value]",
+		"defines a clob input bind variable"},
+	{"outputbind","[variable] [type]",
+		"defines an output bind variable"},
+	{"inputoutputbind","[variable] [type] = [value]",
+		"defines an input/output bind variable"},
+	{"fetchfrombindcursor","[variable]",
+		"writes the result set of a cursor output bind of the "
+		"query that just ran"},
+	{"printbinds","","all three bind variable lists"},
+	{"printinputbind","","the input bind variable list"},
+	{"printoutputbind","","the output bind variable list"},
+	{"printinputoutputbind","","the input/output bind variable list"},
+	{"clearinputbind","[variable]",
+		"clears one input bind variable, or the whole list "
+		"when no variable is given"},
+	{"clearoutputbind","[variable]",
+		"clears one output bind variable, or the whole list "
+		"when no variable is given"},
+	{"clearinputoutputbind","[variable]",
+		"clears one input/output bind variable, or the whole "
+		"list when no variable is given"},
+	{"clearbinds","","clears all three bind variable lists"},
+	{"countbindvariables","",
+		"the number of bind variables in the query that was "
+		"prepared last"},
+	{"validatebinds","on|off",
+		"ignores bind variables the query does not have, "
+		"rather than failing"},
+	{"validbind","[variable]",
+		"whether the variable really was a bind variable of "
+		"the query that just ran"},
+	{"bindformat","","the bind variable format of the database"},
+	{"bindvariabledelimiters","",
+		"the bind variable delimiters in use"},
+	{"bindvariabledelimiters","[delimiters]",
+		"sets them, from the set ? : @ $"},
+	{"bindvariabledelimitersupported","[delimiter]",
+		"whether one of ? : @ $ is supported"},
+	// substitutions
+	{"substitution","[variable] = [value]",
+		"replaces $(variable) in the query text when the "
+		"query is prepared"},
+	{"clearsubstitutions","","clears the substitution list"},
+	// session and database information
+	{"ping","","pings the database"},
+	{"identify","","the type of database"},
+	{"dbversion","","the version of the database"},
+	{"dbhostname","","the host name of the database"},
+	{"dbipaddress","","the ip address of the database"},
+	{"clientversion","","the version of the client library"},
+	{"serverversion","","the version of the server"},
+	{"databasefeature","[feature]",
+		"whether the database has the feature"},
+	{"nextvalformat","",
+		"the sequence next-value format of the database"},
+	{"setclientinfo","[info]","sets the client info string"},
+	{"getclientinfo","","the client info string"},
+	{"endsession","",
+		"ends the session; the next command starts a new one"},
+	{"final","on|off","one session per query"},
+	{"suspendsession","",
+		"leaves the session open for another client to resume"},
+	{"connectionport","","the port of the suspended session"},
+	{"connectionsocket","","the unix socket of the suspended session"},
+	{"resumesession","[port] [socket]","resumes a suspended session"},
+	{"connect timeout","[seconds[.fraction]]",
+		"the timeout for the next connect, which is what a "
+		"resumesession or a reconnect after an endsession uses"},
+	{"getconnecttimeout","",
+		"the connect timeout, or -1 when it is off"},
+	{"response timeout","[seconds[.fraction]]",
+		"the timeout for a response from the server"},
+	{"getresponsetimeout","",
+		"the response timeout, or -1 when it is off"},
+	// databases, catalogs and schemas
+	{"use","[database]","changes the current database or schema"},
+	{"currentdb","","the current database or schema"},
+	{"usecatalog","[catalog]","changes the current catalog"},
+	{"currentcatalog","","the current catalog"},
+	{"useschema","[schema]","changes the current schema"},
+	{"currentschema","","the current schema"},
+	{"currentuser","","the current user"},
+	{"databaseisschema","",
+		"whether the database is what other databases would "
+		"call a schema"},
+	// transactions
+	{"autocommit","on|off","commits after every query"},
+	{"getautocommit","","whether autocommit is on"},
+	{"begin","","begins a transaction"},
+	{"commit","","commits"},
+	{"rollback","","rolls back"},
+	{"txqueries","on|off",
+		"sends begin, commit and rollback to the database as "
+		"queries, rather than running them as commands"},
+	{"intransaction","","whether a transaction is open"},
+	{"isolationlevel","","the current isolation level"},
+	{"isolationlevel","[level]","sets it"},
+	{"defaultisolationlevel","",
+		"the isolation level the session starts with"},
+	{"transactionmodel","","the current transaction model"},
+	{"transactionmodel","[model]","sets it"},
+	{"defaulttransactionmodel","",
+		"the transaction model the session starts with"},
+	// metadata
+	{"show databases","[like 'pattern']","lists the databases"},
+	{"show catalogs","[like 'pattern']","lists the catalogs"},
+	{"show schemas","[like 'pattern']","lists the schemas"},
+	{"show tables","[like 'pattern']","lists the tables"},
+	{"show table types","","lists the table types"},
+	{"show columns","in [table] [like 'pattern']",
+		"lists the columns of a table"},
+	{"describe","[table]",
+		"the column metadata of a table, same as show columns"},
+	{"fields","[table]","just the column names, on one line"},
+	{"show primary keys","in [table] [like 'pattern']",
+		"lists the primary keys of a table"},
+	{"show keys and indexes","in [table] [like 'pattern']",
+		"lists the keys and indexes of a table"},
+	{"show procedures","[like 'pattern']","lists the procedures"},
+	{"show procedure parameters","in [procedure] [like 'pattern']",
+		"lists the parameters of a procedure"},
+	{"show type info","[for type]","lists database type info"},
+	{"show lastinsertid","",
+		"the value of the most recently updated auto-increment "
+		"or identity column"},
+	{"show only tables","[like 'pattern']","lists just the tables"},
+	{"show only views","[like 'pattern']","lists just the views"},
+	{"show only aliases","[like 'pattern']","lists just the aliases"},
+	{"show only synonyms","[like 'pattern']",
+		"lists just the synonyms"},
+	{NULL,NULL,NULL}
+};
+
+void sqlrsh::displayJsonHelp(sqlrshenv *env) {
+
+	stdoutput.write('[');
+	for (const sqlrshhelpentry *he=sqlrshhelpcatalog; he->name; he++) {
+		if (he!=sqlrshhelpcatalog) {
+			stdoutput.write(',');
+		}
+		stdoutput.write("{\"name\":");
+		jsonWriteString(&stdoutput,he->name,
+					charstring::getLength(he->name));
+		stdoutput.write(",\"args\":");
+		jsonWriteString(&stdoutput,he->args,
+					charstring::getLength(he->args));
+		stdoutput.write(",\"description\":");
+		jsonWriteString(&stdoutput,he->description,
+					charstring::getLength(he->description));
+		stdoutput.write('}');
+	}
+	stdoutput.write("]\n");
 }
 
 void sqlrsh::displayHelp(sqlrshenv *env) {
