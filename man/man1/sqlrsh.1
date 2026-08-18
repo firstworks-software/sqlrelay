@@ -210,6 +210,11 @@ plain format only.  Defaults to on.
 Write a line of = signs under the column names.
 plain format only.  Defaults to on.
 .TP
+\fB\-vertical\fR on|off
+Write one column per line, labeled with the column
+name, instead of one row per line.
+plain format only.  Defaults to off.
+.TP
 \fB\-stats\fR on|off
 Write the statistics after the result set.
 plain writes a block of labels, json and jsonl
@@ -323,8 +328,8 @@ among them.
 Columns are space padded, the column names go above the result set, a line of
 = signs goes under the names, and a block of tab indented labels goes under the
 rows.  A null is written as the word NULL, which is indistinguishable from the
-four character string NULL.  \fB\-headers\fR, \fB\-divider\fR and the
-statistics block apply to this format only.
+four character string NULL.  \fB\-headers\fR, \fB\-divider\fR,
+\fB\-vertical\fR and the statistics block apply to this format only.
 .SS csv
 One header row of column names, then one row per row of the result set, and
 nothing else.  The header row is always written, whatever \fB\-headers\fR says,
@@ -492,6 +497,10 @@ The column names above the result set.  plain format only.
 .TP
 divider on|off
 The line of = signs under the column names.  plain format only.
+.TP
+vertical on|off
+One column per line, labeled with the column name, instead of one row
+per line.  plain format only.
 .TP
 stats on|off
 The statistics after the result set.

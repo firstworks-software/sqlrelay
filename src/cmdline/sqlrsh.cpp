@@ -260,6 +260,8 @@ class sqlrshenv {
 
 		bool		headers;
 		bool		divider;
+		// display each row one column per line, plain format only
+		bool		vertical;
 		bool		stats;
 		uint64_t	rsbs;
 		bool		final;
@@ -299,6 +301,7 @@ class sqlrshenv {
 sqlrshenv::sqlrshenv() {
 	headers=true;
 	divider=true;
+	vertical=false;
 	stats=true;
 	rsbs=100;
 	final=false;
@@ -507,6 +510,11 @@ class	sqlrsh {
 		void	displayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
 		void	plainDisplayResultSet(sqlrcursor *sqlrcur,
+						sqlrshenv *env);
+		// displays a result set one column per line, labeled with
+		// the column name, for rows too wide to read in table
+		// layout
+		void	plainVerticalDisplayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
 		void	csvDisplayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
@@ -1039,6 +1047,7 @@ int sqlrsh::commandType(const char *command) {
 	// compare to known internal commands
 	if (!charstring::compareIgnoringCase(ptr,"headers",7) ||
 		!charstring::compareIgnoringCase(ptr,"divider",7) ||
+		!charstring::compareIgnoringCase(ptr,"vertical",8) ||
 		!charstring::compareIgnoringCase(ptr,"stats",5) ||
 		!charstring::compareIgnoringCase(ptr,"format",6) ||
 		!charstring::compareIgnoringCase(ptr,"debug",5) ||
@@ -1186,7 +1195,10 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"divider",7)) {
 		ptr=ptr+7;
 		cmdtype=11;
-	} else if (!charstring::compareIgnoringCase(ptr,"stats",5)) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"vertical",8)) {
+		ptr=ptr+8;
+		cmdtype=20;
+	} else if (!charstring::compareIgnoringCase(ptr,"stats",5)) {
 		ptr=ptr+5;
 		cmdtype=3;
 	} else if (!charstring::compareIgnoringCase(ptr,"format",6)) {	
@@ -1683,6 +1695,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			break;
 		case 11:
 			env->divider=toggle;
+			break;
+		case 20:
+			env->vertical=toggle;
 			break;
 		case 3:
 			env->stats=toggle;
@@ -2651,7 +2666,9 @@ void sqlrsh::plainDisplayHeader(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 	// The headers toggle is plain format only.  Every other format is
 	// parsed, and the names are the only way a reader learns the columns.
-	if (!env->headers) {
+	// Vertical mode labels each field with its column name as it goes,
+	// so it supplies its own per-row labels instead of a table header.
+	if (!env->headers || env->vertical) {
 		return;
 	}
 
@@ -3099,6 +3116,11 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
 void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 
+	if (env->vertical) {
+		plainVerticalDisplayResultSet(sqlrcur,env);
+		return;
+	}
+
 	uint32_t	colcount=sqlrcur->colCount();
 	if (!colcount) {
 		return;
@@ -3154,6 +3176,91 @@ void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			for (uint32_t i=fieldlength; i<longest; i++) {
 				stdoutput.write(' ');
 			}
+		}
+	}
+}
+
+void sqlrsh::plainVerticalDisplayResultSet(sqlrcursor *sqlrcur,
+							sqlrshenv *env) {
+
+	uint32_t	colcount=sqlrcur->colCount();
+	if (!colcount) {
+		return;
+	}
+
+	// pad column names to the width of the longest one, so the ":"
+	// labels line up from field to field
+	uint32_t	namewidth=0;
+	for (uint32_t col=0; col<colcount; col++) {
+		uint32_t	namelen=charstring::getLength(
+						sqlrcur->getColumnName(col));
+		if (namelen>namewidth) {
+			namewidth=namelen;
+		}
+	}
+	uint32_t	dividerwidth=namewidth+22;
+
+	char		convfieldbuffer[256];
+
+	bool		done=false;
+	for (uint64_t row=0; !done; row++) {
+
+		bool	rowstarted=false;
+
+		for (uint32_t col=0; col<colcount; col++) {
+
+			// get the field
+			uint32_t	fieldlength;
+			sqlrshjsontype	jsontype;
+			const char	*field=getFieldForDisplay(sqlrcur,env,
+						row,col,&fieldlength,
+						convfieldbuffer,
+						sizeof(convfieldbuffer),
+						&jsontype);
+
+			// check for end-of-result-set condition
+			// (since nullsasnulls might be set, we have to do
+			// a bit more than just check for a NULL)
+			if (!col && !field &&
+				sqlrcur->endOfResultSet() &&
+				row==sqlrcur->rowCount()) {
+				done=true;
+				break;
+			}
+
+			// separate this row from the previous one
+			if (!rowstarted) {
+				if (row) {
+					stdoutput.write('\n');
+				}
+				if (env->divider) {
+					for (uint32_t i=0;
+						i<dividerwidth; i++) {
+						stdoutput.printf("=");
+					}
+					stdoutput.printf("\n");
+				}
+				rowstarted=true;
+			}
+
+			// handle nulls
+			if (!field) {
+				field="NULL";
+				fieldlength=4;
+			}
+
+			// write the column name, padded to namewidth
+			const char	*name=sqlrcur->getColumnName(col);
+			uint32_t	namelen=charstring::getLength(name);
+			stdoutput.write(name);
+			for (uint32_t j=namelen; j<namewidth; j++) {
+				stdoutput.write(' ');
+			}
+
+			// write the field
+			stdoutput.printf(": ");
+			stdoutput.write(field,fieldlength);
+			stdoutput.write('\n');
 		}
 	}
 }
@@ -5358,6 +5465,9 @@ static const sqlrshhelpentry sqlrshhelpcatalog[]={
 	{"divider","on|off",
 		"the line of = signs under the column names (plain "
 		"format only)"},
+	{"vertical","on|off",
+		"one column per line, labeled with the column name, "
+		"instead of one row per line (plain format only)"},
 	{"stats","on|off","the statistics below the result set"},
 	{"quiet","on|off",
 		"shorthand - quiet on turns headers and stats off, "
@@ -5619,6 +5729,9 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    headers on|off          the column names above the result set\n"
 "                            (plain format only)\n"
 "    divider on|off          the line of = signs under the column names\n"
+"                            (plain format only)\n"
+"    vertical on|off         one column per line, labeled with the\n"
+"                            column name, instead of one row per line\n"
 "                            (plain format only)\n"
 "    stats on|off            the statistics below the result set\n"
 "    quiet on|off            shorthand - quiet on turns headers and stats\n"
@@ -6136,6 +6249,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"[-format (plain|csv|json|jsonl)]\n"
 			"        [-quiet (on|off)] [-headers (on|off)] "
 			"[-divider (on|off)]\n"
+			"        [-vertical (on|off)]\n"
 			"        [-stats (on|off)] [-noelapsed (on|off)]\n"
 			"        [-fieldsas (raw|number|boolean|date)]\n"
 			"        [-getasnumber (on|off)] "
@@ -6376,6 +6490,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	// handle the on/off settings
 	env.headers=onOffOption("headers",env.headers);
 	env.divider=onOffOption("divider",env.divider);
+	env.vertical=onOffOption("vertical",env.vertical);
 	env.stats=onOffOption("stats",env.stats);
 	env.lazyfetch=onOffOption("lazyfetch",env.lazyfetch);
 	env.txqueries=onOffOption("txqueries",env.txqueries);
@@ -6573,6 +6688,10 @@ static void helpmessage(const char *progname) {
 		"	-divider on|off		Write a line of = signs under the column names.\n"
 		"				plain format only.  Defaults to on.\n"
 		"\n"
+		"	-vertical on|off	Write one column per line, labeled with the\n"
+		"				column name, instead of one row per line.\n"
+		"				plain format only.  Defaults to off.\n"
+		"\n"
 		"	-stats on|off		Write the statistics after the result set.\n"
 		"				plain writes a block of labels, json and jsonl\n"
 		"				carry the same numbers inside the document,\n"
@@ -6674,7 +6793,8 @@ static void helpmessage(const char *progname) {
 		"	a line of = signs goes under the names, and a block of tab indented\n"
 		"	labels goes under the rows.  A null is written as the word NULL,\n"
 		"	which is indistinguishable from the four character string NULL.\n"
-		"	-headers, -divider and the statistics block are this format only.\n"
+		"	-headers, -divider, -vertical and the statistics block are this\n"
+		"	format only.\n"
 		"\n"
 		"csv	One header row of column names, then one row per row of the result\n"
 		"	set, and nothing else.  The header row is always written, whatever\n"

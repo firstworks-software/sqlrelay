@@ -165,6 +165,9 @@
 		alongside the existing full "help"
 	added "help json" to sqlrsh, a machine-readable command catalog
 		(name, args, description) for programmatic discovery
+	added "vertical" to sqlrsh, a plain-format display mode that prints
+		one column per line, labeled with the column name, for
+		result sets too wide for the table layout
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
