@@ -702,6 +702,7 @@ class	sqlrsh {
 		bool	openCache(sqlrshenv *env, sqlrcursor *sqlrcur,
 							const char *command);
 		void	displayHelp(sqlrshenv *env);
+		void	displayBriefHelp(sqlrshenv *env);
 		void	interactWithUser(sqlrconnection *sqlrcon,
 						sqlrcursor *sqlrcur,
 						sqlrshenv *env);
@@ -1048,7 +1049,7 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"noelapsed",9) ||
 		!charstring::compareIgnoringCase(ptr,"nextresultset",13) ||
 		!charstring::compareIgnoringCase(ptr,"quiet",5) ||
-		!charstring::compareIgnoringCase(ptr,"help") ||
+		!charstring::compareIgnoringCase(ptr,"help",4) ||
 		!charstring::compareIgnoringCase(ptr,"ping") ||
 		!charstring::compareIgnoringCase(ptr,"identify") ||
 		!charstring::compareIgnoringCase(ptr,"dbversion") ||
@@ -1216,10 +1217,17 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"quiet",5)) {
 		ptr=ptr+5;
 		cmdtype=17;
-	} else if (!charstring::compareIgnoringCase(ptr,"help")) {	
-		displayHelp(env);
+	} else if (!charstring::compareIgnoringCase(ptr,"help",4)) {
+		char	*arg=charstring::duplicate(ptr+4);
+		charstring::bothTrim(arg);
+		if (!charstring::compareIgnoringCase(arg,"brief")) {
+			displayBriefHelp(env);
+		} else {
+			displayHelp(env);
+		}
+		delete[] arg;
 		return true;
-	} else if (!charstring::compareIgnoringCase(ptr,"ping")) {	
+	} else if (!charstring::compareIgnoringCase(ptr,"ping")) {
 		return ping(sqlrcon,env);
 	} else if (!charstring::compareIgnoringCase(ptr,"use ",4)) {	
 		if (!sqlrcon->selectDatabase(ptr+4)) {
@@ -5610,6 +5618,40 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 	stdoutput.printf(
 "    All commands must be followed by the delimiter: %c\n\n",
 								env->delimiter);
+}
+
+void sqlrsh::displayBriefHelp(sqlrshenv *env) {
+
+	// same reasoning as displayHelp() - write, not printf, to avoid
+	// printf misreading patterns like 'a%' as conversions
+	stdoutput.write(
+"\n"
+"  To run a query, type it at the prompt, followed by the delimiter.  A\n"
+"  query may be split over as many lines as it takes.  Everything below is\n"
+"  a command, and ends with the delimiter too.\n"
+"\n"
+"    format plain|csv|json|jsonl\n"
+"                            sets the output format\n"
+"    quiet on|off            shorthand - quiet on turns headers and stats\n"
+"                            off, quiet off turns them back on\n"
+"    nullsasnulls on|off     gets nulls as nulls, rather than as empty\n"
+"                            strings\n"
+"    continueonerror on|off  carries on past a statement that failed,\n"
+"                            rather than stopping at the first one\n"
+"    show tables [like 'pattern']\n"
+"                            lists the tables\n"
+"    describe [table]        the column metadata of a table\n"
+"    exit                    exits\n"
+"    quit                    same as exit\n"
+"    help                    the full command list\n"
+"\n"
+"    A command that sets something writes nothing when it works.  A\n"
+"    command that fails writes to stderr and, in a script or a -command\n"
+"    list, stops the run and exits 4.\n"
+"\n"
+"    Run \"sqlrsh -help\" for the command line options, the output formats,\n"
+"    and the exit codes.\n"
+"\n");
 }
 
 void sqlrsh::startupMessage(sqlrshenv *env, const char *host,

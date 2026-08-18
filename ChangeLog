@@ -161,6 +161,8 @@
 		-nullsasnulls on -continueonerror on
 	added -batch to sqlrsh, for reading piped-in commands with no banner
 		or prompts, counting failures like -script and -command do
+	added "help brief" to sqlrsh, a shorter, curated command reference
+		alongside the existing full "help"
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
