@@ -16,6 +16,7 @@
 * [#commands Commands]
 * [#exitcodes Exit Codes]
 * [#files The RC File and the History File]
+* [#environment Environment Variables]
 
 '''sqlrsh''' is the SQL Relay command line database shell.  It is similar to sqlplus, mysql, psql and isql.
 
@@ -46,7 +47,7 @@ The options are:
 [-script SCRIPT | -command COMMANDS | -query QUERY]
 [-batch] [-agent] [-format (plain|csv|json|jsonl)]
 [-quiet (on|off)] [-headers (on|off)] [-divider (on|off)]
-[-vertical (on|off)]
+[-vertical (on|off)] [-pager (on|off)]
 [-stats (on|off)] [-noelapsed (on|off)]
 [-fieldsas (raw|number|boolean|date)] [-getasnumber (on|off)]
 [-nextresultset (on|off)] [-lazyfetch (on|off)] [-txqueries (on|off)]
@@ -237,6 +238,7 @@ If the instance's password is encrypted, sqlrsh decrypts it with the module name
 * '''-headers''' on|off - write the column names above the result set.  plain format only.  Defaults to on.
 * '''-divider''' on|off - write a line of = signs under the column names.  plain format only.  Defaults to on.
 * '''-vertical''' on|off - write one column per line, labeled with the column name, instead of one row per line.  plain format only.  Defaults to off.
+* '''-pager''' on|off - pipe the output through a pager ($PAGER, else less, else more) in an interactive session.  plain format only.  Defaults to off.
 * '''-stats''' on|off - write the statistics after the result set.  plain writes a block of labels, json and jsonl carry the same numbers inside the document, and csv has no statistics at all.  Defaults to on.
 * '''-noelapsed''' on|off - leave the elapsed time out of the statistics.  Defaults to off.
 * '''-fieldsas''' raw|number|boolean|date - fetch each field with the matching getFieldAs method, where the column suits it.  Defaults to raw, the field as the database sent it.  See [#fieldsas Fetching Fields As A Type].
@@ -325,7 +327,7 @@ id descr         price
 }}}
 }}}
 
-A null is written as the word NULL, which cannot be told apart from the four character string NULL.  -headers, -divider, -vertical and the statistics block are this format only.
+A null is written as the word NULL, which cannot be told apart from the four character string NULL.  -headers, -divider, -vertical, -pager and the statistics block are this format only.
 
 === csv ===
 
@@ -470,6 +472,7 @@ To run a query, type it and end it with the delimiter.  Everything below is a co
 * '''headers''' on|off - the column names above the result set.  plain format only.
 * '''divider''' on|off - the line of = signs under the column names.  plain format only.
 * '''vertical''' on|off - one column per line, labeled with the column name, instead of one row per line.  plain format only.
+* '''pager''' on|off - pipe the output through a pager ($PAGER, else less, else more) in an interactive session.  plain format only.
 * '''stats''' on|off - the statistics below the result set
 * '''quiet''' on|off - shorthand.  quiet on turns headers and stats off, quiet off turns them back on.
 * '''noelapsed''' on|off - leaves the elapsed time out of the statistics
@@ -741,6 +744,11 @@ columncase lower;
 }}}
 
 sqlrsh also keeps a history file, .sqlrsh_history in your home directory.  It holds the last 100 lines typed at the prompt.
+
+[=#environment]
+== Environment Variables ==
+
+'''PAGER''' names the program used when -pager or pager is on: $PAGER if it names something that can actually be run, else less, else more.  Users who want to customize less's own behavior (search highlighting, line wrapping, and so on) may want to set '''LESS''' as well; sqlrsh does not set it.
 
 {{{#!include ../contentend.html}}}
 

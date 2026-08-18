@@ -30,6 +30,10 @@
 #include <defines.h>
 #include <version.h>
 #include <math.h>
+#ifndef _WIN32
+	#include <sys/types.h>
+	#include <unistd.h>
+#endif
 
 class sqlrshbindvalue {
 	public:
@@ -262,6 +266,10 @@ class sqlrshenv {
 		bool		divider;
 		// display each row one column per line, plain format only
 		bool		vertical;
+		// pipe output through a pager, plain format only
+		bool		pager;
+		// true when running as a genuine interactive REPL
+		bool		interactive;
 		bool		stats;
 		uint64_t	rsbs;
 		bool		final;
@@ -302,6 +310,8 @@ sqlrshenv::sqlrshenv() {
 	headers=true;
 	divider=true;
 	vertical=false;
+	pager=false;
+	interactive=false;
 	stats=true;
 	rsbs=100;
 	final=false;
@@ -531,6 +541,27 @@ class	sqlrsh {
 		// result set the cursor is holding
 		void	displayCurrentResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
+		// resolves the pager to run: $PAGER if it names something
+		// runnable, else "less" if runnable, else "more" if runnable.
+		// Returns NULL if none of those are runnable.  The caller
+		// owns what it returns and has to delete[] it.
+		char	*resolvePager();
+		// returns true if a result set should currently be piped
+		// through a pager: the "pager" setting is on, the session is
+		// a genuine interactive one, plain format is in use, and
+		// stdout is a terminal
+		bool	shouldPage(sqlrshenv *env);
+		// if shouldPage() says a pager should run, forks one and
+		// redirects fd 1 (which stdoutput writes through) to its
+		// stdin for the duration of one command's output.  Safe to
+		// call when a pager shouldn't run - it's a no-op then.
+		// Returns true if a pager was started.
+		bool	startPager(sqlrshenv *env);
+		// restores fd 1 and waits for the pager to exit, if one is
+		// running.  Safe (and a no-op) to call when no pager is
+		// running - callers should call it unconditionally after a
+		// call to startPager(), whatever startPager() returned.
+		void	stopPager();
 		// writes every piece of column metadata the client api
 		// reports about the current result set
 		void	columninfo(sqlrcursor *sqlrcur,
@@ -722,11 +753,19 @@ class	sqlrsh {
 		datetime	start;
 
 		prompt		pr;
+
+		// the pager that's currently running, or -1 if none is
+		pid_t		pagerpid;
+		// a private copy of fd 1 from before it was pointed at the
+		// pager, or -1 if fd 1 isn't currently redirected
+		int32_t		savedstdout;
 };
 
 sqlrsh::sqlrsh() {
 	cmdline=NULL;
 	sqlrpth=NULL;
+	pagerpid=-1;
+	savedstdout=-1;
 }
 
 sqlrsh::~sqlrsh() {
@@ -1048,6 +1087,7 @@ int sqlrsh::commandType(const char *command) {
 	if (!charstring::compareIgnoringCase(ptr,"headers",7) ||
 		!charstring::compareIgnoringCase(ptr,"divider",7) ||
 		!charstring::compareIgnoringCase(ptr,"vertical",8) ||
+		!charstring::compareIgnoringCase(ptr,"pager",5) ||
 		!charstring::compareIgnoringCase(ptr,"stats",5) ||
 		!charstring::compareIgnoringCase(ptr,"format",6) ||
 		!charstring::compareIgnoringCase(ptr,"debug",5) ||
@@ -1198,6 +1238,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"vertical",8)) {
 		ptr=ptr+8;
 		cmdtype=20;
+	} else if (!charstring::compareIgnoringCase(ptr,"pager",5)) {
+		ptr=ptr+5;
+		cmdtype=21;
 	} else if (!charstring::compareIgnoringCase(ptr,"stats",5)) {
 		ptr=ptr+5;
 		cmdtype=3;
@@ -1698,6 +1741,9 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 			break;
 		case 20:
 			env->vertical=toggle;
+			break;
+		case 21:
+			env->pager=toggle;
 			break;
 		case 3:
 			env->stats=toggle;
@@ -2224,6 +2270,9 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 
 		} else if (env->nextresultset) {
 
+			// page the output, if a pager is called for
+			startPager(env);
+
 			do {
 
 				// display the header
@@ -2244,6 +2293,9 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 
 		} else {
 
+			// page the output, if a pager is called for
+			startPager(env);
+
 			// display the header
 			displayHeader(sqlrcur,env);
 
@@ -2258,6 +2310,8 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 
 	// display statistics
 	displayStats(sqlrcur,env);
+
+	stopPager();
 
 	return retval;
 }
@@ -3466,9 +3520,168 @@ void sqlrsh::jsonWriteStats(sqlrcursor *sqlrcur, sqlrshenv *env) {
 }
 
 void sqlrsh::displayCurrentResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
+	startPager(env);
 	displayHeader(sqlrcur,env);
 	displayResultSet(sqlrcur,env);
 	displayStats(sqlrcur,env);
+	stopPager();
+}
+
+// looks "name" up in each directory of $PATH and returns the first one that's
+// executable, or NULL if none of them are.  The caller owns what it returns.
+static char *findInPath(const char *name) {
+
+	const char	*path=environment::getValue("PATH");
+	if (charstring::isNullOrEmpty(path)) {
+		return NULL;
+	}
+
+	char		**dirs=NULL;
+	uint64_t	dircount=0;
+	charstring::split(path,":",true,&dirs,&dircount);
+
+	char	*retval=NULL;
+	for (uint64_t i=0; i<dircount; i++) {
+		if (!retval && !charstring::isNullOrEmpty(dirs[i])) {
+			stringbuffer	fn;
+			fn.append(dirs[i])->append('/')->append(name);
+			if (file::isExecutable(fn.getString())) {
+				retval=fn.detachString();
+			}
+		}
+		delete[] dirs[i];
+	}
+	delete[] dirs;
+
+	return retval;
+}
+
+char *sqlrsh::resolvePager() {
+
+	// $PAGER wins, if it names something that can actually be run
+	const char	*pager=environment::getValue("PAGER");
+	if (!charstring::isNullOrEmpty(pager)) {
+		if (pager[0]=='/') {
+			// an absolute path isn't searched for
+			if (file::isExecutable(pager)) {
+				return charstring::duplicate(pager);
+			}
+		} else {
+			char	*resolved=findInPath(pager);
+			if (resolved) {
+				return resolved;
+			}
+		}
+	}
+
+	// fall back to the usual pagers
+	char	*resolved=findInPath("less");
+	if (resolved) {
+		return resolved;
+	}
+	return findInPath("more");
+}
+
+bool sqlrsh::shouldPage(sqlrshenv *env) {
+	#ifndef _WIN32
+	return env->pager && env->interactive &&
+			env->format==SQLRSH_FORMAT_PLAIN &&
+			isatty(1);
+	#else
+	return false;
+	#endif
+}
+
+bool sqlrsh::startPager(sqlrshenv *env) {
+
+	if (!shouldPage(env)) {
+		return false;
+	}
+
+	// no pager to run - fall back to unpaged output rather than erroring
+	char	*pagerprog=resolvePager();
+	if (!pagerprog) {
+		return false;
+	}
+
+	if (!process::supportsFork()) {
+		delete[] pagerprog;
+		return false;
+	}
+
+	filedescriptor	readfd;
+	filedescriptor	writefd;
+	if (!filedescriptor::createPipe(&readfd,&writefd)) {
+		delete[] pagerprog;
+		return false;
+	}
+
+	// keep a copy of fd 1 to put back when the pager exits
+	savedstdout=stdoutput.duplicate();
+	if (savedstdout==-1) {
+		readfd.close();
+		writefd.close();
+		delete[] pagerprog;
+		return false;
+	}
+
+	pid_t	pid=process::fork();
+	if (pid==-1) {
+
+		filedescriptor	saved;
+		saved.setFileDescriptor(savedstdout);
+		saved.close();
+		savedstdout=-1;
+		readfd.close();
+		writefd.close();
+		delete[] pagerprog;
+		return false;
+
+	} else if (!pid) {
+
+		// child - read the pipe as stdin and run the pager
+		writefd.close();
+		if (readfd.getFileDescriptor()!=0) {
+			readfd.duplicate(0);
+			readfd.close();
+		}
+		const char	*args[2];
+		args[0]=pagerprog;
+		args[1]=NULL;
+		process::exec(pagerprog,args);
+
+		// only gets here if the exec failed
+		process::exitImmediately(127);
+	}
+
+	// parent - write to the pipe instead of to fd 1
+	readfd.close();
+	writefd.duplicate(1);
+	writefd.close();
+	pagerpid=pid;
+	delete[] pagerprog;
+	return true;
+}
+
+void sqlrsh::stopPager() {
+
+	if (pagerpid==-1) {
+		return;
+	}
+
+	stdoutput.flushWriteBuffer(-1,-1);
+
+	// Put fd 1 back.  That closes the write end of the pipe too, which is
+	// what gives the pager EOF, so it has to happen before waiting for
+	// the pager to exit.
+	filedescriptor	saved;
+	saved.setFileDescriptor(savedstdout);
+	saved.duplicate(1);
+	saved.close();
+	savedstdout=-1;
+
+	process::wait(pagerpid);
+	pagerpid=-1;
 }
 
 // everything the client api reports about one column of a result set
@@ -5417,6 +5630,9 @@ bool sqlrsh::openCache(sqlrshenv *env,
 		return false;
 	}
 
+	// page the output, if a pager is called for
+	startPager(env);
+
 	// display the header
 	displayHeader(sqlrcur,env);
 
@@ -5425,6 +5641,8 @@ bool sqlrsh::openCache(sqlrshenv *env,
 
 	// display statistics
 	displayStats(sqlrcur,env);
+
+	stopPager();
 
 	return true;
 }
@@ -5468,6 +5686,10 @@ static const sqlrshhelpentry sqlrshhelpcatalog[]={
 	{"vertical","on|off",
 		"one column per line, labeled with the column name, "
 		"instead of one row per line (plain format only)"},
+	{"pager","on|off",
+		"pipe the output through a pager ($PAGER, else less, "
+		"else more) in an interactive session (plain format "
+		"only)"},
 	{"stats","on|off","the statistics below the result set"},
 	{"quiet","on|off",
 		"shorthand - quiet on turns headers and stats off, "
@@ -5733,6 +5955,9 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    vertical on|off         one column per line, labeled with the\n"
 "                            column name, instead of one row per line\n"
 "                            (plain format only)\n"
+"    pager on|off            pipe the output through a pager ($PAGER,\n"
+"                            else less, else more) in an interactive\n"
+"                            session (plain format only)\n"
 "    stats on|off            the statistics below the result set\n"
 "    quiet on|off            shorthand - quiet on turns headers and stats\n"
 "                            off, quiet off turns them back on\n"
@@ -6249,7 +6474,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"[-format (plain|csv|json|jsonl)]\n"
 			"        [-quiet (on|off)] [-headers (on|off)] "
 			"[-divider (on|off)]\n"
-			"        [-vertical (on|off)]\n"
+			"        [-vertical (on|off)] [-pager (on|off)]\n"
 			"        [-stats (on|off)] [-noelapsed (on|off)]\n"
 			"        [-fieldsas (raw|number|boolean|date)]\n"
 			"        [-getasnumber (on|off)] "
@@ -6491,6 +6716,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	env.headers=onOffOption("headers",env.headers);
 	env.divider=onOffOption("divider",env.divider);
 	env.vertical=onOffOption("vertical",env.vertical);
+	env.pager=onOffOption("pager",env.pager);
 	env.stats=onOffOption("stats",env.stats);
 	env.lazyfetch=onOffOption("lazyfetch",env.lazyfetch);
 	env.txqueries=onOffOption("txqueries",env.txqueries);
@@ -6606,6 +6832,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		// batch, so a failed query at the prompt still isn't a failed
 		// run there)
 		env.batch=cmdline->isFound("batch");
+		env.interactive=!env.batch;
 		startupMessage(&env,host,port,user);
 		interactWithUser(&sqlrcon,&sqlrcur,&env);
 		if (env.batch) {
@@ -6691,6 +6918,10 @@ static void helpmessage(const char *progname) {
 		"	-vertical on|off	Write one column per line, labeled with the\n"
 		"				column name, instead of one row per line.\n"
 		"				plain format only.  Defaults to off.\n"
+		"\n"
+		"	-pager on|off		Pipe the output through a pager ($PAGER,\n"
+		"				else less, else more) in an interactive\n"
+		"				session.  plain format only.  Defaults to off.\n"
 		"\n"
 		"	-stats on|off		Write the statistics after the result set.\n"
 		"				plain writes a block of labels, json and jsonl\n"
@@ -6793,8 +7024,8 @@ static void helpmessage(const char *progname) {
 		"	a line of = signs goes under the names, and a block of tab indented\n"
 		"	labels goes under the rows.  A null is written as the word NULL,\n"
 		"	which is indistinguishable from the four character string NULL.\n"
-		"	-headers, -divider, -vertical and the statistics block are this\n"
-		"	format only.\n"
+		"	-headers, -divider, -vertical, -pager and the statistics block\n"
+		"	are this format only.\n"
 		"\n"
 		"csv	One header row of column names, then one row per row of the result\n"
 		"	set, and nothing else.  The header row is always written, whatever\n"

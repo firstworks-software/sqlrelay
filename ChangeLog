@@ -168,6 +168,8 @@
 	added "vertical" to sqlrsh, a plain-format display mode that prints
 		one column per line, labeled with the column name, for
 		result sets too wide for the table layout
+	added "pager" to sqlrsh, which pipes plain-format result sets through
+		$PAGER, less or more during an interactive session
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

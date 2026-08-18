@@ -215,6 +215,11 @@ Write one column per line, labeled with the column
 name, instead of one row per line.
 plain format only.  Defaults to off.
 .TP
+\fB\-pager\fR on|off
+Pipe the output through a pager ($PAGER, else less,
+else more) in an interactive session.
+plain format only.  Defaults to off.
+.TP
 \fB\-stats\fR on|off
 Write the statistics after the result set.
 plain writes a block of labels, json and jsonl
@@ -329,7 +334,8 @@ Columns are space padded, the column names go above the result set, a line of
 = signs goes under the names, and a block of tab indented labels goes under the
 rows.  A null is written as the word NULL, which is indistinguishable from the
 four character string NULL.  \fB\-headers\fR, \fB\-divider\fR,
-\fB\-vertical\fR and the statistics block apply to this format only.
+\fB\-vertical\fR, \fB\-pager\fR and the statistics block apply to this
+format only.
 .SS csv
 One header row of column names, then one row per row of the result set, and
 nothing else.  The header row is always written, whatever \fB\-headers\fR says,
@@ -501,6 +507,10 @@ The line of = signs under the column names.  plain format only.
 vertical on|off
 One column per line, labeled with the column name, instead of one row
 per line.  plain format only.
+.TP
+pager on|off
+Pipe the output through a pager ($PAGER, else less, else more) in an
+interactive session.  plain format only.
 .TP
 stats on|off
 The statistics after the result set.
@@ -990,6 +1000,14 @@ exit status.
 .TP
 ~/.sqlrsh_history
 The last 100 lines typed at the prompt.
+.SH ENVIRONMENT
+.TP
+PAGER
+The program used when \fB\-pager\fR or \fBpager\fR is on: $PAGER if it
+names something that can actually be run, else \fBless\fR, else \fBmore\fR.
+Users who want to customize \fBless\fR's own behavior (search
+highlighting, line wrapping, and so on) may want to set \fBLESS\fR as
+well; sqlrsh does not set it.
 .SH EXAMPLES
 Interactive session with server at svr:9000 as usr/pwd.
 .IP
