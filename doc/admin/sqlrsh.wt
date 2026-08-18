@@ -43,7 +43,7 @@ The options are:
 [-tls] [-tlsversion VERSION] [-tlscert CERTFILE] [-tlspassword PASSWORD]
 [-tlsciphers CIPHERLIST] [-tlsvalidate (no|ca|ca+domain|ca+host)]
 [-tlsca CA] [-tlsdepth DEPTH]
-[-script SCRIPT | -command COMMANDS]
+[-script SCRIPT | -command COMMANDS | -query QUERY]
 [-format (plain|csv|json|jsonl)]
 [-quiet (on|off)] [-headers (on|off)] [-divider (on|off)]
 [-stats (on|off)] [-noelapsed (on|off)]
@@ -66,7 +66,7 @@ Two more options end the run right away, and each has to be the only option on t
 [=#interactive]
 == Interactive Use ==
 
-Run sqlrsh with no -script and no -command and it writes a banner, then a prompt, and reads a query or a command.
+Run sqlrsh with no -script, no -command and no -query and it writes a banner, then a prompt, and reads a query or a command.
 
 {{{#!blockquote
 {{{
@@ -102,12 +102,13 @@ An interactive session always exits 0, even when a query at the prompt failed.  
 [=#noninteractive]
 == Non-Interactive Use ==
 
-This is how a script, a cron job or an AI agent uses sqlrsh.  There are two ways in:
+This is how a script, a cron job or an AI agent uses sqlrsh.  There are three ways in:
 
 * '''-command''' COMMANDS - runs the string and exits.  The string may hold one query or command, or a list of them, each ending in the delimiter.
 * '''-script''' SCRIPT - runs the file and exits.  The file may hold any queries or commands, each ending in the delimiter.
+* '''-query''' QUERY - runs the string as one query and exits.  The whole string is the query, so an embedded delimiter runs to the database as part of it, rather than splitting or truncating the statement.  Best for a query built by another program, which should not have to know sqlrsh has a delimiter at all.
 
-Both accept anything that could be typed at the prompt.  A query and a command are the same thing to sqlrsh.
+-command and -script accept anything that could be typed at the prompt.  A query and a command are the same thing to sqlrsh, and -query runs either, taking the entire argument as one statement, without scanning it for the delimiter.
 
 Four things make a non-interactive run predictable:
 
@@ -199,6 +200,7 @@ If the instance's password is encrypted, sqlrsh decrypts it with the module name
 
 * '''-script''' FILENAME - runs the given file, which holds commands or queries that could otherwise be run at the prompt
 * '''-command''' COMMANDS - runs the given string, which holds commands or queries that could otherwise be run at the prompt
+* '''-query''' QUERY - runs the given string as exactly one query, never scanning it for the delimiter, so an embedded delimiter cannot split or truncate it.  Trailing whitespace and one trailing delimiter, if present, are trimmed as a courtesy, not a requirement.
 * '''-delimiter''' CHAR - end each command or query with the given character.  Defaults to a semicolon.  -delimeter is accepted as a spelling of it.  Unlike the delimiter command, the option does not echo the character back.
 * '''-continueonerror''' on|off - carry on past a statement that failed, rather than stopping at the first one.  Defaults to off.
 

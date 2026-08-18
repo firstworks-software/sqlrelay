@@ -24,7 +24,8 @@ Without one of them, sqlrsh writes a usage message and exits 1.
 .PP
 Interactively, sqlrsh writes a banner, then a prompt, and reads a query or a
 command.  Non\-interactively, it runs the queries and commands in the string
-given to \fB\-command\fR or in the file named by \fB\-script\fR, and exits.
+given to \fB\-command\fR, the single query given to \fB\-query\fR, or in the
+file named by \fB\-script\fR, and exits.
 .PP
 Everything ends with the delimiter, which is a semicolon unless
 \fB\-delimiter\fR or the delimiter command changes it.  A query may be split
@@ -148,6 +149,14 @@ sqlrsh prompt.
 Run the provided string which contains commands
 or queries that could otherwise be run at the
 sqlrsh prompt.
+.TP
+\fB\-query\fR "query"
+Run the provided string as a single SQL statement.
+Unlike \fB\-command\fR, the string is never scanned
+for the delimiter, so an embedded, unquoted
+delimiter character can't split or truncate it.
+A trailing delimiter, if present, is trimmed along
+with trailing whitespace, but neither is required.
 .TP
 \fB\-delimiter\fR char
 End each command or query with the specified

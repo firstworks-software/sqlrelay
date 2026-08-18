@@ -5723,6 +5723,7 @@ static const char * const	valueoptions[]={
 	"bindvariabledelimiters",
 	"script",
 	"command",
+	"query",
 	"delimiter",
 	"delimeter",
 	"format",
@@ -5783,7 +5784,8 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	const char	*localeargument=cmdline->getValue("locale");
 	const char	*script=cmdline->getValue("script");
 	const char	*command=cmdline->getValue("command");
-	
+	const char	*query=cmdline->getValue("query");
+
 	// at least id, host, or socket is required
 	if (charstring::isNullOrEmpty(id) &&
 		charstring::isNullOrEmpty(host) &&
@@ -6128,6 +6130,20 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			exitcode=SQLRSH_EXIT_QUERY;
 		}
 		reportErrorCount(&env,&exitcode);
+	} else if (!charstring::isNullOrEmpty(query)) {
+		// if a query was specified, run it as a single statement
+		// (no delimiter scan, so an embedded delimiter can't split it,
+		// but a trailing one has to come off)
+		char	*trimmedquery=charstring::duplicate(query);
+		charstring::rightTrim(trimmedquery);
+		size_t	querylen=charstring::getLength(trimmedquery);
+		if (querylen && trimmedquery[querylen-1]==env.delimiter) {
+			trimmedquery[querylen-1]='\0';
+		}
+		if (!runCommand(&sqlrcon,&sqlrcur,&env,trimmedquery,NULL)) {
+			exitcode=SQLRSH_EXIT_QUERY;
+		}
+		delete[] trimmedquery;
 	} else {
 		// otherwise go into interactive mode
 		// (an interactive session isn't a batch, so a failed query at
@@ -6164,6 +6180,11 @@ static void helpmessage(const char *progname) {
 		"	-command \"commands\"	Run the provided string which contains commands\n"
 		"				or queries that could otherwise be run at the\n"
 		"				%s prompt.\n"
+		"\n"
+		"	-query \"query\"		Run the provided string as a single statement.\n"
+		"				Unlike -command, the string is not scanned for\n"
+		"				the delimiter character and no trailing\n"
+		"				delimiter is needed.\n"
 		"\n"
 		"	-delimiter char		End each command or query with the specified\n"
 		"				character.  Defaults to a semicolon.\n"
@@ -6462,6 +6483,11 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"	%s -id myinst -command \"select * from mytable\" -quiet -format csv\n"
 		"\n"
+		"Non-interactive session, running a single query with no trailing delimiter\n"
+		"needed.\n"
+		"\n"
+		"	%s -id myinst -query \"select * from mytable\"\n"
+		"\n"
 		"Non-interactive session, one json document per command, on stdout, with\n"
 		"errors on stderr.  nullsasnulls is what makes a null come out as the\n"
 		"json null literal.\n"
@@ -6481,7 +6507,7 @@ static void helpmessage(const char *progname) {
 		progname,SQL_RELAY,progname,progname,progname,
 		progname,progname,progname,progname,
 		progname,progname,progname,progname,progname,
-		progname,progname,progname);
+		progname,progname,progname,progname);
 }
 
 int main(int argc, const char **argv) {

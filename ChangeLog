@@ -155,6 +155,8 @@
 	moved the oracle protocol module's length-prefixed integer read/write
 		into sqlrprotocol as readLenPreInt()/writeLenPreInt(), next to
 		readBerEncInt()/writeBerEncInt()
+	added -query to sqlrsh, for running a single sql statement, with no
+		delimiter scan
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
