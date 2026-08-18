@@ -44,7 +44,7 @@ The options are:
 [-tlsciphers CIPHERLIST] [-tlsvalidate (no|ca|ca+domain|ca+host)]
 [-tlsca CA] [-tlsdepth DEPTH]
 [-script SCRIPT | -command COMMANDS | -query QUERY]
-[-format (plain|csv|json|jsonl)]
+[-agent] [-format (plain|csv|json|jsonl)]
 [-quiet (on|off)] [-headers (on|off)] [-divider (on|off)]
 [-stats (on|off)] [-noelapsed (on|off)]
 [-fieldsas (raw|number|boolean|date)] [-getasnumber (on|off)]
@@ -117,6 +117,8 @@ Four things make a non-interactive run predictable:
 * '''-format csv|json|jsonl''' - gives output that another program can read.  json and jsonl also carry the column types, and write the banner and the prompt nowhere at all.
 * '''-continueonerror on''' - runs every statement, rather than stopping at the first one that failed.
 
+'''-agent''' turns all four of the above on at once - -quiet, -format jsonl, -nullsasnulls on and -continueonerror on - the settings a script or an AI agent wants for output that's quiet, one json object per line, nulls distinguishable from empty strings, and a run that keeps going past a failed statement.  Anything set explicitly alongside it, such as -format csv, still wins.
+
 Errors go to stderr and rows go to stdout, so the two can be redirected apart.
 
 Some examples.  Run one query and get csv on stdout:
@@ -159,6 +161,14 @@ sqlrsh -id myinst -continueonerror on -script ./script.sql 2&gt; errors.txt
 }}}
 }}}
 
+Run a script with the machine-readable preset, in one switch:
+
+{{{#!blockquote
+{{{
+sqlrsh -id myinst -agent -script ./script.sql
+}}}
+}}}
+
 [=#options]
 == Command Line Options ==
 
@@ -195,6 +205,10 @@ If the instance's password is encrypted, sqlrsh decrypts it with the module name
  * '''ca+domain''' - do the ca check, and also check that the domain name of one of those names matches the domain name of the host.  Falls back to ca when a unix socket is used.
 * '''-tlsca''' FILE - the certificate authority file to validate the server's certificate against.  A directory means every certificate authority file in it.
 * '''-tlsdepth''' DEPTH - the maximum certificate chain validation depth
+
+=== Presets ===
+
+* '''-agent''' - shorthand for -quiet -format jsonl -nullsasnulls on -continueonerror on: the settings a script or an AI agent wants for output that's quiet, one json object per line, nulls distinguishable from empty strings, and a run that keeps going past a failed statement.  Anything set explicitly alongside it, such as -format csv, still wins.
 
 === Command Options ===
 

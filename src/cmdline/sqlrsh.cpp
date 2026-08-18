@@ -5811,7 +5811,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			"\n"
 			" options:\n"
 			"        [-script script | -command commands]\n"
-			"        [-format (plain|csv|json|jsonl)]\n"
+			"        [-agent] [-format (plain|csv|json|jsonl)]\n"
 			"        [-quiet (on|off)] [-headers (on|off)] "
 			"[-divider (on|off)]\n"
 			"        [-stats (on|off)] [-noelapsed (on|off)]\n"
@@ -5993,6 +5993,19 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	// set up an sqlrshenv
 	sqlrshenv	env;
 
+	// -agent is shorthand for the settings a script or agent wants:
+	// quiet, format jsonl, nullsasnulls on and continueonerror on.  It
+	// runs first, so any of those given explicitly still win, the same
+	// way -quiet's shorthand does relative to -headers and -stats below.
+	bool	agentnullsasnulls=false;
+	if (cmdline->isFound("agent")) {
+		env.headers=false;
+		env.stats=false;
+		env.format=SQLRSH_FORMAT_JSONL;
+		env.continueonerror=true;
+		agentnullsasnulls=true;
+	}
+
 	// quiet runs before the others, so an explicit -headers or -stats
 	// wins over the shorthand
 	if (cmdline->isFound("quiet")) {
@@ -6052,13 +6065,15 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 
 	// handle nullsasnulls
 	// (the client library hands back empty strings unless it's told
-	// otherwise, so only an explicit option changes it)
+	// otherwise, so only an explicit option, or -agent, changes it)
 	if (cmdline->isFound("nullsasnulls")) {
 		if (onOffOption("nullsasnulls",false)) {
 			sqlrcur.getNullsAsNulls();
 		} else {
 			sqlrcur.getNullsAsEmptyStrings();
 		}
+	} else if (agentnullsasnulls) {
+		sqlrcur.getNullsAsNulls();
 	}
 
 	// handle the delimiter
@@ -6171,6 +6186,15 @@ static void helpmessage(const char *progname) {
 		"Options:\n"
 		"\n"
 		CONNECTIONOPTIONS
+		"\n"
+		"Presets:\n"
+		"	-agent			Shorthand for -quiet -format jsonl -nullsasnulls on\n"
+		"				-continueonerror on: the settings a script or an\n"
+		"				agent wants for output that's quiet, one json\n"
+		"				object per line, nulls distinguishable from empty\n"
+		"				strings, and a run that keeps going past a failed\n"
+		"				statement.  Any of those given explicitly, such as\n"
+		"				-format csv, still wins.\n"
 		"\n"
 		"Command options:\n"
 		"	-script filename	Run the specified script which contains	commands\n"
@@ -6500,6 +6524,11 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"	%s -id myinst -format jsonl -command \"select * from mybigtable\" | myreader\n"
 		"\n"
+		"Non-interactive session, the machine-readable preset, running a script\n"
+		"that keeps going past a failed statement.\n"
+		"\n"
+		"	%s -id myinst -agent -script ./script.sql\n"
+		"\n"
 		"Non-interactive session, checking the exit code.\n"
 		"\n"
 		"	%s -id myinst -script ./script.sql || echo \"failed with $?\"\n"
@@ -6507,7 +6536,7 @@ static void helpmessage(const char *progname) {
 		progname,SQL_RELAY,progname,progname,progname,
 		progname,progname,progname,progname,
 		progname,progname,progname,progname,progname,
-		progname,progname,progname,progname);
+		progname,progname,progname,progname,progname);
 }
 
 int main(int argc, const char **argv) {

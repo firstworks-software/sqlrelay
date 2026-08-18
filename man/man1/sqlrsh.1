@@ -138,6 +138,16 @@ certificate.
 \fB\-tlsdepth\fR depth
 Set the maximum certificate chain validation
 depth to the specified depth.
+.SS "Presets:"
+.TP
+\fB\-agent\fR
+Shorthand for \fB\-quiet\fR \fB\-format\fR jsonl
+\fB\-nullsasnulls\fR on \fB\-continueonerror\fR on: the
+settings a script or an agent wants for output that's
+quiet, one json object per line, nulls distinguishable
+from empty strings, and a run that keeps going past a
+failed statement.  Any of those given explicitly, such
+as \fB\-format\fR csv, still wins.
 .SS "Command options:"
 .TP
 \fB\-script\fR filename
