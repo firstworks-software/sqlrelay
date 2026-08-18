@@ -290,6 +290,10 @@ class sqlrshenv {
 		// the number of statements that failed in the script or the
 		// -command list
 		uint64_t	errorcount;
+		// stdin piped in with no -script, -command or -query: no
+		// banner, no prompts, and a failed statement counts like one
+		// does in -script or -command
+		bool		batch;
 };
 
 sqlrshenv::sqlrshenv() {
@@ -311,6 +315,7 @@ sqlrshenv::sqlrshenv() {
 	txqueries=false;
 	continueonerror=false;
 	errorcount=0;
+	batch=false;
 	inputbinds.setManageArrayKeys(true);
 	outputbinds.setManageArrayKeys(true);
 	inputoutputbinds.setManageArrayKeys(true);
@@ -5610,6 +5615,11 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 void sqlrsh::startupMessage(sqlrshenv *env, const char *host,
 					uint16_t port, const char *user) {
 
+	// no banner in batch mode - it would land in the piped-out data
+	if (env->batch) {
+		return;
+	}
+
 	// no banner for json or jsonl - a greeting isn't part of either
 	switch (env->format) {
 		case SQLRSH_FORMAT_PLAIN:
@@ -5650,16 +5660,19 @@ void sqlrsh::interactWithUser(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 		while (!done) {
 
 			// The prompt is written to the same stream the
-			// output goes to, so json and jsonl don't get one.
-			switch (env->format) {
-				case SQLRSH_FORMAT_PLAIN:
-				case SQLRSH_FORMAT_CSV:
-					prmpt.append(promptcount);
-					prmpt.append("> ");
-					break;
-				case SQLRSH_FORMAT_JSON:
-				case SQLRSH_FORMAT_JSONL:
-					break;
+			// output goes to, so json and jsonl don't get one,
+			// and neither does batch mode, for the same reason.
+			if (!env->batch) {
+				switch (env->format) {
+					case SQLRSH_FORMAT_PLAIN:
+					case SQLRSH_FORMAT_CSV:
+						prmpt.append(promptcount);
+						prmpt.append("> ");
+						break;
+					case SQLRSH_FORMAT_JSON:
+					case SQLRSH_FORMAT_JSONL:
+						break;
+				}
 			}
 			// an empty stringbuffer can hand back a NULL
 			const char	*promptstring=prmpt.getString();
@@ -5810,8 +5823,10 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 			" %ssh [-config config] -id id [options]\n"
 			"\n"
 			" options:\n"
-			"        [-script script | -command commands]\n"
-			"        [-agent] [-format (plain|csv|json|jsonl)]\n"
+			"        [-script script | -command commands | "
+			"-query query]\n"
+			"        [-batch] [-agent] "
+			"[-format (plain|csv|json|jsonl)]\n"
 			"        [-quiet (on|off)] [-headers (on|off)] "
 			"[-divider (on|off)]\n"
 			"        [-stats (on|off)] [-noelapsed (on|off)]\n"
@@ -6160,11 +6175,20 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		}
 		delete[] trimmedquery;
 	} else {
-		// otherwise go into interactive mode
-		// (an interactive session isn't a batch, so a failed query at
-		// the prompt isn't a failed run)
+		// otherwise read commands from the prompt, same as always,
+		// but a -batch run skips the banner and the prompts, since
+		// they'd land in the piped-out data, and counts failures like
+		// -script and -command do, since a run reading piped-in SQL
+		// is a batch even though it's still reading a command at a
+		// time from stdin (a genuinely interactive session isn't a
+		// batch, so a failed query at the prompt still isn't a failed
+		// run there)
+		env.batch=cmdline->isFound("batch");
 		startupMessage(&env,host,port,user);
 		interactWithUser(&sqlrcon,&sqlrcur,&env);
+		if (env.batch) {
+			reportErrorCount(&env,&exitcode);
+		}
 	}
 
 	// clean up
@@ -6209,6 +6233,15 @@ static void helpmessage(const char *progname) {
 		"				Unlike -command, the string is not scanned for\n"
 		"				the delimiter character and no trailing\n"
 		"				delimiter is needed.\n"
+		"\n"
+		"	-batch			With none of -script, -command or -query given,\n"
+		"				read and run commands from stdin like an\n"
+		"				interactive session, but without the banner or\n"
+		"				the prompts, so piped-in SQL doesn't come back\n"
+		"				mixed in with the output.  Unlike a real\n"
+		"				interactive session, a failed statement counts,\n"
+		"				and the exit code reflects it, the same as\n"
+		"				-script and -command.\n"
 		"\n"
 		"	-delimiter char		End each command or query with the specified\n"
 		"				character.  Defaults to a semicolon.\n"
@@ -6437,8 +6470,9 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"Exit codes:\n"
 		"\n"
-		"0	Success.  An interactive session always exits 0, even if a query at\n"
-		"	the prompt failed.  An interactive session is not a batch.\n"
+		"0	Success.  A genuinely interactive session always exits 0, even if a\n"
+		"	query at the prompt failed - it isn't a batch.  -batch is, so a\n"
+		"	failed statement there is a 4, the same as -script and -command.\n"
 		"\n"
 		"1	Usage error.  A run with no -id, no -host and no -socket, an option\n"
 		"	that takes a value given without one, an unrecognized -format or\n"
@@ -6452,17 +6486,18 @@ static void helpmessage(const char *progname) {
 		"3	Connection or authentication failure.  The connection is checked at\n"
 		"	startup, so this is reported before any command runs, in every mode.\n"
 		"\n"
-		"4	At least one statement in a script or a -command list failed, not\n"
-		"	necessarily all of them.  Without -continueonerror the run stopped\n"
-		"	at that statement, and with it the run went on.\n"
+		"4	At least one statement in a script, a -command list, a -query, or a\n"
+		"	-batch run failed, not necessarily all of them.  Without\n"
+		"	-continueonerror the run stopped at that statement, and with it the\n"
+		"	run went on.\n"
 		"\n"
 		"Continuing past an error:\n"
 		"\n"
-		"-continueonerror, and the continueonerror command, make a script or a\n"
-		"-command list run every statement rather than stopping at the first one\n"
-		"that failed.  A statement rejected before it reached the database and one\n"
-		"the database rejected count the same, and each failed statement still\n"
-		"writes its own error.\n"
+		"-continueonerror, and the continueonerror command, make a script, a\n"
+		"-command list, or a -batch run go through every statement rather than\n"
+		"stopping at the first one that failed.  A statement rejected before it\n"
+		"reached the database and one the database rejected count the same, and\n"
+		"each failed statement still writes its own error.\n"
 		"\n"
 		"A failure that takes the session down with it stops the run anyway, because\n"
 		"the rest of the statements have nothing left to run against.\n"
@@ -6512,6 +6547,12 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"	%s -id myinst -query \"select * from mytable\"\n"
 		"\n"
+		"Non-interactive session, piping commands into stdin, with no banner or\n"
+		"prompts mixed into the output.\n"
+		"\n"
+		"	echo \"select 1;\" | %s -id myinst -batch\n"
+		"	%s -id myinst -batch < script.sql\n"
+		"\n"
 		"Non-interactive session, one json document per command, on stdout, with\n"
 		"errors on stderr.  nullsasnulls is what makes a null come out as the\n"
 		"json null literal.\n"
@@ -6534,9 +6575,10 @@ static void helpmessage(const char *progname) {
 		"	%s -id myinst -script ./script.sql || echo \"failed with $?\"\n"
 		"\n",
 		progname,SQL_RELAY,progname,progname,progname,
-		progname,progname,progname,progname,
 		progname,progname,progname,progname,progname,
-		progname,progname,progname,progname,progname);
+		progname,progname,progname,progname,progname,
+		progname,progname,progname,progname,progname,
+		progname);
 }
 
 int main(int argc, const char **argv) {

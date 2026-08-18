@@ -159,6 +159,8 @@
 		delimiter scan
 	added -agent to sqlrsh, a preset for -quiet -format jsonl
 		-nullsasnulls on -continueonerror on
+	added -batch to sqlrsh, for reading piped-in commands with no banner
+		or prompts, counting failures like -script and -command do
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

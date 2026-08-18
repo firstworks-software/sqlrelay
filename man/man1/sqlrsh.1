@@ -25,7 +25,9 @@ Without one of them, sqlrsh writes a usage message and exits 1.
 Interactively, sqlrsh writes a banner, then a prompt, and reads a query or a
 command.  Non\-interactively, it runs the queries and commands in the string
 given to \fB\-command\fR, the single query given to \fB\-query\fR, or in the
-file named by \fB\-script\fR, and exits.
+file named by \fB\-script\fR, and exits.  With none of those and \fB\-batch\fR
+given, it reads queries and commands from standard input, the same as an
+interactive session, but without the banner or the prompts.
 .PP
 Everything ends with the delimiter, which is a semicolon unless
 \fB\-delimiter\fR or the delimiter command changes it.  A query may be split
@@ -167,6 +169,17 @@ for the delimiter, so an embedded, unquoted
 delimiter character can't split or truncate it.
 A trailing delimiter, if present, is trimmed along
 with trailing whitespace, but neither is required.
+.TP
+\fB\-batch\fR
+With none of \fB\-script\fR, \fB\-command\fR or
+\fB\-query\fR given, read and run commands from
+standard input, the same as an interactive session,
+but without the banner or the prompts, so piped\-in
+SQL doesn't come back mixed in with the output.
+Unlike a real interactive session, a failed
+statement counts, and the exit code reflects it,
+the same as \fB\-script\fR and \fB\-command\fR.  See
+EXIT STATUS and CONTINUING PAST AN ERROR below.
 .TP
 \fB\-delimiter\fR char
 End each command or query with the specified
@@ -908,8 +921,9 @@ returns.
 .SH "EXIT STATUS"
 .TP
 0
-Success.  An interactive session always exits 0, even if a query at the prompt
-failed.  An interactive session is not a batch.
+Success.  A genuinely interactive session always exits 0, even if a query at
+the prompt failed \- it isn't a batch.  \fB\-batch\fR is, so a failed
+statement there is a 4, the same as \fB\-script\fR and \fB\-command\fR.
 .TP
 1
 Usage error.  A run with no \fB\-id\fR, no \fB\-host\fR and no \fB\-socket\fR,
@@ -927,13 +941,14 @@ Connection or authentication failure.  The connection is checked at startup, so
 this is reported before any command runs, in every mode.
 .TP
 4
-At least one statement in a script or a \fB\-command\fR list failed, not
-necessarily all of them.  Without \fB\-continueonerror\fR the run stopped at
-that statement, and with it the run went on.
+At least one statement in a script, a \fB\-command\fR list, a \fB\-query\fR,
+or a \fB\-batch\fR run failed, not necessarily all of them.  Without
+\fB\-continueonerror\fR the run stopped at that statement, and with it the
+run went on.
 .SH "CONTINUING PAST AN ERROR"
-\fB\-continueonerror\fR, and the continueonerror command, make a script or a
-\fB\-command\fR list run every statement rather than stopping at the first one
-that failed.
+\fB\-continueonerror\fR, and the continueonerror command, make a script, a
+\fB\-command\fR list, or a \fB\-batch\fR run go through every statement rather
+than stopping at the first one that failed.
 .PP
 A statement rejected before it reached the database, such as a bad
 \fBformat\fR name or a \fBrun\fR of a file that could not be opened, and a
@@ -986,6 +1001,13 @@ Non\-interactive session, running query "select * from mytable" with csv
 output.
 .IP
 sqlrsh \-id myinst \-command "select * from mytable" \-quiet \-format csv
+.PP
+Non\-interactive session, piping commands into stdin, with no banner or
+prompts mixed into the output.
+.IP
+echo "select 1;" | sqlrsh \-id myinst \-batch
+.br
+sqlrsh \-id myinst \-batch < script.sql
 .PP
 Non\-interactive session, one json document per command, on stdout, with errors
 on stderr.  nullsasnulls is what makes a null come out as the json null
