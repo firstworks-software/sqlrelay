@@ -1049,7 +1049,8 @@ int sqlrsh::commandType(const char *command) {
 		!charstring::compareIgnoringCase(ptr,"noelapsed",9) ||
 		!charstring::compareIgnoringCase(ptr,"nextresultset",13) ||
 		!charstring::compareIgnoringCase(ptr,"quiet",5) ||
-		!charstring::compareIgnoringCase(ptr,"help",4) ||
+		(!charstring::compareIgnoringCase(ptr,"help",4) &&
+			(!ptr[4] || character::isWhitespace(ptr[4]))) ||
 		!charstring::compareIgnoringCase(ptr,"ping") ||
 		!charstring::compareIgnoringCase(ptr,"identify") ||
 		!charstring::compareIgnoringCase(ptr,"dbversion") ||
@@ -1217,7 +1218,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 	} else if (!charstring::compareIgnoringCase(ptr,"quiet",5)) {
 		ptr=ptr+5;
 		cmdtype=17;
-	} else if (!charstring::compareIgnoringCase(ptr,"help",4)) {
+	} else if (!charstring::compareIgnoringCase(ptr,"help",4) &&
+			(!ptr[4] || character::isWhitespace(ptr[4]))) {
 		char	*arg=charstring::duplicate(ptr+4);
 		charstring::bothTrim(arg);
 		if (!charstring::compareIgnoringCase(arg,"brief")) {
@@ -5344,6 +5346,7 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    continueonerror on|off  carries on past a statement that failed,\n"
 "                            rather than stopping at the first one\n"
 "    help                    this text\n"
+"    help brief              a shorter, curated command reference\n"
 "    exit                    exits\n"
 "    quit                    same as exit\n"
 "\n"
