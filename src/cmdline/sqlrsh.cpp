@@ -386,6 +386,266 @@ enum querytype_t {
 	DESCRIBE_QUERY
 };
 
+// The sql words tab completion offers.  They're deliberately generic - the
+// words most backends share - rather than any one database's grammar, and
+// they're split in two because a word that can open a statement is worth
+// offering at the start of a command, and the rest only make sense once a
+// statement is under way.  Both lists are NULL terminated, and both are
+// lower case, since that's how they go out to the terminal.
+static const char * const sqlrshsqlstatementkeywords[]={
+	"alter",
+	"begin",
+	"call",
+	"commit",
+	"create",
+	"delete",
+	"desc",
+	"describe",
+	"drop",
+	"explain",
+	"grant",
+	"insert",
+	"revoke",
+	"rollback",
+	"select",
+	"show",
+	"truncate",
+	"update",
+	"use",
+	"with",
+	NULL
+};
+
+static const char * const sqlrshsqlkeywords[]={
+	"and",
+	"as",
+	"count",
+	"distinct",
+	"from",
+	"group",
+	"having",
+	"index",
+	"inner",
+	"into",
+	"join",
+	"left",
+	"limit",
+	"not",
+	"null",
+	"on",
+	"or",
+	"order",
+	"outer",
+	"right",
+	"set",
+	"table",
+	"values",
+	"view",
+	"where",
+	NULL
+};
+
+// The schema side of tab completion: the table names in the current
+// database, and the column names of each table that's been asked about.
+//
+// It keeps a cursor of its own rather than borrowing the session's,
+// because the session's cursor holds the prepared query, the binds, the
+// result set and the cache state that the session is still working with,
+// and a lookup would throw all of that away.
+//
+// Lookups are lazy and cached, and they're silent - a lookup that fails
+// just means no candidates, never an error message, since a completion
+// runs in the middle of a line the user is still typing.
+class	sqlrshcompleter {
+	public:
+			sqlrshcompleter();
+			~sqlrshcompleter();
+
+		// points the completer at the session's connection, and
+		// throws away anything cached against the previous one.  A
+		// NULL connection just clears it, which is how the session
+		// shuts the completer down before the connection goes away.
+		void	setConnection(sqlrconnection *sqlrcon);
+
+		// returns the tables (and views, aliases and synonyms) in
+		// the current database, fetching them if they haven't been
+		// fetched since the last invalidate().  Never returns NULL,
+		// but returns an empty list if there's no connection or the
+		// lookup failed.
+		linkedlist<char *>	*getTables();
+
+		// returns the columns of "table", fetching them if they
+		// haven't been fetched since the last invalidate().  Never
+		// returns NULL, but returns an empty list if there's no
+		// connection, no table name, or the lookup failed.
+		linkedlist<char *>	*getColumns(const char *table);
+
+		// throws away the cached tables and columns, so the next
+		// lookup fetches them again.  The column lists are keyed by
+		// table name, so a table that got dropped or altered would
+		// leave a stale list behind - the two caches go together.
+		void	invalidate();
+
+	private:
+		// returns the completer's own cursor, opening it on the
+		// first call.  Returns NULL if there's no connection.
+		sqlrcursor	*getCursor();
+
+		// copies the names out of the result set the cursor is
+		// holding into "names".  "namecolumn" is the column the
+		// names are in when the result set names its columns; the
+		// first column is the fallback for the formats that don't.
+		void	getNames(sqlrcursor *sqlrcur,
+					const char *namecolumn,
+					linkedlist<char *> *names);
+
+		sqlrconnection	*sqlrcon;
+		sqlrcursor	*sqlrcur;
+
+		linkedlist<char *>	tables;
+		bool			tablesfetched;
+
+		dictionary<char *, linkedlist<char *> *>	columns;
+};
+
+sqlrshcompleter::sqlrshcompleter() {
+	sqlrcon=NULL;
+	sqlrcur=NULL;
+	tablesfetched=false;
+	tables.setManageArrayValues(true);
+	columns.setManageArrayKeys(true);
+	columns.setManageValues(true);
+}
+
+sqlrshcompleter::~sqlrshcompleter() {
+	setConnection(NULL);
+}
+
+void sqlrshcompleter::setConnection(sqlrconnection *sqlrcon) {
+	invalidate();
+	delete sqlrcur;
+	sqlrcur=NULL;
+	this->sqlrcon=sqlrcon;
+}
+
+void sqlrshcompleter::invalidate() {
+	tables.clear();
+	tablesfetched=false;
+	columns.clear();
+}
+
+sqlrcursor *sqlrshcompleter::getCursor() {
+	if (!sqlrcur && sqlrcon) {
+		sqlrcur=new sqlrcursor(sqlrcon);
+	}
+	return sqlrcur;
+}
+
+linkedlist<char *> *sqlrshcompleter::getTables() {
+
+	if (tablesfetched) {
+		return &tables;
+	}
+
+	// a lookup that failed is cached too, as an empty list, so a
+	// database that can't list its tables isn't asked again on every
+	// keystroke
+	tablesfetched=true;
+
+	sqlrcursor	*cur=getCursor();
+	if (!cur) {
+		return &tables;
+	}
+
+	// The list format has to be the null format.  The mysql, odbc and
+	// jdbc formats leave a column map behind on the server, and the
+	// server keeps that map per-connection rather than per-cursor, so
+	// it would still be in place the next time the session's cursor
+	// re-executed a query without preparing it first, and the columns
+	// of that result set would come back remapped.
+	if (cur->getTableList(NULL,SQLRCLIENTLISTFORMAT_NULL,
+					DB_OBJECT_TABLE|
+					DB_OBJECT_VIEW|
+					DB_OBJECT_ALIAS|
+					DB_OBJECT_SYNONYM) &&
+					!cur->errorMessage()) {
+		getNames(cur,"table_name",&tables);
+	}
+
+	return &tables;
+}
+
+linkedlist<char *> *sqlrshcompleter::getColumns(const char *table) {
+
+	// a table with no name has no columns
+	static linkedlist<char *>	nocolumns;
+	if (charstring::isNullOrEmpty(table)) {
+		return &nocolumns;
+	}
+
+	linkedlist<char *>	*cols=NULL;
+	if (columns.getValue((char *)table,&cols)) {
+		return cols;
+	}
+
+	// a lookup that failed is cached too, as an empty list, for the
+	// same reason getTables() caches one
+	cols=new linkedlist<char *>();
+	cols->setManageArrayValues(true);
+	columns.setValue(charstring::duplicate(table),cols);
+
+	sqlrcursor	*cur=getCursor();
+	if (!cur) {
+		return cols;
+	}
+
+	// the null format, for the reason getTables() uses it
+	if (cur->getColumnList(table,NULL,SQLRCLIENTLISTFORMAT_NULL) &&
+					!cur->errorMessage()) {
+		getNames(cur,"column_name",cols);
+	}
+
+	return cols;
+}
+
+void sqlrshcompleter::getNames(sqlrcursor *sqlrcur,
+					const char *namecolumn,
+					linkedlist<char *> *names) {
+
+	// the null format names the column, but fall back to the first
+	// column for the backends that don't
+	uint32_t	namecol=0;
+	uint32_t	colcount=sqlrcur->colCount();
+	for (uint32_t col=0; col<colcount; col++) {
+		if (!charstring::compareIgnoringCase(
+					sqlrcur->getColumnName(col),
+					namecolumn)) {
+			namecol=col;
+			break;
+		}
+	}
+
+	for (uint64_t row=0; ; row++) {
+
+		const char	*name=sqlrcur->getField(row,namecol);
+
+		// check for end-of-result-set condition
+		// (the same one getTableNames() checks, since a null field
+		// isn't the end of the result set on its own)
+		if (!name) {
+			if (sqlrcur->endOfResultSet() &&
+					row==sqlrcur->rowCount()) {
+				break;
+			}
+			continue;
+		}
+
+		if (name[0]) {
+			names->append(charstring::duplicate(name));
+		}
+	}
+}
+
 class	sqlrsh {
 	public:
 			sqlrsh();
@@ -440,6 +700,10 @@ class	sqlrsh {
 					const char *command,
 					bool *exitprogram);
 		int	commandType(const char *command);
+		// returns true if "command" could have changed the schema,
+		// or changed which database the schema comes from, so what
+		// the completer has cached can't be trusted any more
+		bool	invalidatesSchemaCache(const char *command);
 		bool	internalCommand(sqlrconnection *sqlrcon,
 					sqlrcursor *sqlrcur,
 					sqlrshenv *env,
@@ -779,6 +1043,9 @@ class	sqlrsh {
 
 		prompt		pr;
 
+		// the tables and columns tab completion offers
+		sqlrshcompleter	completer;
+
 		// the pager that's currently running, or -1 if none is
 		pid_t		pagerpid;
 		// a private copy of fd 1 from before it was pointed at the
@@ -1084,20 +1351,77 @@ bool sqlrsh::runCommand(sqlrconnection *sqlrcon,
 	// init stats
 	initStats(env);
 
+	bool	retval=true;
+
 	if (cmdtype>0) {
 		// if the command an internal command, run it as one
-		return internalCommand(sqlrcon,sqlrcur,env,command);
+		retval=internalCommand(sqlrcon,sqlrcur,env,command);
 	} else if (cmdtype==0) {
-		// if the command is not an internal command, 
+		// if the command is not an internal command,
 		// execute it as a query and display the result set
-		return externalCommand(sqlrcon,sqlrcur,env,command);
+		retval=externalCommand(sqlrcon,sqlrcur,env,command);
+	} else {
+		// exit
+		if (exitprogram) {
+			*exitprogram=true;
+		}
+		return true;
 	}
 
-	// exit
-	if (exitprogram) {
-		*exitprogram=true;
+	// Every command the shell runs comes through here - the internal
+	// ones, the ones externalCommand() recognizes, and the sql it
+	// hands to the database - so this is the one place that has to
+	// notice a command that left the completer's cache stale.
+	if (invalidatesSchemaCache(command)) {
+		completer.invalidate();
 	}
-	return true;
+
+	return retval;
+}
+
+bool sqlrsh::invalidatesSchemaCache(const char *command) {
+
+	// skip white space
+	const char	*ptr=command;
+	while (character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+
+	// find the end of the first word
+	const char	*end=ptr;
+	while (*end && !character::isWhitespace(*end)) {
+		end++;
+	}
+	size_t	length=end-ptr;
+
+	static const char * const	commands[]={
+		// these change which database the schema comes from
+		"use",
+		"usecatalog",
+		"useschema",
+		// these can put the session on a different database
+		// connection, and a different schema with it
+		"endsession",
+		"suspendsession",
+		// this attaches to a session someone else suspended,
+		// which can be on another database entirely
+		"resumesession",
+		// these change the schema itself
+		"alter",
+		"create",
+		"drop",
+		"rename",
+		"truncate",
+		NULL
+	};
+
+	for (const char * const *c=commands; *c; c++) {
+		if (charstring::getLength(*c)==length &&
+			!charstring::compareIgnoringCase(ptr,*c,length)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 int sqlrsh::commandType(const char *command) {
@@ -6175,6 +6499,412 @@ static const sqlrshhelpentry sqlrshhelpcatalog[]={
 	{NULL,NULL,NULL}
 };
 
+// Tab completion proper.  It lives below the help catalog because the
+// catalog is where the command names, the show subcommands and the lists
+// of literal argument values come from - the catalog is the one place
+// those are written down, and completion reads them rather than repeating
+// them.  The keyword lists and the schema lookups are up at the top of the
+// file, in sqlrshcompleter.
+//
+// What gets offered depends on where the cursor is:
+//	* a word with a "." in it		- the columns of the table
+//						  named before the "."
+//	* the first word of the line		- the sql words that can open
+//						  a statement, and the
+//						  commands
+//	* after show				- the show subcommands
+//	* after from, join, into, update,	- the tables
+//	  table, describe, desc, fields, and
+//	  after the in or from of a show
+//	* after a command whose catalog args	- those values
+//	  are a list of values, like on|off
+//	* anything else				- the columns of the tables
+//						  the line mentions, else
+//						  the tables and the rest of
+//						  the sql words
+
+// appends "word" to "candidates", if "text" is a prefix of it, ignoring
+// case, and if it isn't in the list already - the catalog repeats names,
+// and it overlaps the keyword lists.  "adjustcase" upper cases the
+// candidate when the user is typing in upper case, which is what the
+// keyword and command lists want.  Table and column names go out in
+// whatever case the database gave them, so they pass false.
+static void sqlrshAddCandidate(linkedlist<char *> *candidates,
+					const char *text,
+					const char *word,
+					bool adjustcase) {
+
+	if (charstring::isNullOrEmpty(word)) {
+		return;
+	}
+
+	size_t	textlen=charstring::getLength(text);
+	if (textlen && charstring::compareIgnoringCase(word,text,textlen)) {
+		return;
+	}
+
+	for (listnode<char *> *node=candidates->getFirst();
+					node; node=node->getNext()) {
+		if (!charstring::compareIgnoringCase(node->getValue(),word)) {
+			return;
+		}
+	}
+
+	char	*candidate=charstring::duplicate(word);
+	if (adjustcase && textlen && character::isUpperCase(text[0])) {
+		charstring::upper(candidate);
+	}
+	candidates->append(candidate);
+}
+
+// appends the matching words of a NULL terminated list of words
+static void sqlrshAddCandidates(linkedlist<char *> *candidates,
+					const char *text,
+					const char * const *words) {
+	for (const char * const *word=words; *word; word++) {
+		sqlrshAddCandidate(candidates,text,*word,true);
+	}
+}
+
+// appends the matching names of a list of object names
+static void sqlrshAddCandidates(linkedlist<char *> *candidates,
+					const char *text,
+					linkedlist<char *> *names) {
+	for (listnode<char *> *node=names->getFirst();
+					node; node=node->getNext()) {
+		sqlrshAddCandidate(candidates,text,node->getValue(),false);
+	}
+}
+
+// appends the first word of every command in the catalog.  The first word
+// is all that belongs at the start of a line, even for the commands whose
+// names run to two or three words, because the user types them a word at a
+// time and the words after the first come up in the position they're
+// actually typed in.
+static void sqlrshAddCommandCandidates(linkedlist<char *> *candidates,
+						const char *text) {
+
+	for (const sqlrshhelpentry *he=sqlrshhelpcatalog; he->name; he++) {
+
+		const char	*end=charstring::findFirst(he->name,' ');
+		char		*word=(end)?
+					charstring::duplicate(he->name,
+							end-he->name):
+					charstring::duplicate(he->name);
+		sqlrshAddCandidate(candidates,text,word,true);
+		delete[] word;
+	}
+}
+
+// appends the subcommands show takes - the second word of each "show ..."
+// entry in the catalog.  There are a couple of dozen of them, and reading
+// them out of the catalog is the only way to be sure the list is the same
+// one help writes.
+static void sqlrshAddShowCandidates(linkedlist<char *> *candidates,
+						const char *text) {
+
+	for (const sqlrshhelpentry *he=sqlrshhelpcatalog; he->name; he++) {
+
+		if (charstring::compareIgnoringCase(he->name,"show ",5)) {
+			continue;
+		}
+
+		const char	*sub=he->name+5;
+		const char	*end=charstring::findFirst(sub,' ');
+		char		*word=(end)?
+					charstring::duplicate(sub,end-sub):
+					charstring::duplicate(sub);
+		sqlrshAddCandidate(candidates,text,word,true);
+		delete[] word;
+	}
+}
+
+// appends the values the catalog lists for "command".  An args field like
+// on|off is a list of the literal values the command takes, while one with
+// a "[" in it stands in for a value the catalog can't know.  Some commands
+// have more than one entry, so every matching entry is read, not just the
+// first.
+static void sqlrshAddArgCandidates(linkedlist<char *> *candidates,
+						const char *text,
+						const char *command) {
+
+	if (charstring::isNullOrEmpty(command)) {
+		return;
+	}
+
+	for (const sqlrshhelpentry *he=sqlrshhelpcatalog; he->name; he++) {
+
+		if (charstring::compareIgnoringCase(he->name,command) ||
+				charstring::findFirst(he->args,'[') ||
+				!charstring::findFirst(he->args,'|')) {
+			continue;
+		}
+
+		const char	*alt=he->args;
+		for (;;) {
+			const char	*end=charstring::findFirst(alt,'|');
+			char		*value=(end)?
+						charstring::duplicate(alt,
+								end-alt):
+						charstring::duplicate(alt);
+			sqlrshAddCandidate(candidates,text,value,true);
+			delete[] value;
+			if (!end) {
+				break;
+			}
+			alt=end+1;
+		}
+	}
+}
+
+// splits the first "len" characters of "line" into "words"
+static void sqlrshSplitWords(const char *line, size_t len,
+					linkedlist<char *> *words) {
+
+	size_t	index=0;
+	while (index<len) {
+
+		while (index<len && character::isWhitespace(line[index])) {
+			index++;
+		}
+
+		size_t	start=index;
+		while (index<len && !character::isWhitespace(line[index])) {
+			index++;
+		}
+
+		if (index>start) {
+			words->append(charstring::duplicate(
+						line+start,index-start));
+		}
+	}
+}
+
+// returns the "index"th word from the end of "words" - 0 is the last word
+// - or an empty string if the list is shorter than that
+static const char *sqlrshWordAt(linkedlist<char *> *words, uint64_t index) {
+
+	listnode<char *>	*node=words->getLast();
+	for (uint64_t i=0; node && i<index; i++) {
+		node=node->getPrevious();
+	}
+	return (node)?node->getValue():"";
+}
+
+// returns true for the words a table name follows
+static bool sqlrshTableFollows(const char *word) {
+	return (!charstring::compareIgnoringCase(word,"from") ||
+		!charstring::compareIgnoringCase(word,"join") ||
+		!charstring::compareIgnoringCase(word,"into") ||
+		!charstring::compareIgnoringCase(word,"update") ||
+		!charstring::compareIgnoringCase(word,"table") ||
+		!charstring::compareIgnoringCase(word,"describe") ||
+		!charstring::compareIgnoringCase(word,"desc") ||
+		!charstring::compareIgnoringCase(word,"fields"));
+}
+
+// returns "word" with the punctuation a name picks up inside a statement
+// trimmed off of either end - the commas, parentheses and delimiters that
+// run up against it
+static char *sqlrshTrimName(const char *word) {
+
+	size_t	len=charstring::getLength(word);
+	size_t	start=0;
+	while (start<len && !character::isAlphanumeric(word[start]) &&
+					word[start]!='_' &&
+					word[start]!='$' &&
+					word[start]!='#') {
+		start++;
+	}
+
+	size_t	end=len;
+	while (end>start && !character::isAlphanumeric(word[end-1]) &&
+					word[end-1]!='_' &&
+					word[end-1]!='$' &&
+					word[end-1]!='#') {
+		end--;
+	}
+
+	return charstring::duplicate(word+start,end-start);
+}
+
+// moves the candidates into the NULL terminated array of new[] allocated
+// strings that the tab handler returns.  Returns NULL when there are none,
+// since that, rather than an empty array, is how the tab handler says it
+// has nothing to offer.
+static char **sqlrshCandidateArray(linkedlist<char *> *candidates) {
+
+	uint64_t	count=candidates->getCount();
+	if (!count) {
+		return NULL;
+	}
+
+	char		**array=new char *[count+1];
+	uint64_t	index=0;
+	for (listnode<char *> *node=candidates->getFirst();
+					node; node=node->getNext()) {
+		array[index++]=node->getValue();
+	}
+	array[count]=NULL;
+	return array;
+}
+
+// builds the candidates for the word "text", which starts at offset
+// "start" of "line"
+static char **sqlrshTabCandidates(sqlrshcompleter *completer,
+					const char *text,
+					const char *line,
+					int32_t start) {
+
+	if (!text) {
+		text="";
+	}
+	if (!line) {
+		line="";
+	}
+	if (start<0) {
+		start=0;
+	}
+
+	// the candidates own their strings until sqlrshCandidateArray()
+	// takes them, so the list must not manage them
+	linkedlist<char *>	candidates;
+
+	// a word with a "." in it is a table.column reference.  The part
+	// before the last "." names the table and the rest is the column
+	// being completed.  A candidate replaces the whole word, so it has
+	// to carry the table part along with the column name.
+	const char	*dot=charstring::findLast(text,'.');
+	if (dot) {
+
+		char			*table=
+					charstring::duplicate(text,dot-text);
+		const char		*partial=dot+1;
+		size_t			partiallen=
+					charstring::getLength(partial);
+		linkedlist<char *>	*columns=completer->getColumns(table);
+
+		for (listnode<char *> *node=columns->getFirst();
+						node; node=node->getNext()) {
+
+			const char	*column=node->getValue();
+			if (partiallen &&
+				charstring::compareIgnoringCase(
+						column,partial,partiallen)) {
+				continue;
+			}
+
+			stringbuffer	candidate;
+			candidate.append(table)->append('.')->append(column);
+			sqlrshAddCandidate(&candidates,"",
+						candidate.getString(),false);
+		}
+
+		delete[] table;
+		return sqlrshCandidateArray(&candidates);
+	}
+
+	// the words before the one being completed
+	linkedlist<char *>	words;
+	words.setManageArrayValues(true);
+	sqlrshSplitWords(line,(size_t)start,&words);
+
+	// nothing but whitespace before it - it opens the line, so it's a
+	// command or the first word of a statement
+	if (!words.getCount()) {
+		sqlrshAddCandidates(&candidates,text,
+					sqlrshsqlstatementkeywords);
+		sqlrshAddCommandCandidates(&candidates,text);
+		return sqlrshCandidateArray(&candidates);
+	}
+
+	const char	*previous=sqlrshWordAt(&words,0);
+	const char	*previous2=sqlrshWordAt(&words,1);
+	bool		show=!charstring::compareIgnoringCase(
+					words.getFirst()->getValue(),"show");
+
+	// show takes a subcommand
+	if (!charstring::compareIgnoringCase(previous,"show")) {
+		sqlrshAddShowCandidates(&candidates,text);
+		return sqlrshCandidateArray(&candidates);
+	}
+
+	// a table follows from, join and the rest, and follows the in of
+	// show columns in table, show primary keys in table and the other
+	// show commands that name one
+	if (sqlrshTableFollows(previous) ||
+			(show && !charstring::compareIgnoringCase(
+							previous,"in"))) {
+		sqlrshAddCandidates(&candidates,text,completer->getTables());
+		return sqlrshCandidateArray(&candidates);
+	}
+
+	// a command whose catalog args are a list of values.  Two-word
+	// command names are looked up too, so that a value list on one of
+	// them would be found without any further work here.
+	sqlrshAddArgCandidates(&candidates,text,previous);
+	stringbuffer	twowordcommand;
+	twowordcommand.append(previous2)->append(' ')->append(previous);
+	sqlrshAddArgCandidates(&candidates,text,twowordcommand.getString());
+	if (candidates.getCount()) {
+		return sqlrshCandidateArray(&candidates);
+	}
+
+	// in the middle of a statement - the columns of whatever tables the
+	// line names so far
+	bool	columnsfound=false;
+	for (listnode<char *> *node=words.getFirst();
+					node; node=node->getNext()) {
+
+		listnode<char *>	*next=node->getNext();
+		if (!next || !sqlrshTableFollows(node->getValue())) {
+			continue;
+		}
+
+		char	*table=sqlrshTrimName(next->getValue());
+		if (!charstring::isNullOrEmpty(table)) {
+			linkedlist<char *>	*columns=
+					completer->getColumns(table);
+			if (columns->getCount()) {
+				columnsfound=true;
+			}
+			sqlrshAddCandidates(&candidates,text,columns);
+		}
+		delete[] table;
+	}
+
+	// no table to go on - the tables themselves, and the sql words that
+	// come up inside a statement
+	if (!columnsfound) {
+		sqlrshAddCandidates(&candidates,text,completer->getTables());
+		sqlrshAddCandidates(&candidates,text,sqlrshsqlkeywords);
+	}
+
+	return sqlrshCandidateArray(&candidates);
+}
+
+// The handler prompt::setTabHandler() calls.  Completion needs the schema
+// and nothing else from the session, so "arg" is the address of the
+// session's completer:
+//
+//	pr.setTabHandler(sqlrshTabHandler,&completer);
+static char **sqlrshTabHandler(const char *text, const char *line,
+				int32_t start, int32_t end, void *arg) {
+
+	// "end" isn't used.  The candidates depend on the word being
+	// completed and on what comes before it, not on what follows.
+	// Neither is anything before the current line: libedit hands over
+	// the line being typed, so a statement split over several lines
+	// completes against its last line only.
+	(void)end;
+
+	sqlrshcompleter	*completer=(sqlrshcompleter *)arg;
+	if (!completer) {
+		return NULL;
+	}
+	return sqlrshTabCandidates(completer,text,line,start);
+}
+
 void sqlrsh::displayJsonHelp(sqlrshenv *env) {
 
 	stdoutput.write('[');
@@ -7071,6 +7801,10 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		}
 	}
 
+	// point the completer at the connection.  It opens a cursor of its
+	// own on it, but not until something actually needs a completion.
+	completer.setConnection(&sqlrcon);
+
 	// process RC files
 	userRcFile(&sqlrcon,&sqlrcur,&env);
 
@@ -7123,6 +7857,12 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		// run there)
 		env.batch=cmdline->isFound("batch");
 		env.interactive=!env.batch;
+		if (env.interactive) {
+			// -batch still reads from the prompt below, but it's
+			// piped, non-interactive input, so it must not get
+			// tab completion
+			pr.setTabHandler(sqlrshTabHandler,&completer);
+		}
 		startupMessage(&env,host,port,user);
 		interactWithUser(&sqlrcon,&sqlrcur,&env);
 		if (env.batch) {
@@ -7131,6 +7871,9 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// clean up
+	// (the completer's cursor has to go before the connection it was
+	// opened on, which goes out of scope when this returns)
+	completer.setConnection(NULL);
 	pr.flushHistory();
 	delete[] defaultpassword;
 	delete[] decryptedpassword;

@@ -8,6 +8,7 @@
 
 * [#synopsis Synopsis]
 * [#interactive Interactive Use]
+* [#tabcompletion Tab Completion]
 * [#noninteractive Non-Interactive Use]
 * [#options Command Line Options]
 * [#optionvalues Option Values, On and Off]
@@ -100,6 +101,20 @@ Everything ends with the delimiter, which is a semicolon unless -delimiter or th
 Type help; at the prompt for the command reference, which is the same list as the [#commands Commands] section below.  Type help brief; for a shorter, curated list of the commands used most.  Type help json; for the same reference as a json array, for a program to read.
 
 A genuinely interactive session always exits 0, even when a query at the prompt failed - it is not a batch.
+
+[=#tabcompletion]
+== Tab Completion ==
+
+In a genuinely interactive session, the Tab key completes what's being typed at the prompt, in the spirit of mysql and psql.
+
+* at the start of a line: sqlrsh's own command names (headers, format, show, describe, and so on) and the SQL keywords that open a statement (select, insert, update, delete, create, ...)
+* after a command that takes one of a fixed set of values: those values - on and off after headers, plain, csv, json and jsonl after format, and so on
+* after show: the show subcommands (databases, tables, columns, schema, ...)
+* after from, join, into, update, table, describe, desc, fields, or in after show: the table names in the current database
+* elsewhere in a statement: the column names of whatever table or tables have already been mentioned on the line, or table names and generic SQL keywords if none has been mentioned yet
+* table.column completes the same way, once table. has been typed
+
+Table and column names come from the live connection, the same calls behind show tables and describe, and are cached rather than re-fetched on every Tab.  The cache is dropped after any command that could change them or the current database - use, create/alter/drop/rename/truncate table, and the like - so completion stays accurate without a round trip on every keystroke.
 
 [=#noninteractive]
 == Non-Interactive Use ==
