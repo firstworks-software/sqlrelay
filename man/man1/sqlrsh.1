@@ -406,6 +406,22 @@ command name, so a reader gets the same shape from every one of them:
 printbinds writes one object holding the three bind lists, and the fields
 command writes {"fields":["id","descr"]}.  querytree and translatedquery write
 their text as a json string.
+.PP
+show schema writes its own document instead of the usual columns/rows shape,
+one object per column keyed by whichever list format is in effect (mysql
+format, the default, shown here):
+.RS
+.nf
+{"tables":[{"table":"mytable","columns":[
+{"column_name":"id","data_type":"INTEGER",
+"character_maximum_length":"","numeric_precision":"",
+"numeric_scale":"","is_nullable":"YES","column_key":"PRI",
+"column_default":"","extra":""}]}]}
+.fi
+.RE
+jsonl gives the same table object its own line, typed "table" instead of
+"columns" or "row", with a stats line after the last one.  A table that fails
+gets an "error" member in place of "columns", so the document stays valid.
 .SS "Nulls in every format"
 csv, json and jsonl can only tell a null from an empty string while
 nullsasnulls is on.  With it off, which is the default, the client library
@@ -883,6 +899,14 @@ A list of the known catalogs.
 show schemas [like 'pattern']
 A list of the known schemas.
 .TP
+show schema [like 'pattern']
+Every matching table's columns, in one call \- the equivalent of show tables
+plus describe for every table it lists.  plain and csv print each table's
+result set in turn, with a table name line between them.  json nests each
+table's columns under it in one document, and jsonl writes one line per
+table.  A table that fails partway through the list reports the error in its
+place and the loop continues; the other tables still come back.
+.TP
 show tables [like 'pattern']
 A list of the known tables, views, aliases and synonyms.
 .TP
@@ -928,15 +952,16 @@ The last insert id, as a result set.
 A pattern goes in single quotes, and a single quote inside one is doubled.  The
 wildcards are the database's own, usually % and _.
 .PP
-databases, catalogs, schemas, tables, table types, columns, procedures, type
-info and the show only forms each take an optional list format, right after the
-category:
+databases, catalogs, schemas, schema, tables, table types, columns,
+procedures, type info and the show only forms each take an optional list
+format, right after the category:
 .RS
 .nf
 show tables mysql
 show tables odbc like 'a%'
 show columns jdbc in mytable
 show only views odbc
+show schema odbc like 's%'
 .fi
 .RE
 .PP

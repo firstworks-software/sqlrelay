@@ -519,6 +519,31 @@ class	sqlrsh {
 						sqlrshenv *env, uint32_t col);
 		void	displayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
+		// writes each table matching "wild", and each one's
+		// columns, as a single document.  Returns false if the
+		// table list, or any one table's column list, failed.
+		bool	showSchema(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *wild,
+						sqlrclientlistformat_t
+							listformat);
+		// copies the table names out of the table list the cursor
+		// is holding, so the cursor is free to fetch column lists.
+		// The caller owns the names and has to delete[] them.
+		void	getTableNames(sqlrcursor *sqlrcur,
+						linkedlist<char *> *tables);
+		// writes the line that introduces one table's columns, in
+		// plain and csv format
+		void	showSchemaTableSeparator(sqlrshenv *env,
+						const char *table,
+						bool first);
+		// writes one table, and the column list the cursor is
+		// holding for it, as a json object.  A non-NULL "error"
+		// takes the place of the columns.
+		void	jsonShowSchemaTable(sqlrcursor *sqlrcur,
+						sqlrshenv *env,
+						const char *table,
+						const char *error);
 		void	plainDisplayResultSet(sqlrcursor *sqlrcur,
 						sqlrshenv *env);
 		// displays a result set one column per line, labeled with
@@ -1903,6 +1928,8 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 
 	} else {
 
+		bool	schemashown=false;
+
 		sqlrcur->setResultSetBufferSize(env->rsbs);
 
 		if (env->lazyfetch) {
@@ -1981,6 +2008,34 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 			char	*wild=getWild(command);
 			sqlrcur->getSchemaList(wild);
 			delete[] wild;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show schema mysql",17)) {
+			char	*wild=getWild(command);
+			retval=showSchema(sqlrcur,env,wild,
+					SQLRCLIENTLISTFORMAT_MYSQL);
+			delete[] wild;
+			schemashown=true;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show schema odbc",16)) {
+			char	*wild=getWild(command);
+			retval=showSchema(sqlrcur,env,wild,
+					SQLRCLIENTLISTFORMAT_ODBC);
+			delete[] wild;
+			schemashown=true;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show schema jdbc",16)) {
+			char	*wild=getWild(command);
+			retval=showSchema(sqlrcur,env,wild,
+					SQLRCLIENTLISTFORMAT_JDBC);
+			delete[] wild;
+			schemashown=true;
+		} else if (!charstring::compareIgnoringCase(command,
+						"show schema",11)) {
+			char	*wild=getWild(command);
+			retval=showSchema(sqlrcur,env,wild,
+					SQLRCLIENTLISTFORMAT_MYSQL);
+			delete[] wild;
+			schemashown=true;
 		} else if (!charstring::compareIgnoringCase(command,
 						"show tables mysql",17)) {
 			char	*wild=getWild(command);
@@ -2260,7 +2315,11 @@ bool sqlrsh::externalCommand(sqlrconnection *sqlrcon,
 		}
 
 		// look for an error
-		if (sqlrcur->errorMessage()) {
+		if (schemashown) {
+
+			// showSchema() already wrote its own output
+
+		} else if (sqlrcur->errorMessage()) {
 
 			// display the error
 			displayError(env,NULL,
@@ -3166,6 +3225,228 @@ void sqlrsh::displayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
 			jsonDisplayResultSet(sqlrcur,env);
 			break;
 	}
+}
+
+bool sqlrsh::showSchema(sqlrcursor *sqlrcur, sqlrshenv *env,
+				const char *wild,
+				sqlrclientlistformat_t listformat) {
+
+	// get the tables matching the pattern
+	sqlrcur->getTableList(wild,listformat,
+				DB_OBJECT_TABLE|
+				DB_OBJECT_VIEW|
+				DB_OBJECT_ALIAS|
+				DB_OBJECT_SYNONYM);
+	if (sqlrcur->errorMessage()) {
+		displayError(env,NULL,
+				sqlrcur->errorMessage(),
+				sqlrcur->errorNumber());
+		return false;
+	}
+
+	// copy the names out, the cursor is needed for the column lists
+	linkedlist<char *>	tables;
+	getTableNames(sqlrcur,&tables);
+
+	bool	retval=true;
+	bool	json=(env->format==SQLRSH_FORMAT_JSON);
+	bool	jsonl=(env->format==SQLRSH_FORMAT_JSONL);
+
+	// page the output, if a pager is called for
+	// (once, around every table - stopPager() runs in the caller)
+	startPager(env);
+
+	// open the document
+	if (json) {
+		stdoutput.write("{\"tables\":[");
+	}
+
+	uint64_t	index=0;
+	for (listnode<char *> *node=tables.getFirst();
+					node; node=node->getNext()) {
+
+		const char	*table=node->getValue();
+
+		// get the table's columns
+		sqlrcur->getColumnList(table,NULL,listformat);
+		const char	*error=sqlrcur->errorMessage();
+		if (error) {
+			retval=false;
+		}
+
+		if (json || jsonl) {
+			if (json && index) {
+				stdoutput.write(',');
+			}
+			jsonShowSchemaTable(sqlrcur,env,table,error);
+		} else {
+			showSchemaTableSeparator(env,table,!index);
+			if (error) {
+				displayError(env,NULL,error,
+						sqlrcur->errorNumber());
+			} else {
+				displayHeader(sqlrcur,env);
+				displayResultSet(sqlrcur,env);
+			}
+		}
+
+		index++;
+	}
+
+	// close the document
+	// The stats go here rather than in displayStats(), for the same
+	// reason jsonDisplayResultSet() writes them itself.
+	if (json) {
+		stdoutput.write(']');
+		if (env->stats) {
+			stdoutput.write(',');
+			jsonWriteStats(sqlrcur,env);
+		}
+		stdoutput.write("}\n");
+	} else if (jsonl && env->stats) {
+		stdoutput.write("{\"type\":\"stats\",");
+		jsonWriteStats(sqlrcur,env);
+		stdoutput.write("}\n");
+	}
+
+	// clean up
+	for (listnode<char *> *node=tables.getFirst();
+					node; node=node->getNext()) {
+		delete[] node->getValue();
+	}
+
+	return retval;
+}
+
+void sqlrsh::getTableNames(sqlrcursor *sqlrcur, linkedlist<char *> *tables) {
+
+	// the odbc and jdbc formats name the column, the mysql format
+	// names it after the database, so fall back to the first column
+	uint32_t	namecol=0;
+	uint32_t	colcount=sqlrcur->colCount();
+	for (uint32_t col=0; col<colcount; col++) {
+		if (!charstring::compareIgnoringCase(
+					sqlrcur->getColumnName(col),
+					"table_name")) {
+			namecol=col;
+			break;
+		}
+	}
+
+	for (uint64_t row=0; ; row++) {
+
+		const char	*name=sqlrcur->getField(row,namecol);
+
+		// check for end-of-result-set condition
+		// (since nullsasnulls might be set, we have to do
+		// a bit more than just check for a NULL)
+		if (!name) {
+			if (sqlrcur->endOfResultSet() &&
+					row==sqlrcur->rowCount()) {
+				break;
+			}
+			continue;
+		}
+
+		tables->append(charstring::duplicate(name));
+	}
+}
+
+void sqlrsh::showSchemaTableSeparator(sqlrshenv *env, const char *table,
+								bool first) {
+
+	// put a blank line between tables
+	if (!first) {
+		stdoutput.write('\n');
+	}
+
+	if (env->format==SQLRSH_FORMAT_CSV) {
+		csvWriteField(table,charstring::getLength(table));
+		stdoutput.write('\n');
+	} else {
+		stdoutput.printf("%s:\n",table);
+	}
+}
+
+void sqlrsh::jsonShowSchemaTable(sqlrcursor *sqlrcur, sqlrshenv *env,
+						const char *table,
+						const char *error) {
+
+	bool	jsonl=(env->format==SQLRSH_FORMAT_JSONL);
+
+	// open the table
+	if (jsonl) {
+		stdoutput.write("{\"type\":\"table\",\"table\":");
+	} else {
+		stdoutput.write("{\"table\":");
+	}
+	jsonWriteString(&stdoutput,table,charstring::getLength(table));
+
+	// a table that couldn't be read reports why, in place of columns
+	if (error) {
+		stdoutput.write(",\"error\":");
+		jsonWriteString(&stdoutput,error,
+					charstring::getLength(error));
+		stdoutput.write((jsonl)?"}\n":"}");
+		return;
+	}
+
+	stdoutput.write(",\"columns\":[");
+
+	uint32_t	colcount=sqlrcur->colCount();
+
+	char		convfieldbuffer[256];
+
+	bool		done=!colcount;
+	for (uint64_t row=0; !done; row++) {
+
+		for (uint32_t col=0; col<colcount; col++) {
+
+			// get the field
+			uint32_t	fieldlength;
+			sqlrshjsontype	jsontype;
+			const char	*field=getFieldForDisplay(sqlrcur,env,
+						row,col,&fieldlength,
+						convfieldbuffer,
+						sizeof(convfieldbuffer),
+						&jsontype);
+
+			// check for end-of-result-set condition
+			// (since nullsasnulls might be set, we have to do
+			// a bit more than just check for a NULL)
+			if (!col && !field &&
+				sqlrcur->endOfResultSet() &&
+				row==sqlrcur->rowCount()) {
+				done=true;
+				break;
+			}
+
+			// open the column
+			if (!col) {
+				if (row) {
+					stdoutput.write(',');
+				}
+				stdoutput.write('{');
+			} else {
+				stdoutput.write(',');
+			}
+
+			// write the field, keyed by its name
+			const char	*name=sqlrcur->getColumnName(col);
+			jsonWriteString(&stdoutput,name,
+					charstring::getLength(name));
+			stdoutput.write(':');
+			jsonWriteValue(&stdoutput,field,fieldlength,jsontype);
+		}
+
+		// close the column
+		if (!done) {
+			stdoutput.write('}');
+		}
+	}
+
+	// close the table
+	stdoutput.write((jsonl)?"]}\n":"]}");
 }
 
 void sqlrsh::plainDisplayResultSet(sqlrcursor *sqlrcur, sqlrshenv *env) {
@@ -5867,6 +6148,8 @@ static const sqlrshhelpentry sqlrshhelpcatalog[]={
 	{"show catalogs","[like 'pattern']","lists the catalogs"},
 	{"show schemas","[like 'pattern']","lists the schemas"},
 	{"show tables","[like 'pattern']","lists the tables"},
+	{"show schema","[like 'pattern']",
+		"lists every matching table's columns in one call"},
 	{"show table types","","lists the table types"},
 	{"show columns","in [table] [like 'pattern']",
 		"lists the columns of a table"},
@@ -6172,6 +6455,7 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "    show catalogs [like 'pattern']\n"
 "    show schemas [like 'pattern']\n"
 "    show tables [like 'pattern']\n"
+"    show schema [like 'pattern']\n"
 "    show table types\n"
 "    show columns in [table] [like 'pattern']\n"
 "    describe [table]\n"
@@ -6189,18 +6473,22 @@ void sqlrsh::displayHelp(sqlrshenv *env) {
 "\n"
 "    describe writes the same column metadata that show columns does.\n"
 "    fields writes just the column names, on one line.\n"
+"    show schema writes every matching table's columns in one call,\n"
+"    the same as running show tables and then describe on each table\n"
+"    it lists, but in a single round trip.\n"
 "\n"
 "    A pattern goes in single quotes, and a single quote inside one is\n"
 "    doubled.  The wildcards are the database's own, usually % and _.\n"
 "\n"
-"    databases, catalogs, schemas, tables, table types, columns,\n"
-"    procedures, type info and the show only forms each take an\n"
-"    optional list format, right after the category:\n"
+"    databases, catalogs, schemas, tables, schema, table types,\n"
+"    columns, procedures, type info and the show only forms each take\n"
+"    an optional list format, right after the category:\n"
 "\n"
 "      show tables mysql\n"
 "      show tables odbc like 'a%'\n"
 "      show columns jdbc in mytable\n"
 "      show only views odbc\n"
+"      show schema odbc like 'a%'\n"
 "\n"
 "    The list format decides the columns of the result set: mysql gives\n"
 "    what a MySQL client would see, odbc what an ODBC client would see,\n"
@@ -6243,6 +6531,8 @@ void sqlrsh::displayBriefHelp(sqlrshenv *env) {
 "                            rather than stopping at the first one\n"
 "    show tables [like 'pattern']\n"
 "                            lists the tables\n"
+"    show schema [like 'pattern']\n"
+"                            every matching table's columns, in one call\n"
 "    describe [table]        the column metadata of a table\n"
 "    exit                    exits\n"
 "    quit                    same as exit\n"

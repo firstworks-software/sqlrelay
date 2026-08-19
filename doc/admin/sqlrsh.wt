@@ -418,6 +418,20 @@ printbinds writes one object holding the three bind lists, and querytree and tra
 }}}
 }}}
 
+show schema writes its own document instead of the usual columns/rows shape, nesting each table's columns under it, one object per column keyed by whichever list format is in effect (mysql format, the default, shown here):
+
+{{{#!blockquote
+{{{
+{"tables":[{"table":"mytable","columns":[
+{"column_name":"id","data_type":"INTEGER",
+"character_maximum_length":"","numeric_precision":"",
+"numeric_scale":"","is_nullable":"YES","column_key":"PRI",
+"column_default":"","extra":""}]}]}
+}}}
+}}}
+
+jsonl gives the same table object its own line, typed "table" instead of "columns" or "row", with a stats line after the last one.  plain and csv print each table's own result set in turn, with a table name line between them, rather than merge tables with different columns into one result set.  A table that fails partway through the list reports the error in its place - inline under the table name in plain and csv, as an "error" member in place of "columns" in json and jsonl - and the loop continues; the other tables still come back.
+
 === Nulls in Every Format ===
 
 csv, json and jsonl can only tell a null from an empty string while nullsasnulls is on.  With it off, which is the default, the client library hands back an empty string for a null, and sqlrsh cannot tell the two apart.
@@ -649,6 +663,7 @@ The '''SQLR_CLIENT_CONNECT_TIMEOUT''' and '''SQLR_CLIENT_RESPONSE_TIMEOUT''' env
 * '''show databases''' - the known databases or schemas
 * '''show catalogs''' - the known catalogs
 * '''show schemas''' - the known schemas
+* '''show schema''' - every matching table's columns, in one call - the equivalent of show tables plus describe for every table it lists
 * '''show tables''' - the known tables, views, aliases and synonyms
 * '''show only tables''' - tables only
 * '''show only views''' - views only
@@ -678,7 +693,7 @@ show only views like 'v_%'
 
 A pattern goes in single quotes, and a single quote inside one is doubled.  The wildcards are the database's own, usually % and _.
 
-databases, catalogs, schemas, tables, table types, columns, procedures, type info and the show only forms each take an optional list format, right after the category:
+databases, catalogs, schemas, schema, tables, table types, columns, procedures, type info and the show only forms each take an optional list format, right after the category:
 
 {{{#!blockquote
 {{{
@@ -686,6 +701,7 @@ show tables mysql
 show tables odbc like 'a%'
 show columns jdbc in mytable
 show only views odbc
+show schema odbc like 's%'
 }}}
 }}}
 

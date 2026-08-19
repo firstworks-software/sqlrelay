@@ -170,6 +170,9 @@
 		result sets too wide for the table layout
 	added "pager" to sqlrsh, which pipes plain-format result sets through
 		$PAGER, less or more during an interactive session
+	added "show schema [like 'pattern']" to sqlrsh, which dumps every
+		matching table and its columns in one call, nested per table
+		in json/jsonl and one result set per table in plain/csv
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
