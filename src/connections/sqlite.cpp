@@ -144,6 +144,10 @@ class SQLRSERVER_DLLSPEC sqliteconnection : public sqlrserverconnection {
 
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
+
+		// sqlitecursor's, but stored as sqlrservercursor's because
+		// sqlitecursor's destructor is private
+		linkedlist< sqlrservercursor * >	sqlitecursors;
 };
 
 class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
@@ -208,6 +212,7 @@ class SQLRSERVER_DLLSPEC sqlitecursor : public sqlrservercursor {
 					bool *lob,
 					bool *null);
 		void		closeResultSet();
+		void		finalizeStatement();
 
 		char		**columnnames;
 		int		ncolumn;
@@ -737,7 +742,22 @@ void sqliteconnection::deleteCursor(sqlrservercursor *curs) {
 void sqliteconnection::logOut() {
 	#ifdef SQLITE_TRANSACTIONAL
 	if (sqliteptr) {
+
+		// sqlite3_close() fails with SQLITE_BUSY, and leaves the
+		// connection open, if any statement on it hasn't been
+		// finalized.  If that happens, and the connection is holding
+		// a lock, then the lock is held forever, because nothing can
+		// reach that connection any more.  So, finalize every
+		// cursor's statement first.
+		for (listnode< sqlrservercursor * >
+					*node=sqlitecursors.getFirst();
+					node; node=node->getNext()) {
+			((sqlitecursor *)node->getValue())->
+						finalizeStatement();
+		}
+
 		sqlite3_close(sqliteptr);
+		sqliteptr=NULL;
 	}
 	#endif
 }
@@ -1908,6 +1928,7 @@ sqlitecursor::sqlitecursor(sqlrserverconnection *conn, uint16_t id) :
 	#endif
 
 	sqliteconn=(sqliteconnection *)conn;
+	sqliteconn->sqlitecursors.append(this);
 
 	selectlastinsertrowid.setPattern("^[ 	\r\n]*(select|SELECT)[ 	\r\n]+"
 				"(last|LAST)[ 	\r\n]+(insert|INSERT)[ 	\r\n]+"
@@ -1950,6 +1971,8 @@ sqlitecursor::~sqlitecursor() {
 	sqlite3_finalize(stmt);
 	delete[] lastinsertrowidstr;
 	#endif
+
+	sqliteconn->sqlitecursors.remove(this);
 }
 
 bool sqlitecursor::supportsNativeBinds(const char *query, uint32_t size) {
@@ -2516,6 +2539,23 @@ void sqlitecursor::closeResultSet() {
 		}
 		result=NULL;
 	}
+#endif
+}
+
+void sqlitecursor::finalizeStatement() {
+
+#ifdef HAVE_SQLITE3_STMT
+	closeResultSet();
+
+	sqlite3_finalize(stmt);
+	stmt=NULL;
+	justexecuted=false;
+
+	// the statement is gone now, so the controller has to prepare the
+	// query again, rather than execute the statement that it used to
+	// point at
+	setQueryHasBeenPrepared(false);
+	setQueryHasBeenExecuted(false);
 #endif
 }
 

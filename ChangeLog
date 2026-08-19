@@ -179,6 +179,10 @@
 	fixed sqlrsh's "reexecute" command returning progressively garbled
 		column names on repeated replay; a re-execute now resets the
 		result-set-header state the same way a fresh prepare does
+	fixed the sqlite connection module leaking a database handle, and the
+		lock it held, when switching databases with an unfinalized
+		statement, which made every later write fail with "database is
+		locked"
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
