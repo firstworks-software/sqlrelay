@@ -176,6 +176,9 @@
 	added tab completion to sqlrsh, which completes sqlrsh commands, sql
 		keywords, table names and column names during an interactive
 		session
+	fixed sqlrsh's "reexecute" command returning progressively garbled
+		column names on repeated replay; a re-execute now resets the
+		result-set-header state the same way a fresh prepare does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -5917,11 +5917,16 @@ bool sqlrservercontroller::executeQuery(sqlrservercursor *cursor,
 		// re-init error data
 		clearError(cursor);
 
+		// a re-execute produces a new result set, so both flags must
+		// be reset or handleResultSetHeader will skip rebuilding the
+		// column-name pointer array and it will dangle
+		cursor->setColumnInfoIsValid(false);
+		cursor->setResultSetHeaderHasBeenHandled(false);
+
 		// if we're faking binds then the original
 		// query must be re-prepared
 		if (cursor->getFakeInputBindsForThisQuery()) {
 			cursor->setQueryHasBeenPrepared(false);
-			cursor->setColumnInfoIsValid(false);
 		}
 	}
 
