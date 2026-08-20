@@ -48,6 +48,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		sqlrservercursor	*getCursor(uint16_t command);
 		void	noAvailableCursors(uint16_t command);
 		void	sendNotAuthenticatedError();
+		void	sendUnsupportedProtocolError();
 		bool	authCommand();
 		bool	getUserFromClient();
 		bool	getPasswordFromClient();
@@ -401,6 +402,14 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			if (clientsock->read(&protocolversion,
 						idleclienttimeout,0)==
 						sizeof(uint16_t)) {
+				// reject a version the server doesn't support
+				if (protocolversion<MIN_SQLRCLIENT_PROTOCOL ||
+						protocolversion>
+						MAX_SQLRCLIENT_PROTOCOL) {
+					sendUnsupportedProtocolError();
+					endsession=false;
+					break;
+				}
 				// END_RESULT_SET was 3 in protocol version 1,
 				// but changed in version 2
 				endresultset=(protocolversion==1)?
@@ -432,6 +441,13 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 
 		// these commands are all handled at the connection level
 		if (command==AUTH) {
+			// a client that never sent its protocol version
+			// leaves protocolversion at its unset value
+			if (protocolversion<MIN_SQLRCLIENT_PROTOCOL) {
+				sendUnsupportedProtocolError();
+				endsession=false;
+				break;
+			}
 			cont->incrementAuthCount();
 			if (authCommand()) {
 				authenticated=true;
@@ -1048,6 +1064,21 @@ void sqlrprotocol_sqlrclient::sendNotAuthenticatedError() {
 	clientsock->write((uint16_t)charstring::getLength(
 				SQLR_ERROR_NOTAUTHENTICATED_STRING));
 	clientsock->write(SQLR_ERROR_NOTAUTHENTICATED_STRING);
+	clientsock->flushWriteBuffer(-1,-1);
+}
+
+void sqlrprotocol_sqlrclient::sendUnsupportedProtocolError() {
+
+	debugStart("unsupported protocol");
+	debugEnd();
+
+	// indicate that an error has occurred and disconnect, the same as
+	// a failed auth does
+	clientsock->write((uint16_t)ERROR_OCCURRED_DISCONNECT);
+	clientsock->write((uint64_t)SQLR_ERROR_UNSUPPORTED_PROTOCOL);
+	clientsock->write((uint16_t)charstring::getLength(
+				SQLR_ERROR_UNSUPPORTED_PROTOCOL_STRING));
+	clientsock->write(SQLR_ERROR_UNSUPPORTED_PROTOCOL_STRING);
 	clientsock->flushWriteBuffer(-1,-1);
 }
 

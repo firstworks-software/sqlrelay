@@ -196,6 +196,10 @@
 		sections - basic configuration, listener options,
 		authentication/encryption options, foreign backend - and added
 		matching example config files under doc/admin/parts/
+	the sqlrclient protocol now rejects a client-declared protocol version
+		it doesn't support (SQLR_ERROR_UNSUPPORTED_PROTOCOL), including
+		a client that never declares a version at all, instead of
+		silently accepting any version
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
