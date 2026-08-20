@@ -147,19 +147,35 @@
     <li><a href="#tdsprotocol">TDS Protocol</a></li>
     <ul>
       <li><a href="#tdsconfiguration">Basic Configuration</a></li>
+      <li><a href="#tdslistener">Listener Options</a></li>
       <li><a href="#tdsversion">TDS Version</a></li>
       <li><a href="#tdspacketsize">Packet Size</a></li>
-      <li><a href="#tdstls">TLS/SSL Encryption and Authentication</a></li>
+      <li><a href="#tdsauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="#tdsconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="#tdstls">TLS/SSL Encryption and Authentication</a></li>
+      </ul>
+
+      <li><a href="#tdsforeignbackend">Foreign Backend</a></li>
       <li><a href="#tdslimitations">Limitations</a></li>
     </ul>
 
     <li><a href="#oracleprotocol">Oracle Protocol</a></li>
     <ul>
+      <li><a href="#oracleconfiguration">Basic Configuration</a></li>
+      <li><a href="#oraclelistener">Listener Options</a></li>
       <li><a href="#oraclesid">SID / Service Name</a></li>
       <li><a href="#oracleloginattempts">Login Attempts</a></li>
       <li><a href="#oracleserverversion">Server Version</a></li>
       <li><a href="#oracleverifiertype">Password Verifier Type</a></li>
       <li><a href="#oraclecharsets">Character Set Options</a></li>
+      <li><a href="#oracleauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="#oracleconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="#oracleuserlistauth">User List Auth</a></li>
+      </ul>
+
+      <li><a href="#oracleforeignbackend">Foreign Backend</a></li>
       <li><a href="#oraclelimitations">Limitations</a></li>
     </ul>
 
@@ -3568,7 +3584,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If an instance speaks the TDS client-server protocol, then any client that wishes to use it must also speak the TDS client-server protocol.  This means that most software written using the FreeTDS or Microsoft SQL Server APIs, or written using a database abstraction layer which loads a driver for Microsoft SQL Server or SAP/Sybase can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, etc.) cannot access this instance.</p>
 
-<p>Unlike the Oracle protocol module, the TDS protocol module is complete for query execution.  Clients log in, run queries, and read result sets.  TLS/SSL is the one piece that isn't supported, and most of the module's remaining configuration doesn't need documenting because the defaults work.  The options below are the exception.  They tune the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.</p>
+<p>Unlike the Oracle protocol module, the TDS protocol module is complete for query execution, including TLS/SSL encryption and authentication.  Clients log in, run queries, and read result sets, and most of the module's configuration doesn't need documenting because the defaults work.  The sections below cover the options that do - notably the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.</p>
 
 <p>Compatibility has been verified in SQL Relay's own test suite against FreeTDS, using both its ct-lib API and its tsql command line program.  Since TDS is a standard protocol, other MS-TDS-speaking clients and drivers - isql, sqlcmd, jTDS, and similar - should also work, but they haven't been tested in-tree.</p>
 
@@ -3634,6 +3650,60 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
 
 </blockquote>
+<a name="tdslistener"/><h3>Listener Options</h3>
+
+<p>In the example above, the instance is configured to listen on port 1433, which is already the standard Microsoft SQL Server port, so no special port choice is needed.</p>
+
+<p>If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"192.168.1.50,192.168.1.51"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).</p>
+
+<p>It can also be configured to listen on a unix socket by adding a <i>socket</i> attribute to the listener tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/tds.socket"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The user that SQL Relay runs as must be able to read and write to the path of the socket.)</p>
+
+<p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
+
+<p>The TDS protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <a name="tdsversion"/><h3>TDS Version</h3>
 
 <p>A TDS client works out how to read the server's answers from the version of the protocol it believes is in use.  Field widths and message layouts vary between versions, so client and server have to agree.</p>
@@ -3694,6 +3764,42 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<a name="tdsauth"/><h3>Authentication/Encryption Options</h3>
+
+<p>When using the TDS protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
+
+<a name="tdsconnectstringsauth"/><h3>Connect Strings Auth</h3>
+
+<p>The default authentication option is <i>connect strings</i> auth.</p>
+
+<p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
+
+<p>The basic configuration example above uses this option.  SQL Relay is configured to access the database using example/example credentials, so clients would also use example/example credentials to access SQL Relay.</p>
+
+<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>connect strings</i> auth module as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"tds_connectstrings"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
 <a name="tdstls"/><h3>TLS/SSL Encryption and Authentication</h3>
 
 <p>SQL Relay supports TLS/SSL encryption and authentication between the TDS client and SQL Relay server.</p>
@@ -3706,6 +3812,8 @@ http://www.gnu.org/software/src-highlite -->
 </ul>
 
 <p>When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.</p>
+
+<h3>Encryption Only</h3>
 
 <p>The following configuration enables TLS/SSL encryption for an instance of SQL Relay:</p>
 
@@ -3747,7 +3855,76 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Which of these a client asks for is a client-side setting.  With freetds, for example, it is the <i>encryption</i> setting in freetds.conf, and a client that validates the server's certificate also needs a <i>ca file</i> there.</p>
 
+<h3>Mutual Authentication</h3>
+
 <p>The <b>tlsvalidate</b> and <b>tlsca</b> attributes described for the other protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.</p>
+
+<h3>Performance Considerations</h3>
+
+<p>While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:</p>
+
+<ul>
+  <li>When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.</li>
+  <li>Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.</li>
+  <li>Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.</li>
+</ul>
+
+<p>Any kind of full session encryption should be used with caution in performance-sensitive applications.</p>
+
+<a name="tdsforeignbackend"/><h3>Foreign Backend</h3>
+
+<p>Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the Microsoft SQL Server or SAP/Sybase database it was originally written to use.</p>
+
+<p>This is as simple as specifying a different database using the <i>dbase</i> attribute in the instance tag and specifying the appropriate database connection string in the <i>string</i> attribute of the connection tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, a TDS front-end provides TDS applications access to an Oracle back-end database.</p>
+
+<p>Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:</p>
+
+<ul>
+  <li>In the instance tag:</li>
+  <ul>
+    <li>set translatebindvariables="yes"</li>
+    <li>set the isolationlevel attribute</li>
+    <li>set transactionmodel="explicit"</li>
+  </ul>
+
+  <li>In the string attribute of the connection tag:</li>
+  <ul>
+    <li>set autocommit=yes or autocommit=no</li>
+    <li>implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter</li>
+    <li>set the identity parameter to override the database type</li>
+    <li>set ignorespace=yes</li>
+    <li>set the overrideschema parameter</li>
+    <li>set the typemangling and/or tablemangling parameters</li>
+  </ul>
+
+  <li>use <a href="#querytranslation">Query Translation</a> modules</li>
+  <li>use <a href="#resultsettranslation">Result Set Translation</a> modules</li>
+  <li>use <a href="#errortranslation">Error Translation</a> modules</li>
+  <li>use <a href="#sessionqueries">Session Queries</a></li>
+</ul>
+
+<p>In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
 
 <a name="tdslimitations"/><h3>Limitations</h3>
 
@@ -3764,7 +3941,136 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
 
-<p>The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The options below are the exception.  They decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set.</p>
+<p>The Oracle protocol module is still under development.  Some of the sections below - SID / Service Name, Login Attempts, Server Version, Password Verifier Type, and Character Set Options - decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set; see <a href="#oraclelimitations">Limitations</a> for what still isn't supported.</p>
+
+<a name="oracleconfiguration"/><h3>Basic Configuration</h3>
+
+<p>To enable SQL Relay to speak the Oracle protocol, add the appropriate listener tag:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this configuration:</p>
+
+<ul>
+  <li>The connection tag instructs the instance to log in to Oracle as user <i>scott</i> with password <i>tiger</i>, using the <i>ora1</i> database in the Oracle installation under /u01/app/oracle/product/12.1.0.</li>
+  <li>The listener tag instructs SQL Relay to load the <i>oracle</i> protocol module, and listen on port 1521, which is the standard Oracle listener port.</li>
+</ul>
+
+<p>The instance can be started using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>start <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>and accessed from the local machine using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> scott<font color="#990000">/</font>tiger@<i><font color="#9A1900">//localhost:1521</font></i></tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+</blockquote>
+<p>By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named <i>sqlrserver</i> then it can be accessed from another system using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">sqlplus</font> scott<font color="#990000">/</font>tiger@<i><font color="#9A1900">//sqlrserver:1521</font></i></tt></pre>
+
+</blockquote>
+<p>The instance can be stopped using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>Since this instance speaks the Oracle client-server protocol, any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, and psql command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
+<a name="oraclelistener"/><h3>Listener Options</h3>
+
+<p>In the example above, the instance is configured to listen on port 1521, which is already the standard Oracle listener port, so no special port choice is needed.</p>
+
+<p>If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"192.168.1.50,192.168.1.51"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).</p>
+
+<p>It can also be configured to listen on a unix socket by adding a <i>socket</i> attribute to the listener tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/oracle.socket"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The user that SQL Relay runs as must be able to read and write to the path of the socket.)</p>
+
+<p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
+
+<p>The Oracle protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <a name="oraclesid"/><h3>SID / Service Name</h3>
 
@@ -3847,14 +4153,14 @@ http://www.gnu.org/software/src-highlite -->
 </td>
     <td> login fails with ORA-03113 
 </td>
-    <td> logs in, runs queries, reads result sets 
+    <td> logs in, but every query fails with ORA-03113 
 </td>
   </tr>
 </table>
 
 <br/><p>The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting <i>serverversion</i> to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.</p>
 
-<p>A client built on Oracle's OCI library, which includes sqlplus, is the one client the default doesn't serve.  It needs <i>serverversion</i> set to 11.2, and with that setting it logs in, runs queries and reads result sets like the others.  With the default of 12.1 it doesn't get through the login at all, and no combination of the options on this page changes that.  See the limitations below.</p>
+<p>Neither setting lets a client built on Oracle's OCI library read a query's answer, and no combination of the options on this page changes that.  See the limitations below.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -3951,13 +4257,142 @@ where <font color="#008080">parameter</font> <b><font color="#000000">in</font><
 </blockquote>
 <p>Setting either option to 0, or to something that isn't a number, is the same as leaving it out, and the default is used.</p>
 
+<a name="oracleauth"/><h3>Authentication/Encryption Options</h3>
+
+<p>When using the Oracle protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
+
+<a name="oracleconnectstringsauth"/><h3>Connect Strings Auth</h3>
+
+<p>The default authentication option is <i>connect strings</i> auth.</p>
+
+<p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
+
+<p>The Basic Configuration example above uses this option, and configures SQL Relay to access the database using scott/tiger credentials.  In that case, clients would also use scott/tiger credentials to access SQL Relay.</p>
+
+<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>connect strings</i> auth module as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"oracle_connectstrings"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<a name="oracleuserlistauth"/><h3>User List Auth</h3>
+
+<p>Another popular authentication option is <i>user list</i> auth.</p>
+
+<p>When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.</p>
+
+<p>To enable user list auth, you must provide a list of user/password combinations, as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"oracle_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"oneuser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"onepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"anotheruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"anotherpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"yetanotheruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"yetanotherpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.</p>
+
+<p>There is also an <i>oracle_database</i> auth module, structurally similar to <i>mysql_database</i>, but it only supports the <i>oracle_clear_password</i> method, and no protocol module SQL Relay ships ever selects that method for Oracle-protocol clients - they always authenticate with O5LOGON instead (see <a href="#oraclelimitations">Limitations</a> below).  As a result, database auth isn't currently reachable through the Oracle protocol listener, unlike with the MySQL and PostgreSQL protocols.</p>
+
+<a name="oracleforeignbackend"/><h3>Foreign Backend</h3>
+
+<p>Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the Oracle database it was originally written to use.</p>
+
+<p>This is as simple as specifying a different database using the <i>dbase</i> attribute in the instance tag and specifying the appropriate database connection string in the <i>string</i> attribute of the connection tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, an Oracle front-end provides Oracle applications access to a MySQL back-end database.</p>
+
+<p>Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:</p>
+
+<ul>
+  <li>In the instance tag:</li>
+  <ul>
+    <li>set translatebindvariables="yes"</li>
+    <li>set the isolationlevel attribute</li>
+    <li>set transactionmodel="explicit"</li>
+  </ul>
+
+  <li>In the string attribute of the connection tag:</li>
+  <ul>
+    <li>set autocommit=yes or autocommit=no</li>
+    <li>implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter</li>
+    <li>set the identity parameter to override the database type</li>
+    <li>set ignorespace=yes</li>
+    <li>set the overrideschema parameter</li>
+    <li>set the typemangling and/or tablemangling parameters</li>
+  </ul>
+
+  <li>use <a href="#querytranslation">Query Translation</a> modules</li>
+  <li>use <a href="#resultsettranslation">Result Set Translation</a> modules</li>
+  <li>use <a href="#errortranslation">Error Translation</a> modules</li>
+  <li>use <a href="#sessionqueries">Session Queries</a></li>
+</ul>
+
+<p>In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
+
 <a name="oraclelimitations"/><h3>Limitations</h3>
 
 <p>The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:</p>
 
 <ul>
   <li>Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.</li>
-  <li>Clients built on Oracle's OCI library, which includes sqlplus, need <i>serverversion</i> set to 11.2.  With that setting, such a client logs in, runs queries and reads result sets.  With the default <i>serverversion</i> of 12.1, it doesn't get through the login, and reports ORA-03113.  Oracle's JDBC driver works either way, but python-oracledb and node-oracledb need the default, so a single listener can't serve them and an OCI client at the same time.  Give each kind its own listener, with its own <i>serverversion</i>.</li>
+  <li>Clients built on Oracle's OCI library, which includes sqlplus, can't read a query's answer.  With <i>serverversion</i> set to 11.2, such a client logs in and its queries run, but it rejects the result set and reports ORA-03113.  With the default <i>serverversion</i> of 12.1, it doesn't get through the login, also with ORA-03113.  No setting serves it.  The drivers that don't use the OCI library - Oracle's JDBC driver, python-oracledb and node-oracledb - are unaffected.</li>
   <li>The module always authenticates with O5LOGON, Oracle's challenge/response exchange.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - O5LOGON (or a newer verifier) is mandatory in every client tested against this module.  The <i>oracle_userlist</i> and <i>oracle_database</i> auth modules also accept an <i>oracle_clear_password</i> method, for a protocol module that might need password-based authentication without O5LOGON, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.</li>
 </ul>
 
@@ -10213,7 +10648,7 @@ http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/db2.conf
 
 
 <div id="copyrightbox">
-Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo portuguï¿½s tambï¿½m" src="../images/br.png"/>
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
 </div> <!-- copyrightbox -->
 
 </div>

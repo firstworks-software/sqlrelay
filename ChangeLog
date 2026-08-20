@@ -191,6 +191,11 @@
 		column scale in the count prefixed form rather than the thin
 		drivers' form; an oci client could log in but never read a
 		query answer, reporting ORA-03113 instead
+	reworked the tds and oracle protocol sections of the config guide to
+		follow the same structure as the mysql and postgresql
+		sections - basic configuration, listener options,
+		authentication/encryption options, foreign backend - and added
+		matching example config files under doc/admin/parts/
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -71,16 +71,26 @@
   * [#postgresqllimitations Limitations]
  * [#tdsprotocol TDS Protocol]
   * [#tdsconfiguration Basic Configuration]
+  * [#tdslistener Listener Options]
   * [#tdsversion TDS Version]
   * [#tdspacketsize Packet Size]
-  * [#tdstls TLS/SSL Encryption and Authentication]
+  * [#tdsauth Authentication/Encryption Options]
+   * [#tdsconnectstringsauth Connect Strings Auth]
+   * [#tdstls TLS/SSL Encryption and Authentication]
+  * [#tdsforeignbackend Foreign Backend]
   * [#tdslimitations Limitations]
  * [#oracleprotocol Oracle Protocol]
+  * [#oracleconfiguration Basic Configuration]
+  * [#oraclelistener Listener Options]
   * [#oraclesid SID / Service Name]
   * [#oracleloginattempts Login Attempts]
   * [#oracleserverversion Server Version]
   * [#oracleverifiertype Password Verifier Type]
   * [#oraclecharsets Character Set Options]
+  * [#oracleauth Authentication/Encryption Options]
+   * [#oracleconnectstringsauth Connect Strings Auth]
+   * [#oracleuserlistauth User List Auth]
+  * [#oracleforeignbackend Foreign Backend]
   * [#oraclelimitations Limitations]
  * [#multipleprotocols Multiple Protocols]
   * [#multiprotocolconfiguration Basic Configuration]
@@ -2486,7 +2496,7 @@ SQL Relay can be configured to speak the native TDS protocol, enabling client pr
 
 If an instance speaks the TDS client-server protocol, then any client that wishes to use it must also speak the TDS client-server protocol.  This means that most software written using the !FreeTDS or Microsoft SQL Server APIs, or written using a database abstraction layer which loads a driver for Microsoft SQL Server or SAP/Sybase can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, !MySQL Workbench, Oracle SQL Developer, etc.) cannot access this instance.
 
-Unlike the Oracle protocol module, the TDS protocol module is complete for query execution.  Clients log in, run queries, and read result sets.  TLS/SSL is the one piece that isn't supported, and most of the module's remaining configuration doesn't need documenting because the defaults work.  The options below are the exception.  They tune the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.
+Unlike the Oracle protocol module, the TDS protocol module is complete for query execution, including TLS/SSL encryption and authentication.  Clients log in, run queries, and read result sets, and most of the module's configuration doesn't need documenting because the defaults work.  The sections below cover the options that do - notably the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.
 
 Compatibility has been verified in SQL Relay's own test suite against !FreeTDS, using both its ct-lib API and its tsql command line program.  Since TDS is a standard protocol, other MS-TDS-speaking clients and drivers - isql, sqlcmd, jTDS, and similar - should also work, but they haven't been tested in-tree.
 
@@ -2532,6 +2542,35 @@ sqlr-stop -id example
 }}}
 }}}
 
+[=#tdslistener]
+=== Listener Options ===
+
+In the example above, the instance is configured to listen on port 1433, which is already the standard Microsoft SQL Server port, so no special port choice is needed.
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The TDS protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
 [=#tdsversion]
 === TDS Version ===
 
@@ -2568,6 +2607,28 @@ A client that asks to negotiate a packet size below 512 bytes is refused; the co
 }}}
 }}}
 
+[=#tdsauth]
+=== Authentication/Encryption Options ===
+
+When using the TDS protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
+
+[=#tdsconnectstringsauth]
+=== Connect Strings Auth ===
+
+The default authentication option is //connect strings// auth.
+
+When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
+
+The basic configuration example above uses this option.  SQL Relay is configured to access the database using example/example credentials, so clients would also use example/example credentials to access SQL Relay.
+
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //connect strings// auth module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsconnectstrings.conf@
+}}}
+}}}
+
 [=#tdstls]
 === TLS/SSL Encryption and Authentication ===
 
@@ -2579,6 +2640,8 @@ When TLS/SSL encryption and authentication is used:
 * TDS clients may optionally validate the server's certificate and identity.
 
 When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.
+
+=== Encryption Only ===
 
 The following configuration enables TLS/SSL encryption for an instance of SQL Relay:
 
@@ -2600,7 +2663,54 @@ TDS negotiates encryption in the PRELOGIN exchange, before the login is sent, an
 
 Which of these a client asks for is a client-side setting.  With freetds, for example, it is the //encryption// setting in freetds.conf, and a client that validates the server's certificate also needs a //ca file// there.
 
+=== Mutual Authentication ===
+
 The '''tlsvalidate''' and '''tlsca''' attributes described for the other protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.
+
+=== Performance Considerations ===
+
+While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:
+
+* When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.
+* Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.
+* Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.
+
+Any kind of full session encryption should be used with caution in performance-sensitive applications.
+
+[=#tdsforeignbackend]
+=== Foreign Backend ===
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the Microsoft SQL Server or SAP/Sybase database it was originally written to use.
+
+This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfeoracle.conf@
+}}}
+}}}
+
+In this example, a TDS front-end provides TDS applications access to an Oracle back-end database.
+
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
+
+* In the instance tag:
+ * set translatebindvariables="yes"
+ * set the isolationlevel attribute
+ * set transactionmodel="explicit"
+* In the string attribute of the connection tag:
+ * set autocommit=yes or autocommit=no
+ * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
+ * set the identity parameter to override the database type
+ * set ignorespace=yes
+ * set the overrideschema parameter
+ * set the typemangling and/or tablemangling parameters
+* use [#querytranslation Query Translation] modules
+* use [#resultsettranslation Result Set Translation] modules
+* use [#errortranslation Error Translation] modules
+* use [#sessionqueries Session Queries]
+
+In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
 
 [=#tdslimitations]
 === Limitations ===
@@ -2617,7 +2727,90 @@ SQL Relay can be configured to speak the native Oracle protocol, enabling client
 
 If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
 
-The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The options below are the exception.  They decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set.
+The Oracle protocol module is still under development.  Some of the sections below - SID / Service Name, Login Attempts, Server Version, Password Verifier Type, and Character Set Options - decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set; see [#oraclelimitations Limitations] for what still isn't supported.
+
+[=#oracleconfiguration]
+=== Basic Configuration ===
+
+To enable SQL Relay to speak the Oracle protocol, add the appropriate listener tag:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The connection tag instructs the instance to log in to Oracle as user //scott// with password //tiger//, using the //ora1// database in the Oracle installation under /u01/app/oracle/product/12.1.0.
+* The listener tag instructs SQL Relay to load the //oracle// protocol module, and listen on port 1521, which is the standard Oracle listener port.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+sqlplus scott/tiger@//localhost:1521
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
+
+By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{#!code
+sqlplus scott/tiger@//sqlrserver:1521
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+Since this instance speaks the Oracle client-server protocol, any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, and psql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
+
+[=#oraclelistener]
+=== Listener Options ===
+
+In the example above, the instance is configured to listen on port 1521, which is already the standard Oracle listener port, so no special port choice is needed.
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The Oracle protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 [=#oraclesid]
 === SID / Service Name ===
@@ -2717,6 +2910,82 @@ where parameter in ('NLS_CHARACTERSET','NLS_NCHAR_CHARACTERSET');
 }}}
 
 Setting either option to 0, or to something that isn't a number, is the same as leaving it out, and the default is used.
+
+[=#oracleauth]
+=== Authentication/Encryption Options ===
+
+When using the Oracle protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
+
+[=#oracleconnectstringsauth]
+=== Connect Strings Auth ===
+
+The default authentication option is //connect strings// auth.
+
+When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
+
+The Basic Configuration example above uses this option, and configures SQL Relay to access the database using scott/tiger credentials.  In that case, clients would also use scott/tiger credentials to access SQL Relay.
+
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //connect strings// auth module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oracleconnectstrings.conf@
+}}}
+}}}
+
+[=#oracleuserlistauth]
+=== User List Auth ===
+
+Another popular authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefeuserlistmultiple.conf@
+}}}
+}}}
+
+When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
+
+There is also an //oracle_database// auth module, structurally similar to //mysql_database//, but it only supports the //oracle_clear_password// method, and no protocol module SQL Relay ships ever selects that method for Oracle-protocol clients - they always authenticate with O5LOGON instead (see [#oraclelimitations Limitations] below).  As a result, database auth isn't currently reachable through the Oracle protocol listener, unlike with the !MySQL and !PostgreSQL protocols.
+
+[=#oracleforeignbackend]
+=== Foreign Backend ===
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the Oracle database it was originally written to use.
+
+This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefemysql.conf@
+}}}
+}}}
+
+In this example, an Oracle front-end provides Oracle applications access to a !MySQL back-end database.
+
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
+
+* In the instance tag:
+ * set translatebindvariables="yes"
+ * set the isolationlevel attribute
+ * set transactionmodel="explicit"
+* In the string attribute of the connection tag:
+ * set autocommit=yes or autocommit=no
+ * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
+ * set the identity parameter to override the database type
+ * set ignorespace=yes
+ * set the overrideschema parameter
+ * set the typemangling and/or tablemangling parameters
+* use [#querytranslation Query Translation] modules
+* use [#resultsettranslation Result Set Translation] modules
+* use [#errortranslation Error Translation] modules
+* use [#sessionqueries Session Queries]
+
+In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
 
 [=#oraclelimitations]
 === Limitations ===
