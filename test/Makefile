@@ -3,7 +3,7 @@ top_builddir = ..
 include ../config.mk
 
 all: $(TESTALLSUBDIRS) $(TESTSCRIPTS)
-	$(MKINSTALLDIRS) log/extensionstest
+	$(MKINSTALLDIRS) log/extensions
 
 all-c:
 	cd c $(AND) $(MAKE) all
@@ -80,7 +80,7 @@ test.sh: test.sh.in
 	$(REPLACE) @abs_top_builddir@ "$(abs_top_builddir)" $@.in > $@.out1
 	$(REPLACE) @prefix@ "$(prefix)" $@.out1 > $@.out2
 	$(REPLACE) @PYTHON@ "$(PYTHON)" $@.out2 > $@.out1
-	$(REPLACE) @TESTDBS@ "$(TESTDBS)" $@.out1 > $@.out2
+	$(REPLACE) @TESTINSTANCES@ "$(TESTINSTANCES)" $@.out1 > $@.out2
 	$(REPLACE) @TESTAPIS@ "$(TESTAPIS)" $@.out2 > $@.out1
 	$(MV) $@.out1 $@
 	$(RM) $@.out2
@@ -88,7 +88,7 @@ test.sh: test.sh.in
 
 test.vbs: test.vbs.in
 	$(REPLACE) @prefix@ $(prefix) $@.in > $@.out1
-	$(REPLACE) @TESTDBS@ "$(TESTDBS)" $@.out1 > $@.out2
+	$(REPLACE) @TESTINSTANCES@ "$(TESTINSTANCES)" $@.out1 > $@.out2
 	$(REPLACE) @TESTAPIS@ "$(TESTAPIS)" $@.out2 > $@.out1
 	$(MV) $@.out1 $@
 	$(RM) $@.out2

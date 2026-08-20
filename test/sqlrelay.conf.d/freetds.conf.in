@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="freetdstest" dbase="freetds">
+	<instance id="freetds" dbase="freetds">
 		<listeners>
 			<listener port="9005" socket="/tmp/freetdstest.socket"/>
 		</listeners>

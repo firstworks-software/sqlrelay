@@ -10,7 +10,7 @@ int main(int argc, const char **argv) {
 
 	commandline	cmdl(argc,argv);
 
-	// default to the oracletest instance
+	// default to the oracle instance
 	const char	*host="sqlrelay";
 	uint16_t	port=9001;
 

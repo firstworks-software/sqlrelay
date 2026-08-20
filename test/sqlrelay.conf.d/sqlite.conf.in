@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="sqlitetest" dbase="sqlite">
+	<instance id="sqlite" dbase="sqlite">
 		<listeners>
 			<listener port="9004" socket="/tmp/sqlitetest.socket"/>
 		</listeners>

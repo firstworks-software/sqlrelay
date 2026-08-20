@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="firebirdtest" dbase="firebird">
+	<instance id="firebird" dbase="firebird">
 		<listeners>
 			<listener port="9009" socket="/tmp/firebirdtest.socket"/>
 		</listeners>
@@ -10,7 +10,7 @@
 		</connections>
 	</instance>
 
-	<instance id="firebird3test" dbase="firebird">
+	<instance id="firebird3" dbase="firebird">
 		<listeners>
 			<listener port="9009" socket="/tmp/firebirdtest.socket"/>
 		</listeners>
@@ -19,7 +19,7 @@
 		</connections>
 	</instance>
 
-	<instance id="firebird2test" dbase="firebird">
+	<instance id="firebird2" dbase="firebird">
 		<listeners>
 			<listener port="9009" socket="/tmp/firebirdtest.socket"/>
 		</listeners>

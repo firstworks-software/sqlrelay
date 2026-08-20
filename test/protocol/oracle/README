@@ -66,7 +66,7 @@ sqlr-listener speaking the oracle protocol. Both need java, javac and
 `make` to have built oracle.class first (`make` in this directory).
 
 jdbcauthkvtest drives oracle.java through oraproxy against the local
-oracleprotocol11gtest and oracleprotocol12ctest sqlrelay instances
+oracleprotocol11g and oracleprotocol12c sqlrelay instances
 (test/sqlrelay.conf.d/oracleprotocol.conf, ports 1522 and 1523) and
 greps the decoded captures for the AUTH_VFR_DATA flags and AUTH_SESSKEY
 length each verifier type is expected to put on the wire. This is direct
@@ -75,7 +75,7 @@ section proves indirectly (a correct-password login only succeeds if the
 matching verifier crypto ran) - here the verifier type and session key
 length are read straight off the wire instead of inferred from login
 success. The two sqlrelay instances need to be started first (sqlr-start
-against oracleprotocol.conf, or test.sh -db oracleprotocol).
+against oracleprotocol.conf, or ./test.sh oracleprotocol).
 
 ociselect and ocibannerrewritetest
 -----------------------------------

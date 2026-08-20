@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# run with postgresqlprotocoltest instance
+# run with postgresqlprotocol instance
 
 
 PGPASSFILE=`pwd`/pgpass \

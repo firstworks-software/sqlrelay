@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="saptest" dbase="sap">
+	<instance id="sap" dbase="sap">
 		<listeners>
 			<listener port="9006" socket="/tmp/saptest.socket"/>
 		</listeners>

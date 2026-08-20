@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="extensionstest"
+	<instance id="extensions"
 			dbase="oracle8"
 			connections="0"
 			maxconnections="15"
@@ -177,20 +177,20 @@
 			     default log directory -->
 			<logger module="custom_sc"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log/extensionstest"/>
+				path="@abs_top_builddir@/test/log/extensions"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log/extensionstest"
+				path="@abs_top_builddir@/test/log/extensions"
 				name="sc.log"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log/extensionstest"
+				path="@abs_top_builddir@/test/log/extensions"
 				name="sc-info.log"
 				loglevel="info"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log/extensionstest"
+				path="@abs_top_builddir@/test/log/extensions"
 				name="sc-warning.log"
 				loglevel="warning"/>
 			<logger module="custom_sc"
-				path="@abs_top_builddir@/test/log/extensionstest"
+				path="@abs_top_builddir@/test/log/extensions"
 				name="sc-error.log"
 				loglevel="error"/>
 			<logger module="slowqueries"/>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="postgresqlstringaggtest" dbase="postgresql">
+	<instance id="postgresqlstringagg" dbase="postgresql">
 		<listeners>
 			<listener port="9023" socket="/tmp/postgresqlstringaggtest.socket"/>
 		</listeners>

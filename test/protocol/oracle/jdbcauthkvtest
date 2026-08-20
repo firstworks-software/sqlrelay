@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# capture a JDBC login against the local oracleprotocol11gtest and
-# oracleprotocol12ctest sqlrelay instances (test/sqlrelay.conf.d/
+# capture a JDBC login against the local oracleprotocol11g and
+# oracleprotocol12c sqlrelay instances (test/sqlrelay.conf.d/
 # oracleprotocol.conf, ports 1522 and 1523), through oraproxy, then
 # decode each capture and check that oradecode's auth key/value pair
 # decoder (see #9000) reports the verifier type and session key length
@@ -13,13 +13,13 @@
 #   12c (verifiertype="12c"): AUTH_VFR_DATA flags 0x4815,
 #                              AUTH_SESSKEY 64 hex chars
 #
-# The oracleprotocol11gtest / oracleprotocol12ctest instances must
-# already be running (test.sh -db oracleprotocol starts them, or by
+# The oracleprotocol11g / oracleprotocol12c instances must
+# already be running (./test.sh oracleprotocol starts them, or by
 # hand, from the test/ directory:
 #   sqlr-start -config sqlrelay.conf.d/oracleprotocol.conf \
-#       -id oracleprotocol11gtest
+#       -id oracleprotocol11g
 #   sqlr-start -config sqlrelay.conf.d/oracleprotocol.conf \
-#       -id oracleprotocol12ctest
+#       -id oracleprotocol12c
 #
 # oraproxy can't listen on 1522/1523 itself - the sqlr-listeners already
 # own those ports - so it listens on a spare port instead and forwards

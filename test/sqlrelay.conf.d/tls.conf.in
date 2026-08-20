@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="tlstest">
+	<instance id="tls">
 		<listeners>
 			<listener port="9012"
 				socket="/tmp/tlstest.socket"

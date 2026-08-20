@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="mssqltest" dbase="odbc">
+	<instance id="mssql" dbase="odbc">
 		<listeners>
 			<listener port="9007" socket="/tmp/mssqltest.socket"/>
 		</listeners>
@@ -10,7 +10,7 @@
 		</connections>
 	</instance>
 
-	<instance id="emojitest" dbase="odbc" translatebindvariables="yes">
+	<instance id="emoji" dbase="odbc" translatebindvariables="yes">
 		<listeners>
 			<listener port="9025" socket="/tmp/emojitest.socket"/>
 		</listeners>

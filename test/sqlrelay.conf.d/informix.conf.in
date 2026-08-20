@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="informixtest" dbase="informix">
+	<instance id="informix" dbase="informix">
 		<listeners>
 			<listener port="9010" socket="/tmp/informixtest.socket"/>
 		</listeners>

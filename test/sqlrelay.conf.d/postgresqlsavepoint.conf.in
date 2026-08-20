@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="postgresqlsavepointtest" dbase="postgresql">
+	<instance id="postgresqlsavepoint" dbase="postgresql">
 		<listeners>
 			<listener port="9021" socket="/tmp/postgresqlsavepointtest.socket"/>
 		</listeners>

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# run with mysqlprotocoltest instance
+# run with mysqlprotocol instance
 
 mysql \
 	-h sqlrelay \

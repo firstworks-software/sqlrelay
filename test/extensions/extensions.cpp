@@ -19,7 +19,7 @@ sqlrcursor	*secondcur=NULL;
 
 int main(int argc, char **argv) {
 
-	// The extensionstest instance uses connections="0", so the
+	// The extensions instance uses connections="0", so the
 	// sqlr-connection process exits after each client session.  When the
 	// client sends its final endSession(), and the server can receive it,
 	// process it, and exit, before the client's final write() system call

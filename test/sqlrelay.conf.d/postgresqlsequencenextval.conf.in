@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="postgresqlsequencenextvaltest" dbase="postgresql">
+	<instance id="postgresqlsequencenextval" dbase="postgresql">
 		<listeners>
 			<listener port="9024" socket="/tmp/postgresqlsequencenextvaltest.socket"/>
 		</listeners>

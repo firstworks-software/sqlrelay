@@ -4,7 +4,7 @@
 	<!-- isql compiles a request per lookup and holds them all for the
 	     life of the attachment - a single show table takes 15 - so the
 	     default cursor count is nowhere near enough -->
-	<instance id="firebirdprotocoltest" dbase="firebird" debug="protocols" maxcursors="64">
+	<instance id="firebirdprotocol" dbase="firebird" debug="protocols" maxcursors="64">
 		<listeners>
 			<listener protocol="firebird" port="3050"/>
 		</listeners>
@@ -13,10 +13,10 @@
 		</connections>
 	</instance>
 
-	<!-- same as firebirdprotocoltest, but with fakeinputbindvariables="yes",
+	<!-- same as firebirdprotocol, but with fakeinputbindvariables="yes",
 	     to exercise a select-with-binds describe when the server defers
 	     the prepare and fakes the input binds itself -->
-	<instance id="firebirdprotocolfakebindstest" dbase="firebird" debug="protocols" fakeinputbindvariables="yes" maxcursors="64">
+	<instance id="firebirdprotocolfakebinds" dbase="firebird" debug="protocols" fakeinputbindvariables="yes" maxcursors="64">
 		<listeners>
 			<listener protocol="firebird" port="3051"/>
 		</listeners>
@@ -25,11 +25,11 @@
 		</connections>
 	</instance>
 
-	<!-- same as firebirdprotocoltest, but with wirecrypt="required", to
+	<!-- same as firebirdprotocol, but with wirecrypt="required", to
 	     exercise the Arc4 wire-crypt negotiation end to end - a client
 	     that can't or won't negotiate crypt is refused outright, so any
 	     query that succeeds here proves a real encrypted round trip -->
-	<instance id="firebirdprotocolwirecrypttest" dbase="firebird" debug="protocols" maxcursors="64">
+	<instance id="firebirdprotocolwirecrypt" dbase="firebird" debug="protocols" maxcursors="64">
 		<listeners>
 			<listener protocol="firebird" port="3052" wirecrypt="required"/>
 		</listeners>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="oracletest" dbase="oracle">
+	<instance id="oracle" dbase="oracle">
 		<listeners>
 			<listener port="9001" socket="/tmp/oracletest.socket"/>
 		</listeners>
@@ -15,7 +15,7 @@
 		</connections>
 	</instance>
 
-	<instance id="oracle12ctest" dbase="oracle">
+	<instance id="oracle12c" dbase="oracle">
 		<listeners>
 			<listener port="9001" socket="/tmp/oracletest.socket"/>
 		</listeners>
@@ -29,7 +29,7 @@
 		</connections>
 	</instance>
 
-	<instance id="oracle11gtest" dbase="oracle">
+	<instance id="oracle11g" dbase="oracle">
 		<listeners>
 			<listener port="9001" socket="/tmp/oracletest.socket"/>
 		</listeners>
@@ -43,7 +43,7 @@
 		</connections>
 	</instance>
 
-	<instance id="oracle10gtest" dbase="oracle">
+	<instance id="oracle10g" dbase="oracle">
 		<listeners>
 			<listener port="9001" socket="/tmp/oracletest.socket"/>
 		</listeners>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="mysqltest" dbase="mysql">
+	<instance id="mysql" dbase="mysql">
 		<listeners>
 			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
@@ -10,7 +10,7 @@
 		</connections>
 	</instance>
 
-	<instance id="mysql8test" dbase="mysql">
+	<instance id="mysql8" dbase="mysql">
 		<listeners>
 			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
@@ -19,7 +19,7 @@
 		</connections>
 	</instance>
 
-	<instance id="mysql5test" dbase="mysql">
+	<instance id="mysql5" dbase="mysql">
 		<listeners>
 			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
@@ -28,7 +28,7 @@
 		</connections>
 	</instance>
 
-	<instance id="mysql3test" dbase="mysql">
+	<instance id="mysql3" dbase="mysql">
 		<listeners>
 			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>
@@ -37,7 +37,7 @@
 		</connections>
 	</instance>
 
-	<instance id="mariadb10test" dbase="mysql">
+	<instance id="mariadb10" dbase="mysql">
 		<listeners>
 			<listener port="9002" socket="/tmp/mysqltest.socket"/>
 		</listeners>

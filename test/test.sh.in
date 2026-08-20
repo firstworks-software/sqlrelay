@@ -2,14 +2,14 @@
 
 # print the usage message
 usage() {
-	echo "usage: test.sh [-n] [databases [apis]]"
+	echo "usage: test.sh [-n] [instances [apis]]"
 	echo "       test.sh -h"
 	echo
-	echo "  For each database, start a SQL Relay instance, run the client API"
-	echo "  tests against it, then stop the instance."
+	echo "  For each instance, start it, run the client API tests against it,"
+	echo "  then stop it."
 	echo
-	echo "    databases  space-separated list of databases to test"
-	echo "               (default: every database built)"
+	echo "    instances  space-separated list of instances to test"
+	echo "               (default: every instance built)"
 	echo "    apis       space-separated list of client APIs to test"
 	echo "               (default: every API built)"
 	echo
@@ -36,60 +36,60 @@ usage() {
 # at the same time, and must not be torn down.
 stop_instances() {
 
-	for _db in $TESTDBS
+	for _instance in $TESTINSTANCES
 	do
 
-		# skip databases that have no config file of their own
-		if ( test ! -r "$CONFDIR/${_db}.conf" )
+		# skip instances that have no config file of their own
+		if ( test ! -r "$CONFDIR/${_instance}.conf" )
 		then
 			continue
 		fi
 
 		# the router test also has master/slave instances
-		if ( test "$_db" = "router" )
+		if ( test "$_instance" = "router" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id routermaster
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id routerslave
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id routermaster
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id routerslave
 		fi
 
 		# the firebird test also has a small-maxerrorsize instance
-		if ( test "$_db" = "firebird" )
+		if ( test "$_instance" = "firebird" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdmaxerrorsize
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdmaxerrorsize
 		fi
 
 		# the firebirdprotocol test also has a fakeinputbindvariables
 		# instance, to exercise the faked-bind describe probe
-		if ( test "$_db" = "firebirdprotocol" )
+		if ( test "$_instance" = "firebirdprotocol" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdprotocolfakebindstest
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id firebirdprotocolwirecrypttest
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdprotocolfakebinds
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdprotocolwirecrypt
 		fi
 
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, and a connectstrings-default-auth
 		# instance
-		if ( test "$_db" = "oracleprotocol" )
+		if ( test "$_instance" = "oracleprotocol" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocol11gtest
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocol12ctest
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id oracleprotocolconnectstringstest
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id oracleprotocol12c
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
 		fi
 
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_db}.conf -id ${_db}test
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id ${_instance}
 	done
 	sleep 2
 }
 
-# whether this database can be tested here; returns 1 (skip) when its
+# whether this instance can be tested here; returns 1 (skip) when its
 # connection module was not built or a prerequisite is missing
-db_applicable() {
+instance_applicable() {
 
-	db="$1"
+	instance="$1"
 
-	# map the database to the connection module it needs
-	MODULE=$db
-	case "$db" in
+	# map the instance to the connection module it needs
+	MODULE=$instance
+	case "$instance" in
 		tls|krb|extensions)
 			MODULE=oracle
 			;;
@@ -108,6 +108,9 @@ db_applicable() {
 		firebirdprotocol)
 			MODULE=firebird
 			;;
+		oracleprotocol)
+			MODULE=oracle
+			;;
 	esac
 
 	# skip if that module was not built
@@ -117,7 +120,7 @@ db_applicable() {
 	fi
 
 	# the router test also needs mysql
-	if ( test "$db" = "router" )
+	if ( test "$instance" = "router" )
 	then
 		if ( test -z "`ls $PREFIX/lib*/sqlrelay/sqlrconnection_mysql.* 2> /dev/null`" )
 		then
@@ -126,7 +129,7 @@ db_applicable() {
 	fi
 
 	# the mssql and tdsfreetdsmssqlprotocol tests also need an odbc config for it
-	if ( test "$db" = "mssql" -o "$db" = "tdsfreetdsmssqlprotocol" )
+	if ( test "$instance" = "mssql" -o "$instance" = "tdsfreetdsmssqlprotocol" )
 	then
 		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
 		then
@@ -137,14 +140,14 @@ db_applicable() {
 	# tdsfreetdsmssqlprotocol and tdsfreetdssapprotocol need the FreeTDS-linked
 	# tds test client; tdssapprotocol needs the SAP-linked one.  Both are
 	# conditional on FREETDSLIBS/SYBASELIBS at configure time (see #9273).
-	if ( test "$db" = "tdsfreetdsmssqlprotocol" -o "$db" = "tdsfreetdssapprotocol" )
+	if ( test "$instance" = "tdsfreetdsmssqlprotocol" -o "$instance" = "tdsfreetdssapprotocol" )
 	then
 		if ( test ! -x "$TESTDIR/protocol/tds/tds-freetds" )
 		then
 			return 1
 		fi
 	fi
-	if ( test "$db" = "tdssapprotocol" )
+	if ( test "$instance" = "tdssapprotocol" )
 	then
 		if ( test ! -x "$TESTDIR/protocol/tds/tds-sap" )
 		then
@@ -153,7 +156,7 @@ db_applicable() {
 	fi
 
 	# tdssapprotocol also needs an interfaces entry for sqlrelaysapct
-	if ( test "$db" = "tdssapprotocol" )
+	if ( test "$instance" = "tdssapprotocol" )
 	then
 		if ( test -z "`grep sqlrelaysapct ${SYBASE:-/opt/sap}/interfaces 2> /dev/null`" )
 		then
@@ -164,37 +167,37 @@ db_applicable() {
 	return 0
 }
 
-# start the instance(s) for a database
+# start the instance(s)
 start_instance() {
 
-	db="$1"
+	instance="$1"
 
 	# for the router test, start the master/slave instances
-	if ( test "$db" = "router" )
+	if ( test "$instance" = "router" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id routermaster -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id routermaster -backtrace $BACKTRACEDIR
 		sleep 2
 
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id routerslave -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id routerslave -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
 	# the firebird test needs a second instance, with a small
 	# maxerrorsize, to exercise truncated error messages
-	if ( test "$db" = "firebird" )
+	if ( test "$instance" = "firebird" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdmaxerrorsize -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
 	# the firebirdprotocol test needs a second instance, with
 	# fakeinputbindvariables="yes", to exercise the faked-bind describe
 	# probe
-	if ( test "$db" = "firebirdprotocol" )
+	if ( test "$instance" = "firebirdprotocol" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id firebirdprotocolfakebinds -backtrace $BACKTRACEDIR
 		sleep 2
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id firebirdprotocolwirecrypttest -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id firebirdprotocolwirecrypt -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -203,56 +206,56 @@ start_instance() {
 	# configuration time and can't be varied per connection, plus one
 	# more with no <auths> block, to cover the default oracle_connectstrings
 	# auth path (#9309)
-	if ( test "$db" = "oracleprotocol" )
+	if ( test "$instance" = "oracleprotocol" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocol11gtest -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
 		sleep 2
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocol12ctest -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id oracleprotocol12c -backtrace $BACKTRACEDIR
 		sleep 2
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id oracleprotocolconnectstringstest -backtrace $BACKTRACEDIR
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
 	# start the instance
-	$PREFIX/bin/sqlr-start -config $CONFDIR/${db}.conf -id ${db}test -backtrace $BACKTRACEDIR
+	$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id ${instance} -backtrace $BACKTRACEDIR
 	sleep 2
 }
 
-# stop the instance(s) for a database
+# stop the instance(s)
 stop_instance() {
 
-	db="$1"
+	instance="$1"
 
-	if ( test "$db" = "router" )
+	if ( test "$instance" = "router" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id routermaster
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id routermaster
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id routerslave
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id routerslave
 	fi
-	if ( test "$db" = "firebird" )
+	if ( test "$instance" = "firebird" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdmaxerrorsize
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize
 	fi
-	if ( test "$db" = "firebirdprotocol" )
+	if ( test "$instance" = "firebirdprotocol" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolfakebindstest
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id firebirdprotocolfakebinds
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id firebirdprotocolwirecrypttest
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id firebirdprotocolwirecrypt
 	fi
-	if ( test "$db" = "oracleprotocol" )
+	if ( test "$instance" = "oracleprotocol" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocol11gtest
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocol11g
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocol12ctest
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocol12c
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id oracleprotocolconnectstringstest
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
 	fi
 	sleep 2
-	$PREFIX/bin/sqlr-stop -config $CONFDIR/${db}.conf -id ${db}test
+	$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id ${instance}
 	sleep 2
 }
 
@@ -275,15 +278,15 @@ port_listening() {
 # wait for an instance to answer; sets PING and BYPASS and returns 0 if up
 ping_instance() {
 
-	db="$1"
+	instance="$1"
 
 	PING=""
 	BYPASS="no"
 	for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
 	do
 		echo
-		echo "pinging $db..."
-		if ( test "$db" = "tls" )
+		echo "pinging $instance..."
+		if ( test "$instance" = "tls" )
 		then
 
 			# -config/-id would pick the port up on its own, but
@@ -292,56 +295,56 @@ ping_instance() {
 			# authenticates by client certificate when the user is
 			# empty, so pass the port instead
 			PING=`$PREFIX/bin/sqlrsh -host localhost -port 9012 -tls -tlscert $CONFDIR/tls/client.pem -tlsca $CONFDIR/tls/ca.pem -tlsvalidate ca -command ping 2>&1`
-		elif ( test "$db" = "mysqlprotocol" )
+		elif ( test "$instance" = "mysqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 3306
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "postgresqlprotocol" )
+		elif ( test "$instance" = "postgresqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 5432
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "tdsfreetdsmssqlprotocol" )
+		elif ( test "$instance" = "tdsfreetdsmssqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 1433
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "tdsfreetdssapprotocol" )
+		elif ( test "$instance" = "tdsfreetdssapprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 9030
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "tdssapprotocol" )
+		elif ( test "$instance" = "tdssapprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 9031
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "firebirdprotocol" )
+		elif ( test "$instance" = "firebirdprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 3050
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "oracleprotocol" )
+		elif ( test "$instance" = "oracleprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 1521
 			then
 				PING="The database is up."
 			fi
-		elif ( test "$db" = "teradataprotocol" )
+		elif ( test "$instance" = "teradataprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening 1025
@@ -353,7 +356,7 @@ ping_instance() {
 			# extensions comes through here too - -config/-id
 			# picks up its port, socket, user and password from
 			# extensions.conf
-			PING=`$PREFIX/bin/sqlrsh -config $CONFDIR/${db}.conf -id ${db}test -command ping 2>&1`
+			PING=`$PREFIX/bin/sqlrsh -config $CONFDIR/${instance}.conf -id ${instance} -command ping 2>&1`
 		fi
 
 		# (this collapses whitespace)
@@ -384,153 +387,153 @@ ping_instance() {
 	return 1
 }
 
-# set TEST and TESTFILE for running database db's test under api
+# set TEST and TESTFILE for running the instance's test under api
 api_command() {
 
-	db="$1"
+	instance="$1"
 	api="$2"
 
 	TEST=""
 	TESTFILE=""
 	case "$api" in
 		c)
-			TEST="./$db"
-			TESTFILE="$db"
+			TEST="./$instance"
+			TESTFILE="$instance"
 			;;
 		c++)
-			TEST="./$db"
-			TESTFILE="$db"
+			TEST="./$instance"
+			TESTFILE="$instance"
 			;;
 		extensions)
-			TEST="./$db"
-			TESTFILE="$db"
+			TEST="./$instance"
+			TESTFILE="$instance"
 			;;
 		cs)
 			mono --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="mono $db.exe"
-				TESTFILE="$db.exe"
+				TEST="mono $instance.exe"
+				TESTFILE="$instance.exe"
 			fi
 			;;
 		ado.net)
 			mono --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="mono $db.exe"
-				TESTFILE="$db.exe"
+				TEST="mono $instance.exe"
+				TESTFILE="$instance.exe"
 			fi
 			;;
 		java)
 			java -h > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $db"
-				TESTFILE="$db.class"
+				TEST="./run $instance"
+				TESTFILE="$instance.class"
 			fi
 			;;
 		jdbc)
 			java -h > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $db"
-				TESTFILE="$db.class"
+				TEST="./run $instance"
+				TESTFILE="$instance.class"
 			fi
 			;;
 		nodejs)
 			node --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="node $db.js"
-				TESTFILE="$db.js"
+				TEST="node $instance.js"
+				TESTFILE="$instance.js"
 			fi
 			;;
 		odbc)
-			TEST="./$db"
-			TESTFILE="$db"
+			TEST="./$instance"
+			TESTFILE="$instance"
 			;;
 		perl)
 			perl --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="perl $db.pl"
-				TESTFILE="$db.pl"
+				TEST="perl $instance.pl"
+				TESTFILE="$instance.pl"
 			fi
 			;;
 		perldbi)
 			perl --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="perl $db.pl"
-				TESTFILE="$db.pl"
+				TEST="perl $instance.pl"
+				TESTFILE="$instance.pl"
 			fi
 			;;
 		php)
 			php --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="php $db.php"
-				TESTFILE="$db.php"
+				TEST="php $instance.php"
+				TESTFILE="$instance.php"
 			fi
 			;;
 		phppdo)
 			php --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="php $db.php"
-				TESTFILE="$db.php"
+				TEST="php $instance.php"
+				TESTFILE="$instance.php"
 			fi
 			;;
 		python)
 			@PYTHON@ --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="@PYTHON@ -u $db.py"
-				TESTFILE="$db.py"
+				TEST="@PYTHON@ -u $instance.py"
+				TESTFILE="$instance.py"
 			fi
 			;;
 		pythondb)
 			@PYTHON@ --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="@PYTHON@ -u $db.py"
-				TESTFILE="$db.py"
+				TEST="@PYTHON@ -u $instance.py"
+				TESTFILE="$instance.py"
 			fi
 			;;
 		ruby)
 			ruby --version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="ruby $db.rb"
-				TESTFILE="$db.rb"
+				TEST="ruby $instance.rb"
+				TESTFILE="$instance.rb"
 			fi
 			;;
 		tcl)
 			echo 'puts $tcl_version;exit 0'|tclsh > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="tclsh $db.tcl"
-				TESTFILE="$db.tcl"
+				TEST="tclsh $instance.tcl"
+				TESTFILE="$instance.tcl"
 			fi
 			;;
 		erlang)
 			erl -version > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $db"
-				TESTFILE="$db.beam"
+				TEST="./run $instance"
+				TESTFILE="$instance.beam"
 			fi
 			;;
 	esac
 }
 
-# run database db's test under one api; returns 1 if the test ran and failed
+# run the instance's test under one api; returns 1 if the test ran and failed
 run_api_test() {
 
-	db="$1"
+	instance="$1"
 	api="$2"
 
-	echo "testing $db in $api"
+	echo "testing $instance in $api"
 	echo
 	cd $api
 
@@ -547,7 +550,7 @@ run_api_test() {
 	fi
 
 	# figure out how to run this api's test
-	api_command "$db" "$api"
+	api_command "$instance" "$api"
 
 	# run it
 	STATUS=0
@@ -558,7 +561,7 @@ run_api_test() {
 		then
 			echo
 			echo
-			echo "$db failed in $api"
+			echo "$instance failed in $api"
 			echo
 			printf "    % 8s: failed\n" "$api" >> "$RESULTSLOG"
 			STATUS=1
@@ -568,7 +571,7 @@ run_api_test() {
 			printf "    % 8s: success\n" "$api" >> "$RESULTSLOG"
 		fi
 	else
-		echo "no test found for $db in $api"
+		echo "no test found for $instance in $api"
 	fi
 
 	echo
@@ -580,15 +583,15 @@ run_api_test() {
 	return $STATUS
 }
 
-# run database db's tests across the apis
+# run the instance's tests across the apis
 run_api_tests() {
 
-	db="$1"
+	instance="$1"
 	apis="$2"
 
 	for api in $apis
 	do
-		run_api_test "$db" "$api"
+		run_api_test "$instance" "$api"
 		failures=`expr $failures + $?`
 	done
 }
@@ -596,15 +599,15 @@ run_api_tests() {
 # run a wire-protocol test (the listener speaks another database's protocol)
 run_protocol_test() {
 
-	db="$1"
+	instance="$1"
 
-	# map the database to its protocol test directory, test program, and
+	# map the instance to its protocol test directory, test program, and
 	# (for the tds variants, which share one test program built two ways -
 	# see #9273) the server-name argument to pass on the command line
 	dir=""
 	prog=""
 	server=""
-	case "$db" in
+	case "$instance" in
 		mysqlprotocol)
 			dir="protocol/mysql"
 			prog=`basename $dir`
@@ -644,7 +647,7 @@ run_protocol_test() {
 	cd $dir
 
 	# ct-lib (used by tds-sap) needs SYBASE set to find the interfaces file
-	if ( test "$db" = "tdssapprotocol" )
+	if ( test "$instance" = "tdssapprotocol" )
 	then
 		SYBASE=${SYBASE:-/opt/sap}
 		export SYBASE
@@ -653,8 +656,8 @@ run_protocol_test() {
 	# tdsfreetdsmssqlprotocol runs tds-freetds twice against the same
 	# instance - once requesting tds 7.0 ([sqlrelay]) and once requesting
 	# tds 7.4 ([sqlrelay74]) - #9199 - so both wire-shape variants get
-	# covered.  both runs have to succeed for the db to pass
-	if ( test "$db" = "tdsfreetdsmssqlprotocol" )
+	# covered.  both runs have to succeed for the instance to pass
+	if ( test "$instance" = "tdsfreetdsmssqlprotocol" )
 	then
 		./$prog sqlrelay
 		result70="$?"
@@ -681,10 +684,10 @@ run_protocol_test() {
 	# firebirdprotocol runs the firebird test twice against two listeners
 	# on the same instance's config - once against the default instance
 	# (no argument, port 3050) and once against the
-	# firebirdprotocolfakebindstest instance (127.0.0.1/3051), which sets
+	# firebirdprotocolfakebinds instance (127.0.0.1/3051), which sets
 	# fakeinputbindvariables="yes" to exercise the faked-bind describe
-	# probe.  both runs have to succeed for the db to pass
-	if ( test "$db" = "firebirdprotocol" )
+	# probe.  both runs have to succeed for the instance to pass
+	if ( test "$instance" = "firebirdprotocol" )
 	then
 		./$prog
 		resultdefault="$?"
@@ -715,8 +718,8 @@ run_protocol_test() {
 	# verifier types get covered - and the no-<auths>-block one
 	# (sqlrelayconnectstrings, port 1524), which covers the default
 	# oracle_connectstrings auth path (#9309).  all four runs have to
-	# succeed for the db to pass
-	if ( test "$db" = "oracleprotocol" )
+	# succeed for the instance to pass
+	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
 		resultdefault="$?"
@@ -780,14 +783,14 @@ run_crud_test() {
 	return 1
 }
 
-# run the appropriate tests for a database that is up
-run_db_tests() {
+# run the appropriate tests for an instance that is up
+run_instance_tests() {
 
-	db="$1"
+	instance="$1"
 	apis="$2"
 
 	# kinit for krb tests
-	if ( test "$db" = "krb" )
+	if ( test "$instance" = "krb" )
 	then
 		kdestroy
 		kinit
@@ -797,17 +800,17 @@ run_db_tests() {
 	echo "success..."
 	echo
 
-	case "$db" in
+	case "$instance" in
 		mysqlprotocol|postgresqlprotocol|tdsfreetdsmssqlprotocol|tdsfreetdssapprotocol|tdssapprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
-			run_protocol_test "$db"
+			run_protocol_test "$instance"
 			failures=`expr $failures + $?`
 			;;
 		*)
-			run_api_tests "$db" "$apis"
+			run_api_tests "$instance" "$apis"
 
 			# the crud test uses oracle-specific sql, so
 			# run it only against the oracle instance
-			if ( test "$db" = "oracle" )
+			if ( test "$instance" = "oracle" )
 			then
 				run_crud_test
 				failures=`expr $failures + $?`
@@ -848,13 +851,13 @@ do
 	esac
 done
 
-# determine the set of databases to test, and a tag naming that set, so that
+# determine the set of instances to test, and a tag naming that set, so that
 # runs against different backends don't write each other's output files
-TESTDBS="@TESTDBS@"
+TESTINSTANCES="@TESTINSTANCES@"
 TAG="all"
 if ( test -n "$1" )
 then
-	TESTDBS="$1"
+	TESTINSTANCES="$1"
 
 	# (the unquoted $1 collapses whitespace)
 	TAG=`echo $1 | tr ' ' '-'`
@@ -899,16 +902,16 @@ then
 	stop_instances
 fi
 
-# for each database/configuration...
-for db in $TESTDBS
+# for each instance...
+for instance in $TESTINSTANCES
 do
 
 	# make sure that support for the appropriate database exists
-	if db_applicable "$db"
+	if instance_applicable "$instance"
 	then
 		:
 	else
-		echo "skipping $db..."
+		echo "skipping $instance..."
 		echo
 		echo "================================================================================"
 		echo
@@ -916,16 +919,16 @@ do
 	fi
 
 	# testing...
-	echo "testing $db (from `hostname`)..."
-	echo "$db..." >> "$RESULTSLOG"
+	echo "testing $instance (from `hostname`)..."
+	echo "$instance..." >> "$RESULTSLOG"
 
 	# start the instance and wait for it to come up
 	up="yes"
 	BYPASS="no"
 	if ( test "$manage" = "yes" )
 	then
-		start_instance "$db"
-		if ping_instance "$db"
+		start_instance "$instance"
+		if ping_instance "$instance"
 		then
 			up="yes"
 		else
@@ -940,10 +943,10 @@ do
 		# run the tests
 		if ( test "$up" = "yes" )
 		then
-			run_db_tests "$db" "$TESTAPIS"
+			run_instance_tests "$instance" "$TESTAPIS"
 		else
 			echo
-			echo "failed to start ${db}test"
+			echo "failed to start ${instance}"
 			echo
 			echo "     connect: failed" >> "$RESULTSLOG"
 			failures=`expr $failures + 1`
@@ -953,7 +956,7 @@ do
 	# shut down the instance(s)
 	if ( test "$manage" = "yes" )
 	then
-		stop_instance "$db"
+		stop_instance "$instance"
 	fi
 
 	echo

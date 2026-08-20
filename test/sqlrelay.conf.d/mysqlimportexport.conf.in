@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="mysqlimportexporttest" dbase="mysql">
+	<instance id="mysqlimportexport" dbase="mysql">
 		<listeners>
 			<listener port="9019" socket="/tmp/mysqlimportexporttest.socket"/>
 		</listeners>

@@ -906,7 +906,7 @@ if disabledoc=false then
 	INSTALLDOC="install-doc"
 end if
 
-TESTDBS=""
+TESTINSTANCES=""
 TESTAPIS=""
 
 HOSTNAME=LCase(WScript.CreateObject("WScript.Network").ComputerName)
@@ -1044,53 +1044,53 @@ INFORMIXBUILD="no     "
 ROUTERBUILD="no     "
 if disableoracle=false then
 	ORACLE8BUILD="yes    "
-	TESTDBS=TESTDBs&"oracle "
+	TESTINSTANCES=TESTINSTANCES&"oracle "
 end if
 if disablemysql=false then
 	MYSQLBUILD="yes    "
-	TESTDBS=TESTDBs&"mysql mysqlupsert mysqldeadlockreplay mysqlsplitmultiinsert "
+	TESTINSTANCES=TESTINSTANCES&"mysql mysqlupsert mysqldeadlockreplay mysqlsplitmultiinsert "
 end if
 if disablepostgresql=false then
 	POSTGRESQLBUILD="yes    "
-	TESTDBS=TESTDBs&"postgresql postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg "
+	TESTINSTANCES=TESTINSTANCES&"postgresql postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg "
 end if
 if disablesap=false then
 	SYBASEBUILD="yes    "
-	TESTDBS=TESTDBs&"sap "
+	TESTINSTANCES=TESTINSTANCES&"sap "
 end if
 if disableodbc=false then
 	ODBCBUILD="yes    "
 end if
 if disabledb2=false then
 	DB2BUILD="yes    "
-	TESTDBS=TESTDBs&"db2 "
+	TESTINSTANCES=TESTINSTANCES&"db2 "
 end if
 if disablefirebird=false then
 	FIREBIRDBUILD="yes    "
-	TESTDBS=TESTDBs&"firebird "
+	TESTINSTANCES=TESTINSTANCES&"firebird "
 end if
 if disableinformix=false then
 	INFORMIXBUILD="yes    "
-	TESTDBS=TESTDBs&"informix "
+	TESTINSTANCES=TESTINSTANCES&"informix "
 end if
 if disablerouter=false then
 	ROUTERBUILD="yes    "
-	TESTDBS=TESTDBs&"router "
+	TESTINSTANCES=TESTINSTANCES&"router "
 end if
 if disablemysql=false then
-	TESTDBS=TESTDBs&"mysqlprotocol "
+	TESTINSTANCES=TESTINSTANCES&"mysqlprotocol "
 end if
 if disablepostgresql=false then
-	TESTDBS=TESTDBs&"postgresqlprotocol "
+	TESTINSTANCES=TESTINSTANCES&"postgresqlprotocol "
 end if
 ' freetds isn't built on windows (no freetds ct-lib), so only the
 ' sap-driven tds combo can run here; see config_windows.mk
 if disablesap=false then
-	TESTDBS=TESTDBs&"tdssapprotocol "
+	TESTINSTANCES=TESTINSTANCES&"tdssapprotocol "
 end if
 
 ' truncate the trailing space
-TESTDBS=left(TESTDBS,len(TESTDBS)-1)
+TESTINSTANCES=left(TESTINSTANCES,len(TESTINSTANCES)-1)
 TESTAPIS=left(TESTAPIS,len(TESTAPIS)-1)
 
 ' input and output files
@@ -1335,7 +1335,7 @@ for i=lbound(infiles) to ubound(infiles)
 	content=replace(content,"@ABS_MAXCONNECTIONS@",ABS_MAXCONNECTIONS,1,-1,0)
 
 	' tests
-	content=replace(content,"@TESTDBS@",TESTDBS,1,-1,0)
+	content=replace(content,"@TESTINSTANCES@",TESTINSTANCES,1,-1,0)
 	content=replace(content,"@TESTAPIS@",TESTAPIS,1,-1,0)
 
 	' hostname

@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
 	// there is no separate api for asking which type was used.
 
 	// Run against the sqlrelayconnectstrings target, this section covers
-	// #9309: oracleprotocolconnectstringstest has no <auths> block, so
+	// #9309: oracleprotocolconnectstrings has no <auths> block, so
 	// the listener falls back to oracle_connectstrings, the module that
 	// used to be the un-rewritten mysql clone.  A correct-password login
 	// succeeding there is the regression check for that fix.

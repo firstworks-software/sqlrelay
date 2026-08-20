@@ -19,7 +19,7 @@
 		</connections>
 	</instance>
 
-	<instance id="routertest" dbase="router">
+	<instance id="router" dbase="router">
 		<listeners>
 			<listener port="9015" socket="/tmp/routertest.socket"/>
 		</listeners>

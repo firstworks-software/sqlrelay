@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# run with tdsprotocoltlstest instance
+# run with tdsprotocoltls instance
 #
 # freetds takes its tls settings from freetds.conf, not from the command
 # line, so this drives the [sqlrelaytlsserverauth] entry in

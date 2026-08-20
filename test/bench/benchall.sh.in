@@ -6,7 +6,7 @@ DBS="informix mysql oracle postgresql sap sqlite db2"
 # stop only our own instances, so a concurrent test run isn't torn down
 for DB in $DBS
 do
-	sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
+	sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}
 done
 sleep 2
 
@@ -15,7 +15,7 @@ do
 
 	echo "benching $DB..."
 
-	sqlr-start -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
+	sqlr-start -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}
 	sleep 2
 
 	PING=""
@@ -23,7 +23,7 @@ do
 	do
 		echo
 		echo "pinging $DB..."
-		PING=`sqlrsh -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test -command ping`
+		PING=`sqlrsh -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB} -command ping`
 
 		# (this collapses whitespace)
 		PING=`echo $PING`
@@ -46,14 +46,14 @@ do
 		./sqlr-bench -db $DB -bench sqlrelay,db -querytypes selects
 	else
 		echo
-		echo "failed to start ${DB}test"
+		echo "failed to start ${DB}"
 		echo
 		echo "hit enter to continue or ctrl-c to stop..."
 		read
 	fi
 
 	sleep 2
-	sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}test
+	sqlr-stop -config @abs_top_builddir@/test/sqlrelay.conf.d/${DB}.conf -id ${DB}
 	sleep 2
 
 	echo

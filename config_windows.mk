@@ -41,11 +41,11 @@ THISDIR =
 SCRIPTINT = cscript /nologo
 SCRIPTEXT = .vbs
 
-# @TESTDBS@/@TESTAPIS@ filled in by configure.vbs (see #8091), space-separated
+# @TESTINSTANCES@/@TESTAPIS@ filled in by configure.vbs (see #8091), space-separated
 # like the unix config.mk (#8627) - so the make replace chain can pass them,
 # and prefix, through the command line and regenerate test.vbs like the unix
 # side does (no more quotes/commas to mangle; prefix carries its own quotes).
-TESTDBS = @TESTDBS@
+TESTINSTANCES = @TESTINSTANCES@
 TESTAPIS = @TESTAPIS@
 TESTSCRIPTS = test.vbs
 

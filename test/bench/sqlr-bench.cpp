@@ -16,10 +16,10 @@
 #define ORACLE_SID "(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)))"
 
 // the sqlrelay instance that each database is tested against
-// (see test/sqlrelay.conf.d/*.conf.in - the socket is /tmp/<id>.socket)
+// (see test/sqlrelay.conf.d/*.conf.in - the socket name isn't the instance id)
 struct dbinstance {
 	const char	*db;
-	const char	*id;
+	const char	*socket;
 	uint16_t	port;
 };
 
@@ -205,16 +205,16 @@ int main(int argc, const char **argv) {
 	dynamiclib	*dl;
 
 	// find the sqlrelay instance that this database is tested against
-	const char	*sqlrid=NULL;
+	const char	*sqlrsocket=NULL;
 	uint16_t	sqlrport=0;
 	for (const dbinstance *dbi=dbinstances; dbi->db; dbi++) {
 		if (!charstring::compare(db,dbi->db)) {
-			sqlrid=dbi->id;
+			sqlrsocket=dbi->socket;
 			sqlrport=dbi->port;
 			break;
 		}
 	}
-	if (benchsqlrelay && !sqlrconnectstring && !sqlrid) {
+	if (benchsqlrelay && !sqlrconnectstring && !sqlrsocket) {
 		stdoutput.printf("no sqlrelay instance is defined for "
 					"database %s, "
 					"use -sqlrconnectstring\n",db);
@@ -223,9 +223,9 @@ int main(int argc, const char **argv) {
 
 	// default sqlrelay connect string
 	stringbuffer	sqlrc;
-	if (sqlrid) {
+	if (sqlrsocket) {
 		if (!charstring::compare(sqlr,"local")) {
-			sqlrc.append("socket=/tmp/")->append(sqlrid);
+			sqlrc.append("socket=/tmp/")->append(sqlrsocket);
 			sqlrc.append(".socket;");
 		} else if (!charstring::compare(sqlr,"remote")) {
 			sqlrc.append("host=sqlrelay;port=");

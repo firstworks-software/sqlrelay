@@ -5,7 +5,7 @@
 	     portable encoding, reads the 11.2 summary-object shape and
 	     nothing else, so at the module's 12.1 default the OCI client
 	     the test uses drops the connection outright (ORA-03113). -->
-	<instance id="oracleprotocoltest" dbase="oracle" debug="protocols">
+	<instance id="oracleprotocol" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="1521" serverversion="11.2" sid="ora1"/>
 		</listeners>
@@ -19,11 +19,11 @@
 		</connections>
 	</instance>
 
-	<!-- same as oracleprotocoltest, but with verifiertype="11g", to
+	<!-- same as oracleprotocol, but with verifiertype="11g", to
 	     exercise the 11g O5LOGON verifier - a 48-byte session key and
 	     an sha1 verifier.  the tnsnames.ora alias sqlrelay11g points
 	     here. -->
-	<instance id="oracleprotocol11gtest" dbase="oracle" debug="protocols">
+	<instance id="oracleprotocol11g" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="1522" serverversion="11.2" verifiertype="11g" sid="ora1"/>
 		</listeners>
@@ -37,11 +37,11 @@
 		</connections>
 	</instance>
 
-	<!-- same as oracleprotocoltest, but with verifiertype="12c", to
+	<!-- same as oracleprotocol, but with verifiertype="12c", to
 	     exercise the 12c O5LOGON verifier - a 32-byte session key and
 	     a pbkdf2-hmac-sha512 verifier.  the tnsnames.ora alias
 	     sqlrelay12c points here. -->
-	<instance id="oracleprotocol12ctest" dbase="oracle" debug="protocols">
+	<instance id="oracleprotocol12c" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="1523" serverversion="11.2" verifiertype="12c" sid="ora1"/>
 		</listeners>
@@ -55,12 +55,12 @@
 		</connections>
 	</instance>
 
-	<!-- same as oracleprotocoltest, but with no explicit <auths> block,
+	<!-- same as oracleprotocol, but with no explicit <auths> block,
 	     to exercise the default oracle_connectstrings auth path (#9309)
 	     - the client authenticates directly against the connect
 	     string's user/password rather than an explicit users list.  the
 	     tnsnames.ora alias sqlrelayconnectstrings points here. -->
-	<instance id="oracleprotocolconnectstringstest" dbase="oracle" debug="protocols">
+	<instance id="oracleprotocolconnectstrings" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="1524" serverversion="11.2" sid="ora1"/>
 		</listeners>

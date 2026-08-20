@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="multiprotocoltest" dbase="mysql">
+	<instance id="multiprotocol" dbase="mysql">
 		<listeners>
 			<listener protocol="sqlrclient" port="9026"/>
 			<listener protocol="mysql" port="9027"/>

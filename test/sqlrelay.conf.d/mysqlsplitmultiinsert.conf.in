@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="mysqlsplitmultiinserttest" dbase="mysql">
+	<instance id="mysqlsplitmultiinsert" dbase="mysql">
 		<listeners>
 			<listener port="9018" socket="/tmp/mysqlsplitmultiinserttest.socket"/>
 		</listeners>

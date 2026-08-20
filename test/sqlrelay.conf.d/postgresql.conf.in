@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="postgresqltest" dbase="postgresql">
+	<instance id="postgresql" dbase="postgresql">
 		<listeners>
 			<listener port="9003" socket="/tmp/postgresqltest.socket"/>
 		</listeners>
@@ -10,7 +10,7 @@
 		</connections>
 	</instance>
 
-	<instance id="postgresql7test" dbase="postgresql">
+	<instance id="postgresql7" dbase="postgresql">
 		<listeners>
 			<listener port="9003" socket="/tmp/postgresqltest.socket"/>
 		</listeners>
@@ -19,7 +19,7 @@
 		</connections>
 	</instance>
 
-	<instance id="postgresql12test" dbase="postgresql">
+	<instance id="postgresql12" dbase="postgresql">
 		<listeners>
 			<listener port="9003" socket="/tmp/postgresqltest.socket"/>
 		</listeners>
@@ -28,7 +28,7 @@
 		</connections>
 	</instance>
 
-	<instance id="postgresql15test" dbase="postgresql">
+	<instance id="postgresql15" dbase="postgresql">
 		<listeners>
 			<listener port="9003" socket="/tmp/postgresqltest.socket"/>
 		</listeners>

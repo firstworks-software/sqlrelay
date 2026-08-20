@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="postgresqlprotocoltest" dbase="postgresql">
+	<instance id="postgresqlprotocol" dbase="postgresql">
 		<listeners>
 			<listener protocol="postgresql" port="5432"/>
 			<listener protocol="postgresql" port="5433" passwords="cleartext"/>

@@ -7,7 +7,7 @@
 
 	<!-- freetds cannot present a client certificate, so there is no
 	     mutual-auth counterpart to this instance -->
-	<instance id="tdsprotocoltlstest" dbase="odbc" translatebindvariables="yes">
+	<instance id="tdsprotocoltls" dbase="odbc" translatebindvariables="yes">
 		<listeners>
 			<listener protocol="tds" port="1433"
 				tls="yes"

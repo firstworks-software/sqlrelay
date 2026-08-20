@@ -8,9 +8,9 @@ then
 fi
 URL=http://localhost/mvccrud.$EXT
 
-# mvccrud.cpp connects to oracletest, so target that instance here too
+# mvccrud.cpp connects to oracle, so target that instance here too
 CONFIG=../sqlrelay.conf.d/oracle.conf
-ID=oracletest
+ID=oracle
 
 
 sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"

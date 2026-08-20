@@ -1,8 +1,8 @@
 #!/bin/sh
 
-# mvccrud.cpp connects to oracletest, so target that instance here too
+# mvccrud.cpp connects to oracle, so target that instance here too
 CONFIG=../sqlrelay.conf.d/oracle.conf
-ID=oracletest
+ID=oracle
 
 sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"
 sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "create table testtable (colstr varchar(128), colint int, coltrue boolean, colfalse boolean, colnull varchar(128))"

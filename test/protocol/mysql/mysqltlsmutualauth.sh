@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# run with mysqlprotocoltlsmutualauthtest instance
+# run with mysqlprotocoltlsmutualauth instance
 
 mysql \
 	-h sqlrelay \
