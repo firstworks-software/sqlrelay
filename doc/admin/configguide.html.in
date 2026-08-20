@@ -69,6 +69,7 @@
     <ul>
       <li><a href="#mysqlconfiguration">Basic Configuration</a></li>
       <li><a href="#mysqllistener">Listener Options</a></li>
+      <li><a href="#mysqlhandshake">Handshake Protocol Version</a></li>
       <li><a href="#mysqlauth">Authentication/Encryption Options</a></li>
       <ul>
         <li><a href="#mysqlconnectstringsauth">Connect Strings Auth</a></li>
@@ -108,6 +109,8 @@
 
     <li><a href="#oracleprotocol">Oracle Protocol</a></li>
     <ul>
+      <li><a href="#oraclesid">SID / Service Name</a></li>
+      <li><a href="#oracleloginattempts">Login Attempts</a></li>
       <li><a href="#oracleserverversion">Server Version</a></li>
       <li><a href="#oracleverifiertype">Password Verifier Type</a></li>
       <li><a href="#oraclecharsets">Character Set Options</a></li>
@@ -2497,6 +2500,33 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The MySQL protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
+<a name="mysqlhandshake"/><h3>Handshake Protocol Version</h3>
+
+<p>Before a connecting client sends anything, the MySQL protocol module speaks first: it sends a handshake packet announcing which version of the wire protocol it supports.  Clients read that packet to decide how to format everything that follows.  Modern clients expect the modern handshake packet, known as protocol version 10.  Only a client too old to have ever supported MySQL 4.1's authentication still expects the legacy handshake packet, protocol version 9.</p>
+
+<p>The <i>handshake</i> attribute on the listener tag chooses which one the module sends.  Setting it to anything other than 10 sends the legacy protocol version 9 handshake instead; 9 is the conventional value to use.  Leaving it out, or setting it to 0 or to something that isn't a number, is the same as setting it to 10.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3306"</font> <font color="#009900">handshake</font><font color="#990000">=</font><font color="#FF0000">"9"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>There is normally no reason to set this.  It exists only for a client old enough to require the legacy handshake, and switching it on for a modern client doesn't degrade gracefully - the client simply fails to understand the packet.</p>
+
 <a name="mysqlauth"/><h3>Authentication/Encryption Options</h3>
 
 <p>When using the MySQL protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
@@ -3690,6 +3720,39 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The Oracle protocol module is still under development, and most of its configuration isn't documented here yet.  The options below are the exception.  They decide which clients can connect to the instance at all, and whether a client that connects is able to read a result set.</p>
 
+<a name="oraclesid"/><h3>SID / Service Name</h3>
+
+<p>An Oracle client's connect descriptor names a SID or SERVICE_NAME - either is just an alias for the database it wants, taken from its tnsnames.ora entry or built into its connect string.  A real Oracle listener checks that name against the services it knows about and refuses the connection with ORA-12514 if it doesn't recognize it.</p>
+
+<p>The <i>sid</i> option gives the Oracle protocol module the same check.  Set it to the SID/SERVICE_NAME (or a comma-separated list of them) this instance should accept; a client naming anything else is refused with ORA-12514 before it gets as far as a login prompt.  Matching is case-insensitive, and either CONNECT_DATA key - SID or SERVICE_NAME - is accepted from the client, since a client only ever sends whichever one its own connect descriptor used.</p>
+
+<p>Leaving <i>sid</i> unset accepts any SID/SERVICE_NAME a client asks for, which is the default.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<a name="oracleloginattempts"/><h3>Login Attempts</h3>
+
+<p>A real Oracle server lets a client retry a failed login on the same connection - the wrong-password-then-correct-password flow OCI clients and sqlplus expect - up to a limit before it drops the connection.</p>
+
+<p>The Oracle protocol module does the same.  After a failed login it sends the error and waits for another attempt on the same connection, rather than tearing the connection down.  The <i>maxloginattempts</i> option sets how many attempts one connection gets before the module gives up and drops it; it defaults to 3, matching a real server's default SEC_MAX_FAILED_LOGIN_ATTEMPTS.</p>
+
 <a name="oracleserverversion"/><h3>Server Version</h3>
 
 <p>An Oracle client works out how to read the server's answers from the version of server it believes it is talking to.  Several parts of the protocol changed at Oracle 12.1, and a client that is told one version and then sent another version's bytes doesn't recover.  It either waits for fields that never arrive, or reads the next message a few bytes out of position.</p>
@@ -3849,6 +3912,7 @@ where <font color="#008080">parameter</font> <b><font color="#000000">in</font><
 <ul>
   <li>Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.</li>
   <li>Clients built on Oracle's OCI library, which includes sqlplus, can't read a query's answer.  With <i>serverversion</i> set to 11.2, such a client logs in and its queries run, but it rejects the result set and reports ORA-03113.  With the default <i>serverversion</i> of 12.1, it doesn't get through the login, also with ORA-03113.  No setting serves it.  The drivers that don't use the OCI library - Oracle's JDBC driver, python-oracledb and node-oracledb - are unaffected.</li>
+  <li>The module always authenticates with O5LOGON, Oracle's challenge/response exchange.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - O5LOGON (or a newer verifier) is mandatory in every client tested against this module.  The <i>oracle_userlist</i> and <i>oracle_database</i> auth modules also accept an <i>oracle_clear_password</i> method, for a protocol module that might need password-based authentication without O5LOGON, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.</li>
 </ul>
 
 <br/><a name="multipleprotocols"/><h2>Multiple Protocols</h2>

@@ -218,7 +218,7 @@ http://www.gnu.org/software/src-highlite -->
 
   <li><b>listener</b></li>
   <ul>
-    <li><b>protocol</b> - The client-server protocol to expect on this port/socket/address.  Currently, supported protocols include sqlrclient (the native SQL Relay client-server protocol), mysql, postgresql, oracle, and tds.  Defaults to sqlrclient.</li>
+    <li><b>protocol</b> - The client-server protocol to expect on this port/socket/address.  Currently, supported protocols include sqlrclient (the native SQL Relay client-server protocol), mysql, postgresql, firebird, tds, and oracle.  Defaults to sqlrclient.</li>
     <li><b>port</b> - The port to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to 9000.</li>
     <li><b>socket</b> - The unix socket (filename) to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to /tmp/sqlrelay.socket</li>
     <li><b>addresses</b> - A comma-delimited list of addresses that the instance should bind to.  If absent or set to 0.0.0.0, it will bind to all addresses.  Defaults to 0.0.0.0.</li>
