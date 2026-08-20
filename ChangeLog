@@ -183,6 +183,9 @@
 		lock it held, when switching databases with an unfinalized
 		statement, which made every later write fail with "database is
 		locked"
+	documented the mysql protocol module's handshake listener attribute in
+		the config guide - the legacy protocol version 9 handshake it
+		switches to, and that any value other than 10 selects it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

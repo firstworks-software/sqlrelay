@@ -51,6 +51,7 @@
  * [#mysqlprotocol MySQL Protocol]
   * [#mysqlconfiguration Basic Configuration]
   * [#mysqllistener Listener Options]
+  * [#mysqlhandshake Handshake Protocol Version]
   * [#mysqlauth Authentication/Encryption Options]
    * [#mysqlconnectstringsauth Connect Strings Auth]
    * [#mysqluserlistauth User List Auth]
@@ -1793,6 +1794,21 @@ It can also be configured to listen on a unix socket by adding a //socket// attr
 If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
 
 The !MySQL protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+[=#mysqlhandshake]
+=== Handshake Protocol Version ===
+
+Before a connecting client sends anything, the !MySQL protocol module speaks first: it sends a handshake packet announcing which version of the wire protocol it supports.  Clients read that packet to decide how to format everything that follows.  Modern clients expect the modern handshake packet, known as protocol version 10.  Only a client too old to have ever supported !MySQL 4.1's authentication still expects the legacy handshake packet, protocol version 9.
+
+The //handshake// attribute on the listener tag chooses which one the module sends.  Setting it to anything other than 10 sends the legacy protocol version 9 handshake instead; 9 is the conventional value to use.  Leaving it out, or setting it to 0 or to something that isn't a number, is the same as setting it to 10.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfehandshake.conf@
+}}}
+}}}
+
+There is normally no reason to set this.  It exists only for a client old enough to require the legacy handshake, and switching it on for a modern client doesn't degrade gracefully - the client simply fails to understand the packet.
 
 [=#mysqlauth]
 === Authentication/Encryption Options ===
