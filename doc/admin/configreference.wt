@@ -108,7 +108,7 @@ Below is a description of the attributes for each tag.
  * '''waitfordowndatabase''' - If this is set to "yes" then, if the database goes down while a client is connected, the server will not return an error but rather wait until the database comes back up and then resume the client session.  If this is set to "no" and a down database is detected during a client session, then SQL Relay will return the native database error and if a new client connection is made and all databases are down then SQL Relay will generate an error and return it.  Defaults to "yes".
 
 * '''listener'''
- * '''protocol''' - The client-server protocol to expect on this port/socket/address.  Currently, supported protocols include sqlrclient (the native SQL Relay client-server protocol), mysql, postgresql, oracle, and tds.  Defaults to sqlrclient.
+ * '''protocol''' - The client-server protocol to expect on this port/socket/address.  Currently, supported protocols include sqlrclient (the native SQL Relay client-server protocol), mysql, postgresql, firebird, tds, and oracle.  Defaults to sqlrclient.
  * '''port''' - The port to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to 9000.
  * '''socket''' - The unix socket (filename) to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to /tmp/sqlrelay.socket
  * '''addresses''' - A comma-delimited list of addresses that the instance should bind to.  If absent or set to 0.0.0.0, it will bind to all addresses.  Defaults to 0.0.0.0.
