@@ -112,7 +112,11 @@ class freetds extends sqlrtest {
 			"		smalldatetime, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
-			"	testbit bit) "+
+			"	testbit bit, "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testbigdatetime bigdatetime, "+
+			"	testbigtime bigtime) "+
 			"lock datarows"));
 		System.out.println();
 
@@ -137,7 +141,11 @@ class freetds extends sqlrtest {
 			"	'01-Jan-2001 01:00:00', "+
 			"	'testchar1', "+
 			"	'testvarchar1', "+
-			"	1)"));
+			"	1, "+
+			"	'01-Jan-2001', "+
+			"	'13:01:01', "+
+			"	'01-Jan-2001 13:01:01', "+
+			"	'01:01:01.001000')"));
 		System.out.println();
 
 
@@ -166,8 +174,12 @@ class freetds extends sqlrtest {
 			"	?, "+
 			"	?, "+
 			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
 			"	?)");
-		assertEquals(cur.countBindVariables(),14);
+		assertEquals(cur.countBindVariables(),18);
 		cur.inputBind("1",2);
 		cur.inputBind("2",2);
 		cur.inputBind("3",2);
@@ -182,6 +194,10 @@ class freetds extends sqlrtest {
 		cur.inputBind("12","testchar2");
 		cur.inputBind("13","testvarchar2");
 		cur.inputBind("14",1);
+		cur.inputBind("15","01-Jan-2001");
+		cur.inputBind("16","13:01:01");
+		cur.inputBind("17","01-Jan-2001 13:01:01");
+		cur.inputBind("18","01:01:01.001000");
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("1",3);
@@ -198,6 +214,10 @@ class freetds extends sqlrtest {
 		cur.inputBind("12","testchar3");
 		cur.inputBind("13","testvarchar3");
 		cur.inputBind("14",1);
+		cur.inputBind("15","01-Jan-2001");
+		cur.inputBind("16","13:01:01");
+		cur.inputBind("17","01-Jan-2001 13:01:01");
+		cur.inputBind("18","01:01:01.001000");
 		assertTrue(cur.executeQuery());
 		System.out.println();
 
@@ -225,6 +245,10 @@ class freetds extends sqlrtest {
 		cur.inputBind("12","testchar4");
 		cur.inputBind("13","testvarchar4");
 		cur.inputBind("14",1);
+		cur.inputBind("15","01-Jan-2001");
+		cur.inputBind("16","13:01:01");
+		cur.inputBind("17","01-Jan-2001 13:01:01");
+		cur.inputBind("18","01:01:01.001000");
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -250,8 +274,12 @@ class freetds extends sqlrtest {
 			"	@var11, "+
 			"	@var12, "+
 			"	@var13, "+
-			"	@var14)");
-		assertEquals(cur.countBindVariables(),14);
+			"	@var14, "+
+			"	@var15, "+
+			"	@var16, "+
+			"	@var17, "+
+			"	@var18)");
+		assertEquals(cur.countBindVariables(),18);
 		cur.inputBind("var1",5);
 		cur.inputBind("var2",5);
 		cur.inputBind("var3",5);
@@ -266,6 +294,10 @@ class freetds extends sqlrtest {
 		cur.inputBind("var12","testchar5");
 		cur.inputBind("var13","testvarchar5");
 		cur.inputBind("var14",1);
+		cur.inputBind("var15","01-Jan-2001");
+		cur.inputBind("var16","13:01:01");
+		cur.inputBind("var17","01-Jan-2001 13:01:01");
+		cur.inputBind("var18","01:01:01.001000");
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("var1",6);
@@ -282,6 +314,10 @@ class freetds extends sqlrtest {
 		cur.inputBind("var12","testchar6");
 		cur.inputBind("var13","testvarchar6");
 		cur.inputBind("var14",1);
+		cur.inputBind("var15","01-Jan-2001");
+		cur.inputBind("var16","13:01:01");
+		cur.inputBind("var17","01-Jan-2001 13:01:01");
+		cur.inputBind("var18","01:01:01.001000");
 		assertTrue(cur.executeQuery());
 		cur.clearBinds();
 		cur.inputBind("var1",7);
@@ -298,6 +334,10 @@ class freetds extends sqlrtest {
 		cur.inputBind("var12","testchar7");
 		cur.inputBind("var13","testvarchar7");
 		cur.inputBind("var14",1);
+		cur.inputBind("var15","01-Jan-2001");
+		cur.inputBind("var16","13:01:01");
+		cur.inputBind("var17","01-Jan-2001 13:01:01");
+		cur.inputBind("var18","01:01:01.001000");
 		assertTrue(cur.executeQuery());
 		System.out.println();
 
@@ -325,7 +365,11 @@ class freetds extends sqlrtest {
 		cur.inputBind("var12","testchar8");
 		cur.inputBind("var13","testvarchar8");
 		cur.inputBind("var14",1);
-		cur.inputBind("var15","junkvalue");
+		cur.inputBind("var15","01-Jan-2001");
+		cur.inputBind("var16","13:01:01");
+		cur.inputBind("var17","01-Jan-2001 13:01:01");
+		cur.inputBind("var18","01:01:01.001000");
+		cur.inputBind("var19","junkvalue");
 		cur.validateBinds();
 		assertTrue(cur.executeQuery());
 		System.out.println();
@@ -345,7 +389,7 @@ class freetds extends sqlrtest {
 
 		// column count
 		System.out.println("COLUMN COUNT: ");
-		assertEquals(cur.colCount(),14);
+		assertEquals(cur.colCount(),18);
 		System.out.println();
 
 
@@ -365,6 +409,10 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnName(11),"testchar");
 		assertEquals(cur.getColumnName(12),"testvarchar");
 		assertEquals(cur.getColumnName(13),"testbit");
+		assertEquals(cur.getColumnName(14),"testdate");
+		assertEquals(cur.getColumnName(15),"testtime");
+		assertEquals(cur.getColumnName(16),"testbigdatetime");
+		assertEquals(cur.getColumnName(17),"testbigtime");
 		cols=cur.getColumnNames();
 		assertEquals(cols[0],"testint");
 		assertEquals(cols[1],"testsmallint");
@@ -380,6 +428,10 @@ class freetds extends sqlrtest {
 		assertEquals(cols[11],"testchar");
 		assertEquals(cols[12],"testvarchar");
 		assertEquals(cols[13],"testbit");
+		assertEquals(cols[14],"testdate");
+		assertEquals(cols[15],"testtime");
+		assertEquals(cols[16],"testbigdatetime");
+		assertEquals(cols[17],"testbigtime");
 		System.out.println();
 
 
@@ -414,6 +466,14 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnType("testvarchar"),"VARCHAR");
 		assertEquals(cur.getColumnType(13),"BIT");
 		assertEquals(cur.getColumnType("testbit"),"BIT");
+		assertEquals(cur.getColumnType(14),"DATE");
+		assertEquals(cur.getColumnType("testdate"),"DATE");
+		assertEquals(cur.getColumnType(15),"TIME");
+		assertEquals(cur.getColumnType("testtime"),"TIME");
+		assertEquals(cur.getColumnType(16),"TIMESTAMP");
+		assertEquals(cur.getColumnType("testbigdatetime"),"TIMESTAMP");
+		assertEquals(cur.getColumnType(17),"TIME");
+		assertEquals(cur.getColumnType("testbigtime"),"TIME");
 		System.out.println();
 
 
@@ -461,6 +521,14 @@ class freetds extends sqlrtest {
 				"testvarchar"),40);
 		assertEquals(cur.getColumnLength(13),1);
 		assertEquals(cur.getColumnLength("testbit"),1);
+		assertEquals(cur.getColumnLength(14),4);
+		assertEquals(cur.getColumnLength("testdate"),4);
+		assertEquals(cur.getColumnLength(15),4);
+		assertEquals(cur.getColumnLength("testtime"),4);
+		assertEquals(cur.getColumnLength(16),8);
+		assertEquals(cur.getColumnLength("testbigdatetime"),8);
+		assertEquals(cur.getColumnLength(17),8);
+		assertEquals(cur.getColumnLength("testbigtime"),8);
 		System.out.println();
 
 
@@ -499,6 +567,15 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getLongest("testvarchar"),12);
 		assertEquals(cur.getLongest(13),1);
 		assertEquals(cur.getLongest("testbit"),1);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getLongest(14),26);
+		assertEquals(cur.getLongest("testdate"),26);
+		assertEquals(cur.getLongest(15),26);
+		assertEquals(cur.getLongest("testtime"),26);
+		assertEquals(cur.getLongest(16),26);
+		assertEquals(cur.getLongest("testbigdatetime"),26);
+		assertEquals(cur.getLongest(17),26);
+		assertEquals(cur.getLongest("testbigtime"),26);
 		System.out.println();
 
 
@@ -546,6 +623,11 @@ class freetds extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(0,12),"testvarchar1");
 		assertEquals(cur.getField(0,13),"1");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getField(0,14),"Jan  1 2001 00:00:00:000AM");
+		assertEquals(cur.getField(0,15),"Jan  1 1900 01:01:01:000PM");
+		assertEquals(cur.getField(0,16),"Jan  1 2001 01:01:01:000PM");
+		assertEquals(cur.getField(0,17),"Jan  1 1900 01:01:01:001AM");
 		System.out.println();
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(7,1),"8");
@@ -565,6 +647,11 @@ class freetds extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(7,12),"testvarchar8");
 		assertEquals(cur.getField(7,13),"1");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getField(7,14),"Jan  1 2001 00:00:00:000AM");
+		assertEquals(cur.getField(7,15),"Jan  1 1900 01:01:01:000PM");
+		assertEquals(cur.getField(7,16),"Jan  1 2001 01:01:01:000PM");
+		assertEquals(cur.getField(7,17),"Jan  1 1900 01:01:01:001AM");
 		System.out.println();
 
 
@@ -587,6 +674,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,11),40);
 		assertEquals(cur.getFieldLength(0,12),12);
 		assertEquals(cur.getFieldLength(0,13),1);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getFieldLength(0,14),26);
+		assertEquals(cur.getFieldLength(0,15),26);
+		assertEquals(cur.getFieldLength(0,16),26);
+		assertEquals(cur.getFieldLength(0,17),26);
 		System.out.println();
 		assertEquals(cur.getFieldLength(7,0),1);
 		assertEquals(cur.getFieldLength(7,1),1);
@@ -605,6 +697,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,11),40);
 		assertEquals(cur.getFieldLength(7,12),12);
 		assertEquals(cur.getFieldLength(7,13),1);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getFieldLength(7,14),26);
+		assertEquals(cur.getFieldLength(7,15),26);
+		assertEquals(cur.getFieldLength(7,16),26);
+		assertEquals(cur.getFieldLength(7,17),26);
 		System.out.println();
 
 
@@ -631,6 +728,13 @@ class freetds extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(0,"testvarchar"),"testvarchar1");
 		assertEquals(cur.getField(0,"testbit"),"1");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getField(0,"testdate"),"Jan  1 2001 00:00:00:000AM");
+		assertEquals(cur.getField(0,"testtime"),"Jan  1 1900 01:01:01:000PM");
+		assertEquals(cur.getField(0,"testbigdatetime"),
+			"Jan  1 2001 01:01:01:000PM");
+		assertEquals(cur.getField(0,"testbigtime"),
+			"Jan  1 1900 01:01:01:001AM");
 		System.out.println();
 		assertEquals(cur.getField(7,"testint"),"8");
 		assertEquals(cur.getField(7,"testsmallint"),"8");
@@ -653,6 +757,13 @@ class freetds extends sqlrtest {
 					"                               ");
 		assertEquals(cur.getField(7,"testvarchar"),"testvarchar8");
 		assertEquals(cur.getField(7,"testbit"),"1");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getField(7,"testdate"),"Jan  1 2001 00:00:00:000AM");
+		assertEquals(cur.getField(7,"testtime"),"Jan  1 1900 01:01:01:000PM");
+		assertEquals(cur.getField(7,"testbigdatetime"),
+			"Jan  1 2001 01:01:01:000PM");
+		assertEquals(cur.getField(7,"testbigtime"),
+			"Jan  1 1900 01:01:01:001AM");
 		System.out.println();
 
 
@@ -678,6 +789,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(0,"testchar"),40);
 		assertEquals(cur.getFieldLength(0,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(0,"testbit"),1);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getFieldLength(0,"testdate"),26);
+		assertEquals(cur.getFieldLength(0,"testtime"),26);
+		assertEquals(cur.getFieldLength(0,"testbigdatetime"),26);
+		assertEquals(cur.getFieldLength(0,"testbigtime"),26);
 		System.out.println();
 		assertEquals(cur.getFieldLength(7,"testint"),1);
 		assertEquals(cur.getFieldLength(7,"testsmallint"),1);
@@ -699,6 +815,11 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getFieldLength(7,"testchar"),40);
 		assertEquals(cur.getFieldLength(7,"testvarchar"),12);
 		assertEquals(cur.getFieldLength(7,"testbit"),1);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(cur.getFieldLength(7,"testdate"),26);
+		assertEquals(cur.getFieldLength(7,"testtime"),26);
+		assertEquals(cur.getFieldLength(7,"testbigdatetime"),26);
+		assertEquals(cur.getFieldLength(7,"testbigtime"),26);
 		System.out.println();
 
 
@@ -723,6 +844,11 @@ class freetds extends sqlrtest {
 					"                               ");
 		assertEquals(fields[12],"testvarchar1");
 		assertEquals(fields[13],"1");
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(fields[14],"Jan  1 2001 00:00:00:000AM");
+		assertEquals(fields[15],"Jan  1 1900 01:01:01:000PM");
+		assertEquals(fields[16],"Jan  1 2001 01:01:01:000PM");
+		assertEquals(fields[17],"Jan  1 1900 01:01:01:001AM");
 		System.out.println();
 
 
@@ -744,6 +870,11 @@ class freetds extends sqlrtest {
 		assertEquals(fieldlens[11],40);
 		assertEquals(fieldlens[12],12);
 		assertEquals(fieldlens[13],1);
+		// freetds datetime rendering for the fixture tds version
+		assertEquals(fieldlens[14],26);
+		assertEquals(fieldlens[15],26);
+		assertEquals(fieldlens[16],26);
+		assertEquals(fieldlens[17],26);
 		System.out.println();
 
 
@@ -938,7 +1069,7 @@ class freetds extends sqlrtest {
 
 		// column count for cached result set
 		System.out.println("COLUMN COUNT FOR CACHED RESULT SET: ");
-		assertEquals(cur.colCount(),14);
+		assertEquals(cur.colCount(),18);
 		System.out.println();
 
 
@@ -958,6 +1089,10 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getColumnName(11),"testchar");
 		assertEquals(cur.getColumnName(12),"testvarchar");
 		assertEquals(cur.getColumnName(13),"testbit");
+		assertEquals(cur.getColumnName(14),"testdate");
+		assertEquals(cur.getColumnName(15),"testtime");
+		assertEquals(cur.getColumnName(16),"testbigdatetime");
+		assertEquals(cur.getColumnName(17),"testbigtime");
 		cols=cur.getColumnNames();
 		assertEquals(cols[0],"testint");
 		assertEquals(cols[1],"testsmallint");
@@ -973,6 +1108,10 @@ class freetds extends sqlrtest {
 		assertEquals(cols[11],"testchar");
 		assertEquals(cols[12],"testvarchar");
 		assertEquals(cols[13],"testbit");
+		assertEquals(cols[14],"testdate");
+		assertEquals(cols[15],"testtime");
+		assertEquals(cols[16],"testbigdatetime");
+		assertEquals(cols[17],"testbigtime");
 		System.out.println();
 
 
@@ -2070,7 +2209,11 @@ class freetds extends sqlrtest {
 			"		smalldatetime, "+
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
-			"	testbit bit)"));
+			"	testbit bit, "+
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testbigdatetime bigdatetime, "+
+			"	testbigtime bigtime)"));
 		assertTrue(cur.getColumnList("testtable",null));
 		assertEquals(cur.getColumnName(0),"column_name");
 		assertEquals(cur.getColumnName(1),"data_type");
@@ -2096,6 +2239,10 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(11,"column_name"),"testchar");
 		assertEquals(cur.getField(12,"column_name"),"testvarchar");
 		assertEquals(cur.getField(13,"column_name"),"testbit");
+		assertEquals(cur.getField(14,"column_name"),"testdate");
+		assertEquals(cur.getField(15,"column_name"),"testtime");
+		assertEquals(cur.getField(16,"column_name"),"testbigdatetime");
+		assertEquals(cur.getField(17,"column_name"),"testbigtime");
 		assertEquals(cur.getField(0,"data_type"),"int");
 		assertEquals(cur.getField(1,"data_type"),"smallint");
 		assertEquals(cur.getField(2,"data_type"),"tinyint");
@@ -2110,6 +2257,10 @@ class freetds extends sqlrtest {
 		assertEquals(cur.getField(11,"data_type"),"char");
 		assertEquals(cur.getField(12,"data_type"),"varchar");
 		assertEquals(cur.getField(13,"data_type"),"bit");
+		assertEquals(cur.getField(14,"data_type"),"date");
+		assertEquals(cur.getField(15,"data_type"),"time");
+		assertEquals(cur.getField(16,"data_type"),"bigdatetime");
+		assertEquals(cur.getField(17,"data_type"),"bigtime");
 		assertTrue(cur.sendQuery("drop table testtable"));
 		System.out.println();
 

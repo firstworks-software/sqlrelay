@@ -89,7 +89,11 @@ assertTrue(cur.sendQuery(
 	"	testsmalldatetime smalldatetime, "+
 	"	testchar char(40), "+
 	"	testvarchar varchar(40), "+
-	"	testbit bit) lock datarows"))
+	"	testbit bit, "+
+	"	testdate date, "+
+	"	testtime time, "+
+	"	testbigdatetime bigdatetime, "+
+	"	testbigtime bigtime) lock datarows"))
 print "\n"
 
 
@@ -113,7 +117,11 @@ assertTrue(cur.sendQuery(
 	"	'01-Jan-2001 01:00:00', "+
 	"	'testchar1', "+
 	"	'testvarchar1', "+
-	"	1)"))
+	"	1, "+
+	"	'01-Jan-2001', "+
+	"	'13:01:01', "+
+	"	'01-Jan-2001 13:01:01', "+
+	"	'01:01:01.001000')"))
 print "\n"
 
 
@@ -142,8 +150,12 @@ cur.prepareQuery(
 	"	?, "+
 	"	?, "+
 	"	?, "+
+	"	?, "+
+	"	?, "+
+	"	?, "+
+	"	?, "+
 	"	?)")
-assertEqual(cur.countBindVariables(),14)
+assertEqual(cur.countBindVariables(),18)
 cur.inputBind("1",2)
 cur.inputBind("2",2)
 cur.inputBind("3",2)
@@ -158,6 +170,10 @@ cur.inputBind("11","01-Jan-2002 02:00:00")
 cur.inputBind("12","testchar2")
 cur.inputBind("13","testvarchar2")
 cur.inputBind("14",1)
+cur.inputBind("15","01-Jan-2001")
+cur.inputBind("16","13:01:01")
+cur.inputBind("17","01-Jan-2001 13:01:01")
+cur.inputBind("18","01:01:01.001000")
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("1",3)
@@ -174,6 +190,10 @@ cur.inputBind("11","01-Jan-2003 03:00:00")
 cur.inputBind("12","testchar3")
 cur.inputBind("13","testvarchar3")
 cur.inputBind("14",1)
+cur.inputBind("15","01-Jan-2001")
+cur.inputBind("16","13:01:01")
+cur.inputBind("17","01-Jan-2001 13:01:01")
+cur.inputBind("18","01:01:01.001000")
 assertTrue(cur.executeQuery())
 print "\n"
 
@@ -200,6 +220,10 @@ cur.inputBind("11","01-Jan-2004 04:00:00")
 cur.inputBind("12","testchar4")
 cur.inputBind("13","testvarchar4")
 cur.inputBind("14",1)
+cur.inputBind("15","01-Jan-2001")
+cur.inputBind("16","13:01:01")
+cur.inputBind("17","01-Jan-2001 13:01:01")
+cur.inputBind("18","01:01:01.001000")
 cur.validateBinds()
 assertTrue(cur.executeQuery())
 print "\n"
@@ -225,8 +249,12 @@ cur.prepareQuery(
 	"	@var11, "+
 	"	@var12, "+
 	"	@var13, "+
-	"	@var14)")
-assertEqual(cur.countBindVariables(),14)
+	"	@var14, "+
+	"	@var15, "+
+	"	@var16, "+
+	"	@var17, "+
+	"	@var18)")
+assertEqual(cur.countBindVariables(),18)
 cur.inputBind("var1",5)
 cur.inputBind("var2",5)
 cur.inputBind("var3",5)
@@ -241,6 +269,10 @@ cur.inputBind("var11","01-Jan-2005 05:00:00")
 cur.inputBind("var12","testchar5")
 cur.inputBind("var13","testvarchar5")
 cur.inputBind("var14",1)
+cur.inputBind("var15","01-Jan-2001")
+cur.inputBind("var16","13:01:01")
+cur.inputBind("var17","01-Jan-2001 13:01:01")
+cur.inputBind("var18","01:01:01.001000")
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("var1",6)
@@ -257,6 +289,10 @@ cur.inputBind("var11","01-Jan-2006 06:00:00")
 cur.inputBind("var12","testchar6")
 cur.inputBind("var13","testvarchar6")
 cur.inputBind("var14",1)
+cur.inputBind("var15","01-Jan-2001")
+cur.inputBind("var16","13:01:01")
+cur.inputBind("var17","01-Jan-2001 13:01:01")
+cur.inputBind("var18","01:01:01.001000")
 assertTrue(cur.executeQuery())
 cur.clearBinds()
 cur.inputBind("var1",7)
@@ -273,6 +309,10 @@ cur.inputBind("var11","01-Jan-2007 07:00:00")
 cur.inputBind("var12","testchar7")
 cur.inputBind("var13","testvarchar7")
 cur.inputBind("var14",1)
+cur.inputBind("var15","01-Jan-2001")
+cur.inputBind("var16","13:01:01")
+cur.inputBind("var17","01-Jan-2001 13:01:01")
+cur.inputBind("var18","01:01:01.001000")
 assertTrue(cur.executeQuery())
 print "\n"
 
@@ -299,7 +339,11 @@ cur.inputBind("var11","01-Jan-2008 08:00:00")
 cur.inputBind("var12","testchar8")
 cur.inputBind("var13","testvarchar8")
 cur.inputBind("var14",1)
-cur.inputBind("var15","junkvalue")
+cur.inputBind("var15","01-Jan-2001")
+cur.inputBind("var16","13:01:01")
+cur.inputBind("var17","01-Jan-2001 13:01:01")
+cur.inputBind("var18","01:01:01.001000")
+cur.inputBind("var19","junkvalue")
 cur.validateBinds()
 assertTrue(cur.executeQuery())
 print "\n"
@@ -313,7 +357,7 @@ print "\n"
 
 # column count
 print "COLUMN COUNT: \n"
-assertEqual(cur.colCount(),14)
+assertEqual(cur.colCount(),18)
 print "\n"
 
 
@@ -333,6 +377,10 @@ assertEqual(cur.getColumnName(10),"testsmalldatetime")
 assertEqual(cur.getColumnName(11),"testchar")
 assertEqual(cur.getColumnName(12),"testvarchar")
 assertEqual(cur.getColumnName(13),"testbit")
+assertEqual(cur.getColumnName(14),"testdate")
+assertEqual(cur.getColumnName(15),"testtime")
+assertEqual(cur.getColumnName(16),"testbigdatetime")
+assertEqual(cur.getColumnName(17),"testbigtime")
 cols=cur.getColumnNames()
 assertEqual(cols[0],"testint")
 assertEqual(cols[1],"testsmallint")
@@ -348,6 +396,10 @@ assertEqual(cols[10],"testsmalldatetime")
 assertEqual(cols[11],"testchar")
 assertEqual(cols[12],"testvarchar")
 assertEqual(cols[13],"testbit")
+assertEqual(cols[14],"testdate")
+assertEqual(cols[15],"testtime")
+assertEqual(cols[16],"testbigdatetime")
+assertEqual(cols[17],"testbigtime")
 print "\n"
 
 
@@ -381,6 +433,14 @@ assertEqual(cur.getColumnType(12),"VARCHAR")
 assertEqual(cur.getColumnType("testvarchar"),"VARCHAR")
 assertEqual(cur.getColumnType(13),"BIT")
 assertEqual(cur.getColumnType("testbit"),"BIT")
+assertEqual(cur.getColumnType(14),"DATE")
+assertEqual(cur.getColumnType("testdate"),"DATE")
+assertEqual(cur.getColumnType(15),"TIME")
+assertEqual(cur.getColumnType("testtime"),"TIME")
+assertEqual(cur.getColumnType(16),"TIMESTAMP")
+assertEqual(cur.getColumnType("testbigdatetime"),"TIMESTAMP")
+assertEqual(cur.getColumnType(17),"TIME")
+assertEqual(cur.getColumnType("testbigtime"),"TIME")
 print "\n"
 
 
@@ -416,6 +476,14 @@ assertEqual(cur.getColumnLength(12),40)
 assertEqual(cur.getColumnLength("testvarchar"),40)
 assertEqual(cur.getColumnLength(13),1)
 assertEqual(cur.getColumnLength("testbit"),1)
+assertEqual(cur.getColumnLength(14),4)
+assertEqual(cur.getColumnLength("testdate"),4)
+assertEqual(cur.getColumnLength(15),4)
+assertEqual(cur.getColumnLength("testtime"),4)
+assertEqual(cur.getColumnLength(16),8)
+assertEqual(cur.getColumnLength("testbigdatetime"),8)
+assertEqual(cur.getColumnLength(17),8)
+assertEqual(cur.getColumnLength("testbigtime"),8)
 print "\n"
 
 
@@ -450,6 +518,15 @@ assertEqual(cur.getLongest(12),12)
 assertEqual(cur.getLongest("testvarchar"),12)
 assertEqual(cur.getLongest(13),1)
 assertEqual(cur.getLongest("testbit"),1)
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getLongest(14),26)
+assertEqual(cur.getLongest("testdate"),26)
+assertEqual(cur.getLongest(15),26)
+assertEqual(cur.getLongest("testtime"),26)
+assertEqual(cur.getLongest(16),26)
+assertEqual(cur.getLongest("testbigdatetime"),26)
+assertEqual(cur.getLongest(17),26)
+assertEqual(cur.getLongest("testbigtime"),26)
 print "\n"
 
 
@@ -494,6 +571,11 @@ assertEqual(cur.getField(0,10),"Jan  1 2001 01:00:00:000AM")
 assertEqual(cur.getField(0,11),"testchar1                               ")
 assertEqual(cur.getField(0,12),"testvarchar1")
 assertEqual(cur.getField(0,13),"1")
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getField(0,14),"Jan  1 2001 00:00:00:000AM")
+assertEqual(cur.getField(0,15),"Jan  1 1900 01:01:01:000PM")
+assertEqual(cur.getField(0,16),"Jan  1 2001 01:01:01:000PM")
+assertEqual(cur.getField(0,17),"Jan  1 1900 01:01:01:001AM")
 print "\n"
 assertEqual(cur.getField(7,0),"8")
 assertEqual(cur.getField(7,1),"8")
@@ -510,6 +592,11 @@ assertEqual(cur.getField(7,10),"Jan  1 2008 08:00:00:000AM")
 assertEqual(cur.getField(7,11),"testchar8                               ")
 assertEqual(cur.getField(7,12),"testvarchar8")
 assertEqual(cur.getField(7,13),"1")
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getField(7,14),"Jan  1 2001 00:00:00:000AM")
+assertEqual(cur.getField(7,15),"Jan  1 1900 01:01:01:000PM")
+assertEqual(cur.getField(7,16),"Jan  1 2001 01:01:01:000PM")
+assertEqual(cur.getField(7,17),"Jan  1 1900 01:01:01:001AM")
 print "\n"
 
 
@@ -530,6 +617,11 @@ assertEqual(cur.getFieldLength(0,10),26)
 assertEqual(cur.getFieldLength(0,11),40)
 assertEqual(cur.getFieldLength(0,12),12)
 assertEqual(cur.getFieldLength(0,13),1)
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getFieldLength(0,14),26)
+assertEqual(cur.getFieldLength(0,15),26)
+assertEqual(cur.getFieldLength(0,16),26)
+assertEqual(cur.getFieldLength(0,17),26)
 print "\n"
 assertEqual(cur.getFieldLength(7,0),1)
 assertEqual(cur.getFieldLength(7,1),1)
@@ -546,6 +638,11 @@ assertEqual(cur.getFieldLength(7,10),26)
 assertEqual(cur.getFieldLength(7,11),40)
 assertEqual(cur.getFieldLength(7,12),12)
 assertEqual(cur.getFieldLength(7,13),1)
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getFieldLength(7,14),26)
+assertEqual(cur.getFieldLength(7,15),26)
+assertEqual(cur.getFieldLength(7,16),26)
+assertEqual(cur.getFieldLength(7,17),26)
 print "\n"
 
 
@@ -566,6 +663,11 @@ assertEqual(cur.getField(0,"testsmalldatetime"),"Jan  1 2001 01:00:00:000AM")
 assertEqual(cur.getField(0,"testchar"),"testchar1                               ")
 assertEqual(cur.getField(0,"testvarchar"),"testvarchar1")
 assertEqual(cur.getField(0,"testbit"),"1")
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getField(0,"testdate"),"Jan  1 2001 00:00:00:000AM")
+assertEqual(cur.getField(0,"testtime"),"Jan  1 1900 01:01:01:000PM")
+assertEqual(cur.getField(0,"testbigdatetime"),"Jan  1 2001 01:01:01:000PM")
+assertEqual(cur.getField(0,"testbigtime"),"Jan  1 1900 01:01:01:001AM")
 print "\n"
 assertEqual(cur.getField(7,"testint"),"8")
 assertEqual(cur.getField(7,"testsmallint"),"8")
@@ -582,6 +684,11 @@ assertEqual(cur.getField(7,"testsmalldatetime"),"Jan  1 2008 08:00:00:000AM")
 assertEqual(cur.getField(7,"testchar"),"testchar8                               ")
 assertEqual(cur.getField(7,"testvarchar"),"testvarchar8")
 assertEqual(cur.getField(7,"testbit"),"1")
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getField(7,"testdate"),"Jan  1 2001 00:00:00:000AM")
+assertEqual(cur.getField(7,"testtime"),"Jan  1 1900 01:01:01:000PM")
+assertEqual(cur.getField(7,"testbigdatetime"),"Jan  1 2001 01:01:01:000PM")
+assertEqual(cur.getField(7,"testbigtime"),"Jan  1 1900 01:01:01:001AM")
 print "\n"
 
 
@@ -602,6 +709,11 @@ assertEqual(cur.getFieldLength(0,"testsmalldatetime"),26)
 assertEqual(cur.getFieldLength(0,"testchar"),40)
 assertEqual(cur.getFieldLength(0,"testvarchar"),12)
 assertEqual(cur.getFieldLength(0,"testbit"),1)
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getFieldLength(0,"testdate"),26)
+assertEqual(cur.getFieldLength(0,"testtime"),26)
+assertEqual(cur.getFieldLength(0,"testbigdatetime"),26)
+assertEqual(cur.getFieldLength(0,"testbigtime"),26)
 print "\n"
 assertEqual(cur.getFieldLength(7,"testint"),1)
 assertEqual(cur.getFieldLength(7,"testsmallint"),1)
@@ -618,6 +730,11 @@ assertEqual(cur.getFieldLength(7,"testsmalldatetime"),26)
 assertEqual(cur.getFieldLength(7,"testchar"),40)
 assertEqual(cur.getFieldLength(7,"testvarchar"),12)
 assertEqual(cur.getFieldLength(7,"testbit"),1)
+# freetds datetime rendering for the fixture tds version
+assertEqual(cur.getFieldLength(7,"testdate"),26)
+assertEqual(cur.getFieldLength(7,"testtime"),26)
+assertEqual(cur.getFieldLength(7,"testbigdatetime"),26)
+assertEqual(cur.getFieldLength(7,"testbigtime"),26)
 print "\n"
 
 
@@ -639,6 +756,11 @@ assertEqual(fields[10],"Jan  1 2001 01:00:00:000AM")
 assertEqual(fields[11],"testchar1                               ")
 assertEqual(fields[12],"testvarchar1")
 assertEqual(fields[13],"1")
+# freetds datetime rendering for the fixture tds version
+assertEqual(fields[14],"Jan  1 2001 00:00:00:000AM")
+assertEqual(fields[15],"Jan  1 1900 01:01:01:000PM")
+assertEqual(fields[16],"Jan  1 2001 01:01:01:000PM")
+assertEqual(fields[17],"Jan  1 1900 01:01:01:001AM")
 print "\n"
 
 
@@ -660,6 +782,11 @@ assertEqual(fieldlens[10],26)
 assertEqual(fieldlens[11],40)
 assertEqual(fieldlens[12],12)
 assertEqual(fieldlens[13],1)
+# freetds datetime rendering for the fixture tds version
+assertEqual(fieldlens[14],26)
+assertEqual(fieldlens[15],26)
+assertEqual(fieldlens[16],26)
+assertEqual(fieldlens[17],26)
 print "\n"
 
 
@@ -806,7 +933,7 @@ print "\n"
 
 # column count for cached result set
 print "COLUMN COUNT FOR CACHED RESULT SET: \n"
-assertEqual(cur.colCount(),14)
+assertEqual(cur.colCount(),18)
 print "\n"
 
 
@@ -826,6 +953,10 @@ assertEqual(cur.getColumnName(10),"testsmalldatetime")
 assertEqual(cur.getColumnName(11),"testchar")
 assertEqual(cur.getColumnName(12),"testvarchar")
 assertEqual(cur.getColumnName(13),"testbit")
+assertEqual(cur.getColumnName(14),"testdate")
+assertEqual(cur.getColumnName(15),"testtime")
+assertEqual(cur.getColumnName(16),"testbigdatetime")
+assertEqual(cur.getColumnName(17),"testbigtime")
 cols=cur.getColumnNames()
 assertEqual(cols[0],"testint")
 assertEqual(cols[1],"testsmallint")
@@ -841,6 +972,10 @@ assertEqual(cols[10],"testsmalldatetime")
 assertEqual(cols[11],"testchar")
 assertEqual(cols[12],"testvarchar")
 assertEqual(cols[13],"testbit")
+assertEqual(cols[14],"testdate")
+assertEqual(cols[15],"testtime")
+assertEqual(cols[16],"testbigdatetime")
+assertEqual(cols[17],"testbigtime")
 print "\n"
 
 
@@ -1685,7 +1820,11 @@ assertTrue(cur.sendQuery(
 	"	testsmalldatetime smalldatetime, "+
 	"	testchar char(40), "+
 	"	testvarchar varchar(40), "+
-	"	testbit bit)"))
+	"	testbit bit, "+
+	"	testdate date, "+
+	"	testtime time, "+
+	"	testbigdatetime bigdatetime, "+
+	"	testbigtime bigtime)"))
 assertTrue(cur.getColumnList("testtable",nil))
 assertEqual(cur.getColumnName(0),"column_name")
 assertEqual(cur.getColumnName(1),"data_type")
@@ -1710,6 +1849,10 @@ assertTrue(cur.getField(10,"column_name")=="testsmalldatetime")
 assertTrue(cur.getField(11,"column_name")=="testchar")
 assertTrue(cur.getField(12,"column_name")=="testvarchar")
 assertTrue(cur.getField(13,"column_name")=="testbit")
+assertTrue(cur.getField(14,"column_name")=="testdate")
+assertTrue(cur.getField(15,"column_name")=="testtime")
+assertTrue(cur.getField(16,"column_name")=="testbigdatetime")
+assertTrue(cur.getField(17,"column_name")=="testbigtime")
 assertTrue(cur.getField(0,"data_type")=="int")
 assertTrue(cur.getField(1,"data_type")=="smallint")
 assertTrue(cur.getField(2,"data_type")=="tinyint")
@@ -1724,6 +1867,10 @@ assertTrue(cur.getField(10,"data_type")=="smalldatetime")
 assertTrue(cur.getField(11,"data_type")=="char")
 assertTrue(cur.getField(12,"data_type")=="varchar")
 assertTrue(cur.getField(13,"data_type")=="bit")
+assertTrue(cur.getField(14,"data_type")=="date")
+assertTrue(cur.getField(15,"data_type")=="time")
+assertTrue(cur.getField(16,"data_type")=="bigdatetime")
+assertTrue(cur.getField(17,"data_type")=="bigtime")
 assertTrue(cur.sendQuery("drop table testtable"))
 print "\n"
 

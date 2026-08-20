@@ -98,7 +98,11 @@ assertTrue($cur->sendQuery(
 	"	testsmalldatetime smalldatetime, ".
 	"	testchar char(40), ".
 	"	testvarchar varchar(40), ".
-	"	testbit bit) lock datarows"));
+	"	testbit bit, ".
+	"	testdate date, ".
+	"	testtime time, ".
+	"	testbigdatetime bigdatetime, ".
+	"	testbigtime bigtime) lock datarows"));
 print("\n");
 
 
@@ -122,7 +126,11 @@ assertTrue($cur->sendQuery(
 	"	'01-Jan-2001 01:00:00', ".
 	"	'testchar1', ".
 	"	'testvarchar1', ".
-	"	1)"));
+	"	1, ".
+	"	'01-Jan-2001', ".
+	"	'13:01:01', ".
+	"	'01-Jan-2001 13:01:01', ".
+	"	'01:01:01.001000')"));
 print("\n");
 
 
@@ -151,8 +159,12 @@ $cur->prepareQuery(
 	"	?, ".
 	"	?, ".
 	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
+	"	?, ".
 	"	?)");
-assertEquals($cur->countBindVariables(),14);
+assertEquals($cur->countBindVariables(),18);
 $cur->inputBind("1",2);
 $cur->inputBind("2",2);
 $cur->inputBind("3",2);
@@ -167,6 +179,10 @@ $cur->inputBind("11","01-Jan-2002 02:00:00");
 $cur->inputBind("12","testchar2");
 $cur->inputBind("13","testvarchar2");
 $cur->inputBind("14",1);
+$cur->inputBind("15","01-Jan-2001");
+$cur->inputBind("16","13:01:01");
+$cur->inputBind("17","01-Jan-2001 13:01:01");
+$cur->inputBind("18","01:01:01.001000");
 assertTrue($cur->executeQuery());
 $cur->clearBinds();
 $cur->inputBind("1",3);
@@ -183,6 +199,10 @@ $cur->inputBind("11","01-Jan-2003 03:00:00");
 $cur->inputBind("12","testchar3");
 $cur->inputBind("13","testvarchar3");
 $cur->inputBind("14",1);
+$cur->inputBind("15","01-Jan-2001");
+$cur->inputBind("16","13:01:01");
+$cur->inputBind("17","01-Jan-2001 13:01:01");
+$cur->inputBind("18","01:01:01.001000");
 assertTrue($cur->executeQuery());
 print("\n");
 
@@ -209,6 +229,10 @@ $cur->inputBind("11","01-Jan-2004 04:00:00");
 $cur->inputBind("12","testchar4");
 $cur->inputBind("13","testvarchar4");
 $cur->inputBind("14",1);
+$cur->inputBind("15","01-Jan-2001");
+$cur->inputBind("16","13:01:01");
+$cur->inputBind("17","01-Jan-2001 13:01:01");
+$cur->inputBind("18","01:01:01.001000");
 $cur->validateBinds();
 assertTrue($cur->executeQuery());
 print("\n");
@@ -234,8 +258,12 @@ $cur->prepareQuery(
 	"	\@var11, ".
 	"	\@var12, ".
 	"	\@var13, ".
-	"	\@var14)");
-assertEquals($cur->countBindVariables(),14);
+	"	\@var14, ".
+	"	\@var15, ".
+	"	\@var16, ".
+	"	\@var17, ".
+	"	\@var18)");
+assertEquals($cur->countBindVariables(),18);
 $cur->inputBind("var1",5);
 $cur->inputBind("var2",5);
 $cur->inputBind("var3",5);
@@ -250,6 +278,10 @@ $cur->inputBind("var11","01-Jan-2005 05:00:00");
 $cur->inputBind("var12","testchar5");
 $cur->inputBind("var13","testvarchar5");
 $cur->inputBind("var14",1);
+$cur->inputBind("var15","01-Jan-2001");
+$cur->inputBind("var16","13:01:01");
+$cur->inputBind("var17","01-Jan-2001 13:01:01");
+$cur->inputBind("var18","01:01:01.001000");
 assertTrue($cur->executeQuery());
 $cur->clearBinds();
 $cur->inputBind("var1",6);
@@ -266,6 +298,10 @@ $cur->inputBind("var11","01-Jan-2006 06:00:00");
 $cur->inputBind("var12","testchar6");
 $cur->inputBind("var13","testvarchar6");
 $cur->inputBind("var14",1);
+$cur->inputBind("var15","01-Jan-2001");
+$cur->inputBind("var16","13:01:01");
+$cur->inputBind("var17","01-Jan-2001 13:01:01");
+$cur->inputBind("var18","01:01:01.001000");
 assertTrue($cur->executeQuery());
 $cur->clearBinds();
 $cur->inputBind("var1",7);
@@ -282,6 +318,10 @@ $cur->inputBind("var11","01-Jan-2007 07:00:00");
 $cur->inputBind("var12","testchar7");
 $cur->inputBind("var13","testvarchar7");
 $cur->inputBind("var14",1);
+$cur->inputBind("var15","01-Jan-2001");
+$cur->inputBind("var16","13:01:01");
+$cur->inputBind("var17","01-Jan-2001 13:01:01");
+$cur->inputBind("var18","01:01:01.001000");
 assertTrue($cur->executeQuery());
 print("\n");
 
@@ -308,7 +348,11 @@ $cur->inputBind("var11","01-Jan-2008 08:00:00");
 $cur->inputBind("var12","testchar8");
 $cur->inputBind("var13","testvarchar8");
 $cur->inputBind("var14",1);
-$cur->inputBind("var15","junkvalue");
+$cur->inputBind("var15","01-Jan-2001");
+$cur->inputBind("var16","13:01:01");
+$cur->inputBind("var17","01-Jan-2001 13:01:01");
+$cur->inputBind("var18","01:01:01.001000");
+$cur->inputBind("var19","junkvalue");
 $cur->validateBinds();
 assertTrue($cur->executeQuery());
 print("\n");
@@ -322,7 +366,7 @@ print("\n");
 
 # column count
 print("COLUMN COUNT: \n");
-assertEquals($cur->colCount(),14);
+assertEquals($cur->colCount(),18);
 print("\n");
 
 
@@ -342,6 +386,10 @@ assertEquals($cur->getColumnName(10),"testsmalldatetime");
 assertEquals($cur->getColumnName(11),"testchar");
 assertEquals($cur->getColumnName(12),"testvarchar");
 assertEquals($cur->getColumnName(13),"testbit");
+assertEquals($cur->getColumnName(14),"testdate");
+assertEquals($cur->getColumnName(15),"testtime");
+assertEquals($cur->getColumnName(16),"testbigdatetime");
+assertEquals($cur->getColumnName(17),"testbigtime");
 @cols=$cur->getColumnNames();
 assertEquals($cols[0],"testint");
 assertEquals($cols[1],"testsmallint");
@@ -357,6 +405,10 @@ assertEquals($cols[10],"testsmalldatetime");
 assertEquals($cols[11],"testchar");
 assertEquals($cols[12],"testvarchar");
 assertEquals($cols[13],"testbit");
+assertEquals($cols[14],"testdate");
+assertEquals($cols[15],"testtime");
+assertEquals($cols[16],"testbigdatetime");
+assertEquals($cols[17],"testbigtime");
 print("\n");
 
 
@@ -390,6 +442,14 @@ assertEquals($cur->getColumnType(12),"VARCHAR");
 assertEquals($cur->getColumnType("testvarchar"),"VARCHAR");
 assertEquals($cur->getColumnType(13),"BIT");
 assertEquals($cur->getColumnType("testbit"),"BIT");
+assertEquals($cur->getColumnType(14),"DATE");
+assertEquals($cur->getColumnType("testdate"),"DATE");
+assertEquals($cur->getColumnType(15),"TIME");
+assertEquals($cur->getColumnType("testtime"),"TIME");
+assertEquals($cur->getColumnType(16),"TIMESTAMP");
+assertEquals($cur->getColumnType("testbigdatetime"),"TIMESTAMP");
+assertEquals($cur->getColumnType(17),"TIME");
+assertEquals($cur->getColumnType("testbigtime"),"TIME");
 print("\n");
 
 
@@ -425,6 +485,14 @@ assertEquals($cur->getColumnLength(12),40);
 assertEquals($cur->getColumnLength("testvarchar"),40);
 assertEquals($cur->getColumnLength(13),1);
 assertEquals($cur->getColumnLength("testbit"),1);
+assertEquals($cur->getColumnLength(14),4);
+assertEquals($cur->getColumnLength("testdate"),4);
+assertEquals($cur->getColumnLength(15),4);
+assertEquals($cur->getColumnLength("testtime"),4);
+assertEquals($cur->getColumnLength(16),8);
+assertEquals($cur->getColumnLength("testbigdatetime"),8);
+assertEquals($cur->getColumnLength(17),8);
+assertEquals($cur->getColumnLength("testbigtime"),8);
 print("\n");
 
 
@@ -459,6 +527,15 @@ assertEquals($cur->getLongest(12),12);
 assertEquals($cur->getLongest("testvarchar"),12);
 assertEquals($cur->getLongest(13),1);
 assertEquals($cur->getLongest("testbit"),1);
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getLongest(14),26);
+assertEquals($cur->getLongest("testdate"),26);
+assertEquals($cur->getLongest(15),26);
+assertEquals($cur->getLongest("testtime"),26);
+assertEquals($cur->getLongest(16),26);
+assertEquals($cur->getLongest("testbigdatetime"),26);
+assertEquals($cur->getLongest(17),26);
+assertEquals($cur->getLongest("testbigtime"),26);
 print("\n");
 
 
@@ -503,6 +580,11 @@ assertEquals($cur->getField(0,10),"Jan  1 2001 01:00:00:000AM");
 assertEquals($cur->getField(0,11),"testchar1                               ");
 assertEquals($cur->getField(0,12),"testvarchar1");
 assertEquals($cur->getField(0,13),"1");
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getField(0,14),"Jan  1 2001 00:00:00:000AM");
+assertEquals($cur->getField(0,15),"Jan  1 1900 01:01:01:000PM");
+assertEquals($cur->getField(0,16),"Jan  1 2001 01:01:01:000PM");
+assertEquals($cur->getField(0,17),"Jan  1 1900 01:01:01:001AM");
 print("\n");
 assertEquals($cur->getField(7,0),"8");
 assertEquals($cur->getField(7,1),"8");
@@ -519,6 +601,11 @@ assertEquals($cur->getField(7,10),"Jan  1 2008 08:00:00:000AM");
 assertEquals($cur->getField(7,11),"testchar8                               ");
 assertEquals($cur->getField(7,12),"testvarchar8");
 assertEquals($cur->getField(7,13),"1");
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getField(7,14),"Jan  1 2001 00:00:00:000AM");
+assertEquals($cur->getField(7,15),"Jan  1 1900 01:01:01:000PM");
+assertEquals($cur->getField(7,16),"Jan  1 2001 01:01:01:000PM");
+assertEquals($cur->getField(7,17),"Jan  1 1900 01:01:01:001AM");
 print("\n");
 
 
@@ -539,6 +626,11 @@ assertEquals($cur->getFieldLength(0,10),26);
 assertEquals($cur->getFieldLength(0,11),40);
 assertEquals($cur->getFieldLength(0,12),12);
 assertEquals($cur->getFieldLength(0,13),1);
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getFieldLength(0,14),26);
+assertEquals($cur->getFieldLength(0,15),26);
+assertEquals($cur->getFieldLength(0,16),26);
+assertEquals($cur->getFieldLength(0,17),26);
 print("\n");
 assertEquals($cur->getFieldLength(7,0),1);
 assertEquals($cur->getFieldLength(7,1),1);
@@ -555,6 +647,11 @@ assertEquals($cur->getFieldLength(7,10),26);
 assertEquals($cur->getFieldLength(7,11),40);
 assertEquals($cur->getFieldLength(7,12),12);
 assertEquals($cur->getFieldLength(7,13),1);
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getFieldLength(7,14),26);
+assertEquals($cur->getFieldLength(7,15),26);
+assertEquals($cur->getFieldLength(7,16),26);
+assertEquals($cur->getFieldLength(7,17),26);
 print("\n");
 
 
@@ -575,6 +672,11 @@ assertEquals($cur->getField(0,"testsmalldatetime"),"Jan  1 2001 01:00:00:000AM")
 assertEquals($cur->getField(0,"testchar"),"testchar1                               ");
 assertEquals($cur->getField(0,"testvarchar"),"testvarchar1");
 assertEquals($cur->getField(0,"testbit"),"1");
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getField(0,"testdate"),"Jan  1 2001 00:00:00:000AM");
+assertEquals($cur->getField(0,"testtime"),"Jan  1 1900 01:01:01:000PM");
+assertEquals($cur->getField(0,"testbigdatetime"),"Jan  1 2001 01:01:01:000PM");
+assertEquals($cur->getField(0,"testbigtime"),"Jan  1 1900 01:01:01:001AM");
 print("\n");
 assertEquals($cur->getField(7,"testint"),"8");
 assertEquals($cur->getField(7,"testsmallint"),"8");
@@ -591,6 +693,11 @@ assertEquals($cur->getField(7,"testsmalldatetime"),"Jan  1 2008 08:00:00:000AM")
 assertEquals($cur->getField(7,"testchar"),"testchar8                               ");
 assertEquals($cur->getField(7,"testvarchar"),"testvarchar8");
 assertEquals($cur->getField(7,"testbit"),"1");
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getField(7,"testdate"),"Jan  1 2001 00:00:00:000AM");
+assertEquals($cur->getField(7,"testtime"),"Jan  1 1900 01:01:01:000PM");
+assertEquals($cur->getField(7,"testbigdatetime"),"Jan  1 2001 01:01:01:000PM");
+assertEquals($cur->getField(7,"testbigtime"),"Jan  1 1900 01:01:01:001AM");
 print("\n");
 
 
@@ -611,6 +718,11 @@ assertEquals($cur->getFieldLength(0,"testsmalldatetime"),26);
 assertEquals($cur->getFieldLength(0,"testchar"),40);
 assertEquals($cur->getFieldLength(0,"testvarchar"),12);
 assertEquals($cur->getFieldLength(0,"testbit"),1);
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getFieldLength(0,"testdate"),26);
+assertEquals($cur->getFieldLength(0,"testtime"),26);
+assertEquals($cur->getFieldLength(0,"testbigdatetime"),26);
+assertEquals($cur->getFieldLength(0,"testbigtime"),26);
 print("\n");
 assertEquals($cur->getFieldLength(7,"testint"),1);
 assertEquals($cur->getFieldLength(7,"testsmallint"),1);
@@ -627,6 +739,11 @@ assertEquals($cur->getFieldLength(7,"testsmalldatetime"),26);
 assertEquals($cur->getFieldLength(7,"testchar"),40);
 assertEquals($cur->getFieldLength(7,"testvarchar"),12);
 assertEquals($cur->getFieldLength(7,"testbit"),1);
+# freetds datetime rendering for the fixture tds version
+assertEquals($cur->getFieldLength(7,"testdate"),26);
+assertEquals($cur->getFieldLength(7,"testtime"),26);
+assertEquals($cur->getFieldLength(7,"testbigdatetime"),26);
+assertEquals($cur->getFieldLength(7,"testbigtime"),26);
 print("\n");
 
 
@@ -648,6 +765,11 @@ assertEquals($fields[10],"Jan  1 2001 01:00:00:000AM");
 assertEquals($fields[11],"testchar1                               ");
 assertEquals($fields[12],"testvarchar1");
 assertEquals($fields[13],"1");
+# freetds datetime rendering for the fixture tds version
+assertEquals($fields[14],"Jan  1 2001 00:00:00:000AM");
+assertEquals($fields[15],"Jan  1 1900 01:01:01:000PM");
+assertEquals($fields[16],"Jan  1 2001 01:01:01:000PM");
+assertEquals($fields[17],"Jan  1 1900 01:01:01:001AM");
 print("\n");
 
 
@@ -669,6 +791,11 @@ assertEquals($fieldlens[10],26);
 assertEquals($fieldlens[11],40);
 assertEquals($fieldlens[12],12);
 assertEquals($fieldlens[13],1);
+# freetds datetime rendering for the fixture tds version
+assertEquals($fieldlens[14],26);
+assertEquals($fieldlens[15],26);
+assertEquals($fieldlens[16],26);
+assertEquals($fieldlens[17],26);
 print("\n");
 
 
@@ -815,7 +942,7 @@ print("\n");
 
 # column count for cached result set
 print("COLUMN COUNT FOR CACHED RESULT SET: \n");
-assertEquals($cur->colCount(),14);
+assertEquals($cur->colCount(),18);
 print("\n");
 
 
@@ -835,6 +962,10 @@ assertEquals($cur->getColumnName(10),"testsmalldatetime");
 assertEquals($cur->getColumnName(11),"testchar");
 assertEquals($cur->getColumnName(12),"testvarchar");
 assertEquals($cur->getColumnName(13),"testbit");
+assertEquals($cur->getColumnName(14),"testdate");
+assertEquals($cur->getColumnName(15),"testtime");
+assertEquals($cur->getColumnName(16),"testbigdatetime");
+assertEquals($cur->getColumnName(17),"testbigtime");
 @cols=$cur->getColumnNames();
 assertEquals($cols[0],"testint");
 assertEquals($cols[1],"testsmallint");
@@ -850,6 +981,10 @@ assertEquals($cols[10],"testsmalldatetime");
 assertEquals($cols[11],"testchar");
 assertEquals($cols[12],"testvarchar");
 assertEquals($cols[13],"testbit");
+assertEquals($cols[14],"testdate");
+assertEquals($cols[15],"testtime");
+assertEquals($cols[16],"testbigdatetime");
+assertEquals($cols[17],"testbigtime");
 print("\n");
 
 
@@ -1692,7 +1827,11 @@ assertTrue($cur->sendQuery(
 	"	testsmalldatetime smalldatetime, ".
 	"	testchar char(40), ".
 	"	testvarchar varchar(40), ".
-	"	testbit bit)"));
+	"	testbit bit, ".
+	"	testdate date, ".
+	"	testtime time, ".
+	"	testbigdatetime bigdatetime, ".
+	"	testbigtime bigtime)"));
 assertTrue($cur->getColumnList("testtable",undef));
 assertEquals($cur->getColumnName(0),"column_name");
 assertEquals($cur->getColumnName(1),"data_type");
@@ -1717,6 +1856,10 @@ assertTrue($cur->getField(10,"column_name") eq "testsmalldatetime");
 assertTrue($cur->getField(11,"column_name") eq "testchar");
 assertTrue($cur->getField(12,"column_name") eq "testvarchar");
 assertTrue($cur->getField(13,"column_name") eq "testbit");
+assertTrue($cur->getField(14,"column_name") eq "testdate");
+assertTrue($cur->getField(15,"column_name") eq "testtime");
+assertTrue($cur->getField(16,"column_name") eq "testbigdatetime");
+assertTrue($cur->getField(17,"column_name") eq "testbigtime");
 assertTrue($cur->getField(0,"data_type") eq "int");
 assertTrue($cur->getField(1,"data_type") eq "smallint");
 assertTrue($cur->getField(2,"data_type") eq "tinyint");
@@ -1731,6 +1874,10 @@ assertTrue($cur->getField(10,"data_type") eq "smalldatetime");
 assertTrue($cur->getField(11,"data_type") eq "char");
 assertTrue($cur->getField(12,"data_type") eq "varchar");
 assertTrue($cur->getField(13,"data_type") eq "bit");
+assertTrue($cur->getField(14,"data_type") eq "date");
+assertTrue($cur->getField(15,"data_type") eq "time");
+assertTrue($cur->getField(16,"data_type") eq "bigdatetime");
+assertTrue($cur->getField(17,"data_type") eq "bigtime");
 assertTrue($cur->sendQuery("drop table testtable"));
 print("\n");
 

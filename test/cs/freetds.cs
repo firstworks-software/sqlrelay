@@ -106,7 +106,11 @@ namespace SQLRClientTest
                 + "	testsmalldatetime smalldatetime, "
                 + "	testchar char(40), "
                 + "	testvarchar varchar(40), "
-                + "	testbit bit) lock datarows"));
+                + "	testbit bit, "
+                + "	testdate date, "
+                + "	testtime time, "
+                + "	testbigdatetime bigdatetime, "
+                + "	testbigtime bigtime) lock datarows"));
             Console.WriteLine("");
 
 
@@ -130,7 +134,11 @@ namespace SQLRClientTest
                 + "	'01-Jan-2001 01:00:00', "
                 + "	'testchar1', "
                 + "	'testvarchar1', "
-                + "	1)"));
+                + "	1, "
+                + "	'01-Jan-2001', "
+                + "	'13:01:01', "
+                + "	'01-Jan-2001 13:01:01', "
+                + "	'01:01:01.001000')"));
             Console.WriteLine("");
 
 
@@ -159,8 +167,12 @@ namespace SQLRClientTest
                 + "	?, "
                 + "	?, "
                 + "	?, "
+                + "	?, "
+                + "	?, "
+                + "	?, "
+                + "	?, "
                 + "	?)");
-            assertEquals(cur.countBindVariables(), (UInt16)14);
+            assertEquals(cur.countBindVariables(), (UInt16)18);
             cur.inputBind("1", (Int64)2);
             cur.inputBind("2", (Int64)2);
             cur.inputBind("3", (Int64)2);
@@ -175,6 +187,10 @@ namespace SQLRClientTest
             cur.inputBind("12", "testchar2");
             cur.inputBind("13", "testvarchar2");
             cur.inputBind("14", (Int64)1);
+            cur.inputBind("15", "01-Jan-2001");
+            cur.inputBind("16", "13:01:01");
+            cur.inputBind("17", "01-Jan-2001 13:01:01");
+            cur.inputBind("18", "01:01:01.001000");
             assertTrue(cur.executeQuery());
             cur.clearBinds();
             cur.inputBind("1", (Int64)3);
@@ -191,6 +207,10 @@ namespace SQLRClientTest
             cur.inputBind("12", "testchar3");
             cur.inputBind("13", "testvarchar3");
             cur.inputBind("14", (Int64)1);
+            cur.inputBind("15", "01-Jan-2001");
+            cur.inputBind("16", "13:01:01");
+            cur.inputBind("17", "01-Jan-2001 13:01:01");
+            cur.inputBind("18", "01:01:01.001000");
             assertTrue(cur.executeQuery());
             Console.WriteLine("");
 
@@ -217,6 +237,10 @@ namespace SQLRClientTest
             cur.inputBind("12", "testchar4");
             cur.inputBind("13", "testvarchar4");
             cur.inputBind("14", (Int64)1);
+            cur.inputBind("15", "01-Jan-2001");
+            cur.inputBind("16", "13:01:01");
+            cur.inputBind("17", "01-Jan-2001 13:01:01");
+            cur.inputBind("18", "01:01:01.001000");
             cur.validateBinds();
             assertTrue(cur.executeQuery());
             Console.WriteLine("");
@@ -242,8 +266,12 @@ namespace SQLRClientTest
                 + "	@var11, "
                 + "	@var12, "
                 + "	@var13, "
-                + "	@var14)");
-            assertEquals(cur.countBindVariables(), (UInt16)14);
+                + "	@var14, "
+                + "	@var15, "
+                + "	@var16, "
+                + "	@var17, "
+                + "	@var18)");
+            assertEquals(cur.countBindVariables(), (UInt16)18);
             cur.inputBind("var1", (Int64)5);
             cur.inputBind("var2", (Int64)5);
             cur.inputBind("var3", (Int64)5);
@@ -258,6 +286,10 @@ namespace SQLRClientTest
             cur.inputBind("var12", "testchar5");
             cur.inputBind("var13", "testvarchar5");
             cur.inputBind("var14", (Int64)1);
+            cur.inputBind("var15", "01-Jan-2001");
+            cur.inputBind("var16", "13:01:01");
+            cur.inputBind("var17", "01-Jan-2001 13:01:01");
+            cur.inputBind("var18", "01:01:01.001000");
             assertTrue(cur.executeQuery());
             cur.clearBinds();
             cur.inputBind("var1", (Int64)6);
@@ -274,6 +306,10 @@ namespace SQLRClientTest
             cur.inputBind("var12", "testchar6");
             cur.inputBind("var13", "testvarchar6");
             cur.inputBind("var14", (Int64)1);
+            cur.inputBind("var15", "01-Jan-2001");
+            cur.inputBind("var16", "13:01:01");
+            cur.inputBind("var17", "01-Jan-2001 13:01:01");
+            cur.inputBind("var18", "01:01:01.001000");
             assertTrue(cur.executeQuery());
             cur.clearBinds();
             cur.inputBind("var1", (Int64)7);
@@ -290,6 +326,10 @@ namespace SQLRClientTest
             cur.inputBind("var12", "testchar7");
             cur.inputBind("var13", "testvarchar7");
             cur.inputBind("var14", (Int64)1);
+            cur.inputBind("var15", "01-Jan-2001");
+            cur.inputBind("var16", "13:01:01");
+            cur.inputBind("var17", "01-Jan-2001 13:01:01");
+            cur.inputBind("var18", "01:01:01.001000");
             assertTrue(cur.executeQuery());
             Console.WriteLine("");
 
@@ -316,7 +356,11 @@ namespace SQLRClientTest
             cur.inputBind("var12", "testchar8");
             cur.inputBind("var13", "testvarchar8");
             cur.inputBind("var14", (Int64)1);
-            cur.inputBind("var15", "junkvalue");
+            cur.inputBind("var15", "01-Jan-2001");
+            cur.inputBind("var16", "13:01:01");
+            cur.inputBind("var17", "01-Jan-2001 13:01:01");
+            cur.inputBind("var18", "01:01:01.001000");
+            cur.inputBind("var19", "junkvalue");
             cur.validateBinds();
             assertTrue(cur.executeQuery());
             Console.WriteLine("");
@@ -330,7 +374,7 @@ namespace SQLRClientTest
 
             // column count
             Console.WriteLine("COLUMN COUNT: ");
-            assertEquals(cur.colCount(), (UInt32)14);
+            assertEquals(cur.colCount(), (UInt32)18);
             Console.WriteLine("");
 
 
@@ -350,6 +394,10 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnName(11), "testchar");
             assertEquals(cur.getColumnName(12), "testvarchar");
             assertEquals(cur.getColumnName(13), "testbit");
+            assertEquals(cur.getColumnName(14), "testdate");
+            assertEquals(cur.getColumnName(15), "testtime");
+            assertEquals(cur.getColumnName(16), "testbigdatetime");
+            assertEquals(cur.getColumnName(17), "testbigtime");
             cols = cur.getColumnNames();
             assertEquals(cols[0], "testint");
             assertEquals(cols[1], "testsmallint");
@@ -365,6 +413,10 @@ namespace SQLRClientTest
             assertEquals(cols[11], "testchar");
             assertEquals(cols[12], "testvarchar");
             assertEquals(cols[13], "testbit");
+            assertEquals(cols[14], "testdate");
+            assertEquals(cols[15], "testtime");
+            assertEquals(cols[16], "testbigdatetime");
+            assertEquals(cols[17], "testbigtime");
             Console.WriteLine("");
 
 
@@ -398,6 +450,14 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnType("testvarchar"), "VARCHAR");
             assertEquals(cur.getColumnType(13), "BIT");
             assertEquals(cur.getColumnType("testbit"), "BIT");
+            assertEquals(cur.getColumnType(14), "DATE");
+            assertEquals(cur.getColumnType("testdate"), "DATE");
+            assertEquals(cur.getColumnType(15), "TIME");
+            assertEquals(cur.getColumnType("testtime"), "TIME");
+            assertEquals(cur.getColumnType(16), "TIMESTAMP");
+            assertEquals(cur.getColumnType("testbigdatetime"), "TIMESTAMP");
+            assertEquals(cur.getColumnType(17), "TIME");
+            assertEquals(cur.getColumnType("testbigtime"), "TIME");
             Console.WriteLine("");
 
 
@@ -433,6 +493,14 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnLength("testvarchar"),(UInt32)40);
             assertEquals(cur.getColumnLength(13), (UInt32)1);
             assertEquals(cur.getColumnLength("testbit"), (UInt32)1);
+            assertEquals(cur.getColumnLength(14), (UInt32)4);
+            assertEquals(cur.getColumnLength("testdate"), (UInt32)4);
+            assertEquals(cur.getColumnLength(15), (UInt32)4);
+            assertEquals(cur.getColumnLength("testtime"), (UInt32)4);
+            assertEquals(cur.getColumnLength(16), (UInt32)8);
+            assertEquals(cur.getColumnLength("testbigdatetime"), (UInt32)8);
+            assertEquals(cur.getColumnLength(17), (UInt32)8);
+            assertEquals(cur.getColumnLength("testbigtime"), (UInt32)8);
             Console.WriteLine("");
 
 
@@ -467,6 +535,15 @@ namespace SQLRClientTest
             assertEquals(cur.getLongest("testvarchar"), (UInt32)12);
             assertEquals(cur.getLongest(13), (UInt32)1);
             assertEquals(cur.getLongest("testbit"), (UInt32)1);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getLongest(14), (UInt32)26);
+            assertEquals(cur.getLongest("testdate"), (UInt32)26);
+            assertEquals(cur.getLongest(15), (UInt32)26);
+            assertEquals(cur.getLongest("testtime"), (UInt32)26);
+            assertEquals(cur.getLongest(16), (UInt32)26);
+            assertEquals(cur.getLongest("testbigdatetime"), (UInt32)26);
+            assertEquals(cur.getLongest(17), (UInt32)26);
+            assertEquals(cur.getLongest("testbigtime"), (UInt32)26);
             Console.WriteLine("");
 
 
@@ -511,6 +588,11 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, (UInt32)11), "testchar1                               ");
             assertEquals(cur.getField((UInt64)0, (UInt32)12), "testvarchar1");
             assertEquals(cur.getField((UInt64)0, (UInt32)13), "1");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)0,(UInt32)14),"Jan  1 2001 00:00:00:000AM");
+            assertEquals(cur.getField((UInt64)0,(UInt32)15),"Jan  1 1900 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)0,(UInt32)16),"Jan  1 2001 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)0,(UInt32)17),"Jan  1 1900 01:01:01:001AM");
             Console.WriteLine("");
             assertEquals(cur.getField((UInt64)7, (UInt32)0), "8");
             assertEquals(cur.getField((UInt64)7, (UInt32)1), "8");
@@ -527,6 +609,11 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, (UInt32)11), "testchar8                               ");
             assertEquals(cur.getField((UInt64)7, (UInt32)12), "testvarchar8");
             assertEquals(cur.getField((UInt64)7, (UInt32)13), "1");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)7,(UInt32)14),"Jan  1 2001 00:00:00:000AM");
+            assertEquals(cur.getField((UInt64)7,(UInt32)15),"Jan  1 1900 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)7,(UInt32)16),"Jan  1 2001 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)7,(UInt32)17),"Jan  1 1900 01:01:01:001AM");
             Console.WriteLine("");
 
 
@@ -547,6 +634,11 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)11), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)12), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)0, (UInt32)13), (UInt32)1);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)14),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)15),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)16),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,(UInt32)17),(UInt32)26);
             Console.WriteLine("");
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)0), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)1), (UInt32)1);
@@ -563,6 +655,11 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)11), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)12), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)7, (UInt32)13), (UInt32)1);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)14),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)15),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)16),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,(UInt32)17),(UInt32)26);
             Console.WriteLine("");
 
 
@@ -583,6 +680,11 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)0, "testchar"), "testchar1                               ");
             assertEquals(cur.getField((UInt64)0, "testvarchar"), "testvarchar1");
             assertEquals(cur.getField((UInt64)0, "testbit"), "1");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)0,"testdate"),"Jan  1 2001 00:00:00:000AM");
+            assertEquals(cur.getField((UInt64)0,"testtime"),"Jan  1 1900 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)0,"testbigdatetime"),"Jan  1 2001 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)0,"testbigtime"),"Jan  1 1900 01:01:01:001AM");
             Console.WriteLine("");
             assertEquals(cur.getField((UInt64)7, "testint"), "8");
             assertEquals(cur.getField((UInt64)7, "testsmallint"), "8");
@@ -599,6 +701,11 @@ namespace SQLRClientTest
             assertEquals(cur.getField((UInt64)7, "testchar"), "testchar8                               ");
             assertEquals(cur.getField((UInt64)7, "testvarchar"), "testvarchar8");
             assertEquals(cur.getField((UInt64)7, "testbit"), "1");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getField((UInt64)7,"testdate"),"Jan  1 2001 00:00:00:000AM");
+            assertEquals(cur.getField((UInt64)7,"testtime"),"Jan  1 1900 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)7,"testbigdatetime"),"Jan  1 2001 01:01:01:000PM");
+            assertEquals(cur.getField((UInt64)7,"testbigtime"),"Jan  1 1900 01:01:01:001AM");
             Console.WriteLine("");
 
 
@@ -619,6 +726,11 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)0, "testchar"), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)0, "testvarchar"), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)0, "testbit"), (UInt32)1);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)0,"testdate"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,"testtime"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,"testbigdatetime"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)0,"testbigtime"),(UInt32)26);
             Console.WriteLine("");
             assertEquals(cur.getFieldLength((UInt64)7, "testint"), (UInt32)1);
             assertEquals(cur.getFieldLength((UInt64)7, "testsmallint"), (UInt32)1);
@@ -635,6 +747,11 @@ namespace SQLRClientTest
             assertEquals(cur.getFieldLength((UInt64)7, "testchar"), (UInt32)40);
             assertEquals(cur.getFieldLength((UInt64)7, "testvarchar"), (UInt32)12);
             assertEquals(cur.getFieldLength((UInt64)7, "testbit"), (UInt32)1);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(cur.getFieldLength((UInt64)7,"testdate"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,"testtime"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,"testbigdatetime"),(UInt32)26);
+            assertEquals(cur.getFieldLength((UInt64)7,"testbigtime"),(UInt32)26);
             Console.WriteLine("");
 
 
@@ -656,6 +773,11 @@ namespace SQLRClientTest
             assertEquals(fields[11], "testchar1                               ");
             assertEquals(fields[12], "testvarchar1");
             assertEquals(fields[13], "1");
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(fields[14],"Jan  1 2001 00:00:00:000AM");
+            assertEquals(fields[15],"Jan  1 1900 01:01:01:000PM");
+            assertEquals(fields[16],"Jan  1 2001 01:01:01:000PM");
+            assertEquals(fields[17],"Jan  1 1900 01:01:01:001AM");
             Console.WriteLine("");
 
 
@@ -677,6 +799,11 @@ namespace SQLRClientTest
             assertEquals(fieldlens[11], (UInt32)40);
             assertEquals(fieldlens[12], (UInt32)12);
             assertEquals(fieldlens[13], (UInt32)1);
+            // freetds datetime rendering for the fixture tds version
+            assertEquals(fieldlens[14],(UInt32)26);
+            assertEquals(fieldlens[15],(UInt32)26);
+            assertEquals(fieldlens[16],(UInt32)26);
+            assertEquals(fieldlens[17],(UInt32)26);
             Console.WriteLine("");
 
 
@@ -823,7 +950,7 @@ namespace SQLRClientTest
 
             // column count for cached result set
             Console.WriteLine("COLUMN COUNT FOR CACHED RESULT SET: ");
-            assertEquals(cur.colCount(), (UInt32)14);
+            assertEquals(cur.colCount(), (UInt32)18);
             Console.WriteLine("");
 
 
@@ -843,6 +970,10 @@ namespace SQLRClientTest
             assertEquals(cur.getColumnName(11), "testchar");
             assertEquals(cur.getColumnName(12), "testvarchar");
             assertEquals(cur.getColumnName(13), "testbit");
+            assertEquals(cur.getColumnName(14), "testdate");
+            assertEquals(cur.getColumnName(15), "testtime");
+            assertEquals(cur.getColumnName(16), "testbigdatetime");
+            assertEquals(cur.getColumnName(17), "testbigtime");
             cols = cur.getColumnNames();
             assertEquals(cols[0], "testint");
             assertEquals(cols[1], "testsmallint");
@@ -858,6 +989,10 @@ namespace SQLRClientTest
             assertEquals(cols[11], "testchar");
             assertEquals(cols[12], "testvarchar");
             assertEquals(cols[13], "testbit");
+            assertEquals(cols[14], "testdate");
+            assertEquals(cols[15], "testtime");
+            assertEquals(cols[16], "testbigdatetime");
+            assertEquals(cols[17], "testbigtime");
             Console.WriteLine("");
 
 
@@ -1730,7 +1865,11 @@ namespace SQLRClientTest
                 + "	testsmalldatetime smalldatetime, "
                 + "	testchar char(40), "
                 + "	testvarchar varchar(40), "
-                + "	testbit bit)"));
+                + "	testbit bit, "
+                + "	testdate date, "
+                + "	testtime time, "
+                + "	testbigdatetime bigdatetime, "
+                + "	testbigtime bigtime)"));
             assertTrue(cur.getColumnList("testtable", null));
             assertEquals(cur.getColumnName(0), "column_name");
             assertEquals(cur.getColumnName(1), "data_type");
@@ -1755,6 +1894,10 @@ namespace SQLRClientTest
             assertTrue(cur.getField((UInt64)11, "column_name") == "testchar");
             assertTrue(cur.getField((UInt64)12, "column_name") == "testvarchar");
             assertTrue(cur.getField((UInt64)13, "column_name") == "testbit");
+            assertTrue(cur.getField((UInt64)14, "column_name") == "testdate");
+            assertTrue(cur.getField((UInt64)15, "column_name") == "testtime");
+            assertTrue(cur.getField((UInt64)16, "column_name") == "testbigdatetime");
+            assertTrue(cur.getField((UInt64)17, "column_name") == "testbigtime");
             assertTrue(cur.getField((UInt64)0, "data_type") == "int");
             assertTrue(cur.getField((UInt64)1, "data_type") == "smallint");
             assertTrue(cur.getField((UInt64)2, "data_type") == "tinyint");
@@ -1769,6 +1912,10 @@ namespace SQLRClientTest
             assertTrue(cur.getField((UInt64)11, "data_type") == "char");
             assertTrue(cur.getField((UInt64)12, "data_type") == "varchar");
             assertTrue(cur.getField((UInt64)13, "data_type") == "bit");
+            assertTrue(cur.getField((UInt64)14, "data_type") == "date");
+            assertTrue(cur.getField((UInt64)15, "data_type") == "time");
+            assertTrue(cur.getField((UInt64)16, "data_type") == "bigdatetime");
+            assertTrue(cur.getField((UInt64)17, "data_type") == "bigtime");
             assertTrue(cur.sendQuery("drop table testtable"));
             Console.WriteLine("");
 

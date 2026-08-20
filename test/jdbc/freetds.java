@@ -39,8 +39,14 @@ class freetds extends sqlrtest {
 			issqlrelay=true;
 		} else if (classpath.contains("jtds")) {
 			driver="net.sourceforge.jtds.jdbc.Driver";
+			// #4780 - prepareSQL=0 turns off jtds's server-side
+			// prepare.  jtds 1.3.1 predates the bigdatetime and
+			// bigtime types, and its tds 5 prepare handshake
+			// dies with "Invalid TDS data type 0x0" when a
+			// prepared insert touches one of those columns
 			url="jdbc:jtds:sybase://sap:5000;databaseName="+
-								hostname;
+							hostname+
+							";prepareSQL=0";
 			user="testuser";
 			password="testpassword";
 		}
@@ -1550,7 +1556,16 @@ class freetds extends sqlrtest {
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
-			"	testurl varchar(60)) "+
+			"	testurl varchar(60), "+
+			// #4780 - appended after testurl rather than
+			// right after testbit like the other language
+			// tests do.  this file's fixture has an extra
+			// testurl column, and the new columns have to be
+			// appended, not inserted
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testbigdatetime bigdatetime, "+
+			"	testbigtime bigtime) "+
 			"lock datarows"),0);
 		con.setAutoCommit(false);
 		System.out.println();
@@ -1576,7 +1591,11 @@ class freetds extends sqlrtest {
 			"	'char1', "+
 			"	'varchar1', "+
 			"	1, "+
-			"	'http://www.firstworks.com:8080/testurl1')"));
+			"	'http://www.firstworks.com:8080/testurl1', "+
+			"	'01-Jan-2001', "+
+			"	'13:01:01', "+
+			"	'01-Jan-2001 13:01:01', "+
+			"	'01:01:01.001000')"));
 		assertEquals(stmt.getUpdateCount(),1);
 		stmt.close();
 		assertTrue(stmt.isClosed());
@@ -1589,6 +1608,10 @@ class freetds extends sqlrtest {
 			"insert into "+
 			"	testtable "+
 			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?, "+
 			"	?, "+
 			"	?, "+
 			"	?, "+
@@ -1642,6 +1665,11 @@ class freetds extends sqlrtest {
 			pstmt.setString(15,
 				"http://www.firstworks.com:8080/"+
 				"testurl"+i);
+			// #4780 - same value in every row
+			pstmt.setString(16,"01-Jan-2001");
+			pstmt.setString(17,"13:01:01");
+			pstmt.setString(18,"01-Jan-2001 13:01:01");
+			pstmt.setString(19,"01:01:01.001000");
 			assertEquals(pstmt.executeUpdate(),1);
 			System.out.println();
 		}
@@ -1673,7 +1701,7 @@ class freetds extends sqlrtest {
 
 		// column count
 		System.out.println("COLUMN COUNT:");
-		assertEquals(rsmd.getColumnCount(),15);
+		assertEquals(rsmd.getColumnCount(),19);
 		System.out.println();
 
 
@@ -1694,6 +1722,11 @@ class freetds extends sqlrtest {
 		assertEquals(rsmd.getColumnName(13),"testvarchar");
 		assertEquals(rsmd.getColumnName(14),"testbit");
 		assertEquals(rsmd.getColumnName(15),"testurl");
+		// #4780 - after testurl, not after testbit
+		assertEquals(rsmd.getColumnName(16),"testdate");
+		assertEquals(rsmd.getColumnName(17),"testtime");
+		assertEquals(rsmd.getColumnName(18),"testbigdatetime");
+		assertEquals(rsmd.getColumnName(19),"testbigtime");
 		System.out.println();
 
 
@@ -1774,6 +1807,29 @@ class freetds extends sqlrtest {
 		} else {
 			assertEquals(rsmd.getColumnTypeName(15),"varchar");
 		}
+		// #4780 - the jtds reference driver maps bigdatetime and
+		// bigtime onto plain datetime, so its type names differ
+		// from the ones sqlrelay reports
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(16),"DATE");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(16),"date");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(17),"TIME");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(17),"time");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(18),"TIMESTAMP");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(18),"datetime");
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getColumnTypeName(19),"TIME");
+		} else {
+			assertEquals(rsmd.getColumnTypeName(19),"datetime");
+		}
 		System.out.println();
 
 
@@ -1830,6 +1886,26 @@ class freetds extends sqlrtest {
 		assertEquals(rsmd.getPrecision(13),40);
 		assertEquals(rsmd.getPrecision(14),1);
 		assertEquals(rsmd.getPrecision(15),60);
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(16),7);
+		} else {
+			assertEquals(rsmd.getPrecision(16),10);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(17),7);
+		} else {
+			assertEquals(rsmd.getPrecision(17),8);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(18),7);
+		} else {
+			assertEquals(rsmd.getPrecision(18),23);
+		}
+		if (issqlrelay) {
+			assertEquals(rsmd.getPrecision(19),7);
+		} else {
+			assertEquals(rsmd.getPrecision(19),23);
+		}
 		System.out.println();
 
 
@@ -1940,6 +2016,82 @@ class freetds extends sqlrtest {
 			assertEquals(urlvar.getHost(),"www.firstworks.com");
 			assertEquals(urlvar.getPort(),8080);
 			assertEquals(urlvar.getPath(),"/testurl"+i);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// #4780 - date/time family columns, appended
+			// after testurl.  the instance carries a
+			// reformatdatetime translation, so the sqlrelay
+			// side renders the freetds 26-char form, while the
+			// jtds reference driver renders its own form
+
+			// date
+			System.out.println("  row "+i+" - date");
+			if (issqlrelay) {
+				assertEquals(rs.getString(16),
+					"Jan  1 2001 00:00:00:000AM");
+			} else {
+				assertEquals(rs.getString(16),"2001-01-01");
+			}
+			tsvar=rs.getTimestamp(16);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2001);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// time
+			System.out.println("  row "+i+" - time");
+			if (issqlrelay) {
+				assertEquals(rs.getString(17),
+					"Jan  1 1900 01:01:01:000PM");
+			} else {
+				assertEquals(rs.getString(17),"13:01:01.0");
+			}
+			tsvar=rs.getTimestamp(17);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),13);
+			assertEquals(cal.get(Calendar.MINUTE),1);
+			assertEquals(cal.get(Calendar.SECOND),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigdatetime
+			System.out.println("  row "+i+" - bigdatetime");
+			if (issqlrelay) {
+				assertEquals(rs.getString(18),
+					"Jan  1 2001 01:01:01:000PM");
+			} else {
+				assertEquals(rs.getString(18),
+					"2001-01-01 13:01:01.0");
+			}
+			tsvar=rs.getTimestamp(18);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2001);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),13);
+			assertEquals(cal.get(Calendar.MINUTE),1);
+			assertEquals(cal.get(Calendar.SECOND),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigtime
+			System.out.println("  row "+i+" - bigtime");
+			if (issqlrelay) {
+				assertEquals(rs.getString(19),
+					"Jan  1 1900 01:01:01:001AM");
+			} else {
+				// jtds drops the sub-second part
+				assertEquals(rs.getString(19),
+					"1900-01-01 01:01:01.0");
+			}
+			tsvar=rs.getTimestamp(19);
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),1);
+			assertEquals(cal.get(Calendar.MINUTE),1);
+			assertEquals(cal.get(Calendar.SECOND),1);
 			assertFalse(rs.wasNull());
 			System.out.println();
 		}
@@ -2068,6 +2220,81 @@ class freetds extends sqlrtest {
 			assertEquals(urlvar.getPath(),"/testurl"+i);
 			assertFalse(rs.wasNull());
 			System.out.println();
+
+			// #4780 - date/time family columns, appended
+			// after testurl
+
+			// date
+			System.out.println("  row "+i+" - date");
+			if (issqlrelay) {
+				assertEquals(rs.getString("testdate"),
+					"Jan  1 2001 00:00:00:000AM");
+			} else {
+				assertEquals(rs.getString("testdate"),
+					"2001-01-01");
+			}
+			tsvar=rs.getTimestamp("testdate");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2001);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// time
+			System.out.println("  row "+i+" - time");
+			if (issqlrelay) {
+				assertEquals(rs.getString("testtime"),
+					"Jan  1 1900 01:01:01:000PM");
+			} else {
+				assertEquals(rs.getString("testtime"),
+					"13:01:01.0");
+			}
+			tsvar=rs.getTimestamp("testtime");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),13);
+			assertEquals(cal.get(Calendar.MINUTE),1);
+			assertEquals(cal.get(Calendar.SECOND),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigdatetime
+			System.out.println("  row "+i+" - bigdatetime");
+			if (issqlrelay) {
+				assertEquals(rs.getString("testbigdatetime"),
+					"Jan  1 2001 01:01:01:000PM");
+			} else {
+				assertEquals(rs.getString("testbigdatetime"),
+					"2001-01-01 13:01:01.0");
+			}
+			tsvar=rs.getTimestamp("testbigdatetime");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.YEAR),2001);
+			assertEquals(cal.get(Calendar.MONTH),Calendar.JANUARY);
+			assertEquals(cal.get(Calendar.DAY_OF_MONTH),1);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),13);
+			assertEquals(cal.get(Calendar.MINUTE),1);
+			assertEquals(cal.get(Calendar.SECOND),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
+
+			// bigtime
+			System.out.println("  row "+i+" - bigtime");
+			if (issqlrelay) {
+				assertEquals(rs.getString("testbigtime"),
+					"Jan  1 1900 01:01:01:001AM");
+			} else {
+				// jtds drops the sub-second part
+				assertEquals(rs.getString("testbigtime"),
+					"1900-01-01 01:01:01.0");
+			}
+			tsvar=rs.getTimestamp("testbigtime");
+			cal.setTime(tsvar);
+			assertEquals(cal.get(Calendar.HOUR_OF_DAY),1);
+			assertEquals(cal.get(Calendar.MINUTE),1);
+			assertEquals(cal.get(Calendar.SECOND),1);
+			assertFalse(rs.wasNull());
+			System.out.println();
 		}
 
 
@@ -2131,7 +2358,11 @@ class freetds extends sqlrtest {
 			"	'char10', "+
 			"	'varchar10', "+
 			"	1, "+
-			"	'http://www.firstworks.com:8080/testurl10')"),1);
+			"	'http://www.firstworks.com:8080/testurl10', "+
+			"	'01-Jan-2001', "+
+			"	'13:01:01', "+
+			"	'01-Jan-2001 13:01:01', "+
+			"	'01:01:01.001000')"),1);
 
 		// rollback on con
 		con.rollback();
@@ -2166,7 +2397,11 @@ class freetds extends sqlrtest {
 			"	'char10', "+
 			"	'varchar10', "+
 			"	1, "+
-			"	'http://www.firstworks.com:8080/testurl10')"),1);
+			"	'http://www.firstworks.com:8080/testurl10', "+
+			"	'01-Jan-2001', "+
+			"	'13:01:01', "+
+			"	'01-Jan-2001 13:01:01', "+
+			"	'01:01:01.001000')"),1);
 
 		// from secondcon: row count should be 5
 		secondrs=secondstmt.executeQuery(
@@ -2434,7 +2669,12 @@ class freetds extends sqlrtest {
 			"	testchar char(40), "+
 			"	testvarchar varchar(40), "+
 			"	testbit bit, "+
-			"	testurl varchar(60))");
+			"	testurl varchar(60), "+
+			// #4780 - appended after testurl, see above
+			"	testdate date, "+
+			"	testtime time, "+
+			"	testbigdatetime bigdatetime, "+
+			"	testbigtime bigtime)");
 		con.setAutoCommit(false);
 		rs=md.getColumns(null,null,"testtable","%");
 		assertTrue((rs!=null));
@@ -2508,6 +2748,20 @@ class freetds extends sqlrtest {
 		assertTrue(rs.next());
 		assertEquals(rs.getString("COLUMN_NAME"),"testurl");
 		assertEquals(rs.getString("TYPE_NAME"),"varchar");
+		// #4780 - appended after testurl.  both drivers report the
+		// underlying ase type names here, so no issqlrelay branch
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"testdate");
+		assertEquals(rs.getString("TYPE_NAME"),"date");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"testtime");
+		assertEquals(rs.getString("TYPE_NAME"),"time");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"testbigdatetime");
+		assertEquals(rs.getString("TYPE_NAME"),"bigdatetime");
+		assertTrue(rs.next());
+		assertEquals(rs.getString("COLUMN_NAME"),"testbigtime");
+		assertEquals(rs.getString("TYPE_NAME"),"bigtime");
 		rs.close();
 		con.setAutoCommit(true);
 		stmt.executeUpdate("drop table testtable");

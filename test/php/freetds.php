@@ -96,7 +96,11 @@
 		"smalldatetime, ".
 		"	testchar char(40), ".
 		"	testvarchar varchar(40), ".
-		"	testbit bit) lock datarows"));
+		"	testbit bit, ".
+		"	testdate date, ".
+		"	testtime time, ".
+		"	testbigdatetime bigdatetime, ".
+		"	testbigtime bigtime) lock datarows"));
 	echo("\n");
 
 
@@ -120,7 +124,11 @@
 		"	'01-Jan-2001 01:00:00', ".
 		"	'testchar1', ".
 		"	'testvarchar1', ".
-		"	1)"));
+		"	1, ".
+		"	'01-Jan-2001', ".
+		"	'13:01:01', ".
+		"	'01-Jan-2001 13:01:01', ".
+		"	'01:01:01.001000')"));
 	echo("\n");
 
 
@@ -149,8 +157,12 @@
 		"	?, ".
 		"	?, ".
 		"	?, ".
+		"	?, ".
+		"	?, ".
+		"	?, ".
+		"	?, ".
 		"	?)");
-	assertEqInt(sqlrcur_countBindVariables($cur),14);
+	assertEqInt(sqlrcur_countBindVariables($cur),18);
 	sqlrcur_inputBind($cur,"1",2);
 	sqlrcur_inputBind($cur,"2",2);
 	sqlrcur_inputBind($cur,"3",2);
@@ -165,6 +177,10 @@
 	sqlrcur_inputBind($cur,"12","testchar2");
 	sqlrcur_inputBind($cur,"13","testvarchar2");
 	sqlrcur_inputBind($cur,"14",1);
+	sqlrcur_inputBind($cur,"15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"16","13:01:01");
+	sqlrcur_inputBind($cur,"17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"18","01:01:01.001000");
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"1",3);
@@ -181,6 +197,10 @@
 	sqlrcur_inputBind($cur,"12","testchar3");
 	sqlrcur_inputBind($cur,"13","testvarchar3");
 	sqlrcur_inputBind($cur,"14",1);
+	sqlrcur_inputBind($cur,"15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"16","13:01:01");
+	sqlrcur_inputBind($cur,"17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"18","01:01:01.001000");
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
 
@@ -209,6 +229,10 @@
 	sqlrcur_inputBind($cur,"12","testchar4");
 	sqlrcur_inputBind($cur,"13","testvarchar4");
 	sqlrcur_inputBind($cur,"14",1);
+	sqlrcur_inputBind($cur,"15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"16","13:01:01");
+	sqlrcur_inputBind($cur,"17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"18","01:01:01.001000");
 	sqlrcur_validateBinds($cur);
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
@@ -234,8 +258,12 @@
 		"	@var11, ".
 		"	@var12, ".
 		"	@var13, ".
-		"	@var14)");
-	assertEqInt(sqlrcur_countBindVariables($cur),14);
+		"	@var14, ".
+		"	@var15, ".
+		"	@var16, ".
+		"	@var17, ".
+		"	@var18)");
+	assertEqInt(sqlrcur_countBindVariables($cur),18);
 	sqlrcur_inputBind($cur,"var1",5);
 	sqlrcur_inputBind($cur,"var2",5);
 	sqlrcur_inputBind($cur,"var3",5);
@@ -250,6 +278,10 @@
 	sqlrcur_inputBind($cur,"var12","testchar5");
 	sqlrcur_inputBind($cur,"var13","testvarchar5");
 	sqlrcur_inputBind($cur,"var14",1);
+	sqlrcur_inputBind($cur,"var15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"var16","13:01:01");
+	sqlrcur_inputBind($cur,"var17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"var18","01:01:01.001000");
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"var1",6);
@@ -266,6 +298,10 @@
 	sqlrcur_inputBind($cur,"var12","testchar6");
 	sqlrcur_inputBind($cur,"var13","testvarchar6");
 	sqlrcur_inputBind($cur,"var14",1);
+	sqlrcur_inputBind($cur,"var15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"var16","13:01:01");
+	sqlrcur_inputBind($cur,"var17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"var18","01:01:01.001000");
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_clearBinds($cur);
 	sqlrcur_inputBind($cur,"var1",7);
@@ -282,6 +318,10 @@
 	sqlrcur_inputBind($cur,"var12","testchar7");
 	sqlrcur_inputBind($cur,"var13","testvarchar7");
 	sqlrcur_inputBind($cur,"var14",1);
+	sqlrcur_inputBind($cur,"var15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"var16","13:01:01");
+	sqlrcur_inputBind($cur,"var17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"var18","01:01:01.001000");
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
 
@@ -310,7 +350,11 @@
 	sqlrcur_inputBind($cur,"var12","testchar8");
 	sqlrcur_inputBind($cur,"var13","testvarchar8");
 	sqlrcur_inputBind($cur,"var14",1);
-	sqlrcur_inputBind($cur,"var15","junkvalue");
+	sqlrcur_inputBind($cur,"var15","01-Jan-2001");
+	sqlrcur_inputBind($cur,"var16","13:01:01");
+	sqlrcur_inputBind($cur,"var17","01-Jan-2001 13:01:01");
+	sqlrcur_inputBind($cur,"var18","01:01:01.001000");
+	sqlrcur_inputBind($cur,"var19","junkvalue");
 	sqlrcur_validateBinds($cur);
 	assertTrue(sqlrcur_executeQuery($cur));
 	echo("\n");
@@ -325,7 +369,7 @@
 
 	# column count
 	echo("COLUMN COUNT: \n");
-	assertEqInt(sqlrcur_colCount($cur),14);
+	assertEqInt(sqlrcur_colCount($cur),18);
 	echo("\n");
 
 
@@ -345,6 +389,10 @@
 	assertEqStr(sqlrcur_getColumnName($cur,11),"testchar");
 	assertEqStr(sqlrcur_getColumnName($cur,12),"testvarchar");
 	assertEqStr(sqlrcur_getColumnName($cur,13),"testbit");
+	assertEqStr(sqlrcur_getColumnName($cur,14),"testdate");
+	assertEqStr(sqlrcur_getColumnName($cur,15),"testtime");
+	assertEqStr(sqlrcur_getColumnName($cur,16),"testbigdatetime");
+	assertEqStr(sqlrcur_getColumnName($cur,17),"testbigtime");
 	$cols=sqlrcur_getColumnNames($cur);
 	assertEqStr($cols[0],"testint");
 	assertEqStr($cols[1],"testsmallint");
@@ -360,6 +408,10 @@
 	assertEqStr($cols[11],"testchar");
 	assertEqStr($cols[12],"testvarchar");
 	assertEqStr($cols[13],"testbit");
+	assertEqStr($cols[14],"testdate");
+	assertEqStr($cols[15],"testtime");
+	assertEqStr($cols[16],"testbigdatetime");
+	assertEqStr($cols[17],"testbigtime");
 	echo("\n");
 
 
@@ -395,6 +447,14 @@
 	assertEqStr(sqlrcur_getColumnType($cur,"testvarchar"),"VARCHAR");
 	assertEqStr(sqlrcur_getColumnType($cur,13),"BIT");
 	assertEqStr(sqlrcur_getColumnType($cur,"testbit"),"BIT");
+	assertEqStr(sqlrcur_getColumnType($cur,14),"DATE");
+	assertEqStr(sqlrcur_getColumnType($cur,"testdate"),"DATE");
+	assertEqStr(sqlrcur_getColumnType($cur,15),"TIME");
+	assertEqStr(sqlrcur_getColumnType($cur,"testtime"),"TIME");
+	assertEqStr(sqlrcur_getColumnType($cur,16),"TIMESTAMP");
+	assertEqStr(sqlrcur_getColumnType($cur,"testbigdatetime"),"TIMESTAMP");
+	assertEqStr(sqlrcur_getColumnType($cur,17),"TIME");
+	assertEqStr(sqlrcur_getColumnType($cur,"testbigtime"),"TIME");
 	echo("\n");
 
 
@@ -430,6 +490,14 @@
 	assertEqInt(sqlrcur_getColumnLength($cur,"testvarchar"),40);
 	assertEqInt(sqlrcur_getColumnLength($cur,13),1);
 	assertEqInt(sqlrcur_getColumnLength($cur,"testbit"),1);
+	assertEqInt(sqlrcur_getColumnLength($cur,14),4);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testdate"),4);
+	assertEqInt(sqlrcur_getColumnLength($cur,15),4);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testtime"),4);
+	assertEqInt(sqlrcur_getColumnLength($cur,16),8);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testbigdatetime"),8);
+	assertEqInt(sqlrcur_getColumnLength($cur,17),8);
+	assertEqInt(sqlrcur_getColumnLength($cur,"testbigtime"),8);
 	echo("\n");
 
 
@@ -464,6 +532,15 @@
 	assertEqInt(sqlrcur_getLongest($cur,"testvarchar"),12);
 	assertEqInt(sqlrcur_getLongest($cur,13),1);
 	assertEqInt(sqlrcur_getLongest($cur,"testbit"),1);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getLongest($cur,14),26);
+	assertEqInt(sqlrcur_getLongest($cur,"testdate"),26);
+	assertEqInt(sqlrcur_getLongest($cur,15),26);
+	assertEqInt(sqlrcur_getLongest($cur,"testtime"),26);
+	assertEqInt(sqlrcur_getLongest($cur,16),26);
+	assertEqInt(sqlrcur_getLongest($cur,"testbigdatetime"),26);
+	assertEqInt(sqlrcur_getLongest($cur,17),26);
+	assertEqInt(sqlrcur_getLongest($cur,"testbigtime"),26);
 	echo("\n");
 
 
@@ -511,6 +588,11 @@
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,0,12),"testvarchar1");
 	assertEqStr(sqlrcur_getField($cur,0,13),"1");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,0,14),"Jan  1 2001 00:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,0,15),"Jan  1 1900 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,0,16),"Jan  1 2001 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,0,17),"Jan  1 1900 01:01:01:001AM");
 	echo("\n");
 	assertEqStr(sqlrcur_getField($cur,7,0),"8");
 	assertEqStr(sqlrcur_getField($cur,7,1),"8");
@@ -530,6 +612,11 @@
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,7,12),"testvarchar8");
 	assertEqStr(sqlrcur_getField($cur,7,13),"1");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,7,14),"Jan  1 2001 00:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,7,15),"Jan  1 1900 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,7,16),"Jan  1 2001 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,7,17),"Jan  1 1900 01:01:01:001AM");
 	echo("\n");
 
 
@@ -550,6 +637,11 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,11),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,12),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,13),1);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,0,14),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,15),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,16),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,17),26);
 	echo("\n");
 	assertEqInt(sqlrcur_getFieldLength($cur,7,0),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,1),1);
@@ -566,6 +658,11 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,11),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,12),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,13),1);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,7,14),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,15),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,16),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,17),26);
 	echo("\n");
 
 
@@ -589,6 +686,15 @@
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,0,"testvarchar"),"testvarchar1");
 	assertEqStr(sqlrcur_getField($cur,0,"testbit"),"1");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,0,"testdate"),
+		"Jan  1 2001 00:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,0,"testtime"),
+		"Jan  1 1900 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,0,"testbigdatetime"),
+		"Jan  1 2001 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,0,"testbigtime"),
+		"Jan  1 1900 01:01:01:001AM");
 	echo("\n");
 	assertEqStr(sqlrcur_getField($cur,7,"testint"),"8");
 	assertEqStr(sqlrcur_getField($cur,7,"testsmallint"),"8");
@@ -608,6 +714,15 @@
 		"                               ");
 	assertEqStr(sqlrcur_getField($cur,7,"testvarchar"),"testvarchar8");
 	assertEqStr(sqlrcur_getField($cur,7,"testbit"),"1");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr(sqlrcur_getField($cur,7,"testdate"),
+		"Jan  1 2001 00:00:00:000AM");
+	assertEqStr(sqlrcur_getField($cur,7,"testtime"),
+		"Jan  1 1900 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,7,"testbigdatetime"),
+		"Jan  1 2001 01:01:01:000PM");
+	assertEqStr(sqlrcur_getField($cur,7,"testbigtime"),
+		"Jan  1 1900 01:01:01:001AM");
 	echo("\n");
 
 
@@ -629,6 +744,11 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,0,"testbit"),1);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testdate"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testtime"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testbigdatetime"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,0,"testbigtime"),26);
 	echo("\n");
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testint"),1);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testsmallint"),1);
@@ -646,6 +766,11 @@
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testchar"),40);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testvarchar"),12);
 	assertEqInt(sqlrcur_getFieldLength($cur,7,"testbit"),1);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testdate"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testtime"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testbigdatetime"),26);
+	assertEqInt(sqlrcur_getFieldLength($cur,7,"testbigtime"),26);
 	echo("\n");
 
 
@@ -668,6 +793,11 @@
 		"                               ");
 	assertEqStr($fields[12],"testvarchar1");
 	assertEqStr($fields[13],"1");
+	# freetds datetime rendering for the fixture tds version
+	assertEqStr($fields[14],"Jan  1 2001 00:00:00:000AM");
+	assertEqStr($fields[15],"Jan  1 1900 01:01:01:000PM");
+	assertEqStr($fields[16],"Jan  1 2001 01:01:01:000PM");
+	assertEqStr($fields[17],"Jan  1 1900 01:01:01:001AM");
 	echo("\n");
 
 
@@ -689,6 +819,11 @@
 	assertEqInt($fieldlens[11],40);
 	assertEqInt($fieldlens[12],12);
 	assertEqInt($fieldlens[13],1);
+	# freetds datetime rendering for the fixture tds version
+	assertEqInt($fieldlens[14],26);
+	assertEqInt($fieldlens[15],26);
+	assertEqInt($fieldlens[16],26);
+	assertEqInt($fieldlens[17],26);
 	echo("\n");
 
 
@@ -843,7 +978,7 @@
 
 	# column count for cached result set
 	echo("COLUMN COUNT FOR CACHED RESULT SET: \n");
-	assertEqInt(sqlrcur_colCount($cur),14);
+	assertEqInt(sqlrcur_colCount($cur),18);
 	echo("\n");
 
 
@@ -863,6 +998,10 @@
 	assertEqStr(sqlrcur_getColumnName($cur,11),"testchar");
 	assertEqStr(sqlrcur_getColumnName($cur,12),"testvarchar");
 	assertEqStr(sqlrcur_getColumnName($cur,13),"testbit");
+	assertEqStr(sqlrcur_getColumnName($cur,14),"testdate");
+	assertEqStr(sqlrcur_getColumnName($cur,15),"testtime");
+	assertEqStr(sqlrcur_getColumnName($cur,16),"testbigdatetime");
+	assertEqStr(sqlrcur_getColumnName($cur,17),"testbigtime");
 	$cols=sqlrcur_getColumnNames($cur);
 	assertEqStr($cols[0],"testint");
 	assertEqStr($cols[1],"testsmallint");
@@ -878,6 +1017,10 @@
 	assertEqStr($cols[11],"testchar");
 	assertEqStr($cols[12],"testvarchar");
 	assertEqStr($cols[13],"testbit");
+	assertEqStr($cols[14],"testdate");
+	assertEqStr($cols[15],"testtime");
+	assertEqStr($cols[16],"testbigdatetime");
+	assertEqStr($cols[17],"testbigtime");
 	echo("\n");
 
 
@@ -1778,7 +1921,11 @@
 		"smalldatetime, ".
 		"	testchar char(40), ".
 		"	testvarchar varchar(40), ".
-		"	testbit bit)"));
+		"	testbit bit, ".
+		"	testdate date, ".
+		"	testtime time, ".
+		"	testbigdatetime bigdatetime, ".
+		"	testbigtime bigtime)"));
 	assertTrue(sqlrcur_getColumnList($cur,"testtable",NULL));
 	assertEqStr(sqlrcur_getColumnName($cur,0),"column_name");
 	assertEqStr(sqlrcur_getColumnName($cur,1),"data_type");
@@ -1817,6 +1964,14 @@
 		"testvarchar"));
 	assertTrue(!strcmp(sqlrcur_getField($cur,13,"column_name"),
 		"testbit"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,14,"column_name"),
+		"testdate"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,15,"column_name"),
+		"testtime"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,16,"column_name"),
+		"testbigdatetime"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,17,"column_name"),
+		"testbigtime"));
 	assertTrue(!strcmp(sqlrcur_getField($cur,0,"data_type"),"int"));
 	assertTrue(!strcmp(sqlrcur_getField($cur,1,"data_type"),
 		"smallint"));
@@ -1839,6 +1994,12 @@
 	assertTrue(!strcmp(sqlrcur_getField($cur,12,"data_type"),
 		"varchar"));
 	assertTrue(!strcmp(sqlrcur_getField($cur,13,"data_type"),"bit"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,14,"data_type"),"date"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,15,"data_type"),"time"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,16,"data_type"),
+		"bigdatetime"));
+	assertTrue(!strcmp(sqlrcur_getField($cur,17,"data_type"),
+		"bigtime"));
 	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
 	echo("\n");
 

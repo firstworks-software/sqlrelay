@@ -74,14 +74,14 @@ puts ""
 puts "CREATE TESTTABLE: "
 catch {$cur sendQuery "drop table testtable"}
 $cur sendQuery $dumptran
-assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit) lock datarows"]
+assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit, testdate date, testtime time, testbigdatetime bigdatetime, testbigtime bigtime) lock datarows"]
 puts ""
 
 
 # insert
 puts "INSERT: "
 assertTrue [$con begin]
-assertTrue [$cur sendQuery "insert into testtable values (1, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.00, 1.00, '01-Jan-2001 01:00:00', '01-Jan-2001 01:00:00', 'testchar1', 'testvarchar1', 1)"]
+assertTrue [$cur sendQuery "insert into testtable values (1, 1, 1, 1.5, 1.5, 1.5, 1.5, 1.00, 1.00, '01-Jan-2001 01:00:00', '01-Jan-2001 01:00:00', 'testchar1', 'testvarchar1', 1, '01-Jan-2001', '13:01:01', '01-Jan-2001 13:01:01', '01:01:01.001000')"]
 puts ""
 
 
@@ -93,8 +93,8 @@ puts ""
 
 # input bind by position
 puts "INPUT BIND BY POSITION: "
-$cur prepareQuery "insert into testtable values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-assertEqual [$cur countBindVariables] 14
+$cur prepareQuery "insert into testtable values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+assertEqual [$cur countBindVariables] 18
 $cur inputBind "1" 2
 $cur inputBind "2" 2
 $cur inputBind "3" 2
@@ -109,6 +109,10 @@ $cur inputBind "11" "01-Jan-2002 02:00:00"
 $cur inputBind "12" "testchar2"
 $cur inputBind "13" "testvarchar2"
 $cur inputBind "14" 1
+$cur inputBind "15" "01-Jan-2001"
+$cur inputBind "16" "13:01:01"
+$cur inputBind "17" "01-Jan-2001 13:01:01"
+$cur inputBind "18" "01:01:01.001000"
 assertTrue [$cur executeQuery]
 $cur clearBinds
 $cur inputBind "1" 3
@@ -125,6 +129,10 @@ $cur inputBind "11" "01-Jan-2003 03:00:00"
 $cur inputBind "12" "testchar3"
 $cur inputBind "13" "testvarchar3"
 $cur inputBind "14" 1
+$cur inputBind "15" "01-Jan-2001"
+$cur inputBind "16" "13:01:01"
+$cur inputBind "17" "01-Jan-2001 13:01:01"
+$cur inputBind "18" "01:01:01.001000"
 assertTrue [$cur executeQuery]
 puts ""
 
@@ -151,6 +159,10 @@ $cur inputBind "11" "01-Jan-2004 04:00:00"
 $cur inputBind "12" "testchar4"
 $cur inputBind "13" "testvarchar4"
 $cur inputBind "14" 1
+$cur inputBind "15" "01-Jan-2001"
+$cur inputBind "16" "13:01:01"
+$cur inputBind "17" "01-Jan-2001 13:01:01"
+$cur inputBind "18" "01:01:01.001000"
 $cur validateBinds
 assertTrue [$cur executeQuery]
 puts ""
@@ -159,8 +171,8 @@ puts ""
 # input bind by name
 puts "INPUT BIND BY NAME: "
 $cur clearBinds
-$cur prepareQuery "insert into testtable values (@var1, @var2, @var3, @var4, @var5, @var6, @var7, @var8, @var9, @var10, @var11, @var12, @var13, @var14)"
-assertEqual [$cur countBindVariables] 14
+$cur prepareQuery "insert into testtable values (@var1, @var2, @var3, @var4, @var5, @var6, @var7, @var8, @var9, @var10, @var11, @var12, @var13, @var14, @var15, @var16, @var17, @var18)"
+assertEqual [$cur countBindVariables] 18
 $cur inputBind "var1" 5
 $cur inputBind "var2" 5
 $cur inputBind "var3" 5
@@ -175,6 +187,10 @@ $cur inputBind "var11" "01-Jan-2005 05:00:00"
 $cur inputBind "var12" "testchar5"
 $cur inputBind "var13" "testvarchar5"
 $cur inputBind "var14" 1
+$cur inputBind "var15" "01-Jan-2001"
+$cur inputBind "var16" "13:01:01"
+$cur inputBind "var17" "01-Jan-2001 13:01:01"
+$cur inputBind "var18" "01:01:01.001000"
 assertTrue [$cur executeQuery]
 $cur clearBinds
 $cur inputBind "var1" 6
@@ -191,6 +207,10 @@ $cur inputBind "var11" "01-Jan-2006 06:00:00"
 $cur inputBind "var12" "testchar6"
 $cur inputBind "var13" "testvarchar6"
 $cur inputBind "var14" 1
+$cur inputBind "var15" "01-Jan-2001"
+$cur inputBind "var16" "13:01:01"
+$cur inputBind "var17" "01-Jan-2001 13:01:01"
+$cur inputBind "var18" "01:01:01.001000"
 assertTrue [$cur executeQuery]
 $cur clearBinds
 $cur inputBind "var1" 7
@@ -207,6 +227,10 @@ $cur inputBind "var11" "01-Jan-2007 07:00:00"
 $cur inputBind "var12" "testchar7"
 $cur inputBind "var13" "testvarchar7"
 $cur inputBind "var14" 1
+$cur inputBind "var15" "01-Jan-2001"
+$cur inputBind "var16" "13:01:01"
+$cur inputBind "var17" "01-Jan-2001 13:01:01"
+$cur inputBind "var18" "01:01:01.001000"
 assertTrue [$cur executeQuery]
 puts ""
 
@@ -233,7 +257,11 @@ $cur inputBind "var11" "01-Jan-2008 08:00:00"
 $cur inputBind "var12" "testchar8"
 $cur inputBind "var13" "testvarchar8"
 $cur inputBind "var14" 1
-$cur inputBind "var15" "junkvalue"
+$cur inputBind "var15" "01-Jan-2001"
+$cur inputBind "var16" "13:01:01"
+$cur inputBind "var17" "01-Jan-2001 13:01:01"
+$cur inputBind "var18" "01:01:01.001000"
+$cur inputBind "var19" "junkvalue"
 $cur validateBinds
 assertTrue [$cur executeQuery]
 puts ""
@@ -247,7 +275,7 @@ puts ""
 
 # column count
 puts "COLUMN COUNT: "
-assertEqual [$cur colCount] 14
+assertEqual [$cur colCount] 18
 puts ""
 
 
@@ -267,6 +295,10 @@ assertEqual [$cur getColumnName 10] "testsmalldatetime"
 assertEqual [$cur getColumnName 11] "testchar"
 assertEqual [$cur getColumnName 12] "testvarchar"
 assertEqual [$cur getColumnName 13] "testbit"
+assertEqual [$cur getColumnName 14] "testdate"
+assertEqual [$cur getColumnName 15] "testtime"
+assertEqual [$cur getColumnName 16] "testbigdatetime"
+assertEqual [$cur getColumnName 17] "testbigtime"
 set cols [$cur getColumnNames]
 assertEqual [lindex $cols 0] "testint"
 assertEqual [lindex $cols 1] "testsmallint"
@@ -282,6 +314,10 @@ assertEqual [lindex $cols 10] "testsmalldatetime"
 assertEqual [lindex $cols 11] "testchar"
 assertEqual [lindex $cols 12] "testvarchar"
 assertEqual [lindex $cols 13] "testbit"
+assertEqual [lindex $cols 14] "testdate"
+assertEqual [lindex $cols 15] "testtime"
+assertEqual [lindex $cols 16] "testbigdatetime"
+assertEqual [lindex $cols 17] "testbigtime"
 puts ""
 
 
@@ -315,6 +351,14 @@ assertEqual [$cur getColumnTypeByIndex 12] "VARCHAR"
 assertEqual [$cur getColumnTypeByName "testvarchar"] "VARCHAR"
 assertEqual [$cur getColumnTypeByIndex 13] "BIT"
 assertEqual [$cur getColumnTypeByName "testbit"] "BIT"
+assertEqual [$cur getColumnTypeByIndex 14] "DATE"
+assertEqual [$cur getColumnTypeByName "testdate"] "DATE"
+assertEqual [$cur getColumnTypeByIndex 15] "TIME"
+assertEqual [$cur getColumnTypeByName "testtime"] "TIME"
+assertEqual [$cur getColumnTypeByIndex 16] "TIMESTAMP"
+assertEqual [$cur getColumnTypeByName "testbigdatetime"] "TIMESTAMP"
+assertEqual [$cur getColumnTypeByIndex 17] "TIME"
+assertEqual [$cur getColumnTypeByName "testbigtime"] "TIME"
 puts ""
 
 
@@ -350,6 +394,14 @@ assertEqual [$cur getColumnLengthByIndex 12] 40
 assertEqual [$cur getColumnLengthByName "testvarchar"] 40
 assertEqual [$cur getColumnLengthByIndex 13] 1
 assertEqual [$cur getColumnLengthByName "testbit"] 1
+assertEqual [$cur getColumnLengthByIndex 14] 4
+assertEqual [$cur getColumnLengthByName "testdate"] 4
+assertEqual [$cur getColumnLengthByIndex 15] 4
+assertEqual [$cur getColumnLengthByName "testtime"] 4
+assertEqual [$cur getColumnLengthByIndex 16] 8
+assertEqual [$cur getColumnLengthByName "testbigdatetime"] 8
+assertEqual [$cur getColumnLengthByIndex 17] 8
+assertEqual [$cur getColumnLengthByName "testbigtime"] 8
 puts ""
 
 
@@ -384,6 +436,15 @@ assertEqual [$cur getLongestByIndex 12] 12
 assertEqual [$cur getLongestByName "testvarchar"] 12
 assertEqual [$cur getLongestByIndex 13] 1
 assertEqual [$cur getLongestByName "testbit"] 1
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getLongestByIndex 14] 26
+assertEqual [$cur getLongestByName "testdate"] 26
+assertEqual [$cur getLongestByIndex 15] 26
+assertEqual [$cur getLongestByName "testtime"] 26
+assertEqual [$cur getLongestByIndex 16] 26
+assertEqual [$cur getLongestByName "testbigdatetime"] 26
+assertEqual [$cur getLongestByIndex 17] 26
+assertEqual [$cur getLongestByName "testbigtime"] 26
 puts ""
 
 
@@ -428,6 +489,11 @@ assertEqual [$cur getFieldByIndex 0 10] "Jan  1 2001 01:00:00:000AM"
 assertEqual [$cur getFieldByIndex 0 11] "testchar1                               "
 assertEqual [$cur getFieldByIndex 0 12] "testvarchar1"
 assertEqual [$cur getFieldByIndex 0 13] "1"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByIndex 0 14] "Jan  1 2001 00:00:00:000AM"
+assertEqual [$cur getFieldByIndex 0 15] "Jan  1 1900 01:01:01:000PM"
+assertEqual [$cur getFieldByIndex 0 16] "Jan  1 2001 01:01:01:000PM"
+assertEqual [$cur getFieldByIndex 0 17] "Jan  1 1900 01:01:01:001AM"
 puts ""
 assertEqual [$cur getFieldByIndex 7 0] "8"
 assertEqual [$cur getFieldByIndex 7 1] "8"
@@ -444,6 +510,11 @@ assertEqual [$cur getFieldByIndex 7 10] "Jan  1 2008 08:00:00:000AM"
 assertEqual [$cur getFieldByIndex 7 11] "testchar8                               "
 assertEqual [$cur getFieldByIndex 7 12] "testvarchar8"
 assertEqual [$cur getFieldByIndex 7 13] "1"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByIndex 7 14] "Jan  1 2001 00:00:00:000AM"
+assertEqual [$cur getFieldByIndex 7 15] "Jan  1 1900 01:01:01:000PM"
+assertEqual [$cur getFieldByIndex 7 16] "Jan  1 2001 01:01:01:000PM"
+assertEqual [$cur getFieldByIndex 7 17] "Jan  1 1900 01:01:01:001AM"
 puts ""
 
 
@@ -464,6 +535,11 @@ assertEqual [$cur getFieldLengthByIndex 0 10] 26
 assertEqual [$cur getFieldLengthByIndex 0 11] 40
 assertEqual [$cur getFieldLengthByIndex 0 12] 12
 assertEqual [$cur getFieldLengthByIndex 0 13] 1
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByIndex 0 14] 26
+assertEqual [$cur getFieldLengthByIndex 0 15] 26
+assertEqual [$cur getFieldLengthByIndex 0 16] 26
+assertEqual [$cur getFieldLengthByIndex 0 17] 26
 puts ""
 assertEqual [$cur getFieldLengthByIndex 7 0] 1
 assertEqual [$cur getFieldLengthByIndex 7 1] 1
@@ -480,6 +556,11 @@ assertEqual [$cur getFieldLengthByIndex 7 10] 26
 assertEqual [$cur getFieldLengthByIndex 7 11] 40
 assertEqual [$cur getFieldLengthByIndex 7 12] 12
 assertEqual [$cur getFieldLengthByIndex 7 13] 1
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByIndex 7 14] 26
+assertEqual [$cur getFieldLengthByIndex 7 15] 26
+assertEqual [$cur getFieldLengthByIndex 7 16] 26
+assertEqual [$cur getFieldLengthByIndex 7 17] 26
 puts ""
 
 
@@ -500,6 +581,11 @@ assertEqual [$cur getFieldByName 0 "testsmalldatetime"] "Jan  1 2001 01:00:00:00
 assertEqual [$cur getFieldByName 0 "testchar"] "testchar1                               "
 assertEqual [$cur getFieldByName 0 "testvarchar"] "testvarchar1"
 assertEqual [$cur getFieldByName 0 "testbit"] "1"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByName 0 "testdate"] "Jan  1 2001 00:00:00:000AM"
+assertEqual [$cur getFieldByName 0 "testtime"] "Jan  1 1900 01:01:01:000PM"
+assertEqual [$cur getFieldByName 0 "testbigdatetime"] "Jan  1 2001 01:01:01:000PM"
+assertEqual [$cur getFieldByName 0 "testbigtime"] "Jan  1 1900 01:01:01:001AM"
 puts ""
 assertEqual [$cur getFieldByName 7 "testint"] "8"
 assertEqual [$cur getFieldByName 7 "testsmallint"] "8"
@@ -516,6 +602,11 @@ assertEqual [$cur getFieldByName 7 "testsmalldatetime"] "Jan  1 2008 08:00:00:00
 assertEqual [$cur getFieldByName 7 "testchar"] "testchar8                               "
 assertEqual [$cur getFieldByName 7 "testvarchar"] "testvarchar8"
 assertEqual [$cur getFieldByName 7 "testbit"] "1"
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldByName 7 "testdate"] "Jan  1 2001 00:00:00:000AM"
+assertEqual [$cur getFieldByName 7 "testtime"] "Jan  1 1900 01:01:01:000PM"
+assertEqual [$cur getFieldByName 7 "testbigdatetime"] "Jan  1 2001 01:01:01:000PM"
+assertEqual [$cur getFieldByName 7 "testbigtime"] "Jan  1 1900 01:01:01:001AM"
 puts ""
 
 
@@ -536,6 +627,11 @@ assertEqual [$cur getFieldLengthByName 0 "testsmalldatetime"] 26
 assertEqual [$cur getFieldLengthByName 0 "testchar"] 40
 assertEqual [$cur getFieldLengthByName 0 "testvarchar"] 12
 assertEqual [$cur getFieldLengthByName 0 "testbit"] 1
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByName 0 "testdate"] 26
+assertEqual [$cur getFieldLengthByName 0 "testtime"] 26
+assertEqual [$cur getFieldLengthByName 0 "testbigdatetime"] 26
+assertEqual [$cur getFieldLengthByName 0 "testbigtime"] 26
 puts ""
 assertEqual [$cur getFieldLengthByName 7 "testint"] 1
 assertEqual [$cur getFieldLengthByName 7 "testsmallint"] 1
@@ -552,6 +648,11 @@ assertEqual [$cur getFieldLengthByName 7 "testsmalldatetime"] 26
 assertEqual [$cur getFieldLengthByName 7 "testchar"] 40
 assertEqual [$cur getFieldLengthByName 7 "testvarchar"] 12
 assertEqual [$cur getFieldLengthByName 7 "testbit"] 1
+# freetds datetime rendering for the fixture tds version
+assertEqual [$cur getFieldLengthByName 7 "testdate"] 26
+assertEqual [$cur getFieldLengthByName 7 "testtime"] 26
+assertEqual [$cur getFieldLengthByName 7 "testbigdatetime"] 26
+assertEqual [$cur getFieldLengthByName 7 "testbigtime"] 26
 puts ""
 
 
@@ -573,6 +674,11 @@ assertEqual [lindex $fields 10] "Jan  1 2001 01:00:00:000AM"
 assertEqual [lindex $fields 11] "testchar1                               "
 assertEqual [lindex $fields 12] "testvarchar1"
 assertEqual [lindex $fields 13] "1"
+# freetds datetime rendering for the fixture tds version
+assertEqual [lindex $fields 14] "Jan  1 2001 00:00:00:000AM"
+assertEqual [lindex $fields 15] "Jan  1 1900 01:01:01:000PM"
+assertEqual [lindex $fields 16] "Jan  1 2001 01:01:01:000PM"
+assertEqual [lindex $fields 17] "Jan  1 1900 01:01:01:001AM"
 puts ""
 
 
@@ -594,6 +700,11 @@ assertEqual [lindex $fieldlens 10] 26
 assertEqual [lindex $fieldlens 11] 40
 assertEqual [lindex $fieldlens 12] 12
 assertEqual [lindex $fieldlens 13] 1
+# freetds datetime rendering for the fixture tds version
+assertEqual [lindex $fieldlens 14] 26
+assertEqual [lindex $fieldlens 15] 26
+assertEqual [lindex $fieldlens 16] 26
+assertEqual [lindex $fieldlens 17] 26
 puts ""
 
 
@@ -740,7 +851,7 @@ puts ""
 
 # column count for cached result set
 puts "COLUMN COUNT FOR CACHED RESULT SET: "
-assertEqual [$cur colCount] 14
+assertEqual [$cur colCount] 18
 puts ""
 
 
@@ -760,6 +871,10 @@ assertEqual [$cur getColumnName 10] "testsmalldatetime"
 assertEqual [$cur getColumnName 11] "testchar"
 assertEqual [$cur getColumnName 12] "testvarchar"
 assertEqual [$cur getColumnName 13] "testbit"
+assertEqual [$cur getColumnName 14] "testdate"
+assertEqual [$cur getColumnName 15] "testtime"
+assertEqual [$cur getColumnName 16] "testbigdatetime"
+assertEqual [$cur getColumnName 17] "testbigtime"
 set cols [$cur getColumnNames]
 assertEqual [lindex $cols 0] "testint"
 assertEqual [lindex $cols 1] "testsmallint"
@@ -775,6 +890,10 @@ assertEqual [lindex $cols 10] "testsmalldatetime"
 assertEqual [lindex $cols 11] "testchar"
 assertEqual [lindex $cols 12] "testvarchar"
 assertEqual [lindex $cols 13] "testbit"
+assertEqual [lindex $cols 14] "testdate"
+assertEqual [lindex $cols 15] "testtime"
+assertEqual [lindex $cols 16] "testbigdatetime"
+assertEqual [lindex $cols 17] "testbigtime"
 puts ""
 
 
@@ -1543,7 +1662,7 @@ puts ""
 # column list
 puts "COLUMN LIST: "
 catch {$cur sendQuery "drop table testtable"}
-assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit)"]
+assertTrue [$cur sendQuery "create table testtable (testint int, testsmallint smallint, testtinyint tinyint, testreal real, testfloat float, testdecimal decimal(4,1), testnumeric numeric(4,1), testmoney money, testsmallmoney smallmoney, testdatetime datetime, testsmalldatetime smalldatetime, testchar char(40), testvarchar varchar(40), testbit bit, testdate date, testtime time, testbigdatetime bigdatetime, testbigtime bigtime)"]
 assertTrue [$cur getColumnList "testtable" ""]
 assertEqual [$cur getColumnName 0] "column_name"
 assertEqual [$cur getColumnName 1] "data_type"
@@ -1568,6 +1687,10 @@ assertEqual [$cur getFieldByName 10 "column_name"] "testsmalldatetime"
 assertEqual [$cur getFieldByName 11 "column_name"] "testchar"
 assertEqual [$cur getFieldByName 12 "column_name"] "testvarchar"
 assertEqual [$cur getFieldByName 13 "column_name"] "testbit"
+assertEqual [$cur getFieldByName 14 "column_name"] "testdate"
+assertEqual [$cur getFieldByName 15 "column_name"] "testtime"
+assertEqual [$cur getFieldByName 16 "column_name"] "testbigdatetime"
+assertEqual [$cur getFieldByName 17 "column_name"] "testbigtime"
 assertEqual [$cur getFieldByName 0 "data_type"] "int"
 assertEqual [$cur getFieldByName 1 "data_type"] "smallint"
 assertEqual [$cur getFieldByName 2 "data_type"] "tinyint"
@@ -1582,6 +1705,10 @@ assertEqual [$cur getFieldByName 10 "data_type"] "smalldatetime"
 assertEqual [$cur getFieldByName 11 "data_type"] "char"
 assertEqual [$cur getFieldByName 12 "data_type"] "varchar"
 assertEqual [$cur getFieldByName 13 "data_type"] "bit"
+assertEqual [$cur getFieldByName 14 "data_type"] "date"
+assertEqual [$cur getFieldByName 15 "data_type"] "time"
+assertEqual [$cur getFieldByName 16 "data_type"] "bigdatetime"
+assertEqual [$cur getFieldByName 17 "data_type"] "bigtime"
 assertTrue [$cur sendQuery "drop table testtable"]
 puts ""
 
