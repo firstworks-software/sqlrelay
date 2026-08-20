@@ -20,6 +20,8 @@ For example, !MySQL/MariaDB apps communicate with the database using the !MySQL/
 [[Image(../images/postgresqlnativeprotocol.png,nolink)]]
 }}}
 
+Firebird, SAP/Sybase, Microsoft SQL Server, and Oracle apps work the same way, each using its own native client-server protocol.
+
 [[br]]
 
 Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:
@@ -28,7 +30,16 @@ Whether written using the native SQL Relay API or a connector of some sort, SQL 
 [[Image(../images/sqlrelaynativeprotocol.png,nolink)]]
 }}}
 
-However, SQL Relay also supports the !MySQL/MariaDB and !PostgreSQL client-server protocols.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.
+However, SQL Relay also supports several native database client-server protocols directly.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.  SQL Relay currently supports these front-end protocols, in addition to its own SQL Relay client-server protocol:
+
+||= Protocol =||= Covers =||= Maturity =||
+|| !MySQL/MariaDB || !MySQL and MariaDB clients || Mature - the original protocol module, in production use for years. ||
+|| !PostgreSQL || !PostgreSQL clients || Mature - in production use for years. ||
+|| Firebird || Firebird clients || Newer - core operations (connect, attach, prepare, query, fetch) work; still maturing. ||
+|| TDS || !FreeTDS, SAP/Sybase ctlib, ODBC, and JDBC clients speaking the TDS protocol used by SAP/Sybase and Microsoft SQL Server || Newer - complete for query execution; TLS/SSL is not yet supported. ||
+|| Oracle || Oracle OCI and other clients speaking the Oracle protocol (eg. JDBC thin, python-oracledb Thin, node-oracledb Thin, ODP.NET Managed, go-ora) || Newest - still under active development, but already covers login and query execution for modern clients. ||
+
+For example, apps written using the !MySQL/MariaDB or !PostgreSQL client-server protocols can talk to SQL Relay's !MySQL/MariaDB or !PostgreSQL protocol modules exactly as they would talk to a real !MySQL/MariaDB or !PostgreSQL server:
 
 {{{#!blockquote
 [[Image(../images/sqlrelaymysqlprotocol.png,nolink)]]
@@ -37,13 +48,15 @@ However, SQL Relay also supports the !MySQL/MariaDB and !PostgreSQL client-serve
 [[Image(../images/sqlrelaypostgresqlprotocol.png,nolink)]]
 }}}
 
-As such, SQL Relay can be used as a transparent proxy.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, they are talking to SQL Relay, and can take advantage of SQL Relay's advanced features.
+The Firebird, TDS, and Oracle protocol modules work the same way - the app talks to SQL Relay using the same wire protocol it would use to talk to a real Firebird, SAP/Sybase, Microsoft SQL Server, or Oracle server.  This includes apps built on database-specific APIs like Oracle's OCI: rather than porting the app to the SQL Relay API, you can often just point its existing connect descriptor at sqlr-listener.
+
+As such, SQL Relay can be used as a transparent proxy for any of these databases.  Native apps aimed at SQL Relay still think that they're talking to the database, but in fact, they are talking to SQL Relay, and can take advantage of SQL Relay's advanced features.
 
 [[br]]
 
 == Foreign Back-End ==
 
-Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the database it was originally written to use.  This works no matter which front-end protocol the app speaks - for example:
 
 {{{#!blockquote
 [[Image(../images/sqlrelay-mysql-frontend-mssql-backend.png,nolink)]]
