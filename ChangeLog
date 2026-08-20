@@ -186,6 +186,11 @@
 	documented the mysql protocol module's handshake listener attribute in
 		the config guide - the legacy protocol version 9 handshake it
 		switches to, and that any value other than 10 selects it
+	fixed the oracle protocol module's describe-info message for oci
+		clients, which read the block in front of it and a negative
+		column scale in the count prefixed form rather than the thin
+		drivers' form; an oci client could log in but never read a
+		query answer, reporting ORA-03113 instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

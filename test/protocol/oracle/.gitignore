@@ -1,0 +1,13 @@
+/oracle
+/ociselect
+*.o
+*.obj
+*.lo
+*.class
+/.libs/
+
+# captures and traces written by running the tests.  the intentional,
+# checked-in captures live under samples/ and are not ignored.
+/*.cap
+cli_*.trc
+sqlnet.log

@@ -10,7 +10,7 @@ include ../../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(ORACEINCLUDES) $(COMPILE) $<
 
-all: oracle oracle.class
+all: oracle ociselect oracle.class
 
 oracle.class: oracle.java
 	$(JAVAC) $<
@@ -18,6 +18,9 @@ oracle.class: oracle.java
 oracle: oracle.cpp oracle.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracle.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
+ociselect: ociselect.cpp ociselect.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class oracle$(EXE)
+	$(RM) *.lo *.o *.obj *.class oracle$(EXE) ociselect$(EXE)
 	$(RMTREE) .libs

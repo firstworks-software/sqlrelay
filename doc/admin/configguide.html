@@ -3847,14 +3847,14 @@ http://www.gnu.org/software/src-highlite -->
 </td>
     <td> login fails with ORA-03113 
 </td>
-    <td> logs in, but every query fails with ORA-03113 
+    <td> logs in, runs queries, reads result sets 
 </td>
   </tr>
 </table>
 
 <br/><p>The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting <i>serverversion</i> to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.</p>
 
-<p>Neither setting lets a client built on Oracle's OCI library read a query's answer, and no combination of the options on this page changes that.  See the limitations below.</p>
+<p>A client built on Oracle's OCI library, which includes sqlplus, is the one client the default doesn't serve.  It needs <i>serverversion</i> set to 11.2, and with that setting it logs in, runs queries and reads result sets like the others.  With the default of 12.1 it doesn't get through the login at all, and no combination of the options on this page changes that.  See the limitations below.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -3957,7 +3957,7 @@ where <font color="#008080">parameter</font> <b><font color="#000000">in</font><
 
 <ul>
   <li>Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.</li>
-  <li>Clients built on Oracle's OCI library, which includes sqlplus, can't read a query's answer.  With <i>serverversion</i> set to 11.2, such a client logs in and its queries run, but it rejects the result set and reports ORA-03113.  With the default <i>serverversion</i> of 12.1, it doesn't get through the login, also with ORA-03113.  No setting serves it.  The drivers that don't use the OCI library - Oracle's JDBC driver, python-oracledb and node-oracledb - are unaffected.</li>
+  <li>Clients built on Oracle's OCI library, which includes sqlplus, need <i>serverversion</i> set to 11.2.  With that setting, such a client logs in, runs queries and reads result sets.  With the default <i>serverversion</i> of 12.1, it doesn't get through the login, and reports ORA-03113.  Oracle's JDBC driver works either way, but python-oracledb and node-oracledb need the default, so a single listener can't serve them and an OCI client at the same time.  Give each kind its own listener, with its own <i>serverversion</i>.</li>
   <li>The module always authenticates with O5LOGON, Oracle's challenge/response exchange.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - O5LOGON (or a newer verifier) is mandatory in every client tested against this module.  The <i>oracle_userlist</i> and <i>oracle_database</i> auth modules also accept an <i>oracle_clear_password</i> method, for a protocol module that might need password-based authentication without O5LOGON, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.</li>
 </ul>
 
@@ -10213,7 +10213,7 @@ http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/db2.conf
 
 
 <div id="copyrightbox">
-Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../images/br.png"/>
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo portuguï¿½s tambï¿½m" src="../images/br.png"/>
 </div> <!-- copyrightbox -->
 
 </div>

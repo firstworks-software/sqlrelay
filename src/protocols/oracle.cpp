@@ -907,7 +907,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t *capssize,
 						const byte_t **rpout);
 		uint16_t	countDataTypes(const byte_t *rp,
-						const byte_t *end);
+						const byte_t *end,
+						uint16_t *multirepcount);
 		bool	sendDataTypeResponse();
 
 		bool	authenticate();
@@ -1167,6 +1168,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	clientcharsetout;
 		uint16_t	clientnationalcharset;
 		byte_t		encodingflags;
+		bool		ociclient;
 		byte_t		clientfieldversion;
 		byte_t		fieldversion;
 		bool		clientwantsdbtimezone;
@@ -1414,6 +1416,7 @@ void sqlrprotocol_oracle::init() {
 	clientcharsetout=0;
 	clientnationalcharset=0;
 	encodingflags=0;
+	ociclient=false;
 	clientfieldversion=0;
 
 	// the module's own, until a data type negotiation lowers it to a
@@ -3901,9 +3904,11 @@ bool sqlrprotocol_oracle::getCapabilities(const byte_t *rp,
 }
 
 uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
-						const byte_t *end) {
+						const byte_t *end,
+						uint16_t *multirepcount) {
 
 	uint16_t	count=0;
+	uint16_t	multireps=0;
 	for (;;) {
 
 		if (end-rp<2) {
@@ -3922,17 +3927,36 @@ uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
 
 		uint16_t	convdatatype;
 		readBE(rp,&convdatatype,&rp);
+
+		// a type that converts to something is followed by the
+		// zero-terminated list of representations the client will
+		// accept for it, which is usually one entry long
 		if (convdatatype) {
-			if (end-rp<4) {
-				break;
+			uint16_t	reps=0;
+			for (;;) {
+				if (end-rp<2) {
+					break;
+				}
+				uint16_t	rep;
+				readBE(rp,&rep,&rp);
+				if (!rep) {
+					break;
+				}
+				reps++;
 			}
-			rp+=4;
+			if (reps>1) {
+				multireps++;
+			}
 		}
 
 		count++;
 	}
 
 	debugWrite("total data type count: %d",count);
+	debugWrite("data types offered in more than "
+			"one representation: %d",multireps);
+
+	*multirepcount=multireps;
 	return count;
 }
 
@@ -3974,7 +3998,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 
 	// a bit field, not a marker - 9i and OCI 23.26 send
 	// ENCODING_CONV_LENGTH alone, ojdbc 23.26 sends ENCODING_MULTI_BYTE
-	// alone, python-oracledb sends both
+	// alone, python-oracledb and node-oracledb send both
 	read(rp,&encodingflags,&rp);
 
 	// the client's capability arrays
@@ -4027,7 +4051,18 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// the difference isn't clear
 	datatypes=rp;
 	datatypessize=end-rp;
-	datatypecount=countDataTypes(rp,end);
+	uint16_t	multirepcount=0;
+	datatypecount=countDataTypes(rp,end,&multirepcount);
+
+	// an oci client is the only client measured that offers more than one
+	// representation for a type - it offers its platform's and then the
+	// universal one for the integer types 25-33, where a real server,
+	// ojdbc and the thin drivers all offer exactly one.  it is also the
+	// one client that reads a describe's lengths and a negative column
+	// scale differently from the rest, so this is what those two
+	// decisions are made on.  see putDescribeInfo() and
+	// putColumnPrecisionScale().
+	ociclient=(multirepcount>0);
 
 	if (getDebug()) {
 		debugStart("datatype request");
@@ -4038,6 +4073,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugWrite("encoding flags: 0x%02x%s%s",encodingflags,
 			(encodingflags&ENCODING_MULTI_BYTE)?" multibyte":"",
 			(encodingflags&ENCODING_CONV_LENGTH)?" convlength":"");
+		debugWrite("oci client: %s",(ociclient)?"true":"false");
 		debugWrite("client compile caps size: %d",compilecapssize);
 		debugHexDump(compilecaps,compilecapssize);
 		debugWrite("client runtime caps size: %d",runtimecapssize);
@@ -6825,11 +6861,27 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 	write(&reqpacket,(byte_t)TTC_DESCRIBE_INFO);
 
 	// a block the client skips whole - 16 bytes of query hash and a 7 byte
-	// date, and the module has no hash to report
+	// date, and the module has no hash to report.
+	//
+	// the length in front of it is the one field the two client families
+	// disagree about.  a thin driver reads a single length byte -
+	// node-oracledb's skipBytesChunked() in processMessage(), in
+	// lib/thin/protocol/messages/withData.js - and OCI reads a count
+	// prefixed integer.  captured from a live 12.2 server answering the
+	// same "select 1 from dual" through the same proxy: 17 to ojdbc and
+	// 01 17 to OCI, with the 23 bytes identical either way.  given the
+	// wrong one, OCI takes the block for an integer, runs 22 bytes past
+	// the end of the field, and answers with a marker packet - the
+	// ORA-03113 this fixes
 	byte_t	prologue[23];
 	bytestring::zero(prologue,sizeof(prologue));
 	putOracleDate(prologue+16);
-	putLenBytes((const char *)prologue,sizeof(prologue));
+	if (ociclient) {
+		writeLenPreInt(&reqpacket,(uint32_t)sizeof(prologue));
+		write(&reqpacket,(const char *)prologue,sizeof(prologue));
+	} else {
+		putLenBytes((const char *)prologue,sizeof(prologue));
+	}
 
 	uint32_t	maxrowsize=0;
 	for (uint32_t i=0; i<colcount; i++) {
@@ -6934,7 +6986,13 @@ void sqlrprotocol_oracle::putColumnPrecisionScale(int8_t precision,
 	// the packet - node-oracledb reports "read integer of length 127
 	// when expecting integer of no more than length 4", and
 	// python-oracledb and OCI answer with a marker packet and close.
-	if (encodingflags&ENCODING_CONV_LENGTH) {
+	//
+	// OCI sets the flag and still reads the count prefixed form: the same
+	// live 12.2 server answers the scale -127 of "select 1 from dual"
+	// with 81 7f to OCI and to ojdbc, and node-oracledb reads it as a raw
+	// signed byte (readInt8() in processColumnInfo()), so no one form
+	// serves all three
+	if ((encodingflags&ENCODING_CONV_LENGTH) && !ociclient) {
 		write(&reqpacket,(byte_t)scale);
 	} else {
 		writeLenPreInt(&reqpacket,scale);

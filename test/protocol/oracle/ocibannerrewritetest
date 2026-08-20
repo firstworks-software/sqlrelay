@@ -1,0 +1,63 @@
+#!/bin/sh
+
+# capture an OCI login+select against the REAL oracle122 test server,
+# through oraproxy, with the server's platform banner rewritten to the
+# one the module sends - then decode it.
+#
+# For #9174/#9173.  Both tickets are stuck on the same missing evidence:
+# no capture exists of a real oracle server answering an OCI client in
+# the portable encoding, because OCI picks the encoding from the server's
+# platform banner and every real server's banner puts it in the native
+# encoding.  The module's banner ('Solaris64/SunOS 5.9') and the real
+# 12.2 server's banner ('x86_64/Linux 2.4.xx') are both exactly 19 bytes,
+# so a proxy can swap one for the other inside the TTIPRO exchange
+# without touching any length field.
+#
+# The substitution has to happen in both directions.  Each end compares
+# the banner it was sent against its own and goes portable only when they
+# differ, so rewriting only the server's banner puts the client in the
+# portable encoding while leaving the real server in the native one - the
+# server then cannot parse the client's portable datatype negotiation and
+# drops the connection (ORA-28547).
+#
+# Usage:
+#   ./ocibannerrewritetest [both|s|c|native] [LISTENPORT]
+#
+# 'both' (the default) rewrites in both directions and is the run that
+# works; 's' and 'c' rewrite one direction only; 'native' is the control
+# run - the same client through the same proxy with nothing changed.
+
+mode=${1:-both}
+port=${2:-15221}
+
+server=oracle122centos7x64.firstworks.com
+serverport=1521
+service=ora1
+
+realbanner='x86_64/Linux 2.4.xx'
+modulebanner='Solaris64/SunOS 5.9'
+
+capture=oci-$mode.cap
+
+rm -f $capture
+
+if [ "$mode" = "native" ]
+then
+	./oraproxy $port $server $serverport $capture &
+else
+	./oraproxy $port $server $serverport $capture \
+				"$realbanner" "$modulebanner" "$mode" &
+fi
+proxypid=$!
+
+sleep 1
+
+./ociselect "//localhost:$port/$service"
+
+# oraproxy exits on its own once the one connection it handles closes;
+# this kill only matters if the client failed before ever connecting
+kill $proxypid 2>/dev/null
+
+wait
+
+./oradecode $capture

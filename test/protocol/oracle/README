@@ -20,10 +20,18 @@ A small TCP proxy: it listens locally, connects to a real Oracle
 host:port, relays one client connection through in both directions, and
 writes every byte it sees, tagged by direction, to a capture file.
 
-    ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE
+    ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE \
+                                [OLDBANNER NEWBANNER [DIRECTIONS]]
 
 It handles exactly one connection, then exits - no need to kill it off
 afterward the way jnettrace.jar had to be.
+
+With the optional OLDBANNER/NEWBANNER pair it also rewrites every
+occurrence of OLDBANNER to NEWBANNER on the way through, in the direction
+DIRECTIONS names ("s" for server->client, the default, "c" for
+client->server, or "both"). The two strings must be the same length, so
+nothing has to be done about TNS or TTC length fields. See
+ocibannerrewritetest below for what this is for.
 
 oradecode
 ---------
@@ -69,12 +77,80 @@ length are read straight off the wire instead of inferred from login
 success. The two sqlrelay instances need to be started first (sqlr-start
 against oracleprotocol.conf, or test.sh -db oracleprotocol).
 
+ociselect and ocibannerrewritetest
+-----------------------------------
+
+ociselect (ociselect.cpp, built by `make` here) is a minimal OCI client:
+log in, run one select, print the rows. oracle.cpp in this directory is
+the full OCI test; ociselect is deliberately as small as an OCI
+login-plus-query can be, so a capture of it holds nothing but the login
+and the one query.
+
+    ./ociselect CONNECTSTRING [USER PASSWORD [QUERY]]
+
+ocibannerrewritetest drives ociselect through oraproxy's banner-rewriting
+mode against the real oracle122 server, and decodes the result.
+
+    ./ocibannerrewritetest [both|s|c|native] [LISTENPORT]
+
+This is how #9174 got the capture both #9174 and #9173 were stuck
+without: a real Oracle server answering an OCI client in the portable
+encoding. An OCI client picks the wire encoding by comparing the server's
+platform banner against its own, so against a real server it always goes
+native. The module's banner ("Solaris64/SunOS 5.9") and the real 12.2
+server's ("x86_64/Linux 2.4.xx") are both exactly 19 bytes, so a proxy
+can swap one for the other inside the TTIPRO exchange without touching a
+length field.
+
+The swap has to be done in BOTH directions. Each end runs the same
+comparison, so rewriting only the server's banner puts the client in the
+portable encoding and leaves the real server in the native one; the
+server then cannot parse the client's portable datatype negotiation and
+drops the connection with ORA-28547. With "both", both ends go portable
+and a full login and select run through.
+
+The portable encoding is not the whole story, though. Portable or not,
+an OCI client against a real server marshals every ub4 as a fixed width
+little endian 4 bytes and every pointer as 8 bytes, where the module and
+the thin drivers use the count prefixed ("universal") form. That is
+picked in the datatype negotiation: OCI offers two representations for
+the integer types (25 through 33) - its platform's, then the universal
+one - and a real server takes the first, while the module offers nothing
+but the universal one and OCI complies. So a capture of a real server
+answering OCI is in a different integer representation than anything the
+module ever sends, and is not a byte-for-byte reference for it.
+
+    ORAPROXY_UNIVERSAL_REPS=1 ./ocibannerrewritetest both
+
+fixes that. It has oraproxy rewrite the client's first representation for
+those types to the universal one on the way past, so the real server has
+nothing else to pick and answers OCI in exactly the representation the
+module uses. The rewrite is same-length and the session runs to
+completion (ociselect prints "row 1: 1"). This is what produced the
+reference the #9174 fix was written against.
+
 Sample captures, already known-good, are checked in under samples/ so
 the decoder can be exercised without live server access:
 
     oracle122-login-select.cap       full login + select, Oracle 12.2
     oracle112-login-expiredpwd.cap   login through an ORA-28001 error,
                                       Oracle 11.2
+    oracle122-oci-native-login-select.cap
+                                     OCI 23.26 login + "select 1 from
+                                      dual" against the real 12.2 server,
+                                      native encoding (the control)
+    oracle122-oci-portable-login-select.cap
+                                     the same, but through
+                                      ocibannerrewritetest, so the real
+                                      12.2 server answers OCI in the
+                                      portable encoding (#9174)
+    oracle122-oci-portable-universalreps-login-select.cap
+                                     the same again, with
+                                      ORAPROXY_UNIVERSAL_REPS=1, so the
+                                      answer is also in the count
+                                      prefixed integer representation the
+                                      module uses - the reference the
+                                      #9174 fix was written against
 
 The two real Oracle test servers on this network
 --------------------------------------------------

@@ -7,7 +7,32 @@
 # jnettrace.jar, which is dead on modern JDKs (see #9098).
 #
 # Usage:
-#   ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE
+#   ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE \
+#				[OLDBANNER NEWBANNER [DIRECTIONS]]
+#
+# With the optional OLDBANNER/NEWBANNER pair, every occurrence of
+# OLDBANNER is replaced with NEWBANNER before the bytes reach the far
+# end.  The two must be the same length, so no TNS or TTC length field
+# needs fixing up.  DIRECTIONS says where to do it: "s" (server->client,
+# the default), "c" (client->server), or "both".
+#
+# This is for #9174/#9173: a real server's platform banner
+# ('x86_64/Linux 2.4.xx') and the banner the module sends to select the
+# portable encoding ('Solaris64/SunOS 5.9') are both exactly 19 bytes, so
+# swapping one for the other in the TTIPRO exchange is a same-length
+# substitution that makes an OCI client pick the portable encoding
+# against a real server.
+#
+# Use "both".  The encoding is not chosen by the server's banner alone -
+# each end compares the banner it got against its own, and goes portable
+# only when they differ.  Rewriting one direction makes that comparison
+# come out differently at the two ends: the client goes portable and the
+# real server stays native, the server cannot parse the client's portable
+# datatype negotiation, and it drops the connection (ORA-28547).
+# Rewriting both directions puts both ends in the portable encoding.
+#
+# The capture records what actually went out on each wire - i.e. the
+# rewritten bytes, not the originals.
 #
 # Point a client (e.g. oracle.java, via a tnsnames.ora entry using
 # localhost:LISTENPORT) at this proxy instead of the real server, and it
@@ -21,6 +46,8 @@
 #   N bytes  payload, exactly as read off the socket
 # with chunks in the order they occurred, interleaved across directions.
 
+import os
+import re
 import socket
 import struct
 import sys
@@ -29,8 +56,33 @@ import threading
 DIR_CLIENT_TO_SERVER = b"C"
 DIR_SERVER_TO_CLIENT = b"S"
 
+# a data type negotiation entry the client offers two representations
+# for: the type, the type it converts to, a platform representation, the
+# conversion type again, the universal representation (1) and a zero
+# terminator, all little endian ub2s.  ORAPROXY_UNIVERSAL_REPS=1 rewrites
+# the first representation to 1 as well, so the server has nothing left
+# to pick but the universal one.  see the README.
+UNIVERSAL_REPS = os.environ.get("ORAPROXY_UNIVERSAL_REPS") == "1"
+MULTIREP_ENTRY = re.compile(
+	rb"(.)\x00\1\x00(.)\x00\1\x00\x01\x00\x00\x00", re.DOTALL)
 
-def relay(src, dst, direction, capturefile, capturelock):
+
+def universalreps(chunk):
+	# rewrite the first representation of every two-representation entry
+	def rewrite(match):
+		return (match.group(1) + b"\x00" + match.group(1) + b"\x00" +
+			b"\x01\x00" + match.group(1) + b"\x00" +
+			b"\x01\x00\x00\x00")
+	out, count = MULTIREP_ENTRY.subn(rewrite, chunk)
+	if count:
+		sys.stderr.write("oraproxy: rewrote %d data type "
+					"representations to universal\n" % count)
+		sys.stderr.flush()
+	return out
+
+
+def relay(src, dst, direction, capturefile, capturelock,
+					oldbanner=None, newbanner=None):
 	# read from src, forward to dst, tee into the capture file
 	while True:
 		try:
@@ -39,6 +91,14 @@ def relay(src, dst, direction, capturefile, capturelock):
 			break
 		if not chunk:
 			break
+		if UNIVERSAL_REPS and direction == DIR_CLIENT_TO_SERVER:
+			chunk = universalreps(chunk)
+		if oldbanner and oldbanner in chunk:
+			chunk = chunk.replace(oldbanner, newbanner)
+			sys.stderr.write(
+				"oraproxy: rewrote banner %r -> %r\n" %
+				(oldbanner, newbanner))
+			sys.stderr.flush()
 		try:
 			dst.sendall(chunk)
 		except OSError:
@@ -55,17 +115,22 @@ def relay(src, dst, direction, capturefile, capturelock):
 		pass
 
 
-def handle_connection(clientsock, desthost, destport, capturefile, capturelock):
+def handle_connection(clientsock, desthost, destport, capturefile, capturelock,
+					oldbanner=None, newbanner=None,
+					clientoldbanner=None,
+					clientnewbanner=None):
 	serversock = socket.create_connection((desthost, destport))
 	try:
 		t1 = threading.Thread(target=relay, args=(
 				clientsock, serversock,
 				DIR_CLIENT_TO_SERVER,
-				capturefile, capturelock))
+				capturefile, capturelock,
+				clientoldbanner, clientnewbanner))
 		t2 = threading.Thread(target=relay, args=(
 				serversock, clientsock,
 				DIR_SERVER_TO_CLIENT,
-				capturefile, capturelock))
+				capturefile, capturelock,
+				oldbanner, newbanner))
 		t1.start()
 		t2.start()
 		t1.join()
@@ -76,16 +141,41 @@ def handle_connection(clientsock, desthost, destport, capturefile, capturelock):
 
 
 def main():
-	if len(sys.argv) != 5:
+	if len(sys.argv) not in (5, 7, 8):
 		sys.stderr.write(
-			"usage: %s LISTENPORT DESTHOST DESTPORT "
-			"CAPTUREFILE\n" % sys.argv[0])
+			"usage: %s LISTENPORT DESTHOST DESTPORT CAPTUREFILE "
+			"[OLDBANNER NEWBANNER [DIRECTIONS]]\n" % sys.argv[0])
 		return 1
 
 	listenport = int(sys.argv[1])
 	desthost = sys.argv[2]
 	destport = int(sys.argv[3])
 	capturepath = sys.argv[4]
+
+	oldbanner = None
+	newbanner = None
+	clientoldbanner = None
+	clientnewbanner = None
+	if len(sys.argv) >= 7:
+		old = sys.argv[5].encode("utf-8")
+		new = sys.argv[6].encode("utf-8")
+		if len(old) != len(new):
+			sys.stderr.write(
+				"oraproxy: OLDBANNER and NEWBANNER must be "
+				"the same length (%d vs %d)\n" %
+				(len(old), len(new)))
+			return 1
+		directions = sys.argv[7] if len(sys.argv) == 8 else "s"
+		if directions not in ("s", "c", "both"):
+			sys.stderr.write(
+				"oraproxy: DIRECTIONS must be s, c or both\n")
+			return 1
+		if directions in ("s", "both"):
+			oldbanner = old
+			newbanner = new
+		if directions in ("c", "both"):
+			clientoldbanner = old
+			clientnewbanner = new
 
 	capturelock = threading.Lock()
 	with open(capturepath, "wb") as capturefile:
@@ -100,6 +190,16 @@ def main():
 			"oraproxy: listening on %d, forwarding to "
 			"%s:%d, capturing to %s\n" %
 			(listenport, desthost, destport, capturepath))
+		if oldbanner:
+			sys.stderr.write(
+				"oraproxy: rewriting %r -> %r in the "
+				"server->client direction\n" %
+				(oldbanner, newbanner))
+		if clientoldbanner:
+			sys.stderr.write(
+				"oraproxy: rewriting %r -> %r in the "
+				"client->server direction\n" %
+				(clientoldbanner, clientnewbanner))
 
 		# one connection is all a capture run needs: accept it,
 		# relay it to completion, then exit
@@ -107,7 +207,9 @@ def main():
 		sys.stderr.write("oraproxy: connection from %s:%d\n" %
 					clientaddr)
 		handle_connection(clientsock, desthost, destport,
-					capturefile, capturelock)
+					capturefile, capturelock,
+					oldbanner, newbanner,
+					clientoldbanner, clientnewbanner)
 		sys.stderr.write("oraproxy: connection closed, capture "
 					"written to %s\n" % capturepath)
 

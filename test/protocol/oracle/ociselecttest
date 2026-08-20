@@ -1,0 +1,57 @@
+#!/bin/sh
+
+# For #9174 step 3: a single-command, repeatable repro of an OCI client's
+# ORA-03113 against the module's query answer, plus a decode of the
+# EXECUTE (query3) request OCI actually sends - the message step 2's
+# audit says the module answers without ever checking (oracle.cpp
+# getQuery3Request() / sendQuery3Response()).
+#
+# Starts its own sqlr instance (ociselecttest.conf), points ociselect (a
+# minimal OCI client - see ociselect.cpp) through oraproxy at it, runs
+# "select 1 from dual", and decodes the capture with oradecode.  Tears
+# the instance down again on exit either way.
+#
+# ociselecttest.conf's backend connection points at the live oracle122
+# test server (see the README) rather than at "oracle", the hostname
+# test/sqlrelay.conf.d/oracleprotocol.conf uses - "oracle" isn't
+# resolvable on every host this repro needs to run on.
+#
+# Needs: `make` to have built ociselect in this directory already, and
+# network access to oracle122centos7x64.firstworks.com:1521.
+
+CONF=./ociselecttest.conf
+ID=ociselecttest
+LISTENPORT=15320
+PROXYPORT=15321
+CAPFILE=ociselecttest.cap
+
+cleanup() {
+	sqlr-stop -config $CONF -id $ID >/dev/null 2>&1
+}
+trap cleanup EXIT
+
+echo "starting $ID..."
+sqlr-start -config $CONF -id $ID
+sleep 2
+
+rm -f $CAPFILE
+
+./oraproxy $PROXYPORT localhost $LISTENPORT $CAPFILE &
+proxypid=$!
+
+sleep 1
+
+./ociselect \
+	"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=$PROXYPORT))(CONNECT_DATA=(SID=ora1)))" \
+	testuser testpassword "select 1 from dual"
+
+# oraproxy exits on its own once the one connection it handles closes;
+# this kill only matters if ociselect failed before ever connecting, so
+# wait does not hang forever
+kill $proxypid 2>/dev/null
+
+wait
+
+echo
+echo "=== decoded capture ==="
+./oradecode $CAPFILE
