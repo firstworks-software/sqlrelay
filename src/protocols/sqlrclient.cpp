@@ -403,9 +403,10 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 						idleclienttimeout,0)==
 						sizeof(uint16_t)) {
 				// reject a version the server doesn't support
-				if (protocolversion<MIN_SQLRCLIENT_PROTOCOL ||
-						protocolversion>
-						MAX_SQLRCLIENT_PROTOCOL) {
+				if (protocolversion<
+					SQLRCLIENT_PROTOCOL_VERSION_MIN ||
+					protocolversion>
+					SQLRCLIENT_PROTOCOL_VERSION_MAX) {
 					sendUnsupportedProtocolError();
 					endsession=false;
 					break;
@@ -443,7 +444,7 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		if (command==AUTH) {
 			// a client that never sent its protocol version
 			// leaves protocolversion at its unset value
-			if (protocolversion<MIN_SQLRCLIENT_PROTOCOL) {
+			if (protocolversion<SQLRCLIENT_PROTOCOL_VERSION_MIN) {
 				sendUnsupportedProtocolError();
 				endsession=false;
 				break;

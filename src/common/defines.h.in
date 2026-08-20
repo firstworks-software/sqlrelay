@@ -72,8 +72,8 @@
 #define MAX_COMMAND 56
 
 // range of client-server protocol versions the server supports
-#define MIN_SQLRCLIENT_PROTOCOL 1
-#define MAX_SQLRCLIENT_PROTOCOL 3
+#define SQLRCLIENT_PROTOCOL_VERSION_MIN 1
+#define SQLRCLIENT_PROTOCOL_VERSION_MAX 3
 
 #define SUSPENDED_RESULT_SET 1
 #define NO_SUSPENDED_RESULT_SET 0
