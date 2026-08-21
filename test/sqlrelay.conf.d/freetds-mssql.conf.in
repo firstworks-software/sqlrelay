@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="freetds-mssql" dbase="freetds">
+		<listeners>
+			<listener port="9032" socket="/tmp/freetds-mssql.socket"/>
+		</listeners>
+		<resultsettranslations>
+			<!-- freetds renders datetimes using the system
+			     locales.conf date format, which varies by
+			     freetds build (some render 26-char
+			     "Jan  1 2001 01:00:00:000AM", others 19-char
+			     "Jan  1 2001 01:00AM").  reformat to the 26-char
+			     form so the test expectations are stable.
+
+			     mssql needs this more than sap does.  its time
+			     and datetime2 come back with six fractional
+			     digits, 28 and 29 characters wide, while its
+			     datetime and smalldatetime come back at 26, so
+			     without the reformat the width varies by type.
+			     note that a date renders as 00:00:00 with an AM
+			     suffix under this format, not 12:00:00. -->
+			<resultsettranslation module="reformatdatetime" datetimeformat="Mon  D YYYY HH:MI:SS:FFFAM" ignorenondatetime="yes"/>
+		</resultsettranslations>
+		<connections>
+			<connection string="freetds=@abs_top_builddir@/test/sqlrelay.conf.d/freetds;server=mssql;user=testuser;password=testpassword;db=@HOSTNAME@"/>
+		</connections>
+	</instance>
+
+</instances>
