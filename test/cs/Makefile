@@ -5,7 +5,7 @@ include ../../config.mk
 all: local \
 	db2.exe \
 	firebird.exe \
-	freetds.exe \
+	freetds-sap.exe \
 	informix.exe \
 	krb.exe \
 	mysql.exe \
@@ -28,8 +28,8 @@ db2.exe: sqlrtest.cs db2.cs
 firebird.exe: sqlrtest.cs firebird.cs
 	$(CSC) $(CSCFLAGS) /out:firebird.exe sqlrtest.cs firebird.cs /reference:SQLRClient.dll
 
-freetds.exe: sqlrtest.cs freetds.cs
-	$(CSC) $(CSCFLAGS) /out:freetds.exe sqlrtest.cs freetds.cs /reference:SQLRClient.dll
+freetds-sap.exe: sqlrtest.cs freetds-sap.cs
+	$(CSC) $(CSCFLAGS) /out:freetds-sap.exe sqlrtest.cs freetds-sap.cs /reference:SQLRClient.dll
 
 informix.exe: sqlrtest.cs informix.cs
 	$(CSC) $(CSCFLAGS) /out:informix.exe sqlrtest.cs informix.cs /reference:SQLRClient.dll

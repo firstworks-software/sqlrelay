@@ -1,7 +1,7 @@
 %% Copyright (c) David Muse
 %% See the file COPYING for more information.
 
--module(freetds).
+-module('freetds-sap').
 -export([main/0]).
 
 -import(asserts, [pass/0, fail/2,
@@ -26,7 +26,7 @@ setIsolationLevels([Il | Rest]) ->
 main() ->
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9005, "/tmp/freetds.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9005, "/tmp/freetds-sap.socket",
                              "testuser", "testpassword", 0, 1),
 
     Hostname = shortHostname(),
@@ -938,12 +938,12 @@ main() ->
 
     %% CACHED RESULT SET
     io:format("CACHED RESULT SET: ~n"),
-    sqlrelay:cacheToFile("cachefile1-freetds"),
+    sqlrelay:cacheToFile("cachefile1-freetds-sap"),
     sqlrelay:setCacheTtl(200),
     assertTrue(sqlrelay:sendQuery(
         "select * from testtable order by testint")),
     {ok, Filename1} = sqlrelay:getCacheFileName(),
-    assertEqualsString(Filename1, "cachefile1-freetds"),
+    assertEqualsString(Filename1, "cachefile1-freetds-sap"),
     sqlrelay:cacheOff(),
     assertTrue(sqlrelay:openCachedResultSet(Filename1)),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
@@ -998,12 +998,12 @@ main() ->
     %% CACHED RESULT SET WITH RESULT SET BUFFER SIZE
     io:format("CACHED RESULT SET WITH RESULT SET BUFFER SIZE: ~n"),
     sqlrelay:setResultSetBufferSize(2),
-    sqlrelay:cacheToFile("cachefile1-freetds"),
+    sqlrelay:cacheToFile("cachefile1-freetds-sap"),
     sqlrelay:setCacheTtl(200),
     assertTrue(sqlrelay:sendQuery(
         "select * from testtable order by testint")),
     {ok, Filename2} = sqlrelay:getCacheFileName(),
-    assertEqualsString(Filename2, "cachefile1-freetds"),
+    assertEqualsString(Filename2, "cachefile1-freetds-sap"),
     sqlrelay:cacheOff(),
     assertTrue(sqlrelay:openCachedResultSet(Filename2)),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
@@ -1013,10 +1013,10 @@ main() ->
 
     %% FROM ONE CACHE FILE TO ANOTHER
     io:format("FROM ONE CACHE FILE TO ANOTHER: ~n"),
-    sqlrelay:cacheToFile("cachefile2-freetds"),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile1-freetds")),
+    sqlrelay:cacheToFile("cachefile2-freetds-sap"),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile1-freetds-sap")),
     sqlrelay:cacheOff(),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile2-freetds")),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile2-freetds-sap")),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(8, 0), null),
     io:format("~n"),
@@ -1024,10 +1024,10 @@ main() ->
     %% FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE
     io:format("FROM ONE CACHE FILE TO ANOTHER WITH RESULT SET BUFFER SIZE: ~n"),
     sqlrelay:setResultSetBufferSize(2),
-    sqlrelay:cacheToFile("cachefile2-freetds"),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile1-freetds")),
+    sqlrelay:cacheToFile("cachefile2-freetds-sap"),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile1-freetds-sap")),
     sqlrelay:cacheOff(),
-    assertTrue(sqlrelay:openCachedResultSet("cachefile2-freetds")),
+    assertTrue(sqlrelay:openCachedResultSet("cachefile2-freetds-sap")),
     assertEqualsString(sqlrelay:getFieldByIndex(7, 0), "8"),
     assertEqualsString(sqlrelay:getFieldByIndex(8, 0), null),
     sqlrelay:setResultSetBufferSize(0),
@@ -1036,13 +1036,13 @@ main() ->
     %% CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE
     io:format("CACHED RESULT SET WITH SUSPEND AND RESULT SET BUFFER SIZE: ~n"),
     sqlrelay:setResultSetBufferSize(2),
-    sqlrelay:cacheToFile("cachefile1-freetds"),
+    sqlrelay:cacheToFile("cachefile1-freetds-sap"),
     sqlrelay:setCacheTtl(200),
     assertTrue(sqlrelay:sendQuery(
         "select * from testtable order by testint")),
     assertEqualsString(sqlrelay:getFieldByIndex(2, 0), "3"),
     {ok, Filename3} = sqlrelay:getCacheFileName(),
-    assertEqualsString(Filename3, "cachefile1-freetds"),
+    assertEqualsString(Filename3, "cachefile1-freetds-sap"),
     {ok, Id2} = sqlrelay:getResultSetId(),
     sqlrelay:suspendResultSet(),
     assertTrue(sqlrelay:suspendSession()),

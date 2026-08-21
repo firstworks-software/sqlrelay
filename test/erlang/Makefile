@@ -5,7 +5,7 @@ include ../../config.mk
 all: asserts.beam \
 	db2.beam \
 	firebird.beam \
-	freetds.beam \
+	freetds-sap.beam \
 	informix.beam \
 	krb.beam \
 	mysql.beam \
@@ -24,8 +24,8 @@ db2.beam: db2.erl asserts.beam
 firebird.beam: firebird.erl asserts.beam
 	$(ERLC) firebird.erl
 
-freetds.beam: freetds.erl asserts.beam
-	$(ERLC) freetds.erl
+freetds-sap.beam: freetds-sap.erl asserts.beam
+	$(ERLC) freetds-sap.erl
 
 informix.beam: informix.erl asserts.beam
 	$(ERLC) informix.erl

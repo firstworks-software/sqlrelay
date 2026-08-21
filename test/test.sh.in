@@ -27,7 +27,8 @@ usage() {
 	echo "    mysqlimportexport and mysqlprotocol all hit the mysql server"
 	echo "    the postgresql family likewise"
 	echo "    oracle, tls, krb, extensions, crud and oracleprotocol all hit oracle"
-	echo "    sap, tdsfreetdssapprotocol and tdssapprotocol all hit the sap server"
+	echo "    sap, freetds-sap, tdsfreetdssapprotocol and tdssapprotocol all hit"
+	echo "    the sap server"
 	echo "    (tdsfreetdsmssqlprotocol hits mssql instead, and can run alongside them)"
 }
 
@@ -98,6 +99,9 @@ instance_applicable() {
 			;;
 		postgresql*)
 			MODULE=postgresql
+			;;
+		freetds-*)
+			MODULE=freetds
 			;;
 		tdsfreetdsmssqlprotocol)
 			MODULE=odbc
@@ -387,6 +391,13 @@ ping_instance() {
 	return 1
 }
 
+# the class name for an instance's java and jdbc tests.  a java identifier
+# can't hold a hyphen, so those two tests name their class with underscores
+# while their source file keeps the instance's own name
+class_name() {
+	echo "$1" | tr '-' '_'
+}
+
 # set TEST and TESTFILE for running the instance's test under api
 api_command() {
 
@@ -428,16 +439,18 @@ api_command() {
 			java -h > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $instance"
-				TESTFILE="$instance.class"
+				CLASS=`class_name "$instance"`
+				TEST="./run $CLASS"
+				TESTFILE="$CLASS.class"
 			fi
 			;;
 		jdbc)
 			java -h > /dev/null 2>&1
 			if ( test "$?" = "0" )
 			then
-				TEST="./run $instance"
-				TESTFILE="$instance.class"
+				CLASS=`class_name "$instance"`
+				TEST="./run $CLASS"
+				TESTFILE="$CLASS.class"
 			fi
 			;;
 		nodejs)

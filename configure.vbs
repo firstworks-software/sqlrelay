@@ -1107,7 +1107,7 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\db2.conf.in",_
 	"test\\sqlrelay.conf.d\\extensions.conf.in",_
 	"test\\sqlrelay.conf.d\\firebird.conf.in",_
-	"test\\sqlrelay.conf.d\\freetds.conf.in",_
+	"test\\sqlrelay.conf.d\\freetds-sap.conf.in",_
 	"test\\sqlrelay.conf.d\\informix.conf.in",_
 	"test\\sqlrelay.conf.d\\mssql.conf.in",_
 	"test\\sqlrelay.conf.d\\mysql.conf.in",_
@@ -1146,7 +1146,7 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\db2.conf",_
 	"test\\sqlrelay.conf.d\\extensions.conf",_
 	"test\\sqlrelay.conf.d\\firebird.conf",_
-	"test\\sqlrelay.conf.d\\freetds.conf",_
+	"test\\sqlrelay.conf.d\\freetds-sap.conf",_
 	"test\\sqlrelay.conf.d\\informix.conf",_
 	"test\\sqlrelay.conf.d\\mssql.conf",_
 	"test\\sqlrelay.conf.d\\mysql.conf",_

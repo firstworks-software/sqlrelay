@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetds.socket",
+	con=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetds-sap.socket",
 			"testuser","testpassword",0,1);
 	cur=sqlrcur_alloc(con);
 
@@ -1035,12 +1035,12 @@ int main(int argc, char **argv) {
 
 	// cached result set
 	printf("CACHED RESULT SET: \n");
-	sqlrcur_cacheToFile(cur,"cachefile1-freetds");
+	sqlrcur_cacheToFile(cur,"cachefile1-freetds-sap");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable "
 		"order by testint"));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1-freetds");
+	assertEqStr(filename,"cachefile1-freetds-sap");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
@@ -1100,12 +1100,12 @@ int main(int argc, char **argv) {
 	// buffer size
 	printf("CACHED RESULT SET WITH ""RESULT SET BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile1-freetds");
+	sqlrcur_cacheToFile(cur,"cachefile1-freetds-sap");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable "
 		"order by testint"));
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1-freetds");
+	assertEqStr(filename,"cachefile1-freetds-sap");
 	sqlrcur_cacheOff(cur);
 	assertTrue(sqlrcur_openCachedResultSet(cur,filename));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
@@ -1117,10 +1117,10 @@ int main(int argc, char **argv) {
 
 	// from one cache file to another
 	printf("FROM ONE CACHE FILE ""TO ANOTHER: \n");
-	sqlrcur_cacheToFile(cur,"cachefile2-freetds");
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-freetds"));
+	sqlrcur_cacheToFile(cur,"cachefile2-freetds-sap");
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-freetds-sap"));
 	sqlrcur_cacheOff(cur);
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-freetds"));
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-freetds-sap"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	printf("\n");
@@ -1131,10 +1131,10 @@ int main(int argc, char **argv) {
 	printf("FROM ONE CACHE FILE TO ANOTHER ""WITH RESULT SET "
 		"BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile2-freetds");
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-freetds"));
+	sqlrcur_cacheToFile(cur,"cachefile2-freetds-sap");
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile1-freetds-sap"));
 	sqlrcur_cacheOff(cur);
-	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-freetds"));
+	assertTrue(sqlrcur_openCachedResultSet(cur,"cachefile2-freetds-sap"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,7,0),"8");
 	assertEqStr(sqlrcur_getFieldByIndex(cur,8,0),NULL);
 	sqlrcur_setResultSetBufferSize(cur,0);
@@ -1146,13 +1146,13 @@ int main(int argc, char **argv) {
 	printf("CACHED RESULT SET WITH ""SUSPEND AND RESULT SET "
 		"BUFFER SIZE: \n");
 	sqlrcur_setResultSetBufferSize(cur,2);
-	sqlrcur_cacheToFile(cur,"cachefile1-freetds");
+	sqlrcur_cacheToFile(cur,"cachefile1-freetds-sap");
 	sqlrcur_setCacheTtl(cur,200);
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable "
 		"order by testint"));
 	assertEqStr(sqlrcur_getFieldByIndex(cur,2,0),"3");
 	filename=strdup(sqlrcur_getCacheFileName(cur));
-	assertEqStr(filename,"cachefile1-freetds");
+	assertEqStr(filename,"cachefile1-freetds-sap");
 	id=sqlrcur_getResultSetId(cur);
 	sqlrcur_suspendResultSet(cur);
 	assertTrue(sqlrcon_suspendSession(con));
@@ -1246,7 +1246,7 @@ int main(int argc, char **argv) {
 		"create table testtable (col1 integer) lock datarows"));
 	assertTrue(sqlrcon_setTransactionModel(con,"implicit"));
 	assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
-	secondcon=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetds.socket",
+	secondcon=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetds-sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
 	// session is in a transaction; insert is not visible until commit

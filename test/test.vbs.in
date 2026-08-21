@@ -317,8 +317,15 @@ end function
 ' set TEST and TESTFILE for running the instance's test under api
 sub apicommand(instance, api)
 
+	dim classname
+
 	TEST=""
 	TESTFILE=""
+
+	' a java identifier can't hold a hyphen, so the java and jdbc tests name
+	' their class with underscores while their source file keeps the
+	' instance's own name
+	classname=replace(instance,"-","_")
 	select case api
 		case "c"
 			TEST=instance & ".exe"
@@ -336,11 +343,11 @@ sub apicommand(instance, api)
 			TEST=instance & ".exe"
 			TESTFILE=instance & ".exe"
 		case "java"
-			TEST="run.bat " & instance
-			TESTFILE=instance & ".class"
+			TEST="run.bat " & classname
+			TESTFILE=classname & ".class"
 		case "jdbc"
-			TEST="run.bat " & instance
-			TESTFILE=instance & ".class"
+			TEST="run.bat " & classname
+			TESTFILE=classname & ".class"
 		case "nodejs"
 			' the node on win7x64 is old (v4) and needs a flag to
 			' parse the tests' object-destructuring require; harmless

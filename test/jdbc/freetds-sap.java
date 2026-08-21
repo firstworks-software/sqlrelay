@@ -12,7 +12,7 @@ import java.net.InetAddress;
 import java.math.BigDecimal;
 import java.net.URL;
 
-class freetds extends sqlrtest {
+class freetds_sap extends sqlrtest {
 	public static void main(String args[]) throws Exception {
 
 		String classpath=System.getProperty("java.class.path");

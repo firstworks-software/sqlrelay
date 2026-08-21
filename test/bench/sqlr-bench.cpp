@@ -31,7 +31,7 @@ static const dbinstance	dbinstances[]={
 	{"postgresql","postgresql",9003},
 	{"postgresqlssl","postgresql",9003},
 	{"sqlite","sqlite",9004},
-	{"freetds","freetds",9005},
+	{"freetds","freetds-sap",9005},
 	{"sap","sap",9006},
 	{"sybase","sap",9006},
 	{"db2","db2",9008},

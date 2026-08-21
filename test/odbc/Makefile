@@ -10,10 +10,10 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql postgresql db2 sap freetds informix firebird sqlite
+all: oracle mysql postgresql db2 sap freetds-sap informix firebird sqlite
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds-sap$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -31,8 +31,8 @@ db2: db2.cpp db2.$(OBJ)
 sap: sap.cpp sap.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ sap.$(OBJ) $(ODBCTESTLIBS)
 
-freetds: freetds.cpp freetds.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ freetds.$(OBJ) $(ODBCTESTLIBS)
+freetds-sap: freetds-sap.cpp freetds-sap.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ freetds-sap.$(OBJ) $(ODBCTESTLIBS)
 
 informix: informix.cpp informix.$(OBJ)
 	$(LTLINK) $(LINK) -export-dynamic $(LDFLAGS) $(OUT)$@ informix.$(OBJ) $(ODBCTESTLIBS) $(INFORMIXLIBS)

@@ -5,7 +5,7 @@ import com.firstworks.sqlrelay.SQLRConnection;
 import com.firstworks.sqlrelay.SQLRCursor;
 
 
-class freetds extends sqlrtest {
+class freetds_sap extends sqlrtest {
 
 	public static void	main(String[] args) {
 
@@ -42,7 +42,7 @@ class freetds extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9005,
-					"/tmp/freetds.socket","testuser",
+					"/tmp/freetds-sap.socket","testuser",
 					"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -1050,7 +1050,7 @@ class freetds extends sqlrtest {
 
 		// cached result set
 		System.out.println("CACHED RESULT SET: ");
-		cur.cacheToFile("cachefile1-freetds");
+		cur.cacheToFile("cachefile1-freetds-sap");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -1060,7 +1060,7 @@ class freetds extends sqlrtest {
 			"order by "+
 			"	testint "));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1-freetds");
+		assertEquals(filename,"cachefile1-freetds-sap");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
@@ -1119,7 +1119,7 @@ class freetds extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH "+
 			"RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1-freetds");
+		cur.cacheToFile("cachefile1-freetds-sap");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -1129,7 +1129,7 @@ class freetds extends sqlrtest {
 			"order by "+
 			"	testint "));
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1-freetds");
+		assertEquals(filename,"cachefile1-freetds-sap");
 		cur.cacheOff();
 		assertTrue(cur.openCachedResultSet(filename));
 		assertEquals(cur.getField(7,0),"8");
@@ -1140,10 +1140,10 @@ class freetds extends sqlrtest {
 
 		// from one cache file to another
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER: ");
-		cur.cacheToFile("cachefile2-freetds");
-		assertTrue(cur.openCachedResultSet("cachefile1-freetds"));
+		cur.cacheToFile("cachefile2-freetds-sap");
+		assertTrue(cur.openCachedResultSet("cachefile1-freetds-sap"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2-freetds"));
+		assertTrue(cur.openCachedResultSet("cachefile2-freetds-sap"));
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		System.out.println();
@@ -1153,10 +1153,10 @@ class freetds extends sqlrtest {
 		System.out.println("FROM ONE CACHE FILE TO ANOTHER "+
 			"WITH RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile2-freetds");
-		assertTrue(cur.openCachedResultSet("cachefile1-freetds"));
+		cur.cacheToFile("cachefile2-freetds-sap");
+		assertTrue(cur.openCachedResultSet("cachefile1-freetds-sap"));
 		cur.cacheOff();
-		assertTrue(cur.openCachedResultSet("cachefile2-freetds"));
+		assertTrue(cur.openCachedResultSet("cachefile2-freetds-sap"));
 		assertEquals(cur.getField(7,0),"8");
 		assertEquals(cur.getField(8,0),null);
 		cur.setResultSetBufferSize(0);
@@ -1167,7 +1167,7 @@ class freetds extends sqlrtest {
 		System.out.println("CACHED RESULT SET WITH SUSPEND "+
 			"AND RESULT SET BUFFER SIZE: ");
 		cur.setResultSetBufferSize(2);
-		cur.cacheToFile("cachefile1-freetds");
+		cur.cacheToFile("cachefile1-freetds-sap");
 		cur.setCacheTtl(200);
 		assertTrue(cur.sendQuery(
 			"select "+
@@ -1178,7 +1178,7 @@ class freetds extends sqlrtest {
 			"	testint "));
 		assertEquals(cur.getField(2,0),"3");
 		filename=cur.getCacheFileName();
-		assertEquals(filename,"cachefile1-freetds");
+		assertEquals(filename,"cachefile1-freetds-sap");
 		id=cur.getResultSetId();
 		cur.suspendResultSet();
 		assertTrue(con.suspendSession());
@@ -1278,7 +1278,7 @@ class freetds extends sqlrtest {
 		assertTrue(con.setTransactionModel("implicit"));
 		assertEquals(con.getTransactionModel(),"implicit");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9005,"/tmp/freetds.socket","testuser",
+				(short)9005,"/tmp/freetds-sap.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

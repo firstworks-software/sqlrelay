@@ -1,13 +1,10 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="freetds" dbase="freetds">
+	<instance id="freetds-sap" dbase="freetds">
 		<listeners>
-			<listener port="9005" socket="/tmp/freetds.socket"/>
+			<listener port="9005" socket="/tmp/freetds-sap.socket"/>
 		</listeners>
-		<connections>
-			<connection string="freetds=@abs_top_builddir@/test/sqlrelay.conf.d/freetds;server=sap;user=testuser;password=testpassword;db=@HOSTNAME@"/>
-		</connections>
 		<resultsettranslations>
 			<!-- freetds renders datetimes using the system
 			     locales.conf date format, which varies by
@@ -17,6 +14,9 @@
 			     form so the test expectations are stable. -->
 			<resultsettranslation module="reformatdatetime" datetimeformat="Mon  D YYYY HH:MI:SS:FFFAM" ignorenondatetime="yes"/>
 		</resultsettranslations>
+		<connections>
+			<connection string="freetds=@abs_top_builddir@/test/sqlrelay.conf.d/freetds;server=sap;user=testuser;password=testpassword;db=@HOSTNAME@"/>
+		</connections>
 	</instance>
 
 </instances>

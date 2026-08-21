@@ -355,7 +355,7 @@ int main(int argc, char **argv) {
 		incstr.append(
 			"Driver={SQL Relay};"
 			"Server=sqlrelay;Port=9005;"
-			"Socket=/tmp/freetds.socket;"
+			"Socket=/tmp/freetds-sap.socket;"
 			"User=testuser;Password=testpassword;"
 			"NullsAsNulls=yes;"
 			// for ODBC spec compliance
@@ -813,12 +813,12 @@ int main(int argc, char **argv) {
 	// driver manager rejects an empty restore value, so don't restore
 	stdoutput.printf("  SQL_ATTR_TRACEFILE\n");
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
-			(SQLPOINTER)"/tmp/odbctrace-freetds.log",SQL_NTS);
+			(SQLPOINTER)"/tmp/odbctrace-freetds-sap.log",SQL_NTS);
 	assertSuccessDbc(dbc,erg);
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_TRACEFILE,
 			(SQLPOINTER)dbcstrval,sizeof(dbcstrval),&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(const char *)dbcstrval,"/tmp/odbctrace-freetds.log");
+	assertEqualDbc(dbc,(const char *)dbcstrval,"/tmp/odbctrace-freetds-sap.log");
 	stdoutput.printf("\n");
 
 
