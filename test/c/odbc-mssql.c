@@ -78,14 +78,10 @@ int main(int argc, char **argv) {
 	const char	**il;
 	uint64_t	i;
 	int		j;
-	// only the parked ENCODED BINARY DATA
-	// section uses these
-	#if 0
 	unsigned char	buffer[256];
 	char		query[8192+512];
 	char		hex[3];
 	int		qoff;
-	#endif
 
 	#define	LARGE_BUFFER_LENGTH	8192
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
@@ -1724,11 +1720,6 @@ int main(int argc, char **argv) {
 
 
 	// long lobs
-	// the blob still goes in, only reading
-	// it back is parked.  #9405 - image and
-	// varbinary come back hex-encoded as
-	// uppercase ascii text, twice the length
-	// they went in as
 	printf("LONG LOBS: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
 	assertTrue(sqlrcur_sendQuery(cur,
@@ -1747,12 +1738,10 @@ int main(int argc, char **argv) {
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testclob"),
 		LARGE_BUFFER_LENGTH);
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"testclob"),largebuffer);
-	#if 0
 	assertEqInt(sqlrcur_getFieldLengthByName(cur,0,"testblob"),
 		LARGE_BUFFER_LENGTH);
 	assertEqStrLen(sqlrcur_getFieldByName(cur,0,"testblob"),largebuffer,
 		LARGE_BUFFER_LENGTH);
-	#endif
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -2157,10 +2146,6 @@ int main(int argc, char **argv) {
 
 
 	// encoded binary data
-	// #9405 - image and varbinary come back
-	// hex-encoded as uppercase ascii text,
-	// twice the length they went in as
-	#if 0
 	printf("ENCODED BINARY DATA: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
 	assertTrue(sqlrcur_sendQuery(cur,"create table testtable "
@@ -2183,7 +2168,6 @@ int main(int argc, char **argv) {
 		buffer,sizeof(buffer));
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
-	#endif
 
 
 	// quotes

@@ -1647,9 +1647,6 @@ int main(int argc, char **argv) {
 
 
 	// long lobs
-	// the blob still goes in, only reading it back is parked.  #9405 -
-	// image and varbinary come back hex-encoded as uppercase ascii
-	// text, twice the length they went in as
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
@@ -1667,11 +1664,9 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("select * from testtable"));
 	assertEquals(cur->getFieldLength(0,"testclob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testclob"),largebuffer);
-	#if 0
 	assertEquals(cur->getFieldLength(0,"testblob"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"testblob"),largebuffer,
 						LARGE_BUFFER_LENGTH);
-	#endif
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -2075,9 +2070,6 @@ int main(int argc, char **argv) {
 
 
 	// encoded binary data
-	// #9405 - image and varbinary come back hex-encoded as uppercase
-	// ascii text, twice the length they went in as
-	#if 0
 	stdoutput.printf("ENCODED BINARY DATA: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery("create table testtable (col1 image)"));
@@ -2085,22 +2077,21 @@ int main(int argc, char **argv) {
 	for (uint16_t i=0; i<256; i++) {
 		buffer[i]=i;
 	}
-	stringbuffer	query;
-	query.append("insert into testtable values (0x");
+	stringbuffer	hexquery;
+	hexquery.append("insert into testtable values (0x");
 	char	hex[3];
 	for (uint64_t i=0; i<sizeof(buffer); i++) {
 		charstring::printf(hex,sizeof(hex),"%02x",buffer[i]);
-		query.append(hex);
+		hexquery.append(hex);
 	}
-	query.append(")");
-	assertTrue(cur->sendQuery(query.getString()));
+	hexquery.append(")");
+	assertTrue(cur->sendQuery(hexquery.getString()));
 	assertTrue(cur->sendQuery("select col1 from testtable"));
 	assertEquals(cur->getFieldLength(0,(uint32_t)0),sizeof(buffer));
 	assertEquals(bytestring::compare(cur->getField(0,(uint32_t)0),
 						buffer,sizeof(buffer)),0);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
-	#endif
 
 
 	// quotes

@@ -237,6 +237,11 @@
 		connection handle while testing whether it was null; the driver
 		manager rejects a null handle before the driver sees it, so this
 		only reached code linking libsqlrodbc directly
+	fixed the odbc connection module returning binary, varbinary and,
+		on ms sql server, image column values from a plain select as
+		uppercase hex text at twice their length; the fetch bind asked
+		the driver for SQL_C_CHAR for those columns, and now binds them
+		as SQL_C_BINARY instead, so raw bytes come back
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

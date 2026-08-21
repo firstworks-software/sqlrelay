@@ -288,8 +288,10 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 
 #if (ODBCVER >= 0x0300) && defined(SQLCOLATTRIBUTE_SQLLEN)
 		bool		isLob(SQLLEN type);
+		bool		isBinary(SQLLEN type);
 #else
 		bool		isLob(SQLINTEGER type);
+		bool		isBinary(SQLINTEGER type);
 #endif
 
 		void		setConvCharError(const char *baseerror,
@@ -5494,16 +5496,32 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 							field[i],maxfieldsize,
 							&(indicator[i]));
 				} else if (!isLob(column[i].type)) {
-					erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
+					if (isBinary(column[i].type)) {
+						erg=SQLBindCol(stmt,i+1,
+							SQL_C_BINARY,
 							field[i],maxfieldsize,
 							&(indicator[i]));
+					} else {
+						erg=SQLBindCol(stmt,i+1,
+							SQL_C_CHAR,
+							field[i],maxfieldsize,
+							&(indicator[i]));
+					}
 				}
 			} else {
 			#endif
 				if (!isLob(column[i].type)) {
-					erg=SQLBindCol(stmt,i+1,SQL_C_CHAR,
+					if (isBinary(column[i].type)) {
+						erg=SQLBindCol(stmt,i+1,
+							SQL_C_BINARY,
 							field[i],maxfieldsize,
 							&(indicator[i]));
+					} else {
+						erg=SQLBindCol(stmt,i+1,
+							SQL_C_CHAR,
+							field[i],maxfieldsize,
+							&(indicator[i]));
+					}
 				}
 			#ifdef HAVE_SQLCONNECTW
 			}
@@ -6436,6 +6454,19 @@ bool odbccursor::isLob(SQLINTEGER type) {
 	return (type==SQL_LONGVARCHAR ||
 		type==SQL_LONGVARBINARY ||
 		type==SQL_WLONGVARCHAR);
+}
+
+#if (ODBCVER >= 0x0300) && defined(SQLCOLATTRIBUTE_SQLLEN)
+bool odbccursor::isBinary(SQLLEN type) {
+#else
+bool odbccursor::isBinary(SQLINTEGER type) {
+#endif
+
+	// If these are fetched as SQL_C_CHAR, then the driver hex-expands them,
+	// so they have to be fetched as SQL_C_BINARY instead.
+	return (type==SQL_BINARY ||
+		type==SQL_VARBINARY ||
+		type==SQL_LONGVARBINARY);
 }
 
 void odbccursor::setConvCharError(const char *baseerror,
