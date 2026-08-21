@@ -1277,7 +1277,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMN_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1287,7 +1291,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CURSOR_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1297,7 +1305,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_SCHEMA_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1307,7 +1319,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CATALOG_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1317,7 +1333,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_TABLE_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1483,7 +1503,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_GROUP_BY,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,16);
+	if (issqlrelay) {
+		// no limit
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,16);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1503,7 +1528,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_ORDER_BY,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,16);
+	if (issqlrelay) {
+		// no limit
+		assertEqualDbc(dbc,(int)usmallintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,16);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1528,7 +1558,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMNS_IN_TABLE,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,250);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,1024);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,250);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1539,7 +1573,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,255);
+		assertEqualDbc(dbc,(int)uintval,900);
 	} else {
 		assertEqualDbc(dbc,(int)uintval,127);
 	}
@@ -1552,7 +1586,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_ROW_SIZE,
 			(SQLPOINTER)&uintval,(SQLSMALLINT)sizeof(uintval),
 			&vallen);
-	assertEqualDbc(dbc,(int)uintval,1962);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,8060);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,1962);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1577,7 +1615,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_TABLES_IN_SELECT,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,16);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,256);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,16);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1587,7 +1629,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_USER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1683,7 +1729,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_IDENTIFIER_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1868,7 +1918,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_OWNER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1879,7 +1933,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
 	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,30);
+		assertEqualDbc(dbc,(int)usmallintval,128);
 	} else {
 		assertEqualDbc(dbc,(int)usmallintval,36);
 	}
@@ -1892,7 +1946,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_QUALIFIER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	assertEqualDbc(dbc,(int)usmallintval,30);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)usmallintval,128);
+	} else {
+		assertEqualDbc(dbc,(int)usmallintval,30);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1932,7 +1990,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_OWNER_TERM,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	assertEqualDbc(dbc,(const char *)strval,"owner");
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(const char *)strval,"schema");
+	} else {
+		assertEqualDbc(dbc,(const char *)strval,"owner");
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2049,10 +2111,13 @@ int main(int argc, char **argv) {
 		assertEqualDbc(dbc,(int)uintval,
 			(int)(SQL_FN_STR_CONCAT|
 				SQL_FN_STR_INSERT|
+				SQL_FN_STR_LEFT|
 				SQL_FN_STR_LTRIM|
 				SQL_FN_STR_LENGTH|
+				SQL_FN_STR_LOCATE|
 				SQL_FN_STR_LCASE|
 				SQL_FN_STR_REPEAT|
+				SQL_FN_STR_REPLACE|
 				SQL_FN_STR_RIGHT|
 				SQL_FN_STR_RTRIM|
 				SQL_FN_STR_SUBSTRING|

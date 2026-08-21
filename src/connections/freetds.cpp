@@ -472,7 +472,10 @@ void freetdsconnection::initDatabaseFeatures() {
 	maxconnections=
 		charstring::parseNumber(cont->getConfig()->getMaxConnections());
 
-	// FIXME: we need separate methods for sybase and mssql
+	// these are the sap ase values - sybasedb defaults to true and
+	// this runs from the constructor, before we know which db this
+	// is; probeDbVersion() patches up the ones that differ for
+	// ms sql server once it does know
 
 	databasefeatures[FEATURE_AGGREGATE_FUNCTIONS]=
 		"ALL,AVG,COUNT,DISTINCT,MAX,MIN,SUM";
@@ -1462,6 +1465,102 @@ void freetdsconnection::probeDbVersion() {
 
 	// it's sybase if it's not microsoft
 	sybasedb=!charstring::contains(dbversion,"Microsoft");
+
+	// initDatabaseFeatures() runs in the constructor, before we know
+	// which db this is, so it sets the sap ase values - now that we
+	// know, patch up the ones that differ for ms sql server
+	if (!sybasedb) {
+
+		// ms sql server also supports snapshot isolation - see
+		// getIsolationLevelQuery() and mapIsolationLevel()
+		databasefeatures[FEATURE_ISOLATION_LEVELS]=
+			"READ_UNCOMMITTED,READ_COMMITTED,"
+				"REPEATABLE_READ,SERIALIZABLE,SNAPSHOT";
+
+		// identifiers are sysname (nvarchar(128)), not 30 chars
+		databasefeatures[FEATURE_MAX_CATALOG_NAME_LENGTH]=
+			"128";
+
+		// no limit
+		databasefeatures[FEATURE_MAX_COLUMNS_IN_GROUP_BY]=
+			"0";
+
+		// no limit
+		databasefeatures[FEATURE_MAX_COLUMNS_IN_ORDER_BY]=
+			"0";
+
+		databasefeatures[FEATURE_MAX_COLUMNS_IN_TABLE]=
+			"1024";
+
+		databasefeatures[FEATURE_MAX_COLUMN_NAME_LENGTH]=
+			"128";
+
+		databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
+			"128";
+
+		databasefeatures[FEATURE_MAX_IDENTIFIER_LENGTH]=
+			"128";
+
+		// max index key size (legacy 900-byte limit; jtds reports
+		// the same value)
+		databasefeatures[FEATURE_MAX_INDEX_LENGTH]=
+			"900";
+
+		databasefeatures[FEATURE_MAX_PROCEDURE_NAME_LENGTH]=
+			"128";
+
+		// max in-row size, one 8k page minus overhead
+		databasefeatures[FEATURE_MAX_ROW_SIZE]=
+			"8060";
+
+		databasefeatures[FEATURE_MAX_SCHEMA_NAME_LENGTH]=
+			"128";
+
+		databasefeatures[FEATURE_MAX_TABLES_IN_SELECT]=
+			"256";
+
+		databasefeatures[FEATURE_MAX_TABLE_NAME_LENGTH]=
+			"128";
+
+		databasefeatures[FEATURE_MAX_USER_NAME_LENGTH]=
+			"128";
+
+		// ms sql server has real schemas - see
+		// getSchemaListQuerySqlServer(), which selects from
+		// information_schema.schemata, rather than faking
+		// them from object owners like the sybase version
+		databasefeatures[FEATURE_SCHEMA_TERM]=
+			"schema";
+
+		// microsoft's documented t-sql reserved words, minus
+		// the ones that odbc/sql-92 already reserve
+		databasefeatures[FEATURE_SQL_KEYWORDS]=
+			"BACKUP,BREAK,BROWSE,BULK,CHECKPOINT,CLUSTERED,"
+				"COMPUTE,CONTAINS,CONTAINSTABLE,DATABASE,"
+				"DBCC,DENY,DISK,DISTRIBUTED,DUMP,ERRLVL,"
+				"EXIT,FILE,FILLFACTOR,FREETEXT,"
+				"FREETEXTTABLE,HOLDLOCK,IDENTITY_INSERT,"
+				"IDENTITYCOL,IF,INDEX,KILL,LINENO,LOAD,"
+				"MERGE,NOCHECK,NONCLUSTERED,OFF,OFFSETS,"
+				"OPENDATASOURCE,OPENQUERY,OPENROWSET,"
+				"OPENXML,OVER,PERCENT,PIVOT,PLAN,PRINT,"
+				"PROC,RAISERROR,READTEXT,RECONFIGURE,"
+				"REPLICATION,RESTORE,RETURN,REVERT,"
+				"ROWCOUNT,ROWGUIDCOL,RULE,SAVE,"
+				"SECURITYAUDIT,SEMANTICKEYPHRASETABLE,"
+				"SEMANTICSIMILARITYDETAILSTABLE,"
+				"SEMANTICSIMILARITYTABLE,SETUSER,SHUTDOWN,"
+				"STATISTICS,TABLESAMPLE,TEXTSIZE,TOP,TRAN,"
+				"TRIGGER,TRUNCATE,TRY_CONVERT,TSEQUAL,"
+				"UNPIVOT,UPDATETEXT,USE,WAITFOR,WHILE,"
+				"WRITETEXT";
+
+		// ms sql server also has left, locate and replace
+		databasefeatures[FEATURE_STRING_FUNCTIONS]=
+			"ascii,char,concat,difference,insert,lcase,left,"
+				"length,locate,ltrim,repeat,replace,right,"
+				"rtrim,soundex,space,substring,ucase";
+	}
 }
 
 sqlrservercursor *freetdsconnection::newCursor(uint16_t id) {

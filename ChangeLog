@@ -210,6 +210,12 @@
 		instead of a zero-length field for an empty (but not null)
 		text column on ms sql server; freetds doesn't null-terminate
 		a zero-length value, so trimming the terminator underflowed
+	fixed the freetds connection module reporting sap ase's database
+		features (identifier length limits, max row size, schema
+		terminology, sql keywords, isolation levels, and so on)
+		for ms sql server backends too; it now reports the
+		correct values for each backend, patched up during login
+		once the db version probe determines which backend it is
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

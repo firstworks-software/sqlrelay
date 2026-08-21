@@ -347,7 +347,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxCatalogNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -366,7 +366,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxColumnNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -378,7 +378,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxColumnsInGroupBy();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,16);
+			assertEquals(intval,0);
 		} else {
 			// jtds reports no limit for tds 7
 			assertEquals(intval,0);
@@ -397,7 +397,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxColumnsInOrderBy();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,16);
+			assertEquals(intval,0);
 		} else {
 			// jtds reports no limit for tds 7
 			assertEquals(intval,0);
@@ -421,7 +421,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxColumnsInTable();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,250);
+			assertEquals(intval,1024);
 		} else {
 			// jtds reports the sql server limit
 			assertEquals(intval,1024);
@@ -445,7 +445,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxCursorNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -457,7 +457,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxIndexLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,255);
+			assertEquals(intval,900);
 		} else {
 			// jtds reports the sql server limit
 			assertEquals(intval,900);
@@ -469,7 +469,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxProcedureNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -481,7 +481,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxRowSize();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,1962);
+			assertEquals(intval,8060);
 		} else {
 			// jtds reports the sql server limit
 			assertEquals(intval,8060);
@@ -493,7 +493,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxSchemaNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -529,7 +529,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxTableNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -541,7 +541,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxTablesInSelect();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,16);
+			assertEquals(intval,256);
 		} else {
 			// jtds reports the sql server limit
 			assertEquals(intval,256);
@@ -553,7 +553,7 @@ class freetds_mssql extends sqlrtest {
 		intval=md.getMaxUserNameLength();
 		System.out.println("    "+intval);
 		if (issqlrelay) {
-			assertEquals(intval,30);
+			assertEquals(intval,128);
 		} else {
 			// jtds reports the tds 7 sysname length
 			assertEquals(intval,128);
@@ -595,7 +595,12 @@ class freetds_mssql extends sqlrtest {
 		System.out.println("  getSchemaTerm");
 		stringval=md.getSchemaTerm();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"owner");
+		if (issqlrelay) {
+			assertEquals(stringval,"schema");
+		} else {
+			// jtds reports "owner" for sql server
+			assertEquals(stringval,"owner");
+		}
 		System.out.println();
 
 		// getSearchStringEscape
@@ -609,7 +614,12 @@ class freetds_mssql extends sqlrtest {
 		System.out.println("  getSQLKeywords");
 		stringval=md.getSQLKeywords();
 		System.out.println("    "+stringval);
-		assertEquals(stringval,"ARITH_OVERFLOW,BREAK,BROWSE,BULK,CHAR_CONVERT,CHECKPOINT,CLUSTERED,COMPUTE,CONFIRM,CONTROLROW,DATA_PGS,DATABASE,DBCC,DISK,DUMMY,DUMP,ENDTRAN,ERRLVL,ERRORDATA,ERROREXIT,EXIT,FILLFACTOR,HOLDLOCK,IDENTITY_INSERT,IF,INDEX,KILL,LINENO,LOAD,MAX_ROWS_PER_PAGE,MIRROR,MIRROREXIT,NOHOLDLOCK,NONCLUSTERED,NUMERIC_TRUNCATION,OFF,OFFSETS,ONCE,ONLINE,OVER,PARTITION,PERM,PERMANENT,PLAN,PRINT,PROC,PROCESSEXIT,RAISERROR,READ,READTEXT,RECONFIGURE,REPLACE,RESERVED_PGS,RETURN,ROLE,ROWCNT,ROWCOUNT,RULE,SAVE,SETUSER,SHARED,SHUTDOWN,SOME,STATISTICS,STRIPE,SYB_IDENTITY,SYB_RESTREE,SYB_TERMINATE,TEMP,TEXTSIZE,TRAN,TRIGGER,TRUNCATE,TSEQUAL,UNPARTITION,USE,USED_PGS,USER_OPTION,WAITFOR,WHILE,WRITETEXT");
+		if (issqlrelay) {
+			assertEquals(stringval,"BACKUP,BREAK,BROWSE,BULK,CHECKPOINT,CLUSTERED,COMPUTE,CONTAINS,CONTAINSTABLE,DATABASE,DBCC,DENY,DISK,DISTRIBUTED,DUMP,ERRLVL,EXIT,FILE,FILLFACTOR,FREETEXT,FREETEXTTABLE,HOLDLOCK,IDENTITY_INSERT,IDENTITYCOL,IF,INDEX,KILL,LINENO,LOAD,MERGE,NOCHECK,NONCLUSTERED,OFF,OFFSETS,OPENDATASOURCE,OPENQUERY,OPENROWSET,OPENXML,OVER,PERCENT,PIVOT,PLAN,PRINT,PROC,RAISERROR,READTEXT,RECONFIGURE,REPLICATION,RESTORE,RETURN,REVERT,ROWCOUNT,ROWGUIDCOL,RULE,SAVE,SECURITYAUDIT,SEMANTICKEYPHRASETABLE,SEMANTICSIMILARITYDETAILSTABLE,SEMANTICSIMILARITYTABLE,SETUSER,SHUTDOWN,STATISTICS,TABLESAMPLE,TEXTSIZE,TOP,TRAN,TRIGGER,TRUNCATE,TRY_CONVERT,TSEQUAL,UNPIVOT,UPDATETEXT,USE,WAITFOR,WHILE,WRITETEXT");
+		} else {
+			// jtds reports the sybase ase keyword list for sql server
+			assertEquals(stringval,"ARITH_OVERFLOW,BREAK,BROWSE,BULK,CHAR_CONVERT,CHECKPOINT,CLUSTERED,COMPUTE,CONFIRM,CONTROLROW,DATA_PGS,DATABASE,DBCC,DISK,DUMMY,DUMP,ENDTRAN,ERRLVL,ERRORDATA,ERROREXIT,EXIT,FILLFACTOR,HOLDLOCK,IDENTITY_INSERT,IF,INDEX,KILL,LINENO,LOAD,MAX_ROWS_PER_PAGE,MIRROR,MIRROREXIT,NOHOLDLOCK,NONCLUSTERED,NUMERIC_TRUNCATION,OFF,OFFSETS,ONCE,ONLINE,OVER,PARTITION,PERM,PERMANENT,PLAN,PRINT,PROC,PROCESSEXIT,RAISERROR,READ,READTEXT,RECONFIGURE,REPLACE,RESERVED_PGS,RETURN,ROLE,ROWCNT,ROWCOUNT,RULE,SAVE,SETUSER,SHARED,SHUTDOWN,SOME,STATISTICS,STRIPE,SYB_IDENTITY,SYB_RESTREE,SYB_TERMINATE,TEMP,TEXTSIZE,TRAN,TRIGGER,TRUNCATE,TSEQUAL,UNPARTITION,USE,USED_PGS,USER_OPTION,WAITFOR,WHILE,WRITETEXT");
+		}
 		System.out.println();
 
 		// getSQLStateType
@@ -624,7 +634,7 @@ class freetds_mssql extends sqlrtest {
 		stringval=md.getStringFunctions();
 		System.out.println("    "+stringval);
 		if (issqlrelay) {
-			assertEquals(stringval,"ascii,char,concat,difference,insert,lcase,length,ltrim,repeat,right,rtrim,soundex,space,substring,ucase");
+			assertEquals(stringval,"ascii,char,concat,difference,insert,lcase,left,length,locate,ltrim,repeat,replace,right,rtrim,soundex,space,substring,ucase");
 		} else {
 			// jtds adds left, locate and replace for sql server
 			assertEquals(stringval,"ascii,char,concat,difference,insert,lcase,left,length,locate,ltrim,repeat,replace,right,rtrim,soundex,space,substring,ucase");
