@@ -3763,14 +3763,16 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 			createtemptable.study();
 			selectintotemptable.study();
 		} else {
-			// the fallback below can't spot a # table either, so
-			// the tables would just quietly leak again - nothing
-			// downstream can detect that, so make noise here
-			stdoutput.printf("odbc: %s temp table pattern failed "
-					"to compile - MS SQL Server temp tables "
-					"will not be dropped at the end of the "
-					"session\n",
-					(createok)?"select-into":"create-table");
+			// checkForTempTable() falls back to the base class,
+			// which can't spot a # table either, so they'd just
+			// leak again - and nothing downstream can detect
+			// that, so make the noise here
+			stdoutput.printf("odbc: %s temp table pattern "
+					"failed to compile - MS SQL Server "
+					"temp tables will not be dropped "
+					"at the end of the session\n",
+					(createok)?"select-into":
+							"create-table");
 		}
 	}
 
