@@ -5509,8 +5509,12 @@ void freetdscursor::getField(uint32_t col,
 
 	// get the data and data size for this field,
 	// trimming the null terminator
+	// (a zero-length value has no null terminator, and datasize 0,
+	// so trimming it would underflow - datasize is also signed, and
+	// freetds leaves it unset on a couple of internal failure paths,
+	// so guard on >0 rather than just non-zero)
 	char		*d=&data[col][row*conn->cont->getMaxFieldSize()];
-	uint32_t	ds=datasize[col][row]-1;
+	uint32_t	ds=(datasize[col][row]>0)?(datasize[col][row]-1):0;
 
 	// decode text-encoded binary data
 	// (unless the user has opted out via decodeblobs=no)

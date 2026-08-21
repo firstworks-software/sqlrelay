@@ -1436,12 +1436,11 @@ cur.inputBindBlob("3","",0)
 cur.inputBindBlob("4",nil,0)
 assertTrue(cur.executeQuery())
 cur.sendQuery("select * from testtable")
-# the text column really holds zero bytes, but sql relay returns its
-# whole buffer of nulls, sized by the instance's maxfieldsize, which
-# defaults to 32768.  That is a defect, filed as #9389.  This pins the
-# current behavior, so it is the assertion that has to change when #9389
-# is fixed.
-assertEqual(cur.getField(0,0),"\0"*32768)
+# an empty (non-NULL) text column now correctly returns an empty
+# string.  #9389 was that it came back as a full buffer (the
+# instance's maxfieldsize, 32768 bytes) of NUL bytes, due to a
+# freetds NUL-termination quirk on zero-length values.  Now fixed.
+assertEqual(cur.getField(0,0),"")
 assertEqual(cur.getField(0,1),nil)
 # the module encodes empty blob data as a single 0x00 byte
 assertEqual(cur.getField(0,2),"\0")

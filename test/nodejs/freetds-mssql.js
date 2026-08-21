@@ -1508,15 +1508,15 @@ cur.inputBindBlob("3","",0);
 cur.inputBindBlob("4",null,0);
 assertTrue(cur.executeQuery());
 cur.sendQuery("select * from testtable");
-// neither field is really empty - the image column returns the single
+// neither field is really NULL - the image column returns the single
 // 0x00 byte the module encodes for empty blob data, and the text column
-// returns its whole buffer of nulls, sized by the instance's
-// maxfieldsize, which defaults to 32768 (#9389).  Both read as "" here
-// because the nodejs api stops strings at the first null, so the lengths
-// are what pin the behavior.  The 32768 has to change when #9389 is
-// fixed.
+// returns a true zero-length string.  #9389 was a freetds
+// NUL-termination quirk that made the text column's length come back as
+// maxfieldsize (32768) instead; now fixed.  Both read as "" here because
+// the nodejs api stops strings at the first null, so the lengths are
+// asserted too.
 assertEqStr(cur.getField(0,0),"");
-assertEqInt(cur.getFieldLength(0,0),32768);
+assertEqInt(cur.getFieldLength(0,0),0);
 assertEqStr(cur.getField(0,1),null);
 assertEqStr(cur.getField(0,2),"");
 assertEqInt(cur.getFieldLength(0,2),1);

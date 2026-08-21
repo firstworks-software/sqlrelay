@@ -1177,12 +1177,11 @@ main() ->
     sqlrelay:inputBindNull("4"),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select * from testtable"),
-    %% the text column really holds zero bytes, but sql relay returns the
-    %% column's whole 32768-byte buffer of nulls.  That is a defect, filed
-    %% as #9389.  This assertion pins the current behavior, and has to
-    %% change when #9389 is fixed.
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 0),
-                                        lists:duplicate(32768, 0)),
+    %% an empty (non-NULL) text column now correctly returns an empty
+    %% string.  #9389 was that it came back as a full buffer (the
+    %% instance's maxfieldsize, 32768 bytes) of NUL bytes, due to a
+    %% freetds NUL-termination quirk on zero-length values.  Now fixed.
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 0), ""),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 1), null),
     %% the module encodes empty blob data as a single 0x00 byte
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), [0]),

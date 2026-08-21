@@ -206,6 +206,10 @@
 		it knows which backend it's talking to in time to pick the
 		right host name query, and getDbIpAddress() resolves correctly
 		on mssql as a result
+	fixed the freetds connection module returning a bufferful of nulls
+		instead of a zero-length field for an empty (but not null)
+		text column on ms sql server; freetds doesn't null-terminate
+		a zero-length value, so trimming the terminator underflowed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

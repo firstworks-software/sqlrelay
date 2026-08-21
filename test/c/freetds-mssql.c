@@ -1557,16 +1557,15 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindBlob(cur,"4",NULL,0);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
-	// neither field is really empty - the image column returns the
+	// neither field is really NULL - the image column returns the
 	// single 0x00 byte the module encodes for empty blob data, and
-	// the text column returns its whole buffer of nulls (#9389), sized
-	// by the instance's maxfieldsize, which defaults to 32768 - but
+	// the text column returns a true zero-length string.  #9389 was
+	// a freetds NUL-termination quirk that made the text column's
+	// length come back as maxfieldsize (32768) instead; now fixed.
 	// both compare equal to "" here because this api compares
-	// null-terminated strings.  the lengths are asserted too, so this
-	// test fails alongside the others when #9389 is fixed rather than
-	// passing on with a comment describing behavior that is gone
+	// null-terminated strings, so the lengths are asserted too
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"");
-	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),32768);
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),0);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),NULL);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"");
 	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,2),1);

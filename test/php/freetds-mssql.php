@@ -1481,12 +1481,11 @@
 	sqlrcur_inputBindBlob($cur,"4",NULL,0);
 	assertTrue(sqlrcur_executeQuery($cur));
 	sqlrcur_sendQuery($cur,"select * from testtable");
-	# the text column really holds zero bytes, but sql relay returns
-	# its whole buffer of nulls, sized by the instance's maxfieldsize,
-	# which defaults to 32768.  That is a defect, filed as #9389.  This
-	# pins the current behavior, so it is the assertion that has to
-	# change when #9389 is fixed.
-	assertEqStr(sqlrcur_getField($cur,0,0),str_repeat("\0",32768));
+	# an empty (non-NULL) text column now correctly returns an empty
+	# string.  #9389 was that it came back as a full buffer (the
+	# instance's maxfieldsize, 32768 bytes) of NUL bytes, due to a
+	# freetds NUL-termination quirk on zero-length values.  Now fixed.
+	assertEqStr(sqlrcur_getField($cur,0,0),"");
 	assertEqStr(sqlrcur_getField($cur,0,1),NULL);
 	# the module encodes empty blob data as a single 0x00 byte
 	assertEqStr(sqlrcur_getField($cur,0,2),"\0");

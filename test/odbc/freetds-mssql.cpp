@@ -6589,15 +6589,14 @@ int main(int argc, char **argv) {
 	erg=SQLFetch(stmt);
 	assertSuccessStmt(stmt,erg);
 	if (issqlrelay) {
-		// neither empty lob really comes back empty - the image
-		// column returns the single 0x00 byte the module encodes for
-		// empty blob data, and the text column returns its whole
-		// buffer of nulls, sized by the instance's maxfieldsize,
-		// which defaults to 32768.  that is a defect, filed as
-		// #9389.  these assertions pin the current behavior, so they
-		// are what has to change when #9389 is fixed.  a genuine NULL
-		// does round-trip as SQL_NULL_DATA
-		assertEqualStmt(stmt,(int)lobclob1ind,32768);
+		// neither empty lob is really NULL - the image column
+		// returns the single 0x00 byte the module encodes for empty
+		// blob data, and the text column returns a true zero-length
+		// value.  #9389 was a freetds NUL-termination quirk that made
+		// the text column's length come back as maxfieldsize (32768)
+		// instead; now fixed.  a genuine NULL does round-trip as
+		// SQL_NULL_DATA
+		assertEqualStmt(stmt,(int)lobclob1ind,0);
 		assertEqualStmt(stmt,(int)lobclob2ind,(int)SQL_NULL_DATA);
 		assertEqualStmt(stmt,(int)lobblob1ind,1);
 		assertEqualStmt(stmt,(int)lobblob2ind,(int)SQL_NULL_DATA);

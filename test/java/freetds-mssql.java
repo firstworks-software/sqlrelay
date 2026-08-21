@@ -1564,16 +1564,16 @@ class freetds_mssql extends sqlrtest {
 		cur.inputBindBlob("4",null,0);
 		assertTrue(cur.executeQuery());
 		cur.sendQuery("select * from testtable");
-		// neither field is really empty - the image column returns the
+		// neither field is really NULL - the image column returns the
 		// single 0x00 byte the module encodes for empty blob data, and
-		// the text column returns its whole buffer of nulls, sized by
-		// the instance's maxfieldsize, which defaults to 32768 (#9389).
-		// both read as "" here because the jni layer builds strings
-		// with NewStringUTF, which stops at the first null, so the
-		// lengths are what pin the behavior.  the 32768 has to change
-		// when #9389 is fixed
+		// the text column returns a true zero-length string.  #9389
+		// was a freetds NUL-termination quirk that made the text
+		// column's length come back as maxfieldsize (32768) instead;
+		// now fixed.  both read as "" here because the jni layer builds
+		// strings with NewStringUTF, which stops at the first null, so
+		// the lengths are asserted too
 		assertEquals(cur.getField(0,0),"");
-		assertEquals(cur.getFieldLength(0,0),32768);
+		assertEquals(cur.getFieldLength(0,0),0);
 		assertEquals(cur.getField(0,1),null);
 		assertEquals(cur.getField(0,2),"");
 		assertEquals(cur.getFieldLength(0,2),1);

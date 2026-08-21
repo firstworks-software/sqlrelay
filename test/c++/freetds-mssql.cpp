@@ -1502,16 +1502,15 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
 	assertTrue(cur->sendQuery("select * from testtable"));
-	// neither field is really empty - the image column returns the
+	// neither field is really NULL - the image column returns the
 	// single 0x00 byte the module encodes for empty blob data, and
-	// the text column returns its whole buffer of nulls (#9389), sized
-	// by the instance's maxfieldsize, which defaults to 32768 - but
+	// the text column returns a true zero-length string.  #9389 was
+	// a freetds NUL-termination quirk that made the text column's
+	// length come back as maxfieldsize (32768) instead; now fixed.
 	// both compare equal to "" here because this api compares
-	// null-terminated strings.  the lengths are asserted too, so this
-	// test fails alongside the others when #9389 is fixed rather than
-	// passing on with a comment describing behavior that is gone
+	// null-terminated strings, so the lengths are asserted too
 	assertEquals(cur->getField(0,(uint32_t)0),"");
-	assertEquals(cur->getFieldLength(0,(uint32_t)0),(uint32_t)32768);
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),(uint32_t)0);
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");
 	assertEquals(cur->getFieldLength(0,2),(uint32_t)1);
