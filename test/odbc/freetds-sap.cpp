@@ -1184,8 +1184,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"N");
 	} else {
-		// oracle odbc wrongly returns "Y"; jdbc allTablesAreSelectable()
-		// correctly returns false
+		// the freetds odbc driver wrongly reports that every table
+		// is accessible; jdbc allTablesAreSelectable() correctly
+		// returns false
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	}
 	assertSuccessDbc(dbc,erg);

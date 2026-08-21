@@ -396,7 +396,14 @@ int main(int argc, char **argv) {
 	erg=SQLGetConnectAttr(dbc,SQL_ATTR_PACKET_SIZE,
 			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
 	assertSuccessDbc(dbc,erg);
-	assertEqualDbc(dbc,(int)dbcuintval,2048);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)dbcuintval,2048);
+	} else {
+		// the native driver overwrites this with the packet size
+		// the server reports during login, so the 2048 requested
+		// above doesn't survive
+		assertEqualDbc(dbc,(int)dbcuintval,4096);
+	}
 	stdoutput.printf("\n");
 
 
@@ -1121,7 +1128,8 @@ int main(int argc, char **argv) {
 		// sqlrelay only supports SQL_FD_FETCH_NEXT
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_FD_FETCH_NEXT);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
+		// the native driver reports all six fetch directions
+		assertEqualDbc(dbc,(int)uintval,63);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1191,8 +1199,9 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(const char *)strval,"N");
 	} else {
-		// oracle odbc wrongly returns "Y"; jdbc allTablesAreSelectable()
-		// correctly returns false
+		// the freetds odbc driver wrongly reports that every table
+		// is accessible; jdbc allTablesAreSelectable() correctly
+		// returns false
 		assertEqualDbc(dbc,(const char *)strval,"Y");
 	}
 	assertSuccessDbc(dbc,erg);
@@ -1263,11 +1272,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_IDENTIFIER_QUOTE_CHAR,
 			(SQLPOINTER)strval,(SQLSMALLINT)sizeof(strval),
 			&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(const char *)strval,"\"");
-	} else {
-		assertEqualDbc(dbc,(const char *)strval,"");
-	}
+	assertEqualDbc(dbc,(const char *)strval,"\"");
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1277,11 +1282,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_COLUMN_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1291,11 +1292,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CURSOR_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1305,11 +1302,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_SCHEMA_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1319,11 +1312,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_CATALOG_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1333,11 +1322,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_TABLE_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1350,7 +1335,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,0);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,1);
+		// all four concurrency control options
+		assertEqualDbc(dbc,(int)uintval,15);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1589,7 +1575,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,8060);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,1962);
+		assertEqualDbc(dbc,(int)uintval,8062);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1629,11 +1615,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_USER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1729,11 +1711,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_IDENTIFIER_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -1879,11 +1857,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONCAT_NULL_BEHAVIOR,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_NULL);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_NON_NULL);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,(int)SQL_CB_NULL);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1918,11 +1892,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_OWNER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -1935,7 +1905,7 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)usmallintval,128);
 	} else {
-		assertEqualDbc(dbc,(int)usmallintval,36);
+		assertEqualDbc(dbc,(int)usmallintval,134);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -1946,11 +1916,7 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_MAX_QUALIFIER_NAME_LEN,
 			(SQLPOINTER)&usmallintval,
 			(SQLSMALLINT)sizeof(usmallintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)usmallintval,128);
-	} else {
-		assertEqualDbc(dbc,(int)usmallintval,30);
-	}
+	assertEqualDbc(dbc,(int)usmallintval,128);
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2034,8 +2000,16 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_SCROLL_OPTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,
-		(int)(SQL_SO_FORWARD_ONLY|SQL_SO_STATIC));
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SO_FORWARD_ONLY|SQL_SO_STATIC));
+	} else {
+		assertEqualDbc(dbc,(int)uintval,
+			(int)(SQL_SO_FORWARD_ONLY|
+				SQL_SO_KEYSET_DRIVEN|
+				SQL_SO_DYNAMIC|
+				SQL_SO_STATIC));
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2070,34 +2044,30 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_NUMERIC_FUNCTIONS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		assertEqualDbc(dbc,(int)uintval,
-			(int)(SQL_FN_NUM_ABS|
-				SQL_FN_NUM_ACOS|
-				SQL_FN_NUM_ASIN|
-				SQL_FN_NUM_ATAN|
-				SQL_FN_NUM_ATAN2|
-				SQL_FN_NUM_CEILING|
-				SQL_FN_NUM_COS|
-				SQL_FN_NUM_COT|
-				SQL_FN_NUM_EXP|
-				SQL_FN_NUM_FLOOR|
-				SQL_FN_NUM_LOG|
-				SQL_FN_NUM_MOD|
-				SQL_FN_NUM_SIGN|
-				SQL_FN_NUM_SIN|
-				SQL_FN_NUM_SQRT|
-				SQL_FN_NUM_TAN|
-				SQL_FN_NUM_PI|
-				SQL_FN_NUM_RAND|
-				SQL_FN_NUM_DEGREES|
-				SQL_FN_NUM_LOG10|
-				SQL_FN_NUM_POWER|
-				SQL_FN_NUM_RADIANS|
-				SQL_FN_NUM_ROUND));
-	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
-	}
+	assertEqualDbc(dbc,(int)uintval,
+		(int)(SQL_FN_NUM_ABS|
+			SQL_FN_NUM_ACOS|
+			SQL_FN_NUM_ASIN|
+			SQL_FN_NUM_ATAN|
+			SQL_FN_NUM_ATAN2|
+			SQL_FN_NUM_CEILING|
+			SQL_FN_NUM_COS|
+			SQL_FN_NUM_COT|
+			SQL_FN_NUM_EXP|
+			SQL_FN_NUM_FLOOR|
+			SQL_FN_NUM_LOG|
+			SQL_FN_NUM_MOD|
+			SQL_FN_NUM_SIGN|
+			SQL_FN_NUM_SIN|
+			SQL_FN_NUM_SQRT|
+			SQL_FN_NUM_TAN|
+			SQL_FN_NUM_PI|
+			SQL_FN_NUM_RAND|
+			SQL_FN_NUM_DEGREES|
+			SQL_FN_NUM_LOG10|
+			SQL_FN_NUM_POWER|
+			SQL_FN_NUM_RADIANS|
+			SQL_FN_NUM_ROUND));
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2128,7 +2098,7 @@ int main(int argc, char **argv) {
 				SQL_FN_STR_SOUNDEX|
 				SQL_FN_STR_SPACE));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
+		assertEqualDbc(dbc,(int)uintval,5242591);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2171,7 +2141,8 @@ int main(int argc, char **argv) {
 				SQL_FN_TD_DAYNAME|
 				SQL_FN_TD_MONTHNAME));
 	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
+		// all twenty-one timedate functions
+		assertEqualDbc(dbc,(int)uintval,2097151);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2199,7 +2170,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	// sqlrelay reports no conversion support at all; the native driver
+	// reports the conversions mssql can actually do
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10759455);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2210,7 +2187,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_BIT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10501503);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2221,7 +2202,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_CHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,15089535);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2248,7 +2233,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_DECIMAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10501503);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2275,7 +2264,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_FLOAT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10498431);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2286,7 +2279,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_INTEGER,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10501503);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2297,7 +2294,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_LONGVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,14680833);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2308,7 +2309,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_NUMERIC,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10501503);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2319,7 +2324,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_REAL,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10498431);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2330,7 +2339,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_SMALLINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10501503);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2357,7 +2370,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TIMESTAMP,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10620161);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2368,7 +2385,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_TINYINT,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10501503);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2379,7 +2400,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_VARBINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,10759455);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2390,7 +2415,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_VARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,15089535);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2401,7 +2430,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_LONGVARBINARY,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,265216);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2469,7 +2502,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_LOCK_TYPES,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,1);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2482,7 +2519,8 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		assertEqualDbc(dbc,(int)uintval,(int)SQL_POS_POSITION);
 	} else {
-		assertEqualDbc(dbc,(int)uintval,0);
+		// SQL_POS_POSITION|SQL_POS_UPDATE|SQL_POS_DELETE
+		assertEqualDbc(dbc,(int)uintval,13);
 	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
@@ -2674,8 +2712,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_ADD_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// the backend supports these, but neither driver reports them
-	assertEqualDbc(dbc,(int)uintval,0);
+	// mssql supports all nine intervals; the native driver reports them,
+	// sqlrelay doesn't
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,511);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2685,8 +2728,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_TIMEDATE_DIFF_INTERVALS,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	// the backend supports these, but neither driver reports them
-	assertEqualDbc(dbc,(int)uintval,0);
+	// mssql supports all nine intervals; the native driver reports them,
+	// sqlrelay doesn't
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,511);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 
@@ -2842,7 +2890,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,15089535);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -2891,7 +2943,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WLONGVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,14680833);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -2904,7 +2960,11 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_CONVERT_WVARCHAR,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		assertEqualDbc(dbc,(int)uintval,15089535);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3133,8 +3193,13 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
-	// neither driver supports dynamic cursors
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		// scrolled fetch, no-change locking, the SQLSetPos
+		// operations and positioned update/delete
+		assertEqualDbc(dbc,(int)uintval,28231);
+	}
 	stdoutput.printf("\n");
 	#endif
 
@@ -3146,7 +3211,7 @@ int main(int argc, char **argv) {
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
 	assertSuccessDbc(dbc,erg);
-	// neither driver supports dynamic cursors
+	// the native driver reports its dynamic cursor bits in ATTRIBUTES1
 	assertEqualDbc(dbc,(int)uintval,0);
 	stdoutput.printf("\n");
 	#endif
@@ -3158,7 +3223,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_FORWARD_ONLY_CURSOR_ATTRIBUTES1,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		// fetch next, positioned update and delete
+		assertEqualDbc(dbc,(int)uintval,24577);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -3485,7 +3555,12 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_STATIC_CURSOR_ATTRIBUTES1,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertEqualDbc(dbc,(int)uintval,0);
+	if (issqlrelay) {
+		assertEqualDbc(dbc,(int)uintval,0);
+	} else {
+		// scrolled fetch, no-change locking, SQLSetPos positioning
+		assertEqualDbc(dbc,(int)uintval,583);
+	}
 	assertSuccessDbc(dbc,erg);
 	stdoutput.printf("\n");
 	#endif
@@ -4627,15 +4702,27 @@ int main(int argc, char **argv) {
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_NONSCROLLABLE);
 	} else {
-		// FreeTDS doesn't support scrollable cursors; the initial get
-		// reports nonscrollable and setting scrollable fails
+		// the native driver defaults to nonscrollable but does
+		// support scrollable cursors
 		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
 		assertSuccessStmt(stmt,erg);
 		assertEqualStmt(stmt,(int)stmtinitial,(int)SQL_NONSCROLLABLE);
 		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
 				(SQLPOINTER)(uintptr_t)SQL_SCROLLABLE,0);
-		assertFailureStmt(stmt,erg);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLGetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
+		assertSuccessStmt(stmt,erg);
+		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_SCROLLABLE);
+		// going scrollable switches the cursor type to static as a
+		// side effect, so put both attributes back
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_SCROLLABLE,
+				(SQLPOINTER)(uintptr_t)SQL_NONSCROLLABLE,0);
+		assertSuccessStmt(stmt,erg);
+		erg=SQLSetStmtAttr(stmt,SQL_ATTR_CURSOR_TYPE,
+				(SQLPOINTER)(uintptr_t)SQL_CURSOR_FORWARD_ONLY,0);
+		assertSuccessStmt(stmt,erg);
 	}
 	stdoutput.printf("\n");
 
@@ -4707,7 +4794,8 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)stmtinitial,
 				(int)SQL_CURSOR_FORWARD_ONLY);
 	} else {
-		// the native driver defaults to a static cursor
+		// the SQL_ATTR_CURSOR_SENSITIVITY set above switched the
+		// native driver's cursor to static
 		assertEqualStmt(stmt,(int)stmtinitial,
 				(int)SQL_CURSOR_STATIC);
 	}
@@ -4746,8 +4834,9 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)stmtulenval,
 				(int)SQL_CURSOR_FORWARD_ONLY);
 	} else {
-		// FreeTDS keeps a static cursor regardless of the requested type
-		assertEqualStmt(stmt,(int)stmtulenval,(int)SQL_CURSOR_STATIC);
+		// the native driver honors the last requested cursor type
+		assertEqualStmt(stmt,(int)stmtulenval,
+				(int)SQL_CURSOR_FORWARD_ONLY);
 	}
 	stdoutput.printf("\n");
 
@@ -5991,7 +6080,13 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(const char *)colname,"testtext");
 	assertEqualStmt(stmt,(int)colnamelen,8);
 	assertEqualStmt(stmt,(int)datatype,SQL_LONGVARCHAR);
-	assertEqualStmt(stmt,(int)colsize,32768);
+	// 32768 is sqlrelay's configured maxfieldsize; the native driver
+	// reports the real mssql text/image limit
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)colsize,32768);
+	} else {
+		assertEqualStmt(stmt,(int)colsize,2147483647);
+	}
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
 
@@ -6006,7 +6101,7 @@ int main(int argc, char **argv) {
 		assertEqualStmt(stmt,(int)colsize,32768);
 	} else {
 		assertEqualStmt(stmt,(int)datatype,SQL_LONGVARBINARY);
-		assertEqualStmt(stmt,(int)colsize,32768);
+		assertEqualStmt(stmt,(int)colsize,2147483647);
 	}
 	assertEqualStmt(stmt,(int)decdigits,0);
 	assertEqualStmt(stmt,(int)nullable,SQL_NULLABLE);
