@@ -112,7 +112,8 @@ struct charbind {
 	~charbind() { delete[] ucsvalue; }
 	char		*value;
 	uint32_t	valuesize;
-	// scratch buffer for unicode input-output string binds; NULL otherwise
+	// scratch buffer for unicode output and input-output string binds;
+	// NULL otherwise
 	byte_t		*ucsvalue;
 };
 
@@ -4404,12 +4405,33 @@ bool odbccursor::outputBind(const char *variable,
 		// FIXME: should buffersize also be reduced here
 	}
 
+	// scratch buffer for the unicode case; left NULL, and "value"
+	// bound directly, otherwise
+	byte_t		*ucsvalue=NULL;
+	SQLLEN		ucsvaluesize=0;
+	#ifdef HAVE_SQLCONNECTW
+	if (odbcconn->unicode) {
+		// bind a scratch buffer rather than "value" - "value" was
+		// sized for the utf-8 form, and the ucs-2 that the driver
+		// writes needs up to twice that.  binding "value" itself
+		// would cap the result at buffersize/2-1 characters.
+		ucsvaluesize=(SQLLEN)((size_t)buffersize*2);
+		ucsvalue=new byte_t[ucsvaluesize];
+		// unlike the input-output case, nothing copies an initial
+		// value in here - only the driver writes it.  zero it, so
+		// that the post-execute conversion doesn't scan
+		// uninitialized memory if the driver writes nothing.
+		bytestring::zero(ucsvalue,ucsvaluesize);
+	}
+	#endif
+
 	charbind	*cb=new charbind;
 	cb->value=value;
 	// buffersize, not valuesize - the reduction above turns valuesize into
 	// a column size in characters, and the post-execute conversion needs
 	// the size of the buffer in bytes
 	cb->valuesize=(uint32_t)buffersize;
+	cb->ucsvalue=ucsvalue;
 
 	outdatebind[pos-1]=NULL;
 	outcharbind[pos-1]=cb;
@@ -4425,8 +4447,8 @@ bool odbccursor::outputBind(const char *variable,
 				SQL_WVARCHAR,
 				valuesize,		// in characters
 				0,
-				(SQLPOINTER)value,
-				buffersize,		// in bytes
+				(SQLPOINTER)ucsvalue,
+				ucsvaluesize,		// in bytes
 				&(outisnull[pos-1]));
 
 	} else {
@@ -4951,9 +4973,14 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 			// convert wchar output binds to user coding
 			char		*value=outcharbind[i]->value;
 			uint32_t	valuesize=outcharbind[i]->valuesize;
+			// the driver wrote its output into the scratch
+			// buffer, if the bind allocated one
+			byte_t		*ucsvalue=outcharbind[i]->ucsvalue;
 			char		*err=NULL;
 			byte_t		*u=convertCharset(
-						(const byte_t *)value,
+						(ucsvalue)?
+							ucsvalue:
+							(const byte_t *)value,
 						odbcconn->ncharencoding,
 						"UTF-8",&err);
 			if (err) {

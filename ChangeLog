@@ -216,6 +216,12 @@
 		for ms sql server backends too; it now reports the
 		correct values for each backend, patched up during login
 		once the db version probe determines which backend it is
+	fixed the odbc connection module returning only half of a string
+		output bind value; in unicode mode it bound the caller's utf-8
+		buffer directly for the driver to write ucs-2 into, which capped
+		the result at buffersize/2-1 characters.  it now binds a scratch
+		buffer of twice the size, like the input-output bind path already
+		did, and converts back out of it after execute
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

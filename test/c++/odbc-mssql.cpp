@@ -52,6 +52,10 @@ int main(int argc, char **argv) {
 	#define	LARGE_BUFFER_LENGTH	8192
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
+	// SQL Server caps a varchar output parameter at 8000 characters
+	#define	LONG_OUTPUT_BIND_LENGTH	8000
+	char		longoutputbindbuffer[LONG_OUTPUT_BIND_LENGTH+1];
+
 
 	// hostname
 	char	*hostname=sys::getHostName();
@@ -1794,29 +1798,26 @@ int main(int argc, char **argv) {
 
 
 	// long output bind
-	// #9406 - defineOutputBindString(name,size) comes back with only
-	// (size/2)-1 characters
-	#if 0
 	stdoutput.printf("LONG OUTPUT BIND: \n");
 	cur->sendQuery("drop procedure testproc");
-	for (int i=0; i<LARGE_BUFFER_LENGTH; i++) {
-		largebuffer[i]='C';
+	for (int i=0; i<LONG_OUTPUT_BIND_LENGTH; i++) {
+		longoutputbindbuffer[i]='C';
 	}
-	largebuffer[LARGE_BUFFER_LENGTH]='\0';
-	char	query[LARGE_BUFFER_LENGTH+256];
+	longoutputbindbuffer[LONG_OUTPUT_BIND_LENGTH]='\0';
+	char	query[LONG_OUTPUT_BIND_LENGTH+256];
 	charstring::printf(query,sizeof(query),
 		"create procedure testproc "
 		"@bindval varchar(%d) output as "
-		"set @bindval='%s'",LARGE_BUFFER_LENGTH,largebuffer);
+		"set @bindval='%s'",LONG_OUTPUT_BIND_LENGTH,
+		longoutputbindbuffer);
 	assertTrue(cur->sendQuery(query));
 	cur->prepareQuery("exec testproc ?");
-	cur->defineOutputBindString("1",LARGE_BUFFER_LENGTH);
+	cur->defineOutputBindString("1",LONG_OUTPUT_BIND_LENGTH);
 	assertTrue(cur->executeQuery());
-	assertEquals(cur->getOutputBindLength("1"),LARGE_BUFFER_LENGTH);
-	assertEquals(cur->getOutputBindString("1"),largebuffer);
+	assertEquals(cur->getOutputBindLength("1"),LONG_OUTPUT_BIND_LENGTH);
+	assertEquals(cur->getOutputBindString("1"),longoutputbindbuffer);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
-	#endif
 
 
 	// negative input bind
