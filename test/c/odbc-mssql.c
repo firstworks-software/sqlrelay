@@ -2399,17 +2399,6 @@ int main(int argc, char **argv) {
 
 	// column list - auto_increment,
 	// primary key
-	// the odbc module surfaces the identity
-	// flag inside data_type, as "int
-	// identity", and leaves extra empty;
-	// column_key is the literal "0" for
-	// every column rather than PRI or empty.
-	// that looks like a defect in the module
-	// rather than a contract, so it is
-	// parked with the values it ought to
-	// report rather than pinned to what it
-	// does
-	#if 0
 	printf("COLUMN LIST - ""auto_increment, ""primary key: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");
 	assertTrue(sqlrcur_sendQuery(cur,
@@ -2439,7 +2428,6 @@ int main(int argc, char **argv) {
 		"PRI");
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
-	#endif
 
 
 	// primary keys list

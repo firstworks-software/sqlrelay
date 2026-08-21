@@ -2324,12 +2324,6 @@ int main(int argc, char **argv) {
 
 
 	// column list - auto_increment, primary key
-	// the odbc module surfaces the identity flag inside data_type, as
-	// "int identity", and leaves extra empty; column_key is the literal
-	// "0" for every column rather than PRI or empty.  that looks like a
-	// defect in the module rather than a contract, so it is parked with
-	// the values it ought to report rather than pinned to what it does
-	#if 0
 	stdoutput.printf("COLUMN LIST - auto_increment, primary key: \n");
 	cur->sendQuery("drop table testtable");
 	assertTrue(cur->sendQuery(
@@ -2352,7 +2346,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"column_key"),"PRI");
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
-	#endif
 
 
 	// primary keys list

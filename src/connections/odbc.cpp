@@ -449,6 +449,11 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 						const char *schema,
 						const char *table,
 						const char *column);
+		const char	*getColumnListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *table,
+						const char *column);
 		bool		getPrimaryKeysList(sqlrservercursor *cursor,
 						const char *catalog,
 						const char *schema,
@@ -509,6 +514,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*ncharencoding;
 		bool		binarylobbind;
 
+		stringbuffer	columnlistquery;
 		stringbuffer	errormessage;
 
 		char		dbversion[512];
@@ -3208,6 +3214,16 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 					const char *table,
 					const char *column) {
 
+	// The Microsoft SQL Server ODBC driver's SQLColumns() appends eleven
+	// proprietary columns after the standard eighteen.  The column list
+	// format is read by position, so numeric_precision, column_key, and
+	// is_autoincrement end up reading driver flags.  Query the system
+	// tables instead
+	if (mssql) {
+		return sqlrserverconnection::getColumnList(
+					cursor,catalog,schema,table,column);
+	}
+
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
 	// allocate the statement handle
@@ -3249,6 +3265,206 @@ bool odbcconnection::getColumnList(sqlrservercursor *cursor,
 		(odbccur->handleColumns(true,true) &&
 		odbccur->appendColumnListColumns() &&
 		odbccur->appendNullColumn()):false;
+}
+
+const char *odbcconnection::getColumnListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *table,
+						const char *column) {
+
+	if (!mssql) {
+		return sqlrserverconnection::getColumnListQuery(
+						catalog,schema,table,column);
+	}
+
+	columnlistquery.clear();
+
+	bool	temptable=(table && table[0]=='#');
+
+	// select clause
+	columnlistquery.append(
+		"select "
+		"	co.table_catalog as table_cat, "
+		"	co.table_schema as table_schem, "
+		"	co.table_name as table_name, "
+		"	co.column_name, "
+		"	null as data_type, "
+		"	co.data_type as type_name, "
+		"	co.character_maximum_length "
+					"as column_size, "
+		"	co.character_octet_length "
+					"as buffer_length, "
+		"	co.numeric_scale as decimal_digits, "
+		"	co.numeric_precision_radix "
+					"as num_prec_radix, "
+		"	case co.is_nullable "
+		"		when 'YES' then 1 "
+		"		else 0 "
+		"	end as nullable, "
+		"	case "
+		"		when COLUMNPROPERTY( "
+		"			OBJECT_ID(");
+	if (temptable) {
+		columnlistquery.append(
+			"			'tempdb..'+co.table_name), ");
+	} else {
+		columnlistquery.append(
+			"			co.table_name), ");
+	}
+	columnlistquery.append(
+		"			co.column_name, "
+		"			'IsIdentity')=1 "
+		"			then 'auto_increment' "
+		"		else null "
+		"	end as remarks, "
+		"	co.column_default, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	co.character_octet_length "
+				"as char_octet_length, "
+		"	co.ordinal_position, "
+		"	co.is_nullable, "
+		"	co.numeric_precision, "
+		"	case ck.key_priority "
+		"		when 1 then 'PRI' "
+		"		when 2 then 'UNI' "
+		"		when 3 then 'MUL' "
+		"		else null "
+		"	end as column_key, "
+		"	case "
+		"		when COLUMNPROPERTY( "
+		"			OBJECT_ID(");
+	if (temptable) {
+		columnlistquery.append(
+			"			'tempdb..'+co.table_name), ");
+	} else {
+		columnlistquery.append(
+			"			co.table_name), ");
+	}
+	columnlistquery.append(
+		"			co.column_name, "
+		"			'IsIdentity')=1 "
+		"			then 'YES' "
+		"		else 'NO' "
+		"	end as is_autoincrement, "
+		"	null ");
+
+	// from clause
+	columnlistquery.append("from ");
+	if (temptable) {
+		columnlistquery.append(
+			"	tempdb.information_schema.columns co ");
+	} else {
+		columnlistquery.append(
+			"	information_schema.columns co ");
+	}
+	columnlistquery.append(
+		"left outer join ( "
+		"	select "
+		"		ku.table_catalog, "
+		"		ku.table_schema, "
+		"		ku.table_name, "
+		"		ku.column_name, "
+		"		min(case tc.constraint_type "
+		"			when 'PRIMARY KEY' then 1 "
+		"			when 'UNIQUE' then 2 "
+		"			when 'FOREIGN KEY' then 3 "
+		"		end) as key_priority "
+		"	from ");
+	if (temptable) {
+		columnlistquery.append(
+			"		tempdb.information_schema.table_constraints tc, "
+			"		tempdb.information_schema.key_column_usage ku ");
+	} else {
+		columnlistquery.append(
+			"		information_schema.table_constraints tc, "
+			"		information_schema.key_column_usage ku ");
+	}
+	columnlistquery.append(
+		"	where "
+		"		tc.constraint_name=ku.constraint_name "
+		"		and "
+		"		tc.table_schema=ku.table_schema "
+		"		and "
+		"		tc.constraint_type in "
+		"			('PRIMARY KEY','UNIQUE','FOREIGN KEY') "
+		"	group by "
+		"		ku.table_catalog, "
+		"		ku.table_schema, "
+		"		ku.table_name, "
+		"		ku.column_name "
+		") ck "
+		"on "
+		"	co.table_catalog=ck.table_catalog "
+		"	and "
+		"	co.table_schema=ck.table_schema "
+		"	and "
+		"	co.table_name=ck.table_name "
+		"	and "
+		"	co.column_name=ck.column_name ");
+
+	// where clause
+	bool	first=true;
+	if (temptable) {
+		columnlistquery.append(
+			"where "
+			"	co.table_name like '");
+		columnlistquery.append(table);
+		columnlistquery.append("____%%' ");
+		first=false;
+	} else {
+		if (!charstring::isNullOrEmpty(catalog)) {
+			columnlistquery.append(
+				"where "
+				"	co.table_catalog like '");
+			columnlistquery.append(catalog);
+			columnlistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (first) {
+				columnlistquery.append("where ");
+				first=false;
+			} else {
+				columnlistquery.append("	and ");
+			}
+			columnlistquery.append(
+				"	co.table_schema like '");
+			columnlistquery.append(schema);
+			columnlistquery.append("' ");
+		}
+		if (!charstring::isNullOrEmpty(table)) {
+			if (first) {
+				columnlistquery.append("where ");
+				first=false;
+			} else {
+				columnlistquery.append("	and ");
+			}
+			columnlistquery.append(
+				"	co.table_name like '");
+			columnlistquery.append(table);
+			columnlistquery.append("' ");
+		}
+	}
+	if (!charstring::isNullOrEmpty(column)) {
+		if (first) {
+			columnlistquery.append("where ");
+		} else {
+			columnlistquery.append("	and ");
+		}
+		columnlistquery.append(
+			"	co.column_name like '");
+		columnlistquery.append(column);
+		columnlistquery.append("' ");
+	}
+
+	// order by clause
+	columnlistquery.append(
+		"order by "
+		"	co.ordinal_position");
+
+	return columnlistquery.getString();
 }
 
 bool odbcconnection::getPrimaryKeysList(sqlrservercursor *cursor,
@@ -5820,8 +6036,9 @@ bool odbccursor::appendNullColumn() {
 
 bool odbccursor::appendColumnListColumns() {
 
-	// the odbc api can't supply the numeric_precision, column_key,
-	// and is_autoincrement columns of the SQLColumns()+ format
+	// a driver whose SQLColumns() returns the standard 18 columns can't
+	// supply the numeric_precision, column_key, and is_autoincrement
+	// columns of the SQLColumns()+ format
 	return appendNullColumns(3);
 }
 

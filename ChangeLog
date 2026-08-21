@@ -275,6 +275,32 @@
 		ended, and the connection went back into the pool holding its
 		locks; affects the odbc and router connection modules, and the
 		mysql module when a client selects one of those two models
+	fixed the odbc connection module returning a bad column list on ms sql
+		server; numeric_precision and column_key both came back as
+		"0", extra came back empty even for an identity column, and
+		data_type reported the identity flag as part of the type, as
+		"int identity".  the microsoft driver's SQLColumns() returns
+		29 columns rather than the standard 18, appending eleven
+		proprietary SS_* columns after IS_NULLABLE, so reading the
+		result by position landed numeric_precision and column_key on
+		SS_IS_SPARSE and SS_IS_COLUMN_SET, which both read "0"; the
+		module now builds an information_schema query for the column
+		list on ms sql server, the way the freetds module already
+		does, so data_type now reports the base type instead; every
+		other odbc backend still uses SQLColumns, and no other odbc
+		catalog call changed; note that within this one call the odbc
+		and jdbc column list formats give up what SQLColumns supplied
+		- data_type, sql_data_type and sql_datetime_sub come back
+		null, column_size and buffer_length come back null for a
+		numeric column, and a column list for a catalog other than
+		the current one comes back empty - which is the same trade
+		the freetds module already makes on ms sql server
+	fixed the server not finding a table's primary key or identity column
+		on odbc plus ms sql server; getColumnsInTable() looks for
+		"PRI" in column_key and "auto_increment" in extra, and the
+		column list came back empty there, so the upsert, replay and
+		split-multi-insert triggers and the firebird protocol
+		module's insert parsing all ran without them
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
