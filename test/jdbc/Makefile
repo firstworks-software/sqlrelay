@@ -4,6 +4,7 @@ include ../../config.mk
 
 all: db2.class \
 	firebird.class \
+	freetds_mssql.class \
 	freetds_sap.class \
 	informix.class \
 	mysql.class \
@@ -21,6 +22,9 @@ db2.class: sqlrtest.java db2.java
 
 firebird.class: sqlrtest.java firebird.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar$(CLASSPATHSEP)$(javadir)/sqlrelayjdbc.jar sqlrtest.java firebird.java
+
+freetds_mssql.class: sqlrtest.java freetds-mssql.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar$(CLASSPATHSEP)$(javadir)/sqlrelayjdbc.jar sqlrtest.java freetds-mssql.java
 
 freetds_sap.class: sqlrtest.java freetds-sap.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar$(CLASSPATHSEP)$(javadir)/sqlrelayjdbc.jar sqlrtest.java freetds-sap.java

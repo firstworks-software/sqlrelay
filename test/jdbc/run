@@ -15,6 +15,9 @@ else
 			firebird)
 				jar=`ls drivers/jaybird*.jar | tail -1`
 				;;
+			freetds_mssql)
+				jar=`ls drivers/jtds*.jar | tail -1`
+				;;
 			freetds_sap)
 				jar=`ls drivers/jtds*.jar | tail -1`
 				;;

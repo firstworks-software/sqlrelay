@@ -3,6 +3,7 @@ top_builddir = ../..
 include ../../config.mk
 
 all: db2.class\
+	freetds_mssql.class \
 	freetds_sap.class \
 	firebird.class \
 	informix.class \
@@ -20,6 +21,9 @@ clean:
 
 db2.class: sqlrtest.java db2.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java db2.java
+
+freetds_mssql.class: sqlrtest.java freetds-mssql.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java freetds-mssql.java
 
 freetds_sap.class: sqlrtest.java freetds-sap.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java freetds-sap.java
