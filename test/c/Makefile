@@ -10,14 +10,17 @@ include ../../config.mk
 .c.obj:
 	$(CC) $(CFLAGS) $(CTESTCPPFLAGS) $(COMPILE) $<
 
-all: db2 freetds-sap firebird informix mysql oracle postgresql sqlite sap krb tls
+all: db2 freetds-mssql freetds-sap firebird informix mysql oracle postgresql sqlite sap krb tls
 
 clean:
-	$(RM) *.lo *.o *.obj db2$(EXE) freetds-sap$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracle$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) krb$(EXE) tls$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj db2$(EXE) freetds-mssql$(EXE) freetds-sap$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracle$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) krb$(EXE) tls$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 db2: db2.c db2.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) db2.$(OBJ) $(CTESTLIBS)
+
+freetds-mssql: freetds-mssql.c freetds-mssql.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freetds-mssql.$(OBJ) $(CTESTLIBS)
 
 freetds-sap: freetds-sap.c freetds-sap.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freetds-sap.$(OBJ) $(CTESTLIBS)
