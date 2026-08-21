@@ -4408,8 +4408,8 @@ bool odbccursor::outputBind(const char *variable,
 	// scratch buffer for the unicode case; left NULL, and "value"
 	// bound directly, otherwise
 	byte_t		*ucsvalue=NULL;
-	SQLLEN		ucsvaluesize=0;
 	#ifdef HAVE_SQLCONNECTW
+	SQLLEN		ucsvaluesize=0;
 	if (odbcconn->unicode) {
 		// bind a scratch buffer rather than "value" - "value" was
 		// sized for the utf-8 form, and the ucs-2 that the driver
