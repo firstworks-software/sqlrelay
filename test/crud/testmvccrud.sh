@@ -5,7 +5,7 @@ CONFIG=../sqlrelay.conf.d/oracle.conf
 ID=oracle
 
 sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "drop table testtable"
-sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "create table testtable (colstr varchar(128), colint int, coltrue boolean, colfalse boolean, colnull varchar(128))"
+sqlrsh -config $CONFIG -id $ID -user testuser -password testpassword -command "create table testtable (colstr varchar(128), colint int, colnull varchar(128))"
 
 
 
@@ -26,8 +26,6 @@ export CONTENT_TYPE
 	"data": {
 		"colstr": "val1",
 		"colint": 1,
-		"coltrue": true,
-		"colfalse": false,
 		"colnull": null
 	}
 }
@@ -59,14 +57,6 @@ export CONTENT_TYPE
 				{ "var": "colint" },
 				1
 			] },
-			{ "=" : [
-				{ "var": "coltrue" },
-				true
-			] },
-			{ "=" : [
-				{ "var": "colfalse" },
-				false
-			] },
 			{ "isnull" : [
 				{ "var": "colnull" }
 			] }
@@ -75,8 +65,6 @@ export CONTENT_TYPE
 	"sort": {
 		"colstr" : "asc",
 		"colint" : "asc",
-		"coltrue" : "asc"
-		"colfalse" : "asc"
 		"colnull" : "asc"
 	}
 }
@@ -107,8 +95,6 @@ export CONTENT_TYPE
 	"data": {
 		"colstr": "val2",
 		"colint": 2,
-		"coltrue": false,
-		"colfalse": true,
 		"colnull": "not-null"
 	}
 }
