@@ -227,6 +227,16 @@
 		pointer when reusing a slot, so a failed execute after a prior
 		successful DATE bind could free it twice - affects every
 		client api and backend, not just odbc
+	fixed the odbc driver smashing the caller's buffer in
+		SQLGetInfo(SQL_FILE_USAGE); it wrote 4 bytes into what the odbc
+		spec defines as a 2-byte SQLUSMALLINT, clobbering whatever the
+		caller had next to it, which typically surfaced much later as a
+		segfault in SQLDisconnect.  SQL_POS_OPERATIONS had the mirror
+		bug, writing only 2 bytes of a 4-byte bitmask
+	fixed eight null-handle checks in the odbc driver that dereferenced the
+		connection handle while testing whether it was null; the driver
+		manager rejects a null handle before the driver sees it, so this
+		only reached code linking libsqlrodbc directly
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

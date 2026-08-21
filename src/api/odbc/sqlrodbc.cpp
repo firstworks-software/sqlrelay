@@ -473,11 +473,11 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 			CONN	*conn=(CONN *)inputhandle;
 			if (inputhandle==SQL_NULL_HANDLE ||
 						!conn || !conn->con) {
-				if (!conn->con) {
+				if (!conn) {
+					debugPrintf("  NULL conn handle\n");
+				} else {
 					debugPrintf("  NULL conn->con "
 								"handle\n");
-				} else {
-					debugPrintf("  NULL conn handle\n");
 				}
 				*outputhandle=SQL_NULL_HENV;
 				return SQL_INVALID_HANDLE;
@@ -844,10 +844,10 @@ static SQLRETURN SQLR_SQLCancelHandle(SQLSMALLINT handletype,
 	} else if (handletype==SQL_HANDLE_DBC) {
 		CONN	*conn=(CONN *)handle;
 		if (handle==SQL_NULL_HANDLE || !conn || !conn->con) {
-			if (!conn->con) {
-				debugPrintf("  NULL conn->con handle\n");
-			} else {
+			if (!conn) {
 				debugPrintf("  NULL conn handle\n");
+			} else {
+				debugPrintf("  NULL conn->con handle\n");
 			}
 			return SQL_INVALID_HANDLE;
 		}
@@ -3169,10 +3169,10 @@ SQLRETURN SQL_API SQLDisconnect(SQLHDBC connectionhandle) {
 
 	CONN	*conn=(CONN *)connectionhandle;
 	if (connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) {
-		if (!conn->con) {
-			debugPrintf("  NULL conn->con handle\n");
-		} else {
+		if (!conn) {
 			debugPrintf("  NULL conn handle\n");
+		} else {
+			debugPrintf("  NULL conn->con handle\n");
 		}
 		return SQL_INVALID_HANDLE;
 	}
@@ -3219,11 +3219,11 @@ static SQLRETURN SQLR_SQLEndTran(SQLSMALLINT handletype,
 
 			CONN	*conn=(CONN *)handle;
 			if (handle==SQL_NULL_HANDLE || !conn || !conn->con) {
-				if (!conn->con) {
+				if (!conn) {
+					debugPrintf("  NULL conn handle\n");
+				} else {
 					debugPrintf("  NULL conn->con "
 								"handle\n");
-				} else {
-					debugPrintf("  NULL conn handle\n");
 				}
 				return SQL_INVALID_HANDLE;
 			}
@@ -4916,11 +4916,11 @@ static SQLRETURN SQLR_SQLFreeHandle(SQLSMALLINT handletype, SQLHANDLE handle) {
 			debugPrintf("  handletype: SQL_HANDLE_DBC\n");
 			CONN	*conn=(CONN *)handle;
 			if (handle==SQL_NULL_HANDLE || !conn || !conn->con) {
-				if (!conn->con) {
+				if (!conn) {
+					debugPrintf("  NULL conn handle\n");
+				} else {
 					debugPrintf("  NULL conn->con "
 								"handle\n");
-				} else {
-					debugPrintf("  NULL conn handle\n");
 				}
 				return SQL_INVALID_HANDLE;
 			}
@@ -5004,10 +5004,10 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 
 	CONN	*conn=(CONN *)connectionhandle;
 	if (connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) {
-		if (!conn->con) {
-			debugPrintf("  NULL conn->con handle\n");
-		} else {
+		if (!conn) {
 			debugPrintf("  NULL conn handle\n");
+		} else {
+			debugPrintf("  NULL conn->con handle\n");
 		}
 		return SQL_INVALID_HANDLE;
 	}
@@ -6442,10 +6442,10 @@ static SQLRETURN SQLR_SQLGetFunctions(SQLHDBC connectionhandle,
 
 	CONN	*conn=(CONN *)connectionhandle;
 	if (connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) {
-		if (!conn->con) {
-			debugPrintf("  NULL conn->con handle\n");
-		} else {
+		if (!conn) {
 			debugPrintf("  NULL conn handle\n");
+		} else {
+			debugPrintf("  NULL conn->con handle\n");
 		}
 		return SQL_INVALID_HANDLE;
 	}
@@ -7743,7 +7743,7 @@ static SQLUINTEGER SQLR_StaticSensitivity(CONN *conn) {
 	return retval;
 }
 
-static SQLUINTEGER SQLR_FileUsage(CONN *conn) {
+static SQLUSMALLINT SQLR_FileUsage(CONN *conn) {
 	if (SQLR_FeatureContains(conn,
 			"local_file_usage","LOCAL_FILE_PER_TABLE")) {
 		return SQL_FILE_TABLE;
@@ -9770,10 +9770,10 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			infotype==SQL_ODBC_VER ||
 			infotype==SQL_DATABASE_NAME ||
 			infotype==SQL_USER_NAME)) {
-		if (!conn->con) {
-			debugPrintf("  NULL conn->con handle\n");
-		} else {
+		if (!conn) {
 			debugPrintf("  NULL conn handle\n");
+		} else {
+			debugPrintf("  NULL conn->con handle\n");
 		}
 		return SQL_INVALID_HANDLE;
 	}
@@ -10630,8 +10630,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  infotype: "
 					"SQL_POS_OPERATIONS\n");
 			// sqlrelay only supports SQL_POS_POSITION
-			val.usmallintval=SQL_POS_POSITION;
-			type=2;
+			val.uintval=SQL_POS_POSITION;
+			type=1;
 			break;
 		case SQL_POSITIONED_STATEMENTS:
 			debugPrintf("  infotype: "
@@ -10655,8 +10655,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_FILE_USAGE:
 			debugPrintf("  infotype: "
 					"SQL_FILE_USAGE\n");
-			val.uintval=SQLR_FileUsage(conn);
-			type=1;
+			val.usmallintval=SQLR_FileUsage(conn);
+			type=2;
 			break;
 		case SQL_COLUMN_ALIAS:
 			debugPrintf("  infotype: "
@@ -11243,6 +11243,15 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 			debugPrintf("  uintval: %d\n",val.uintval);
 			valuelength=sizeof(SQLUINTEGER);
 			if (infovalue) {
+				// bufferlength is ignored for the fixed-size
+				// infotypes, but a too-small one is a red flag
+				if (bufferlength>0 &&
+						bufferlength<(SQLSMALLINT)
+						sizeof(SQLUINTEGER)) {
+					debugPrintf("  WARNING! bufferlength "
+							"too small for "
+							"uintval\n");
+				}
 				*((SQLUINTEGER *)infovalue)=val.uintval;
 			} else {
 				debugPrintf("  NULL infovalue "
