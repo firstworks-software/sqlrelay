@@ -29,8 +29,8 @@ usage() {
 	echo "    oracle, tls, krb, extensions, crud and oracleprotocol all hit oracle"
 	echo "    sap, freetds-sap, tdsfreetdssapprotocol and tdssapprotocol all hit"
 	echo "    the sap server"
-	echo "    mssql, freetds-mssql and tdsfreetdsmssqlprotocol all hit the mssql"
-	echo "    server, so that group runs alongside the sap group"
+	echo "    odbc-mssql, freetds-mssql and tdsfreetdsmssqlprotocol all hit the"
+	echo "    mssql server, so that group runs alongside the sap group"
 }
 
 # stop any instances left running from a previous run.  only the instances
@@ -104,6 +104,9 @@ instance_applicable() {
 		freetds-*)
 			MODULE=freetds
 			;;
+		odbc-*)
+			MODULE=odbc
+			;;
 		tdsfreetdsmssqlprotocol)
 			MODULE=odbc
 			;;
@@ -134,12 +137,13 @@ instance_applicable() {
 	fi
 
 	# the instances that talk to the mssql server also need an odbc config
-	# for it.  freetds-mssql reaches it through freetds rather than odbc, so
-	# it has no use for the dsn itself, but the odbc.ini entry is the only
-	# host-level sign that an mssql server is there at all - without this it
-	# would be started on any host that builds freetds, and then spend the
-	# ping retries timing out
-	if ( test "$instance" = "mssql" -o "$instance" = "freetds-mssql" -o "$instance" = "tdsfreetdsmssqlprotocol" )
+	# for it.  odbc-mssql and tdsfreetdsmssqlprotocol connect through the
+	# dsn directly, but freetds-mssql reaches the server through freetds
+	# rather than odbc, so it has no use for the dsn itself - for it, the
+	# odbc.ini entry is only the host-level sign that an mssql server is
+	# there at all.  without this it would be started on any host that
+	# builds freetds, and then spend the ping retries timing out
+	if ( test "$instance" = "odbc-mssql" -o "$instance" = "freetds-mssql" -o "$instance" = "tdsfreetdsmssqlprotocol" )
 	then
 		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
 		then

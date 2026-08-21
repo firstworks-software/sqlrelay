@@ -12,6 +12,7 @@ include ../../config.mk
 
 all: db2 \
 	freetds-mssql \
+	odbc-mssql \
 	freetds-sap \
 	firebird \
 	informix \
@@ -24,7 +25,7 @@ all: db2 \
 	tls
 
 clean:
-	$(RM) *.lo *.o *.obj db2$(EXE) freetds-mssql$(EXE) freetds-sap$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracle$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) krb$(EXE) tls$(EXE) *.csv cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj db2$(EXE) freetds-mssql$(EXE) odbc-mssql$(EXE) freetds-sap$(EXE) firebird$(EXE) informix$(EXE) mysql$(EXE) oracle$(EXE) postgresql$(EXE) sqlite$(EXE) sap$(EXE) krb$(EXE) tls$(EXE) *.csv cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 db2: db2.cpp db2.$(OBJ)
@@ -32,6 +33,9 @@ db2: db2.cpp db2.$(OBJ)
 
 freetds-mssql: freetds-mssql.cpp freetds-mssql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freetds-mssql.$(OBJ) $(CPPTESTLIBS)
+
+odbc-mssql: odbc-mssql.cpp odbc-mssql.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) odbc-mssql.$(OBJ) $(CPPTESTLIBS)
 
 freetds-sap: freetds-sap.cpp freetds-sap.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freetds-sap.$(OBJ) $(CPPTESTLIBS)

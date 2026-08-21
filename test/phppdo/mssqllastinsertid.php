@@ -4,7 +4,7 @@
 
 	$host="sqlrelay";
 	$port=9007;
-	$socket="/tmp/mssql.socket";
+	$socket="/tmp/odbc-mssql.socket";
 	$user="testuser";
 	$password="testpassword";
 	$dsn = "sqlrelay:host=$host;port=$port;socket=$socket;tries=0;retrytime=1;fetchlobsasstrings=1;debug=0";

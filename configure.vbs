@@ -1110,7 +1110,7 @@ infiles=Array(_
 	"test\\sqlrelay.conf.d\\freetds-sap.conf.in",_
 	"test\\sqlrelay.conf.d\\freetds-mssql.conf.in",_
 	"test\\sqlrelay.conf.d\\informix.conf.in",_
-	"test\\sqlrelay.conf.d\\mssql.conf.in",_
+	"test\\sqlrelay.conf.d\\odbc-mssql.conf.in",_
 	"test\\sqlrelay.conf.d\\mysql.conf.in",_
 	"test\\sqlrelay.conf.d\\mysqlprotocol.conf.in",_
 	"test\\sqlrelay.conf.d\\mysqlupsert.conf.in",_
@@ -1150,7 +1150,7 @@ outfiles=Array(_
 	"test\\sqlrelay.conf.d\\freetds-sap.conf",_
 	"test\\sqlrelay.conf.d\\freetds-mssql.conf",_
 	"test\\sqlrelay.conf.d\\informix.conf",_
-	"test\\sqlrelay.conf.d\\mssql.conf",_
+	"test\\sqlrelay.conf.d\\odbc-mssql.conf",_
 	"test\\sqlrelay.conf.d\\mysql.conf",_
 	"test\\sqlrelay.conf.d\\mysqlprotocol.conf",_
 	"test\\sqlrelay.conf.d\\mysqlupsert.conf",_

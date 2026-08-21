@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- unlike freetds-mssql.conf.in, this instance has no
+	     reformatdatetime resultsettranslation.  the odbc module
+	     renders datetimes straight from the driver's
+	     SQL_TIMESTAMP_STRUCT into fixed ISO forms, with no locale
+	     involved, so the widths are already stable: 23 for
+	     datetime, 19 for smalldatetime, 10 for date, 16 for time,
+	     27 for datetime2.  there is nothing here for a reformat
+	     to stabilize. -->
+	<instance id="odbc-mssql" dbase="odbc">
+		<listeners>
+			<listener port="9007" socket="/tmp/odbc-mssql.socket"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;lastinsertidquery=select @@identity;db=@HOSTNAME@"/>
+		</connections>
+	</instance>
+
+	<instance id="emoji" dbase="odbc" translatebindvariables="yes">
+		<listeners>
+			<listener port="9025" socket="/tmp/emoji.socket"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;lastinsertidquery=select @@identity;ncharencoding=UTF-16"/>
+		</connections>
+	</instance>
+
+</instances>
