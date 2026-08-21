@@ -1729,6 +1729,41 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// failed execute after output bind date
+	// ticket #9408 - an unbraced odbc call escape
+	// ("call testproc(...)") fails to execute.  reusing this cursor's
+	// date output bind (successfully populated by the execute above)
+	// across a prepareQuery/executeQuery pair that fails to execute,
+	// followed by another prepareQuery, used to double free a stale
+	// timezone pointer and abort the client
+	stdoutput.printf("FAILED EXECUTE AFTER OUTPUT BIND DATE: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@out1 int output, "
+		"	@out2 varchar(20) output, "
+		"	@out3 float output, "
+		"	@out4 datetime output, "
+		"	@out5 varchar(20) output as "
+		"select @out1=1, "
+		"	@out2='hello', "
+		"	@out3=2.5, "
+		"	@out4='2001-02-03', "
+		"	@out5=null"));
+	cur->prepareQuery("call testproc(?,?,?,?,?)");
+	cur->defineOutputBindInteger("1");
+	cur->defineOutputBindString("2",20);
+	cur->defineOutputBindDouble("3");
+	cur->defineOutputBindDate("4");
+	cur->defineOutputBindString("5",20);
+	assertFalse(cur->executeQuery());
+	cur->prepareQuery("select 1");
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+
+
 	// output bind by name
 	// odbc binds positionally, so there is nothing to bind by name
 	#if 0

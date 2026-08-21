@@ -1982,6 +1982,8 @@ void sqlrcursor::defineOutputBindGeneric(const char *variable,
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
 				bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
 			delete[] bv->value.lobval;
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
+			delete[] bv->value.dateval.tz;
 		}
 	}
 	if (pvt->_copyrefs) {
@@ -1998,6 +2000,12 @@ void sqlrcursor::defineOutputBindGeneric(const char *variable,
 	} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
 				bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
 		bv->value.lobval=NULL;
+	} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
+		// parseOutputBinds() allocates this and
+		// deleteOutputBindVariables() frees it, so it has to start
+		// out NULL in case the query fails and parseOutputBinds()
+		// never runs
+		bv->value.dateval.tz=NULL;
 	}
 	bv->valuesize=valuesize;
 	bv->resultvaluesize=0;

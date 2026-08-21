@@ -1811,6 +1811,45 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// failed execute after output bind date
+	// ticket #9408 - an unbraced odbc call
+	// escape ("call testproc(...)") fails to
+	// execute.  reusing this cursor's date
+	// output bind (successfully populated by
+	// the execute above) across a
+	// prepareQuery/executeQuery pair that
+	// fails to execute, followed by another
+	// prepareQuery, used to double free a
+	// stale timezone pointer and abort the
+	// client
+	printf("FAILED EXECUTE AFTER OUTPUT BIND DATE: \n");
+	sqlrcur_sendQuery(cur,"drop procedure testproc");
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create procedure testproc "
+		"	@out1 int output, "
+		"	@out2 varchar(20) output, "
+		"	@out3 float output, "
+		"	@out4 datetime output, "
+		"	@out5 varchar(20) output ""as "
+		"select @out1=1, "
+		"	@out2='hello', "
+		"	@out3=2.5, "
+		"	@out4='2001-02-03', "
+		"	@out5=null"));
+	sqlrcur_prepareQuery(cur,"call testproc(?,?,?,?,?)");
+	sqlrcur_defineOutputBindInteger(cur,"1");
+	sqlrcur_defineOutputBindString(cur,"2",20);
+	sqlrcur_defineOutputBindDouble(cur,"3");
+	sqlrcur_defineOutputBindDate(cur,"4");
+	sqlrcur_defineOutputBindString(cur,"5",20);
+	assertFalse(sqlrcur_executeQuery(cur));
+	sqlrcur_prepareQuery(cur,"select 1");
+	assertTrue(sqlrcur_executeQuery(cur));
+	assertEqInt(sqlrcur_rowCount(cur),1);
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	printf("\n");
+
+
 	// output bind by name
 	// odbc binds positionally, so there is
 	// nothing to bind by name

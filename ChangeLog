@@ -222,6 +222,11 @@
 		the result at buffersize/2-1 characters.  it now binds a scratch
 		buffer of twice the size, like the input-output bind path already
 		did, and converts back out of it after execute
+	fixed a double free in the c++ client api's DATE output bind reuse;
+		defineOutputBindGeneric() didn't clear the bind's old timezone
+		pointer when reusing a slot, so a failed execute after a prior
+		successful DATE bind could free it twice - affects every
+		client api and backend, not just odbc
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
