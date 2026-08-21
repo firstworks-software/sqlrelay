@@ -3,7 +3,7 @@
 
 	<instance id="oracle" dbase="oracle">
 		<listeners>
-			<listener port="9001" socket="/tmp/oracletest.socket"/>
+			<listener port="9001" socket="/tmp/oracle.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">
@@ -17,7 +17,7 @@
 
 	<instance id="oracle12c" dbase="oracle">
 		<listeners>
-			<listener port="9001" socket="/tmp/oracletest.socket"/>
+			<listener port="9001" socket="/tmp/oracle.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">
@@ -31,7 +31,7 @@
 
 	<instance id="oracle11g" dbase="oracle">
 		<listeners>
-			<listener port="9001" socket="/tmp/oracletest.socket"/>
+			<listener port="9001" socket="/tmp/oracle.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">
@@ -45,7 +45,7 @@
 
 	<instance id="oracle10g" dbase="oracle">
 		<listeners>
-			<listener port="9001" socket="/tmp/oracletest.socket"/>
+			<listener port="9001" socket="/tmp/oracle.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">

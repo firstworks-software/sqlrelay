@@ -37,7 +37,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 						None,None,0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	con.enableTls(None,cert,None,None,"ca",ca,0)
@@ -824,7 +824,7 @@ def main():
 	assertTrue(con.setTransactionModel("implicit"))
 	assertEquals(con.getTransactionModel(),"implicit")
 	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 						None,None,0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	secondcon.enableTls(None,cert,None,None,"ca",ca,0)

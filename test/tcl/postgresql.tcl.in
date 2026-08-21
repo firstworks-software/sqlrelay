@@ -17,7 +17,7 @@ if {$dot > 0} {
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9003 -socket "/tmp/postgresqltest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9003 -socket "/tmp/postgresql.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -759,7 +759,7 @@ assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
 # postgresql DDL is transactional; commit so the table is visible
 # to the second connection (the commit implicitly starts a new tx)
 assertTrue [$con commit]
-set secondcon [sqlrcon -server "sqlrelay" -port 9003 -socket "/tmp/postgresqltest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9003 -socket "/tmp/postgresql.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 setSecondConnection $secondcon
 setSecondCursor $secondcur

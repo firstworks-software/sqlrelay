@@ -28,7 +28,7 @@ $dumptran="dump tran $hostname with truncate_only";
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9006,"/tmp/saptest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -1242,7 +1242,7 @@ assertTrue($cur->sendQuery(
 	"create table testtable (col1 integer) lock datarows"));
 assertTrue($con->setTransactionModel("implicit"));
 assertEquals($con->getTransactionModel(),"implicit");
-$secondcon=SQLRelay::Connection->new("sqlrelay",9006,"/tmp/saptest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 # session is in a transaction; insert is not visible until commit

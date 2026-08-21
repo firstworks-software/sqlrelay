@@ -35,7 +35,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9009, "/tmp/firebirdtest.socket",
+            con = new SQLRConnection("sqlrelay", 9009, "/tmp/firebird.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -929,7 +929,7 @@ namespace SQLRClientTest
             // commit so the truncation is visible to the second connection
             // (the commit implicitly starts a new tx)
             assertTrue(con.commit());
-            secondcon=new SQLRConnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+            secondcon=new SQLRConnection("sqlrelay",9009,"/tmp/firebird.socket",
                                     "testuser","testpassword",0,1);
             secondcur=new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

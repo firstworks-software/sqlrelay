@@ -49,7 +49,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9006, "/tmp/saptest.socket",
+            con = new SQLRConnection("sqlrelay", 9006, "/tmp/sap.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -1267,7 +1267,7 @@ namespace SQLRClientTest
                 "create table testtable (col1 integer) lock datarows"));
             assertTrue(con.setTransactionModel("implicit"));
             assertEquals(con.getTransactionModel(), "implicit");
-            secondcon = new SQLRConnection("sqlrelay", 9006, "/tmp/saptest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9006, "/tmp/sap.socket",
                                 "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

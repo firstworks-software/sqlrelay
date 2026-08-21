@@ -21,7 +21,7 @@ set LARGE_BUFFER_LENGTH 8192
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9004 -socket "/tmp/sqlitetest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9004 -socket "/tmp/sqlite.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -657,7 +657,7 @@ assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
 # sqlite DDL is transactional; commit so the table is visible
 # to the second connection (the commit implicitly starts a new tx)
 assertTrue [$con commit]
-set secondcon [sqlrcon -server "sqlrelay" -port 9004 -socket "/tmp/sqlitetest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9004 -socket "/tmp/sqlite.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 setSecondConnection $secondcon
 setSecondCursor $secondcur

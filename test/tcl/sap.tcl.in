@@ -21,7 +21,7 @@ set dumptran "dump tran $hostname with truncate_only"
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9006 -socket "/tmp/saptest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9006 -socket "/tmp/sap.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -1153,7 +1153,7 @@ puts "TRANSACTION BEHAVIOR - implicit: "
 assertTrue [$cur sendQuery "create table testtable (col1 integer) lock datarows"]
 assertTrue [$con setTransactionModel "implicit"]
 assertEqual [$con getTransactionModel] "implicit"
-set secondcon [sqlrcon -server "sqlrelay" -port 9006 -socket "/tmp/saptest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9006 -socket "/tmp/sap.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 setSecondConnection $secondcon
 setSecondCursor $secondcur

@@ -3,7 +3,7 @@
 
 	<instance id="db2" dbase="db2">
 		<listeners>
-			<listener port="9008" socket="/tmp/db2test.socket"/>
+			<listener port="9008" socket="/tmp/db2.socket"/>
 		</listeners>
 		<connections>
 			<connection string="user=db2inst1;password=testpassword;db=@SHORTHOSTNAME@;lang=C;timeout=120"/>

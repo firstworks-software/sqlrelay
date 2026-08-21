@@ -3,7 +3,7 @@
 
 	<instance id="postgresqlupsert" dbase="postgresql">
 		<listeners>
-			<listener port="9020" socket="/tmp/postgresqlupserttest.socket"/>
+			<listener port="9020" socket="/tmp/postgresqlupsert.socket"/>
 		</listeners>
 		<translations>
 			<translation module="normalize"/>

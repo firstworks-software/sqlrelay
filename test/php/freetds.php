@@ -26,7 +26,7 @@
 
 
 	# instantiation
-	$con=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetdstest.socket",
+	$con=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetds.socket",
 			"testuser","testpassword",0,1);
 	$cur=sqlrcur_alloc($con);
 
@@ -1170,7 +1170,7 @@
 		"create table testtable (col1 integer) lock datarows"));
 	assertTrue(sqlrcon_setTransactionModel($con,"implicit"));
 	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
-	$secondcon=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetdstest.socket",
+	$secondcon=sqlrcon_alloc("sqlrelay",9005,"/tmp/freetds.socket",
 						"testuser","testpassword",0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	# session is in a transaction; insert is not visible until commit

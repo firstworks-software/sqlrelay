@@ -31,7 +31,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9001,"/tmp/oracletest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9001,"/tmp/oracle.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -814,7 +814,7 @@ print("TRANSACTION BEHAVIOR - implicit: \n");
 assertTrue($con->setTransactionModel("implicit"));
 assertEquals($con->getTransactionModel(),"implicit");
 assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
-$secondcon=SQLRelay::Connection->new("sqlrelay",9001,"/tmp/oracletest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9001,"/tmp/oracle.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 # session is in a transaction; insert is not visible until commit

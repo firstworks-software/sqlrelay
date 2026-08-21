@@ -41,7 +41,7 @@ if (dot>-1) {
 
 
 // instantiation
-var con=new sqlrelay.SQLRConnection("sqlrelay",9010,"/tmp/informixtest.socket",
+var con=new sqlrelay.SQLRConnection("sqlrelay",9010,"/tmp/informix.socket",
 					"testuser","testpassword",0,1);
 setConnection(con);
 var cur=new sqlrelay.SQLRCursor(con);
@@ -1186,7 +1186,7 @@ assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
 // is visible to the second connection (commit implicitly starts a
 // new tx)
 assertTrue(con.commit());
-var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9010,"/tmp/informixtest.socket",
+var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9010,"/tmp/informix.socket",
 					"testuser","testpassword",0,1);
 setSecondConnection(secondcon);
 var secondcur=new sqlrelay.SQLRCursor(secondcon);

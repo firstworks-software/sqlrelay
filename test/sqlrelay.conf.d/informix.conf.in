@@ -3,7 +3,7 @@
 
 	<instance id="informix" dbase="informix">
 		<listeners>
-			<listener port="9010" socket="/tmp/informixtest.socket"/>
+			<listener port="9010" socket="/tmp/informix.socket"/>
 		</listeners>
 		<connections>
 			<connection string="informixdir=/opt/informix;servername=ol_informix1210;user=testuser;password=testpassword;db=@HOSTNAME@"/>

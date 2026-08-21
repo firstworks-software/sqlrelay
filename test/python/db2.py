@@ -30,7 +30,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9008,"/tmp/db2.socket",
 						"db2inst1","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -927,7 +927,7 @@ def main():
 	# db2 DDL is transactional; commit so the table is visible to the
 	# second connection (the commit implicitly starts a new tx)
 	assertTrue(con.commit())
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9008,"/tmp/db2test.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9008,"/tmp/db2.socket",
 						"db2inst1","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	asserts.setSecondConnection(secondcon)

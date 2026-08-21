@@ -35,7 +35,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9004, "/tmp/sqlitetest.socket",
+            con = new SQLRConnection("sqlrelay", 9004, "/tmp/sqlite.socket",
                                 "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -726,7 +726,7 @@ namespace SQLRClientTest
             // sqlite DDL is transactional; commit so the table is visible
             // to the second connection (the commit implicitly starts a new tx)
             assertTrue(con.commit());
-            secondcon = new SQLRConnection("sqlrelay", 9004, "/tmp/sqlitetest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9004, "/tmp/sqlite.socket",
                                 "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

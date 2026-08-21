@@ -20,7 +20,7 @@ if {$dot > 0} {
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9013 -socket "/tmp/krbtest.socket" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9013 -socket "/tmp/krb.socket" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 $con enableKerberos $service "" ""
 setConnection $con
@@ -705,7 +705,7 @@ puts "TRANSACTION BEHAVIOR - implicit: "
 assertTrue [$con setTransactionModel "implicit"]
 assertEqual [$con getTransactionModel] "implicit"
 assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
-set secondcon [sqlrcon -server "sqlrelay" -port 9013 -socket "/tmp/krbtest.socket" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9013 -socket "/tmp/krb.socket" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 $secondcon enableKerberos $service "" ""
 setSecondConnection $secondcon

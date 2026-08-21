@@ -38,7 +38,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9010,"/tmp/informixtest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -1157,7 +1157,7 @@ assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
 # is visible to the second connection (commit implicitly starts a
 # new tx)
 assertTrue($con->commit());
-$secondcon=SQLRelay::Connection->new("sqlrelay",9010,"/tmp/informixtest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 # Informix has no MVCC; under default committed-read isolation,

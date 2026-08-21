@@ -6,7 +6,7 @@
 
 	$host="sqlrelay";
 	$port=9001;
-	$socket="/tmp/oracletest.socket";
+	$socket="/tmp/oracle.socket";
 	$user="testuser";
 	$password="testpassword";
 	$dsn="sqlrelay:host=$host;port=$port;socket=$socket;tries=0;retrytime=1;debug=0";

@@ -29,7 +29,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -925,7 +925,7 @@ def main():
 	# commit so the truncation is visible to the second connection
 	# (the commit implicitly starts a new tx)
 	assertTrue(con.commit())
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	asserts.setSecondConnection(secondcon)

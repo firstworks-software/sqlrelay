@@ -26,7 +26,7 @@ setIsolationLevels([Il | Rest]) ->
 main() ->
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9006, "/tmp/saptest.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9006, "/tmp/sap.socket",
                              "testuser", "testpassword", 0, 1),
 
     Hostname = shortHostname(),

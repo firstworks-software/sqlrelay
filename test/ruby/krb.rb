@@ -23,7 +23,7 @@ hostname=Socket.gethostname.split('.')[0].downcase
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9013,"/tmp/krbtest.socket","","",0,1)
+con=SQLRConnection.new("sqlrelay",9013,"/tmp/krb.socket","","",0,1)
 cur=SQLRCursor.new(con)
 con.enableKerberos(service,nil,nil)
 setConnection(con)
@@ -739,7 +739,7 @@ print "TRANSACTION BEHAVIOR - implicit: \n"
 assertTrue(con.setTransactionModel("implicit"))
 assertEqual(con.getTransactionModel(),"implicit")
 assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-secondcon=SQLRConnection.new("sqlrelay",9013,"/tmp/krbtest.socket","","",0,1)
+secondcon=SQLRConnection.new("sqlrelay",9013,"/tmp/krb.socket","","",0,1)
 secondcur=SQLRCursor.new(secondcon)
 secondcon.enableKerberos(service,nil,nil)
 setSecondConnection(secondcon)

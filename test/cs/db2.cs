@@ -58,7 +58,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9008, "/tmp/db2test.socket",
+            con = new SQLRConnection("sqlrelay", 9008, "/tmp/db2.socket",
                                     "db2inst1", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -957,7 +957,7 @@ namespace SQLRClientTest
             // db2 DDL is transactional; commit so the table is visible to the
             // second connection (the commit implicitly starts a new tx)
             assertTrue(con.commit());
-            secondcon = new SQLRConnection("sqlrelay", 9008, "/tmp/db2test.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9008, "/tmp/db2.socket",
                                 "db2inst1", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

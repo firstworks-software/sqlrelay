@@ -38,7 +38,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9012,"/tmp/tlstest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9012,"/tmp/tls.socket",
 						undef,undef,0,1);
 $cur=SQLRelay::Cursor->new($con);
 $con->enableTls(undef,$cert,undef,undef,"ca",$ca,0);
@@ -822,7 +822,7 @@ print("TRANSACTION BEHAVIOR - implicit: \n");
 assertTrue($con->setTransactionModel("implicit"));
 assertEquals($con->getTransactionModel(),"implicit");
 assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
-$secondcon=SQLRelay::Connection->new("sqlrelay",9012,"/tmp/tlstest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9012,"/tmp/tls.socket",
 						undef,undef,0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 $secondcon->enableTls(undef,$cert,undef,undef,"ca",$ca,0);

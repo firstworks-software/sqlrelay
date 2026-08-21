@@ -29,7 +29,7 @@ if (dot>0) {
 
 
 // instantiation
-var con=new sqlrelay.SQLRConnection("sqlrelay",9012,"/tmp/tlstest.socket",
+var con=new sqlrelay.SQLRConnection("sqlrelay",9012,"/tmp/tls.socket",
 					null,null,0,1);
 setConnection(con);
 var cur=new sqlrelay.SQLRCursor(con);
@@ -826,7 +826,7 @@ console.log("TRANSACTION BEHAVIOR - implicit: ");
 assertTrue(con.setTransactionModel("implicit"));
 assertEqStr(con.getTransactionModel(),"implicit");
 assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9012,"/tmp/tlstest.socket",
+var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9012,"/tmp/tls.socket",
 					null,null,0,1);
 setSecondConnection(secondcon);
 var secondcur=new sqlrelay.SQLRCursor(secondcon);

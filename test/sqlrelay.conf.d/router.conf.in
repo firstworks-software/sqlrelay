@@ -21,7 +21,7 @@
 
 	<instance id="router" dbase="router">
 		<listeners>
-			<listener port="9015" socket="/tmp/routertest.socket"/>
+			<listener port="9015" socket="/tmp/router.socket"/>
 		</listeners>
 		<filters>
 			<filter module="regex" pattern=".*junktable"/>

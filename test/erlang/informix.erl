@@ -25,7 +25,7 @@ setIsolationLevels([Il | Rest]) ->
 main() ->
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9010, "/tmp/informixtest.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9010, "/tmp/informix.socket",
                              "testuser", "testpassword", 0, 1),
 
     Hostname = shortHostname(),

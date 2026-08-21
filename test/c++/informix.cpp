@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
+	con=new sqlrconnection("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -1189,7 +1189,7 @@ int main(int argc, char **argv) {
 	// is visible to the second connection (commit implicitly starts a
 	// new tx)
 	assertTrue(con->commit());
-	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// Informix has no MVCC; under default committed-read isolation,
@@ -1240,7 +1240,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit"));
 	assertEquals(con->getTransactionModel(),"explicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// see note above re: informix dirty-read workaround
@@ -1290,7 +1290,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// see note in - implicit section re: informix dirty-read workaround
@@ -1381,7 +1381,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit-error"));
 	assertEquals(con->getTransactionModel(),"explicit-error");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin, insert, commit
@@ -1425,7 +1425,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("none"));
 	assertEquals(con->getTransactionModel(),"none");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informixtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// no transactions; everything is visible immediately

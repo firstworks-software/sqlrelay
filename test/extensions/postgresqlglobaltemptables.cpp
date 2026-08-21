@@ -20,7 +20,7 @@ sqlrcursor	*secondcur=NULL;
 int main(int argc, char **argv) {
 
 	stdoutput.printf("GLOBALTEMPTABLES:\n");
-	con=new sqlrconnection("sqlrelay",9022,"/tmp/postgresqlglobaltemptablestest.socket",
+	con=new sqlrconnection("sqlrelay",9022,"/tmp/postgresqlglobaltemptables.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

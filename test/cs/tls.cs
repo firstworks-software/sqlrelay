@@ -69,7 +69,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9012, "/tmp/tlstest.socket",
+            con = new SQLRConnection("sqlrelay", 9012, "/tmp/tls.socket",
                                     "", "", 0, 1);
             cur = new SQLRCursor(con);
             con.enableTls(null, cert, null, null, "ca", ca, 0);
@@ -855,7 +855,7 @@ namespace SQLRClientTest
             assertTrue(con.setTransactionModel("implicit"));
             assertEquals(con.getTransactionModel(), "implicit");
             assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            secondcon = new SQLRConnection("sqlrelay", 9012, "/tmp/tlstest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9012, "/tmp/tls.socket",
                                     "", "", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             secondcon.enableTls(null, cert, null, null, "ca", ca, 0);

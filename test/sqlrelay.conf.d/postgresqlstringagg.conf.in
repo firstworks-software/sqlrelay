@@ -3,7 +3,7 @@
 
 	<instance id="postgresqlstringagg" dbase="postgresql">
 		<listeners>
-			<listener port="9023" socket="/tmp/postgresqlstringaggtest.socket"/>
+			<listener port="9023" socket="/tmp/postgresqlstringagg.socket"/>
 		</listeners>
 		<translations>
 			<translation module="normalize"/>

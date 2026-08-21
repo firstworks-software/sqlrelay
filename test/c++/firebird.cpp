@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	con=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -938,7 +938,7 @@ int main(int argc, char **argv) {
 	// commit so the truncation is visible to the second connection
 	// (the commit implicitly starts a new tx)
 	assertTrue(con->commit());
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// session is in a transaction; insert is not visible until commit
@@ -983,7 +983,7 @@ int main(int argc, char **argv) {
 	// truncate testtable so this section starts with it empty (delete
 	// autocommits here since explicit-model defaults to autocommit-on)
 	assertTrue(cur->sendQuery("delete from testtable"));
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin starts a new transaction; insert is not visible until commit
@@ -1031,7 +1031,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->getAutoCommit());
 	// truncate testtable so this section starts with it empty
 	assertTrue(cur->sendQuery("delete from testtable"));
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin starts a transaction; commit makes it visible
@@ -1118,7 +1118,7 @@ int main(int argc, char **argv) {
 	assertEquals(con->getTransactionModel(),"explicit-error");
 	// truncate testtable so this section starts with it empty
 	assertTrue(cur->sendQuery("delete from testtable"));
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin, insert, commit
@@ -1162,7 +1162,7 @@ int main(int argc, char **argv) {
 	assertEquals(con->getTransactionModel(),"none");
 	// truncate testtable so this section starts with it empty
 	assertTrue(cur->sendQuery("delete from testtable"));
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// no transactions; everything is visible immediately
@@ -1900,13 +1900,13 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("select * from x"));
 	assertEquals(cur->errorMessage(),shorterror);
 	stdoutput.printf("\n");
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	assertFalse(secondcur->sendQuery("drop table nosuchtable9070"));
 	delete secondcur;
 	delete secondcon;
-	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	assertFalse(secondcur->sendQuery("select * from x"));

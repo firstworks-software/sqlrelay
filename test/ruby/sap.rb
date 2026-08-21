@@ -17,7 +17,7 @@ dumptran="dump tran #{hostname} with truncate_only"
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9006,"/tmp/saptest.socket",
+con=SQLRConnection.new("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
 setConnection(con)
@@ -1234,7 +1234,7 @@ assertTrue(cur.sendQuery(
 	"create table testtable (col1 integer) lock datarows"))
 assertTrue(con.setTransactionModel("implicit"))
 assertEqual(con.getTransactionModel(),"implicit")
-secondcon=SQLRConnection.new("sqlrelay",9006,"/tmp/saptest.socket",
+secondcon=SQLRConnection.new("sqlrelay",9006,"/tmp/sap.socket",
 					"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
 setSecondConnection(secondcon)

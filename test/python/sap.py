@@ -30,7 +30,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -1252,7 +1252,7 @@ def main():
 		"create table testtable (col1 integer) lock datarows"))
 	assertTrue(con.setTransactionModel("implicit"))
 	assertEquals(con.getTransactionModel(),"implicit")
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	asserts.setSecondConnection(secondcon)

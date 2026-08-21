@@ -16,7 +16,7 @@ sqlrcursor	*secondcur=NULL;
 int main(int argc, char **argv) {
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9018,"/tmp/mysqlsplitmultiinserttest.socket",
+	con=new sqlrconnection("sqlrelay",9018,"/tmp/mysqlsplitmultiinsert.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

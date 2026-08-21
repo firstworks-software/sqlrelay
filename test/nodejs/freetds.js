@@ -52,7 +52,7 @@ var dumptran="dump tran "+hostname+" with truncate_only";
 
 
 // instantiation
-var	con=new sqlrelay.SQLRConnection("sqlrelay",9005,"/tmp/freetdstest.socket",
+var	con=new sqlrelay.SQLRConnection("sqlrelay",9005,"/tmp/freetds.socket",
 					"testuser","testpassword",0,1);
 setConnection(con);
 var	cur=new sqlrelay.SQLRCursor(con);
@@ -1193,7 +1193,7 @@ assertTrue(cur.sendQuery(
 	"create table testtable (col1 integer) lock datarows"));
 assertTrue(con.setTransactionModel("implicit"));
 assertEqStr(con.getTransactionModel(),"implicit");
-var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9005,"/tmp/freetdstest.socket",
+var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9005,"/tmp/freetds.socket",
 	"testuser","testpassword",0,1);
 setSecondConnection(secondcon);
 var	secondcur=new sqlrelay.SQLRCursor(secondcon);

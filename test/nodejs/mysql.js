@@ -22,7 +22,7 @@ if (dot>-1) {
 
 
 	// instantiation
-	var con=new sqlrelay.SQLRConnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+	var con=new sqlrelay.SQLRConnection("sqlrelay",9002,"/tmp/mysql.socket",
 			"testuser","testpassword",0,1);
 	var cur=new sqlrelay.SQLRCursor(con);
 	setConnection(con);
@@ -1341,7 +1341,7 @@ if (dot>-1) {
 		assertTrue(con.setTransactionModel("implicit"));
 		assertEqStr(con.getTransactionModel(),"implicit");
 		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-		var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9002,"/tmp/mysql.socket",
 			"testuser","testpassword",0,1);
 		var secondcur=new sqlrelay.SQLRCursor(secondcon);
 		setSecondConnection(secondcon);

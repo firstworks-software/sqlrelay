@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
 	#endif
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9014,"/tmp/extensionstest.socket",
+	con=new sqlrconnection("sqlrelay",9014,"/tmp/extensions.socket",
 							"test","test",0,1);
 	cur=new sqlrcursor(con);
 
@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
 
 	// open a second connection and set autocommit off there too
-	secondcon=new sqlrconnection("sqlrelay",9014,"/tmp/extensionstest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9014,"/tmp/extensions.socket",
 							"test","test",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	assertTrue(secondcon->autoCommitOff());
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
 	secondcon=NULL;
 	delete cur;
 	delete con;
-	con=new sqlrconnection("sqlrelay",9014,"/tmp/extensionstest.socket",
+	con=new sqlrconnection("sqlrelay",9014,"/tmp/extensions.socket",
 							"test","test",0,1);
 	cur=new sqlrcursor(con);
 	assertTrue(cur->sendQuery("drop table testtable"));
@@ -429,7 +429,7 @@ int main(int argc, char **argv) {
 		NULL
 	};
 	for (const char **usrpwd=usrpwds; *usrpwd; usrpwd++) {
-		con=new sqlrconnection("sqlrelay",9014,"/tmp/extensionstest.socket",
+		con=new sqlrconnection("sqlrelay",9014,"/tmp/extensions.socket",
 							*usrpwd,*usrpwd,0,1);
 		cur=new sqlrcursor(con);
 		assertTrue(cur->sendQuery("select 1 from dual"));
@@ -442,7 +442,7 @@ int main(int argc, char **argv) {
 
 	// upsert
 	stdoutput.printf("UPSERT: \n");
-	con=new sqlrconnection("sqlrelay",9014,"/tmp/extensionstest.socket",
+	con=new sqlrconnection("sqlrelay",9014,"/tmp/extensions.socket",
 							"test","test",0,1);
 	cur=new sqlrcursor(con);
 	secondcur=new sqlrcursor(con);

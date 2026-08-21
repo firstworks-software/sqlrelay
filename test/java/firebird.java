@@ -35,7 +35,7 @@ class firebird extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9009,
-					"/tmp/firebirdtest.socket","testuser",
+					"/tmp/firebird.socket","testuser",
 					"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -951,7 +951,7 @@ class firebird extends sqlrtest {
 		// (the commit implicitly starts a new tx)
 		assertTrue(con.commit());
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9009,"/tmp/firebirdtest.socket","testuser",
+				(short)9009,"/tmp/firebird.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

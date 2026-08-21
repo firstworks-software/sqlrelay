@@ -61,7 +61,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9013, "/tmp/krbtest.socket",
+            con = new SQLRConnection("sqlrelay", 9013, "/tmp/krb.socket",
                                     "", "", 0, 1);
             cur = new SQLRCursor(con);
             con.enableKerberos(null, null, null);
@@ -847,7 +847,7 @@ namespace SQLRClientTest
             assertTrue(con.setTransactionModel("implicit"));
             assertEquals(con.getTransactionModel(), "implicit");
             assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            secondcon = new SQLRConnection("sqlrelay", 9013, "/tmp/krbtest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9013, "/tmp/krb.socket",
                                     "", "", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             secondcon.enableKerberos(null, null, null);

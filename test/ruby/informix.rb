@@ -18,7 +18,7 @@ hostname=Socket.gethostname.split(".")[0].downcase
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9010,"/tmp/informixtest.socket",
+con=SQLRConnection.new("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
 setConnection(con)
@@ -1149,7 +1149,7 @@ assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
 # is visible to the second connection (commit implicitly starts a
 # new tx)
 assertTrue(con.commit())
-secondcon=SQLRConnection.new("sqlrelay",9010,"/tmp/informixtest.socket",
+secondcon=SQLRConnection.new("sqlrelay",9010,"/tmp/informix.socket",
 					"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
 setSecondConnection(secondcon)

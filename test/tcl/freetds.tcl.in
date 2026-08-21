@@ -18,7 +18,7 @@ set dumptran "dump tran $hostname with truncate_only"
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9005 -socket "/tmp/freetdstest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9005 -socket "/tmp/freetds.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -1035,7 +1035,7 @@ puts "TRANSACTION BEHAVIOR - implicit: "
 assertTrue [$cur sendQuery "create table testtable (col1 integer) lock datarows"]
 assertTrue [$con setTransactionModel "implicit"]
 assertEqual [$con getTransactionModel] "implicit"
-set secondcon [sqlrcon -server "sqlrelay" -port 9005 -socket "/tmp/freetdstest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9005 -socket "/tmp/freetds.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 # session is in a transaction; insert is not visible until commit
 assertTrue [$con getInTransaction]

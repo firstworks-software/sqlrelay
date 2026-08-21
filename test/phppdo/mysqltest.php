@@ -49,7 +49,7 @@ if (defined('SQLRELAY_TEST'))
 	echo "SQLRELAY_TEST",PHP_EOL;
 	$user = "testuser";
 	$pass = "testpassword";
-	$dsn = "sqlrelay:host=sqlrelay;port=9002;socket=/tmp/mysqltest.socket;tries=0;retrytime=1;debug=0";
+	$dsn = "sqlrelay:host=sqlrelay;port=9002;socket=/tmp/mysql.socket;tries=0;retrytime=1;debug=0";
 }
 
 

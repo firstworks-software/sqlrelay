@@ -42,7 +42,7 @@ class freetds extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9005,
-					"/tmp/freetdstest.socket","testuser",
+					"/tmp/freetds.socket","testuser",
 					"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -1278,7 +1278,7 @@ class freetds extends sqlrtest {
 		assertTrue(con.setTransactionModel("implicit"));
 		assertEquals(con.getTransactionModel(),"implicit");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9005,"/tmp/freetdstest.socket","testuser",
+				(short)9005,"/tmp/freetds.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

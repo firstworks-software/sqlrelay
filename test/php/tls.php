@@ -21,7 +21,7 @@
 
 
 	# instantiation
-	$con=sqlrcon_alloc("sqlrelay",9012,"/tmp/tlstest.socket",
+	$con=sqlrcon_alloc("sqlrelay",9012,"/tmp/tls.socket",
 						NULL,NULL,0,1);
 	$cur=sqlrcur_alloc($con);
 	sqlrcon_enableTls($con,NULL,$cert,NULL,NULL,"ca",$ca,0);
@@ -816,7 +816,7 @@
 	assertTrue(sqlrcon_setTransactionModel($con,"implicit"));
 	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
 	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
-	$secondcon=sqlrcon_alloc("sqlrelay",9012,"/tmp/tlstest.socket",
+	$secondcon=sqlrcon_alloc("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	sqlrcon_enableTls($secondcon,NULL,$cert,NULL,NULL,"ca",$ca,0);

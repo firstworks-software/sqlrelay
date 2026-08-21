@@ -28,7 +28,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9002,"/tmp/mysqltest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9002,"/tmp/mysql.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -1316,7 +1316,7 @@ if ($majorversion>3) {
 	assertTrue($con->setTransactionModel("implicit"));
 	assertEquals($con->getTransactionModel(),"implicit");
 	assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
-	$secondcon=SQLRelay::Connection->new("sqlrelay",9002,"/tmp/mysqltest.socket",
+	$secondcon=SQLRelay::Connection->new("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1);
 	$secondcur=SQLRelay::Cursor->new($secondcon);
 	# session is in a transaction; insert is not visible until commit

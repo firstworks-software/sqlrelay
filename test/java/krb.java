@@ -73,7 +73,7 @@ class krb extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9013,
-						"/tmp/krbtest.socket",
+						"/tmp/krb.socket",
 						null,null,0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 		con.enableKerberos(service,null,null);
@@ -873,7 +873,7 @@ class krb extends sqlrtest {
 		assertEquals(con.getTransactionModel(),"implicit");
 		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9013,"/tmp/krbtest.socket",null,
+				(short)9013,"/tmp/krb.socket",null,
 				null,0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		secondcon.enableKerberos(service,null,null);

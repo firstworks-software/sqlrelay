@@ -13,7 +13,7 @@
 
 
 	# instantiation
-	$con=sqlrcon_alloc("sqlrelay",9013,"/tmp/krbtest.socket",
+	$con=sqlrcon_alloc("sqlrelay",9013,"/tmp/krb.socket",
 						null,null,0,1);
 	$cur=sqlrcur_alloc($con);
 	sqlrcon_enableKerberos($con,null,null,null);
@@ -807,7 +807,7 @@
 	assertTrue(sqlrcon_setTransactionModel($con,"implicit"));
 	assertEqStr(sqlrcon_getTransactionModel($con),"implicit");
 	assertTrue(sqlrcur_sendQuery($cur,"create table testtable (col1 integer)"));
-	$secondcon=sqlrcon_alloc("sqlrelay",9013,"/tmp/krbtest.socket",
+	$secondcon=sqlrcon_alloc("sqlrelay",9013,"/tmp/krb.socket",
 							null,null,0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	sqlrcon_enableKerberos($secondcon,null,null,null);

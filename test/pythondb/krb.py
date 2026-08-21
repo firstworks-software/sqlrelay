@@ -17,7 +17,7 @@ def main():
 	print("INSTANTIATION")
 	con=PySQLRDB.connect(
 		"sqlrelay",9013,
-		"/tmp/krbtest.socket",
+		"/tmp/krb.socket",
 		"testuser","testpassword",
 		0,1,krb='yes')
 	cur=con.cursor()

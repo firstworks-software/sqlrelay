@@ -25,7 +25,7 @@ $LARGE_BUFFER_LENGTH=20*1024;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9009,"/tmp/firebirdtest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -917,7 +917,7 @@ assertTrue($cur->sendQuery("delete from testtable"));
 # commit so the truncation is visible to the second connection
 # (the commit implicitly starts a new tx)
 assertTrue($con->commit());
-$secondcon=SQLRelay::Connection->new("sqlrelay",9009,"/tmp/firebirdtest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 # session is in a transaction; insert is not visible until commit

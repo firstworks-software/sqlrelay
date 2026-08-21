@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	con=new sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	cur=new sqlrcursor(con);
 	con->enableTls(NULL,cert,NULL,NULL,"ca",ca,0);
@@ -871,7 +871,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("implicit"));
 	assertEquals(con->getTransactionModel(),"implicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	secondcur=new sqlrcursor(secondcon);
 	secondcon->enableTls(NULL,cert,NULL,NULL,"ca",ca,0);
@@ -916,7 +916,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit"));
 	assertEquals(con->getTransactionModel(),"explicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	secondcur=new sqlrcursor(secondcon);
 	secondcon->enableTls(NULL,cert,NULL,NULL,"ca",ca,0);
@@ -965,7 +965,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	secondcur=new sqlrcursor(secondcon);
 	secondcon->enableTls(NULL,cert,NULL,NULL,"ca",ca,0);
@@ -1053,7 +1053,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit-error"));
 	assertEquals(con->getTransactionModel(),"explicit-error");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	secondcur=new sqlrcursor(secondcon);
 	secondcon->enableTls(NULL,cert,NULL,NULL,"ca",ca,0);
@@ -1098,7 +1098,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("none"));
 	assertEquals(con->getTransactionModel(),"none");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tlstest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9012,"/tmp/tls.socket",
 							NULL,NULL,0,1);
 	secondcur=new sqlrcursor(secondcon);
 	secondcon->enableTls(NULL,cert,NULL,NULL,"ca",ca,0);

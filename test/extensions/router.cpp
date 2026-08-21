@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 	uint32_t	*fieldlens;
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9015,"/tmp/routertest.socket",
+	con=new sqlrconnection("sqlrelay",9015,"/tmp/router.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -879,7 +879,7 @@ int main(int argc, char **argv) {
 
 	// commit
 	stdoutput.printf("COMMIT: \n");
-	secondcon=new sqlrconnection("sqlrelay",9015,"/tmp/routertest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9015,"/tmp/router.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// It may take some time for the replication to actually occur.

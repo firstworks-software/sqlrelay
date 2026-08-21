@@ -387,7 +387,7 @@ int main(int argc, char **argv) {
 		incstr.append(
 			"Driver={SQL Relay};"
 			"Server=sqlrelay;Port=9008;"
-			"Socket=/tmp/db2test.socket;"
+			"Socket=/tmp/db2.socket;"
 			"User=db2inst1;Password=testpassword;"
 			"NullsAsNulls=yes;"
 			// for ODBC spec compliance

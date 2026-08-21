@@ -6,7 +6,7 @@
 
 	$host="sqlrelay";
 	$port=9013;
-	$socket="/tmp/krbtest.socket";
+	$socket="/tmp/krb.socket";
 	$user="";
 	$password="";
 	$dsn = "sqlrelay:host=$host;port=$port;socket=$socket;tries=0;retrytime=1;krb=yes;debug=0";

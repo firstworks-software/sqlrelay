@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9010,"/tmp/informixtest.socket",
+	con=sqlrcon_alloc("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	cur=sqlrcur_alloc(con);
 
@@ -1246,7 +1246,7 @@ int main(int argc, char **argv) {
 	// is visible to the second connection (commit implicitly starts a
 	// new tx)
 	assertTrue(sqlrcon_commit(con));
-	secondcon=sqlrcon_alloc("sqlrelay",9010,"/tmp/informixtest.socket",
+	secondcon=sqlrcon_alloc("sqlrelay",9010,"/tmp/informix.socket",
 						"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
 	// Informix has no MVCC; under default committed-read isolation,

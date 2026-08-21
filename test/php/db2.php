@@ -21,7 +21,7 @@
 
 
 	# instantiation
-	$con=sqlrcon_alloc("sqlrelay",9008,"/tmp/db2test.socket",
+	$con=sqlrcon_alloc("sqlrelay",9008,"/tmp/db2.socket",
 				"db2inst1","testpassword",0,1);
 	$cur=sqlrcur_alloc($con);
 
@@ -922,7 +922,7 @@
 	# db2 DDL is transactional; commit so the table is visible to the
 	# second connection (the commit implicitly starts a new tx)
 	assertTrue(sqlrcon_commit($con));
-	$secondcon=sqlrcon_alloc("sqlrelay",9008,"/tmp/db2test.socket",
+	$secondcon=sqlrcon_alloc("sqlrelay",9008,"/tmp/db2.socket",
 						"db2inst1","testpassword",0,1);
 	$secondcur=sqlrcur_alloc($secondcon);
 	# session is in a transaction; insert is not visible until commit

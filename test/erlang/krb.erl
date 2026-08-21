@@ -30,7 +30,7 @@ setIsolationLevels([Il | Rest]) ->
 main() ->
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9013, "/tmp/krbtest.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9013, "/tmp/krb.socket",
                              "", "", 0, 1),
     sqlrelay:enableKerberos("", "", ""),
 

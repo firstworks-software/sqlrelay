@@ -31,7 +31,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 						"testuser","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -1315,7 +1315,7 @@ def main():
 		assertTrue(con.setTransactionModel("implicit"))
 		assertEquals(con.getTransactionModel(),"implicit")
 		assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-		secondcon=PySQLRClient.sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		secondcon=PySQLRClient.sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1)
 		secondcur=PySQLRClient.sqlrcursor(secondcon)
 		asserts.setSecondConnection(secondcon)

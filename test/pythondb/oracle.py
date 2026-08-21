@@ -17,7 +17,7 @@ def main():
 	print("INSTANTIATION")
 	con=PySQLRDB.connect(
 		"sqlrelay",9001,
-		"/tmp/oracletest.socket",
+		"/tmp/oracle.socket",
 		"testuser","testpassword",
 		0,1)
 	cur=con.cursor()

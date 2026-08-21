@@ -1350,7 +1350,7 @@ void generateTable(const char *option,
 	stdoutput.printf("%sGENERATE TABLE:\n",option);
 
 	// connect to db
-	sqlrconnection	econ("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
+	sqlrconnection	econ("sqlrelay",9019,"/tmp/mysqlimportexport.socket",
 					"testuser","testpassword",0,1);
 	sqlrcursor	ecur(&econ);
 
@@ -1463,7 +1463,7 @@ void diffFiles(const char *filename1, const char *filename2) {
 void diffTables(const char *table1, const char *table2) {
 
 	// select from table 1
-	sqlrconnection	con1("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
+	sqlrconnection	con1("sqlrelay",9019,"/tmp/mysqlimportexport.socket",
 						"testuser","testpassword",0,1);
 	sqlrcursor	cur1(&con1);
 	stringbuffer	q1;
@@ -1474,7 +1474,7 @@ void diffTables(const char *table1, const char *table2) {
 	cur1.sendQuery(q1.getString());
 
 	// select from table 2
-	sqlrconnection	con2("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
+	sqlrconnection	con2("sqlrelay",9019,"/tmp/mysqlimportexport.socket",
 						"testuser","testpassword",0,1);
 	sqlrcursor	cur2(&con2);
 	stringbuffer	q2;
@@ -1764,7 +1764,7 @@ void exportTests() {
 				assertTrue(tsex.exportData());
 			} else if (fiter==2) {
 				sqlrconnection	econ("sqlrelay",9019,
-							"/tmp/mysqlimportexporttest.socket",
+							"/tmp/mysqlimportexport.socket",
 							"testuser",
 							"testpassword",0,1);
 				sqlrcursor	ecur(&econ);
@@ -1808,7 +1808,7 @@ void exportTests() {
 			// clean up
 			if (fiter==2) {
 				sqlrconnection	ccon("sqlrelay",9019,
-							"/tmp/mysqlimportexporttest.socket",
+							"/tmp/mysqlimportexport.socket",
 							"testuser",
 							"testpassword",0,1);
 				sqlrcursor	ccur(&ccon);
@@ -1974,7 +1974,7 @@ void importTests() {
 
 			// clean up
 			sqlrconnection	ccon("sqlrelay",9019,
-						"/tmp/mysqlimportexporttest.socket",
+						"/tmp/mysqlimportexport.socket",
 						"testuser",
 						"testpassword",0,1);
 			sqlrcursor	ccur(&ccon);
@@ -1998,7 +1998,7 @@ void importTests() {
 
 int main(int argc, char **argv) {
 
-	con=new sqlrconnection("sqlrelay",9019,"/tmp/mysqlimportexporttest.socket",
+	con=new sqlrconnection("sqlrelay",9019,"/tmp/mysqlimportexport.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

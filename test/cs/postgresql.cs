@@ -35,7 +35,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9003, "/tmp/postgresqltest.socket",
+            con = new SQLRConnection("sqlrelay", 9003, "/tmp/postgresql.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -867,7 +867,7 @@ namespace SQLRClientTest
             // postgresql DDL is transactional; commit so the table is visible
             // to the second connection (the commit implicitly starts a new tx)
             assertTrue(con.commit());
-            secondcon = new SQLRConnection("sqlrelay", 9003, "/tmp/postgresqltest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9003, "/tmp/postgresql.socket",
                                     "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

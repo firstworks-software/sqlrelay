@@ -17,7 +17,7 @@ if {$dot > 0} {
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9002 -socket "/tmp/mysqltest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9002 -socket "/tmp/mysql.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -1085,7 +1085,7 @@ if {$majorversion>3} {
 	assertTrue [$con setTransactionModel "implicit"]
 	assertEqual [$con getTransactionModel] "implicit"
 	assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
-	set secondcon [sqlrcon -server "sqlrelay" -port 9002 -socket "/tmp/mysqltest.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
+	set secondcon [sqlrcon -server "sqlrelay" -port 9002 -socket "/tmp/mysql.socket" -user "testuser" -password "testpassword" -retrytime 0 -tries 1]
 	set secondcur [$secondcon sqlrcur]
 	setSecondConnection $secondcon
 	setSecondCursor $secondcur

@@ -15,7 +15,7 @@ my $prefix="DBI:SQLRelay(AutoCommit=>0,PrintError=>0):";
 my $connectstring=
 	"host=sqlrelay;".
 	"port=9013;".
-	"socket=/tmp/krbtest.socket;".
+	"socket=/tmp/krb.socket;".
 	"debug=0;".
 	"krb=yes";
 my $dsn=$prefix.$connectstring;

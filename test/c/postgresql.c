@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9003,"/tmp/postgresqltest.socket","testuser",
+	con=sqlrcon_alloc("sqlrelay",9003,"/tmp/postgresql.socket","testuser",
 				"testpassword",0,1);
 	cur=sqlrcur_alloc(con);
 
@@ -939,7 +939,7 @@ int main(int argc, char **argv) {
 	// postgresql DDL is transactional; commit so the table is visible
 	// to the second connection (the commit implicitly starts a new tx)
 	assertTrue(sqlrcon_commit(con));
-	secondcon=sqlrcon_alloc("sqlrelay",9003,"/tmp/postgresqltest.socket",
+	secondcon=sqlrcon_alloc("sqlrelay",9003,"/tmp/postgresql.socket",
 						"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
 	// session is in a transaction; insert is not visible until commit

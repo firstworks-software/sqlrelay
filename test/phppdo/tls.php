@@ -6,7 +6,7 @@
 
 	$host="sqlrelay";
 	$port=9012;
-	$socket="/tmp/tlstest.socket";
+	$socket="/tmp/tls.socket";
 	$user="";
 	$password="";
 	$tlscert="../sqlrelay.conf.d/tls/client.pem";

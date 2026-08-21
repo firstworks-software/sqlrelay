@@ -21,7 +21,7 @@ set LARGE_BUFFER_LENGTH [expr 20*1024]
 
 
 # instantiation
-set con [sqlrcon -server "sqlrelay" -port 9008 -socket "/tmp/db2test.socket" -user "db2inst1" -password "testpassword" -retrytime 0 -tries 1]
+set con [sqlrcon -server "sqlrelay" -port 9008 -socket "/tmp/db2.socket" -user "db2inst1" -password "testpassword" -retrytime 0 -tries 1]
 set cur [$con sqlrcur]
 setConnection $con
 setCursor $cur
@@ -797,7 +797,7 @@ assertTrue [$cur sendQuery "create table testtable (col1 integer)"]
 # db2 DDL is transactional; commit so the table is visible to the
 # second connection (the commit implicitly starts a new tx)
 assertTrue [$con commit]
-set secondcon [sqlrcon -server "sqlrelay" -port 9008 -socket "/tmp/db2test.socket" -user "db2inst1" -password "testpassword" -retrytime 0 -tries 1]
+set secondcon [sqlrcon -server "sqlrelay" -port 9008 -socket "/tmp/db2.socket" -user "db2inst1" -password "testpassword" -retrytime 0 -tries 1]
 set secondcur [$secondcon sqlrcur]
 setSecondConnection $secondcon
 setSecondCursor $secondcur

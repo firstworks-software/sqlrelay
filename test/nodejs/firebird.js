@@ -39,7 +39,7 @@ var	found;
 
 
 // instantiation
-var	con=new sqlrelay.SQLRConnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+var	con=new sqlrelay.SQLRConnection("sqlrelay",9009,"/tmp/firebird.socket",
 			"testuser","testpassword",0,1);
 var	cur=new sqlrelay.SQLRCursor(con);
 setConnection(con);
@@ -945,7 +945,7 @@ assertTrue(cur.sendQuery("delete from testtable"));
 // commit so the truncation is visible to the second connection
 // (the commit implicitly starts a new tx)
 assertTrue(con.commit());
-var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9009,"/tmp/firebirdtest.socket",
+var	secondcon=new sqlrelay.SQLRConnection("sqlrelay",9009,"/tmp/firebird.socket",
 			"testuser","testpassword",0,1);
 var	secondcur=new sqlrelay.SQLRCursor(secondcon);
 setSecondConnection(secondcon);

@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=sqlrcon_alloc("sqlrelay",9006,"/tmp/saptest.socket",
+	con=sqlrcon_alloc("sqlrelay",9006,"/tmp/sap.socket",
 			"testuser","testpassword",0,1);
 	cur=sqlrcur_alloc(con);
 
@@ -1358,7 +1358,7 @@ int main(int argc, char **argv) {
 		"create table testtable (col1 integer) lock datarows"));
 	assertTrue(sqlrcon_setTransactionModel(con,"implicit"));
 	assertEqStr(sqlrcon_getTransactionModel(con),"implicit");
-	secondcon=sqlrcon_alloc("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=sqlrcon_alloc("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=sqlrcur_alloc(secondcon);
 	// session is in a transaction; insert is not visible until commit

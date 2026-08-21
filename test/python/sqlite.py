@@ -24,7 +24,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9004,"/tmp/sqlitetest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9004,"/tmp/sqlite.socket",
 						"testuser","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -719,7 +719,7 @@ def main():
 	# sqlite DDL is transactional; commit so the table is visible
 	# to the second connection (the commit implicitly starts a new tx)
 	assertTrue(con.commit())
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9004,"/tmp/sqlitetest.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9004,"/tmp/sqlite.socket",
 						"testuser","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	asserts.setSecondConnection(secondcon)

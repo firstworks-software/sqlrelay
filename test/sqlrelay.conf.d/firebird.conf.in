@@ -3,7 +3,7 @@
 
 	<instance id="firebird" dbase="firebird">
 		<listeners>
-			<listener port="9009" socket="/tmp/firebirdtest.socket"/>
+			<listener port="9009" socket="/tmp/firebird.socket"/>
 		</listeners>
 		<connections>
 			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
@@ -12,7 +12,7 @@
 
 	<instance id="firebird3" dbase="firebird">
 		<listeners>
-			<listener port="9009" socket="/tmp/firebirdtest.socket"/>
+			<listener port="9009" socket="/tmp/firebird.socket"/>
 		</listeners>
 		<connections>
 			<connection string="user=testuser;password=testpassword;db=firebird3:/u02/@HOSTNAME@.gdb;dialect=3"/>
@@ -21,7 +21,7 @@
 
 	<instance id="firebird2" dbase="firebird">
 		<listeners>
-			<listener port="9009" socket="/tmp/firebirdtest.socket"/>
+			<listener port="9009" socket="/tmp/firebird.socket"/>
 		</listeners>
 		<connections>
 			<connection string="user=testuser;password=testpassword;db=firebird2:/u02/@HOSTNAME@.gdb;dialect=3"/>

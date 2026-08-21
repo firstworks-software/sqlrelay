@@ -59,7 +59,7 @@ class informix extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9010,
-						"/tmp/informixtest.socket","testuser",
+						"/tmp/informix.socket","testuser",
 						"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -1223,7 +1223,7 @@ class informix extends sqlrtest {
 		// new tx)
 		assertTrue(con.commit());
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9010,"/tmp/informixtest.socket","testuser",
+				(short)9010,"/tmp/informix.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// Informix has no MVCC; under default committed-read isolation,

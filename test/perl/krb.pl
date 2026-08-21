@@ -33,7 +33,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9013,"/tmp/krbtest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9013,"/tmp/krb.socket",
 						undef,undef,0,1);
 $cur=SQLRelay::Cursor->new($con);
 $con->enableKerberos($service,undef,undef);
@@ -817,7 +817,7 @@ print("TRANSACTION BEHAVIOR - implicit: \n");
 assertTrue($con->setTransactionModel("implicit"));
 assertEquals($con->getTransactionModel(),"implicit");
 assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
-$secondcon=SQLRelay::Connection->new("sqlrelay",9013,"/tmp/krbtest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9013,"/tmp/krb.socket",
 						undef,undef,0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 $secondcon->enableKerberos($service,undef,undef);

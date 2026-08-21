@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	con=new sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -1285,7 +1285,7 @@ int main(int argc, char **argv) {
 		"create table testtable (col1 integer) lock datarows"));
 	assertTrue(con->setTransactionModel("implicit"));
 	assertEquals(con->getTransactionModel(),"implicit");
-	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// session is in a transaction; insert is not visible until commit
@@ -1331,7 +1331,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit"));
 	assertEquals(con->getTransactionModel(),"explicit");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer) lock datarows"));
-	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin starts a new transaction; insert is not visible until commit
@@ -1381,7 +1381,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->autoCommitOn());
 	assertTrue(con->getAutoCommit());
 	assertTrue(cur->sendQuery("create table testtable (col1 integer) lock datarows"));
-	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin starts a transaction; commit makes it visible
@@ -1470,7 +1470,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("explicit-error"));
 	assertEquals(con->getTransactionModel(),"explicit-error");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer) lock datarows"));
-	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// begin, insert, commit
@@ -1519,7 +1519,7 @@ int main(int argc, char **argv) {
 	assertTrue(con->setTransactionModel("none"));
 	assertEquals(con->getTransactionModel(),"none");
 	assertTrue(cur->sendQuery("create table testtable (col1 integer) lock datarows"));
-	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/saptest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9006,"/tmp/sap.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	// no transactions; everything is visible immediately

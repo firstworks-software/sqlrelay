@@ -36,7 +36,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9013,"/tmp/krbtest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9013,"/tmp/krb.socket",
 						None,None,0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	con.enableKerberos(service,None,None)
@@ -823,7 +823,7 @@ def main():
 	assertTrue(con.setTransactionModel("implicit"))
 	assertEquals(con.getTransactionModel(),"implicit")
 	assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9013,"/tmp/krbtest.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9013,"/tmp/krb.socket",
 						None,None,0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	secondcon.enableKerberos(service,None,None)

@@ -41,7 +41,7 @@ end
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9012,"/tmp/tlstest.socket",
+con=SQLRConnection.new("sqlrelay",9012,"/tmp/tls.socket",
 						nil,nil,0,1)
 cur=SQLRCursor.new(con)
 con.enableTls(nil,cert,nil,nil,"ca",ca,0)
@@ -827,7 +827,7 @@ print "TRANSACTION BEHAVIOR - implicit: \n"
 assertTrue(con.setTransactionModel("implicit"))
 assertEqual(con.getTransactionModel(),"implicit")
 assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
-secondcon=SQLRConnection.new("sqlrelay",9012,"/tmp/tlstest.socket",
+secondcon=SQLRConnection.new("sqlrelay",9012,"/tmp/tls.socket",
 							nil,nil,0,1)
 secondcur=SQLRCursor.new(secondcon)
 secondcon.enableTls(nil,cert,nil,nil,"ca",ca,0)

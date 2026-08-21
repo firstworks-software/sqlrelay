@@ -51,7 +51,7 @@ class db2 extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9008,
-						"/tmp/db2test.socket","db2inst1",
+						"/tmp/db2.socket","db2inst1",
 						"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -981,7 +981,7 @@ class db2 extends sqlrtest {
 		// second connection (the commit implicitly starts a new tx)
 		assertTrue(con.commit());
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9008,"/tmp/db2test.socket","db2inst1",
+				(short)9008,"/tmp/db2.socket","db2inst1",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

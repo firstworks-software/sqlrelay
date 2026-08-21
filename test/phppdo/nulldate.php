@@ -5,7 +5,7 @@
 	# sqlrelay
 	$host="sqlrelay";
 	$port=9002;
-	$socket="/tmp/mysqltest.socket";
+	$socket="/tmp/mysql.socket";
 	$user="testuser";
 	$password="testpassword";
 	$dsn="sqlrelay:host=$host;port=$port;socket=$socket;tries=0;retrytime=1;debug=0";

@@ -24,7 +24,7 @@ def main():
 	print("INSTANTIATION")
 	con=PySQLRDB.connect(
 		"sqlrelay",9012,
-		"/tmp/tlstest.socket",
+		"/tmp/tls.socket",
 		"","",0,1,tls='yes',
 		tlscert=tlscert,
 		tlsvalidate='ca',

@@ -31,7 +31,7 @@ def main():
 
 
 	# instantiation
-	con=PySQLRClient.sqlrconnection("sqlrelay",9003,"/tmp/postgresqltest.socket",
+	con=PySQLRClient.sqlrconnection("sqlrelay",9003,"/tmp/postgresql.socket",
 						"testuser","testpassword",0,1)
 	cur=PySQLRClient.sqlrcursor(con)
 	asserts.setConnection(con)
@@ -859,7 +859,7 @@ def main():
 	# postgresql DDL is transactional; commit so the table is visible
 	# to the second connection (the commit implicitly starts a new tx)
 	assertTrue(con.commit())
-	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9003,"/tmp/postgresqltest.socket",
+	secondcon=PySQLRClient.sqlrconnection("sqlrelay",9003,"/tmp/postgresql.socket",
 						"testuser","testpassword",0,1)
 	secondcur=PySQLRClient.sqlrcursor(secondcon)
 	asserts.setSecondConnection(secondcon)

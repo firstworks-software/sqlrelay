@@ -13,7 +13,7 @@ require "./asserts.pl";
 
 # instantiation
 my $prefix="DBI:SQLRelay(AutoCommit=>0,PrintError=>0):";
-my $connectstring="host=sqlrelay;port=9001;socket=/tmp/oracletest.socket;debug=0";
+my $connectstring="host=sqlrelay;port=9001;socket=/tmp/oracle.socket;debug=0";
 my $dsn=$prefix.$connectstring;
 
 # parse dsn

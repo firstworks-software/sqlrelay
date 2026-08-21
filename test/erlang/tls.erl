@@ -34,7 +34,7 @@ main() ->
 
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9012, "/tmp/tlstest.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9012, "/tmp/tls.socket",
                              "", "", 0, 1),
     sqlrelay:enableTls("", Cert, "", "", "ca", Ca, 0),
 

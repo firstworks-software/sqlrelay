@@ -30,7 +30,7 @@ var LARGE_BUFFER_LENGTH=20*1024;
 
 
 // instantiation
-var con=new sqlrelay.SQLRConnection("sqlrelay",9008,"/tmp/db2test.socket",
+var con=new sqlrelay.SQLRConnection("sqlrelay",9008,"/tmp/db2.socket",
 			"db2inst1","testpassword",0,1);
 setConnection(con);
 var cur=new sqlrelay.SQLRCursor(con);
@@ -936,7 +936,7 @@ assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
 // db2 DDL is transactional; commit so the table is visible to the
 // second connection (the commit implicitly starts a new tx)
 assertTrue(con.commit());
-var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9008,"/tmp/db2test.socket",
+var secondcon=new sqlrelay.SQLRConnection("sqlrelay",9008,"/tmp/db2.socket",
 				"db2inst1","testpassword",0,1);
 setSecondConnection(secondcon);
 var secondcur=new sqlrelay.SQLRCursor(secondcon);

@@ -74,7 +74,7 @@ class tls extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9012,
-						"/tmp/tlstest.socket",
+						"/tmp/tls.socket",
 						null,null,0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 		con.enableTls(null,cert,null,null,"ca",ca,(short)0);
@@ -874,7 +874,7 @@ class tls extends sqlrtest {
 		assertEquals(con.getTransactionModel(),"implicit");
 		assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9012,"/tmp/tlstest.socket",null,
+				(short)9012,"/tmp/tls.socket",null,
 				null,0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		secondcon.enableTls(null,cert,null,null,"ca",ca,(short)0);

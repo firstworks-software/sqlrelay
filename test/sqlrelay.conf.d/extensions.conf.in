@@ -28,7 +28,7 @@
 		<listeners>
 			<listener port="9014"
 				addresses="0.0.0.0"
-				socket="/tmp/extensionstest.socket"/>
+				socket="/tmp/extensions.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">

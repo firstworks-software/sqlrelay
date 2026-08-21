@@ -54,7 +54,7 @@ class sap extends sqlrtest {
 
 		// instantiation
 		SQLRConnection con=new SQLRConnection("sqlrelay",(short)9006,
-						"/tmp/saptest.socket","testuser",
+						"/tmp/sap.socket","testuser",
 						"testpassword",0,1);
 		SQLRCursor cur=new SQLRCursor(con);
 
@@ -1361,7 +1361,7 @@ class sap extends sqlrtest {
 		assertTrue(con.setTransactionModel("implicit"));
 		assertEquals(con.getTransactionModel(),"implicit");
 		SQLRConnection secondcon=new SQLRConnection("sqlrelay",
-				(short)9006,"/tmp/saptest.socket","testuser",
+				(short)9006,"/tmp/sap.socket","testuser",
 				"testpassword",0,1);
 		SQLRCursor secondcur=new SQLRCursor(secondcon);
 		// session is in a transaction; insert is not visible until commit

@@ -3,7 +3,7 @@
 
 	<instance id="teradata" dbase="odbc">
 		<listeners>
-			<listener port="9011" socket="/tmp/teradatatest.socket"/>
+			<listener port="9011" socket="/tmp/teradata.socket"/>
 		</listeners>
 		<auths>
 			<auth module="sqlrclient_userlist">

@@ -57,7 +57,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9010, "/tmp/informixtest.socket",
+            con = new SQLRConnection("sqlrelay", 9010, "/tmp/informix.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -1180,7 +1180,7 @@ namespace SQLRClientTest
             // is visible to the second connection (commit implicitly starts a
             // new tx)
             assertTrue(con.commit());
-            secondcon = new SQLRConnection("sqlrelay", 9010, "/tmp/informixtest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9010, "/tmp/informix.socket",
                                         "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // Informix has no MVCC; under default committed-read isolation,

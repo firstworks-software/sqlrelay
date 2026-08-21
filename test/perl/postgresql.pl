@@ -29,7 +29,7 @@ $hostname=~s/\..*//;
 
 
 # instantiation
-$con=SQLRelay::Connection->new("sqlrelay",9003,"/tmp/postgresqltest.socket",
+$con=SQLRelay::Connection->new("sqlrelay",9003,"/tmp/postgresql.socket",
 						"testuser","testpassword",0,1);
 $cur=SQLRelay::Cursor->new($con);
 
@@ -854,7 +854,7 @@ assertTrue($cur->sendQuery("create table testtable (col1 integer)"));
 # postgresql DDL is transactional; commit so the table is visible
 # to the second connection (the commit implicitly starts a new tx)
 assertTrue($con->commit());
-$secondcon=SQLRelay::Connection->new("sqlrelay",9003,"/tmp/postgresqltest.socket",
+$secondcon=SQLRelay::Connection->new("sqlrelay",9003,"/tmp/postgresql.socket",
 						"testuser","testpassword",0,1);
 $secondcur=SQLRelay::Cursor->new($secondcon);
 # session is in a transaction; insert is not visible until commit

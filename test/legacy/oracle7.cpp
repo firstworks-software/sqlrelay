@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9001,"/tmp/oracletest.socket",
+	con=new sqlrconnection("sqlrelay",9001,"/tmp/oracle.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -767,7 +767,7 @@ int main(int argc, char **argv) {
 
 	// commit and rollback
 	stdoutput.printf("COMMIT AND ROLLBACK: \n");
-	secondcon=new sqlrconnection("sqlrelay",9001,"/tmp/oracletest.socket",
+	secondcon=new sqlrconnection("sqlrelay",9001,"/tmp/oracle.socket",
 						"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
 	assertTrue(secondcur->sendQuery("select count(*) from testtable"));

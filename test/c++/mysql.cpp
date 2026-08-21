@@ -65,7 +65,7 @@ for (uint16_t a=0; a<50; a++) {
 
 
 	// instantiation
-	con=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+	con=new sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 
@@ -1361,7 +1361,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("implicit"));
 		assertEquals(con->getTransactionModel(),"implicit");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// session is in a transaction; insert is not visible until commit
@@ -1405,7 +1405,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("explicit"));
 		assertEquals(con->getTransactionModel(),"explicit");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// begin starts a new transaction; insert is not visible until commit
@@ -1453,7 +1453,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->autoCommitOn());
 		assertTrue(con->getAutoCommit());
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// begin starts a transaction; commit makes it visible
@@ -1540,7 +1540,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("explicit-error"));
 		assertEquals(con->getTransactionModel(),"explicit-error");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// begin, insert, commit
@@ -1584,7 +1584,7 @@ for (uint16_t a=0; a<50; a++) {
 		assertTrue(con->setTransactionModel("none"));
 		assertEquals(con->getTransactionModel(),"none");
 		assertTrue(cur->sendQuery("create table testtable (col1 integer)"));
-		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysqltest.socket",
+		secondcon=new sqlrconnection("sqlrelay",9002,"/tmp/mysql.socket",
 							"testuser","testpassword",0,1);
 		secondcur=new sqlrcursor(secondcon);
 		// no transactions; everything is visible immediately

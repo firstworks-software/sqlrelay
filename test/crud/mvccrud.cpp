@@ -363,7 +363,7 @@ bool httpModuleInit(httpserverapi *sapi) {
 	prop.parseString(
 		"sqlr.host=localhost\n"
 		"sqlr.port=9001\n"
-		"sqlr.socket=/tmp/oracletest.socket\n"
+		"sqlr.socket=/tmp/oracle.socket\n"
 		"sqlr.user=testuser\n"
 		"sqlr.password=testpassword\n"
 		"table=testtable\n"

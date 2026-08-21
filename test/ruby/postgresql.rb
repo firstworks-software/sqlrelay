@@ -18,7 +18,7 @@ hostname=Socket.gethostname.split(".")[0].downcase
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9003,"/tmp/postgresqltest.socket",
+con=SQLRConnection.new("sqlrelay",9003,"/tmp/postgresql.socket",
 						"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
 setConnection(con)
@@ -846,7 +846,7 @@ assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
 # postgresql DDL is transactional; commit so the table is visible
 # to the second connection (the commit implicitly starts a new tx)
 assertTrue(con.commit())
-secondcon=SQLRConnection.new("sqlrelay",9003,"/tmp/postgresqltest.socket",
+secondcon=SQLRConnection.new("sqlrelay",9003,"/tmp/postgresql.socket",
 					"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
 setSecondConnection(secondcon)

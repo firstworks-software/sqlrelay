@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 
 	// upsert
 	stdoutput.printf("UPSERT:\n");
-	con=new sqlrconnection("sqlrelay",9016,"/tmp/mysqlupserttest.socket",
+	con=new sqlrconnection("sqlrelay",9016,"/tmp/mysqlupsert.socket",
 						"testuser","testpassword",0,1);
 
 	// get the db version and bail for < 5, as the query to get the column

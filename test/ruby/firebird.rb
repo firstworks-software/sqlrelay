@@ -27,7 +27,7 @@ largebuffer = "C" * (20*1024)
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9009,"/tmp/firebirdtest.socket",
+con=SQLRConnection.new("sqlrelay",9009,"/tmp/firebird.socket",
 						"testuser","testpassword",0,1)
 cur=SQLRCursor.new(con)
 setConnection(con)
@@ -921,7 +921,7 @@ assertTrue(cur.sendQuery("delete from testtable"))
 # commit so the truncation is visible to the second connection
 # (the commit implicitly starts a new tx)
 assertTrue(con.commit())
-secondcon=SQLRConnection.new("sqlrelay",9009,"/tmp/firebirdtest.socket",
+secondcon=SQLRConnection.new("sqlrelay",9009,"/tmp/firebird.socket",
 					"testuser","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
 setSecondConnection(secondcon)

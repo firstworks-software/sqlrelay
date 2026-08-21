@@ -16,7 +16,7 @@
 main() ->
     sqlrelay:start(),
     waitForPort(50),
-    {ok, _} = sqlrelay:alloc("sqlrelay", 9009, "/tmp/firebirdtest.socket",
+    {ok, _} = sqlrelay:alloc("sqlrelay", 9009, "/tmp/firebird.socket",
                              "testuser", "testpassword", 0, 1),
 
     _Hostname = shortHostname(),

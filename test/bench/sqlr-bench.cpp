@@ -16,7 +16,7 @@
 #define ORACLE_SID "(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)))"
 
 // the sqlrelay instance that each database is tested against
-// (see test/sqlrelay.conf.d/*.conf.in - the socket name isn't the instance id)
+// (see test/sqlrelay.conf.d/*.conf.in - the socket is /tmp/<socket>.socket)
 struct dbinstance {
 	const char	*db;
 	const char	*socket;
@@ -24,19 +24,19 @@ struct dbinstance {
 };
 
 static const dbinstance	dbinstances[]={
-	{"oracle","oracletest",9001},
-	{"oracle8","oracletest",9001},
-	{"mysql","mysqltest",9002},
-	{"mysqlssl","mysqltest",9002},
-	{"postgresql","postgresqltest",9003},
-	{"postgresqlssl","postgresqltest",9003},
-	{"sqlite","sqlitetest",9004},
-	{"freetds","freetdstest",9005},
-	{"sap","saptest",9006},
-	{"sybase","saptest",9006},
-	{"db2","db2test",9008},
-	{"firebird","firebirdtest",9009},
-	{"informix","informixtest",9010},
+	{"oracle","oracle",9001},
+	{"oracle8","oracle",9001},
+	{"mysql","mysql",9002},
+	{"mysqlssl","mysql",9002},
+	{"postgresql","postgresql",9003},
+	{"postgresqlssl","postgresql",9003},
+	{"sqlite","sqlite",9004},
+	{"freetds","freetds",9005},
+	{"sap","sap",9006},
+	{"sybase","sap",9006},
+	{"db2","db2",9008},
+	{"firebird","firebird",9009},
+	{"informix","informix",9010},
 	{NULL,NULL,0}
 };
 
@@ -284,7 +284,7 @@ int main(int argc, const char **argv) {
 			if (!charstring::compare(db,"mysql")) {
 				if (!proxyconnectstring) {
 					proxyconnectstring=
-					"socket=/tmp/mysql.socket;"
+					"socket=/tmp/mysqlprotocol.socket;"
 					"db=testdb;"
 					"user=testuser;"
 					"password=testpassword;";

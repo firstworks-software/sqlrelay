@@ -61,7 +61,7 @@ namespace SQLRClientTest
 
 
             // instantiation
-            con = new SQLRConnection("sqlrelay", 9001, "/tmp/oracletest.socket",
+            con = new SQLRConnection("sqlrelay", 9001, "/tmp/oracle.socket",
                                     "testuser", "testpassword", 0, 1);
             cur = new SQLRCursor(con);
 
@@ -846,7 +846,7 @@ namespace SQLRClientTest
             assertTrue(con.setTransactionModel("implicit"));
             assertEquals(con.getTransactionModel(), "implicit");
             assertTrue(cur.sendQuery("create table testtable (col1 integer)"));
-            secondcon = new SQLRConnection("sqlrelay", 9001, "/tmp/oracletest.socket",
+            secondcon = new SQLRConnection("sqlrelay", 9001, "/tmp/oracle.socket",
                                     "testuser", "testpassword", 0, 1);
             secondcur = new SQLRCursor(secondcon);
             // session is in a transaction; insert is not visible until commit

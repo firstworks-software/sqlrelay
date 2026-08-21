@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("SEQUENCE NEXTVAL:\n");
 
-	con=new sqlrconnection("sqlrelay",9024,"/tmp/postgresqlsequencenextvaltest.socket",
+	con=new sqlrconnection("sqlrelay",9024,"/tmp/postgresqlsequencenextval.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
 

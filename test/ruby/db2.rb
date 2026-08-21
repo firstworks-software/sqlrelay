@@ -13,7 +13,7 @@ require './asserts'
 
 
 # instantiation
-con=SQLRConnection.new("sqlrelay",9008,"/tmp/db2test.socket",
+con=SQLRConnection.new("sqlrelay",9008,"/tmp/db2.socket",
 						"db2inst1","testpassword",0,1)
 cur=SQLRCursor.new(con)
 setConnection(con)
@@ -915,7 +915,7 @@ assertTrue(cur.sendQuery("create table testtable (col1 integer)"))
 # db2 DDL is transactional; commit so the table is visible to the
 # second connection (the commit implicitly starts a new tx)
 assertTrue(con.commit())
-secondcon=SQLRConnection.new("sqlrelay",9008,"/tmp/db2test.socket",
+secondcon=SQLRConnection.new("sqlrelay",9008,"/tmp/db2.socket",
 					"db2inst1","testpassword",0,1)
 secondcur=SQLRCursor.new(secondcon)
 setSecondConnection(secondcon)
