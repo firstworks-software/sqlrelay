@@ -2703,7 +2703,15 @@ class freetds_sap extends sqlrtest {
 		assertTrue(rs.next());
 		// #7971 - freetds returns the current catalog (the database)
 		assertEquals(rs.getString("TABLE_CAT"),con.getCatalog());
-		assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
+		if (issqlrelay) {
+			assertEquals(rs.getString("TABLE_SCHEM"),con.getSchema());
+		} else {
+			// jtds 1.3.1 predates jdbc 4.1, so con.getSchema() throws
+			// AbstractMethodError - ASE reports the object owner as the
+			// schema, and this login is aliased to dbo, so compare
+			// against "dbo" rather than the login name
+			assertEquals(rs.getString("TABLE_SCHEM"),"dbo");
+		}
 		assertEquals(rs.getString("COLUMN_NAME"),"testint");
 		assertEquals(rs.getString("TYPE_NAME"),"int");
 		assertTrue(rs.next());
