@@ -2126,11 +2126,6 @@ int main(int argc, char **argv) {
 
 
 	// temporary tables
-	// #9407 - a local #temp table doesn't
-	// survive to the next statement, because
-	// each statement runs as its own
-	// sp_prepexec batch
-	#if 0
 	printf("TEMPORARY TABLES: \n");
 	sqlrcur_sendQuery(cur,"drop table #temptable");
 	assertTrue(sqlrcur_sendQuery(cur,"create table #temptable ""(col1 int)"));
@@ -2142,7 +2137,6 @@ int main(int argc, char **argv) {
 	printf("\n");
 	assertFalse(sqlrcur_sendQuery(cur,"select count(*) ""from #temptable"));
 	printf("\n");
-	#endif
 
 
 	// encoded binary data

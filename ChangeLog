@@ -242,6 +242,16 @@
 		uppercase hex text at twice their length; the fetch bind asked
 		the driver for SQL_C_CHAR for those columns, and now binds them
 		as SQL_C_BINARY instead, so raw bytes come back
+	the odbc connection module now runs bind-free statements against ms
+		sql server with SQLExecDirect rather than prepare+execute, so a
+		local #temp table and session-scoped SET options such as SET
+		LOCK_TIMEOUT survive to the next statement instead of dying with
+		the sp_prepexec batch that created them; statements with bind
+		variables still use prepare+execute, and executedirect=no in the
+		connect string restores the old behavior everywhere
+	the odbc connection module now recognizes ms sql server local temp
+		tables and drops them at session end, so they no longer outlive
+		the client session on a pooled connection
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

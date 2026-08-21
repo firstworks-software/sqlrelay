@@ -23,6 +23,7 @@
 // get around a problem with CHAR/xmlChar in gnome-xml
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/charstring.h>
+#include <rudiments/regularexpression.h>
 #include <rudiments/ucs2character.h>
 #include <rudiments/ucs2charstring.h>
 #include <rudiments/utf8character.h>
@@ -233,6 +234,8 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		int16_t		getNullBindValue();
 		bool		executeQuery(const char *query,
 						uint32_t size);
+		void		checkForTempTable(const char *query,
+						uint32_t size);
 		bool		handleColumns(bool getcolumninfo,
 						bool bindcolumns);
 		bool		appendNullColumns(uint8_t count);
@@ -367,6 +370,12 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 
 		bool		columninfoisvalidafterprepare;
 
+		bool		execdirect;
+
+		regularexpression	createtemptable;
+		regularexpression	selectintotemptable;
+		bool			temptablepatterns;
+
 		odbcconnection	*odbcconn;
 
 		char	columnnamescratch[4096];
@@ -413,6 +422,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char * const	*getDatabaseFeatures();
 		const char	*getBindFormat();
 		const char	*getNextvalFormat();
+		const char	*tempTablePrefix();
 		const char	*getLastInsertIdQuery();
 		bool		getListsByApiCalls();
 		bool		getCatalogList(sqlrservercursor *cursor,
@@ -491,6 +501,8 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		const char	*lastinsertidquery;
 		bool		mars;
 		bool		getcolumntables;
+		bool		mssql;
+		bool		neverexecutedirect;
 		const char	*overrideschema;
 		bool		unicode;
 		const char	*ncharencoding;
@@ -728,6 +740,8 @@ odbcconnection::odbcconnection(sqlrservercontroller *cont) :
 	lastinsertidquery=NULL;
 	mars=false;
 	getcolumntables=false;
+	mssql=false;
+	neverexecutedirect=false;
 	overrideschema=NULL;
 	unicode=true;
 	ncharencoding=NULL;
@@ -785,6 +799,13 @@ void odbcconnection::handleConnectString() {
 	// (see the bottom of logIn())
 	binarylobbind=charstring::isYes(
 			cont->getConnectStringValue("binarylobbind"));
+
+	// sqlrserverconnection::handleConnectString() only ever asks
+	// isYes() about executedirect, so "no" has always been the same as
+	// leaving it out.  That leaves "no" free to mean "never", opting out
+	// of the auto-enable in odbccursor::prepareQuery().
+	neverexecutedirect=charstring::isNo(
+			cont->getConnectStringValue("executedirect"));
 
 	// unixodbc doesn't support array fetches
 	cont->setFetchAtOnce(1);
@@ -1009,6 +1030,7 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 	columninfonotvalidyeterror=NULL;
 	sqltypedatetosqlcbinary=true;
 	fetchlobsasstrings=false;
+	mssql=false;
 
 	// override some default params based on the db-type
 	if (!charstring::compare(dbmsnamebuffer,"Teradata")) {
@@ -1106,6 +1128,9 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 		// flattens into a plain null, so ask the driver what the
 		// parameter is aimed at
 		describenullbinds=true;
+
+		// see odbccursor::prepareQuery()
+		mssql=true;
 	} else if (!charstring::compare(dbmsnamebuffer,"SQL Server") ||
 				!charstring::compare(dbmsnamebuffer,"ASE")) {
 		// SAP ASE's own driver reports SQL_DBMS_NAME as exactly
@@ -2812,6 +2837,12 @@ const char *odbcconnection::getNextvalFormat() {
 	return "";
 }
 
+const char *odbcconnection::tempTablePrefix() {
+	// checkForTempTable() records the name without the #, so the drop
+	// that sqlrservercontroller generates at session end needs it back
+	return (mssql)?"#":sqlrserverconnection::tempTablePrefix();
+}
+
 const char *odbcconnection::getLastInsertIdQuery() {
 	return lastinsertidquery;
 }
@@ -3656,6 +3687,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 						sqlrservercursor(conn,id) {
 	odbcconn=(odbcconnection *)conn;
 	stmt=NULL;
+	execdirect=getExecuteDirect();
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	indatebind=new SQL_DATE_STRUCT[maxbindcount];
 	intimebind=new SQL_TIME_STRUCT[maxbindcount];
@@ -3702,6 +3734,46 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 	#ifdef HAVE_SQLCONNECTW
 	ucsinbindstrings.setManageArrayValues(true);
 	#endif
+
+	// Now that execute-direct really creates # temp tables, they'd
+	// outlive the client session on the pooled connection unless
+	// they get dropped at the end of it.  The base class pattern
+	// can't spot them - see checkForTempTable().  Compile the
+	// patterns once here, rather than per-query.
+	// (logIn() runs before initCursors(), so mssql is already valid.)
+	// Inline flags, lookahead and lazy quantifiers are pcre-only, and
+	// rudiments falls back to a posix engine where those fail to
+	// compile - which would silently disable this entirely.  So the
+	// options go through the portable api, the ## exclusion is done in
+	// checkForTempTable(), and the into-clause relies on leftmost
+	// matching rather than a lazy quantifier.
+	temptablepatterns=false;
+	if (odbcconn->mssql) {
+		// both of these run, rather than short-circuiting, so a
+		// pattern that fails to compile is reported even if the
+		// other one failed too
+		bool	createok=createtemptable.setPattern(
+				"^create[ \t\r\n]+table[ \t\r\n]+#",
+				REGULAR_EXPRESSION_CASE_INSENSITIVE);
+		bool	selectok=selectintotemptable.setPattern(
+				"[ \t\r\n)*]into[ \t\r\n]+#",
+				REGULAR_EXPRESSION_CASE_INSENSITIVE);
+		temptablepatterns=(createok && selectok);
+		if (temptablepatterns) {
+			createtemptable.study();
+			selectintotemptable.study();
+		} else {
+			// the fallback below can't spot a # table either, so
+			// the tables would just quietly leak again - nothing
+			// downstream can detect that, so make noise here
+			stdoutput.printf("odbc: %s temp table pattern failed "
+					"to compile - MS SQL Server temp tables "
+					"will not be dropped at the end of the "
+					"session\n",
+					(createok)?"select-into":"create-table");
+		}
+	}
+
 	allocateResultSetBuffers(conn->cont->getMaxColumnCount());
 	initializeColCounts();
 	initializeRowCounts();
@@ -3774,6 +3846,22 @@ void odbccursor::deallocateResultSetBuffers() {
 
 bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 
+	// MS SQL Server runs a prepared statement in a nested batch
+	// (sp_prepexec).  A # temp table or session SET option created in
+	// there dies with that batch, so it's gone by the next statement.
+	// Executing directly keeps the statement in the outer batch, where
+	// both survive.  Binds still need a prepared statement though, and
+	// the getcolumntables trick below is silently ignored under
+	// execute-direct, so only bind-free queries qualify.
+	//
+	// This is recomputed on every prepare, and deliberately isn't the
+	// public per-cursor flag, which nothing resets between queries.
+	execdirect=getExecuteDirect() ||
+			(odbcconn->mssql &&
+			!odbcconn->neverexecutedirect &&
+			!odbcconn->getcolumntables &&
+			!conn->cont->hasBindVariables(query,size));
+
 	bindformaterror=false;
 
 	// initialize column count
@@ -3784,7 +3872,7 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
-	if (odbcconn->getcolumntables && !getExecuteDirect()) {
+	if (odbcconn->getcolumntables && !execdirect) {
 
 		// MS SQL Server only returns column table names when using a
 		// server cursor or when the query contains a FOR BROWSE clause.
@@ -3815,7 +3903,7 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 
 		ucsinbindstrings.clear();
 
-		if (getExecuteDirect()) {
+		if (execdirect) {
 			return true;
 		}
 
@@ -3834,7 +3922,7 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 		delete[] queryucs;
 	} else {
 	#endif
-		if (getExecuteDirect()) {
+		if (execdirect) {
 			return true;
 		}
 		erg=SQLPrepare(stmt,(SQLCHAR *)query,size);
@@ -3923,7 +4011,7 @@ bool odbccursor::nullBindIsBinary(uint16_t pos) {
 
 	// SQLDescribeParam needs a prepared statement, and execute-direct
 	// never prepares one
-	if (getExecuteDirect()) {
+	if (execdirect) {
 		return false;
 	}
 
@@ -4863,7 +4951,7 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 	}
 
 	// execute the query
-	if (getExecuteDirect()) {
+	if (execdirect) {
 		#ifdef HAVE_SQLCONNECTW
 		if (odbcconn->unicode) {
 			char	*err=NULL;
@@ -4939,7 +5027,7 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 	// if we're not exec-direct'ing, and if column info is valid after
 	// prepare, then we must have already done the first half of this in
 	// prepareQuery()
-	if (!handleColumns(getExecuteDirect() ||
+	if (!handleColumns(execdirect ||
 			!columninfoisvalidafterprepare,true)) {
 		return false;
 	}
@@ -5089,6 +5177,67 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 	}
 
 	return true;
+}
+
+void odbccursor::checkForTempTable(const char *query, uint32_t size) {
+
+	// only MS SQL Server has #-prefixed session-local temp tables,
+	// the other db's this module talks to declare theirs in a form
+	// the base class already recognizes, and if the patterns didn't
+	// compile then fall back rather than misbehave
+	if (!odbcconn->mssql || !temptablepatterns) {
+		sqlrservercursor::checkForTempTable(query,size);
+		return;
+	}
+
+	const char	*start=conn->cont->skipWhitespaceAndComments(query);
+	if (!start || start<query || start>=query+size) {
+		return;
+	}
+	size_t	length=(size_t)(query+size-start);
+
+	const char	*ptr=NULL;
+	if (createtemptable.match(start,length)) {
+		ptr=createtemptable.getSubstringEnd(0);
+	} else if (length>6 &&
+			!charstring::compareIgnoringCase(start,"select",6) &&
+			(character::isWhitespace(start[6]) ||
+				start[6]=='(' || start[6]=='*') &&
+			selectintotemptable.match(start,length)) {
+		// "select ... into #table" creates a temp table too, but
+		// "insert into #table" doesn't, hence the test for a
+		// leading select.  The pattern matches leftmost, so the
+		// first into-clause wins.
+		ptr=selectintotemptable.getSubstringEnd(0);
+	}
+	if (!ptr) {
+		return;
+	}
+
+	const char	*endptr=query+size;
+
+	// a ## table is deliberately visible to other sessions, so it has
+	// to outlive this one
+	if (ptr<endptr && *ptr=='#') {
+		return;
+	}
+
+	// The name runs to the next whitespace, like the base class,
+	// but T-SQL also allows the column list, another table or the
+	// next statement to butt right up against it, as in
+	// "create table #temptable(col1 int)".
+	stringbuffer	tablename;
+	while (*ptr && ptr<endptr && !character::isWhitespace(*ptr) &&
+			*ptr!='(' && *ptr!=',' && *ptr!=';') {
+		tablename.append(*ptr);
+		ptr++;
+	}
+	if (!tablename.getStringLength()) {
+		return;
+	}
+
+	// tempTablePrefix() puts the # that the pattern ate back on
+	conn->cont->addTempTableForDrop(tablename.getString());
 }
 
 void odbccursor::initializeColCounts() {
@@ -6434,7 +6583,12 @@ void odbccursor::closeResultSet() {
 }
 
 bool odbccursor::columnInfoIsValidAfterPrepare() {
-	return columninfoisvalidafterprepare;
+	// sqlrservercontroller::prepareQuery() builds and latches the result
+	// set header here if this returns true, but under execute-direct
+	// nothing has been prepared yet and the header would latch empty.
+	// The framework's own guard only sees the public per-cursor flag,
+	// which we don't set, so it has to be caught here.
+	return !execdirect && columninfoisvalidafterprepare;
 }
 
 #if (ODBCVER >= 0x0300) && defined(SQLCOLATTRIBUTE_SQLLEN)

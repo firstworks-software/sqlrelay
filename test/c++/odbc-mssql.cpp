@@ -2052,10 +2052,6 @@ int main(int argc, char **argv) {
 
 
 	// temporary tables
-	// #9407 - a local #temp table doesn't survive to the next
-	// statement, because each statement runs as its own sp_prepexec
-	// batch
-	#if 0
 	stdoutput.printf("TEMPORARY TABLES: \n");
 	cur->sendQuery("drop table #temptable");
 	assertTrue(cur->sendQuery("create table #temptable (col1 int)"));
@@ -2066,7 +2062,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	assertFalse(cur->sendQuery("select count(*) from #temptable"));
 	stdoutput.printf("\n");
-	#endif
 
 
 	// encoded binary data
