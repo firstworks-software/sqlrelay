@@ -200,6 +200,12 @@
 		it doesn't support (SQLR_ERROR_UNSUPPORTED_PROTOCOL), including
 		a client that never declares a version at all, instead of
 		silently accepting any version
+	fixed the freetds connection module running asehostname(), a sap ase
+		builtin, against ms sql server; it now probes the db version
+		during login instead of waiting for the first cursor open, so
+		it knows which backend it's talking to in time to pick the
+		right host name query, and getDbIpAddress() resolves correctly
+		on mssql as a result
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

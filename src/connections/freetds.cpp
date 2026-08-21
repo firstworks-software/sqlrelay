@@ -255,6 +255,7 @@ class SQLRSERVER_DLLSPEC freetdsconnection : public sqlrserverconnection {
 		void	handleConnectString();
 		bool	logIn(const char **error, const char **warning);
 		const char	*logInError(const char *error, uint16_t stage);
+		void	probeDbVersion();
 		CS_INT	ctlibVersion(const char *version);
 		const char	*ctlibVersionString(CS_INT version);
 		sqlrservercursor	*newCursor(uint16_t id);
@@ -1323,6 +1324,14 @@ bool freetdsconnection::logIn(const char **error, const char **warning) {
 	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 	ct_cmd_drop(cmd);
 
+	// get the db version and, from it, whether this is sap ase or ms
+	// sql server - needed by getDbHostNameQuery(), which runs (via
+	// getDbHostName()) before any cursor is opened, so this can't wait
+	// for the version probe that freetdscursor::open() runs
+	if (retval && !dbversion) {
+		probeDbVersion();
+	}
+
 	return retval;
 }
 
@@ -1356,6 +1365,105 @@ const char *freetdsconnection::logInError(const char *error, uint16_t stage) {
 	return loginerror.getString();
 }
 
+// query the server for its version string, and use it to tell sap ase
+// apart from ms sql server (sybasedb).  runs directly on dbconn using a
+// throwaway command, since it needs to run during logIn(), before any
+// cursor exists.
+void freetdsconnection::probeDbVersion() {
+
+	CS_COMMAND	*cmd;
+	if (ct_cmd_alloc(dbconn,&cmd)==CS_SUCCEED) {
+
+		// try the various queries that might return the version,
+		// and which column of the result holds it
+		const char	*query[]={
+			"select @@version",
+			"sp_version installmaster",
+			NULL
+		};
+		CS_INT		column[]={
+			0,1,0
+		};
+
+		for (uint32_t i=0; query[i] && !dbversion; i++) {
+
+			const char	*q=query[i];
+			CS_INT		len=charstring::getLength(q);
+
+			if (ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)q,len,
+							CS_UNUSED)!=CS_SUCCEED) {
+				continue;
+			}
+			if (ct_send(cmd)!=CS_SUCCEED) {
+				continue;
+			}
+
+			// drain every result set the command returns -
+			// sp_version installmaster returns a status result
+			// ahead of its row result, and freetds requires
+			// every result set to be fetched or cancelled
+			// before the next ct_results() call (see the note
+			// in freetdscursor::fetchRow(), and the same
+			// cancel-then-ct_results loop in discardResults())
+			CS_INT	resultstype;
+			while (ct_results(cmd,&resultstype)==CS_SUCCEED) {
+
+				if (resultstype==CS_ROW_RESULT &&
+								!dbversion) {
+
+					CS_DATAFMT	fmt;
+					(CS_VOID)bytestring::zero(&fmt,
+								sizeof(fmt));
+					fmt.datatype=CS_CHAR_TYPE;
+					fmt.format=CS_FMT_NULLTERM;
+					fmt.maxlength=2048;
+					fmt.scale=CS_UNUSED;
+					fmt.precision=CS_UNUSED;
+					fmt.status=CS_UNUSED;
+					fmt.count=1;
+					fmt.usertype=CS_UNUSED;
+					fmt.locale=NULL;
+
+					char	versionbuffer[2048];
+					versionbuffer[0]='\0';
+					CS_INT		valuelen=0;
+					CS_SMALLINT	nullind=0;
+					CS_INT		rowsread=0;
+
+					if (ct_bind(cmd,column[i]+1,&fmt,
+						(CS_VOID *)versionbuffer,
+						&valuelen,&nullind)==
+								CS_SUCCEED &&
+						ct_fetch(cmd,CS_UNUSED,
+							CS_UNUSED,CS_UNUSED,
+							&rowsread)==
+								CS_SUCCEED &&
+						rowsread && nullind!=-1) {
+						dbversion=charstring::
+							duplicate(
+								versionbuffer);
+					}
+				}
+
+				// done with this result set (whatever it
+				// was) - move on to the next one
+				ct_cancel(NULL,cmd,CS_CANCEL_CURRENT);
+			}
+		}
+
+		ct_cmd_drop(cmd);
+	}
+
+	// fall back to unknown - also covers ct_cmd_alloc() failing above,
+	// so dbversion (and sybasedb, just below) always end up set
+	if (!dbversion) {
+		dbversion=charstring::duplicate("unknown");
+	}
+
+	// it's sybase if it's not microsoft
+	sybasedb=!charstring::contains(dbversion,"Microsoft");
+}
+
 sqlrservercursor *freetdsconnection::newCursor(uint16_t id) {
 	return (sqlrservercursor *)new freetdscursor(
 					(sqlrserverconnection *)this,id);
@@ -1383,7 +1491,16 @@ const char *freetdsconnection::getDbVersion() {
 }
 
 const char *freetdsconnection::getDbHostNameQuery() {
-	return "select asehostname()";
+	if (sybasedb) {
+		return "select asehostname()";
+	} else {
+		// serverproperty('MachineName') rather than @@servername -
+		// @@servername includes the instance name on a named
+		// instance (eg. "MYHOST\SQLEXPRESS"), which getDbIpAddress()
+		// can't resolve via dns, while MachineName is the bare host
+		// name, matching what asehostname() returns for sap
+		return "select serverproperty('MachineName')";
+	}
 }
 
 const char *freetdsconnection::getCatalogListQuery(const char *catalog) {
@@ -4022,43 +4139,10 @@ bool freetdscursor::open() {
 		delete[] query;
 	}
 
+	// usually already done by freetdsconnection::logIn() - this is
+	// just a safety net in case that probe didn't run or didn't succeed
 	if (!freetdsconn->dbversion) {
-
-		// try the various queries that might return the version
-		const char	*query[]={
-			"select @@version",
-			"sp_version installmaster",
-			NULL
-		};
-		CS_INT		index[]={
-			0,1,0
-		};
-
-		for (uint32_t i=0; query[i] && !freetdsconn->dbversion; i++) {
-
-			const char	*q=query[i];
-			int32_t		len=charstring::getLength(q);
-			bool		error=false;
-
-			if (prepareQuery(q,len) &&
-					executeQuery(q,len) &&
-					fetchRow(&error)) {
-				freetdsconn->dbversion=
-					charstring::duplicate(data[index[i]]);
-			}
-
-			closeResultSet();
-		}
-
-		// fall back to unknown
-		if (!freetdsconn->dbversion) {
-			freetdsconn->dbversion=
-				charstring::duplicate("unknown");
-		}
-
-		// set sybasedb too, it's sybase if it's not microsoft
-		freetdsconn->sybasedb=!charstring::contains(
-					freetdsconn->dbversion,"Microsoft");
+		freetdsconn->probeDbVersion();
 	}
 	return retval;
 }
