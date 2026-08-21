@@ -407,6 +407,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		supportsAutoCommit();
 		bool		getDefaultAutoCommit();
 		const char	*beginTransactionQuery();
+		bool		begin();
 		bool		commit();
 		bool		rollback();
 		void		getError(char *errorbuffer,
@@ -514,6 +515,8 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		char		**databasefeatures;
 
 		const char	*begintxquery;
+		bool		endtxwithquery;
+		bool		autocommit;
 		bool		usecharforlobbind;
 		bool		describenullbinds;
 		bool		hasdescribeparam;
@@ -742,6 +745,9 @@ odbcconnection::odbcconnection(sqlrservercontroller *cont) :
 	getcolumntables=false;
 	mssql=false;
 	neverexecutedirect=false;
+	begintxquery=NULL;
+	endtxwithquery=true;
+	autocommit=true;
 	overrideschema=NULL;
 	unicode=true;
 	ncharencoding=NULL;
@@ -1007,6 +1013,9 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 
 	// set some default params
 	begintxquery=sqlrserverconnection::beginTransactionQuery();
+	endtxwithquery=true;
+	// the odbc default, and nothing but setAutoCommitOn/Off changes it
+	autocommit=true;
 	usecharforlobbind=true;
 	describenullbinds=false;
 
@@ -1035,6 +1044,10 @@ bool odbcconnection::logIn(const char **error, const char **warning) {
 	// override some default params based on the db-type
 	if (!charstring::compare(dbmsnamebuffer,"Teradata")) {
 		begintxquery="BT";
+		// Teradata ends a BT with ET rather than with commit, and
+		// there's nothing here to test that against, so leave it
+		// ending transactions the way it always has.
+		endtxwithquery=false;
 		usecharforlobbind=false;
 		// See below...  Teradata only supports 6 digits though.
 		fractionscale=6;
@@ -3455,7 +3468,13 @@ bool odbcconnection::setAutoCommitOn() {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_ON,
 				sizeof(SQLINTEGER));
-	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		return false;
+	}
+	// commit() and rollback() need to know which of the two ways of
+	// ending a transaction applies
+	autocommit=true;
+	return true;
 }
 
 bool odbcconnection::setAutoCommitOff() {
@@ -3464,7 +3483,13 @@ bool odbcconnection::setAutoCommitOff() {
 	erg=SQLSetConnectAttr(dbc,SQL_ATTR_AUTOCOMMIT,
 				(SQLPOINTER)SQL_AUTOCOMMIT_OFF,
 				sizeof(SQLINTEGER));
-	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		return false;
+	}
+	// the driver opens a transaction of its own right here, and opens
+	// another after each SQLEndTran, until autocommit is turned back on
+	autocommit=false;
+	return true;
 }
 
 bool odbcconnection::supportsAutoCommit() {
@@ -3479,16 +3504,49 @@ const char *odbcconnection::beginTransactionQuery() {
 	return begintxquery;
 }
 
+bool odbcconnection::begin() {
+
+	// With autocommit off, the driver already has a transaction open.
+	// Running the begin query would nest another one inside of it, and
+	// then neither SQLEndTran nor a commit query would commit anything -
+	// ms sql server just decrements the transaction count.  So there's
+	// nothing to do here but agree that a transaction is open.
+	if (!autocommit) {
+		cont->clearError();
+		cont->setNeedsCommitOrRollback(true);
+		return true;
+	}
+
+	return sqlrserverconnection::begin();
+}
+
 bool odbcconnection::commit() {
 	// FIXME: I'm not sure this is necessary for non-sqlserver/sap/sybase
 	cont->closeAllResultSets();
-	return (SQLEndTran(SQL_HANDLE_ENV,env,SQL_COMMIT)==SQL_SUCCESS);
+
+	// SQLEndTran only ends a transaction that the driver opened itself
+	// when autocommit was turned off.  While autocommit is on it returns
+	// success without doing anything at all, so a transaction that the
+	// begin query opened has to be ended by a commit query.
+	if (autocommit && endtxwithquery) {
+		return sqlrserverconnection::commit();
+	}
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_COMMIT);
+	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
 bool odbcconnection::rollback() {
 	// FIXME: I'm not sure this is necessary for non-sqlserver/sap/sybase
 	cont->closeAllResultSets();
-	return (SQLEndTran(SQL_HANDLE_ENV,env,SQL_ROLLBACK)==SQL_SUCCESS);
+
+	// see commit()
+	if (autocommit && endtxwithquery) {
+		return sqlrserverconnection::rollback();
+	}
+
+	erg=SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
+	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
 void odbcconnection::getError(char *errorbuffer,

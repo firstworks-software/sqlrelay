@@ -3027,10 +3027,14 @@ bool sqlrservercontroller::endTransaction(bool commit) {
 		}
 	} else if (supportsExplicitTransactions() ||
 				fakingExplicitTransactions()) {
-		if (fakingExplicitTransactions()) {
-			if (pvt->_conn->supportsAutoCommit()) {
-				pvt->_conn->setAutoCommitOn();
-			}
+		// In this model the transaction is over and autocommit is on
+		// again.  If the db has an autocommit of its own then it has
+		// to be told, whether we started the transaction with a begin
+		// or with autocommit-off, or it stays in manual-commit mode
+		// while we think it isn't, and every statement after this one
+		// runs in a transaction that nothing ever ends.
+		if (pvt->_conn->supportsAutoCommit()) {
+			pvt->_conn->setAutoCommitOn();
 		}
 		pvt->_autocommit=true;
 	}

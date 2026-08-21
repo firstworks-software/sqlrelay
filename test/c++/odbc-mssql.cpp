@@ -145,13 +145,7 @@ int main(int argc, char **argv) {
 
 	// insert
 	stdoutput.printf("INSERT: \n");
-	// the insert isn't wrapped in a transaction.  #9404 - con->begin()
-	// fails against mssql through odbc, and leaves the pooled session
-	// holding an open transaction that nothing rolls back, which hangs
-	// the next run
-	#if 0
 	assertTrue(con->begin());
-	#endif
 	assertTrue(cur->sendQuery(
 		"insert into "
 		"	testtable "
@@ -1213,12 +1207,9 @@ int main(int argc, char **argv) {
 	delete secondcur;
 	secondcur=NULL;
 	//cur->setResultSetBufferSize(0);
-	// the freetds test closes the transaction the INSERT section opened
-	// here, so the drop isn't rejected as DDL inside a multi-statement
-	// transaction.  #9404 - nothing opened one, so there is none to close
-	#if 0
+	// close the open tx from the INSERT section so the drop isn't
+	// rejected as DDL inside a multi-statement transaction
 	assertTrue(con->commit());
-	#endif
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 
@@ -1299,12 +1290,6 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// transaction behavior - explicit, explicit-deferred, explicit-error
-	// #9404 - con->begin() fails against mssql through odbc, and leaves
-	// the pooled session holding an open transaction that nothing rolls
-	// back, which hangs the next run.  all three of these models are
-	// driven by begin(), so all three are parked
-	#if 0
 	// transaction behavior - explicit
 	stdoutput.printf("TRANSACTION BEHAVIOR - explicit: \n");
 	assertTrue(con->setTransactionModel("explicit"));
@@ -1504,7 +1489,6 @@ int main(int argc, char **argv) {
 	secondcon=NULL;
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
-	#endif
 
 
 	// transaction behavior - none

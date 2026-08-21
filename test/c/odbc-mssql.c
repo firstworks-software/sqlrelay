@@ -184,13 +184,7 @@ int main(int argc, char **argv) {
 
 	// insert
 	printf("INSERT: \n");
-	// the insert isn't wrapped in a transaction.  #9404 -
-	// sqlrcon_begin() fails against mssql through odbc, and
-	// leaves the pooled session holding an open transaction
-	// that nothing rolls back, which hangs the next run
-	#if 0
 	assertTrue(sqlrcon_begin(con));
-	#endif
 	assertTrue(sqlrcur_sendQuery(cur,
 		"insert into "
 		"	testtable "
@@ -1303,15 +1297,11 @@ int main(int argc, char **argv) {
 	}
 	sqlrcur_free(secondcur);
 	//sqlrcur_setResultSetBufferSize(cur,0);
-	// the freetds test closes the
-	// transaction the INSERT section opened
-	// here, so the drop isn't rejected as
+	// close the open tx from the INSERT
+	// section so the drop isn't rejected as
 	// DDL inside a multi-statement
-	// transaction.  #9404 - nothing opened
-	// one, so there is none to close
-	#if 0
+	// transaction
 	assertTrue(sqlrcon_commit(con));
-	#endif
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
 
@@ -1392,16 +1382,6 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
-	// transaction behavior - explicit,
-	// explicit-deferred, explicit-error
-	// #9404 - sqlrcon_begin() fails against
-	// mssql through odbc, and leaves the
-	// pooled session holding an open
-	// transaction that nothing rolls back,
-	// which hangs the next run.  all three
-	// of these models are driven by begin(),
-	// so all three are parked
-	#if 0
 	// transaction behavior - explicit
 	printf("TRANSACTION BEHAVIOR - explicit: \n");
 	assertTrue(sqlrcon_setTransactionModel(con,"explicit"));
@@ -1580,7 +1560,6 @@ int main(int argc, char **argv) {
 	sqlrcur_closeResultSet(secondcur);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
 	printf("\n");
-	#endif
 
 
 	// transaction behavior - none

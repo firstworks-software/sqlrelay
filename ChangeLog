@@ -252,6 +252,28 @@
 	the odbc connection module now recognizes ms sql server local temp
 		tables and drops them at session end, so they no longer outlive
 		the client session on a pooled connection
+	fixed the odbc connection module leaving a transaction open on the
+		pooled connection; a transaction that a begin query started was
+		ended with SQLEndTran, which returns success but does nothing at
+		all while the driver is in autocommit mode, so commit and
+		rollback both reported success while the transaction stayed
+		open and kept its locks; it now ends such a transaction with a
+		commit or rollback query, and only uses SQLEndTran for a
+		transaction the driver itself started when autocommit was
+		turned off (teradata, which ends a BT with ET rather than with
+		commit, is unchanged)
+	fixed the odbc connection module nesting a transaction inside the
+		one the driver opens when autocommit is off; a begin is now a
+		no-op there, since neither SQLEndTran nor a commit query
+		commits anything at an inner nesting level on ms sql server
+	fixed the server leaving a db in manual-commit mode after ending a
+		transaction in the explicit and explicit-error transaction
+		models; it turned its own autocommit flag back on without
+		telling a db that has an autocommit of its own, so every
+		statement after that ran in a transaction that nothing ever
+		ended, and the connection went back into the pool holding its
+		locks; affects the odbc and router connection modules, and the
+		mysql module when a client selects one of those two models
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
