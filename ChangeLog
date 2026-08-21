@@ -260,8 +260,9 @@
 		open and kept its locks; it now ends such a transaction with a
 		commit or rollback query, and only uses SQLEndTran for a
 		transaction the driver itself started when autocommit was
-		turned off (teradata, which ends a BT with ET rather than with
-		commit, is unchanged)
+		turned off; teradata is left ending its transactions with
+		SQLEndTran, since it ends a BT with ET rather than with a
+		commit, but the rest of the change applies to it too
 	fixed the odbc connection module nesting a transaction inside the
 		one the driver opens when autocommit is off; a begin is now a
 		no-op there, since neither SQLEndTran nor a commit query
