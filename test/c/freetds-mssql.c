@@ -1557,11 +1557,19 @@ int main(int argc, char **argv) {
 	sqlrcur_inputBindBlob(cur,"4",NULL,0);
 	assertTrue(sqlrcur_executeQuery(cur));
 	assertTrue(sqlrcur_sendQuery(cur,"select * from testtable"));
-	// mssql stores an empty string as a true empty string, zero
-	// characters long, in text and image columns alike
+	// neither field is really empty - the image column returns the
+	// single 0x00 byte the module encodes for empty blob data, and
+	// the text column returns its whole buffer of nulls (#9389), sized
+	// by the instance's maxfieldsize, which defaults to 32768 - but
+	// both compare equal to "" here because this api compares
+	// null-terminated strings.  the lengths are asserted too, so this
+	// test fails alongside the others when #9389 is fixed rather than
+	// passing on with a comment describing behavior that is gone
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"");
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,0),32768);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,1),NULL);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,2),"");
+	assertEqInt(sqlrcur_getFieldLengthByIndex(cur,0,2),1);
 	assertEqStr(sqlrcur_getFieldByIndex(cur,0,3),NULL);
 	sqlrcur_getNullsAsEmptyStrings(cur);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));

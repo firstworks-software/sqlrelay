@@ -1502,11 +1502,19 @@ int main(int argc, char **argv) {
 	cur->inputBindBlob("4",NULL,0);
 	assertTrue(cur->executeQuery());
 	assertTrue(cur->sendQuery("select * from testtable"));
-	// mssql stores an empty string as a true empty string, zero
-	// characters long, in text and image columns alike
+	// neither field is really empty - the image column returns the
+	// single 0x00 byte the module encodes for empty blob data, and
+	// the text column returns its whole buffer of nulls (#9389), sized
+	// by the instance's maxfieldsize, which defaults to 32768 - but
+	// both compare equal to "" here because this api compares
+	// null-terminated strings.  the lengths are asserted too, so this
+	// test fails alongside the others when #9389 is fixed rather than
+	// passing on with a comment describing behavior that is gone
 	assertEquals(cur->getField(0,(uint32_t)0),"");
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),(uint32_t)32768);
 	assertEquals(cur->getField(0,1),NULL);
 	assertEquals(cur->getField(0,2),"");
+	assertEquals(cur->getFieldLength(0,2),(uint32_t)1);
 	assertEquals(cur->getField(0,3),NULL);
 	cur->getNullsAsEmptyStrings();
 	assertTrue(cur->sendQuery("drop table testtable"));
