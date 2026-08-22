@@ -471,6 +471,10 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 						const char *catalog,
 						const char *schema,
 						const char *procedure);
+		const char	*getProcedureParameterListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *procedure);
 		const char	*selectCatalogQuery();
 		char		*getCurrentCatalog();
 		char		*getCurrentSchema();
@@ -515,6 +519,7 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		bool		binarylobbind;
 
 		stringbuffer	columnlistquery;
+		stringbuffer	procedureparameterlistquery;
 		stringbuffer	errormessage;
 
 		char		dbversion[512];
@@ -3627,6 +3632,21 @@ bool odbcconnection::getProcedureParameterList(
 					const char *schema,
 					const char *procedure) {
 
+	// The Microsoft SQL Server ODBC driver's SQLProcedureColumns()
+	// appends nine proprietary SS_* columns after the standard nineteen -
+	// SS_TYPE_CATALOG_NAME, SS_TYPE_SCHEMA_NAME, SS_UDT_CATALOG_NAME,
+	// SS_UDT_SCHEMA_NAME, SS_UDT_ASSEMBLY_TYPE_NAME,
+	// SS_XML_SCHEMACOLLECTION_CATALOG_NAME,
+	// SS_XML_SCHEMACOLLECTION_SCHEMA_NAME, SS_XML_SCHEMACOLLECTION_NAME
+	// and SS_DATA_TYPE.  The procedure parameter list is read by
+	// position, and position 19 is where the jdbc format's
+	// specific_name comes from, so it reads SS_TYPE_CATALOG_NAME rather
+	// than the appended null column.  Query the system tables instead
+	if (mssql) {
+		return sqlrserverconnection::getProcedureParameterList(
+					cursor,catalog,schema,procedure);
+	}
+
 	odbccursor	*odbccur=(odbccursor *)cursor;
 
 	// allocate the statement handle
@@ -3662,6 +3682,96 @@ bool odbcconnection::getProcedureParameterList(
 	return (retval)?
 		(odbccur->handleColumns(true,true) &&
 		odbccur->appendNullColumn()):false;
+}
+
+const char *odbcconnection::getProcedureParameterListQuery(
+						const char *catalog,
+						const char *schema,
+						const char *procedure) {
+
+	if (!mssql) {
+		return sqlrserverconnection::getProcedureParameterListQuery(
+						catalog,schema,procedure);
+	}
+
+	procedureparameterlistquery.clear();
+
+	// select clause
+	procedureparameterlistquery.append(
+		"select "
+		"	p.specific_catalog as procedure_cat, "
+		"	p.specific_schema as procedure_schem, "
+		"	p.specific_name as procedure_name, "
+		"	p.parameter_name as column_name, "
+		"	case p.parameter_mode "
+		"		when 'IN' then 1 "
+		"		when 'INOUT' then 2 "
+		"		when 'OUT' then 4 "
+		"		else 5 "
+		"	end as column_type, "
+		"	'' as data_type, "
+		"	p.data_type as type_name, "
+		"	p.character_maximum_length as column_size, "
+		"	null as buffer_length, "
+		"	p.numeric_scale as decimal_digits, "
+		"	p.numeric_precision_radix as num_prec_radix, "
+		"	1 as nullable, "
+		"	'' as remarks, "
+		"	null as column_def, "
+		"	null as sql_data_type, "
+		"	null as sql_datetime_sub, "
+		"	p.character_octet_length as char_octet_length, "
+		"	p.ordinal_position, "
+		"	'YES' as is_nullable, "
+		"	null ");
+
+	// from clause
+	procedureparameterlistquery.append(
+		"from "
+		"	information_schema.parameters p ");
+
+	// where clause
+	if (!charstring::isNullOrEmpty(catalog) ||
+		!charstring::isNullOrEmpty(schema) ||
+		!charstring::isNullOrEmpty(procedure)) {
+
+		bool	first=true;
+		procedureparameterlistquery.append("where ");
+		if (!charstring::isNullOrEmpty(catalog)) {
+			procedureparameterlistquery.append(
+				"p.specific_catalog like '");
+			procedureparameterlistquery.append(catalog);
+			procedureparameterlistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(schema)) {
+			if (!first) {
+				procedureparameterlistquery.append("and ");
+			}
+			procedureparameterlistquery.append(
+				"p.specific_schema like '");
+			procedureparameterlistquery.append(schema);
+			procedureparameterlistquery.append("' ");
+			first=false;
+		}
+		if (!charstring::isNullOrEmpty(procedure)) {
+			if (!first) {
+				procedureparameterlistquery.append("and ");
+			}
+			procedureparameterlistquery.append(
+				"p.specific_name like '");
+			procedureparameterlistquery.append(procedure);
+			procedureparameterlistquery.append("' ");
+		}
+	}
+
+	// order by clause
+	procedureparameterlistquery.append(
+		"order by "
+		"	p.specific_name, "
+		"	p.ordinal_position");
+
+	return procedureparameterlistquery.getString();
 }
 
 const char *odbcconnection::selectCatalogQuery() {

@@ -2578,33 +2578,23 @@ int main(int argc, char **argv) {
 	assertEqStr(sqlrcur_getColumnName(cur,2),"data_type");
 	assertEqStr(sqlrcur_getColumnName(cur,3),"character_maximum_length");
 	assertEqStr(sqlrcur_getColumnName(cur,4),"ordinal_position");
-	// odbc reports the procedure's return
-	// value as a parameter of its own, ahead
-	// of the declared ones, so there are 5
-	// rows rather than 4 and each @inN sits
-	// one row lower
-	assertEqInt(sqlrcur_rowCount(cur),5);
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_name"),
-		"@RETURN_VALUE");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_mode"),"5");
+	assertEqInt(sqlrcur_rowCount(cur),4);
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_name"),"@in1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"parameter_mode"),"1");
 	assertEqStr(sqlrcur_getFieldByName(cur,0,"data_type"),"int");
-	assertEqStr(sqlrcur_getFieldByName(cur,0,"ordinal_position"),"0");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_name"),"@in1");
+	assertEqStr(sqlrcur_getFieldByName(cur,0,"ordinal_position"),"1");
+	assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_name"),"@in2");
 	assertEqStr(sqlrcur_getFieldByName(cur,1,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"int");
-	assertEqStr(sqlrcur_getFieldByName(cur,1,"ordinal_position"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_name"),"@in2");
+	assertEqStr(sqlrcur_getFieldByName(cur,1,"data_type"),"char");
+	assertEqStr(sqlrcur_getFieldByName(cur,1,"ordinal_position"),"2");
+	assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_name"),"@in3");
 	assertEqStr(sqlrcur_getFieldByName(cur,2,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"char");
-	assertEqStr(sqlrcur_getFieldByName(cur,2,"ordinal_position"),"2");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_name"),"@in3");
+	assertEqStr(sqlrcur_getFieldByName(cur,2,"data_type"),"varchar");
+	assertEqStr(sqlrcur_getFieldByName(cur,2,"ordinal_position"),"3");
+	assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_name"),"@in4");
 	assertEqStr(sqlrcur_getFieldByName(cur,3,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"varchar");
-	assertEqStr(sqlrcur_getFieldByName(cur,3,"ordinal_position"),"3");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"parameter_name"),"@in4");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"parameter_mode"),"1");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"data_type"),"datetime");
-	assertEqStr(sqlrcur_getFieldByName(cur,4,"ordinal_position"),"4");
+	assertEqStr(sqlrcur_getFieldByName(cur,3,"data_type"),"datetime");
+	assertEqStr(sqlrcur_getFieldByName(cur,3,"ordinal_position"),"4");
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc1"));
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc2"));
 	assertTrue(sqlrcur_sendQuery(cur,"drop procedure testproc3"));

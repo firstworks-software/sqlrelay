@@ -2494,30 +2494,23 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getColumnName(2),"data_type");
 	assertEquals(cur->getColumnName(3),"character_maximum_length");
 	assertEquals(cur->getColumnName(4),"ordinal_position");
-	// odbc reports the procedure's return value as a parameter of its
-	// own, ahead of the declared ones, so there are 5 rows rather than
-	// 4 and each @inN sits one row lower
-	assertEquals(cur->rowCount(),5);
-	assertEquals(cur->getField(0,"parameter_name"),"@RETURN_VALUE");
-	assertEquals(cur->getField(0,"parameter_mode"),"5");
+	assertEquals(cur->rowCount(),4);
+	assertEquals(cur->getField(0,"parameter_name"),"@in1");
+	assertEquals(cur->getField(0,"parameter_mode"),"1");
 	assertEquals(cur->getField(0,"data_type"),"int");
-	assertEquals(cur->getField(0,"ordinal_position"),"0");
-	assertEquals(cur->getField(1,"parameter_name"),"@in1");
+	assertEquals(cur->getField(0,"ordinal_position"),"1");
+	assertEquals(cur->getField(1,"parameter_name"),"@in2");
 	assertEquals(cur->getField(1,"parameter_mode"),"1");
-	assertEquals(cur->getField(1,"data_type"),"int");
-	assertEquals(cur->getField(1,"ordinal_position"),"1");
-	assertEquals(cur->getField(2,"parameter_name"),"@in2");
+	assertEquals(cur->getField(1,"data_type"),"char");
+	assertEquals(cur->getField(1,"ordinal_position"),"2");
+	assertEquals(cur->getField(2,"parameter_name"),"@in3");
 	assertEquals(cur->getField(2,"parameter_mode"),"1");
-	assertEquals(cur->getField(2,"data_type"),"char");
-	assertEquals(cur->getField(2,"ordinal_position"),"2");
-	assertEquals(cur->getField(3,"parameter_name"),"@in3");
+	assertEquals(cur->getField(2,"data_type"),"varchar");
+	assertEquals(cur->getField(2,"ordinal_position"),"3");
+	assertEquals(cur->getField(3,"parameter_name"),"@in4");
 	assertEquals(cur->getField(3,"parameter_mode"),"1");
-	assertEquals(cur->getField(3,"data_type"),"varchar");
-	assertEquals(cur->getField(3,"ordinal_position"),"3");
-	assertEquals(cur->getField(4,"parameter_name"),"@in4");
-	assertEquals(cur->getField(4,"parameter_mode"),"1");
-	assertEquals(cur->getField(4,"data_type"),"datetime");
-	assertEquals(cur->getField(4,"ordinal_position"),"4");
+	assertEquals(cur->getField(3,"data_type"),"datetime");
+	assertEquals(cur->getField(3,"ordinal_position"),"4");
 	assertTrue(cur->sendQuery("drop procedure testproc1"));
 	assertTrue(cur->sendQuery("drop procedure testproc2"));
 	assertTrue(cur->sendQuery("drop procedure testproc3"));

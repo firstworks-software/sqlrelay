@@ -315,6 +315,24 @@
 		columnproperty() can't read a tempdb object across databases,
 		so the temp-table column list now checks tempdb.sys.columns
 		instead
+	fixed the jdbc procedure parameter list format reporting a driver
+		artifact instead of specific_name on odbc plus ms sql server;
+		the microsoft driver's SQLProcedureColumns() returns 28
+		columns rather than the standard 19, appending nine
+		proprietary SS_* columns after the standard set, so reading
+		the result by position landed specific_name on
+		SS_TYPE_CATALOG_NAME; the odbc module now builds an
+		information_schema.parameters query for the procedure
+		parameter list on ms sql server, the way it already does for
+		the column list and the freetds module already does here too;
+		note that within this one call the odbc and jdbc formats give
+		up what SQLProcedureColumns supplied - data_type comes
+		back empty and sql_data_type, sql_datetime_sub and
+		buffer_length come back null, the procedure's return value is
+		no longer reported as a synthetic extra parameter row, and a
+		parameter list for a catalog other than the current one comes
+		back empty - which is the same trade freetds already makes on
+		ms sql server
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
