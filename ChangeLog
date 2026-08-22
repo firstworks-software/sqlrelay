@@ -355,6 +355,14 @@
 		returning every column in the database for an empty table
 		name instead of none; also added three-part catalog naming
 		so a catalog other than the current one can be listed
+	fixed the odbc connection module returning only about half of a
+		wide (nvarchar/nchar) result-set column value; in unicode
+		mode it bound the caller's utf-8 buffer directly for the
+		driver to write ucs-2 into via SQLBindCol, which capped
+		the column at maxfieldsize/2-1 characters.  it now binds
+		a per-column scratch buffer of twice the size and
+		converts back out of it after each fetch, the same way
+		the output bind path was fixed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

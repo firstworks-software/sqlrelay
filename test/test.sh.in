@@ -68,6 +68,13 @@ stop_instances() {
 			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdprotocolwirecrypt
 		fi
 
+		# the odbc-mssql test also has a small-maxfieldsize instance, to
+		# exercise wide nvarchar column truncation (#9411)
+		if ( test "$_instance" = "odbc-mssql" )
+		then
+			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id odbcmssqlmaxfieldsize
+		fi
+
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, and a connectstrings-default-auth
 		# instance
@@ -230,6 +237,14 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the odbc-mssql test needs a second instance, with a small
+	# maxfieldsize, to exercise wide nvarchar column truncation (#9411)
+	if ( test "$instance" = "odbc-mssql" )
+	then
+		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# start the instance
 	$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id ${instance} -backtrace $BACKTRACEDIR
 	sleep 2
@@ -267,6 +282,11 @@ stop_instance() {
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocol12c
 		sleep 2
 		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
+	fi
+	if ( test "$instance" = "odbc-mssql" )
+	then
+		sleep 2
+		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize
 	fi
 	sleep 2
 	$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id ${instance}

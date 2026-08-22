@@ -18,6 +18,24 @@
 		</connections>
 	</instance>
 
+	<!-- maxfieldsize is the per-field buffer size the connection module
+	     is handed, and the default of 32768 is large enough that even a
+	     4000-char nvarchar column fits inside the half-truncated buffer
+	     SQLBindCol produced when it bound the driver's UCS-2 output
+	     directly into a UTF-8-sized buffer, so the bug can't be exposed
+	     against a practical-length column at the default size.  a
+	     smaller maxfieldsize makes the truncation reproducible at a
+	     manageable column length.  it is on its own port because the
+	     odbc-mssql instance above already owns 9007. -->
+	<instance id="odbcmssqlmaxfieldsize" dbase="odbc">
+		<listeners>
+			<listener port="9033" socket="/tmp/odbcmssqlmaxfieldsize.socket"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;lastinsertidquery=select @@identity;db=@HOSTNAME@;maxfieldsize=4096"/>
+		</connections>
+	</instance>
+
 	<instance id="emoji" dbase="odbc" translatebindvariables="yes">
 		<listeners>
 			<listener port="9025" socket="/tmp/emoji.socket"/>

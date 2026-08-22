@@ -312,6 +312,9 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 
 		int32_t		columncount;
 		char		**field;
+		// scratch buffers for unicode wvarchar/wchar result set
+		// columns; each is NULL until such a column needs one
+		byte_t		**ucsfield;
 		#ifdef SQLBINDCOL_SQLLEN
 		SQLLEN		*loblength;
 		SQLLEN		*indicator;
@@ -4373,12 +4376,14 @@ void odbccursor::allocateResultSetBuffers(int32_t columncount) {
 	if (!columncount) {
 		this->columncount=0;
 		field=NULL;
+		ucsfield=NULL;
 		loblength=NULL;
 		indicator=NULL;
 		column=NULL;
 	} else {
 		this->columncount=columncount;
 		field=new char *[columncount];
+		ucsfield=new byte_t *[columncount];
 		#ifdef SQLBINDCOL_SQLLEN
 		loblength=new SQLLEN[columncount];
 		indicator=new SQLLEN[columncount];
@@ -4390,6 +4395,7 @@ void odbccursor::allocateResultSetBuffers(int32_t columncount) {
 		column=new odbccolumn[columncount];
 		for (int32_t i=0; i<columncount; i++) {
 			field[i]=new char[maxfieldsize];
+			ucsfield[i]=NULL;
 		}
 	}
 }
@@ -4398,9 +4404,11 @@ void odbccursor::deallocateResultSetBuffers() {
 	if (columncount) {
 		for (int32_t i=0; i<columncount; i++) {
 			delete[] field[i];
+			delete[] ucsfield[i];
 		}
 		delete[] column;
 		delete[] field;
+		delete[] ucsfield;
 		delete[] loblength;
 		delete[] indicator;
 		columncount=0;
@@ -6198,8 +6206,21 @@ bool odbccursor::handleColumns(bool getcolumninfo, bool bindcolumns) {
 			if (odbcconn->unicode) {
 				if (column[i].type==SQL_WVARCHAR ||
 					column[i].type==SQL_WCHAR) {
+					// the driver writes ucs-2 here, 2
+					// bytes per character plus the null
+					// terminator, so it needs twice the
+					// space of the utf-8 field buffer
+					size_t	ucsfieldsize=
+						(size_t)maxfieldsize*2;
+					if (!ucsfield[i]) {
+						ucsfield[i]=
+							new byte_t[ucsfieldsize];
+					}
+					bytestring::zero(ucsfield[i],
+								ucsfieldsize);
 					erg=SQLBindCol(stmt,i+1,SQL_C_WCHAR,
-							field[i],maxfieldsize,
+							ucsfield[i],
+							ucsfieldsize,
 							&(indicator[i]));
 				} else if (column[i].type==SQL_TYPE_TIMESTAMP ||
 					(odbcconn->sqltypedatetosqlcbinary &&
@@ -6261,6 +6282,7 @@ bool odbccursor::appendNullColumns(uint8_t count) {
 
 		// allocate a new set of column buffers
 		char		**newfield=new char *[newcount];
+		byte_t		**newucsfield=new byte_t *[newcount];
 		#ifdef SQLBINDCOL_SQLLEN
 		SQLLEN		*newloblength=new SQLLEN[newcount];
 		SQLLEN		*newindicator=new SQLLEN[newcount];
@@ -6273,6 +6295,7 @@ bool odbccursor::appendNullColumns(uint8_t count) {
 		// keep the existing columns
 		for (int32_t i=0; i<columncount; i++) {
 			newfield[i]=field[i];
+			newucsfield[i]=ucsfield[i];
 			newloblength[i]=loblength[i];
 			newindicator[i]=indicator[i];
 			newcolumn[i]=column[i];
@@ -6281,14 +6304,17 @@ bool odbccursor::appendNullColumns(uint8_t count) {
 		// the appended columns are null and need no data buffers
 		for (int32_t i=columncount; i<newcount; i++) {
 			newfield[i]=NULL;
+			newucsfield[i]=NULL;
 		}
 
 		delete[] field;
+		delete[] ucsfield;
 		delete[] loblength;
 		delete[] indicator;
 		delete[] column;
 
 		field=newfield;
+		ucsfield=newucsfield;
 		loblength=newloblength;
 		indicator=newindicator;
 		column=newcolumn;
@@ -6842,7 +6868,11 @@ bool odbccursor::fetchRow(bool *error) {
 				if (indicator[i]!=SQL_NULL_DATA && field[i]) {
 					char	*err=NULL;
 					byte_t	*u=convertCharset(
-						(const byte_t *)field[i],
+						(ucsfield[i])?
+							(const byte_t *)
+								ucsfield[i]:
+							(const byte_t *)
+								field[i],
 						odbcconn->ncharencoding,
 						"UTF-8",&err);
 					if (err) {

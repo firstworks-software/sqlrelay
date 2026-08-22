@@ -56,6 +56,11 @@ int main(int argc, char **argv) {
 	#define	LONG_OUTPUT_BIND_LENGTH	8000
 	char		longoutputbindbuffer[LONG_OUTPUT_BIND_LENGTH+1];
 
+	// nvarchar(4000) is the widest an nvarchar column can be declared
+	// without switching to nvarchar(max)
+	#define	WIDE_NCHAR_LENGTH	4000
+	char		widencharbuffer[WIDE_NCHAR_LENGTH+1];
+
 
 	// hostname
 	char	*hostname=sys::getHostName();
@@ -1652,6 +1657,41 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,"testblob"),largebuffer,
 						LARGE_BUFFER_LENGTH);
 	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// wide nchar column
+	// #9411 - SQLBindCol was binding the driver's UCS-2 output directly
+	// into the caller's UTF-8-sized buffer, truncating wide nvarchar
+	// columns to roughly half their length in unicode mode.  a
+	// 4000-char value still fits inside a half-truncated buffer sized
+	// against the default 32768 maxfieldsize, so this connects to a
+	// second instance whose maxfieldsize is reduced to 4096, where the
+	// truncation is reproducible at a practical column length
+	stdoutput.printf("WIDE NCHAR COLUMN: \n");
+	secondcon=new sqlrconnection("sqlrelay",9033,
+					"/tmp/odbcmssqlmaxfieldsize.socket",
+						"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	secondcur->sendQuery("drop table testtable");
+	assertTrue(secondcur->sendQuery(
+		"create table testtable (testnchar nvarchar(4000))"));
+	for (int i=0; i<WIDE_NCHAR_LENGTH; i++) {
+		widencharbuffer[i]='N';
+	}
+	widencharbuffer[WIDE_NCHAR_LENGTH]='\0';
+	secondcur->prepareQuery("insert into testtable values (?)");
+	secondcur->inputBind("1",widencharbuffer,WIDE_NCHAR_LENGTH);
+	assertTrue(secondcur->executeQuery());
+	assertTrue(secondcur->sendQuery("select testnchar from testtable"));
+	assertEquals(secondcur->getFieldLength(0,"testnchar"),
+							WIDE_NCHAR_LENGTH);
+	assertEquals(secondcur->getField(0,"testnchar"),widencharbuffer);
+	assertTrue(secondcur->sendQuery("drop table testtable"));
+	delete secondcur;
+	secondcur=NULL;
+	delete secondcon;
+	secondcon=NULL;
 	stdoutput.printf("\n");
 
 

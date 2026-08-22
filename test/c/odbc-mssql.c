@@ -90,6 +90,11 @@ int main(int argc, char **argv) {
 	#define	LONG_OUTPUT_BIND_LENGTH	8000
 	char		longoutputbindbuffer[LONG_OUTPUT_BIND_LENGTH+1];
 
+	// nvarchar(4000) is the widest an nvarchar column can be declared
+	// without switching to nvarchar(max)
+	#define	WIDE_NCHAR_LENGTH	4000
+	char		widencharbuffer[WIDE_NCHAR_LENGTH+1];
+
 
 	// hostname
 	char	hostname[256];
@@ -1722,6 +1727,42 @@ int main(int argc, char **argv) {
 	assertEqStrLen(sqlrcur_getFieldByName(cur,0,"testblob"),largebuffer,
 		LARGE_BUFFER_LENGTH);
 	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	printf("\n");
+
+
+	// wide nchar column
+	// #9411 - SQLBindCol was binding the driver's UCS-2 output directly
+	// into the caller's UTF-8-sized buffer, truncating wide nvarchar
+	// columns to roughly half their length in unicode mode.  a
+	// 4000-char value still fits inside a half-truncated buffer sized
+	// against the default 32768 maxfieldsize, so this connects to a
+	// second instance whose maxfieldsize is reduced to 4096, where the
+	// truncation is reproducible at a practical column length
+	printf("WIDE NCHAR COLUMN: \n");
+	secondcon=sqlrcon_alloc("sqlrelay",9033,
+					"/tmp/odbcmssqlmaxfieldsize.socket",
+						"testuser","testpassword",0,1);
+	secondcur=sqlrcur_alloc(secondcon);
+	sqlrcur_sendQuery(secondcur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery(secondcur,
+		"create table testtable (testnchar nvarchar(4000))"));
+	for (j=0; j<WIDE_NCHAR_LENGTH; j++) {
+		widencharbuffer[j]='N';
+	}
+	widencharbuffer[WIDE_NCHAR_LENGTH]='\0';
+	sqlrcur_prepareQuery(secondcur,"insert into testtable values (?)");
+	sqlrcur_inputBindStringWithLength(secondcur,"1",
+					widencharbuffer,WIDE_NCHAR_LENGTH);
+	assertTrue(sqlrcur_executeQuery(secondcur));
+	assertTrue(sqlrcur_sendQuery(secondcur,
+					"select testnchar from testtable"));
+	assertEqInt(sqlrcur_getFieldLengthByName(secondcur,0,"testnchar"),
+		WIDE_NCHAR_LENGTH);
+	assertEqStr(sqlrcur_getFieldByName(secondcur,0,"testnchar"),
+					widencharbuffer);
+	assertTrue(sqlrcur_sendQuery(secondcur,"drop table testtable"));
+	sqlrcur_free(secondcur);
+	sqlrcon_free(secondcon);
 	printf("\n");
 
 
