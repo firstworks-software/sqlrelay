@@ -3294,12 +3294,116 @@ const char *odbcconnection::getColumnListQuery(
 		"	co.table_schema as table_schem, "
 		"	co.table_name as table_name, "
 		"	co.column_name, "
-		"	null as data_type, "
+		// odbc concise type code for the native type
+		"	case co.data_type "
+		"		when 'int' then 4 "
+		"		when 'bigint' then -5 "
+		"		when 'smallint' then 5 "
+		"		when 'tinyint' then -6 "
+		"		when 'bit' then -7 "
+		"		when 'decimal' then 3 "
+		"		when 'numeric' then 2 "
+		"		when 'money' then 1 "
+		"		when 'smallmoney' then 1 "
+		"		when 'float' then 6 "
+		"		when 'real' then 7 "
+		"		when 'char' then 1 "
+		"		when 'varchar' then 12 "
+		"		when 'text' then -1 "
+		"		when 'nchar' then -8 "
+		"		when 'nvarchar' then -9 "
+		"		when 'ntext' then -10 "
+		"		when 'binary' then -2 "
+		"		when 'varbinary' then -3 "
+		"		when 'image' then -2 "
+		"		when 'timestamp' then -2 "
+		"		when 'uniqueidentifier' then -2 "
+		"		when 'xml' then -1 "
+		"		when 'sql_variant' then 1 "
+		"		when 'date' then 91 "
+		"		when 'time' then 92 "
+		"		when 'datetime' then 93 "
+		"		when 'datetime2' then 93 "
+		"		when 'smalldatetime' then 93 "
+		"		when 'datetimeoffset' then 93 "
+		"		else 12 "
+		"	end as data_type, "
 		"	co.data_type as type_name, "
-		"	co.character_maximum_length "
-					"as column_size, "
-		"	co.character_octet_length "
-					"as buffer_length, "
+		// character/binary types size in characters/bytes,
+		// numeric types in digits, date/time types in the
+		// length of their string representation
+		"	case "
+		"		when co.data_type in ('char','varchar','text', "
+		"				'nchar','nvarchar','ntext', "
+		"				'binary','varbinary','image') "
+		"			then case "
+		"				when co.character_maximum_length"
+						"=-1 "
+		"					then 2147483647 "
+		"				else co.character_maximum_length "
+		"			end "
+		"		when co.data_type in ('int','bigint','smallint', "
+		"				'tinyint','bit','decimal', "
+		"				'numeric','money','smallmoney', "
+		"				'float','real') "
+		"			then co.numeric_precision "
+		"		when co.data_type='date' then 10 "
+		"		when co.data_type='smalldatetime' then 16 "
+		"		when co.data_type='datetime' then 23 "
+		"		when co.data_type='time' "
+		"			then 8+case "
+		"				when co.datetime_precision>0 "
+		"					then co.datetime_precision+1 "
+		"				else 0 "
+		"			end "
+		"		when co.data_type='datetime2' "
+		"			then 19+case "
+		"				when co.datetime_precision>0 "
+		"					then co.datetime_precision+1 "
+		"				else 0 "
+		"			end "
+		"		when co.data_type='datetimeoffset' "
+		"			then 26+case "
+		"				when co.datetime_precision>0 "
+		"					then co.datetime_precision+1 "
+		"				else 0 "
+		"			end "
+		"		when co.data_type='timestamp' then 8 "
+		"		when co.data_type='uniqueidentifier' then 36 "
+		"		when co.data_type='xml' then 2147483647 "
+		"		when co.data_type='sql_variant' then 8000 "
+		"		else co.character_maximum_length "
+		"	end as column_size, "
+		// number of bytes needed to fetch the column
+		"	case "
+		"		when co.data_type in ('char','varchar','text', "
+		"				'nchar','nvarchar','ntext', "
+		"				'binary','varbinary','image') "
+		"			then case "
+		"				when co.character_octet_length"
+						"=-1 "
+		"					then 2147483647 "
+		"				else co.character_octet_length "
+		"			end "
+		"		when co.data_type in ('tinyint','bit') then 1 "
+		"		when co.data_type='smallint' then 2 "
+		"		when co.data_type in ('int','real','smallmoney') "
+		"			then 4 "
+		"		when co.data_type in ('bigint','float','money', "
+		"				'timestamp') "
+		"			then 8 "
+		"		when co.data_type in ('decimal','numeric') "
+		"			then co.numeric_precision+2 "
+		"		when co.data_type in ('date','time') then 6 "
+		"		when co.data_type in ('datetime','datetime2', "
+		"				'smalldatetime', "
+		"				'datetimeoffset') "
+		"			then 16 "
+		"		when co.data_type='uniqueidentifier' then 16 "
+		"		when co.data_type='xml' then 2147483647 "
+		"		when co.data_type='sql_variant' then 8000 "
+		"		else co.character_octet_length "
+		"	end as buffer_length, "
 		"	co.numeric_scale as decimal_digits, "
 		"	co.numeric_precision_radix "
 					"as num_prec_radix, "
@@ -3335,8 +3439,50 @@ const char *odbcconnection::getColumnListQuery(
 	}
 	columnlistquery.append(
 		"	co.column_default, "
-		"	null as sql_data_type, "
-		"	null as sql_datetime_sub, "
+		// odbc verbose type code - the date/time family
+		// reports SQL_DATETIME here and its subtype below
+		"	case co.data_type "
+		"		when 'int' then 4 "
+		"		when 'bigint' then -5 "
+		"		when 'smallint' then 5 "
+		"		when 'tinyint' then -6 "
+		"		when 'bit' then -7 "
+		"		when 'decimal' then 3 "
+		"		when 'numeric' then 2 "
+		"		when 'money' then 1 "
+		"		when 'smallmoney' then 1 "
+		"		when 'float' then 6 "
+		"		when 'real' then 7 "
+		"		when 'char' then 1 "
+		"		when 'varchar' then 12 "
+		"		when 'text' then -1 "
+		"		when 'nchar' then -8 "
+		"		when 'nvarchar' then -9 "
+		"		when 'ntext' then -10 "
+		"		when 'binary' then -2 "
+		"		when 'varbinary' then -3 "
+		"		when 'image' then -2 "
+		"		when 'timestamp' then -2 "
+		"		when 'uniqueidentifier' then -2 "
+		"		when 'xml' then -1 "
+		"		when 'sql_variant' then 1 "
+		"		when 'date' then 9 "
+		"		when 'time' then 9 "
+		"		when 'datetime' then 9 "
+		"		when 'datetime2' then 9 "
+		"		when 'smalldatetime' then 9 "
+		"		when 'datetimeoffset' then 9 "
+		"		else 12 "
+		"	end as sql_data_type, "
+		"	case co.data_type "
+		"		when 'date' then 1 "
+		"		when 'time' then 2 "
+		"		when 'datetime' then 3 "
+		"		when 'datetime2' then 3 "
+		"		when 'smalldatetime' then 3 "
+		"		when 'datetimeoffset' then 3 "
+		"		else null "
+		"	end as sql_datetime_sub, "
 		"	co.character_octet_length "
 				"as char_octet_length, "
 		"	co.ordinal_position, "
@@ -3377,11 +3523,16 @@ const char *odbcconnection::getColumnListQuery(
 			"	null ");
 	}
 
-	// from clause
+	// from clause - information_schema is scoped to the current
+	// database, so a catalog has to be addressed by three-part name
 	columnlistquery.append("from ");
 	if (temptable) {
 		columnlistquery.append(
 			"	tempdb.information_schema.columns co ");
+	} else if (!charstring::isNullOrEmpty(catalog)) {
+		columnlistquery.append("	");
+		columnlistquery.append(catalog);
+		columnlistquery.append(".information_schema.columns co ");
 	} else {
 		columnlistquery.append(
 			"	information_schema.columns co ");
@@ -3403,6 +3554,15 @@ const char *odbcconnection::getColumnListQuery(
 		columnlistquery.append(
 			"		tempdb.information_schema.table_constraints tc, "
 			"		tempdb.information_schema.key_column_usage ku ");
+	} else if (!charstring::isNullOrEmpty(catalog)) {
+		columnlistquery.append("		");
+		columnlistquery.append(catalog);
+		columnlistquery.append(".information_schema."
+					"table_constraints tc, ");
+		columnlistquery.append("		");
+		columnlistquery.append(catalog);
+		columnlistquery.append(".information_schema."
+					"key_column_usage ku ");
 	} else {
 		columnlistquery.append(
 			"		information_schema.table_constraints tc, "
@@ -3441,37 +3601,32 @@ const char *odbcconnection::getColumnListQuery(
 		columnlistquery.append("____%%' ");
 		first=false;
 	} else {
-		if (!charstring::isNullOrEmpty(catalog)) {
+		// no catalog filter is needed, the from clause is
+		// already scoped to the catalog
+		if (!charstring::isNullOrEmpty(schema)) {
 			columnlistquery.append(
 				"where "
-				"	co.table_catalog like '");
-			columnlistquery.append(catalog);
-			columnlistquery.append("' ");
-			first=false;
-		}
-		if (!charstring::isNullOrEmpty(schema)) {
-			if (first) {
-				columnlistquery.append("where ");
-				first=false;
-			} else {
-				columnlistquery.append("	and ");
-			}
-			columnlistquery.append(
 				"	co.table_schema like '");
 			columnlistquery.append(schema);
 			columnlistquery.append("' ");
+			first=false;
+		}
+		if (first) {
+			columnlistquery.append("where ");
+			first=false;
+		} else {
+			columnlistquery.append("	and ");
 		}
 		if (!charstring::isNullOrEmpty(table)) {
-			if (first) {
-				columnlistquery.append("where ");
-				first=false;
-			} else {
-				columnlistquery.append("	and ");
-			}
 			columnlistquery.append(
 				"	co.table_name like '");
 			columnlistquery.append(table);
 			columnlistquery.append("' ");
+		} else {
+			// an empty table matches nothing, rather
+			// than every column in the catalog
+			columnlistquery.append(
+				"	co.table_name='' ");
 		}
 	}
 	if (!charstring::isNullOrEmpty(column)) {

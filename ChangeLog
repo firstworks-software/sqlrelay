@@ -347,6 +347,14 @@
 	fixed the freetds connection module's rpc output-bind fetch ignoring
 		the null indicator, so a null output parameter came back as
 		stale or uninitialized data instead of null
+	fixed the freetds and odbc connection modules' ms sql server column
+		list query leaving data_type, sql_data_type,
+		sql_datetime_sub null and column_size/buffer_length null
+		for non-character columns - which the odbc and jdbc list
+		formats need but the mysql format doesn't ask for - and
+		returning every column in the database for an empty table
+		name instead of none; also added three-part catalog naming
+		so a catalog other than the current one can be listed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
