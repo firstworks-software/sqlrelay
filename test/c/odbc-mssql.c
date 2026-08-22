@@ -2430,6 +2430,29 @@ int main(int argc, char **argv) {
 	printf("\n");
 
 
+	// column list - auto_increment,
+	// primary key - local temp table
+	printf("COLUMN LIST - ""auto_increment, "
+		"primary key - temp table: \n");
+	sqlrcur_sendQuery(cur,"drop table #t9417");
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create table #t9417 ("
+		"	col1 int identity "
+		"primary key, "
+		"	col2 int)"));
+	assertTrue(sqlrcur_getColumnList(cur,"#t9417",NULL));
+	assertContains(sqlrcur_getFieldByName(cur,0,"extra"),
+		"auto_increment");
+	assertContains(sqlrcur_getFieldByName(cur,0,"column_key"),
+		"PRI");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"extra"),
+		"auto_increment");
+	assertNotContains(sqlrcur_getFieldByName(cur,1,"column_key"),
+		"PRI");
+	assertTrue(sqlrcur_sendQuery(cur,"drop table #t9417"));
+	printf("\n");
+
+
 	// primary keys list
 	printf("PRIMARY KEYS LIST: \n");
 	sqlrcur_sendQuery(cur,"drop table testtable");

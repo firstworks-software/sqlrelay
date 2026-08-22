@@ -2348,6 +2348,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// column list - auto_increment, primary key - local temp table
+	stdoutput.printf("COLUMN LIST - auto_increment, "
+				"primary key - temp table: \n");
+	cur->sendQuery("drop table #t9417");
+	assertTrue(cur->sendQuery(
+		"create table #t9417 ("
+		"	col1 int identity primary key, "
+		"	col2 int)"));
+	assertTrue(cur->getColumnList("#t9417",NULL));
+	assertEquals(cur->getField(0,"extra"),"auto_increment");
+	assertEquals(cur->getField(0,"column_key"),"PRI");
+	assertEquals(cur->getField(1,"extra"),"");
+	assertEquals(cur->getField(1,"column_key"),"");
+	assertTrue(cur->sendQuery("drop table #t9417"));
+	stdoutput.printf("\n");
+
+
 	// primary keys list
 	stdoutput.printf("PRIMARY KEYS LIST: \n");
 	cur->sendQuery("drop table testtable");

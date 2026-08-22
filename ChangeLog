@@ -310,6 +310,11 @@
 		zeroed, so a zero-length field there would have leaked
 		uninitialized heap instead of freetds' all-null buffer had it
 		ever been hit
+	fixed the freetds and odbc modules not reporting auto_increment for an
+		identity column on a local temp table on ms sql server;
+		columnproperty() can't read a tempdb object across databases,
+		so the temp-table column list now checks tempdb.sys.columns
+		instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -3302,22 +3302,33 @@ const char *odbcconnection::getColumnListQuery(
 		"		when 'YES' then 1 "
 		"		else 0 "
 		"	end as nullable, "
-		"	case "
-		"		when COLUMNPROPERTY( "
-		"			OBJECT_ID(");
+	);
 	if (temptable) {
 		columnlistquery.append(
-			"			'tempdb..'+co.table_name), ");
+			"	case "
+			"		when exists ( "
+			"			select 1 "
+			"			from tempdb.sys.columns c "
+			"			where c.object_id=OBJECT_ID( "
+			"				'tempdb..'+co.table_name) "
+			"			and c.name=co.column_name "
+			"			and c.is_identity=1) "
+			"		then 'auto_increment' "
+			"		else null "
+			"	end as remarks, ");
 	} else {
 		columnlistquery.append(
-			"			co.table_name), ");
+			"	case "
+			"		when COLUMNPROPERTY( "
+			"			OBJECT_ID("
+			"			co.table_name), "
+			"			co.column_name, "
+			"			'IsIdentity')=1 "
+			"			then 'auto_increment' "
+			"		else null "
+			"	end as remarks, ");
 	}
 	columnlistquery.append(
-		"			co.column_name, "
-		"			'IsIdentity')=1 "
-		"			then 'auto_increment' "
-		"		else null "
-		"	end as remarks, "
 		"	co.column_default, "
 		"	null as sql_data_type, "
 		"	null as sql_datetime_sub, "
@@ -3332,23 +3343,34 @@ const char *odbcconnection::getColumnListQuery(
 		"		when 3 then 'MUL' "
 		"		else null "
 		"	end as column_key, "
-		"	case "
-		"		when COLUMNPROPERTY( "
-		"			OBJECT_ID(");
+	);
 	if (temptable) {
 		columnlistquery.append(
-			"			'tempdb..'+co.table_name), ");
+			"	case "
+			"		when exists ( "
+			"			select 1 "
+			"			from tempdb.sys.columns c "
+			"			where c.object_id=OBJECT_ID( "
+			"				'tempdb..'+co.table_name) "
+			"			and c.name=co.column_name "
+			"			and c.is_identity=1) "
+			"		then 'YES' "
+			"		else 'NO' "
+			"	end as is_autoincrement, "
+			"	null ");
 	} else {
 		columnlistquery.append(
-			"			co.table_name), ");
+			"	case "
+			"		when COLUMNPROPERTY( "
+			"			OBJECT_ID("
+			"			co.table_name), "
+			"			co.column_name, "
+			"			'IsIdentity')=1 "
+			"			then 'YES' "
+			"		else 'NO' "
+			"	end as is_autoincrement, "
+			"	null ");
 	}
-	columnlistquery.append(
-		"			co.column_name, "
-		"			'IsIdentity')=1 "
-		"			then 'YES' "
-		"		else 'NO' "
-		"	end as is_autoincrement, "
-		"	null ");
 
 	// from clause
 	columnlistquery.append("from ");
