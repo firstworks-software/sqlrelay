@@ -3461,13 +3461,9 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DTC_TRANSITION_COST,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// sqlrelay accepts the infotype but writes no value
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)vallen,0);
-	} else {
-		assertFailureDbc(dbc,erg);
-	}
+	// sqlrelay returns HYC00 (optional feature not implemented)
+	// for this infotype too
+	assertFailureDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 

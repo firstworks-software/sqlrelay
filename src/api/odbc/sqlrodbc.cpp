@@ -479,7 +479,9 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 					debugPrintf("  NULL conn->con "
 								"handle\n");
 				}
-				*outputhandle=SQL_NULL_HENV;
+				if (outputhandle) {
+					*outputhandle=SQL_NULL_HSTMT;
+				}
 				return SQL_INVALID_HANDLE;
 			}
 			if (outputhandle) {
@@ -9752,6 +9754,71 @@ static SQLUINTEGER SQLR_InsertStatement(CONN *conn) {
 	return retval;
 }
 
+static bool SQLR_InfoTypeNeedsConn(SQLUSMALLINT infotype) {
+	switch (infotype) {
+		case SQL_DATA_SOURCE_READ_ONLY:
+		case SQL_GETDATA_EXTENSIONS:
+		case SQL_DRIVER_NAME:
+		case SQL_ODBC_API_CONFORMANCE:
+		case SQL_ROW_UPDATES:
+		case SQL_ODBC_SAG_CLI_CONFORMANCE:
+		case SQL_CONVERT_BIGINT:
+		case SQL_CONVERT_BINARY:
+		case SQL_CONVERT_BIT:
+		case SQL_CONVERT_CHAR:
+		case SQL_CONVERT_DATE:
+		case SQL_CONVERT_DECIMAL:
+		case SQL_CONVERT_DOUBLE:
+		case SQL_CONVERT_FLOAT:
+		case SQL_CONVERT_INTEGER:
+		case SQL_CONVERT_LONGVARCHAR:
+		case SQL_CONVERT_NUMERIC:
+		case SQL_CONVERT_REAL:
+		case SQL_CONVERT_SMALLINT:
+		case SQL_CONVERT_TIME:
+		case SQL_CONVERT_TIMESTAMP:
+		case SQL_CONVERT_TINYINT:
+		case SQL_CONVERT_VARBINARY:
+		case SQL_CONVERT_VARCHAR:
+		case SQL_CONVERT_LONGVARBINARY:
+		case SQL_DRIVER_ODBC_VER:
+		case SQL_POS_OPERATIONS:
+		case SQL_BOOKMARK_PERSISTENCE:
+		#if (ODBCVER >= 0x0300)
+		case SQL_XOPEN_CLI_YEAR:
+		case SQL_ACTIVE_ENVIRONMENTS:
+		case SQL_ASYNC_MODE:
+		case SQL_CONVERT_WCHAR:
+		case SQL_CONVERT_INTERVAL_DAY_TIME:
+		case SQL_CONVERT_INTERVAL_YEAR_MONTH:
+		case SQL_CONVERT_WLONGVARCHAR:
+		case SQL_CONVERT_WVARCHAR:
+		case SQL_DYNAMIC_CURSOR_ATTRIBUTES1:
+		case SQL_DYNAMIC_CURSOR_ATTRIBUTES2:
+		case SQL_KEYSET_CURSOR_ATTRIBUTES1:
+		case SQL_KEYSET_CURSOR_ATTRIBUTES2:
+		case SQL_MAX_ASYNC_CONCURRENT_STATEMENTS:
+		case SQL_ODBC_INTERFACE_CONFORMANCE:
+		case SQL_PARAM_ARRAY_ROW_COUNTS:
+		case SQL_PARAM_ARRAY_SELECTS:
+		case SQL_STANDARD_CLI_CONFORMANCE:
+		case SQL_DM_VER:
+		#if (ODBCVER >= 0x0380)
+		case SQL_ASYNC_DBC_FUNCTIONS:
+		#endif
+		#endif
+		#ifdef SQL_DRIVER_AWARE_POOLING_SUPPORTED
+		case SQL_DRIVER_AWARE_POOLING_SUPPORTED:
+		#endif
+		#ifdef SQL_ASYNC_NOTIFICATION
+		case SQL_ASYNC_NOTIFICATION:
+		#endif
+			return false;
+		default:
+			return true;
+	}
+}
+
 SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					SQLUSMALLINT infotype,
 					SQLPOINTER infovalue,
@@ -9759,23 +9826,30 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 					SQLSMALLINT *stringlength) {
 	debugFunction();
 
-	// some bits of info need a valid conn handle, but others don't
+	// a null connection handle is invalid unless the requested info
+	// type can be answered without a live connection
 	CONN	*conn=(CONN *)connectionhandle;
 	if ((connectionhandle==SQL_NULL_HANDLE || !conn || !conn->con) &&
-		(infotype==SQL_DATA_SOURCE_NAME ||
-			infotype==SQL_SERVER_NAME ||
-			infotype==SQL_DRIVER_VER ||
-			infotype==SQL_DBMS_NAME ||
-			infotype==SQL_DBMS_VER ||
-			infotype==SQL_ODBC_VER ||
-			infotype==SQL_DATABASE_NAME ||
-			infotype==SQL_USER_NAME)) {
+			SQLR_InfoTypeNeedsConn(infotype)) {
 		if (!conn) {
 			debugPrintf("  NULL conn handle\n");
 		} else {
 			debugPrintf("  NULL conn->con handle\n");
 		}
 		return SQL_INVALID_HANDLE;
+	}
+
+	// bail if bufferlength < 0
+	if (bufferlength<0) {
+		debugPrintf("  bufferlength < 0 (%lld)\n",
+						(int64_t)bufferlength);
+		// conn can legitimately be NULL here, for info
+		// types that don't require a live connection
+		if (conn) {
+			SQLR_CONNSetError(conn,
+				"Invalid string or buffer length",0,"HY090");
+		}
+		return SQL_ERROR;
 	}
 
 	union {
@@ -10252,15 +10326,18 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_DRIVER_HDBC:
 			debugPrintf("  unsupported infotype: "
 						"SQL_DRIVER_HDBC\n");
-			break;
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
+			return SQL_ERROR;
 		case SQL_DRIVER_HENV:
 			debugPrintf("  unsupported infotype: "
 						"SQL_DRIVER_HENV\n");
-			break;
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
+			return SQL_ERROR;
 		case SQL_DRIVER_HSTMT:
 			debugPrintf("  unsupported infotype: "
 						"SQL_DRIVER_HSTMT\n");
-			break;
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
+			return SQL_ERROR;
 		case SQL_DRIVER_NAME:
 			debugPrintf("  infotype: "
 					"SQL_DRIVER_NAME\n");
@@ -10607,7 +10684,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_DRIVER_HLIB:
 			debugPrintf("  unsupported infotype: "
 					"SQL_DRIVER_HLIB\n");
-			break;
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
+			return SQL_ERROR;
 		case SQL_DRIVER_ODBC_VER:
 			debugPrintf("  infotype: "
 					"SQL_DRIVER_ODBC_VER\n");
@@ -10914,7 +10992,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_DRIVER_HDESC:
 			debugPrintf("  unsupported infotype: "
 					"SQL_DRIVER_HDESC\n");
-			break;
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
+			return SQL_ERROR;
 		case SQL_DROP_ASSERTION:
 			debugPrintf("  infotype: "
 					"SQL_DROP_ASSERTION\n");
@@ -11178,7 +11257,8 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_DTC_TRANSITION_COST:
 			debugPrintf("  unsupported infotype: "
 					"SQL_DTC_TRANSITION_COST\n");
-			break;
+			SQLR_ConnSetOptionalFeatureNotImplementedError(conn);
+			return SQL_ERROR;
 		#endif
 		#ifdef SQL_DRIVER_AWARE_POOLING_SUPPORTED
 		case SQL_DRIVER_AWARE_POOLING_SUPPORTED:

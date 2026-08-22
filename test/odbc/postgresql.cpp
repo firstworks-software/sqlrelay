@@ -3994,12 +3994,13 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DTC_TRANSITION_COST,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	assertSuccessDbc(dbc,erg);
 	if (issqlrelay) {
-		// sqlrelay accepts the infotype but writes no value
-		assertEqualDbc(dbc,(int)vallen,0);
+		// sqlrelay returns HYC00
+		// (optional feature not implemented)
+		assertFailureDbc(dbc,erg);
 	} else {
 		// psqlodbc reports no transition cost
+		assertSuccessDbc(dbc,erg);
 		assertEqualDbc(dbc,(int)uintval,0);
 	}
 	stdoutput.printf("\n");

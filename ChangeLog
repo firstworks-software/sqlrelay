@@ -333,6 +333,17 @@
 		parameter list for a catalog other than the current one comes
 		back empty - which is the same trade freetds already makes on
 		ms sql server
+	fixed the odbc driver's SQLGetInfo null-handle guard; it rejected a
+		null handle only for eight info types, and let a null handle
+		through to the switch for the ~130 other info types that need
+		a connection, where most arms dereference it and crash
+	fixed six SQLGetInfo info types (SQL_DRIVER_HDBC/HENV/HSTMT/HLIB/
+		HDESC and SQL_DTC_TRANSITION_COST) returning success without
+		writing anything to the caller's buffer
+	fixed a negative SQLGetInfo BufferLength reaching a size_t copy as a
+		huge value
+	fixed SQLAllocHandle's SQL_HANDLE_STMT error path writing the wrong
+		null-handle constant with no null check on the output pointer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

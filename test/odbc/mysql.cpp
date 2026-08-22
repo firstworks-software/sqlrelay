@@ -4327,14 +4327,10 @@ int main(int argc, char **argv) {
 	erg=SQLGetInfo(dbc,SQL_DTC_TRANSITION_COST,
 			(SQLPOINTER)&uintval,
 			(SQLSMALLINT)sizeof(uintval),&vallen);
-	if (issqlrelay) {
-		// sqlrelay accepts the infotype but writes no value
-		assertSuccessDbc(dbc,erg);
-		assertEqualDbc(dbc,(int)vallen,0);
-	} else {
-		// MariaDB doesn't implement this infotype
-		assertFailureDbc(dbc,erg);
-	}
+	// sqlrelay returns HYC00 (optional feature not implemented)
+	// for this infotype too
+	// MariaDB doesn't implement it either
+	assertFailureDbc(dbc,erg);
 	stdoutput.printf("\n");
 
 
