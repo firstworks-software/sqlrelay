@@ -6801,19 +6801,22 @@ void odbccursor::closeResultSet() {
 		// So apparently the microsoft documentation is wrong.
 	}
 
-	for (uint16_t i=0; i<getOutputBindCount(); i++) {
+	// these arrays are indexed by statement parameter position, not by
+	// an output-bind-only sequence number, so iterate maxbindcount here,
+	// same as the NULL-out loop below
+	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete outdatebind[i];
 	}
 
-	for (uint16_t i=0; i<getOutputBindCount(); i++) {
+	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete outcharbind[i];
 	}
 
-	for (uint16_t i=0; i<getInputOutputBindCount(); i++) {
+	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete inoutdatebind[i];
 	}
 
-	for (uint16_t i=0; i<getInputOutputBindCount(); i++) {
+	for (uint16_t i=0; i<maxbindcount; i++) {
 		delete inoutcharbind[i];
 	}
 

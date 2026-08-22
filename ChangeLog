@@ -301,6 +301,10 @@
 		column list came back empty there, so the upsert, replay and
 		split-multi-insert triggers and the firebird protocol
 		module's insert parsing all ran without them
+	fixed the odbc module leaking output/inout bind buffers when a stored
+		procedure had input parameters positioned before an output
+		parameter; closeResultSet's delete loops now iterate the full
+		bind count instead of just the output-bind count
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
