@@ -227,6 +227,7 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		int64_t		**outbindints;
 		double		**outbinddoubles;
 		datebind	*outbinddates;
+		int16_t		**outbindisnull;
 		uint16_t	outbindindex;
 
 		int32_t		columncount;
@@ -4136,6 +4137,7 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 	outbindints=new int64_t *[maxbindcount];
 	outbinddoubles=new double *[maxbindcount];
 	outbinddates=new datebind[maxbindcount];
+	outbindisnull=new int16_t *[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
 		inbindts[i]=new char[27];
 	}
@@ -4178,6 +4180,7 @@ freetdscursor::~freetdscursor() {
 	delete[] outbindints;
 	delete[] outbinddoubles;
 	delete[] outbinddates;
+	delete[] outbindisnull;
 
 	deallocateResultSetBuffers();
 }
@@ -4802,6 +4805,7 @@ bool freetdscursor::outputBind(const char *variable,
 	outbindtype[outbindindex]=CS_CHAR_TYPE;
 	outbindstrings[outbindindex]=value;
 	outbindstringsizes[outbindindex]=valuesize;
+	outbindisnull[outbindindex]=isnull;
 	outbindindex++;
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -4835,6 +4839,7 @@ bool freetdscursor::outputBind(const char *variable,
 
 	outbindtype[outbindindex]=CS_INT_TYPE;
 	outbindints[outbindindex]=value;
+	outbindisnull[outbindindex]=isnull;
 	outbindindex++;
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -4870,6 +4875,7 @@ bool freetdscursor::outputBind(const char *variable,
 
 	outbindtype[outbindindex]=CS_FLOAT_TYPE;
 	outbinddoubles[outbindindex]=value;
+	outbindisnull[outbindindex]=isnull;
 	outbindindex++;
 
 	(CS_VOID)bytestring::zero(&parameter[paramindex],
@@ -4919,6 +4925,7 @@ bool freetdscursor::outputBind(const char *variable,
 	outbinddates[outbindindex].microsecond=microsecond;
 	outbinddates[outbindindex].tz=tz;
 	outbinddates[outbindindex].isnegative=isnegative;
+	outbindisnull[outbindindex]=isnull;
 	outbindindex++;
 
 	bytestring::zero(&parameter[paramindex],sizeof(parameter[paramindex]));
@@ -5194,6 +5201,20 @@ bool freetdscursor::executeQuery(const char *query, uint32_t size) {
 			maxindex=ncols;
 		}
 		for (CS_INT i=0; i<maxindex; i++) {
+
+			// report the null indicator to the caller and skip
+			// copying data for a null output parameter - the
+			// buffers behind data[i] aren't zeroed, so reading
+			// them for a null column would return stale or
+			// uninitialized data
+			bool	isnull=(nullindicator[i][0]==-1);
+			if (outbindisnull[i]) {
+				*outbindisnull[i]=(isnull)?-1:0;
+			}
+			if (isnull) {
+				continue;
+			}
+
 			if (outbindtype[i]==CS_CHAR_TYPE) {
 				CS_INT	size=outbindstringsizes[i];
 				if (datasize[i][0]<size) {

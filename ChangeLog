@@ -344,6 +344,9 @@
 		huge value
 	fixed SQLAllocHandle's SQL_HANDLE_STMT error path writing the wrong
 		null-handle constant with no null check on the output pointer
+	fixed the freetds connection module's rpc output-bind fetch ignoring
+		the null indicator, so a null output parameter came back as
+		stale or uninitialized data instead of null
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
