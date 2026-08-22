@@ -305,6 +305,11 @@
 		procedure had input parameters positioned before an output
 		parameter; closeResultSet's delete loops now iterate the full
 		bind count instead of just the output-bind count
+	guarded the same unbounded-length underflow in the sap connection
+		module that was fixed in freetds; sap's row buffers are never
+		zeroed, so a zero-length field there would have leaked
+		uninitialized heap instead of freetds' all-null buffer had it
+		ever been hit
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

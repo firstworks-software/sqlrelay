@@ -4792,8 +4792,12 @@ void sapcursor::getField(uint32_t col,
 	}
 
 	// handle normal datatypes
+	// (a zero-length value has no null terminator, and datasize 0,
+	// so trimming it would underflow - datasize is also signed, and
+	// ctlib leaves it unset on a couple of internal failure paths,
+	// so guard on >0 rather than just non-zero)
 	char		*d=&rowdata[col][row*conn->cont->getMaxFieldSize()];
-	uint64_t	ds=rowdatasize[col][row]-1;
+	uint64_t	ds=(rowdatasize[col][row]>0)?(rowdatasize[col][row]-1):0;
 
 	// Note: image columns are fetched with the same CS_CHAR_TYPE/
 	// CS_FMT_NULLTERM ct_bind() format as everything else (see
