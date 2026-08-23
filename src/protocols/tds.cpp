@@ -1035,6 +1035,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *field,
 					uint64_t fieldsize,
 					bool null);
+		// writes "size" bytes of a binary column value, decoding
+		// "field" from hex text if "hextext" is set
+		void	binary(const char *field,
+					uint64_t size,
+					bool hextext);
 		bool	parseDateTime(const char *datetime,
 					int16_t *year,
 					int16_t *month,
@@ -1419,6 +1424,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool		dbistds;
 		bool		dbisase;
+		bool		binaryishextext;
+		bool		imageishextext;
 
 		bool		loggedin;
 
@@ -1513,6 +1520,15 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	const char	*dbtype=cont->getDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
 			!charstring::compare(dbtype,"sap"));
+
+	// The ct-lib-based connection modules hand back binary and varbinary
+	// column values as hex text rather than as bytes, because ct-lib's
+	// own binary-to-char conversion renders them that way and neither
+	// module decodes them.  sap does the same with image; freetds
+	// decodes image itself.  Every other connection module returns the
+	// raw bytes.  Either way the value has to reach the client as bytes.
+	binaryishextext=dbistds;
+	imageishextext=(!charstring::compare(dbtype,"sap"));
 
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxrequestsize=(uint64_t)maxquerysize*16;
@@ -5794,15 +5810,15 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_BINARY:
 		case TDS_TYPE_VARBINARY:
 			{
-			// FIXME: assumes hex-pair text encoding; other
-			// backends may encode this differently
-			write(&resppacket,(byte_t)(fieldsize/2));
-			const char	*f=field;
-			for (byte_t i=0; i<fieldsize/2; i++) {
-				write(&resppacket,charsToHex(f));
-				f+=2;
+			// the size can't exceed the one sent by typeInfo()
+			uint64_t	size=(binaryishextext)?
+						fieldsize/2:fieldsize;
+			if (size>127) {
+				size=127;
 			}
-			debugWrite("size: %lld",(long long)fieldsize);
+			write(&resppacket,(byte_t)size);
+			binary(field,size,binaryishextext);
+			debugWrite("size: %lld",(long long)size);
 			debugWrite("data:");
 			debugHexDump((byte_t *)field,fieldsize);
 			}
@@ -5810,15 +5826,15 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_BIGBINARY:
 		case TDS_TYPE_BIGVARBIN:
 			{
-			// FIXME: assumes hex-pair text encoding; other
-			// backends may encode this differently
-			writeLE(&resppacket,(uint16_t)(fieldsize/2));
-			const char	*f=field;
-			for (uint16_t i=0; i<(fieldsize/2); i++) {
-				write(&resppacket,charsToHex(f));
-				f+=2;
+			// the size can't exceed the one sent by typeInfo()
+			uint64_t	size=(binaryishextext)?
+						fieldsize/2:fieldsize;
+			if (size>32767) {
+				size=32767;
 			}
-			debugWrite("size: %lld",(long long)fieldsize);
+			writeLE(&resppacket,(uint16_t)size);
+			binary(field,size,binaryishextext);
+			debugWrite("size: %lld",(long long)size);
 			debugWrite("data:");
 			debugHexDump((byte_t *)field,fieldsize);
 			}
@@ -5916,15 +5932,15 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_IMAGE:
 		case TDS_TYPE_SSVARIANT:
 			{
-			// FIXME: assumes hex-pair text encoding; other
-			// backends may encode this differently
-			writeLE(&resppacket,(uint32_t)(fieldsize/2));
-			const char	*f=field;
-			for (uint32_t i=0; i<fieldsize/2; i++) {
-				write(&resppacket,charsToHex(f));
-				f+=2;
+			// the size can't exceed the one sent by typeInfo()
+			uint64_t	size=(imageishextext)?
+						fieldsize/2:fieldsize;
+			if (size>2147483647) {
+				size=2147483647;
 			}
-			debugWrite("size: %lld",(long long)fieldsize);
+			writeLE(&resppacket,(uint32_t)size);
+			binary(field,size,imageishextext);
+			debugWrite("size: %lld",(long long)size);
 			debugWrite("data:");
 			debugHexDump((byte_t *)field,fieldsize);
 			}
@@ -5932,6 +5948,18 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 	}
 
 	debugEnd();
+}
+
+void sqlrprotocol_tds::binary(const char *field, uint64_t size, bool hextext) {
+	if (hextext) {
+		const char	*f=field;
+		for (uint64_t i=0; i<size; i++) {
+			write(&resppacket,charsToHex(f));
+			f+=2;
+		}
+	} else {
+		write(&resppacket,field,size);
+	}
 }
 
 static uint16_t mdays[]={31,28,31,30,31,30,31,31,30,31,30,31};

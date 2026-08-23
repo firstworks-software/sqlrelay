@@ -375,6 +375,11 @@
 		argument instead of the length argument when called with an
 		explicit length, which passed a garbage length down and
 		overran the buffer
+	fixed the tds protocol module hex-decoding binary, varbinary and image
+		column values from connection modules that return raw bytes
+		rather than hex text, which halved and garbled every such
+		value, and clamped those values' length prefixes to the sizes
+		sent in the column metadata
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
