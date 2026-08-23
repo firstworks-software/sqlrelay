@@ -4771,23 +4771,41 @@ bool odbccursor::inputBind(const char *variable,
 		SQLSMALLINT	valtype=SQL_C_CHAR;
 		SQLSMALLINT	paramtype=SQL_CHAR;
 		SQLLEN		buffersize=valuesize;
+
+		// A character bind has to be given its real byte count.  If
+		// StrLen_or_IndPtr is NULL then the driver takes the value to
+		// be null-terminated and stops at the first NUL, but a NUL can
+		// legitimately appear inside the value - eg. a fixed-width
+		// column value padded out past one.  For a value with no
+		// embedded NUL this is the same length the driver would have
+		// found on its own.
+		inbindlength[pos-1]=valuesize;
+
 		#ifdef HAVE_SQLCONNECTW
 		if (odbcconn->unicode) {
 
 			const char	*encoding=odbcconn->ncharencoding;
 			char	*err=NULL;
+			size_t	valueucssize=0;
 			byte_t	*valueucs=convertCharset(
 						(const byte_t *)value,
 						valuesize,
 						"UTF-8",encoding,
+						&valueucssize,
 						&err);
 			if (err) {
 				delete[] valueucs;
 				setConvCharError("input bind",err);
 				return false;
 			}
-			valuesize=len(valueucs,encoding);
-			buffersize=stringSize(valueucs,encoding);
+			// the converted length has to come from the
+			// conversion too, for the same reason - scanning the
+			// converted buffer for a terminator stops short of the
+			// real end of a value with an embedded NUL
+			size_t	nullsize=nullSize(encoding);
+			inbindlength[pos-1]=(SQLLEN)valueucssize;
+			valuesize=valueucssize/nullsize;
+			buffersize=valueucssize+nullsize;
 			ucsinbindstrings.append(valueucs);
 			val=(SQLPOINTER)valueucs;
 			valtype=SQL_C_WCHAR;
@@ -4840,7 +4858,7 @@ bool odbccursor::inputBind(const char *variable,
 				0,
 				val,
 				buffersize,	// in bytes
-				NULL);
+				&(inbindlength[pos-1]));
 	}
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }

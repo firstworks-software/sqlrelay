@@ -4461,13 +4461,15 @@ int main(int argc, char **argv) {
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 	assertEquals(rowsread,1);
-	// the terminator ends the value, so the blank pad sqlrelay added is
-	// dropped again and only "six"/"seis" is stored - char(20) pads its
-	// own column back out on the way in, varchar(20) doesn't
-	assertEquals(dyndata[0],(issybase)?"six":"six                 ");
+	// #9434 - the embedded NUL is part of the value now, so the whole
+	// 20-byte blank-padded value sqlrelay bound is what mssql stores,
+	// in the varchar column as well as the char one, exactly like the
+	// cases above with no NUL in them.  The terminator in the middle
+	// still ends the C string at "six"/"seis".  ASE pads nothing.
+	assertEquals(dyndata[0],"six");
 	assertEquals(dyndatalength[0],(issybase)?4:21);
 	assertEquals(dyndata[1],"seis");
-	assertEquals(dyndatalength[1],5);
+	assertEquals(dyndatalength[1],(issybase)?5:21);
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
@@ -7953,17 +7955,10 @@ int main(int argc, char **argv) {
 	CS_INT	bindtds5=(nativease)?bindtakes:bindcmdfails;
 
 
-	// Two cases below are driven only against a native mssql link,
-	// where they hold.  Through the relay each hits a known defect and
-	// is parked until that defect is fixed:
-	//
-	// #9429 - the three binary types' prepare is accepted rather than
-	// refused
-	// #9434 - a char column value read back through the relay
-	// truncates at an embedded NUL instead of reporting the column's
-	// full fixed width
+	// The three binary types' prepare is accepted rather than refused
+	// through the relay - #9429 - so that case is driven only against a
+	// native mssql link, where it holds, and parked until that is fixed.
 	CS_INT	bindprepnotrefused=(relaymssql)?bindnocolumn:bindprepfails;
-	CS_INT	bindreadtruncates=(relaymssql)?bindnocolumn:bindtakes;
 
 	struct bindcase {
 		const char	*label;
@@ -8162,7 +8157,7 @@ int main(int argc, char **argv) {
 			bindpadexpect,bindpadlength,1,0,0},
 		{"datalen strlen plus one","bindchar",CS_CHAR_TYPE,
 			(CS_VOID *)bindcharvalue,4,20,0,0,
-			bindreadtruncates,bindtakes,"abc",bindtermlength,1,0,0},
+			bindtakes,bindtakes,"abc",bindtermlength,1,0,0},
 		{"datalen CS_NULLTERM","bindchar",CS_CHAR_TYPE,
 			(CS_VOID *)bindcharvalue,CS_NULLTERM,20,0,0,
 			bindtakes,bindtakes,
