@@ -7813,17 +7813,17 @@ int main(int argc, char **argv) {
 	CS_INT	bindtds5=(nativease)?bindtakes:bindcmdfails;
 
 
-	// Three cases below are driven only against a native mssql link,
+	// Two cases below are driven only against a native mssql link,
 	// where they hold.  Through the relay each hits a known defect and
 	// is parked until that defect is fixed:
 	//
 	// #9429 - the three binary types' prepare is accepted rather than
 	// refused
-	// #9425 - the "datalen strlen plus one" value contains a NUL, and
-	// the odbc connection module's charset conversion overruns its
-	// output buffer on it
+	// #9434 - a char column value read back through the relay
+	// truncates at an embedded NUL instead of reporting the column's
+	// full fixed width
 	CS_INT	bindprepnotrefused=(relaymssql)?bindnocolumn:bindprepfails;
-	CS_INT	bindconvoverruns=(relaymssql)?bindnocolumn:bindtakes;
+	CS_INT	bindreadtruncates=(relaymssql)?bindnocolumn:bindtakes;
 
 	struct bindcase {
 		const char	*label;
@@ -8022,7 +8022,7 @@ int main(int argc, char **argv) {
 			bindpadexpect,bindpadlength,1,0,0},
 		{"datalen strlen plus one","bindchar",CS_CHAR_TYPE,
 			(CS_VOID *)bindcharvalue,4,20,0,0,
-			bindconvoverruns,bindtakes,"abc",bindtermlength,1,0,0},
+			bindreadtruncates,bindtakes,"abc",bindtermlength,1,0,0},
 		{"datalen CS_NULLTERM","bindchar",CS_CHAR_TYPE,
 			(CS_VOID *)bindcharvalue,CS_NULLTERM,20,0,0,
 			bindtakes,bindtakes,
