@@ -1695,6 +1695,45 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// embedded null in an nchar field
+	// #9432 - the unicode fetch path sized the value it converted with
+	// a null-terminated scan of the driver's buffer rather than with
+	// the driver's indicator, so a value with an embedded null came
+	// back truncated at the null
+	stdoutput.printf("EMBEDDED NULL FIELD: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable (testval nvarchar(20))"));
+	assertTrue(cur->sendQuery(
+		"insert into testtable values (N'ab'+NCHAR(0)+N'cd')"));
+	assertTrue(cur->sendQuery("select testval from testtable"));
+	assertEquals(cur->getFieldLength(0,"testval"),5);
+	assertEquals(cur->getField(0,"testval"),"ab");
+	assertEquals(cur->getField(0,"testval")+3,"cd");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// embedded null in an output bind
+	// #9432 - the same truncation, on the output bind path.  the
+	// sqlrclient protocol returns output bind strings as
+	// null-terminated values, so the client can only see the part
+	// ahead of the null.  the case is here to exercise the conversion
+	// and the clamp against the bind buffer
+	stdoutput.printf("EMBEDDED NULL OUTPUT BIND: \n");
+	cur->sendQuery("drop procedure testproc");
+	assertTrue(cur->sendQuery(
+		"create procedure testproc "
+		"	@out1 nvarchar(20) output as "
+		"select @out1=N'ab'+NCHAR(0)+N'cd'"));
+	cur->prepareQuery("exec testproc ?");
+	cur->defineOutputBindString("1",20);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindString("1"),"ab");
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
 	// output bind by position
 	// the odbc module needs a placeholder for each parameter in the
 	// query - "exec testproc" on its own counts 0 bind variables and

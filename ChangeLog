@@ -405,6 +405,11 @@
 		the module already blank pads a char(n) parameter.
 		varbinary(n) parameters are variable length and stay
 		unpadded
+	fixed the odbc connection module truncating a fetched field or an
+		output/input-output bind value at an embedded null - the
+		length of a value the driver wrote comes from the driver's
+		indicator now, rather than from a scan for a null
+		terminator
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

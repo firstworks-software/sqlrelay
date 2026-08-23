@@ -109,13 +109,15 @@ struct datebind {
 };
 
 struct charbind {
-	charbind() : value(NULL), valuesize(0), ucsvalue(NULL) {}
+	charbind() : value(NULL), valuesize(0),
+			ucsvalue(NULL), ucsvaluesize(0) {}
 	~charbind() { delete[] ucsvalue; }
 	char		*value;
 	uint32_t	valuesize;
 	// scratch buffer for unicode output and input-output string binds;
 	// NULL otherwise
 	byte_t		*ucsvalue;
+	size_t		ucsvaluesize;
 };
 
 // carries a deferred blob bind value from inputBindBlob() to the
@@ -673,11 +675,15 @@ byte_t *convertCharset(const byte_t *inbuf,
 				size_t insize,
 				const char *inenc,
 				const char *outenc,
+				size_t *outlen,
 				char **error) {
 
-	// initialize error
+	// initialize error and output length
 	if (error) {
 		*error=NULL;
+	}
+	if (outlen) {
+		*outlen=0;
 	}
 
 	// get size of null terminator
@@ -740,14 +746,45 @@ byte_t *convertCharset(const byte_t *inbuf,
 	// null-terminate the output
 	bytestring::zero(outbufend,nullsize);
 
+	// report the size of the converted value, excluding the terminator
+	if (outlen) {
+		*outlen=outbufend-outbuf;
+	}
+
 	return outbuf;
+}
+
+byte_t *convertCharset(const byte_t *inbuf,
+				size_t insize,
+				const char *inenc,
+				const char *outenc,
+				char **error) {
+	return convertCharset(inbuf,insize,inenc,outenc,NULL,error);
 }
 
 byte_t *convertCharset(const byte_t *inbuf,
 				const char *inenc,
 				const char *outenc,
 				char **error) {
-	return convertCharset(inbuf,stringSize(inbuf,inenc),inenc,outenc,error);
+	return convertCharset(inbuf,stringSize(inbuf,inenc),
+					inenc,outenc,NULL,error);
+}
+
+// The length of a value that the driver wrote into a bind or column buffer
+// has to come from the driver's indicator.  Such a value can legitimately
+// contain an embedded NUL, so scanning for a terminator stops short of the
+// real end and silently truncates it.  The terminator is only a fallback,
+// for a driver that reports SQL_NO_TOTAL rather than a byte count.
+size_t driverValueSize(const byte_t *buf,
+				size_t bufsize,
+				const char *enc,
+				SQLLEN indicator) {
+	if (indicator>=0) {
+		return ((size_t)indicator<bufsize)?(size_t)indicator:bufsize;
+	}
+	size_t	size=stringSize(buf,enc);
+	size_t	nullsize=nullSize(enc);
+	return (size>nullsize)?size-nullsize:0;
 }
 #endif
 
@@ -5125,6 +5162,9 @@ bool odbccursor::outputBind(const char *variable,
 	// the size of the buffer in bytes
 	cb->valuesize=(uint32_t)buffersize;
 	cb->ucsvalue=ucsvalue;
+	#ifdef HAVE_SQLCONNECTW
+	cb->ucsvaluesize=(size_t)ucsvaluesize;
+	#endif
 
 	outdatebind[pos-1]=NULL;
 	outcharbind[pos-1]=cb;
@@ -5306,20 +5346,23 @@ bool odbccursor::inputOutputBind(const char *variable,
 
 		const char	*encoding=odbcconn->ncharencoding;
 		char	*err=NULL;
+		size_t	convsize=0;
+		// Unlike a value the driver writes back, the in-value of an
+		// input-output bind really is a C string.  The client APIs
+		// null-pad it out to the declared output buffer size, so the
+		// terminator, not the buffer size, marks the end of it.
 		byte_t	*valueucs=convertCharset(
 				(const byte_t *)value,
-				stringSize((const byte_t *)value,"UTF-8"),
+				charstring::getLength(value),
 				"UTF-8",encoding,
-				&err);
+				&convsize,&err);
 		if (err) {
 			delete[] valueucs;
 			setConvCharError("input-output bind",err);
 			return false;
 		}
-		// stringSize() counts the null terminator, but the
-		// indicator must exclude it
-		size_t	sizetocopy=stringSize(valueucs,encoding);
-		indicatorlen=sizetocopy-nullSize(encoding);
+		indicatorlen=convsize;
+		size_t	sizetocopy=convsize+nullSize(encoding);
 
 		// convert into a scratch buffer rather than back into
 		// "value" - "value" was sized for the utf-8 form, and
@@ -5341,6 +5384,7 @@ bool odbccursor::inputOutputBind(const char *variable,
 	cb->value=value;
 	cb->valuesize=valuesize;
 	cb->ucsvalue=ucsvalue;
+	cb->ucsvaluesize=(size_t)ucsvaluesize;
 
 	inoutdatebind[pos-1]=NULL;
 	inoutcharbind[pos-1]=cb;
@@ -5694,27 +5738,33 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 			// the driver wrote its output into the scratch
 			// buffer, if the bind allocated one
 			byte_t		*ucsvalue=outcharbind[i]->ucsvalue;
+			const byte_t	*ucs=(ucsvalue)?
+						(const byte_t *)ucsvalue:
+						(const byte_t *)value;
+			size_t		ucssize=(ucsvalue)?
+						outcharbind[i]->ucsvaluesize:
+						valuesize;
 			char		*err=NULL;
-			byte_t		*u=convertCharset(
-						(ucsvalue)?
-							ucsvalue:
-							(const byte_t *)value,
+			size_t		usize=0;
+			byte_t		*u=convertCharset(ucs,
+						driverValueSize(ucs,ucssize,
+							odbcconn->
+								ncharencoding,
+							outisnull[i]),
 						odbcconn->ncharencoding,
-						"UTF-8",&err);
+						"UTF-8",&usize,&err);
 			if (err) {
 				delete[] u;
 				setConvCharError("output bind",err);
 				return false;
 			}
-			// clamp to the bind buffer
+			// clamp to the bind buffer, leaving
+			// room for the null terminator
 			size_t	nullsize=nullSize("UTF-8");
-			size_t	s=stringSize(u,"UTF-8");
-			if (s>valuesize) {
-				s=valuesize;
+			size_t	s=usize;
+			if (s+nullsize>valuesize) {
+				s=(valuesize>nullsize)?valuesize-nullsize:0;
 			}
-
-			// stringSize() counts the null terminator
-			s=(s>nullsize)?s-nullsize:0;
 
 			// copy in and null-terminate
 			bytestring::copy(value,u,s);
@@ -5769,27 +5819,33 @@ bool odbccursor::executeQuery(const char *query, uint32_t size) {
 			// the driver wrote its output into the scratch
 			// buffer, if the bind allocated one
 			byte_t		*ucsvalue=inoutcharbind[i]->ucsvalue;
+			const byte_t	*ucs=(ucsvalue)?
+						(const byte_t *)ucsvalue:
+						(const byte_t *)value;
+			size_t		ucssize=(ucsvalue)?
+						inoutcharbind[i]->ucsvaluesize:
+						valuesize;
 			char		*err=NULL;
-			byte_t		*u=convertCharset(
-						(ucsvalue)?
-							ucsvalue:
-							(const byte_t *)value,
+			size_t		usize=0;
+			byte_t		*u=convertCharset(ucs,
+						driverValueSize(ucs,ucssize,
+							odbcconn->
+								ncharencoding,
+							inoutisnull[i]),
 						odbcconn->ncharencoding,
-						"UTF-8",&err);
+						"UTF-8",&usize,&err);
 			if (err) {
 				delete[] u;
 				setConvCharError("input-output bind",err);
 				return false;
 			}
-			// clamp to the bind buffer
+			// clamp to the bind buffer, leaving
+			// room for the null terminator
 			size_t	nullsize=nullSize("UTF-8");
-			size_t	s=stringSize(u,"UTF-8");
-			if (s>valuesize) {
-				s=valuesize;
+			size_t	s=usize;
+			if (s+nullsize>valuesize) {
+				s=(valuesize>nullsize)?valuesize-nullsize:0;
 			}
-
-			// stringSize() counts the null terminator
-			s=(s>nullsize)?s-nullsize:0;
 
 			// copy in and null-terminate
 			bytestring::copy(value,u,s);
@@ -6923,30 +6979,34 @@ bool odbccursor::fetchRow(bool *error) {
 			if (column[i].type==SQL_WVARCHAR ||
 					column[i].type==SQL_WCHAR) {
 				if (indicator[i]!=SQL_NULL_DATA && field[i]) {
+					const byte_t	*ucs=(ucsfield[i])?
+						(const byte_t *)ucsfield[i]:
+						(const byte_t *)field[i];
+					size_t		ucssize=(ucsfield[i])?
+						(size_t)maxfieldsize*2:
+						(size_t)maxfieldsize;
 					char	*err=NULL;
-					byte_t	*u=convertCharset(
-						(ucsfield[i])?
-							(const byte_t *)
-								ucsfield[i]:
-							(const byte_t *)
-								field[i],
+					size_t	usize=0;
+					byte_t	*u=convertCharset(ucs,
+						driverValueSize(ucs,ucssize,
+							odbcconn->
+								ncharencoding,
+							indicator[i]),
 						odbcconn->ncharencoding,
-						"UTF-8",&err);
+						"UTF-8",&usize,&err);
 					if (err) {
 						delete[] u;
 						setConvCharError("fetch",err);
 						return false;
 					}
-					// clamp to the field buffer
+					// clamp to the field buffer, leaving
+					// room for the null terminator
 					size_t	nullsize=nullSize("UTF-8");
-					size_t	s=stringSize(u,"UTF-8");
-					if (s>maxfieldsize) {
-						s=maxfieldsize;
+					size_t	s=usize;
+					if (s+nullsize>maxfieldsize) {
+						s=(maxfieldsize>nullsize)?
+							maxfieldsize-nullsize:0;
 					}
-
-					// stringSize() counts the null
-					// terminator, indicator[] must not
-					s=(s>nullsize)?s-nullsize:0;
 
 					// copy in and null-terminate
 					bytestring::copy(field[i],u,s);
