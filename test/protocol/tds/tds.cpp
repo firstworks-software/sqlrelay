@@ -8831,6 +8831,13 @@ int main(int argc, char **argv) {
 		// extra row pending.  so these three stay parked until #9429
 		// lands.  the fetch itself still has to run, or the pending
 		// row hangs the drain below.
+		//
+		// #9429 itself isn't likely to land: msodbcsql defers prepare
+		// entirely, folding it into execute as a single sp_prepexec
+		// rpc, so mssql never gets a chance to reject a bad prepare
+		// the way ASE does.  reproducing that rejection would mean
+		// the tds protocol module inventing its own prepare-time
+		// validation ahead of the odbc driver, not fixing a bug in it.
 		bool	bindrpcbinparked=(relaymssql && !i);
 		if (!bindrpcbinparked) {
 			assertEquals(bindreaddata,bindrpcbinexpect[i]);
