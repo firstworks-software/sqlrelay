@@ -10,6 +10,7 @@ all: local \
 	informix.exe \
 	krb.exe \
 	mysql.exe \
+	odbc-mssql.exe \
 	oracle.exe \
 	postgresql.exe \
 	sap.exe \
@@ -43,6 +44,9 @@ krb.exe: sqlrtest.cs krb.cs
 
 mysql.exe: sqlrtest.cs mysql.cs
 	$(CSC) $(CSCFLAGS) /out:mysql.exe sqlrtest.cs mysql.cs /reference:SQLRClient.dll
+
+odbc-mssql.exe: sqlrtest.cs odbc-mssql.cs
+	$(CSC) $(CSCFLAGS) /out:odbc-mssql.exe sqlrtest.cs odbc-mssql.cs /reference:SQLRClient.dll
 
 oracle.exe: sqlrtest.cs oracle.cs
 	$(CSC) $(CSCFLAGS) /out:oracle.exe sqlrtest.cs oracle.cs /reference:SQLRClient.dll

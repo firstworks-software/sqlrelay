@@ -10,6 +10,7 @@ all: asserts.beam \
 	informix.beam \
 	krb.beam \
 	mysql.beam \
+	odbc-mssql.beam \
 	oracle.beam \
 	postgresql.beam \
 	sap.beam \
@@ -39,6 +40,9 @@ krb.beam: krb.erl asserts.beam
 
 mysql.beam: mysql.erl asserts.beam
 	$(ERLC) mysql.erl
+
+odbc-mssql.beam: odbc-mssql.erl asserts.beam
+	$(ERLC) odbc-mssql.erl
 
 oracle.beam: oracle.erl asserts.beam
 	$(ERLC) oracle.erl

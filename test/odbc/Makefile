@@ -10,10 +10,10 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql postgresql db2 sap freetds-sap freetds-mssql informix firebird sqlite
+all: oracle mysql postgresql db2 sap freetds-sap freetds-mssql odbc-mssql informix firebird sqlite
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds-sap$(EXE) freetds-mssql$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds-sap$(EXE) freetds-mssql$(EXE) odbc-mssql$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -36,6 +36,9 @@ freetds-sap: freetds-sap.cpp freetds-sap.$(OBJ)
 
 freetds-mssql: freetds-mssql.cpp freetds-mssql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ freetds-mssql.$(OBJ) $(ODBCTESTLIBS)
+
+odbc-mssql: odbc-mssql.cpp odbc-mssql.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ odbc-mssql.$(OBJ) $(ODBCTESTLIBS)
 
 informix: informix.cpp informix.$(OBJ)
 	$(LTLINK) $(LINK) -export-dynamic $(LDFLAGS) $(OUT)$@ informix.$(OBJ) $(ODBCTESTLIBS) $(INFORMIXLIBS)

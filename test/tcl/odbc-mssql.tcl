@@ -1,10 +1,10 @@
 #! /usr/bin/env tclsh
-# @DONOTEDIT@
+# DO NOT EDIT - this is a generated file; edit the corresponding .in template and rerun make in this directory
 
 # Copyright (c) David Muse
 # See the file COPYING for more information.
 
-load @TCLLIBSPATH@@SLASH@sqlrelay@SLASH@sqlrelay.@SOSUFFIX@ sqlrelay
+load /usr/lib64/sqlrelay/sqlrelay.so sqlrelay
 source ./asserts.tcl
 
 
