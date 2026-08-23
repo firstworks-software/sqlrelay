@@ -393,6 +393,11 @@
 		xml parameter no longer desyncs the parameter stream and fails
 		with "Data type 0x00 is unknown" - which is how text and image
 		parameters arrive under tds 7.2 and up
+	fixed the tds protocol module reporting usertype 0x0050 for a datetime2
+		column under tds 7.3 and up - 0x0050 marks a
+		timestamp/rowversion column, not a date/time column, so a
+		datetime2 column reports usertype 0 now, like every other
+		ordinary column
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

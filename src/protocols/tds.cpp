@@ -4759,11 +4759,11 @@ void sqlrprotocol_tds::userType(byte_t tdstype) {
 	uint32_t	usertype=0;
 
 	// * = 0x0000 by default
-	// * = 0x0050 for timestamp types
+	// * = 0x0050 for a timestamp/rowversion column - that's an
+	//   8-byte binary value, not a date/time value, and the
+	//   backends don't tell us which binary columns are
+	//   timestamps, so we can't tag it (FIXME)
 	// * > 0x00FF for alias types (FIXME: how to identify these?)
-	if (tdstype==TDS_TYPE_DATETIME2N) {
-		usertype=0x0050;
-	}
 
 	if (negotiatedtdsversion<720) {
 		writeLE(&resppacket,(uint16_t)usertype);

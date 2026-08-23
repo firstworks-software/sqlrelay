@@ -949,13 +949,13 @@ int main(int argc, char **argv) {
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[16].status,CS_UNUSED);
 		assertEquals(column[16].count,1);
-		// once the column travels as a real datetime2 (tds 7.3 and up),
-		// the relay's userType() tags it 0x0050, the "timestamp types"
-		// usertype (see sqlrprotocol_tds::userType() in
-		// src/protocols/tds.cpp).  A real sql server sends 0 here.
-		// TODO(#9199): the 80 wants confirming against a live run.
-		assertEquals(column[16].usertype,
-				(issqlrelay && tds73plus)?80:CS_CHAR_TYPE);
+		// 0 in every tds version, whether the column travels as a
+		// real datetime2 (tds 7.3 and up) or as nvarchar.  The relay
+		// used to tag the real-datetime2 case 0x0050 (80), which is
+		// the usertype of a timestamp/rowversion column, not a
+		// datetime2 column - see #9430 and sqlrprotocol_tds::
+		// userType() in src/protocols/tds.cpp
+		assertEquals(column[16].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
 	}
 
