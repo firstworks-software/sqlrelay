@@ -689,6 +689,9 @@ static byte_t	tdstypemap[]={
 // the widest a bigchar or nchar value can be padded out to
 #define TDS_MAX_CHAR_SIZE	8000
 
+// the widest a binary or bigbinary value can be padded out to
+#define TDS_MAX_BINARY_SIZE	8000
+
 // how many bytes a guid occupies on the wire
 #define TDS_GUID_SIZE		16
 
@@ -11847,8 +11850,30 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				debugEnd();
 				return false;
 			}
+
+			// a binary is zero padded out to its declared size,
+			// like a real sql server does - a varbinary isn't.
+			// the declared size is client-chosen, not a count of
+			// bytes that arrived, so cap the pad at
+			// TDS_MAX_BINARY_SIZE
+			uint32_t	valuesize=size;
+			if (tdstype==TDS_TYPE_BINARY && maxsize>size &&
+					maxsize<=TDS_MAX_BINARY_SIZE) {
+				valuesize=maxsize;
+			}
+
 			if (bv) {
-				bulkBinary(bv,&rpcparampool,rp,size);
+				const byte_t	*value=rp;
+				if (valuesize>size) {
+					byte_t	*padded=(byte_t *)
+						rpcparampool.allocate(
+								valuesize);
+					bytestring::copy(padded,rp,size);
+					bytestring::set(padded+size,0,
+							valuesize-size);
+					value=padded;
+				}
+				bulkBinary(bv,&rpcparampool,value,valuesize);
 			}
 			rp+=size;
 			rpsize-=size;
@@ -11872,8 +11897,30 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				debugEnd();
 				return false;
 			}
+
+			// a binary is zero padded out to its declared size,
+			// like a real sql server does - a varbinary isn't.
+			// the declared size is client-chosen, not a count of
+			// bytes that arrived, so cap the pad at
+			// TDS_MAX_BINARY_SIZE
+			uint32_t	valuesize=size;
+			if (tdstype==TDS_TYPE_BIGBINARY && maxsize>size &&
+					maxsize<=TDS_MAX_BINARY_SIZE) {
+				valuesize=maxsize;
+			}
+
 			if (bv) {
-				bulkBinary(bv,&rpcparampool,rp,size);
+				const byte_t	*value=rp;
+				if (valuesize>size) {
+					byte_t	*padded=(byte_t *)
+						rpcparampool.allocate(
+								valuesize);
+					bytestring::copy(padded,rp,size);
+					bytestring::set(padded+size,0,
+							valuesize-size);
+					value=padded;
+				}
+				bulkBinary(bv,&rpcparampool,value,valuesize);
 			}
 			rp+=size;
 			rpsize-=size;

@@ -8686,10 +8686,16 @@ int main(int argc, char **argv) {
 					&bindreadindicator),CS_SUCCEED);
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
-		// #9431 - through the relay the CS_BINARY_TYPE parameter
-		// reads back empty and leaves an extra row pending, so these
-		// three are parked for that case.  the fetch itself still has
-		// to run, or the pending row hangs the drain below.
+		// #9431 - the value half of this is fixed: the module now
+		// zero pads a fixed-length binary parameter out to its
+		// declared maxsize, so the CS_BINARY_TYPE case carries the
+		// full 20 bytes.  what's left is #9429's residue - the
+		// preceding rpc section leaves results queued, the "delete
+		// from bindtable" above never reaches the server, and the
+		// stale row it leaves behind reads back empty and leaves an
+		// extra row pending.  so these three stay parked until #9429
+		// lands.  the fetch itself still has to run, or the pending
+		// row hangs the drain below.
 		bool	bindrpcbinparked=(relaymssql && !i);
 		if (!bindrpcbinparked) {
 			assertEquals(bindreaddata,bindrpcbinexpect[i]);

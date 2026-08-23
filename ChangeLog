@@ -398,6 +398,13 @@
 		timestamp/rowversion column, not a date/time column, so a
 		datetime2 column reports usertype 0 now, like every other
 		ordinary column
+	fixed the tds protocol module passing a fixed-length binary rpc
+		parameter through with only the bytes that arrived - a
+		binary(n) parameter is zero padded out to its declared
+		size now, the way a real sql server does it, and the way
+		the module already blank pads a char(n) parameter.
+		varbinary(n) parameters are variable length and stay
+		unpadded
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
