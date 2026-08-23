@@ -32,7 +32,7 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 	private
 	int getInt(String feature) {
 		String	value=getDatabaseFeature(feature);
-		return (value!=null)?Integer.parseInt(value):0;
+		return (value!=null && !value.isEmpty())?Integer.parseInt(value):0;
 	}
 
 	private

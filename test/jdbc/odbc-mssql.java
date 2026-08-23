@@ -672,14 +672,10 @@ class odbc_mssql extends sqlrtest {
 		System.out.println("  getSQLStateType");
 		if (issqlrelay) {
 			// the odbc module has no ODBC equivalent for this, so
-			// it reports an empty string, which the driver's
-			// Integer.parseInt() rejects
-			try {
-				intval=md.getSQLStateType();
-				assertTrue(false);
-			} catch (NumberFormatException e) {
-				assertTrue(true);
-			}
+			// it reports an empty string, which the driver maps to 0
+			intval=md.getSQLStateType();
+			System.out.println("    "+intval);
+			assertEquals(intval,0);
 		} else {
 			intval=md.getSQLStateType();
 			System.out.println("    "+intval);

@@ -363,6 +363,9 @@
 		a per-column scratch buffer of twice the size and
 		converts back out of it after each fetch, the same way
 		the output bind path was fixed
+	fixed jdbc's DatabaseMetaData integer feature accessors throwing
+		NumberFormatException when a connection module reports an empty
+		value, as the odbc module does for getSQLStateType()
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
