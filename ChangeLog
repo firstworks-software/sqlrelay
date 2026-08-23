@@ -385,6 +385,9 @@
 		count, which made any bind or query containing an embedded null
 		fail with a bogus "iconvert::convert(): Argument list too long"
 		server message
+	fixed the tds protocol module parsing a uniqueidentifier parameter and
+		throwing it away, which stored a null instead of the value the
+		client sent
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

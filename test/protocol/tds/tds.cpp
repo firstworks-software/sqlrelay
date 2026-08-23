@@ -7813,7 +7813,7 @@ int main(int argc, char **argv) {
 	CS_INT	bindtds5=(nativease)?bindtakes:bindcmdfails;
 
 
-	// Four cases below are driven only against a native mssql link,
+	// Three cases below are driven only against a native mssql link,
 	// where they hold.  Through the relay each hits a known defect and
 	// is parked until that defect is fixed:
 	//
@@ -7824,12 +7824,9 @@ int main(int argc, char **argv) {
 	// output buffer on it
 	// #9428 - text and image parameters fail with "Data type 0x00 is
 	// unknown" under tds 7.4, though they work under 7.0
-	// #9427 - a uniqueidentifier parameter is parsed and discarded, so
-	// the row comes back null
 	CS_INT	bindprepnotrefused=(relaymssql)?bindnocolumn:bindprepfails;
 	CS_INT	bindconvoverruns=(relaymssql)?bindnocolumn:bindtakes;
 	CS_INT	bindplpunknown=(relaymssql && tds73plus)?bindnocolumn:bindtakes;
-	CS_INT	bindguiddiscarded=(relaymssql)?bindnocolumn:bindtakes;
 
 	struct bindcase {
 		const char	*label;
@@ -7977,7 +7974,7 @@ int main(int argc, char **argv) {
 			bindtakes,bindtakes,"123.4500",9,1,0,0},
 		{"CS_UNIQUE_TYPE","bindguid",CS_UNIQUE_TYPE,
 			(CS_VOID *)binduniquevalue,16,16,0,0,
-			bindguiddiscarded,bindnocolumn,
+			bindtakes,bindnocolumn,
 			"04030201-0605-0807-090A-0B0C0D0E0F10",37,1,0,0},
 		{"CS_BLOB_TYPE","bindimage",CS_BLOB_TYPE,
 			(CS_VOID *)bindbinaryvalue,3,36,0,0,

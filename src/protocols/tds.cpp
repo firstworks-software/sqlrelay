@@ -689,6 +689,9 @@ static byte_t	tdstypemap[]={
 // the widest a bigchar or nchar value can be padded out to
 #define TDS_MAX_CHAR_SIZE	8000
 
+// how many bytes a guid occupies on the wire
+#define TDS_GUID_SIZE		16
+
 static const char *procids[]={
 	"",
 	"SP_CURSOR",
@@ -11390,7 +11393,50 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				debugEnd();
 				return false;
 			}
-			// FIXME: actually implement this
+			if (size!=TDS_GUID_SIZE) {
+				// any other size means null
+				debugWrite("value: (null)");
+				rp+=size;
+				rpsize-=size;
+				break;
+			}
+
+			if (bv) {
+
+				// ms-tds sends a guid with its first three
+				// fields byte-reversed with respect to the
+				// canonical string form, and its last two
+				// fields in string order - the reverse of
+				// the swap guid() applies on the way out,
+				// which is the same swap, since swapping
+				// pairs is its own inverse
+				static const uint16_t	order[]={
+					3,2,1,0, 5,4, 7,6,
+					8,9, 10,11,12,13,14,15
+				};
+				static const char	hex[]="0123456789ABCDEF";
+
+				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				bv->valuesize=36;
+				bv->value.stringval=(char *)
+					rpcparampool.allocate(
+						bv->valuesize+1);
+				char	*out=bv->value.stringval;
+				for (uint16_t i=0; i<TDS_GUID_SIZE; i++) {
+					if (i==4 || i==6 || i==8 || i==10) {
+						*(out++)='-';
+					}
+					byte_t	b=rp[order[i]];
+					*(out++)=hex[(b>>4)&0x0f];
+					*(out++)=hex[b&0x0f];
+				}
+				*out='\0';
+				bv->isnull=cont->getNonNullBindValue();
+
+				debugWrite("valuesize: %d",bv->valuesize);
+				debugWrite("value: %s",bv->value.stringval);
+			}
+
 			rp+=size;
 			rpsize-=size;
 			}
