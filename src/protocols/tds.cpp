@@ -692,6 +692,18 @@ static byte_t	tdstypemap[]={
 // how many bytes a guid occupies on the wire
 #define TDS_GUID_SIZE		16
 
+// A USHORTMAXLEN of 0xFFFF in a bigvarchr/bigvarbin/nvarchar TYPE_INFO isn't
+// a length at all - it's varchar(max)/varbinary(max)/nvarchar(max), and it
+// means the value that follows is partially length prefixed (MS-TDS 2.2.5.2.3)
+// rather than prefixed with one plain length.
+#define TDS_USHORTMAXLEN	0xFFFF
+
+// PLP_BODY total-length sentinels.  Anything else is the real byte count, but
+// the chunks and terminator follow in every case, so the total length is only
+// ever a hint.
+#define TDS_PLP_NULL		0xFFFFFFFFFFFFFFFFULL
+#define TDS_PLP_UNKNOWN_LEN	0xFFFFFFFFFFFFFFFEULL
+
 static const char *procids[]={
 	"",
 	"SP_CURSOR",
@@ -1152,6 +1164,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	paramValue(uint16_t param,
 					const byte_t **rpinout,
 					size_t *rpsizeinout,
+					sqlrserverbindvar *bv);
+		bool	parseXmlInfo(const byte_t **rpinout,
+					size_t *rpsizeinout);
+		bool	plpValue(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					byte_t tdstype,
 					sqlrserverbindvar *bv);
 		void	batchFlags(const byte_t *rp,
 					size_t rpsize,
@@ -10817,6 +10835,167 @@ bool sqlrprotocol_tds::param(uint16_t param,
 	return retval;
 }
 
+bool sqlrprotocol_tds::parseXmlInfo(const byte_t **rpinout,
+					size_t *rpsizeinout) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	// XML_INFO (MS-TDS 2.2.5.5.2) is a SchemaPresent byte and, only when
+	// it's set, three ucs-2 strings naming the schema collection: a
+	// 1-byte-counted dbname and owning schema, then a 2-byte-counted
+	// collection name.  All three counts are in characters rather than
+	// bytes.  Nothing here uses the names, so they're just skipped.
+	if (!rpsize) {
+		return false;
+	}
+	byte_t	schemapresent;
+	read(rp,&schemapresent,&rp);
+	rpsize--;
+	debugWrite("schemapresent: %d",schemapresent);
+
+	if (!schemapresent) {
+		return true;
+	}
+
+	for (uint8_t i=0; i<3; i++) {
+
+		uint16_t	length;
+		if (i<2) {
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	blength;
+			read(rp,&blength,&rp);
+			rpsize--;
+			length=blength;
+		} else {
+			if (rpsize<sizeof(uint16_t)) {
+				return false;
+			}
+			readLE(rp,&length,&rp);
+			rpsize-=sizeof(uint16_t);
+		}
+
+		size_t	size=length*sizeof(ucs2_t);
+		if (rpsize<size) {
+			return false;
+		}
+		rp+=size;
+		rpsize-=size;
+	}
+
+	return true;
+}
+
+bool sqlrprotocol_tds::plpValue(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					byte_t tdstype,
+					sqlrserverbindvar *bv) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	debugStart("plp value");
+
+	// PLP_BODY (MS-TDS 2.2.5.2.3) is an 8-byte total length, then a run of
+	// chunks - each a 4-byte length followed by that many bytes - ending
+	// in a zero-length chunk.  Two total lengths are sentinels rather than
+	// counts: PLP_NULL means the value is null and nothing follows at all,
+	// and UNKNOWN_PLP_LEN means the sender didn't know the total up front.
+	// The chunks run to the terminator either way, so the total length is
+	// only ever a hint and the terminator is what actually ends the value.
+	if (rpsize<sizeof(uint64_t)) {
+		debugEnd();
+		return false;
+	}
+	uint64_t	totalsize;
+	readLE(rp,&totalsize,&rp);
+	rpsize-=sizeof(uint64_t);
+
+	if (totalsize==TDS_PLP_NULL) {
+		if (bv) {
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			bv->isnull=cont->getNullBindValue();
+		}
+		debugWrite("value: (null)");
+		debugEnd();
+		return true;
+	}
+
+	if (totalsize==TDS_PLP_UNKNOWN_LEN) {
+		debugWrite("totalsize: (unknown)");
+	} else {
+		debugWrite("totalsize: %lld",(long long)totalsize);
+	}
+
+	bytebuffer	data;
+	for (;;) {
+
+		if (rpsize<sizeof(uint32_t)) {
+			debugEnd();
+			return false;
+		}
+		uint32_t	chunksize;
+		readLE(rp,&chunksize,&rp);
+		rpsize-=sizeof(uint32_t);
+
+		if (!chunksize) {
+			break;
+		}
+
+		if (rpsize<chunksize) {
+			debugEnd();
+			return false;
+		}
+		data.append(rp,chunksize);
+		rp+=chunksize;
+		rpsize-=chunksize;
+	}
+
+	size_t		size=data.getSize();
+	const byte_t	*value=data.getBuffer();
+
+	debugWrite("valuesize: %lld",(long long)size);
+
+	if (bv) {
+		switch (tdstype) {
+			case TDS_TYPE_BIGVARBIN:
+				bulkBinary(bv,&rpcparampool,value,size);
+				break;
+			case TDS_TYPE_NVARCHAR:
+			case TDS_TYPE_XML:
+				{
+				// the chunks are ucs-2,
+				// and their lengths are in bytes
+				size_t	length=size/sizeof(ucs2_t);
+
+				// the data isn't necessarily aligned,
+				// so copy it out before converting it
+				const byte_t	*dummy;
+				ucs2_t		*value16=new ucs2_t[length];
+				read(value,value16,length,&dummy);
+				size_t	utf8size;
+				char	*utf8=ucs2ToUtf8(value16,
+							length,&utf8size);
+				delete[] value16;
+
+				bulkString(bv,&rpcparampool,utf8,utf8size);
+
+				delete[] utf8;
+				}
+				break;
+			default:
+				bulkString(bv,&rpcparampool,
+						(const char *)value,size);
+				break;
+		}
+	}
+
+	debugEnd();
+	return true;
+}
+
 bool sqlrprotocol_tds::paramValue(uint16_t param,
 					const byte_t **rpinout,
 					size_t *rpsizeinout,
@@ -10841,6 +11020,13 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	uint32_t	maxsize=0;
 	byte_t		precision=0;
 	byte_t		scale=0;
+
+	// Whether the value below is partially length prefixed.  bigvarchr,
+	// bigvarbin and nvarchar are var-len or part-len depending on the
+	// USHORTMAXLEN that follows the type byte, not on the type byte alone,
+	// so this can only be decided once that's been read.  xml and udt are
+	// always part-len.
+	bool		partlen=false;
 
 	if (isFixedLenType(tdstype)) {
 
@@ -10878,9 +11064,30 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				uint16_t	size;
 				readLE(rp,&size,&rp);
 				rpsize-=sizeof(uint16_t);
-				maxsize=size;
-				debugWrite("maxsize: %d",maxsize);
+				if (size==TDS_USHORTMAXLEN) {
+					// the max forms - varchar(max),
+					// nvarchar(max), varbinary(max) -
+					// declare no maxsize at all and carry
+					// a plp value instead of a plainly
+					// length prefixed one
+					partlen=true;
+					debugWrite("maxsize: (max)");
+				} else {
+					maxsize=size;
+					debugWrite("maxsize: %d",maxsize);
 				}
+				}
+				break;
+			case TDS_TYPE_XML:
+				// XML_INFO (MS-TDS 2.2.5.5.2) - a
+				// SchemaPresent byte, then the schema
+				// collection if it's set.  No maxsize, and
+				// the value is always plp.
+				if (!parseXmlInfo(&rp,&rpsize)) {
+					debugEnd();
+					return false;
+				}
+				partlen=true;
 				break;
 			case TDS_TYPE_DATEN:
 			case TDS_TYPE_TIMEN:
@@ -10939,15 +11146,12 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				break;
 		}
 
-	} else if (isPartLenType(tdstype)) {
-
-		debugWrite("partlentype...");
-
-		// FIXME: [ushortmaxlen] [collation] [xml_info] [utd_info]
-		debugEnd();
-		return rpcUnsupportedTypeError(tdstype);
 	}
 
+	// no isPartLenType() arm here on purpose - every part-len type is a
+	// var-len type too, and which shape a given parameter actually has
+	// depends on its maxsize, so the arm above reads the type info for
+	// both and sets partlen for the value read below
 	// an output parameter goes back as the type the client declared, and
 	// tdstype is rewritten just below to read the value
 	if (bv) {
@@ -11128,6 +11332,14 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 				}
 				break;
 		}
+	}
+
+	// a max type's value is plp framed rather than plainly
+	// length prefixed, so it needs its own reader
+	if (partlen && tdstype!=TDS_TYPE_NULL) {
+		bool	retval=plpValue(&rp,&rpsize,tdstype,bv);
+		debugEnd();
+		return retval;
 	}
 
 	// get the data

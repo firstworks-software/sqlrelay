@@ -388,6 +388,11 @@
 	fixed the tds protocol module parsing a uniqueidentifier parameter and
 		throwing it away, which stored a null instead of the value the
 		client sent
+	the tds protocol module reads partially length prefixed parameter
+		values now, so a varchar(max), varbinary(max), nvarchar(max) or
+		xml parameter no longer desyncs the parameter stream and fails
+		with "Data type 0x00 is unknown" - which is how text and image
+		parameters arrive under tds 7.2 and up
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

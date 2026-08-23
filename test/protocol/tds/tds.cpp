@@ -7822,11 +7822,8 @@ int main(int argc, char **argv) {
 	// #9425 - the "datalen strlen plus one" value contains a NUL, and
 	// the odbc connection module's charset conversion overruns its
 	// output buffer on it
-	// #9428 - text and image parameters fail with "Data type 0x00 is
-	// unknown" under tds 7.4, though they work under 7.0
 	CS_INT	bindprepnotrefused=(relaymssql)?bindnocolumn:bindprepfails;
 	CS_INT	bindconvoverruns=(relaymssql)?bindnocolumn:bindtakes;
-	CS_INT	bindplpunknown=(relaymssql && tds73plus)?bindnocolumn:bindtakes;
 
 	struct bindcase {
 		const char	*label;
@@ -7859,7 +7856,7 @@ int main(int argc, char **argv) {
 			bindtakes,bindtakes,"abc",4,1,0,0},
 		{"CS_TEXT_TYPE","bindtext",CS_TEXT_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
-			bindplpunknown,bindtakes,"abc",4,1,0,0},
+			bindtakes,bindtakes,"abc",4,1,0,0},
 		{"CS_UNICHAR_TYPE","bindunichar",CS_UNICHAR_TYPE,
 			(CS_VOID *)bindcharvalue,3,36,0,0,
 			bindtakes,bindtakes,"abc",4,1,0,0},
@@ -7875,7 +7872,7 @@ int main(int argc, char **argv) {
 			bindprepnotrefused,bindtakes,"010203",7,1,0,0},
 		{"CS_IMAGE_TYPE","bindimage",CS_IMAGE_TYPE,
 			(CS_VOID *)bindbinaryvalue,3,36,0,0,
-			bindplpunknown,bindtakes,"010203",7,1,0,0},
+			bindtakes,bindtakes,"010203",7,1,0,0},
 		{"CS_TINYINT_TYPE","bindtinyint",CS_TINYINT_TYPE,
 			(CS_VOID *)&bindtinyintvalue,
 			(CS_INT)sizeof(CS_TINYINT),1,0,0,
@@ -8226,6 +8223,62 @@ int main(int argc, char **argv) {
 
 		stdoutput.printf("\n");
 	}
+
+
+	// The long-statement side of #9428.  The text and image parameters
+	// above arrive plp framed under tds 7.4 - freetds upgrades them to
+	// varchar(max)/varbinary(max) - and the worry was that the statement
+	// sp_prepare carries would go the same way as nvarchar(max) once it
+	// passed 4000 characters.  It doesn't: freetds sends the statement
+	// and the parameter declaration string as ntext at every length and
+	// every tds version, so nothing here reaches the nvarchar plp arm.
+	// This case pins that down and covers the long statement itself,
+	// which nothing else here does.  datalength() rather than the string
+	// itself, so the readback stays small and both servers can answer it.
+	stdoutput.printf("ct_dynamic: statement over 4000 characters\n");
+	stringbuffer	bindlongb;
+	bindlongb.append("select datalength('");
+	for (CS_INT i=0; i<4100; i++) {
+		bindlongb.append('a');
+	}
+	bindlongb.append("')");
+	query=bindlongb.getString();
+
+	assertEquals(ct_dynamic(cmd,CS_PREPARE,(CS_CHAR *)"bindlong",
+				CS_NULLTERM,(CS_CHAR *)query,
+				CS_NULLTERM),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,(CS_CHAR *)"bindlong",
+				CS_NULLTERM,(CS_CHAR *)NULL,
+				CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	bytestring::zero(bindreaddata,sizeof(bindreaddata));
+	bindreadlength=-1;
+	bindreadindicator=-99;
+	assertEquals(ct_bind(cmd,1,&bindreadfmt,(CS_VOID *)bindreaddata,
+				&bindreadlength,&bindreadindicator),CS_SUCCEED);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,CS_UNUSED,
+				&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(bindreaddata,"4100");
+	assertEquals(bindreadindicator,0);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,CS_UNUSED,
+				&rowsread),CS_END_DATA);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+	ct_dynamic(cmd,CS_DEALLOC,(CS_CHAR *)"bindlong",CS_NULLTERM,
+					(CS_CHAR *)NULL,CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+	stdoutput.printf("\n");
 
 
 	// #8791 drove one output parameter, an int.  These three carry the
