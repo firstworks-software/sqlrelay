@@ -380,6 +380,11 @@
 		rather than hex text, which halved and garbled every such
 		value, and clamped those values' length prefixes to the sizes
 		sent in the column metadata
+	fixed the odbc connection module sizing its charset conversion buffer
+		from a null-terminated length rather than the caller's byte
+		count, which made any bind or query containing an embedded null
+		fail with a bogus "iconvert::convert(): Argument list too long"
+		server message
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

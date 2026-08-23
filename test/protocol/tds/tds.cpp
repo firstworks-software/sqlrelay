@@ -4240,6 +4240,105 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// #9425 - a datalen of strlen+1 sends the terminator as data, and
+	// sqlrelay then blank pads that out to the char column's declared
+	// width, so the value the connection module binds is 20 bytes with
+	// a NUL in the middle.  Sizing a charset conversion buffer from a
+	// null-terminated length instead of that 20 makes the bind fail
+	// with a bogus "iconvert::convert(): Argument list too long"
+	// server message.
+	stdoutput.printf("ct_dynamic: execute insert with an embedded null\n");
+	assertEquals(ct_dynamic(cmd,CS_EXECUTE,
+				(CS_CHAR *)dyninsertid,CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
+	bytestring::zero(&(dynparam[0]),sizeof(CS_DATAFMT));
+	dynparam[0].datatype=CS_INT_TYPE;
+	dynparam[0].maxlength=4;
+	dynparam[0].count=1;
+	dynintvalue[0]=6;
+	assertEquals(ct_param(cmd,&(dynparam[0]),
+				(CS_VOID *)&(dynintvalue[0]),
+				sizeof(CS_INT),0),CS_SUCCEED);
+	bytestring::zero(&(dynparam[1]),sizeof(CS_DATAFMT));
+	dynparam[1].datatype=CS_CHAR_TYPE;
+	dynparam[1].maxlength=20;
+	dynparam[1].count=1;
+	charstring::copy(dyncharvalue[0],"six");
+	assertEquals(ct_param(cmd,&(dynparam[1]),
+			(CS_VOID *)dyncharvalue[0],
+			charstring::getLength(dyncharvalue[0])+1,
+			0),CS_SUCCEED);
+	bytestring::zero(&(dynparam[2]),sizeof(CS_DATAFMT));
+	dynparam[2].datatype=CS_CHAR_TYPE;
+	dynparam[2].maxlength=20;
+	dynparam[2].count=1;
+	charstring::copy(dyncharvalue[1],"seis");
+	assertEquals(ct_param(cmd,&(dynparam[2]),
+			(CS_VOID *)dyncharvalue[1],
+			charstring::getLength(dyncharvalue[1])+1,
+			0),CS_SUCCEED);
+	bytestring::zero(&(dynparam[3]),sizeof(CS_DATAFMT));
+	dynparam[3].datatype=CS_INT_TYPE;
+	dynparam[3].maxlength=4;
+	dynparam[3].count=1;
+	dynintvalue[3]=106;
+	assertEquals(ct_param(cmd,&(dynparam[3]),
+				(CS_VOID *)&(dynintvalue[3]),
+				sizeof(CS_INT),0),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_SUCCEED);
+	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+				(CS_VOID *)&affectedrows,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	assertEquals(affectedrows,1);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("ct_command: select embedded null row\n");
+	query="select testchar, testvarchar from dyntable where testid = 6";
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+	for (CS_INT i=0; i<2; i++) {
+		bytestring::zero(dyndata[i],1024);
+		assertEquals(ct_bind(cmd,i+1,&(dynfmt[i]),
+					(CS_VOID *)dyndata[i],
+					&(dyndatalength[i]),
+					&(dynnullindicator[i])),CS_SUCCEED);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	// the terminator ends the value, so the blank pad sqlrelay added is
+	// dropped again and only "six"/"seis" is stored - char(20) pads its
+	// own column back out on the way in, varchar(20) doesn't
+	assertEquals(dyndata[0],(issybase)?"six":"six                 ");
+	assertEquals(dyndatalength[0],(issybase)?4:21);
+	assertEquals(dyndata[1],"seis");
+	assertEquals(dyndatalength[1],5);
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
 	// MSSQL answers sp_unprepare with only a return status and a
 	// done, so freetds reports no result sets at all.  ASE's native
 	// dynamic dealloc gets the ordinary pair, but only over a real
@@ -4367,7 +4466,7 @@ int main(int argc, char **argv) {
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 	assertEquals(rowsread,1);
-	assertEquals(dyndata[0],"5");
+	assertEquals(dyndata[0],"6");
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);

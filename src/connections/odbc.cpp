@@ -685,11 +685,16 @@ byte_t *convertCharset(const byte_t *inbuf,
 
 	// calculate size of output buffer (in bytes)
 	// (3 is max size of byte order mark)
+	// The output size must come from the caller's byte count, not from a
+	// null-terminated length.  A value with an embedded NUL is longer than
+	// its null-terminated length, and iconvert is driven with insize, so
+	// deriving the output size any other way undersizes the buffer and the
+	// conversion fails with E2BIG.
 	size_t	multiplier=4;
 	if (isUcs2(inenc) && isUcs2(outenc)) {
 		multiplier=1;
 	}
-	size_t	outsize=len(inbuf,inenc)*multiplier+3+nullsize;
+	size_t	outsize=insize*multiplier+3+nullsize;
 
 	// allocate the output buffer
 	byte_t	*outbuf=new byte_t[outsize];
