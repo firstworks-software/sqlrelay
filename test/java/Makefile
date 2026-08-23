@@ -8,6 +8,7 @@ all: db2.class\
 	firebird.class \
 	informix.class \
 	mysql.class \
+	odbc_mssql.class \
 	oracle.class \
 	postgresql.class \
 	sqlite.class \
@@ -36,6 +37,9 @@ informix.class: sqlrtest.java informix.java
 
 mysql.class: sqlrtest.java mysql.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java mysql.java
+
+odbc_mssql.class: sqlrtest.java odbc-mssql.java
+	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java odbc-mssql.java
 
 oracle.class: sqlrtest.java oracle.java
 	$(JAVAC) -classpath $(javadir)/sqlrelay.jar sqlrtest.java oracle.java

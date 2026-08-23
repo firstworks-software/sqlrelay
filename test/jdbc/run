@@ -27,6 +27,12 @@ else
 			mysql)
 				jar=`ls drivers/mysql-connector-j-*.jar | tail -1`
 				;;
+			odbc_mssql)
+				# no ms jdbc driver jar in drivers/, and
+				# jtds talks to the same sql server the
+				# odbc connection module reaches
+				jar=`ls drivers/jtds*.jar | tail -1`
+				;;
 			oracle)
 				jar=`ls drivers/ojdbc*.jar | tail -1`
 				;;
