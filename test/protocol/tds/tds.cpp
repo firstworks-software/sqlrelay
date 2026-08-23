@@ -3548,6 +3548,146 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// #9433 - a bulk copy into a varchar(max) shaped column.  The column
+	// metadata of a max column carries a 0xFFFF USHORTMAXLEN rather than
+	// a real size, and its values are plp framed (an 8 byte total length,
+	// then 4-byte-length chunks ending at a zero length terminator)
+	// rather than plainly length prefixed - the same wire shape #9428
+	// fixed for rpc parameters, but read by bulkTypeInfo()/bulkValue()
+	// here instead of paramValue().
+	//
+	// Note what this case does and doesn't cover.  Freetds builds its
+	// bulk column metadata from whatever the server described the table
+	// as, so against sqlrelay it echoes the relay's own description, and
+	// the relay describes a max column with a plain size rather than
+	// 0xFFFF - so this run exercises the bounded half of the dispatch,
+	// not the plp half.  Against a real sql server the same case does
+	// send 0xFFFF and plp.  Freetds reaches 0xFFFF on its own only for
+	// xml and udt columns, and it can't bulk copy into either: it fails
+	// to build a column declaration for them and silently leaves them
+	// out of its "insert bulk" statement, so the copy dies on a column
+	// count mismatch before any value is read.
+	if (!issybase) {
+
+		query="drop table bulkmaxtable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+		stdoutput.printf("ct_command: create max\n");
+		query="create table bulkmaxtable ("
+				"testint int null, "
+				"testvarcharmax varchar(max) null"
+				")";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("blk_: max column\n");
+		CS_BLKDESC	*maxblk=NULL;
+		assertEquals(blk_alloc(dbconn,BLK_VERSION_100,&maxblk),
+								CS_SUCCEED);
+		assertEquals(blk_init(maxblk,CS_BLK_IN,
+					(CS_CHAR *)"bulkmaxtable",
+					CS_NULLTERM),CS_SUCCEED);
+		char		maxvalue[2][32];
+		CS_INT		maxlength[2];
+		CS_SMALLINT	maxindicator[2];
+		CS_DATAFMT	maxfmt[2];
+		charstring::copy(maxvalue[0],"1");
+		charstring::copy(maxvalue[1],"maxvalue");
+		for (CS_INT i=0; i<2; i++) {
+			maxlength[i]=charstring::getLength(maxvalue[i]);
+			maxindicator[i]=0;
+			maxfmt[i].datatype=CS_CHAR_TYPE;
+			maxfmt[i].format=CS_FMT_NULLTERM;
+			maxfmt[i].maxlength=(CS_INT)sizeof(maxvalue[i]);
+			maxfmt[i].scale=CS_UNUSED;
+			maxfmt[i].precision=CS_UNUSED;
+			maxfmt[i].status=CS_UNUSED;
+			maxfmt[i].count=1;
+			maxfmt[i].usertype=CS_UNUSED;
+			maxfmt[i].locale=NULL;
+			assertEquals(blk_bind(maxblk,i+1,&(maxfmt[i]),
+						(CS_VOID *)maxvalue[i],
+						&(maxlength[i]),
+						&(maxindicator[i])),
+						CS_SUCCEED);
+		}
+		assertEquals(blk_rowxfer(maxblk),CS_SUCCEED);
+		outrow=-1;
+		assertEquals(blk_done(maxblk,CS_BLK_ALL,&outrow),CS_SUCCEED);
+		assertEquals(outrow,1);
+		assertEquals(blk_drop(maxblk),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// only the row count, not the value.  the relay describes a
+		// max column with a size of 0 today, so the value it stores
+		// is empty, while a real sql server stores "maxvalue" - a
+		// separate defect from the plp parse this case is here for
+		stdoutput.printf("ct_command: max row count\n");
+		query="select convert(varchar(20),count(*)) "
+			"from bulkmaxtable";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		bytestring::zero(blkreaddata[0],1024);
+		assertEquals(ct_bind(cmd,1,&(blkreadfmt[0]),
+					(CS_VOID *)blkreaddata[0],
+					&(blkreadlength[0]),
+					&(blkreadindicator[0])),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(blkreaddata[0],"1");
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: drop max\n");
+		query="drop table bulkmaxtable";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
+
+
 	stdoutput.printf("ct_command: drop\n");
 	query="drop table bulktable";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,

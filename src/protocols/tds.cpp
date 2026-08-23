@@ -1173,7 +1173,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	plpValue(const byte_t **rpinout,
 					size_t *rpsizeinout,
 					byte_t tdstype,
-					sqlrserverbindvar *bv);
+					sqlrserverbindvar *bv,
+					memorypool *bindpool);
 		void	batchFlags(const byte_t *rp,
 					size_t rpsize,
 					const byte_t **rpout,
@@ -1479,6 +1480,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		byte_t			*bulktypes;
 		uint32_t		*bulksizes;
 		byte_t			*bulkscales;
+		bool			*bulkpartlens;
 
 		// a client can hold a prepared statement handle and a cursor
 		// derived from it at the same time, so these are independent
@@ -1583,6 +1585,7 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	bulktypes=new byte_t[maxbindcount];
 	bulksizes=new uint32_t[maxbindcount];
 	bulkscales=new byte_t[maxbindcount];
+	bulkpartlens=new bool[maxbindcount];
 
 	forupdateof.setPattern(
 		"\\sfor\\s+update(\\s+of\\s+[a-z0-9_.,\\s]+)?\\s*$",
@@ -1620,6 +1623,7 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] bulktypes;
 	delete[] bulksizes;
 	delete[] bulkscales;
+	delete[] bulkpartlens;
 }
 
 tdsrows::tdsrows(sqlrprotocol_tds *tds) {
@@ -7143,6 +7147,12 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 	bulktypes[col]=tdstype;
 	bulksizes[col]=0;
 	bulkscales[col]=0;
+	// Whether this column's values are partially length prefixed.
+	// bigvarchr, bigvarbin and nvarchar are var-len or part-len depending
+	// on the USHORTMAXLEN that follows the type byte, not on the type byte
+	// alone, so this can only be decided once that's been read.  xml is
+	// always part-len.  Same rule paramValue() applies to rpc parameters.
+	bulkpartlens[col]=false;
 
 	if (isFixedLenType(tdstype)) {
 
@@ -7213,7 +7223,6 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 			case TDS_TYPE_BIGVARBIN:
 			case TDS_TYPE_NCHAR:
 			case TDS_TYPE_NVARCHAR:
-			case TDS_TYPE_XML:
 			case TDS_TYPE_UDT:
 				{
 				if (rpsize<sizeof(uint16_t)) {
@@ -7224,9 +7233,35 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 				uint16_t	size;
 				readLE(rp,&size,&rp);
 				rpsize-=sizeof(uint16_t);
-				bulksizes[col]=size;
-				debugWrite("size: %d (16-bit)",size);
+				if (size==TDS_USHORTMAXLEN &&
+						tdstype!=TDS_TYPE_UDT) {
+					// the max forms - varchar(max),
+					// nvarchar(max), varbinary(max) -
+					// declare no size at all and carry
+					// plp values instead of plainly
+					// length prefixed ones.  (a udt
+					// declares a real size ahead of its
+					// own type info, which nothing
+					// parses, so leave it alone.)
+					bulkpartlens[col]=true;
+					debugWrite("size: (max)");
+				} else {
+					bulksizes[col]=size;
+					debugWrite("size: %d (16-bit)",size);
 				}
+				}
+				break;
+			case TDS_TYPE_XML:
+				// XML_INFO (MS-TDS 2.2.5.5.2) - a
+				// SchemaPresent byte, then the schema
+				// collection if it's set.  No size, and the
+				// values are always plp.
+				if (!parseXmlInfo(&rp,&rpsize)) {
+					debugWrite("short packet");
+					debugEnd();
+					return false;
+				}
+				bulkpartlens[col]=true;
 				break;
 			default:
 				{
@@ -7630,6 +7665,17 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 
 	debugStart("value");
 	debugColumnType(tdstype);
+
+	// a max column - varchar(max), nvarchar(max), varbinary(max), xml -
+	// carries plp values rather than plainly length prefixed ones.
+	// bulkTypeInfo() decided that from the column's type info, since the
+	// type byte alone doesn't say which shape a value has.
+	if (bulkpartlens[col]) {
+		bool	retval=plpValue(rpinout,rpsizeinout,
+						tdstype,bv,bindpool);
+		debugEnd();
+		return retval;
+	}
 
 	// a text, ntext or image value arrives behind a text pointer and
 	// timestamp, both filled with 0xFF by a bulk load.  a single zero
@@ -8282,9 +8328,8 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			}
 			break;
 		default:
-			// FIXME: partlen types arrive as a 64-bit length
-			// followed by chunks, which nothing sends yet
-			// because typeInfo() never declares one
+			// the part-len types are read above rather than here.
+			// what's left is udt, whose body nothing parses.
 			debugWrite("unsupported type");
 			debugEnd();
 			return false;
@@ -10894,7 +10939,8 @@ bool sqlrprotocol_tds::parseXmlInfo(const byte_t **rpinout,
 bool sqlrprotocol_tds::plpValue(const byte_t **rpinout,
 					size_t *rpsizeinout,
 					byte_t tdstype,
-					sqlrserverbindvar *bv) {
+					sqlrserverbindvar *bv,
+					memorypool *bindpool) {
 
 	const byte_t	*&rp=*rpinout;
 	size_t		&rpsize=*rpsizeinout;
@@ -10964,7 +11010,7 @@ bool sqlrprotocol_tds::plpValue(const byte_t **rpinout,
 	if (bv) {
 		switch (tdstype) {
 			case TDS_TYPE_BIGVARBIN:
-				bulkBinary(bv,&rpcparampool,value,size);
+				bulkBinary(bv,bindpool,value,size);
 				break;
 			case TDS_TYPE_NVARCHAR:
 			case TDS_TYPE_XML:
@@ -10983,13 +11029,13 @@ bool sqlrprotocol_tds::plpValue(const byte_t **rpinout,
 							length,&utf8size);
 				delete[] value16;
 
-				bulkString(bv,&rpcparampool,utf8,utf8size);
+				bulkString(bv,bindpool,utf8,utf8size);
 
 				delete[] utf8;
 				}
 				break;
 			default:
-				bulkString(bv,&rpcparampool,
+				bulkString(bv,bindpool,
 						(const char *)value,size);
 				break;
 		}
@@ -11340,7 +11386,8 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	// a max type's value is plp framed rather than plainly
 	// length prefixed, so it needs its own reader
 	if (partlen && tdstype!=TDS_TYPE_NULL) {
-		bool	retval=plpValue(&rp,&rpsize,tdstype,bv);
+		bool	retval=plpValue(&rp,&rpsize,tdstype,bv,
+							&rpcparampool);
 		debugEnd();
 		return retval;
 	}

@@ -410,6 +410,12 @@
 		length of a value the driver wrote comes from the driver's
 		indicator now, rather than from a scan for a null
 		terminator
+	the tds protocol module reads partially length prefixed bulk copy
+		values now, so a bulk copy into a varchar(max),
+		varbinary(max), nvarchar(max) or xml column no longer
+		misreads the column's 0xFFFF max length as a real length and
+		dies with "Malformed bulk load row" - the same fix the rpc
+		parameter path already got, applied to the bulk load path
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
