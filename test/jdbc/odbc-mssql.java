@@ -1909,51 +1909,32 @@ class odbc_mssql extends sqlrtest {
 			pstmt.setInt(1,i);
 			pstmt.setInt(2,i);
 			pstmt.setInt(3,i);
-			// the odbc module binds a double with the (15,0)
-			// precision and scale the driver sends, and the driver
-			// rejects that with "Invalid precision value" - bind
-			// the value as a string instead
-			if (issqlrelay) {
-				pstmt.setString(4,i+".5");
-				pstmt.setString(5,i+".5");
-			} else {
-				pstmt.setDouble(4,i+0.5);
-				pstmt.setDouble(5,i+0.5);
-			}
+			pstmt.setDouble(4,i+0.5);
+			pstmt.setDouble(5,i+0.5);
 			pstmt.setBigDecimal(6,new BigDecimal(i+".5"));
 			pstmt.setBigDecimal(7,new BigDecimal(i+".5"));
 			pstmt.setBigDecimal(8,new BigDecimal(i+".50"));
 			pstmt.setBigDecimal(9,new BigDecimal(i+".50"));
 
-			// the odbc module rejects the driver's date binds the
-			// same way it rejects its double binds, so bind these
-			// as strings too
-			if (issqlrelay) {
-				pstmt.setString(10,
-					"200"+i+"-01-01 0"+i+":00:00");
-				pstmt.setString(11,
-					"200"+i+"-01-01 0"+i+":00:00");
-			} else {
-				cal.set(Calendar.YEAR,2000+i);
-				cal.set(Calendar.MONTH,Calendar.JANUARY);
-				cal.set(Calendar.DAY_OF_MONTH,1);
-				cal.set(Calendar.HOUR_OF_DAY,i);
-				cal.set(Calendar.MINUTE,0);
-				cal.set(Calendar.SECOND,0);
-				cal.set(Calendar.MILLISECOND,0);
-				pstmt.setTimestamp(10,new Timestamp(
-						cal.getTimeInMillis()));
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,i);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
+			pstmt.setTimestamp(10,new Timestamp(
+					cal.getTimeInMillis()));
 
-				cal.set(Calendar.YEAR,2000+i);
-				cal.set(Calendar.MONTH,Calendar.JANUARY);
-				cal.set(Calendar.DAY_OF_MONTH,1);
-				cal.set(Calendar.HOUR_OF_DAY,i);
-				cal.set(Calendar.MINUTE,0);
-				cal.set(Calendar.SECOND,0);
-				cal.set(Calendar.MILLISECOND,0);
-				pstmt.setTimestamp(11,new Timestamp(
-						cal.getTimeInMillis()));
-			}
+			cal.set(Calendar.YEAR,2000+i);
+			cal.set(Calendar.MONTH,Calendar.JANUARY);
+			cal.set(Calendar.DAY_OF_MONTH,1);
+			cal.set(Calendar.HOUR_OF_DAY,i);
+			cal.set(Calendar.MINUTE,0);
+			cal.set(Calendar.SECOND,0);
+			cal.set(Calendar.MILLISECOND,0);
+			pstmt.setTimestamp(11,new Timestamp(
+					cal.getTimeInMillis()));
 			pstmt.setString(12,"char"+i);
 			pstmt.setString(13,"varchar"+i);
 			pstmt.setInt(14,i%2);
@@ -2658,12 +2639,7 @@ class odbc_mssql extends sqlrtest {
 			(issqlrelay)?-1:0);
 		cstmt=con.prepareCall("exec testproc ?,?,?,?,?,?");
 		cstmt.setInt(1,1);
-		// same double bind restriction as the fixture inserts above
-		if (issqlrelay) {
-			cstmt.setString(2,"1.5");
-		} else {
-			cstmt.setDouble(2,1.5);
-		}
+		cstmt.setDouble(2,1.5);
 		cstmt.setString(3,"hello");
 		cstmt.registerOutParameter(4,Types.INTEGER);
 		cstmt.registerOutParameter(5,Types.DOUBLE);

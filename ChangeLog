@@ -366,6 +366,11 @@
 	fixed jdbc's DatabaseMetaData integer feature accessors throwing
 		NumberFormatException when a connection module reports an empty
 		value, as the odbc module does for getSQLStateType()
+	fixed the odbc connection module getting "Invalid precision value"
+		errors from sql server's driver when binding doubles, dates,
+		times or timestamps.  it passed a column size of 0 for those
+		types, and a fractional seconds scale that could exceed sql
+		server's maximum of 7
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

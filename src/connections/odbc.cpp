@@ -230,6 +230,8 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						const char **tz,
 						bool *isnegative,
 						int16_t *isnull);
+		SQLSMALLINT	getTimestampScale();
+		SQLULEN		getTimestampColumnSize(SQLSMALLINT scale);
 		int16_t		getNonNullBindValue();
 		int16_t		getNullBindValue();
 		bool		executeQuery(const char *query,
@@ -4836,13 +4838,27 @@ bool odbccursor::inputBind(const char *variable,
 		return false;
 	}
 
+	// Bind as a decimal, with the precision/scale that the client
+	// supplied, if they're usable.  Otherwise bind as a double, which
+	// ignores the precision/scale entirely.  Some drivers (SQL Server's
+	// in particular) reject a decimal bind with a precision of 0, or
+	// with a scale greater than the precision.
+	SQLSMALLINT	paramtype=SQL_DOUBLE;
+	SQLULEN		cs=0;
+	SQLSMALLINT	s=0;
+	if (precision>0 && scale<=precision) {
+		paramtype=SQL_DECIMAL;
+		cs=precision;
+		s=scale;
+	}
+
 	erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT,
 				SQL_C_DOUBLE,
-				SQL_DECIMAL,
-				precision,
-				scale,
+				paramtype,
+				cs,
+				s,
 				value,
 				sizeof(double),
 				NULL);
@@ -4883,7 +4899,8 @@ bool odbccursor::inputBind(const char *variable,
 				SQL_PARAM_INPUT,
 				SQL_C_DATE,
 				SQL_DATE,
-				0,
+				// standard column size for YYYY-MM-DD
+				10,
 				0,
 				ts,
 				0,
@@ -4901,8 +4918,11 @@ bool odbccursor::inputBind(const char *variable,
 				SQL_PARAM_INPUT,
 				SQL_C_TIME,
 				SQL_TIME,
+				// standard column size for HH:MM:SS.
+				// SQL_TIME_STRUCT has no fraction
+				// field, so the scale must be 0.
+				8,
 				0,
-				odbcconn->fractionscale,
 				ts,
 				0,
 				NULL);
@@ -4933,13 +4953,20 @@ bool odbccursor::inputBind(const char *variable,
 		// driver.  None of their solutions worked for me.  There is
 		// probably some magic that will work.  I'll have to find it
 		// some day.
+		// The column size and decimal digits must be consistent
+		// with each other, and within the range that the db
+		// supports, or some drivers (SQL Server's in particular)
+		// reject the bind.
+		SQLSMALLINT	s=getTimestampScale();
+		SQLULEN		cs=getTimestampColumnSize(s);
+
 		erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT,
 				SQL_C_TIMESTAMP,
 				SQL_TIMESTAMP,
-				0,
-				odbcconn->fractionscale,
+				cs,
+				s,
 				ts,
 				0,
 				NULL);
@@ -5230,15 +5257,16 @@ bool odbccursor::outputBind(const char *variable,
 	outcharbind[pos-1]=NULL;
 	outisnullptr[pos-1]=isnull;
 
+	SQLSMALLINT	s=getTimestampScale();
+	SQLULEN		cs=getTimestampColumnSize(s);
+
 	erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_OUTPUT,
 				SQL_C_TIMESTAMP,
 				SQL_TIMESTAMP,
-				// FIXME: shouldn't these be 29,9
-				// like an input/output bind?
-				0,
-				0,
+				cs,
+				s,
 				&(db->buffer),
 				0,
 				&(outisnull[pos-1])
@@ -5478,17 +5506,41 @@ bool odbccursor::inputOutputBind(const char *variable,
 	inoutcharbind[pos-1]=NULL;
 	inoutisnullptr[pos-1]=isnull;
 
+	SQLSMALLINT	s=getTimestampScale();
+	SQLULEN		cs=getTimestampColumnSize(s);
+
 	erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT_OUTPUT,
 				SQL_C_TIMESTAMP,
 				SQL_TIMESTAMP,
-				29,
-				9,
+				cs,
+				s,
 				&(db->buffer),
 				0,
 				&(outisnull[pos-1]));
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+}
+
+SQLSMALLINT odbccursor::getTimestampScale() {
+
+	// fractional seconds digits that the db supports...
+	SQLSMALLINT	scale=(odbcconn->supportsfraction)?
+					odbcconn->fractionscale:0;
+
+	// ... but SQL Server's datetime2 tops out at 7, and its driver
+	// rejects anything higher outright
+	if (odbcconn->mssql && scale>7) {
+		scale=7;
+	}
+	return scale;
+}
+
+SQLULEN odbccursor::getTimestampColumnSize(SQLSMALLINT scale) {
+
+	// YYYY-MM-DD HH:MM:SS is 19 characters, plus the decimal point
+	// and the fractional seconds digits, if there are any
+	return (scale)?(SQLULEN)(20+scale):19;
 }
 
 int16_t odbccursor::getNonNullBindValue() {
