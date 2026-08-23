@@ -1051,9 +1051,9 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 			 (uint32_t)scale);
 	} else if (objc == 5) {
           /* string with length */
-	  long length;
-	  if (Tcl_GetLongFromObj(interp, objv[3], &length) != TCL_OK) {
-	      Tcl_GetIntFromObj(interp, objv[3], (int *)&length);
+	  long length=0;
+	  if (Tcl_GetLongFromObj(interp, objv[4], &length) != TCL_OK) {
+	      Tcl_GetIntFromObj(interp, objv[4], (int *)&length);
           }
           /* length must be > 0 */
           if (length>0) {

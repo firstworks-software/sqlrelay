@@ -371,6 +371,10 @@
 		times or timestamps.  it passed a column size of 0 for those
 		types, and a fractional seconds scale that could exceed sql
 		server's maximum of 7
+	fixed the tcl api's inputBind reading the length from the value
+		argument instead of the length argument when called with an
+		explicit length, which passed a garbage length down and
+		overran the buffer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

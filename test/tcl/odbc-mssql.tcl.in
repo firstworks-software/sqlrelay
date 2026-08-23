@@ -1348,12 +1348,7 @@ catch {$secondcur sendQuery "drop table testtable"}
 assertTrue [$secondcur sendQuery "create table testtable (testnchar nvarchar(4000))"]
 set widencharbuffer [string repeat "N" 4000]
 $secondcur prepareQuery "insert into testtable values (?)"
-# not "inputBind "1" $widencharbuffer 4000" - the tcl binding's 3-arg
-# (variable value length) form reads the length from the wrong Tcl_Obj
-# and segfaults on a non-numeric value this long (#9423).  $widencharbuffer
-# has no embedded nulls, so the 2-arg form (which computes the length
-# itself) round-trips it just as well.
-$secondcur inputBind "1" $widencharbuffer
+$secondcur inputBind "1" $widencharbuffer 4000
 assertTrue [$secondcur executeQuery]
 assertTrue [$secondcur sendQuery "select testnchar from testtable"]
 assertEqual [$secondcur getFieldLengthByName 0 "testnchar"] 4000
