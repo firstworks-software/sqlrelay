@@ -460,6 +460,11 @@
 		whether the bind was null - the column was already bound as
 		null correctly, but the blob it created went unreferenced and
 		had to be garbage collected
+	fixed the odbc connection module re-describing a null bind's target
+		column on every execute instead of once per prepared
+		statement, by no longer resetting the per-position describe
+		cache in closeResultSet(), which doesn't change what's
+		prepared
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

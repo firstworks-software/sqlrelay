@@ -7288,9 +7288,17 @@ void odbccursor::closeResultSet() {
 		inoutisnullptr[i]=NULL;
 		inoutisnull[i]=0;
 		inbindlength[i]=0;
-		nullbindisbinary[i]=false;
-		nullbinddescribed[i]=false;
 	}
+
+	// nullbindisbinary/nullbinddescribed are not reset here.  What they
+	// cache - whether a parameter position is bound to a binary column -
+	// is a property of the prepared statement, and closeResultSet()
+	// never changes what's prepared.  allocateStatementHandle(), called
+	// from prepareQuery() for every new statement handle, is the only
+	// place that invalidates them, and it already resets both arrays.
+	// Resetting them here too turned a describe that's cached for the
+	// life of the prepared statement into one repeated on every
+	// re-execute.
 
 	if (!conn->cont->getMaxColumnCount()) {
 		deallocateResultSetBuffers();
