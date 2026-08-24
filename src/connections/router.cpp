@@ -1732,6 +1732,8 @@ routercursor::routercursor(sqlrserverconnection *conn, uint16_t id) :
 		}
 		curs[index]=new sqlrcursor(routerconn->cons[index]);
 		curs[index]->setResultSetBufferSize(getFetchAtOnce());
+		// distinguish nulls from empty strings/blobs/clobs
+		curs[index]->getNullsAsNulls();
 	}
 
 	obv=new outputbindvar[conn->cont->getConfig()->getMaxBindCount()];
@@ -2345,7 +2347,11 @@ bool routercursor::fetchRow(bool *error) {
 	if (!currentcur) {
 		return false;
 	}
-	if (currentcur->getField(nextrow,(uint32_t)0)) {
+	// fetch ahead, if necessary - ignore the return value, a null
+	// return could mean either a null field or no such row
+	currentcur->getField(nextrow,(uint32_t)0);
+
+	if (nextrow<currentcur->rowCount()) {
 		nextrow++;
 		return true;
 	}
@@ -2360,7 +2366,7 @@ void routercursor::getField(uint32_t col,
 				bool *lob, bool *null) {
 	const char	*fld=currentcur->getField(nextrow-1,col);
 	uint32_t	len=currentcur->getFieldLength(nextrow-1,col);
-	if (len) {
+	if (fld) {
 		*field=fld;
 		*fieldsize=len;
 	} else {

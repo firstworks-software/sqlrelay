@@ -468,6 +468,10 @@
 	fixed the tds protocol module's rpc-parameter path flattening a null
 		bigbinary/bigvarbin/image parameter to a plain null bind,
 		which lost its lob-ness
+	fixed the router connection module returning null instead of empty for
+		an empty string/blob/clob read back through the router, by
+		telling its client-side cursors to return nulls as nulls and
+		testing the field pointer rather than the field length
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
