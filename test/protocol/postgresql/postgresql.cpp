@@ -313,6 +313,46 @@ int main(int argc, char **argv) {
 
 	PQclear(pgresult);
 
+	// #9447: a null bind to a bytea/text column previously lost its
+	// type on the wire between sqlr-listener and sqlr-connection.
+	// exercising the fix requires the client to declare the param's
+	// oid explicitly in PQprepare (sqlrelay's postgresql protocol
+	// module never sends back a ParameterDescription, so it only knows
+	// a param's type if the client states it) and to send an explicit
+	// paramFormats array in PQexecPrepared (a NULL array sends a
+	// format-code count of 0, a separate code path that skips the
+	// oid-based null typing entirely)
+	stdoutput.printf("PQprepare/PQexecPrepared: null bytea/text bind\n");
+	query="alter table testtable add column testbytea bytea, "
+				"add column testtext text";
+	pgresult=PQexec(pgconn,query);
+	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
+	PQclear(pgresult);
+
+	query="insert into testtable (testint,testbytea,testtext) "
+					"values ($1,$2,$3)";
+	Oid	nulltypes[]={23,17,25};
+	pgresult=PQprepare(pgconn,"nullblobclob",query,3,nulltypes);
+	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
+	PQclear(pgresult);
+
+	const char * const nullparamvalues[]={"99",NULL,NULL};
+	int	nullparamformats[]={0,0,0};
+	pgresult=PQexecPrepared(pgconn,"nullblobclob",3,
+				nullparamvalues,NULL,nullparamformats,0);
+	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
+	assertEquals(PQcmdTuples(pgresult),"1");
+	PQclear(pgresult);
+
+	query="select testbytea,testtext from testtable where testint=99";
+	pgresult=PQexec(pgconn,query);
+	assertEquals(PQresultStatus(pgresult),PGRES_TUPLES_OK);
+	assertEquals(PQntuples(pgresult),1);
+	assertEquals(PQgetisnull(pgresult,0,0),1);
+	assertEquals(PQgetisnull(pgresult,0,1),1);
+	PQclear(pgresult);
+	stdoutput.printf("\n");
+
 	query="drop table testtable";
 	pgresult=PQexec(pgconn,query);
 	PQclear(pgresult);

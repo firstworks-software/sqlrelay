@@ -449,6 +449,12 @@
 	fixed the tds protocol module's bulk-load path flattening a null
 		binary/varbinary/image field to a plain null bind, which lost
 		its lob-ness before it ever reached bulkBinary()
+	fixed the mysql, postgresql and firebird protocol modules discarding
+		a null bind parameter's blob/clob type before the connection
+		module ever saw it, even though each module already had the
+		type in hand at the null check - the mysql type array, the
+		postgresql oid, and the firebird field descriptor,
+		respectively
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -4763,7 +4763,19 @@ bool sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 		byte_t	nullbitmapindex=nullbitmap[(i)/8];
 		byte_t	nullbitmapmask=(1<<(i%8));
 		if (nullbitmapindex&nullbitmapmask) {
-			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			// a blob column stays a lob even when the value
+			// turns out to be null
+			switch (ptypes[i]) {
+				case MYSQL_TYPE_TINY_BLOB:
+				case MYSQL_TYPE_MEDIUM_BLOB:
+				case MYSQL_TYPE_LONG_BLOB:
+				case MYSQL_TYPE_BLOB:
+					bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+					break;
+				default:
+					bv->type=SQLRSERVERBINDVARTYPE_NULL;
+					break;
+			}
 			bv->isnull=cont->getNullBindValue();
 			debugStart("%d",i);
 			debugWrite("variable: %s",bv->variable);

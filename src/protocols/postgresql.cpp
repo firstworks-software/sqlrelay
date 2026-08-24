@@ -2680,8 +2680,28 @@ bool sqlrprotocol_postgresql::bind() {
 
 		if (paramsize==(uint32_t)-1) {
 
-			// bind null
+			// bind null - the oid (from the earlier Parse
+			// message) tells us whether this is really a null
+			// blob/clob rather than a plain null, regardless of
+			// format (text/binary) or the format-code dispatch
+			// below, which this branch runs ahead of
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			if (oids && i<oidcount) {
+				switch (oids[i]) {
+					case 17: //bytea
+					case 1001: //_bytea
+						bv->type=
+						SQLRSERVERBINDVARTYPE_NULLBLOB;
+						break;
+					case 25: //text
+					case 1009: //_text
+						bv->type=
+						SQLRSERVERBINDVARTYPE_NULLCLOB;
+						break;
+					default:
+						break;
+				}
+			}
 			bv->isnull=cont->getNullBindValue();
 
 			debugWrite("value: (null)");

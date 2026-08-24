@@ -14478,9 +14478,17 @@ void sqlrprotocol_firebird::bindMessageValue(memorypool *bindpool,
 	bv->variablesize=bindvarnamesizes[bindindex];
 
 	if (val->isnull) {
-		bv->type=SQLRSERVERBINDVARTYPE_NULL;
+		if (fld->blrtype==blr_blob2) {
+			bv->type=(fld->subtype==1)?
+				SQLRSERVERBINDVARTYPE_NULLCLOB:
+				SQLRSERVERBINDVARTYPE_NULLBLOB;
+			debugWrite((fld->subtype==1)?
+				"type: null clob":"type: null blob");
+		} else {
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			debugWrite("type: null");
+		}
 		bv->isnull=cont->getNullBindValue();
-		debugWrite("type: null");
 	} else if (val->isquad &&
 			getArrayById(val->blobhigh,val->bloblow)) {
 
