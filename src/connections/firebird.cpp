@@ -3681,12 +3681,13 @@ bool firebirdcursor::inputBind(const char *variable,
 	t.tm_year=year-1900;
 	isc_encode_timestamp(&t,&(inbindts[index]));
 
-	inbindsqlda->sqlvar[index].sqltype=SQL_TIMESTAMP;
+	// low bit set makes firebird consult sqlind
+	inbindsqlda->sqlvar[index].sqltype=SQL_TIMESTAMP+1;
 	inbindsqlda->sqlvar[index].sqlscale=0;
 	inbindsqlda->sqlvar[index].sqlsubtype=0;
 	inbindsqlda->sqlvar[index].sqllen=sizeof(ISC_TIMESTAMP);
 	inbindsqlda->sqlvar[index].sqldata=(char *)&(inbindts[index]);
-	inbindsqlda->sqlvar[index].sqlind=(short *)NULL;
+	inbindsqlda->sqlvar[index].sqlind=isnull;
 	inbindsqlda->sqlvar[index].sqlname_length=0;
 	inbindsqlda->sqlvar[index].sqlname[0]='\0';
 	inbindsqlda->sqlvar[index].relname_length=0;

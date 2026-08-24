@@ -3189,7 +3189,7 @@ bool informixcursor::inputBind(const char *variable,
 				0,
 				ts,
 				0,
-				NULL);
+				(*isnull==SQL_NULL_DATA)?&sqlnulldata:NULL);
 
 	} else {
 
@@ -3211,7 +3211,7 @@ bool informixcursor::inputBind(const char *variable,
 				0,
 				ts,
 				0,
-				NULL);
+				(*isnull==SQL_NULL_DATA)?&sqlnulldata:NULL);
 	}
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }

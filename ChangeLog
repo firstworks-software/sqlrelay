@@ -477,6 +477,16 @@
 		parameter position was already bound, by describing null-bind
 		parameter types up front at prepare time, before any
 		parameter is bound, rather than lazily
+	hardened the db2, informix, odbc, firebird and oracle connection
+		modules' date/time inputBind() overload, which
+		ignored its isnull argument and would bind the possibly
+		stale date fields instead of sql null if a null date bind
+		ever reached it - no code path today can actually deliver
+		one, but the isnull indicator is now passed through to
+		each backend's own null-bind mechanism (SQLBindParameter's
+		null indicator for db2/informix/odbc, firebird's XSQLVAR
+		sqlind/sqltype convention, and oci's indp for oracle),
+		matching what each file's string-bind overload already did
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

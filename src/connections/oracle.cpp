@@ -4072,7 +4072,7 @@ bool oraclecursor::inputBind(const char *variable,
 				(dvoid *)&(indatebind[orainbindcount]),
 				(sb4)sizeof(OCIDate),
 				SQLT_ODT,
-				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
+				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
 			return false;
 		}
@@ -4084,7 +4084,7 @@ bool oraclecursor::inputBind(const char *variable,
 				(dvoid *)&(indatebind[orainbindcount]),
 				(sb4)sizeof(OCIDate),
 				SQLT_ODT,
-				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
+				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
 			return false;
 		}
