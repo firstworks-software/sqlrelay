@@ -7638,8 +7638,21 @@ bool sqlrprotocol_tds::bulkField(const byte_t **rpinout,
 	debugStart("col %d",col);
 	debugWrite("tdstype: 0x%02x",bulktypes[col]);
 
-	// until proven otherwise
-	bv->type=SQLRSERVERBINDVARTYPE_NULL;
+	// until proven otherwise - a binary column stays a lob even when
+	// the value turns out to be null, so bulkBinary()'s type doesn't
+	// get lost before it's ever reached
+	switch (bulktypes[col]) {
+		case TDS_TYPE_BINARY:
+		case TDS_TYPE_VARBINARY:
+		case TDS_TYPE_BIGBINARY:
+		case TDS_TYPE_BIGVARBIN:
+		case TDS_TYPE_IMAGE:
+			bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+			break;
+		default:
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			break;
+	}
 	bv->valuesize=0;
 	bv->value.stringval=NULL;
 	bv->isnull=cont->getNullBindValue();
@@ -10964,7 +10977,12 @@ bool sqlrprotocol_tds::plpValue(const byte_t **rpinout,
 
 	if (totalsize==TDS_PLP_NULL) {
 		if (bv) {
-			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			// a varbinary(max)/binary(max) column is the only
+			// plp type that ends up a blob below, so it's the
+			// only one that needs to stay one here too
+			bv->type=(tdstype==TDS_TYPE_BIGVARBIN)?
+					SQLRSERVERBINDVARTYPE_NULLBLOB:
+					SQLRSERVERBINDVARTYPE_NULL;
 			bv->isnull=cont->getNullBindValue();
 		}
 		debugWrite("value: (null)");
