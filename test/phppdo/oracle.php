@@ -826,10 +826,10 @@ if (PHP_VERSION_ID < 70000) {
 	echo("\n");
 
 
-	# null and empty lob output bind
+	# null and empty lobs
 
 
-	echo("NULL AND EMPTY LOB OUTPUT BIND: \n");
+	echo("NULL AND EMPTY LOBS: \n");
 	try {
 		$dbh->exec("drop table testtable1");
 	} catch (Exception $e) {
@@ -838,27 +838,24 @@ if (PHP_VERSION_ID < 70000) {
 		"create table testtable1 (".
 		"	testclob clob, ".
 		"	testblob blob)"),0);
-	$stmt=$dbh->prepare("insert into testtable1 values ('hello',:var1)");
+	$stmt=$dbh->prepare("insert into testtable1 values (:var1,:var2)");
 	assertTrue($stmt->bindValue("var1","",PDO::PARAM_LOB));
+	assertTrue($stmt->bindValue("var2","",PDO::PARAM_LOB));
 	assertTrue($stmt->execute());
-	$stmt=$dbh->prepare(
-		"begin  select testblob into :blobvar from testtable1; ".
-		"	end;");
-	$param1="";
-	assertTrue($stmt->bindParam(":blobvar",$param1,PDO::PARAM_LOB|PDO::PARAM_INPUT_OUTPUT));
-	assertTrue($stmt->execute());
-	assertEqual(stream_get_contents($param1),"");
+	$stmt=$dbh->query("select * from testtable1");
+	$result=$stmt->fetch(PDO::FETCH_NUM);
+	assertEqual(stream_get_contents($result[0]),"");
+	assertEqual(stream_get_contents($result[1]),"");
 	$dbh->exec("delete from testtable1");
-	$stmt=$dbh->prepare("insert into testtable1 values ('hello',:var1)");
+	$stmt=$dbh->prepare("insert into testtable1 values (:var1,:var2)");
 	assertTrue($stmt->bindValue("var1",null,PDO::PARAM_LOB));
+	assertTrue($stmt->bindValue("var2",null,PDO::PARAM_LOB));
 	assertTrue($stmt->execute());
-	$stmt=$dbh->prepare(
-		"begin  select testblob into :blobvar from testtable1; ".
-		"	end;");
-	$param1="";
-	assertTrue($stmt->bindParam(":blobvar",$param1,PDO::PARAM_LOB|PDO::PARAM_INPUT_OUTPUT));
-	assertTrue($stmt->execute());
-	assertEqual($param1,null);
+	$stmt=$dbh->query("select * from testtable1");
+	$result=$stmt->fetch(PDO::FETCH_NUM);
+	assertEqual($result[0],null);
+	assertEqual($result[1],null);
+	$dbh->exec("delete from testtable1");
 	echo("\n");
 
 
