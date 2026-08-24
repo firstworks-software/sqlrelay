@@ -443,6 +443,9 @@
 	fixed sqlrsh flattening "inputbindblob X is null" and "inputbindclob X
 		is null" to a plain null bind, and reading an uninitialized
 		value when printing one
+	fixed the router connection module dropping the null indicator on a
+		date bind, which sent a non-null date to the next instance
+		instead of a null one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

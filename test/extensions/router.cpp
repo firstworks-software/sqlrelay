@@ -1048,6 +1048,51 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// component-form date bind through the router hop - #9443
+	stdoutput.printf("COMPONENT-FORM DATE BIND THROUGH THE ROUTER: \n");
+	assertTrue(con->autoCommitOn());
+	cur->prepareQuery(
+		"insert into "
+		"	testtable1 "
+		"values ("
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	?, "
+		"	NULL)");
+	cur->inputBind("1",11);
+	cur->inputBind("2",11.5,4,2);
+	cur->inputBind("3",11.5,4,2);
+	cur->inputBind("4",11);
+	cur->inputBind("5","testchar11");
+	cur->inputBind("6","testvarchar11");
+	cur->inputBind("7",2011,1,1,-1,-1,-1,-1,NULL,false);
+	cur->inputBind("8","11:00:00");
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+
+	// the select is routed to the slave, so wait for replication
+	for (uint16_t i=0; i<10; i++) {
+		stdoutput.printf("loop %d...\n",i);
+		if (cur->sendQuery(
+			"select testdate from testtable1 "
+			"where testint=11") &&
+			cur->rowCount()==1) {
+			break;
+		}
+		snooze::macrosnooze(1,0);
+	}
+	assertEquals(cur->rowCount(),1);
+	assertEquals(cur->getField(0,(uint32_t)0),"2011-01-01");
+	assertTrue(con->autoCommitOff());
+	assertTrue(cur->sendQuery("begin"));
+	stdoutput.printf("\n");
+
+
 	// drop existing table
 	cur->sendQuery("drop table testtable1");
 	cur->sendQuery("drop table testtable2");

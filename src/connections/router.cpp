@@ -1981,8 +1981,12 @@ bool routercursor::inputBind(const char *variable,
 				const char *tz,
 				bool isnegative,
 				int16_t *isnull) {
-	currentcur->inputBind(variable+1,year,month,day,
-			hour,minute,second,microsecond,tz,isnegative);
+	if (*isnull==routerconn->nullbindvalue) {
+		currentcur->inputBind(variable+1,(const char *)NULL);
+	} else {
+		currentcur->inputBind(variable+1,year,month,day,
+				hour,minute,second,microsecond,tz,isnegative);
+	}
 	return true;
 }
 
