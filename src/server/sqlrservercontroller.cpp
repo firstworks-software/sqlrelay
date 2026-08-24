@@ -5387,7 +5387,8 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 					&bind->isnull)) {
 				return false;
 			}
-		} else if (bind->type==SQLRSERVERBINDVARTYPE_BLOB) {
+		} else if (bind->type==SQLRSERVERBINDVARTYPE_BLOB ||
+				bind->type==SQLRSERVERBINDVARTYPE_NULLBLOB) {
 			bool	result=(bind->segmentlengths)?
 				cursor->inputBindBlob(
 					bind->variable,
@@ -5406,7 +5407,8 @@ bool sqlrservercontroller::handleBinds(sqlrservercursor *cursor) {
 			if (!result) {
 				return false;
 			}
-		} else if (bind->type==SQLRSERVERBINDVARTYPE_CLOB) {
+		} else if (bind->type==SQLRSERVERBINDVARTYPE_CLOB ||
+				bind->type==SQLRSERVERBINDVARTYPE_NULLCLOB) {
 			bool	result=(bind->segmentlengths)?
 				cursor->inputBindClob(
 					bind->variable,

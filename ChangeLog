@@ -426,6 +426,23 @@
 		that bind and every bind after it - a date bind was enough to
 		trigger it; also escaped the timezone, which reached the log
 		unescaped and could inject delimiters into it
+	a null blob or clob bind now reaches the connection module's blob/clob
+		bind rather than arriving as a plain null character bind, so
+		modules can bind it as the right type; bumped the sqlrclient
+		protocol to version 4 for it - an older client still works
+		against a newer server, but a version 4 client is rejected at
+		connect time by a server that predates this
+	fixed the sqlite, db2, informix and oracle connection modules ignoring
+		the null indicator on a blob or clob bind, which bound an empty
+		lob instead of a null one
+	fixed the router connection module dropping the null indicator on
+		string, blob and clob binds, which sent an empty value to the
+		next instance instead of a null one - an app that relied on a
+		null string bind arriving as an empty string will see a null
+		now, which a not-null column will reject
+	fixed sqlrsh flattening "inputbindblob X is null" and "inputbindclob X
+		is null" to a plain null bind, and reading an uninitialized
+		value when printing one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

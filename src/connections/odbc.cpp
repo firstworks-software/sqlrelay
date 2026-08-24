@@ -4673,9 +4673,12 @@ bool odbccursor::inputBind(const char *variable,
 
 	if (*isnull==SQL_NULL_DATA) {
 
-		// the client api flattens a null lob bind into a plain null
-		// bind, so the only way to tell whether this one is aimed at
-		// a binary column is to ask the driver
+		// a plain null bind carries no type, so the only way to tell
+		// whether this one is aimed at a binary column is to ask the
+		// driver.  A null lob bind from a protocol version 4 or newer
+		// client arrives typed and reaches inputBindBlob() directly,
+		// but older clients and the other protocol modules still
+		// flatten their nulls to this path.
 		SQLSMALLINT	paramtype=SQL_VARCHAR;
 		if (nullBindIsBinary(pos)) {
 

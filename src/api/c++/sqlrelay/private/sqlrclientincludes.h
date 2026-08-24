@@ -33,7 +33,15 @@ enum sqlrclientbindvartype_t {
 	// corresponding sqlrserverbindvartype_t values.  8 and 9 are
 	// skipped because they are server-side bulk-load-only types
 	// (DELIMITER and NEWLINE) that the client never sends.
-	SQLRCLIENTBINDVARTYPE_ARRAY=10
+	SQLRCLIENTBINDVARTYPE_ARRAY=10,
+
+	// A null lob bind keeps its lob-ness rather than collapsing to
+	// NULL, so the server can route it to the connection module's
+	// inputBindBlob()/inputBindClob() rather than to its plain
+	// character inputBind().  Only a protocol version 4 or newer
+	// client sends these.
+	SQLRCLIENTBINDVARTYPE_NULLBLOB=11,
+	SQLRCLIENTBINDVARTYPE_NULLCLOB=12
 };
 
 enum sqlrclientlistformat_t {

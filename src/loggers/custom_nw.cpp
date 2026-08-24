@@ -203,7 +203,9 @@ bool sqlrlogger_custom_nw::descInputBinds(sqlrserverconnection *sqlrcon,
 			return false;
 		}
 
-		if (bv->type==SQLRSERVERBINDVARTYPE_NULL) {
+		if (bv->type==SQLRSERVERBINDVARTYPE_NULL ||
+			bv->type==SQLRSERVERBINDVARTYPE_NULLBLOB ||
+			bv->type==SQLRSERVERBINDVARTYPE_NULLCLOB) {
 			write_len=charstring::printf(c,remain_len,"NULL]");
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 			strescape(bv->value.stringval,bindstrbuf,512);

@@ -2701,8 +2701,22 @@ bool db2cursor::inputBindBlob(const char *variable,
 		return false;
 	}
 
-	blobbindsize[pos-1]=valuesize;
-	erg=SQLBindParameter(stmt,
+	if (*isnull==SQL_NULL_DATA) {
+		// same bind inputBind() uses for a null - a module with no
+		// lob override reaches that one anyway
+		erg=SQLBindParameter(stmt,
+				pos,
+				SQL_PARAM_INPUT,
+				SQL_C_BINARY,
+				SQL_CHAR,
+				0,
+				0,
+				(SQLPOINTER)value,
+				valuesize,
+				&sqlnulldata);
+	} else {
+		blobbindsize[pos-1]=valuesize;
+		erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT,
 				SQL_C_BINARY,
@@ -2712,6 +2726,7 @@ bool db2cursor::inputBindBlob(const char *variable,
 				(SQLPOINTER)value,
 				valuesize,
 				&(blobbindsize[pos-1]));
+	}
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 
@@ -2732,7 +2747,21 @@ bool db2cursor::inputBindClob(const char *variable,
 		return false;
 	}
 
-	erg=SQLBindParameter(stmt,
+	if (*isnull==SQL_NULL_DATA) {
+		// same bind inputBind() uses for a null - a module with no
+		// lob override reaches that one anyway
+		erg=SQLBindParameter(stmt,
+				pos,
+				SQL_PARAM_INPUT,
+				SQL_C_BINARY,
+				SQL_CHAR,
+				0,
+				0,
+				(SQLPOINTER)value,
+				valuesize,
+				&sqlnulldata);
+	} else {
+		erg=SQLBindParameter(stmt,
 				pos,
 				SQL_PARAM_INPUT,
 				SQL_C_CHAR,
@@ -2742,6 +2771,7 @@ bool db2cursor::inputBindClob(const char *variable,
 				(SQLPOINTER)value,
 				valuesize,
 				NULL);
+	}
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 #endif

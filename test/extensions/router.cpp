@@ -986,9 +986,72 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("begin"));
 	stdoutput.printf("\n");
 
+
+	// null binds through the router hop - #9149
+	stdoutput.printf("NULL BINDS THROUGH THE ROUTER: \n");
+	assertTrue(con->autoCommitOn());
+	cur->sendQuery("drop table if exists testtable3");
+	assertTrue(cur->sendQuery(
+		"create table testtable3 ("
+		"	testint int, "
+		"	testvarchar varchar(40), "
+		"	testblob blob, "
+		"	testclob text)"));
+	cur->prepareQuery(
+		"insert into "
+		"	testtable3 "
+		"values (?,?,?,?)");
+	cur->inputBind("1",1);
+	cur->inputBind("2",(const char *)NULL);
+	cur->inputBindBlob("3",(const char *)NULL,0);
+	cur->inputBindClob("4",(const char *)NULL,0);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+
+	// an empty value has to stay distinct from a null one, or this
+	// passes just as well against a router that nulls everything
+	cur->inputBind("1",2);
+	cur->inputBind("2","");
+	cur->inputBindBlob("3","",0);
+	cur->inputBindClob("4","",0);
+	assertTrue(cur->executeQuery());
+	cur->clearBinds();
+
+	// the select is routed to the slave, so wait for replication
+	cur->getNullsAsNulls();
+	for (uint16_t i=0; i<10; i++) {
+		stdoutput.printf("loop %d...\n",i);
+		if (cur->sendQuery(
+			"select "
+			"	testvarchar, "
+			"	testblob, "
+			"	testclob "
+			"from "
+			"	testtable3 "
+			"order by "
+			"	testint") &&
+			cur->rowCount()==2) {
+			break;
+		}
+		snooze::macrosnooze(1,0);
+	}
+	assertEquals(cur->rowCount(),2);
+	assertEquals(cur->getField(0,(uint32_t)0),NULL);
+	assertEquals(cur->getField(0,1),NULL);
+	assertEquals(cur->getField(0,2),NULL);
+	assertEquals(cur->getField(1,(uint32_t)0),"");
+	assertEquals(cur->getField(1,1),"");
+	assertEquals(cur->getField(1,2),"");
+	cur->getNullsAsEmptyStrings();
+	assertTrue(con->autoCommitOff());
+	assertTrue(cur->sendQuery("begin"));
+	stdoutput.printf("\n");
+
+
 	// drop existing table
 	cur->sendQuery("drop table testtable1");
 	cur->sendQuery("drop table testtable2");
+	cur->sendQuery("drop table testtable3");
 
 	stdoutput.printf("\n");
 

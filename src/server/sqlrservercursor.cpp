@@ -1485,7 +1485,11 @@ void sqlrservercursor::performSubstitution(stringbuffer *buffer,
 			pvt->_inbindvars[index].value.dateval.isnegative);
 		buffer->append("'")->append(buf)->append("'");
 	} else if (pvt->_inbindvars[index].type==
-				SQLRSERVERBINDVARTYPE_NULL) {
+				SQLRSERVERBINDVARTYPE_NULL ||
+			pvt->_inbindvars[index].type==
+				SQLRSERVERBINDVARTYPE_NULLBLOB ||
+			pvt->_inbindvars[index].type==
+				SQLRSERVERBINDVARTYPE_NULLCLOB) {
 		buffer->append("NULL");
 	}
 }

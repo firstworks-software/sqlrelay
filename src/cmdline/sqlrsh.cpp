@@ -2743,6 +2743,12 @@ void sqlrsh::executeQuery(sqlrcursor *sqlrcur, sqlrshenv *env) {
 				sqlrcur->inputBindClob(name,
 						bv->stringval.value,
 						bv->stringval.length);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_NULLBLOB) {
+				sqlrcur->inputBindBlob(name,
+						(const char *)NULL,0);
+			} else if (bv->type==SQLRCLIENTBINDVARTYPE_NULLCLOB) {
+				sqlrcur->inputBindClob(name,
+						(const char *)NULL,0);
 			} else if (bv->type==SQLRCLIENTBINDVARTYPE_NULL) {
 				sqlrcur->inputBind(name,(const char *)NULL);
 			}
@@ -5304,7 +5310,13 @@ bool sqlrsh::inputbindlob(sqlrcursor *sqlrcur,
 	// a value in quotes gets them trimmed off and what's between them
 	// unescaped, an unquoted value is taken as it stands
 	if (!value) {
-		bv->type=SQLRCLIENTBINDVARTYPE_NULL;
+		bv->type=(type==SQLRCLIENTBINDVARTYPE_BLOB)?
+				SQLRCLIENTBINDVARTYPE_NULLBLOB:
+				SQLRCLIENTBINDVARTYPE_NULLCLOB;
+		// stringval is a union member with no constructor to
+		// zero it, and printbinds() reads it for these types
+		bv->stringval.value=NULL;
+		bv->stringval.length=0;
 	} else if (valuelen>=2 &&
 			((value[0]=='\'' && value[valuelen-1]=='\'') ||
 			(value[0]=='"' && value[valuelen-1]=='"'))) {
@@ -5648,11 +5660,13 @@ void sqlrsh::printbinds(const char *type,
 						bv->dateval.second,
 						bv->dateval.microsecond,
 						bv->dateval.tz);
-		} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB) {
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
+				bv->type==SQLRCLIENTBINDVARTYPE_NULLBLOB) {
 			stdoutput.printf("(BLOB) = ");
 			writeBindLob(bv);
 			stdoutput.printf("\n");
-		} else if (bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_CLOB ||
+				bv->type==SQLRCLIENTBINDVARTYPE_NULLCLOB) {
 			stdoutput.printf("(CLOB) = ");
 			writeBindLob(bv);
 			stdoutput.printf("\n");

@@ -3228,6 +3228,25 @@ bool informixcursor::inputBindBlob(const char *variable,
 		return false;
 	}
 
+	// This has to come before the empty-string workaround below.  A null
+	// arrives with a value size of zero, and that workaround would turn
+	// it into an empty lob rather than a null.
+	if (*isnull==SQL_NULL_DATA) {
+		// same bind inputBind() uses for a null - a module with no
+		// lob override reaches that one anyway
+		erg=SQLBindParameter(stmt,
+				pos,
+				SQL_PARAM_INPUT,
+				SQL_C_BINARY,
+				SQL_CHAR,
+				0,
+				0,
+				(SQLPOINTER)value,
+				valuesize,
+				&sqlnulldata);
+		return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	}
+
 	// Informix doesn't like it if you bind a string of size zero.
 	// It can actually cause SQLBindParameter to hang (at least with
 	// 12.10 client against 12.10 server).  So, bind a known empty
@@ -3261,6 +3280,25 @@ bool informixcursor::inputBindClob(const char *variable,
 	if (!pos || pos>maxbindcount) {
 		bindformaterror=true;
 		return false;
+	}
+
+	// This has to come before the empty-string workaround below.  A null
+	// arrives with a value size of zero, and that workaround would turn
+	// it into an empty lob rather than a null.
+	if (*isnull==SQL_NULL_DATA) {
+		// same bind inputBind() uses for a null - a module with no
+		// lob override reaches that one anyway
+		erg=SQLBindParameter(stmt,
+				pos,
+				SQL_PARAM_INPUT,
+				SQL_C_BINARY,
+				SQL_CHAR,
+				0,
+				0,
+				(SQLPOINTER)value,
+				valuesize,
+				&sqlnulldata);
+		return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 	}
 
 	// Informix doesn't like it if you bind a string of size zero.

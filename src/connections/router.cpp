@@ -1945,7 +1945,11 @@ bool routercursor::inputBind(const char *variable,
 				const char *value, 
 				uint32_t valuesize,
 				int16_t *isnull) {
-	currentcur->inputBind(variable+1,value);
+	if (*isnull==routerconn->nullbindvalue) {
+		currentcur->inputBind(variable+1,(const char *)NULL);
+	} else {
+		currentcur->inputBind(variable+1,value);
+	}
 	return true;
 }
 
@@ -1987,7 +1991,11 @@ bool routercursor::inputBindBlob(const char *variable,
 					const char *value, 
 					uint32_t valuesize,
 					int16_t *isnull) {
-	currentcur->inputBindBlob(variable+1,value,valuesize);
+	if (*isnull==routerconn->nullbindvalue) {
+		currentcur->inputBindBlob(variable+1,(const char *)NULL,0);
+	} else {
+		currentcur->inputBindBlob(variable+1,value,valuesize);
+	}
 	return true;
 }
 
@@ -1996,7 +2004,11 @@ bool routercursor::inputBindClob(const char *variable,
 					const char *value, 
 					uint32_t valuesize,
 					int16_t *isnull) {
-	currentcur->inputBindClob(variable+1,value,valuesize);
+	if (*isnull==routerconn->nullbindvalue) {
+		currentcur->inputBindClob(variable+1,(const char *)NULL,0);
+	} else {
+		currentcur->inputBindClob(variable+1,value,valuesize);
+	}
 	return true;
 }
 

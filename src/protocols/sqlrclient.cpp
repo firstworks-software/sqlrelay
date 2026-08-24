@@ -2534,7 +2534,11 @@ bool sqlrprotocol_sqlrclient::getInputBinds(sqlrservercursor *cursor) {
 		}
 
 		// get the value
-		if (bv->type==SQLRSERVERBINDVARTYPE_NULL) {
+		if (bv->type==SQLRSERVERBINDVARTYPE_NULL ||
+			bv->type==SQLRSERVERBINDVARTYPE_NULLBLOB ||
+			bv->type==SQLRSERVERBINDVARTYPE_NULLCLOB) {
+			// getNullBind() leaves the type alone, so a null lob
+			// bind keeps its lob-ness for handleBinds() to route on
 			getNullBind(bv,bindpool);
 		} else if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
 			if (!getStringBind(cursor,bv,bindpool)) {
@@ -3160,6 +3164,12 @@ void sqlrprotocol_sqlrclient::getNullBind(sqlrserverbindvar *bv,
 	bv->value.stringval[0]='\0';
 	bv->valuesize=0;
 	bv->isnull=cont->getNullBindValue();
+
+	// The bind var array is allocated once per cursor and nothing else
+	// clears these, so a slot can still hold a pointer from whatever
+	// segmented a bind here last.  A null bind has no segments.
+	bv->segmentlengths=NULL;
+	bv->segmentcount=0;
 }
 
 bool sqlrprotocol_sqlrclient::getStringBind(sqlrservercursor *cursor,

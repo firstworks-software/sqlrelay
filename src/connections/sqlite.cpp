@@ -2070,9 +2070,14 @@ bool sqlitecursor::inputBindBlob(const char *variable,
 				const char *value,
 				uint32_t valuesize,
 				int16_t *isnull) {
+	if (*isnull==conn->getNullBindValue()) {
+		return (sqlite3_bind_null(stmt,
+				getBindVariableIndex(
+					variable,variablesize))==SQLITE_OK);
+	}
 	return (sqlite3_bind_blob(stmt,
-				getBindVariableIndex(variable,variablesize),
-				value,valuesize,SQLITE_STATIC)==SQLITE_OK);
+			getBindVariableIndex(variable,variablesize),
+			value,valuesize,SQLITE_STATIC)==SQLITE_OK);
 }
 #endif
 

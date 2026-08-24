@@ -1504,6 +1504,9 @@ void sqlrcursor::deleteInputBindVariables() {
 					SQLRCLIENTBINDVARTYPE_STRING) {
 				delete[] (*pvt->_inbindvars)[i].value.stringval;
 			}
+			// NULLBLOB and NULLCLOB are left out on purpose.
+			// lobVar() never allocates a lobval for a null lob
+			// bind, so freeing one here would be a wild free.
 			if ((*pvt->_inbindvars)[i].type==
 					SQLRCLIENTBINDVARTYPE_BLOB ||
 				(*pvt->_inbindvars)[i].type==
@@ -1891,7 +1894,16 @@ void sqlrcursor::lobVar(sqlrclientbindvar *var,
 		var->valuesize=size;
 		var->type=type;
 	} else {
-		var->type=SQLRCLIENTBINDVARTYPE_NULL;
+		// keep lob type on null bind
+		if (type==SQLRCLIENTBINDVARTYPE_BLOB) {
+			var->type=SQLRCLIENTBINDVARTYPE_NULLBLOB;
+		} else if (type==SQLRCLIENTBINDVARTYPE_CLOB) {
+			var->type=SQLRCLIENTBINDVARTYPE_NULLCLOB;
+		} else {
+			var->type=SQLRCLIENTBINDVARTYPE_NULL;
+		}
+		// clear stale valuesize
+		var->valuesize=0;
 	}
 }
 
@@ -1911,6 +1923,10 @@ void sqlrcursor::initVar(sqlrclientbindvar *var,
 					var->type==SQLRCLIENTBINDVARTYPE_CLOB ||
 					var->type==
 						SQLRCLIENTBINDVARTYPE_ARRAY) {
+				// NULLBLOB and NULLCLOB are left out on
+				// purpose.  lobVar() never allocates a
+				// lobval for a null lob bind, so freeing
+				// one here would be a wild free.
 				delete[] var->value.lobval;
 			}
 		}
@@ -3187,10 +3203,24 @@ void sqlrcursor::sendInputBinds() {
 
 		// send the value
 		if ((*pvt->_inbindvars)[i].type==
-					SQLRCLIENTBINDVARTYPE_NULL) {
+					SQLRCLIENTBINDVARTYPE_NULL ||
+			(*pvt->_inbindvars)[i].type==
+					SQLRCLIENTBINDVARTYPE_NULLBLOB ||
+			(*pvt->_inbindvars)[i].type==
+					SQLRCLIENTBINDVARTYPE_NULLCLOB) {
 
 			if (pvt->_sqlrc->debug()) {
-				pvt->_sqlrc->debugPrint(":NULL)\n");
+				sqlrclientbindvartype_t	nulltype=
+						(*pvt->_inbindvars)[i].type;
+				if (nulltype==
+					SQLRCLIENTBINDVARTYPE_NULLBLOB) {
+					pvt->_sqlrc->debugPrint(":NULLBLOB)\n");
+				} else if (nulltype==
+					SQLRCLIENTBINDVARTYPE_NULLCLOB) {
+					pvt->_sqlrc->debugPrint(":NULLCLOB)\n");
+				} else {
+					pvt->_sqlrc->debugPrint(":NULL)\n");
+				}
 				pvt->_sqlrc->debugPreEnd();
 			}
 
@@ -3464,6 +3494,12 @@ void sqlrcursor::sendOutputBinds() {
 				case SQLRCLIENTBINDVARTYPE_ARRAY:
 					bindtype="(ARRAY)";
 					break;
+				case SQLRCLIENTBINDVARTYPE_NULLBLOB:
+					bindtype="(NULLBLOB)";
+					break;
+				case SQLRCLIENTBINDVARTYPE_NULLCLOB:
+					bindtype="(NULLCLOB)";
+					break;
 			}
 			pvt->_sqlrc->debugPrint(bindtype);
 			if ((*pvt->_outbindvars)[i].type==
@@ -3615,6 +3651,12 @@ void sqlrcursor::sendInputOutputBinds() {
 					break;
 				case SQLRCLIENTBINDVARTYPE_ARRAY:
 					bindtype="(ARRAY)";
+					break;
+				case SQLRCLIENTBINDVARTYPE_NULLBLOB:
+					bindtype="(NULLBLOB)";
+					break;
+				case SQLRCLIENTBINDVARTYPE_NULLCLOB:
+					bindtype="(NULLCLOB)";
 					break;
 			}
 			pvt->_sqlrc->debugPrint(bindtype);

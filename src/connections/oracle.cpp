@@ -4441,7 +4441,7 @@ bool oraclecursor::inputBindGenericLob(const char *variable,
 				oracleconn->err,pos,
 				(dvoid *)&inbind_lob[orainbindlobcount],(sb4)0,
 				type,
-				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
+				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
 			return false;
 		}
@@ -4452,7 +4452,7 @@ bool oraclecursor::inputBindGenericLob(const char *variable,
 				(text *)variable,(sb4)variablesize,
 				(dvoid *)&inbind_lob[orainbindlobcount],(sb4)0,
 				type,
-				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
+				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
 			return false;
 		}
