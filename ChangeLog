@@ -472,6 +472,11 @@
 		an empty string/blob/clob read back through the router, by
 		telling its client-side cursors to return nulls as nulls and
 		testing the field pointer rather than the field length
+	fixed the odbc connection module misdiagnosing a null bind aimed at a
+		binary/varbinary/image column as non-binary when an earlier
+		parameter position was already bound, by describing null-bind
+		parameter types up front at prepare time, before any
+		parameter is bound, rather than lazily
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

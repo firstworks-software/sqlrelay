@@ -354,6 +354,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		bool			*nullbindisbinary;
 		bool			*nullbinddescribed;
 		bool	nullBindIsBinary(uint16_t pos);
+		void	describeNullBind(uint16_t pos);
 
 		bool		bindformaterror;
 
@@ -4596,7 +4597,35 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 		#endif
 	}
 
-	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+		return false;
+	}
+
+	// MS SQL Server's driver fails SQLDescribeParam for a parameter
+	// position with 07009 (invalid descriptor index) once an earlier
+	// position has been bound on the same statement handle.  A failed
+	// describe is just an answer of "no", so a null bind aimed at a
+	// binary/varbinary/image column would get bound as a character
+	// parameter, which the server rejects.  Describing every parameter
+	// here, on the final prepared statement and before any
+	// SQLBindParameter, gets a real answer for each of them.
+	// (nullBindIsBinary() still describes lazily for whatever this
+	// doesn't cover, and execute-direct already returned above)
+	if (odbcconn->describenullbinds && odbcconn->hasdescribeparam) {
+		SQLSMALLINT	paramcount=0;
+		SQLRETURN	npres=SQLNumParams(stmt,&paramcount);
+		if ((npres==SQL_SUCCESS || npres==SQL_SUCCESS_WITH_INFO) &&
+							paramcount>0) {
+			if ((uint16_t)paramcount>maxbindcount) {
+				paramcount=(SQLSMALLINT)maxbindcount;
+			}
+			for (SQLSMALLINT i=1; i<=paramcount; i++) {
+				describeNullBind((uint16_t)i);
+			}
+		}
+	}
+
+	return true;
 }
 
 bool odbccursor::allocateStatementHandle() {
@@ -4634,6 +4663,13 @@ bool odbccursor::nullBindIsBinary(uint16_t pos) {
 		return nullbindisbinary[pos-1];
 	}
 
+	describeNullBind(pos);
+
+	return nullbindisbinary[pos-1];
+}
+
+void odbccursor::describeNullBind(uint16_t pos) {
+
 	// a failed describe isn't an error, just an answer of "no", for a
 	// parameter whose type the back end can't deduce ("select ?")
 	// (the diagnostic it leaves on stmt is cleared by the next
@@ -4655,8 +4691,6 @@ bool odbccursor::nullBindIsBinary(uint16_t pos) {
 				(datatype==SQL_BINARY ||
 					datatype==SQL_VARBINARY ||
 					datatype==SQL_LONGVARBINARY));
-
-	return nullbindisbinary[pos-1];
 }
 
 bool odbccursor::inputBind(const char *variable,

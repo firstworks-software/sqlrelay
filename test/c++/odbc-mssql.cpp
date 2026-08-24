@@ -1635,6 +1635,37 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// null bind at non-first parameter position
+	// #9453 - on ms sql server, once an earlier parameter position was
+	// already bound via SQLBindParameter on a statement handle,
+	// SQLDescribeParam for a later position failed with 07009 (invalid
+	// descriptor index), and the failure was misread as "not binary",
+	// so a NULL aimed at a varbinary column got bound as varchar and
+	// the server rejected the implicit conversion
+	stdoutput.printf("NULL BIND AT NON-FIRST PARAMETER POSITION: \n");
+	cur->getNullsAsNulls();
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testid int, "
+		"	testbin varbinary(max) NULL)"));
+	cur->prepareQuery("insert into testtable values (?,?)");
+	cur->inputBind("1",(int64_t)1);
+	cur->inputBind("2",(const char *)NULL);
+	assertTrue(cur->executeQuery());
+	cur->inputBind("1",(int64_t)2);
+	cur->inputBind("2",(const char *)NULL);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable order by testid"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(0,1),NULL);
+	assertEquals(cur->getField(1,(uint32_t)0),"2");
+	assertEquals(cur->getField(1,1),NULL);
+	cur->getNullsAsEmptyStrings();
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
 	// long lobs
 	stdoutput.printf("LONG LOBS: \n");
 	cur->sendQuery("drop table testtable");
