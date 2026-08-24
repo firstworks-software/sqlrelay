@@ -8437,9 +8437,15 @@ int main(int argc, char **argv) {
 	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
 	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 
+	query="drop procedure bindimgproc";
+	ct_command(cmd,CS_LANG_CMD,query,charstring::getLength(query),CS_UNUSED);
+	ct_send(cmd);
+	while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+	ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
 
 	stdoutput.printf("ct_command: create procedures\n");
-	const char	*bindprocs[3]={
+	const char	*bindprocs[4]={
 		"create procedure bindproc "
 			"@pin int, @pchr varchar(20) output, "
 			"@pflt float output, @pdt datetime output as "
@@ -8453,9 +8459,12 @@ int main(int argc, char **argv) {
 			"return 9",
 		"create procedure bindbinproc "
 			"@pbin varbinary(40) as "
-			"insert into bindtable (bindbinary) values (@pbin)"
+			"insert into bindtable (bindbinary) values (@pbin)",
+		"create procedure bindimgproc "
+			"@pimg image as "
+			"insert into bindtable (bindimage) values (@pimg)"
 	};
-	for (CS_INT i=0; i<3; i++) {
+	for (CS_INT i=0; i<4; i++) {
 		assertEquals(ct_command(cmd,CS_LANG_CMD,bindprocs[i],
 					charstring::getLength(bindprocs[i]),
 					CS_UNUSED),CS_SUCCEED);
@@ -8853,6 +8862,103 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// #9451 - a null binary or image rpc parameter is still a lob.  The
+	// value is gone, but the parameter has to reach the bind as a null
+	// lob rather than as a plain null, or it goes on to the database as
+	// a character null and the server refuses the implicit conversion
+	// into a binary or image column.  CS_BINARY_TYPE and
+	// CS_VARBINARY_TYPE arrive as bigbinary/bigvarbin and
+	// CS_IMAGE_TYPE as image, so the three cases cover both of the
+	// null branches.  CS_LONGBINARY_TYPE is left out - mssql refuses
+	// the type itself, null or not.
+	stdoutput.printf("ct_command: rpc with null binary params\n");
+	CS_INT		bindrpcnulltype[3]={
+				CS_BINARY_TYPE,CS_VARBINARY_TYPE,
+				CS_IMAGE_TYPE};
+	const char	*bindrpcnullproc[3]={
+				"bindbinproc","bindbinproc","bindimgproc"};
+	const char	*bindrpcnullselect[3]={
+				"select bindbinary from bindtable",
+				"select bindbinary from bindtable",
+				"select bindimage from bindtable"};
+	for (CS_INT i=0; i<3; i++) {
+
+		query="delete from bindtable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+		assertEquals(ct_command(cmd,CS_RPC_CMD,
+					(CS_CHAR *)bindrpcnullproc[i],
+					CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
+		bytestring::zero(&bindparamfmt,sizeof(CS_DATAFMT));
+		bindparamfmt.datatype=bindrpcnulltype[i];
+		bindparamfmt.maxlength=20;
+		bindparamfmt.count=1;
+
+		// an indicator of CS_NULLDATA is what makes it null - the
+		// value and the datalen are ignored
+		assertEquals(ct_param(cmd,&bindparamfmt,
+					(CS_VOID *)bindbinaryvalue,
+					0,-1),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+
+		// a procedure with no return statement still answers with
+		// a status result, and it comes first
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_STATUS_RESULT);
+		bytestring::zero(bindreaddata,sizeof(bindreaddata));
+		assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(bindreaddata,"0");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		query=bindrpcnullselect[i];
+		assertEquals(ct_command(cmd,CS_LANG_CMD,query,
+					charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		bytestring::zero(bindreaddata,sizeof(bindreaddata));
+		bindreadlength=-1;
+		bindreadindicator=-99;
+		assertEquals(ct_bind(cmd,1,&bindreadfmt,
+					(CS_VOID *)bindreaddata,
+					&bindreadlength,
+					&bindreadindicator),CS_SUCCEED);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(rowsread,1);
+		assertEquals(bindreaddata,"");
+		assertEquals(bindreadlength,0);
+		assertEquals(bindreadindicator,-1);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	}
+	stdoutput.printf("\n");
+
+
 	// ct_setparam's length and indicator are taken by pointer, but the
 	// bindings do not survive the next ct_command(CS_RPC_CMD) any more
 	// than they survive the next ct_dynamic(CS_EXECUTE) that #8791
@@ -9053,11 +9159,12 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_command: drop procedures\n");
-	const char	*binddrops[3]={
+	const char	*binddrops[4]={
 				"drop procedure bindproc",
 				"drop procedure bindnumproc",
-				"drop procedure bindbinproc"};
-	for (CS_INT i=0; i<3; i++) {
+				"drop procedure bindbinproc",
+				"drop procedure bindimgproc"};
+	for (CS_INT i=0; i<4; i++) {
 		assertEquals(ct_command(cmd,CS_LANG_CMD,binddrops[i],
 					charstring::getLength(binddrops[i]),
 					CS_UNUSED),CS_SUCCEED);

@@ -11955,6 +11955,14 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			readLE(rp,&size,&rp);
 			rpsize-=sizeof(uint16_t);
 			if (size==0xFFFF) {
+				// a bigbinary/bigvarbin parameter stays a
+				// lob even when the value turns out to be
+				// null, so it doesn't lose its lob-ness
+				// before it's ever bound
+				if (bv) {
+					bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+					bv->isnull=cont->getNullBindValue();
+				}
 				debugWrite("value: (null)");
 				break;
 			}
@@ -12224,6 +12232,13 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			readLE(rp,&size,&rp);
 			rpsize-=sizeof(uint32_t);
 			if (size==0xFFFFFFFF) {
+				// only image is a lob here - this branch is
+				// shared with ssvariant, and a null variant
+				// must not be relabeled as one
+				if (bv && tdstype==TDS_TYPE_IMAGE) {
+					bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+					bv->isnull=cont->getNullBindValue();
+				}
 				debugWrite("value: (null)");
 				break;
 			}

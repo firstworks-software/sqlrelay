@@ -465,6 +465,9 @@
 		statement, by no longer resetting the per-position describe
 		cache in closeResultSet(), which doesn't change what's
 		prepared
+	fixed the tds protocol module's rpc-parameter path flattening a null
+		bigbinary/bigvarbin/image parameter to a plain null bind,
+		which lost its lob-ness
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
