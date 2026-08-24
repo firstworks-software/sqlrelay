@@ -882,6 +882,36 @@ $sth->bind_param_inout("blobvar",\$testblob,undef,DBD::SQLRelay::SQL_BLOB);
 assertTrue($sth->execute());
 assertEqualString($testclob,"testclob");
 assertEqualString($testblob,"testblob");
+$dbh->do("delete from testtable");
+$sth=$dbh->prepare("insert into testtable values (:var1,:var2)");
+$sth->bind_param("var1",undef,DBD::SQLRelay::SQL_CLOB);
+$sth->bind_param("var2",undef,DBD::SQLRelay::SQL_BLOB);
+assertTrue($sth->execute());
+$sth=$dbh->prepare(
+	"begin ".
+	"	select testclob into :clobvar from testtable; ".
+	"	select testblob into :blobvar from testtable; ".
+	"end;");
+$sth->bind_param_inout("clobvar",\$testclob,undef,DBD::SQLRelay::SQL_CLOB);
+$sth->bind_param_inout("blobvar",\$testblob,undef,DBD::SQLRelay::SQL_BLOB);
+assertTrue($sth->execute());
+assertUndef($testclob);
+assertUndef($testblob);
+$dbh->do("delete from testtable");
+$sth=$dbh->prepare("insert into testtable values (:var1,:var2)");
+$sth->bind_param("var1","",DBD::SQLRelay::SQL_CLOB);
+$sth->bind_param("var2","",DBD::SQLRelay::SQL_BLOB);
+assertTrue($sth->execute());
+$sth=$dbh->prepare(
+	"begin ".
+	"	select testclob into :clobvar from testtable; ".
+	"	select testblob into :blobvar from testtable; ".
+	"end;");
+$sth->bind_param_inout("clobvar",\$testclob,undef,DBD::SQLRelay::SQL_CLOB);
+$sth->bind_param_inout("blobvar",\$testblob,undef,DBD::SQLRelay::SQL_BLOB);
+assertTrue($sth->execute());
+assertEqualString($testclob,"");
+assertEqualString($testblob,"");
 $dbh->do("drop table testtable");
 print("\n");
 

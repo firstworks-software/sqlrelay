@@ -1106,11 +1106,17 @@ assertEqual [$cur getFieldByIndex 0 2] ""
 puts ""
 
 
-# empty lobs
-puts "EMPTY LOBS: "
+# null and empty lobs
+puts "NULL AND EMPTY LOBS: "
 $cur sendQuery "delete from testtable1"
 $cur prepareQuery "insert into testtable1 values (?)"
 $cur inputBindBlob "1" "" 0
+assertTrue [$cur executeQuery]
+$cur sendQuery "select testblob from testtable1"
+assertEqual [$cur getFieldByName 0 "TESTBLOB"] ""
+$cur sendQuery "delete from testtable1"
+$cur prepareQuery "insert into testtable1 values (?)"
+$cur inputBindNull "1"
 assertTrue [$cur executeQuery]
 $cur sendQuery "select testblob from testtable1"
 assertEqual [$cur getFieldByName 0 "TESTBLOB"] ""

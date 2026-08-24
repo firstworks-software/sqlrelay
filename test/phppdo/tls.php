@@ -832,6 +832,42 @@ if (PHP_VERSION_ID < 70000) {
 	echo("\n");
 
 
+	# null and empty lob output bind
+
+
+	echo("NULL AND EMPTY LOB OUTPUT BIND: \n");
+	try {
+		$dbh->exec("drop table testtable1");
+	} catch (Exception $e) {
+	}
+	assertEqual($dbh->exec(
+		"create table testtable1 (".
+		"	testclob clob, ".
+		"	testblob blob)"),0);
+	$stmt=$dbh->prepare("insert into testtable1 values ('hello',:var1)");
+	assertTrue($stmt->bindValue("var1","",PDO::PARAM_LOB));
+	assertTrue($stmt->execute());
+	$stmt=$dbh->prepare(
+		"begin  select testblob into :blobvar from testtable1; ".
+		"	end;");
+	$param1="";
+	assertTrue($stmt->bindParam(":blobvar",$param1,PDO::PARAM_LOB|PDO::PARAM_INPUT_OUTPUT));
+	assertTrue($stmt->execute());
+	assertEqual(stream_get_contents($param1),"");
+	$dbh->exec("delete from testtable1");
+	$stmt=$dbh->prepare("insert into testtable1 values ('hello',:var1)");
+	assertTrue($stmt->bindValue("var1",null,PDO::PARAM_LOB));
+	assertTrue($stmt->execute());
+	$stmt=$dbh->prepare(
+		"begin  select testblob into :blobvar from testtable1; ".
+		"	end;");
+	$param1="";
+	assertTrue($stmt->bindParam(":blobvar",$param1,PDO::PARAM_LOB|PDO::PARAM_INPUT_OUTPUT));
+	assertTrue($stmt->execute());
+	assertEqual($param1,null);
+	echo("\n");
+
+
 	# clob and blob output bind to and from file
 
 
