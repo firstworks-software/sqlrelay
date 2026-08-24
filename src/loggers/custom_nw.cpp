@@ -221,6 +221,42 @@ bool sqlrlogger_custom_nw::descInputBinds(sqlrserverconnection *sqlrcon,
 				bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
 			write_len=charstring::printf(
 					c,remain_len,"LOB]");
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
+			// the timezone comes off the wire too
+			strescape(bv->value.dateval.tz,bindstrbuf,512);
+			write_len=charstring::printf(
+					c,remain_len,
+					"'%04hd-%02hd-%02hd "
+					"%s%02hd:%02hd:%02hd.%06d %s']",
+					bv->value.dateval.year,
+					bv->value.dateval.month,
+					bv->value.dateval.day,
+					(bv->value.dateval.isnegative)?"-":"",
+					bv->value.dateval.hour,
+					bv->value.dateval.minute,
+					bv->value.dateval.second,
+					bv->value.dateval.microsecond,
+					bindstrbuf);
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_ARRAY) {
+			// an array bind arrives as text
+			strescape(bv->value.stringval,bindstrbuf,512);
+			write_len=charstring::printf(
+					c,remain_len,"'%s']",bindstrbuf);
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_CURSOR) {
+			write_len=charstring::printf(
+					c,remain_len,"CURSOR:%d]",
+					bv->value.cursorid);
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_DELIMITER) {
+			// no value is set for these two types
+			write_len=charstring::printf(
+					c,remain_len,"DELIMITER]");
+		} else if (bv->type==SQLRSERVERBINDVARTYPE_NEWLINE) {
+			write_len=charstring::printf(
+					c,remain_len,"NEWLINE]");
+		} else {
+			// unhandled type - write_len must not go stale
+			write_len=charstring::printf(
+					c,remain_len,"UNKNOWN]");
 		}
 
 		c+=write_len;

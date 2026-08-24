@@ -421,6 +421,11 @@
 		conversion now, and SQLBindParameter is given a real byte
 		count rather than a NULL indicator, which made the driver
 		treat the value as a null-terminated string
+	fixed the custom_nw logger truncating the logged bind description at
+		the first bind whose type it didn't handle, silently dropping
+		that bind and every bind after it - a date bind was enough to
+		trigger it; also escaped the timezone, which reached the log
+		unescaped and could inject delimiters into it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
