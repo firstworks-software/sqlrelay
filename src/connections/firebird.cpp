@@ -3724,56 +3724,65 @@ bool firebirdcursor::inputBindBlob(const char *variable,
 		return false;
 	}
 
-	// create a blob
-	bytestring::zero(&inbindblobhandle[index],sizeof(isc_blob_handle));
-	if (isc_create_blob2(firebirdconn->error,
-				&firebirdconn->db,
-				&firebirdconn->tr,
-				&inbindblobhandle[index],
-				&inbindblobid[index],0,NULL)) {
-		return false;
-	}
+	if (isnull && *isnull==(int16_t)-1) {
+		// a null bind needs no blob, just a null indicator
+		bytestring::zero(&inbindblobid[index],sizeof(ISC_QUAD));
+	} else {
 
-	// write the value to the blob - one isc_put_segment() per segment
-	// the client wrote, when segment boundaries were given, or
-	// MAX_LOB_CHUNK_SIZE bytes at a time otherwise
-	uint32_t	bytesput=0;
-	uint16_t	seg=0;
-	while (bytesput<valuesize) {
-		uint32_t	segbytesleft=(segmentlengths)?
-					segmentlengths[seg]:
-					(valuesize-bytesput);
-		uint32_t	segbytesput=0;
-		while (segbytesput<segbytesleft) {
-			uint16_t	bytestoput=0;
-			if (segbytesleft-segbytesput<MAX_LOB_CHUNK_SIZE) {
-				bytestoput=segbytesleft-segbytesput;
-			} else {
-				bytestoput=MAX_LOB_CHUNK_SIZE;
-			}
-			// (modern versions of isc_put_segment take a
-			// const char * parameter, but old versions take
-			// char * and this cast works with both)
-			if (isc_put_segment(firebirdconn->error,
+		// create a blob
+		bytestring::zero(&inbindblobhandle[index],
+					sizeof(isc_blob_handle));
+		if (isc_create_blob2(firebirdconn->error,
+					&firebirdconn->db,
+					&firebirdconn->tr,
 					&inbindblobhandle[index],
-					bytestoput,
-					(char *)(value+bytesput))) {
-				return false;
-			}
-			bytesput=bytesput+bytestoput;
-			segbytesput=segbytesput+bytestoput;
+					&inbindblobid[index],0,NULL)) {
+			return false;
 		}
-		seg++;
-		if (segmentlengths && seg>=segmentcount && bytesput<valuesize) {
-			// ran out of segments before running out of bytes -
-			// shouldn't happen, but fall back to chunking
-			// whatever is left as one more segment
-			segmentlengths=NULL;
-		}
-	}
 
-	// close the blob
-	isc_close_blob(firebirdconn->error,&inbindblobhandle[index]);
+		// write the value to the blob - one isc_put_segment() per
+		// segment the client wrote, when segment boundaries were
+		// given, or MAX_LOB_CHUNK_SIZE bytes at a time otherwise
+		uint32_t	bytesput=0;
+		uint16_t	seg=0;
+		while (bytesput<valuesize) {
+			uint32_t	segbytesleft=(segmentlengths)?
+						segmentlengths[seg]:
+						(valuesize-bytesput);
+			uint32_t	segbytesput=0;
+			while (segbytesput<segbytesleft) {
+				uint16_t	bytestoput=0;
+				if (segbytesleft-segbytesput<
+						MAX_LOB_CHUNK_SIZE) {
+					bytestoput=segbytesleft-segbytesput;
+				} else {
+					bytestoput=MAX_LOB_CHUNK_SIZE;
+				}
+				// (modern versions of isc_put_segment take a
+				// const char * parameter, but old versions take
+				// char * and this cast works with both)
+				if (isc_put_segment(firebirdconn->error,
+						&inbindblobhandle[index],
+						bytestoput,
+						(char *)(value+bytesput))) {
+					return false;
+				}
+				bytesput=bytesput+bytestoput;
+				segbytesput=segbytesput+bytestoput;
+			}
+			seg++;
+			if (segmentlengths && seg>=segmentcount &&
+					bytesput<valuesize) {
+				// ran out of segments before running out of
+				// bytes - shouldn't happen, but fall back to
+				// chunking whatever is left as one more segment
+				segmentlengths=NULL;
+			}
+		}
+
+		// close the blob
+		isc_close_blob(firebirdconn->error,&inbindblobhandle[index]);
+	}
 
 	inbindsqlda->sqlvar[index].sqltype=SQL_BLOB+1;
 	inbindsqlda->sqlvar[index].sqlscale=0;
