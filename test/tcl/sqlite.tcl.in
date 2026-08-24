@@ -961,9 +961,9 @@ catch {catch {$cur sendQuery "drop table testtable"}}
 assertTrue [$cur sendQuery "create table testtable (	testclob1 clob, 	testclob2 clob, 	testblob1 blob, 	testblob2 blob)"]
 $cur prepareQuery "insert into 	testtable values (	:var1, 	:var2, 	:var3, 	:var4)"
 $cur inputBindClob "var1" "" 0
-$cur inputBindClob "var2" "" 0
+$cur inputBindNull "var2"
 $cur inputBindBlob "var3" "" 0
-$cur inputBindBlob "var4" "" 0
+$cur inputBindNull "var4"
 assertTrue [$cur executeQuery]
 $cur sendQuery "select * from testtable"
 assertEqual [$cur getFieldByIndex 0 0] ""

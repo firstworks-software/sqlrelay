@@ -2422,6 +2422,61 @@ class freetds_sap extends sqlrtest {
 		System.out.println();
 
 
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		stmt=con.createStatement();
+		con.setAutoCommit(true);
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testtext1 text NULL, "+
+			"	testtext2 text NULL, "+
+			"	testimage1 image NULL, "+
+			"	testimage2 image NULL)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?)");
+		assertTrue((pstmt!=null));
+		pstmt.setString(1,"");
+		pstmt.setString(2,null);
+		pstmt.setBytes(3,new byte[0]);
+		pstmt.setNull(4,Types.LONGVARBINARY);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select * from testtable1");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		// sap converts an empty string to a single space.  see the
+		// NULL AND EMPTY LOBS section of test/erlang/freetds-sap.erl
+		assertEquals(rs.getString(1)," ");
+		assertFalse(rs.wasNull());
+		assertEquals(rs.getString(2),null);
+		assertTrue(rs.wasNull());
+		// sap doesn't really support inserting an empty string into
+		// a binary column.  the minimum that can be inserted is a
+		// single 0x00 byte, which reads back as a one-byte array
+		// containing 0x00 - treat that as empty
+		byte[]	emptyimage=rs.getBytes(3);
+		assertTrue((emptyimage!=null));
+		assertTrue((emptyimage.length==0 ||
+				(emptyimage.length==1 && emptyimage[0]==0)));
+		assertTrue((rs.getBytes(4)==null));
+		assertTrue(rs.wasNull());
+		rs.close();
+		stmt.executeUpdate("drop table testtable1");
+		con.setAutoCommit(false);
+		stmt.close();
+		System.out.println();
+
+
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
 		stmt=con.createStatement();

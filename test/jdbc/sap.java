@@ -2711,6 +2711,66 @@ class sap extends sqlrtest {
 		System.out.println();
 
 
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		con.setAutoCommit(true);
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testtext1 text null, "+
+			"	testtext2 text null, "+
+			"	testimage1 image null, "+
+			"	testimage2 image null)"),0);
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable1 "+
+				"values ("+
+				"	@var1, "+
+				"	@var2, "+
+				"	@var3, "+
+				"	@var4)");
+		} else {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable1 "+
+				"values ("+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?)");
+		}
+		assertTrue((pstmt!=null));
+		pstmt.setString(1,"");
+		pstmt.setString(2,null);
+		pstmt.setBytes(3,new byte[0]);
+		pstmt.setNull(4,java.sql.Types.LONGVARBINARY);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select * from testtable1");
+		assertTrue((rs!=null));
+		rs.next();
+		// sap converts an empty string to a single space
+		assertEquals(rs.getString(1)," ");
+		assertEquals(rs.getString(2),null);
+		// sap doesn't really support inserting an empty string into
+		// a binary column.  the minimum that can be inserted is a
+		// single 0x00 byte, which reads back as a one-byte array
+		// containing 0x00 - treat that as empty
+		byte[]	emptyimage=rs.getBytes(3);
+		assertTrue((emptyimage!=null));
+		assertTrue((emptyimage.length==0 ||
+				(emptyimage.length==1 && emptyimage[0]==0)));
+		assertTrue((rs.getBytes(4)==null));
+		rs.close();
+		stmt.executeUpdate("drop table testtable1");
+		con.setAutoCommit(false);
+		System.out.println();
+
+
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
 		con.setAutoCommit(true);

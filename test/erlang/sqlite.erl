@@ -782,10 +782,6 @@ main() ->
     io:format("~n"),
 
     %% NULL AND EMPTY LOBS
-    %% the Erlang inputBindClob/inputBindBlob functions require a list
-    %% Value, so a true NULL cannot be bound; all four columns are bound
-    %% as empty strings and round-trip as empty strings (the true-NULL
-    %% LOB case is exercised by the c++ test)
     io:format("NULL AND EMPTY LOBS: ~n"),
     sqlrelay:getNullsAsNulls(),
     sqlrelay:sendQuery("drop table testtable"),
@@ -804,15 +800,15 @@ main() ->
         "	:var3, "
         "	:var4)"),
     sqlrelay:inputBindClob("var1", "", 0),
-    sqlrelay:inputBindClob("var2", "", 0),
+    sqlrelay:inputBindNull("var2"),
     sqlrelay:inputBindBlob("var3", "", 0),
-    sqlrelay:inputBindBlob("var4", "", 0),
+    sqlrelay:inputBindNull("var4"),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select * from testtable"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), ""),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), ""),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 1), null),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 2), ""),
-    assertEqualsString(sqlrelay:getFieldByIndex(0, 3), ""),
+    assertEqualsString(sqlrelay:getFieldByIndex(0, 3), null),
     sqlrelay:getNullsAsEmptyStrings(),
     assertTrue(sqlrelay:sendQuery("drop table testtable")),
     io:format("~n"),

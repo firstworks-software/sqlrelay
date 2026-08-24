@@ -3073,9 +3073,13 @@ int main(int argc, char **argv) {
 					&(blklength[i]),
 					&(blkindicator[i])),CS_SUCCEED);
 	}
-	// testvarchar goes in null
+	// testvarchar, testbinary and testtext go in null
 	blklength[2]=0;
 	blkindicator[2]=-1;
+	blklength[6]=0;
+	blkindicator[6]=-1;
+	blklength[7]=0;
+	blkindicator[7]=-1;
 	stdoutput.printf("\n");
 
 
@@ -3170,19 +3174,10 @@ int main(int argc, char **argv) {
 	assertEquals(blkreaddata[3],"1.25");
 	assertEquals(blkreaddata[4],"123.45");
 	assertEquals(blkreaddata[5],"Jan  1 2001 12:00:00:000PM");
-	assertEquals(blkreaddata[7],"texttexttext");
-	stdoutput.printf("\n");
-
-
-	// a char source bound to a binary column is parsed as hex digits,
-	// not bytes, so "0123456789" lands as five bytes.  ASE stores a
-	// nullable binary as a varbinary, so only mssql zero pads to ten
-	stdoutput.printf("row data: binary padding\n");
-	if (issybase) {
-		assertEquals(blkreaddata[6],"0123456789");
-	} else {
-		assertEquals(blkreaddata[6],"01234567890000000000");
-	}
+	assertEquals(blkreadindicator[7],-1);
+	assertEquals(blkreadlength[7],0);
+	assertEquals(blkreadindicator[6],-1);
+	assertEquals(blkreadlength[6],0);
 	stdoutput.printf("\n");
 
 
@@ -3249,6 +3244,10 @@ int main(int argc, char **argv) {
 	blklength[1]=charstring::getLength(blkvalue[1]);
 	blklength[2]=charstring::getLength(blkvalue[2]);
 	blkindicator[2]=0;
+	blklength[6]=charstring::getLength(blkvalue[6]);
+	blkindicator[6]=0;
+	blklength[7]=charstring::getLength(blkvalue[7]);
+	blkindicator[7]=0;
 	assertEquals(blk_rowxfer(blk),CS_SUCCEED);
 	stdoutput.printf("\n");
 

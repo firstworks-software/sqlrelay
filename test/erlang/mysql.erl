@@ -1358,9 +1358,9 @@ main() ->
         "	?, "
         "	?)"),
     sqlrelay:inputBindClob("1", "", 0),
-    sqlrelay:inputBindClob("2", "", 0),
+    sqlrelay:inputBindNull("2"),
     sqlrelay:inputBindBlob("3", "", 0),
-    sqlrelay:inputBindBlob("4", "", 0),
+    sqlrelay:inputBindNull("4"),
     assertTrue(sqlrelay:executeQuery()),
     sqlrelay:sendQuery("select * from testtable"),
     assertEqualsString(sqlrelay:getFieldByIndex(0, 0), ""),

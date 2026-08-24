@@ -1088,9 +1088,9 @@ assertTrue [$cur sendQuery "create table testtable (	testclob1 clob, 	testclob2 
 assertTrue [$con commit]
 $cur prepareQuery "insert into 	testtable values ( 	?, 	?, 	?, 	?)"
 $cur inputBindClob "1" "" 0
-$cur inputBindClob "2" "" 0
+$cur inputBindNull "2"
 $cur inputBindBlob "3" "" 0
-$cur inputBindBlob "4" "" 0
+$cur inputBindNull "4"
 assertTrue [$cur executeQuery]
 $cur sendQuery "select * from testtable"
 assertEqual [$cur getFieldByIndex 0 0] ""

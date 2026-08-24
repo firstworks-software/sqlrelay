@@ -2342,6 +2342,73 @@ class informix extends sqlrtest {
 		System.out.println();
 
 
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		stmt=con.createStatement();
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testtext1 text, "+
+			"	testtext2 text, "+
+			"	testbyte1 byte, "+
+			"	testbyte2 byte)"),0);
+		con.commit();
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?)");
+		assertTrue((pstmt!=null));
+		if (issqlrelay) {
+			// informix jdbc doesn't support createClob/createBlob,
+			// and text/byte columns have to be bound as lobs
+			// through sqlrelay - see the BIND BY POSITION section
+			clob=con.createClob();
+			blob=con.createBlob();
+			pstmt.setClob(1,clob);
+			pstmt.setBlob(3,blob);
+		} else {
+			pstmt.setString(1,"");
+			pstmt.setBytes(3,new byte[0]);
+		}
+		pstmt.setNull(2,Types.LONGVARCHAR);
+		pstmt.setNull(4,Types.LONGVARBINARY);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		con.commit();
+		rs=stmt.executeQuery("select * from testtable1");
+		assertTrue((rs!=null));
+		assertTrue(rs.next());
+		// informix returns a single 0x00 byte when you insert an
+		// empty text/byte value.  see the NULL AND EMPTY LOBS
+		// section of test/erlang/informix.erl, which strips the
+		// trailing NUL before comparing
+		String	emptytext=rs.getString(1);
+		assertTrue((emptytext!=null));
+		assertTrue((emptytext.length()==0 ||
+				(emptytext.length()==1 &&
+					emptytext.charAt(0)=='\0')));
+		assertEquals(rs.getString(2),null);
+		assertTrue(rs.wasNull());
+		byte[]	emptybyte=rs.getBytes(3);
+		assertTrue((emptybyte!=null));
+		assertTrue((emptybyte.length==0 ||
+				(emptybyte.length==1 && emptybyte[0]==0)));
+		assertTrue((rs.getBytes(4)==null));
+		assertTrue(rs.wasNull());
+		rs.close();
+		stmt.executeUpdate("drop table testtable1");
+		con.commit();
+		stmt.close();
+		System.out.println();
+
+
 		// output bind by position
 		System.out.println("OUTPUT BIND BY POSITION:");
 		stmt=con.createStatement();

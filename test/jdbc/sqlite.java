@@ -2074,6 +2074,44 @@ class sqlite extends sqlrtest {
 		System.out.println();
 
 
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		stmt=con.createStatement();
+		stmt.executeUpdate("drop table if exists testtable1");
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testclob1 clob, "+
+			"	testclob2 clob, "+
+			"	testblob1 blob, "+
+			"	testblob2 blob)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?)");
+		assertTrue((pstmt!=null));
+		pstmt.setString(1,"");
+		pstmt.setString(2,null);
+		pstmt.setBytes(3,new byte[0]);
+		pstmt.setNull(4,java.sql.Types.BLOB);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select * from testtable1");
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),"");
+		assertEquals(rs.getString(2),null);
+		assertEquals(rs.getBytes(3).length,0);
+		assertEquals(rs.getBytes(4),null);
+		rs.close();
+		stmt.executeUpdate("drop table if exists testtable1");
+		stmt.close();
+		System.out.println();
+
+
 		// catalog list
 		System.out.println("CATALOG LIST:");
 		stmt=con.createStatement();

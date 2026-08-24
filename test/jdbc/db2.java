@@ -2270,6 +2270,46 @@ class db2 extends sqlrtest {
 		System.out.println();
 
 
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		try {
+			stmt.executeUpdate("drop table testtable1");
+		} catch (Exception ex) {
+		}
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testclob1 clob, "+
+			"	testclob2 clob, "+
+			"	testblob1 blob, "+
+			"	testblob2 blob)"),0);
+		pstmt=con.prepareStatement(
+			"insert into "+
+			"	testtable1 "+
+			"values ("+
+			"	?, "+
+			"	?, "+
+			"	?, "+
+			"	?)");
+		assertTrue((pstmt!=null));
+		pstmt.setString(1,"");
+		pstmt.setString(2,null);
+		pstmt.setBytes(3,new byte[0]);
+		pstmt.setNull(4,java.sql.Types.BLOB);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select * from testtable1");
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),"");
+		assertEquals(rs.getString(2),null);
+		blob=rs.getBlob(3);
+		assertEquals(blob.length(),0);
+		assertEquals(rs.getBlob(4),null);
+		rs.close();
+		stmt.executeUpdate("drop table testtable1");
+		System.out.println();
+
+
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
 		// return values

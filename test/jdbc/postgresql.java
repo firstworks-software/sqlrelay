@@ -2172,6 +2172,56 @@ class postgresql extends sqlrtest {
 		System.out.println();
 
 
+		// null and empty clobs and blobs
+		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
+		stmt=con.createStatement();
+		stmt.executeUpdate("drop table if exists testtable1");
+		assertEquals(stmt.executeUpdate(
+			"create table testtable1 ("+
+			"	testtext1 text, "+
+			"	testtext2 text, "+
+			"	testbytea1 bytea, "+
+			"	testbytea2 bytea)"),0);
+		if (issqlrelay) {
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable1 "+
+				"values ("+
+				"	$1, "+
+				"	$2, "+
+				"	$3, "+
+				"	$4)");
+		} else {
+			// postgresql jdbc requires ? format
+			pstmt=con.prepareStatement(
+				"insert into "+
+				"	testtable1 "+
+				"values ("+
+				"	?, "+
+				"	?, "+
+				"	?, "+
+				"	?)");
+		}
+		assertTrue((pstmt!=null));
+		pstmt.setString(1,"");
+		pstmt.setString(2,null);
+		pstmt.setBytes(3,new byte[0]);
+		pstmt.setNull(4,java.sql.Types.BINARY);
+		assertEquals(pstmt.executeUpdate(),1);
+		pstmt.close();
+		rs=stmt.executeQuery("select * from testtable1");
+		assertTrue((rs!=null));
+		rs.next();
+		assertEquals(rs.getString(1),"");
+		assertEquals(rs.getString(2),null);
+		assertEquals(rs.getBytes(3).length,0);
+		assertEquals(rs.getBytes(4),null);
+		rs.close();
+		stmt.executeUpdate("drop table if exists testtable1");
+		stmt.close();
+		System.out.println();
+
+
 		// stored procedures
 		System.out.println("STORED PROCEDURES:");
 		stmt=con.createStatement();
