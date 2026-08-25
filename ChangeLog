@@ -506,6 +506,13 @@
 		to a statement, transaction and blob at once, which corrupted
 		the client library's object table and surfaced as "invalid
 		BLOB ID" (sqlcode -901) on later calls
+	fixed the odbc connection module reporting an rpc or stored procedure
+		call with no result set of its own as a bogus 24-column
+		result set on ms sql server, which the driver's internal
+		sp_describe_undeclared_parameters call leaves the statement's
+		metadata pointing at after the up-front null-bind parameter
+		describe added above, by asking for the column count again
+		once the describes are done
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
