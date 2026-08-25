@@ -101,10 +101,58 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	stdoutput.printf("TABLES DROPPED AT END-OF-SESSION:\n");
+	stdoutput.printf("TABLES RE-CREATED AFTER END-OF-SESSION:\n");
 	con->endSession();
-	assertFalse(cur->sendQuery("select * from gtttest1"));
-	assertFalse(cur->sendQuery("select * from gtttest2"));
+	assertTrue(cur->sendQuery("select * from gtttest1"));
+	assertEquals(cur->rowCount(),0);
+	assertTrue(cur->sendQuery("select * from gtttest2"));
+	assertEquals(cur->rowCount(),0);
+	stdoutput.printf("\n");
+
+
+	// The instance under test is configured with connections="1"
+	// maxconnections="1", so every session below - and every session
+	// above, for that matter - is served by the same single pooled
+	// backend connection.  That's what exercises the bug fixed by
+	// #9470: the trigger's per-table "created" flags live on that one
+	// pooled connection and outlive any single client session, but each
+	// postgresql "create temp table" is scoped to the backend session
+	// that issued it.  gtttest3 was already created earlier in this
+	// file (its "created" flag is already set), so before the fix,
+	// every iteration below - including the first - would fail with
+	// "relation ... does not exist": postgresql dropped the table when
+	// the earlier session ended, but the flag never got cleared to
+	// say so.  Every test above this point runs within a single
+	// session, which is why the bug wasn't caught by them.
+	stdoutput.printf("TABLES RE-CREATED ACROSS MORE CLIENT SESSIONS "
+				"THAN THERE ARE POOLED CONNECTIONS:\n");
+	for (uint16_t session=0; session<3; session++) {
+		con->endSession();
+		assertTrue(cur->sendQuery(
+				"insert into gtttest3 values (1,'one')"));
+		assertTrue(cur->sendQuery("select count(*) from gtttest3"));
+		assertEquals(cur->getField(0,(uint32_t)0),"1");
+		assertTrue(cur->sendQuery("delete from gtttest3"));
+	}
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("TABLES RE-CREATED FOR A SEPARATE CLIENT "
+				"CONNECTION SHARING THE SAME REUSED POOLED "
+				"CONNECTION:\n");
+	con->endSession();
+	secondcon=new sqlrconnection("sqlrelay",9022,
+			"/tmp/postgresqlglobaltemptables.socket",
+			"testuser","testpassword",0,1);
+	secondcur=new sqlrcursor(secondcon);
+	assertTrue(secondcur->sendQuery(
+				"insert into gtttest4 values (1,'one')"));
+	assertTrue(secondcur->sendQuery("select count(*) from gtttest4"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	delete secondcur;
+	delete secondcon;
+	secondcur=NULL;
+	secondcon=NULL;
 	stdoutput.printf("\n");
 
 	delete cur;

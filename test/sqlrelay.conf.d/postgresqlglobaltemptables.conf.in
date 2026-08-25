@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <instances>
 
-	<instance id="postgresqlglobaltemptables" dbase="postgresql">
+	<instance id="postgresqlglobaltemptables" dbase="postgresql"
+			connections="1" maxconnections="1">
 		<listeners>
 			<listener port="9022" socket="/tmp/postgresqlglobaltemptables.socket"/>
 		</listeners>

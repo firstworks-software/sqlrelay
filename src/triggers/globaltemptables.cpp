@@ -99,6 +99,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_globaltemptables : public sqlrtrigger {
 
 		bool	runBeforePrepare(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
+		void	endSession();
 	private:
 		bool	createTable(uint64_t i, sqlrservercursor *usercur);
 		bool	isAlreadyExistsError(sqlrservercursor *ccur);
@@ -215,6 +216,33 @@ bool sqlrtrigger_globaltemptables::runBeforePrepare(
 	debugEnd();
 
 	return true;
+}
+
+void sqlrtrigger_globaltemptables::endSession() {
+
+	// The "created" flag models a permanent, once-created object (which
+	// is what a real global temporary table is, on databases like
+	// Oracle/DB2 - only the DATA is session-scoped there). But this
+	// trigger's own object outlives any one client session - it lives
+	// for as long as the sqlr-connection process holds the pooled
+	// backend connection, and that connection is reused by many client
+	// sessions in turn. On a database where the create statement
+	// actually makes a session-scoped OBJECT (eg. postgresql's
+	// "create temp table"), the object is gone once the backend session
+	// that created it ends, even though this trigger's "created" flag
+	// says otherwise. So forget every table here, at the end of each
+	// client session, and let runBeforePrepare() re-create on demand.
+	//
+	// If a table's create statement really does target a permanent
+	// object (eg. a real Oracle/DB2 global temporary table), this just
+	// costs one extra create-and-catch-"already exists" per table per
+	// session - createTable()'s isAlreadyExistsError() handling already
+	// treats that as success, so nothing breaks, it's just not free.
+	debugStart("globaltemptables endSession");
+	for (uint64_t i=0; i<tables.getCount(); i++) {
+		tables[i].setCreated(false);
+	}
+	debugEnd();
 }
 
 bool sqlrtrigger_globaltemptables::isAlreadyExistsError(
