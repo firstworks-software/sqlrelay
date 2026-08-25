@@ -498,6 +498,10 @@
 		rpc parameter or bulk-load field as an empty value rather than
 		as null, the same length-0-means-null gap already fixed above
 		for binary/varbinary
+	the firebird protocol module now describes bind parameter types from
+		the backend's own prepare, so select, update and delete binds
+		describe correctly, rather than only from an insert's column
+		list
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

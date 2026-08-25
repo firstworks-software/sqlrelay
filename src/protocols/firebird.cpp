@@ -11397,11 +11397,12 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 					uint32_t itemslen) {
 
 	// a firebird client expects isc_dsql_describe_bind to answer with
-	// each parameter's type, which the module works out for itself
-	// FIXME: ask the backend first, with getInputBindCountFromPrepare()
-	// and getInputBindType() - only the firebird backend implements them
-	// (for an insert the type of a value going into a column is the
-	// column's type, so a select of the columns the binds feed answers it)
+	// each parameter's type, which the module works out two ways.  The
+	// backend's own prepare answers it exactly, for any statement type,
+	// but only the firebird backend implements that.  Failing it, a probe
+	// query answers it for an insert - the type of a value going into a
+	// column is the column's type, so a select of the columns the binds
+	// feed describes them.
 
 	debugStart("describe binds");
 
@@ -11422,6 +11423,44 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 		return;
 	}
 	stmt->bindsdescribed=true;
+
+	// ask the backend first
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querylen=cont->getQuerySize(cursor);
+	uint16_t	querybindcount=cont->countBindVariables(query,querylen);
+
+	// with faked binds the backend prepare never ran for this query, so
+	// whatever count the cursor still holds belongs to a previous one
+	uint16_t	preparebindcount=
+			(cont->getFakeInputBindsForThisQuery(cursor))?
+				0:cont->getInputBindCountFromPrepare(cursor);
+
+	debugWrite("query bind count: %hd",querybindcount);
+	debugWrite("prepare bind count: %hd",preparebindcount);
+
+	// a backend that can't describe binds answers 0 and UNKNOWN_DATATYPE
+	if (preparebindcount && preparebindcount==querybindcount &&
+		cont->getInputBindType(cursor,0)!=UNKNOWN_DATATYPE) {
+
+		stmt->binds=new sqlrfirebirdbind[preparebindcount];
+		stmt->bindcount=preparebindcount;
+		for (uint16_t i=0; i<preparebindcount; i++) {
+			stmt->binds[i].coltype=
+				cont->getInputBindType(cursor,i);
+			stmt->binds[i].colsize=
+				cont->getInputBindSize(cursor,i);
+			stmt->binds[i].colscale=
+				cont->getInputBindScale(cursor,i);
+			debugWrite("bind %hd: type=%hd size=%u scale=%u",
+					i,
+					stmt->binds[i].coltype,
+					stmt->binds[i].colsize,
+					stmt->binds[i].colscale);
+		}
+
+		debugEnd();
+		return;
+	}
 
 	// build the probe query
 	stringbuffer	probe;

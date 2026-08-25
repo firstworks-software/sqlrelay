@@ -300,11 +300,14 @@ static void freeOutputBuffers(int colcount, char **buffer) {
 // in whatever type the bind describe came back with, and hand the buffer
 // back for the caller to delete[].
 //
-// the type has to be taken rather than assumed: a native firebird types a
-// select's parameters from the columns they compare against, but sql relay's
-// firebird protocol module works a bind's type out only for an insert (see
-// describeBinds() in src/protocols/firebird.cpp), so a select's parameters
-// come back as its generic stand-in - a wide nullable string - instead.
+// the type has to be taken rather than assumed: sql relay's firebird
+// protocol module gets a bind's real type - for a select, update or delete
+// as well as an insert - from the backend's own prepare, when talking to a
+// live firebird backend that actually ran one (see describeBinds() in
+// src/protocols/firebird.cpp). under fakeinputbindvariables, or when the
+// firebird protocol fronts a non-firebird backend, there was no prepare to
+// ask, and the bind comes back as a generic stand-in - a wide nullable
+// string - instead.
 static char *bindInputValue(XSQLVAR *var, short *ind,
 					ISC_LONG intval, const char *strval) {
 
@@ -1787,20 +1790,14 @@ int main(int argc, char **argv) {
 	assertEquals((int)isc_dsql_describe_bind(fbstatus,&bselstmt,
 					SQL_DIALECT_V6,bindselinsqlda),0);
 	assertEquals(bindselinsqlda->sqld,1);
-	assertEquals(bindselinsqlda->sqlvar[0].sqltype&~1,SQL_LONG);
+	// no assert on the parameter's own type - see bindInputValue()
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("select with bind variable - execute and fetch\n");
-	// bind buffers have to be ISC_LONG, not C long - on LP64 a plain
-	// long is 8 bytes where SQL_LONG is 4, and the fetch then fails
-	// with a message-length error that looks like a module defect
-	ISC_LONG	bselval=7;
-	short		bselvalind=0;
-	bindselinsqlda->sqlvar[0].sqldata=(char *)&bselval;
-	bindselinsqlda->sqlvar[0].sqlind=&bselvalind;
-	// force the nullable bit on, so the indicator is honoured
-	bindselinsqlda->sqlvar[0].sqltype|=1;
+	short	bselvalind=0;
+	char	*bselinbuffer=bindInputValue(&bindselinsqlda->sqlvar[0],
+							&bselvalind,7,"7");
 	short	bseloutind[2];
 	char	*bseloutbuffer[2];
 	int	bseloutcolcount=bindOutputBuffers(bselsqlda,bseloutind,
@@ -1847,6 +1844,7 @@ int main(int argc, char **argv) {
 					SQL_DIALECT_V6,bselsqlda),100);
 	freeOutputBuffers(bseloutcolcount,bseloutbuffer);
 	isc_dsql_free_statement(fbstatus,&bselstmt,DSQL_drop);
+	delete[] bselinbuffer;
 	delete[] (char *)bindselinsqlda;
 	delete[] (char *)bselsqlda;
 	stdoutput.printf("\n\n");
