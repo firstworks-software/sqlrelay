@@ -8611,7 +8611,7 @@ int main(int argc, char **argv) {
 	bindoutreadfmt.maxlength=(CS_INT)sizeof(bindoutdata[0]);
 	bindoutreadfmt.count=1;
 
-	for (CS_INT i=0; i<3; i++) {
+	for (CS_INT i=0; i<ncols && i<3; i++) {
 		bytestring::zero(&(bindoutfmt[i]),sizeof(CS_DATAFMT));
 		assertEquals(ct_describe(cmd,i+1,&(bindoutfmt[i])),CS_SUCCEED);
 		assertEquals(bindoutfmt[i].name,bindoutname[i]);
@@ -8635,7 +8635,7 @@ int main(int argc, char **argv) {
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 	assertEquals(rowsread,1);
-	for (CS_INT i=0; i<3; i++) {
+	for (CS_INT i=0; i<ncols && i<3; i++) {
 		assertEquals(bindoutdata[i],bindoutvalue[i]);
 		assertEquals(bindoutdatalength[i],bindoutvaluelen[i]);
 		assertEquals(bindoutdataindicator[i],0);

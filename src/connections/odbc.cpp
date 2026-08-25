@@ -4622,6 +4622,21 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 			for (SQLSMALLINT i=1; i<=paramcount; i++) {
 				describeNullBind((uint16_t)i);
 			}
+
+			// MS SQL Server's driver implements
+			// SQLDescribeParam by running
+			// sp_describe_undeclared_parameters, and leaves
+			// the statement's result set metadata pointing
+			// at that call's 24-column result set.
+			// SQLExecute doesn't reset it for a statement
+			// with no result set of its own, so an rpc or
+			// stored procedure call would appear to return
+			// 24 columns, and fetching from it would fail
+			// with 24000 (invalid cursor state).  Asking
+			// for the column count here refreshes the
+			// metadata from the prepared statement itself.
+			SQLSMALLINT	discardncols=0;
+			SQLNumResultCols(stmt,&discardncols);
 		}
 	}
 
