@@ -150,7 +150,11 @@ int main(int argc, char **argv) {
 	const char	*password;
 	const char	*db;
 	const char	*language="us_english";
-	const char	*charset="utf-8";
+	// FreeTDS's ctlib emulation puts this string on the wire verbatim
+	// as server_charset, so it has to stay "utf-8" there; SAP's native
+	// ctlib instead validates the name against /opt/sap/charsets and
+	// locales.dat, which spell it "utf8" with no hyphen.
+	const char	*charset=TDSTEST_LINKED_WITH_FREETDS?"utf-8":"utf8";
 
 	// pass "native" to test a real sql server or sybase instance
 	// instead of sqlrelay's tds protocol.  a second argument picks
@@ -270,9 +274,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 	stdoutput.printf("cs_con_props: packet size\n");
 	// ASE rejects anything over 2048 at login time
-	uint16_t	ps=(issybase)?2048:4096;
+	// both ctlib implementations read this back as a 4-byte int
+	// internally regardless of the type declared here; FreeTDS only
+	// gets away with a narrower type via a truncating cast, SAP's
+	// ctlib does not.
+	CS_INT	ps=(issybase)?2048:4096;
+	// SAP's native ctlib requires buflen to be CS_UNUSED here; it
+	// fails login otherwise with "The buflen parameter must be set
+	// to CS_UNUSED".
 	assertEquals(ct_con_props(dbconn,CS_SET,
-				CS_PACKETSIZE,(CS_VOID *)&ps,sizeof(ps),
+				CS_PACKETSIZE,(CS_VOID *)&ps,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
 	stdoutput.printf("\n");
 	#ifdef CS_SEC_ENCRYPTION
@@ -1400,7 +1411,7 @@ int main(int argc, char **argv) {
 	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_CHARSET,
 				(CS_VOID *)buf,(CS_INT)sizeof(buf),
 				&outlen),CS_SUCCEED);
-	assertEquals(buf,"utf-8");
+	assertEquals(buf,charset);
 	stdoutput.printf("\n");
 
 
@@ -1420,7 +1431,9 @@ int main(int argc, char **argv) {
 	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_LANG_CHARSET,
 				(CS_VOID *)buf,(CS_INT)sizeof(buf),
 				&outlen),CS_SUCCEED);
-	assertEquals(buf,"us_english.utf-8");
+	stringbuffer	langcharset;
+	langcharset.append(language)->append(".")->append(charset);
+	assertEquals(buf,langcharset.getString());
 	stdoutput.printf("\n");
 
 
@@ -1469,7 +1482,7 @@ int main(int argc, char **argv) {
 	assertEquals(cs_locale(context,CS_GET,conlocale,CS_SYB_CHARSET,
 				(CS_VOID *)buf,(CS_INT)sizeof(buf),
 				&outlen),CS_SUCCEED);
-	assertEquals(buf,"utf-8");
+	assertEquals(buf,charset);
 	bytestring::zero(buf,sizeof(buf));
 	outlen=-1;
 	assertEquals(cs_locale(context,CS_GET,conlocale,CS_SYB_LANG,
@@ -1696,7 +1709,8 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 
-		// the client asks for utf-8 (see charset above) but ASE's
+		// the client asks for utf-8/utf8 depending on ctlib (see
+		// charset above) but ASE's
 		// own default charset is iso_1, so the session really is
 		// converting - @@char_convert is 1, not 0
 		stdoutput.printf("row data:\n");
@@ -2432,7 +2446,7 @@ int main(int argc, char **argv) {
 				CS_APPNAME,(CS_VOID *)"SQL Relay Test",
 				CS_NULLTERM,(CS_INT *)NULL),CS_SUCCEED);
 	assertEquals(ct_con_props(conn2,CS_SET,
-				CS_PACKETSIZE,(CS_VOID *)&ps,sizeof(ps),
+				CS_PACKETSIZE,(CS_VOID *)&ps,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
 	assertEquals(ct_con_props(conn2,CS_SET,
 				CS_CLIENTCHARSET,(CS_VOID *)"UTF-8",CS_NULLTERM,
