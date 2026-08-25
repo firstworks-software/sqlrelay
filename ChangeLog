@@ -494,6 +494,10 @@
 		GEN_NULL (0x00) for a null byte-length CHAR/VARCHAR/BINARY/
 		VARBINARY column - unreachable under today's type mapping,
 		fixed for consistency with the rest of the switch
+	fixed the tds protocol module treating a null byte-length char/varchar
+		rpc parameter or bulk-load field as an empty value rather than
+		as null, the same length-0-means-null gap already fixed above
+		for binary/varbinary
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

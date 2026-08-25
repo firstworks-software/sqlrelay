@@ -8185,6 +8185,13 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			// a length of 0 is how the protocol says null -
+			// bulkField() already bound it as a null value
+			if (!size) {
+				debugWrite("value: (null)");
+				debugEnd();
+				return true;
+			}
 			if (rpsize<size) {
 				debugEnd();
 				return false;
@@ -11881,6 +11888,10 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			if (!size) {
+				debugWrite("value: (null)");
+				break;
+			}
 			if (rpsize<size) {
 				debugEnd();
 				return false;
