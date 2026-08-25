@@ -5556,7 +5556,7 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			case TDS_TYPE_VARCHAR:
 			case TDS_TYPE_BINARY:
 			case TDS_TYPE_VARBINARY:
-				write(&resppacket,(byte_t)0xFF);
+				write(&resppacket,(byte_t)0x00);
 				break;
 			case TDS_TYPE_BIGBINARY:
 			case TDS_TYPE_BIGVARBIN:

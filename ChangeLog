@@ -490,6 +490,10 @@
 	fixed the tds protocol module treating a null binary/varbinary rpc
 		parameter or bulk-load field as an empty value rather than as
 		null, since a length of 0 is how those types say null
+	fixed the tds protocol module's field() writing 0xFF instead of
+		GEN_NULL (0x00) for a null byte-length CHAR/VARCHAR/BINARY/
+		VARBINARY column - unreachable under today's type mapping,
+		fixed for consistency with the rest of the switch
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
