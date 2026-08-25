@@ -513,6 +513,16 @@
 		metadata pointing at after the up-front null-bind parameter
 		describe added above, by asking for the column count again
 		once the describes are done
+	added pre-tds7 (tds 5.0) login support to the tds protocol module, so
+		sap's native open client ct-lib - which always negotiates tds
+		5.0 - can log in, rather than being turned away by an
+		unimplemented-feature error; error, info, envchange and login
+		ack tokens are encoded with single-byte strings instead of
+		ucs-2 on that path now, and tds 5.0 data requests are refused
+		with a readable message instead of a dropped connection
+	fixed the tds protocol module leaking the converted message, server name
+		and procedure name strings on every info and error token, and
+		the program name on every login ack
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

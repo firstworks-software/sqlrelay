@@ -25,6 +25,10 @@
 #define BULK_LOAD_DATA			0x07
 #define FEDERATED_AUTHENTICATION_TOKEN	0x08
 #define TRANSACTION_MANAGER_REQUEST	0x0E
+// tds 5.0's "normal" buffer.  it carries token-framed requests - language
+// commands, rpc's, dynamic sql, cursors - rather than the bare payload that
+// each of the types above carries.
+#define PRE_TDS7_NORMAL			0x0F
 #define TDS7_LOGIN			0x10
 #define SSPI				0x11
 #define PRE_LOGIN			0x12
@@ -68,6 +72,74 @@
 // exactly what this module can't service yet - revisit when sspi is
 // implemented
 #define	MAX_LOGIN_SSPI_BYTES		65535
+
+// The pre-tds7 login record is entirely fixed-length, unlike login7.
+// Tds 4.2 and 5.0 lay it out at different sizes (572 and 568 bytes), but
+// the record also carries the client's dialect in 4 bytes of its own, and
+// that's what this module goes by, so only the 5.0 size is defined here,
+// as the floor that has to have arrived.  A capability token may follow
+// the record.
+#define	PRE_TDS7_LOGIN_SIZE		568
+
+// each string field in the pre-tds7 login record is a fixed run of
+// nul-padded bytes followed by a trailing byte giving how many of those
+// bytes are real characters.  these are the sizes of the runs, the
+// trailing byte isn't counted.
+#define	PRE_TDS7_NAME_SIZE		30
+#define	PRE_TDS7_REMOTE_PASSWORD_SIZE	255
+#define	PRE_TDS7_PROGNAME_SIZE		10
+#define	PRE_TDS7_PACKET_SIZE_SIZE	6
+
+// the fixed-length fields in the pre-tds7 login record
+#define	PRE_TDS7_TYPE_FLAGS_SIZE	6
+#define	PRE_TDS7_SPARE_SIZE		3
+#define	PRE_TDS7_SESSION_ID_SIZE	6
+#define	PRE_TDS7_SEC_SPARE_SIZE		2
+#define	PRE_TDS7_DUMMY_SIZE		4
+
+// seclogin bits in the pre-tds7 login record.  When any of these are set,
+// the client leaves the password fields empty and waits for the server to
+// drive a challenge/response exchange instead.
+#define	PRE_TDS7_SEC_LOG_ENCRYPT	0x01
+#define	PRE_TDS7_SEC_LOG_CHALLENGE	0x02
+#define	PRE_TDS7_SEC_LOG_ENCRYPT2	0x20
+#define	PRE_TDS7_SEC_LOG_ENCRYPT3	0x80
+#define	PRE_TDS7_SEC_LOG_ENCRYPT_MASK	(PRE_TDS7_SEC_LOG_ENCRYPT| \
+					PRE_TDS7_SEC_LOG_CHALLENGE| \
+					PRE_TDS7_SEC_LOG_ENCRYPT2| \
+					PRE_TDS7_SEC_LOG_ENCRYPT3)
+
+// login-time capability token, and the capability types it carries
+#define	TOKEN_CAPABILITY		0xE2
+#define	CAPABILITY_REQUEST		0x01
+#define	CAPABILITY_RESPONSE		0x02
+
+// a capability mask's length is a single byte, so this is a ceiling
+// rather than a policy
+#define	MAX_CAPABILITY_MASK_BYTES	255
+
+// In a tds 7.x login ack, the byte after the token size says which sql
+// interface the server speaks (SQL_DFLT/SQL_TSQL).  In a tds 4.2/5.0
+// login ack the same byte says how the login came out instead, and 4.2
+// and 5.0 don't spell it the same way (4.2 says 1, 5.0 says 5) - which
+// is one reason preTds7Login() refuses a client that declares 4.2.
+// Only SUCCEED is ever sent; a login that fails gets an error token and
+// no login ack at all.  FAIL and NEGOTIATE are kept, unused, to record
+// the other values the byte can take.
+#define	PRE_TDS7_LOGIN_ACK_SUCCEED	0x05
+#define	PRE_TDS7_LOGIN_ACK_FAIL		0x06
+#define	PRE_TDS7_LOGIN_ACK_NEGOTIATE	0x07
+
+// What the login ack reports as the server program, for pre-tds7 clients.
+// ct-lib decides sybase-vs-mssql from the product version's high bit, so
+// keep it clear, and report a modern ase - 16.0.0 here - since older
+// versions send ct-lib down compatibility paths this module doesn't
+// implement.
+#define	PRE_TDS7_LOGIN_ACK_PROGNAME	"ASE"
+#define	PRE_TDS7_LOGIN_ACK_MAJORVER	0x10
+#define	PRE_TDS7_LOGIN_ACK_MINORVER	0x00
+#define	PRE_TDS7_LOGIN_ACK_BUILDNUMHI	0x00
+#define	PRE_TDS7_LOGIN_ACK_BUILDNUMLOW	0x00
 
 // status bitmap
 #define	STATUS_NORMAL			0x00
@@ -965,6 +1037,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t packetsize);
 
 		bool	preTds7Login();
+		// "value" must point at a buffer of at least "size"+1
+		// bytes - see the note at the definition
+		void	readPreTds7Field(const byte_t *rp,
+						char *value,
+						size_t size,
+						byte_t *length,
+						const byte_t **rpout);
+		void	capability();
+		bool	sendSecEncryptUnsupportedError();
+		bool	sendPreTds7VersionUnsupportedError();
 
 		bool	tds7Login();
 		bool	loginFieldFits(const char *name,
@@ -977,9 +1059,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t usernamelen,
 						const wchar_t *password,
 						size_t passwordlen);
+		bool	auth(const char *username,
+						const char *password);
 		void	loginAck();
 		void	authError(const wchar_t *username,
 						size_t usernamelen);
+		void	authError(const char *username);
 		bool	changeDatabase(const wchar_t *database,
 						size_t databaselen);
 		void	changeDatabaseInfo(const wchar_t *database,
@@ -1294,6 +1379,27 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		char	*callSyntaxToExec(const char *stmt);
 
+		// length-prefixed string writers - "lensize" is the size
+		// of the length prefix (1, 2, or 4 bytes) and "length" is
+		// a count of characters at the session's character width,
+		// which is single-byte for pre-tds7 clients and ucs-2
+		// otherwise.  So for a pre-tds7 session "length" is a byte
+		// count, and for a tds7 session it isn't.  The characters
+		// themselves are written at that same width.
+		size_t	charSize();
+		size_t	varcharSize(size_t lensize, size_t length);
+		void	writeVarcharLength(bytebuffer *buffer,
+					size_t lensize,
+					size_t length);
+		void	writeVarchar(bytebuffer *buffer,
+					size_t lensize,
+					const char *str,
+					size_t length);
+		void	writeVarchar(bytebuffer *buffer,
+					size_t lensize,
+					const wchar_t *str,
+					size_t length);
+
 		void	envChange(byte_t type,
 					const wchar_t *newvalue,
 					size_t newvaluelen,
@@ -1342,6 +1448,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	sendNoCursorAvailableError();
 		bool	sendLoginRequiredError();
 		bool	sendAlreadyLoggedInError();
+		bool	sendPreTds7UnsupportedError();
 
 		void	done();
 		void	done(uint16_t status,
@@ -1443,6 +1550,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		uint32_t	servertdsversion;
 		uint32_t	clienttdsversion;
 		uint32_t	negotiatedtdsversion;
+
+		// tds 5.0 and earlier send single-byte strings where tds 7.0
+		// and later send ucs-2.  This can't be derived from
+		// negotiatedtdsversion because init() presets that to 700,
+		// which would send anything written before the version is
+		// actually negotiated out tds7-shaped.
+		bool		pretds7;
 
 		uint32_t	oldpacketsize;
 		uint32_t	negotiatedpacketsize;
@@ -1933,6 +2047,7 @@ void sqlrprotocol_tds::init() {
 
 	clienttdsversion=700;
 	negotiatedtdsversion=700;
+	pretds7=false;
 
 	oldpacketsize=configpacketsize;
 	negotiatedpacketsize=configpacketsize;
@@ -2190,6 +2305,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			*packettype!=BULK_LOAD_DATA &&
 			*packettype!=FEDERATED_AUTHENTICATION_TOKEN &&
 			*packettype!=TRANSACTION_MANAGER_REQUEST &&
+			*packettype!=PRE_TDS7_NORMAL &&
 			*packettype!=TDS7_LOGIN &&
 			*packettype!=SSPI &&
 			*packettype!=PRE_LOGIN) {
@@ -2444,9 +2560,15 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 		servertdsversion=740;
 	}
 
-	// This module only speaks the LOGIN7+ (>=700) wire format, so never
-	// report a lower version even for genuinely older backends -
-	// negotiateTdsVersion() would echo it back and hang the client.
+	// Never report a version below 700, even for a genuinely older
+	// backend.  The wire format follows the login record the client
+	// sent, not the backend's version, so a LOGIN7 client has to end up
+	// with a LOGIN7-era version; negotiateTdsVersion() takes the minimum
+	// of the two, so an unclamped 500 here would drag a 7.x client down
+	// to 500 and hang it.  This doesn't cap pre-tds7 clients - the
+	// minimum keeps them at the 500 they asked for, and 500 is the only
+	// pre-tds7 version that gets this far, since preTds7Login() refuses
+	// the older ones outright.
 	if (servertdsversion && servertdsversion<700) {
 		servertdsversion=700;
 	}
@@ -2472,8 +2594,12 @@ uint32_t sqlrprotocol_tds::tdsVersionHexToDec(uint32_t tdsversion) {
 	switch (tdsversion) {
 		case 0x00000042:
 		case 0x42000000:
+		case 0x04020000:
+		case 0x00000204:
 			// Sybase < 10
 			// SQL Server 6.x
+			// (a real 4.2 client sends the version as the
+			// bytes 04 02 00 00, rather than as bcd)
 			result=420;
 			break;
 		case 0x00000050:
@@ -2710,6 +2836,11 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				loopback=true;
 				break;
 			case PRE_TDS7_LOGIN:
+				// a client that sends this speaks tds 5.0
+				// or earlier, so everything written from
+				// here on, errors included, uses single-byte
+				// strings rather than ucs-2
+				pretds7=true;
 				loop=preTds7Login();
 				loopback=true;
 				break;
@@ -2719,6 +2850,17 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				break;
 			case FEDERATED_AUTHENTICATION_TOKEN:
 				loop=federatedAuthenticationToken();
+				loopback=true;
+				break;
+			case PRE_TDS7_NORMAL:
+				// tds 5.0 login works, but nothing past it
+				// does yet.  answer with a real server
+				// message rather than dropping the socket,
+				// and keep the session up - the message
+				// rides its own done, so the client can
+				// display it, fail just this command, and
+				// close down cleanly
+				loop=sendPreTds7UnsupportedError();
 				loopback=true;
 				break;
 			case ATTENTION_SIGNAL:
@@ -3259,10 +3401,447 @@ bool sqlrprotocol_tds::preTds7Login() {
 
 	debugEnd();
 
-	// FIXME: actually implement this
+	const byte_t	*rp=reqpacket.getBuffer();
+	const byte_t	*startrp=rp;
 
-	sendUnimplementedFeatureError();
-	return false;
+	// the whole request, in bytes
+	size_t		rpsize=reqpacket.getSize();
+
+	// Unlike login7, this record has no offset/length table - every field
+	// is at a fixed offset and the whole record is read straight through
+	// below, so all of it has to be there.
+	if (rpsize<PRE_TDS7_LOGIN_SIZE) {
+		debugStart("pre-tds7 login");
+		debugWrite("truncated pre-tds7 login: %lld<%d",
+					(long long)rpsize,PRE_TDS7_LOGIN_SIZE);
+		debugEnd();
+		return false;
+	}
+
+	// initialize values...
+
+	// the record's string fields, each with the character count that
+	// came off the wire in the field's trailing length byte
+	char	hostname[PRE_TDS7_NAME_SIZE+1];
+	byte_t	hostnamelen=0;
+	char	username[PRE_TDS7_NAME_SIZE+1];
+	byte_t	usernamelen=0;
+	char	password[PRE_TDS7_NAME_SIZE+1];
+	byte_t	passwordlen=0;
+	char	hostproc[PRE_TDS7_NAME_SIZE+1];
+	byte_t	hostproclen=0;
+	char	appname[PRE_TDS7_NAME_SIZE+1];
+	byte_t	appnamelen=0;
+	char	servername[PRE_TDS7_NAME_SIZE+1];
+	byte_t	servernamelen=0;
+	char	remotepassword[PRE_TDS7_REMOTE_PASSWORD_SIZE+1];
+	byte_t	remotepasswordlen=0;
+	char	progname[PRE_TDS7_PROGNAME_SIZE+1];
+	byte_t	prognamelen=0;
+	char	language[PRE_TDS7_NAME_SIZE+1];
+	byte_t	languagelen=0;
+	char	charset[PRE_TDS7_NAME_SIZE+1];
+	byte_t	charsetlen=0;
+	char	packetsizestr[PRE_TDS7_PACKET_SIZE_SIZE+1];
+	byte_t	packetsizestrlen=0;
+
+	// the record's fixed-length fields
+	byte_t		typeflags[PRE_TDS7_TYPE_FLAGS_SIZE];
+	byte_t		dumpload=0;
+	byte_t		interfacespare=0;
+	byte_t		type=0;
+	uint32_t	deprecated=0;
+	byte_t		spare[PRE_TDS7_SPARE_SIZE];
+	uint32_t	tdsversion=0;
+	uint32_t	progversion=0;
+	byte_t		noshort=0;
+	byte_t		flt4type=0;
+	byte_t		date4type=0;
+	byte_t		suppresslanguage=0;
+	uint16_t	oldsecure=0;
+	byte_t		seclogin=0;
+	byte_t		secbulk=0;
+	byte_t		halogin=0;
+	byte_t		hasessionid[PRE_TDS7_SESSION_ID_SIZE];
+	byte_t		secspare[PRE_TDS7_SEC_SPARE_SIZE];
+	byte_t		charsetchange=0;
+	byte_t		dummy[PRE_TDS7_DUMMY_SIZE];
+
+	bytestring::zero(typeflags,sizeof(typeflags));
+	bytestring::zero(spare,sizeof(spare));
+	bytestring::zero(hasessionid,sizeof(hasessionid));
+	bytestring::zero(secspare,sizeof(secspare));
+	bytestring::zero(dummy,sizeof(dummy));
+
+	// copy values out of the recv packet
+	readPreTds7Field(rp,hostname,PRE_TDS7_NAME_SIZE,&hostnamelen,&rp);
+	readPreTds7Field(rp,username,PRE_TDS7_NAME_SIZE,&usernamelen,&rp);
+	readPreTds7Field(rp,password,PRE_TDS7_NAME_SIZE,&passwordlen,&rp);
+	readPreTds7Field(rp,hostproc,PRE_TDS7_NAME_SIZE,&hostproclen,&rp);
+	// FIXME: typeflags is where the client declares its byte order for
+	// 2-byte ints, 4-byte ints, chars, floats and datetimes.  Tds 7.x is
+	// little-endian by spec, but a tds 5.0 token stream follows what the
+	// client declares here, and readLE()/writeLE() assume little-endian
+	// everywhere.  So a big-endian ct-lib client would mis-parse
+	// everything past the login.  For now these bytes are only printed
+	// in the debug output below.
+	read(rp,typeflags,sizeof(typeflags),&rp);
+	read(rp,&dumpload,&rp);
+	read(rp,&interfacespare,&rp);
+	read(rp,&type,&rp);
+	readLE(rp,&deprecated,&rp);
+	read(rp,spare,sizeof(spare),&rp);
+	readPreTds7Field(rp,appname,PRE_TDS7_NAME_SIZE,&appnamelen,&rp);
+	readPreTds7Field(rp,servername,PRE_TDS7_NAME_SIZE,&servernamelen,&rp);
+	readPreTds7Field(rp,remotepassword,
+				PRE_TDS7_REMOTE_PASSWORD_SIZE,
+				&remotepasswordlen,&rp);
+	readBE(rp,&tdsversion,&rp);
+	readPreTds7Field(rp,progname,PRE_TDS7_PROGNAME_SIZE,&prognamelen,&rp);
+	readBE(rp,&progversion,&rp);
+	read(rp,&noshort,&rp);
+	read(rp,&flt4type,&rp);
+	read(rp,&date4type,&rp);
+	readPreTds7Field(rp,language,PRE_TDS7_NAME_SIZE,&languagelen,&rp);
+	read(rp,&suppresslanguage,&rp);
+	readLE(rp,&oldsecure,&rp);
+	read(rp,&seclogin,&rp);
+	read(rp,&secbulk,&rp);
+	read(rp,&halogin,&rp);
+	read(rp,hasessionid,sizeof(hasessionid),&rp);
+	read(rp,secspare,sizeof(secspare),&rp);
+	readPreTds7Field(rp,charset,PRE_TDS7_NAME_SIZE,&charsetlen,&rp);
+	read(rp,&charsetchange,&rp);
+	readPreTds7Field(rp,packetsizestr,
+				PRE_TDS7_PACKET_SIZE_SIZE,
+				&packetsizestrlen,&rp);
+	read(rp,dummy,sizeof(dummy),&rp);
+
+	// the packet size arrives as ascii digits rather than as a number
+	uint32_t	packetsize=(uint32_t)
+				charstring::convertToUnsignedInteger(
+								packetsizestr);
+
+	// The client's tds version arrives twice - as the 4 bytes read above,
+	// and as the size of the record itself (572 for 4.2, 568 for 5.0).
+	// Go with the 4 bytes; tdsVersionHexToDec() knows both 0x05000000
+	// (5.0) and 0x04020000 (4.2).
+	clienttdsversion=tdsVersionHexToDec(tdsversion);
+
+	// a capability token may follow the record
+	bool		capabilities=false;
+	uint16_t	capabilitiessize=0;
+	byte_t		requestmask[MAX_CAPABILITY_MASK_BYTES];
+	byte_t		requestmasklen=0;
+	byte_t		responsemask[MAX_CAPABILITY_MASK_BYTES];
+	byte_t		responsemasklen=0;
+	bytestring::zero(requestmask,sizeof(requestmask));
+	bytestring::zero(responsemask,sizeof(responsemask));
+
+	// what's left of the request, after the record
+	size_t	remaining=rpsize-(size_t)(rp-startrp);
+
+	if (remaining>=sizeof(byte_t)+sizeof(uint16_t)) {
+
+		byte_t	token=0;
+		read(rp,&token,&rp);
+		remaining=remaining-sizeof(byte_t);
+
+		if (token==TOKEN_CAPABILITY) {
+
+			capabilities=true;
+
+			readLE(rp,&capabilitiessize,&rp);
+			remaining=remaining-sizeof(uint16_t);
+
+			// don't trust the token's length over the
+			// amount of data that actually arrived
+			size_t	left=capabilitiessize;
+			if (left>remaining) {
+				debugStart("pre-tds7 login");
+				debugWrite("truncated capability token: "
+						"%lld<%lld, "
+						"parsing what arrived",
+						(long long)remaining,
+						(long long)left);
+				debugEnd();
+				left=remaining;
+			}
+
+			// each capability is a type byte, a length byte,
+			// and that many mask bytes
+			while (left>=sizeof(byte_t)+sizeof(byte_t)) {
+
+				byte_t	captype=0;
+				byte_t	caplen=0;
+				read(rp,&captype,&rp);
+				read(rp,&caplen,&rp);
+				left=left-sizeof(byte_t)-sizeof(byte_t);
+
+				if ((size_t)caplen>left) {
+					caplen=(byte_t)left;
+				}
+
+				byte_t	mask[MAX_CAPABILITY_MASK_BYTES];
+				bytestring::zero(mask,sizeof(mask));
+				read(rp,mask,(size_t)caplen,&rp);
+				left=left-(size_t)caplen;
+
+				if (captype==CAPABILITY_REQUEST) {
+					bytestring::copy(requestmask,
+								mask,caplen);
+					requestmasklen=caplen;
+				} else if (captype==CAPABILITY_RESPONSE) {
+					bytestring::copy(responsemask,
+								mask,caplen);
+					responsemasklen=caplen;
+				}
+			}
+		}
+	}
+
+	if (getDebug()) {
+		debugStart("pre-tds7 login");
+		debugWrite("request size: %lld",(long long)rpsize);
+		debugWrite("hostname: (%d) %s",(int)hostnamelen,hostname);
+		debugWrite("username: (%d) %s",(int)usernamelen,username);
+		debugWrite("password: (%d) (hidden)",(int)passwordlen);
+		debugWrite("hostproc: (%d) %s",(int)hostproclen,hostproc);
+		debugWrite("typeflags: "
+				"int2=%d int4=%d char=%d "
+				"flt=%d date=%d usedb=%d",
+				(int)typeflags[0],(int)typeflags[1],
+				(int)typeflags[2],(int)typeflags[3],
+				(int)typeflags[4],(int)typeflags[5]);
+		debugWrite("dumpload: %d",(int)dumpload);
+		debugWrite("interfacespare: %d",(int)interfacespare);
+		debugWrite("type: %d",(int)type);
+		debugWrite("deprecated: %d",deprecated);
+		debugWrite("appname: (%d) %s",(int)appnamelen,appname);
+		debugWrite("servername: (%d) %s",(int)servernamelen,servername);
+		debugWrite("remotepassword: (%d) (hidden)",
+						(int)remotepasswordlen);
+		debugWrite("tdsversion: 0x%08x (%d)",
+						tdsversion,clienttdsversion);
+		debugWrite("progname: (%d) %s",(int)prognamelen,progname);
+		debugWrite("progversion: 0x%08x",progversion);
+		debugWrite("noshort: %d",(int)noshort);
+		debugWrite("flt4type: %d",(int)flt4type);
+		debugWrite("date4type: %d",(int)date4type);
+		debugWrite("language: (%d) %s",(int)languagelen,language);
+		debugWrite("suppresslanguage: %d",(int)suppresslanguage);
+		debugWrite("oldsecure: %d",(int)oldsecure);
+		debugWrite("seclogin: 0x%02x",(int)seclogin);
+		debugWrite("secbulk: %d",(int)secbulk);
+		debugWrite("halogin: %d",(int)halogin);
+		debugWrite("hasessionid:");
+		debugHexDump(hasessionid,sizeof(hasessionid));
+		debugWrite("charset: (%d) %s",(int)charsetlen,charset);
+		debugWrite("charsetchange: %d",(int)charsetchange);
+		debugWrite("packetsize: (%d) %s (%d)",
+					(int)packetsizestrlen,
+					packetsizestr,packetsize);
+		debugWrite("dummy:");
+		debugHexDump(dummy,sizeof(dummy));
+		if (capabilities) {
+			debugWrite("capabilities: %d bytes",
+						(int)capabilitiessize);
+			debugWrite("request mask: (%d)",(int)requestmasklen);
+			debugHexDump(requestmask,requestmasklen);
+			debugWrite("response mask: (%d)",(int)responsemasklen);
+			debugHexDump(responsemask,responsemasklen);
+		} else {
+			debugWrite("capabilities: (none)");
+		}
+		debugEnd();
+	}
+
+	// Tds 5.0 is the only pre-tds7 dialect this module implements.  A
+	// client that declares an older one (4.2, say) lays the rest of the
+	// session out differently - starting with the login ack, where 4.2
+	// spells success as 1 rather than as 5 - so answering it as though
+	// it were 5.0 hands it a response it can't parse.  Refuse it here
+	// instead.  The error itself is written pre-tds7 style, which 4.2
+	// and 5.0 do have in common, so the client can display it.
+	if (clienttdsversion!=500) {
+		debugStart("pre-tds7 login");
+		debugWrite("unsupported pre-tds7 version: 0x%08x (%d)",
+					tdsversion,clienttdsversion);
+		debugEnd();
+		// The login is refused whether or not the error makes it
+		// out, so the send result isn't the return value here, the
+		// same as the tls-required refusal above.  The error tokens
+		// are already shaped correctly - the only version-dependent
+		// choice in them is negotiatedtdsversion<720, and every
+		// pre-tds7 version is.
+		sendPreTds7VersionUnsupportedError();
+		return false;
+	}
+
+	// FIXME: apply the record's language and charset fields.  Both are
+	// parsed above and neither is used, unlike the tds7 path, which acts
+	// on the login's language, collation and database.
+
+	// A client that asks for password encryption sets a seclogin bit and
+	// sends empty password fields, then waits for the server to drive a
+	// challenge/response exchange (a TDS_MSG token carrying msgid 1, and
+	// the client's msgid 2/3 answers).  This module doesn't implement
+	// that exchange, so there's no password here to authenticate with.
+	// Say so, rather than dropping the socket or letting what amounts to
+	// an empty password through the auth modules.
+	if ((seclogin&PRE_TDS7_SEC_LOG_ENCRYPT_MASK) && !passwordlen) {
+		debugStart("pre-tds7 login");
+		debugWrite("encrypted login requested (seclogin: 0x%02x) "
+				"but encrypted logins aren't supported",
+				(int)seclogin);
+		debugEnd();
+		// The login is refused whether or not the error makes it
+		// out, so the send result isn't the return value here, the
+		// same as the tls-required refusal above.  No version
+		// negotiation is needed first - the only version-dependent
+		// choice in an error token is negotiatedtdsversion<720, and
+		// both the pre-negotiation default (700) and what would be
+		// negotiated here (500) are.
+		sendSecEncryptUnsupportedError();
+		return false;
+	}
+
+	// negotiate tds version
+	negotiateTdsVersion();
+
+	// begin building the response packet
+	resppacket.clear();
+
+	bool	retval=true;
+
+	// auth the user
+	if (auth(username,password)) {
+
+		loggedin=true;
+
+		// run session-start queries
+		cont->beginSession();
+
+		loginAck();
+
+		// A client that sent a capability token rejects the whole
+		// login response unless one comes back, so unlike the
+		// envchanges a real ase also sends, this isn't optional.
+		if (capabilities) {
+			capability();
+		}
+
+	} else {
+		authError(username);
+		retval=false;
+	}
+
+	// change packet size
+	// (a real ase also sends envchanges for the packet size, charset,
+	// database and language here, but no client requires them)
+	if (retval) {
+		negotiatePacketSize(packetsize);
+
+		// reset "old" packet size
+		oldpacketsize=negotiatedpacketsize;
+	}
+
+	// done
+	done((retval)?DONE_FINAL:DONE_ERROR,0,0);
+
+	// send the response packet, without losing a login failure
+	if (!sendPacket()) {
+		retval=false;
+	}
+
+	return retval;
+}
+
+void sqlrprotocol_tds::capability() {
+
+	byte_t	token=TOKEN_CAPABILITY;
+
+	// The masks a real ase answers a login with.  What's echoed back in
+	// the request mask is what ct_capability() reports and what ct-lib's
+	// type mapping keys off of, so send what ase sends rather than
+	// whatever the client asked for.
+	// FIXME: send what this module actually supports, once the request
+	// bits have been audited against it
+	static const byte_t	requestmask[]={
+					0x00,0x00,0x00,0x00,0x80,0x00,0x00,
+					0x23,0x61,0x7f,0xff,0xff,0xff,0xe6
+					};
+	static const byte_t	responsemask[]={
+					0x00,0x00,0x00,0x00,0x00,0x08,0x40,
+					0x00,0x00,0x0a,0x00,0x00,0x00,0x00
+					};
+
+	byte_t	requestmasklen=(byte_t)sizeof(requestmask);
+	byte_t	responsemasklen=(byte_t)sizeof(responsemask);
+
+	// each capability is a type byte, a length byte, and that many
+	// mask bytes
+	uint16_t	tokensize=(uint16_t)
+				(sizeof(byte_t)+sizeof(byte_t)+requestmasklen+
+				sizeof(byte_t)+sizeof(byte_t)+responsemasklen);
+
+	debugStart("capability");
+	debugTokenType(token);
+	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("request mask: (%d)",(int)requestmasklen);
+	debugHexDump(requestmask,requestmasklen);
+	debugWrite("response mask: (%d)",(int)responsemasklen);
+	debugHexDump(responsemask,responsemasklen);
+	debugEnd();
+
+	write(&resppacket,token);
+	writeLE(&resppacket,tokensize);
+	write(&resppacket,(byte_t)CAPABILITY_REQUEST);
+	write(&resppacket,requestmasklen);
+	write(&resppacket,requestmask,(size_t)requestmasklen);
+	write(&resppacket,(byte_t)CAPABILITY_RESPONSE);
+	write(&resppacket,responsemasklen);
+	write(&resppacket,responsemask,(size_t)responsemasklen);
+}
+
+bool sqlrprotocol_tds::sendSecEncryptUnsupportedError() {
+	// FIXME: is there a real error number/state for this?
+	return sendError(0,1,14,
+			"Encrypted logins are not supported.  "
+			"Disable password encryption in the client "
+			"and log in again.",1);
+}
+
+bool sqlrprotocol_tds::sendPreTds7VersionUnsupportedError() {
+	// FIXME: is there a real error number/state for this?
+	return sendError(0,1,14,
+			"TDS 5.0 is the only supported pre-TDS-7 protocol "
+			"version.  Configure the client to use TDS 5.0 "
+			"and log in again.",1);
+}
+
+// "value" must point at a buffer of at least "size"+1 bytes: "size" for the
+// field itself, and one more for the nul written after the last real
+// character.  Nothing checks that, so every call site pairs a
+// char[SOMETHING+1] with a matching SOMETHING here.
+void sqlrprotocol_tds::readPreTds7Field(const byte_t *rp,
+					char *value,
+					size_t size,
+					byte_t *length,
+					const byte_t **rpout) {
+
+	// the field is a fixed run of "size" nul-padded bytes, followed by a
+	// trailing byte giving how many of them are real characters
+	read(rp,value,size,&rp);
+	read(rp,length,&rp);
+
+	// a bogus length would run off the end of the field
+	if ((size_t)(*length)>size) {
+		*length=(byte_t)size;
+	}
+	value[*length]='\0';
+
+	*rpout=rp;
 }
 
 bool sqlrprotocol_tds::tds7Login() {
@@ -3738,23 +4317,32 @@ bool sqlrprotocol_tds::auth(const wchar_t *username,
 				const wchar_t *password,
 				size_t passwordlen) {
 
+	// pre-tds7 clients send single-byte strings and call the narrow
+	// version below directly
 	char	*username8=charstring::duplicate(username,usernamelen);
 	char	*password8=charstring::duplicate(password,passwordlen);
 
+	bool	authsuccess=auth(username8,password8);
+
+	delete[] username8;
+	delete[] password8;
+
+	return authsuccess;
+}
+
+bool sqlrprotocol_tds::auth(const char *username, const char *password) {
+
 	sqlruserpasswordcredentials	cred;
-	cred.setUser(username8);
-	cred.setPassword(password8);
+	cred.setUser(username);
+	cred.setPassword(password);
 
 	bool	authsuccess=cont->auth(&cred);
 
 	debugStart("authenticate");
-	debugWrite("username: %s",username8);
+	debugWrite("username: %s",username);
 	debugWrite("password: (hidden)");
 	debugWrite((authsuccess)?"success":"failed");
 	debugEnd();
-
-	delete[] username8;
-	delete[] password8;
 
 	return authsuccess;
 }
@@ -3763,29 +4351,36 @@ void sqlrprotocol_tds::loginAck() {
 
 	byte_t		token=TOKEN_LOGIN_ACK;
 					
-	byte_t		iface=SQL_TSQL;
+	// For a tds 7.x client this byte names the sql interface, for a
+	// pre-tds7 client it reports whether the login succeeded.  Only the
+	// success case gets here; the failure paths send an error token and
+	// no login ack at all, which is what both dialects' clients expect.
+	byte_t		iface=(pretds7)?PRE_TDS7_LOGIN_ACK_SUCCEED:SQL_TSQL;
 	// unlike the version in the login request, the version in the
 	// login ack is sent big-endian
 	uint32_t	tdsversion=
 			tdsVersionDecToHex(negotiatedtdsversion,true);
-	const char	*progname=dbversion;
+	// A pre-tds7 client parses this as the server program name and
+	// decides from it what dialect to speak, so it has to be an ase
+	// product name rather than the backend's version string.
+	const char	*progname=(pretds7)?
+				PRE_TDS7_LOGIN_ACK_PROGNAME:dbversion;
 	byte_t		prognamelength=(byte_t)charstring::getLength(progname);
-	ucs2_t		*progname16=ucs2charstring::duplicate(progname,
-							(size_t)prognamelength);
-	byte_t		majorver=0;
-	byte_t		minorver=0;
-	byte_t		buildnumhi=0;
-	byte_t		buildnumlow=0;
+	byte_t		majorver=(pretds7)?PRE_TDS7_LOGIN_ACK_MAJORVER:0;
+	byte_t		minorver=(pretds7)?PRE_TDS7_LOGIN_ACK_MINORVER:0;
+	byte_t		buildnumhi=(pretds7)?PRE_TDS7_LOGIN_ACK_BUILDNUMHI:0;
+	byte_t		buildnumlow=(pretds7)?PRE_TDS7_LOGIN_ACK_BUILDNUMLOW:0;
 
-	uint16_t	tokensize=sizeof(byte_t)+
-					sizeof(uint32_t)+
-					sizeof(byte_t)+
-					prognamelength*sizeof(ucs2_t)+
-					sizeof(byte_t)+
-					sizeof(byte_t)+
-					sizeof(byte_t)+
-					sizeof(byte_t);
-	
+	uint16_t	tokensize=(uint16_t)
+				(sizeof(byte_t)+
+				sizeof(uint32_t)+
+				varcharSize(sizeof(byte_t),
+						(size_t)prognamelength)+
+				sizeof(byte_t)+
+				sizeof(byte_t)+
+				sizeof(byte_t)+
+				sizeof(byte_t));
+
 	debugStart("login ack");
 	debugTokenType(token);
 	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
@@ -3803,8 +4398,8 @@ void sqlrprotocol_tds::loginAck() {
 	writeLE(&resppacket,tokensize);
 	write(&resppacket,iface);
 	writeBE(&resppacket,tdsversion);
-	write(&resppacket,prognamelength);
-	write(&resppacket,progname16,prognamelength);
+	writeVarchar(&resppacket,sizeof(byte_t),
+				progname,(size_t)prognamelength);
 	write(&resppacket,majorver);
 	write(&resppacket,minorver);
 	write(&resppacket,buildnumhi);
@@ -3814,20 +4409,27 @@ void sqlrprotocol_tds::loginAck() {
 void sqlrprotocol_tds::authError(const wchar_t *username,
 					size_t usernamelen) {
 
+	// pre-tds7 clients send single-byte strings and call the narrow
+	// version below directly
 	char	*username8=charstring::duplicate(username,usernamelen);
 
+	authError(username8);
+
+	delete[] username8;
+}
+
+void sqlrprotocol_tds::authError(const char *username) {
+
 	debugStart("auth error");
-	debugWrite("username: %s",username8);
+	debugWrite("username: %s",username);
 	debugEnd();
 
 	stringbuffer	err;
 	err.append("Login failed for user '");
-	err.append(username8);
+	err.append(username);
 	err.append("'.");
 
 	appendError(18456,1,14,err.getString(),srvname,NULL,0);
-
-	delete[] username8;
 }
 
 bool sqlrprotocol_tds::changeDatabase(const wchar_t *database,
@@ -12315,6 +12917,68 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	return true;
 }
 
+size_t sqlrprotocol_tds::charSize() {
+	return (pretds7)?sizeof(byte_t):sizeof(ucs2_t);
+}
+
+size_t sqlrprotocol_tds::varcharSize(size_t lensize, size_t length) {
+	return lensize+length*charSize();
+}
+
+void sqlrprotocol_tds::writeVarcharLength(bytebuffer *buffer,
+					size_t lensize,
+					size_t length) {
+	if (lensize==sizeof(byte_t)) {
+		write(buffer,(byte_t)length);
+	} else if (lensize==sizeof(uint16_t)) {
+		writeLE(buffer,(uint16_t)length);
+	} else {
+		writeLE(buffer,(uint32_t)length);
+	}
+}
+
+void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
+					size_t lensize,
+					const char *str,
+					size_t length) {
+
+	writeVarcharLength(buffer,lensize,length);
+
+	if (!length) {
+		return;
+	}
+
+	if (pretds7) {
+		write(buffer,str,length);
+	} else {
+		ucs2_t	*str16=ucs2charstring::duplicate(str,length);
+		write(buffer,str16,length);
+		delete[] str16;
+	}
+}
+
+void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
+					size_t lensize,
+					const wchar_t *str,
+					size_t length) {
+
+	writeVarcharLength(buffer,lensize,length);
+
+	if (!length) {
+		return;
+	}
+
+	if (pretds7) {
+		char	*str8=charstring::duplicate(str,length);
+		write(buffer,str8,length);
+		delete[] str8;
+	} else {
+		ucs2_t	*str16=ucs2charstring::duplicate(str,length);
+		write(buffer,str16,length);
+		delete[] str16;
+	}
+}
+
 void sqlrprotocol_tds::envChange(byte_t type,
 					const wchar_t *newvalue,
 					size_t newvaluelen,
@@ -12323,23 +12987,16 @@ void sqlrprotocol_tds::envChange(byte_t type,
 
 	byte_t		token=TOKEN_ENV_CHANGE;
 
-	ucs2_t		*newvalue16=ucs2charstring::duplicate(
-						newvalue,newvaluelen);
-	ucs2_t		*oldvalue16=ucs2charstring::duplicate(
-						oldvalue,oldvaluelen);
-
 	uint16_t	newvaluelensize=
 			(type==ENV_CHANGE_PROMOTE_TRANSACTION)?
 						sizeof(uint32_t):
 						sizeof(byte_t);
 	uint16_t	oldvaluelensize=sizeof(byte_t);
 
-	uint16_t	tokensize=
-				sizeof(byte_t)+
-				newvaluelensize+
-				newvaluelen*sizeof(uint16_t)+
-				oldvaluelensize+
-				oldvaluelen*sizeof(uint16_t);
+	uint16_t	tokensize=(uint16_t)
+				(sizeof(byte_t)+
+				varcharSize(newvaluelensize,newvaluelen)+
+				varcharSize(oldvaluelensize,oldvaluelen));
 
 	debugStart("env change");
 	debugTokenType(token);
@@ -12356,17 +13013,8 @@ void sqlrprotocol_tds::envChange(byte_t type,
 	write(&resppacket,token);
 	writeLE(&resppacket,tokensize);
 	write(&resppacket,type);
-	if (newvaluelensize==sizeof(byte_t)) {
-		write(&resppacket,(byte_t)newvaluelen);
-	} else {
-		writeLE(&resppacket,(uint32_t)newvaluelen);
-	}
-	write(&resppacket,newvalue16,newvaluelen);
-	write(&resppacket,(byte_t)oldvaluelen);
-	write(&resppacket,oldvalue16,oldvaluelen);
-
-	delete[] newvalue16;
-	delete[] oldvalue16;
+	writeVarchar(&resppacket,newvaluelensize,newvalue,newvaluelen);
+	writeVarchar(&resppacket,oldvaluelensize,oldvalue,oldvaluelen);
 }
 
 void sqlrprotocol_tds::appendInfo(uint32_t number,
@@ -12415,30 +13063,21 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 					sizeof(byte_t)+
 					sizeof(byte_t)+
 					sizeof(uint16_t)+
-					sizeof(byte_t)+
-					srvnamelen*sizeof(ucs2_t)+
-					sizeof(byte_t)+
-					procnamelen*sizeof(ucs2_t)+
+					varcharSize(sizeof(byte_t),srvnamelen)+
+					varcharSize(sizeof(byte_t),procnamelen)+
 					((negotiatedtdsversion<720)?
 						sizeof(uint16_t):
 						sizeof(uint32_t));
 
 	// truncate the message text so that the token size fits in 16 bits
 	size_t		msgtextlen=charstring::getLength(msgtext);
-	size_t		maxmsgtextlen=(65535-fixedsize)/sizeof(ucs2_t);
+	size_t		maxmsgtextlen=(65535-fixedsize)/charSize();
 	if (msgtextlen>maxmsgtextlen) {
 		msgtextlen=maxmsgtextlen;
 	}
 
-	ucs2_t		*msgtext16=ucs2charstring::duplicate(
-					msgtext,msgtextlen);
-	ucs2_t		*srvname16=ucs2charstring::duplicate(
-					servername,srvnamelen);
-	ucs2_t		*procname16=ucs2charstring::duplicate(
-					procname,procnamelen);
-
 	uint16_t	tokensize=(uint16_t)
-				(fixedsize+msgtextlen*sizeof(ucs2_t));
+				(fixedsize+msgtextlen*charSize());
 
 	debugStart((token==TOKEN_INFO)?"info":"error");
 	debugTokenType(token);
@@ -12457,12 +13096,9 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 	writeLE(&resppacket,number);
 	write(&resppacket,state);
 	write(&resppacket,infoerrclass);
-	writeLE(&resppacket,(uint16_t)msgtextlen);
-	write(&resppacket,msgtext16,msgtextlen);
-	write(&resppacket,(byte_t)srvnamelen);
-	write(&resppacket,srvname16,srvnamelen);
-	write(&resppacket,(byte_t)procnamelen);
-	write(&resppacket,procname16,procnamelen);
+	writeVarchar(&resppacket,sizeof(uint16_t),msgtext,msgtextlen);
+	writeVarchar(&resppacket,sizeof(byte_t),servername,srvnamelen);
+	writeVarchar(&resppacket,sizeof(byte_t),procname,procnamelen);
 	if (negotiatedtdsversion<720) {
 		writeLE(&resppacket,(uint16_t)linenumber);
 	} else {
@@ -12539,6 +13175,16 @@ bool sqlrprotocol_tds::sendLoginRequiredError() {
 bool sqlrprotocol_tds::sendAlreadyLoggedInError() {
 	// FIXME: is there a real error message/number/state/class for this?
 	return sendError(0,1,16,"Already logged in",1);
+}
+
+bool sqlrprotocol_tds::sendPreTds7UnsupportedError() {
+	// class 16 rather than 20-and-up on purpose.  a class 20 error is
+	// fatal and the client hangs up on it; this one leaves the connection
+	// usable, so every request after it gets the same message too
+	// FIXME: is there a real error message/number/state/class for this?
+	return sendError(0,1,16,
+			"TDS 5.0 data requests are not supported.  "
+			"Only login is implemented.",1);
 }
 
 void sqlrprotocol_tds::done() {
@@ -13136,6 +13782,9 @@ void sqlrprotocol_tds::debugPacketType(const char *name, byte_t type) {
 		case TRANSACTION_MANAGER_REQUEST:
 			typestring="TRANSACTION_MANAGER_REQUEST";
 			break;
+		case PRE_TDS7_NORMAL:
+			typestring="PRE_TDS7_NORMAL";
+			break;
 		case TDS7_LOGIN:
 			typestring="TDS7_LOGIN";
 			break;
@@ -13197,6 +13846,9 @@ void sqlrprotocol_tds::debugTokenType(byte_t token) {
 			break;
 		case TOKEN_ENV_CHANGE:
 			tokenstring="TOKEN_ENV_CHANGE";
+			break;
+		case TOKEN_CAPABILITY:
+			tokenstring="TOKEN_CAPABILITY";
 			break;
 		case TOKEN_INFO:
 			tokenstring="TOKEN_INFO";
