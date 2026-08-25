@@ -9638,7 +9638,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>In databases that support global temporary tables, the table definition is persistent and visible to every session, but each session sees its own private set of rows.  In databases that only support session-local temporary tables, the table itself only exists for the life of the session that created it, so an application that expects a global temp table to already be there will fail with a <i>relation does not exist</i> (or similar) error at prepare time.</p>
 
-<p>This module bridges that gap.  For each configured table, the module watches for inserts targeting that table at prepare time, and the first time it sees one in the current backend session, it issues the configured <i>create</i> statement on that session.  Once created, the table persists for the rest of the backend session, which - given the sqlr-connection process model, where one backend session is multiplexed across many client sessions - lets it appear to behave like a global temporary table.</p>
+<p>This module bridges that gap.  For each configured table, the module watches for any query that references that table at prepare time, and the first time it sees one in the current backend session, it issues the configured <i>create</i> statement on that session.  Once created, the table persists for the rest of the backend session, which - given the sqlr-connection process model, where one backend session is multiplexed across many client sessions - lets it appear to behave like a global temporary table.</p>
 
 <p>An example configuration:</p>
 
@@ -9673,7 +9673,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The trigger is configured to run before the query has been prepared.  This is the only valid configuration for the globaltemptables trigger - the create statement has to run before the database tries to resolve the table reference during prepare, or the prepare itself will fail.  Configurations with any other <i>when</i> value will not accomplish anything useful.</p>
 
-<p>Two tables are configured, <i>gtttest1</i> and <i>gtttest2</i>.  The first time an insert into one of them is seen in a given backend session, the corresponding <i>create temp table ...</i> statement is run on that session.  Subsequent inserts in the same session skip the create step.</p>
+<p>Two tables are configured, <i>gtttest1</i> and <i>gtttest2</i>.  The first time either one is referenced in a given backend session - by an insert, a select, an update, a delete, or the table name turning up in a join or subquery - the corresponding <i>create temp table ...</i> statement is run on that session.  Subsequent references in the same session skip the create step.</p>
 
 <p>The first time the create is attempted, it may fail because another agent (e.g. another sqlr-connection process, or the application itself) has already created the table in this session.  The <b>alreadyexists</b> tag lets the module recognize that situation and treat it as success.  Its <b>error</b> attribute may be set to either:</p>
 
@@ -9682,9 +9682,9 @@ http://www.gnu.org/software/src-highlite -->
   <li>a string - matched as a substring against the database error text</li>
 </ul>
 
-<p>If the create fails with any other error, that error is reported back to the client as if the user's insert had failed.</p>
+<p>If the create fails with any other error, that error is reported back to the client as if the user's query had failed.</p>
 
-<p>Note that the normalize translation is also configured.  This is important - the trigger matches inserts against a regular expression that assumes the query has been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, an insert with unusual capitalization or spacing will not be recognized and the create will not fire.</p>
+<p>Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.</p>
 
 <p>The <b>trigger</b> tag supports the following attributes in addition to the standard <b>module</b>, <b>when</b>, <b>enabled</b>, and <b>debug</b> attributes:</p>
 
@@ -9697,8 +9697,8 @@ http://www.gnu.org/software/src-highlite -->
 <ul>
   <li><b>name</b></li>
   <ul>
-    <li>the name of the table to watch for - matched against inserts at prepare time</li>
-    <li>the table body (between the open and close tags) is the <i>create</i> statement to run on the backend session the first time an insert into the table is seen</li>
+    <li>the name of the table to watch for - matched, as a whole word, against every query at prepare time</li>
+    <li>the table body (between the open and close tags) is the <i>create</i> statement to run on the backend session the first time the table is referenced</li>
   </ul>
 
 </ul>
@@ -9707,9 +9707,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <h3>Considerations</h3>
 
-<p>The "create-on-first-insert" trigger only fires on inserts.  Queries like <i>select * from gtttest1</i> run against a session that has not yet seen an insert into <i>gtttest1</i> will fail with the underlying <i>relation does not exist</i> error.  In practice this is rarely a problem - applications that use global temp tables typically populate them before reading from them - but it's worth noting.</p>
+<p>The trigger matches the configured table name as a whole word anywhere in the normalized query text, not just in an insert - so a delete, select, update, or a table name turning up in a join or subquery all cause the table to be created if it hasn't been already.  This can over-fire - a query that only mentions the name inside a string literal or a comment will also trigger an early create - but that's harmless: the table starts out empty either way, and it's only created once per backend session.</p>
 
-<p>The match is keyed off normalized insert syntax.  Make sure the <a href="#normalize">normalize</a> query translation is loaded ahead of any application code that exercises these tables.</p>
+<p>The match is keyed off normalized query text.  Make sure the <a href="#normalize">normalize</a> query translation is loaded ahead of any application code that exercises these tables.</p>
 
 <p>Once a table has been created in a backend session, the module remembers that and skips the create on subsequent matches.  However, this state is per-sqlr-connection process.  If the sqlr-connection process is recycled, the next process will create the table again on first use.</p>
 

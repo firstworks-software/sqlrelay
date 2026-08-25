@@ -523,6 +523,9 @@
 	fixed the tds protocol module leaking the converted message, server name
 		and procedure name strings on every info and error token, and
 		the program name on every login ack
+	fixed the globaltemptables trigger to materialize a table on any
+		statement that references it, not just an insert - a delete,
+		select or update against a not-yet-created table used to fail
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

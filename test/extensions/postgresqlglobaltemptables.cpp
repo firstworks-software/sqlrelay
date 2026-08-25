@@ -66,6 +66,41 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	stdoutput.printf("LAZY CREATE ON FIRST DELETE:\n");
+	assertTrue(cur->sendQuery("delete from gtttest3 where id=1"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest3"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("LAZY CREATE ON FIRST SELECT:\n");
+	assertTrue(cur->sendQuery("select * from gtttest4"));
+	assertEquals(cur->rowCount(),0);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("LAZY CREATE ON FIRST UPDATE:\n");
+	assertTrue(cur->sendQuery("update gtttest5 set value='x' where id=1"));
+	assertEquals(cur->affectedRows(),0);
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("LAZY CREATE ON FIRST REFERENCE IN JOIN:\n");
+	assertTrue(cur->sendQuery("select gtttest1.id from gtttest1 "
+			"left join gtttest6 on gtttest1.id=gtttest6.id"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest6"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("LAZY CREATE ON FIRST REFERENCE IN SUBQUERY:\n");
+	assertTrue(cur->sendQuery("select gtttest1.id from gtttest1 "
+			"where gtttest1.id in (select id from gtttest7)"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest7"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	stdoutput.printf("\n");
+
+
 	stdoutput.printf("TABLES DROPPED AT END-OF-SESSION:\n");
 	con->endSession();
 	assertFalse(cur->sendQuery("select * from gtttest1"));

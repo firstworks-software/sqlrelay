@@ -46,15 +46,16 @@ void table_t::setName(const char *name) {
 
 	this->name=name;
 
-	// build an insert regex that handles mysql's weird options
+	// build a regex that matches the table name, as a whole word,
+	// anywhere in the query
 	// (the query is assumed to be normalized)
+	// The boundaries are spelled out as an explicit "not an identifier
+	// character" class rather than \b.  Without pcre, rudiments'
+	// regularexpression falls back to posix regcomp, which has no \b.
 	stringbuffer	pattern;
-	pattern.append("^insert "
-			"((low_priority|delayed|high_priority) )?"
-			"(ignore )?"
-			"(into )?");
+	pattern.append("(^|[^a-zA-Z0-9_$#])");
 	pattern.append(name);
-	pattern.append("[ (]");
+	pattern.append("([^a-zA-Z0-9_$#]|$)");
 
 	re.setPattern(pattern.getString());
 	re.study();
@@ -191,12 +192,15 @@ bool sqlrtrigger_globaltemptables::runBeforePrepare(
 			continue;
 		}
 
-		debugWrite("matched insert into %s",tables[i].getName());
+		debugWrite("matched %s",tables[i].getName());
 
-		// bail if we've already created this table
+		// loop back if we've already created this table
+		// (a query may reference more than one configured table now
+		// that the match isn't limited to a single leading insert,
+		// so don't stop at the first match)
 		if (tables[i].getCreated()) {
 			debugWrite("already created");
-			break;
+			continue;
 		}
 
 		// create the table
@@ -206,7 +210,6 @@ bool sqlrtrigger_globaltemptables::runBeforePrepare(
 			debugEnd();
 			return false;
 		}
-		break;
 	}
 
 	debugEnd();
@@ -239,7 +242,7 @@ bool sqlrtrigger_globaltemptables::createTable(uint64_t i,
 	debugWrite("%s",tables[i].getCreateStatement());
 
 	// Create a separate cursor to run the create rather than reusing
-	// the cursor that is about to run the user's insert.  This preserves
+	// the cursor that is about to run the user's query.  This preserves
 	// the user cursor's buffers, binds, etc.
 	sqlrservercursor	*ccur=cont->newCursor();
 	if (!ccur) {
