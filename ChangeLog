@@ -487,6 +487,9 @@
 		null indicator for db2/informix/odbc, firebird's XSQLVAR
 		sqlind/sqltype convention, and oci's indp for oracle),
 		matching what each file's string-bind overload already did
+	fixed the tds protocol module treating a null binary/varbinary rpc
+		parameter or bulk-load field as an empty value rather than as
+		null, since a length of 0 is how those types say null
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

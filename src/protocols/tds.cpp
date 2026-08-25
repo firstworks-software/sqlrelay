@@ -8204,6 +8204,13 @@ bool sqlrprotocol_tds::bulkValue(const byte_t **rpinout,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			// a length of 0 is how the protocol says null -
+			// bulkField() already bound it as a null lob
+			if (!size) {
+				debugWrite("value: (null)");
+				debugEnd();
+				return true;
+			}
 			if (rpsize<size) {
 				debugEnd();
 				return false;
@@ -11911,6 +11918,18 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 			byte_t	size;
 			read(rp,&size,&rp);
 			rpsize--;
+			// a length of 0 is how the protocol says null, and
+			// a binary/varbinary parameter stays a lob even
+			// when the value turns out to be null, so it
+			// doesn't lose its lob-ness before it's ever bound
+			if (!size) {
+				if (bv) {
+					bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+					bv->isnull=cont->getNullBindValue();
+				}
+				debugWrite("value: (null)");
+				break;
+			}
 			if (rpsize<size) {
 				debugEnd();
 				return false;

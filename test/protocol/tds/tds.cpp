@@ -8869,19 +8869,38 @@ int main(int argc, char **argv) {
 	// into a binary or image column.  CS_BINARY_TYPE and
 	// CS_VARBINARY_TYPE arrive as bigbinary/bigvarbin and
 	// CS_IMAGE_TYPE as image, so the three cases cover both of the
-	// null branches.  CS_LONGBINARY_TYPE is left out - mssql refuses
-	// the type itself, null or not.
+	// null branches.
+	//
+	// #9454 - CS_LONGBINARY_TYPE is the fourth case, and it reaches a
+	// third branch.  freetds leaves it a sybase type on the tds 7 wire
+	// rather than rewriting it to a big type the way it does
+	// binary/varbinary, so it keeps its single length byte, and a null
+	// one is that byte set to 0 with no value behind it - the rpc
+	// packet body is e1 14 00.  That is paramValue()'s byte-length
+	// branch, which used to read the 0 as a zero-length value and bind
+	// an empty lob rather than a null one.
+	//
+	// This case pins that branch down, but it cannot fail on its own if
+	// the fix is backed out: ASE is the only backend the module accepts
+	// 0xE1 for, and a zero-length value is how tds says null on the way
+	// back out too, so the empty lob the old code bound reached ASE as
+	// a null anyway and the column reads back the same either way.
+	// mssql refuses the type itself, null or not - 0xE1 is unknown to
+	// it - so there this case only goes as far as the command failing.
 	stdoutput.printf("ct_command: rpc with null binary params\n");
-	CS_INT		bindrpcnulltype[3]={
+	CS_INT		bindrpcnulltype[4]={
 				CS_BINARY_TYPE,CS_VARBINARY_TYPE,
-				CS_IMAGE_TYPE};
-	const char	*bindrpcnullproc[3]={
-				"bindbinproc","bindbinproc","bindimgproc"};
-	const char	*bindrpcnullselect[3]={
+				CS_IMAGE_TYPE,CS_LONGBINARY_TYPE};
+	const char	*bindrpcnullproc[4]={
+				"bindbinproc","bindbinproc",
+				"bindimgproc","bindbinproc"};
+	const char	*bindrpcnullselect[4]={
 				"select bindbinary from bindtable",
 				"select bindbinary from bindtable",
-				"select bindimage from bindtable"};
-	for (CS_INT i=0; i<3; i++) {
+				"select bindimage from bindtable",
+				"select bindbinary from bindtable"};
+	bool		bindrpcnullok[4]={true,true,true,issybase};
+	for (CS_INT i=0; i<4; i++) {
 
 		query="delete from bindtable";
 		ct_command(cmd,CS_LANG_CMD,query,
@@ -8907,28 +8926,35 @@ int main(int argc, char **argv) {
 
 		// a procedure with no return statement still answers with
 		// a status result, and it comes first
-		results=ct_results(cmd,&resultstype);
-		assertEquals(results,CS_SUCCEED);
-		assertEquals(resultstype,CS_STATUS_RESULT);
-		bytestring::zero(bindreaddata,sizeof(bindreaddata));
-		assertEquals(ct_bind(cmd,1,&bindreadfmt,
+		if (bindrpcnullok[i]) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_STATUS_RESULT);
+			bytestring::zero(bindreaddata,sizeof(bindreaddata));
+			assertEquals(ct_bind(cmd,1,&bindreadfmt,
 					(CS_VOID *)bindreaddata,
 					&bindreadlength,
 					&bindreadindicator),CS_SUCCEED);
-		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
-		assertEquals(bindreaddata,"0");
-		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+			assertEquals(bindreaddata,"0");
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
+		}
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
-		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(resultstype,(bindrpcnullok[i])?
+					CS_CMD_SUCCEED:CS_CMD_FAIL);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_END_RESULTS);
 		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		if (!bindrpcnullok[i]) {
+			continue;
+		}
 
 		query=bindrpcnullselect[i];
 		assertEquals(ct_command(cmd,CS_LANG_CMD,query,
