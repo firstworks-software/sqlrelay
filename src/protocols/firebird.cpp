@@ -1824,6 +1824,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 
 		sqlrfirebirdblob	*newBlob();
 		uint32_t	newBlobHandle();
+		uint32_t	nextTransactionHandle();
 		sqlrfirebirdblob	*getBlobById(uint32_t high, uint32_t low);
 		sqlrfirebirdblob	*getBlobByHandle(uint32_t blobhandle);
 		void	removeBlob(sqlrfirebirdblob *blob);
@@ -5722,13 +5723,17 @@ bool sqlrprotocol_firebird::transaction() {
 		trreadonly=readonly;
 		trisolevel=(isolevelhonored)?isolevel:0;
 
+		// only a transaction that's actually starting gets a new
+		// handle - a client that asks again for one already open (see
+		// the comment above) still has its old handle live in its
+		// object table, and handing out a second one for the same
+		// transaction would leave that old number unreserved, open
+		// to the same collision this dodges elsewhere
+		nextTransactionHandle();
+
 	} else {
 		debugWrite("a transaction is already open, reusing it");
 	}
-
-	// a client only ever compares a handle against 0, but distinct ones
-	// keep a stale handle from looking live in a debug log
-	trhandle++;
 
 	debugWrite("transaction handle: %u",trhandle);
 	debugWrite("read only: %s",(readonly)?"yes":"no");
@@ -7905,16 +7910,46 @@ uint32_t sqlrprotocol_firebird::newBlobHandle() {
 	// comes back as 0xffff8000 or higher and stops matching
 	// (0 means "no blob", and a handle an open blob is using can't be
 	// handed out twice)
+	//
+	// a client also keeps every object it has a handle for - statements,
+	// transactions, blobs, requests - in one flat table keyed by the
+	// handle alone, with no per-type namespace, so handing the same
+	// number out for two live objects of different types corrupts that
+	// table.  statement and request handles are cursorid+1, so 1 through
+	// maxcursorcount is reserved for them, and the transaction handle is
+	// whatever trhandle currently is.  dodge both.
 	for (uint32_t i=0; i<0x7fff; i++) {
 		nextblobhandle=(nextblobhandle+1)&0x7fff;
 		if (!nextblobhandle) {
 			nextblobhandle=1;
 		}
-		if (!getBlobByHandle(nextblobhandle)) {
+		if (nextblobhandle>maxcursorcount &&
+				nextblobhandle!=trhandle &&
+				!getBlobByHandle(nextblobhandle)) {
 			return nextblobhandle;
 		}
 	}
 	return 0;
+}
+
+uint32_t sqlrprotocol_firebird::nextTransactionHandle() {
+
+	// see newBlobHandle() - the same 16-bit wire field and flat
+	// client-side object table apply to a transaction handle too, so it
+	// has to wrap the same way instead of just growing forever (a
+	// long-lived connection can rack up far more than 0x7fff
+	// transactions over its life), and dodge the statement/request
+	// range and the handles of any open blobs
+	for (uint32_t i=0; i<0x7fff; i++) {
+		trhandle=(trhandle+1)&0x7fff;
+		if (!trhandle) {
+			trhandle=1;
+		}
+		if (trhandle>maxcursorcount && !getBlobByHandle(trhandle)) {
+			return trhandle;
+		}
+	}
+	return trhandle;
 }
 
 sqlrfirebirdblob *sqlrprotocol_firebird::getBlobById(uint32_t high,
@@ -12316,7 +12351,7 @@ bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 			trautocommit=false;
 			trreadonly=false;
 			trisolevel=0;
-			trhandle++;
+			nextTransactionHandle();
 			debugWrite("began transaction");
 			debugWrite("transaction handle: %u",trhandle);
 			break;

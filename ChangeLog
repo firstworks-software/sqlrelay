@@ -502,6 +502,10 @@
 		the backend's own prepare, so select, update and delete binds
 		describe correctly, rather than only from an insert's column
 		list
+	fixed the firebird protocol module handing out the same handle number
+		to a statement, transaction and blob at once, which corrupted
+		the client library's object table and surfaced as "invalid
+		BLOB ID" (sqlcode -901) on later calls
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -296,6 +296,41 @@ static void freeOutputBuffers(int colcount, char **buffer) {
 	}
 }
 
+// read every segment of an already-open blob into buffer, up to
+// buffersize bytes, and return the number of bytes read.  Used where a
+// test only cares whether the round-tripped content matches, not the
+// segment-boundary mechanics themselves - those are exercised directly by
+// the "isc_get_segment" test further down.
+static int readBlob(isc_blob_handle *blobhandle, char *buffer,
+					int buffersize) {
+
+	bytestring::zero(buffer,buffersize);
+
+	unsigned short	seglen=0;
+	int		totalread=0;
+	int		segreads=0;
+	while (segreads<64 && totalread<buffersize) {
+
+		ISC_STATUS	getresult=isc_get_segment(fbstatus,blobhandle,
+					&seglen,
+					(unsigned short)(buffersize-totalread),
+					buffer+totalread);
+
+		totalread+=seglen;
+		segreads++;
+
+		// a non-zero return with isc_segment in the vector means
+		// the buffer was too small for the whole segment and there
+		// is more of it to come - anything else non-zero means eof
+		// (or an error, left for the caller to notice via fbstatus)
+		if (getresult && fbstatus[1]!=isc_segment) {
+			break;
+		}
+	}
+
+	return totalread;
+}
+
 // point an input parameter at a newly allocated buffer holding the value,
 // in whatever type the bind describe came back with, and hand the buffer
 // back for the caller to delete[].
@@ -2262,6 +2297,271 @@ int main(int argc, char **argv) {
 				"delete from testtable where testinteger=9",
 				SQL_DIALECT_V6,NULL);
 	assertEquals(countRows("testtable"),8);
+	isc_commit_transaction(fbstatus,&tr);
+
+
+
+	stdoutput.printf("\n======== Blob handle collision (#9457) ========"
+								"\n\n");
+
+	// #9457: "invalid BLOB ID" (sqlcode -901, isc_bad_segstr_id) turned
+	// out not to be about a NULL blob at all.  Firebird's client library
+	// keeps every object - statements, transactions, blobs, requests -
+	// in one flat table keyed purely by handle number.  The module's
+	// blob handle allocator and its statement handle (assigned at
+	// prepare time) both start counting near 1, so a blob created AFTER
+	// a statement is prepared could land on the same client-visible
+	// handle number as that statement, corrupting the table.  Creating
+	// the blob BEFORE the prepare, like the test above does, happens to
+	// dodge the collision - every test below creates it after, on
+	// purpose, since that ordering is what the fix (newBlobHandle() and
+	// nextTransactionHandle() in src/protocols/firebird.cpp) addresses.
+	//
+	// This needs its own table: testtable's blob column is used by the
+	// test above, and a select-all test further up asserts an exact
+	// column count against testtable, so it can't be widened with a
+	// clob column here.
+	reattach();
+
+	tr=0;
+	isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb);
+
+	isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+				"drop table testblobhandle",
+				SQL_DIALECT_V6,NULL);
+	isc_commit_transaction(fbstatus,&tr);
+	tr=0;
+	isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb);
+	assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+		"create table testblobhandle ("
+			"testinteger integer, "
+			"testblob blob, "
+			"testclob blob sub_type 1)",
+				SQL_DIALECT_V6,NULL),0);
+	isc_commit_transaction(fbstatus,&tr);
+	tr=0;
+	isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb);
+
+
+	stdoutput.printf("isc_dsql_prepare - insert, before the blob and "
+				"clob exist\n");
+	XSQLDA	*bhinsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(3)];
+	bytestring::zero(bhinsqlda,XSQLDA_LENGTH(3));
+	bhinsqlda->version=SQLDA_VERSION1;
+	bhinsqlda->sqln=3;
+	isc_stmt_handle	bhstmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,
+							&bhstmt),0);
+	assertTrue(bhstmt!=0);
+	assertEquals((int)isc_dsql_prepare(fbstatus,&tr,&bhstmt,0,
+		"insert into testblobhandle "
+		"(testinteger,testblob,testclob) values (?,?,?)",
+		SQL_DIALECT_V6,NULL),0);
+	assertEquals((int)isc_dsql_describe_bind(fbstatus,&bhstmt,
+						SQL_DIALECT_V6,bhinsqlda),0);
+	assertEquals(bhinsqlda->sqld,3);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("isc_create_blob2 - blob, after the prepare\n");
+	// short - the point here is the handle number, not the segment
+	// path, which the "isc_get_segment" test above already covers
+	const char	*bhblobtext="testblob after prepare";
+	isc_blob_handle	bhblobhandle=0;
+	ISC_QUAD	bhblobid;
+	bytestring::zero(&bhblobid,sizeof(bhblobid));
+	assertEquals((int)isc_create_blob2(fbstatus,&db,&tr,&bhblobhandle,
+						&bhblobid,0,NULL),0);
+	assertTrue(bhblobhandle!=0);
+	assertEquals((int)isc_put_segment(fbstatus,&bhblobhandle,
+			(unsigned short)charstring::getLength(bhblobtext),
+			(char *)bhblobtext),0);
+	assertEquals((int)isc_close_blob(fbstatus,&bhblobhandle),0);
+	assertTrue(bhblobhandle==0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("isc_create_blob2 - clob, after the prepare\n");
+	const char	*bhclobtext="testclob after prepare";
+	isc_blob_handle	bhclobhandle=0;
+	ISC_QUAD	bhclobid;
+	bytestring::zero(&bhclobid,sizeof(bhclobid));
+	assertEquals((int)isc_create_blob2(fbstatus,&db,&tr,&bhclobhandle,
+						&bhclobid,0,NULL),0);
+	assertTrue(bhclobhandle!=0);
+	assertEquals((int)isc_put_segment(fbstatus,&bhclobhandle,
+			(unsigned short)charstring::getLength(bhclobtext),
+			(char *)bhclobtext),0);
+	assertEquals((int)isc_close_blob(fbstatus,&bhclobhandle),0);
+	assertTrue(bhclobhandle==0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("isc_dsql_execute - insert with a blob and clob "
+				"created after the prepare\n");
+	ISC_LONG	bhrowid=1;
+	short		bhind[3];
+	bhind[0]=0;
+	bhind[1]=0;
+	bhind[2]=0;
+	bhinsqlda->sqlvar[0].sqldata=(char *)&bhrowid;
+	bhinsqlda->sqlvar[0].sqlind=&bhind[0];
+	bhinsqlda->sqlvar[0].sqltype|=1;
+	bhinsqlda->sqlvar[1].sqldata=(char *)&bhblobid;
+	bhinsqlda->sqlvar[1].sqlind=&bhind[1];
+	bhinsqlda->sqlvar[1].sqltype|=1;
+	bhinsqlda->sqlvar[2].sqldata=(char *)&bhclobid;
+	bhinsqlda->sqlvar[2].sqlind=&bhind[2];
+	bhinsqlda->sqlvar[2].sqltype|=1;
+	assertEquals((int)isc_dsql_execute(fbstatus,&tr,&bhstmt,
+						SQL_DIALECT_V6,bhinsqlda),0);
+	// the defect this guards against surfaces here specifically: -901 /
+	// isc_bad_segstr_id, from a corrupted client-side handle table
+	// rather than a missing blob
+	assertTrue(isc_sqlcode(fbstatus)!=-901);
+	isc_dsql_free_statement(fbstatus,&bhstmt,DSQL_drop);
+	delete[] (char *)bhinsqlda;
+	assertEquals((int)isc_commit_transaction(fbstatus,&tr),0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select the row back - blob and clob round-trip\n");
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb),0);
+	XSQLDA	*bhrdsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(2)];
+	bytestring::zero(bhrdsqlda,XSQLDA_LENGTH(2));
+	bhrdsqlda->version=SQLDA_VERSION1;
+	bhrdsqlda->sqln=2;
+	isc_stmt_handle	bhrdstmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,
+							&bhrdstmt),0);
+	assertEquals((int)isc_dsql_prepare(fbstatus,&tr,&bhrdstmt,0,
+		"select testblob,testclob from testblobhandle "
+		"where testinteger=1",
+		SQL_DIALECT_V6,bhrdsqlda),0);
+	short	bhrdind[64];
+	char	*bhrdbuffer[64];
+	int	bhrdcolcount=bindOutputBuffers(bhrdsqlda,bhrdind,bhrdbuffer);
+	assertEquals(bhrdcolcount,2);
+	assertEquals((int)isc_dsql_execute(fbstatus,&tr,&bhrdstmt,
+						SQL_DIALECT_V6,NULL),0);
+	assertEquals((int)isc_dsql_fetch(fbstatus,&bhrdstmt,
+						SQL_DIALECT_V6,bhrdsqlda),0);
+	ISC_QUAD	bhreadblobid;
+	ISC_QUAD	bhreadclobid;
+	bytestring::zero(&bhreadblobid,sizeof(bhreadblobid));
+	bytestring::zero(&bhreadclobid,sizeof(bhreadclobid));
+	if (bhrdcolcount==2) {
+		bhreadblobid=*((ISC_QUAD *)bhrdsqlda->sqlvar[0].sqldata);
+		bhreadclobid=*((ISC_QUAD *)bhrdsqlda->sqlvar[1].sqldata);
+	}
+	assertTrue(bhreadblobid.gds_quad_high!=0 ||
+					bhreadblobid.gds_quad_low!=0);
+	assertTrue(bhreadclobid.gds_quad_high!=0 ||
+					bhreadclobid.gds_quad_low!=0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("read back the blob content\n");
+	isc_blob_handle	bhreadblobhandle=0;
+	assertEquals((int)isc_open_blob2(fbstatus,&db,&tr,&bhreadblobhandle,
+						&bhreadblobid,0,NULL),0);
+	assertTrue(bhreadblobhandle!=0);
+	char	bhreadblobbuffer[256];
+	int	bhreadbloblen=readBlob(&bhreadblobhandle,bhreadblobbuffer,
+						sizeof(bhreadblobbuffer));
+	assertEquals((int)fbstatus[1],(int)isc_segstr_eof);
+	assertEquals(bhreadbloblen,(int)charstring::getLength(bhblobtext));
+	assertEquals(bhreadblobbuffer,bhblobtext);
+	assertEquals((int)isc_close_blob(fbstatus,&bhreadblobhandle),0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("read back the clob content\n");
+	isc_blob_handle	bhreadclobhandle=0;
+	assertEquals((int)isc_open_blob2(fbstatus,&db,&tr,&bhreadclobhandle,
+						&bhreadclobid,0,NULL),0);
+	assertTrue(bhreadclobhandle!=0);
+	char	bhreadclobbuffer[256];
+	int	bhreadcloblen=readBlob(&bhreadclobhandle,bhreadclobbuffer,
+						sizeof(bhreadclobbuffer));
+	assertEquals((int)fbstatus[1],(int)isc_segstr_eof);
+	assertEquals(bhreadcloblen,(int)charstring::getLength(bhclobtext));
+	assertEquals(bhreadclobbuffer,bhclobtext);
+	assertEquals((int)isc_close_blob(fbstatus,&bhreadclobhandle),0);
+	stdoutput.printf("\n\n");
+
+
+	isc_dsql_free_statement(fbstatus,&bhrdstmt,DSQL_drop);
+	freeOutputBuffers(bhrdcolcount,bhrdbuffer);
+	delete[] (char *)bhrdsqlda;
+	isc_commit_transaction(fbstatus,&tr);
+
+
+	// defensive regression coverage for the symptom #9457 was originally
+	// filed under - a NULL blob/clob select-back.  The literal repro no
+	// longer reproduces (root-caused to the handle collision above
+	// instead), but this guards against it resurfacing.
+	stdoutput.printf("insert a row with a NULL blob and NULL clob\n");
+	tr=0;
+	isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb);
+	assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+		"insert into testblobhandle "
+		"(testinteger,testblob,testclob) values (2,NULL,NULL)",
+				SQL_DIALECT_V6,NULL),0);
+	assertEquals((int)isc_commit_transaction(fbstatus,&tr),0);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select the NULL blob and NULL clob back\n");
+	tr=0;
+	assertEquals((int)isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb),0);
+	XSQLDA	*bhnullsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(2)];
+	bytestring::zero(bhnullsqlda,XSQLDA_LENGTH(2));
+	bhnullsqlda->version=SQLDA_VERSION1;
+	bhnullsqlda->sqln=2;
+	isc_stmt_handle	bhnullstmt=0;
+	assertEquals((int)isc_dsql_allocate_statement(fbstatus,&db,
+							&bhnullstmt),0);
+	assertEquals((int)isc_dsql_prepare(fbstatus,&tr,&bhnullstmt,0,
+		"select testblob,testclob from testblobhandle "
+		"where testinteger=2",
+		SQL_DIALECT_V6,bhnullsqlda),0);
+	short	bhnullind[64];
+	char	*bhnullbuffer[64];
+	int	bhnullcolcount=bindOutputBuffers(bhnullsqlda,
+						bhnullind,bhnullbuffer);
+	assertEquals(bhnullcolcount,2);
+	// the originally-reported symptom: selecting a NULL blob/clob output
+	// column must not fail with -901
+	assertEquals((int)isc_dsql_execute(fbstatus,&tr,&bhnullstmt,
+						SQL_DIALECT_V6,NULL),0);
+	assertTrue(isc_sqlcode(fbstatus)!=-901);
+	assertEquals((int)isc_dsql_fetch(fbstatus,&bhnullstmt,
+						SQL_DIALECT_V6,bhnullsqlda),0);
+	if (bhnullcolcount==2) {
+		assertEquals((int)bhnullind[0],-1);
+		assertEquals((int)bhnullind[1],-1);
+	}
+	isc_dsql_free_statement(fbstatus,&bhnullstmt,DSQL_drop);
+	freeOutputBuffers(bhnullcolcount,bhnullbuffer);
+	delete[] (char *)bhnullsqlda;
+	stdoutput.printf("\n\n");
+
+
+	isc_commit_transaction(fbstatus,&tr);
+	tr=0;
+	isc_start_transaction(fbstatus,&tr,1,&db,
+					(unsigned short)sizeof(tpb),tpb);
+	isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+				"drop table testblobhandle",
+				SQL_DIALECT_V6,NULL);
 	isc_commit_transaction(fbstatus,&tr);
 
 
