@@ -580,6 +580,60 @@
 		5.0 done token's transtate field - the field is curcmd in
 		ms-tds but transtate in tds 5.0, and it now reports whether a
 		transaction is open
+	added tds 5.0 parameter decoding to the tds protocol module, so a
+		parameterized language command is bound and run now rather
+		than being refused - the values ride in a paramfmt/params pair
+		behind the language token, and a params token carries no
+		lengths of its own, so the paramfmt in front of it has to be
+		replayed to size every value; the parameters are named in the
+		sql text, the way an ms-tds sp_executesql call names them, so
+		bind variable translation pairs them up by position
+	the tds protocol module refuses just the one tds 5.0 command it can't
+		answer now, and goes on to the commands behind it in the same
+		buffer, wherever the token carries a length that lets the walk
+		step over it - it gave up on the whole buffer before, so a
+		ct-lib cursor, which sends declare, rows and open together,
+		got a single error instead of one per command
+	added tds 5.0 remote procedure calls to the tds protocol module, so a
+		procedure called from sap's native open client runs now - the
+		reply is a result set, then a return status, then the output
+		parameters as a paramfmt/params pair, since tds 5.0 has no
+		returnvalue token at all; the procedure dispatch is shared
+		with the ms-tds path rather than copied, but the five cursor
+		procedures are refused, because they write a colmetadata
+		token, and that byte means cursor-delete in tds 5.0
+	added tds 5.0 dynamic sql to the tds protocol module, so prepare,
+		execute, deallocate and execute-immediate from sap's native
+		open client work now - statements are named by a string id
+		rather than the number the ms-tds path uses, and a prepare is
+		answered with the input parameter formats and the output
+		column formats together, which is why a client never asks to
+		describe either one; the client wraps a prepare in a "create
+		proc" that would leave a real procedure behind on the server,
+		so that wrapper is stripped
+	added tds 5.0 remote procedure calls to the tds protocol module - a
+		dbrpc token names its procedure by string rather than by the
+		numeric id an ms-tds rpc uses, so the name is mapped back to
+		an id and both dialects run the same procedure dispatch; the
+		reply is a rowfmt/rows result set, a return status, the output
+		parameters as a paramfmt/params pair, and a done, which is
+		what a real ase sends
+	fixed the tds protocol module sending 0 for the transtate field of a
+		tds 5.0 done-in-proc or done-proc token - the field is curcmd
+		in ms-tds, and both tokens can now turn up in a tds 5.0 reply
+	added tds 5.0 dynamic sql to the tds protocol module - prepare,
+		execute, deallocate and execute-immediate, all four answered
+		with the ack a real ase sends; a dynamic statement is named by
+		a string id the client picks rather than by the numeric handle
+		ms-tds mints, so a map of one onto the other sits beside the
+		handle maps, and prepare, execute and unprepare now share a
+		wire-neutral core with the ms-tds sp_prepare, sp_execute and
+		sp_unprepare procedures
+	the tds protocol module strips the "create proc <id> as " wrapper a
+		ct-lib client puts in front of a dynamic prepare - a real ase
+		turns that into a stored procedure named for the id, which
+		isn't portable to any other backend and would outlive the
+		session that asked for it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

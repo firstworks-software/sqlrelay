@@ -114,12 +114,42 @@ CS_RETCODE clientMessageCallback(CS_CONTEXT *ctxt,
 
 	stdoutput.printf("%s\n",errorstring.getString());
 
-	// A timeout is the only client library error that looks at this
-	// return code, and answering CS_SUCCEED there means "keep waiting".
-	// The timeouts set below are there so that a protocol module which
-	// stops answering fails this test rather than hanging it, and make
-	// tests along with it, so answer CS_FAIL and let ct-lib give up.
-	return CS_FAIL;
+	// A timeout is the only client library error that ct-lib documents
+	// as looking at this return code, and answering CS_SUCCEED there
+	// means "keep waiting".  The timeouts set below are there so that a
+	// protocol module which stops answering fails this test rather than
+	// hanging it, and make tests along with it, so answer CS_FAIL for
+	// that one and let ct-lib give up.
+	//
+	// Answering CS_FAIL for anything else is fatal on SAP's ct-lib: it
+	// marks the connection dead on the spot, and every call after that
+	// fails with error 50 whatever it was going to do.  A test that
+	// exercises a negative case - an id that was never prepared, an
+	// unbound column, a ct_res_info that isn't legal on the current
+	// result - raises a client message by design, and one of those
+	// would otherwise take the whole rest of the run down with it.
+	// Verified against a real ASE, not just against sqlrelay: the same
+	// callback answering CS_FAIL kills a native ct-lib-to-ASE
+	// connection at the first ct_dynamic(CS_EXECUTE) naming an id that
+	// was never prepared.
+	//
+	// Only sap's ct-lib packs layer, origin, severity and number into
+	// msgnumber, so CS_SEVERITY() only means anything there.  Freetds
+	// puts a flat TDSE* code in that field and carries the severity in
+	// msgp->severity instead, so CS_SEVERITY() picks bits out of the
+	// middle of the number - a freetds client message reports
+	// "severity(78) layer(0) origin(0)" - and never matches
+	// CS_SV_RETRY_FAIL, timeouts included.  Testing it there would
+	// answer CS_SUCCEED for a timeout, which means "keep waiting", and
+	// the hang this guard exists to prevent would come back.
+	//
+	// Freetds ignores the return code except on a timeout, so the
+	// blanket CS_FAIL is right for it and is what it has always got.
+	if (TDSTEST_LINKED_WITH_FREETDS) {
+		return CS_FAIL;
+	}
+	return (CS_SEVERITY(msgp->msgnumber)==CS_SV_RETRY_FAIL)?
+						CS_FAIL:CS_SUCCEED;
 }
 
 CS_RETCODE serverMessageCallback(CS_CONTEXT *ctxt, 
@@ -203,6 +233,14 @@ int main(int argc, char **argv) {
 	// below hold against a real sql server but not against the module,
 	// and are parked for this combination only.
 	bool	relaymssql=(issqlrelay && !issybase);
+
+	// Which wire dialect this run speaks.  That's decided by which
+	// ct-lib the build is linked with rather than by which server it's
+	// pointed at: sap's ct-lib speaks tds 5.0 to everything, and
+	// freetds' ct-lib emulation speaks tds 7.x.  A few results below
+	// have a tds 5.0 shape that neither the backend nor
+	// sqlrelay-vs-native decides.
+	bool	tds5=!TDSTEST_LINKED_WITH_FREETDS;
 
 
 	CS_CONTEXT	*context=NULL;
@@ -738,6 +776,11 @@ int main(int argc, char **argv) {
 	// this binary is linked against.
 	CS_INT	describeformat=(TDSTEST_LINKED_WITH_FREETDS)?CS_FMT_NULLTERM:0;
 	CS_INT	describecount=(TDSTEST_LINKED_WITH_FREETDS)?1:0;
+
+	// Sap's ct_describe also fills in the locale, from the connection's
+	// own, where freetds' leaves the CS_DATAFMT's alone.  Same split,
+	// same reason - the docs only promise the type fields.
+	bool	describelocale=!TDSTEST_LINKED_WITH_FREETDS;
 
 	stdoutput.printf("ct_describe:\n");
 	col=0;
@@ -4059,12 +4102,11 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// A native ASE link ships the input parameter formats with the
-	// prepare ack, so it reports the placeholder count here.  MSSQL
-	// reports the prepared statement's output column count instead,
-	// which is zero for an insert, and so does sqlrelay - it never
-	// speaks tds 5, so there is no unsolicited parameter metadata to
-	// cache no matter what the backend is.
+	// MSSQL reports the prepared statement's output column count here,
+	// which is zero for an insert, and so does sqlrelay - it has no
+	// input parameter metadata to send, over either dialect, because
+	// the server API can't describe a statement's parameters without
+	// running it.
 	//
 	// This has to be asked while the prepare's own result is still the
 	// current one, and only when that result is one that can answer it.
@@ -4074,12 +4116,21 @@ int main(int argc, char **argv) {
 	// CS_CMD_DONE that is error 34, after CS_CMD_FAIL error 40.  Every
 	// block from here to the end of the cursor section is guarded the
 	// same way, because sqlrelay's tds protocol module has no tds 5.0
-	// dynamic sql, rpc or cursor support yet, so the commands they read
-	// back all fail through it and each unguarded read would take the
-	// rest of the run down with it.
+	// rpc or cursor support yet, so the commands they read back all fail
+	// through it and each unguarded read would take the rest of the run
+	// down with it.
+	//
+	// Sap's ct-lib refuses this one whatever the result holds: CS_NUMDATA
+	// after a result type of CS_CMD_SUCCEED is error 41, "This routine
+	// cannot be called after ct_results() returns a result type of
+	// CS_CMD_SUCCEED", and that too marks the connection dead.  A real
+	// ASE gets exactly that - it ships the input parameter formats with
+	// the prepare ack, and ct-lib caches them without making the prepare
+	// a describe result - so this can only be asked on the freetds-linked
+	// build.  The describe below asks the same question over both.
 	stdoutput.printf("ct_res_info: after prepare\n");
 	ncols=-1;
-	if (resultstype==CS_CMD_SUCCEED) {
+	if (TDSTEST_LINKED_WITH_FREETDS && resultstype==CS_CMD_SUCCEED) {
 		assertEquals(ct_res_info(cmd,CS_NUMDATA,
 					(CS_VOID *)&ncols,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);
@@ -4139,9 +4190,9 @@ int main(int argc, char **argv) {
 			assertEquals(dyndesc[i].precision,0);
 			assertEquals(dyndesc[i].scale,0);
 			assertEquals(dyndesc[i].status,0);
-			assertEquals(dyndesc[i].count,1);
+			assertEquals(dyndesc[i].count,describecount);
 			assertEquals(dyndesc[i].usertype,0);
-			assertTrue(dyndesc[i].locale==NULL);
+			assertTrue((dyndesc[i].locale!=NULL)==describelocale);
 		}
 	}
 
@@ -4395,9 +4446,9 @@ int main(int argc, char **argv) {
 		assertEquals(dyndesc[0].precision,0);
 		assertEquals(dyndesc[0].scale,0);
 		assertEquals(dyndesc[0].status,0);
-		assertEquals(dyndesc[0].count,1);
+		assertEquals(dyndesc[0].count,describecount);
 		assertEquals(dyndesc[0].usertype,0);
-		assertTrue(dyndesc[0].locale==NULL);
+		assertTrue((dyndesc[0].locale!=NULL)==describelocale);
 	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -4456,9 +4507,9 @@ int main(int argc, char **argv) {
 		assertEquals(dyndesc[i].precision,0);
 		assertEquals(dyndesc[i].scale,0);
 		assertEquals(dyndesc[i].status,CS_UPDATABLE|CS_CANBENULL);
-		assertEquals(dyndesc[i].count,1);
+		assertEquals(dyndesc[i].count,describecount);
 		assertEquals(dyndesc[i].usertype,dyncolusertype[i]);
-		assertTrue(dyndesc[i].locale==NULL);
+		assertTrue((dyndesc[i].locale!=NULL)==describelocale);
 	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -4751,16 +4802,15 @@ int main(int argc, char **argv) {
 
 
 	// MSSQL answers sp_unprepare with only a return status and a
-	// done, so freetds reports no result sets at all.  ASE's native
-	// dynamic dealloc gets the ordinary pair, but only over a real
-	// tds 5 link - through sqlrelay a dealloc is driven the mssql way
-	// no matter what the backend is.
+	// done, so freetds reports no result sets at all.  A tds 5.0
+	// dynamic dealloc gets the ordinary pair instead, from a real ASE
+	// and from sqlrelay alike - both answer it with an ack and a done.
 	stdoutput.printf("ct_dynamic: dealloc select\n");
 	assertEquals(ct_dynamic(cmd,CS_DEALLOC,
 				(CS_CHAR *)dynselectid,CS_NULLTERM,
 				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -4779,7 +4829,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)dyninsertid,CS_NULLTERM,
 				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -4846,7 +4896,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)dyninsertid,CS_NULLTERM,
 				(CS_CHAR *)NULL,CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -4975,7 +5025,7 @@ int main(int argc, char **argv) {
 	assertEquals(dyndesc[0].datatype,CS_INT_TYPE);
 	assertEquals(dyndesc[0].maxlength,4);
 	assertEquals(dyndesc[0].status,0);
-	assertEquals(dyndesc[0].count,1);
+	assertEquals(dyndesc[0].count,describecount);
 	bytestring::zero(dyndata[0],1024);
 	assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
 				(CS_VOID *)dyndata[0],
@@ -4990,9 +5040,12 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// The name comes back only because it was set on the way in.  The
-	// returned status is 0, not CS_RETURN, so an output parameter
-	// cannot be told from the describe - only from the result type.
+	// The name comes back only because it was set on the way in.  Over
+	// tds 7 the status is 0, so an output parameter cannot be told from
+	// the describe there - only from the result type.  Over tds 5.0 it
+	// can: the paramfmt that carries a returned parameter sets its own
+	// "return value" status bit, which is what a real ASE sends, and
+	// sap's ct-lib surfaces that as CS_RETURN.
 	stdoutput.printf("ct_results: rpc output params\n");
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -5008,8 +5061,8 @@ int main(int argc, char **argv) {
 	assertEquals(dyndesc[0].namelen,9);
 	assertEquals(dyndesc[0].datatype,CS_INT_TYPE);
 	assertEquals(dyndesc[0].maxlength,4);
-	assertEquals(dyndesc[0].status,0);
-	assertEquals(dyndesc[0].count,1);
+	assertEquals(dyndesc[0].status,(tds5)?CS_RETURN:0);
+	assertEquals(dyndesc[0].count,describecount);
 	assertEquals(dyndesc[0].usertype,(nativease)?7:0);
 	bytestring::zero(dyndata[0],1024);
 	assertEquals(ct_bind(cmd,1,&(dynfmt[0]),
@@ -5774,7 +5827,10 @@ int main(int argc, char **argv) {
 	CS_INT		cursdesctype[3]={CS_INT_TYPE,CS_CHAR_TYPE,CS_INT_TYPE};
 	CS_INT		cursdescmaxlength[3]={4,20,4};
 	CS_INT		cursdescusertype[3]={7,2,7};
-	for (CS_INT i=0; i<3; i++) {
+	// ct_describe on a result whose column count is zero segfaults
+	// inside libct, so the count above has to gate the loop rather than
+	// just be asserted, or a regression here ends the whole run
+	for (CS_INT i=0; i<ncols && i<3; i++) {
 		bytestring::zero(&(cursdesc[i]),sizeof(CS_DATAFMT));
 		assertEquals(ct_describe(cmd,i+1,&(cursdesc[i])),CS_SUCCEED);
 		assertEquals(cursdesc[i].name,cursdescname[i]);

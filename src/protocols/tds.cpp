@@ -111,6 +111,39 @@
 // "parameters follow", as a paramfmt/params pair.
 #define	TDS5_LANGUAGE_PARAMS		0x01
 
+// the tds 5.0 dbrpc token's option flags.  "recompile" was never seen on
+// the wire; a real ct-lib client sends "params" whenever it has any and
+// 0 when it hasn't.
+#define	TDS5_RPC_RECOMPILE		0x0001
+#define	TDS5_RPC_PARAMS			0x0002
+
+// The tds 5.0 dynamic token's operation type.  0x20 is the server's
+// answer to all four of the others; the rest are what a client sends.
+// Procname, describe-input and describe-output were never seen on the
+// wire from any client - ct-lib answers both describes out of the
+// formats that came back with the prepare - but they're implemented
+// anyway, since nothing stops a client from sending one.
+#define	TDS5_DYN_PREPARE		0x01
+#define	TDS5_DYN_EXEC			0x02
+#define	TDS5_DYN_DEALLOC		0x04
+#define	TDS5_DYN_EXEC_IMMEDIATE		0x08
+#define	TDS5_DYN_PROCNAME		0x10
+#define	TDS5_DYN_ACK			0x20
+#define	TDS5_DYN_DESCRIBE_INPUT		0x40
+#define	TDS5_DYN_DESCRIBE_OUTPUT	0x80
+
+// The tds 5.0 dynamic token's status byte.  "suppress fmt" is advisory -
+// a real ase re-sends the formats whether or not the client asked it to,
+// so this module ignores the bit rather than acting on it.
+#define	TDS5_DYN_HASARGS		0x01
+#define	TDS5_DYN_SUPPRESS_FMT		0x02
+
+// How many dynamic sql statement ids one session can name at once.  Each
+// one holds a cursor, so the real ceiling is how many cursors the
+// session has, and this only keeps a client that prepares under a fresh
+// id forever from growing the map without bound.
+#define	MAX_DYNAMIC_IDS			1024
+
 // packet header size, and the smallest, default, and largest packet sizes
 // (the size on the wire is 16 bits and includes the header)
 #define	PACKET_HEADER_SIZE		8
@@ -492,6 +525,19 @@
 #define	TDS5_COLFLAG_WRITEABLE		0x10
 #define	TDS5_COLFLAG_NULLABLE		0x20
 #define	TDS5_COLFLAG_IDENTITY		0x40
+
+// Tds 5.0 paramfmt parameter status.  One byte in a paramfmt (0xEC) and
+// four in a paramfmt2 (0x20), but the same bits either way.
+//
+// Not the same namespace as the rowfmt column flags above, even though
+// both describe a column-shaped block: 0x10 is writeable there and means
+// nothing here, and nullable is 0x20 in both by coincidence rather than
+// by design.  Only "return" was ever seen on the wire - a real ct-lib
+// client leaves nullable clear even for a parameter it sends a null in,
+// so nothing may gate null handling on it.
+#define	TDS5_PARAM_RETURN		0x01
+#define	TDS5_PARAM_COLUMNSTATUS		0x08
+#define	TDS5_PARAM_NULLALLOWED		0x20
 
 // Tds 5.0 done transaction states - the second uint16 of a done, which
 // is CurCmd in ms-tds.  The values are ct-lib's CS_TRAN_* (cspublic.h),
@@ -1500,6 +1546,32 @@ class tdsrow {
 		uint64_t	*sizes;
 };
 
+// One parameter's format, as a tds 5.0 paramfmt declared it.  A params
+// token carries no lengths of its own, so the whole set has to be kept
+// between the two tokens and replayed to size each value.  The same
+// shape drives the writers, so a paramfmt/params pair going out is
+// described exactly the way one coming in is.
+//
+// "size" is what the paramfmt declared, which is NOT the width of the
+// value behind it - a client and a server can declare the same
+// decimal(9,2) at 33 and at 5, and both are legal.  Size a value from
+// its own length, the way preTds7Field() does for a row field.
+class tds5paramfmt {
+	public:
+		const char	*name;
+		uint16_t	namesize;
+		byte_t		status;
+		uint32_t	usertype;
+		// the datatype as it arrived, in the tds 5.0 namespace,
+		// and the ms-tds type that means the same thing
+		byte_t		tds5type;
+		byte_t		mstype;
+		byte_t		varintsize;
+		uint32_t	size;
+		byte_t		precision;
+		byte_t		scale;
+};
+
 class sqlrprotocol_tds;
 
 // the rows the most recent sp_cursorfetch returned for one cursor.  the
@@ -1666,9 +1738,85 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool	preTds7Normal();
 		byte_t	preTds7TokenLength(byte_t token);
+		bool	preTds7SkipCommand(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					byte_t token);
 		bool	preTds7Language(const byte_t **rpinout,
 					size_t *rpsizeinout);
-		void	preTds7UnsupportedToken(byte_t token);
+		bool	preTds7DbRpc(const byte_t **rpinout,
+					size_t *rpsizeinout);
+
+		// Tds 5.0 dynamic sql.  preTds7Dynamic() decodes the token
+		// and hands what it decoded to one of the operations below,
+		// each of which appends its own done.  "more" is whether
+		// another command follows in the request buffer.
+		bool	preTds7Dynamic(const byte_t **rpinout,
+					size_t *rpsizeinout);
+		bool	preTds7DynamicPrepare(const char *id,
+					const char *stmt,
+					bool more);
+		bool	preTds7DynamicExecute(const char *id, bool more);
+		bool	preTds7DynamicDealloc(const char *id, bool more);
+		bool	preTds7DynamicExecImmediate(const char *stmt,
+					size_t stmtsize,
+					bool more);
+		void	preTds7DynamicDescribe(const char *id,
+					bool output,
+					bool more);
+		void	preTds7DynamicAck(const char *id, size_t idsize);
+		const char	*preTds7DynamicStatement(const char *stmt,
+							const char *id);
+		void	preTds7DynamicError(const char *msgtext, bool more);
+		// the string-id-to-handle map, and the eviction that bounds
+		// it.  the cursor itself lives in stmthandles.
+		bool	dynamicHandle(const char *id, uint32_t *handle);
+		void	setDynamicHandle(const char *id, uint32_t handle);
+		void	removeDynamicHandle(const char *id);
+		void	evictOldestDynamicHandle();
+
+		// Tds 5.0 paramfmt/params, in both directions.  These know
+		// nothing about what the pair is attached to - a language
+		// command, a dbrpc, a dynamic execute and a server-sent msg
+		// all carry the same two tokens and use them the same way.
+		//
+		// The token byte is read by the caller; these start at the
+		// token length.  "wide" picks the paramfmt2 (0x20) shape
+		// over the paramfmt (0xEC) one.
+		bool	preTds7ParamFmt(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					bool wide);
+		// the walk itself, split out so that each of its dozen
+		// bail-outs is one line rather than the five
+		// preTds7ParamFmt() turns them into
+		bool	preTds7ParamFmtRead(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					bool wide,
+					const char **err);
+		bool	preTds7Params(const byte_t **rpinout,
+					size_t *rpsizeinout);
+		// the walk itself, split out for the same reason
+		// preTds7ParamFmtRead() is
+		bool	preTds7ParamsRead(const byte_t **rpinout,
+					size_t *rpsizeinout);
+		// the pair together, as a command token that declared one
+		// carries it
+		bool	preTds7ParamFmtAndParams(const byte_t **rpinout,
+					size_t *rpsizeinout);
+		bool	preTds7ParamValueRead(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					const tds5paramfmt *fmt,
+					sqlrserverbindvar *bv);
+		bool	preTds7ParamFmtWrite(const tds5paramfmt *fmts,
+					uint16_t count);
+		bool	preTds7ParamsWrite(const tds5paramfmt *fmts,
+					sqlrserverbindvar *bvs,
+					uint16_t count);
+		void	preTds7ParamValueWrite(const tds5paramfmt *fmt,
+					sqlrserverbindvar *bv);
+		void	preTds7ParamNullWrite(const tds5paramfmt *fmt);
+		void	preTds7ParamError(const char *msgtext, bool more);
+
+		void	preTds7UnsupportedToken(byte_t token, bool more);
 		void	tooManyCommands(byte_t token);
 
 		bool	tds7Login();
@@ -1772,6 +1920,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	isVarLenType(byte_t tdstype);
 		bool	isPartLenType(byte_t tdstype);
 		bool	isCharType(byte_t tdstype);
+		byte_t	tds5TypeToMsType(byte_t tds5type);
 		byte_t	nTypeSize(uint16_t coltype,
 					byte_t tdstype,
 					uint32_t colsize);
@@ -1905,6 +2054,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	rpc(const byte_t **rpinout,
 					size_t *rpsizeinout,
 					bool *more);
+		// the proc dispatch, shared by rpc() and preTds7DbRpc()
+		bool	runProc(uint16_t procid,
+					const char *procname,
+					bool nometadata);
 		uint16_t	procNameToProcId(const char *procname);
 		bool	params(const byte_t *rp,
 					size_t rpsize,
@@ -1951,6 +2104,27 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	prepare(bool prepexec, bool rpcsyntax, bool nometadata);
 		bool	execute(bool nometadata);
 		bool	unprepare();
+
+		// The wire-neutral cores of the three above, shared with
+		// tds 5.0 dynamic sql, which does the same three things by
+		// string id rather than by numeric handle.  What's left in
+		// each wrapper is the ms-tds reply tail.
+		//
+		// prepareStatement() returns false either when no cursor
+		// was available - *cursorout is NULL then - or when the
+		// prepare itself failed, with *cursorout set so the caller
+		// can pull the error out of it and release it.
+		bool	prepareStatement(uint32_t oldhandle,
+					const char *query,
+					size_t querylen,
+					bool exec,
+					uint16_t firstvalue,
+					sqlrservercursor **cursorout,
+					uint32_t *handleout);
+		bool	executeStatement(sqlrservercursor *cursor,
+					uint16_t firstvalue);
+		void	unprepareStatement(uint32_t handle,
+					sqlrservercursor *cursor);
 		bool	cursorOpen(bool nometadata);
 		bool	cursorPrepare();
 		bool	cursorExecute(bool nometadata);
@@ -2123,14 +2297,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint16_t status,
 					uint16_t curcmdortransstate,
 					uint64_t donerowcount);
-		// done-in-proc and done-proc are ms-tds only, so their
-		// second uint16 is always a CurCmd
+		// A done-in-proc and a done-proc carry the same
+		// CurCmd-or-TransState second uint16 that a done does.
+		// Both take a CurCmd, and both ignore it for a tds 5.0
+		// session and send what transState() picks instead -
+		// see their definitions.
 		void	doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount);
 		void	returnStatus(uint32_t value);
 		uint32_t	procReturnValue(sqlrservercursor *cursor);
+		void	procReturnValues(sqlrservercursor *cursor);
 		void	returnValues(sqlrservercursor *cursor);
+		void	preTds7ReturnValues(sqlrservercursor *cursor);
 		void	returnValue(sqlrservercursor *cursor,
 					uint16_t param,
 					uint16_t ordinal);
@@ -2146,6 +2325,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					byte_t scale);
 		void	returnValueInteger(uint16_t ordinal,
 					int32_t value,
+					bool isnull);
+		void	preTds7ReturnValueInteger(int32_t value,
 					bool isnull);
 		void	returnValueHeader(uint16_t ordinal,
 						const char *name,
@@ -2243,12 +2424,32 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool			*rpcparambyref;
 		char			**rpcparamnames;
 		uint16_t		*rpcparamnamesizes;
+		// always an ms-tds type byte, whichever dialect the
+		// parameter arrived in - see tds5TypeToMsType()
 		byte_t			*rpcparamtdstypes;
+		// the raw tds 5.0 type byte, when that's where it came
+		// from, so that a reply can echo the type the client
+		// declared rather than its ms-tds equivalent.  0 for a
+		// parameter that arrived over ms-tds.
+		byte_t			*rpcparamtds5types;
 		uint32_t		*rpcparammaxsizes;
 		byte_t			*rpcparamprecisions;
 		byte_t			*rpcparamscales;
 		uint16_t		*outbindparams;
 		uint16_t		rpcparamcount;
+
+		// the format the most recent tds 5.0 paramfmt declared for
+		// each parameter, kept until the params token behind it has
+		// been read, and the pool its names live in
+		memorypool		pretds7paramfmtpool;
+		tds5paramfmt		*pretds7paramfmts;
+		uint16_t		pretds7paramfmtcount;
+
+		// the output parameters of the proc being answered, packed
+		// down from the cursor's output binds so that the paramfmt
+		// and the params token that replays it index alike
+		tds5paramfmt		*pretds7outfmts;
+		sqlrserverbindvar	*pretds7outbinds;
 
 		bool			rpcfailed;
 
@@ -2270,6 +2471,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		dictionary<uint32_t, sqlrservercursor *>	stmthandles;
 		dictionary<uint32_t, sqlrservercursor *>	cursorhandles;
 		uint32_t					nexthandle;
+
+		// tds 5.0 dynamic sql names each prepared statement with a
+		// string id the client picks, rather than with a handle the
+		// server mints.  this maps one onto the other; the cursor
+		// itself sits in stmthandles like any other prepared
+		// statement's, so eviction and cleanup need no special case.
+		dictionary<char *, uint32_t>			dynamicids;
 
 		sqlrservercursor				*pendingcursor;
 
@@ -2346,6 +2554,9 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	}
 	maxbindcount=cont->getConfig()->getMaxBindCount();
 
+	// the keys are duplicated on the way in, so the map owns them
+	dynamicids.setManageArrayKeys(true);
+
 	bindvarnames=new char *[maxbindcount];
 	bindvarnamesizes=new int16_t[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
@@ -2358,11 +2569,18 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	rpcparamnames=new char *[maxbindcount];
 	rpcparamnamesizes=new uint16_t[maxbindcount];
 	rpcparamtdstypes=new byte_t[maxbindcount];
+	rpcparamtds5types=new byte_t[maxbindcount];
 	rpcparammaxsizes=new uint32_t[maxbindcount];
 	rpcparamprecisions=new byte_t[maxbindcount];
 	rpcparamscales=new byte_t[maxbindcount];
 	outbindparams=new uint16_t[maxbindcount];
 	rpcparamcount=0;
+
+	pretds7paramfmts=new tds5paramfmt[maxbindcount];
+	pretds7paramfmtcount=0;
+
+	pretds7outfmts=new tds5paramfmt[maxbindcount];
+	pretds7outbinds=new sqlrserverbindvar[maxbindcount];
 
 	bulkcolumns=new char *[maxbindcount];
 	bulktypes=new byte_t[maxbindcount];
@@ -2397,10 +2615,16 @@ sqlrprotocol_tds::~sqlrprotocol_tds() {
 	delete[] rpcparamnames;
 	delete[] rpcparamnamesizes;
 	delete[] rpcparamtdstypes;
+	delete[] rpcparamtds5types;
 	delete[] rpcparammaxsizes;
 	delete[] rpcparamprecisions;
 	delete[] rpcparamscales;
 	delete[] outbindparams;
+
+	delete[] pretds7paramfmts;
+
+	delete[] pretds7outfmts;
+	delete[] pretds7outbinds;
 
 	delete[] bulkcolumns;
 	delete[] bulktypes;
@@ -2742,6 +2966,8 @@ void sqlrprotocol_tds::init() {
 	rpcfailed=false;
 	rpcunsupportedtype=false;
 
+	pretds7paramfmtcount=0;
+
 	bulktable=NULL;
 	bulkcolumncount=0;
 }
@@ -2757,6 +2983,9 @@ void sqlrprotocol_tds::free() {
 
 	rpcparampool.clear();
 
+	pretds7paramfmtpool.clear();
+	pretds7paramfmtcount=0;
+
 	bulkpool.clear();
 	bulktable=NULL;
 	bulkcolumncount=0;
@@ -2765,6 +2994,7 @@ void sqlrprotocol_tds::free() {
 	// just have to forget about them
 	stmthandles.clear();
 	cursorhandles.clear();
+	dynamicids.clear();
 	pendingcursor=NULL;
 	executeflag.clear();
 	bindmarkercount.clear();
@@ -5538,13 +5768,18 @@ bool sqlrprotocol_tds::sspi() {
 // at the TDS5_LENSIZE_* defines - so it's a table, and anything not in
 // it is TDS5_LENSIZE_UNKNOWN and can't be stepped over.
 //
-// Nothing steps over a token yet - preTds7Normal() refuses everything
-// but a language token without asking how long it is - so this is only
-// in the debug output so far.  It's here for #9467, which will dispatch
-// on these.  Re-verify the values against the spec before relying on
-// one: freetds and the wireshark dissector agree with everything here
-// that they define, but they don't define curdeclare2/3, curupdate,
-// curinfo2/3, dbrpc2 or key at all, and those rest on the spec alone.
+// preTds7Normal() dispatches language, dbrpc and dynamic itself, and
+// uses this to step over a command it can't answer so that the walk can
+// reach the commands behind it.
+//
+// Re-verify a value against a capture before relying on one.  Freetds
+// and the wireshark dissector agree with everything here that they
+// define, but they don't define curdeclare2/3, curupdate, curinfo2/3,
+// dbrpc2 or key at all, and those rest on the spec alone - and the spec
+// is not reliable on its own either.  Freetds calls dynamic2 0xA3,
+// which is a *type* byte here; a real sap client sends 0x62.  The
+// wireshark dissector was seeded from freetds, so the two are one
+// source rather than two.
 byte_t sqlrprotocol_tds::preTds7TokenLength(byte_t token) {
 
 	switch (token) {
@@ -5614,7 +5849,8 @@ void sqlrprotocol_tds::tooManyCommands(byte_t token) {
 
 // Refuses one token, with its own done, so the client sees this command
 // fail rather than being left waiting for a result that never comes.
-void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token) {
+// "more" is whether the walk goes on past it.
+void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token, bool more) {
 
 	char	tokenstr[3];
 	charstring::printf(tokenstr,sizeof(tokenstr),"%02x",
@@ -5632,9 +5868,132 @@ void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token) {
 	appendError(0,1,16,err.getString(),srvname,NULL,1);
 
 	// DONE_ERROR is what turns this into a CS_CMD_FAIL - ct-lib reports
-	// CS_CMD_SUCCEED for a done without it.  DONE_FINAL because the walk
-	// stops here; nothing after an unskippable token can be trusted.
-	done(DONE_ERROR|DONE_FINAL,transState(),0);
+	// CS_CMD_SUCCEED for a done without it.  DONE_MORE when the walk
+	// goes on past this token - ct-lib stops reading at the first done
+	// without it, and the dones of the commands behind this one would be
+	// left sitting in the socket.
+	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
+}
+
+// Steps over a command token this module can't answer, along with the
+// paramfmt/params pair behind it if it brought one, so that the commands
+// behind it in the buffer can still be walked.  The token byte has
+// already been read.
+//
+// Returns false, having appended nothing at all, if the token can't be
+// stepped over - one that carries no length of its own, one that runs
+// off the end of the buffer, or a paramfmt/params pair that can't be
+// read.  Then there's no telling where the next token starts and the
+// walk has to stop.
+bool sqlrprotocol_tds::preTds7SkipCommand(const byte_t **rpinout,
+						size_t *rpsizeinout,
+						byte_t token) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	// A paramfmt or params is never a command of its own - it belongs to
+	// the command in front of it, which consumes it below.  One turning
+	// up where a command should be means the walk has already lost its
+	// place, so stop rather than pretend to step over a command.
+	if (token==TDS5_TOKEN_PARAMFMT || token==TDS5_TOKEN_PARAMFMT2 ||
+					token==TDS5_TOKEN_PARAMS) {
+		return false;
+	}
+
+	// how much of the buffer the token itself takes
+	size_t	tokenlength=0;
+	switch (preTds7TokenLength(token)) {
+		case TDS5_LENSIZE_FIXED1:
+			// no length field, one fixed byte of payload
+			tokenlength=1;
+			break;
+		case TDS5_LENSIZE_BYTE:
+			{
+			byte_t	bytelength=0;
+			if (rpsize<sizeof(bytelength)) {
+				return false;
+			}
+			read(rp,&bytelength,&rp);
+			rpsize-=sizeof(bytelength);
+			tokenlength=bytelength;
+			}
+			break;
+		case TDS5_LENSIZE_USHORT:
+			{
+			uint16_t	shortlength=0;
+			if (rpsize<sizeof(shortlength)) {
+				return false;
+			}
+			readLE(rp,&shortlength,&rp);
+			rpsize-=sizeof(shortlength);
+			tokenlength=shortlength;
+			}
+			break;
+		case TDS5_LENSIZE_UINT:
+			{
+			uint32_t	intlength=0;
+			if (rpsize<sizeof(intlength)) {
+				return false;
+			}
+			readLE(rp,&intlength,&rp);
+			rpsize-=sizeof(intlength);
+			tokenlength=(size_t)intlength;
+			}
+			break;
+		default:
+			// an unrecognized token could be anything at all
+			return false;
+	}
+
+	if (tokenlength>rpsize) {
+		return false;
+	}
+	rp+=tokenlength;
+	rpsize-=tokenlength;
+
+	// Which commands can carry a paramfmt/params pair is a status bit
+	// inside each one's own body, and nothing here decodes bodies, so go
+	// by what's actually on the wire instead - a paramfmt is never a
+	// command on its own, so one sitting here can only belong to the
+	// token just stepped over.
+	//
+	// The pair is read rather than skipped because a params token
+	// carries no lengths of its own; replaying the paramfmt in front of
+	// it is the only way to find its end.  What the read leaves in the
+	// format and parameter arrays is scratch - the command it belongs to
+	// is being refused - and the next command that needs them fills them
+	// in again.
+	if (rpsize && (*rp==TDS5_TOKEN_PARAMFMT ||
+					*rp==TDS5_TOKEN_PARAMFMT2)) {
+
+		byte_t	fmttoken=0;
+		read(rp,&fmttoken,&rp);
+		rpsize--;
+
+		const char	*err=NULL;
+		if (!preTds7ParamFmtRead(&rp,&rpsize,
+					(fmttoken==TDS5_TOKEN_PARAMFMT2),
+					&err)) {
+			return false;
+		}
+
+		if (!rpsize) {
+			return false;
+		}
+		byte_t	paramstoken=0;
+		read(rp,&paramstoken,&rp);
+		rpsize--;
+		if (paramstoken!=TDS5_TOKEN_PARAMS ||
+					!preTds7ParamsRead(&rp,&rpsize)) {
+			return false;
+		}
+	}
+
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	return true;
 }
 
 // A tds 5.0 "normal" buffer carries token-framed requests rather than the
@@ -5696,7 +6055,11 @@ bool sqlrprotocol_tds::preTds7Normal() {
 			break;
 		}
 
-		// too many commands in one buffer
+		// Too many commands in one buffer.  A parameterized command
+		// is three tokens on the wire but one command, and it counts
+		// as one here because whoever handles the command token
+		// consumes the paramfmt/params pair behind it rather than
+		// letting the walk see them.
 		if (commandcount==MAX_COMMANDS_PER_REQUEST) {
 			debugWrite("too many commands");
 			tooManyCommands(TOKEN_DONE);
@@ -5704,7 +6067,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 		}
 		commandcount++;
 
-		// the only command this module can answer so far
+		// the commands this module can answer so far
 		if (token==TDS5_TOKEN_LANGUAGE) {
 			if (preTds7Language(&rp,&rpsize)) {
 				continue;
@@ -5715,17 +6078,32 @@ bool sqlrprotocol_tds::preTds7Normal() {
 			// can't be trusted, so stop here
 			break;
 		}
+		if (token==TDS5_TOKEN_DBRPC) {
+			if (preTds7DbRpc(&rp,&rpsize)) {
+				continue;
+			}
+			break;
+		}
+		if (token==TDS5_TOKEN_DYNAMIC) {
+			if (preTds7Dynamic(&rp,&rpsize)) {
+				continue;
+			}
+			break;
+		}
 
-		// Anything else.  Stepping over a token whose length is known
-		// would keep the stream in sync, but there'd still be nothing
-		// to answer the command it represents with, and the tokens
-		// most likely to show up next - paramfmt/params after a
-		// language token with parameters - are exactly the ones that
-		// carry no length and can't be stepped over.  So refuse the
-		// command and stop walking.
-		// FIXME: #9467 implements rpc, dynamic sql, cursors and bulk
-		preTds7UnsupportedToken(token);
-		break;
+		// Anything else.  There's nothing to answer the command with
+		// either way, so it gets refused either way; the only question
+		// is whether the walk can go on.  A token that carries its own
+		// length can be stepped over, so refuse just that command and
+		// keep walking.  One that can't be stepped over ends the walk
+		// - an unrecognized token could be anything at all, and
+		// there's no finding the token behind it.
+		// FIXME: #9479 implements the cursor tokens, #9480 bulk copy
+		if (!preTds7SkipCommand(&rp,&rpsize,token)) {
+			preTds7UnsupportedToken(token,false);
+			break;
+		}
+		preTds7UnsupportedToken(token,rpsize>0);
 	}
 
 	// An empty buffer would otherwise get an empty response, which
@@ -5836,25 +6214,32 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 	*rpinout=rp;
 	*rpsizeinout=rpsize;
 
-	// whether another command follows this one in the buffer
-	bool	more=(rpsize>0);
-
-	// A parameterized command's values ride in the paramfmt/params
-	// pair after this token, so the sql can't be run without them.
+	// A parameterized command's values ride in the paramfmt/params pair
+	// behind this token, so read both before the sql can be run.
+	uint16_t	paramcount=0;
 	if (status&TDS5_LANGUAGE_PARAMS) {
-		debugWrite("parameters are not supported yet");
-		debugEnd();
-		delete[] sql8;
-		// params carries no length, so the rest of the buffer
-		// can't be walked past it either
-		*rpsizeinout=0;
-		// FIXME: #9467 implements parameters
-		appendError(0,1,16,
-			"Parameterized TDS 5.0 language commands "
-			"are not supported yet.",srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,transState(),0);
-		return false;
+
+		if (!preTds7ParamFmtAndParams(&rp,&rpsize)) {
+			debugEnd();
+			delete[] sql8;
+			*rpinout=rp;
+			*rpsizeinout=0;
+			return false;
+		}
+
+		paramcount=rpcparamcount;
+
+		// copy out what the pair consumed too
+		*rpinout=rp;
+		*rpsizeinout=rpsize;
 	}
+
+	// Whether another command follows this one in the buffer.  This has
+	// to be worked out here, behind the paramfmt/params pair rather than
+	// in front of it - the pair is part of this command, so counting it
+	// as "more" would put DONE_MORE on the last command's done, and
+	// ct-lib would sit waiting for a done that never comes.
+	bool	more=(rpsize>0);
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
@@ -5869,18 +6254,37 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		return false;
 	}
 
-	// a language command has no bind variables, and the cursor may have
-	// been left with some by something that used it earlier
-	cont->setInputBindCount(cursor,0);
-	cont->setOutputBindCount(cursor,0);
+	// tds 5.0 has no in/out parameter direction - a paramfmt says input
+	// or return, not both - and the cursor may have been left with some
+	// by something that used it earlier
 	cont->setInputOutputBindCount(cursor,0);
-	cont->setTranslateBindVariablesForThisQuery(cursor,false);
 
-	// run the query
-	bool	success=
-		cont->prepareQuery(cursor,sql8,(uint32_t)sql8size,
-						true,true,true,true) &&
-		cont->executeQuery(cursor,true,true,true,true);
+	// A language command without parameters has no bind variables at
+	// all, and @name in bare sql is a local variable or a parameter
+	// declaration rather than one, so bind translation is off for that
+	// case the way sqlBatch() turns it off.
+	//
+	// With parameters it's sp_executesql's shape instead: the names are
+	// in the sql text - freetds rewrites each ? to @P1, @P2 ... and
+	// names the parameters to match - and bindParams() renames the binds
+	// to @1, @2 ... by position, so translation has to stay on to pair
+	// the two up in order.  getCursor() has already reset it to on.
+	if (!paramcount) {
+		cont->setInputBindCount(cursor,0);
+		cont->setOutputBindCount(cursor,0);
+		cont->setTranslateBindVariablesForThisQuery(cursor,false);
+	}
+
+	// run the query.  the binds go on between prepare and execute, the
+	// way sp_executesql does it
+	bool	success=cont->prepareQuery(cursor,sql8,(uint32_t)sql8size,
+							true,true,true,true);
+	if (success) {
+		if (paramcount) {
+			bindParams(cursor,0);
+		}
+		success=cont->executeQuery(cursor,true,true,true,true);
+	}
 
 	// clean up
 	delete[] sql8;
@@ -5969,6 +6373,966 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 	releaseCursor(cursor);
 
 	return true;
+}
+
+// Handles one tds 5.0 dbrpc token, appending its result to the response
+// packet.  Returns false if the walk should stop, having already
+// appended an error and a done.
+//
+// A dbrpc names its procedure by string where an ms-tds rpc names the
+// numbered ones by id, and its parameters ride in the paramfmt/params
+// pair behind it rather than inside the token.  So this is the decode
+// half of rpc() rather than a sibling of it, and it hands what it
+// decoded to the same proc dispatch.
+//
+// The token is:
+//	uint16, little-endian	how much follows - the name length byte,
+//				the name and the options
+//	byte			name length
+//	bytes			the name, as single-byte characters, not
+//				nul terminated
+//	uint16, little-endian	options - TDS5_RPC_PARAMS when a
+//				paramfmt/params pair follows
+//
+// Dbrpc2 (0xE8) gets no case of its own.  No client was ever seen
+// sending one and freetds has no code that can, so it stays with the
+// tokens preTds7Normal() refuses rather than being guessed at.
+bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
+					size_t *rpsizeinout) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	debugStart("pre-tds7 dbrpc");
+
+	// get the token length
+	uint16_t	tokenlength=0;
+	if (rpsize<sizeof(tokenlength)) {
+		debugWrite("truncated token length");
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dbrpc token",false);
+		return false;
+	}
+	readLE(rp,&tokenlength,&rp);
+	rpsize-=sizeof(tokenlength);
+
+	debugWrite("token length: %d",tokenlength);
+
+	// The length covers the name-length byte and the options, so a
+	// token without room for both is malformed, as is one that runs
+	// off the end of the buffer.
+	if ((size_t)tokenlength<sizeof(byte_t)+sizeof(uint16_t) ||
+					(size_t)tokenlength>rpsize) {
+		debugWrite("invalid token length: %d",tokenlength);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dbrpc token",false);
+		return false;
+	}
+
+	// everything below reads out of the token's own body, so remember
+	// where that ends - a name shorter than the length allows for
+	// leaves bytes to step over
+	const byte_t	*body=rp;
+	size_t		bodyleft=tokenlength;
+
+	// get the proc name length
+	byte_t	namelen=0;
+	read(rp,&namelen,&rp);
+	bodyleft-=sizeof(namelen);
+
+	debugWrite("proc name length: %d",namelen);
+
+	// the options still have to fit behind the name
+	if ((size_t)namelen+sizeof(uint16_t)>bodyleft) {
+		debugWrite("invalid proc name length: %d",namelen);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dbrpc token",false);
+		return false;
+	}
+
+	// the name is decoded further down - it can't be refused until the
+	// paramfmt/params pair behind it has been stepped over
+	const byte_t	*name=rp;
+	rp+=namelen;
+	bodyleft-=namelen;
+
+	// get the option flags
+	uint16_t	options=0;
+	readLE(rp,&options,&rp);
+	bodyleft-=sizeof(options);
+
+	if (getDebug()) {
+		stringbuffer	b;
+		b.printBits(options);
+		debugWrite("options: %s",b.getString());
+	}
+
+	// step over anything the token declared past the options
+	rp=body+tokenlength;
+	rpsize-=tokenlength;
+
+	// copy out what's been consumed, so that the walker sees this
+	// token gone whichever way the rest of this goes
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	// The values ride in the paramfmt/params pair behind the token, and
+	// the count has to be reset either way - namedProc() builds its
+	// query from it, and whatever ran before this left its own count
+	// behind.
+	rpcparamcount=0;
+	if (options&TDS5_RPC_PARAMS) {
+
+		if (!preTds7ParamFmtAndParams(&rp,&rpsize)) {
+			debugEnd();
+			*rpinout=rp;
+			*rpsizeinout=0;
+			return false;
+		}
+
+		// copy out what the pair consumed too
+		*rpinout=rp;
+		*rpsizeinout=rpsize;
+	}
+
+	// Whether another command follows this one in the buffer.  This has
+	// to be worked out behind the paramfmt/params pair rather than in
+	// front of it, for the reason preTds7Language() spells out - the
+	// pair is part of this command, so counting it as "more" would put
+	// DONE_MORE on the last command's done and leave ct-lib waiting for
+	// a done that never comes.
+	bool	more=(rpsize>0);
+
+	// a call with no procedure to call
+	if (!namelen) {
+		debugWrite("empty proc name");
+		debugEnd();
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"Empty TDS 5.0 dbrpc procedure name",
+							srvname,NULL,1);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),
+							transState(),0);
+		return true;
+	}
+
+	size_t	procnamesize;
+	char	*procname=preTds7ToUtf8(name,namelen,&procnamesize);
+
+	debugWrite("procname: %s",procname);
+
+	// a client can send any of the numbered procs by name
+	uint16_t	procid=procNameToProcId(procname);
+	if (procid) {
+		debugProcId(procid);
+	}
+
+	// The numbered procs whose reply tail is still ms-tds only.  Their
+	// cores are wire-neutral, but each of them either writes
+	// colmetadata (0x81) and rows (0xD1) straight out rather than going
+	// through rpcResultSet(), or sends several output parameters, which
+	// is one paramfmt/params pair in this dialect rather than one token
+	// each.  Answering one would desynchronize the client rather than
+	// fail it, and 0x81 is the cursor-delete token here.  A ct-lib
+	// client has cursor tokens of its own and never sends these.
+	// FIXME: give these a pre-tds7 reply tail along with the tds 5.0
+	// cursor tokens
+	if (procid==SP_CURSOR_PREPARE || procid==SP_CURSOR_OPEN ||
+				procid==SP_CURSOR_EXECUTE ||
+				procid==SP_CURSOR_PREP_EXEC ||
+				procid==SP_CURSOR_FETCH) {
+		debugWrite("proc not supported over tds 5.0");
+		debugEnd();
+		delete[] procname;
+		stringbuffer	err;
+		err.append("Procedure ")->append(procnames[procid]);
+		err.append(" is not supported over TDS 5.0 yet.");
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,err.getString(),srvname,NULL,1);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),
+							transState(),0);
+		return true;
+	}
+
+	// do whatever the proc asked for.  there's no "no metadata" option
+	// to pass along - tds 5.0 has nothing like it
+	rpcfailed=false;
+	rpcunsupportedtype=false;
+	bool	retval=runProc(procid,procname,false);
+
+	delete[] procname;
+
+	// A handler that gave up can't say where the request stream now
+	// stands, so end the walk after this command's own done rather
+	// than leaving DONE_MORE on it.
+	if (!retval) {
+		more=false;
+		*rpsizeinout=0;
+	}
+
+	// A failed rpc has to set DONE_ERROR - ct-lib reports
+	// CS_CMD_SUCCEED for a done without it, so a failed call would
+	// report success and the client's result walk would fall a result
+	// out of step.  A real ase closes an rpc with a plain done (0xFD)
+	// rather than with the done-proc an ms-tds server sends.
+	uint16_t	donestatus=(more)?DONE_MORE:DONE_FINAL;
+	if (rpcfailed) {
+		donestatus|=DONE_ERROR;
+	}
+	done(donestatus,transState(),0);
+
+	debugEnd();
+
+	return retval;
+}
+
+// Refuses one dynamic sql command, with its own done, so the client sees
+// that command fail rather than being left waiting for a result that
+// never comes.  Class 16 for the same reason preTds7UnsupportedToken()
+// uses it - the session stays usable.
+void sqlrprotocol_tds::preTds7DynamicError(const char *msgtext, bool more) {
+	// FIXME: is there a real error number/state for this?
+	appendError(0,1,16,msgtext,srvname,NULL,1);
+	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
+}
+
+// Looks a dynamic sql statement id up.  A live one names a prepared
+// statement handle that still has a cursor; one whose cursor was evicted
+// to make room for another request is dropped here rather than left to
+// be found again.
+bool sqlrprotocol_tds::dynamicHandle(const char *id, uint32_t *handle) {
+	*handle=0;
+	if (!dynamicids.getValue((char *)id,handle)) {
+		return false;
+	}
+	if (!handleCursor(&stmthandles,*handle)) {
+		debugWrite("dynamic id: %s (evicted)",id);
+		dynamicids.remove((char *)id);
+		*handle=0;
+		return false;
+	}
+	return true;
+}
+
+// Names a prepared statement handle with a dynamic sql statement id,
+// replacing whatever that id named before.
+void sqlrprotocol_tds::setDynamicHandle(const char *id, uint32_t handle) {
+
+	// the map owns its keys, so drop the old one rather than leaving
+	// two entries for the same id
+	removeDynamicHandle(id);
+
+	if (dynamicids.getCount()>=MAX_DYNAMIC_IDS) {
+		evictOldestDynamicHandle();
+	}
+
+	dynamicids.setValue(charstring::duplicate(id),handle);
+}
+
+void sqlrprotocol_tds::removeDynamicHandle(const char *id) {
+	dynamicids.remove((char *)id);
+}
+
+// Drops the oldest dynamic sql statement id, along with the cursor its
+// handle was holding.  The same thing evictOldestHandle() does for the
+// handle maps, and for the same reason - a client can walk off and leave
+// ids prepared forever.
+void sqlrprotocol_tds::evictOldestDynamicHandle() {
+
+	debugStart("evict-oldest-dynamic-handle");
+
+	// the dictionary tracks insertion order, so the first key is the
+	// oldest id
+	listnode<char *>	*node=dynamicids.getKeys()->getFirst();
+	if (!node) {
+		debugEnd();
+		return;
+	}
+
+	debugWrite("dynamic id: %s (evicted)",node->getValue());
+
+	uint32_t		handle=0;
+	sqlrservercursor	*cursor=NULL;
+	if (dynamicids.getValue(node->getValue(),&handle)) {
+		cursor=handleCursor(&stmthandles,handle);
+	}
+
+	dynamicids.remove(node->getValue());
+
+	if (cursor) {
+		unprepareStatement(handle,cursor);
+	}
+
+	debugEnd();
+}
+
+// Writes the dynamic ack that answers every dynamic sql command.  Unlike
+// the request form, this one stops after the id - it has no statement
+// length field at all, which is how a client tells a server's dynamic
+// token from its own.
+void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
+
+	byte_t	token=TDS5_TOKEN_DYNAMIC;
+
+	// the id length is a single byte, and a longer one couldn't have
+	// arrived in the first place
+	if (idsize>255) {
+		idsize=255;
+	}
+
+	uint16_t	tokensize=(uint16_t)
+				(sizeof(byte_t)*3+idsize);
+
+	debugStart("pre-tds7 dynamic ack");
+	debugTokenType(token);
+	debugWrite("tokensize: %d",tokensize);
+	debugWrite("id: %s",id);
+
+	write(&resppacket,token);
+	writeLE(&resppacket,tokensize);
+	write(&resppacket,(byte_t)TDS5_DYN_ACK);
+	write(&resppacket,(byte_t)0);
+	write(&resppacket,(byte_t)idsize);
+	if (idsize) {
+		write(&resppacket,(const byte_t *)id,idsize);
+	}
+
+	debugEnd();
+}
+
+// Strips the "create proc <id> as " wrapper that a client puts in front
+// of a dynamic prepare's statement.  Ct-lib writes one when the server's
+// request capability mask sets bit 48, TDS_PROTO_DYNPROC, which
+// capability() does, since it sends back what a real ase sends.
+//
+// On an ase that wrapper is real - the prepare becomes a stored
+// procedure named for the id, and the dealloc drops it.  Here it can't
+// be.  The backend may not be an ase at all, "create proc" is not
+// portable, and a real stored procedure would outlive the session that
+// asked for it if anything went wrong before the dealloc.
+//
+// So the wrapper is stripped rather than run, and rather than cleared
+// out of the capability mask.  Clearing the bit would change what
+// ct_capability() reports to the application, and it wouldn't be enough
+// anyway - nothing stops a client from wrapping the statement without
+// being asked, so both forms have to be handled either way.
+//
+// Returns a pointer into "stmt", or "stmt" itself when there's no
+// wrapper to strip.  Only a wrapper naming this command's own id is
+// stripped; anything else is somebody's real "create procedure" and gets
+// prepared as it stands.
+const char *sqlrprotocol_tds::preTds7DynamicStatement(const char *stmt,
+							const char *id) {
+
+	const char	*ptr=stmt;
+
+	while (character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	if (charstring::compareIgnoringCase(ptr,"create",6)) {
+		return stmt;
+	}
+	ptr+=6;
+
+	if (!character::isWhitespace(*ptr)) {
+		return stmt;
+	}
+	while (character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	if (!charstring::compareIgnoringCase(ptr,"procedure",9)) {
+		ptr+=9;
+	} else if (!charstring::compareIgnoringCase(ptr,"proc",4)) {
+		ptr+=4;
+	} else {
+		return stmt;
+	}
+
+	if (!character::isWhitespace(*ptr)) {
+		return stmt;
+	}
+	while (character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	size_t	idlen=charstring::getLength(id);
+	if (!idlen || charstring::compare(ptr,id,idlen)) {
+		return stmt;
+	}
+	ptr+=idlen;
+
+	if (!character::isWhitespace(*ptr)) {
+		return stmt;
+	}
+	while (character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	if (charstring::compareIgnoringCase(ptr,"as",2)) {
+		return stmt;
+	}
+	ptr+=2;
+
+	if (!character::isWhitespace(*ptr)) {
+		return stmt;
+	}
+	while (character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+
+	return ptr;
+}
+
+// Handles one tds 5.0 dynamic sql token, appending its result to the
+// response packet.  Returns false if the walk should stop, having
+// already appended an error and a done.
+//
+// The token is:
+//	uint16, little-endian	how much follows - everything below
+//	byte			type - which operation this is
+//	byte			status - TDS5_DYN_HASARGS when a
+//				paramfmt/params pair follows
+//	byte			id length
+//	bytes			the id, as single-byte characters, not
+//				nul terminated
+//	uint16, little-endian	statement length
+//	bytes			the statement, as single-byte characters
+//
+// Every operation sends that same layout.  The ones with no statement of
+// their own send a zero length rather than leaving the field out, and
+// exec-immediate sends a zero id length rather than an id.
+//
+// Dynamic2 (0xA3) gets no case of its own, for the same reason dbrpc2
+// doesn't - no client was ever seen sending one and freetds has no code
+// that can, so it stays with the tokens preTds7Normal() refuses.
+bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
+					size_t *rpsizeinout) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	debugStart("pre-tds7 dynamic");
+
+	// get the token length
+	uint16_t	tokenlength=0;
+	if (rpsize<sizeof(tokenlength)) {
+		debugWrite("truncated token length");
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dynamic token",false);
+		return false;
+	}
+	readLE(rp,&tokenlength,&rp);
+	rpsize-=sizeof(tokenlength);
+
+	debugWrite("token length: %d",tokenlength);
+
+	// The length covers the type, status and id-length bytes and the
+	// statement length, so a token without room for all four is
+	// malformed, as is one that runs off the end of the buffer.
+	if ((size_t)tokenlength<sizeof(byte_t)*3+sizeof(uint16_t) ||
+					(size_t)tokenlength>rpsize) {
+		debugWrite("invalid token length: %d",tokenlength);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dynamic token",false);
+		return false;
+	}
+
+	// everything below reads out of the token's own body, so remember
+	// where that ends - an id or statement shorter than the length
+	// allows for leaves bytes to step over
+	const byte_t	*body=rp;
+	size_t		bodyleft=tokenlength;
+
+	// get the type and status
+	byte_t	type=0;
+	read(rp,&type,&rp);
+	bodyleft-=sizeof(type);
+	byte_t	status=0;
+	read(rp,&status,&rp);
+	bodyleft-=sizeof(status);
+
+	debugWrite("type: 0x%02x",type);
+	debugWrite("status: 0x%02x",status);
+
+	// get the id length
+	byte_t	idlen=0;
+	read(rp,&idlen,&rp);
+	bodyleft-=sizeof(idlen);
+
+	debugWrite("id length: %d",idlen);
+
+	// the statement length still has to fit behind the id
+	if ((size_t)idlen+sizeof(uint16_t)>bodyleft) {
+		debugWrite("invalid id length: %d",idlen);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dynamic token",false);
+		return false;
+	}
+
+	const byte_t	*id=rp;
+	rp+=idlen;
+	bodyleft-=idlen;
+
+	// get the statement length
+	uint16_t	stmtlen=0;
+	readLE(rp,&stmtlen,&rp);
+	bodyleft-=sizeof(stmtlen);
+
+	debugWrite("statement length: %d",stmtlen);
+
+	if ((size_t)stmtlen>bodyleft) {
+		debugWrite("invalid statement length: %d",stmtlen);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		preTds7ParamError("Malformed TDS 5.0 dynamic token",false);
+		return false;
+	}
+
+	const byte_t	*stmt=rp;
+
+	// step over anything the token declared past the statement
+	rp=body+tokenlength;
+	rpsize-=tokenlength;
+
+	// copy out what's been consumed, so that the walker sees this
+	// token gone whichever way the rest of this goes
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	// An execute's values ride in the paramfmt/params pair behind the
+	// token, and the count has to be reset either way - whatever ran
+	// before this left its own count behind.
+	rpcparamcount=0;
+	if (status&TDS5_DYN_HASARGS) {
+
+		if (!preTds7ParamFmtAndParams(&rp,&rpsize)) {
+			debugEnd();
+			*rpinout=rp;
+			*rpsizeinout=0;
+			return false;
+		}
+
+		// copy out what the pair consumed too
+		*rpinout=rp;
+		*rpsizeinout=rpsize;
+	}
+
+	// Whether another command follows this one in the buffer.  This has
+	// to be worked out behind the paramfmt/params pair rather than in
+	// front of it, for the reason preTds7Language() spells out - the
+	// pair is part of this command, so counting it as "more" would put
+	// DONE_MORE on the last command's done and leave ct-lib waiting for
+	// a done that never comes.
+	bool	more=(rpsize>0);
+
+	// bounds checking.  a single check is enough here, the way it is in
+	// preTds7Language() - passing single bytes through can't grow them.
+	if ((size_t)stmtlen>maxquerysize) {
+		debugWrite("query too large: %d",stmtlen);
+		debugEnd();
+		*rpsizeinout=0;
+		stringbuffer	err;
+		queryTooLargeMessage(stmtlen,&err);
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,err.getString(),srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
+		return false;
+	}
+
+	size_t	idsize;
+	char	*idstr=preTds7ToUtf8(id,idlen,&idsize);
+	size_t	stmtsize;
+	char	*stmtstr=preTds7ToUtf8(stmt,stmtlen,&stmtsize);
+
+	debugWrite("id: %s",idstr);
+	debugWrite("statement: %s",stmtstr);
+
+	// Every operation is answered with an ack naming the same id, so
+	// write it once here.  A failed operation gets one too - that's
+	// what a real ase sends, with the error and the done behind it.
+	preTds7DynamicAck(idstr,idsize);
+
+	bool	retval=true;
+	switch (type) {
+		case TDS5_DYN_PREPARE:
+			retval=preTds7DynamicPrepare(idstr,stmtstr,more);
+			break;
+		case TDS5_DYN_EXEC:
+			retval=preTds7DynamicExecute(idstr,more);
+			break;
+		case TDS5_DYN_DEALLOC:
+			retval=preTds7DynamicDealloc(idstr,more);
+			break;
+		case TDS5_DYN_EXEC_IMMEDIATE:
+			retval=preTds7DynamicExecImmediate(stmtstr,
+							stmtsize,more);
+			break;
+		case TDS5_DYN_DESCRIBE_INPUT:
+		case TDS5_DYN_DESCRIBE_OUTPUT:
+			preTds7DynamicDescribe(idstr,
+					(type==TDS5_DYN_DESCRIBE_OUTPUT),
+					more);
+			break;
+		default:
+			// procname (0x10) and anything else.  There's nothing
+			// to answer it with, so refuse just this command; the
+			// token has already been stepped over, so the walk
+			// can go on.
+			debugWrite("unsupported dynamic type");
+			preTds7DynamicError("This TDS 5.0 dynamic SQL "
+						"operation is not supported "
+						"yet.",more);
+			break;
+	}
+
+	delete[] idstr;
+	delete[] stmtstr;
+
+	// A handler that gave up can't say where the request stream now
+	// stands, so end the walk after its own done rather than leaving
+	// DONE_MORE on it.
+	if (!retval) {
+		*rpsizeinout=0;
+	}
+
+	debugEnd();
+
+	return retval;
+}
+
+// Prepares a dynamic sql statement under the id the client named it
+// with.  The reply is the ack, the prepared statement's output column
+// formats when the backend can describe them without running it, and a
+// done.  Ct-lib caches those formats and answers
+// ct_dynamic(CS_DESCRIBE_OUTPUT) out of them without going near the
+// wire, which is why a describe is almost never seen here.
+//
+// No input parameter formats go with them.  A real ase sends those too,
+// but the server API has no way to describe a statement's parameters
+// without running it, and guessing would be worse than saying nothing -
+// ct_dynamic(CS_DESCRIBE_INPUT) reports no parameters instead.
+bool sqlrprotocol_tds::preTds7DynamicPrepare(const char *id,
+						const char *stmt,
+						bool more) {
+
+	debugStart("pre-tds7 dynamic prepare");
+
+	const char	*query=preTds7DynamicStatement(stmt,id);
+	size_t		querylen=charstring::getLength(query);
+
+	debugWrite("query: %s",query);
+
+	// re-preparing a live id replaces what it named
+	uint32_t	oldhandle=0;
+	dynamicHandle(id,&oldhandle);
+
+	sqlrservercursor	*cursor=NULL;
+	uint32_t		handle=0;
+	bool	success=prepareStatement(oldhandle,query,querylen,
+						false,0,&cursor,&handle);
+
+	if (!cursor) {
+		debugWrite("no cursor available");
+		debugEnd();
+		removeDynamicHandle(id);
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"No cursor available",srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
+		return false;
+	}
+
+	if (!success) {
+		debugEnd();
+		removeDynamicHandle(id);
+		appendQueryError(cursor);
+		releaseCursor(cursor);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),
+						transState(),0);
+		return true;
+	}
+
+	setDynamicHandle(id,handle);
+
+	debugWrite("prepared handle: %d",handle);
+
+	// the cursor stays put - the execute will want it
+
+	// A result set too wide for a rowfmt is refused in here, with its
+	// own error and done, so don't send a second one.
+	if (!preTds7RowFmt(cursor,more)) {
+		debugEnd();
+		return true;
+	}
+
+	done((more)?DONE_MORE:DONE_FINAL,transState(),0);
+
+	debugEnd();
+
+	return true;
+}
+
+// Runs a dynamic sql statement that was prepared under this id, with the
+// values that rode in the paramfmt/params pair behind the token.
+bool sqlrprotocol_tds::preTds7DynamicExecute(const char *id, bool more) {
+
+	debugStart("pre-tds7 dynamic execute");
+
+	uint32_t	handle=0;
+	if (!dynamicHandle(id,&handle)) {
+		debugWrite("no such statement");
+		debugEnd();
+		stringbuffer	err;
+		err.append("Prepared statement ")->append(id);
+		err.append(" does not exist.");
+		preTds7DynamicError(err.getString(),more);
+		return true;
+	}
+
+	debugWrite("prepared handle: %d",handle);
+
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
+
+	// tds 5.0 has no in/out parameter direction - a paramfmt says input
+	// or return, not both - and the cursor may have been left with some
+	// by something that used it earlier
+	cont->setInputOutputBindCount(cursor,0);
+	if (!rpcparamcount) {
+		cont->setInputBindCount(cursor,0);
+		cont->setOutputBindCount(cursor,0);
+	}
+
+	// bind and run the prepared query
+	if (!executeStatement(cursor,0)) {
+		debugEnd();
+		// DONE_ERROR is what turns this into a CS_CMD_FAIL - ct-lib
+		// reports CS_CMD_SUCCEED for a done without it, and the
+		// client's result walk would fall a result out of step
+		appendQueryError(cursor);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),
+						transState(),0);
+		return true;
+	}
+
+	if (!cont->colCount(cursor)) {
+		// DONE_COUNT is what makes the count valid - without it
+		// ct_res_info(CS_ROW_COUNT) reports no count at all
+		done(((more)?DONE_MORE:DONE_FINAL)|DONE_COUNT,
+					transState(),
+					cont->getAffectedRows(cursor));
+		debugEnd();
+		return true;
+	}
+
+	// One rowfmt/rows/done group per result set, the way
+	// preTds7Language() sends them.  DONE_MORE on every one of them,
+	// including the last: the command's own done follows behind.
+	for (;;) {
+
+		// A result set too wide for a rowfmt is refused in here,
+		// with its own error and done, so don't send a second one.
+		if (!preTds7RowFmt(cursor,true)) {
+			debugEnd();
+			return true;
+		}
+
+		uint64_t	rowcount=preTds7Rows(cursor);
+
+		bool	avail=false;
+		if (!cont->nextResultSet(cursor,&avail)) {
+			appendQueryError(cursor);
+			done(DONE_ERROR|DONE_COUNT|
+				((more)?DONE_MORE:DONE_FINAL),
+				transState(),rowcount);
+			debugEnd();
+			return true;
+		}
+
+		done(DONE_MORE|DONE_COUNT,transState(),rowcount);
+
+		if (!avail) {
+			break;
+		}
+	}
+
+	// The execute's own done, behind the result sets it produced.  A
+	// real ase sends this one too, and ct-lib reports it as an extra
+	// CS_CMD_SUCCEED/CS_CMD_DONE pair after the rows - the same pair
+	// sp_execute's done produces over ms-tds.
+	done((more)?DONE_MORE:DONE_FINAL,transState(),0);
+
+	debugEnd();
+
+	return true;
+}
+
+// Drops a dynamic sql statement and the cursor it was holding.
+//
+// An id that was never prepared isn't an error.  Ct-lib refuses a
+// dealloc of an id it doesn't know about before it ever reaches the
+// wire, so one that gets here is an id whose prepare failed on this end,
+// and the client is entitled to clean up after that.
+bool sqlrprotocol_tds::preTds7DynamicDealloc(const char *id, bool more) {
+
+	debugStart("pre-tds7 dynamic dealloc");
+
+	uint32_t	handle=0;
+	if (dynamicHandle(id,&handle)) {
+
+		debugWrite("prepared handle: %d",handle);
+
+		removeDynamicHandle(id);
+		unprepareStatement(handle,handleCursor(&stmthandles,handle));
+
+	} else {
+		debugWrite("no such statement");
+		removeDynamicHandle(id);
+	}
+
+	done((more)?DONE_MORE:DONE_FINAL,transState(),0);
+
+	debugEnd();
+
+	return true;
+}
+
+// Runs one statement immediately, without preparing it under an id.
+//
+// A real ase takes only statements that return no rows here and rejects
+// anything else outright, and ct-lib sends no parameters with one, so
+// the reply is just a done.  A statement that does return rows gets its
+// result sets sent anyway rather than silently thrown away.
+bool sqlrprotocol_tds::preTds7DynamicExecImmediate(const char *stmt,
+							size_t stmtsize,
+							bool more) {
+
+	debugStart("pre-tds7 dynamic exec immediate");
+
+	// get an available cursor
+	sqlrservercursor	*cursor=availableCursor();
+	if (!cursor) {
+		debugWrite("no cursor available");
+		debugEnd();
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"No cursor available",srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
+		return false;
+	}
+
+	// this statement has no parameters at all, so bind translation is
+	// off, the way preTds7Language() turns it off for a language
+	// command without any
+	cont->setInputBindCount(cursor,0);
+	cont->setOutputBindCount(cursor,0);
+	cont->setInputOutputBindCount(cursor,0);
+	cont->setTranslateBindVariablesForThisQuery(cursor,false);
+
+	bool	success=cont->prepareQuery(cursor,stmt,(uint32_t)stmtsize,
+							true,true,true,true) &&
+			cont->executeQuery(cursor,true,true,true,true);
+
+	if (!success) {
+		appendQueryError(cursor);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),
+						transState(),0);
+		releaseCursor(cursor);
+		debugEnd();
+		return true;
+	}
+
+	if (!cont->colCount(cursor)) {
+		done(((more)?DONE_MORE:DONE_FINAL)|DONE_COUNT,
+					transState(),
+					cont->getAffectedRows(cursor));
+		releaseCursor(cursor);
+		debugEnd();
+		return true;
+	}
+
+	for (;;) {
+
+		if (!preTds7RowFmt(cursor,more)) {
+			break;
+		}
+
+		uint64_t	rowcount=preTds7Rows(cursor);
+
+		bool	avail=false;
+		if (!cont->nextResultSet(cursor,&avail)) {
+			appendQueryError(cursor);
+			done(DONE_ERROR|DONE_COUNT|
+				((more)?DONE_MORE:DONE_FINAL),
+				transState(),rowcount);
+			break;
+		}
+
+		done(((avail || more)?DONE_MORE:DONE_FINAL)|DONE_COUNT,
+						transState(),rowcount);
+
+		if (!avail) {
+			break;
+		}
+	}
+
+	releaseCursor(cursor);
+
+	debugEnd();
+
+	return true;
+}
+
+// Describes a prepared dynamic sql statement's parameters or columns.
+//
+// Neither describe was ever seen on the wire - both sap's ct-lib and
+// freetds answer ct_dynamic(CS_DESCRIBE_INPUT) and
+// ct_dynamic(CS_DESCRIBE_OUTPUT) out of the formats that came back with
+// the prepare - but nothing stops a client from asking, so both are
+// answered rather than refused.
+//
+// The output describe sends the same rowfmt the prepare did.  The input
+// describe sends no formats at all, for the same reason the prepare
+// doesn't: there's no way to describe a statement's parameters without
+// running it.
+void sqlrprotocol_tds::preTds7DynamicDescribe(const char *id,
+						bool output,
+						bool more) {
+
+	debugStart("pre-tds7 dynamic describe");
+
+	uint32_t	handle=0;
+	if (!dynamicHandle(id,&handle)) {
+		debugWrite("no such statement");
+		debugEnd();
+		stringbuffer	err;
+		err.append("Prepared statement ")->append(id);
+		err.append(" does not exist.");
+		preTds7DynamicError(err.getString(),more);
+		return;
+	}
+
+	debugWrite("prepared handle: %d",handle);
+
+	if (output) {
+		// a result set too wide for a rowfmt is refused in here,
+		// with its own error and done, so don't send a second one
+		if (!preTds7RowFmt(handleCursor(&stmthandles,handle),more)) {
+			debugEnd();
+			return;
+		}
+	}
+
+	done((more)?DONE_MORE:DONE_FINAL,transState(),0);
+
+	debugEnd();
 }
 
 bool sqlrprotocol_tds::sqlBatch() {
@@ -7558,6 +8922,127 @@ bool sqlrprotocol_tds::isCharType(byte_t tdstype) {
 	}
 }
 
+// The ms-tds datatype that means what a tds 5.0 datatype means, or 0 for
+// one that has no ms-tds counterpart at all.
+//
+// rpcparamtdstypes[] is read by ms-tds predicates - isCharType() at the
+// top of this file and paramIsUnicode() - and by everything built on
+// them, so whatever goes in it has to be an ms-tds type byte whichever
+// dialect the parameter arrived in.  Putting a raw tds 5.0 byte there
+// would be silently wrong rather than merely unrecognized:
+//
+// * 0xE7 and 0x63 are nvarchar and ntext in ms-tds, and neither is a
+//   datatype in tds 5.0 at all - they're the dynamic and optioncmd2
+//   token bytes - so paramIsUnicode() would answer false for every tds
+//   5.0 parameter, and executeSql() and prepare() reject a call whose
+//   parameters aren't unicode.
+// * 0xAF is a blank-padded, 2-byte-counted bigchar in ms-tds and a
+//   4-byte-counted longchar here, so isCharType() would answer true and
+//   returnValueChar() would write the wrong length field.
+//
+// The raw byte is kept alongside, in rpcparamtds5types[], for a reply
+// that has to echo the type the client declared.
+//
+// A byte that isn't a tds 5.0 datatype is refused rather than passed
+// through, so nothing can land in the array in the wrong namespace.
+byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
+
+	switch (tds5type) {
+
+		// same byte, same meaning in both dialects
+		case TDS5_TYPE_VOID:		// TDS_TYPE_NULL
+		case TDS5_TYPE_IMAGE:
+		case TDS5_TYPE_TEXT:
+		case TDS5_TYPE_VARBINARY:
+		case TDS5_TYPE_INTN:
+		case TDS5_TYPE_VARCHAR:
+		case TDS5_TYPE_BINARY:
+		case TDS5_TYPE_CHAR:
+		case TDS5_TYPE_INT1:
+		case TDS5_TYPE_BIT:
+		case TDS5_TYPE_INT2:
+		case TDS5_TYPE_INT4:
+		case TDS5_TYPE_SHORTDATE:	// TDS_TYPE_DATETIM4
+		case TDS5_TYPE_FLT4:
+		case TDS5_TYPE_MONEY:
+		case TDS5_TYPE_DATETIME:
+		case TDS5_TYPE_FLT8:
+		case TDS5_TYPE_DECN:		// TDS_TYPE_DECIMALN
+		case TDS5_TYPE_NUMN:		// TDS_TYPE_NUMERICN
+		case TDS5_TYPE_FLTN:
+		case TDS5_TYPE_MONEYN:
+		case TDS5_TYPE_DATETIMEN:	// TDS_TYPE_DATETIMN
+		case TDS5_TYPE_SHORTMONEY:	// TDS_TYPE_MONEY4
+		case TDS5_TYPE_LONGBINARY:
+			return tds5type;
+
+		// The unsigned integers, which ms-tds doesn't have - each
+		// one becomes the signed type of its own width.  The value
+		// itself is read here rather than by anything that reads
+		// this array, so nothing is lost by it.
+		case TDS5_TYPE_UINT1:
+			return TDS_TYPE_INT1;
+		case TDS5_TYPE_UINT2:
+			return TDS_TYPE_INT2;
+		case TDS5_TYPE_UINT4:
+			return TDS_TYPE_INT4;
+		case TDS5_TYPE_UINT8:
+			return TDS_TYPE_INT8;
+		case TDS5_TYPE_UINTN:
+			return TDS_TYPE_INTN;
+
+		// ms-tds has no signed 1-byte type either - int1 is a
+		// tinyint, and tinyint is unsigned
+		case TDS5_TYPE_SINT1:
+			return TDS_TYPE_INT1;
+
+		// the 8-byte integer is 0xBF here and 0x7F in ms-tds, where
+		// 0xBF isn't a datatype and 0x7F is a 1-byte varint
+		case TDS5_TYPE_INT8:
+			return TDS_TYPE_INT8;
+
+		// date and time, fixed-width and nullable alike - ms-tds
+		// only has the nullable forms
+		case TDS5_TYPE_DATE:
+		case TDS5_TYPE_DATEN:
+			return TDS_TYPE_DATEN;
+		case TDS5_TYPE_TIME:
+		case TDS5_TYPE_TIMEN:
+			return TDS_TYPE_TIMEN;
+
+		// Longchar is 4-byte counted and not blank padded, so it's
+		// a bigvarchr rather than the bigchar that happens to share
+		// its byte in ms-tds.  Blank padding a value out to a
+		// declared size that a longchar never meant as a fixed
+		// width is the concrete difference.
+		case TDS5_TYPE_LONGCHAR:
+			return TDS_TYPE_BIGVARCHR;
+
+		// unitext is utf-16 text
+		case TDS5_TYPE_UNITEXT:
+			return TDS_TYPE_NTEXT;
+
+		// Xml has text's wire shape here - a 4-byte length - and
+		// text is also what makes isCharType() answer correctly for
+		// it.  TDS_TYPE_XML is the closer name, but no ms-tds
+		// character predicate covers it, so a parameter tagged with
+		// it would silently lose the output buffer bindParams()
+		// preallocates for a character type.
+		case TDS5_TYPE_XML:
+			return TDS_TYPE_TEXT;
+
+		default:
+			// Nothing else is bindable.  Blob (0x24) is a
+			// serialized object behind a class id, interval
+			// (0x2E) has no counterpart, and sensitivity (0x67)
+			// and boundary (0x68) are labels rather than values.
+			// 0x24 and 0x68 are uniqueidentifier and bitn in
+			// ms-tds, so passing either byte through would be
+			// worse than refusing it.
+			return 0;
+	}
+}
+
 int64_t sqlrprotocol_tds::moneyValue(const char *field) {
 
 	debugStart("money value");
@@ -8723,6 +10208,1374 @@ void sqlrprotocol_tds::binary(const char *field, uint64_t size, bool hextext) {
 		}
 	} else {
 		write(&resppacket,field,size);
+	}
+}
+
+// Refuses a malformed or unsupported paramfmt/params pair, with its own
+// done, so the client sees the command fail rather than being left
+// waiting for a result that never comes.  Class 16 for the same reason
+// preTds7UnsupportedToken() uses it - the session stays usable.
+//
+// "more" is whether another done still follows this one.  A refusal on
+// the way in ends the walk, so nothing follows and the done is final;
+// one on the way out is in the middle of a reply whose caller still
+// appends its own closing done, and ct-lib stops reading at the first
+// done without DONE_MORE, so that one would be left in the socket.
+void sqlrprotocol_tds::preTds7ParamError(const char *msgtext, bool more) {
+	// FIXME: is there a real error number/state for this?
+	appendError(0,1,16,msgtext,srvname,NULL,1);
+	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
+}
+
+// Reads a tds 5.0 paramfmt into the retained format array.  The token
+// byte has already been read.  Returns false with a message in "err" if
+// the token can't be walked; preTds7ParamFmt() turns that into the
+// refusal, so that every bail-out here is one line rather than five.
+//
+// "wide" picks the paramfmt2 (0x20) shape over the paramfmt (0xEC) one.
+// They differ in exactly two fields - a 32-bit token length rather than
+// a 16-bit one, and a 32-bit status rather than an 8-bit one - so one
+// function reads both.  Paramfmt2 is NOT rowfmt2's shape: rowfmt2 also
+// prepends label, catalog, schema and table names to every column.
+//
+// A real ase only sends the wide form to a client that echoed request
+// capability bit 59, TDS_WIDETABLE.  capability() doesn't set that bit,
+// so what actually arrives here is the narrow form; the wide one is
+// read anyway because nothing stops a client from sending it.
+//
+// The token is:
+//	uint16/uint32	how much follows, counting the parameter count
+//			but not the token byte or the length itself
+//	uint16		parameter count
+//	then per parameter:
+//	byte		name length
+//	bytes		name, single-byte characters, often absent
+//	byte/uint32	status
+//	uint32		usertype
+//	byte		datatype
+//	...		size, unless the type's varint class is 0
+//	byte,byte	precision and scale, decimal and numeric only
+//	byte		locale length
+//	bytes		locale
+//
+// Unlike a rowfmt, there's no table name after a text or image size -
+// verified against a real ase's paramfmt and against the wireshark
+// dissector.
+bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
+						size_t *rpsizeinout,
+						bool wide,
+						const char **err) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	*err="Malformed TDS 5.0 paramfmt token";
+
+	pretds7paramfmtcount=0;
+	pretds7paramfmtpool.clear();
+
+	// the token length
+	size_t	lensize=(wide)?sizeof(uint32_t):sizeof(uint16_t);
+	if (rpsize<lensize) {
+		return false;
+	}
+	uint32_t	tokenlength=0;
+	if (wide) {
+		readLE(rp,&tokenlength,&rp);
+	} else {
+		uint16_t	narrowlength=0;
+		readLE(rp,&narrowlength,&rp);
+		tokenlength=narrowlength;
+	}
+	rpsize-=lensize;
+
+	debugWrite("token length: %lld",(long long)tokenlength);
+
+	// The length covers the parameter count, so a token without room
+	// for one is malformed, as is one that runs off the end of the
+	// buffer.
+	if (tokenlength<sizeof(uint16_t) || (size_t)tokenlength>rpsize) {
+		return false;
+	}
+
+	// Everything below is bounded by "left" rather than by rpsize, so
+	// that a paramfmt claiming more parameters than it carries can't
+	// read past its own end into whatever token follows it.
+	size_t	left=(size_t)tokenlength;
+
+	uint16_t	count=0;
+	readLE(rp,&count,&rp);
+	left-=sizeof(uint16_t);
+
+	debugWrite("count: %d",count);
+
+	// the retained array is maxbindcount long, and nothing downstream
+	// can bind more than that anyway
+	if (count>maxbindcount) {
+		*err="Too many TDS 5.0 parameters.";
+		return false;
+	}
+
+	for (uint16_t i=0; i<count; i++) {
+
+		tds5paramfmt	*fmt=&(pretds7paramfmts[i]);
+
+		debugStart("pre-tds7 param fmt %d",i);
+
+		// name.  single-byte characters, not ucs-2, and frequently
+		// absent - every parameter of a dynamic execute has a name
+		// length of 0.
+		if (!left) {
+			debugEnd();
+			return false;
+		}
+		byte_t	namelen=0;
+		read(rp,&namelen,&rp);
+		left--;
+		if (left<namelen) {
+			debugEnd();
+			return false;
+		}
+		char	*name=(char *)pretds7paramfmtpool.allocate(namelen+1);
+		if (namelen) {
+			read(rp,name,namelen,&rp);
+			left-=namelen;
+		}
+		name[namelen]='\0';
+		fmt->name=name;
+		fmt->namesize=namelen;
+
+		debugWrite("namelen: %d",namelen);
+		debugWrite("name: %s",name);
+
+		// status
+		size_t	statussize=(wide)?sizeof(uint32_t):sizeof(byte_t);
+		if (left<statussize) {
+			debugEnd();
+			return false;
+		}
+		uint32_t	status=0;
+		if (wide) {
+			readLE(rp,&status,&rp);
+		} else {
+			byte_t	narrowstatus=0;
+			read(rp,&narrowstatus,&rp);
+			status=narrowstatus;
+		}
+		left-=statussize;
+		fmt->status=(byte_t)status;
+
+		debugWrite("status: 0x%02x",status);
+		debugWrite("return: %d",
+				(status&TDS5_PARAM_RETURN)?1:0);
+
+		// A columnstatus byte in front of every value needs
+		// capability bit 57, which capability() leaves clear, so no
+		// client should be asking for one.  Refuse rather than
+		// mis-size every value behind it if one does.
+		if (status&TDS5_PARAM_COLUMNSTATUS) {
+			*err="TDS 5.0 parameter column status "
+						"is not supported yet.";
+			debugEnd();
+			return false;
+		}
+
+		// usertype
+		if (left<sizeof(uint32_t)) {
+			debugEnd();
+			return false;
+		}
+		readLE(rp,&(fmt->usertype),&rp);
+		left-=sizeof(uint32_t);
+
+		debugWrite("usertype: %d",fmt->usertype);
+
+		// datatype
+		if (!left) {
+			debugEnd();
+			return false;
+		}
+		read(rp,&(fmt->tds5type),&rp);
+		left--;
+
+		debugPreTds7ColumnType(fmt->tds5type);
+
+		// A type with no ms-tds counterpart can't be bound, and a
+		// serialized object (0x24) carries a class id after its
+		// locale that nothing here knows how to skip either.
+		fmt->mstype=tds5TypeToMsType(fmt->tds5type);
+		if (!fmt->mstype) {
+			*err="That TDS 5.0 datatype is not supported yet.";
+			debugEnd();
+			return false;
+		}
+		debugColumnType(fmt->mstype);
+
+		fmt->varintsize=preTds7VarintSize(fmt->tds5type);
+		fmt->size=0;
+		fmt->precision=0;
+		fmt->scale=0;
+
+		// size
+		switch (fmt->varintsize) {
+			case 0:
+				// the type carries its own width, so there's
+				// no size field to read
+				fmt->size=preTds7FixedSize(fmt->tds5type);
+				break;
+			case 4:
+			case 5:
+				if (left<sizeof(uint32_t)) {
+					debugEnd();
+					return false;
+				}
+				readLE(rp,&(fmt->size),&rp);
+				left-=sizeof(uint32_t);
+				break;
+			default:
+				{
+				if (!left) {
+					debugEnd();
+					return false;
+				}
+				byte_t	size=0;
+				read(rp,&size,&rp);
+				left--;
+				fmt->size=size;
+				}
+				break;
+		}
+
+		debugWrite("size: %d",fmt->size);
+
+		// precision and scale
+		if (fmt->tds5type==TDS5_TYPE_DECN ||
+				fmt->tds5type==TDS5_TYPE_NUMN) {
+
+			if (left<2*sizeof(byte_t)) {
+				debugEnd();
+				return false;
+			}
+			read(rp,&(fmt->precision),&rp);
+			read(rp,&(fmt->scale),&rp);
+			left-=2*sizeof(byte_t);
+
+			debugWrite("precision: %d",fmt->precision);
+			debugWrite("scale: %d",fmt->scale);
+
+			// A precision of 0, a precision past the maximum, or
+			// a scale wider than the precision are all outside
+			// what decimalSize() and bulkDecimal() can render -
+			// preTds7DecimalInfo() clamps the same three on the
+			// way out.  Note that a client may declare a
+			// different precision and scale for the same
+			// parameter on two executes of one prepared
+			// statement; a real ct-lib client sends 9,2 for a
+			// value and 18,0 for a null.
+			if (!fmt->precision ||
+				fmt->precision>TDS_DECIMAL_MAX_PRECISION ||
+				fmt->scale>fmt->precision) {
+				*err="Invalid TDS 5.0 decimal "
+						"precision or scale.";
+				debugEnd();
+				return false;
+			}
+		}
+
+		// locale.  Mandatory even when it's empty, the way it is in
+		// a rowfmt - the next parameter starts right after it.
+		if (!left) {
+			debugEnd();
+			return false;
+		}
+		byte_t	localelen=0;
+		read(rp,&localelen,&rp);
+		left--;
+		if (left<localelen) {
+			debugEnd();
+			return false;
+		}
+		rp+=localelen;
+		left-=localelen;
+
+		debugWrite("locale length: %d",localelen);
+
+		pretds7paramfmtcount++;
+
+		debugEnd();
+	}
+
+	// A real client's blocks add up to the length exactly.  Anything
+	// left over means the two disagree, and then there's no telling
+	// where the next token starts.
+	if (left) {
+		debugWrite("%lld bytes left over",(long long)left);
+		return false;
+	}
+
+	rpsize-=(size_t)tokenlength;
+
+	return true;
+}
+
+bool sqlrprotocol_tds::preTds7ParamFmt(const byte_t **rpinout,
+						size_t *rpsizeinout,
+						bool wide) {
+
+	debugStart("pre-tds7 param fmt");
+
+	const char	*err=NULL;
+	if (preTds7ParamFmtRead(rpinout,rpsizeinout,wide,&err)) {
+		debugWrite("param count: %d",pretds7paramfmtcount);
+		debugEnd();
+		return true;
+	}
+
+	debugWrite("%s",err);
+	debugEnd();
+
+	// A params token behind a paramfmt that couldn't be walked can't be
+	// walked either - it carries no length of its own - so nothing
+	// after this point in the buffer can be trusted.
+	*rpsizeinout=0;
+	pretds7paramfmtcount=0;
+	preTds7ParamError(err,false);
+	return false;
+}
+
+// Reads a tds 5.0 params token, replaying the paramfmt in front of it to
+// size each value.  The token byte has already been read.
+//
+// The results go into the rpcparams[] family, which is wire-neutral -
+// bindParams() and everything above it read them the same way whichever
+// dialect they arrived in.  rpcparamtdstypes[] gets the ms-tds
+// equivalent of each type and rpcparamtds5types[] the raw byte; see
+// tds5TypeToMsType() for why.
+//
+// Split the way preTds7ParamFmtRead() and preTds7ParamFmt() are - this
+// is the walk, and the wrapper turns a failed walk into the refusal.
+// preTds7SkipCommand() needs the walk without the refusal; it appends
+// its own.
+bool sqlrprotocol_tds::preTds7ParamsRead(const byte_t **rpinout,
+						size_t *rpsizeinout) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	debugStart("pre-tds7 params");
+	debugWrite("count: %d",pretds7paramfmtcount);
+
+	// reset the pool that parameter values get copied into, the way the
+	// ms-tds params() does
+	rpcparampool.clear();
+	rpcparamcount=0;
+
+	// The loop is bounded by the format array rather than by what's
+	// left in the buffer, so a value that consumed nothing can't spin
+	// it the way params() has to guard against.
+	for (uint16_t i=0; i<pretds7paramfmtcount; i++) {
+
+		const tds5paramfmt	*fmt=&(pretds7paramfmts[i]);
+
+		debugStart("pre-tds7 param %d",i);
+		debugWrite("name: %s",fmt->name);
+		debugPreTds7ColumnType(fmt->tds5type);
+
+		sqlrserverbindvar	*bv=&(rpcparams[i]);
+		bv->type=SQLRSERVERBINDVARTYPE_NULL;
+		bv->variable=NULL;
+		bv->variablesize=0;
+		bv->valuesize=0;
+		bv->value.stringval=NULL;
+		bv->isnull=cont->getNullBindValue();
+
+		// A binary or image parameter stays a lob even when the
+		// value turns out to be null, the way bulkField() keeps it
+		// one, so it doesn't lose its lob-ness before it's ever
+		// bound.
+		switch (fmt->tds5type) {
+			case TDS5_TYPE_BINARY:
+			case TDS5_TYPE_VARBINARY:
+			case TDS5_TYPE_LONGBINARY:
+			case TDS5_TYPE_IMAGE:
+				bv->type=SQLRSERVERBINDVARTYPE_NULLBLOB;
+				break;
+		}
+
+		if (!preTds7ParamValueRead(&rp,&rpsize,fmt,bv)) {
+			debugEnd();
+			debugEnd();
+			*rpinout=rp;
+			return false;
+		}
+
+		// the name, the direction and the declared type, which the
+		// paramfmt carried rather than the value
+		rpcparambyref[i]=((fmt->status&TDS5_PARAM_RETURN)!=0);
+		rpcparamnames[i]=(char *)rpcparampool.allocate(
+							fmt->namesize+1);
+		if (fmt->namesize) {
+			charstring::copy(rpcparamnames[i],
+						fmt->name,fmt->namesize);
+		}
+		rpcparamnames[i][fmt->namesize]='\0';
+		rpcparamnamesizes[i]=fmt->namesize;
+		rpcparamtdstypes[i]=fmt->mstype;
+		rpcparamtds5types[i]=fmt->tds5type;
+		rpcparammaxsizes[i]=fmt->size;
+		rpcparamprecisions[i]=fmt->precision;
+		rpcparamscales[i]=fmt->scale;
+
+		rpcparamcount++;
+
+		debugEnd();
+	}
+
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	debugEnd();
+	return true;
+}
+
+bool sqlrprotocol_tds::preTds7Params(const byte_t **rpinout,
+						size_t *rpsizeinout) {
+
+	if (preTds7ParamsRead(rpinout,rpsizeinout)) {
+		return true;
+	}
+
+	// A params token carries no length of its own, so a walk that ran
+	// aground in the middle of one leaves no way to find the token
+	// behind it either.
+	*rpsizeinout=0;
+	rpcparamcount=0;
+	preTds7ParamError("Malformed TDS 5.0 params token",false);
+	return false;
+}
+
+// Reads the paramfmt/params pair that a command token declaring
+// parameters carries behind it.  Returns false, having appended its own
+// error and final done, if either token is missing or can't be walked.
+bool sqlrprotocol_tds::preTds7ParamFmtAndParams(const byte_t **rpinout,
+						size_t *rpsizeinout) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	// the paramfmt
+	byte_t	fmttoken=0;
+	if (rpsize) {
+		read(rp,&fmttoken,&rp);
+		rpsize--;
+	}
+	if (fmttoken!=TDS5_TOKEN_PARAMFMT && fmttoken!=TDS5_TOKEN_PARAMFMT2) {
+		*rpinout=rp;
+		*rpsizeinout=0;
+		pretds7paramfmtcount=0;
+		rpcparamcount=0;
+		preTds7ParamError("Missing TDS 5.0 paramfmt token",false);
+		return false;
+	}
+	if (!preTds7ParamFmt(&rp,&rpsize,(fmttoken==TDS5_TOKEN_PARAMFMT2))) {
+		*rpinout=rp;
+		*rpsizeinout=0;
+		rpcparamcount=0;
+		return false;
+	}
+
+	// the params
+	byte_t	paramstoken=0;
+	if (rpsize) {
+		read(rp,&paramstoken,&rp);
+		rpsize--;
+	}
+	if (paramstoken!=TDS5_TOKEN_PARAMS) {
+		*rpinout=rp;
+		*rpsizeinout=0;
+		pretds7paramfmtcount=0;
+		rpcparamcount=0;
+		preTds7ParamError("Missing TDS 5.0 params token",false);
+		return false;
+	}
+	if (!preTds7Params(&rp,&rpsize)) {
+		*rpinout=rp;
+		*rpsizeinout=0;
+		return false;
+	}
+
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	return true;
+}
+
+// Reads one parameter's value out of a params token.  A params token
+// carries no lengths of its own, so how many bytes a value occupies
+// comes entirely from the format the paramfmt declared:
+//
+//	varint 0	the value alone, at the type's own width.  there's
+//			no length field, so there's no way to say null
+//	varint 1	one length byte, then that many bytes.  a length
+//			of 0 means null
+//	varint 4	a text pointer, a timestamp and a 32-bit length for
+//			the blob types; a bare 32-bit length otherwise
+//	varint 5	a 32-bit length
+//
+// The declared size is not the value's size - a client and a server can
+// declare the same decimal(9,2) at 33 and at 5 - so every value is sized
+// from the length that arrived with it, exactly as preTds7Field() writes
+// one.  This is that function inverted.
+bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
+						size_t *rpsizeinout,
+						const tds5paramfmt *fmt,
+						sqlrserverbindvar *bv) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	// A text or image value arrives behind a text pointer and a
+	// timestamp, the way a row field does, and a text-pointer length of
+	// 0 is how it says null.  Xml and unitext are varint 4 too but
+	// aren't blob types, so they carry no text pointer -
+	// preTds7TypeInfo() draws the same line writing a rowfmt.
+	if (fmt->tds5type==TDS5_TYPE_TEXT || fmt->tds5type==TDS5_TYPE_IMAGE) {
+		if (!rpsize) {
+			return false;
+		}
+		byte_t	textptrsize=0;
+		read(rp,&textptrsize,&rp);
+		rpsize--;
+		if (!textptrsize) {
+			debugWrite("value: (null)");
+			return true;
+		}
+		// the text pointer, then an 8-byte timestamp
+		if (rpsize<(size_t)textptrsize+8) {
+			return false;
+		}
+		rp+=(size_t)textptrsize+8;
+		rpsize-=(size_t)textptrsize+8;
+	}
+
+	// the length
+	uint32_t	size=0;
+	switch (fmt->varintsize) {
+		case 0:
+			size=preTds7FixedSize(fmt->tds5type);
+			break;
+		case 4:
+		case 5:
+			if (rpsize<sizeof(uint32_t)) {
+				return false;
+			}
+			readLE(rp,&size,&rp);
+			rpsize-=sizeof(uint32_t);
+			break;
+		default:
+			{
+			if (!rpsize) {
+				return false;
+			}
+			byte_t	varint1size=0;
+			read(rp,&varint1size,&rp);
+			rpsize--;
+			size=varint1size;
+			}
+			break;
+	}
+
+	if (rpsize<size) {
+		return false;
+	}
+
+	debugWrite("size: %d",size);
+
+	// A length of 0 is null for every type that has a length at all.
+	// It is not gated on TDS5_PARAM_NULLALLOWED: a real ct-lib client
+	// leaves that bit clear even for a parameter it sends a null in,
+	// even when the parameter was declared CS_CANBENULL.
+	if (fmt->varintsize && !size) {
+		debugWrite("value: (null)");
+		return true;
+	}
+
+	const byte_t	*value=rp;
+	rp+=size;
+	rpsize-=size;
+
+	// the integer types, signed and unsigned, at every width one of
+	// them can be.  little-endian, and sign-extended from whatever
+	// width arrived.
+	bool	isint=false;
+	bool	issigned=true;
+	switch (fmt->tds5type) {
+		case TDS5_TYPE_UINT1:
+		case TDS5_TYPE_UINT2:
+		case TDS5_TYPE_UINT4:
+		case TDS5_TYPE_UINT8:
+		case TDS5_TYPE_UINTN:
+		case TDS5_TYPE_INT1:
+			// tds 5.0's int1 is the unsigned one - sint1 is the
+			// signed 1-byte type
+			issigned=false;
+			// fall through
+		case TDS5_TYPE_INT2:
+		case TDS5_TYPE_INT4:
+		case TDS5_TYPE_INT8:
+		case TDS5_TYPE_INTN:
+		case TDS5_TYPE_SINT1:
+		case TDS5_TYPE_BIT:
+			isint=true;
+			break;
+	}
+	if (isint) {
+
+		if (size<1 || size>8) {
+			debugWrite("invalid size: %d",size);
+			return false;
+		}
+
+		uint64_t	magnitude=0;
+		for (byte_t i=0; i<size; i++) {
+			magnitude|=((uint64_t)value[i])<<(i*8);
+		}
+		if (issigned && size<8 && (value[size-1]&0x80)) {
+			magnitude|=~((uint64_t)0)<<(size*8);
+		}
+
+		bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+		bv->valuesize=size;
+		bv->isnull=cont->getNonNullBindValue();
+		bv->value.integerval=(int64_t)magnitude;
+
+		debugWrite("value: %lld",(long long)bv->value.integerval);
+		return true;
+	}
+
+	switch (fmt->tds5type) {
+
+		case TDS5_TYPE_VOID:
+			// no width and no value - null is all it can mean
+			debugWrite("value: (null)");
+			break;
+
+		case TDS5_TYPE_FLT4:
+		case TDS5_TYPE_FLT8:
+		case TDS5_TYPE_FLTN:
+			{
+			if (size!=sizeof(float) && size!=sizeof(double)) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
+			double	data=0.0;
+			if (size==sizeof(float)) {
+				float	f=0.0;
+				bytestring::copy(&f,value,sizeof(f));
+				data=f;
+			} else {
+				bytestring::copy(&data,value,sizeof(data));
+			}
+			bulkDouble(bv,data);
+			}
+			break;
+
+		case TDS5_TYPE_MONEY:
+		case TDS5_TYPE_SHORTMONEY:
+		case TDS5_TYPE_MONEYN:
+			{
+			// a 4-byte money is one signed count of
+			// ten-thousandths; an 8-byte one is two, the high
+			// half first, and both little-endian
+			if (size!=4 && size!=8) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
+			const byte_t	*vp=value;
+			int64_t		tenthousandths=0;
+			if (size==4) {
+				uint32_t	low=0;
+				readLE(vp,&low,&vp);
+				tenthousandths=(int32_t)low;
+			} else {
+				uint32_t	high=0;
+				uint32_t	low=0;
+				readLE(vp,&high,&vp);
+				readLE(vp,&low,&vp);
+				tenthousandths=(int64_t)
+					((((uint64_t)high)<<32)|low);
+			}
+			moneyValue(tenthousandths,bv);
+			}
+			break;
+
+		case TDS5_TYPE_DATETIME:
+		case TDS5_TYPE_SHORTDATE:
+		case TDS5_TYPE_DATETIMEN:
+			{
+			// 8 bytes is days since 1900 and three-hundredths of
+			// a second since midnight; 4 is days and whole
+			// minutes, both unsigned
+			if (size!=4 && size!=8) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
+			const byte_t	*vp=value;
+			int32_t		dayssince1900=0;
+			uint32_t	threehundredths=0;
+			if (size==4) {
+				uint16_t	days=0;
+				uint16_t	minutes=0;
+				readLE(vp,&days,&vp);
+				readLE(vp,&minutes,&vp);
+				dayssince1900=days;
+				threehundredths=((uint32_t)minutes)*60*300;
+			} else {
+				uint32_t	days=0;
+				readLE(vp,&days,&vp);
+				readLE(vp,&threehundredths,&vp);
+				dayssince1900=(int32_t)days;
+			}
+			dateTimeValue(dayssince1900,threehundredths,bv);
+			}
+			break;
+
+		case TDS5_TYPE_DECN:
+		case TDS5_TYPE_NUMN:
+			{
+			// Two things are inverted from the ms-tds form that
+			// bulkDecimal() reads, and preTds7Field() inverts
+			// the same two writing one out: the sign byte is 0
+			// for positive rather than 1, and the magnitude is
+			// big-endian rather than little-endian.
+			byte_t	magsize=(byte_t)(size-1);
+			if (magsize>TDS_DECIMAL_MAX_SIZE-1) {
+				debugWrite("invalid size: %d",size);
+				return false;
+			}
+			byte_t	magnitude[TDS_DECIMAL_MAX_SIZE-1];
+			bytestring::zero(magnitude,sizeof(magnitude));
+			for (byte_t i=0; i<magsize; i++) {
+				magnitude[i]=value[size-1-i];
+			}
+
+			stringbuffer	strb;
+			// FIXME: anything wider than 8 bytes overflows, the
+			// same way it does in paramValue()
+			bulkDecimal((value[0])?0:1,magnitude,
+					(magsize>8)?8:magsize,
+					fmt->scale,&strb);
+
+			// bound as a number rather than a string - ase
+			// refuses to convert a varchar to a decimal
+			// ("Implicit conversion from datatype 'VARCHAR' to
+			// 'DECIMAL' is not allowed")
+			bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
+			bv->isnull=cont->getNonNullBindValue();
+			bv->value.doubleval.value=
+				(double)charstring::convertToFloat(
+							strb.getString());
+			// FIXME: kludgy, but the same thing bulkDouble() does
+			bv->value.doubleval.precision=
+				(uint32_t)charstring::getLength(
+						strb.getString())-
+				((charstring::contains(
+					strb.getString(),'-'))?1:0)-
+				((charstring::contains(
+					strb.getString(),'.'))?1:0);
+			bv->value.doubleval.scale=fmt->scale;
+			debugWrite("value: %s",strb.getString());
+			}
+			break;
+
+		case TDS5_TYPE_VARCHAR:
+		case TDS5_TYPE_CHAR:
+		case TDS5_TYPE_LONGCHAR:
+		case TDS5_TYPE_TEXT:
+		case TDS5_TYPE_XML:
+			// Character data passes straight through as utf-8,
+			// the way preTds7Field() writes it - a tds 5.0
+			// paramfmt has no collation field, so nothing
+			// declares a code page to convert from.  A char is
+			// not blank padded out to its declared size here the
+			// way a bigchar is on the ms-tds path: the declared
+			// size isn't a width in tds 5.0, and a client that
+			// wants the padding sends it.
+			bulkString(bv,&rpcparampool,(const char *)value,size);
+			break;
+
+		case TDS5_TYPE_UNITEXT:
+			{
+			// utf-16, so it needs converting rather than copying.
+			// the copy is because the value isn't necessarily
+			// aligned for a ucs2_t read.
+			size_t	length=size/sizeof(ucs2_t);
+			ucs2_t	*value16=new ucs2_t[length+1];
+			bytestring::copy(value16,value,
+						length*sizeof(ucs2_t));
+			value16[length]=0;
+			size_t	value8size=0;
+			char	*value8=ucs2ToUtf8(value16,length,&value8size);
+			bulkString(bv,&rpcparampool,value8,value8size);
+			delete[] value8;
+			delete[] value16;
+			}
+			break;
+
+		case TDS5_TYPE_VARBINARY:
+		case TDS5_TYPE_BINARY:
+		case TDS5_TYPE_LONGBINARY:
+		case TDS5_TYPE_IMAGE:
+			bulkBinary(bv,&rpcparampool,value,size);
+			break;
+
+		case TDS5_TYPE_DATE:
+		case TDS5_TYPE_DATEN:
+		case TDS5_TYPE_TIME:
+		case TDS5_TYPE_TIMEN:
+			// FIXME: actually implement these.  A date is a
+			// signed count of days since 1900-01-01 and a time
+			// an unsigned count of three-hundredths of a second
+			// since midnight, but neither has ever been seen on
+			// the wire, and paramValue() leaves the ms-tds
+			// versions unimplemented too.  The value has already
+			// been stepped over, so the parameter just stays
+			// null.
+			debugWrite("unimplemented type - leaving null");
+			break;
+
+		default:
+			// Nothing else survives tds5TypeToMsType().  Leave
+			// the parameter null rather than guess, the way
+			// preTds7Field() writes a null for a type it has no
+			// case for; the value has already been stepped over,
+			// so the rest of the token still parses.
+			debugWrite("unhandled type - leaving null");
+			break;
+	}
+
+	return true;
+}
+
+// Writes a tds 5.0 paramfmt describing "count" parameters.  The caller
+// fills in each parameter's name, status, usertype, datatype, size and -
+// for a decimal or numeric - precision and scale; everything else is
+// derived from the datatype here, so that this and preTds7ParamsWrite()
+// can't disagree about a parameter's shape.
+//
+// The narrow token (0xEC) rather than paramfmt2 (0x20), because that's
+// what a real ase sends a client that didn't ask for wide tables, and
+// capability() doesn't offer them.
+//
+// The declared size is not the width the values have to be written at -
+// a real ase declares a decimal(9,2) at 5 where a ct-lib client declares
+// the same parameter at 33 - so nothing here caps what
+// preTds7ParamsWrite() puts on the wire.
+bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
+						uint16_t count) {
+
+	byte_t	token=TDS5_TOKEN_PARAMFMT;
+
+	debugStart("pre-tds7 param fmt write");
+	debugPreTds7TokenType(token);
+	debugWrite("count: %d",count);
+
+	// The token length counts bytes that aren't written yet, and every
+	// parameter block is a different size, so build the blocks into a
+	// scratch buffer and measure them - the same reason preTds7RowFmt()
+	// does it that way.
+	bytebuffer	params;
+
+	for (uint16_t i=0; i<count; i++) {
+
+		const tds5paramfmt	*fmt=&(fmts[i]);
+
+		debugStart("pre-tds7 param fmt %d",i);
+
+		// name.  single-byte characters, and the length is a single
+		// byte, so a longer name is truncated the way
+		// preTds7RowFmt() truncates a column name.
+		size_t	namelen=fmt->namesize;
+		if (namelen>255) {
+			namelen=255;
+		}
+		write(&params,(byte_t)namelen);
+		if (namelen) {
+			write(&params,fmt->name,namelen);
+		}
+		debugWrite("namelen: %lld",(long long)namelen);
+		debugWrite("name: %s",fmt->name);
+
+		// status.  one byte in this token, four in a paramfmt2.
+		write(&params,fmt->status);
+		debugWrite("status: 0x%02x",fmt->status);
+
+		// usertype.  0 means "no alias type", which is what
+		// preTds7RowFmt() sends for a column.
+		writeLE(&params,fmt->usertype);
+		debugWrite("usertype: %d",fmt->usertype);
+
+		// datatype
+		write(&params,fmt->tds5type);
+		debugPreTds7ColumnType(fmt->tds5type);
+
+		// size.  no table name after a blob's size, unlike a rowfmt.
+		byte_t	varintsize=preTds7VarintSize(fmt->tds5type);
+		switch (varintsize) {
+			case 0:
+				debugWrite("fixed, no size");
+				break;
+			case 4:
+			case 5:
+				writeLE(&params,fmt->size);
+				debugWrite("size: %d (32-bit)",fmt->size);
+				break;
+			default:
+				{
+				byte_t	size=(fmt->size>255)?
+							255:(byte_t)fmt->size;
+				write(&params,size);
+				debugWrite("size: %d (8-bit)",size);
+				}
+				break;
+		}
+
+		// precision and scale
+		if (fmt->tds5type==TDS5_TYPE_DECN ||
+				fmt->tds5type==TDS5_TYPE_NUMN) {
+			write(&params,fmt->precision);
+			write(&params,fmt->scale);
+			debugWrite("precision: %d",fmt->precision);
+			debugWrite("scale: %d",fmt->scale);
+		}
+
+		// locale.  Mandatory even when it's empty - the client reads
+		// it right after the type info, so leaving it out
+		// desynchronizes everything after this parameter.
+		write(&params,(byte_t)0);
+		debugWrite("locale length: 0");
+
+		debugEnd();
+	}
+
+	// the length covers the parameter count too, not just the blocks
+	size_t	tokenlength=sizeof(uint16_t)+params.getSize();
+
+	// Refuse rather than truncate.  A truncated paramfmt isn't a
+	// smaller set of parameters, it's a stream the client can't parse
+	// at all, and the params token behind it has no length of its own
+	// to recover from.  Class 16 for the same reason preTds7RowFmt()
+	// uses it when a result set won't fit in a rowfmt.
+	if (count>maxbindcount || tokenlength>65535) {
+		debugWrite("token too large: %lld",(long long)tokenlength);
+		debugEnd();
+		preTds7ParamError("Too many TDS 5.0 parameters to send.",true);
+		return false;
+	}
+
+	write(&resppacket,token);
+	writeLE(&resppacket,(uint16_t)tokenlength);
+	writeLE(&resppacket,(uint16_t)count);
+	write(&resppacket,params.getBuffer(),params.getSize());
+
+	debugWrite("token length: %lld",(long long)tokenlength);
+	debugEnd();
+
+	return true;
+}
+
+// Writes a tds 5.0 params token carrying "count" values, described by
+// the same format array the paramfmt in front of them was written from.
+// The token has no length field at all - it can only be parsed by
+// replaying that paramfmt - so there's nothing to measure here.
+bool sqlrprotocol_tds::preTds7ParamsWrite(const tds5paramfmt *fmts,
+						sqlrserverbindvar *bvs,
+						uint16_t count) {
+
+	byte_t	token=TDS5_TOKEN_PARAMS;
+
+	debugStart("pre-tds7 params write");
+	debugPreTds7TokenType(token);
+	debugWrite("count: %d",count);
+
+	if (count>maxbindcount) {
+		debugWrite("too many parameters: %d",count);
+		debugEnd();
+		preTds7ParamError("Too many TDS 5.0 parameters to send.",true);
+		return false;
+	}
+
+	write(&resppacket,token);
+
+	for (uint16_t i=0; i<count; i++) {
+		preTds7ParamValueWrite(&(fmts[i]),&(bvs[i]));
+	}
+
+	debugEnd();
+
+	return true;
+}
+
+// Writes one parameter's value into a params token.
+//
+// This is preTds7Field() sourced from a bind variable rather than from a
+// result-set field, and it isn't that function for two reasons: a bind
+// holds a value in whatever form the back end put there rather than
+// always as text, and it holds binary as raw bytes rather than as the
+// hex text the ct-lib back ends render a binary column as.
+void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
+						sqlrserverbindvar *bv) {
+
+	debugStart("pre-tds7 param value write");
+	debugPreTds7ColumnType(fmt->tds5type);
+
+	// The bind's value, kept in every form the types below need it in.
+	// The text rendering is what the date/time, money and decimal
+	// writers parse, the same way preTds7Field() gets them.
+	stringbuffer	strb;
+	const char	*field=NULL;
+	uint64_t	fieldsize=0;
+	int64_t		intval=0;
+	double		dblval=0.0;
+	bool		null=false;
+
+	switch (bv->type) {
+		case SQLRSERVERBINDVARTYPE_INTEGER:
+			intval=bv->value.integerval;
+			dblval=(double)intval;
+			strb.append(intval);
+			break;
+		case SQLRSERVERBINDVARTYPE_DOUBLE:
+			dblval=bv->value.doubleval.value;
+			intval=(int64_t)dblval;
+			strb.append(dblval,
+					bv->value.doubleval.precision,
+					bv->value.doubleval.scale);
+			break;
+		case SQLRSERVERBINDVARTYPE_DATE:
+			{
+			char	buffer[48];
+			charstring::printf(buffer,sizeof(buffer),
+					"%04d-%02d-%02d %02d:%02d:%02d.%06d",
+					(int32_t)bv->value.dateval.year,
+					(int32_t)bv->value.dateval.month,
+					(int32_t)bv->value.dateval.day,
+					(int32_t)bv->value.dateval.hour,
+					(int32_t)bv->value.dateval.minute,
+					(int32_t)bv->value.dateval.second,
+					(int32_t)bv->value.dateval.microsecond);
+			strb.append(buffer);
+			}
+			break;
+		case SQLRSERVERBINDVARTYPE_STRING:
+		case SQLRSERVERBINDVARTYPE_BLOB:
+		case SQLRSERVERBINDVARTYPE_CLOB:
+			field=bv->value.stringval;
+			fieldsize=bv->valuesize;
+			intval=charstring::convertToInteger(field);
+			dblval=charstring::convertToFloat(field);
+			break;
+		default:
+			// null, nullblob, nullclob, cursor, and everything
+			// else that has no value to send
+			null=true;
+			break;
+	}
+	if (!field) {
+		field=strb.getString();
+		fieldsize=strb.getStringLength();
+	}
+	if (!field) {
+		field="";
+		fieldsize=0;
+		null=true;
+	}
+
+	if (null) {
+		preTds7ParamNullWrite(fmt);
+		debugEnd();
+		return;
+	}
+
+	switch (fmt->tds5type) {
+
+		// the n-types: a size byte, then the value at that width.
+		// the width comes from what the paramfmt declared, narrowed
+		// to one the type allows.
+		case TDS5_TYPE_INTN:
+		case TDS5_TYPE_UINTN:
+			{
+			byte_t	size=(byte_t)fmt->size;
+			if (size!=1 && size!=2 && size!=4 && size!=8) {
+				size=sizeof(int64_t);
+			}
+			write(&resppacket,size);
+			writeIntN(intval,size);
+			debugWrite("size: %d",size);
+			debugWrite("data: %lld",(long long)intval);
+			}
+			break;
+		case TDS5_TYPE_FLTN:
+			{
+			byte_t	size=(fmt->size==sizeof(float))?
+						sizeof(float):sizeof(double);
+			write(&resppacket,size);
+			if (size==sizeof(float)) {
+				write(&resppacket,(float)dblval);
+			} else {
+				write(&resppacket,dblval);
+			}
+			debugWrite("size: %d",size);
+			debugWrite("data: %f",dblval);
+			}
+			break;
+		case TDS5_TYPE_MONEYN:
+			{
+			byte_t	size=(fmt->size==4)?4:8;
+			write(&resppacket,size);
+			int64_t	data=moneyValue(field);
+			if (size==4) {
+				writeLE(&resppacket,(uint32_t)(int32_t)data);
+			} else {
+				// the high half goes first, ahead of the low
+				// half, and both are little-endian
+				writeLE(&resppacket,(uint32_t)
+					((data&0xFFFFFFFF00000000LL)>>32));
+				writeLE(&resppacket,(uint32_t)
+					(data&0x00000000FFFFFFFFLL));
+			}
+			debugWrite("size: %d",size);
+			debugWrite("data: %lld (%s)",(long long)data,field);
+			}
+			break;
+		case TDS5_TYPE_DATETIMEN:
+			{
+			byte_t	size=(fmt->size==4)?4:8;
+			write(&resppacket,size);
+			int32_t		dayssince1900;
+			uint32_t	threehundredths;
+			dateTime(field,&dayssince1900,&threehundredths);
+			debugWrite("size: %d",size);
+			if (size==4) {
+				// days and whole minutes
+				uint16_t	days=(dayssince1900>0)?
+							dayssince1900:0;
+				uint16_t	minutes=threehundredths/300/60;
+				writeLE(&resppacket,days);
+				writeLE(&resppacket,minutes);
+				debugWrite("data: %d,%d",(uint32_t)days,
+							(uint32_t)minutes);
+			} else {
+				// days and three-hundredths of a second
+				writeLE(&resppacket,(uint32_t)dayssince1900);
+				writeLE(&resppacket,threehundredths);
+				debugWrite("data: %d,%d",dayssince1900,
+							threehundredths);
+			}
+			}
+			break;
+
+		// varint 0 - the value alone, with no length in front of it
+		case TDS5_TYPE_INT1:
+		case TDS5_TYPE_UINT1:
+		case TDS5_TYPE_SINT1:
+		case TDS5_TYPE_BIT:
+		case TDS5_TYPE_INT2:
+		case TDS5_TYPE_UINT2:
+		case TDS5_TYPE_INT4:
+		case TDS5_TYPE_UINT4:
+		case TDS5_TYPE_INT8:
+		case TDS5_TYPE_UINT8:
+			writeIntN(intval,preTds7FixedSize(fmt->tds5type));
+			debugWrite("data: %lld",(long long)intval);
+			break;
+		case TDS5_TYPE_FLT4:
+			write(&resppacket,(float)dblval);
+			debugWrite("data: %f",dblval);
+			break;
+		case TDS5_TYPE_FLT8:
+			write(&resppacket,dblval);
+			debugWrite("data: %f",dblval);
+			break;
+		case TDS5_TYPE_MONEY:
+		case TDS5_TYPE_SHORTMONEY:
+			{
+			int64_t	data=moneyValue(field);
+			if (fmt->tds5type==TDS5_TYPE_SHORTMONEY) {
+				writeLE(&resppacket,(uint32_t)(int32_t)data);
+			} else {
+				writeLE(&resppacket,(uint32_t)
+					((data&0xFFFFFFFF00000000LL)>>32));
+				writeLE(&resppacket,(uint32_t)
+					(data&0x00000000FFFFFFFFLL));
+			}
+			debugWrite("data: %lld (%s)",(long long)data,field);
+			}
+			break;
+		case TDS5_TYPE_DATETIME:
+		case TDS5_TYPE_SHORTDATE:
+			{
+			int32_t		dayssince1900;
+			uint32_t	threehundredths;
+			dateTime(field,&dayssince1900,&threehundredths);
+			if (fmt->tds5type==TDS5_TYPE_SHORTDATE) {
+				uint16_t	days=(dayssince1900>0)?
+							dayssince1900:0;
+				uint16_t	minutes=threehundredths/300/60;
+				writeLE(&resppacket,days);
+				writeLE(&resppacket,minutes);
+				debugWrite("data: %d,%d",(uint32_t)days,
+							(uint32_t)minutes);
+			} else {
+				writeLE(&resppacket,(uint32_t)dayssince1900);
+				writeLE(&resppacket,threehundredths);
+				debugWrite("data: %d,%d",dayssince1900,
+							threehundredths);
+			}
+			}
+			break;
+
+		case TDS5_TYPE_DECN:
+		case TDS5_TYPE_NUMN:
+			{
+			byte_t	ispositive;
+			byte_t	size;
+			byte_t	val[TDS_DECIMAL_MAX_SIZE-1];
+			// decimal() only fills the low 4 or 8 bytes, so zero
+			// the rest before reversing a wider window of it
+			bytestring::zero(val,sizeof(val));
+			decimal(field,&ispositive,&size,val);
+
+			// the sign byte is 0 for positive, the opposite way
+			// round from decimal()'s "ispositive", and the
+			// magnitude is big-endian where decimal() builds it
+			// little-endian.  the width is decimalSize() of the
+			// declared precision, counting the sign byte, and
+			// not decimal()'s "size", which follows the value's
+			// own digit count.
+			byte_t	wiresize=decimalSize(fmt->precision);
+			write(&resppacket,wiresize);
+			write(&resppacket,(byte_t)((ispositive)?0:1));
+			for (byte_t i=0; i<wiresize-1; i++) {
+				write(&resppacket,val[wiresize-2-i]);
+			}
+
+			debugWrite("size: %d",wiresize);
+			debugWrite("sign: %d",(ispositive)?0:1);
+			debugWrite("data: %s (precision %d)",
+						field,fmt->precision);
+			}
+			break;
+
+		case TDS5_TYPE_VARCHAR:
+		case TDS5_TYPE_CHAR:
+			{
+			// character data goes out as utf-8, the way
+			// preTds7Field() writes it - a tds 5.0 paramfmt has
+			// no collation field to declare anything else
+			uint64_t	size=(fieldsize>255)?255:fieldsize;
+			write(&resppacket,(byte_t)size);
+			write(&resppacket,field,size);
+			debugWrite("size: %lld",(long long)size);
+			debugWrite("data: %.*s",(int)size,field);
+			}
+			break;
+
+		case TDS5_TYPE_VARBINARY:
+		case TDS5_TYPE_BINARY:
+			{
+			// raw bytes, not the hex text preTds7Field() decodes
+			// a binary column value from
+			uint64_t	size=(fieldsize>255)?255:fieldsize;
+			write(&resppacket,(byte_t)size);
+			write(&resppacket,field,size);
+			debugWrite("size: %lld",(long long)size);
+			debugHexDump((byte_t *)field,size);
+			}
+			break;
+
+		case TDS5_TYPE_TEXT:
+		case TDS5_TYPE_IMAGE:
+			// a non-null blob value is a text pointer, a
+			// timestamp, a 32-bit length and then the data.
+			// lobData() writes the first two, and the tds 5.0
+			// bytes for text and image are the same 0x23 and
+			// 0x22 it switches on, so it takes one as-is.
+			lobData(fmt->tds5type);
+			writeLE(&resppacket,(uint32_t)fieldsize);
+			write(&resppacket,field,fieldsize);
+			debugWrite("size: %lld",(long long)fieldsize);
+			debugHexDump((byte_t *)field,fieldsize);
+			break;
+
+		case TDS5_TYPE_LONGCHAR:
+		case TDS5_TYPE_LONGBINARY:
+		case TDS5_TYPE_XML:
+		case TDS5_TYPE_UNITEXT:
+			// varint 4 or 5 with no text pointer - a 32-bit
+			// length and then the data
+			writeLE(&resppacket,(uint32_t)fieldsize);
+			write(&resppacket,field,fieldsize);
+			debugWrite("size: %lld",(long long)fieldsize);
+			break;
+
+		default:
+			// Void, and the date and time types the reader
+			// doesn't decode either.  Write the null form rather
+			// than nothing at all, so a type added later without
+			// a case here costs one value rather than the whole
+			// token.
+			// FIXME: implement date and time, both here and in
+			// preTds7ParamValueRead()
+			debugWrite("unhandled type - writing null");
+			preTds7ParamNullWrite(fmt);
+			break;
+	}
+
+	debugEnd();
+}
+
+// A parameter's null form, which is decided entirely by its type's
+// varint class.  preTds7Field() writes the same shapes for a row field.
+void sqlrprotocol_tds::preTds7ParamNullWrite(const tds5paramfmt *fmt) {
+
+	debugWrite("data: null");
+
+	switch (preTds7VarintSize(fmt->tds5type)) {
+		case 0:
+			{
+			// A fixed-length type has no null form at all -
+			// there's no length field to set to zero - so a null
+			// goes out as a zero value at the type's own width.
+			byte_t	zero[8];
+			bytestring::zero(zero,sizeof(zero));
+			write(&resppacket,zero,
+					preTds7FixedSize(fmt->tds5type));
+			}
+			break;
+		case 4:
+			if (fmt->tds5type==TDS5_TYPE_TEXT ||
+					fmt->tds5type==TDS5_TYPE_IMAGE) {
+				// a text-pointer length of 0, and nothing
+				// after it
+				write(&resppacket,(byte_t)0);
+			} else {
+				// xml and unitext are varint 4 but carry no
+				// text pointer, so their null is a length
+				// of 0
+				writeLE(&resppacket,(uint32_t)0);
+			}
+			break;
+		case 5:
+			writeLE(&resppacket,(uint32_t)0);
+			break;
+		default:
+			// A length of 0 is a varint-1 type's only null form,
+			// and it's also what an empty value comes out as -
+			// so an empty varchar and a null varchar are the
+			// same bytes, and the client reads both as null.
+			write(&resppacket,(byte_t)0);
+			break;
 	}
 }
 
@@ -11262,58 +14115,8 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 
 
 	// do whatever the proc asked for
-	bool	retval=true;
 	rpcfailed=false;
-	switch (procid) {
-		case SP_CURSOR:
-			retval=cursorPositioned();
-			break;
-		case SP_CURSOR_OPEN:
-			retval=cursorOpen(nometadata);
-			break;
-		case SP_CURSOR_PREPARE:
-			retval=cursorPrepare();
-			break;
-		case SP_CURSOR_EXECUTE:
-			retval=cursorExecute(nometadata);
-			break;
-		case SP_CURSOR_PREP_EXEC:
-			retval=cursorPrepExec(nometadata);
-			break;
-		case SP_CURSOR_UNPREPARE:
-			retval=cursorUnprepare();
-			break;
-		case SP_CURSOR_FETCH:
-			retval=cursorFetch(nometadata);
-			break;
-		case SP_CURSOR_OPTION:
-			retval=cursorOption();
-			break;
-		case SP_CURSOR_CLOSE:
-			retval=cursorClose();
-			break;
-		case SP_EXECUTE_SQL:
-			retval=executeSql(nometadata);
-			break;
-		case SP_PREPARE:
-			retval=prepare(false,false,nometadata);
-			break;
-		case SP_EXECUTE:
-			retval=execute(nometadata);
-			break;
-		case SP_PREP_EXEC:
-			retval=prepare(true,false,nometadata);
-			break;
-		case SP_PREP_EXEC_RPC:
-			retval=prepare(true,true,nometadata);
-			break;
-		case SP_UNPREPARE:
-			retval=unprepare();
-			break;
-		default:
-			retval=namedProc(procname,nometadata);
-			break;
-	}
+	bool	retval=runProc(procid,procname,nometadata);
 
 	// a failed rpc has to set DONE_ERROR - the ct-lib client reports
 	// CS_CMD_SUCCEED for a done without it, so a failed rpc would report
@@ -11334,6 +14137,51 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	debugEnd();
 
 	return retval;
+}
+
+// Runs whichever proc the call named, once the caller has decoded it and
+// filled in the rpcparams[] family.  Nothing in here reads the wire, so
+// both dialects share it: an ms-tds rpc names the numbered procs by id
+// and everything else by string, and a tds 5.0 dbrpc names all of them
+// by string, but procNameToProcId() maps a name back to an id either
+// way, so both arrive here with the same two arguments.
+bool sqlrprotocol_tds::runProc(uint16_t procid,
+					const char *procname,
+					bool nometadata) {
+	switch (procid) {
+		case SP_CURSOR:
+			return cursorPositioned();
+		case SP_CURSOR_OPEN:
+			return cursorOpen(nometadata);
+		case SP_CURSOR_PREPARE:
+			return cursorPrepare();
+		case SP_CURSOR_EXECUTE:
+			return cursorExecute(nometadata);
+		case SP_CURSOR_PREP_EXEC:
+			return cursorPrepExec(nometadata);
+		case SP_CURSOR_UNPREPARE:
+			return cursorUnprepare();
+		case SP_CURSOR_FETCH:
+			return cursorFetch(nometadata);
+		case SP_CURSOR_OPTION:
+			return cursorOption();
+		case SP_CURSOR_CLOSE:
+			return cursorClose();
+		case SP_EXECUTE_SQL:
+			return executeSql(nometadata);
+		case SP_PREPARE:
+			return prepare(false,false,nometadata);
+		case SP_EXECUTE:
+			return execute(nometadata);
+		case SP_PREP_EXEC:
+			return prepare(true,false,nometadata);
+		case SP_PREP_EXEC_RPC:
+			return prepare(true,true,nometadata);
+		case SP_UNPREPARE:
+			return unprepare();
+		default:
+			return namedProc(procname,nometadata);
+	}
 }
 
 uint16_t sqlrprotocol_tds::procNameToProcId(const char *procname) {
@@ -11613,6 +14461,24 @@ void sqlrprotocol_tds::releaseCursorHandles(sqlrservercursor *cursor) {
 						node; node=node->getNext()) {
 			handles[i]->remove(node->getValue());
 		}
+	}
+
+	// a tds 5.0 dynamic sql id names one of those prepared statement
+	// handles, so drop any that just went away with it
+	linkedlist<char *>	deadids;
+	linkedlist<char *>	*idkeys=dynamicids.getKeys();
+	for (listnode<char *> *node=idkeys->getFirst();
+					node; node=node->getNext()) {
+		uint32_t	handle=0;
+		if (dynamicids.getValue(node->getValue(),&handle) &&
+				!handleCursor(&stmthandles,handle)) {
+			deadids.append(node->getValue());
+		}
+	}
+	for (listnode<char *> *node=deadids.getFirst();
+					node; node=node->getNext()) {
+		debugWrite("dynamic id: %s (dropped)",node->getValue());
+		dynamicids.remove(node->getValue());
 	}
 
 	if (pendingcursor==cursor) {
@@ -11922,8 +14788,112 @@ void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
 		return;
 	}
 
+	// A result set in tds 5.0 is a rowfmt (0xEE) and rows (0xD1), not
+	// the colmetadata (0x81) that colMetaData() writes - 0x81 is a
+	// cursor-delete token there.  A real ase closes an rpc's result set
+	// with a done-in-proc just as sql server does, so only the two
+	// tokens in front of it differ.
+	if (pretds7) {
+		// A result set that's too wide for the token is refused in
+		// there, with its own error and done, so don't send a
+		// second one.  DONE_MORE on that refusal because at least
+		// the caller's own closing done still follows it.
+		if (preTds7RowFmt(cursor,true)) {
+			doneInProc(DONE_COUNT,0,preTds7Rows(cursor));
+		}
+		debugEnd();
+		return;
+	}
+
 	colMetaData(cursor,nometadata);
 	doneInProc(DONE_COUNT,0,rows(cursor,maxrows));
+
+	debugEnd();
+}
+
+// Writes a proc's output parameters in whichever dialect the session
+// negotiated.  The two are different tokens rather than two shapes of
+// one - ms-tds gives each parameter its own self-describing returnvalue
+// (0xAC), and tds 5.0 sends the whole set as a paramfmt/params pair, the
+// way a result set is a rowfmt and rows.
+//
+// A real ase does send 0xAC, but only to a client that set response
+// capability bit 45, TDS_NO_WIDETABLES.  The sap client leaves it clear,
+// so the pair is what actually gets asked for.
+void sqlrprotocol_tds::procReturnValues(sqlrservercursor *cursor) {
+	if (pretds7) {
+		preTds7ReturnValues(cursor);
+	} else {
+		returnValues(cursor);
+	}
+}
+
+// The tds 5.0 counterpart of returnValues().  The format each parameter
+// goes back in is the one the client declared it with, on the same
+// reasoning returnValue() echoes the declared ms-tds type: sql relay's
+// own bind type can't tell a char(20) from a varchar(max), and
+// ct_describe() reports whatever arrives.  A real ase re-derives the
+// type instead and sends a fixed INT4 where the client declared an
+// INTN(4), but a fixed type has no null form, so echoing what came in
+// keeps a null output parameter expressible.
+void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
+
+	debugStart("pre-tds7 return-values");
+
+	uint16_t		outbindcount=cont->getOutputBindCount(cursor);
+	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
+	debugWrite("outbindcount: %d",outbindcount);
+
+	// The paramfmt and the params are two tokens but one set, and the
+	// second can only be parsed by replaying the first, so both are
+	// written from the same array - built here rather than in place,
+	// since the return value drops out of the middle of the output
+	// binds and the two tokens must not disagree about the count.
+	uint16_t	count=0;
+	for (uint16_t i=0; i<outbindcount && count<maxbindcount; i++) {
+
+		// the return value went out in the returnstatus token, so
+		// it isn't one of these
+		if (outbindparams[i]==RPC_RETURN_VALUE_PARAM) {
+			debugWrite("param %d: (return value, skipped)",i);
+			continue;
+		}
+
+		uint16_t	rpcparam=outbindparams[i];
+
+		tds5paramfmt	*fmt=&(pretds7outfmts[count]);
+		fmt->name=rpcparamnames[rpcparam];
+		fmt->namesize=rpcparamnamesizes[rpcparam];
+		fmt->status=TDS5_PARAM_RETURN;
+		// 0 rather than the systypes number a real ase echoes for a
+		// decimal - the client asserts whatever arrives, and this
+		// module has never sent one
+		fmt->usertype=0;
+		fmt->tds5type=rpcparamtds5types[rpcparam];
+		fmt->mstype=rpcparamtdstypes[rpcparam];
+		fmt->varintsize=preTds7VarintSize(fmt->tds5type);
+		fmt->size=rpcparammaxsizes[rpcparam];
+		fmt->precision=rpcparamprecisions[rpcparam];
+		fmt->scale=rpcparamscales[rpcparam];
+
+		pretds7outbinds[count]=outbinds[i];
+
+		count++;
+	}
+
+	// a proc with no output parameters sends neither token, the way a
+	// real ase sends neither
+	if (!count) {
+		debugWrite("no output parameters");
+		debugEnd();
+		return;
+	}
+
+	// the paramfmt refuses with its own error and done if the set won't
+	// fit, and the params token behind it can't be parsed without it
+	if (preTds7ParamFmtWrite(pretds7outfmts,count)) {
+		preTds7ParamsWrite(pretds7outfmts,pretds7outbinds,count);
+	}
 
 	debugEnd();
 }
@@ -11986,7 +14956,7 @@ bool sqlrprotocol_tds::namedProc(const char *procname, bool nometadata) {
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
 		returnStatus(procReturnValue(cursor));
-		returnValues(cursor);
+		procReturnValues(cursor);
 	} else {
 		rpcError(cursor,dbisase);
 	}
@@ -12115,7 +15085,7 @@ bool sqlrprotocol_tds::backendCursorExecute(uint32_t handle,
 	if (success) {
 		rpcResultSet(cursor,nometadata,0);
 		returnStatus(RPC_STATUS_SUCCESS);
-		returnValues(cursor);
+		procReturnValues(cursor);
 	} else {
 		rpcError(cursor);
 	}
@@ -12199,6 +15169,115 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	return true;
 }
 
+// Prepares a query on a cursor of its own and mints a handle for it.
+// Shared with tds 5.0 dynamic sql, which prepares by string id and looks
+// the handle up in a map of its own.
+//
+// "oldhandle" is the handle the caller is re-preparing, if it's
+// re-preparing one - a live one's cursor is dropped first.  "exec" runs
+// the query as well, with the parameters starting at "firstvalue", the
+// way sp_prepexec does.
+bool sqlrprotocol_tds::prepareStatement(uint32_t oldhandle,
+					const char *query,
+					size_t querylen,
+					bool exec,
+					uint16_t firstvalue,
+					sqlrservercursor **cursorout,
+					uint32_t *handleout) {
+
+	*cursorout=NULL;
+	*handleout=0;
+
+	// re-preparing always mints a new handle - a backend-owned handle
+	// isn't re-prepared on the backend either
+	sqlrservercursor	*cursor=handleCursor(&stmthandles,oldhandle);
+	if (cursor) {
+		// drop the cursor a live handle was holding
+		stmthandles.remove(oldhandle);
+		releaseCursor(cursor);
+	}
+
+	// get an available cursor
+	cursor=availableCursor();
+	if (!cursor) {
+		return false;
+	}
+	*cursorout=cursor;
+
+	uint32_t	handle=newHandle();
+
+	// prepare the query
+	bool	success=cont->prepareQuery(cursor,query,querylen,
+							true,true,true,true);
+
+	if (success) {
+		// remember how many bind markers the statement has, so that
+		// an execute can ignore any parameters past the last one
+		// (see executeStatement())
+		bindmarkercount.setValue(cursor,
+					cont->countBindVariables(
+						cont->getQueryBuffer(cursor),
+						cont->getQuerySize(cursor)));
+		executeflag.setValue(cursor,true);
+		if (exec) {
+			bindParams(cursor,firstvalue);
+			success=cont->executeQuery(cursor,true,true,true,true);
+			executeflag.setValue(cursor,false);
+		}
+	}
+
+	if (!success) {
+		return false;
+	}
+
+	// hang on to the cursor - the execute will want it
+	stmthandles.setValue(handle,cursor);
+
+	*handleout=handle;
+
+	return true;
+}
+
+// Binds and runs a query that prepareStatement() prepared.  Shared with
+// tds 5.0 dynamic sql.  "firstvalue" is which parameter the values start
+// at.
+bool sqlrprotocol_tds::executeStatement(sqlrservercursor *cursor,
+					uint16_t firstvalue) {
+
+	bindParams(cursor,firstvalue);
+
+	// A client can send more values than the statement has bind markers.
+	// Sql server rejects the call outright, but sybase just ignores the
+	// extras, and a backend that runs the statement as plain sql with
+	// positional parameters (sap.cpp) has no way to ignore them - it
+	// hands every bind to the database, which then rejects the whole
+	// statement.  So drop the extras here instead, before they reach
+	// the backend.
+	uint16_t	markers=0;
+	if (bindmarkercount.getValue(cursor,&markers) &&
+			cont->getInputBindCount(cursor)>markers) {
+		debugWrite("capping input binds at %d marker(s)",markers);
+		cont->setInputBindCount(cursor,markers);
+	}
+
+	bool	success=cont->executeQuery(cursor,true,true,true,true);
+	executeflag.setValue(cursor,false);
+
+	return success;
+}
+
+// Drops a statement that prepareStatement() prepared, along with
+// everything kept alongside its cursor.  Shared with tds 5.0 dynamic
+// sql.
+void sqlrprotocol_tds::unprepareStatement(uint32_t handle,
+					sqlrservercursor *cursor) {
+	stmthandles.remove(handle);
+	executeflag.remove(cursor);
+	bindmarkercount.remove(cursor);
+	releasePositionRows(cursor);
+	releaseCursor(cursor);
+}
+
 bool sqlrprotocol_tds::prepare(bool prepexec,
 					bool rpcsyntax,
 					bool nometadata) {
@@ -12252,45 +15331,18 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		return rpcQueryTooLargeError(querylen);
 	}
 
-	// re-preparing always mints a new handle - a backend-owned handle
-	// isn't re-prepared on the backend either
-	uint32_t		handle=(uint32_t)paramInteger(0);
-	sqlrservercursor	*cursor=handleCursor(&stmthandles,handle);
-	if (cursor) {
-		// drop the cursor a live handle was holding
-		stmthandles.remove(handle);
-		releaseCursor(cursor);
-	}
+	sqlrservercursor	*cursor=NULL;
+	uint32_t		handle=0;
+	bool	success=prepareStatement((uint32_t)paramInteger(0),
+						query,querylen,
+						prepexec,firstvalue,
+						&cursor,&handle);
 
-	// get an available cursor
-	cursor=availableCursor();
-	if (!cursor) {
-		delete[] query;
-		debugEnd();
-		return rpcNoCursorAvailableError();
-	}
-
-	handle=newHandle();
-
-	// prepare the query
-	bool	success=cont->prepareQuery(cursor,query,querylen,
-							true,true,true,true);
 	delete[] query;
 
-	if (success) {
-		// remember how many bind markers the statement has, so that
-		// sp_execute can ignore any parameters past the last one
-		// (see execute())
-		bindmarkercount.setValue(cursor,
-					cont->countBindVariables(
-						cont->getQueryBuffer(cursor),
-						cont->getQuerySize(cursor)));
-		executeflag.setValue(cursor,true);
-		if (prepexec) {
-			bindParams(cursor,firstvalue);
-			success=cont->executeQuery(cursor,true,true,true,true);
-			executeflag.setValue(cursor,false);
-		}
+	if (!cursor) {
+		debugEnd();
+		return rpcNoCursorAvailableError();
 	}
 
 	if (!success) {
@@ -12301,9 +15353,6 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		debugEnd();
 		return true;
 	}
-
-	// hang on to the cursor - sp_execute will want it
-	stmthandles.setValue(handle,cursor);
 
 	debugWrite("prepared handle: %d",handle);
 
@@ -12353,24 +15402,7 @@ bool sqlrprotocol_tds::execute(bool nometadata) {
 	debugWrite("prepared handle: %d",handle);
 
 	// bind and run the prepared query
-	bindParams(cursor,1);
-
-	// A client can send more values than the statement has bind markers.
-	// Sql server rejects the call outright, but sybase just ignores the
-	// extras, and a backend that runs the statement as plain sql with
-	// positional parameters (sap.cpp) has no way to ignore them - it
-	// hands every bind to the database, which then rejects the whole
-	// statement.  So drop the extras here instead, before they reach
-	// the backend.
-	uint16_t	markers=0;
-	if (bindmarkercount.getValue(cursor,&markers) &&
-			cont->getInputBindCount(cursor)>markers) {
-		debugWrite("capping input binds at %d marker(s)",markers);
-		cont->setInputBindCount(cursor,markers);
-	}
-
-	bool	success=cont->executeQuery(cursor,true,true,true,true);
-	executeflag.setValue(cursor,false);
+	bool	success=executeStatement(cursor,1);
 
 	// build the response
 	if (success) {
@@ -12409,11 +15441,7 @@ bool sqlrprotocol_tds::unprepare() {
 
 	debugWrite("prepared handle: %d",handle);
 
-	stmthandles.remove(handle);
-	executeflag.remove(cursor);
-	bindmarkercount.remove(cursor);
-	releasePositionRows(cursor);
-	releaseCursor(cursor);
+	unprepareStatement(handle,cursor);
 
 	returnStatus(RPC_STATUS_SUCCESS);
 
@@ -13983,6 +17011,11 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	// tdstype is rewritten just below to read the value
 	if (bv) {
 		rpcparamtdstypes[param]=tdstype;
+		// this parameter arrived over ms-tds, so it has no tds 5.0
+		// type byte to echo.  0 rather than left alone: a tds 5.0
+		// session that sends an ms-tds rpc packet still answers it
+		// through preTds7ReturnValues(), which reads this.
+		rpcparamtds5types[param]=0;
 		rpcparammaxsizes[param]=maxsize;
 		rpcparamprecisions[param]=precision;
 		rpcparamscales[param]=scale;
@@ -15381,6 +18414,13 @@ void sqlrprotocol_tds::done(byte_t token,
 	}
 }
 
+// "curcmd" is only ever a CurCmd - every caller passes 0, and the field
+// is a TransState rather than a CurCmd in tds 5.0, which is why it goes
+// through transState() there.  Self-guarding the same way transState()
+// itself is: for an ms-tds session it hands back exactly what the caller
+// asked for, so the ms-tds wire can't move.  A done-in-proc used to be
+// an ms-tds-only token, but a tds 5.0 dbrpc closes its result set with
+// one too.
 void sqlrprotocol_tds::doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount) {
@@ -15389,7 +18429,8 @@ void sqlrprotocol_tds::doneInProc(uint16_t status,
 	// always sets DONE_MORE on one.  without that bit freetds takes it for
 	// the last one and stops reading, leaving every command after it one
 	// response behind.
-	done(TOKEN_DONEINPROC,status|DONE_MORE,curcmd,donerowcount);
+	done(TOKEN_DONEINPROC,status|DONE_MORE,
+			(pretds7)?transState():curcmd,donerowcount);
 }
 
 void sqlrprotocol_tds::returnStatus(uint32_t value) {
@@ -15495,9 +18536,22 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 	debugEnd();
 }
 
+// One unnamed integer output parameter, which is how the numbered procs
+// hand a handle back.  A tds 5.0 session gets the paramfmt/params pair
+// instead of the ms-tds returnvalue token, the same swap
+// procReturnValues() makes.
+//
+// A pair carries the whole set rather than one parameter, so this only
+// works where the proc sends exactly one - preTds7DbRpc() refuses the
+// procs that send several.
 void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 						int32_t value,
 						bool isnull) {
+
+	if (pretds7) {
+		preTds7ReturnValueInteger(value,isnull);
+		return;
+	}
 
 	debugStart("return-value");
 
@@ -15516,6 +18570,48 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 		write(&resppacket,(byte_t)sizeof(int32_t));
 		writeLE(&resppacket,(uint32_t)value);
 		debugWrite("value: %d",value);
+	}
+
+	debugEnd();
+}
+
+// the tds 5.0 counterpart of returnValueInteger().  No name - the ms-tds
+// token doesn't carry one here either, and a parameter is identified by
+// position in this dialect anyway.
+void sqlrprotocol_tds::preTds7ReturnValueInteger(int32_t value,
+						bool isnull) {
+
+	debugStart("pre-tds7 return-value integer");
+
+	tds5paramfmt	*fmt=&(pretds7outfmts[0]);
+	fmt->name="";
+	fmt->namesize=0;
+	fmt->status=TDS5_PARAM_RETURN;
+	fmt->usertype=0;
+	// intn rather than a fixed int4, so that a null can be expressed -
+	// a fixed type has no length field to set to zero
+	fmt->tds5type=TDS5_TYPE_INTN;
+	fmt->mstype=TDS_TYPE_INTN;
+	fmt->varintsize=preTds7VarintSize(fmt->tds5type);
+	fmt->size=sizeof(int32_t);
+	fmt->precision=0;
+	fmt->scale=0;
+
+	sqlrserverbindvar	*bv=&(pretds7outbinds[0]);
+	bv->variable=NULL;
+	bv->variablesize=0;
+	bv->valuesize=0;
+	bv->isnull=cont->getNullBindValue();
+	if (isnull) {
+		bv->type=SQLRSERVERBINDVARTYPE_NULL;
+		bv->value.stringval=NULL;
+	} else {
+		bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
+		bv->value.integerval=value;
+	}
+
+	if (preTds7ParamFmtWrite(pretds7outfmts,1)) {
+		preTds7ParamsWrite(pretds7outfmts,pretds7outbinds,1);
 	}
 
 	debugEnd();
@@ -15892,10 +18988,12 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 	debugEnd();
 }
 
+// self-guarded the same way doneInProc() is, and for the same reason
 void sqlrprotocol_tds::doneProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount) {
-	done(TOKEN_DONEPROC,status,curcmd,donerowcount);
+	done(TOKEN_DONEPROC,status,
+			(pretds7)?transState():curcmd,donerowcount);
 }
 
 void sqlrprotocol_tds::debugSystemError() {
