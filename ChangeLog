@@ -644,6 +644,10 @@
 		open client library the connection already links, and an
 		instance without one still refuses such logins with a real
 		error rather than letting an empty password through
+	fixed an off-by-one bounds check in the oracle protocol module's
+		bindParameters() that let a bind index equal to maxbindcount
+		through instead of being skipped, causing an out-of-bounds array
+		access
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

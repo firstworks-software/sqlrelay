@@ -6247,7 +6247,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 			return false;
 		}
 
-		if (i>maxbindcount) {
+		if (i>=maxbindcount) {
 			continue;
 		}
 
