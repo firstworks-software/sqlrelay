@@ -10,6 +10,9 @@
 #include <rudiments/sys.h>
 #include <rudiments/datetime.h>
 #include <rudiments/error.h>
+#include <rudiments/csprng.h>
+#include <rudiments/dynamiclib.h>
+#include <rudiments/environment.h>
 
 #include <datatypes.h>
 
@@ -110,6 +113,19 @@
 // the tds 5.0 language token's status byte.  the only bit defined is
 // "parameters follow", as a paramfmt/params pair.
 #define	TDS5_LANGUAGE_PARAMS		0x01
+
+// the tds 5.0 msg token's status byte, and how long the token's body is
+// when it carries nothing but a status and a msgid, which is all the
+// three messages below carry
+#define	TDS5_MSG_HASARGS		0x01
+#define	TDS5_MSG_SIZE			3
+
+// The msg id's of the tds 5.0 encrypted-password exchange.  The server
+// sends sec_encrypt with the key it chose; the client answers with
+// sec_logpwd, and with sec_rempwd as well when it has a remote password.
+#define	TDS5_MSG_SEC_ENCRYPT		0x0001
+#define	TDS5_MSG_SEC_LOGPWD		0x0002
+#define	TDS5_MSG_SEC_REMPWD		0x0003
 
 // the tds 5.0 dbrpc token's option flags.  "recompile" was never seen on
 // the wire; a real ct-lib client sends "params" whenever it has any and
@@ -234,6 +250,23 @@
 					PRE_TDS7_SEC_LOG_ENCRYPT2| \
 					PRE_TDS7_SEC_LOG_ENCRYPT3)
 
+// The sizes of the encrypted-password exchange: the key the server
+// chooses, and the blob the client answers with - 32 bytes of ciphertext
+// and a trailing byte giving how long the password inside them is.  The
+// cipher clamps a password to 30 bytes, which is also as long as the
+// cleartext field in the login record.
+#define	SEC_ENCRYPT_KEY_SIZE		8
+#define	SEC_ENCRYPT_BLOB_SIZE		33
+#define	SEC_ENCRYPT_MAX_PASSWORD	30
+
+// what a real ase declares the sec_encrypt key parameter's usertype as
+#define	SEC_ENCRYPT_USERTYPE		37
+
+// where the cipher itself comes from - see secEncryptDecryptPassword()
+#define	SEC_ENCRYPT_LIB			"libsybcomn64.so"
+#define	SEC_ENCRYPT_LIB_DIR		"/OCS-16_0/lib/"
+#define	SEC_ENCRYPT_SYMBOL		"com__string_uninitialize"
+
 // login-time capability token, and the capability types it carries
 #define	TOKEN_CAPABILITY		0xE2
 #define	CAPABILITY_REQUEST		0x01
@@ -249,9 +282,8 @@
 // and 5.0 don't spell it the same way (4.2 says 1, 5.0 says 5) - which
 // is one reason preTds7Login() refuses a client that declares 4.2.
 // A failed pre-tds7 login gets an error token and a login ack carrying
-// FAIL, which is what a real ase sends.  NEGOTIATE goes with the
-// challenge/response exchange that this module doesn't implement, and is
-// kept, unused, to record the other value the byte can take.
+// FAIL, which is what a real ase sends.  NEGOTIATE opens the encrypted-
+// password exchange - see preTds7SecEncryptLogin().
 #define	PRE_TDS7_LOGIN_ACK_SUCCEED	0x05
 #define	PRE_TDS7_LOGIN_ACK_FAIL		0x06
 #define	PRE_TDS7_LOGIN_ACK_NEGOTIATE	0x07
@@ -1689,7 +1721,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t *outsize);
 
 		bool	recvPacket(byte_t *packettype);
-		bool	sendPacket();
+		// "packettype" defaults to the tabular result that every
+		// response but the sec_encrypt negotiate goes out as
+		bool	sendPacket(byte_t packettype=TABULAR_RESULT);
 
 		wchar_t	*readPassword(const byte_t *rp,
 					size_t charcount);
@@ -1717,6 +1751,31 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						byte_t *length,
 						const byte_t **rpout);
 		void	capability();
+
+		// The tds 5.0 encrypted-password exchange.
+		// preTds7SecEncryptLogin() drives the whole thing and hands
+		// back the cleartext password; the rest are its pieces.
+		// "password" must point at a buffer of "passwordsize" bytes.
+		bool	preTds7SecEncryptLogin(char *password,
+					size_t passwordsize);
+		void	preTds7Msg(byte_t status, uint16_t msgid);
+		bool	preTds7MsgRead(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t *msgid);
+		// reads the paramfmt/params pair behind one msg token and
+		// copies parameter "param" out of it as a blob
+		bool	preTds7SecEncryptBlob(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t param,
+					byte_t *blob);
+		// The cipher itself, and the only thing that knows how the
+		// blob is enciphered - see the note at the definition.
+		bool	secEncryptDecryptPassword(const byte_t *key,
+					const byte_t *blob,
+					size_t bloblen,
+					char *password,
+					size_t passwordsize);
+
 		bool	sendSecEncryptUnsupportedError();
 		bool	sendPreTds7VersionUnsupportedError();
 		// blank a login record's password fields, so the
@@ -1832,7 +1891,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t passwordlen);
 		bool	auth(const char *username,
 						const char *password);
-		void	loginAck(bool success);
+		// "status" is one of the PRE_TDS7_LOGIN_ACK_* values, and
+		// only reaches the wire for a pre-tds7 client - see the
+		// definition
+		void	loginAck(byte_t status);
 		void	authError(const wchar_t *username,
 						size_t usernamelen);
 		void	authError(const char *username);
@@ -2418,6 +2480,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool		loggedin;
 
+		// whether the packet being received is the client's answer
+		// to a sec_encrypt negotiate.  the blobs in it are
+		// password-equivalent, so recvPacket() masks its raw dump.
+		bool		secencryptreply;
+
 		// rpc parameters, as they arrived on the wire
 		memorypool		rpcparampool;
 		sqlrserverbindvar	*rpcparams;
@@ -2957,6 +3024,8 @@ void sqlrprotocol_tds::init() {
 	// this connection next must not inherit the previous client's login
 	loggedin=false;
 
+	secencryptreply=false;
+
 	// start at SQLRELAY_HANDLE_BASE, to stay disjoint from the handles
 	// the real backend issues (see newHandle())
 	nexthandle=SQLRELAY_HANDLE_BASE;
@@ -3289,7 +3358,16 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		// reqpacket already has its own copy, so this only affects
 		// the dump.
 		if (getDebug()) {
-			if (*packettype==PRE_TDS7_LOGIN) {
+			if (secencryptreply) {
+				// The answer to a sec_encrypt negotiate is
+				// nothing but the encrypted password and its
+				// framing, so blank all of it - the tokens
+				// are printed field by field as they're read.
+				// Checked ahead of the packet type: whatever
+				// type the client sent it as, it's still the
+				// blob.
+				bytestring::set(packet,'x',packetsize);
+			} else if (*packettype==PRE_TDS7_LOGIN) {
 				maskPreTds7Passwords(packet,packetsize,
 							packetoffset);
 			} else if (*packettype==TDS7_LOGIN) {
@@ -3317,7 +3395,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 	return true;
 }
 
-bool sqlrprotocol_tds::sendPacket() {
+bool sqlrprotocol_tds::sendPacket(byte_t packettype) {
 
 	const byte_t	*packet=resppacket.getBuffer();
 	uint64_t	remaining=resppacket.getSize();
@@ -3331,7 +3409,6 @@ bool sqlrprotocol_tds::sendPacket() {
 	do {
 
 		// set header parts
-		byte_t		packettype=TABULAR_RESULT;
 		byte_t		packetstatus=0;
 		uint32_t	datasize=(remaining>maxdatasize)?
 						maxdatasize:
@@ -4623,32 +4700,30 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// parsed above and neither is used, unlike the tds7 path, which acts
 	// on the login's language, collation and database.
 
-	// A client that asks for password encryption sets a seclogin bit and
-	// sends empty password fields, then waits for the server to drive a
-	// challenge/response exchange (a TDS_MSG token carrying msgid 1, and
-	// the client's msgid 2/3 answers).  This module doesn't implement
-	// that exchange, so there's no password here to authenticate with.
-	// Say so, rather than dropping the socket or letting what amounts to
-	// an empty password through the auth modules.
-	if ((seclogin&PRE_TDS7_SEC_LOG_ENCRYPT_MASK) && !passwordlen) {
-		debugStart("pre-tds7 login");
-		debugWrite("encrypted login requested (seclogin: 0x%02x) "
-				"but encrypted logins aren't supported",
-				(int)seclogin);
-		debugEnd();
-		// The login is refused whether or not the error makes it
-		// out, so the send result isn't the return value here, the
-		// same as the tls-required refusal above.  No version
-		// negotiation is needed first - the only version-dependent
-		// choice in an error token is negotiatedtdsversion<720, and
-		// both the pre-negotiation default (700) and what would be
-		// negotiated here (500) are.
-		sendSecEncryptUnsupportedError();
-		return false;
-	}
-
 	// negotiate tds version
 	negotiateTdsVersion();
+
+	// A client that asks for password encryption sets a seclogin bit and
+	// sends empty password fields, then waits for the server to drive
+	// the exchange that hands the password over enciphered instead.
+	// Nothing below this point can tell the difference: the exchange
+	// fills in the password field that the record left empty, and the
+	// login goes on exactly as a cleartext one would.
+	//
+	// The tls and version refusals above run first, and have to: the
+	// negotiate is tds 5.0 shaped, and enciphering the password is no
+	// substitute for tls when tls is required.  The version negotiation
+	// runs first too - the login ack that opens the exchange carries the
+	// negotiated version.
+	if ((seclogin&PRE_TDS7_SEC_LOG_ENCRYPT_MASK) && !passwordlen) {
+		debugStart("pre-tds7 login");
+		debugWrite("encrypted login requested (seclogin: 0x%02x)",
+				(int)seclogin);
+		debugEnd();
+		if (!preTds7SecEncryptLogin(password,sizeof(password))) {
+			return false;
+		}
+	}
 
 	// begin building the response packet
 	resppacket.clear();
@@ -4663,7 +4738,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 		// run session-start queries
 		cont->beginSession();
 
-		loginAck(true);
+		loginAck(PRE_TDS7_LOGIN_ACK_SUCCEED);
 
 		// A client that sent a capability token rejects the whole
 		// login response unless one comes back, so unlike the
@@ -4678,10 +4753,14 @@ bool sqlrprotocol_tds::preTds7Login() {
 		// Unlike tds 7.x, where a failed login gets an error token
 		// and nothing else, a real ase answers a failed pre-tds7
 		// login with a login ack too, carrying the "failed" byte.
-		loginAck(false);
+		loginAck(PRE_TDS7_LOGIN_ACK_FAIL);
 
 		retval=false;
 	}
+
+	// the cleartext password isn't needed past the auth attempt, and an
+	// encrypted login went to some trouble to keep it off the wire
+	bytestring::zero(password,sizeof(password));
 
 	// change packet size
 	// (a real ase also sends envchanges for the charset, database and
@@ -4751,6 +4830,486 @@ void sqlrprotocol_tds::capability() {
 	write(&resppacket,responsemasklen);
 	write(&resppacket,responsemask,(size_t)responsemasklen);
 }
+
+// Drives the tds 5.0 encrypted-password exchange and hands back the
+// cleartext password it recovers.
+//
+// The server opens it, in a normal buffer rather than a tabular result:
+// a login ack carrying NEGOTIATE, a msg token carrying SEC_ENCRYPT, and
+// a paramfmt/params pair carrying the 8-byte key the server chose.  The
+// client answers with SEC_LOGPWD, and with SEC_REMPWD as well when it
+// has a remote password - both msg tokens arrive in one buffer, each
+// with a paramfmt/params pair of its own.
+//
+// This runs inline rather than through the main loop, which rejects a
+// non-login packet before login.  Returns false, having sent its own
+// error, on anything the client got wrong or when the cipher isn't
+// available; the caller then fails the login rather than authenticating
+// with an empty password.
+bool sqlrprotocol_tds::preTds7SecEncryptLogin(char *password,
+						size_t passwordsize) {
+
+	// The key.  Fresh per login: a fixed one would make the blob a
+	// constant function of the password, and one captured login
+	// replayable forever.  Nul terminated because
+	// preTds7ParamValueWrite() renders a value as text as well as as
+	// bytes.
+	byte_t	key[SEC_ENCRYPT_KEY_SIZE+1];
+	csprng	rng;
+	if (!rng.generateBytes(key,sizeof(key),SEC_ENCRYPT_KEY_SIZE)) {
+		debugStart("pre-tds7 sec encrypt");
+		debugWrite("failed to generate a key");
+		debugEnd();
+		sendSecEncryptUnsupportedError();
+		return false;
+	}
+	key[SEC_ENCRYPT_KEY_SIZE]='\0';
+
+	debugStart("pre-tds7 sec encrypt");
+	debugWrite("key:");
+	debugHexDump(key,SEC_ENCRYPT_KEY_SIZE);
+	debugEnd();
+
+	// the negotiate
+	resppacket.clear();
+	loginAck(PRE_TDS7_LOGIN_ACK_NEGOTIATE);
+	preTds7Msg(TDS5_MSG_HASARGS,TDS5_MSG_SEC_ENCRYPT);
+
+	tds5paramfmt	fmt;
+	fmt.name="";
+	fmt.namesize=0;
+	fmt.status=0;
+	fmt.usertype=SEC_ENCRYPT_USERTYPE;
+	fmt.tds5type=TDS5_TYPE_VARBINARY;
+	fmt.mstype=tds5TypeToMsType(TDS5_TYPE_VARBINARY);
+	fmt.varintsize=preTds7VarintSize(TDS5_TYPE_VARBINARY);
+	fmt.size=SEC_ENCRYPT_KEY_SIZE;
+	fmt.precision=0;
+	fmt.scale=0;
+
+	sqlrserverbindvar	bv;
+	bv.type=SQLRSERVERBINDVARTYPE_BLOB;
+	bv.variable=NULL;
+	bv.variablesize=0;
+	bv.value.stringval=(char *)key;
+	bv.valuesize=SEC_ENCRYPT_KEY_SIZE;
+	bv.isnull=cont->getNonNullBindValue();
+
+	if (!preTds7ParamFmtWrite(&fmt,1) ||
+			!preTds7ParamsWrite(&fmt,&bv,1)) {
+		debugStart("pre-tds7 sec encrypt");
+		debugWrite("failed to write the key parameter");
+		debugEnd();
+		// sendSecEncryptUnsupportedError() clears the half-built
+		// negotiate before it writes the error
+		sendSecEncryptUnsupportedError();
+		return false;
+	}
+
+	done();
+
+	if (!sendPacket(PRE_TDS7_NORMAL)) {
+		debugStart("pre-tds7 sec encrypt");
+		debugWrite("failed to send the negotiate");
+		debugEnd();
+		return false;
+	}
+
+	// the answer
+	byte_t	packettype=0;
+	secencryptreply=true;
+	bool	received=recvPacket(&packettype);
+	secencryptreply=false;
+	if (!received) {
+		debugStart("pre-tds7 sec encrypt");
+		debugWrite("failed to read the answer");
+		debugEnd();
+		return false;
+	}
+	if (packettype!=PRE_TDS7_NORMAL) {
+		debugStart("pre-tds7 sec encrypt");
+		debugPacketType("unexpected answer packet type",packettype);
+		debugEnd();
+		sendTdsProtocolError();
+		return false;
+	}
+
+	const byte_t	*rp=reqpacket.getBuffer();
+	size_t		rpsize=reqpacket.getSize();
+
+	byte_t	logpwd[SEC_ENCRYPT_BLOB_SIZE];
+	byte_t	rempwd[SEC_ENCRYPT_BLOB_SIZE];
+	bool	haslogpwd=false;
+
+	// Every token in the buffer, not just the first - sec_logpwd and
+	// sec_rempwd arrive together.
+	while (rpsize) {
+
+		debugStart("pre-tds7 sec encrypt");
+
+		byte_t	token=0;
+		read(rp,&token,&rp);
+		rpsize--;
+		debugPreTds7TokenType(token);
+
+		if (token!=TDS5_TOKEN_MSG) {
+			debugWrite("expected a msg token");
+			debugEnd();
+			sendTdsProtocolError();
+			return false;
+		}
+
+		uint16_t	msgid=0;
+		if (!preTds7MsgRead(&rp,&rpsize,&msgid)) {
+			debugWrite("malformed msg token");
+			debugEnd();
+			sendTdsProtocolError();
+			return false;
+		}
+
+		// sec_logpwd carries the blob alone; sec_rempwd carries a
+		// remote server name in front of it, empty unless the client
+		// set a remote password.  Sec_logpwd comes first and comes
+		// once; a second one is malformed.
+		//
+		// A sec_rempwd is parsed for its framing and its blob then
+		// discarded.  A remote password is whatever the client's
+		// ct_remote_pwd() said, independent of the login password,
+		// and the module ignores remote passwords everywhere else.
+		// A client can have set several, so any number of sec_rempwd
+		// tokens is accepted.
+		uint16_t	param=0;
+		byte_t		*blob=NULL;
+		if (msgid==TDS5_MSG_SEC_LOGPWD && !haslogpwd) {
+			param=0;
+			blob=logpwd;
+			haslogpwd=true;
+		} else if (msgid==TDS5_MSG_SEC_REMPWD && haslogpwd) {
+			param=1;
+			blob=rempwd;
+		} else {
+			debugWrite("unexpected msgid: %d",(int)msgid);
+			debugEnd();
+			sendTdsProtocolError();
+			return false;
+		}
+
+		if (!preTds7SecEncryptBlob(&rp,&rpsize,param,blob)) {
+			debugEnd();
+			sendTdsProtocolError();
+			return false;
+		}
+
+		debugEnd();
+	}
+
+	debugStart("pre-tds7 sec encrypt");
+
+	if (!haslogpwd) {
+		debugWrite("no sec_logpwd in the answer");
+		debugEnd();
+		sendTdsProtocolError();
+		return false;
+	}
+
+	bool	decrypted=secEncryptDecryptPassword(key,logpwd,sizeof(logpwd),
+							password,passwordsize);
+
+	// the blobs are password-equivalent, so don't leave them on the stack
+	bytestring::zero(logpwd,sizeof(logpwd));
+	bytestring::zero(rempwd,sizeof(rempwd));
+
+	if (!decrypted) {
+		debugWrite("failed to decrypt the password");
+		debugEnd();
+		// The cipher may simply not be there, and that's the one
+		// failure the client can do something about, so it gets the
+		// message that says so.
+		sendSecEncryptUnsupportedError();
+		return false;
+	}
+
+	debugWrite("password: (hidden)");
+	debugEnd();
+
+	return true;
+}
+
+// Writes a tds 5.0 msg token.  All three of the encrypted-password
+// exchange's messages carry nothing but a status and a msgid, so the
+// token length is fixed.
+void sqlrprotocol_tds::preTds7Msg(byte_t status, uint16_t msgid) {
+
+	byte_t	token=TDS5_TOKEN_MSG;
+
+	debugStart("pre-tds7 msg write");
+	debugPreTds7TokenType(token);
+	debugWrite("token length: %d",TDS5_MSG_SIZE);
+	debugWrite("status: 0x%02x",(int)status);
+	debugWrite("msgid: %d",(int)msgid);
+	debugEnd();
+
+	write(&resppacket,token);
+	write(&resppacket,(byte_t)TDS5_MSG_SIZE);
+	write(&resppacket,status);
+	writeLE(&resppacket,msgid);
+}
+
+// Reads a tds 5.0 msg token.  The token byte has already been read.
+// Whatever the token declares past the msgid is stepped over rather than
+// refused, so a message carrying more than the three above still parses.
+bool sqlrprotocol_tds::preTds7MsgRead(const byte_t **rpinout,
+					size_t *rpsizeinout,
+					uint16_t *msgid) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	*msgid=0;
+
+	// the token length
+	if (!rpsize) {
+		return false;
+	}
+	byte_t	tokenlength=0;
+	read(rp,&tokenlength,&rp);
+	rpsize--;
+
+	// Everything below is bounded by the token's own length rather than
+	// by what's left in the buffer, so a msg that lies about its size
+	// can't read into the token behind it.
+	if (tokenlength<TDS5_MSG_SIZE || (size_t)tokenlength>rpsize) {
+		return false;
+	}
+
+	byte_t	status=0;
+	read(rp,&status,&rp);
+	readLE(rp,msgid,&rp);
+	rp+=(size_t)tokenlength-TDS5_MSG_SIZE;
+	rpsize-=(size_t)tokenlength;
+
+	debugWrite("token length: %d",(int)tokenlength);
+	debugWrite("status: 0x%02x",(int)status);
+	debugWrite("msgid: %d",(int)(*msgid));
+
+	return true;
+}
+
+bool sqlrprotocol_tds::preTds7SecEncryptBlob(const byte_t **rpinout,
+						size_t *rpsizeinout,
+						uint16_t param,
+						byte_t *blob) {
+
+	const byte_t	*&rp=*rpinout;
+	size_t		&rpsize=*rpsizeinout;
+
+	// the paramfmt
+	if (!rpsize) {
+		debugWrite("missing paramfmt token");
+		return false;
+	}
+	byte_t	token=0;
+	read(rp,&token,&rp);
+	rpsize--;
+	if (token!=TDS5_TOKEN_PARAMFMT && token!=TDS5_TOKEN_PARAMFMT2) {
+		debugWrite("expected a paramfmt token");
+		return false;
+	}
+	const char	*err=NULL;
+	if (!preTds7ParamFmtRead(&rp,&rpsize,
+				(token==TDS5_TOKEN_PARAMFMT2),&err)) {
+		debugWrite("%s",err);
+		return false;
+	}
+
+	// The declared type, checked before the value is read rather than
+	// after.  preTds7ParamsRead() routes a value by the type its
+	// paramfmt declared, and the string types print the value into the
+	// debug output - which for a blob declared as varchar would be the
+	// ciphertext.  A real client declares varbinary here.
+	if (pretds7paramfmtcount<=param ||
+			(pretds7paramfmts[param].tds5type!=
+					TDS5_TYPE_VARBINARY &&
+			pretds7paramfmts[param].tds5type!=
+					TDS5_TYPE_BINARY)) {
+		debugWrite("parameter %d is not declared binary",(int)param);
+		return false;
+	}
+
+	// the params
+	if (!rpsize) {
+		debugWrite("missing params token");
+		return false;
+	}
+	read(rp,&token,&rp);
+	rpsize--;
+	if (token!=TDS5_TOKEN_PARAMS) {
+		debugWrite("expected a params token");
+		return false;
+	}
+	if (!preTds7ParamsRead(&rp,&rpsize)) {
+		debugWrite("malformed params token");
+		return false;
+	}
+
+	// the blob itself.  A paramfmt that declared a different type or a
+	// different width than the exchange uses lands here as a parameter
+	// that isn't a 33-byte blob, whatever it claimed to be.
+	if (rpcparamcount<=param) {
+		debugWrite("too few parameters: %d",rpcparamcount);
+		return false;
+	}
+	sqlrserverbindvar	*bv=&(rpcparams[param]);
+	if (bv->type!=SQLRSERVERBINDVARTYPE_BLOB ||
+			bv->valuesize!=SEC_ENCRYPT_BLOB_SIZE) {
+		debugWrite("parameter %d is not a %d byte blob",
+				(int)param,SEC_ENCRYPT_BLOB_SIZE);
+		return false;
+	}
+	bytestring::copy(blob,bv->value.stringval,SEC_ENCRYPT_BLOB_SIZE);
+
+	// The blob's last byte says how long the password inside it is, and
+	// the cipher clamps that to SEC_ENCRYPT_MAX_PASSWORD.  Checked here
+	// as well as in secEncryptDecryptPassword() so that a malformed blob
+	// gets the protocol error it deserves rather than the "encrypted
+	// logins aren't supported" one.
+	if (blob[SEC_ENCRYPT_BLOB_SIZE-1]>SEC_ENCRYPT_MAX_PASSWORD) {
+		debugWrite("declared password length is too long: %d",
+				(int)blob[SEC_ENCRYPT_BLOB_SIZE-1]);
+		return false;
+	}
+
+	return true;
+}
+
+
+// ---- the cipher ---------------------------------------------------
+//
+// Everything that knows how the blob is enciphered lives between here
+// and the end of secEncryptDecryptPassword(), so it can be replaced
+// without touching the exchange around it.
+//
+// The cipher is sap's own, and is reached by calling sap's own library:
+// com__string_uninitialize() is an exported symbol in open client's
+// libsybcomn64.so.  The alternative is to ship the cipher's 256 x 33
+// byte key table, which is a verbatim copy of an internal sap document,
+// so calling the library is what interoperates without copying sap's
+// data.  The cost is that an encrypted tds 5.0 login works where open
+// client is installed and is refused cleanly where it isn't.
+//
+// The soname is what usually resolves it: a sap-backed instance already
+// has open client's libraries in the process, so the loader matches the
+// name against what's loaded.  The paths after it only find the library
+// when open client's other libraries are on the runtime search path
+// too, since libsybcomn64 needs them.
+typedef int (*secencryptdecryptfunction)(const byte_t *key,
+						int keylen,
+						const byte_t *in,
+						int inlen,
+						byte_t *out,
+						int *outlen);
+
+static bool				secencrypttried=false;
+static dynamiclib			secencryptlib;
+static secencryptdecryptfunction	secencryptdecrypt=NULL;
+
+static bool secEncryptLoadCipher() {
+
+	// One attempt per process, however many logins ask for it.  The
+	// check-then-set needs no lock: sqlr-connection is single threaded
+	// and is exec'd per process, so the statics start out fresh.
+	if (secencrypttried) {
+		return (secencryptdecrypt!=NULL);
+	}
+	secencrypttried=true;
+
+	stringbuffer	sybasepath;
+	const char	*sybase=environment::getValue("SYBASE");
+	if (!charstring::isNullOrEmpty(sybase)) {
+		sybasepath.append(sybase);
+		sybasepath.append(SEC_ENCRYPT_LIB_DIR);
+		sybasepath.append(SEC_ENCRYPT_LIB);
+	}
+
+	const char	*libnames[3];
+	libnames[0]=SEC_ENCRYPT_LIB;
+	libnames[1]=sybasepath.getString();
+	libnames[2]="/opt/sap" SEC_ENCRYPT_LIB_DIR SEC_ENCRYPT_LIB;
+
+	for (uint8_t i=0; i<3; i++) {
+
+		if (charstring::isNullOrEmpty(libnames[i])) {
+			continue;
+		}
+		if (!secencryptlib.open(libnames[i],true,false)) {
+			continue;
+		}
+
+		secencryptdecrypt=(secencryptdecryptfunction)
+				secencryptlib.getSymbol(SEC_ENCRYPT_SYMBOL);
+		if (secencryptdecrypt) {
+			return true;
+		}
+		secencryptlib.close();
+	}
+
+	return false;
+}
+
+bool sqlrprotocol_tds::secEncryptDecryptPassword(const byte_t *key,
+						const byte_t *blob,
+						size_t bloblen,
+						char *password,
+						size_t passwordsize) {
+
+	// The blob is 32 bytes of ciphertext and a trailing byte giving how
+	// long the password inside them is.  Nothing about it is logged -
+	// it's password-equivalent, and so is what comes out.
+	if (bloblen!=SEC_ENCRYPT_BLOB_SIZE) {
+		return false;
+	}
+	size_t	length=blob[SEC_ENCRYPT_BLOB_SIZE-1];
+	if (length>SEC_ENCRYPT_MAX_PASSWORD || length>=passwordsize) {
+		return false;
+	}
+
+	// an empty password is not an acceptable decrypt result
+	if (!length) {
+		return false;
+	}
+
+	if (!secEncryptLoadCipher()) {
+		return false;
+	}
+
+	// the library writes the cleartext and its length; the scratch
+	// buffer is well clear of the 30 bytes the cipher can produce
+	byte_t	out[64];
+	int	outlen=0;
+	bytestring::zero(out,sizeof(out));
+
+	// The cipher carries no integrity check, so this is not one.  The
+	// library takes the length from the blob's own trailing byte and
+	// returns 1 either way, so a blob that isn't what the client's
+	// library produced decrypts to a wrong password rather than to an
+	// error, and it's the authentication below that rejects it.  The
+	// checks are here against a library build that behaves differently.
+	bool	ok=((*secencryptdecrypt)(key,(int)SEC_ENCRYPT_KEY_SIZE,
+						blob,(int)bloblen,
+						out,&outlen)==1 &&
+			outlen>=0 && (size_t)outlen==length);
+	if (ok) {
+		bytestring::copy(password,out,length);
+		password[length]='\0';
+	}
+
+	bytestring::zero(out,sizeof(out));
+
+	return ok;
+}
+
+// ---- end of the cipher --------------------------------------------
+
 
 bool sqlrprotocol_tds::sendSecEncryptUnsupportedError() {
 	// FIXME: is there a real error number/state for this?
@@ -5233,7 +5792,9 @@ bool sqlrprotocol_tds::tds7Login() {
 			loggedin=true;
 			// run session-start queries
 			cont->beginSession();
-			loginAck(true);
+			// loginAck() ignores the status on the tds 7.x
+			// path - only a pre-tds7 login ack carries one
+			loginAck(PRE_TDS7_LOGIN_ACK_SUCCEED);
 		} else {
 			authError(username,cchusername);
 			retval=false;
@@ -5376,18 +5937,16 @@ bool sqlrprotocol_tds::auth(const char *username, const char *password) {
 	return authsuccess;
 }
 
-void sqlrprotocol_tds::loginAck(bool success) {
+void sqlrprotocol_tds::loginAck(byte_t status) {
 
 	byte_t		token=TOKEN_LOGIN_ACK;
 
 	// For a tds 7.x client this byte names the sql interface, for a
-	// pre-tds7 client it reports whether the login succeeded.  A tds 7.x
-	// login that fails gets an error token and no login ack at all, so
-	// only "success" reaches here on that path.
-	byte_t		iface=(pretds7)?
-				((success)?PRE_TDS7_LOGIN_ACK_SUCCEED:
-					PRE_TDS7_LOGIN_ACK_FAIL):
-				SQL_TSQL;
+	// pre-tds7 client it reports how the login came out - so "status" is
+	// ignored on the tds 7.x path.  A tds 7.x login that fails gets an
+	// error token and no login ack at all, so only success reaches here
+	// on that path anyway.
+	byte_t		iface=(pretds7)?status:SQL_TSQL;
 	// unlike the version in the login request, the version in the
 	// login ack is sent big-endian
 	uint32_t	tdsversion=

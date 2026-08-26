@@ -325,25 +325,17 @@ int main(int argc, char **argv) {
 				CS_PACKETSIZE,(CS_VOID *)&ps,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
 	stdoutput.printf("\n");
-	// Only ask for password encryption on the FreeTDS-linked build.
+	// Ask for password encryption.
 	//
-	// FreeTDS defines CS_SEC_ENCRYPTION too, but its ctlib emulation
-	// speaks tds 7.x here, where the password is always obfuscated in
-	// the login7 record anyway, so the property changes nothing on the
-	// wire and the tdsfreetds*protocol instances pass with it set.
+	// FreeTDS's ctlib emulation speaks tds 7.x here, where the password
+	// is always obfuscated in the login7 record anyway, so this changes
+	// nothing on the wire for the tdsfreetds*protocol instances.
 	//
-	// SAP's native ctlib speaks tds 5.0, where setting this makes the
-	// client send an *empty* password in the pre-tds7 login record and
-	// wait for the server to drive the TDS 5.0 SEC_ENCRYPT negotiation
-	// (TDS_MSG msgids 1/2/3).  sqlrelay's tds protocol module doesn't
-	// implement that negotiation - the cipher it uses isn't documented
-	// and FreeTDS only implements the newer RSA scheme - so the module
-	// answers such a login with an error and the login fails.  Leave it
-	// off here so the SAP build sends its password in the clear, which
-	// the module can actually authenticate.  Tracked by ticket #9468
-	// (TDS 5.0 encrypted login); turn this back on once SEC_ENCRYPT is
-	// implemented.
-	#if defined(CS_SEC_ENCRYPTION) && TDSTEST_LINKED_WITH_FREETDS
+	// SAP's native ctlib speaks tds 5.0, where this makes the client
+	// send an *empty* password in the pre-tds7 login record and wait for
+	// the server to drive the SEC_ENCRYPT negotiation (TDS_MSG msgids
+	// 1/2/3), so it's what exercises that path.
+	#if defined(CS_SEC_ENCRYPTION)
 	stdoutput.printf("cs_con_props: sec encryption\n");
 	CS_INT	enc=CS_TRUE;
 	assertEquals(ct_con_props(dbconn,CS_SET,

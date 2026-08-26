@@ -634,6 +634,16 @@
 		turns that into a stored procedure named for the id, which
 		isn't portable to any other backend and would outlive the
 		session that asked for it
+	the tds protocol module supports tds 5.0 encrypted login now - a
+		ct-lib client with CS_SEC_ENCRYPTION sends no password at all
+		and waits for the server to drive a key exchange, which is
+		answered with a login ack status of negotiate and the
+		SEC_ENCRYPT/SEC_LOGPWD/SEC_REMPWD messages a real ase uses;
+		the password cipher isn't documented anywhere and freetds
+		only implements the newer rsa scheme, so it's taken from the
+		open client library the connection already links, and an
+		instance without one still refuses such logins with a real
+		error rather than letting an empty password through
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
