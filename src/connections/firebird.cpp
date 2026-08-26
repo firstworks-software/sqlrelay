@@ -3482,6 +3482,21 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
+	// a prepare into an sqlda with too few slots reports the true
+	// output param count in sqld with no regard to sqln/allocation
+	// size - bail with an error rather than let the nulling loop
+	// below, or the loops in executeQuery() that iterate up to
+	// sqld, run past the maxbindcount-sized allocation
+	if (queryisexecsp && outbindsqlda->sqld>(int32_t)maxbindcount) {
+		stringbuffer	err;
+		err.append(SQLR_ERROR_MAXBINDCOUNT_STRING);
+		err.append(" (")->append(maxbindcount);
+		err.append('<')->append(outbindsqlda->sqld)->append(')');
+		conn->cont->setError(this,err.getString(),
+				SQLR_ERROR_MAXBINDCOUNT,true);
+		return false;
+	}
+
 	// null output bind sqldata pointers so we can detect
 	// which ones were set by outputBind later
 	if (queryisexecsp) {
