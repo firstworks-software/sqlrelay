@@ -9353,6 +9353,15 @@ void sqlrprotocol_tds::colName(sqlrservercursor *cursor,
 
 	size_t 		namelen=cont->getColumnNameSize(cursor,col);
 	const char	*name=cont->getColumnName(cursor,col);
+
+	// the length is a single byte, so a longer name is truncated,
+	// the way preTds7RowFmt() and appendInfoOrError() truncate the
+	// names they send; losing the tail of a long column name is much
+	// better than desynchronizing the rest of the result-set stream.
+	if (namelen>255) {
+		namelen=255;
+	}
+
 	ucs2_t		*name16=ucs2charstring::duplicate(name,namelen);
 	write(&resppacket,(byte_t)namelen);
 	write(&resppacket,name16,namelen);
@@ -19078,8 +19087,13 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 	writeLE(&resppacket,ordinal);
 
 	// param name - a client that looks at it, rather than matching by
-	// ordinal, gets an empty name from ct_describe otherwise
+	// ordinal, gets an empty name from ct_describe otherwise.  The
+	// length is a single byte, so a longer name is truncated, the
+	// same way colName() truncates an over-length column name.
 	if (name && namesize) {
+		if (namesize>255) {
+			namesize=255;
+		}
 		ucs2_t	*name16=ucs2charstring::duplicate(name,
 							(size_t)namesize);
 		write(&resppacket,(byte_t)namesize);

@@ -661,6 +661,12 @@
 		against maxbindcount before writing into fixed-size arrays -
 		out-of-range positions are now rejected as a bind format error
 		instead of overrunning the array
+	fixed the tds protocol module's colName() and returnValueHeader()
+		writing a column or output-parameter name behind a single
+		length byte without clamping it first - a name of 256 units
+		or longer desynchronized the rest of the result-set or
+		return-value stream; both now truncate to 255 the way
+		preTds7RowFmt() and appendInfoOrError() already do
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

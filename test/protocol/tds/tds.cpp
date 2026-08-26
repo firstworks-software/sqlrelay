@@ -1477,6 +1477,73 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// Regression test for #9477: colName() wrote a column name behind
+	// a single, unclamped length byte, so a name of 256 wire units or
+	// more desynchronized the rest of the result-set stream.  A true
+	// 256-unit round trip isn't reachable through a real backend
+	// identifier (mssql's sysname caps at 128 characters) or through
+	// ct-lib's own CS_DATAFMT.name (FreeTDS's CS_MAX_NAME is 132), so
+	// this exercises the write path at the longest alias actually
+	// reachable and checks that a normal column right after it still
+	// describes and fetches correctly - i.e. the stream stayed in
+	// sync rather than desynchronizing on the long name.
+	stdoutput.printf("ct_command: long column alias\n");
+	stringbuffer	longaliasb;
+	for (CS_INT i=0; i<120; i++) {
+		longaliasb.append((char)('a'+(i%26)));
+	}
+	const char	*longalias=longaliasb.getString();
+
+	stringbuffer	longaliasqueryb;
+	longaliasqueryb.append("select convert(varchar(20),1) as ")->
+				append(longalias)->
+				append(", convert(varchar(20),2) "
+						"as testlongaliascol2");
+	query=longaliasqueryb.getString();
+
+	assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+	assertEquals(ct_send(cmd),CS_SUCCEED);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_ROW_RESULT);
+
+	CS_DATAFMT	longaliasfmt[2];
+	char		longaliasdata[2][32];
+	CS_INT		longaliaslength[2];
+	CS_SMALLINT	longaliasindicator[2];
+	for (CS_INT i=0; i<2; i++) {
+		// ct_describe succeeding at all, for both columns, is the
+		// point of the test - it's what fails first if the long
+		// name desynchronized the token stream.
+		assertEquals(ct_describe(cmd,i+1,&(longaliasfmt[i])),
+								CS_SUCCEED);
+		bytestring::zero(longaliasdata[i],sizeof(longaliasdata[i]));
+		longaliasfmt[i].datatype=CS_CHAR_TYPE;
+		longaliasfmt[i].format=CS_FMT_NULLTERM;
+		longaliasfmt[i].maxlength=(CS_INT)sizeof(longaliasdata[i]);
+		assertEquals(ct_bind(cmd,i+1,&(longaliasfmt[i]),
+					(CS_VOID *)longaliasdata[i],
+					&(longaliaslength[i]),
+					&(longaliasindicator[i])),CS_SUCCEED);
+	}
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+	assertEquals(rowsread,1);
+	assertEquals(longaliasdata[0],"1");
+	assertEquals(longaliasdata[1],"2");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_END_RESULTS);
+	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+	stdoutput.printf("\n");
+
+
 	stdoutput.printf("ct_command: drop\n");
 	query="drop table testtable";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
@@ -2955,6 +3022,88 @@ int main(int argc, char **argv) {
 		assertEquals(results,CS_END_RESULTS);
 		assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),CS_SUCCEED);
 		stdoutput.printf("\n");
+
+
+		// Regression test for #9477: colName() used to write a
+		// column name behind an unclamped single length byte, so a
+		// name of 256 wire units or more desynchronized the rest of
+		// the result-set stream.  This builds a 128-character alias
+		// out of a 2-byte utf-8 character (\xc3\xa9, the same one
+		// used above) - a legal 128-character mssql identifier that
+		// would be 256 bytes if it reached colName() still utf-8
+		// encoded.  It doesn't: the [mssql] backend connection in
+		// this test's config deliberately has no client charset set
+		// (other tests - #8887/#8793 - depend on it staying that
+		// way), so the freetds odbc driver falls back to a
+		// single-byte-per-character encoding under which \xc3\xa9
+		// round-trips as one byte, not two - namelen comes back as
+		// 128, not 256, so this case does not actually exercise the
+		// >255 clamp.  It's kept anyway as coverage that a non-ascii
+		// alias round-trips through this connection without
+		// breaking anything; see the "long column alias" case in
+		// the Queries section above for the equivalent ascii smoke
+		// test, and #9477 itself for why a true >255-byte reproduction
+		// isn't reachable in this test environment either way.  Ase
+		// mangles multi-byte statement text sent through this
+		// connection (see the charsetinserts2 comment above) and is
+		// pre-tds7 anyway, so it never reaches colName() at all.
+		if (!issybase) {
+
+			stdoutput.printf("ct_command: long multi-byte "
+						"column alias\n");
+			stringbuffer	longutf8aliasb;
+			longutf8aliasb.append(
+					"select convert(varchar(20),1) as [");
+			for (CS_INT i=0; i<128; i++) {
+				longutf8aliasb.append("\xc3\xa9");
+			}
+			longutf8aliasb.append("], convert(varchar(20),2) "
+						"as testlongutf8col2");
+			query=longutf8aliasb.getString();
+
+			assertEquals(ct_command(cmd2,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd2),CS_SUCCEED);
+			results=ct_results(cmd2,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_ROW_RESULT);
+
+			cscols=2;
+			for (CS_INT i=0; i<cscols; i++) {
+				// ct_describe succeeding for both columns is
+				// the point of the test - it's what fails
+				// first if the long name desynchronized the
+				// token stream.
+				assertEquals(ct_describe(cmd2,i+1,
+							&(csfmt[i])),
+							CS_SUCCEED);
+				bytestring::zero(csdata[i],1024);
+				csfmt[i].datatype=CS_CHAR_TYPE;
+				csfmt[i].format=CS_FMT_NULLTERM;
+				csfmt[i].maxlength=1024;
+				assertEquals(ct_bind(cmd2,i+1,&(csfmt[i]),
+							(CS_VOID *)csdata[i],
+							&(csdatalength[i]),
+							&(csnullindicator[i])),
+							CS_SUCCEED);
+			}
+			assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(csdata[0],"1");
+			assertEquals(csdata[1],"2");
+			assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd2,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd2,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd2,CS_CANCEL_ALL),
+							CS_SUCCEED);
+			stdoutput.printf("\n");
+		}
 
 
 		stdoutput.printf("ct_cmd_drop: cmd2\n");
