@@ -46,6 +46,65 @@
 #define TOKEN_RETURNSTATUS		0x79
 #define TOKEN_RETURNVALUE		0xAC
 
+// Tds 5.0 request tokens - what a client can send inside a
+// PRE_TDS7_NORMAL buffer.  Only TDS5_TOKEN_LANGUAGE is implemented; the
+// rest are defined so that preTds7TokenLength() can name what it's
+// refusing, and so that a later ticket adding one has the value already.
+//
+// These live in the request direction only.  Some of the values mean
+// something else in the other direction, or in tds 7.x - 0x81 is
+// TDS5_TOKEN_CURDELETE here but TOKEN_COLMETADATA there - and some,
+// like paramfmt, travel both ways.  So don't fold these into one table
+// with the response tokens above.
+#define	TDS5_TOKEN_CURDECLARE3		0x10
+#define	TDS5_TOKEN_PARAMFMT2		0x20
+#define	TDS5_TOKEN_LANGUAGE		0x21
+#define	TDS5_TOKEN_ORDERBY2		0x22
+#define	TDS5_TOKEN_CURDECLARE2		0x23
+#define	TDS5_TOKEN_ROWFMT2		0x61
+#define	TDS5_TOKEN_OPTIONCMD2		0x63
+#define	TDS5_TOKEN_MSG			0x65
+#define	TDS5_TOKEN_LOGOUT		0x71
+#define	TDS5_TOKEN_CURCLOSE		0x80
+#define	TDS5_TOKEN_CURDELETE		0x81
+#define	TDS5_TOKEN_CURFETCH		0x82
+#define	TDS5_TOKEN_CURINFO		0x83
+#define	TDS5_TOKEN_CUROPEN		0x84
+#define	TDS5_TOKEN_CURUPDATE		0x85
+#define	TDS5_TOKEN_CURDECLARE		0x86
+#define	TDS5_TOKEN_CURINFO2		0x87
+#define	TDS5_TOKEN_CURINFO3		0x88
+#define	TDS5_TOKEN_DYNAMIC2		0xA3
+#define	TDS5_TOKEN_OPTIONCMD		0xA6
+#define	TDS5_TOKEN_KEY			0xCA
+#define	TDS5_TOKEN_ROW			0xD1
+#define	TDS5_TOKEN_PARAMS		0xD7
+#define	TDS5_TOKEN_CAPABILITY		0xE2
+#define	TDS5_TOKEN_DBRPC		0xE6
+#define	TDS5_TOKEN_DYNAMIC		0xE7
+#define	TDS5_TOKEN_DBRPC2		0xE8
+#define	TDS5_TOKEN_PARAMFMT		0xEC
+
+// How long a tds 5.0 request token's length field is.  There's no rule
+// that derives this from the token byte - the tds 7.x "token&0x30"
+// classification gets LANGUAGE and MSG wrong - so it's a table, and a
+// token that isn't in it can't be skipped at all.  Both freetds and the
+// wireshark dissector do the same thing, and freetds treats a token it
+// doesn't know as fatal (src/tds/token.c, "Bad token from the server").
+#define	TDS5_LENSIZE_BYTE		1
+#define	TDS5_LENSIZE_USHORT		2
+#define	TDS5_LENSIZE_UINT		4
+// no length field, and a payload of one fixed byte rather than none -
+// don't confuse this with a length of 0
+#define	TDS5_LENSIZE_FIXED1		0xFE
+// the token carries no length and can only be sized by replaying the
+// paramfmt or rowfmt before it, so the walker can't step over one
+#define	TDS5_LENSIZE_UNKNOWN		0xFF
+
+// the tds 5.0 language token's status byte.  the only bit defined is
+// "parameters follow", as a paramfmt/params pair.
+#define	TDS5_LANGUAGE_PARAMS		0x01
+
 // packet header size, and the smallest, default, and largest packet sizes
 // (the size on the wire is 16 bits and includes the header)
 #define	PACKET_HEADER_SIZE		8
@@ -1015,6 +1074,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		char	*utf8ToCp1252(const char *str,
 					size_t size,
 					size_t *outsize);
+		char	*preTds7ToUtf8(const byte_t *str,
+					size_t size,
+					size_t *outsize);
 
 		bool	recvPacket(byte_t *packettype);
 		bool	sendPacket();
@@ -1047,6 +1109,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	capability();
 		bool	sendSecEncryptUnsupportedError();
 		bool	sendPreTds7VersionUnsupportedError();
+
+		bool	preTds7Normal();
+		byte_t	preTds7TokenLength(byte_t token);
+		bool	preTds7Language(const byte_t **rpinout,
+					size_t *rpsizeinout);
+		void	preTds7UnsupportedToken(byte_t token);
 
 		bool	tds7Login();
 		bool	loginFieldFits(const char *name,
@@ -1448,7 +1516,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	sendNoCursorAvailableError();
 		bool	sendLoginRequiredError();
 		bool	sendAlreadyLoggedInError();
-		bool	sendPreTds7UnsupportedError();
 
 		void	done();
 		void	done(uint16_t status,
@@ -1494,6 +1561,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	debugPacketType(const char *name, byte_t type);
 		void	debugPacketStatus(byte_t status);
 		void	debugTokenType(byte_t token);
+		void	debugPreTds7TokenType(byte_t token);
 		void	debugPreLoginOption(byte_t opt);
 		void	debugEncryptionOption(const char *name, byte_t enc);
 		void	debugLogin7OptionFlags(byte_t optionflags1,
@@ -2242,6 +2310,35 @@ char *sqlrprotocol_tds::utf8ToCp1252(const char *str,
 	return out;
 }
 
+// The pre-tds7 counterpart to ucs2ToUtf8().  A tds 5.0 client sends
+// single-byte characters rather than ucs-2, and they aren't nul
+// terminated, so this is a nul-terminating copy rather than a charset
+// conversion.
+//
+// Named for ucs2ToUtf8(), but it doesn't convert anything - a byte
+// above 0x7f goes to the backend as-is rather than as utf-8.  That's
+// deliberate for now: the outbound side doesn't convert either -
+// writeVarchar() writes the utf-8 bytes straight out when pretds7 is
+// set - so the two directions agree and a round trip comes back intact.
+// FIXME: the login record carries the client's charset (read into
+// "charset" in preTds7Login(), and ignored there too).  Once that's
+// honored, both directions should convert instead of passing through.
+char *sqlrprotocol_tds::preTds7ToUtf8(const byte_t *str,
+					size_t size,
+					size_t *outsize) {
+
+	debugStart("pre-tds7 to utf8");
+	debugWrite("size: %lld",(long long)size);
+
+	char	*out=charstring::duplicate((const char *)str,size);
+	*outsize=size;
+
+	debugWrite("outsize: %lld",(long long)(*outsize));
+	debugEnd();
+
+	return out;
+}
+
 bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 
 	// clear the receive buffer
@@ -2852,17 +2949,6 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				loop=federatedAuthenticationToken();
 				loopback=true;
 				break;
-			case PRE_TDS7_NORMAL:
-				// tds 5.0 login works, but nothing past it
-				// does yet.  answer with a real server
-				// message rather than dropping the socket,
-				// and keep the session up - the message
-				// rides its own done, so the client can
-				// display it, fail just this command, and
-				// close down cleanly
-				loop=sendPreTds7UnsupportedError();
-				loopback=true;
-				break;
 			case ATTENTION_SIGNAL:
 				loop=attention();
 				loopback=true;
@@ -2890,6 +2976,12 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 		switch (packettype) {
 			case SQL_BATCH:
 				loop=sqlBatch();
+				break;
+			case PRE_TDS7_NORMAL:
+				// tds 5.0's counterpart to a sql batch,
+				// but token-framed, and it can carry more
+				// than one command
+				loop=preTds7Normal();
 				break;
 			case BULK_LOAD_DATA:
 				loop=bulkLoad();
@@ -4729,6 +4821,367 @@ bool sqlrprotocol_tds::sspi() {
 	// FIXME: actually implement this
 
 	return sendUnimplementedFeatureError();
+}
+
+// How many bytes the length field of a tds 5.0 request token takes.
+// There's no rule that derives this from the token byte - see the note
+// at the TDS5_LENSIZE_* defines - so it's a table, and anything not in
+// it is TDS5_LENSIZE_UNKNOWN and can't be stepped over.
+//
+// Nothing steps over a token yet - preTds7Normal() refuses everything
+// but a language token without asking how long it is - so this is only
+// in the debug output so far.  It's here for #9467, which will dispatch
+// on these.  Re-verify the values against the spec before relying on
+// one: freetds and the wireshark dissector agree with everything here
+// that they define, but they don't define curdeclare2/3, curupdate,
+// curinfo2/3, dbrpc2 or key at all, and those rest on the spec alone.
+byte_t sqlrprotocol_tds::preTds7TokenLength(byte_t token) {
+
+	switch (token) {
+		case TDS5_TOKEN_CURDECLARE3:
+		case TDS5_TOKEN_PARAMFMT2:
+		case TDS5_TOKEN_LANGUAGE:
+		case TDS5_TOKEN_ORDERBY2:
+		case TDS5_TOKEN_CURDECLARE2:
+		case TDS5_TOKEN_ROWFMT2:
+		case TDS5_TOKEN_DYNAMIC2:
+			return TDS5_LENSIZE_UINT;
+		case TDS5_TOKEN_MSG:
+			return TDS5_LENSIZE_BYTE;
+		case TDS5_TOKEN_LOGOUT:
+			// one options byte, which must be 0, rather than
+			// a length
+			return TDS5_LENSIZE_FIXED1;
+		case TDS5_TOKEN_CURCLOSE:
+		case TDS5_TOKEN_CURDELETE:
+		case TDS5_TOKEN_CURFETCH:
+		case TDS5_TOKEN_CURINFO:
+		case TDS5_TOKEN_CUROPEN:
+		case TDS5_TOKEN_CURUPDATE:
+		case TDS5_TOKEN_CURDECLARE:
+		case TDS5_TOKEN_CURINFO2:
+		case TDS5_TOKEN_CURINFO3:
+		case TDS5_TOKEN_OPTIONCMD:
+		case TDS5_TOKEN_CAPABILITY:
+		case TDS5_TOKEN_DBRPC:
+		case TDS5_TOKEN_DYNAMIC:
+		case TDS5_TOKEN_DBRPC2:
+		case TDS5_TOKEN_PARAMFMT:
+			return TDS5_LENSIZE_USHORT;
+		default:
+			// params, key and row carry no length of their own -
+			// they can only be sized by replaying the paramfmt or
+			// rowfmt in front of them.  optioncmd2 is reserved and
+			// was never defined.  and an unrecognized token could
+			// be anything at all.
+			return TDS5_LENSIZE_UNKNOWN;
+	}
+}
+
+// Refuses one token, with its own done, so the client sees this command
+// fail rather than being left waiting for a result that never comes.
+void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token) {
+
+	char	tokenstr[3];
+	charstring::printf(tokenstr,sizeof(tokenstr),"%02x",
+					(uint32_t)(0x000000ff&token));
+
+	stringbuffer	err;
+	err.append("TDS 5.0 request token 0x");
+	err.append(tokenstr);
+	err.append(" is not supported yet.");
+
+	// FIXME: is there a real error number/state for this?
+	// class 16 rather than 20-and-up on purpose - a class 20 error is
+	// fatal and the client hangs up on it, and the session is still
+	// perfectly usable
+	appendError(0,1,16,err.getString(),srvname,NULL,1);
+
+	// DONE_ERROR is what turns this into a CS_CMD_FAIL - ct-lib reports
+	// CS_CMD_SUCCEED for a done without it.  DONE_FINAL because the walk
+	// stops here; nothing after an unskippable token can be trusted.
+	done(DONE_ERROR|DONE_FINAL,0,0);
+}
+
+// A tds 5.0 "normal" buffer carries token-framed requests rather than the
+// bare payload that a tds 7.x sql batch or rpc packet carries.  This walks
+// the tokens in one.
+//
+// Modelled on remoteProcedureCall(), which does the same thing for a batch
+// of tds 7.x rpc's: clear the response once, append a done per command as
+// each is answered, and send the whole thing at the end.  The buffer can
+// carry several commands and ct-lib expects one done per command, not one
+// per buffer, so a command that isn't the last one sets DONE_MORE.
+bool sqlrprotocol_tds::preTds7Normal() {
+
+	const byte_t	*rp=reqpacket.getBuffer();
+	size_t		rpsize=reqpacket.getSize();
+
+	debugStart("pre-tds7 normal");
+
+	// recvPacket() takes this packet type whatever the session logged
+	// in as, but everything written back from here - errors included -
+	// is sized by charSize(), which only gets the tds 5.0 shape when
+	// pretds7 is set.  a tds 7.x session that sends one of these has
+	// no business doing so and would get a response it can't read.
+	if (!pretds7) {
+		debugWrite("not a pre-tds7 session");
+		debugEnd();
+		return sendTdsProtocolError();
+	}
+
+	// begin building the response packet
+	resppacket.clear();
+
+	// FIXME: nothing bounds how many commands one buffer can carry.
+	// maxquerysize bounds each command's sql, but a maxrequestsize
+	// buffer packed with minimal language tokens is millions of them,
+	// each a backend round trip with an error and a done appended.
+	// remoteProcedureCall() has the same shape.
+	bool	anycommands=false;
+
+	while (rpsize) {
+
+		// get the token
+		byte_t	token=0;
+		read(rp,&token,&rp);
+		rpsize--;
+
+		debugStart("pre-tds7 request token");
+		debugPreTds7TokenType(token);
+		debugEnd();
+
+		anycommands=true;
+
+		// the only command this module can answer so far
+		if (token==TDS5_TOKEN_LANGUAGE) {
+			if (preTds7Language(&rp,&rpsize)) {
+				continue;
+			}
+			// the token was malformed, or asked for something
+			// that isn't implemented.  it has appended its own
+			// error and final done, and the rest of the buffer
+			// can't be trusted, so stop here
+			break;
+		}
+
+		// A logout isn't a command to refuse - it's the client
+		// hanging up, and ct_close() waits for a done before it
+		// does.  Answering it with an error would put a spurious
+		// message through the client's callback on a perfectly
+		// normal disconnect.
+		if (token==TDS5_TOKEN_LOGOUT) {
+			debugWrite("logout");
+			done(DONE_FINAL,0,0);
+			break;
+		}
+
+		// Anything else.  Stepping over a token whose length is known
+		// would keep the stream in sync, but there'd still be nothing
+		// to answer the command it represents with, and the tokens
+		// most likely to show up next - paramfmt/params after a
+		// language token with parameters - are exactly the ones that
+		// carry no length and can't be stepped over.  So refuse the
+		// command and stop walking.
+		// FIXME: #9467 implements rpc, dynamic sql, cursors and bulk
+		preTds7UnsupportedToken(token);
+		break;
+	}
+
+	// An empty buffer would otherwise get an empty response, which
+	// leaves the client waiting forever.
+	if (!anycommands) {
+		debugWrite("no tokens in the buffer");
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"Empty TDS 5.0 request buffer",
+							srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,0,0);
+	}
+
+	debugEnd();
+
+	// send the response packet
+	return sendPacket();
+}
+
+// Handles one tds 5.0 language token, appending its result to the
+// response packet.  Returns false if the walk should stop, having
+// already appended an error and a final done.
+//
+// The token is:
+//	int32, little-endian	how much follows - the status byte
+//				plus the sql
+//	byte			status - 0x01 means a paramfmt/params
+//				pair follows
+//	bytes			the sql, as single-byte characters,
+//				not nul terminated
+bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
+					size_t *rpsizeinout) {
+
+	const byte_t	*rp=*rpinout;
+	size_t		rpsize=*rpsizeinout;
+
+	debugStart("pre-tds7 language");
+
+	// get the token length
+	uint32_t	tokenlength=0;
+	if (rpsize<sizeof(tokenlength)) {
+		debugWrite("truncated token length");
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"Malformed TDS 5.0 language token",
+							srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,0,0);
+		return false;
+	}
+	readLE(rp,&tokenlength,&rp);
+	rpsize-=sizeof(tokenlength);
+
+	debugWrite("token length: %lld",(long long)tokenlength);
+
+	// The length covers the status byte, so a token that doesn't have
+	// room for one is malformed, as is one that runs off the end of
+	// the buffer.
+	if (tokenlength<sizeof(byte_t) || (size_t)tokenlength>rpsize) {
+		debugWrite("invalid token length: %lld",(long long)tokenlength);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"Malformed TDS 5.0 language token",
+							srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,0,0);
+		return false;
+	}
+
+	// get the status byte
+	byte_t	status=0;
+	read(rp,&status,&rp);
+	rpsize--;
+
+	debugWrite("status: 0x%02x",status);
+
+	// what's left of the token is the sql
+	size_t	sqllength=(size_t)tokenlength-sizeof(status);
+
+	// bounds checking.  a single check is enough here, unlike
+	// sqlBatch(), which checks again after converting - ucs-2 to utf-8
+	// can grow, and passing single bytes through can't.
+	if (sqllength>maxquerysize) {
+		debugWrite("query too large: %lld",(long long)sqllength);
+		debugEnd();
+		*rpinout=rp;
+		*rpsizeinout=0;
+		stringbuffer	err;
+		queryTooLargeMessage(sqllength,&err);
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,err.getString(),srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,0,0);
+		return false;
+	}
+
+	// decode the sql
+	size_t	sql8size;
+	char	*sql8=preTds7ToUtf8(rp,sqllength,&sql8size);
+	rp+=sqllength;
+	rpsize-=sqllength;
+
+	debugWrite("sql: %s",sql8);
+	debugWrite("sqllength: %lld",(long long)sql8size);
+
+	// copy out what's been consumed, so that the walker sees this
+	// token gone whichever way the rest of this goes
+	*rpinout=rp;
+	*rpsizeinout=rpsize;
+
+	// whether another command follows this one in the buffer
+	bool	more=(rpsize>0);
+
+	// A parameterized command's values ride in the paramfmt/params
+	// pair after this token, so the sql can't be run without them.
+	if (status&TDS5_LANGUAGE_PARAMS) {
+		debugWrite("parameters are not supported yet");
+		debugEnd();
+		delete[] sql8;
+		// params carries no length, so the rest of the buffer
+		// can't be walked past it either
+		*rpsizeinout=0;
+		// FIXME: #9467 implements parameters
+		appendError(0,1,16,
+			"Parameterized TDS 5.0 language commands "
+			"are not supported yet.",srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,0,0);
+		return false;
+	}
+
+	// get an available cursor
+	sqlrservercursor	*cursor=availableCursor();
+	if (!cursor) {
+		debugWrite("no cursor available");
+		debugEnd();
+		delete[] sql8;
+		*rpsizeinout=0;
+		// FIXME: is there a real error number/state/class for this?
+		appendError(0,1,16,"No cursor available",srvname,NULL,1);
+		done(DONE_ERROR|DONE_FINAL,0,0);
+		return false;
+	}
+
+	// a language command has no bind variables, and the cursor may have
+	// been left with some by something that used it earlier
+	cont->setInputBindCount(cursor,0);
+	cont->setOutputBindCount(cursor,0);
+	cont->setInputOutputBindCount(cursor,0);
+	cont->setTranslateBindVariablesForThisQuery(cursor,false);
+
+	// run the query
+	bool	success=
+		cont->prepareQuery(cursor,sql8,(uint32_t)sql8size,
+						true,true,true,true) &&
+		cont->executeQuery(cursor,true,true,true,true);
+
+	// clean up
+	delete[] sql8;
+
+	if (success) {
+
+		// A result set in this dialect is a rowfmt (0xEE) and rows
+		// (0xD1), not the colmetadata (0x81) that colMetaData()
+		// writes - 0x81 is a cursor-delete token here - so sending
+		// one would be a datastream error rather than a result the
+		// client could read.
+		// FIXME: #9466 implements tds 5.0 result sets
+		if (cont->colCount(cursor)) {
+			debugWrite("result sets are not supported yet");
+			appendError(0,1,16,
+				"TDS 5.0 result sets are not supported yet.",
+				srvname,NULL,1);
+			done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),0,0);
+		} else {
+			// DONE_COUNT is what makes the count valid - without
+			// it ct_res_info(CS_ROW_COUNT) reports no count at all
+			done(((more)?DONE_MORE:DONE_FINAL)|DONE_COUNT,0,
+					cont->getAffectedRows(cursor));
+		}
+
+	} else {
+
+		// DONE_ERROR is what turns this into a CS_CMD_FAIL - ct-lib
+		// reports CS_CMD_SUCCEED for a done without it, and the
+		// client's result walk would fall a result out of step
+		appendQueryError(cursor);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),0,0);
+	}
+
+	debugEnd();
+
+	// release the cursor
+	// FIXME: kludgy - same as sqlBatch()
+	releaseCursor(cursor);
+
+	return true;
 }
 
 bool sqlrprotocol_tds::sqlBatch() {
@@ -13177,16 +13630,6 @@ bool sqlrprotocol_tds::sendAlreadyLoggedInError() {
 	return sendError(0,1,16,"Already logged in",1);
 }
 
-bool sqlrprotocol_tds::sendPreTds7UnsupportedError() {
-	// class 16 rather than 20-and-up on purpose.  a class 20 error is
-	// fatal and the client hangs up on it; this one leaves the connection
-	// usable, so every request after it gets the same message too
-	// FIXME: is there a real error message/number/state/class for this?
-	return sendError(0,1,16,
-			"TDS 5.0 data requests are not supported.  "
-			"Only login is implemented.",1);
-}
-
 void sqlrprotocol_tds::done() {
 	done(DONE_FINAL,0,0);
 }
@@ -13877,6 +14320,121 @@ void sqlrprotocol_tds::debugTokenType(byte_t token) {
 	}
 	debugWrite("token: 0x%02x (%s)",
 			(uint32_t)(0x000000ff&token),tokenstring);
+}
+
+// Separate from debugTokenType() on purpose - these are request-direction
+// tokens, and several of the values mean something else in a response.
+void sqlrprotocol_tds::debugPreTds7TokenType(byte_t token) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*tokenstring=NULL;
+	switch (token) {
+		case TDS5_TOKEN_CURDECLARE3:
+			tokenstring="TDS5_TOKEN_CURDECLARE3";
+			break;
+		case TDS5_TOKEN_PARAMFMT2:
+			tokenstring="TDS5_TOKEN_PARAMFMT2";
+			break;
+		case TDS5_TOKEN_LANGUAGE:
+			tokenstring="TDS5_TOKEN_LANGUAGE";
+			break;
+		case TDS5_TOKEN_ORDERBY2:
+			tokenstring="TDS5_TOKEN_ORDERBY2";
+			break;
+		case TDS5_TOKEN_CURDECLARE2:
+			tokenstring="TDS5_TOKEN_CURDECLARE2";
+			break;
+		case TDS5_TOKEN_ROWFMT2:
+			tokenstring="TDS5_TOKEN_ROWFMT2";
+			break;
+		case TDS5_TOKEN_DYNAMIC2:
+			tokenstring="TDS5_TOKEN_DYNAMIC2";
+			break;
+		case TDS5_TOKEN_OPTIONCMD2:
+			tokenstring="TDS5_TOKEN_OPTIONCMD2";
+			break;
+		case TDS5_TOKEN_MSG:
+			tokenstring="TDS5_TOKEN_MSG";
+			break;
+		case TDS5_TOKEN_LOGOUT:
+			tokenstring="TDS5_TOKEN_LOGOUT";
+			break;
+		case TDS5_TOKEN_CURCLOSE:
+			tokenstring="TDS5_TOKEN_CURCLOSE";
+			break;
+		case TDS5_TOKEN_CURDELETE:
+			tokenstring="TDS5_TOKEN_CURDELETE";
+			break;
+		case TDS5_TOKEN_CURFETCH:
+			tokenstring="TDS5_TOKEN_CURFETCH";
+			break;
+		case TDS5_TOKEN_CURINFO:
+			tokenstring="TDS5_TOKEN_CURINFO";
+			break;
+		case TDS5_TOKEN_CUROPEN:
+			tokenstring="TDS5_TOKEN_CUROPEN";
+			break;
+		case TDS5_TOKEN_CURUPDATE:
+			tokenstring="TDS5_TOKEN_CURUPDATE";
+			break;
+		case TDS5_TOKEN_CURDECLARE:
+			tokenstring="TDS5_TOKEN_CURDECLARE";
+			break;
+		case TDS5_TOKEN_CURINFO2:
+			tokenstring="TDS5_TOKEN_CURINFO2";
+			break;
+		case TDS5_TOKEN_CURINFO3:
+			tokenstring="TDS5_TOKEN_CURINFO3";
+			break;
+		case TDS5_TOKEN_OPTIONCMD:
+			tokenstring="TDS5_TOKEN_OPTIONCMD";
+			break;
+		case TDS5_TOKEN_KEY:
+			tokenstring="TDS5_TOKEN_KEY";
+			break;
+		case TDS5_TOKEN_ROW:
+			tokenstring="TDS5_TOKEN_ROW";
+			break;
+		case TDS5_TOKEN_PARAMS:
+			tokenstring="TDS5_TOKEN_PARAMS";
+			break;
+		case TDS5_TOKEN_CAPABILITY:
+			tokenstring="TDS5_TOKEN_CAPABILITY";
+			break;
+		case TDS5_TOKEN_DBRPC:
+			tokenstring="TDS5_TOKEN_DBRPC";
+			break;
+		case TDS5_TOKEN_DYNAMIC:
+			tokenstring="TDS5_TOKEN_DYNAMIC";
+			break;
+		case TDS5_TOKEN_DBRPC2:
+			tokenstring="TDS5_TOKEN_DBRPC2";
+			break;
+		case TDS5_TOKEN_PARAMFMT:
+			tokenstring="TDS5_TOKEN_PARAMFMT";
+			break;
+		default:
+			tokenstring="unknown token";
+			break;
+	}
+	debugWrite("token: 0x%02x (%s)",
+			(uint32_t)(0x000000ff&token),tokenstring);
+
+	byte_t		lensize=preTds7TokenLength(token);
+	const char	*lensizestring=NULL;
+	switch (lensize) {
+		case TDS5_LENSIZE_FIXED1:
+			lensizestring="fixed, no length";
+			break;
+		case TDS5_LENSIZE_UNKNOWN:
+			lensizestring="not skippable";
+			break;
+		default:
+			lensizestring="byte length field";
+			break;
+	}
+	debugWrite("length size: %d (%s)",(int)lensize,lensizestring);
 }
 
 void sqlrprotocol_tds::debugPreLoginOption(byte_t opt) {
