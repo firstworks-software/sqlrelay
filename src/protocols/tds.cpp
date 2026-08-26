@@ -7898,6 +7898,18 @@ void sqlrprotocol_tds::preTds7DynamicDescribe(const char *id,
 
 bool sqlrprotocol_tds::sqlBatch() {
 
+	// recvPacket() takes this packet type whatever the session logged
+	// in as, but the sql below is read as ucs-2 and the response is
+	// sized by charSize(), which only gets the ms-tds shape when
+	// pretds7 is clear.  a pre-tds7 session's single-byte query would
+	// come out garbled, and the reply would be unreadable besides.
+	if (pretds7) {
+		debugStart("sql batch");
+		debugWrite("pre-tds7 session");
+		debugEnd();
+		return sendTdsProtocolError();
+	}
+
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
@@ -13062,6 +13074,17 @@ bool sqlrprotocol_tds::bulkLoad() {
 
 	debugStart("bulk load");
 
+	// recvPacket() takes this packet type whatever the session logged
+	// in as, but nothing below - metadata, type info, or field - has a
+	// pretds7 branch, and what's written back is sized by charSize().
+	// a pre-tds7 session's bulk data would be misparsed as ms-tds from
+	// the first type byte on.
+	if (pretds7) {
+		debugWrite("pre-tds7 session");
+		debugEnd();
+		return sendTdsProtocolError();
+	}
+
 	// bulk data without an insert bulk statement to go with it
 	if (!bulktable) {
 		debugWrite("no insert bulk statement");
@@ -14547,6 +14570,18 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 	size_t		rpsize=reqpacket.getSize();
 
 	debugStart("rpc");
+
+	// recvPacket() takes this packet type whatever the session logged
+	// in as, but this parses ms-tds rpc's and everything it writes back
+	// is sized by charSize(), which only gets the ms-tds shape when
+	// pretds7 is clear.  a pre-tds7 session gets its rpc's through
+	// preTds7Normal(); one arriving here would get a response shaped
+	// for the wrong dialect.
+	if (pretds7) {
+		debugWrite("pre-tds7 session");
+		debugEnd();
+		return sendTdsProtocolError();
+	}
 
 	// get the headers
 	if (negotiatedtdsversion>=720) {

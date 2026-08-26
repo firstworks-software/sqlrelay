@@ -667,6 +667,11 @@
 		or longer desynchronized the rest of the result-set or
 		return-value stream; both now truncate to 255 the way
 		preTds7RowFmt() and appendInfoOrError() already do
+	fixed the tds protocol module accepting sql batch, bulk load and rpc
+		packets from a pre-tds7 session - those handlers parse and
+		write ms-tds only, so the request was misparsed and the
+		response was shaped for the wrong dialect; they now refuse
+		the packet the way preTds7Normal() refuses a tds 7.x one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
