@@ -13141,6 +13141,15 @@ bool sqlrprotocol_tds::bulkLoad() {
 	delete[] query;
 
 	// run it once per row
+	//
+	// No MAX_COMMANDS_PER_REQUEST cap here, unlike preTds7Normal()'s
+	// and remoteProcedureCall()'s command loops - this one builds
+	// nothing into resppacket until after it ends, so there's no
+	// growing in-memory response to bound, only one backend round
+	// trip per row.  That round trip count is what bulk copy
+	// legitimately needs - a client loading a large table needs
+	// exactly that many - so a row cap would break real bcp use
+	// rather than stop abuse of it.
 	uint64_t	rowcount=0;
 	bool		badrow=false;
 	while (success && rpsize) {
@@ -14611,6 +14620,18 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 			sendTdsProtocolError();
 			return false;
 		}
+	}
+
+	// An empty request - or one too short for rpc() to read even a
+	// proc name length - hits rpc()'s own "nothing left to do" check
+	// on the first pass and returns without appending anything.
+	// Left alone that would send a response with no done token, the
+	// same failure mode preTds7Normal() already guards against for an
+	// empty tds 5.0 buffer.
+	if (!resppacket.getSize()) {
+		debugWrite("empty rpc request");
+		appendError(0,1,16,"Empty TDS RPC request",srvname,NULL,1);
+		doneProc(DONE_FINAL|DONE_ERROR,0,0);
 	}
 
 	debugEnd();

@@ -672,6 +672,17 @@
 		write ms-tds only, so the request was misparsed and the
 		response was shaped for the wrong dialect; they now refuse
 		the packet the way preTds7Normal() refuses a tds 7.x one
+	the tds protocol module's bulk load row loop documents why it isn't
+		bounded by MAX_COMMANDS_PER_REQUEST the way the language-token
+		and rpc loops are - it builds no growing response as it goes,
+		and a legitimate bulk copy of a large table needs exactly as
+		many backend round trips as it has rows, so an arbitrary row
+		cap would break real use rather than stop abuse of it
+	fixed the tds protocol module's remoteProcedureCall() answering an
+		empty or one-byte rpc request with an empty response packet,
+		leaving the client waiting forever - it now answers with an
+		error and a doneproc, the way preTds7Normal() already does for
+		an empty tds 5.0 buffer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
