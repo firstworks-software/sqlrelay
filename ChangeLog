@@ -532,6 +532,10 @@
 		connection and outlives any one session, but a database like
 		postgresql scopes a temporary table to the session that
 		created it, so the flag now clears at the end of each session
+	fixed the firebird connection module overrunning its input-bind
+		describe buffers when a query has more bind parameters than
+		the configured maxbindcount - it now fails the prepare with an
+		error instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -3515,6 +3515,20 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 	if (isc_dsql_describe_bind(firebirdconn->error,&stmt,1,inbindsqlda)) {
 		return false;
 	}
+
+	// a describe into an sqlda with too few slots reports the true
+	// bind count in sqld but doesn't fill sqlvar beyond sqln - bail
+	// with an error rather than let sqln, inbindcountfromprepare, or
+	// the copy loop below run past the maxbindcount-sized allocation
+	if (inbindsqlda->sqld>(int32_t)maxbindcount) {
+		stringbuffer	err;
+		err.append(SQLR_ERROR_MAXBINDCOUNT_STRING);
+		err.append(" (")->append(maxbindcount);
+		err.append('<')->append(inbindsqlda->sqld)->append(')');
+		conn->cont->setError(this,err.getString(),
+				SQLR_ERROR_MAXBINDCOUNT,true);
+		return false;
+	}
 	inbindsqlda->sqln=inbindsqlda->sqld;
 
 	// copy the describe out now - inputBind() overwrites inbindsqlda's
