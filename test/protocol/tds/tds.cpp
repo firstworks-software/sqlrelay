@@ -1506,7 +1506,9 @@ int main(int argc, char **argv) {
 	assertEquals(cs_locale(context,CS_GET,locale,CS_SYB_SORTORDER,
 				(CS_VOID *)buf,(CS_INT)sizeof(buf),
 				&outlen),CS_SUCCEED);
-	assertEquals(buf,"");
+	// freetds keeps no sort order in the locale at all, so its readback
+	// is empty.  sap's cslib defaults the locale's sort order to binary.
+	assertEquals(buf,(TDSTEST_LINKED_WITH_FREETDS)?"":"binary");
 	stdoutput.printf("\n");
 
 
@@ -1519,18 +1521,38 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// The charset set through cs_locale never reaches libtds' iconv
-	// layer, so the readback is empty.  Only a ct_con_props CS_SET of
-	// CS_CLIENTCHARSET takes.  This connection converts as ISO-8859-1,
-	// which passes bytes through unchanged.
+	// Freetds has a real CS_CLIENTCHARSET connection property, and the
+	// charset set through cs_locale never reaches libtds' iconv layer,
+	// so its readback is empty - only a ct_con_props CS_SET of
+	// CS_CLIENTCHARSET takes.  That connection converts as ISO-8859-1,
+	// which passes bytes through unchanged.  Sap's ct-lib has no such
+	// property at all (CS_CLIENTCHARSET is aliased to CS_LOC_PROP at the
+	// top of this file), so the same question has to be put to the
+	// connection's locale instead, which does carry the charset given at
+	// login.  Handing a plain char buffer to CS_LOC_PROP would just get
+	// locale-struct bytes copied into it.
 	stdoutput.printf("ct_con_props: get client charset\n");
 	bytestring::zero(buf,sizeof(buf));
 	outlen=-1;
-	assertEquals(ct_con_props(dbconn,CS_GET,CS_CLIENTCHARSET,
-				(CS_VOID *)buf,(CS_INT)sizeof(buf),
-				&outlen),CS_SUCCEED);
-	assertEquals(outlen,0);
-	assertEquals(buf,"");
+	if (TDSTEST_LINKED_WITH_FREETDS) {
+		assertEquals(ct_con_props(dbconn,CS_GET,CS_CLIENTCHARSET,
+					(CS_VOID *)buf,(CS_INT)sizeof(buf),
+					&outlen),CS_SUCCEED);
+		assertEquals(outlen,0);
+		assertEquals(buf,"");
+	} else {
+		CS_LOCALE	*ccslocale=NULL;
+		assertEquals(cs_loc_alloc(context,&ccslocale),CS_SUCCEED);
+		assertEquals(ct_con_props(dbconn,CS_GET,CS_LOC_PROP,
+					(CS_VOID *)ccslocale,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_GET,ccslocale,
+					CS_SYB_CHARSET,
+					(CS_VOID *)buf,(CS_INT)sizeof(buf),
+					&outlen),CS_SUCCEED);
+		assertEquals(buf,charset);
+		assertEquals(cs_loc_drop(context,ccslocale),CS_SUCCEED);
+	}
 	stdoutput.printf("\n");
 
 
@@ -1570,36 +1592,46 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// Freetds' cslib stores a charset name in a locale without checking
+	// it, so a made-up name takes and reads back.  Sap's cslib looks the
+	// name up in /opt/sap/charsets, fails the set, and leaves the locale
+	// carrying the name it was allocated with.
 	stdoutput.printf("cs_locale: set bogus charset\n");
 	CS_LOCALE	*throwawaylocale=NULL;
 	assertEquals(cs_loc_alloc(context,&throwawaylocale),CS_SUCCEED);
 	assertEquals(cs_locale(context,CS_SET,throwawaylocale,CS_SYB_CHARSET,
 				(CS_VOID *)"nosuchcharset",CS_NULLTERM,
-				(CS_INT *)NULL),CS_SUCCEED);
+				(CS_INT *)NULL),
+			(TDSTEST_LINKED_WITH_FREETDS)?CS_SUCCEED:CS_FAIL);
 	bytestring::zero(buf,sizeof(buf));
 	outlen=-1;
 	assertEquals(cs_locale(context,CS_GET,throwawaylocale,CS_SYB_CHARSET,
 				(CS_VOID *)buf,(CS_INT)sizeof(buf),
 				&outlen),CS_SUCCEED);
-	assertEquals(buf,"nosuchcharset");
+	assertEquals(buf,(TDSTEST_LINKED_WITH_FREETDS)?
+					"nosuchcharset":charset);
 	stdoutput.printf("\n");
 
 
+	// freetds keeps no sort order in a locale, so setting one fails.
+	// Sap's cslib does, and takes it.
 	stdoutput.printf("cs_locale: set sort order\n");
 	assertEquals(cs_locale(context,CS_SET,throwawaylocale,CS_SYB_SORTORDER,
 				(CS_VOID *)"nocase",CS_NULLTERM,
-				(CS_INT *)NULL),CS_FAIL);
+				(CS_INT *)NULL),
+			(TDSTEST_LINKED_WITH_FREETDS)?CS_FAIL:CS_SUCCEED);
 	stdoutput.printf("\n");
 
 
-	// outlen is the size the value needs, not the size copied
+	// under freetds outlen is the size the value needs, not the size
+	// copied.  Sap's cslib leaves outlen untouched on a short buffer.
 	stdoutput.printf("cs_locale: get charset, short buffer\n");
 	bytestring::zero(buf,sizeof(buf));
 	outlen=-1;
 	assertEquals(cs_locale(context,CS_GET,throwawaylocale,CS_SYB_CHARSET,
 				(CS_VOID *)buf,(CS_INT)3,
 				&outlen),CS_FAIL);
-	assertEquals(outlen,14);
+	assertEquals(outlen,(TDSTEST_LINKED_WITH_FREETDS)?14:-1);
 	assertEquals(cs_loc_drop(context,throwawaylocale),CS_SUCCEED);
 	stdoutput.printf("\n");
 
@@ -1703,6 +1735,11 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	// as above, every result set below has to be fetched to CS_END_DATA
+	// before ct_results may be called again, or sap's ct-lib fails the
+	// ct_results with error 163 and marks the connection dead
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -1784,6 +1821,8 @@ int main(int argc, char **argv) {
 
 
 		stdoutput.printf("ct_results:\n");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
@@ -1932,14 +1971,22 @@ int main(int argc, char **argv) {
 
 	// Freetds' CS_DATAFMT has no collation field, so locale is the only
 	// place per-column collation could surface.  Poisoning it first
-	// keeps the NULL assert below from passing vacuously.
+	// keeps the NULL assert below from passing vacuously.  Freetds
+	// overwrites the field with NULL; sap's ct_describe overwrites it
+	// with a locale of its own - the same one for every column, and
+	// neither the connection's nor the one poisoned in here.
 	stdoutput.printf("ct_describe:\n");
 	CS_LOCALE	*poisonlocale=NULL;
 	assertEquals(cs_loc_alloc(context,&poisonlocale),CS_SUCCEED);
 	for (CS_INT i=0; i<6; i++) {
 		nafmt[i].locale=poisonlocale;
 		assertEquals(ct_describe(cmd,i+1,&(nafmt[i])),CS_SUCCEED);
-		assertTrue(nafmt[i].locale==NULL);
+		if (TDSTEST_LINKED_WITH_FREETDS) {
+			assertTrue(nafmt[i].locale==NULL);
+		} else {
+			assertTrue(nafmt[i].locale!=NULL);
+			assertTrue(nafmt[i].locale!=poisonlocale);
+		}
 	}
 	assertEquals(cs_loc_drop(context,poisonlocale),CS_SUCCEED);
 	stdoutput.printf("\n");
@@ -2025,6 +2072,8 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -2167,6 +2216,8 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -2274,6 +2325,8 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -2430,6 +2483,8 @@ int main(int argc, char **argv) {
 
 
 		stdoutput.printf("ct_results:\n");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
@@ -2511,9 +2566,31 @@ int main(int argc, char **argv) {
 	assertEquals(ct_con_props(conn2,CS_SET,
 				CS_PACKETSIZE,(CS_VOID *)&ps,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(ct_con_props(conn2,CS_SET,
-				CS_CLIENTCHARSET,(CS_VOID *)"UTF-8",CS_NULLTERM,
+	// Freetds takes a charset name straight through CS_CLIENTCHARSET and
+	// spells utf-8 with the hyphen.  Sap has no CS_CLIENTCHARSET, so the
+	// charset has to travel in a locale, and the name has to be one that
+	// appears in /opt/sap/charsets - "utf8", lower case, no hyphen.
+	const char	*charset2=(TDSTEST_LINKED_WITH_FREETDS)?"UTF-8":"utf8";
+	CS_LOCALE	*locale2=NULL;
+	if (TDSTEST_LINKED_WITH_FREETDS) {
+		assertEquals(ct_con_props(conn2,CS_SET,
+				CS_CLIENTCHARSET,(CS_VOID *)charset2,
+				CS_NULLTERM,(CS_INT *)NULL),CS_SUCCEED);
+	} else {
+		assertEquals(cs_loc_alloc(context,&locale2),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_SET,locale2,CS_LC_ALL,
+				(CS_CHAR *)NULL,CS_UNUSED,
 				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_SET,locale2,CS_SYB_LANG,
+				(CS_CHAR *)language,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_SET,locale2,CS_SYB_CHARSET,
+				(CS_CHAR *)charset2,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn2,CS_SET,CS_LOC_PROP,
+				(CS_VOID *)locale2,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+	}
 	stdoutput.printf("\n");
 
 
@@ -2526,15 +2603,32 @@ int main(int argc, char **argv) {
 	if (connected2==CS_SUCCEED) {
 
 		// set through ct_con_props, so this one reads back, unlike the
-		// primary connection above
+		// primary connection above.  Sap has to be asked through the
+		// connection's locale again, for the reason given there.
 		stdoutput.printf("ct_con_props: get client charset\n");
 		bytestring::zero(buf,sizeof(buf));
 		outlen=-1;
-		assertEquals(ct_con_props(conn2,CS_GET,CS_CLIENTCHARSET,
+		if (TDSTEST_LINKED_WITH_FREETDS) {
+			assertEquals(ct_con_props(conn2,CS_GET,
+					CS_CLIENTCHARSET,
 					(CS_VOID *)buf,(CS_INT)sizeof(buf),
 					&outlen),CS_SUCCEED);
-		assertEquals(outlen,5);
-		assertEquals(buf,"UTF-8");
+			assertEquals(outlen,5);
+		} else {
+			CS_LOCALE	*ccslocale2=NULL;
+			assertEquals(cs_loc_alloc(context,&ccslocale2),
+					CS_SUCCEED);
+			assertEquals(ct_con_props(conn2,CS_GET,CS_LOC_PROP,
+					(CS_VOID *)ccslocale2,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(cs_locale(context,CS_GET,ccslocale2,
+					CS_SYB_CHARSET,
+					(CS_VOID *)buf,(CS_INT)sizeof(buf),
+					&outlen),CS_SUCCEED);
+			assertEquals(cs_loc_drop(context,ccslocale2),
+					CS_SUCCEED);
+		}
+		assertEquals(buf,charset2);
 		stdoutput.printf("\n");
 
 
@@ -2629,7 +2723,15 @@ int main(int argc, char **argv) {
 		// stored.  Both ASE paths now report that failure as
 		// CS_CMD_FAIL, so the check is gated on issybase, not on
 		// whether the link is native.
+		//
+		// Sap's ct-lib converts down to iso_1 the same way, but it
+		// substitutes '?' for what it cannot represent instead of
+		// dropping it.  The quotes stay balanced, so the statement is
+		// still valid when it lands and every row is stored, with a?z
+		// where the utf-8 character was.
 		stdoutput.printf("ct_command: insert\n");
+		bool	charsetinsertfails=(issybase &&
+						TDSTEST_LINKED_WITH_FREETDS);
 		for (CS_INT i=0; i<3; i++) {
 			query=charsetinserts2[i];
 			assertEquals(ct_command(cmd2,CS_LANG_CMD,
@@ -2638,7 +2740,7 @@ int main(int argc, char **argv) {
 			assertEquals(ct_send(cmd2),CS_SUCCEED);
 			results=ct_results(cmd2,&resultstype);
 			assertEquals(results,CS_SUCCEED);
-			if (issybase && i>0) {
+			if (charsetinsertfails && i>0) {
 				assertEquals(resultstype,CS_CMD_FAIL);
 			} else {
 				assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -2722,8 +2824,9 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 
-		// neither ASE path stored rows 2 and 3, so only mssql has
-		// them to read back
+		// no ASE path stored rows 2 and 3 when the conversion above
+		// dropped characters, so under freetds only mssql has them
+		// to read back
 		if (!issybase) {
 
 			stdoutput.printf("ct_fetch:\n");
@@ -2760,10 +2863,38 @@ int main(int argc, char **argv) {
 			assertEquals(csdata[2],"a\xe6\x97\xa5z");
 			assertEquals(csdatalength[2],6);
 			stdoutput.printf("\n");
+
+		} else if (!charsetinsertfails) {
+
+			// sap's ct-lib substituted '?' on the way out, so
+			// ase stored a?z in both columns of both rows
+			for (CS_INT i=2; i<4; i++) {
+
+				stdoutput.printf("ct_fetch:\n");
+				assertEquals(ct_fetch(cmd2,
+						CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),
+						CS_SUCCEED);
+				assertEquals(rowsread,1);
+				stdoutput.printf("\n");
+
+
+				stdoutput.printf("row data:\n");
+				assertEquals(csdata[0],
+					(i==2)?"2":"3");
+				assertEquals(csdatalength[0],2);
+				assertEquals(csdata[1],"a?z");
+				assertEquals(csdatalength[1],4);
+				assertEquals(csdata[2],"a?z");
+				assertEquals(csdatalength[2],4);
+				stdoutput.printf("\n");
+			}
 		}
 
 
 		stdoutput.printf("ct_results:\n");
+		assertEquals(ct_fetch(cmd2,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
 		results=ct_results(cmd2,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
@@ -3238,8 +3369,9 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_fetch:\n");
-	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_SUCCEED);
+	CS_RETCODE	blkfetched=ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread);
+	assertEquals(blkfetched,CS_SUCCEED);
 	assertEquals(rowsread,1);
 	stdoutput.printf("\n");
 
@@ -3271,6 +3403,18 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	// as in the sections above, the result set has to be fetched to
+	// CS_END_DATA before ct_results may be called again, or sap's ct-lib
+	// fails the ct_results with error 163 and marks the connection dead.
+	// Guarded on the fetch above having returned a row, because fetching
+	// again after ct_fetch has already reported CS_END_DATA is error 158,
+	// which sap answers the same way.  Bulk load is unimplemented in
+	// sqlrelay's tds protocol module, so nothing was inserted to read
+	// back and the fetch above ends the data by itself.
+	if (blkfetched==CS_SUCCEED) {
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -3394,9 +3538,11 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_fetch:\n");
-	for (CS_INT i=0; i<3; i++) {
-		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_SUCCEED);
+	blkfetched=CS_SUCCEED;
+	for (CS_INT i=0; i<3 && blkfetched==CS_SUCCEED; i++) {
+		blkfetched=ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread);
+		assertEquals(blkfetched,CS_SUCCEED);
 		assertEquals(rowsread,1);
 		assertEquals(blkreaddata[0],blkrowint[i]);
 		assertEquals(blkreaddata[1],
@@ -3407,6 +3553,11 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	// guarded as above
+	if (blkfetched==CS_SUCCEED) {
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -3506,12 +3657,19 @@ int main(int argc, char **argv) {
 					&(blkreadlength[i]),
 					&(blkreadindicator[i])),CS_SUCCEED);
 	}
-	for (CS_INT i=0; i<2; i++) {
-		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_SUCCEED);
+	blkfetched=CS_SUCCEED;
+	for (CS_INT i=0; i<2 && blkfetched==CS_SUCCEED; i++) {
+		blkfetched=ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread);
+		assertEquals(blkfetched,CS_SUCCEED);
 		assertEquals(rowsread,1);
 		assertEquals(blkreaddata[0],blkmultint[i]);
 		assertEquals(blkreaddata[2],blkmultvarchar[i]);
+	}
+	// guarded as above
+	if (blkfetched==CS_SUCCEED) {
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
@@ -3615,6 +3773,8 @@ int main(int argc, char **argv) {
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 	assertEquals(rowsread,1);
 	assertEquals(blkreaddata[0],"2");
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -3736,6 +3896,8 @@ int main(int argc, char **argv) {
 					CS_UNUSED,&rowsread),CS_SUCCEED);
 		assertEquals(rowsread,1);
 		assertEquals(blkreaddata[0],"1");
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
@@ -3894,9 +4056,6 @@ int main(int argc, char **argv) {
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_SUCCEED);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_DONE);
 	stdoutput.printf("\n");
 
 
@@ -3906,12 +4065,29 @@ int main(int argc, char **argv) {
 	// which is zero for an insert, and so does sqlrelay - it never
 	// speaks tds 5, so there is no unsolicited parameter metadata to
 	// cache no matter what the backend is.
+	//
+	// This has to be asked while the prepare's own result is still the
+	// current one, and only when that result is one that can answer it.
+	// Freetds answers ct_res_info from cache whenever it is asked, but
+	// sap's ct-lib treats reading a result that is not current as a fatal
+	// user error and marks the connection dead over it - after
+	// CS_CMD_DONE that is error 34, after CS_CMD_FAIL error 40.  Every
+	// block from here to the end of the cursor section is guarded the
+	// same way, because sqlrelay's tds protocol module has no tds 5.0
+	// dynamic sql, rpc or cursor support yet, so the commands they read
+	// back all fail through it and each unguarded read would take the
+	// rest of the run down with it.
 	stdoutput.printf("ct_res_info: after prepare\n");
 	ncols=-1;
-	assertEquals(ct_res_info(cmd,CS_NUMDATA,
+	if (resultstype==CS_CMD_SUCCEED) {
+		assertEquals(ct_res_info(cmd,CS_NUMDATA,
 					(CS_VOID *)&ncols,CS_UNUSED,
 					(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(ncols,(nativease)?4:0);
+		assertEquals(ncols,(nativease)?4:0);
+	}
+	results=ct_results(cmd,&resultstype);
+	assertEquals(results,CS_SUCCEED);
+	assertEquals(resultstype,CS_CMD_DONE);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_END_RESULTS);
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
@@ -3984,10 +4160,14 @@ int main(int argc, char **argv) {
 
 
 	// The datalen handed to ct_param is strlen exactly.  With
-	// strlen+1 both servers store the terminator as data.  Only
-	// datatype, maxlength and count have to be set - status
-	// CS_INPUTVALUE is not required, and the name is discarded on
-	// this path.
+	// strlen+1 both servers store the terminator as data.  Freetds
+	// needs only datatype, maxlength and count set, and the name is
+	// discarded on this path.  Sap's ct-lib also requires status:
+	// it rejects a zero status with error 46, "An illegal value of 0
+	// was placed in the status field of the CS_DATAFMT structure",
+	// and marks the connection dead over it.  So every input
+	// parameter below carries CS_INPUTVALUE, which is what ct-lib
+	// documents and what freetds ignores.
 	stdoutput.printf("ct_dynamic: execute insert\n");
 	const char	*dyncharinput[4]={"one","two","three","four"};
 	const char	*dynvarcharinput[4]={"uno","dos","tres","cuatro"};
@@ -4001,6 +4181,7 @@ int main(int argc, char **argv) {
 		dynparam[0].datatype=CS_INT_TYPE;
 		dynparam[0].maxlength=4;
 		dynparam[0].count=1;
+		dynparam[0].status=CS_INPUTVALUE;
 		dynintvalue[0]=i+1;
 		assertEquals(ct_param(cmd,&(dynparam[0]),
 					(CS_VOID *)&(dynintvalue[0]),
@@ -4010,12 +4191,14 @@ int main(int argc, char **argv) {
 		dynparam[1].datatype=CS_CHAR_TYPE;
 		dynparam[1].maxlength=20;
 		dynparam[1].count=1;
+		dynparam[1].status=CS_INPUTVALUE;
 		charstring::copy(dyncharvalue[0],dyncharinput[i]);
 
 		bytestring::zero(&(dynparam[2]),sizeof(CS_DATAFMT));
 		dynparam[2].datatype=CS_CHAR_TYPE;
 		dynparam[2].maxlength=20;
 		dynparam[2].count=1;
+		dynparam[2].status=CS_INPUTVALUE;
 		charstring::copy(dyncharvalue[1],dynvarcharinput[i]);
 
 		// the last row sends both char columns null
@@ -4033,6 +4216,7 @@ int main(int argc, char **argv) {
 		dynparam[3].datatype=CS_INT_TYPE;
 		dynparam[3].maxlength=4;
 		dynparam[3].count=1;
+		dynparam[3].status=CS_INPUTVALUE;
 		dynintvalue[3]=101+i;
 		assertEquals(ct_param(cmd,&(dynparam[3]),
 					(CS_VOID *)&(dynintvalue[3]),
@@ -4300,6 +4484,7 @@ int main(int argc, char **argv) {
 		dynparam[0].datatype=CS_INT_TYPE;
 		dynparam[0].maxlength=4;
 		dynparam[0].count=1;
+		dynparam[0].status=CS_INPUTVALUE;
 		dynintvalue[0]=i+2;
 		assertEquals(ct_param(cmd,&(dynparam[0]),
 					(CS_VOID *)&(dynintvalue[0]),
@@ -4371,6 +4556,7 @@ int main(int argc, char **argv) {
 	dynparam[0].datatype=CS_INT_TYPE;
 	dynparam[0].maxlength=4;
 	dynparam[0].count=1;
+	dynparam[0].status=CS_INPUTVALUE;
 	assertEquals(ct_setparam(cmd,&(dynparam[0]),
 				(CS_VOID *)&(dynintvalue[0]),
 				&(dynsetlength[0]),
@@ -4381,6 +4567,7 @@ int main(int argc, char **argv) {
 	dynparam[1].datatype=CS_CHAR_TYPE;
 	dynparam[1].maxlength=20;
 	dynparam[1].count=1;
+	dynparam[1].status=CS_INPUTVALUE;
 	assertEquals(ct_setparam(cmd,&(dynparam[1]),
 				(CS_VOID *)dyncharvalue[0],
 				&(dynsetlength[1]),
@@ -4391,6 +4578,7 @@ int main(int argc, char **argv) {
 	dynparam[2].datatype=CS_CHAR_TYPE;
 	dynparam[2].maxlength=20;
 	dynparam[2].count=1;
+	dynparam[2].status=CS_INPUTVALUE;
 	assertEquals(ct_setparam(cmd,&(dynparam[2]),
 				(CS_VOID *)dyncharvalue[1],
 				&(dynsetlength[2]),
@@ -4401,6 +4589,7 @@ int main(int argc, char **argv) {
 	dynparam[3].datatype=CS_INT_TYPE;
 	dynparam[3].maxlength=4;
 	dynparam[3].count=1;
+	dynparam[3].status=CS_INPUTVALUE;
 	assertEquals(ct_setparam(cmd,&(dynparam[3]),
 				(CS_VOID *)&(dynintvalue[3]),
 				&(dynsetlength[3]),
@@ -4471,6 +4660,7 @@ int main(int argc, char **argv) {
 	dynparam[0].datatype=CS_INT_TYPE;
 	dynparam[0].maxlength=4;
 	dynparam[0].count=1;
+	dynparam[0].status=CS_INPUTVALUE;
 	dynintvalue[0]=6;
 	assertEquals(ct_param(cmd,&(dynparam[0]),
 				(CS_VOID *)&(dynintvalue[0]),
@@ -4479,6 +4669,7 @@ int main(int argc, char **argv) {
 	dynparam[1].datatype=CS_CHAR_TYPE;
 	dynparam[1].maxlength=20;
 	dynparam[1].count=1;
+	dynparam[1].status=CS_INPUTVALUE;
 	charstring::copy(dyncharvalue[0],"six");
 	assertEquals(ct_param(cmd,&(dynparam[1]),
 			(CS_VOID *)dyncharvalue[0],
@@ -4488,6 +4679,7 @@ int main(int argc, char **argv) {
 	dynparam[2].datatype=CS_CHAR_TYPE;
 	dynparam[2].maxlength=20;
 	dynparam[2].count=1;
+	dynparam[2].status=CS_INPUTVALUE;
 	charstring::copy(dyncharvalue[1],"seis");
 	assertEquals(ct_param(cmd,&(dynparam[2]),
 			(CS_VOID *)dyncharvalue[1],
@@ -4497,6 +4689,7 @@ int main(int argc, char **argv) {
 	dynparam[3].datatype=CS_INT_TYPE;
 	dynparam[3].maxlength=4;
 	dynparam[3].count=1;
+	dynparam[3].status=CS_INPUTVALUE;
 	dynintvalue[3]=106;
 	assertEquals(ct_param(cmd,&(dynparam[3]),
 				(CS_VOID *)&(dynintvalue[3]),
@@ -4710,6 +4903,7 @@ int main(int argc, char **argv) {
 	dynparam[0].count=1;
 	charstring::copy(dynparam[0].name,"@inparam");
 	dynparam[0].namelen=8;
+	dynparam[0].status=CS_INPUTVALUE;
 	dynintvalue[0]=2;
 	assertEquals(ct_param(cmd,&(dynparam[0]),
 				(CS_VOID *)&(dynintvalue[0]),
@@ -4874,6 +5068,7 @@ int main(int argc, char **argv) {
 		dynparam[1].datatype=CS_CHAR_TYPE;
 		dynparam[1].maxlength=64;
 		dynparam[1].count=1;
+		dynparam[1].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(dynparam[1]),
 				(CS_VOID *)dynrpcparams,
 				charstring::getLength(dynrpcparams),
@@ -4887,6 +5082,7 @@ int main(int argc, char **argv) {
 		dynparam[2].datatype=CS_INT_TYPE;
 		dynparam[2].maxlength=4;
 		dynparam[2].count=1;
+		dynparam[2].status=CS_INPUTVALUE;
 		dynintvalue[2]=1;
 		assertEquals(ct_param(cmd,&(dynparam[2]),
 					(CS_VOID *)&(dynintvalue[2]),
@@ -4960,6 +5156,7 @@ int main(int argc, char **argv) {
 	dynparam[0].datatype=CS_CHAR_TYPE;
 	dynparam[0].maxlength=64;
 	dynparam[0].count=1;
+	dynparam[0].status=CS_INPUTVALUE;
 	assertEquals(ct_param(cmd,&(dynparam[0]),
 			(CS_VOID *)dynrpcstmt,
 			charstring::getLength(dynrpcstmt),0),CS_SUCCEED);
@@ -4970,6 +5167,7 @@ int main(int argc, char **argv) {
 	dynparam[1].datatype=CS_INT_TYPE;
 	dynparam[1].maxlength=4;
 	dynparam[1].count=1;
+	dynparam[1].status=CS_INPUTVALUE;
 	dynintvalue[1]=1;
 	assertEquals(ct_param(cmd,&(dynparam[1]),
 				(CS_VOID *)&(dynintvalue[1]),
@@ -5016,6 +5214,7 @@ int main(int argc, char **argv) {
 			dynparam[0].datatype=CS_INT_TYPE;
 			dynparam[0].maxlength=4;
 			dynparam[0].count=1;
+			dynparam[0].status=CS_INPUTVALUE;
 			dynintvalue[0]=1;
 			assertEquals(ct_param(cmd,&(dynparam[0]),
 					(CS_VOID *)&(dynintvalue[0]),
@@ -5165,6 +5364,7 @@ int main(int argc, char **argv) {
 			dynparam[0].datatype=CS_INT_TYPE;
 			dynparam[0].maxlength=4;
 			dynparam[0].count=1;
+			dynparam[0].status=CS_INPUTVALUE;
 			dynintvalue[0]=dynhandle;
 			assertEquals(ct_param(cmd,&(dynparam[0]),
 					(CS_VOID *)&(dynintvalue[0]),
@@ -5228,6 +5428,7 @@ int main(int argc, char **argv) {
 		dynparam[0].datatype=CS_INT_TYPE;
 		dynparam[0].maxlength=4;
 		dynparam[0].count=1;
+		dynparam[0].status=CS_INPUTVALUE;
 		dynintvalue[0]=dynhandle;
 		assertEquals(ct_param(cmd,&(dynparam[0]),
 					(CS_VOID *)&(dynintvalue[0]),
@@ -5269,6 +5470,7 @@ int main(int argc, char **argv) {
 		dynparam[0].datatype=CS_INT_TYPE;
 		dynparam[0].maxlength=4;
 		dynparam[0].count=1;
+		dynparam[0].status=CS_INPUTVALUE;
 		dynintvalue[0]=dynhandle;
 		assertEquals(ct_param(cmd,&(dynparam[0]),
 					(CS_VOID *)&(dynintvalue[0]),
@@ -5619,13 +5821,22 @@ int main(int argc, char **argv) {
 	stdoutput.printf("ct_res_info: CS_CUR_ family is unimplemented\n");
 	CS_INT	cursinfo[4]={CS_CUR_STATUS,CS_CUR_ID,
 					CS_CUR_NAME,CS_CUR_ROWCOUNT};
+	// CS_CUR_NAME hands back the cursor name rather than an int, so the
+	// destination has to be big enough for a string under a ct-lib that
+	// implements the family.  A bare CS_INT would be smashed.
+	union cursinfobuffer {
+		CS_INT	intvalue;
+		CS_CHAR	charvalue[1024];
+	};
 	for (CS_INT i=0; i<4; i++) {
-		CS_INT	cursinfovalue=-987654;
+		cursinfobuffer	cursinfovalue;
+		bytestring::zero(&cursinfovalue,sizeof(cursinfovalue));
+		cursinfovalue.intvalue=-987654;
 		CS_INT	cursinfolen=-987654;
 		assertEquals(ct_res_info(cmd,cursinfo[i],
 					(CS_VOID *)&cursinfovalue,CS_UNUSED,
 					&cursinfolen),CS_FAIL);
-		assertEquals(cursinfovalue,-987654);
+		assertEquals(cursinfovalue.intvalue,-987654);
 		assertEquals(cursinfolen,-987654);
 	}
 	stdoutput.printf("\n");
@@ -6198,6 +6409,7 @@ int main(int argc, char **argv) {
 	cursparamfmt.datatype=CS_INT_TYPE;
 	cursparamfmt.maxlength=4;
 	cursparamfmt.count=1;
+	cursparamfmt.status=CS_INPUTVALUE;
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursid6,CS_NULLTERM,
 				(CS_CHAR *)cursparamselect,CS_NULLTERM,
@@ -7055,6 +7267,7 @@ int main(int argc, char **argv) {
 		posparam[1].datatype=CS_CHAR_TYPE;
 		posparam[1].maxlength=charstring::getLength(posselect);
 		posparam[1].count=1;
+		posparam[1].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[1]),
 					(CS_VOID *)posselect,
 					charstring::getLength(posselect),
@@ -7165,6 +7378,7 @@ int main(int argc, char **argv) {
 			posparam[i].datatype=CS_INT_TYPE;
 			posparam[i].maxlength=4;
 			posparam[i].count=1;
+			posparam[i].status=CS_INPUTVALUE;
 			posintvalue[i]=(i==0)?poscursorid:((i==1)?2:1);
 			assertEquals(ct_param(cmd,&(posparam[i]),
 					(CS_VOID *)&(posintvalue[i]),
@@ -7233,6 +7447,7 @@ int main(int argc, char **argv) {
 			posparam[i].datatype=CS_INT_TYPE;
 			posparam[i].maxlength=4;
 			posparam[i].count=1;
+			posparam[i].status=CS_INPUTVALUE;
 			posintvalue[i]=(i==0)?poscursorid:1;
 			assertEquals(ct_param(cmd,&(posparam[i]),
 					(CS_VOID *)&(posintvalue[i]),
@@ -7242,6 +7457,7 @@ int main(int argc, char **argv) {
 		posparam[3].datatype=CS_CHAR_TYPE;
 		posparam[3].maxlength=postablelen;
 		posparam[3].count=1;
+		posparam[3].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[3]),
 				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
 		bytestring::zero(&(posparam[4]),sizeof(CS_DATAFMT));
@@ -7250,6 +7466,7 @@ int main(int argc, char **argv) {
 		posparam[4].count=1;
 		charstring::copy(posparam[4].name,"@posname");
 		posparam[4].namelen=8;
+		posparam[4].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[4]),
 				(CS_VOID *)"ONE",3,0),CS_SUCCEED);
 		bytestring::zero(&(posparam[5]),sizeof(CS_DATAFMT));
@@ -7258,6 +7475,7 @@ int main(int argc, char **argv) {
 		posparam[5].count=1;
 		charstring::copy(posparam[5].name,"@posval");
 		posparam[5].namelen=7;
+		posparam[5].status=CS_INPUTVALUE;
 		posintvalue[5]=11;
 		assertEquals(ct_param(cmd,&(posparam[5]),
 					(CS_VOID *)&(posintvalue[5]),
@@ -7345,6 +7563,7 @@ int main(int argc, char **argv) {
 			posparam[i].datatype=CS_INT_TYPE;
 			posparam[i].maxlength=4;
 			posparam[i].count=1;
+			posparam[i].status=CS_INPUTVALUE;
 			posintvalue[i]=(i==0)?poscursorid:((i==1)?2:1);
 			assertEquals(ct_param(cmd,&(posparam[i]),
 					(CS_VOID *)&(posintvalue[i]),
@@ -7407,6 +7626,7 @@ int main(int argc, char **argv) {
 			posparam[i].datatype=CS_INT_TYPE;
 			posparam[i].maxlength=4;
 			posparam[i].count=1;
+			posparam[i].status=CS_INPUTVALUE;
 			posintvalue[i]=(i==0)?poscursorid:((i==1)?2:1);
 			assertEquals(ct_param(cmd,&(posparam[i]),
 					(CS_VOID *)&(posintvalue[i]),
@@ -7416,6 +7636,7 @@ int main(int argc, char **argv) {
 		posparam[3].datatype=CS_CHAR_TYPE;
 		posparam[3].maxlength=postablelen;
 		posparam[3].count=1;
+		posparam[3].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[3]),
 				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
 		assertEquals(ct_send(cmd),CS_SUCCEED);
@@ -7499,6 +7720,7 @@ int main(int argc, char **argv) {
 			posparam[i].datatype=CS_INT_TYPE;
 			posparam[i].maxlength=4;
 			posparam[i].count=1;
+			posparam[i].status=CS_INPUTVALUE;
 			posintvalue[i]=(i==0)?poscursorid:((i==1)?4:1);
 			assertEquals(ct_param(cmd,&(posparam[i]),
 					(CS_VOID *)&(posintvalue[i]),
@@ -7508,6 +7730,7 @@ int main(int argc, char **argv) {
 		posparam[3].datatype=CS_CHAR_TYPE;
 		posparam[3].maxlength=postablelen;
 		posparam[3].count=1;
+		posparam[3].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[3]),
 				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
 		bytestring::zero(&(posparam[4]),sizeof(CS_DATAFMT));
@@ -7516,6 +7739,7 @@ int main(int argc, char **argv) {
 		posparam[4].count=1;
 		charstring::copy(posparam[4].name,"@posid");
 		posparam[4].namelen=6;
+		posparam[4].status=CS_INPUTVALUE;
 		posintvalue[4]=4;
 		assertEquals(ct_param(cmd,&(posparam[4]),
 					(CS_VOID *)&(posintvalue[4]),
@@ -7526,6 +7750,7 @@ int main(int argc, char **argv) {
 		posparam[5].count=1;
 		charstring::copy(posparam[5].name,"@posname");
 		posparam[5].namelen=8;
+		posparam[5].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[5]),
 				(CS_VOID *)"four",4,0),CS_SUCCEED);
 		bytestring::zero(&(posparam[6]),sizeof(CS_DATAFMT));
@@ -7534,6 +7759,7 @@ int main(int argc, char **argv) {
 		posparam[6].count=1;
 		charstring::copy(posparam[6].name,"@posval");
 		posparam[6].namelen=7;
+		posparam[6].status=CS_INPUTVALUE;
 		posintvalue[6]=40;
 		assertEquals(ct_param(cmd,&(posparam[6]),
 					(CS_VOID *)&(posintvalue[6]),
@@ -7626,6 +7852,7 @@ int main(int argc, char **argv) {
 			posparam[i].datatype=CS_INT_TYPE;
 			posparam[i].maxlength=4;
 			posparam[i].count=1;
+			posparam[i].status=CS_INPUTVALUE;
 			posintvalue[i]=(i==0)?poscursorid:1;
 			assertEquals(ct_param(cmd,&(posparam[i]),
 					(CS_VOID *)&(posintvalue[i]),
@@ -7635,6 +7862,7 @@ int main(int argc, char **argv) {
 		posparam[3].datatype=CS_CHAR_TYPE;
 		posparam[3].maxlength=postablelen;
 		posparam[3].count=1;
+		posparam[3].status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&(posparam[3]),
 				(CS_VOID *)postable,postablelen,0),CS_SUCCEED);
 		bytestring::zero(&(posparam[4]),sizeof(CS_DATAFMT));
@@ -7643,6 +7871,7 @@ int main(int argc, char **argv) {
 		posparam[4].count=1;
 		charstring::copy(posparam[4].name,"posval");
 		posparam[4].namelen=6;
+		posparam[4].status=CS_INPUTVALUE;
 		posintvalue[4]=99;
 		assertEquals(ct_param(cmd,&(posparam[4]),
 					(CS_VOID *)&(posintvalue[4]),
@@ -7696,6 +7925,7 @@ int main(int argc, char **argv) {
 		posparam[0].datatype=CS_INT_TYPE;
 		posparam[0].maxlength=4;
 		posparam[0].count=1;
+		posparam[0].status=CS_INPUTVALUE;
 		posintvalue[0]=poscursorid;
 		assertEquals(ct_param(cmd,&(posparam[0]),
 					(CS_VOID *)&(posintvalue[0]),
@@ -8361,6 +8591,7 @@ int main(int argc, char **argv) {
 		bindparamfmt.precision=bc->precision;
 		bindparamfmt.scale=bc->scale;
 		bindparamfmt.count=bc->count;
+		bindparamfmt.status=CS_INPUTVALUE;
 		assertEquals(ct_param(cmd,&bindparamfmt,bc->value,
 					bc->datalen,bc->indicator),
 				(howfar==bindparamfails)?CS_FAIL:CS_SUCCEED);
@@ -8576,6 +8807,7 @@ int main(int argc, char **argv) {
 	bindoutfmt[0].count=1;
 	charstring::copy(bindoutfmt[0].name,"@pin");
 	bindoutfmt[0].namelen=4;
+	bindoutfmt[0].status=CS_INPUTVALUE;
 	assertEquals(ct_param(cmd,&(bindoutfmt[0]),
 				(CS_VOID *)&bindintvalue,
 				sizeof(CS_INT),0),CS_SUCCEED);
@@ -8731,6 +8963,7 @@ int main(int argc, char **argv) {
 	bindoutfmt[0].count=1;
 	charstring::copy(bindoutfmt[0].name,"@pin");
 	bindoutfmt[0].namelen=4;
+	bindoutfmt[0].status=CS_INPUTVALUE;
 	assertEquals(ct_param(cmd,&(bindoutfmt[0]),
 				(CS_VOID *)&bindintvalue,
 				sizeof(CS_INT),0),CS_SUCCEED);
@@ -8847,6 +9080,7 @@ int main(int argc, char **argv) {
 		bindparamfmt.datatype=bindrpcbintype[i];
 		bindparamfmt.maxlength=20;
 		bindparamfmt.count=1;
+		bindparamfmt.status=CS_INPUTVALUE;
 		if (bindrpcbintype[i]==CS_VARBINARY_TYPE) {
 			assertEquals(ct_param(cmd,&bindparamfmt,
 					(CS_VOID *)&bindvarbinaryvalue,
@@ -8993,6 +9227,7 @@ int main(int argc, char **argv) {
 		bindparamfmt.datatype=bindrpcnulltype[i];
 		bindparamfmt.maxlength=20;
 		bindparamfmt.count=1;
+		bindparamfmt.status=CS_INPUTVALUE;
 
 		// an indicator of CS_NULLDATA is what makes it null - the
 		// value and the datalen are ignored
@@ -9085,6 +9320,7 @@ int main(int argc, char **argv) {
 			bindoutfmt[0].count=1;
 			charstring::copy(bindoutfmt[0].name,"@pin");
 			bindoutfmt[0].namelen=4;
+			bindoutfmt[0].status=CS_INPUTVALUE;
 			assertEquals(ct_setparam(cmd,&(bindoutfmt[0]),
 					(CS_VOID *)&bindintvalue,
 					&(bindsetlength[0]),
@@ -9167,14 +9403,20 @@ int main(int argc, char **argv) {
 	bindparamfmt.datatype=CS_INT_TYPE;
 	bindparamfmt.maxlength=4;
 	bindparamfmt.count=1;
+	bindparamfmt.status=CS_INPUTVALUE;
 	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
 				sizeof(CS_INT),0),CS_FAIL);
 	query="select 1";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,query,
 				charstring::getLength(query),
 				CS_UNUSED),CS_SUCCEED);
+	// a language command takes no parameters, and sap's ct-lib says so.
+	// Freetds only refuses this one on the zero status the CS_DATAFMT
+	// used to carry - with a real CS_INPUTVALUE it accepts the parameter
+	// and drops it on the floor.
 	assertEquals(ct_param(cmd,&bindparamfmt,(CS_VOID *)&bindintvalue,
-				sizeof(CS_INT),0),CS_FAIL);
+				sizeof(CS_INT),0),
+			(TDSTEST_LINKED_WITH_FREETDS)?CS_SUCCEED:CS_FAIL);
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	assertEquals(ct_command(cmd,CS_RPC_CMD,(CS_CHAR *)"bindbinproc",
 				CS_NULLTERM,CS_UNUSED),CS_SUCCEED);
@@ -9207,6 +9449,7 @@ int main(int argc, char **argv) {
 	bindparamfmt.datatype=CS_INT_TYPE;
 	bindparamfmt.maxlength=4;
 	bindparamfmt.count=1;
+	bindparamfmt.status=CS_INPUTVALUE;
 
 	assertEquals(ct_dynamic(cmd,CS_EXECUTE,(CS_CHAR *)"bindmm",
 				CS_NULLTERM,(CS_CHAR *)NULL,CS_UNUSED),
