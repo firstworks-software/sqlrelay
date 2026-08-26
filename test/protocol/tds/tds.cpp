@@ -191,10 +191,11 @@ int main(int argc, char **argv) {
 
 	// issybase means "the backend is ase/sybase", true whether reached
 	// natively or through sqlrelay.  Some ase-flavored expectations below
-	// only hold over a *native*, direct ct-lib-to-ase link (real
-	// unsolicited tds-5 metadata, ase's own procedure-not-found status,
-	// etc) - those never apply when going through sqlrelay, which never
-	// exposes a raw tds 5 wire even though the backend is still ase.
+	// hold only over a *native*, direct ct-lib-to-ase link - ase's own
+	// systypes usertype values (sqlrelay's tds protocol module
+	// synthesizes its own usertype value instead) and ase's own
+	// procedure-not-found status (sqlrelay implements those procedures
+	// itself) - never against sqlrelay, whatever wire dialect it speaks.
 	// nativease isolates that narrower fact from issybase.
 	bool	nativease=(issybase && !issqlrelay);
 
@@ -729,6 +730,15 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// ct_describe fills in the type-describing fields of the CS_DATAFMT.
+	// FreeTDS's also sets count to 1 and never touches format, so format
+	// keeps the CS_FMT_NULLTERM that ct_bind was given just above.  SAP's
+	// sets neither, and both read back 0.  The ct-lib docs only promise
+	// the type fields, so neither library is wrong - expect whichever one
+	// this binary is linked against.
+	CS_INT	describeformat=(TDSTEST_LINKED_WITH_FREETDS)?CS_FMT_NULLTERM:0;
+	CS_INT	describecount=(TDSTEST_LINKED_WITH_FREETDS)?1:0;
+
 	stdoutput.printf("ct_describe:\n");
 	col=0;
 	for (CS_INT i=0; i<28; i++) {
@@ -743,13 +753,13 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[0].name);
 	assertEquals(column[0].name,"testtinyint");
 	assertEquals(column[0].datatype,CS_TINYINT_TYPE);
-	assertEquals(column[0].format,CS_FMT_NULLTERM);
+	assertEquals(column[0].format,describeformat);
 	assertEquals(column[0].maxlength,1);
 	assertEquals(column[0].precision,0);
 	assertEquals(column[0].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[0].status,CS_UNUSED);
-	assertEquals(column[0].count,1);
+	assertEquals(column[0].count,describecount);
 	// ase sends each column's systypes usertype and mssql sends 0, but
 	// only a native ct-lib link ever sees ase's - through sqlrelay the
 	// tds protocol module makes up the usertype itself (see userType()
@@ -760,130 +770,130 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[1].name);
 	assertEquals(column[1].name,"testbit");
 	assertEquals(column[1].datatype,CS_BIT_TYPE);
-	assertEquals(column[1].format,CS_FMT_NULLTERM);
+	assertEquals(column[1].format,describeformat);
 	assertEquals(column[1].maxlength,1);
 	assertEquals(column[1].precision,0);
 	assertEquals(column[1].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[1].status,CS_UNUSED);
-	assertEquals(column[1].count,1);
+	assertEquals(column[1].count,describecount);
 	assertEquals(column[1].usertype,(nativease)?16:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[2].name);
 	assertEquals(column[2].name,"testsmallint");
 	assertEquals(column[2].datatype,CS_SMALLINT_TYPE);
-	assertEquals(column[2].format,CS_FMT_NULLTERM);
+	assertEquals(column[2].format,describeformat);
 	assertEquals(column[2].maxlength,2);
 	assertEquals(column[2].precision,0);
 	assertEquals(column[2].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[2].status,CS_UNUSED);
-	assertEquals(column[2].count,1);
+	assertEquals(column[2].count,describecount);
 	assertEquals(column[2].usertype,(nativease)?6:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[3].name);
 	assertEquals(column[3].name,"testint");
 	assertEquals(column[3].datatype,CS_INT_TYPE);
-	assertEquals(column[3].format,CS_FMT_NULLTERM);
+	assertEquals(column[3].format,describeformat);
 	assertEquals(column[3].maxlength,4);
 	assertEquals(column[3].precision,0);
 	assertEquals(column[3].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[3].status,CS_UNUSED);
-	assertEquals(column[3].count,1);
+	assertEquals(column[3].count,describecount);
 	assertEquals(column[3].usertype,(nativease)?7:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[4].name);
 	assertEquals(column[4].name,"testsmalldatetime");
 	assertEquals(column[4].datatype,CS_DATETIME4_TYPE);
-	assertEquals(column[4].format,CS_FMT_NULLTERM);
+	assertEquals(column[4].format,describeformat);
 	assertEquals(column[4].maxlength,4);
 	assertEquals(column[4].precision,0);
 	assertEquals(column[4].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[4].status,CS_UNUSED);
-	assertEquals(column[4].count,1);
+	assertEquals(column[4].count,describecount);
 	assertEquals(column[4].usertype,(nativease)?22:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[5].name);
 	assertEquals(column[5].name,"testreal");
 	assertEquals(column[5].datatype,CS_REAL_TYPE);
-	assertEquals(column[5].format,CS_FMT_NULLTERM);
+	assertEquals(column[5].format,describeformat);
 	assertEquals(column[5].maxlength,4);
 	assertEquals(column[5].precision,0);
 	assertEquals(column[5].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[5].status,CS_UNUSED);
-	assertEquals(column[5].count,1);
+	assertEquals(column[5].count,describecount);
 	assertEquals(column[5].usertype,(nativease)?23:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[6].name);
 	assertEquals(column[6].name,"testmoney");
 	assertEquals(column[6].datatype,CS_MONEY_TYPE);
-	assertEquals(column[6].format,CS_FMT_NULLTERM);
+	assertEquals(column[6].format,describeformat);
 	assertEquals(column[6].maxlength,8);
 	assertEquals(column[6].precision,0);
 	assertEquals(column[6].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[6].status,CS_UNUSED);
-	assertEquals(column[6].count,1);
+	assertEquals(column[6].count,describecount);
 	assertEquals(column[6].usertype,(nativease)?11:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[7].name);
 	assertEquals(column[7].name,"testdatetime");
 	assertEquals(column[7].datatype,CS_DATETIME_TYPE);
-	assertEquals(column[7].format,CS_FMT_NULLTERM);
+	assertEquals(column[7].format,describeformat);
 	assertEquals(column[7].maxlength,8);
 	assertEquals(column[7].precision,0);
 	assertEquals(column[7].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[7].status,CS_UNUSED);
-	assertEquals(column[7].count,1);
+	assertEquals(column[7].count,describecount);
 	assertEquals(column[7].usertype,(nativease)?12:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[8].name);
 	assertEquals(column[8].name,"testfloat");
 	assertEquals(column[8].datatype,CS_FLOAT_TYPE);
-	assertEquals(column[8].format,CS_FMT_NULLTERM);
+	assertEquals(column[8].format,describeformat);
 	assertEquals(column[8].maxlength,8);
 	assertEquals(column[8].precision,0);
 	assertEquals(column[8].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[8].status,CS_UNUSED);
-	assertEquals(column[8].count,1);
+	assertEquals(column[8].count,describecount);
 	assertEquals(column[8].usertype,(nativease)?8:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[9].name);
 	assertEquals(column[9].name,"testsmallmoney");
 	assertEquals(column[9].datatype,CS_MONEY4_TYPE);
-	assertEquals(column[9].format,CS_FMT_NULLTERM);
+	assertEquals(column[9].format,describeformat);
 	assertEquals(column[9].maxlength,4);
 	assertEquals(column[9].precision,0);
 	assertEquals(column[9].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[9].status,CS_UNUSED);
-	assertEquals(column[9].count,1);
+	assertEquals(column[9].count,describecount);
 	assertEquals(column[9].usertype,(nativease)?21:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[10].name);
 	assertEquals(column[10].name,"testbigint");
 	assertEquals(column[10].datatype,CS_BIGINT_TYPE);
-	assertEquals(column[10].format,CS_FMT_NULLTERM);
+	assertEquals(column[10].format,describeformat);
 	assertEquals(column[10].maxlength,8);
 	assertEquals(column[10].precision,0);
 	assertEquals(column[10].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[10].status,CS_UNUSED);
-	assertEquals(column[10].count,1);
+	assertEquals(column[10].count,describecount);
 	assertEquals(column[10].usertype,(nativease)?43:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -891,13 +901,13 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%s\n",column[11].name);
 		assertEquals(column[11].name,"testguid");
 		assertEquals(column[11].datatype,CS_UNIQUE_TYPE);
-		assertEquals(column[11].format,CS_FMT_NULLTERM);
+		assertEquals(column[11].format,describeformat);
 		assertEquals(column[11].maxlength,16);
 		assertEquals(column[11].precision,0);
 		assertEquals(column[11].scale,0);
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[11].status,CS_UNUSED);
-		assertEquals(column[11].count,1);
+		assertEquals(column[11].count,describecount);
 		assertEquals(column[11].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
 	}
@@ -905,26 +915,26 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[12].name);
 	assertEquals(column[12].name,"testdecimal");
 	assertEquals(column[12].datatype,CS_DECIMAL_TYPE);
-	assertEquals(column[12].format,CS_FMT_NULLTERM);
+	assertEquals(column[12].format,describeformat);
 	assertEquals(column[12].maxlength,35);
 	assertEquals(column[12].precision,3);
 	assertEquals(column[12].scale,2);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[12].status,CS_UNUSED);
-	assertEquals(column[12].count,1);
+	assertEquals(column[12].count,describecount);
 	assertEquals(column[12].usertype,(nativease)?26:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[13].name);
 	assertEquals(column[13].name,"testnumeric");
 	assertEquals(column[13].datatype,CS_NUMERIC_TYPE);
-	assertEquals(column[13].format,CS_FMT_NULLTERM);
+	assertEquals(column[13].format,describeformat);
 	assertEquals(column[13].maxlength,35);
 	assertEquals(column[13].precision,3);
 	assertEquals(column[13].scale,2);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[13].status,CS_UNUSED);
-	assertEquals(column[13].count,1);
+	assertEquals(column[13].count,describecount);
 	assertEquals(column[13].usertype,(nativease)?10:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -937,14 +947,14 @@ int main(int argc, char **argv) {
 	// and on the native mssql run.  Native sybase has its own types.
 	assertEquals(column[14].datatype,
 			(issqlrelay && !tds73plus)?CS_CHAR_TYPE:CS_DATE_TYPE);
-	assertEquals(column[14].format,CS_FMT_NULLTERM);
+	assertEquals(column[14].format,describeformat);
 	// FIXME: 64 direct, 16 via relay
 	//assertEquals(column[14].maxlength,64);
 	assertEquals(column[14].precision,0);
 	assertEquals(column[14].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[14].status,CS_UNUSED);
-	assertEquals(column[14].count,1);
+	assertEquals(column[14].count,describecount);
 	assertEquals(column[14].usertype,(nativease)?37:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -953,14 +963,14 @@ int main(int argc, char **argv) {
 	assertEquals(column[15].datatype,
 			(issqlrelay && !tds73plus)?CS_CHAR_TYPE:
 			(issybase)?CS_TIME_TYPE:CS_BIGTIME_TYPE);
-	assertEquals(column[15].format,CS_FMT_NULLTERM);
+	assertEquals(column[15].format,describeformat);
 	// FIXME: 16/7/7 direct, 64/0/0 via relay
 	//assertEquals(column[15].maxlength,16);
 	//assertEquals(column[15].precision,7);
 	//assertEquals(column[15].scale,7);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[15].status,CS_UNUSED);
-	assertEquals(column[15].count,1);
+	assertEquals(column[15].count,describecount);
 	assertEquals(column[15].usertype,(nativease)?38:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -970,14 +980,14 @@ int main(int argc, char **argv) {
 		assertEquals(column[16].datatype,
 				(issqlrelay && !tds73plus)?CS_CHAR_TYPE:
 						CS_BIGDATETIME_TYPE);
-		assertEquals(column[16].format,CS_FMT_NULLTERM);
+		assertEquals(column[16].format,describeformat);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
 		//assertEquals(column[16].maxlength,16);
 		//assertEquals(column[16].precision,7);
 		//assertEquals(column[16].scale,7);
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[16].status,CS_UNUSED);
-		assertEquals(column[16].count,1);
+		assertEquals(column[16].count,describecount);
 		// 0 in every tds version, whether the column travels as a
 		// real datetime2 (tds 7.3 and up) or as nvarchar.  The relay
 		// used to tag the real-datetime2 case 0x0050 (80), which is
@@ -994,14 +1004,14 @@ int main(int argc, char **argv) {
 		assertEquals(column[17].datatype,
 				(issqlrelay && !tds73plus)?CS_CHAR_TYPE:
 						CS_BIGDATETIME_TYPE);
-		assertEquals(column[17].format,CS_FMT_NULLTERM);
+		assertEquals(column[17].format,describeformat);
 		// FIXME: 16/7/7 direct, 64/0/0 via relay
 		//assertEquals(column[17].maxlength,16);
 		//assertEquals(column[17].precision,7);
 		//assertEquals(column[17].scale,7);
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[17].status,CS_UNUSED);
-		assertEquals(column[17].count,1);
+		assertEquals(column[17].count,describecount);
 		assertEquals(column[17].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
 	}
@@ -1009,14 +1019,14 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[18].name);
 	assertEquals(column[18].name,"testchar");
 	assertEquals(column[18].datatype,CS_CHAR_TYPE);
-	assertEquals(column[18].format,CS_FMT_NULLTERM);
+	assertEquals(column[18].format,describeformat);
 	// FIXME: 40 direct, 160 via relay	#4783
 	//assertEquals(column[18].maxlength,40);
 	assertEquals(column[18].precision,0);
 	assertEquals(column[18].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[18].status,CS_UNUSED);
-	assertEquals(column[18].count,1);
+	assertEquals(column[18].count,describecount);
 	assertEquals(column[18].usertype,(nativease)?1:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -1024,27 +1034,27 @@ int main(int argc, char **argv) {
 	assertEquals(column[19].name,"testvarchar");
 	//assertEquals(column[19].datatype,CS_VARCHAR_TYPE);
 	assertEquals(column[19].datatype,CS_CHAR_TYPE);		// #4652
-	assertEquals(column[19].format,CS_FMT_NULLTERM);
+	assertEquals(column[19].format,describeformat);
 	// FIXME: 40 direct, 160 via relay	#4783
 	//assertEquals(column[19].maxlength,40);
 	assertEquals(column[19].precision,0);
 	assertEquals(column[19].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[19].status,CS_UNUSED);
-	assertEquals(column[19].count,1);
+	assertEquals(column[19].count,describecount);
 	assertEquals(column[19].usertype,(nativease)?2:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[20].name);
 	assertEquals(column[20].name,"testbinary");
 	assertEquals(column[20].datatype,CS_BINARY_TYPE);
-	assertEquals(column[20].format,CS_FMT_NULLTERM);
+	assertEquals(column[20].format,describeformat);
 	assertEquals(column[20].maxlength,40);
 	assertEquals(column[20].precision,0);
 	assertEquals(column[20].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[20].status,CS_UNUSED);
-	assertEquals(column[20].count,1);
+	assertEquals(column[20].count,describecount);
 	assertEquals(column[20].usertype,(nativease)?3:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -1052,13 +1062,13 @@ int main(int argc, char **argv) {
 	assertEquals(column[21].name,"testvarbinary");
 	//assertEquals(column[21].datatype,CS_VARBINARY_TYPE);
 	assertEquals(column[21].datatype,CS_BINARY_TYPE);	// #4781
-	assertEquals(column[21].format,CS_FMT_NULLTERM);
+	assertEquals(column[21].format,describeformat);
 	assertEquals(column[21].maxlength,40);
 	assertEquals(column[21].precision,0);
 	assertEquals(column[21].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[21].status,CS_UNUSED);
-	assertEquals(column[21].count,1);
+	assertEquals(column[21].count,describecount);
 	assertEquals(column[21].usertype,(nativease)?4:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -1066,14 +1076,14 @@ int main(int argc, char **argv) {
 	assertEquals(column[22].name,"testnvarchar");
 	//assertEquals(column[22].datatype,CS_NVARCHAR_TYPE);
 	assertEquals(column[22].datatype,CS_CHAR_TYPE);		// #4652
-	assertEquals(column[22].format,CS_FMT_NULLTERM);
+	assertEquals(column[22].format,describeformat);
 	// FIXME: 40 direct, 160 via relay	#4783
 	//assertEquals(column[22].maxlength,40);
 	assertEquals(column[22].precision,0);
 	assertEquals(column[22].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[22].status,CS_UNUSED);
-	assertEquals(column[22].count,1);
+	assertEquals(column[22].count,describecount);
 	assertEquals(column[22].usertype,(nativease)?25:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -1081,14 +1091,14 @@ int main(int argc, char **argv) {
 	assertEquals(column[23].name,"testnchar");
 	//assertEquals(column[23].datatype,CS_NCHAR_TYPE);
 	assertEquals(column[23].datatype,CS_CHAR_TYPE);		// #4652
-	assertEquals(column[23].format,CS_FMT_NULLTERM);
+	assertEquals(column[23].format,describeformat);
 	// FIXME: 40 direct, 160 via relay	#4783
 	//assertEquals(column[23].maxlength,40);
 	assertEquals(column[23].precision,0);
 	assertEquals(column[23].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[23].status,CS_UNUSED);
-	assertEquals(column[23].count,1);
+	assertEquals(column[23].count,describecount);
 	assertEquals(column[23].usertype,(nativease)?24:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -1106,7 +1116,7 @@ int main(int argc, char **argv) {
 		assertEquals(column[24].datatype,
 			(issqlrelay && !tds73plus)?CS_TEXT_TYPE:
 							CS_LONGCHAR_TYPE);
-		assertEquals(column[24].format,CS_FMT_NULLTERM);
+		assertEquals(column[24].format,describeformat);
 		// maxlength limited by maxfieldlength via relay,
 		// but not directly
 		//assertEquals(column[24].maxlength,131068);
@@ -1114,7 +1124,7 @@ int main(int argc, char **argv) {
 		assertEquals(column[24].scale,0);
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[24].status,CS_UNUSED);
-		assertEquals(column[24].count,1);
+		assertEquals(column[24].count,describecount);
 		assertEquals(column[24].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
 	}
@@ -1122,28 +1132,28 @@ int main(int argc, char **argv) {
 	stdoutput.printf("%s\n",column[25].name);
 	assertEquals(column[25].name,"testtext");
 	assertEquals(column[25].datatype,CS_TEXT_TYPE);
-	assertEquals(column[25].format,CS_FMT_NULLTERM);
+	assertEquals(column[25].format,describeformat);
 	// maxlength limited by maxfieldlength via relay, but not directly
 	//assertEquals(column[25].maxlength,131068);
 	assertEquals(column[25].precision,0);
 	assertEquals(column[25].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[25].status,CS_UNUSED);
-	assertEquals(column[25].count,1);
+	assertEquals(column[25].count,describecount);
 	assertEquals(column[25].usertype,(nativease)?19:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("%s\n",column[26].name);
 	assertEquals(column[26].name,"testimage");
 	assertEquals(column[26].datatype,CS_IMAGE_TYPE);
-	assertEquals(column[26].format,CS_FMT_NULLTERM);
+	assertEquals(column[26].format,describeformat);
 	// maxlength limited by maxfieldlength via relay, but not directly
 	//assertEquals(column[26].maxlength,131068);
 	assertEquals(column[26].precision,0);
 	assertEquals(column[26].scale,0);
 	// FIXME: 48 direct, 0 via relay
 	//assertEquals(column[26].status,CS_UNUSED);
-	assertEquals(column[26].count,1);
+	assertEquals(column[26].count,describecount);
 	assertEquals(column[26].usertype,(nativease)?20:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
 
@@ -1151,7 +1161,7 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%s\n",column[27].name);
 		assertEquals(column[27].name,"testntext");
 		assertEquals(column[27].datatype,CS_TEXT_TYPE);
-		assertEquals(column[27].format,CS_FMT_NULLTERM);
+		assertEquals(column[27].format,describeformat);
 		// maxlength limited by maxfieldlength via relay,
 		// but not directly
 		//assertEquals(column[27].maxlength,131068);
@@ -1159,7 +1169,7 @@ int main(int argc, char **argv) {
 		assertEquals(column[27].scale,0);
 		// FIXME: 48 direct, 0 via relay
 		//assertEquals(column[27].status,CS_UNUSED);
-		assertEquals(column[27].count,1);
+		assertEquals(column[27].count,describecount);
 		assertEquals(column[27].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
 	}
@@ -1186,8 +1196,15 @@ int main(int argc, char **argv) {
 	assertEquals(data[3],"1");
 	assertEquals(*(datalength[3]),2);
 	assertEquals(*(nullindicator[3]),0);
-	assertEquals(data[4],"Jan  1 2001 01:01:00:000PM");
-	assertEquals(*(datalength[4]),27);
+	// SAP's ct-lib converts a datetime to CS_CHAR with its short default
+	// date format, which stops at the minute - no seconds and no
+	// milliseconds - where FreeTDS's uses the long one.  Same bytes on
+	// the wire either way, only the client-side rendering differs, so the
+	// expectations for every datetime below follow the linked library.
+	assertEquals(data[4],(TDSTEST_LINKED_WITH_FREETDS)?
+					"Jan  1 2001 01:01:00:000PM":
+					"Jan  1 2001  1:01PM");
+	assertEquals(*(datalength[4]),(TDSTEST_LINKED_WITH_FREETDS)?27:20);
 	assertEquals(*(nullindicator[4]),0);
 	// reals aren't converted to strings reliably enough to compare
 	//assertEquals(data[5],"1.5");
@@ -1199,11 +1216,15 @@ int main(int argc, char **argv) {
 	// short format, which stops at the minute, so a sap-backed relay
 	// hands on a value with no seconds.  TODO(#9283): that belongs in
 	// src/connections/sap.cpp, but changing it moves every sap test's
-	// expectations, so it needs a ticket of its own.
-	assertEquals(data[7],(issqlrelay && issybase)?
+	// expectations, so it needs a ticket of its own.  Under sap's ct-lib
+	// the short-format rendering drops the seconds anyway, so both paths
+	// land on the same string there.
+	assertEquals(data[7],(!TDSTEST_LINKED_WITH_FREETDS)?
+					"Jan  1 2001  1:01PM":
+					(issqlrelay && issybase)?
 					"Jan  1 2001 01:01:00:000PM":
 					"Jan  1 2001 01:01:01:000PM");
-	assertEquals(*(datalength[7]),27);
+	assertEquals(*(datalength[7]),(TDSTEST_LINKED_WITH_FREETDS)?27:20);
 	assertEquals(*(nullindicator[7]),0);
 	// floats aren't converted to strings reliably enough to compare
 	//assertEquals(data[8],"1.5");
@@ -1255,15 +1276,23 @@ int main(int argc, char **argv) {
 			assertEquals(*(nullindicator[17]),0);
 		}
 	} else {
-		assertEquals(data[14],"Jan  1 2001 12:00:00:000AM");
-		assertEquals(*(datalength[14]),27);
+		// same short-format rendering as testsmalldatetime above
+		assertEquals(data[14],(TDSTEST_LINKED_WITH_FREETDS)?
+				"Jan  1 2001 12:00:00:000AM":
+				"Jan  1 2001 12:00AM");
+		assertEquals(*(datalength[14]),
+				(TDSTEST_LINKED_WITH_FREETDS)?27:20);
 		assertEquals(*(nullindicator[14]),0);
 		// sybase renders time fractional seconds to millisecond
 		// precision ("000PM"), mssql to microsecond ("000000PM")
-		assertEquals(data[15],(issybase)?
+		assertEquals(data[15],(!TDSTEST_LINKED_WITH_FREETDS)?
+				"Jan  1 1900  1:01PM":
+				(issybase)?
 				"Jan  1 1900 01:01:01:000PM":
 				"Jan  1 1900 01:01:01:000000PM");
-		assertEquals(*(datalength[15]),(issybase)?27:30);
+		assertEquals(*(datalength[15]),
+				(!TDSTEST_LINKED_WITH_FREETDS)?20:
+				(issybase)?27:30);
 		assertEquals(*(nullindicator[15]),0);
 		// sybase has no datetime2/datetimeoffset - present[16] and
 		// present[17] are cleared for it, and data[16]/data[17] are
@@ -1325,10 +1354,15 @@ int main(int argc, char **argv) {
 	assertEquals(data[1],"1");
 	assertEquals(data[2],"2");
 	assertEquals(data[3],"2");
-	assertEquals(data[4],"Feb  2 2002 02:02:00:000PM");
+	// short vs long date rendering per client library, as in row 1 above
+	assertEquals(data[4],(TDSTEST_LINKED_WITH_FREETDS)?
+					"Feb  2 2002 02:02:00:000PM":
+					"Feb  2 2002  2:02PM");
 	//assertEquals(data[5],"2.5");
 	//assertEquals(data[6],"2.50");
-	assertEquals(data[7],(issqlrelay && issybase)?
+	assertEquals(data[7],(!TDSTEST_LINKED_WITH_FREETDS)?
+					"Feb  2 2002  2:02PM":
+					(issqlrelay && issybase)?
 					"Feb  2 2002 02:02:00:000PM":
 					"Feb  2 2002 02:02:02:000PM");
 	//assertEquals(data[8],"2.5");
@@ -1354,10 +1388,15 @@ int main(int argc, char **argv) {
 					"2002-02-02 14:02:02.0000000 +00:00");
 		}
 	} else {
-		assertEquals(data[14],"Feb  2 2002 12:00:00:000AM");
+		// same short-format rendering as testsmalldatetime above
+		assertEquals(data[14],(TDSTEST_LINKED_WITH_FREETDS)?
+				"Feb  2 2002 12:00:00:000AM":
+				"Feb  2 2002 12:00AM");
 		// sybase renders time fractional seconds to millisecond
 		// precision ("000PM"), mssql to microsecond ("000000PM")
-		assertEquals(data[15],(issybase)?
+		assertEquals(data[15],(!TDSTEST_LINKED_WITH_FREETDS)?
+				"Jan  1 1900  2:02PM":
+				(issybase)?
 				"Jan  1 1900 02:02:02:000PM":
 				"Jan  1 1900 02:02:02:000000PM");
 		// sybase has no datetime2/datetimeoffset - present[16] and
@@ -1388,6 +1427,12 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("ct_results:\n");
+	// the result set has to be fetched to CS_END_DATA before ct_results
+	// may be called again.  FreeTDS lets the extra fetch be skipped, sap's
+	// ct-lib fails the ct_results with error 163 and marks the connection
+	// dead, taking every section below down with it.
+	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype),
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);

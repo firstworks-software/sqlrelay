@@ -542,8 +542,7 @@
 		token-framed rather than carrying bare ucs-2, and the sql
 		inside its language token is single-byte and not nul
 		terminated; a command that returns no result set is answered
-		properly now, and one that does still gets an error, pending
-		tds 5.0 result set support
+		properly now
 	fixed the tds protocol module answering a tds 5.0 request buffer with
 		exactly one done no matter how many commands the buffer
 		carried - ct-lib expects one done per command, so a
@@ -564,6 +563,23 @@
 		a 16mb request packed with minimal tds 5.0 language tokens or
 		tds 7.x rpcs was millions of backend round trips, with the
 		whole response held in memory
+	added tds 5.0 result-set encoding to the tds protocol module, so a
+		query from sap's native open client ct-lib now gets a real
+		result set back instead of an error - the ms-tds colmetadata
+		encoding could not be reused, since its 0x81 token byte means
+		cursor-delete rather than column metadata in tds 5.0; tds 5.0
+		gets its own rowfmt and row tokens, varint length classes,
+		null encoding, and type map, since the dialects disagree on
+		which types exist and what several byte values mean; column
+		names are single-byte instead of ucs-2, decimal and numeric
+		values use the opposite sign convention and a big-endian
+		magnitude, and a command that returns more than one result set
+		now advances through all of them instead of stopping after the
+		first
+	fixed the tds protocol module always sending 0 (undefined) for the tds
+		5.0 done token's transtate field - the field is curcmd in
+		ms-tds but transtate in tds 5.0, and it now reports whether a
+		transaction is open
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

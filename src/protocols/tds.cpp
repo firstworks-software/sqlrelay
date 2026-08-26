@@ -45,6 +45,12 @@
 #define TOKEN_DONEINPROC		0xFF
 #define TOKEN_RETURNSTATUS		0x79
 #define TOKEN_RETURNVALUE		0xAC
+// The tds 5.0 counterpart of TOKEN_COLMETADATA - what describes the
+// columns of a result set in that dialect.  They can't share a token
+// byte, and not just because their contents differ: 0x81 is
+// TDS5_TOKEN_CURDELETE in tds 5.0, so a tds 5.0 client reading an 0x81
+// would take it for a cursor-delete request rather than metadata.
+#define TOKEN_ROWFMT			0xEE
 
 // Tds 5.0 request tokens - what a client can send inside a
 // PRE_TDS7_NORMAL buffer.  Only TDS5_TOKEN_LANGUAGE is implemented; the
@@ -418,6 +424,87 @@
 						// (introduced in TDS 7.2)
 #define TDS_TYPE_TVP			0xF3	// Table Valued Parameter
 						// (introduced in TDS 7.3)
+
+// Tds 5.0 data types - the full set from the tds 5.0 datatype summary,
+// whether or not anything sends one yet.
+//
+// A separate block from the TDS_TYPE_* values above, rather than more
+// entries in it, because several of the bytes mean something different
+// in the two dialects.  0x68 is BITN in ms-tds but TDS_BOUNDARY here,
+// 0x24 is uniqueidentifier in ms-tds but TDS_BLOB here, 0xAF is BIGCHAR
+// (a 2-byte length) in ms-tds but TDS_LONGCHAR (a 4-byte length) here,
+// and 0x7F is a fixed-length INT8 in ms-tds but falls to a 1-byte varint
+// here, where the 8-byte integer is 0xBF.  Same reasoning as the
+// TDS5_TOKEN_* block above.
+#define	TDS5_TYPE_VOID			0x1F	// Void (unknown)
+#define	TDS5_TYPE_IMAGE			0x22	// Image
+#define	TDS5_TYPE_TEXT			0x23	// Text
+#define	TDS5_TYPE_BLOB			0x24	// Serialized Object
+#define	TDS5_TYPE_VARBINARY		0x25	// Binary
+#define	TDS5_TYPE_INTN			0x26	// Integer (variable length)
+#define	TDS5_TYPE_VARCHAR		0x27	// Character
+#define	TDS5_TYPE_BINARY		0x2D	// Binary (blank padded)
+#define	TDS5_TYPE_INTERVAL		0x2E	// Time Interval
+#define	TDS5_TYPE_CHAR			0x2F	// Character (blank padded)
+#define	TDS5_TYPE_INT1			0x30	// Unsigned Integer
+#define	TDS5_TYPE_DATE			0x31	// Date
+#define	TDS5_TYPE_BIT			0x32	// Bit
+#define	TDS5_TYPE_TIME			0x33	// Time
+#define	TDS5_TYPE_INT2			0x34	// Integer
+#define	TDS5_TYPE_INT4			0x38	// Integer
+#define	TDS5_TYPE_SHORTDATE		0x3A	// Date/time (4 byte)
+#define	TDS5_TYPE_FLT4			0x3B	// Float
+#define	TDS5_TYPE_MONEY			0x3C	// Money
+#define	TDS5_TYPE_DATETIME		0x3D	// Date/time
+#define	TDS5_TYPE_FLT8			0x3E	// Float
+#define	TDS5_TYPE_UINT1			0x40	// Unsigned Integer
+						// (not in the summary table,
+						// but freetds treats it as
+						// fixed-length like its
+						// wider siblings)
+#define	TDS5_TYPE_UINT2			0x41	// Unsigned Integer
+#define	TDS5_TYPE_UINT4			0x42	// Unsigned Integer
+#define	TDS5_TYPE_UINT8			0x43	// Unsigned Integer
+#define	TDS5_TYPE_UINTN			0x44	// Unsigned Integer
+						// (variable length)
+#define	TDS5_TYPE_SENSITIVITY		0x67	// Sensitivity
+#define	TDS5_TYPE_BOUNDARY		0x68	// Boundary
+#define	TDS5_TYPE_DECN			0x6A	// Decimal
+#define	TDS5_TYPE_NUMN			0x6C	// Numeric
+#define	TDS5_TYPE_FLTN			0x6D	// Float (variable length)
+#define	TDS5_TYPE_MONEYN		0x6E	// Money (variable length)
+#define	TDS5_TYPE_DATETIMEN		0x6F	// Date/time (variable length)
+#define	TDS5_TYPE_SHORTMONEY		0x7A	// Money (4 byte)
+#define	TDS5_TYPE_DATEN			0x7B	// Date (variable length)
+#define	TDS5_TYPE_TIMEN			0x93	// Time (variable length)
+#define	TDS5_TYPE_XML			0xA3	// XML
+#define	TDS5_TYPE_UNITEXT		0xAE	// Unicode UTF-16 Text
+#define	TDS5_TYPE_LONGCHAR		0xAF	// Character (4 byte length)
+#define	TDS5_TYPE_SINT1			0xB0	// Signed Integer
+#define	TDS5_TYPE_INT8			0xBF	// Integer
+#define	TDS5_TYPE_LONGBINARY		0xE1	// Binary (4 byte length)
+
+// Tds 5.0 rowfmt column flags.  One byte, and not the 16-bit map that
+// colFlags() writes - there's no case-sensitivity bit, no 2-bit
+// updateable field, and nullable sits somewhere else.
+#define	TDS5_COLFLAG_HIDDEN		0x01
+#define	TDS5_COLFLAG_KEY		0x02
+#define	TDS5_COLFLAG_WRITEABLE		0x10
+#define	TDS5_COLFLAG_NULLABLE		0x20
+#define	TDS5_COLFLAG_IDENTITY		0x40
+
+// Tds 5.0 done transaction states - the second uint16 of a done, which
+// is CurCmd in ms-tds.  The values are ct-lib's CS_TRAN_* (cspublic.h),
+// and ct_res_info(CS_TRANS_STATE) is what surfaces them.  The whole set
+// is here for the reader's sake, though transState() only ever sends
+// in-progress or completed - the failure states can make a client mark
+// the connection unusable, and there's no evidence for which one a real
+// ase picks when.
+#define	TDS5_TRAN_UNDEFINED		0
+#define	TDS5_TRAN_IN_PROGRESS		1
+#define	TDS5_TRAN_COMPLETED		2
+#define	TDS5_TRAN_FAIL			3
+#define	TDS5_TRAN_STMT_FAIL		4
 
 static byte_t	tdstypemap[]={
 	// "UNKNOWN"
@@ -819,6 +906,429 @@ static byte_t	tdstypemap[]={
 	(byte_t)TDS_TYPE_BIGVARCHR
 };
 
+// The tds 5.0 counterpart of tdstypemap[] - the same length, and the same
+// *_DATATYPE index order, but carrying tds 5.0 datatypes.
+//
+// It deliberately deviates from what a real ase sends for the same column
+// in a few places:
+// * the n-variants (intn, fltn, moneyn, datetimen) rather than the fixed
+//   types, because a fixed type has no null encoding at all.  The client
+//   maps an n-variant back to the fixed type by its size, so it still
+//   reports the same type and the same maximum length.
+// * bit stays fixed at TDS5_TYPE_BIT, because the "nullable bit" byte
+//   0x68 is TDS_BOUNDARY in tds 5.0.  A null bit has to go out as 0.
+// * varchar (0x27) and varbinary (0x25) rather than char (0x2F) and
+//   binary (0x2D), because char and binary make the client pad the value
+//   out to the declared column size.  The backend already hands us
+//   whatever padding the column really has.
+// * date and time as varchar, in the rendering the backend hands us,
+//   matching what the tds 7.x path does for a client older than 7.3.
+static byte_t	pretds7typemap[]={
+	// "UNKNOWN"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// added by freetds
+	// "CHAR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "INT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "SMALLINT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "TINYINT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "MONEY"
+	(byte_t)TDS5_TYPE_MONEYN,
+	// "DATETIME"
+	(byte_t)TDS5_TYPE_DATETIMEN,
+	// "NUMERIC"
+	(byte_t)TDS5_TYPE_NUMN,
+	// "DECIMAL"
+	(byte_t)TDS5_TYPE_DECN,
+	// "SMALLDATETIME"
+	(byte_t)TDS5_TYPE_DATETIMEN,
+	// "SMALLMONEY"
+	(byte_t)TDS5_TYPE_MONEYN,
+	// "IMAGE"
+	(byte_t)TDS5_TYPE_IMAGE,
+	// "BINARY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BIT"
+	(byte_t)TDS5_TYPE_BIT,
+	// "REAL"
+	(byte_t)TDS5_TYPE_FLTN,
+	// "FLOAT"
+	(byte_t)TDS5_TYPE_FLTN,
+	// "TEXT"
+	(byte_t)TDS5_TYPE_TEXT,
+	// "VARCHAR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "VARBINARY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONGCHAR"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONGBINARY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONG"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "ILLEGAL"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "SENSITIVITY"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "BOUNDARY"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "VOID"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "USHORT"
+	(byte_t)TDS5_TYPE_INTN,
+	// added by lago
+	// "UNDEFINED"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "DOUBLE"
+	(byte_t)TDS5_TYPE_FLTN,
+	// "DATE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "TIME"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "TIMESTAMP"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// added by msql
+	// "UINT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "LASTREAL"
+	(byte_t)TDS5_TYPE_DECN,
+	// added by mysql
+	// "STRING"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "VARSTRING"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "LONGLONG"
+	(byte_t)TDS5_TYPE_INTN,
+	// "MEDIUMINT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "YEAR"
+	(byte_t)TDS5_TYPE_INTN,
+	// "NEWDATE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "NULL"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "ENUM"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "SET"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TINYBLOB"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "MEDIUMBLOB"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONGBLOB"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BLOB"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// added by oracle
+	// "VARCHAR2"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "NUMBER"
+	(byte_t)TDS5_TYPE_DECN,
+	// "ROWID"
+	(byte_t)TDS5_TYPE_INTN,
+	// "RAW"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONG_RAW"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "MLSLABEL"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "CLOB"
+	(byte_t)TDS5_TYPE_TEXT,
+	// "BFILE"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// added by odbc
+	// "BIGINT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "INTEGER"
+	(byte_t)TDS5_TYPE_INTN,
+	// "LONGVARBINARY"
+	(byte_t)TDS5_TYPE_IMAGE,
+	// "LONGVARCHAR"
+	(byte_t)TDS5_TYPE_TEXT,
+	// added by db2
+	// "GRAPHIC"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "VARGRAPHIC"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONGVARGRAPHIC"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "DBCLOB"
+	(byte_t)TDS5_TYPE_TEXT,
+	// "DATALINK"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "USER_DEFINED_TYPE"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "SHORT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "TINY"
+	(byte_t)TDS5_TYPE_INTN,
+	// added by firebird
+	// "D_FLOAT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "QUAD"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INT64"
+	(byte_t)TDS5_TYPE_INTN,
+	// "DOUBLE PRECISION"
+	(byte_t)TDS5_TYPE_INTN,
+	// added by postgresql
+	// "BOOL"
+	(byte_t)TDS5_TYPE_BIT,
+	// "BYTEA"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "NAME"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "INT8"
+	(byte_t)TDS5_TYPE_INTN,
+	// "INT2"
+	(byte_t)TDS5_TYPE_INTN,
+	// "INT2VECTOR"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INT4"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REGPROC"
+	(byte_t)TDS5_TYPE_INTN,
+	// "OID"
+	(byte_t)TDS5_TYPE_INTN,
+	// "TID"
+	(byte_t)TDS5_TYPE_INTN,
+	// "XID"
+	(byte_t)TDS5_TYPE_INTN,
+	// "CID"
+	(byte_t)TDS5_TYPE_INTN,
+	// "OIDVECTOR"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "SMGR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "POINT"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "LSEG"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "PATH"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "BOX"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "POLYGON"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "LINE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "LINE_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "FLOAT4"
+	(byte_t)TDS5_TYPE_FLTN,
+	// "FLOAT8"
+	(byte_t)TDS5_TYPE_FLTN,
+	// "ABSTIME"
+	(byte_t)TDS5_TYPE_INTN,
+	// "RELTIME"
+	(byte_t)TDS5_TYPE_INTN,
+	// "TINTERVAL"
+	(byte_t)TDS5_TYPE_INTN,
+	// "CIRCLE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "CIRCLE_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "MONEY_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "MACADDR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "INET"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "CIDR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "BOOL_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BYTEA_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "CHAR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "NAME_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INT2_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INT2VECTOR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INT4_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REGPROC_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TEXT_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "OID_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TID_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "XID_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "CID_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "OIDVECTOR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BPCHAR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "VARCHAR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INT8_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "POINT_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LSEG_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "PATH_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BOX_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "FLOAT4_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "FLOAT8_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "ABSTIME_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "RELTIME_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TINTERVAL_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "POLYGON_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "ACLITEM"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "ACLITEM_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "MACADDR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INET_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "CIDR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BPCHAR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "TIMESTAMP_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "DATE_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TIME_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TIMESTAMPTZ"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "TIMESTAMPTZ_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "INTERVAL"
+	(byte_t)TDS5_TYPE_INTN,
+	// "INTERVAL_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "NUMERIC_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TIMETZ"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "TIMETZ_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BIT_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "VARBIT"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "VARBIT_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REFCURSOR"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REFCURSOR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REGPROCEDURE"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REGOPER"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REGOPERATOR"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REGCLASS"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REGTYPE"
+	(byte_t)TDS5_TYPE_INTN,
+	// "REGPROCEDURE_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REGOPER_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REGOPERATOR_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REGCLASS_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "REGTYPE_ARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "RECORD"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "CSTRING"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "ANY"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "ANYARRAY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "TRIGGER"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "LANGUAGE_HANDLER"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "INTERNAL"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "OPAQUE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "ANYELEMENT"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "PG_TYPE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "PG_ATTRIBUTE"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "PG_PROC"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "PG_CLASS"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// none added by sqlite
+	// added by sqlserver
+	// "UBIGINT"
+	(byte_t)TDS5_TYPE_INTN,
+	// "UNIQUEIDENTIFIER"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// added by informix
+	// "SMALLFLOAT"
+	(byte_t)TDS5_TYPE_FLTN,
+	// "BYTE"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "BOOLEAN"
+	(byte_t)TDS5_TYPE_BIT,
+	// "TINYTEXT"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "MEDIUMTEXT"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "LONGTEXT"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "JSON"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "GEOMETRY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "SDO_GEOMETRY"
+	(byte_t)TDS5_TYPE_VARBINARY,
+	// "NCHAR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "NVARCHAR"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// "NTEXT"
+	(byte_t)TDS5_TYPE_TEXT,
+	// "XML"
+	(byte_t)TDS5_TYPE_TEXT,
+	// "DATETIMEOFFSET"
+	(byte_t)TDS5_TYPE_VARCHAR,
+	// also added by informix
+	// "LVARCHAR"
+	(byte_t)TDS5_TYPE_VARCHAR
+};
+
+// tdstypemap[] and pretds7typemap[] have to stay the same length, since
+// mapType() bounds-checks against the one and may index the other.  This
+// fails to compile if they ever drift apart.
+typedef char	pretds7typemapsizecheck[
+			(sizeof(pretds7typemap)==sizeof(tdstypemap))?1:-1];
+
 // rpc proc ids
 #define	SP_CURSOR		1
 #define	SP_CURSOR_OPEN		2
@@ -1213,8 +1723,37 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const byte_t **rpout,
 					size_t *rpsizeout);
 		void	colMetaData(sqlrservercursor *cursor, bool nometadata);
+		// The tds 5.0 counterpart of colMetaData().  Returns
+		// false, having sent an error and a done of its own, if
+		// the metadata won't fit in a rowfmt - the caller must
+		// not send rows after that.  "more" is whether another
+		// command follows in the request buffer, and only
+		// decides the DONE_MORE of that done.
+		bool	preTds7RowFmt(sqlrservercursor *cursor, bool more);
+		void	preTds7ColFlags(bytebuffer *buffer,
+					sqlrservercursor *cursor,
+					uint16_t col);
+		void	preTds7TypeInfo(bytebuffer *buffer,
+					sqlrservercursor *cursor,
+					uint16_t col,
+					uint16_t coltype,
+					byte_t tds5type);
+		// The single source of the sizes a pre-tds7 result set is
+		// declared at.  preTds7TypeInfo() writes what these return
+		// and preTds7Field() caps every value against them, so the
+		// two writers can't drift apart.
+		uint32_t	preTds7DeclaredSize(sqlrservercursor *cursor,
+						uint16_t col,
+						uint16_t coltype,
+						byte_t tds5type);
+		void	preTds7DecimalInfo(sqlrservercursor *cursor,
+						uint16_t col,
+						byte_t *precision,
+						byte_t *scale);
 		void	cekTable();
 		byte_t	mapType(uint16_t type);
+		byte_t	preTds7VarintSize(byte_t tds5type);
+		byte_t	preTds7FixedSize(byte_t tds5type);
 		void	colData(sqlrservercursor *cursor, uint16_t col);
 		void	userType(byte_t tdstype);
 		void	colFlags(sqlrservercursor *cursor,
@@ -1248,6 +1787,19 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					byte_t tdstype,
 					uint32_t colsize,
 					uint32_t colscale,
+					const char *field,
+					uint64_t fieldsize,
+					bool null);
+		// The tds 5.0 counterparts of rows() and field().  Separate
+		// implementations rather than branches in those: the length
+		// prefixes, the null forms, the character encoding and the
+		// decimal layout all come out differently, and rows() and
+		// field() are on the hot ms-tds path.
+		uint64_t	preTds7Rows(sqlrservercursor *cursor);
+		void	preTds7Field(uint16_t coltype,
+					byte_t tds5type,
+					uint32_t colsize,
+					byte_t precision,
 					const char *field,
 					uint64_t fieldsize,
 					bool null);
@@ -1562,14 +2114,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	sendLoginRequiredError();
 		bool	sendAlreadyLoggedInError();
 
+		uint16_t	transState();
 		void	done();
 		void	done(uint16_t status,
-					uint16_t curcmd,
+					uint16_t curcmdortransstate,
 					uint64_t donerowcount);
 		void	done(byte_t token,
 					uint16_t status,
-					uint16_t curcmd,
+					uint16_t curcmdortransstate,
 					uint64_t donerowcount);
+		// done-in-proc and done-proc are ms-tds only, so their
+		// second uint16 is always a CurCmd
 		void	doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount);
@@ -1617,6 +2172,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	debugDoneStatus(uint16_t status);
 		void	debugAllHeadersType(uint16_t type);
 		void	debugColumnType(byte_t type);
+		void	debugPreTds7ColumnType(byte_t type);
 		void	debugCollation(uint32_t lcid, byte_t sortid);
 		void	debugProcId(uint16_t procid);
 
@@ -5053,7 +5609,7 @@ void sqlrprotocol_tds::tooManyCommands(byte_t token) {
 	// the session is still perfectly usable
 	appendError(0,1,16,err.getString(),srvname,NULL,1);
 
-	done(token,DONE_ERROR|DONE_FINAL,0,0);
+	done(token,DONE_ERROR|DONE_FINAL,transState(),0);
 }
 
 // Refuses one token, with its own done, so the client sees this command
@@ -5078,7 +5634,7 @@ void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token) {
 	// DONE_ERROR is what turns this into a CS_CMD_FAIL - ct-lib reports
 	// CS_CMD_SUCCEED for a done without it.  DONE_FINAL because the walk
 	// stops here; nothing after an unskippable token can be trusted.
-	done(DONE_ERROR|DONE_FINAL,0,0);
+	done(DONE_ERROR|DONE_FINAL,transState(),0);
 }
 
 // A tds 5.0 "normal" buffer carries token-framed requests rather than the
@@ -5136,7 +5692,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 		// a clean disconnect rather than that same spurious error.
 		if (token==TDS5_TOKEN_LOGOUT) {
 			debugWrite("logout");
-			done(DONE_FINAL,0,0);
+			done(DONE_FINAL,transState(),0);
 			break;
 		}
 
@@ -5179,7 +5735,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 		// FIXME: is there a real error number/state/class for this?
 		appendError(0,1,16,"Empty TDS 5.0 request buffer",
 							srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,0,0);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
 	}
 
 	debugEnd();
@@ -5217,7 +5773,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		// FIXME: is there a real error number/state/class for this?
 		appendError(0,1,16,"Malformed TDS 5.0 language token",
 							srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,0,0);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
 		return false;
 	}
 	readLE(rp,&tokenlength,&rp);
@@ -5236,7 +5792,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		// FIXME: is there a real error number/state/class for this?
 		appendError(0,1,16,"Malformed TDS 5.0 language token",
 							srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,0,0);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
 		return false;
 	}
 
@@ -5262,7 +5818,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		queryTooLargeMessage(sqllength,&err);
 		// FIXME: is there a real error number/state/class for this?
 		appendError(0,1,16,err.getString(),srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,0,0);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
 		return false;
 	}
 
@@ -5296,7 +5852,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		appendError(0,1,16,
 			"Parameterized TDS 5.0 language commands "
 			"are not supported yet.",srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,0,0);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
 		return false;
 	}
 
@@ -5309,7 +5865,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		*rpsizeinout=0;
 		// FIXME: is there a real error number/state/class for this?
 		appendError(0,1,16,"No cursor available",srvname,NULL,1);
-		done(DONE_ERROR|DONE_FINAL,0,0);
+		done(DONE_ERROR|DONE_FINAL,transState(),0);
 		return false;
 	}
 
@@ -5331,22 +5887,68 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 
 	if (success) {
 
-		// A result set in this dialect is a rowfmt (0xEE) and rows
-		// (0xD1), not the colmetadata (0x81) that colMetaData()
-		// writes - 0x81 is a cursor-delete token here - so sending
-		// one would be a datastream error rather than a result the
-		// client could read.
-		// FIXME: #9466 implements tds 5.0 result sets
 		if (cont->colCount(cursor)) {
-			debugWrite("result sets are not supported yet");
-			appendError(0,1,16,
-				"TDS 5.0 result sets are not supported yet.",
-				srvname,NULL,1);
-			done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),0,0);
+
+			// A result set in this dialect is a rowfmt (0xEE)
+			// and rows (0xD1), not the colmetadata (0x81) that
+			// colMetaData() writes - 0x81 is a cursor-delete
+			// token here.
+			//
+			// A language token carries free text, so it can hold
+			// a multi-statement batch, and a backend that walks
+			// result sets can answer one with several of them.
+			// Send one rowfmt/rows/done group per result set, the
+			// way sqlBatch() does, with DONE_MORE on all but the
+			// last - ct-lib stops reading at the first done
+			// without it.
+			//
+			// Unlike sqlBatch() there's no return-status/done-proc
+			// pairing.  Those report an "exec" inside an ms-tds
+			// batch and tds 5.0 has neither token.
+			for (;;) {
+
+				// A result set that's too wide for the token
+				// is refused in here, with its own error and
+				// done, so don't send a second one.
+				if (!preTds7RowFmt(cursor,more)) {
+					break;
+				}
+
+				uint64_t	rowcount=preTds7Rows(cursor);
+
+				bool	avail=false;
+				if (!cont->nextResultSet(cursor,&avail)) {
+					// "more" rather than DONE_FINAL for
+					// the same reason as the failed-query
+					// done below - the buffer may still
+					// hold commands whose dones follow
+					// this one, and ct-lib stops reading
+					// at the first done without DONE_MORE
+					appendQueryError(cursor);
+					done(DONE_ERROR|DONE_COUNT|
+						((more)?DONE_MORE:DONE_FINAL),
+						transState(),rowcount);
+					break;
+				}
+
+				// DONE_COUNT is what makes the count valid -
+				// without it ct_res_info(CS_ROW_COUNT) reports
+				// no count at all
+				done(((avail || more)?
+						DONE_MORE:DONE_FINAL)|
+						DONE_COUNT,
+						transState(),rowcount);
+
+				if (!avail) {
+					break;
+				}
+			}
+
 		} else {
 			// DONE_COUNT is what makes the count valid - without
 			// it ct_res_info(CS_ROW_COUNT) reports no count at all
-			done(((more)?DONE_MORE:DONE_FINAL)|DONE_COUNT,0,
+			done(((more)?DONE_MORE:DONE_FINAL)|DONE_COUNT,
+					transState(),
 					cont->getAffectedRows(cursor));
 		}
 
@@ -5356,7 +5958,8 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		// reports CS_CMD_SUCCEED for a done without it, and the
 		// client's result walk would fall a result out of step
 		appendQueryError(cursor);
-		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),0,0);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),
+						transState(),0);
 	}
 
 	debugEnd();
@@ -5904,6 +6507,155 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 	debugEnd();
 }
 
+// The tds 5.0 counterpart of colMetaData(), and a sibling of it rather
+// than a branch inside it.  The token byte can't be shared - 0x81 is a
+// cursor-delete request in tds 5.0 - and nothing after it is laid out
+// the same way either: the length and column count come first, the
+// names are single-byte characters, the flags are one byte with
+// different bits, the usertype is always 4 bytes, and there's no
+// collation anywhere.
+//
+//	byte			0xEE
+//	uint16, little-endian	how much follows, counting the column
+//				count as well as the column blocks
+//	uint16, little-endian	column count
+//	then per column:
+//		byte		name length
+//		bytes		the name, as single-byte characters
+//		byte		flags
+//		int32, LE	usertype
+//		byte		datatype
+//		...		size/precision/scale, keyed off the
+//				datatype's varint class
+//		byte		locale length (then that many bytes)
+//
+// "more" says whether another command follows this one in the request
+// buffer, and only matters on the refusal paths - it decides whether
+// their done gets DONE_MORE, the way every other refusal in this module
+// does.  A refusal here doesn't stop the token walk, so a DONE_FINAL
+// would leave the dones of those later commands unread in the socket.
+bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
+
+	// get col count and bail if there are no columns
+	uint32_t	count=cont->colCount(cursor);
+	if (!count) {
+		return true;
+	}
+
+	byte_t	token=TOKEN_ROWFMT;
+
+	debugStart("pre-tds7 row fmt");
+	debugTokenType(token);
+
+	// The column count is 16 bits wide here.  A wider result set needs
+	// rowfmt2 (0x61), which this module doesn't write, so refuse the
+	// whole thing rather than send a count that the blocks after it
+	// don't match.  Class 16 for the same reason
+	// preTds7UnsupportedToken() uses it - the session stays usable.
+	if (count>65535) {
+		debugWrite("too many columns: %d",count);
+		debugEnd();
+		// FIXME: is there a real error number/state for this?
+		appendError(0,1,16,"Result sets with more than 65535 "
+					"columns are not supported yet.",
+					srvname,NULL,1);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
+		return false;
+	}
+
+	debugWrite("count: %d",count);
+
+	// The token length counts bytes that aren't written yet, and every
+	// column block is a different size, so build the blocks into a
+	// scratch buffer and measure them.  The alternative - a second pass
+	// that adds up what the writers below are going to produce - is a
+	// parallel copy of the same size rules that can silently drift out
+	// of step with them, and a rowfmt whose length is off by even one
+	// byte desynchronizes the rest of the stream.  Building first also
+	// means an oversized result set is caught before anything lands in
+	// the response.
+	bytebuffer	cols;
+
+	for (uint32_t i=0; i<count; i++) {
+
+		uint16_t	col=(uint16_t)i;
+
+		debugStart("pre-tds7 col %d",col);
+
+		// name.  writeVarchar() writes single-byte characters when
+		// pretds7 is set, which is what tds 5.0 wants - colName()
+		// always writes ucs-2.  The length is a single byte, so a
+		// longer name is truncated, the way appendInfoOrError()
+		// truncates the names it sends; losing the whole result set
+		// over a long column name would be worse.
+		size_t		namelen=cont->getColumnNameSize(cursor,col);
+		const char	*name=cont->getColumnName(cursor,col);
+		if (namelen>255) {
+			namelen=255;
+		}
+		writeVarchar(&cols,sizeof(byte_t),name,namelen);
+		debugWrite("namelen: %lld",(long long)namelen);
+		debugWrite("name: %s",name);
+
+		// flags
+		preTds7ColFlags(&cols,cursor,col);
+
+		// usertype.  Always 4 bytes, so userType() can't be reused -
+		// it writes 2 when the negotiated version is under 720, and
+		// a pre-tds7 session negotiates 500.
+		//
+		// 0 means "no alias type", the same thing userType() sends,
+		// and the client reports it as such.
+		uint32_t	usertype=0;
+		writeLE(&cols,usertype);
+		debugWrite("usertype: %d",usertype);
+
+		// datatype
+		uint16_t	coltype=cont->getColumnType(cursor,col);
+		byte_t		tds5type=mapType(coltype);
+		write(&cols,tds5type);
+
+		// size/precision/scale
+		preTds7TypeInfo(&cols,cursor,col,coltype,tds5type);
+
+		// locale.  Mandatory even when it's empty - the client reads
+		// it right after the type info, so leaving it out
+		// desynchronizes everything after this column.
+		write(&cols,(byte_t)0);
+		debugWrite("locale length: 0");
+
+		debugEnd();
+	}
+
+	// the length covers the column count too, not just the blocks
+	size_t	tokenlength=sizeof(uint16_t)+cols.getSize();
+
+	// Metadata too wide for the 16-bit length needs rowfmt2 (0x61),
+	// whose length field is 32 bits.  Refuse rather than truncate - a
+	// truncated rowfmt isn't a smaller result set, it's a stream the
+	// client can't parse at all.
+	if (tokenlength>65535) {
+		debugWrite("token too large: %lld",(long long)tokenlength);
+		debugEnd();
+		// FIXME: is there a real error number/state for this?
+		appendError(0,1,16,"Result set metadata larger than 65535 "
+					"bytes is not supported yet.",
+					srvname,NULL,1);
+		done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
+		return false;
+	}
+
+	write(&resppacket,token);
+	writeLE(&resppacket,(uint16_t)tokenlength);
+	writeLE(&resppacket,(uint16_t)count);
+	write(&resppacket,cols.getBuffer(),cols.getSize());
+
+	debugWrite("token length: %lld",(long long)tokenlength);
+	debugEnd();
+
+	return true;
+}
+
 void sqlrprotocol_tds::cekTable() {
 
 	debugStart("cek table");
@@ -5935,10 +6687,25 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 	debugWrite("type: %hd",type);
 
 	// bail on a type that the map doesn't cover
+	// (0x1F is TDS_TYPE_NULL in ms-tds and TDS5_TYPE_VOID in tds 5.0,
+	// so this is a legal answer in either dialect)
 	if (type>=sizeof(tdstypemap)/sizeof(tdstypemap[0])) {
 		debugWrite("invalid column type: %hd",type);
 		debugEnd();
 		return TDS_TYPE_NULL;
+	}
+
+	// Tds 5.0 has its own map, and none of the version downgrades below
+	// apply to it.  They rewrite types to TDS_TYPE_NVARCHAR, which isn't
+	// a datatype in tds 5.0 at all, and a pre-tds7 session negotiates
+	// version 500, so every one of them would fire.  The date/time to
+	// varchar downgrade is still wanted here - it just comes out of
+	// pretds7typemap[] rather than out of a version guard.
+	if (pretds7) {
+		byte_t	tds5type=pretds7typemap[type];
+		debugPreTds7ColumnType(tds5type);
+		debugEnd();
+		return tds5type;
 	}
 
 	byte_t	tdstype=tdstypemap[type];
@@ -5978,6 +6745,92 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 	debugEnd();
 
 	return tdstype;
+}
+
+// How wide a tds 5.0 datatype's length field is - its "varint class".
+// It decides both the size field in a rowfmt and the length prefix in
+// front of the value in a row:
+//
+//	0 - no length at all.  The type carries its own width, and there's
+//	    no way to encode a null.
+//	1 - a single byte.  The default, and a length of 0 means null.
+//	4 - a 4-byte length, for the blob types.
+//	5 - a 4-byte length, for longbinary and longchar.
+//
+// The membership is freetds's tds_get_varint_size(), restricted to its
+// tds 5.0 branch.  Note that 0x7F isn't in the fixed set here the way it
+// is in ms-tds - the tds 5.0 8-byte integer is TDS5_TYPE_INT8 (0xBF).
+byte_t sqlrprotocol_tds::preTds7VarintSize(byte_t tds5type) {
+
+	switch (tds5type) {
+		case TDS5_TYPE_VOID:
+		case TDS5_TYPE_INTERVAL:
+		case TDS5_TYPE_INT1:
+		case TDS5_TYPE_DATE:
+		case TDS5_TYPE_BIT:
+		case TDS5_TYPE_TIME:
+		case TDS5_TYPE_INT2:
+		case TDS5_TYPE_INT4:
+		case TDS5_TYPE_SHORTDATE:
+		case TDS5_TYPE_FLT4:
+		case TDS5_TYPE_MONEY:
+		case TDS5_TYPE_DATETIME:
+		case TDS5_TYPE_FLT8:
+		case TDS5_TYPE_UINT1:
+		case TDS5_TYPE_UINT2:
+		case TDS5_TYPE_UINT4:
+		case TDS5_TYPE_UINT8:
+		case TDS5_TYPE_SHORTMONEY:
+		case TDS5_TYPE_SINT1:
+		case TDS5_TYPE_INT8:
+			return 0;
+		case TDS5_TYPE_IMAGE:
+		case TDS5_TYPE_TEXT:
+		case TDS5_TYPE_XML:
+		case TDS5_TYPE_UNITEXT:
+			return 4;
+		case TDS5_TYPE_LONGCHAR:
+		case TDS5_TYPE_LONGBINARY:
+			return 5;
+		default:
+			return 1;
+	}
+}
+
+// How wide a varint-0 type's value is.  Nothing but the value goes on
+// the wire for one of these - there's no length field in front of it -
+// so this is also how many bytes a null has to be padded out to, since
+// a fixed type has no way to say "null" at all.
+byte_t sqlrprotocol_tds::preTds7FixedSize(byte_t tds5type) {
+
+	switch (tds5type) {
+		case TDS5_TYPE_INT1:
+		case TDS5_TYPE_BIT:
+		case TDS5_TYPE_UINT1:
+		case TDS5_TYPE_SINT1:
+			return 1;
+		case TDS5_TYPE_INT2:
+		case TDS5_TYPE_UINT2:
+			return 2;
+		case TDS5_TYPE_INT4:
+		case TDS5_TYPE_UINT4:
+		case TDS5_TYPE_DATE:
+		case TDS5_TYPE_TIME:
+		case TDS5_TYPE_SHORTDATE:
+		case TDS5_TYPE_SHORTMONEY:
+		case TDS5_TYPE_FLT4:
+			return 4;
+		case TDS5_TYPE_INT8:
+		case TDS5_TYPE_UINT8:
+		case TDS5_TYPE_INTERVAL:
+		case TDS5_TYPE_MONEY:
+		case TDS5_TYPE_DATETIME:
+		case TDS5_TYPE_FLT8:
+			return 8;
+		default:
+			// void, and everything that isn't varint 0 at all
+			return 0;
+	}
 }
 
 void sqlrprotocol_tds::colData(sqlrservercursor *cursor, uint16_t col) {
@@ -6076,6 +6929,44 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 		}
 	}
 	writeLE(&resppacket,flags);
+
+	if (getDebug()) {
+		stringbuffer	b;
+		b.printBits(flags);
+		debugWrite("flags: %s",b.getString());
+	}
+	debugEnd();
+}
+
+// The tds 5.0 counterpart of colFlags().  One byte rather than two, and
+// the bits mean different things, so the two can't share an
+// implementation.
+void sqlrprotocol_tds::preTds7ColFlags(bytebuffer *buffer,
+						sqlrservercursor *cursor,
+						uint16_t col) {
+
+	debugStart("pre-tds7 col flags");
+
+	byte_t	flags=0;
+
+	// hidden - a column the client didn't ask for, added to a "for
+	// browse" select to key the rows.  Nothing here produces one.
+
+	// key - part of that same key.  Likewise.
+
+	// updateable (FIXME: the backends don't tell us, and colFlags()
+	// assumes the same thing)
+	flags|=((true)?TDS5_COLFLAG_WRITEABLE:0);
+
+	// is nullable
+	flags|=((cont->getColumnIsNullable(cursor,col))?
+					TDS5_COLFLAG_NULLABLE:0);
+
+	// identity
+	flags|=((cont->getColumnIsAutoIncrement(cursor,col))?
+					TDS5_COLFLAG_IDENTITY:0);
+
+	write(buffer,flags);
 
 	if (getDebug()) {
 		stringbuffer	b;
@@ -6267,6 +7158,191 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 	}
 
 	debugEnd();
+}
+
+// The tds 5.0 counterpart of the size/collation/precision/scale part of
+// typeInfo().  A separate function rather than another branch in that
+// one: typeInfo() is on the hot ms-tds path, and almost nothing it does
+// carries over.  What's sent here is decided by the datatype's varint
+// class rather than by an isVarLenType()/isPartLenType() chain, the
+// sizes have different widths and different limits, and there's no
+// collation in tds 5.0 at all.
+void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
+						sqlrservercursor *cursor,
+						uint16_t col,
+						uint16_t coltype,
+						byte_t tds5type) {
+
+	debugStart("pre-tds7 type info");
+	debugPreTds7ColumnType(tds5type);
+
+	// Decimal and numeric carry a precision and a scale after their
+	// size, and the size is how wide that precision makes the value on
+	// the wire, not the column's declared width.
+	if (tds5type==TDS5_TYPE_DECN || tds5type==TDS5_TYPE_NUMN) {
+
+		byte_t	precision;
+		byte_t	scale;
+		preTds7DecimalInfo(cursor,col,&precision,&scale);
+
+		byte_t	wiresize=decimalSize(precision);
+		write(buffer,wiresize);
+		write(buffer,precision);
+		write(buffer,scale);
+
+		debugWrite("size: %d (8-bit)",wiresize);
+		debugWrite("precision: %d",precision);
+		debugWrite("scale: %d",scale);
+		debugEnd();
+		return;
+	}
+
+	uint32_t	size=preTds7DeclaredSize(cursor,col,coltype,tds5type);
+
+	switch (preTds7VarintSize(tds5type)) {
+
+		case 0:
+			// the type carries its own width, so there's no size
+			// field at all
+			debugWrite("fixed, no size");
+			break;
+
+		case 4:
+			writeLE(buffer,size);
+			debugWrite("size: %d (32-bit)",size);
+
+			// Only the blob types carry a table name, and
+			// writing one for anything else desynchronizes the
+			// stream.  Xml and unitext are varint 4 but aren't
+			// blob types, so they take none.
+			if (tds5type==TDS5_TYPE_TEXT ||
+					tds5type==TDS5_TYPE_IMAGE) {
+				// The module has no table name to give - the
+				// backends don't expose one for a result-set
+				// column - and an empty one is legal.
+				writeLE(buffer,(uint16_t)0);
+				debugWrite("table name: (none)");
+			}
+			break;
+
+		case 5:
+			// longchar/longbinary - a 32-bit size, and no table
+			// name, blob-sized though they are
+			writeLE(buffer,size);
+			debugWrite("size: %d (32-bit)",size);
+			break;
+
+		default:
+			write(buffer,(byte_t)size);
+			debugWrite("size: %d (8-bit)",size);
+			break;
+	}
+
+	debugEnd();
+}
+
+// The size a column's values are declared at in a pre-tds7 rowfmt.
+// preTds7TypeInfo() writes what this returns, and preTds7Field() caps
+// every value it writes against it, so a field can't come out wider
+// than the buffer the client sized from the rowfmt.  One function
+// rather than the same rules written out twice - a second copy of them
+// is a copy that can drift.
+//
+// Decimal and numeric don't come through here.  Their width isn't a
+// size at all, it's decimalSize() of the precision, so they go through
+// preTds7DecimalInfo() instead.
+uint32_t sqlrprotocol_tds::preTds7DeclaredSize(sqlrservercursor *cursor,
+						uint16_t col,
+						uint16_t coltype,
+						byte_t tds5type) {
+
+	uint32_t	size=cont->getColumnSize(cursor,col);
+
+	switch (preTds7VarintSize(tds5type)) {
+
+		case 0:
+			// the type carries its own width, and there's no size
+			// field in the rowfmt to cap anything against
+			return 0;
+
+		case 4:
+		case 5:
+			// limit the size to 2^31-1 because the client will
+			// interpret it as signed
+			if (size>2147483647) {
+				size=2147483647;
+			}
+			return size;
+
+		default:
+			switch (tds5type) {
+				case TDS5_TYPE_INTN:
+				case TDS5_TYPE_FLTN:
+				case TDS5_TYPE_MONEYN:
+				case TDS5_TYPE_DATETIMEN:
+					// these only allow certain sizes.
+					// the n-type bytes happen to be the
+					// same in both dialects, so nTypeSize()
+					// takes one as-is
+					size=nTypeSize(coltype,tds5type,size);
+					break;
+				case TDS5_TYPE_VARCHAR:
+				case TDS5_TYPE_CHAR:
+					// A date/time column mapped to
+					// varchar reports its binary-form
+					// size (ct-lib says 4 for a date),
+					// which is too small for the rendered
+					// string, so measure it by type
+					// instead or the client truncates it.
+					size=dateTimeStringSize(coltype,size);
+					break;
+			}
+			// The size byte is unsigned here, so the whole 255 is
+			// usable - unlike the ms-tds path, which stops at 127
+			// because the client reads that one signed.
+			// FIXME: a wider column should go out as longchar
+			// (0xAF) or longbinary (0xE1) rather than be
+			// truncated, but the datatype byte is written before
+			// this, out of pretds7typemap[], and the row writer
+			// has to agree with it - so the promotion belongs in
+			// the mapping, not here.
+			if (size>255) {
+				size=255;
+			}
+			return size;
+	}
+}
+
+// The precision and scale a decimal or numeric column is declared at in
+// a pre-tds7 rowfmt, and with them the width of its values - the client
+// reads the sign byte and then as many magnitude bytes as
+// decimalSize(precision) calls for, whatever length it was sent.  Both
+// writers call this for the same reason they both call
+// preTds7DeclaredSize().
+//
+// The client fails the connection outright on a precision of 0, a
+// precision over the maximum, or a scale wider than the precision, so
+// clamp all three - a backend that reports 0 would otherwise kill the
+// session.
+void sqlrprotocol_tds::preTds7DecimalInfo(sqlrservercursor *cursor,
+						uint16_t col,
+						byte_t *precision,
+						byte_t *scale) {
+
+	uint32_t	p=cont->getColumnPrecision(cursor,col);
+	uint32_t	s=cont->getColumnScale(cursor,col);
+
+	if (!p) {
+		p=18;
+	} else if (p>TDS_DECIMAL_MAX_PRECISION) {
+		p=TDS_DECIMAL_MAX_PRECISION;
+	}
+	if (s>p) {
+		s=p;
+	}
+
+	*precision=(byte_t)p;
+	*scale=(byte_t)s;
 }
 
 void sqlrprotocol_tds::writeCollation() {
@@ -6711,6 +7787,104 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
 				position->setField(positionrow,col,
 							fld,fldsize,null);
 			}
+
+			debugEnd();
+		}
+
+		// FIXME: kludgy
+		cont->nextRow(cursor);
+
+		debugEnd();
+
+		// bump row count
+		rowcount++;
+	}
+
+	return rowcount;
+}
+
+// The tds 5.0 counterpart of rows().  The token byte is the same in
+// both dialects but nothing inside the row is, so the two don't share a
+// body: the column type comes out of pretds7typemap[] rather than
+// tdstypemap[], the length prefix and the null form come from the
+// datatype's varint class rather than from the type itself, and there's
+// no separate lob-data step - a tds 5.0 blob's text pointer is part of
+// its field.
+//
+// There's no maxrows/position pair either.  Those serve the ms-tds
+// cursor tokens, and tds 5.0 cursors are somebody else's ticket.
+uint64_t sqlrprotocol_tds::preTds7Rows(sqlrservercursor *cursor) {
+
+	// get col count and bail if there are no columns
+	uint32_t	colcount=cont->colCount(cursor);
+	if (!colcount) {
+		// return the affected row count though
+		return cont->getAffectedRows(cursor);
+	}
+
+	// for each row...
+	uint64_t	rowcount=0;
+	for (;;) {
+
+		// fetch a row
+		bool	error;
+		if (!cont->fetchRow(cursor,&error)) {
+			if (error) {
+				// FIXME: handle error
+			}
+			break;
+		}
+
+		// append the token to the packet
+		byte_t	token=TOKEN_ROW;
+		write(&resppacket,token);
+
+		debugStart("pre-tds7 row");
+		debugTokenType(token);
+
+		// append the fields to the packet
+		for (uint32_t i=0; i<colcount; i++) {
+
+			uint16_t	col=(uint16_t)i;
+
+			// get/map the column type
+			// FIXME: cache this earlier and just look it up here
+			uint16_t	coltype=cont->getColumnType(cursor,col);
+			byte_t		tds5type=mapType(coltype);
+
+			debugStart("pre-tds7 col %d",col);
+
+			// get the field
+			const char	*fld=NULL;
+			uint64_t	fldsize=0;
+			bool		lob=false;
+			bool		null=false;
+			if (!cont->getField(cursor,col,
+					&fld,&fldsize,&lob,&null)) {
+				// FIXME: handle error
+			}
+
+			// Decimal and numeric are sized by the precision
+			// rather than by a column size.
+			// FIXME: cache this earlier too
+			byte_t	precision=0;
+			byte_t	scale=0;
+			if (tds5type==TDS5_TYPE_DECN ||
+					tds5type==TDS5_TYPE_NUMN) {
+				preTds7DecimalInfo(cursor,col,
+							&precision,&scale);
+			}
+
+			// Send the field, capped against the size the rowfmt
+			// declared for this column.  Both numbers come from
+			// the same helpers preTds7TypeInfo() declared them
+			// with, so they agree by construction rather than by
+			// two writers happening to compute the same thing.
+			// FIXME: cache this earlier too
+			preTds7Field(coltype,tds5type,
+					preTds7DeclaredSize(cursor,col,
+							coltype,tds5type),
+					precision,fld,fldsize,null);
 
 			debugEnd();
 		}
@@ -7211,6 +8385,329 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 			debugWrite("data:");
 			debugHexDump((byte_t *)field,fieldsize);
 			}
+			break;
+	}
+
+	debugEnd();
+}
+
+// The tds 5.0 counterpart of field().  The value encodings themselves
+// are the same ones field() writes - only the length in front of them,
+// the way a null is spelled, and the layout of a decimal come out
+// differently - but the length and the null form are driven by the
+// datatype's varint class here rather than by field()'s two per-type
+// switches, so there's nothing worth sharing between them.
+//
+// "colsize" is what preTds7DeclaredSize() gave preTds7TypeInfo() for
+// this column, and "precision" what preTds7DecimalInfo() gave it, so
+// capping a value against them is the same thing as capping it against
+// the rowfmt.  A field wider than the rowfmt declared would overrun the
+// buffer the client sized from that rowfmt.
+void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
+					byte_t tds5type,
+					uint32_t colsize,
+					byte_t precision,
+					const char *field,
+					uint64_t fieldsize,
+					bool null) {
+
+	debugStart("pre-tds7 field");
+	debugPreTds7ColumnType(tds5type);
+
+	// handle nulls
+	if (null) {
+
+		debugWrite("data: null");
+
+		switch (preTds7VarintSize(tds5type)) {
+			case 0:
+				{
+				// A fixed-length type has no null form at
+				// all - there's no length field to set to
+				// zero - so a null has to go out as a zero
+				// value.  Bit is the only varint-0 type
+				// pretds7typemap[] produces, and an ase bit
+				// column is never nullable, but writing the
+				// right number of bytes for any of them
+				// keeps a type mapped in later from
+				// desynchronizing the row.
+				byte_t	zero[8];
+				bytestring::zero(zero,sizeof(zero));
+				write(&resppacket,zero,
+						preTds7FixedSize(tds5type));
+				}
+				break;
+			case 4:
+				// a text-pointer length of 0, and nothing
+				// after it
+				write(&resppacket,(byte_t)0);
+				break;
+			case 5:
+				writeLE(&resppacket,(uint32_t)0);
+				break;
+			default:
+				// A length of 0 is a varint-1 type's only
+				// null form, and it's also what an empty
+				// value comes out as - so an empty varchar
+				// and a null varchar are the same bytes on
+				// the wire, and the client reads both as
+				// null.  That's how tds 5.0 works rather
+				// than something to work around; a real ase
+				// sends the same thing.
+				write(&resppacket,(byte_t)0);
+				break;
+		}
+
+		debugEnd();
+		return;
+	}
+
+	switch (tds5type) {
+
+		// The n-types: a size byte, then the value at that width.
+		// The size is the one the rowfmt declared, which nTypeSize()
+		// already narrowed to a width the type allows.
+		case TDS5_TYPE_INTN:
+			{
+			byte_t	size=(byte_t)colsize;
+			write(&resppacket,size);
+			int64_t	data=charstring::convertToInteger(field);
+			switch (size) {
+				case 1:
+					write(&resppacket,(char)data);
+					break;
+				case 2:
+					writeLE(&resppacket,(uint16_t)data);
+					break;
+				case 4:
+					writeLE(&resppacket,(uint32_t)data);
+					break;
+				case 8:
+					writeLE(&resppacket,(uint64_t)data);
+					break;
+			}
+			debugWrite("size: %d",size);
+			debugWrite("data: ");
+			debugWrite("%lld",(long long)data);
+			}
+			break;
+		case TDS5_TYPE_FLTN:
+			{
+			byte_t	size=(byte_t)colsize;
+			write(&resppacket,size);
+			double	data=charstring::convertToFloat(field);
+			if (size==4) {
+				write(&resppacket,(float)data);
+			} else {
+				write(&resppacket,data);
+			}
+			debugWrite("size: %d",size);
+			debugWrite("data: ");
+			debugWrite("%f",data);
+			}
+			break;
+		case TDS5_TYPE_MONEYN:
+			{
+			byte_t	size=(byte_t)colsize;
+			write(&resppacket,size);
+			int64_t	data=moneyValue(field);
+			if (size==4) {
+				writeLE(&resppacket,(uint32_t)(int32_t)data);
+			} else {
+				// the high half goes first, ahead of the
+				// low half, and both are little-endian
+				writeLE(&resppacket,(uint32_t)
+					((data&0xFFFFFFFF00000000LL)>>32));
+				writeLE(&resppacket,(uint32_t)
+					(data&0x00000000FFFFFFFFLL));
+			}
+			debugWrite("size: %d",size);
+			debugWrite("data: ");
+			debugWrite("%lld (%s)",(long long)data,field);
+			}
+			break;
+		case TDS5_TYPE_DATETIMEN:
+			{
+			byte_t	size=(byte_t)colsize;
+			write(&resppacket,size);
+			int32_t		dayssince1900;
+			uint32_t	threehundredths;
+			dateTime(field,&dayssince1900,&threehundredths);
+			debugWrite("size: %d",size);
+			debugWrite("data: ");
+			if (size==4) {
+				// days and whole minutes
+				uint16_t	days=(dayssince1900>0)?
+							dayssince1900:0;
+				uint16_t	minutes=threehundredths/300/60;
+				writeLE(&resppacket,days);
+				writeLE(&resppacket,minutes);
+				debugWrite("%d,%d",(uint32_t)days,
+							(uint32_t)minutes);
+			} else {
+				// days and three-hundredths of a second
+				writeLE(&resppacket,(uint32_t)dayssince1900);
+				writeLE(&resppacket,threehundredths);
+				debugWrite("%d,%d",dayssince1900,
+							threehundredths);
+			}
+			}
+			break;
+
+		// varint 0 - the value alone, with no length in front of it
+		case TDS5_TYPE_BIT:
+			{
+			char	data=charstring::convertToInteger(field);
+			write(&resppacket,data);
+			debugWrite("data: ");
+			debugWrite("%d (1 byte)",data);
+			}
+			break;
+
+		case TDS5_TYPE_DECN:
+		case TDS5_TYPE_NUMN:
+			{
+			byte_t	ispositive;
+			byte_t	size;
+			byte_t	val[TDS_DECIMAL_MAX_SIZE-1];
+			// decimal() only fills the low 4 or 8 bytes, so zero
+			// the rest before reversing a wider window of it
+			bytestring::zero(val,sizeof(val));
+			decimal(field,&ispositive,&size,val);
+
+			// Two things are inverted from the ms-tds form that
+			// decimal() produces and field() writes:
+			//
+			// * the sign byte is 0 for positive and 1 for
+			//   negative, the opposite way round from
+			//   decimal()'s "ispositive"
+			// * the magnitude is big-endian, and decimal()
+			//   builds it little-endian
+			//
+			// The width is decimalSize() of the precision the
+			// rowfmt declared, counting the sign byte, so
+			// decimalSize(precision)-1 magnitude bytes follow it.
+			// It is NOT decimal()'s "size", which is derived from
+			// how many digits the value happens to have.  The
+			// client reads the sign byte and then exactly as many
+			// magnitude bytes as the rowfmt's precision calls
+			// for, whatever length it was sent, so any other
+			// width decodes to garbage - which is why the
+			// precision here comes from preTds7DecimalInfo(), the
+			// same place the rowfmt's did.
+			byte_t	wiresize=decimalSize(precision);
+			write(&resppacket,wiresize);
+			write(&resppacket,(byte_t)((ispositive)?0:1));
+			for (byte_t i=0; i<wiresize-1; i++) {
+				write(&resppacket,val[wiresize-2-i]);
+			}
+
+			debugWrite("size: %d",wiresize);
+			debugWrite("sign: %d",(ispositive)?0:1);
+			debugWrite("data: ");
+			debugWrite("%s (precision %d)",field,precision);
+			}
+			break;
+
+		case TDS5_TYPE_VARCHAR:
+		case TDS5_TYPE_CHAR:
+			{
+			// Character data passes straight through as utf-8.
+			// A tds 5.0 rowfmt has no collation field, so nothing
+			// declares a code page that utf8ToCp1252() could
+			// convert to, and preTds7ToUtf8() doesn't convert on
+			// the way in either - the two directions agree.
+			// One consequence: the length below counts utf-8
+			// bytes, so a multi-byte character eats more than one
+			// unit of the declared column size.
+			uint64_t	size=fieldsize;
+			if (size>colsize) {
+				size=colsize;
+			}
+			write(&resppacket,(byte_t)size);
+			write(&resppacket,field,size);
+			debugWrite("size: %lld",(long long)size);
+			debugWrite("data: ");
+			debugWrite("%.*s",(int)size,field);
+			}
+			break;
+
+		case TDS5_TYPE_VARBINARY:
+		case TDS5_TYPE_BINARY:
+			{
+			// the sap back end hands binary values back as hex
+			// text, so the wire length is half the field length
+			uint64_t	size=(binaryishextext)?
+						fieldsize/2:fieldsize;
+			if (size>colsize) {
+				size=colsize;
+			}
+			write(&resppacket,(byte_t)size);
+			binary(field,size,binaryishextext);
+			debugWrite("size: %lld",(long long)size);
+			debugWrite("data:");
+			debugHexDump((byte_t *)field,fieldsize);
+			}
+			break;
+
+		case TDS5_TYPE_TEXT:
+		case TDS5_TYPE_IMAGE:
+			{
+			// image comes back as hex text from the sap back end
+			// too, under its own config flag - text doesn't
+			bool		hextext=(tds5type==TDS5_TYPE_IMAGE &&
+							imageishextext);
+			uint64_t	size=(hextext)?fieldsize/2:fieldsize;
+			if (size>colsize) {
+				size=colsize;
+			}
+
+			// A non-null varint-4 field is a 16-byte text
+			// pointer, an 8-byte timestamp, a 32-bit data
+			// length, and then the data.  lobData() already
+			// writes the first two - the dummy values it makes
+			// up are as good here as they are on the ms-tds
+			// path, and the tds 5.0 type bytes for text and
+			// image are the same 0x23 and 0x22 it switches on,
+			// so it takes one as-is.
+			lobData(tds5type);
+
+			writeLE(&resppacket,(uint32_t)size);
+			binary(field,size,hextext);
+			debugWrite("size: %lld",(long long)size);
+			debugWrite("data:");
+			debugHexDump((byte_t *)field,fieldsize);
+			}
+			break;
+
+		case TDS5_TYPE_LONGCHAR:
+		case TDS5_TYPE_LONGBINARY:
+			{
+			// varint 5 - a 32-bit length rather than an 8-bit
+			// one, and no text pointer.  pretds7typemap[] never
+			// produces these today; they're here so that a wider
+			// column promoted to one later writes a field the
+			// client can walk past.
+			bool		hextext=(tds5type==TDS5_TYPE_LONGBINARY &&
+							binaryishextext);
+			uint64_t	size=(hextext)?fieldsize/2:fieldsize;
+			if (size>colsize) {
+				size=colsize;
+			}
+			writeLE(&resppacket,(uint32_t)size);
+			binary(field,size,hextext);
+			debugWrite("size: %lld",(long long)size);
+			}
+			break;
+
+		default:
+			// Nothing else comes out of pretds7typemap[].  Write
+			// the null form rather than nothing at all, so a type
+			// added to the map without a case here costs one
+			// value rather than the whole stream.
+			debugWrite("unhandled type - writing null");
+			preTds7Field(coltype,tds5type,colsize,precision,
+						field,fieldsize,true);
 			break;
 	}
 
@@ -13824,19 +15321,36 @@ bool sqlrprotocol_tds::sendAlreadyLoggedInError() {
 	return sendError(0,1,16,"Already logged in",1);
 }
 
+// The value done() writes for a tds 5.0 session, and 0 for an ms-tds one.
+// The field means two different things in the two dialects - see done().
+// A real ASE sends CS_TRAN_COMPLETED on every done that isn't inside a
+// transaction, so match that rather than leaving it CS_TRAN_UNDEFINED.
+uint16_t sqlrprotocol_tds::transState() {
+	if (!pretds7) {
+		// CurCmd.  Ms-tds clients ignore it and freetds expects
+		// the 0 that this module has always sent.
+		return 0;
+	}
+	return (cont->getInTransaction())?
+			TDS5_TRAN_IN_PROGRESS:TDS5_TRAN_COMPLETED;
+}
+
 void sqlrprotocol_tds::done() {
-	done(DONE_FINAL,0,0);
+	done(DONE_FINAL,transState(),0);
 }
 
 void sqlrprotocol_tds::done(uint16_t status,
-				uint16_t curcmd,
+				uint16_t curcmdortransstate,
 				uint64_t donerowcount) {
-	done(TOKEN_DONE,status,curcmd,donerowcount);
+	done(TOKEN_DONE,status,curcmdortransstate,donerowcount);
 }
 
+// "curcmdortransstate" is the second uint16 of the token, and it carries
+// a different thing in each dialect: CurCmd in ms-tds, TransState (one of
+// the TDS5_TRAN_* values) in tds 5.0.  transState() picks the right one.
 void sqlrprotocol_tds::done(byte_t token,
 				uint16_t status,
-				uint16_t curcmd,
+				uint16_t curcmdortransstate,
 				uint64_t donerowcount) {
 
 	switch (token) {
@@ -13852,13 +15366,14 @@ void sqlrprotocol_tds::done(byte_t token,
 	}
 	debugTokenType(token);
 	debugDoneStatus(status);
-	debugWrite("curcmd: 0x%02x",curcmd);
+	debugWrite("%s: 0x%02x",(pretds7)?"transstate":"curcmd",
+						curcmdortransstate);
 	debugWrite("donerowcount: %lld",(long long)donerowcount);
 	debugEnd();
 
 	write(&resppacket,token);
 	writeLE(&resppacket,status);
-	writeLE(&resppacket,curcmd);
+	writeLE(&resppacket,curcmdortransstate);
 	if (negotiatedtdsversion<720) {
 		writeLE(&resppacket,(uint32_t)donerowcount);
 	} else {
@@ -14508,6 +16023,9 @@ void sqlrprotocol_tds::debugTokenType(byte_t token) {
 		case TOKEN_RETURNVALUE:
 			tokenstring="TOKEN_RETURNVALUE";
 			break;
+		case TOKEN_ROWFMT:
+			tokenstring="TOKEN_ROWFMT";
+			break;
 		default:
 			tokenstring="unknown token";
 			break;
@@ -15092,6 +16610,148 @@ void sqlrprotocol_tds::debugColumnType(byte_t type) {
 			break;
 	}
 	debugWrite("tdstype: 0x%02x (%s)",
+			(uint32_t)(0x000000ff&type),typestring);
+}
+
+// Separate from debugColumnType() on purpose - these are tds 5.0
+// datatypes, and several of the values name something else in ms-tds.
+void sqlrprotocol_tds::debugPreTds7ColumnType(byte_t type) {
+	if (!getDebug()) {
+		return;
+	}
+	const char	*typestring=NULL;
+	switch (type) {
+		case TDS5_TYPE_VOID:
+			typestring="TDS5_TYPE_VOID";
+			break;
+		case TDS5_TYPE_IMAGE:
+			typestring="TDS5_TYPE_IMAGE";
+			break;
+		case TDS5_TYPE_TEXT:
+			typestring="TDS5_TYPE_TEXT";
+			break;
+		case TDS5_TYPE_BLOB:
+			typestring="TDS5_TYPE_BLOB";
+			break;
+		case TDS5_TYPE_VARBINARY:
+			typestring="TDS5_TYPE_VARBINARY";
+			break;
+		case TDS5_TYPE_INTN:
+			typestring="TDS5_TYPE_INTN";
+			break;
+		case TDS5_TYPE_VARCHAR:
+			typestring="TDS5_TYPE_VARCHAR";
+			break;
+		case TDS5_TYPE_BINARY:
+			typestring="TDS5_TYPE_BINARY";
+			break;
+		case TDS5_TYPE_INTERVAL:
+			typestring="TDS5_TYPE_INTERVAL";
+			break;
+		case TDS5_TYPE_CHAR:
+			typestring="TDS5_TYPE_CHAR";
+			break;
+		case TDS5_TYPE_INT1:
+			typestring="TDS5_TYPE_INT1";
+			break;
+		case TDS5_TYPE_DATE:
+			typestring="TDS5_TYPE_DATE";
+			break;
+		case TDS5_TYPE_BIT:
+			typestring="TDS5_TYPE_BIT";
+			break;
+		case TDS5_TYPE_TIME:
+			typestring="TDS5_TYPE_TIME";
+			break;
+		case TDS5_TYPE_INT2:
+			typestring="TDS5_TYPE_INT2";
+			break;
+		case TDS5_TYPE_INT4:
+			typestring="TDS5_TYPE_INT4";
+			break;
+		case TDS5_TYPE_SHORTDATE:
+			typestring="TDS5_TYPE_SHORTDATE";
+			break;
+		case TDS5_TYPE_FLT4:
+			typestring="TDS5_TYPE_FLT4";
+			break;
+		case TDS5_TYPE_MONEY:
+			typestring="TDS5_TYPE_MONEY";
+			break;
+		case TDS5_TYPE_DATETIME:
+			typestring="TDS5_TYPE_DATETIME";
+			break;
+		case TDS5_TYPE_FLT8:
+			typestring="TDS5_TYPE_FLT8";
+			break;
+		case TDS5_TYPE_UINT1:
+			typestring="TDS5_TYPE_UINT1";
+			break;
+		case TDS5_TYPE_UINT2:
+			typestring="TDS5_TYPE_UINT2";
+			break;
+		case TDS5_TYPE_UINT4:
+			typestring="TDS5_TYPE_UINT4";
+			break;
+		case TDS5_TYPE_UINT8:
+			typestring="TDS5_TYPE_UINT8";
+			break;
+		case TDS5_TYPE_UINTN:
+			typestring="TDS5_TYPE_UINTN";
+			break;
+		case TDS5_TYPE_SENSITIVITY:
+			typestring="TDS5_TYPE_SENSITIVITY";
+			break;
+		case TDS5_TYPE_BOUNDARY:
+			typestring="TDS5_TYPE_BOUNDARY";
+			break;
+		case TDS5_TYPE_DECN:
+			typestring="TDS5_TYPE_DECN";
+			break;
+		case TDS5_TYPE_NUMN:
+			typestring="TDS5_TYPE_NUMN";
+			break;
+		case TDS5_TYPE_FLTN:
+			typestring="TDS5_TYPE_FLTN";
+			break;
+		case TDS5_TYPE_MONEYN:
+			typestring="TDS5_TYPE_MONEYN";
+			break;
+		case TDS5_TYPE_DATETIMEN:
+			typestring="TDS5_TYPE_DATETIMEN";
+			break;
+		case TDS5_TYPE_SHORTMONEY:
+			typestring="TDS5_TYPE_SHORTMONEY";
+			break;
+		case TDS5_TYPE_DATEN:
+			typestring="TDS5_TYPE_DATEN";
+			break;
+		case TDS5_TYPE_TIMEN:
+			typestring="TDS5_TYPE_TIMEN";
+			break;
+		case TDS5_TYPE_XML:
+			typestring="TDS5_TYPE_XML";
+			break;
+		case TDS5_TYPE_UNITEXT:
+			typestring="TDS5_TYPE_UNITEXT";
+			break;
+		case TDS5_TYPE_LONGCHAR:
+			typestring="TDS5_TYPE_LONGCHAR";
+			break;
+		case TDS5_TYPE_SINT1:
+			typestring="TDS5_TYPE_SINT1";
+			break;
+		case TDS5_TYPE_INT8:
+			typestring="TDS5_TYPE_INT8";
+			break;
+		case TDS5_TYPE_LONGBINARY:
+			typestring="TDS5_TYPE_LONGBINARY";
+			break;
+		default:
+			typestring="unknown TDS5_TYPE";
+			break;
+	}
+	debugWrite("tds5type: 0x%02x (%s)",
 			(uint32_t)(0x000000ff&type),typestring);
 }
 
