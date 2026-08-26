@@ -5858,15 +5858,20 @@ int main(int argc, char **argv) {
 
 
 	// The whole CS_CUR_ family - CS_CUR_STATUS 9126, CS_CUR_ID 9127,
-	// CS_CUR_NAME 9128 and CS_CUR_ROWCOUNT 9129 - is unimplemented in
-	// freetds 1.3.3.  ct_res_info falls through to its default case,
-	// writes "Unknown type in ct_res_info" to stderr and returns
-	// CS_FAIL without touching either the value buffer or the outlen,
-	// so the sentinels below survive.  Neither message callback fires.
-	// That leaves no cursor state introspection at all through ct-lib,
-	// and no CS_CURSTAT_ bit is ever observable.  Pinned rather than
-	// skipped, so a freetds that implements it shows up here.
-	stdoutput.printf("ct_res_info: CS_CUR_ family is unimplemented\n");
+	// CS_CUR_NAME 9128 and CS_CUR_ROWCOUNT 9129 - is a set of
+	// ct_cmd_props properties, not a valid ct_res_info operation, on
+	// either library.  SAP's ct-lib rejects it explicitly: an "illegal
+	// value... for parameter operation" client message fires and
+	// outlen comes back 0.  freetds 1.3.3 falls through to its default
+	// case, writes "Unknown type in ct_res_info" to stderr, and leaves
+	// outlen untouched, so the sentinel survives there.  Both return
+	// CS_FAIL and neither ever touches the value buffer, so there is
+	// no overflow risk through this call on either library.  Real
+	// cursor state introspection is reachable through
+	// ct_cmd_props(CS_GET,...) instead, on both libraries - this test
+	// does not exercise that path.
+	stdoutput.printf("ct_res_info: CS_CUR_ family is not a valid "
+						"operation\n");
 	CS_INT	cursinfo[4]={CS_CUR_STATUS,CS_CUR_ID,
 					CS_CUR_NAME,CS_CUR_ROWCOUNT};
 	// CS_CUR_NAME hands back the cursor name rather than an int, so the
@@ -5885,7 +5890,7 @@ int main(int argc, char **argv) {
 					(CS_VOID *)&cursinfovalue,CS_UNUSED,
 					&cursinfolen),CS_FAIL);
 		assertEquals(cursinfovalue.intvalue,-987654);
-		assertEquals(cursinfolen,-987654);
+		assertEquals(cursinfolen,(TDSTEST_LINKED_WITH_FREETDS)?-987654:0);
 	}
 	stdoutput.printf("\n");
 
