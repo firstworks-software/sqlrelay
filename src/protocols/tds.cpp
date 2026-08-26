@@ -117,10 +117,29 @@
 // query text rather than the whole request.
 #define	MIN_MAX_REQUEST_SIZE		(16*1024*1024)
 
+// A ceiling on how many commands one request buffer may carry.  Neither
+// maxquerysize nor maxrequestsize bounds this - the first bounds a single
+// command's sql and the second bounds the buffer, and a 16mb buffer packed
+// with 6-byte language tokens is millions of commands, each a backend
+// round trip whose result is held in memory until the whole response is
+// sent.  Well clear of any real batch: a ct-lib client typically sends one
+// language command per ct_send, and an rpc batch from a driver's parameter
+// arrays runs to the low hundreds before the driver chunks it.
+#define	MAX_COMMANDS_PER_REQUEST	1024
+
 // login7's fixed header, before the variable length fields it points into.
 // tds 7.2 and up add ibchangepassword, cchchangepassword and cbsspilong.
 #define	LOGIN7_HEADER_SIZE		86
 #define	LOGIN7_HEADER_SIZE_72		94
+
+// Where login7's fixed header declares its version and its two password
+// fields.  tds7Login() finds every field by walking the header, but these
+// three have to be located before the record is parsed at all, so that the
+// received-packet dump can blank the passwords.  Each ib is followed
+// immediately by its cch.
+#define	LOGIN7_TDSVERSION_OFFSET	4
+#define	LOGIN7_IBPASSWORD_OFFSET	44
+#define	LOGIN7_IBCHANGEPASSWORD_OFFSET	86
 
 // the longest each login7 field may be, in characters for the ucs-2 fields
 // and in bytes for the rest
@@ -148,6 +167,14 @@
 #define	PRE_TDS7_REMOTE_PASSWORD_SIZE	255
 #define	PRE_TDS7_PROGNAME_SIZE		10
 #define	PRE_TDS7_PACKET_SIZE_SIZE	6
+
+// Where the two cleartext credential fields start in the pre-tds7 login
+// record.  Each preceding string field counts as its fixed run of bytes
+// plus its trailing length byte: hostname and username put password at
+// 62, and hostproc, the fixed-length block, appname and servername put
+// remotepassword at 202.
+#define	PRE_TDS7_PASSWORD_OFFSET	62
+#define	PRE_TDS7_REMOTE_PASSWORD_OFFSET	202
 
 // the fixed-length fields in the pre-tds7 login record
 #define	PRE_TDS7_TYPE_FLAGS_SIZE	6
@@ -182,9 +209,10 @@
 // login ack the same byte says how the login came out instead, and 4.2
 // and 5.0 don't spell it the same way (4.2 says 1, 5.0 says 5) - which
 // is one reason preTds7Login() refuses a client that declares 4.2.
-// Only SUCCEED is ever sent; a login that fails gets an error token and
-// no login ack at all.  FAIL and NEGOTIATE are kept, unused, to record
-// the other values the byte can take.
+// A failed pre-tds7 login gets an error token and a login ack carrying
+// FAIL, which is what a real ase sends.  NEGOTIATE goes with the
+// challenge/response exchange that this module doesn't implement, and is
+// kept, unused, to record the other value the byte can take.
 #define	PRE_TDS7_LOGIN_ACK_SUCCEED	0x05
 #define	PRE_TDS7_LOGIN_ACK_FAIL		0x06
 #define	PRE_TDS7_LOGIN_ACK_NEGOTIATE	0x07
@@ -1109,12 +1137,29 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	capability();
 		bool	sendSecEncryptUnsupportedError();
 		bool	sendPreTds7VersionUnsupportedError();
+		// blank a login record's password fields, so the
+		// received-packet hex dump doesn't hand out passwords the
+		// field-level output takes care to hide
+		void	maskTds7Passwords(byte_t *packet,
+						uint32_t packetsize,
+						uint64_t packetoffset);
+		void	maskPreTds7Passwords(byte_t *packet,
+						uint32_t packetsize,
+						uint64_t packetoffset);
+		// blanks the part of a request-relative range that landed
+		// in this packet
+		void	maskRange(byte_t *packet,
+						uint32_t packetsize,
+						uint64_t packetoffset,
+						uint64_t start,
+						uint64_t size);
 
 		bool	preTds7Normal();
 		byte_t	preTds7TokenLength(byte_t token);
 		bool	preTds7Language(const byte_t **rpinout,
 					size_t *rpsizeinout);
 		void	preTds7UnsupportedToken(byte_t token);
+		void	tooManyCommands(byte_t token);
 
 		bool	tds7Login();
 		bool	loginFieldFits(const char *name,
@@ -1129,7 +1174,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t passwordlen);
 		bool	auth(const char *username,
 						const char *password);
-		void	loginAck();
+		void	loginAck(bool success);
 		void	authError(const wchar_t *username,
 						size_t usernamelen);
 		void	authError(const char *username);
@@ -2446,8 +2491,26 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
+		// where this packet starts in the reassembled request
+		uint64_t	packetoffset=reqpacket.getSize();
+
 		// append the data to the receive buffer
 		reqpacket.append(packet,packetsize);
+
+		// The dump below writes the packet exactly as it arrived, so
+		// a login packet hands over the password that the field-level
+		// output takes care to print as "(hidden)".  Blank it first.
+		// reqpacket already has its own copy, so this only affects
+		// the dump.
+		if (getDebug()) {
+			if (*packettype==PRE_TDS7_LOGIN) {
+				maskPreTds7Passwords(packet,packetsize,
+							packetoffset);
+			} else if (*packettype==TDS7_LOGIN) {
+				maskTds7Passwords(packet,packetsize,
+							packetoffset);
+			}
+		}
 
 		debugStart("recv");
 		debugPacketType("packet type",*packettype);
@@ -3814,7 +3877,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 		// run session-start queries
 		cont->beginSession();
 
-		loginAck();
+		loginAck(true);
 
 		// A client that sent a capability token rejects the whole
 		// login response unless one comes back, so unlike the
@@ -3825,14 +3888,21 @@ bool sqlrprotocol_tds::preTds7Login() {
 
 	} else {
 		authError(username);
+
+		// Unlike tds 7.x, where a failed login gets an error token
+		// and nothing else, a real ase answers a failed pre-tds7
+		// login with a login ack too, carrying the "failed" byte.
+		loginAck(false);
+
 		retval=false;
 	}
 
 	// change packet size
-	// (a real ase also sends envchanges for the packet size, charset,
-	// database and language here, but no client requires them)
+	// (a real ase also sends envchanges for the charset, database and
+	// language here, but no client requires them)
 	if (retval) {
 		negotiatePacketSize(packetsize);
+		envChangePacketSize();
 
 		// reset "old" packet size
 		oldpacketsize=negotiatedpacketsize;
@@ -3934,6 +4004,87 @@ void sqlrprotocol_tds::readPreTds7Field(const byte_t *rp,
 	value[*length]='\0';
 
 	*rpout=rp;
+}
+
+// The tds 7.x login record doesn't send its passwords in the clear, but
+// what it does send is only a fixed xor-and-nibble-swap away from them -
+// see readPassword() - so a raw dump of one gives them up just as surely.
+// Unlike the pre-tds7 record, login7 declares where its fields are rather
+// than laying them out at fixed offsets, so read the offsets back out of
+// the header that's arrived so far.
+void sqlrprotocol_tds::maskTds7Passwords(byte_t *packet,
+					uint32_t packetsize,
+					uint64_t packetoffset) {
+
+	const byte_t	*rq=reqpacket.getBuffer();
+	uint64_t	rqsize=reqpacket.getSize();
+
+	// nothing can be located until the header declaring it has arrived
+	if (rqsize<LOGIN7_HEADER_SIZE) {
+		return;
+	}
+
+	// each cch counts ucs-2 characters rather than bytes
+	const byte_t	*rp=rq+LOGIN7_IBPASSWORD_OFFSET;
+	uint16_t	ibpassword=0;
+	uint16_t	cchpassword=0;
+	readLE(rp,&ibpassword,&rp);
+	readLE(rp,&cchpassword,&rp);
+	maskRange(packet,packetsize,packetoffset,
+			ibpassword,(uint64_t)cchpassword*sizeof(ucs2_t));
+
+	// the change-password field only exists from tds 7.2 on
+	const byte_t	*vp=rq+LOGIN7_TDSVERSION_OFFSET;
+	uint32_t	tdsversion=0;
+	readBE(vp,&tdsversion,&vp);
+	if (tdsVersionHexToDec(tdsversion)<720 ||
+				rqsize<LOGIN7_HEADER_SIZE_72) {
+		return;
+	}
+
+	const byte_t	*cp=rq+LOGIN7_IBCHANGEPASSWORD_OFFSET;
+	uint16_t	ibchangepassword=0;
+	uint16_t	cchchangepassword=0;
+	readLE(cp,&ibchangepassword,&cp);
+	readLE(cp,&cchchangepassword,&cp);
+	maskRange(packet,packetsize,packetoffset,
+			ibchangepassword,
+			(uint64_t)cchchangepassword*sizeof(ucs2_t));
+}
+
+void sqlrprotocol_tds::maskPreTds7Passwords(byte_t *packet,
+					uint32_t packetsize,
+					uint64_t packetoffset) {
+	maskRange(packet,packetsize,packetoffset,
+				PRE_TDS7_PASSWORD_OFFSET,
+				PRE_TDS7_NAME_SIZE);
+	maskRange(packet,packetsize,packetoffset,
+				PRE_TDS7_REMOTE_PASSWORD_OFFSET,
+				PRE_TDS7_REMOTE_PASSWORD_SIZE);
+}
+
+void sqlrprotocol_tds::maskRange(byte_t *packet,
+					uint32_t packetsize,
+					uint64_t packetoffset,
+					uint64_t start,
+					uint64_t size) {
+
+	// the range is given relative to the reassembled request, but only
+	// the part of it that landed in this packet can be masked here
+	uint64_t	end=start+size;
+	uint64_t	packetend=packetoffset+packetsize;
+	if (end<=packetoffset || start>=packetend) {
+		return;
+	}
+	if (start<packetoffset) {
+		start=packetoffset;
+	}
+	if (end>packetend) {
+		end=packetend;
+	}
+
+	bytestring::set(packet+(start-packetoffset),'x',
+					(size_t)(end-start));
 }
 
 bool sqlrprotocol_tds::tds7Login() {
@@ -4296,7 +4447,7 @@ bool sqlrprotocol_tds::tds7Login() {
 			loggedin=true;
 			// run session-start queries
 			cont->beginSession();
-			loginAck();
+			loginAck(true);
 		} else {
 			authError(username,cchusername);
 			retval=false;
@@ -4439,15 +4590,18 @@ bool sqlrprotocol_tds::auth(const char *username, const char *password) {
 	return authsuccess;
 }
 
-void sqlrprotocol_tds::loginAck() {
+void sqlrprotocol_tds::loginAck(bool success) {
 
 	byte_t		token=TOKEN_LOGIN_ACK;
-					
+
 	// For a tds 7.x client this byte names the sql interface, for a
-	// pre-tds7 client it reports whether the login succeeded.  Only the
-	// success case gets here; the failure paths send an error token and
-	// no login ack at all, which is what both dialects' clients expect.
-	byte_t		iface=(pretds7)?PRE_TDS7_LOGIN_ACK_SUCCEED:SQL_TSQL;
+	// pre-tds7 client it reports whether the login succeeded.  A tds 7.x
+	// login that fails gets an error token and no login ack at all, so
+	// only "success" reaches here on that path.
+	byte_t		iface=(pretds7)?
+				((success)?PRE_TDS7_LOGIN_ACK_SUCCEED:
+					PRE_TDS7_LOGIN_ACK_FAIL):
+				SQL_TSQL;
 	// unlike the version in the login request, the version in the
 	// login ack is sent big-endian
 	uint32_t	tdsversion=
@@ -4878,6 +5032,30 @@ byte_t sqlrprotocol_tds::preTds7TokenLength(byte_t token) {
 	}
 }
 
+// Refuses the rest of a request that carries more commands than
+// MAX_COMMANDS_PER_REQUEST, with its own done, so the client sees the
+// refusal rather than waiting for results that won't come.
+// "token" is the done token that ends the request being refused - a batch
+// of rpc's is closed with doneproc, the way rpc() closes each one it ran.
+void sqlrprotocol_tds::tooManyCommands(byte_t token) {
+
+	char	countstr[11];
+	charstring::printf(countstr,sizeof(countstr),"%d",
+					MAX_COMMANDS_PER_REQUEST);
+
+	stringbuffer	err;
+	err.append("A request may carry at most ");
+	err.append(countstr);
+	err.append(" commands.");
+
+	// FIXME: is there a real error number/state for this?
+	// class 16 for the same reason preTds7UnsupportedToken() uses it -
+	// the session is still perfectly usable
+	appendError(0,1,16,err.getString(),srvname,NULL,1);
+
+	done(token,DONE_ERROR|DONE_FINAL,0,0);
+}
+
 // Refuses one token, with its own done, so the client sees this command
 // fail rather than being left waiting for a result that never comes.
 void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token) {
@@ -4933,12 +5111,8 @@ bool sqlrprotocol_tds::preTds7Normal() {
 	// begin building the response packet
 	resppacket.clear();
 
-	// FIXME: nothing bounds how many commands one buffer can carry.
-	// maxquerysize bounds each command's sql, but a maxrequestsize
-	// buffer packed with minimal language tokens is millions of them,
-	// each a backend round trip with an error and a done appended.
-	// remoteProcedureCall() has the same shape.
-	bool	anycommands=false;
+	bool		anycommands=false;
+	uint32_t	commandcount=0;
 
 	while (rpsize) {
 
@@ -4953,6 +5127,27 @@ bool sqlrprotocol_tds::preTds7Normal() {
 
 		anycommands=true;
 
+		// A logout isn't a command to refuse - it's the client
+		// hanging up, and ct_close() waits for a done before it
+		// does.  Answering it with an error would put a spurious
+		// message through the client's callback on a perfectly
+		// normal disconnect.  It isn't counted against the command
+		// limit either, so a full buffer that ends in one still gets
+		// a clean disconnect rather than that same spurious error.
+		if (token==TDS5_TOKEN_LOGOUT) {
+			debugWrite("logout");
+			done(DONE_FINAL,0,0);
+			break;
+		}
+
+		// too many commands in one buffer
+		if (commandcount==MAX_COMMANDS_PER_REQUEST) {
+			debugWrite("too many commands");
+			tooManyCommands(TOKEN_DONE);
+			break;
+		}
+		commandcount++;
+
 		// the only command this module can answer so far
 		if (token==TDS5_TOKEN_LANGUAGE) {
 			if (preTds7Language(&rp,&rpsize)) {
@@ -4962,17 +5157,6 @@ bool sqlrprotocol_tds::preTds7Normal() {
 			// that isn't implemented.  it has appended its own
 			// error and final done, and the rest of the buffer
 			// can't be trusted, so stop here
-			break;
-		}
-
-		// A logout isn't a command to refuse - it's the client
-		// hanging up, and ct_close() waits for a done before it
-		// does.  Answering it with an error would put a spurious
-		// message through the client's callback on a perfectly
-		// normal disconnect.
-		if (token==TDS5_TOKEN_LOGOUT) {
-			debugWrite("logout");
-			done(DONE_FINAL,0,0);
 			break;
 		}
 
@@ -9437,8 +9621,18 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 	resppacket.clear();
 
 	// a single request packet can carry a batch of rpc's
-	bool	more=true;
+	bool		more=true;
+	uint32_t	commandcount=0;
 	while (more) {
+
+		// too many rpc's in one batch
+		if (commandcount==MAX_COMMANDS_PER_REQUEST) {
+			debugWrite("too many commands");
+			tooManyCommands(TOKEN_DONEPROC);
+			break;
+		}
+		commandcount++;
+
 		if (!rpc(&rp,&rpsize,&more)) {
 			debugEnd();
 			// a protocol error means the request stream is

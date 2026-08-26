@@ -549,6 +549,21 @@
 		carried - ct-lib expects one done per command, so a
 		multi-command buffer left it waiting for results that would
 		never come
+	fixed the tds protocol module writing client passwords to the debug log
+		- the raw packet hex dump defeated the "(hidden)" that the
+		field-level debug output prints in their place, giving up a
+		pre-tds7 login record's passwords outright, and login7's
+		behind nothing more than a fixed xor and nibble swap
+	the tds protocol module sends an envchange for the packet size it
+		negotiates with a tds 5.0 client now, rather than renegotiating
+		silently and then chunking at a size the client was never told
+	the tds protocol module answers a failed tds 5.0 login with a login ack
+		carrying the "failed" byte now, the way a real ase does
+	the tds protocol module bounds how many commands one request may carry
+		now - neither maxquerysize nor maxrequestsize covered this, so
+		a 16mb request packed with minimal tds 5.0 language tokens or
+		tds 7.x rpcs was millions of backend round trips, with the
+		whole response held in memory
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
