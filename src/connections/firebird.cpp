@@ -3603,7 +3603,7 @@ bool firebirdcursor::inputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -3630,7 +3630,7 @@ bool firebirdcursor::inputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -3659,7 +3659,7 @@ bool firebirdcursor::inputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -3695,7 +3695,7 @@ bool firebirdcursor::inputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -3749,7 +3749,7 @@ bool firebirdcursor::inputBindBlob(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -3839,7 +3839,7 @@ bool firebirdcursor::inputBindArray(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -4046,7 +4046,7 @@ bool firebirdcursor::outputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -4076,7 +4076,7 @@ bool firebirdcursor::outputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -4108,7 +4108,7 @@ bool firebirdcursor::outputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -4158,7 +4158,7 @@ bool firebirdcursor::outputBind(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
@@ -4188,7 +4188,7 @@ bool firebirdcursor::outputBindBlob(const char *variable,
 
 	// make bind vars 1 based like all other db's
 	long	index=charstring::convertToInteger(variable+1)-1;
-	if (index<0) {
+	if (index<0 || index>=(long)maxbindcount) {
 		bindformaterror=true;
 		return false;
 	}
