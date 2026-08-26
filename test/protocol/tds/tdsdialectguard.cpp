@@ -93,8 +93,19 @@ static void buildPreTds7Login(bytebuffer *body,
 	appendField(body,password,NAME_SIZE);
 	appendField(body,"",NAME_SIZE);			// hostproc
 
-	unsigned char	typeflags[TYPE_FLAGS_SIZE];
-	bytestring::zero(typeflags,sizeof(typeflags));
+	// Typeflags - where the client declares the byte order it lays
+	// multi-byte values out in.  These are the six bytes a real ct-lib
+	// client on x86 sends: little-endian 2-byte ints, little-endian
+	// 4-byte ints, ascii, little-endian ieee floats, little-endian
+	// date/time, and the usedb flag.  See preTds7ByteOrder() in
+	// src/protocols/tds.cpp.
+	//
+	// These have to be filled in rather than zeroed.  A zeroed block
+	// isn't a valid declaration at all, and the 4-byte-int byte in
+	// particular reads as big-endian when it's 0, which is not what
+	// this test's client - the c api on x86 - wants.
+	unsigned char	typeflags[TYPE_FLAGS_SIZE]=
+				{0x03,0x01,0x06,0x0a,0x09,0x01};
 	body->append(typeflags,sizeof(typeflags));
 
 	body->append((unsigned char)0);			// dumpload

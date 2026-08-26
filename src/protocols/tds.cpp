@@ -238,6 +238,46 @@
 #define	PRE_TDS7_SEC_SPARE_SIZE		2
 #define	PRE_TDS7_DUMMY_SIZE		4
 
+// Which byte of the login record's typeflags block declares what.  The
+// block is where a pre-tds7 client says how it lays out multi-byte
+// values, and a tds 5.0 token stream follows what it says - unlike tds
+// 7.x, which the ms-tds spec fixes as little-endian.
+#define	PRE_TDS7_TYPE_FLAGS_INT2	0
+#define	PRE_TDS7_TYPE_FLAGS_INT4	1
+#define	PRE_TDS7_TYPE_FLAGS_CHAR	2
+#define	PRE_TDS7_TYPE_FLAGS_FLT		3
+#define	PRE_TDS7_TYPE_FLAGS_DATE	4
+#define	PRE_TDS7_TYPE_FLAGS_USEDB	5
+
+// What each of those bytes can say.  These names and numbers are the tds
+// 5.0 spec's - no header on this box declares them - and they match the
+// le1[] array freetds's login.c fills in.  A live capture of a real
+// ct-lib client on x86 sends 03 01 06 0a 09 01, which is every "_LO"
+// value below.
+//
+// "LSB_LO" means the least significant byte comes first (little-endian);
+// "LSB_HI" means it comes last (big-endian).  The char byte names a
+// character set family rather than a byte order, so it says nothing
+// about how values are laid out - it's decoded only for the debug
+// output.  The last byte is a usedb/notify flag, unrelated to either.
+#define	TDS_INT2_LSB_HI			2
+#define	TDS_INT2_LSB_LO			3
+#define	TDS_INT4_LSB_HI			0
+#define	TDS_INT4_LSB_LO			1
+#define	TDS_CHAR_ASCII			6
+#define	TDS_CHAR_EBCDIC			7
+#define	TDS_FLT_IEEE_HI			4
+#define	TDS_FLT_VAX_D			5
+#define	TDS_FLT_IEEE_LO			10
+#define	TDS_FLT_ND5000			11
+#define	TDS_TWO_I4_LSB_HI		8
+#define	TDS_TWO_I4_LSB_LO		9
+
+// what preTds7ByteOrder() decoded one of those bytes into
+#define	PRE_TDS7_ORDER_LE		0
+#define	PRE_TDS7_ORDER_BE		1
+#define	PRE_TDS7_ORDER_UNKNOWN		2
+
 // seclogin bits in the pre-tds7 login record.  When any of these are set,
 // the client leaves the password fields empty and waits for the server to
 // drive a challenge/response exchange instead.
@@ -275,6 +315,80 @@
 // a capability mask's length is a single byte, so this is a ceiling
 // rather than a policy
 #define	MAX_CAPABILITY_MASK_BYTES	255
+
+// Tds 5.0 capability numbers, as capability() and the bit helpers under
+// it use them.
+//
+// The numbers below are freetds's wire bit positions (its enum_cap.h),
+// confirmed against a live ase 16.0 capture: the bits ase itself sets
+// for date/time, interval, unitext and sint1 line up with freetds's
+// numbering, not with sap's own cspublic.h, whose CS_* values are
+// ct_capability() api ids rather than wire positions - past
+// CS_OPTION_GET=51 an api id is one higher than the wire bit it
+// translates to, so cspublic.h cannot be read as this list directly.
+// The response side is not in dispute - both headers agree there.
+//
+// A capability this module does NOT support is simply left out of
+// capability()'s tables below, which clears its bit regardless of which
+// scheme a reader has in mind (e.g. wide tables/columnstatus, whose
+// wire position differs by one between the two schemes, are absent
+// either way).
+#define	TDS5_CAP_REQ_LANG		1
+#define	TDS5_CAP_REQ_RPC		2
+#define	TDS5_CAP_REQ_BCP		5
+#define	TDS5_CAP_REQ_CURSOR		6
+#define	TDS5_CAP_REQ_DYN		7
+#define	TDS5_CAP_REQ_MSG		8
+#define	TDS5_CAP_REQ_PARAM		9
+#define	TDS5_CAP_REQ_DATA_INT1		10
+#define	TDS5_CAP_REQ_DATA_INT2		11
+#define	TDS5_CAP_REQ_DATA_INT4		12
+#define	TDS5_CAP_REQ_DATA_BIT		13
+#define	TDS5_CAP_REQ_DATA_CHAR		14
+#define	TDS5_CAP_REQ_DATA_VCHAR		15
+#define	TDS5_CAP_REQ_DATA_BIN		16
+#define	TDS5_CAP_REQ_DATA_VBIN		17
+#define	TDS5_CAP_REQ_DATA_MNY8		18
+#define	TDS5_CAP_REQ_DATA_MNY4		19
+#define	TDS5_CAP_REQ_DATA_DATE8		20
+#define	TDS5_CAP_REQ_DATA_DATE4		21
+#define	TDS5_CAP_REQ_DATA_FLT4		22
+#define	TDS5_CAP_REQ_DATA_FLT8		23
+#define	TDS5_CAP_REQ_DATA_NUM		24
+#define	TDS5_CAP_REQ_DATA_TEXT		25
+#define	TDS5_CAP_REQ_DATA_IMAGE		26
+#define	TDS5_CAP_REQ_DATA_DEC		27
+#define	TDS5_CAP_REQ_DATA_LCHAR		28
+#define	TDS5_CAP_REQ_DATA_LBIN		29
+#define	TDS5_CAP_REQ_DATA_INTN		30
+#define	TDS5_CAP_REQ_DATA_DATETIMEN	31
+#define	TDS5_CAP_REQ_DATA_MONEYN	32
+#define	TDS5_CAP_REQ_CSR_PREV		33
+#define	TDS5_CAP_REQ_CSR_FIRST		34
+#define	TDS5_CAP_REQ_CSR_LAST		35
+#define	TDS5_CAP_REQ_CSR_ABS		36
+#define	TDS5_CAP_REQ_CSR_REL		37
+#define	TDS5_CAP_REQ_CSR_MULTI		38
+#define	TDS5_CAP_REQ_CON_INBAND		40
+#define	TDS5_CAP_REQ_PROTO_BULK		43
+#define	TDS5_CAP_REQ_DATA_SENSITIVITY	45
+#define	TDS5_CAP_REQ_DATA_BOUNDARY	46
+#define	TDS5_CAP_REQ_PROTO_DYNPROC	48
+#define	TDS5_CAP_REQ_DATA_FLTN		49
+#define	TDS5_CAP_REQ_DATA_INT8		51
+#define	TDS5_CAP_REQ_DOL_BULK		53
+#define	TDS5_CAP_REQ_DATA_COLUMNSTATUS	58
+#define	TDS5_CAP_REQ_WIDETABLE		59
+#define	TDS5_CAP_REQ_SRVPKTSIZE		79
+
+// The response mask is inverted - a bit means "don't send me this" -
+// except for the SUPPRESS_ ones, which mean "you may leave this out".
+#define	TDS5_CAP_RES_NOTDSDEBUG		33
+#define	TDS5_CAP_RES_DATA_NOINT8	35
+#define	TDS5_CAP_RES_DATA_NOCOLUMNSTATUS	38
+#define	TDS5_CAP_RES_NO_WIDETABLES	45
+#define	TDS5_CAP_RES_SUPPRESS_FMT	62
+#define	TDS5_CAP_RES_NO_TDSCONTROL	67
 
 // In a tds 7.x login ack, the byte after the token size says which sql
 // interface the server speaks (SQL_DFLT/SQL_TSQL).  In a tds 4.2/5.0
@@ -392,6 +506,52 @@
 #define TDS_UNICODE_CHARSET	"UTF-16LE"
 #define TDS_NONUNICODE_CHARSET	"CP1252//TRANSLIT"
 #define TDS_BACKEND_CHARSET	"UTF-8"
+
+// The charsets a pre-tds7 client is allowed to name in its login record,
+// and the iconv encodings each one maps to.  "outenc" is "inenc" with
+// //TRANSLIT, so that a character the client's charset has no form for
+// comes out as a substitute rather than failing the whole conversion,
+// the way TDS_NONUNICODE_CHARSET does it on the tds 7.x path.
+//
+// A NULL encoding means "no conversion" - utf8 is what this module
+// already speaks internally - and so does a name that isn't in the table
+// at all.  Both leave the bytes passing through untouched, which is what
+// every pre-tds7 session did before the charset field was honored.
+//
+// The table is deliberately restricted to single-byte charsets plus
+// utf8.  preTds7Field() sizes a character value in bytes against the
+// column width the rowfmt already declared - charSize() is 1 on this
+// path - so a value that fits the declared width in one encoding can
+// overflow it in another.  A single-byte target keeps the existing size
+// cap safe even though //TRANSLIT can still substitute a multi-byte
+// utf-8 sequence with several single-byte characters (e.g. one utf-8
+// fraction character can expand to "1/2") - the cap can only ever cut
+// at a character boundary, since every character is one byte wide, so
+// truncation loses whole characters rather than corrupting one.
+// Converting into a multi-byte encoding would let that same cap cut a
+// value off mid-character and silently corrupt it, so no multi-byte
+// charset belongs here without a way to widen the declared column size
+// first.
+struct pretds7charset {
+	const char	*name;
+	const char	*inenc;
+	const char	*outenc;
+};
+
+static const pretds7charset	pretds7charsets[]={
+	{"utf8",NULL,NULL},
+	{"iso_1","ISO-8859-1","ISO-8859-1//TRANSLIT"},
+	{"iso15","ISO-8859-15","ISO-8859-15//TRANSLIT"},
+	{"ascii_8","US-ASCII","US-ASCII//TRANSLIT"},
+	{"cp437","CP437","CP437//TRANSLIT"},
+	{"cp850","CP850","CP850//TRANSLIT"},
+	{"cp1250","CP1250","CP1250//TRANSLIT"},
+	{"cp1251","CP1251","CP1251//TRANSLIT"},
+	{"cp1252","CP1252","CP1252//TRANSLIT"},
+	{"mac","MACINTOSH","MACINTOSH//TRANSLIT"},
+	{"roman8","HP-ROMAN8","HP-ROMAN8//TRANSLIT"},
+	{NULL,NULL,NULL}
+};
 
 // envchange types
 #define ENV_CHANGE_DATABASE					1
@@ -1722,6 +1882,29 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t size,
 					size_t *outsize);
 
+		// Convert between the charset the pre-tds7 client declared
+		// in its login record and the utf-8 this module works in.
+		// Both return NULL - and leave *outsize alone - when no
+		// conversion applies, either because the client declared
+		// nothing, or declared utf8, or declared a charset
+		// pretds7charsets[] doesn't cover, or because the
+		// conversion itself failed.  Every caller answers a NULL by
+		// passing the bytes through unconverted.
+		//
+		// The outbound one is called from the callers of
+		// writeVarchar() rather than from writeVarchar() itself,
+		// because a converted string isn't necessarily the same
+		// number of bytes as the utf-8 it came from, and each of
+		// those callers writes a length - its own, and usually a
+		// token size containing it - that has to count the bytes
+		// that actually go on the wire.
+		char	*clientCharsetToUtf8(const byte_t *str,
+					size_t size,
+					size_t *outsize);
+		char	*utf8ToClientCharset(const char *str,
+					size_t size,
+					size_t *outsize);
+
 		bool	recvPacket(byte_t *packettype);
 		// "packettype" defaults to the tabular result that every
 		// response but the sec_encrypt negotiate goes out as
@@ -1745,6 +1928,22 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t packetsize);
 
 		bool	preTds7Login();
+		// Applies the charset and language a pre-tds7 login record
+		// declared.  The charset is applied as soon as the record
+		// is parsed, because it decides how character data is
+		// converted in both directions for the rest of the session
+		// - including an error sent before the login even finishes.
+		void	preTds7SetCharsetAndLanguage(const char *charset,
+						byte_t charsetlen,
+						const char *language,
+						byte_t languagelen,
+						byte_t suppresslanguage);
+		// The envchange (and the info message behind it) that tells
+		// a pre-tds7 client what charset the session settled on
+		void	envChangeCharset();
+		// The pre-tds7 counterpart of the language block in
+		// tds7Login()
+		void	preTds7ChangeLanguage();
 		// "value" must point at a buffer of at least "size"+1
 		// bytes - see the note at the definition
 		void	readPreTds7Field(const byte_t *rp,
@@ -1753,6 +1952,31 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						byte_t *length,
 						const byte_t **rpout);
 		void	capability();
+
+		// Capability mask arithmetic.  A mask arrives most
+		// significant byte first, so bit "cap" of a mask "masklen"
+		// bytes long is bit (cap&7) of mask[masklen-1-(cap>>3)].
+		// Both are no-ops for a bit past the end of the mask.
+		static bool	capabilityBitIsSet(const byte_t *mask,
+						byte_t masklen,
+						uint16_t cap);
+		static void	setCapabilityBit(byte_t *mask,
+						byte_t masklen,
+						uint16_t cap,
+						bool on);
+		// sets every capability in "caps" in "mask", then
+		// intersects it with "clientmask" - see capability()
+		static void	buildCapabilityMask(byte_t *mask,
+						byte_t masklen,
+						const uint16_t *caps,
+						uint16_t capcount,
+						const byte_t *clientmask);
+
+		// What the login ended up agreeing to.  All three answer
+		// false when the client sent no capability token at all.
+		bool	requestCapabilityGranted(uint16_t cap);
+		bool	responseCapabilityGranted(uint16_t cap);
+		bool	clientRequestedCapability(uint16_t cap);
 
 		// The tds 5.0 encrypted-password exchange.
 		// preTds7SecEncryptLogin() drives the whole thing and hands
@@ -1780,6 +2004,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool	sendSecEncryptUnsupportedError();
 		bool	sendPreTds7VersionUnsupportedError();
+		bool	sendPreTds7ByteOrderUnsupportedError();
+		// decodes one byte of the login record's typeflags block
+		// into PRE_TDS7_ORDER_LE/BE/UNKNOWN
+		byte_t	preTds7FieldOrder(byte_t value,
+					byte_t leval, byte_t beval);
+		// works the whole typeflags block out into the one byte
+		// order the session runs in - see the definition
+		bool	preTds7ByteOrder(const byte_t *typeflags,
+					bool *bigendian);
 		// blank a login record's password fields, so the
 		// received-packet hex dump doesn't hand out passwords the
 		// field-level output takes care to hide
@@ -2397,6 +2630,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						uint16_t namesize,
 						uint32_t usertype);
 		void	writeIntN(int64_t value, byte_t size);
+		void	writeFloatN(double value, byte_t size);
 		void	doneProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount);
@@ -2472,6 +2706,32 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// actually negotiated out tds7-shaped.
 		bool		pretds7;
 
+		// What a pre-tds7 login record declared about character
+		// data.  The module instance outlives the session, so
+		// init() clears all of these - a client that gets this
+		// connection next must not inherit the previous client's
+		// charset.
+		//
+		// "clientcharset" is the name the client sent, kept because
+		// the charset envchange names it back, and
+		// clientcharsetinenc/clientcharsetoutenc are the encodings
+		// it looked up to in pretds7charsets[] - both NULL when
+		// nothing is to be converted.  A zero clientcharsetlen
+		// means the client named no charset at all, which freetds
+		// does on purpose ("use empty charset to handle conversions
+		// on client", its login.c says), and which is answered with
+		// no envchange at all.
+		char		clientcharset[PRE_TDS7_NAME_SIZE+1];
+		byte_t		clientcharsetlen;
+		const char	*clientcharsetinenc;
+		const char	*clientcharsetoutenc;
+
+		// The language the same record declared, and its "don't
+		// send me the language-change message" flag
+		char		clientlanguage[PRE_TDS7_NAME_SIZE+1];
+		byte_t		clientlanguagelen;
+		bool		clientsuppresslanguage;
+
 		uint32_t	oldpacketsize;
 		uint32_t	negotiatedpacketsize;
 
@@ -2481,6 +2741,23 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool		imageishextext;
 
 		bool		loggedin;
+
+		// The tds 5.0 capability masks this session settled on.
+		// "client*" is what the login's capability token declared,
+		// "granted*" is what capability() answered with; the answer
+		// is the declaration intersected with what this module
+		// supports, so a granted bit is one both sides agreed to.
+		// clientcapabilities is false when the client sent no
+		// capability token at all, which leaves every mask empty.
+		bool		clientcapabilities;
+		byte_t		clientrequestmask[MAX_CAPABILITY_MASK_BYTES];
+		byte_t		clientrequestmasklen;
+		byte_t		clientresponsemask[MAX_CAPABILITY_MASK_BYTES];
+		byte_t		clientresponsemasklen;
+		byte_t		grantedrequestmask[MAX_CAPABILITY_MASK_BYTES];
+		byte_t		grantedrequestmasklen;
+		byte_t		grantedresponsemask[MAX_CAPABILITY_MASK_BYTES];
+		byte_t		grantedresponsemasklen;
 
 		// whether the packet being received is the client's answer
 		// to a sec_encrypt negotiate.  the blobs in it are
@@ -3011,6 +3288,23 @@ void sqlrprotocol_tds::init() {
 	negotiatedtdsversion=700;
 	pretds7=false;
 
+	// likewise, the charset and language a pre-tds7 login record
+	// declared say nothing about the next session on this instance,
+	// and a leftover charset would convert its character data
+	clientcharset[0]='\0';
+	clientcharsetlen=0;
+	clientcharsetinenc=NULL;
+	clientcharsetoutenc=NULL;
+	clientlanguage[0]='\0';
+	clientlanguagelen=0;
+	clientsuppresslanguage=false;
+
+	// Tds 7.x is little-endian by spec, and a pre-tds7 client declares
+	// its own order in its login record - see preTds7ByteOrder().  The
+	// module instance outlives the session, so a big-endian client's
+	// setting must not leak into the next session on this instance.
+	setProtocolIsBigEndian(false);
+
 	oldpacketsize=configpacketsize;
 	negotiatedpacketsize=configpacketsize;
 
@@ -3025,6 +3319,18 @@ void sqlrprotocol_tds::init() {
 	// the module instance outlives the session, so a client that gets
 	// this connection next must not inherit the previous client's login
 	loggedin=false;
+
+	// likewise, the capabilities the previous client negotiated say
+	// nothing about this one
+	clientcapabilities=false;
+	bytestring::zero(clientrequestmask,sizeof(clientrequestmask));
+	clientrequestmasklen=0;
+	bytestring::zero(clientresponsemask,sizeof(clientresponsemask));
+	clientresponsemasklen=0;
+	bytestring::zero(grantedrequestmask,sizeof(grantedrequestmask));
+	grantedrequestmasklen=0;
+	bytestring::zero(grantedresponsemask,sizeof(grantedresponsemask));
+	grantedresponsemasklen=0;
 
 	secencryptreply=false;
 
@@ -3212,19 +3518,40 @@ char *sqlrprotocol_tds::utf8ToCp1252(const char *str,
 	return out;
 }
 
+char *sqlrprotocol_tds::clientCharsetToUtf8(const byte_t *str,
+						size_t size,
+						size_t *outsize) {
+	if (!clientcharsetinenc || !size) {
+		return NULL;
+	}
+	return (char *)convertCharset(str,size,
+					clientcharsetinenc,
+					TDS_BACKEND_CHARSET,
+					outsize);
+}
+
+char *sqlrprotocol_tds::utf8ToClientCharset(const char *str,
+						size_t size,
+						size_t *outsize) {
+	if (!clientcharsetoutenc || !size) {
+		return NULL;
+	}
+	return (char *)convertCharset((const byte_t *)str,size,
+					TDS_BACKEND_CHARSET,
+					clientcharsetoutenc,
+					outsize);
+}
+
 // The pre-tds7 counterpart to ucs2ToUtf8().  A tds 5.0 client sends
 // single-byte characters rather than ucs-2, and they aren't nul
-// terminated, so this is a nul-terminating copy rather than a charset
-// conversion.
+// terminated, so this both converts and nul-terminates.
 //
-// Named for ucs2ToUtf8(), but it doesn't convert anything - a byte
-// above 0x7f goes to the backend as-is rather than as utf-8.  That's
-// deliberate for now: the outbound side doesn't convert either -
-// writeVarchar() writes the utf-8 bytes straight out when pretds7 is
-// set - so the two directions agree and a round trip comes back intact.
-// FIXME: the login record carries the client's charset (read into
-// "charset" in preTds7Login(), and ignored there too).  Once that's
-// honored, both directions should convert instead of passing through.
+// The charset converted from is the one the login record declared - see
+// preTds7SetCharsetAndLanguage().  A client that declared utf8, or
+// declared nothing, or declared a charset pretds7charsets[] doesn't
+// cover gets its bytes passed through instead, and the outbound side
+// passes the same cases through too, so the two directions agree and a
+// round trip comes back intact.
 char *sqlrprotocol_tds::preTds7ToUtf8(const byte_t *str,
 					size_t size,
 					size_t *outsize) {
@@ -3232,8 +3559,12 @@ char *sqlrprotocol_tds::preTds7ToUtf8(const byte_t *str,
 	debugStart("pre-tds7 to utf8");
 	debugWrite("size: %lld",(long long)size);
 
-	char	*out=charstring::duplicate((const char *)str,size);
-	*outsize=size;
+	char	*out=clientCharsetToUtf8(str,size,outsize);
+	if (!out) {
+		out=charstring::duplicate((const char *)str,size);
+		*outsize=size;
+		debugWrite("passed bytes through");
+	}
 
 	debugWrite("outsize: %lld",(long long)(*outsize));
 	debugEnd();
@@ -4498,18 +4829,25 @@ bool sqlrprotocol_tds::preTds7Login() {
 	readPreTds7Field(rp,username,PRE_TDS7_NAME_SIZE,&usernamelen,&rp);
 	readPreTds7Field(rp,password,PRE_TDS7_NAME_SIZE,&passwordlen,&rp);
 	readPreTds7Field(rp,hostproc,PRE_TDS7_NAME_SIZE,&hostproclen,&rp);
-	// FIXME: typeflags is where the client declares its byte order for
-	// 2-byte ints, 4-byte ints, chars, floats and datetimes.  Tds 7.x is
-	// little-endian by spec, but a tds 5.0 token stream follows what the
-	// client declares here, and readLE()/writeLE() assume little-endian
-	// everywhere.  So a big-endian ct-lib client would mis-parse
-	// everything past the login.  For now these bytes are only printed
-	// in the debug output below.
 	read(rp,typeflags,sizeof(typeflags),&rp);
+
+	// Typeflags is where the client declares its byte order for 2-byte
+	// ints, 4-byte ints, floats and datetimes.  The declaration covers
+	// the rest of this record as much as it covers the token stream
+	// after it, so decode it and set the order here, mid-parse, rather
+	// than once the whole record is in hand.  A client that declared an
+	// order this module can't serve is refused further down, after the
+	// version check - by then the flag is little-endian, which is what
+	// setProtocolIsBigEndian() gets below when the decode fails, so the
+	// error tokens go out the way the common case would read them.
+	bool	bigendian=false;
+	bool	byteorderok=preTds7ByteOrder(typeflags,&bigendian);
+	setProtocolIsBigEndian(byteorderok && bigendian);
+
 	read(rp,&dumpload,&rp);
 	read(rp,&interfacespare,&rp);
 	read(rp,&type,&rp);
-	readLE(rp,&deprecated,&rp);
+	read(rp,&deprecated,&rp);
 	read(rp,spare,sizeof(spare),&rp);
 	readPreTds7Field(rp,appname,PRE_TDS7_NAME_SIZE,&appnamelen,&rp);
 	readPreTds7Field(rp,servername,PRE_TDS7_NAME_SIZE,&servernamelen,&rp);
@@ -4524,7 +4862,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 	read(rp,&date4type,&rp);
 	readPreTds7Field(rp,language,PRE_TDS7_NAME_SIZE,&languagelen,&rp);
 	read(rp,&suppresslanguage,&rp);
-	readLE(rp,&oldsecure,&rp);
+	read(rp,&oldsecure,&rp);
 	read(rp,&seclogin,&rp);
 	read(rp,&secbulk,&rp);
 	read(rp,&halogin,&rp);
@@ -4548,15 +4886,13 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// (5.0) and 0x04020000 (4.2).
 	clienttdsversion=tdsVersionHexToDec(tdsversion);
 
-	// a capability token may follow the record
-	bool		capabilities=false;
+	// A capability token may follow the record.  What it declares is
+	// kept for the whole session, in clientrequestmask/
+	// clientresponsemask, because capability() answers with the
+	// intersection of it and what this module supports, and because
+	// what came out of that intersection decides what the client is
+	// allowed to send later.
 	uint16_t	capabilitiessize=0;
-	byte_t		requestmask[MAX_CAPABILITY_MASK_BYTES];
-	byte_t		requestmasklen=0;
-	byte_t		responsemask[MAX_CAPABILITY_MASK_BYTES];
-	byte_t		responsemasklen=0;
-	bytestring::zero(requestmask,sizeof(requestmask));
-	bytestring::zero(responsemask,sizeof(responsemask));
 
 	// what's left of the request, after the record
 	size_t	remaining=rpsize-(size_t)(rp-startrp);
@@ -4569,9 +4905,9 @@ bool sqlrprotocol_tds::preTds7Login() {
 
 		if (token==TOKEN_CAPABILITY) {
 
-			capabilities=true;
+			clientcapabilities=true;
 
-			readLE(rp,&capabilitiessize,&rp);
+			read(rp,&capabilitiessize,&rp);
 			remaining=remaining-sizeof(uint16_t);
 
 			// don't trust the token's length over the
@@ -4608,13 +4944,13 @@ bool sqlrprotocol_tds::preTds7Login() {
 				left=left-(size_t)caplen;
 
 				if (captype==CAPABILITY_REQUEST) {
-					bytestring::copy(requestmask,
+					bytestring::copy(clientrequestmask,
 								mask,caplen);
-					requestmasklen=caplen;
+					clientrequestmasklen=caplen;
 				} else if (captype==CAPABILITY_RESPONSE) {
-					bytestring::copy(responsemask,
+					bytestring::copy(clientresponsemask,
 								mask,caplen);
-					responsemasklen=caplen;
+					clientresponsemasklen=caplen;
 				}
 			}
 		}
@@ -4630,9 +4966,12 @@ bool sqlrprotocol_tds::preTds7Login() {
 		debugWrite("typeflags: "
 				"int2=%d int4=%d char=%d "
 				"flt=%d date=%d usedb=%d",
-				(int)typeflags[0],(int)typeflags[1],
-				(int)typeflags[2],(int)typeflags[3],
-				(int)typeflags[4],(int)typeflags[5]);
+				(int)typeflags[PRE_TDS7_TYPE_FLAGS_INT2],
+				(int)typeflags[PRE_TDS7_TYPE_FLAGS_INT4],
+				(int)typeflags[PRE_TDS7_TYPE_FLAGS_CHAR],
+				(int)typeflags[PRE_TDS7_TYPE_FLAGS_FLT],
+				(int)typeflags[PRE_TDS7_TYPE_FLAGS_DATE],
+				(int)typeflags[PRE_TDS7_TYPE_FLAGS_USEDB]);
 		debugWrite("dumpload: %d",(int)dumpload);
 		debugWrite("interfacespare: %d",(int)interfacespare);
 		debugWrite("type: %d",(int)type);
@@ -4663,13 +5002,15 @@ bool sqlrprotocol_tds::preTds7Login() {
 					packetsizestr,packetsize);
 		debugWrite("dummy:");
 		debugHexDump(dummy,sizeof(dummy));
-		if (capabilities) {
+		if (clientcapabilities) {
 			debugWrite("capabilities: %d bytes",
 						(int)capabilitiessize);
-			debugWrite("request mask: (%d)",(int)requestmasklen);
-			debugHexDump(requestmask,requestmasklen);
-			debugWrite("response mask: (%d)",(int)responsemasklen);
-			debugHexDump(responsemask,responsemasklen);
+			debugWrite("request mask: (%d)",
+						(int)clientrequestmasklen);
+			debugHexDump(clientrequestmask,clientrequestmasklen);
+			debugWrite("response mask: (%d)",
+						(int)clientresponsemasklen);
+			debugHexDump(clientresponsemask,clientresponsemasklen);
 		} else {
 			debugWrite("capabilities: (none)");
 		}
@@ -4698,9 +5039,23 @@ bool sqlrprotocol_tds::preTds7Login() {
 		return false;
 	}
 
-	// FIXME: apply the record's language and charset fields.  Both are
-	// parsed above and neither is used, unlike the tds7 path, which acts
-	// on the login's language, collation and database.
+	// A client whose typeflags block declared more than one byte order
+	// is refused for the same reason an unsupported version is:
+	// answering it anyway hands it a response it can't parse.  See
+	// preTds7ByteOrder() for what the decode does and doesn't refuse.
+	if (!byteorderok) {
+		sendPreTds7ByteOrderUnsupportedError();
+		return false;
+	}
+
+	// Apply the record's charset and language fields.  This runs before
+	// anything below can send character data back - an auth error, say -
+	// because the charset decides how that data is encoded.  The
+	// envchanges that answer both fields go out further down, once the
+	// login has succeeded.
+	preTds7SetCharsetAndLanguage(charset,charsetlen,
+					language,languagelen,
+					suppresslanguage);
 
 	// negotiate tds version
 	negotiateTdsVersion();
@@ -4745,7 +5100,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 		// A client that sent a capability token rejects the whole
 		// login response unless one comes back, so unlike the
 		// envchanges a real ase also sends, this isn't optional.
-		if (capabilities) {
+		if (clientcapabilities) {
 			capability();
 		}
 
@@ -4764,9 +5119,22 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// encrypted login went to some trouble to keep it off the wire
 	bytestring::zero(password,sizeof(password));
 
+	// The envchanges that answer the login.  A real ase sends a database
+	// envchange along with these, but there's nothing here to source one
+	// from: a pre-tds7 login record has no database field at all - a tds
+	// 5.0 client picks its database with a "use" command after the login
+	// - so what a real ase reports there is just its own default-database
+	// behavior.
+	if (retval) {
+
+		// change charset
+		envChangeCharset();
+
+		// change language
+		preTds7ChangeLanguage();
+	}
+
 	// change packet size
-	// (a real ase also sends envchanges for the charset, database and
-	// language here, but no client requires them)
 	if (retval) {
 		negotiatePacketSize(packetsize);
 		envChangePacketSize();
@@ -4786,51 +5154,351 @@ bool sqlrprotocol_tds::preTds7Login() {
 	return retval;
 }
 
+void sqlrprotocol_tds::preTds7SetCharsetAndLanguage(const char *charset,
+						byte_t charsetlen,
+						const char *language,
+						byte_t languagelen,
+						byte_t suppresslanguage) {
+
+	charstring::copy(clientcharset,charset,charsetlen);
+	clientcharset[charsetlen]='\0';
+	clientcharsetlen=charsetlen;
+
+	// An empty charset isn't an error and isn't a name to look up.
+	// Freetds sends one on purpose - its login.c says "use empty charset
+	// to handle conversions on client" - so the bytes it sends are
+	// already in whatever encoding it wants them in, and this module
+	// must leave them alone.
+	clientcharsetinenc=NULL;
+	clientcharsetoutenc=NULL;
+	if (charsetlen) {
+		for (const pretds7charset *c=pretds7charsets; c->name; c++) {
+			if (!charstring::compareIgnoringCase(
+						clientcharset,c->name)) {
+				clientcharsetinenc=c->inenc;
+				clientcharsetoutenc=c->outenc;
+				break;
+			}
+		}
+	}
+
+	charstring::copy(clientlanguage,language,languagelen);
+	clientlanguage[languagelen]='\0';
+	clientlanguagelen=languagelen;
+
+	// nonzero is the client asking not to be told about a language
+	// change - see preTds7ChangeLanguage()
+	clientsuppresslanguage=(suppresslanguage!=0);
+
+	debugStart("pre-tds7 charset and language");
+	debugWrite("charset: %s",clientcharset);
+	debugWrite("in encoding: %s",
+			(clientcharsetinenc)?clientcharsetinenc:"(none)");
+	debugWrite("out encoding: %s",
+			(clientcharsetoutenc)?clientcharsetoutenc:"(none)");
+	debugWrite("language: %s",clientlanguage);
+	debugWrite("suppresslanguage: %d",(int)clientsuppresslanguage);
+	debugEnd();
+}
+
+void sqlrprotocol_tds::envChangeCharset() {
+
+	// A client that named no charset gets no answer.  Freetds names
+	// none on purpose, so telling it what the session settled on would
+	// be answering a question it never asked.  This is not gated on
+	// whether the name was recognized: an unrecognized name leaves the
+	// data passing through, and naming it back is still what a real ase
+	// does with the name it was handed.
+	if (!clientcharsetlen) {
+		return;
+	}
+
+	debugStart("env change charset");
+	debugWrite("charset: %s",clientcharset);
+	debugEnd();
+
+	// The name goes back exactly as it arrived, with no conversion:
+	// clientcharset holds the client's own bytes, and writeVarchar()
+	// narrows each wchar back to the byte it was widened from.  The
+	// language envchange below and the packet size one after it are the
+	// same - a pre-tds7 envchange value is never anything but ascii or
+	// an echo of what the client sent.
+	wchar_t	*charset32=wcharstring::duplicate(clientcharset,
+							clientcharsetlen);
+
+	envChange(ENV_CHANGE_CHARSET,
+			charset32,clientcharsetlen,
+			// This module has no charset of its own to name as
+			// the old one - it speaks utf-8 internally whatever
+			// the client declared - so the new value stands in,
+			// the way a language envchange echoes its new value
+			// as the old one.
+			charset32,clientcharsetlen);
+
+	// a real ase follows the envchange with an eed info message naming
+	// the charset it changed to
+	stringbuffer	inf;
+	inf.append("Changed client character set setting to '");
+	inf.append(clientcharset)->append("'.");
+
+	appendInfo(5704,1,0,inf.getString(),NULL,NULL,1);
+
+	delete[] charset32;
+}
+
+void sqlrprotocol_tds::preTds7ChangeLanguage() {
+
+	if (!clientlanguagelen) {
+		return;
+	}
+
+	wchar_t	*language32=wcharstring::duplicate(clientlanguage,
+							clientlanguagelen);
+
+	if (changeLanguage(language32,clientlanguagelen)) {
+
+		envChange(ENV_CHANGE_LANGUAGE,
+				language32,clientlanguagelen,
+				// FIXME: send the actual old language
+				// instead of just sending the new language
+				// as the old language.  The tds7 path has
+				// the same gap.
+				language32,clientlanguagelen);
+
+		// Suppresslanguage is the client saying "don't send me the
+		// language-change message", and that message is all it
+		// means - the envchange above still goes out.  A tds7 login
+		// record has no equivalent flag, so this is the one place
+		// the info message is conditional.
+		if (!clientsuppresslanguage) {
+			changeLanguageInfo(language32,clientlanguagelen);
+		}
+
+	} else {
+
+		// A pre-tds7 login record carries no option flags, so
+		// there's nothing in it saying whether a refused language
+		// should be fatal the way fsetlangfatal does on the tds7
+		// path.  Warn and carry on rather than failing a login the
+		// client never said to fail.
+		changeLanguageError(language32,clientlanguagelen,true);
+	}
+
+	delete[] language32;
+}
+
+bool sqlrprotocol_tds::capabilityBitIsSet(const byte_t *mask,
+						byte_t masklen,
+						uint16_t cap) {
+	uint16_t	index=cap>>3;
+	if (index>=(uint16_t)masklen) {
+		return false;
+	}
+	return ((mask[masklen-1-index]>>(cap&7))&1)!=0;
+}
+
+void sqlrprotocol_tds::setCapabilityBit(byte_t *mask,
+						byte_t masklen,
+						uint16_t cap,
+						bool on) {
+	uint16_t	index=cap>>3;
+	if (index>=(uint16_t)masklen) {
+		return;
+	}
+	byte_t	bit=(byte_t)(1<<(cap&7));
+	if (on) {
+		mask[masklen-1-index]|=bit;
+	} else {
+		mask[masklen-1-index]&=(byte_t)~bit;
+	}
+}
+
+void sqlrprotocol_tds::buildCapabilityMask(byte_t *mask,
+						byte_t masklen,
+						const uint16_t *caps,
+						uint16_t capcount,
+						const byte_t *clientmask) {
+
+	bytestring::zero(mask,masklen);
+
+	for (uint16_t i=0; i<capcount; i++) {
+		setCapabilityBit(mask,masklen,caps[i],true);
+	}
+
+	// A real ase never answers with a bit the client didn't ask for,
+	// and neither does this.  The intersection can only clear bits, so
+	// nothing this module doesn't support can survive it either.
+	for (byte_t i=0; i<masklen; i++) {
+		mask[i]&=clientmask[i];
+	}
+}
+
+bool sqlrprotocol_tds::requestCapabilityGranted(uint16_t cap) {
+	return capabilityBitIsSet(grantedrequestmask,grantedrequestmasklen,cap);
+}
+
+bool sqlrprotocol_tds::responseCapabilityGranted(uint16_t cap) {
+	return capabilityBitIsSet(grantedresponsemask,
+					grantedresponsemasklen,cap);
+}
+
+bool sqlrprotocol_tds::clientRequestedCapability(uint16_t cap) {
+	return capabilityBitIsSet(clientrequestmask,clientrequestmasklen,cap);
+}
+
+// Answers the login's capability token.
+//
+// A real ase answers with what the client asked for and it supports -
+// never with a bit the client didn't ask for - so that's what this does:
+// the tables below say what this module supports, and each one is
+// intersected with the mask the client declared.  Anything else invites
+// the client to send something that gets refused, or promises the client
+// something that gets sent anyway.
+//
+// The numbers are the TDS5_CAP_* constants at the top of this file, whose
+// note explains the numbering.  A capability this module doesn't support
+// is simply absent here, which leaves its bit clear under either
+// numbering scheme.
 void sqlrprotocol_tds::capability() {
 
 	byte_t	token=TOKEN_CAPABILITY;
 
-	// The masks a real ase answers a login with.  What's echoed back in
-	// the request mask is what ct_capability() reports and what ct-lib's
-	// type mapping keys off of, so send what ase sends rather than
-	// whatever the client asked for.
-	// FIXME: send what this module actually supports, once the request
-	// bits have been audited against it
-	static const byte_t	requestmask[]={
-					0x00,0x00,0x00,0x00,0x80,0x00,0x00,
-					0x23,0x61,0x7f,0xff,0xff,0xff,0xe6
-					};
-	static const byte_t	responsemask[]={
-					0x00,0x00,0x00,0x00,0x00,0x08,0x40,
-					0x00,0x00,0x0a,0x00,0x00,0x00,0x00
-					};
+	// What this module can be asked to do.
+	//
+	// Deliberately absent:
+	// * bcp (5) and dol bulk (53) - #9480 implements bulk copy
+	// * cursors (6) and the scroll bits (33-38) - #9479 implements
+	//   them; preTds7Request()'s token dispatch refuses every cursor
+	//   token today
+	// * msg (8) - a msg token is only read inside the sec-encrypt
+	//   login exchange, never accepted as a general request command
+	// * sensitivity (45) and boundary (46) - tds5TypeToMsType()
+	//   refuses both, since they're labels rather than values
+	// * wide tables (59/60) and columnstatus (58/57) - this module
+	//   writes the narrow rowfmt and paramfmt, and no columnstatus byte
+	// * date/time (71/72), xml (85), sint1 (82) and the unsigned
+	//   integer types - tds5TypeToMsType() maps all of these, but no
+	//   rowfmt here ever carries one, and leaving out something that
+	//   is supported only costs a client the chance to use it
+	static const uint16_t	requestcaps[]={
+		TDS5_CAP_REQ_LANG,
+		TDS5_CAP_REQ_RPC,
+		TDS5_CAP_REQ_DYN,
+		TDS5_CAP_REQ_PARAM,
+		// the datatypes tds5TypeToMsType() accepts on the way in and
+		// pretds7typemap[] can send on the way out
+		TDS5_CAP_REQ_DATA_INT1,
+		TDS5_CAP_REQ_DATA_INT2,
+		TDS5_CAP_REQ_DATA_INT4,
+		TDS5_CAP_REQ_DATA_BIT,
+		TDS5_CAP_REQ_DATA_CHAR,
+		TDS5_CAP_REQ_DATA_VCHAR,
+		TDS5_CAP_REQ_DATA_BIN,
+		TDS5_CAP_REQ_DATA_VBIN,
+		TDS5_CAP_REQ_DATA_MNY8,
+		TDS5_CAP_REQ_DATA_MNY4,
+		TDS5_CAP_REQ_DATA_DATE8,
+		TDS5_CAP_REQ_DATA_DATE4,
+		TDS5_CAP_REQ_DATA_FLT4,
+		TDS5_CAP_REQ_DATA_FLT8,
+		TDS5_CAP_REQ_DATA_NUM,
+		TDS5_CAP_REQ_DATA_TEXT,
+		TDS5_CAP_REQ_DATA_IMAGE,
+		TDS5_CAP_REQ_DATA_DEC,
+		TDS5_CAP_REQ_DATA_LCHAR,
+		TDS5_CAP_REQ_DATA_LBIN,
+		TDS5_CAP_REQ_DATA_INTN,
+		TDS5_CAP_REQ_DATA_DATETIMEN,
+		TDS5_CAP_REQ_DATA_MONEYN,
+		TDS5_CAP_REQ_DATA_FLTN,
+		// an attention arrives in the packet stream rather than as
+		// out-of-band data - see attention()
+		TDS5_CAP_REQ_CON_INBAND,
+		// preTds7DynamicStatement() strips the "create proc" wrapper
+		// this invites, rather than running it - see the note there
+		TDS5_CAP_REQ_PROTO_DYNPROC,
+		// nTypeSize() sizes a bigint at 8 and preTds7Field() writes
+		// it, so this is real
+		TDS5_CAP_REQ_DATA_INT8,
+		// preTds7Login() ends with negotiatePacketSize() and
+		// envChangePacketSize(), so the packet size the login asks
+		// for really is honored
+		TDS5_CAP_REQ_SRVPKTSIZE
+	};
 
-	byte_t	requestmasklen=(byte_t)sizeof(requestmask);
-	byte_t	responsemasklen=(byte_t)sizeof(responsemask);
+	// What this module promises not to send.  A bit here means "don't
+	// send me this", so it's set for what never goes out.
+	//
+	// Deliberately absent are the NO<datatype> bits: an output
+	// parameter is echoed back in whatever type the client declared it
+	// as (see rpcparamtds5types), so promising never to send a given
+	// type would be a promise this module can't keep.
+	//
+	// SUPPRESS_FMT is the odd one out - it means "you may leave the
+	// format out", not "don't send me one" - and it's offered here
+	// rather than hardcoded, so a client that doesn't ask for it
+	// doesn't get told it was granted.
+	static const uint16_t	responsecaps[]={
+		// no debug token is ever written
+		TDS5_CAP_RES_NOTDSDEBUG,
+		// no columnstatus byte is ever written
+		TDS5_CAP_RES_DATA_NOCOLUMNSTATUS,
+		// rowfmt2/paramfmt2 are never written
+		TDS5_CAP_RES_NO_WIDETABLES,
+		TDS5_CAP_RES_SUPPRESS_FMT,
+		// no control token is ever written
+		TDS5_CAP_RES_NO_TDSCONTROL
+	};
+
+	// Answer at the length the client declared.  The intersection is
+	// byte-for-byte, and a bit the client's mask is too short to hold
+	// is one the client didn't ask for anyway.
+	grantedrequestmasklen=clientrequestmasklen;
+	grantedresponsemasklen=clientresponsemasklen;
+
+	buildCapabilityMask(grantedrequestmask,grantedrequestmasklen,
+				requestcaps,
+				(uint16_t)(sizeof(requestcaps)/
+						sizeof(requestcaps[0])),
+				clientrequestmask);
+	buildCapabilityMask(grantedresponsemask,grantedresponsemasklen,
+				responsecaps,
+				(uint16_t)(sizeof(responsecaps)/
+						sizeof(responsecaps[0])),
+				clientresponsemask);
+
+	// NOINT8 is cleared whatever the client asked for, rather than left
+	// to the intersection.  It isn't a negotiation - pretds7typemap[]
+	// sends a bigint as an intn, nTypeSize() sizes that at 8, and
+	// preTds7Field() writes 8 bytes for it - so granting "don't send me
+	// an 8-byte integer" would contradict what this module does.  The
+	// tables above leave it out, and this makes that non-negotiable.
+	setCapabilityBit(grantedresponsemask,grantedresponsemasklen,
+					TDS5_CAP_RES_DATA_NOINT8,false);
 
 	// each capability is a type byte, a length byte, and that many
 	// mask bytes
 	uint16_t	tokensize=(uint16_t)
-				(sizeof(byte_t)+sizeof(byte_t)+requestmasklen+
-				sizeof(byte_t)+sizeof(byte_t)+responsemasklen);
+			(sizeof(byte_t)+sizeof(byte_t)+grantedrequestmasklen+
+			sizeof(byte_t)+sizeof(byte_t)+grantedresponsemasklen);
 
 	debugStart("capability");
 	debugTokenType(token);
 	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
-	debugWrite("request mask: (%d)",(int)requestmasklen);
-	debugHexDump(requestmask,requestmasklen);
-	debugWrite("response mask: (%d)",(int)responsemasklen);
-	debugHexDump(responsemask,responsemasklen);
+	debugWrite("request mask: (%d)",(int)grantedrequestmasklen);
+	debugHexDump(grantedrequestmask,grantedrequestmasklen);
+	debugWrite("response mask: (%d)",(int)grantedresponsemasklen);
+	debugHexDump(grantedresponsemask,grantedresponsemasklen);
 	debugEnd();
 
 	write(&resppacket,token);
-	writeLE(&resppacket,tokensize);
+	write(&resppacket,tokensize);
 	write(&resppacket,(byte_t)CAPABILITY_REQUEST);
-	write(&resppacket,requestmasklen);
-	write(&resppacket,requestmask,(size_t)requestmasklen);
+	write(&resppacket,grantedrequestmasklen);
+	write(&resppacket,grantedrequestmask,(size_t)grantedrequestmasklen);
 	write(&resppacket,(byte_t)CAPABILITY_RESPONSE);
-	write(&resppacket,responsemasklen);
-	write(&resppacket,responsemask,(size_t)responsemasklen);
+	write(&resppacket,grantedresponsemasklen);
+	write(&resppacket,grantedresponsemask,(size_t)grantedresponsemasklen);
 }
 
 // Drives the tds 5.0 encrypted-password exchange and hands back the
@@ -5054,7 +5722,7 @@ void sqlrprotocol_tds::preTds7Msg(byte_t status, uint16_t msgid) {
 	write(&resppacket,token);
 	write(&resppacket,(byte_t)TDS5_MSG_SIZE);
 	write(&resppacket,status);
-	writeLE(&resppacket,msgid);
+	write(&resppacket,msgid);
 }
 
 // Reads a tds 5.0 msg token.  The token byte has already been read.
@@ -5086,7 +5754,7 @@ bool sqlrprotocol_tds::preTds7MsgRead(const byte_t **rpinout,
 
 	byte_t	status=0;
 	read(rp,&status,&rp);
-	readLE(rp,msgid,&rp);
+	read(rp,msgid,&rp);
 	rp+=(size_t)tokenlength-TDS5_MSG_SIZE;
 	rpsize-=(size_t)tokenlength;
 
@@ -5327,6 +5995,144 @@ bool sqlrprotocol_tds::sendPreTds7VersionUnsupportedError() {
 			"TDS 5.0 is the only supported pre-TDS-7 protocol "
 			"version.  Configure the client to use TDS 5.0 "
 			"and log in again.",1);
+}
+
+bool sqlrprotocol_tds::sendPreTds7ByteOrderUnsupportedError() {
+	// FIXME: is there a real error number/state for this?
+	return sendError(0,1,14,
+			"Mixed byte orders are not supported.  Configure the "
+			"client to use one byte order for integers, floats "
+			"and datetimes, and log in again.",1);
+}
+
+byte_t sqlrprotocol_tds::preTds7FieldOrder(byte_t value,
+					byte_t leval, byte_t beval) {
+	if (value==leval) {
+		return PRE_TDS7_ORDER_LE;
+	}
+	if (value==beval) {
+		return PRE_TDS7_ORDER_BE;
+	}
+	return PRE_TDS7_ORDER_UNKNOWN;
+}
+
+// Works the login record's typeflags block out into the single byte order
+// the rest of the session runs in, and returns false if the record didn't
+// declare one.
+//
+// Only the exact values the spec defines are recognized, one field at a
+// time.  Anything else - including a byte of 0 in a position where 0
+// isn't a defined value - falls back to little-endian rather than being
+// read as anything in particular.  That matters most for a block of all
+// zeros, which isn't a valid declaration at all but would otherwise
+// decode as big-endian, because 0 is what TDS_INT4_LSB_HI happens to be.
+// Every client that reaches this in practice runs on little-endian
+// hardware, so little-endian is the safe fallback, and an unrecognized
+// value gets a debug line rather than a refused login.
+//
+// A genuine disagreement between fields is a different matter.  The
+// record declares integers, floats and datetimes separately, so a client
+// could in principle ask for little-endian integers and big-endian
+// floats.  Nothing downstream can serve that: the byte order is one
+// per-session flag, so picking either order would get the other one
+// wrong in every row.  Refuse the login instead - real clients declare a
+// consistent order, so this costs nothing that works today.
+bool sqlrprotocol_tds::preTds7ByteOrder(const byte_t *typeflags,
+					bool *bigendian) {
+
+	// A block of all zeros declares nothing - it's what a client that
+	// never filled the field in sends.  It has to be caught up front
+	// rather than decoded field by field, because 0 is a valid value in
+	// one of the positions: it's what TDS_INT4_LSB_HI happens to be.
+	// Decoded a field at a time, an unfilled block would come out as
+	// big-endian 4-byte ints and little-endian everything else, and get
+	// the login refused for declaring two orders at once.
+	bool	allzero=true;
+	for (byte_t i=0; i<PRE_TDS7_TYPE_FLAGS_SIZE; i++) {
+		if (typeflags[i]) {
+			allzero=false;
+			break;
+		}
+	}
+	if (allzero) {
+		debugStart("pre-tds7 byte order");
+		debugWrite("typeflags not filled in - "
+				"assuming little-endian");
+		debugEnd();
+		*bigendian=false;
+		return true;
+	}
+
+	byte_t	int2=typeflags[PRE_TDS7_TYPE_FLAGS_INT2];
+	byte_t	int4=typeflags[PRE_TDS7_TYPE_FLAGS_INT4];
+	byte_t	chr=typeflags[PRE_TDS7_TYPE_FLAGS_CHAR];
+	byte_t	flt=typeflags[PRE_TDS7_TYPE_FLAGS_FLT];
+	byte_t	date=typeflags[PRE_TDS7_TYPE_FLAGS_DATE];
+
+	// the four fields that declare a byte order
+	byte_t	order[4];
+	order[0]=preTds7FieldOrder(int2,TDS_INT2_LSB_LO,TDS_INT2_LSB_HI);
+	order[1]=preTds7FieldOrder(int4,TDS_INT4_LSB_LO,TDS_INT4_LSB_HI);
+	order[2]=preTds7FieldOrder(flt,TDS_FLT_IEEE_LO,TDS_FLT_IEEE_HI);
+	order[3]=preTds7FieldOrder(date,TDS_TWO_I4_LSB_LO,TDS_TWO_I4_LSB_HI);
+
+	const char	*name[4];
+	name[0]="int2";
+	name[1]="int4";
+	name[2]="flt";
+	name[3]="date";
+
+	byte_t	value[4];
+	value[0]=int2;
+	value[1]=int4;
+	value[2]=flt;
+	value[3]=date;
+
+	debugStart("pre-tds7 byte order");
+
+	// The char field isn't a byte order, but decode it here anyway so
+	// the debug output says what the whole block declared.  Nothing
+	// acts on it - an ebcdic client would need a translation this
+	// module doesn't do, and none has ever turned up.
+	debugWrite("char: %d (%s)",(int)chr,
+			(chr==TDS_CHAR_ASCII)?"ascii":
+			((chr==TDS_CHAR_EBCDIC)?"ebcdic":"unrecognized"));
+
+	// fall unrecognized fields back to little-endian, noting each one
+	bool	agree=true;
+	byte_t	verdict=PRE_TDS7_ORDER_LE;
+	for (byte_t i=0; i<4; i++) {
+		if (order[i]==PRE_TDS7_ORDER_UNKNOWN) {
+			debugWrite("%s: %d (unrecognized - "
+					"assuming little-endian)",
+					name[i],(int)value[i]);
+			order[i]=PRE_TDS7_ORDER_LE;
+		} else {
+			debugWrite("%s: %d (%s)",name[i],(int)value[i],
+					(order[i]==PRE_TDS7_ORDER_BE)?
+						"big-endian":"little-endian");
+		}
+		if (i) {
+			if (order[i]!=verdict) {
+				agree=false;
+			}
+		} else {
+			verdict=order[i];
+		}
+	}
+
+	if (!agree) {
+		debugWrite("fields disagree - refusing the login");
+		debugEnd();
+		return false;
+	}
+
+	*bigendian=(verdict==PRE_TDS7_ORDER_BE);
+
+	debugWrite("byte order: %s",(*bigendian)?"BE":"LE");
+	debugEnd();
+
+	return true;
 }
 
 // "value" must point at a buffer of at least "size"+1 bytes: "size" for the
@@ -5988,7 +6794,7 @@ void sqlrprotocol_tds::loginAck(byte_t status) {
 	debugEnd();
 
 	write(&resppacket,token);
-	writeLE(&resppacket,tokensize);
+	write(&resppacket,tokensize);
 	write(&resppacket,iface);
 	writeBE(&resppacket,tdsversion);
 	writeVarchar(&resppacket,sizeof(byte_t),
@@ -6486,7 +7292,7 @@ bool sqlrprotocol_tds::preTds7SkipCommand(const byte_t **rpinout,
 			if (rpsize<sizeof(shortlength)) {
 				return false;
 			}
-			readLE(rp,&shortlength,&rp);
+			read(rp,&shortlength,&rp);
 			rpsize-=sizeof(shortlength);
 			tokenlength=shortlength;
 			}
@@ -6497,7 +7303,7 @@ bool sqlrprotocol_tds::preTds7SkipCommand(const byte_t **rpinout,
 			if (rpsize<sizeof(intlength)) {
 				return false;
 			}
-			readLE(rp,&intlength,&rp);
+			read(rp,&intlength,&rp);
 			rpsize-=sizeof(intlength);
 			tokenlength=(size_t)intlength;
 			}
@@ -6715,7 +7521,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		done(DONE_ERROR|DONE_FINAL,transState(),0);
 		return false;
 	}
-	readLE(rp,&tokenlength,&rp);
+	read(rp,&tokenlength,&rp);
 	rpsize-=sizeof(tokenlength);
 
 	debugWrite("token length: %lld",(long long)tokenlength);
@@ -6976,7 +7782,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 		preTds7ParamError("Malformed TDS 5.0 dbrpc token",false);
 		return false;
 	}
-	readLE(rp,&tokenlength,&rp);
+	read(rp,&tokenlength,&rp);
 	rpsize-=sizeof(tokenlength);
 
 	debugWrite("token length: %d",tokenlength);
@@ -7025,7 +7831,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 
 	// get the option flags
 	uint16_t	options=0;
-	readLE(rp,&options,&rp);
+	read(rp,&options,&rp);
 	bodyleft-=sizeof(options);
 
 	if (getDebug()) {
@@ -7240,6 +8046,16 @@ void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
 
 	byte_t	token=TDS5_TOKEN_DYNAMIC;
 
+	// The id arrived in the client's charset and preTds7ToUtf8()
+	// converted it, so it goes back converted the other way - and
+	// before the sizes below, which count the bytes on the wire.
+	size_t	convidsize=0;
+	char	*convid=utf8ToClientCharset(id,idsize,&convidsize);
+	if (convid) {
+		id=convid;
+		idsize=convidsize;
+	}
+
 	// the id length is a single byte, and a longer one couldn't have
 	// arrived in the first place
 	if (idsize>255) {
@@ -7255,7 +8071,7 @@ void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
 	debugWrite("id: %s",id);
 
 	write(&resppacket,token);
-	writeLE(&resppacket,tokensize);
+	write(&resppacket,tokensize);
 	write(&resppacket,(byte_t)TDS5_DYN_ACK);
 	write(&resppacket,(byte_t)0);
 	write(&resppacket,(byte_t)idsize);
@@ -7263,13 +8079,15 @@ void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
 		write(&resppacket,(const byte_t *)id,idsize);
 	}
 
+	delete[] convid;
+
 	debugEnd();
 }
 
 // Strips the "create proc <id> as " wrapper that a client puts in front
 // of a dynamic prepare's statement.  Ct-lib writes one when the server's
 // request capability mask sets bit 48, TDS_PROTO_DYNPROC, which
-// capability() does, since it sends back what a real ase sends.
+// capability() grants to any client that asks for it.
 //
 // On an ase that wrapper is real - the prepare becomes a stored
 // procedure named for the id, and the dealloc drops it.  Here it can't
@@ -7387,7 +8205,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 		preTds7ParamError("Malformed TDS 5.0 dynamic token",false);
 		return false;
 	}
-	readLE(rp,&tokenlength,&rp);
+	read(rp,&tokenlength,&rp);
 	rpsize-=sizeof(tokenlength);
 
 	debugWrite("token length: %d",tokenlength);
@@ -7445,7 +8263,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 
 	// get the statement length
 	uint16_t	stmtlen=0;
-	readLE(rp,&stmtlen,&rp);
+	read(rp,&stmtlen,&rp);
 	bodyleft-=sizeof(stmtlen);
 
 	debugWrite("statement length: %d",stmtlen);
@@ -8521,18 +9339,29 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 
 		// name.  writeVarchar() writes single-byte characters when
 		// pretds7 is set, which is what tds 5.0 wants - colName()
-		// always writes ucs-2.  The length is a single byte, so a
-		// longer name is truncated, the way appendInfoOrError()
-		// truncates the names it sends; losing the whole result set
-		// over a long column name would be worse.
+		// always writes ucs-2 - so the name is converted to the
+		// charset the login record declared first, before the
+		// truncation below counts its bytes.  The length is a single
+		// byte, so a longer name is truncated, the way
+		// appendInfoOrError() truncates the names it sends; losing
+		// the whole result set over a long column name would be
+		// worse.
 		size_t		namelen=cont->getColumnNameSize(cursor,col);
 		const char	*name=cont->getColumnName(cursor,col);
+		size_t		convnamelen=0;
+		char		*convname=utf8ToClientCharset(
+						name,namelen,&convnamelen);
+		if (convname) {
+			name=convname;
+			namelen=convnamelen;
+		}
 		if (namelen>255) {
 			namelen=255;
 		}
 		writeVarchar(&cols,sizeof(byte_t),name,namelen);
 		debugWrite("namelen: %lld",(long long)namelen);
 		debugWrite("name: %s",name);
+		delete[] convname;
 
 		// flags
 		preTds7ColFlags(&cols,cursor,col);
@@ -8544,7 +9373,7 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 		// 0 means "no alias type", the same thing userType() sends,
 		// and the client reports it as such.
 		uint32_t	usertype=0;
-		writeLE(&cols,usertype);
+		write(&cols,usertype);
 		debugWrite("usertype: %d",usertype);
 
 		// datatype
@@ -8583,8 +9412,8 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 	}
 
 	write(&resppacket,token);
-	writeLE(&resppacket,(uint16_t)tokenlength);
-	writeLE(&resppacket,(uint16_t)count);
+	write(&resppacket,(uint16_t)tokenlength);
+	write(&resppacket,(uint16_t)count);
 	write(&resppacket,cols.getBuffer(),cols.getSize());
 
 	debugWrite("token length: %lld",(long long)tokenlength);
@@ -9145,7 +9974,7 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 			break;
 
 		case 4:
-			writeLE(buffer,size);
+			write(buffer,size);
 			debugWrite("size: %d (32-bit)",size);
 
 			// Only the blob types carry a table name, and
@@ -9157,7 +9986,7 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 				// The module has no table name to give - the
 				// backends don't expose one for a result-set
 				// column - and an empty one is legal.
-				writeLE(buffer,(uint16_t)0);
+				write(buffer,(uint16_t)0);
 				debugWrite("table name: (none)");
 			}
 			break;
@@ -9165,7 +9994,7 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 		case 5:
 			// longchar/longbinary - a 32-bit size, and no table
 			// name, blob-sized though they are
-			writeLE(buffer,size);
+			write(buffer,size);
 			debugWrite("size: %d (32-bit)",size);
 			break;
 
@@ -10510,7 +11339,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 				write(&resppacket,(byte_t)0);
 				break;
 			case 5:
-				writeLE(&resppacket,(uint32_t)0);
+				write(&resppacket,(uint32_t)0);
 				break;
 			default:
 				// A length of 0 is a varint-1 type's only
@@ -10544,13 +11373,13 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 					write(&resppacket,(char)data);
 					break;
 				case 2:
-					writeLE(&resppacket,(uint16_t)data);
+					write(&resppacket,(uint16_t)data);
 					break;
 				case 4:
-					writeLE(&resppacket,(uint32_t)data);
+					write(&resppacket,(uint32_t)data);
 					break;
 				case 8:
-					writeLE(&resppacket,(uint64_t)data);
+					write(&resppacket,(uint64_t)data);
 					break;
 			}
 			debugWrite("size: %d",size);
@@ -10563,11 +11392,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			byte_t	size=(byte_t)colsize;
 			write(&resppacket,size);
 			double	data=charstring::convertToFloat(field);
-			if (size==4) {
-				write(&resppacket,(float)data);
-			} else {
-				write(&resppacket,data);
-			}
+			writeFloatN(data,size);
 			debugWrite("size: %d",size);
 			debugWrite("data: ");
 			debugWrite("%f",data);
@@ -10579,13 +11404,15 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			write(&resppacket,size);
 			int64_t	data=moneyValue(field);
 			if (size==4) {
-				writeLE(&resppacket,(uint32_t)(int32_t)data);
+				write(&resppacket,(uint32_t)(int32_t)data);
 			} else {
-				// the high half goes first, ahead of the
-				// low half, and both are little-endian
-				writeLE(&resppacket,(uint32_t)
+				// The high half goes first, ahead of the
+				// low half.  That ordering is the type's
+				// own, not a byte order - each half goes
+				// out in the order the login declared.
+				write(&resppacket,(uint32_t)
 					((data&0xFFFFFFFF00000000LL)>>32));
-				writeLE(&resppacket,(uint32_t)
+				write(&resppacket,(uint32_t)
 					(data&0x00000000FFFFFFFFLL));
 			}
 			debugWrite("size: %d",size);
@@ -10607,14 +11434,14 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 				uint16_t	days=(dayssince1900>0)?
 							dayssince1900:0;
 				uint16_t	minutes=threehundredths/300/60;
-				writeLE(&resppacket,days);
-				writeLE(&resppacket,minutes);
+				write(&resppacket,days);
+				write(&resppacket,minutes);
 				debugWrite("%d,%d",(uint32_t)days,
 							(uint32_t)minutes);
 			} else {
 				// days and three-hundredths of a second
-				writeLE(&resppacket,(uint32_t)dayssince1900);
-				writeLE(&resppacket,threehundredths);
+				write(&resppacket,(uint32_t)dayssince1900);
+				write(&resppacket,threehundredths);
 				debugWrite("%d,%d",dayssince1900,
 							threehundredths);
 			}
@@ -10679,23 +11506,41 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 		case TDS5_TYPE_VARCHAR:
 		case TDS5_TYPE_CHAR:
 			{
-			// Character data passes straight through as utf-8.
-			// A tds 5.0 rowfmt has no collation field, so nothing
-			// declares a code page that utf8ToCp1252() could
-			// convert to, and preTds7ToUtf8() doesn't convert on
-			// the way in either - the two directions agree.
-			// One consequence: the length below counts utf-8
-			// bytes, so a multi-byte character eats more than one
-			// unit of the declared column size.
-			uint64_t	size=fieldsize;
+			// Character data goes out in the charset the login
+			// record declared, converted from the utf-8 the back
+			// end handed over.  A tds 5.0 rowfmt has no collation
+			// field, so the login record is the only thing that
+			// names a charset, and preTds7ToUtf8() converts the
+			// other way with the same one - the two directions
+			// agree.
+			//
+			// The conversion has to run before the size cap
+			// below, not after it: the cap counts the bytes that
+			// go on the wire against the width the rowfmt
+			// declared, so capping the utf-8 first would measure
+			// the wrong encoding and could cut a multi-byte
+			// character in half.
+			//
+			// A client that declared utf8, nothing, or a charset
+			// pretds7charsets[] doesn't cover gets the utf-8
+			// bytes straight through.  One consequence there: the
+			// length counts utf-8 bytes, so a multi-byte
+			// character eats more than one unit of the declared
+			// column size.
+			size_t		convsize=0;
+			char		*conv=utf8ToClientCharset(field,
+						(size_t)fieldsize,&convsize);
+			const char	*data=(conv)?conv:field;
+			uint64_t	size=(conv)?convsize:fieldsize;
 			if (size>colsize) {
 				size=colsize;
 			}
 			write(&resppacket,(byte_t)size);
-			write(&resppacket,field,size);
+			write(&resppacket,data,size);
 			debugWrite("size: %lld",(long long)size);
 			debugWrite("data: ");
-			debugWrite("%.*s",(int)size,field);
+			debugWrite("%.*s",(int)size,data);
+			delete[] conv;
 			}
 			break;
 
@@ -10724,7 +11569,20 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			// too, under its own config flag - text doesn't
 			bool		hextext=(tds5type==TDS5_TYPE_IMAGE &&
 							imageishextext);
-			uint64_t	size=(hextext)?fieldsize/2:fieldsize;
+
+			// text is character data, so it goes out in the
+			// charset the login record declared, the way a
+			// varchar does above - and before the size cap, for
+			// the same reason.  image is bytes, so it doesn't.
+			size_t		convsize=0;
+			char		*conv=(tds5type==TDS5_TYPE_TEXT)?
+						utf8ToClientCharset(field,
+						(size_t)fieldsize,&convsize):
+						NULL;
+			const char	*data=(conv)?conv:field;
+			uint64_t	size=(conv)?convsize:
+						((hextext)?fieldsize/2:
+								fieldsize);
 			if (size>colsize) {
 				size=colsize;
 			}
@@ -10739,11 +11597,13 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			// so it takes one as-is.
 			lobData(tds5type);
 
-			writeLE(&resppacket,(uint32_t)size);
-			binary(field,size,hextext);
+			write(&resppacket,(uint32_t)size);
+			binary(data,size,hextext);
 			debugWrite("size: %lld",(long long)size);
 			debugWrite("data:");
-			debugHexDump((byte_t *)field,fieldsize);
+			debugHexDump((byte_t *)data,
+					(conv)?convsize:(size_t)fieldsize);
+			delete[] conv;
 			}
 			break;
 
@@ -10757,13 +11617,25 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			// client can walk past.
 			bool		hextext=(tds5type==TDS5_TYPE_LONGBINARY &&
 							binaryishextext);
-			uint64_t	size=(hextext)?fieldsize/2:fieldsize;
+
+			// longchar is character data, longbinary isn't - the
+			// same split text and image make above
+			size_t		convsize=0;
+			char		*conv=(tds5type==TDS5_TYPE_LONGCHAR)?
+						utf8ToClientCharset(field,
+						(size_t)fieldsize,&convsize):
+						NULL;
+			const char	*data=(conv)?conv:field;
+			uint64_t	size=(conv)?convsize:
+						((hextext)?fieldsize/2:
+								fieldsize);
 			if (size>colsize) {
 				size=colsize;
 			}
-			writeLE(&resppacket,(uint32_t)size);
-			binary(field,size,hextext);
+			write(&resppacket,(uint32_t)size);
+			binary(data,size,hextext);
 			debugWrite("size: %lld",(long long)size);
+			delete[] conv;
 			}
 			break;
 
@@ -10820,9 +11692,10 @@ void sqlrprotocol_tds::preTds7ParamError(const char *msgtext, bool more) {
 // function reads both.  Paramfmt2 is NOT rowfmt2's shape: rowfmt2 also
 // prepends label, catalog, schema and table names to every column.
 //
-// A real ase only sends the wide form to a client that echoed request
-// capability bit 59, TDS_WIDETABLE.  capability() doesn't set that bit,
-// so what actually arrives here is the narrow form; the wide one is
+// A real ase only sends the wide form to a client that echoed the wide
+// tables request capability.  capability() never grants it - it's bit 59
+// in freetds's numbering and 60 in cspublic's, and its table leaves both
+// out - so what actually arrives here is the narrow form; the wide one is
 // read anyway because nothing stops a client from sending it.
 //
 // The token is:
@@ -10863,10 +11736,10 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 	}
 	uint32_t	tokenlength=0;
 	if (wide) {
-		readLE(rp,&tokenlength,&rp);
+		read(rp,&tokenlength,&rp);
 	} else {
 		uint16_t	narrowlength=0;
-		readLE(rp,&narrowlength,&rp);
+		read(rp,&narrowlength,&rp);
 		tokenlength=narrowlength;
 	}
 	rpsize-=lensize;
@@ -10886,7 +11759,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 	size_t	left=(size_t)tokenlength;
 
 	uint16_t	count=0;
-	readLE(rp,&count,&rp);
+	read(rp,&count,&rp);
 	left-=sizeof(uint16_t);
 
 	debugWrite("count: %d",count);
@@ -10938,7 +11811,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 		}
 		uint32_t	status=0;
 		if (wide) {
-			readLE(rp,&status,&rp);
+			read(rp,&status,&rp);
 		} else {
 			byte_t	narrowstatus=0;
 			read(rp,&narrowstatus,&rp);
@@ -10951,10 +11824,12 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 		debugWrite("return: %d",
 				(status&TDS5_PARAM_RETURN)?1:0);
 
-		// A columnstatus byte in front of every value needs
-		// capability bit 57, which capability() leaves clear, so no
-		// client should be asking for one.  Refuse rather than
-		// mis-size every value behind it if one does.
+		// A columnstatus byte in front of every value needs the
+		// columnstatus request capability, which capability() never
+		// grants - it's bit 58 in freetds's numbering and 57 in
+		// cspublic's, and its table leaves both out - so no client
+		// should be asking for one.  Refuse rather than mis-size
+		// every value behind it if one does.
 		if (status&TDS5_PARAM_COLUMNSTATUS) {
 			*err="TDS 5.0 parameter column status "
 						"is not supported yet.";
@@ -10967,7 +11842,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 			debugEnd();
 			return false;
 		}
-		readLE(rp,&(fmt->usertype),&rp);
+		read(rp,&(fmt->usertype),&rp);
 		left-=sizeof(uint32_t);
 
 		debugWrite("usertype: %d",fmt->usertype);
@@ -11011,7 +11886,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 					debugEnd();
 					return false;
 				}
-				readLE(rp,&(fmt->size),&rp);
+				read(rp,&(fmt->size),&rp);
 				left-=sizeof(uint32_t);
 				break;
 			default:
@@ -11351,7 +12226,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			if (rpsize<sizeof(uint32_t)) {
 				return false;
 			}
-			readLE(rp,&size,&rp);
+			read(rp,&size,&rp);
 			rpsize-=sizeof(uint32_t);
 			break;
 		default:
@@ -11387,8 +12262,8 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 	rpsize-=size;
 
 	// the integer types, signed and unsigned, at every width one of
-	// them can be.  little-endian, and sign-extended from whatever
-	// width arrived.
+	// them can be.  sign-extended from whatever width arrived, and in
+	// the byte order the login record declared.
 	bool	isint=false;
 	bool	issigned=true;
 	switch (fmt->tds5type) {
@@ -11418,11 +12293,26 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			return false;
 		}
 
+		// The width here can be anything from 1 to 8, so this
+		// assembles the value a byte at a time rather than going
+		// through read(), which only has the four standard widths.
+		// Which end of the field the high byte sits at is what the
+		// login record declared, and the sign bit lives in it.
 		uint64_t	magnitude=0;
-		for (byte_t i=0; i<size; i++) {
-			magnitude|=((uint64_t)value[i])<<(i*8);
+		byte_t		msb=0;
+		if (getProtocolIsBigEndian()) {
+			for (byte_t i=0; i<size; i++) {
+				magnitude=(magnitude<<8)|
+						((uint64_t)value[i]);
+			}
+			msb=value[0];
+		} else {
+			for (byte_t i=0; i<size; i++) {
+				magnitude|=((uint64_t)value[i])<<(i*8);
+			}
+			msb=value[size-1];
 		}
-		if (issigned && size<8 && (value[size-1]&0x80)) {
+		if (issigned && size<8 && (msb&0x80)) {
 			magnitude|=~((uint64_t)0)<<(size*8);
 		}
 
@@ -11450,13 +12340,23 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 				debugWrite("invalid size: %d",size);
 				return false;
 			}
-			double	data=0.0;
+			// An ieee float is as byte-order-sensitive as an
+			// integer of the same width is, but read() has no
+			// float overload that swaps - see the note in
+			// preTds7Field() - so the bits come in as an
+			// integer and get copied over a float afterward.
+			const byte_t	*vp=value;
+			double		data=0.0;
 			if (size==sizeof(float)) {
-				float	f=0.0;
-				bytestring::copy(&f,value,sizeof(f));
+				uint32_t	bits=0;
+				read(vp,&bits,&vp);
+				float		f=0.0;
+				bytestring::copy(&f,&bits,sizeof(f));
 				data=f;
 			} else {
-				bytestring::copy(&data,value,sizeof(data));
+				uint64_t	bits=0;
+				read(vp,&bits,&vp);
+				bytestring::copy(&data,&bits,sizeof(data));
 			}
 			bulkDouble(bv,data);
 			}
@@ -11466,9 +12366,11 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 		case TDS5_TYPE_SHORTMONEY:
 		case TDS5_TYPE_MONEYN:
 			{
-			// a 4-byte money is one signed count of
+			// A 4-byte money is one signed count of
 			// ten-thousandths; an 8-byte one is two, the high
-			// half first, and both little-endian
+			// half first.  That ordering is the type's own, not
+			// a byte order - each half arrives in the order the
+			// login declared.
 			if (size!=4 && size!=8) {
 				debugWrite("invalid size: %d",size);
 				return false;
@@ -11477,13 +12379,13 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			int64_t		tenthousandths=0;
 			if (size==4) {
 				uint32_t	low=0;
-				readLE(vp,&low,&vp);
+				read(vp,&low,&vp);
 				tenthousandths=(int32_t)low;
 			} else {
 				uint32_t	high=0;
 				uint32_t	low=0;
-				readLE(vp,&high,&vp);
-				readLE(vp,&low,&vp);
+				read(vp,&high,&vp);
+				read(vp,&low,&vp);
 				tenthousandths=(int64_t)
 					((((uint64_t)high)<<32)|low);
 			}
@@ -11508,14 +12410,14 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			if (size==4) {
 				uint16_t	days=0;
 				uint16_t	minutes=0;
-				readLE(vp,&days,&vp);
-				readLE(vp,&minutes,&vp);
+				read(vp,&days,&vp);
+				read(vp,&minutes,&vp);
 				dayssince1900=days;
 				threehundredths=((uint32_t)minutes)*60*300;
 			} else {
 				uint32_t	days=0;
-				readLE(vp,&days,&vp);
-				readLE(vp,&threehundredths,&vp);
+				read(vp,&days,&vp);
+				read(vp,&threehundredths,&vp);
 				dayssince1900=(int32_t)days;
 			}
 			dateTimeValue(dayssince1900,threehundredths,bv);
@@ -11575,15 +12477,25 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 		case TDS5_TYPE_LONGCHAR:
 		case TDS5_TYPE_TEXT:
 		case TDS5_TYPE_XML:
-			// Character data passes straight through as utf-8,
-			// the way preTds7Field() writes it - a tds 5.0
-			// paramfmt has no collation field, so nothing
-			// declares a code page to convert from.  A char is
-			// not blank padded out to its declared size here the
-			// way a bigchar is on the ms-tds path: the declared
-			// size isn't a width in tds 5.0, and a client that
-			// wants the padding sends it.
-			bulkString(bv,&rpcparampool,(const char *)value,size);
+			{
+			// Character data arrives in the charset the login
+			// record declared - a tds 5.0 paramfmt has no
+			// collation field of its own, so that's the only
+			// thing naming one - and preTds7ToUtf8() converts it
+			// to the utf-8 the rest of this module works in, or
+			// passes it through when the client declared utf8 or
+			// something pretds7charsets[] doesn't cover.
+			// preTds7Field() writes it back the same way.
+			//
+			// A char is not blank padded out to its declared
+			// size here the way a bigchar is on the ms-tds path:
+			// the declared size isn't a width in tds 5.0, and a
+			// client that wants the padding sends it.
+			size_t	value8size=0;
+			char	*value8=preTds7ToUtf8(value,size,&value8size);
+			bulkString(bv,&rpcparampool,value8,value8size);
+			delete[] value8;
+			}
 			break;
 
 		case TDS5_TYPE_UNITEXT:
@@ -11694,7 +12606,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 
 		// usertype.  0 means "no alias type", which is what
 		// preTds7RowFmt() sends for a column.
-		writeLE(&params,fmt->usertype);
+		write(&params,fmt->usertype);
 		debugWrite("usertype: %d",fmt->usertype);
 
 		// datatype
@@ -11709,7 +12621,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 				break;
 			case 4:
 			case 5:
-				writeLE(&params,fmt->size);
+				write(&params,fmt->size);
 				debugWrite("size: %d (32-bit)",fmt->size);
 				break;
 			default:
@@ -11756,8 +12668,8 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	}
 
 	write(&resppacket,token);
-	writeLE(&resppacket,(uint16_t)tokenlength);
-	writeLE(&resppacket,(uint16_t)count);
+	write(&resppacket,(uint16_t)tokenlength);
+	write(&resppacket,(uint16_t)count);
 	write(&resppacket,params.getBuffer(),params.getSize());
 
 	debugWrite("token length: %lld",(long long)tokenlength);
@@ -11902,11 +12814,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			byte_t	size=(fmt->size==sizeof(float))?
 						sizeof(float):sizeof(double);
 			write(&resppacket,size);
-			if (size==sizeof(float)) {
-				write(&resppacket,(float)dblval);
-			} else {
-				write(&resppacket,dblval);
-			}
+			writeFloatN(dblval,size);
 			debugWrite("size: %d",size);
 			debugWrite("data: %f",dblval);
 			}
@@ -11917,13 +12825,15 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			write(&resppacket,size);
 			int64_t	data=moneyValue(field);
 			if (size==4) {
-				writeLE(&resppacket,(uint32_t)(int32_t)data);
+				write(&resppacket,(uint32_t)(int32_t)data);
 			} else {
-				// the high half goes first, ahead of the low
-				// half, and both are little-endian
-				writeLE(&resppacket,(uint32_t)
+				// The high half goes first, ahead of the low
+				// half.  That ordering is the type's own,
+				// not a byte order - each half goes out in
+				// the order the login declared.
+				write(&resppacket,(uint32_t)
 					((data&0xFFFFFFFF00000000LL)>>32));
-				writeLE(&resppacket,(uint32_t)
+				write(&resppacket,(uint32_t)
 					(data&0x00000000FFFFFFFFLL));
 			}
 			debugWrite("size: %d",size);
@@ -11943,14 +12853,14 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 				uint16_t	days=(dayssince1900>0)?
 							dayssince1900:0;
 				uint16_t	minutes=threehundredths/300/60;
-				writeLE(&resppacket,days);
-				writeLE(&resppacket,minutes);
+				write(&resppacket,days);
+				write(&resppacket,minutes);
 				debugWrite("data: %d,%d",(uint32_t)days,
 							(uint32_t)minutes);
 			} else {
 				// days and three-hundredths of a second
-				writeLE(&resppacket,(uint32_t)dayssince1900);
-				writeLE(&resppacket,threehundredths);
+				write(&resppacket,(uint32_t)dayssince1900);
+				write(&resppacket,threehundredths);
 				debugWrite("data: %d,%d",dayssince1900,
 							threehundredths);
 			}
@@ -11972,11 +12882,11 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			debugWrite("data: %lld",(long long)intval);
 			break;
 		case TDS5_TYPE_FLT4:
-			write(&resppacket,(float)dblval);
+			writeFloatN(dblval,sizeof(float));
 			debugWrite("data: %f",dblval);
 			break;
 		case TDS5_TYPE_FLT8:
-			write(&resppacket,dblval);
+			writeFloatN(dblval,sizeof(double));
 			debugWrite("data: %f",dblval);
 			break;
 		case TDS5_TYPE_MONEY:
@@ -11984,11 +12894,11 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			{
 			int64_t	data=moneyValue(field);
 			if (fmt->tds5type==TDS5_TYPE_SHORTMONEY) {
-				writeLE(&resppacket,(uint32_t)(int32_t)data);
+				write(&resppacket,(uint32_t)(int32_t)data);
 			} else {
-				writeLE(&resppacket,(uint32_t)
+				write(&resppacket,(uint32_t)
 					((data&0xFFFFFFFF00000000LL)>>32));
-				writeLE(&resppacket,(uint32_t)
+				write(&resppacket,(uint32_t)
 					(data&0x00000000FFFFFFFFLL));
 			}
 			debugWrite("data: %lld (%s)",(long long)data,field);
@@ -12004,13 +12914,13 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 				uint16_t	days=(dayssince1900>0)?
 							dayssince1900:0;
 				uint16_t	minutes=threehundredths/300/60;
-				writeLE(&resppacket,days);
-				writeLE(&resppacket,minutes);
+				write(&resppacket,days);
+				write(&resppacket,minutes);
 				debugWrite("data: %d,%d",(uint32_t)days,
 							(uint32_t)minutes);
 			} else {
-				writeLE(&resppacket,(uint32_t)dayssince1900);
-				writeLE(&resppacket,threehundredths);
+				write(&resppacket,(uint32_t)dayssince1900);
+				write(&resppacket,threehundredths);
 				debugWrite("data: %d,%d",dayssince1900,
 							threehundredths);
 			}
@@ -12052,14 +12962,25 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 		case TDS5_TYPE_VARCHAR:
 		case TDS5_TYPE_CHAR:
 			{
-			// character data goes out as utf-8, the way
-			// preTds7Field() writes it - a tds 5.0 paramfmt has
-			// no collation field to declare anything else
-			uint64_t	size=(fieldsize>255)?255:fieldsize;
+			// Character data goes out in the charset the login
+			// record declared, the way preTds7Field() writes it -
+			// a tds 5.0 paramfmt has no collation field to
+			// declare anything else.  The conversion runs before
+			// the 255-byte cap, so the cap counts the bytes that
+			// actually go on the wire.
+			size_t		convsize=0;
+			char		*conv=utf8ToClientCharset(field,
+						(size_t)fieldsize,&convsize);
+			const char	*data=(conv)?conv:field;
+			uint64_t	size=(conv)?convsize:fieldsize;
+			if (size>255) {
+				size=255;
+			}
 			write(&resppacket,(byte_t)size);
-			write(&resppacket,field,size);
+			write(&resppacket,data,size);
 			debugWrite("size: %lld",(long long)size);
-			debugWrite("data: %.*s",(int)size,field);
+			debugWrite("data: %.*s",(int)size,data);
+			delete[] conv;
 			}
 			break;
 
@@ -12078,26 +12999,51 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 
 		case TDS5_TYPE_TEXT:
 		case TDS5_TYPE_IMAGE:
+			{
 			// a non-null blob value is a text pointer, a
 			// timestamp, a 32-bit length and then the data.
 			// lobData() writes the first two, and the tds 5.0
 			// bytes for text and image are the same 0x23 and
 			// 0x22 it switches on, so it takes one as-is.
+			//
+			// text is character data and goes out in the charset
+			// the login record declared; image is bytes.
+			size_t		convsize=0;
+			char		*conv=(fmt->tds5type==TDS5_TYPE_TEXT)?
+						utf8ToClientCharset(field,
+						(size_t)fieldsize,&convsize):
+						NULL;
+			const char	*data=(conv)?conv:field;
+			uint64_t	size=(conv)?convsize:fieldsize;
 			lobData(fmt->tds5type);
-			writeLE(&resppacket,(uint32_t)fieldsize);
-			write(&resppacket,field,fieldsize);
-			debugWrite("size: %lld",(long long)fieldsize);
-			debugHexDump((byte_t *)field,fieldsize);
+			write(&resppacket,(uint32_t)size);
+			write(&resppacket,data,size);
+			debugWrite("size: %lld",(long long)size);
+			debugHexDump((byte_t *)data,size);
+			delete[] conv;
+			}
 			break;
 
 		case TDS5_TYPE_LONGCHAR:
 		case TDS5_TYPE_LONGBINARY:
 		case TDS5_TYPE_XML:
+			{
 			// varint 4 or 5 with no text pointer - a 32-bit
-			// length and then the data
-			writeLE(&resppacket,(uint32_t)fieldsize);
-			write(&resppacket,field,fieldsize);
-			debugWrite("size: %lld",(long long)fieldsize);
+			// length and then the data.  longchar and xml are
+			// character data, longbinary isn't.
+			size_t		convsize=0;
+			char		*conv=(fmt->tds5type!=
+						TDS5_TYPE_LONGBINARY)?
+						utf8ToClientCharset(field,
+						(size_t)fieldsize,&convsize):
+						NULL;
+			const char	*data=(conv)?conv:field;
+			uint64_t	size=(conv)?convsize:fieldsize;
+			write(&resppacket,(uint32_t)size);
+			write(&resppacket,data,size);
+			debugWrite("size: %lld",(long long)size);
+			delete[] conv;
+			}
 			break;
 
 		case TDS5_TYPE_UNITEXT:
@@ -12108,7 +13054,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			size_t	field16length;
 			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
 							&field16length);
-			writeLE(&resppacket,
+			write(&resppacket,
 				(uint32_t)(field16length*sizeof(ucs2_t)));
 			write(&resppacket,field16,field16length);
 			delete[] field16;
@@ -12161,11 +13107,11 @@ void sqlrprotocol_tds::preTds7ParamNullWrite(const tds5paramfmt *fmt) {
 				// xml and unitext are varint 4 but carry no
 				// text pointer, so their null is a length
 				// of 0
-				writeLE(&resppacket,(uint32_t)0);
+				write(&resppacket,(uint32_t)0);
 			}
 			break;
 		case 5:
-			writeLE(&resppacket,(uint32_t)0);
+			write(&resppacket,(uint32_t)0);
 			break;
 		default:
 			// A length of 0 is a varint-1 type's only null form,
@@ -18750,12 +19696,21 @@ void sqlrprotocol_tds::writeVarcharLength(bytebuffer *buffer,
 	if (lensize==sizeof(byte_t)) {
 		write(buffer,(byte_t)length);
 	} else if (lensize==sizeof(uint16_t)) {
-		writeLE(buffer,(uint16_t)length);
+		write(buffer,(uint16_t)length);
 	} else {
-		writeLE(buffer,(uint32_t)length);
+		write(buffer,(uint32_t)length);
 	}
 }
 
+// These write "length" units at the session's character width and
+// nothing else - in particular they don't convert to the charset a
+// pre-tds7 client declared, even though that's where a pre-tds7 client's
+// column names and message text go out.  The conversion is the caller's,
+// because a converted string isn't necessarily the same number of bytes
+// as the utf-8 it came from, and every caller here has already written a
+// length - its own, and usually a token size containing it - that has to
+// agree with what lands in the buffer.  See utf8ToClientCharset() and its
+// callers.
 void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
 					size_t lensize,
 					const char *str,
@@ -18830,7 +19785,7 @@ void sqlrprotocol_tds::envChange(byte_t type,
 	debugEnd();
 
 	write(&resppacket,token);
-	writeLE(&resppacket,tokensize);
+	write(&resppacket,tokensize);
 	write(&resppacket,type);
 	writeVarchar(&resppacket,newvaluelensize,newvalue,newvaluelen);
 	writeVarchar(&resppacket,oldvaluelensize,oldvalue,oldvaluelen);
@@ -18866,6 +19821,35 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 					const char *servername,
 					const char *procname,
 					uint32_t linenumber) {
+
+	// A pre-tds7 client gets these strings in the charset its login
+	// record declared.  The conversion happens here rather than inside
+	// writeVarchar() because the sizes below - the token size in
+	// particular - have to count the bytes that actually go on the wire,
+	// and a converted string isn't necessarily as long as the utf-8 it
+	// came from.  Each of these is NULL when nothing is to be converted,
+	// which leaves the utf-8 passing through.
+	size_t		msgtextconvlen=0;
+	char		*msgtextconv=utf8ToClientCharset(msgtext,
+					charstring::getLength(msgtext),
+					&msgtextconvlen);
+	if (msgtextconv) {
+		msgtext=msgtextconv;
+	}
+	size_t		srvnameconvlen=0;
+	char		*srvnameconv=utf8ToClientCharset(servername,
+					charstring::getLength(servername),
+					&srvnameconvlen);
+	if (srvnameconv) {
+		servername=srvnameconv;
+	}
+	size_t		procnameconvlen=0;
+	char		*procnameconv=utf8ToClientCharset(procname,
+					charstring::getLength(procname),
+					&procnameconvlen);
+	if (procnameconv) {
+		procname=procnameconv;
+	}
 
 	// the name lengths are sent as single bytes
 	size_t		srvnamelen=charstring::getLength(servername);
@@ -18911,18 +19895,22 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 	debugEnd();
 
 	write(&resppacket,token);
-	writeLE(&resppacket,tokensize);
-	writeLE(&resppacket,number);
+	write(&resppacket,tokensize);
+	write(&resppacket,number);
 	write(&resppacket,state);
 	write(&resppacket,infoerrclass);
 	writeVarchar(&resppacket,sizeof(uint16_t),msgtext,msgtextlen);
 	writeVarchar(&resppacket,sizeof(byte_t),servername,srvnamelen);
 	writeVarchar(&resppacket,sizeof(byte_t),procname,procnamelen);
 	if (negotiatedtdsversion<720) {
-		writeLE(&resppacket,(uint16_t)linenumber);
+		write(&resppacket,(uint16_t)linenumber);
 	} else {
-		writeLE(&resppacket,linenumber);
+		write(&resppacket,linenumber);
 	}
+
+	delete[] msgtextconv;
+	delete[] srvnameconv;
+	delete[] procnameconv;
 }
 
 bool sqlrprotocol_tds::sendError(uint32_t number,
@@ -19047,12 +20035,12 @@ void sqlrprotocol_tds::done(byte_t token,
 	debugEnd();
 
 	write(&resppacket,token);
-	writeLE(&resppacket,status);
-	writeLE(&resppacket,curcmdortransstate);
+	write(&resppacket,status);
+	write(&resppacket,curcmdortransstate);
 	if (negotiatedtdsversion<720) {
-		writeLE(&resppacket,(uint32_t)donerowcount);
+		write(&resppacket,(uint32_t)donerowcount);
 	} else {
-		writeLE(&resppacket,donerowcount);
+		write(&resppacket,donerowcount);
 	}
 }
 
@@ -19077,10 +20065,13 @@ void sqlrprotocol_tds::doneInProc(uint16_t status,
 
 void sqlrprotocol_tds::returnStatus(uint32_t value) {
 
+	// shared with the pre-tds7 path (preTds7DbRpc()->runProc()->
+	// namedProc() and rpcError() both reach this), so this has to
+	// honor the client's declared byte order rather than hardcode LE
 	byte_t		token=TOKEN_RETURNSTATUS;
 
 	write(&resppacket,token);
-	writeLE(&resppacket,value);
+	write(&resppacket,value);
 
 	debugStart("return-status");
 	debugTokenType(token);
@@ -19270,14 +20261,38 @@ void sqlrprotocol_tds::writeIntN(int64_t value, byte_t size) {
 			write(&resppacket,(byte_t)value);
 			break;
 		case 2:
-			writeLE(&resppacket,(uint16_t)value);
+			write(&resppacket,(uint16_t)value);
 			break;
 		case 4:
-			writeLE(&resppacket,(uint32_t)value);
+			write(&resppacket,(uint32_t)value);
 			break;
 		default:
-			writeLE(&resppacket,(uint64_t)value);
+			write(&resppacket,(uint64_t)value);
 			break;
+	}
+}
+
+// An ieee float raises the same byte-order question an integer of the
+// same width does, and a pre-tds7 client answers both in the same place -
+// the login record's typeflags block.  But the base class's
+// write(bytebuffer *,float) and write(bytebuffer *,double) append the
+// host's raw bytes without consulting the order the login settled on, and
+// there is no writeLE/writeBE for either, so this hands the bits to the
+// integer path instead, which does consult it.
+//
+// On a little-endian host serving a little-endian client - every client
+// that turns up in practice - this writes the same bytes write(float)
+// would have.
+void sqlrprotocol_tds::writeFloatN(double value, byte_t size) {
+	if (size==sizeof(float)) {
+		float		f=(float)value;
+		uint32_t	bits=0;
+		bytestring::copy(&bits,&f,sizeof(bits));
+		write(&resppacket,bits);
+	} else {
+		uint64_t	bits=0;
+		bytestring::copy(&bits,&value,sizeof(bits));
+		write(&resppacket,bits);
 	}
 }
 

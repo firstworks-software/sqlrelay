@@ -4,10 +4,11 @@ include ../../../config.mk
 
 .SUFFIXES: .lo .obj .cpp
 
-# tdsdialectguard only needs rudiments (raw sockets), so it builds
-# regardless of whether SAP ct-lib and/or FreeTDS are configured - unlike
-# tds-freetds/tds-sap, it isn't gated behind $(TDSTESTALLTARGETS)
-all: $(TDSTESTALLTARGETS) tdsdialectguard
+# tdsdialectguard and tdsbyteorder only need rudiments (raw sockets), so
+# they build regardless of whether SAP ct-lib and/or FreeTDS are configured
+# - unlike tds-freetds/tds-sap, they aren't gated behind
+# $(TDSTESTALLTARGETS)
+all: $(TDSTESTALLTARGETS) tdsdialectguard tdsbyteorder
 
 tds-freetds.lo: tds.cpp
 	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(TDSTESTFREETDSCPPFLAGS) $(COMPILE) tds.cpp $(OUT)$@
@@ -36,6 +37,15 @@ tdsdialectguard.obj: tdsdialectguard.cpp
 tdsdialectguard: tdsdialectguard.cpp tdsdialectguard.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) tdsdialectguard.$(OBJ) $(RUDIMENTSLIBS)
 
+tdsbyteorder.lo: tdsbyteorder.cpp
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) tdsbyteorder.cpp $(OUT)$@
+
+tdsbyteorder.obj: tdsbyteorder.cpp
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) tdsbyteorder.cpp $(OUT)$@
+
+tdsbyteorder: tdsbyteorder.cpp tdsbyteorder.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) tdsbyteorder.$(OBJ) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class tds$(EXE) tds-freetds$(EXE) tds-sap$(EXE) tdsdialectguard$(EXE)
+	$(RM) *.lo *.o *.obj *.class tds$(EXE) tds-freetds$(EXE) tds-sap$(EXE) tdsdialectguard$(EXE) tdsbyteorder$(EXE)
 	$(RMTREE) .libs

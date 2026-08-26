@@ -683,6 +683,18 @@
 		leaving the client waiting forever - it now answers with an
 		error and a doneproc, the way preTds7Normal() already does for
 		an empty tds 5.0 buffer
+	fixed the tds protocol module's pre-tds7 capability() sending two
+		hardcoded byte arrays as its request/response masks no
+		matter what a client asked for; it now grants the
+		intersection of the client's declared masks and what this
+		module actually supports
+	the tds protocol module honors a pre-tds7 client's declared
+		integer/float byte order now, read from the login record's
+		typeflags block, instead of always assuming little-endian
+	the tds protocol module honors a pre-tds7 client's declared
+		charset and language now, read from the login record,
+		instead of always converting as utf-8 and ignoring both
+		fields
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

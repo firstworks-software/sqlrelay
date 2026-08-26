@@ -173,6 +173,21 @@ CS_RETCODE serverMessageCallback(CS_CONTEXT *ctxt,
 	return CS_SUCCEED;
 }
 
+// #9476 - registered as the iso_1 connection's own CS_SERVERMSG_CB, in
+// place of serverMessageCallback above, so its charset-change confirmation
+// (msg 5704, sent by envChangeCharset() in src/protocols/tds.cpp) can be
+// asserted on below instead of just printed.  Accumulates rather than
+// overwrites, since a pre-tds7 login sends more than one info message and
+// nothing here needs to isolate which one is which.
+stringbuffer	iso1servermsgs;
+
+CS_RETCODE iso1MessageCallback(CS_CONTEXT *ctxt,
+					CS_CONNECTION *cnn,
+					CS_SERVERMSG *msgp) {
+	iso1servermsgs.append(msgp->text)->append("\n");
+	return CS_SUCCEED;
+}
+
 int main(int argc, char **argv) {
 
 	const char	*server;
@@ -380,6 +395,39 @@ int main(int argc, char **argv) {
 	if (connected!=CS_SUCCEED) {
 		reportTestStatus();
 		return status;
+	}
+
+
+	// #9476 - capability(), in src/protocols/tds.cpp, answers the tds
+	// 5.0 login's capability token with (what the client asked for) AND
+	// (what this module supports), except for CS_DATA_NOINT8, which it
+	// force-clears no matter what the client asked for, because the
+	// module writes a bigint as an 8-byte intn regardless of any
+	// client's negotiation - not a capability, a fact about the wire
+	// format this module emits.  That's the one part of the answer that
+	// doesn't depend on what this client itself requested, so it's the
+	// only part safe to assert here without also re-deriving this
+	// client's own request mask.
+	//
+	// capability() only runs from preTds7Login(), which only runs over
+	// a pre-tds7 (tds 5.0) login - and tds5 (above) is the only build
+	// that logs in that way here: every freetds.conf stanza this suite
+	// points the freetds-linked binary at, including [sqlrelaysap],
+	// asks for "tds version = 7.0", so that binary always logs in with
+	// a tds 7.x LOGIN7 packet instead, which carries no capability
+	// token at all.  Under that binary ct_capability() below would just
+	// read freetds's own never-updated client-side default rather than
+	// anything the server answered, so this check is both only
+	// meaningful and only run under the sap ct-lib build.
+	if (issqlrelay && tds5) {
+
+		stdoutput.printf("ct_capability: response/NOINT8\n");
+		CS_BOOL	noint8=CS_TRUE;
+		assertEquals(ct_capability(dbconn,CS_GET,CS_CAP_RESPONSE,
+					CS_DATA_NOINT8,
+					(CS_VOID *)&noint8),CS_SUCCEED);
+		assertEquals((int)noint8,(int)CS_FALSE);
+		stdoutput.printf("\n\n");
 	}
 
 
@@ -3119,6 +3167,226 @@ int main(int argc, char **argv) {
 		stdoutput.printf("ct_con_drop: second connection\n");
 		assertEquals(ct_con_drop(conn2),CS_SUCCEED);
 		stdoutput.printf("\n");
+	}
+
+
+	// #9476 - pre-tds7 (tds 5.0) charset conversion.  The primary and
+	// second connections above both declare "utf8"/"UTF-8", for which
+	// preTds7SetCharsetAndLanguage()'s conversion table (pretds7charsets[]
+	// in src/protocols/tds.cpp) has no entry, so clientCharsetToUtf8()/
+	// utf8ToClientCharset() fall back to passing bytes through unchanged.
+	// This connection declares "iso_1" instead - a charset that is in
+	// that table - to exercise the actual widening/narrowing path.
+	//
+	// Only meaningful under SAP's ct-lib: preTds7SetCharsetAndLanguage()
+	// only runs off a pre-tds7 login, and tds5 (above) is the only build
+	// that logs in that way here.  FreeTDS deliberately sends an empty
+	// charset on its own tds 5.0 login - it converts client-side itself
+	// instead - so under the freetds-linked binaries clientcharsetlen
+	// stays 0, envChangeCharset() sends no confirmation at all, and every
+	// conversion function above is a no-op.  Gating this block on
+	// "issqlrelay && tds5" - the same condition the #9476 capability
+	// check above uses - skips it cleanly there instead of failing it.
+	//
+	// The identifier round trip that the primary/second-connection blocks
+	// above cover isn't repeated here: it depends on mssql's "as
+	// [name]" bracket-quoted alias syntax, which is unavailable over this
+	// connection - it always reaches a real ASE (dbase="sap" in
+	// test/sqlrelay.conf.d/tdssapprotocol.conf), the same backend the
+	// "long multi-byte column alias" case above is gated off of for lack
+	// of bracket-quoting.  An ordinary ascii column name is used instead,
+	// alongside the iso_1 value below, as coverage that colName() round
+	// trips normally over this connection too.
+	if (issqlrelay && tds5) {
+
+		stdoutput.printf("cs_con_alloc: third connection\n");
+		CS_CONNECTION	*conn3=NULL;
+		assertEquals(ct_con_alloc(context,&conn3),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("cs_con_props: third connection\n");
+		assertEquals(ct_con_props(conn3,CS_SET,
+					CS_USERNAME,(CS_VOID *)user,CS_NULLTERM,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn3,CS_SET,
+					CS_PASSWORD,(CS_VOID *)password,CS_NULLTERM,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn3,CS_SET,
+				CS_APPNAME,(CS_VOID *)"SQL Relay Test",
+				CS_NULLTERM,(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn3,CS_SET,
+					CS_PACKETSIZE,(CS_VOID *)&ps,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		// "iso_1" - lower case, no hyphen - is the ISO-8859-1 entry's
+		// name both in pretds7charsets[] and in /opt/sap/charsets;
+		// sap's ct-lib validates against the latter.
+		const char	*charset3="iso_1";
+		CS_LOCALE	*locale3=NULL;
+		assertEquals(cs_loc_alloc(context,&locale3),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_SET,locale3,CS_LC_ALL,
+				(CS_CHAR *)NULL,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_SET,locale3,CS_SYB_LANG,
+				(CS_CHAR *)language,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(cs_locale(context,CS_SET,locale3,CS_SYB_CHARSET,
+				(CS_CHAR *)charset3,CS_NULLTERM,
+				(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(ct_con_props(conn3,CS_SET,CS_LOC_PROP,
+				(CS_VOID *)locale3,CS_UNUSED,
+				(CS_INT *)NULL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// A connection-specific server-message callback, registered
+		// before connecting so it catches the login's own charset
+		// envchange info message, in place of the context-wide
+		// serverMessageCallback (which only prints).
+		stdoutput.printf("ct_callback: third connection server msg\n");
+		assertEquals(ct_callback(NULL,conn3,CS_SET,
+					CS_SERVERMSG_CB,
+					(CS_VOID *)iso1MessageCallback),
+					CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_connect: third connection\n");
+		CS_RETCODE	connected3=
+				ct_connect(conn3,(CS_CHAR *)NULL,(CS_INT)0);
+		assertEquals(connected3,CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		if (connected3==CS_SUCCEED) {
+
+			// envChangeCharset() answers a recognized pre-tds7
+			// charset with an ENVCHANGE plus this info message
+			// (msg 5704) - the same thing a real ase does.  Its
+			// own text is plain ascii, so it can't demonstrate the
+			// byte-level conversion asserted on below by itself,
+			// but seeing it confirms iso_1 was recognized and
+			// actually took effect, rather than silently falling
+			// back to pass-through the way an unrecognized charset
+			// name would.
+			stdoutput.printf("server message: "
+						"charset envchange info\n");
+			assertTrue(charstring::contains(
+					iso1servermsgs.getString(),
+					"Changed client character set "
+					"setting to 'iso_1'."));
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_cmd_alloc: cmd3\n");
+			CS_COMMAND	*cmd3=NULL;
+			assertEquals(ct_cmd_alloc(conn3,&cmd3),CS_SUCCEED);
+			stdoutput.printf("\n");
+
+
+			// "caf\xe9" - "cafe" with an iso-8859-1 e-acute, sent
+			// as the single raw byte 0xe9 rather than utf-8's
+			// two-byte encoding of the same character.  Under
+			// iso_1, preTds7ToUtf8() widens that byte to utf-8
+			// (0xc3 0xa9) before the statement text reaches the
+			// backend, so datalength() sees 5 bytes there; under
+			// the utf8 connections above, the same raw byte would
+			// pass straight through unconverted and datalength()
+			// would see 4 - the clearest, most decisive proof that
+			// the inbound conversion is actually happening.
+			stdoutput.printf("ct_command: select iso_1 value\n");
+			query="select 'caf\xe9' as testval, "
+					"datalength('caf\xe9') as testlen";
+			assertEquals(ct_command(cmd3,CS_LANG_CMD,
+						query,charstring::getLength(query),
+						CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd3),CS_SUCCEED);
+			results=ct_results(cmd3,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_ROW_RESULT);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_res_info: col count\n");
+			cscols=2;
+			ncols=0;
+			assertEquals(ct_res_info(cmd3,CS_NUMDATA,
+						(CS_VOID *)&ncols,CS_UNUSED,
+						(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(ncols,cscols);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_bind:\n");
+			for (CS_INT i=0; i<cscols; i++) {
+				bytestring::zero(csdata[i],1024);
+				csfmt[i].datatype=CS_CHAR_TYPE;
+				csfmt[i].format=CS_FMT_NULLTERM;
+				csfmt[i].maxlength=1024;
+				csfmt[i].scale=CS_UNUSED;
+				csfmt[i].precision=CS_UNUSED;
+				csfmt[i].status=CS_UNUSED;
+				csfmt[i].count=1;
+				csfmt[i].usertype=CS_UNUSED;
+				csfmt[i].locale=NULL;
+				assertEquals(ct_bind(cmd3,i+1,&(csfmt[i]),
+								(CS_VOID *)csdata[i],
+								&(csdatalength[i]),
+								&(csnullindicator[i])),
+								CS_SUCCEED);
+			}
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_fetch:\n");
+			assertEquals(ct_fetch(cmd3,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			stdoutput.printf("\n");
+
+
+			// testval comes back narrowed to the same single
+			// iso_1 byte it went in as, not left widened as
+			// internal utf-8 - the outbound half of the
+			// conversion round-tripping the value intact, the
+			// same way the second connection's utf8 columns
+			// round-tripped above.  CS_FMT_NULLTERM counts the
+			// terminating nul in csdatalength, so 4 visible bytes
+			// ("caf" + the one iso_1 byte) comes back as 5.
+			stdoutput.printf("row data:\n");
+			assertEquals(csdata[0],"caf\xe9");
+			assertEquals(csdatalength[0],5);
+			assertEquals(csdata[1],"5");
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_results:\n");
+			assertEquals(ct_fetch(cmd3,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+			results=ct_results(cmd3,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd3,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd3,CS_CANCEL_ALL),
+								CS_SUCCEED);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_cmd_drop: cmd3\n");
+			assertEquals(ct_cmd_drop(cmd3),CS_SUCCEED);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_close: third connection\n");
+			assertEquals(ct_close(conn3,CS_UNUSED),CS_SUCCEED);
+			stdoutput.printf("\n");
+
+
+			stdoutput.printf("ct_con_drop: third connection\n");
+			assertEquals(ct_con_drop(conn3),CS_SUCCEED);
+			stdoutput.printf("\n");
+		}
 	}
 
 

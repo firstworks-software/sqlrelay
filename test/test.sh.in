@@ -798,19 +798,24 @@ run_protocol_test() {
 		return 1
 	fi
 
-	# tdssapprotocol also runs tdsdialectguard, a raw-socket regression
-	# test for #9481 (a pre-tds7 session used to be able to send
-	# ms-tds-only packet types straight through).  It talks to the wire
-	# protocol directly rather than through ct-lib, so it doesn't need
-	# $server or SYBASE.  Both runs have to succeed for the instance to
-	# pass.
+	# tdssapprotocol also runs two raw-socket tests: tdsdialectguard, a
+	# regression test for #9481 (a pre-tds7 session used to be able to
+	# send ms-tds-only packet types straight through), and tdsbyteorder,
+	# coverage for #9476 (the pre-tds7 path now honors the byte order the
+	# login record declares, and only a hand-built login can declare
+	# big-endian - every real ct-lib here runs on x86).  Both talk to the
+	# wire protocol directly rather than through ct-lib, so neither needs
+	# $server or SYBASE.  All three runs have to succeed for the instance
+	# to pass.
 	if ( test "$instance" = "tdssapprotocol" )
 	then
 		./$prog $server
 		resultctlib="$?"
 		./tdsdialectguard
 		resultdialectguard="$?"
-		if ( test "$resultctlib" = "0" ) && ( test "$resultdialectguard" = "0" )
+		./tdsbyteorder
+		resultbyteorder="$?"
+		if ( test "$resultctlib" = "0" ) && ( test "$resultdialectguard" = "0" ) && ( test "$resultbyteorder" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -823,6 +828,10 @@ run_protocol_test() {
 		if ( test "$resultdialectguard" != "0" )
 		then
 			printf "    % 8s: failed (dialect guard)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultbyteorder" != "0" )
+		then
+			printf "    % 8s: failed (byte order)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
