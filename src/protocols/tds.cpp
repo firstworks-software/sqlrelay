@@ -546,6 +546,8 @@
 #define	TDS5_TYPE_UNITEXT		0xAE	// Unicode UTF-16 Text
 #define	TDS5_TYPE_LONGCHAR		0xAF	// Character (4 byte length)
 #define	TDS5_TYPE_SINT1			0xB0	// Signed Integer
+#define	TDS5_TYPE_SYB5BIGDATETIME	0xBB	// Big Date/time
+#define	TDS5_TYPE_SYB5BIGTIME		0xBC	// Big Time
 #define	TDS5_TYPE_INT8			0xBF	// Integer
 #define	TDS5_TYPE_LONGBINARY		0xE1	// Binary (4 byte length)
 
@@ -12070,12 +12072,28 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 		case TDS5_TYPE_LONGCHAR:
 		case TDS5_TYPE_LONGBINARY:
 		case TDS5_TYPE_XML:
-		case TDS5_TYPE_UNITEXT:
 			// varint 4 or 5 with no text pointer - a 32-bit
 			// length and then the data
 			writeLE(&resppacket,(uint32_t)fieldsize);
 			write(&resppacket,field,fieldsize);
 			debugWrite("size: %lld",(long long)fieldsize);
+			break;
+
+		case TDS5_TYPE_UNITEXT:
+			{
+			// utf-16, to match the type the paramfmt ahead of
+			// this value declared - varint 4 or 5 with no text
+			// pointer, a 32-bit length in bytes and then the data
+			size_t	field16length;
+			ucs2_t	*field16=utf8ToUcs2(field,fieldsize,
+							&field16length);
+			writeLE(&resppacket,
+				(uint32_t)(field16length*sizeof(ucs2_t)));
+			write(&resppacket,field16,field16length);
+			delete[] field16;
+			debugWrite("size: %lld",
+				(long long)(field16length*sizeof(ucs2_t)));
+			}
 			break;
 
 		default:
