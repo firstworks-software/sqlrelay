@@ -2518,6 +2518,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		byte_t	charsToHex(const char *chars);
 
 		bool	insertBulk(const char *sql);
+		bool	preTds7InsertBulk(const char *sql, bool more);
 		bool	bulkLoad();
 		bool	bulkColMetaData(const byte_t **rpinout,
 					size_t *rpsizeinout,
@@ -8027,6 +8028,14 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 	// ct-lib would sit waiting for a done that never comes.
 	bool	more=(rpsize>0);
 
+	// a bulk load opens with an "insert bulk" statement, which this
+	// dialect sends as an ordinary language command
+	if (preTds7InsertBulk(sql8,more)) {
+		debugEnd();
+		delete[] sql8;
+		return true;
+	}
+
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
@@ -8830,6 +8839,12 @@ bool sqlrprotocol_tds::preTds7DynamicPrepare(const char *id,
 
 	debugWrite("query: %s",query);
 
+	// a bulk load can open from here too - the statement is just sql
+	if (preTds7InsertBulk(query,more)) {
+		debugEnd();
+		return true;
+	}
+
 	// re-preparing a live id replaces what it named
 	uint32_t	oldhandle=0;
 	dynamicHandle(id,&oldhandle);
@@ -9014,6 +9029,12 @@ bool sqlrprotocol_tds::preTds7DynamicExecImmediate(const char *stmt,
 							bool more) {
 
 	debugStart("pre-tds7 dynamic exec immediate");
+
+	// a bulk load can open from here too - the statement is just sql
+	if (preTds7InsertBulk(stmt,more)) {
+		debugEnd();
+		return true;
+	}
 
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
@@ -15706,6 +15727,32 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 
 	debugEnd();
 	return (uint32_t)errorcode;
+}
+
+// Refuses an "insert bulk" statement that arrived as sql, with its own
+// done, and says whether it refused one.  The statement opens a bulk
+// copy, and nothing in this dialect reads the bulk data that would
+// follow it, but it is real Transact-SQL, so running it would leave the
+// backend's own connection - which is pooled, and outlives the client
+// session - in bulk-copy mode.  Class 16 for the same reason
+// preTds7CurError() uses it - the session stays usable.
+bool sqlrprotocol_tds::preTds7InsertBulk(const char *sql, bool more) {
+
+	if (!insertBulk(sql)) {
+		return false;
+	}
+
+	// insertBulk() retains a table and column list for a bulk load
+	// that isn't going to happen
+	bulkpool.clear();
+	bulktable=NULL;
+	bulkcolumncount=0;
+
+	// FIXME: is there a real error number/state for this?
+	appendError(0,1,16,"Bulk copy is not supported yet.",
+						srvname,NULL,1);
+	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
+	return true;
 }
 
 bool sqlrprotocol_tds::insertBulk(const char *sql) {

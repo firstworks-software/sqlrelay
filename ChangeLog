@@ -805,6 +805,10 @@
 		constraint, matching what a real ase sends; ct-lib was
 		rejecting the mismatched combination and leaving the
 		whole column description blank
+	the tds protocol module now refuses an "insert bulk" statement sent
+		as a tds 5.0 language or dynamic sql command instead of
+		running it on the backend, where it would have left the
+		pooled connection in bulk-copy mode
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
