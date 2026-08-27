@@ -19,6 +19,15 @@
 				<table name="gtttest5">create temp table gtttest5 (id int primary key, value varchar(20))</table>
 				<table name="gtttest6">create temp table gtttest6 (id int primary key, value varchar(20))</table>
 				<table name="gtttest7">create temp table gtttest7 (id int primary key, value varchar(20))</table>
+				<!-- no "temp" - sql relay won't register this one
+					for automatic drop, so it survives
+					end-of-session and the re-create hits
+					"already exists" -->
+				<table name="gtttest9">create table gtttest9 (id int primary key, value varchar(20))</table>
+			</trigger>
+			<trigger module="globaltemptables" when="bothprepare">
+				<alreadyexists error="already exists"/>
+				<table name="gtttest8">create temp table gtttest8 (id int primary key, value varchar(20))</table>
 			</trigger>
 		</triggers>
 		<connections>

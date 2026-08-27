@@ -16,6 +16,18 @@ sqlrconnection	*con=NULL;
 sqlrcursor	*cur=NULL;
 sqlrconnection	*secondcon=NULL;
 sqlrcursor	*secondcur=NULL;
+char		*backendpid=NULL;
+
+// The instance under test is configured with connections="1"
+// maxconnections="1", so every session in this file is expected to be served
+// by the same single pooled backend connection.  That's what exercises the
+// bug this file targets: the trigger's per-table "created" flags live on that
+// one pooled connection and outlive any single client session.  Compare the
+// backend process id after each end-of-session to prove that assumption.
+void assertSameBackend(sqlrcursor *c) {
+	assertTrue(c->sendQuery("select pg_backend_pid()"));
+	assertEquals(c->getField(0,(uint32_t)0),backendpid);
+}
 
 int main(int argc, char **argv) {
 
@@ -23,6 +35,10 @@ int main(int argc, char **argv) {
 	con=new sqlrconnection("sqlrelay",9022,"/tmp/postgresqlglobaltemptables.socket",
 						"testuser","testpassword",0,1);
 	cur=new sqlrcursor(con);
+
+	// capture the backend process id
+	assertTrue(cur->sendQuery("select pg_backend_pid()"));
+	backendpid=charstring::duplicate(cur->getField(0,(uint32_t)0));
 
 	stdoutput.printf("LAZY CREATE ON FIRST INSERT:\n");
 	assertTrue(cur->sendQuery("insert into gtttest1 values (1,'one')"));
@@ -102,7 +118,10 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("TABLES RE-CREATED AFTER END-OF-SESSION:\n");
+	assertTrue(cur->sendQuery("select count(*) from gtttest1"));
+	assertEquals(cur->getField(0,(uint32_t)0),"4");
 	con->endSession();
+	assertSameBackend(cur);
 	assertTrue(cur->sendQuery("select * from gtttest1"));
 	assertEquals(cur->rowCount(),0);
 	assertTrue(cur->sendQuery("select * from gtttest2"));
@@ -110,29 +129,23 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// The instance under test is configured with connections="1"
-	// maxconnections="1", so every session below - and every session
-	// above, for that matter - is served by the same single pooled
-	// backend connection.  That's what exercises the bug fixed by
-	// #9470: the trigger's per-table "created" flags live on that one
-	// pooled connection and outlive any single client session, but each
-	// postgresql "create temp table" is scoped to the backend session
-	// that issued it.  gtttest3 was already created earlier in this
-	// file (its "created" flag is already set), so before the fix,
-	// every iteration below - including the first - would fail with
-	// "relation ... does not exist": postgresql dropped the table when
-	// the earlier session ended, but the flag never got cleared to
-	// say so.  Every test above this point runs within a single
-	// session, which is why the bug wasn't caught by them.
+	// Postgresql doesn't drop these tables, sql relay does.  It records
+	// every successful "create temp table" it sees and drops those
+	// tables itself at end-of-session, before running the triggers'
+	// endSession()s.  The trigger's part is just to notice that its
+	// "created" flag is stale and re-create the table on next use.
+	// No iteration below deletes its row, so if the table weren't
+	// actually dropped and re-created, the next insert of id=1 would
+	// fail on the primary key.
 	stdoutput.printf("TABLES RE-CREATED ACROSS MORE CLIENT SESSIONS "
 				"THAN THERE ARE POOLED CONNECTIONS:\n");
 	for (uint16_t session=0; session<3; session++) {
 		con->endSession();
+		assertSameBackend(cur);
 		assertTrue(cur->sendQuery(
 				"insert into gtttest3 values (1,'one')"));
 		assertTrue(cur->sendQuery("select count(*) from gtttest3"));
 		assertEquals(cur->getField(0,(uint32_t)0),"1");
-		assertTrue(cur->sendQuery("delete from gtttest3"));
 	}
 	stdoutput.printf("\n");
 
@@ -140,11 +153,17 @@ int main(int argc, char **argv) {
 	stdoutput.printf("TABLES RE-CREATED FOR A SEPARATE CLIENT "
 				"CONNECTION SHARING THE SAME REUSED POOLED "
 				"CONNECTION:\n");
+	// leave a row behind, so the insert below collides on the primary
+	// key if the table isn't re-created
+	assertTrue(cur->sendQuery("insert into gtttest4 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest4"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	con->endSession();
 	secondcon=new sqlrconnection("sqlrelay",9022,
 			"/tmp/postgresqlglobaltemptables.socket",
 			"testuser","testpassword",0,1);
 	secondcur=new sqlrcursor(secondcon);
+	assertSameBackend(secondcur);
 	assertTrue(secondcur->sendQuery(
 				"insert into gtttest4 values (1,'one')"));
 	assertTrue(secondcur->sendQuery("select count(*) from gtttest4"));
@@ -155,8 +174,44 @@ int main(int argc, char **argv) {
 	secondcon=NULL;
 	stdoutput.printf("\n");
 
+
+	stdoutput.printf("TABLES RE-CREATED AFTER END-OF-SESSION FOR A "
+				"BOTH-PREPARE TRIGGER:\n");
+	assertTrue(cur->sendQuery("insert into gtttest8 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest8"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	assertSameBackend(cur);
+	assertTrue(cur->sendQuery("insert into gtttest8 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest8"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+
+
+	// gtttest9 is created with a plain "create table", which sql relay's
+	// create-temp-table pattern doesn't match, so it's never registered
+	// for automatic drop.  The table survives end-of-session but the
+	// trigger's "created" flag doesn't, so the next reference re-runs
+	// the create against a table that's still there and has to fall
+	// through the trigger's already-exists handling to succeed.
+	stdoutput.printf("ALREADY-EXISTS HANDLING (TABLE SURVIVES "
+				"END-OF-SESSION):\n");
+	assertTrue(cur->sendQuery("delete from gtttest9"));
+	assertTrue(cur->sendQuery("insert into gtttest9 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest9"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	assertSameBackend(cur);
+	assertTrue(cur->sendQuery("select count(*) from gtttest9"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	// drop gtttest9 last - nothing may reference it after this, or the
+	// trigger would re-create it and leave it behind
+	assertTrue(cur->sendQuery("drop table gtttest9"));
+	stdoutput.printf("\n");
+
 	delete cur;
 	delete con;
+	delete[] backendpid;
 	stdoutput.printf("\n");
 
 	reportTestStatus();

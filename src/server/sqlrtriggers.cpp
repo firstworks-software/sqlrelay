@@ -221,6 +221,28 @@ bool sqlrtriggers::runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
 	return runAfterExecute(sqlrcon,sqlrcur,&alist);
 }
 
+void sqlrtriggers::endSession() {
+
+	// before/after-execute lists...
+	sqlrservermodules::endSession();
+
+	// before-prepare list...
+	// skip plugins shared with aplist (eg. when="bothprepare" triggers)
+	for (listnode< sqlrmoduleplugin * > *node=bplist.getFirst();
+						node; node=node->getNext()) {
+		if (aplist.find(node->getValue())) {
+			continue;
+		}
+		node->getValue()->m->endSession();
+	}
+
+	// after-prepare list...
+	for (listnode< sqlrmoduleplugin * > *node=aplist.getFirst();
+						node; node=node->getNext()) {
+		node->getValue()->m->endSession();
+	}
+}
+
 bool sqlrtriggers::runBeforePrepare(sqlrserverconnection *sqlrcon,
 				sqlrservercursor *sqlrcur,
 				singlylinkedlist< sqlrmoduleplugin * > *list) {

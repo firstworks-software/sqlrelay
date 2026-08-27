@@ -399,6 +399,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 						sqlrservercursor *sqlrcur);
 		bool	runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
+		void	endSession();
 
 	private:
 		void	loadModule(domnode *trigger, sqlrmoduleplugin **plugin);
