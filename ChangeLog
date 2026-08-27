@@ -763,6 +763,11 @@
 		sp_cursor path, but ase refuses it outright; only a
 		whole-number key is converted, since a decimal or a float
 		wouldn't survive the round trip
+	fixed the tds protocol module honoring a trailing rpc batch flag with
+		nothing behind it - the flag alone told remoteProcedureCall()'s
+		batch loop another rpc was coming, so the batch's last done
+		carried DONE_MORE instead of DONE_FINAL and a ct-lib client sat
+		waiting for a result that would never arrive
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

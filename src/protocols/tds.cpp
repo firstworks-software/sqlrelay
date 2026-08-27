@@ -17505,7 +17505,17 @@ void sqlrprotocol_tds::batchFlags(const byte_t *rp,
 		debugWrite("batch flag: 0x%02x",flag);
 
 		if (flag==RPC_BATCH_FLAG) {
-			*more=true;
+
+			// Only claim another rpc follows if enough bytes
+			// remain behind the flag for rpc() to find one -
+			// rpc() bails out below that same threshold without
+			// appending anything, so setting *more here on a
+			// bare or near-bare trailing flag would leave the
+			// response's done token claiming more is coming
+			// when nothing ever will.
+			if (rpsize>=sizeof(uint16_t)) {
+				*more=true;
+			}
 			break;
 		} else if (flag==RPC_NO_EXEC_FLAG) {
 			continue;
