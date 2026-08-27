@@ -146,8 +146,7 @@ int main(int argc, char **argv) {
 		"	1, "
 		"	'', "
 		"	:hello, "
-		"	'''', "
-		"	'\\'' "
+		"	'''' "
 		"from "
 		"	dual "
 		"where "
@@ -161,7 +160,6 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)2),"");
 	assertEquals(cur->getField(0,(uint32_t)3),"hello");
 	assertEquals(cur->getField(0,(uint32_t)4),"'");
-	assertEquals(cur->getField(0,(uint32_t)5),"'");
 	stdoutput.printf("\n");
 
 

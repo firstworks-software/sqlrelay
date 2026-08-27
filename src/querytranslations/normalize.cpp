@@ -56,6 +56,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 		bool	removebq;
 		bool	doubleescape;
 		bool	slashescape;
+		const char	*slashescapeattr;
 };
 
 sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
@@ -115,8 +116,19 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 
 	doubleescape=!charstring::isNo(
 			parameters->getAttributeValue("doubleescape"));
-	slashescape=!charstring::isNo(
-			parameters->getAttributeValue("slashescape"));
+
+	// backslash-escaping inside a quoted string (eg. \' or \\) is a
+	// mysql/mariadb behavior - postgresql, oracle, db2, firebird and
+	// mssql all treat a backslash in a literal as an ordinary character,
+	// so a literal ending in a backslash (eg. an escape='\' clause) has
+	// its closing quote consumed as if escaped, silently swallowing the
+	// rest of the query as string content.  Default slashescape to the
+	// target database's own behavior instead of unconditionally "on";
+	// an explicit attribute still overrides that default either way.
+	// the default is resolved from getDbType() in run() instead of here,
+	// matching how src/directives/singlestep.cpp checks it
+	slashescapeattr=parameters->getAttributeValue("slashescape");
+	slashescape=!charstring::isNo(slashescapeattr);
 }
 
 static const char beforeset[]=" +-/*=<>(";
@@ -128,6 +140,13 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 					uint32_t querylength,
 					stringbuffer *translatedquery) {
 	debugFunction();
+
+	// resolve the slashescape default against the connected database -
+	// an explicit attribute always wins over this
+	if (!slashescapeattr) {
+		slashescape=!charstring::compareIgnoringCase(
+						cont->getDbType(),"mysql");
+	}
 
 	if (getDebug()) {
 		debugWrite("original query:");

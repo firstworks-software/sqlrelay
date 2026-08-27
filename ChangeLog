@@ -706,6 +706,13 @@
 	added the keep_dense_rank_to_array_agg query translation module, to
 		rewrite oracle's max/min(x) keep (dense_rank first/last order
 		by y) into a plain postgresql aggregate
+	fixed the normalize query translation defaulting slashescape to
+		"yes" against every database - that's mysql/mariadb-specific
+		syntax, so a literal ending in a backslash (eg. an
+		escape='\' clause) never found its closing quote against any
+		other database and silently swallowed the rest of the query;
+		the default now depends on the connected database, and an
+		explicit slashescape attribute still overrides it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

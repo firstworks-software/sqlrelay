@@ -4469,11 +4469,12 @@ The following attributes are currently supported:
   * This can be useful when converting an app from one type of database to the other if the app's queries contain quoted object names.
  * If set to "no" then back-quotes are not removed.
  * If omitted then the value defaults to "no".
-* '''slashescape''' - "yes" or "no".  Defaults to "yes".
+* '''slashescape''' - "yes" or "no".  Defaults to "yes" when connected to !MySQL/MariaDB, "no" otherwise.
  * Most databases support //double-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'
- * Some databases support //slash-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said \'hello\' to her.'
- * By default, the normalize query translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes.
- * If slashescape is set to "no" then the slash will be ignored as an escape character, and the quote (or double/back quote) and slash will be interpreted literally, potentially affecting case conversion and quote removal.
+ * !MySQL/MariaDB also supports //slash-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said \'hello\' to her.'  Other databases (eg. !PostgreSQL with standard_conforming_strings on, which has been the default since !PostgreSQL 9.1, and also Oracle, DB2, Firebird, and SQL Server) treat a backslash inside a quoted string as an ordinary character, not an escape.
+ * When connected to !MySQL/MariaDB, the normalize query translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes by default.  Against any other database, the slash is left alone by default, since treating it as an escape character there would incorrectly swallow the quote that was meant to close the string - for example, a literal ending in a backslash (as in an //escape '\'// clause) would never find its closing quote, and the rest of the query would be consumed as string content.
+ * Setting slashescape explicitly to "yes" or "no" overrides the default for any database.
+ * The default is based on the database module actually in use, not the real backend behind it - so a !MySQL/MariaDB database reached through the ODBC or router modules is reported as //odbc// or //router// rather than //mysql//, and needs slashescape="yes" set explicitly.
 * '''doubleescape''' - "yes" or "no".  Defaults to "yes".
  * Most databases support //double-escaped// quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'
  * By default, the normalize query translation interprets double-escaped single, double, and back-quotes in this manner.
