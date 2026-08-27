@@ -1963,12 +1963,18 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 
-		// the client asks for utf-8/utf8 depending on ctlib (see
-		// charset above) but ASE's
-		// own default charset is iso_1, so the session really is
-		// converting - @@char_convert is 1, not 0
+		// @@char_convert reports the pooled backend ct-lib session's
+		// own conversion state, set only by the connect string's
+		// charset= key (src/connections/sap.cpp:885,1216-1224) - not
+		// by whatever charset the frontend client negotiated.
+		// tdssapprotocol.conf's connect string sets no charset=, so
+		// the backend logs into ase with ct-lib's own default, which
+		// happens to match ase's server default (iso_1), so no
+		// conversion happens.  tdsfreetdssapprotocol.conf's connect
+		// string does set charset=utf8, so that combination gets real
+		// conversion and still expects "1" here.
 		stdoutput.printf("row data:\n");
-		assertEquals(csdata[0],"1");
+		assertEquals(csdata[0],(issqlrelay && tds5)?"0":"1");
 		assertEquals(csdata[1],"1");
 		assertEquals(csdata[2],"1");
 		stdoutput.printf("\n");
@@ -2178,24 +2184,29 @@ int main(int argc, char **argv) {
 
 	// On tds 7 the query text goes out as ucs-2, so each raw byte widens
 	// to its own code point.  Narrowing back to cp1252 for the
-	// non-unicode columns loses U+0082 and U+0097 to '?'.  A native ASE
-	// link converts nothing either way, but sqlrelay speaks tds 7 no
-	// matter what the backend is, so a sap backend narrows the same way
-	// mssql does.
+	// non-unicode columns loses U+0082 and U+0097 to '?'.  That only
+	// happens when the client-to-relay leg itself speaks tds 7: a
+	// native ASE link converts nothing either way, and neither does a
+	// tds 5.0 sap ct-lib client talking to sqlrelay, since sqlrelay's
+	// tds frontend then speaks tds 5.0 too instead of widening the
+	// query text.  Only the tds 7 frontends - native mssql, and
+	// sqlrelay fronted by freetds - narrow.
 	stdoutput.printf("row data:\n");
 	assertEquals(nadata[0],"2");
 	assertEquals(nadatalength[0],2);
-	assertEquals(nadata[1],(nativease)?
+	assertEquals(nadata[1],(nativease || (issqlrelay && tds5))?
 				"a\xe2\x82\xacz               ":
 				"a\xe2?\xacz               ");
 	assertEquals(nadatalength[1],21);
-	assertEquals(nadata[2],(nativease)?"a\xe2\x82\xacz":"a\xe2?\xacz");
+	assertEquals(nadata[2],(nativease || (issqlrelay && tds5))?
+				"a\xe2\x82\xacz":"a\xe2?\xacz");
 	assertEquals(nadatalength[2],6);
 	assertEquals(nadata[3],"a\xe2\x82\xacz               ");
 	assertEquals(nadatalength[3],21);
 	assertEquals(nadata[4],"a\xe2\x82\xacz");
 	assertEquals(nadatalength[4],6);
-	assertEquals(nadata[5],(nativease)?"a\xe2\x82\xacz":"a\xe2?\xacz");
+	assertEquals(nadata[5],(nativease || (issqlrelay && tds5))?
+				"a\xe2\x82\xacz":"a\xe2?\xacz");
 	assertEquals(nadatalength[5],6);
 	stdoutput.printf("\n");
 
@@ -2210,17 +2221,19 @@ int main(int argc, char **argv) {
 	stdoutput.printf("row data:\n");
 	assertEquals(nadata[0],"3");
 	assertEquals(nadatalength[0],2);
-	assertEquals(nadata[1],(nativease)?
+	assertEquals(nadata[1],(nativease || (issqlrelay && tds5))?
 				"a\xe6\x97\xa5z               ":
 				"a\xe6?\xa5z               ");
 	assertEquals(nadatalength[1],21);
-	assertEquals(nadata[2],(nativease)?"a\xe6\x97\xa5z":"a\xe6?\xa5z");
+	assertEquals(nadata[2],(nativease || (issqlrelay && tds5))?
+				"a\xe6\x97\xa5z":"a\xe6?\xa5z");
 	assertEquals(nadatalength[2],6);
 	assertEquals(nadata[3],"a\xe6\x97\xa5z               ");
 	assertEquals(nadatalength[3],21);
 	assertEquals(nadata[4],"a\xe6\x97\xa5z");
 	assertEquals(nadatalength[4],6);
-	assertEquals(nadata[5],(nativease)?"a\xe6\x97\xa5z":"a\xe6?\xa5z");
+	assertEquals(nadata[5],(nativease || (issqlrelay && tds5))?
+				"a\xe6\x97\xa5z":"a\xe6?\xa5z");
 	assertEquals(nadatalength[5],6);
 	stdoutput.printf("\n");
 
@@ -3020,8 +3033,12 @@ int main(int argc, char **argv) {
 
 		} else if (!charsetinsertfails) {
 
-			// sap's ct-lib substituted '?' on the way out, so
-			// ase stored a?z in both columns of both rows
+			// natively, sap's ct-lib substitutes '?' on the way
+			// out, so ase stores a?z in both columns of both
+			// rows.  Through sqlrelay's tds 5.0 frontend the same
+			// characters round-trip intact instead - the relay
+			// leg never narrows them the way a direct ct-lib
+			// link does.
 			for (CS_INT i=2; i<4; i++) {
 
 				stdoutput.printf("ct_fetch:\n");
@@ -3037,10 +3054,21 @@ int main(int argc, char **argv) {
 				assertEquals(csdata[0],
 					(i==2)?"2":"3");
 				assertEquals(csdatalength[0],2);
-				assertEquals(csdata[1],"a?z");
-				assertEquals(csdatalength[1],4);
-				assertEquals(csdata[2],"a?z");
-				assertEquals(csdatalength[2],4);
+				if (issqlrelay && tds5) {
+					assertEquals(csdata[1],(i==2)?
+						"a\xe2\x82\xacz":
+						"a\xe6\x97\xa5z");
+					assertEquals(csdatalength[1],6);
+					assertEquals(csdata[2],(i==2)?
+						"a\xe2\x82\xacz":
+						"a\xe6\x97\xa5z");
+					assertEquals(csdatalength[2],6);
+				} else {
+					assertEquals(csdata[1],"a?z");
+					assertEquals(csdatalength[1],4);
+					assertEquals(csdata[2],"a?z");
+					assertEquals(csdatalength[2],4);
+				}
 				stdoutput.printf("\n");
 			}
 		}
