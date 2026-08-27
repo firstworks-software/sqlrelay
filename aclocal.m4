@@ -10914,14 +10914,22 @@ gethostbyname(0);
 
 
 dnl fixes various libtool issues
+dnl
+dnl this has to be called before AC_OUTPUT, since it registers a
+dnl AC_CONFIG_COMMANDS hook - config.status regenerates libtool on its
+dnl own (registered by AC_PROG_LIBTOOL), so the fixups have to be attached
+dnl to config.status too, otherwise a bare ./config.status silently
+dnl reverts a previously-patched libtool
 AC_DEFUN([FW_FIX_LIBTOOL],
 [
+AC_CONFIG_COMMANDS([libtool-fixups],
+[
 
-dnl Some versions of NetBSD create a libtool with -lgcc_s -lgcc in it, but don't
-dnl provide a shared libgcc.
-dnl Also, some versions of NetBSD create a libtool with -lgcc_s_pic in it, but
-dnl don't provide a shraed libgcc_s_pic.
-dnl These cause all kinds of link failures.  Fix them
+# Some versions of NetBSD create a libtool with -lgcc_s -lgcc in it, but don't
+# provide a shared libgcc.
+# Also, some versions of NetBSD create a libtool with -lgcc_s_pic in it, but
+# don't provide a shraed libgcc_s_pic.
+# These cause all kinds of link failures.  Fix them
 if ( test -r "libtool" )
 then
 	sed -e "s|-lgcc_s -lgcc |-lgcc_s |g" \
@@ -10931,15 +10939,15 @@ then
 	mv libtool.new libtool
 fi
 
-dnl On some versions of OS X, the libtool config erroneusly finds "Print" and
-dnl tries to use it as "print -r --".  Replace this with "printf %s\\n".
+# On some versions of OS X, the libtool config erroneusly finds "Print" and
+# tries to use it as "print -r --".  Replace this with "printf %s\\n".
 if ( test -r "libtool" -a -n "$DARWIN" )
 then
 	sed -e "s|print -r --|printf %s\\\\\\\\n|g" libtool > libtool.new
 	mv libtool.new libtool
 fi
 
-dnl on SCO OSR 5.0.5-
+# on SCO OSR 5.0.5-
 if ( test -r "libtool" -a -n "$SCO_OSR5" )
 then
 	if ( test "$SCO_OSR5_V" = "5.0.5" -o "$SCO_OSR5_V" = "2" )
@@ -10949,29 +10957,34 @@ then
 	fi
 fi
 
-dnl On SCO UnixWare and SCO OSR5...
+# On SCO UnixWare and SCO OSR5...
 if ( test -r "libtool" )
 then
 	if ( test -n "$SCO_UW" -o -n "$SCO_OSR5" )
 	then
-		dnl The linker doesn't support -R at all
+		# The linker doesn't support -R at all
 		sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
 		mv libtool.new libtool
 	fi
 fi
 
-dnl On SCO UnixWare...
+# On SCO UnixWare...
 if ( test -r "libtool" -a -n "$SCO_UW" )
 then
-	dnl The linker doesn't support -R at all
+	# The linker doesn't support -R at all
 	sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
 	mv libtool.new libtool
 
-	dnl And libtool wants to use the -Wl,-h option which causes all kinds
-	dnl of problems.
+	# And libtool wants to use the -Wl,-h option which causes all kinds
+	# of problems.
 	sed -e "s|\\\\\$wl-h,\\\\\$soname ||g" libtool > libtool.new
 	mv libtool.new libtool
 fi
+],
+[DARWIN='$DARWIN'
+SCO_UW='$SCO_UW'
+SCO_OSR5='$SCO_OSR5'
+SCO_OSR5_V='$SCO_OSR5_V'])
 ])
 
 

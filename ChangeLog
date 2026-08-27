@@ -700,6 +700,12 @@
 		its before-execute and after-execute lists, so a trigger
 		configured when="beforeprepare", like globaltemptables, never
 		got to clean up
+	moved the FW_FIX_LIBTOOL call in configure.in ahead of AC_OUTPUT - the
+		macro registers an AC_CONFIG_COMMANDS hook now, so calling it
+		afterward dropped the libtool fixups from configure entirely
+	added the keep_dense_rank_to_array_agg query translation module, to
+		rewrite oracle's max/min(x) keep (dense_rank first/last order
+		by y) into a plain postgresql aggregate
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

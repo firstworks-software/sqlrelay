@@ -41534,7 +41534,7 @@ if ( test -n "$MYSQLLIBS" ); then
 	TESTINSTANCES="$TESTINSTANCES mysqlupsert mysqldeadlockreplay mysqlsplitmultiinsert mysqlimportexport"
 fi
 if ( test -n "$POSTGRESQLLIBS" ); then
-	TESTINSTANCES="$TESTINSTANCES postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg postgresqlsequencenextval"
+	TESTINSTANCES="$TESTINSTANCES postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg postgresqlsequencenextval postgresqlkeepdenserank"
 fi
 if ( test -n "$MYSQLLIBS" ); then
 	TESTINSTANCES="$TESTINSTANCES mysqlprotocol"
@@ -41581,7 +41581,7 @@ sed -e "s|^centos|co|" \
 
 
 
-MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
+MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/postgresqlkeepdenserank.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
 ac_config_files="$ac_config_files $MAKELIST"
 
 
@@ -41590,6 +41590,11 @@ ac_config_files="$ac_config_files bin/sqlrclient-config bin/sqlrclientwrapper-co
 
 
 ac_config_files="$ac_config_files init/com.firstworks.sqlrelay.plist init/com.firstworks.sqlrcachemanager.plist"
+
+
+
+ac_config_commands="$ac_config_commands libtool-fixups"
+
 
 
 cat >confcache <<\_ACEOF
@@ -42662,6 +42667,10 @@ fi
 
 
 
+DARWIN='$DARWIN'
+SCO_UW='$SCO_UW'
+SCO_OSR5='$SCO_OSR5'
+SCO_OSR5_V='$SCO_OSR5_V'
 
 _ACEOF
 
@@ -42683,6 +42692,7 @@ do
     "test/erlang/run") CONFIG_FILES="$CONFIG_FILES test/erlang/run" ;;
     "init/com.firstworks.sqlrelay.plist") CONFIG_FILES="$CONFIG_FILES init/com.firstworks.sqlrelay.plist" ;;
     "init/com.firstworks.sqlrcachemanager.plist") CONFIG_FILES="$CONFIG_FILES init/com.firstworks.sqlrcachemanager.plist" ;;
+    "libtool-fixups") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool-fixups" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -43969,6 +43979,64 @@ _LT_EOF
 		mv "$ac_file".new "$ac_file" ;;
     "init/com.firstworks.sqlrcachemanager.plist":F) sed -e "s|\${DESTDIR}||g" "$ac_file" > "$ac_file".new
 		mv "$ac_file".new "$ac_file" ;;
+    "libtool-fixups":C)
+
+# Some versions of NetBSD create a libtool with -lgcc_s -lgcc in it, but don't
+# provide a shared libgcc.
+# Also, some versions of NetBSD create a libtool with -lgcc_s_pic in it, but
+# don't provide a shraed libgcc_s_pic.
+# These cause all kinds of link failures.  Fix them
+if ( test -r "libtool" )
+then
+	sed -e "s|-lgcc_s -lgcc |-lgcc_s |g" \
+		-e "s|-lgcc_s -lgcc\"|-lgcc_s\"|g" \
+		-e "s|-lgcc_s_pic|-lgcc_s|g" \
+		libtool > libtool.new
+	mv libtool.new libtool
+fi
+
+# On some versions of OS X, the libtool config erroneusly finds "Print" and
+# tries to use it as "print -r --".  Replace this with "printf %s\\n".
+if ( test -r "libtool" -a -n "$DARWIN" )
+then
+	sed -e "s|print -r --|printf %s\\\\\\\\n|g" libtool > libtool.new
+	mv libtool.new libtool
+fi
+
+# on SCO OSR 5.0.5-
+if ( test -r "libtool" -a -n "$SCO_OSR5" )
+then
+	if ( test "$SCO_OSR5_V" = "5.0.5" -o "$SCO_OSR5_V" = "2" )
+	then
+		sed -e "s|CC -shared|CC -G|g" libtool > libtool.new
+		mv libtool.new libtool
+	fi
+fi
+
+# On SCO UnixWare and SCO OSR5...
+if ( test -r "libtool" )
+then
+	if ( test -n "$SCO_UW" -o -n "$SCO_OSR5" )
+	then
+		# The linker doesn't support -R at all
+		sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
+		mv libtool.new libtool
+	fi
+fi
+
+# On SCO UnixWare...
+if ( test -r "libtool" -a -n "$SCO_UW" )
+then
+	# The linker doesn't support -R at all
+	sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
+	mv libtool.new libtool
+
+	# And libtool wants to use the -Wl,-h option which causes all kinds
+	# of problems.
+	sed -e "s|\\\\\$wl-h,\\\\\$soname ||g" libtool > libtool.new
+	mv libtool.new libtool
+fi
+ ;;
 
   esac
 done # for ac_tag
@@ -44005,52 +44073,6 @@ fi
 if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
-fi
-
-
-
-
-
-if ( test -r "libtool" )
-then
-	sed -e "s|-lgcc_s -lgcc |-lgcc_s |g" \
-		-e "s|-lgcc_s -lgcc\"|-lgcc_s\"|g" \
-		-e "s|-lgcc_s_pic|-lgcc_s|g" \
-		libtool > libtool.new
-	mv libtool.new libtool
-fi
-
-if ( test -r "libtool" -a -n "$DARWIN" )
-then
-	sed -e "s|print -r --|printf %s\\\\\\\\n|g" libtool > libtool.new
-	mv libtool.new libtool
-fi
-
-if ( test -r "libtool" -a -n "$SCO_OSR5" )
-then
-	if ( test "$SCO_OSR5_V" = "5.0.5" -o "$SCO_OSR5_V" = "2" )
-	then
-		sed -e "s|CC -shared|CC -G|g" libtool > libtool.new
-		mv libtool.new libtool
-	fi
-fi
-
-if ( test -r "libtool" )
-then
-	if ( test -n "$SCO_UW" -o -n "$SCO_OSR5" )
-	then
-				sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
-		mv libtool.new libtool
-	fi
-fi
-
-if ( test -r "libtool" -a -n "$SCO_UW" )
-then
-		sed -e "s|hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=\"\"|g" libtool > libtool.new
-	mv libtool.new libtool
-
-			sed -e "s|\\\\\$wl-h,\\\\\$soname ||g" libtool > libtool.new
-	mv libtool.new libtool
 fi
 
 

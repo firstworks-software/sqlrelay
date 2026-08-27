@@ -1131,7 +1131,7 @@ if ( test -n "$MYSQLLIBS" ); then
 	TESTINSTANCES="$TESTINSTANCES mysqlupsert mysqldeadlockreplay mysqlsplitmultiinsert mysqlimportexport"
 fi
 if ( test -n "$POSTGRESQLLIBS" ); then
-	TESTINSTANCES="$TESTINSTANCES postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg postgresqlsequencenextval"
+	TESTINSTANCES="$TESTINSTANCES postgresqlupsert postgresqlsavepoint postgresqlglobaltemptables postgresqlstringagg postgresqlsequencenextval postgresqlkeepdenserank"
 fi
 if ( test -n "$MYSQLLIBS" ); then
 	TESTINSTANCES="$TESTINSTANCES mysqlprotocol"
@@ -1178,7 +1178,7 @@ AC_SUBST(HOSTNAME)
 AC_SUBST(SHORTHOSTNAME)
 
 
-MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
+MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/postgresqlkeepdenserank.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
 AC_CONFIG_FILES([$MAKELIST])
 
 dnl Post-processing is attached to the files themselves rather than run after
@@ -1201,10 +1201,11 @@ AC_CONFIG_FILES([init/com.firstworks.sqlrelay.plist
 		[sed -e "s|\${DESTDIR}||g" "$ac_file" > "$ac_file".new
 		mv "$ac_file".new "$ac_file"])
 
-AC_OUTPUT
-
-
+dnl The libtool fixups are attached to config.status rather than run after
+dnl AC_OUTPUT, otherwise a bare ./config.status reverts them.
 FW_FIX_LIBTOOL
+
+AC_OUTPUT
 
 
 dnl Summary.

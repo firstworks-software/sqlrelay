@@ -250,6 +250,7 @@
       <li><a href="#patterns">patterns</a></li>
       <li><a href="#listagg_to_string_agg">listagg_to_string_agg</a></li>
       <li><a href="#sequence_nextval">sequence_nextval</a></li>
+      <li><a href="#keep_dense_rank_to_array_agg">keep_dense_rank_to_array_agg</a></li>
     </ul>
 
     <li><a href="#bindvariabletranslation">Bind Variable Translation</a></li>
@@ -6533,6 +6534,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>patterns</b></li>
   <li><b>listagg_to_string_agg</b></li>
   <li><b>sequence_nextval</b></li>
+  <li><b>keep_dense_rank_to_array_agg</b></li>
 </ul>
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
@@ -7049,6 +7051,80 @@ http://www.gnu.org/software/src-highlite -->
 <p>Sequence references inside string literals are left alone.</p>
 
 <p>The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the <a href="#normalize">normalize</a> translation first helps it match reliably.</p>
+
+<br/><a name="keep_dense_rank_to_array_agg"/><h3>keep_dense_rank_to_array_agg</h3>
+
+<p>Oracle's <i>keep (dense_rank first|last order by ...)</i> clause on <i>max()</i> and <i>min()</i> picks the aggregated column's value from whichever row sorts first (or last) within each group.  PostgreSQL has no <i>keep()</i> syntax, and a window function can't substitute for it in a grouped aggregate query, so the <b>keep_dense_rank_to_array_agg</b> module rewrites the call as an ordered <i>array_agg()</i> and takes its first element.</p>
+
+<p>A query like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#008080">select</font> <b><font color="#000000">max</font></b><font color="#990000">(</font>pfn<font color="#990000">.</font>pathfullname<font color="#990000">)</font> <b><font color="#000000">keep</font></b> <font color="#990000">(</font>dense_rank last order <font color="#008080">by</font> hv<font color="#990000">.</font>versionobjid<font color="#990000">)</font> pathfullname
+from <font color="#008080">harversions</font> hv<font color="#990000">,</font> harpathfullname pfn
+<font color="#008080">where</font> pfn<font color="#990000">.</font>versionobjid<font color="#990000">=</font>hv<font color="#990000">.</font>versionobjid
+group <font color="#008080">by</font> hv<font color="#990000">.</font>itemobjid</tt></pre>
+
+</blockquote>
+<p>Would be translated to:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000000">select</font></b> <font color="#990000">(</font><b><font color="#000000">array_agg</font></b><font color="#990000">(</font>pfn<font color="#990000">.</font>pathfullname order <font color="#008080">by</font> hv<font color="#990000">.</font>versionobjid desc <font color="#008080">nulls</font> first<font color="#990000">,</font>
+                   pfn<font color="#990000">.</font>pathfullname desc <font color="#008080">nulls</font> last<font color="#990000">))[</font><font color="#993399">1</font><font color="#990000">]</font> pathfullname
+from <font color="#008080">harversions</font> hv<font color="#990000">,</font> harpathfullname pfn
+<font color="#008080">where</font> pfn<font color="#990000">.</font>versionobjid<font color="#990000">=</font>hv<font color="#990000">.</font>versionobjid
+group <font color="#008080">by</font> hv<font color="#990000">.</font>itemobjid</tt></pre>
+
+</blockquote>
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"keep_dense_rank_to_array_agg"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The module has no module-specific attributes - only the standard <b>module</b>, <b>enabled</b>, and <b>debug</b> attributes apply.</p>
+
+<p>Note that, in this example, the normalize translation is also configured.  Loading normalize first helps the module identify <i>keep (dense_rank ...)</i> calls more reliably, as their syntactic form (the spacing around <i>keep</i>, <i>dense_rank</i>, <i>order by</i>, etc.) is sensitive to whitespace and case.</p>
+
+<h3>Considerations</h3>
+
+<p>The module performs the following transformations on each <i>max(EXPR) keep (dense_rank first|last order by SORT)</i> or <i>min(...)</i> call, where SORT may include an optional <i>asc</i> or <i>desc</i> direction and an optional <i>nulls first</i> or <i>nulls last</i> clause:</p>
+
+<ul>
+  <li>wraps the call in an ordered <i>array_agg(EXPR order by ...)</i> and takes its first element</li>
+  <li>for <i>dense_rank last</i>, reverses the sort direction and nulls placement, since only the first element of the array can be taken</li>
+  <li>adds EXPR itself as a secondary sort key (descending for <i>max()</i>, ascending for <i>min()</i>, nulls last), so that ties in SORT resolve to a deterministic value</li>
+</ul>
+
+<p>Calls inside string literals are left alone.  Identifiers like <i>mymax(...)</i> that merely end in <i>max</i> or <i>min</i> are also left alone.</p>
+
+<p>Only a single sort key is supported inside <i>order by</i>, and only a single argument is supported inside <i>max()</i> or <i>min()</i>; either case is passed through untranslated.  An analytic form, eg. <i>max(x) keep (dense_rank first order by y) over (...)</i>, also can't be expressed this way and is left untranslated.</p>
+
+<p>EXPR appears twice in the rewritten query.  For a plain column reference this makes no difference, but a volatile EXPR (eg. a call to a random-number function) would be evaluated twice by the rewritten query where Oracle's <i>keep()</i> evaluates it once.</p>
 
 <br/><a name="bindvariabletranslation"/><h2>Bind Variable Translation</h2>
 
