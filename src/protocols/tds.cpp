@@ -6762,6 +6762,19 @@ bool sqlrprotocol_tds::tds7Login() {
 					(ucs2_t *)(startrp+ibdatabase),
 					(size_t)cchdatabase);
 	}
+
+	// envChange()'s length is a single byte, so a longer database or
+	// language name would be truncated, the same way colName()
+	// truncates an over-length column name; loginFieldFits() already
+	// keeps these at or under MAX_LOGIN_CHARS, but clamp here too so
+	// envChange() can't drift out of sync with changeDatabase()/
+	// changeLanguage() if that bound ever changes
+	if (cchlanguage>255) {
+		cchlanguage=255;
+	}
+	if (cchdatabase>255) {
+		cchdatabase=255;
+	}
 	if (loginFieldFits("atchdbfile",ibatchdbfile,&cchatchdbfile,
 				MAX_LOGIN_ATCHDBFILE_CHARS,
 				sizeof(ucs2_t),rpsize)) {
@@ -12844,11 +12857,21 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 		case TDS_TYPE_CHAR:
 		case TDS_TYPE_VARCHAR:
 			{
-			write(&resppacket,(byte_t)fieldsize);
-			write(&resppacket,field,fieldsize);
-			debugWrite("size: %lld",(long long)fieldsize);
+			// the length is a single byte, so a longer field is
+			// truncated, the same way colName() truncates an
+			// over-length column name; mapType() never returns
+			// TDS_TYPE_CHAR/TDS_TYPE_VARCHAR today, so this case
+			// doesn't run, but keep the length and the payload
+			// in sync in case that ever changes
+			uint64_t	size=fieldsize;
+			if (size>255) {
+				size=255;
+			}
+			write(&resppacket,(byte_t)size);
+			write(&resppacket,field,size);
+			debugWrite("size: %lld",(long long)size);
 			debugWrite("data: ");
-			debugWrite("%.*s",(int)fieldsize,field);
+			debugWrite("%.*s",(int)size,field);
 			}
 			break;
 		case TDS_TYPE_BINARY:
