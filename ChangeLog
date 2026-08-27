@@ -798,6 +798,13 @@
 		shape has no room at all for a sqlstate or transaction-state
 		field; a client that asks to have eed suppressed still gets
 		the old shape
+	fixed the tds protocol module describing a not-null column wrong
+		to a pre-tds7 (tds 5.0) client - it always sends a
+		null-capable wire type for that column, so it now claims
+		nullable regardless of the backend's own not-null
+		constraint, matching what a real ase sends; ct-lib was
+		rejecting the mismatched combination and leaving the
+		whole column description blank
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

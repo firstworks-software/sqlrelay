@@ -888,8 +888,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[0].maxlength,1);
 	assertEquals(column[0].precision,0);
 	assertEquals(column[0].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[0].status,CS_UNUSED);
+	assertEquals(column[0].status,(tds5)?48:column[0].status);
 	assertEquals(column[0].count,describecount);
 	// ase sends each column's systypes usertype and mssql sends 0, but
 	// only a native ct-lib link ever sees ase's - through sqlrelay the
@@ -905,8 +904,11 @@ int main(int argc, char **argv) {
 	assertEquals(column[1].maxlength,1);
 	assertEquals(column[1].precision,0);
 	assertEquals(column[1].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[1].status,CS_UNUSED);
+	// bit has no null form, so it's never nullable, over sqlrelay's
+	// tds protocol module - unverified natively, so left unchecked
+	// there
+	assertEquals(column[1].status,(tds5 && issqlrelay)?16:
+							column[1].status);
 	assertEquals(column[1].count,describecount);
 	assertEquals(column[1].usertype,(nativease)?16:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -918,8 +920,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[2].maxlength,2);
 	assertEquals(column[2].precision,0);
 	assertEquals(column[2].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[2].status,CS_UNUSED);
+	assertEquals(column[2].status,(tds5)?48:column[2].status);
 	assertEquals(column[2].count,describecount);
 	assertEquals(column[2].usertype,(nativease)?6:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -931,8 +932,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[3].maxlength,4);
 	assertEquals(column[3].precision,0);
 	assertEquals(column[3].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[3].status,CS_UNUSED);
+	assertEquals(column[3].status,(tds5)?48:column[3].status);
 	assertEquals(column[3].count,describecount);
 	assertEquals(column[3].usertype,(nativease)?7:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -944,8 +944,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[4].maxlength,4);
 	assertEquals(column[4].precision,0);
 	assertEquals(column[4].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[4].status,CS_UNUSED);
+	assertEquals(column[4].status,(tds5)?48:column[4].status);
 	assertEquals(column[4].count,describecount);
 	assertEquals(column[4].usertype,(nativease)?22:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -957,8 +956,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[5].maxlength,4);
 	assertEquals(column[5].precision,0);
 	assertEquals(column[5].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[5].status,CS_UNUSED);
+	assertEquals(column[5].status,(tds5)?48:column[5].status);
 	assertEquals(column[5].count,describecount);
 	assertEquals(column[5].usertype,(nativease)?23:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -970,8 +968,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[6].maxlength,8);
 	assertEquals(column[6].precision,0);
 	assertEquals(column[6].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[6].status,CS_UNUSED);
+	assertEquals(column[6].status,(tds5)?48:column[6].status);
 	assertEquals(column[6].count,describecount);
 	assertEquals(column[6].usertype,(nativease)?11:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -983,8 +980,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[7].maxlength,8);
 	assertEquals(column[7].precision,0);
 	assertEquals(column[7].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[7].status,CS_UNUSED);
+	assertEquals(column[7].status,(tds5)?48:column[7].status);
 	assertEquals(column[7].count,describecount);
 	assertEquals(column[7].usertype,(nativease)?12:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -996,8 +992,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[8].maxlength,8);
 	assertEquals(column[8].precision,0);
 	assertEquals(column[8].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[8].status,CS_UNUSED);
+	assertEquals(column[8].status,(tds5)?48:column[8].status);
 	assertEquals(column[8].count,describecount);
 	assertEquals(column[8].usertype,(nativease)?8:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1009,8 +1004,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[9].maxlength,4);
 	assertEquals(column[9].precision,0);
 	assertEquals(column[9].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[9].status,CS_UNUSED);
+	assertEquals(column[9].status,(tds5)?48:column[9].status);
 	assertEquals(column[9].count,describecount);
 	assertEquals(column[9].usertype,(nativease)?21:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1022,8 +1016,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[10].maxlength,8);
 	assertEquals(column[10].precision,0);
 	assertEquals(column[10].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[10].status,CS_UNUSED);
+	assertEquals(column[10].status,(tds5)?48:column[10].status);
 	assertEquals(column[10].count,describecount);
 	assertEquals(column[10].usertype,(nativease)?43:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1036,8 +1029,7 @@ int main(int argc, char **argv) {
 		assertEquals(column[11].maxlength,16);
 		assertEquals(column[11].precision,0);
 		assertEquals(column[11].scale,0);
-		// FIXME: 48 direct, 0 via relay
-		//assertEquals(column[11].status,CS_UNUSED);
+		assertEquals(column[11].status,(tds5)?48:column[11].status);
 		assertEquals(column[11].count,describecount);
 		assertEquals(column[11].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
@@ -1050,8 +1042,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[12].maxlength,35);
 	assertEquals(column[12].precision,3);
 	assertEquals(column[12].scale,2);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[12].status,CS_UNUSED);
+	assertEquals(column[12].status,(tds5)?48:column[12].status);
 	assertEquals(column[12].count,describecount);
 	assertEquals(column[12].usertype,(nativease)?26:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1063,8 +1054,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[13].maxlength,35);
 	assertEquals(column[13].precision,3);
 	assertEquals(column[13].scale,2);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[13].status,CS_UNUSED);
+	assertEquals(column[13].status,(tds5)?48:column[13].status);
 	assertEquals(column[13].count,describecount);
 	assertEquals(column[13].usertype,(nativease)?10:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1083,8 +1073,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[14].maxlength,64);
 	assertEquals(column[14].precision,0);
 	assertEquals(column[14].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[14].status,CS_UNUSED);
+	assertEquals(column[14].status,(tds5)?48:column[14].status);
 	assertEquals(column[14].count,describecount);
 	assertEquals(column[14].usertype,(nativease)?37:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1099,8 +1088,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[15].maxlength,16);
 	//assertEquals(column[15].precision,7);
 	//assertEquals(column[15].scale,7);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[15].status,CS_UNUSED);
+	assertEquals(column[15].status,(tds5)?48:column[15].status);
 	assertEquals(column[15].count,describecount);
 	assertEquals(column[15].usertype,(nativease)?38:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1116,8 +1104,7 @@ int main(int argc, char **argv) {
 		//assertEquals(column[16].maxlength,16);
 		//assertEquals(column[16].precision,7);
 		//assertEquals(column[16].scale,7);
-		// FIXME: 48 direct, 0 via relay
-		//assertEquals(column[16].status,CS_UNUSED);
+		assertEquals(column[16].status,(tds5)?48:column[16].status);
 		assertEquals(column[16].count,describecount);
 		// 0 in every tds version, whether the column travels as a
 		// real datetime2 (tds 7.3 and up) or as nvarchar.  The relay
@@ -1140,8 +1127,7 @@ int main(int argc, char **argv) {
 		//assertEquals(column[17].maxlength,16);
 		//assertEquals(column[17].precision,7);
 		//assertEquals(column[17].scale,7);
-		// FIXME: 48 direct, 0 via relay
-		//assertEquals(column[17].status,CS_UNUSED);
+		assertEquals(column[17].status,(tds5)?48:column[17].status);
 		assertEquals(column[17].count,describecount);
 		assertEquals(column[17].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
@@ -1155,8 +1141,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[18].maxlength,40);
 	assertEquals(column[18].precision,0);
 	assertEquals(column[18].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[18].status,CS_UNUSED);
+	assertEquals(column[18].status,(tds5)?48:column[18].status);
 	assertEquals(column[18].count,describecount);
 	assertEquals(column[18].usertype,(nativease)?1:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1170,8 +1155,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[19].maxlength,40);
 	assertEquals(column[19].precision,0);
 	assertEquals(column[19].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[19].status,CS_UNUSED);
+	assertEquals(column[19].status,(tds5)?48:column[19].status);
 	assertEquals(column[19].count,describecount);
 	assertEquals(column[19].usertype,(nativease)?2:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1183,8 +1167,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[20].maxlength,40);
 	assertEquals(column[20].precision,0);
 	assertEquals(column[20].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[20].status,CS_UNUSED);
+	assertEquals(column[20].status,(tds5)?48:column[20].status);
 	assertEquals(column[20].count,describecount);
 	assertEquals(column[20].usertype,(nativease)?3:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1197,8 +1180,7 @@ int main(int argc, char **argv) {
 	assertEquals(column[21].maxlength,40);
 	assertEquals(column[21].precision,0);
 	assertEquals(column[21].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[21].status,CS_UNUSED);
+	assertEquals(column[21].status,(tds5)?48:column[21].status);
 	assertEquals(column[21].count,describecount);
 	assertEquals(column[21].usertype,(nativease)?4:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1212,8 +1194,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[22].maxlength,40);
 	assertEquals(column[22].precision,0);
 	assertEquals(column[22].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[22].status,CS_UNUSED);
+	assertEquals(column[22].status,(tds5)?48:column[22].status);
 	assertEquals(column[22].count,describecount);
 	assertEquals(column[22].usertype,(nativease)?25:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1227,8 +1208,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[23].maxlength,40);
 	assertEquals(column[23].precision,0);
 	assertEquals(column[23].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[23].status,CS_UNUSED);
+	assertEquals(column[23].status,(tds5)?48:column[23].status);
 	assertEquals(column[23].count,describecount);
 	assertEquals(column[23].usertype,(nativease)?24:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1253,8 +1233,7 @@ int main(int argc, char **argv) {
 		//assertEquals(column[24].maxlength,131068);
 		assertEquals(column[24].precision,0);
 		assertEquals(column[24].scale,0);
-		// FIXME: 48 direct, 0 via relay
-		//assertEquals(column[24].status,CS_UNUSED);
+		assertEquals(column[24].status,(tds5)?48:column[24].status);
 		assertEquals(column[24].count,describecount);
 		assertEquals(column[24].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");
@@ -1268,8 +1247,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[25].maxlength,131068);
 	assertEquals(column[25].precision,0);
 	assertEquals(column[25].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[25].status,CS_UNUSED);
+	assertEquals(column[25].status,(tds5)?48:column[25].status);
 	assertEquals(column[25].count,describecount);
 	assertEquals(column[25].usertype,(nativease)?19:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1282,8 +1260,7 @@ int main(int argc, char **argv) {
 	//assertEquals(column[26].maxlength,131068);
 	assertEquals(column[26].precision,0);
 	assertEquals(column[26].scale,0);
-	// FIXME: 48 direct, 0 via relay
-	//assertEquals(column[26].status,CS_UNUSED);
+	assertEquals(column[26].status,(tds5)?48:column[26].status);
 	assertEquals(column[26].count,describecount);
 	assertEquals(column[26].usertype,(nativease)?20:CS_CHAR_TYPE);
 	stdoutput.printf("\n");
@@ -1298,8 +1275,7 @@ int main(int argc, char **argv) {
 		//assertEquals(column[27].maxlength,131068);
 		assertEquals(column[27].precision,0);
 		assertEquals(column[27].scale,0);
-		// FIXME: 48 direct, 0 via relay
-		//assertEquals(column[27].status,CS_UNUSED);
+		assertEquals(column[27].status,(tds5)?48:column[27].status);
 		assertEquals(column[27].count,describecount);
 		assertEquals(column[27].usertype,CS_CHAR_TYPE);
 		stdoutput.printf("\n");

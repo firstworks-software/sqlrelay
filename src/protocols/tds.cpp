@@ -2388,7 +2388,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	preTds7RowFmt(sqlrservercursor *cursor, bool more);
 		void	preTds7ColFlags(bytebuffer *buffer,
 					sqlrservercursor *cursor,
-					uint16_t col);
+					uint16_t col,
+					byte_t tds5type);
 		void	preTds7TypeInfo(bytebuffer *buffer,
 					sqlrservercursor *cursor,
 					uint16_t col,
@@ -11127,8 +11128,13 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 		debugWrite("name: %s",name);
 		delete[] convname;
 
+		// datatype.  Resolved before the flags below so they can see
+		// which wire type the column is actually going out as.
+		uint16_t	coltype=cont->getColumnType(cursor,col);
+		byte_t		tds5type=mapType(coltype);
+
 		// flags
-		preTds7ColFlags(&cols,cursor,col);
+		preTds7ColFlags(&cols,cursor,col,tds5type);
 
 		// usertype.  Always 4 bytes, so userType() can't be reused -
 		// it writes 2 when the negotiated version is under 720, and
@@ -11140,9 +11146,6 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 		write(&cols,usertype);
 		debugWrite("usertype: %d",usertype);
 
-		// datatype
-		uint16_t	coltype=cont->getColumnType(cursor,col);
-		byte_t		tds5type=mapType(coltype);
 		write(&cols,tds5type);
 
 		// size/precision/scale
@@ -11473,7 +11476,8 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 // implementation.
 void sqlrprotocol_tds::preTds7ColFlags(bytebuffer *buffer,
 						sqlrservercursor *cursor,
-						uint16_t col) {
+						uint16_t col,
+						byte_t tds5type) {
 
 	debugStart("pre-tds7 col flags");
 
@@ -11488,8 +11492,16 @@ void sqlrprotocol_tds::preTds7ColFlags(bytebuffer *buffer,
 	// assumes the same thing)
 	flags|=((true)?TDS5_COLFLAG_WRITEABLE:0);
 
-	// is nullable
-	flags|=((cont->getColumnIsNullable(cursor,col))?
+	// is nullable.  pretds7typemap[] sends an n-variant for every
+	// type but bit, and an n-variant encodes null as a zero-length
+	// value regardless of what the backend column allows, so it has
+	// to claim nullable even for a not-null column or ct-lib rejects
+	// the mismatch and leaves the whole description blank.  Bit is
+	// the one type with no null form at all, so that one still
+	// mirrors the backend, which never reports a bit column nullable
+	// anyway.
+	flags|=((cont->getColumnIsNullable(cursor,col) ||
+					preTds7VarintSize(tds5type))?
 					TDS5_COLFLAG_NULLABLE:0);
 
 	// identity
