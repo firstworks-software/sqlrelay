@@ -1529,15 +1529,19 @@ int main(int argc, char **argv) {
 	// a single, unclamped length byte, so a name of 256 wire units or
 	// more desynchronized the rest of the result-set stream.  A true
 	// 256-unit round trip isn't reachable through a real backend
-	// identifier (mssql's sysname caps at 128 characters) or through
-	// ct-lib's own CS_DATAFMT.name (FreeTDS's CS_MAX_NAME is 132), so
-	// this exercises the write path at the longest alias actually
-	// reachable and checks that a normal column right after it still
-	// describes and fetches correctly - i.e. the stream stayed in
-	// sync rather than desynchronizing on the long name.
+	// identifier, so this exercises the write path at the longest
+	// alias actually reachable and checks that a normal column right
+	// after it still describes and fetches correctly - i.e. the
+	// stream stayed in sync rather than desynchronizing on the long
+	// name.  mssql's sysname caps at 128 characters, but ASE's real
+	// (non-wide-identifier) identifier limit is much lower - 30
+	// characters, confirmed live against this project's test ASE
+	// host ("...is too long. Maximum length is 30.") - so the alias
+	// is sized per backend rather than at the mssql maximum.
 	stdoutput.printf("ct_command: long column alias\n");
 	stringbuffer	longaliasb;
-	for (CS_INT i=0; i<120; i++) {
+	CS_INT	longaliaslen=issybase?30:120;
+	for (CS_INT i=0; i<longaliaslen; i++) {
 		longaliasb.append((char)('a'+(i%26)));
 	}
 	const char	*longalias=longaliasb.getString();
