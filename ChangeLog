@@ -739,6 +739,30 @@
 		impersonate another for the client's benefit, and following
 		that override for a backend-behavior decision silently picks
 		the wrong behavior for the real database being talked to
+	added tds 5.0 cursors to the tds protocol module, so declare,
+		set-rows, open, fetch, close, deallocate and positioned update
+		and delete from sap's native open client work now - each
+		cursor token is acked separately, the way a real ase does it,
+		so a batched declare/rows/open comes back as two acks and then
+		the row format, which is what makes ct-lib report a cursor
+		result rather than a third command-succeeded; a cursor is
+		named by a string the client picks and by an id the server
+		mints, so a map of one onto the other sits beside the dynamic
+		statement map; a cursor open carries its parameters as a
+		paramfmt/params pair; and cursor update and delete drive the
+		same positioned dml the ms-tds sp_cursor procedure does,
+		through a wire-neutral core split out of it
+	the tds protocol module grants the cursor and multi-row-fetch
+		capability bits to a tds 5.0 client now - without the cursor
+		bit ct-lib refuses every cursor command before it reaches the
+		wire - while the positional scroll bits stay withheld, since
+		the backend is forward-only
+	fixed the tds protocol module binding a positioned update or
+		delete's primary key value as a string - ms sql server
+		converts that implicitly, so it never showed up on the
+		sp_cursor path, but ase refuses it outright; only a
+		whole-number key is converted, since a decimal or a float
+		wouldn't survive the round trip
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

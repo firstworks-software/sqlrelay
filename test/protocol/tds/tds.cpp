@@ -6206,10 +6206,14 @@ int main(int argc, char **argv) {
 	// CS_CMD_SUCCEED and CS_CMD_DONE pairs come from.  Per-call
 	// ct_send works too, and gives the same split.
 	//
-	// So the split is the wire version, not the backend.  Sqlrelay
-	// never speaks tds 5, so an ASE reached through it produces the
-	// tds 7 shape with no extra pairs.  That is why every cursor block
-	// below gates the extra pairs on nativease rather than issybase.
+	// So the split is the wire version, not the backend, and sqlrelay's
+	// tds protocol module implements the tds 5 cursor tokens, so an ASE
+	// reached through it produces the same extra pairs a native link
+	// does.  That is why every cursor block below gates the extra pairs
+	// on "nativease || tds5" rather than on issybase: sap's ct-lib
+	// speaks tds 5 to everything, and freetds negotiates tds 5 when it
+	// is pointed straight at an ASE, while a sqlrelay stanza in
+	// freetds.conf pins tds 7.
 	//
 	// CS_READ_ONLY and CS_UNUSED behave identically here on both
 	// backends, so freetds.cpp:4072 having CS_READ_ONLY commented out
@@ -6229,7 +6233,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6247,16 +6251,24 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// Two splits in the cursor result's column metadata.  status is
+	// Four splits in the cursor result's column metadata.  status is
 	// CS_UPDATABLE|CS_CANBENULL on mssql and CS_CANBENULL alone on a
 	// native ASE link, so only mssql marks a read-only cursor's
 	// columns updatable.  Through sqlrelay it is
-	// CS_UPDATABLE|CS_CANBENULL either way, since the flag comes out
-	// of the tds 7 column metadata sqlrelay writes.
+	// CS_UPDATABLE|CS_CANBENULL either way, since sqlrelay's row format
+	// does not distinguish an updatable column from a read-only one.
 	// usertype is 0 on every mssql column and the ASE syscolumns id on
 	// a native sybase link - int 7, varchar 2 - which is the same split
 	// #8779 recorded for language commands.  Through sqlrelay it is 0
 	// either way.
+	// A native ASE link describes the varchar column as
+	// CS_LONGCHAR_TYPE and doubles its maxlength, since the connection's
+	// utf8 charset can take two bytes per character.  Sqlrelay's row
+	// format writes the declared width instead, so it stays
+	// CS_CHAR_TYPE at 20.
+	// count and locale are a library split rather than a server one -
+	// the same one describecount and describelocale already carry for
+	// the language-command describes above, so they are reused here.
 	stdoutput.printf("ct_describe: cursor result\n");
 	ncols=-1;
 	assertEquals(ct_res_info(cmd,CS_NUMDATA,
@@ -6266,7 +6278,10 @@ int main(int argc, char **argv) {
 	const char	*cursdescname[3]={"cursid","cursname","cursval"};
 	CS_INT		cursdescnamelen[3]={6,8,7};
 	CS_INT		cursdesctype[3]={CS_INT_TYPE,CS_CHAR_TYPE,CS_INT_TYPE};
+	CS_INT		cursdescnativetype[3]={CS_INT_TYPE,CS_LONGCHAR_TYPE,
+								CS_INT_TYPE};
 	CS_INT		cursdescmaxlength[3]={4,20,4};
+	CS_INT		cursdescnativemaxlength[3]={4,40,4};
 	CS_INT		cursdescusertype[3]={7,2,7};
 	// ct_describe on a result whose column count is zero segfaults
 	// inside libct, so the count above has to gate the loop rather than
@@ -6276,33 +6291,46 @@ int main(int argc, char **argv) {
 		assertEquals(ct_describe(cmd,i+1,&(cursdesc[i])),CS_SUCCEED);
 		assertEquals(cursdesc[i].name,cursdescname[i]);
 		assertEquals(cursdesc[i].namelen,cursdescnamelen[i]);
-		assertEquals(cursdesc[i].datatype,cursdesctype[i]);
+		assertEquals(cursdesc[i].datatype,
+				(nativease && tds5)?cursdescnativetype[i]:
+					cursdesctype[i]);
 		assertEquals(cursdesc[i].format,0);
-		assertEquals(cursdesc[i].maxlength,cursdescmaxlength[i]);
+		assertEquals(cursdesc[i].maxlength,
+				(nativease && tds5)?
+					cursdescnativemaxlength[i]:
+					cursdescmaxlength[i]);
 		assertEquals(cursdesc[i].precision,0);
 		assertEquals(cursdesc[i].scale,0);
 		assertEquals(cursdesc[i].status,
 				(nativease)?CS_CANBENULL:
 					(CS_UPDATABLE|CS_CANBENULL));
-		assertEquals(cursdesc[i].count,1);
+		assertEquals(cursdesc[i].count,describecount);
 		assertEquals(cursdesc[i].usertype,
 				(nativease)?cursdescusertype[i]:0);
-		assertTrue(cursdesc[i].locale==NULL);
+		if (describelocale) {
+			assertTrue(cursdesc[i].locale!=NULL);
+		} else {
+			assertTrue(cursdesc[i].locale==NULL);
+		}
 	}
 	stdoutput.printf("\n");
 
 
-	// CS_ROW_COUNT is not a row count on a cursor result.  mssql says
-	// 0 before the first fetch, a native ASE link says -1, sqlrelay
-	// says 0 for either backend, and all of them say 0 once the
-	// fetch loop has run out.  A plain language select gives -1
-	// throughout on both, so nothing here can be read as a count.
+	// CS_ROW_COUNT is not a row count on a cursor result, and under sap's
+	// ct-lib it is not even a legal question - it answers CS_FAIL with
+	// client library error 33, "cannot be called after ct_results()
+	// returns a result type of CS_CURSOR_RESULT", and never touches the
+	// value buffer, before and after the fetch loop alike.  Freetds
+	// answers it: mssql says 0 before the first fetch and a native ASE
+	// link says -1, and both say 0 once the fetch loop has run out.  A
+	// plain language select gives -1 throughout on both, so nothing here
+	// can be read as a count.
 	stdoutput.printf("ct_res_info: cursor row count before fetch\n");
 	affectedrows=-987654;
 	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
 					(CS_VOID *)&affectedrows,CS_UNUSED,
-					(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(affectedrows,(nativease)?-1:0);
+					(CS_INT *)NULL),(tds5)?CS_FAIL:CS_SUCCEED);
+	assertEquals(affectedrows,(tds5)?-987654:((nativease)?-1:0));
 	stdoutput.printf("\n");
 
 
@@ -6390,11 +6418,13 @@ int main(int argc, char **argv) {
 	affectedrows=-987654;
 	assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
 					(CS_VOID *)&affectedrows,CS_UNUSED,
-					(CS_INT *)NULL),CS_SUCCEED);
-	assertEquals(affectedrows,0);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+					(CS_INT *)NULL),(tds5)?CS_FAIL:CS_SUCCEED);
+	assertEquals(affectedrows,(tds5)?-987654:0);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -6414,7 +6444,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6456,7 +6486,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6495,12 +6525,18 @@ int main(int argc, char **argv) {
 		assertEquals(cursarraylength[2][i],3);
 		assertEquals(cursarraynull[2][i],0);
 	}
+	// the CS_END_DATA that ends an array fetch leaves rowsread holding
+	// the last real fetch's count under sap's ct-lib, rather than
+	// zeroing it the way freetds does and the way both libraries do it
+	// for a one-row-at-a-time fetch
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	assertEquals(rowsread,0);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	assertEquals(rowsread,(tds5)?4:0);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -6515,7 +6551,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6529,13 +6565,20 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// The same array fetch with the bind count left at 1.  ct_fetch
+	// The same array fetch with the bind count left at 1.  The two
+	// libraries disagree about whether that is legal at all.  Freetds
 	// refuses it, and refuses it silently - CS_FAIL, rowsread 0, no
 	// client message, no server message - and ct_results then goes
-	// straight to CS_END_RESULTS with the rows never delivered.  This
+	// straight to CS_END_RESULTS with the rows never delivered.  That
 	// is the trap behind the comment on the first ct_bind above, and
 	// it is pinned here so that a change to either number in
 	// src/connections/freetds.cpp shows up as a test failure.
+	//
+	// Sap's ct-lib does not treat the two counts as having to match.  It
+	// hands back one row per ct_fetch, as the bind count asks for,
+	// buffering the rest of what the cursor's rows count brought back,
+	// and refuses ct_results with client library error 163 until the
+	// fetch loop has run out.
 	stdoutput.printf("ct_cursor: rows count above the bind count\n");
 	const char	*cursid3="curs3";
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
@@ -6551,7 +6594,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6571,11 +6614,28 @@ int main(int argc, char **argv) {
 					&(cursnullindicator[i])),CS_SUCCEED);
 	}
 	rowsread=-987654;
-	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_FAIL);
-	assertEquals(rowsread,0);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_END_RESULTS);
+	if (tds5) {
+		for (CS_INT i=0; i<4; i++) {
+			bytestring::zero(cursdata[0],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],cursexpectid[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	} else {
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_FAIL);
+		assertEquals(rowsread,0);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	}
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
 
@@ -6586,7 +6646,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6617,7 +6677,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6647,9 +6707,11 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -6660,7 +6722,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6674,47 +6736,125 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// A closed cursor cannot be re-opened.  ct_cursor takes the
-	// CS_CURSOR_OPEN and answers CS_SUCCEED, but queues nothing, so
-	// the command structure is still idle when ct_send is called and
-	// ct_send fails with client library error 155.  That is the
-	// CS_SUCCEED while doing nothing shape #8794 and #8791 both hit,
-	// in a third place.
+	// Whether a closed cursor can be re-opened is the sharpest split in
+	// this section, because the two libraries do not even agree on what
+	// a close without CS_DEALLOC left behind.
 	//
-	// The fetch afterwards is the sharper half.  Freetds is still
-	// holding the closed cursor's id, so ct_fetch reaches the wire
-	// even though no send succeeded, and the server rejects it by
-	// name - mssql error 13 naming a stale sp_cursor id, ASE saying
-	// the cursor is not open.  ct_fetch reports CS_END_DATA either
-	// way, so a caller that only checks return codes sees an empty
-	// result rather than an error.
+	// Under tds 5 the name is still declared, so CS_CURSOR_OPEN is a
+	// real command again - it goes out as its own TDS_CUROPEN, the
+	// server answers with the cursor's row format, and all four rows
+	// come back a second time.  This block closes it without
+	// deallocating again afterwards, so the block below still meets a
+	// name the server has.
+	//
+	// Freetds queues nothing for the open instead.  ct_cursor answers
+	// CS_SUCCEED, the command structure is still idle when ct_send is
+	// called, and ct_send fails with client library error 155.  That is
+	// the CS_SUCCEED while doing nothing shape #8794 and #8791 both hit,
+	// in a third place.  The fetch afterwards is the sharper half of
+	// that: freetds is still holding the closed cursor's id, so ct_fetch
+	// reaches the wire even though no send succeeded, and the server
+	// rejects it by name - mssql error 13 naming a stale sp_cursor id,
+	// ASE saying the cursor is not open.  ct_fetch reports CS_END_DATA
+	// either way, so a caller that only checks return codes sees an
+	// empty result rather than an error.
 	stdoutput.printf("ct_cursor: re-open without re-declaring\n");
 	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
 				(CS_CHAR *)NULL,CS_UNUSED,
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
-	assertEquals(ct_send(cmd),CS_FAIL);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_END_RESULTS);
-	rowsread=-987654;
-	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
-					CS_UNUSED,&rowsread),CS_END_DATA);
-	assertEquals(rowsread,0);
+	if (tds5) {
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+								CS_SUCCEED);
+		}
+		for (CS_INT i=0; i<4; i++) {
+			bytestring::zero(cursdata[0],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],cursexpectid[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	} else {
+		assertEquals(ct_send(cmd),CS_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		rowsread=-987654;
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		assertEquals(rowsread,0);
+	}
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
 
 
-	// Re-declaring the name is the only way back, and that is where
-	// the missing CS_DEALLOC shows up.  ASE still has the name and
-	// says so - server error 51, "There is already another cursor with
-	// the name", severity 2 - and delivers a CS_CMD_FAIL in the middle
-	// of the sequence, and then opens the already-declared cursor and
-	// hands over all four rows anyway.  MSSQL is silent.  Worth
-	// knowing beyond this test: a drain loop that treats any
-	// CS_CMD_FAIL as fatal throws away a result set that is right
-	// there, and src/connections/freetds.cpp:4627 does exactly that.
+	// Re-declaring the name is where the missing CS_DEALLOC shows up,
+	// and the two libraries put the complaint in different places.
+	//
+	// Sap's ct-lib refuses the declare itself, client side, with client
+	// library error 22 - the closed cursor is still on the command
+	// structure, and nothing but a deallocate takes it off.  So the
+	// server never gets the chance to object, and the deallocate below
+	// is what makes the rest of this block reachable.  On a native ASE
+	// link that deallocate is also what keeps the declare after it
+	// clean: without it ASE answers server error 51, "There is already
+	// another cursor with the name", severity 2, makes the declare's own
+	// ack a CS_CMD_FAIL, and then opens the already-declared cursor and
+	// hands over all four rows anyway.  Worth knowing beyond this test:
+	// a drain loop that treats any CS_CMD_FAIL as fatal throws away a
+	// result set that is right there, and
+	// src/connections/freetds.cpp:4627 does exactly that.
+	//
+	// Freetds takes the declare and overwrites its own slot, so the
+	// re-declare is silent there and mssql never sees a duplicate name.
 	stdoutput.printf("ct_cursor: re-declare after a close with "
 							"no dealloc\n");
+	if (tds5) {
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+					(CS_CHAR *)cursid4,CS_NULLTERM,
+					(CS_CHAR *)cursselect,CS_NULLTERM,
+					CS_READ_ONLY),CS_FAIL);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DEALLOC,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	}
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursid4,CS_NULLTERM,
 				(CS_CHAR *)cursselect,CS_NULLTERM,
@@ -6728,10 +6868,10 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
-		assertEquals(resultstype,CS_CMD_FAIL);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
@@ -6762,9 +6902,11 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -6775,7 +6917,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -6807,7 +6949,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -6837,22 +6979,51 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// One ct_cancel is not enough after a mid-fetch abandon.  It
-	// answers CS_SUCCEED, but the next command's ct_send comes back
-	// CS_CANCELED and ct_results then says CS_END_RESULTS, so the
-	// command looks like it ran and returned nothing.  A second
-	// ct_cancel is what actually clears it.  Left uncleared, a caller
-	// that goes on to ct_fetch blocks until the 60 second CS_TIMEOUT
-	// set at the top of this test, once per row - which is how this
-	// was found.
+	// One ct_cancel is not enough after a mid-fetch abandon on either
+	// library, but they are not enough in different ways.
+	//
+	// Freetds answers the cancel CS_SUCCEED and then lets the next
+	// command be built - its ct_send comes back CS_CANCELED and
+	// ct_results says CS_END_RESULTS, so the command looks like it ran
+	// and returned nothing.  A second ct_cancel is what actually clears
+	// it.  Left uncleared, a caller that goes on to ct_fetch blocks
+	// until the 60 second CS_TIMEOUT set at the top of this test, once
+	// per row - which is how this was found.
+	//
+	// Sap's ct-lib keeps the cursor on the command structure right
+	// through the cancel - a cursor only leaves a command when it is
+	// deallocated - so the language command is refused as it is built,
+	// with client library error 21, and no amount of canceling changes
+	// that.  A close with CS_DEALLOC is the way out, and that is what is
+	// driven here so the block after this one has a usable command
+	// either way.
 	stdoutput.printf("ct_command: one cancel is not enough\n");
 	query="select count(*) from cursortable";
-	assertEquals(ct_command(cmd,CS_LANG_CMD,
+	if (tds5) {
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_FAIL);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	} else {
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
 					query,charstring::getLength(query),
 					CS_UNUSED),CS_SUCCEED);
-	assertEquals(ct_send(cmd),CS_CANCELED);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_send(cmd),CS_CANCELED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	}
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
 
@@ -6885,20 +7056,33 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// A cursor cannot take parameters through ct-lib at all.  ct_param
-	// and ct_setparam both refuse a cursor command outright on both
-	// backends, in every arrangement - the placeholder-then-value flow
-	// src/connections/freetds.cpp:4261 and 4603 use on its own cursor
-	// path, a value on its own after the open, named and unnamed, and
-	// every datatype tried.  No message callback fires.
+	// Under freetds a cursor cannot take parameters through ct-lib at
+	// all.  ct_param and ct_setparam both refuse a cursor command
+	// outright on both backends, in every arrangement - the
+	// placeholder-then-value flow src/connections/freetds.cpp:4261 and
+	// 4603 use on its own cursor path, a value on its own after the
+	// open, named and unnamed, and every datatype tried.  No message
+	// callback fires.  The placeholder is then sent as text, ct_send
+	// succeeds, and the server is what rejects it - error 102,
+	// "Incorrect syntax near '?'", and mssql adds error 49 saying the
+	// cursor was never declared.  Nothing parameter shaped reaches the
+	// wire, so #8792's finding that freetds declares every prepared
+	// parameter as varchar(4000) says nothing either way about this
+	// path.
 	//
-	// The placeholder is then sent as text.  ct_send succeeds and the
-	// server is what rejects it - error 102 on both, "Incorrect syntax
-	// near '?'", and mssql adds error 49 saying the cursor was never
-	// declared.  Nothing parameter shaped reaches the wire, so
-	// #8792's finding that freetds declares every prepared parameter
-	// as varchar(4000) says nothing either way about this path.
-	stdoutput.printf("ct_cursor: parameters are refused\n");
+	// Sap's ct-lib takes a value on the open.  It still refuses one on
+	// the declare, but for a narrower reason - a CS_INPUTVALUE
+	// parameter there describes the parameter and so has to have a NULL
+	// data pointer - and the value handed to it after CS_CURSOR_OPEN
+	// rides out with the TDS_CUROPEN as a paramfmt/params pair.
+	//
+	// What happens next is the split.  A native ASE link never got the
+	// parameter described, so all it sees is a declare whose text has a
+	// '?' in it, and answers error 102 like the others.  Sqlrelay reads
+	// the '?' as a bind variable itself, binds the value that came with
+	// the open, and opens a working cursor - so the cursor declared
+	// "where cursid > ?" with 2 bound returns exactly rows 3 and 4.
+	stdoutput.printf("ct_cursor: parameters on the open\n");
 	const char	*cursid6="curs6";
 	const char	*cursparamselect="select cursid, cursname, cursval "
 					"from cursortable where cursid > ? "
@@ -6932,16 +7116,64 @@ int main(int argc, char **argv) {
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_param(cmd,&cursparamfmt,
 				(CS_VOID *)&cursparamvalue,
-				sizeof(CS_INT),0),CS_FAIL);
+				sizeof(CS_INT),0),(tds5)?CS_SUCCEED:CS_FAIL);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_FAIL);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_DONE);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_END_RESULTS);
+	if (issqlrelay && tds5) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+								CS_SUCCEED);
+		}
+		for (CS_INT i=2; i<4; i++) {
+			bytestring::zero(cursdata[0],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],cursexpectid[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	} else {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	}
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
 
@@ -6951,15 +7183,34 @@ int main(int argc, char **argv) {
 	// both backends - libct's own trace calls it "Option not
 	// implemented".  Nothing goes on the wire, no ct_send is possible
 	// and no message callback fires, so there is no server behavior to
-	// record on either side.  CS_CURSOR_OPTION, type 725, sits in the
-	// same arm and is refused the same way.
+	// record there.
 	//
-	// They are tried here with the cursor open and positioned on a
-	// row, which is the only state in which they would be legal, to
-	// show the refusal is not a state complaint.  Because they never
-	// reach the wire they leave the pending result untouched, so the
-	// remaining rows still fetch normally below.
-	stdoutput.printf("ct_cursor: update and delete are unimplemented\n");
+	// Sap's ct-lib sends both, as TDS_CURUPDATE and TDS_CURDELETE with
+	// the current row's key riding behind them.  Each one is its own
+	// command: once ct_cursor takes it, everything else on the command
+	// structure is refused with client library error 165 until it has
+	// been sent and its results drained.
+	//
+	// Through sqlrelay both are then refused by the server rather than
+	// by the library - cursortable has no primary key, so there is no
+	// way to say which row the cursor is on, and sqlrelay answers "a
+	// positioned update needs a primary key that the cursor selected"
+	// with a CS_CMD_FAIL.  A native ASE link runs them: a
+	// datarows-locked table does not need a key of its own for ASE to
+	// name the row its cursor is on.  Either way the cursor itself
+	// survives, and the remaining rows still fetch normally below.
+	//
+	// CS_CURSOR_OPTION, type 725, has no wire token on either library.
+	// Freetds refuses it as unimplemented and sap refuses the value -
+	// CS_IMPLICIT_CURSOR is not one of the three option values it takes
+	// - so it is CS_FAIL on both.
+	//
+	// The positioned update and delete that do reach a table with a
+	// primary key are driven further down, against poscursortable, and
+	// only on mssql.  A tds 5 version of that needs a not null key
+	// column, and #9493 garbles a not null column's describe over sap's
+	// ct-lib, so it waits on that.
+	stdoutput.printf("ct_cursor: update and delete are refused\n");
 	const char	*cursid7="curs7";
 	const char	*cursupdate="update cursortable set cursval = 99";
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
@@ -6975,7 +7226,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -7000,10 +7251,36 @@ int main(int argc, char **argv) {
 	assertEquals(cursdata[0],"1");
 	assertEquals(ct_cursor(cmd,CS_CURSOR_UPDATE,
 			(CS_CHAR *)"cursortable",CS_NULLTERM,
-			(CS_CHAR *)cursupdate,CS_NULLTERM,CS_UNUSED),CS_FAIL);
+			(CS_CHAR *)cursupdate,CS_NULLTERM,CS_UNUSED),
+					(tds5)?CS_SUCCEED:CS_FAIL);
+	if (tds5) {
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,
+			(nativease)?CS_CMD_SUCCEED:CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	}
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DELETE,
 			(CS_CHAR *)"cursortable",CS_NULLTERM,
-			(CS_CHAR *)NULL,CS_UNUSED,CS_UNUSED),CS_FAIL);
+			(CS_CHAR *)NULL,CS_UNUSED,CS_UNUSED),
+					(tds5)?CS_SUCCEED:CS_FAIL);
+	if (tds5) {
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,
+			(nativease)?CS_CMD_SUCCEED:CS_CMD_FAIL);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+	}
 	assertEquals(ct_cursor(cmd,CS_CURSOR_OPTION,
 			(CS_CHAR *)NULL,CS_UNUSED,
 			(CS_CHAR *)NULL,CS_UNUSED,
@@ -7016,9 +7293,11 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -7029,7 +7308,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -7043,15 +7322,26 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// CS_FOR_UPDATE as the declare option, used just above, is
-	// accepted and then discarded - the send packet is byte for byte
-	// identical to the CS_READ_ONLY one on both wire protocols, the
-	// mssql sp_cursoropen rpc and ASE's TDS_CURDECLARE token.  So the
+	// CS_FOR_UPDATE as the declare option, used just above, is accepted
+	// and then discarded on the mssql sp_cursoropen path - that send
+	// packet is byte for byte identical to the CS_READ_ONLY one, so the
 	// four rows the block above fetched are the proof that
-	// CS_FOR_UPDATE changes nothing, not just that it is tolerated.
+	// CS_FOR_UPDATE changes nothing there, not just that it is
+	// tolerated.  Tds 5 does carry it: TDS_CURDECLARE has an options
+	// byte, and CS_FOR_UPDATE and CS_READ_ONLY put different values in
+	// it.  What a for-update cursor cannot do is name a row without a
+	// primary key, which is what the refusals above are.
+	//
 	// This language select is the other half of that block's proof -
 	// the table still has its seeded values, so neither the update nor
 	// the delete did anything.
+	//
+	// Except on a native tds 5 link, where they did.  ASE takes a
+	// positioned update on a datarows-locked table without asking for a
+	// key, so the row the cursor was on really was changed there.  That
+	// is the fixture corruption to watch for, and the reseed after this
+	// block is what keeps the rest of the section reading the four rows
+	// it expects.
 	stdoutput.printf("ct_command: the table is unchanged\n");
 	query="select count(*) from cursortable where cursval = 99";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
@@ -7068,7 +7358,7 @@ int main(int argc, char **argv) {
 				&(cursnullindicator[0])),CS_SUCCEED);
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
-	assertEquals(cursdata[0],"0");
+	assertEquals(cursdata[0],(nativease && tds5)?"1":"0");
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
 	results=ct_results(cmd,&resultstype);
@@ -7078,6 +7368,27 @@ int main(int argc, char **argv) {
 	assertEquals(results,CS_END_RESULTS);
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
+
+
+	// put the four seeded rows back, unasserted, since which of them the
+	// block above changed is ASE's business rather than something this
+	// section should pin
+	if (nativease && tds5) {
+		query="delete from cursortable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+		for (CS_INT i=0; i<4; i++) {
+			ct_command(cmd,CS_LANG_CMD,(CS_CHAR *)cursinsert[i],
+					charstring::getLength(cursinsert[i]),
+					CS_UNUSED);
+			ct_send(cmd);
+			while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+			ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+		}
+	}
 
 
 	// Putting "for update of" in the declare text, rather than passing
@@ -7201,11 +7512,15 @@ int main(int argc, char **argv) {
 	// length instead is safe and gives the clean CS_FAIL above.
 
 
-	// The second declare overwrites libct's per-command cursor slot,
-	// so the first one never reaches either server and neither
-	// complains.  The narrower text is the one that runs, which is
-	// what the two rows prove.  This is not the case that draws ASE
-	// error 51 - that one needs a close that did not dealloc.
+	// Freetds lets the second declare overwrite libct's per-command
+	// cursor slot, so the first one never reaches either server and
+	// neither complains.  The narrower text is the one that runs, which
+	// is what the two rows prove there.  Sap's ct-lib refuses the second
+	// declare instead, with client library error 29 - a declare cannot
+	// be batched onto a command that already has one - so it is the
+	// first, wider text that runs and all four rows come back.  Neither
+	// case is the one that draws ASE error 51; that one needs a close
+	// that did not dealloc.
 	stdoutput.printf("ct_cursor: declare twice without closing\n");
 	const char	*cursnarrow="select cursid, cursname, cursval "
 					"from cursortable where cursid > 2 "
@@ -7217,7 +7532,7 @@ int main(int argc, char **argv) {
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursid9,CS_NULLTERM,
 				(CS_CHAR *)cursnarrow,CS_NULLTERM,
-				CS_READ_ONLY),CS_SUCCEED);
+				CS_READ_ONLY),(tds5)?CS_FAIL:CS_SUCCEED);
 	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
 				(CS_CHAR *)NULL,CS_UNUSED,
 				(CS_CHAR *)NULL,CS_UNUSED,
@@ -7227,7 +7542,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -7246,7 +7561,7 @@ int main(int argc, char **argv) {
 					&(cursdatalength[i]),
 					&(cursnullindicator[i])),CS_SUCCEED);
 	}
-	for (CS_INT i=2; i<4; i++) {
+	for (CS_INT i=(tds5)?0:2; i<4; i++) {
 		bytestring::zero(cursdata[0],256);
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
@@ -7254,9 +7569,11 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -7267,7 +7584,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -7284,11 +7601,17 @@ int main(int argc, char **argv) {
 	// A declare whose text is not a select is the one negative the
 	// client takes and the server refuses.  mssql answers error 42
 	// naming what a cursor statement may be, then error 49 saying the
-	// cursor was not declared.  ASE answers error 219, "neither a
-	// SELECT nor an EXECUTE".  Both then give CS_CMD_FAIL,
-	// CS_CMD_DONE, CS_END_RESULTS, and unlike the for update case
-	// above the command is left usable.  The update does not run,
-	// which the select after it checks.
+	// cursor was not declared.  A native ASE link answers error 219,
+	// "neither a SELECT nor an EXECUTE", and sqlrelay answers "a cursor
+	// may only be declared for a select or an exec statement".  Through
+	// sqlrelay under tds 5 all three tokens are acked separately and
+	// all three fail - the declare on the text, then the rows and the
+	// open on a cursor that was never declared - so it is three
+	// CS_CMD_FAIL and CS_CMD_DONE pairs rather than one; ASE abandons
+	// the rest of the batch after the declare and sends just the one.
+	// Either way, and unlike the for update case above, the command is
+	// left usable, and the update does not run, which the select after
+	// it checks.
 	stdoutput.printf("ct_cursor: declare a non-select\n");
 	const char	*cursid10="curs10";
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
@@ -7304,6 +7627,16 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
+	if (issqlrelay && tds5) {
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_FAIL);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_FAIL);
@@ -7344,11 +7677,15 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// Declaring a second cursor while the first is still open works on
-	// both backends, and silently abandons the first one's remaining
-	// rows - the second declare takes over libct's slot on the
-	// command, and the first cursor is left open server side with no
-	// way to reach it.
+	// Declaring a second cursor while the first is still open works
+	// under freetds, and silently abandons the first one's remaining
+	// rows - the second declare takes over libct's slot on the command,
+	// and the first cursor is left open server side with no way to
+	// reach it.  Sap's ct-lib will not have it: one command structure
+	// holds one cursor, so the declare, the rows and the open are all
+	// refused and the first cursor is still the command's, still
+	// positioned where the fetch above left it, so its remaining rows
+	// are what come back.
 	stdoutput.printf("ct_cursor: a second cursor while the "
 							"first is open\n");
 	const char	*cursid11="curs11";
@@ -7366,7 +7703,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -7392,36 +7729,29 @@ int main(int argc, char **argv) {
 	assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursid12,CS_NULLTERM,
 				(CS_CHAR *)cursnarrow,CS_NULLTERM,
-				CS_READ_ONLY),CS_SUCCEED);
+				CS_READ_ONLY),(tds5)?CS_FAIL:CS_SUCCEED);
 	assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
 				(CS_CHAR *)NULL,CS_UNUSED,
 				(CS_CHAR *)NULL,CS_UNUSED,
-				(CS_INT)1),CS_SUCCEED);
+				(CS_INT)1),(tds5)?CS_FAIL:CS_SUCCEED);
 	assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
 				(CS_CHAR *)NULL,CS_UNUSED,
 				(CS_CHAR *)NULL,CS_UNUSED,
-				CS_UNUSED),CS_SUCCEED);
-	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
-		for (CS_INT i=0; i<2; i++) {
-			results=ct_results(cmd,&resultstype);
-			assertEquals(results,CS_SUCCEED);
-			assertEquals(resultstype,CS_CMD_SUCCEED);
-			results=ct_results(cmd,&resultstype);
-			assertEquals(results,CS_SUCCEED);
-			assertEquals(resultstype,CS_CMD_DONE);
+				CS_UNUSED),(tds5)?CS_FAIL:CS_SUCCEED);
+	if (!tds5) {
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+								CS_SUCCEED);
 		}
 	}
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CURSOR_RESULT);
-	for (CS_INT i=0; i<3; i++) {
-		assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
-					(CS_VOID *)cursdata[i],
-					&(cursdatalength[i]),
-					&(cursnullindicator[i])),CS_SUCCEED);
-	}
-	for (CS_INT i=2; i<4; i++) {
+	for (CS_INT i=(tds5)?1:2; i<4; i++) {
 		bytestring::zero(cursdata[0],256);
 		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_SUCCEED);
@@ -7429,9 +7759,11 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -7442,7 +7774,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -7499,7 +7831,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_UNUSED),CS_SUCCEED);
 	assertEquals(ct_send(curscmd),CS_FAIL);
-	if (nativease) {
+	if (nativease || tds5) {
 		for (CS_INT i=0; i<2; i++) {
 			results=ct_results(cmd,&resultstype);
 			assertEquals(results,CS_SUCCEED);
@@ -7526,9 +7858,11 @@ int main(int argc, char **argv) {
 	}
 	assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
 					CS_UNUSED,&rowsread),CS_END_DATA);
-	results=ct_results(cmd,&resultstype);
-	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,CS_CMD_SUCCEED);
+	if (!tds5) {
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+	}
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -7539,7 +7873,7 @@ int main(int argc, char **argv) {
 				(CS_CHAR *)NULL,CS_UNUSED,
 				CS_DEALLOC),CS_SUCCEED);
 	assertEquals(ct_send(cmd),CS_SUCCEED);
-	if (nativease) {
+	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_SUCCEED);
@@ -7551,6 +7885,67 @@ int main(int argc, char **argv) {
 	assertEquals(results,CS_END_RESULTS);
 	assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
 	stdoutput.printf("\n");
+
+
+	// The refused send left the cursor on the second handle under sap's
+	// ct-lib - initialized but never sent - so nothing else can be put
+	// on that handle until it goes out.  Now that the first cursor is
+	// closed, the same send works, which is the other half of "not
+	// wedged": the second handle was waiting, not broken.  Freetds
+	// dropped the cursor with the failed send, so there is nothing left
+	// to re-send there.
+	if (tds5) {
+		stdoutput.printf("ct_cursor: the second handle's cursor, "
+								"re-sent\n");
+		assertEquals(ct_send(curscmd),CS_SUCCEED);
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(curscmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(curscmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+		results=ct_results(curscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(curscmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+								CS_SUCCEED);
+		}
+		for (CS_INT i=2; i<4; i++) {
+			bytestring::zero(cursdata[0],256);
+			assertEquals(ct_fetch(curscmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(rowsread,1);
+			assertEquals(cursdata[0],cursexpectid[i]);
+		}
+		assertEquals(ct_fetch(curscmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(curscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(curscmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(curscmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(curscmd),CS_SUCCEED);
+		results=ct_results(curscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(curscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(curscmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,curscmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+	}
 
 
 	stdoutput.printf("ct_command: on the second handle\n");
@@ -7582,15 +7977,21 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
-	// Two cursors above are deliberately left open - curs5 by the
+	// Under freetds two cursors above are left open - curs5 by the
 	// mid-fetch cancel, curs11 by the second declare taking over
 	// libct's slot - and neither can be reached through ct_cursor any
 	// more.  ASE counts them and refuses to drop the table underneath
 	// them, server error 118, "Cannot drop or replace the table
 	// because it is currently in use".  MSSQL does not care and drops
 	// it either way.  Through sqlrelay the error reaches the client the
-	// same way it does natively, so the first drop is asserted per
-	// backend, not per transport.
+	// same way it does natively, so that drop is asserted per backend,
+	// not per transport.
+	//
+	// Under tds 5 there are no orphans to count.  Sap's ct-lib will not
+	// abandon a cursor - it stays on its command structure until it is
+	// deallocated, which is what makes the two blocks above deallocate
+	// theirs - so nothing is holding the table and the drop goes
+	// through.
 	stdoutput.printf("ct_command: drop\n");
 	query="drop table cursortable";
 	assertEquals(ct_command(cmd,CS_LANG_CMD,
@@ -7599,7 +8000,8 @@ int main(int argc, char **argv) {
 	assertEquals(ct_send(cmd),CS_SUCCEED);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
-	assertEquals(resultstype,(issybase)?CS_CMD_FAIL:CS_CMD_SUCCEED);
+	assertEquals(resultstype,
+		(issybase && !tds5)?CS_CMD_FAIL:CS_CMD_SUCCEED);
 	results=ct_results(cmd,&resultstype);
 	assertEquals(results,CS_SUCCEED);
 	assertEquals(resultstype,CS_CMD_DONE);
@@ -7622,7 +8024,10 @@ int main(int argc, char **argv) {
 	// back, so the deallocates land on nothing (ASE error 45) and ASE
 	// still counts two open cursors on the table.  ASE's refusal is
 	// relayed honestly, so this is a transport difference, not a bug.
-	if (issybase) {
+	//
+	// None of that applies under tds 5, where the drop above already
+	// dropped the table.
+	if (issybase && !tds5) {
 
 		const char	*cursdealloc[2]={
 					"deallocate cursor curs5",
