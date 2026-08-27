@@ -725,6 +725,12 @@
 		same transaction, but the trigger's "created" flag had no way
 		to learn that, so the next reference to the table skipped the
 		create and failed against a table that no longer existed
+	the globaltemptables trigger now inserts "if not exists" into its
+		create statement on postgresql - catching an "already exists"
+		error there isn't enough on its own, since the error aborts
+		the whole surrounding transaction before the trigger's recovery
+		can take effect, and every later statement in that transaction
+		is then refused until it's rolled back
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

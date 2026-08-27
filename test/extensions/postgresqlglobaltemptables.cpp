@@ -192,8 +192,12 @@ int main(int argc, char **argv) {
 	// create-temp-table pattern doesn't match, so it's never registered
 	// for automatic drop.  The table survives end-of-session but the
 	// trigger's "created" flag doesn't, so the next reference re-runs
-	// the create against a table that's still there and has to fall
-	// through the trigger's already-exists handling to succeed.
+	// the create against a table that's still there.  On postgresql the
+	// trigger now inserts "if not exists" into the create automatically,
+	// so this succeeds directly rather than failing and falling through
+	// the trigger's already-exists handling - that handling still exists
+	// and is still exercised on databases where "if not exists" isn't
+	// available (eg. Oracle's "create global temporary table").
 	stdoutput.printf("ALREADY-EXISTS HANDLING (TABLE SURVIVES "
 				"END-OF-SESSION):\n");
 	assertTrue(cur->sendQuery("delete from gtttest9"));

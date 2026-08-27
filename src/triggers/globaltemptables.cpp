@@ -6,6 +6,7 @@
 #include <rudiments/sensitivevalue.h>
 #include <rudiments/stringbuffer.h>
 #include <rudiments/dynamicarray.h>
+#include <rudiments/character.h>
 
 
 class table_t {
@@ -104,6 +105,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_globaltemptables : public sqlrtrigger {
 	private:
 		bool	createTable(uint64_t i, sqlrservercursor *usercur);
 		bool	isAlreadyExistsError(sqlrservercursor *ccur);
+		void	buildCreateStatement(uint64_t i, stringbuffer *out);
 
 		dynamicarray<table_t>	tables;
 
@@ -282,11 +284,47 @@ bool sqlrtrigger_globaltemptables::isAlreadyExistsError(
 	return cont->getErrorNumber(ccur)==alreadyexistsnum;
 }
 
+void sqlrtrigger_globaltemptables::buildCreateStatement(uint64_t i,
+							stringbuffer *out) {
+
+	const char	*cs=tables[i].getCreateStatement();
+
+	// On postgresql, a failed create doesn't just fail - it aborts the
+	// whole surrounding transaction, and nothing about isAlreadyExistsError
+	// treating that failure as success undoes the abort.  Every later
+	// statement in the same transaction is then refused until a rollback,
+	// which shows up to the client as an unrelated later query failing.
+	// Insert "if not exists" so the create can't fail on "already exists"
+	// in the first place - unless the configured statement already has
+	// it.  Other databases (eg. Oracle's "create global temporary table")
+	// don't support "if not exists" at all, so this is deliberately
+	// scoped to the one database it's known to matter for, rather than
+	// applied unconditionally.
+	if (!charstring::compareIgnoringCase(cont->getDbType(),"postgresql") &&
+			!charstring::containsIgnoringCase(cs,"if not exists")) {
+		const char	*tableword=
+				charstring::findFirstIgnoringCase(cs,"table");
+		if (tableword && !character::isAlphanumeric(*(tableword+5))
+						&& *(tableword+5)!='_') {
+			uint64_t	prefixlen=(tableword-cs)+5;
+			out->append(cs,prefixlen);
+			out->append(" if not exists");
+			out->append(cs+prefixlen);
+			return;
+		}
+	}
+
+	out->append(cs);
+}
+
 bool sqlrtrigger_globaltemptables::createTable(uint64_t i,
 						sqlrservercursor *usercur) {
 
+	stringbuffer	createstatement;
+	buildCreateStatement(i,&createstatement);
+
 	debugWrite("creating table %s",tables[i].getName());
-	debugWrite("%s",tables[i].getCreateStatement());
+	debugWrite("%s",createstatement.getString());
 
 	// Create a separate cursor to run the create rather than reusing
 	// the cursor that is about to run the user's query.  This preserves
@@ -304,8 +342,8 @@ bool sqlrtrigger_globaltemptables::createTable(uint64_t i,
 
 	// prepare and execute the create query
 	bool	success=cont->prepareQuery(ccur,
-				tables[i].getCreateStatement(),
-				tables[i].getCreateStatementLength(),
+				createstatement.getString(),
+				createstatement.getSize(),
 				false,false,false,false) &&
 			cont->executeQuery(ccur,
 				false,false,false,false);

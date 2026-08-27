@@ -9711,7 +9711,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <br/><br/><a name="globaltemptables"/><h2>globaltemptables</h2>
 
-<p>The globaltemptables module simulates Oracle/DB2-style global temporary tables on databases (notably <a href="PostgreSQL">PostgreSQL</a>) that only support session-local temporary tables.</p>
+<p>The globaltemptables module simulates Oracle/DB2-style global temporary tables on databases (notably PostgreSQL) that only support session-local temporary tables.</p>
 
 <p>In databases that support global temporary tables, the table definition is persistent and visible to every session, but each session sees its own private set of rows.  In databases that only support session-local temporary tables, the table itself only exists for the life of the session that created it, so an application that expects a global temp table to already be there will fail with a <i>relation does not exist</i> (or similar) error at prepare time.</p>
 
@@ -9752,7 +9752,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Two tables are configured, <i>gtttest1</i> and <i>gtttest2</i>.  The first time either one is referenced in a given backend session - by an insert, a select, an update, a delete, or the table name turning up in a join or subquery - the corresponding <i>create temp table ...</i> statement is run on that session.  Subsequent references in the same session skip the create step.</p>
 
-<p>The first time the create is attempted, it may fail because another agent (e.g. another sqlr-connection process, or the application itself) has already created the table in this session.  The <b>alreadyexists</b> tag lets the module recognize that situation and treat it as success.  Its <b>error</b> attribute may be set to either:</p>
+<p>The first time the create is attempted, it may fail because the table already exists - another agent (e.g. another sqlr-connection process, or the application itself) may have created it already, or the modules own state may believe the table is gone when it isn't (see Considerations below).  The <b>alreadyexists</b> tag lets the module recognize that situation and treat it as success.  Its <b>error</b> attribute may be set to either:</p>
 
 <ul>
   <li>a numeric value - matched against the database error number</li>
@@ -9760,6 +9760,8 @@ http://www.gnu.org/software/src-highlite -->
 </ul>
 
 <p>If the create fails with any other error, that error is reported back to the client as if the user's query had failed.</p>
+
+<p>On a database where transactions abort on any statement error (eg. PostgreSQL), prefer <i>create temporary table if not exists ...</i> (or the equivalent for the target database) over relying on <b>alreadyexists</b> at all, if the database supports it.  A create that fails - even one the <b>alreadyexists</b> handling recognizes and reports as success back to the client - has already put the surrounding transaction into an aborted state on databases like PostgreSQL, and nothing about that success at the trigger level undoes that.  Every subsequent statement in the same transaction is then refused until the transaction is rolled back, which the client sees as an unrelated later query failing for no apparent reason.  A create that never errors in the first place avoids the problem entirely.  <i>IF NOT EXISTS</i> is not universally available - eg. Oracle's <i>CREATE GLOBAL TEMPORARY TABLE</i> does not support it - so the <b>alreadyexists</b> handling remains necessary for those databases.</p>
 
 <p>Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.</p>
 
@@ -9788,11 +9790,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The match is keyed off normalized query text.  Make sure the <a href="#normalize">normalize</a> query translation is loaded ahead of any application code that exercises these tables.</p>
 
-<p>Once a table has been created in a backend session, the module remembers that and skips the create on subsequent matches.  However, this state is per-sqlr-connection process.  If the sqlr-connection process is recycled, the next process will create the table again on first use.</p>
+<p>Once a table has been created, the module remembers that and skips the create on subsequent matches - until one of three things happens, at which point it forgets and re-creates on the next reference: the sqlr-connection process is recycled; the client session that referenced the table ends (the create statement may target an object that's scoped to the backend session rather than the sqlr-connection process, eg. PostgreSQL's <i>create temporary table</i>, and the sqlr-connection process outlives any one client session); or the surrounding transaction is rolled back (the create is DDL, and a rollback can undo it on a transactional database, even though the module has no other way to detect that).  In none of these cases does the trigger actively drop the table - it just stops assuming it's still there, and lets the next reference re-create it (or discover, via <b>alreadyexists</b>, that it is still there after all).</p>
 
 <p>Different sqlr-connection processes in the same instance each maintain their own copy of the temp table (since each holds its own backend session).  The data in one is not visible from another, which matches the per-session-private-rows semantics of a real global temporary table.</p>
-
-<p>The trigger does not drop the table at the end of a client session.  The table is created lazily in the backend session and persists until that backend session ends.</p>
 
 <hr/>
 
