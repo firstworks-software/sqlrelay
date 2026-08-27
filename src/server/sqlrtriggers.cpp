@@ -221,6 +221,28 @@ bool sqlrtriggers::runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
 	return runAfterExecute(sqlrcon,sqlrcur,&alist);
 }
 
+void sqlrtriggers::endTransaction(bool commit) {
+
+	// before/after-execute lists...
+	sqlrservermodules::endTransaction(commit);
+
+	// before-prepare list...
+	// skip plugins shared with aplist (eg. when="bothprepare" triggers)
+	for (listnode< sqlrmoduleplugin * > *node=bplist.getFirst();
+						node; node=node->getNext()) {
+		if (aplist.find(node->getValue())) {
+			continue;
+		}
+		node->getValue()->m->endTransaction(commit);
+	}
+
+	// after-prepare list...
+	for (listnode< sqlrmoduleplugin * > *node=aplist.getFirst();
+						node; node=node->getNext()) {
+		node->getValue()->m->endTransaction(commit);
+	}
+}
+
 void sqlrtriggers::endSession() {
 
 	// before/after-execute lists...

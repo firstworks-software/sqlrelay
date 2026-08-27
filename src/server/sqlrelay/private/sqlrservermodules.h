@@ -399,6 +399,7 @@ class SQLRSERVER_DLLSPEC sqlrtriggers : public sqlrservermodules {
 						sqlrservercursor *sqlrcur);
 		bool	runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
+		void	endTransaction(bool commit);
 		void	endSession();
 
 	private:

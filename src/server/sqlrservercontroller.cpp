@@ -7940,8 +7940,21 @@ void sqlrservercontroller::endSession() {
 	// with oracle, it may be necessary to log out and log back in to
 	// drop a temp table.  With each log-out the session end queries
 	// are run and with each log-in the session start queries are run.)
+	bool	temptablecleanup=(pvt->_temptablesfordrop.getFirst() ||
+					pvt->_temptablesfortrunc.getFirst() ||
+					pvt->_allglobaltemptables);
 	truncateTempTables(pvt->_cur[0]);
 	dropTempTables(pvt->_cur[0]);
+
+	// The commit/rollback above (if it ran) re-opened a fresh
+	// transaction on a faking connection.  Commit the drops into that
+	// transaction now, rather than leaving them uncommitted for
+	// whichever client session this pooled connection serves next to
+	// inherit - and potentially roll back, resurrecting a table this
+	// session meant to get rid of.
+	if (temptablecleanup) {
+		commit();
+	}
 
 	// run session-end queries
 	sessionEndQueries();
