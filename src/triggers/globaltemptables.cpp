@@ -99,6 +99,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_globaltemptables : public sqlrtrigger {
 
 		bool	runBeforePrepare(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
+		void	endTransaction(bool commit);
 		void	endSession();
 	private:
 		bool	createTable(uint64_t i, sqlrservercursor *usercur);
@@ -216,6 +217,24 @@ bool sqlrtrigger_globaltemptables::runBeforePrepare(
 	debugEnd();
 
 	return true;
+}
+
+void sqlrtrigger_globaltemptables::endTransaction(bool commit) {
+
+	// A rollback can undo a "create temp table" issued earlier in the
+	// same transaction (eg. postgresql's DDL is transactional) while
+	// this trigger still believes the table exists - so a later
+	// reference skips the create and fails against a table that isn't
+	// there. A commit doesn't undo anything, so only a rollback needs
+	// to clear the flags here; runBeforePrepare() re-creates on demand.
+	if (commit) {
+		return;
+	}
+	debugStart("globaltemptables endTransaction (rollback)");
+	for (uint64_t i=0; i<tables.getCount(); i++) {
+		tables[i].setCreated(false);
+	}
+	debugEnd();
 }
 
 void sqlrtrigger_globaltemptables::endSession() {

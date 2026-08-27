@@ -720,6 +720,11 @@
 		uncommitted in a transaction it re-opens but never closes,
 		so the next session on that pooled connection could inherit
 		an uncommitted drop from the one before it
+	fixed the globaltemptables trigger not noticing a client rollback -
+		a rollback undoes a "create temp table" issued earlier in the
+		same transaction, but the trigger's "created" flag had no way
+		to learn that, so the next reference to the table skipped the
+		create and failed against a table that no longer existed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

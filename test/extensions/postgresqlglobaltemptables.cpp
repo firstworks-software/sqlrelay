@@ -209,6 +209,23 @@ int main(int argc, char **argv) {
 	assertTrue(cur->sendQuery("drop table gtttest9"));
 	stdoutput.printf("\n");
 
+	// postgresql's "create temp table" is DDL, and DDL is transactional
+	// there - a rollback of the transaction it ran in undoes it, same as
+	// any other statement.  Before the endTransaction() fix, the
+	// trigger's "created" flag had no way to learn that, so the next
+	// reference skipped the create and failed against a table that was
+	// rolled back out of existence.
+	stdoutput.printf("TABLE RE-CREATED AFTER A CLIENT ROLLBACK:\n");
+	assertTrue(cur->sendQuery("begin"));
+	assertTrue(cur->sendQuery("insert into gtttest10 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest10"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertTrue(con->rollback());
+	assertTrue(cur->sendQuery("select count(*) from gtttest10"));
+	assertEquals(cur->rowCount(),0);
+	stdoutput.printf("\n");
+
+
 	delete cur;
 	delete con;
 	delete[] backendpid;
