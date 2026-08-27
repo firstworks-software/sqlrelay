@@ -13,6 +13,7 @@
 #include <rudiments/csprng.h>
 #include <rudiments/dynamiclib.h>
 #include <rudiments/environment.h>
+#include <rudiments/file.h>
 
 #define NEED_IS_NUMBER_TYPE_INT
 #define NEED_IS_FLOAT_TYPE_INT
@@ -369,7 +370,6 @@
 
 // where the cipher itself comes from - see secEncryptDecryptPassword()
 #define	SEC_ENCRYPT_LIB			"libsybcomn64.so"
-#define	SEC_ENCRYPT_LIB_DIR		"/OCS-16_0/lib/"
 #define	SEC_ENCRYPT_SYMBOL		"com__string_uninitialize"
 
 // login-time capability token, and the capability types it carries
@@ -6148,11 +6148,13 @@ bool sqlrprotocol_tds::preTds7SecEncryptBlob(const byte_t **rpinout,
 // data.  The cost is that an encrypted tds 5.0 login works where open
 // client is installed and is refused cleanly where it isn't.
 //
-// The soname is what usually resolves it: a sap-backed instance already
-// has open client's libraries in the process, so the loader matches the
-// name against what's loaded.  The paths after it only find the library
-// when open client's other libraries are on the runtime search path
-// too, since libsybcomn64 needs them.
+// The bare soname is tried first: a sap-backed sqlr-connection already has
+// open client's libraries in the process, so the loader matches the name
+// against what's loaded without any path search at all.  When that fails,
+// the search falls back to looking for the library on disk, first under
+// the SYBASE-derived OCS directories (OCS-16_0, OCS-15_0, OCS-12_5, in
+// that order) if SYBASE is set, then under a fixed list of install roots
+// where open client is commonly found.
 typedef int (*secencryptdecryptfunction)(const byte_t *key,
 						int keylen,
 						const byte_t *in,
@@ -6164,7 +6166,7 @@ static bool				secencrypttried=false;
 static dynamiclib			secencryptlib;
 static secencryptdecryptfunction	secencryptdecrypt=NULL;
 
-static bool secEncryptLoadCipher() {
+static bool secEncryptLoadCipher(sqlrprotocol_tds *tds) {
 
 	// One attempt per process, however many logins ask for it.  The
 	// check-then-set needs no lock: sqlr-connection is single threaded
@@ -6174,37 +6176,81 @@ static bool secEncryptLoadCipher() {
 	}
 	secencrypttried=true;
 
-	stringbuffer	sybasepath;
+	tds->debugStart("load sec-encrypt cipher");
+
+	// build path names
+	const char	*pathnames[12];
+	uint16_t	p=0;
+	stringbuffer	libdir16;
+	stringbuffer	libdir15;
+	stringbuffer	libdir125;
 	const char	*sybase=environment::getValue("SYBASE");
 	if (!charstring::isNullOrEmpty(sybase)) {
-		sybasepath.append(sybase);
-		sybasepath.append(SEC_ENCRYPT_LIB_DIR);
-		sybasepath.append(SEC_ENCRYPT_LIB);
+		libdir16.append(sybase)->append("/OCS-16_0/lib");
+		libdir15.append(sybase)->append("/OCS-15_0/lib");
+		libdir125.append(sybase)->append("/OCS-12_5/lib");
+		pathnames[p++]=libdir16.getString();
+		pathnames[p++]=libdir15.getString();
+		pathnames[p++]=libdir125.getString();
+	}
+	pathnames[p++]="/opt/sap/OCS-16_0/lib";
+	pathnames[p++]="/opt/sybase/OCS-15_0/lib";
+	pathnames[p++]="/opt/sybase/OCS-12_5/lib";
+	pathnames[p++]="/opt/sybase-12.5/OCS-12_5/lib";
+	pathnames[p++]="/opt/sybase-11.9.2/lib";
+	pathnames[p++]="/opt/sybase-11.0.3.3/lib";
+	pathnames[p++]="/opt/sybase/lib";
+	pathnames[p++]="/usr/local/sybase/lib";
+	pathnames[p++]=NULL;
+
+	// try the bare soname first
+	tds->debugWrite("trying: %s",SEC_ENCRYPT_LIB);
+	stringbuffer	libfilename;
+	bool		found=false;
+	if (secencryptlib.open(SEC_ENCRYPT_LIB,true,false)) {
+		found=true;
+	} else {
+		// look for the library
+		const char	**path=pathnames;
+		while (*path) {
+			libfilename.clear();
+			libfilename.append(*path)->append('/')
+						->append(SEC_ENCRYPT_LIB);
+			tds->debugWrite("trying: %s",
+						libfilename.getString());
+			if (file::isReadable(libfilename.getString())) {
+				break;
+			}
+			path++;
+		}
+		if (*path) {
+			// Local (not global) symbols are the safer default
+			// here: sqlr-connection may already have a different
+			// backend's client library loaded, and resolving
+			// this library's symbols globally could collide
+			// with it.
+			found=secencryptlib.open(
+					libfilename.getString(),true,false);
+		}
 	}
 
-	const char	*libnames[3];
-	libnames[0]=SEC_ENCRYPT_LIB;
-	libnames[1]=sybasepath.getString();
-	libnames[2]="/opt/sap" SEC_ENCRYPT_LIB_DIR SEC_ENCRYPT_LIB;
+	if (!found) {
+		tds->debugWrite("failed");
+		tds->debugEnd();
+		return false;
+	}
 
-	for (uint8_t i=0; i<3; i++) {
-
-		if (charstring::isNullOrEmpty(libnames[i])) {
-			continue;
-		}
-		if (!secencryptlib.open(libnames[i],true,false)) {
-			continue;
-		}
-
-		secencryptdecrypt=(secencryptdecryptfunction)
-				secencryptlib.getSymbol(SEC_ENCRYPT_SYMBOL);
-		if (secencryptdecrypt) {
-			return true;
-		}
+	secencryptdecrypt=(secencryptdecryptfunction)
+			secencryptlib.getSymbol(SEC_ENCRYPT_SYMBOL);
+	if (!secencryptdecrypt) {
 		secencryptlib.close();
+		tds->debugWrite("failed");
+		tds->debugEnd();
+		return false;
 	}
 
-	return false;
+	tds->debugEnd();
+	return true;
 }
 
 bool sqlrprotocol_tds::secEncryptDecryptPassword(const byte_t *key,
@@ -6229,7 +6275,7 @@ bool sqlrprotocol_tds::secEncryptDecryptPassword(const byte_t *key,
 		return false;
 	}
 
-	if (!secEncryptLoadCipher()) {
+	if (!secEncryptLoadCipher(this)) {
 		return false;
 	}
 

@@ -787,6 +787,10 @@
 		are already bounded by loginFieldFits(), but both now clamp to
 		255 before the length byte and payload write the same way, in
 		case either bound ever changes
+	the tds protocol module's encrypted-login cipher lookup now searches
+		the standard sybase/sap OCS install directories for
+		libsybcomn64.so, the same way the sap connection module already
+		does, instead of only one hard-coded ocs version under two roots
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
