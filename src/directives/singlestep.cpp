@@ -32,8 +32,9 @@ bool sqlrdirective_singlestep::run(sqlrserverconnection *sqlrcon,
 					const char *query) {
 	debugFunction();
 
-	// bail if not postgresql
-	if (charstring::compare(cont->getDbType(),"postgresql")) {
+	// bail if not postgresql - use the real backend type, not whatever
+	// identity a migration may have configured the client to see
+	if (charstring::compare(cont->getNativeDbType(),"postgresql")) {
 		return true;
 	}
 

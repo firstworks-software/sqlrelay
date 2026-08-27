@@ -123,10 +123,14 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 	// so a literal ending in a backslash (eg. an escape='\' clause) has
 	// its closing quote consumed as if escaped, silently swallowing the
 	// rest of the query as string content.  Default slashescape to the
-	// target database's own behavior instead of unconditionally "on";
-	// an explicit attribute still overrides that default either way.
-	// the default is resolved from getDbType() in run() instead of here,
-	// matching how src/directives/singlestep.cpp checks it
+	// real backend's own behavior instead of unconditionally "on" - not
+	// the client-facing dbtype= identity a migration may have configured
+	// the backend to impersonate, since this is about how the actual
+	// database engine parses the literal, not what the client believes
+	// it's talking to.  An explicit attribute still overrides the
+	// default either way.  The default is resolved from
+	// getNativeDbType() in run() instead of here, matching how
+	// src/directives/singlestep.cpp checks it.
 	slashescapeattr=parameters->getAttributeValue("slashescape");
 	slashescape=!charstring::isNo(slashescapeattr);
 }
@@ -141,11 +145,11 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 					stringbuffer *translatedquery) {
 	debugFunction();
 
-	// resolve the slashescape default against the connected database -
-	// an explicit attribute always wins over this
+	// resolve the slashescape default against the real backend - an
+	// explicit attribute always wins over this
 	if (!slashescapeattr) {
 		slashescape=!charstring::compareIgnoringCase(
-						cont->getDbType(),"mysql");
+					cont->getNativeDbType(),"mysql");
 	}
 
 	if (getDebug()) {

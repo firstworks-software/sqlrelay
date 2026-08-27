@@ -11348,6 +11348,10 @@ const char *sqlrservercontroller::getDbType() {
 	return (pvt->_dbtype)?pvt->_dbtype:pvt->_conn->getDbType();
 }
 
+const char *sqlrservercontroller::getNativeDbType() {
+	return pvt->_conn->getDbType();
+}
+
 const char *sqlrservercontroller::getDbVersion() {
 	return pvt->_conn->getDbVersion();
 }

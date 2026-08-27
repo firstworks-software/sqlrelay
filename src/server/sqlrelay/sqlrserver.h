@@ -452,8 +452,24 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  odbc, etc. as reported by the connection module, or as
 		 *  overridden by a call to setDbType() or by the "dbtype"
 		 *  parameter, of the string attribute, of the connection tag,
-		 *  in the config file. */
+		 *  in the config file.
+		 *
+		 *  This is the client-facing identity - what SQL Relay is
+		 *  configured to pretend to be - not necessarily what the
+		 *  backend connection module actually is.  Code that needs
+		 *  to know how to talk to the real backend (as opposed to
+		 *  code that needs to match what the client expects to be
+		 *  talking to) should use getNativeDbType() instead. */
 		const char	*getDbType();
+
+		/** Returns the type of database the connection module
+		 *  actually is: oracle, mysql, postgresql, odbc, etc. -
+		 *  never overridden by setDbType() or the "dbtype"
+		 *  parameter.  Use this for any decision that depends on the
+		 *  real backend's own behavior; use getDbType() for anything
+		 *  that should follow the identity the client was told to
+		 *  expect. */
+		const char	*getNativeDbType();
 
 		/** Returns the database version. */
 		const char	*getDbVersion();

@@ -300,7 +300,13 @@ void sqlrtrigger_globaltemptables::buildCreateStatement(uint64_t i,
 	// don't support "if not exists" at all, so this is deliberately
 	// scoped to the one database it's known to matter for, rather than
 	// applied unconditionally.
-	if (!charstring::compareIgnoringCase(cont->getDbType(),"postgresql") &&
+	//
+	// Use getNativeDbType(), not getDbType() - a migration commonly sets
+	// dbtype= to make the real backend impersonate a different database
+	// for the client's benefit, and this decision has to be based on
+	// what the backend actually is, not what it's pretending to be.
+	if (!charstring::compareIgnoringCase(
+				cont->getNativeDbType(),"postgresql") &&
 			!charstring::containsIgnoringCase(cs,"if not exists")) {
 		const char	*tableword=
 				charstring::findFirstIgnoringCase(cs,"table");
