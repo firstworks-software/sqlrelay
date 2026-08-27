@@ -768,6 +768,17 @@
 		batch loop another rpc was coming, so the batch's last done
 		carried DONE_MORE instead of DONE_FINAL and a ct-lib client sat
 		waiting for a result that would never arrive
+	fixed the tds protocol module's colName() and returnValueHeader()
+		mangling a multi-byte utf-8 column or output-parameter name -
+		both widened it to ucs-2 one unit per source byte instead of
+		decoding it, garbling any accented, cjk, or other multi-byte
+		character; both now go through the same utf8ToUcs2() converter
+		the row-data path already uses, clamping the character count
+		it returns to 255 rather than the raw byte count; the rpc
+		parameter name array that feeds returnValueHeader() also now
+		stores the utf-8 byte length instead of the ucs-2 unit count
+		read off the wire, so a multi-byte parameter name is no longer
+		truncated on its way into that array
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

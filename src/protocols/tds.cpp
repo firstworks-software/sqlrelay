@@ -11876,19 +11876,21 @@ void sqlrprotocol_tds::colName(sqlrservercursor *cursor,
 	size_t 		namelen=cont->getColumnNameSize(cursor,col);
 	const char	*name=cont->getColumnName(cursor,col);
 
+	size_t		namechars;
+	ucs2_t		*name16=utf8ToUcs2(name,namelen,&namechars);
+
 	// the length is a single byte, so a longer name is truncated,
 	// the way preTds7RowFmt() and appendInfoOrError() truncate the
 	// names they send; losing the tail of a long column name is much
 	// better than desynchronizing the rest of the result-set stream.
-	if (namelen>255) {
-		namelen=255;
+	if (namechars>255) {
+		namechars=255;
 	}
 
-	ucs2_t		*name16=ucs2charstring::duplicate(name,namelen);
-	write(&resppacket,(byte_t)namelen);
-	write(&resppacket,name16,namelen);
+	write(&resppacket,(byte_t)namechars);
+	write(&resppacket,name16,namechars);
 
-	debugWrite("namelen: %lld",(long long)namelen);
+	debugWrite("namelen: %lld",(long long)namechars);
 	debugWrite("name: %s",name);
 
 	delete[] name16;
@@ -20043,6 +20045,7 @@ bool sqlrprotocol_tds::param(uint16_t param,
 	rpsize--;
 	ucs2_t	*pname16=NULL;
 	char	*pname=NULL;
+	size_t	pname8size=0;
 	if (pnamelen) {
 		// the name length is in characters, but the data is ucs-2
 		size_t	pnamesize=((size_t)pnamelen)*sizeof(ucs2_t);
@@ -20052,7 +20055,6 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		pname16=new ucs2_t[pnamelen];
 		read(rp,pname16,pnamelen,&rp);
 		rpsize-=pnamesize;
-		size_t	pname8size;
 		pname=ucs2ToUtf8(pname16,(size_t)pnamelen,&pname8size);
 	}
 
@@ -20091,13 +20093,16 @@ bool sqlrprotocol_tds::param(uint16_t param,
 		bv->value.stringval=NULL;
 		bv->isnull=cont->getNullBindValue();
 
+		// rpcparamnamesizes holds the utf-8 byte length of
+		// rpcparamnames, matching the pre-tds7 rpc path, not the
+		// ucs-2 unit count read off the wire
 		rpcparambyref[param]=byrefvalue;
-		rpcparamnames[param]=(char *)rpcparampool.allocate(pnamelen+1);
-		if (pnamelen) {
-			charstring::copy(rpcparamnames[param],pname,pnamelen);
+		rpcparamnames[param]=(char *)rpcparampool.allocate(pname8size+1);
+		if (pname8size) {
+			charstring::copy(rpcparamnames[param],pname,pname8size);
 		}
-		rpcparamnames[param][pnamelen]='\0';
-		rpcparamnamesizes[param]=pnamelen;
+		rpcparamnames[param][pname8size]='\0';
+		rpcparamnamesizes[param]=pname8size;
 	}
 
 
@@ -21991,13 +21996,13 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 	// length is a single byte, so a longer name is truncated, the
 	// same way colName() truncates an over-length column name.
 	if (name && namesize) {
-		if (namesize>255) {
-			namesize=255;
+		size_t	namechars;
+		ucs2_t	*name16=utf8ToUcs2(name,(size_t)namesize,&namechars);
+		if (namechars>255) {
+			namechars=255;
 		}
-		ucs2_t	*name16=ucs2charstring::duplicate(name,
-							(size_t)namesize);
-		write(&resppacket,(byte_t)namesize);
-		write(&resppacket,name16,namesize);
+		write(&resppacket,(byte_t)namechars);
+		write(&resppacket,name16,namechars);
 		delete[] name16;
 		debugWrite("name: %s",name);
 	} else {
