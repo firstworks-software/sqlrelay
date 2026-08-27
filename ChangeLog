@@ -791,6 +791,13 @@
 		the standard sybase/sap OCS install directories for
 		libsybcomn64.so, the same way the sap connection module already
 		does, instead of only one hard-coded ocs version under two roots
+	fixed the tds protocol module sending ms-tds info/error tokens to a
+		pre-tds7 (tds 5.0) client instead of tds 5.0's own eed token -
+		the two shapes disagree on how the message number and severity
+		are packed, which made ct-lib misreport both, and the ms-tds
+		shape has no room at all for a sqlstate or transaction-state
+		field; a client that asks to have eed suppressed still gets
+		the old shape
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

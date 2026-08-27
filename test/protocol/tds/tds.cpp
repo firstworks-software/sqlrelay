@@ -152,23 +152,47 @@ CS_RETCODE clientMessageCallback(CS_CONTEXT *ctxt,
 						CS_FAIL:CS_SUCCEED;
 }
 
-CS_RETCODE serverMessageCallback(CS_CONTEXT *ctxt, 
+// #9491 - the severity and sqlstate of the most recent server message on
+// the primary connection, so a caller can assert on them once ct_connect()
+// returns.  Only meaningful on the sap ct-lib build (see the assertion
+// site): sqlstate is one of the fields a real tds 5.0 TDS5_TOKEN_EED
+// carries that the old TOKEN_INFO/TOKEN_ERROR shape had no room for at
+// all, so it's otherwise untested.
+CS_INT		lastservermsgseverity=-1;
+stringbuffer	lastservermsgsqlstate;
+
+CS_RETCODE serverMessageCallback(CS_CONTEXT *ctxt,
 					CS_CONNECTION *cnn,
 					CS_SERVERMSG *msgp) {
+	// CS_SERVERMSG already carries msgnumber and severity as separate,
+	// unpacked fields (unlike CS_CLIENTMSG.msgnumber, which packs
+	// severity/layer/origin/number into one CS_INT and needs the
+	// CS_SEVERITY()/CS_NUMBER() bitfield macros to pull them back out).
+	// Applying those macros here split msgp->msgnumber across the wrong
+	// byte boundaries, e.g. message 5704 severity 22 displayed as number
+	// 72 severity 22.
 	stringbuffer	errorstring;
 	errorstring.append("Server message: ")->append(msgp->text);
 	errorstring.append(" severity(")->
-		append((int32_t)CS_SEVERITY(msgp->msgnumber))->append(")");
+		append((int32_t)msgp->severity)->append(")");
 	errorstring.append(" number(")->
-		append((int32_t)CS_NUMBER(msgp->msgnumber))->append(")");
+		append((int32_t)msgp->msgnumber)->append(")");
 	errorstring.append(" state(")->
 		append((int32_t)msgp->state)->append(")");
 	errorstring.append(" line(")->
 		append((int32_t)msgp->line)->append(")");
+	errorstring.append(" sqlstate(")->
+		append((const char *)msgp->sqlstate,
+				(size_t)msgp->sqlstatelen)->append(")");
 	errorstring.append("  Server Name:")->append(msgp->svrname);
 	errorstring.append("  Procedure Name:")->append(msgp->proc);
 
 	stdoutput.printf("%s\n",errorstring.getString());
+
+	lastservermsgseverity=msgp->severity;
+	lastservermsgsqlstate.clear();
+	lastservermsgsqlstate.append((const char *)msgp->sqlstate,
+					(size_t)msgp->sqlstatelen);
 
 	return CS_SUCCEED;
 }
@@ -427,6 +451,30 @@ int main(int argc, char **argv) {
 					CS_DATA_NOINT8,
 					(CS_VOID *)&noint8),CS_SUCCEED);
 		assertEquals((int)noint8,(int)CS_FALSE);
+		stdoutput.printf("\n\n");
+
+
+		// #9491 - the login above (cs_locale/CS_SYB_CHARSET and
+		// CS_SYB_LANG, set before ct_connect()) makes
+		// preTds7SetCharsetAndLanguage() send back a charset-change
+		// and/or language-change info message, the same way the third
+		// connection's iso_1 charset does further down - so
+		// lastservermsgseverity/lastservermsgsqlstate, last written by
+		// serverMessageCallback() during that login, reflect one of
+		// those now.  Asserting severity and sqlstate here, rather than
+		// on the charset message specifically, is enough: every
+		// pre-tds7 info message this module sends carries the same
+		// severity and the same (currently constant) sqlstate default.
+		//
+		// This is the actual regression test for this ticket: severity
+		// was already correct before it (see the serverMessageCallback()
+		// fix above), but sqlstate is a field TOKEN_INFO/TOKEN_ERROR had
+		// no room for at all - a non-tds5 build, or a pre-fix module,
+		// would either never reach this callback with a sqlstate or
+		// would leave it empty.
+		stdoutput.printf("server message: eed severity/sqlstate\n");
+		assertEquals((int)lastservermsgseverity,0);
+		assertEquals(lastservermsgsqlstate.getString(),"ZZZZZ");
 		stdoutput.printf("\n\n");
 	}
 

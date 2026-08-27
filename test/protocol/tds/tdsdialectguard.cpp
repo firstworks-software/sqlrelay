@@ -28,8 +28,8 @@ static const unsigned char	STATUS_EOM=0x01;
 static const unsigned char	PRE_TDS7_LOGIN=0x02;
 static const unsigned char	SQL_BATCH=0x01;
 static const unsigned char	TABULAR_RESULT=0x04;
-static const unsigned char	TOKEN_ERROR=0xAA;
 static const unsigned char	TOKEN_LOGIN_ACK=0xAD;
+static const unsigned char	TOKEN_EED=0xE5;
 
 // pre-tds7 login record field sizes - see the PRE_TDS7_*_SIZE defines and
 // preTds7Login() in src/protocols/tds.cpp
@@ -294,8 +294,8 @@ int main(int argc, char **argv) {
 	// empty payload isn't enough to prove the guard works: sqlBatch()
 	// would decode it as a zero-length query, fail prepare/execute for
 	// that unrelated reason, and appendQueryError() would write
-	// TOKEN_ERROR anyway, even on a build without the guard.  A real
-	// query only comes back as TOKEN_ERROR up front if the pretds7
+	// TOKEN_EED anyway, even on a build without the guard.  A real
+	// query only comes back as TOKEN_EED up front if the pretds7
 	// guard actually fires before query execution; on an unguarded
 	// build it runs and returns column metadata instead.
 	bytebuffer	sqlbatchbody;
@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
 	gotresponse=readTdsPacketFirstToken(&sock,&packettype,&firsttoken);
 	report("sql batch refused with a protocol error",
 			gotresponse && packettype==TABULAR_RESULT &&
-					firsttoken==TOKEN_ERROR);
+					firsttoken==TOKEN_EED);
 
 	// pre-fix, sqlBatch() would actually execute this query and answer
 	// with column metadata (TOKEN_COLMETADATA) instead of refusing it;

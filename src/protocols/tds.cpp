@@ -57,6 +57,11 @@
 // TDS5_TOKEN_CURDELETE in tds 5.0, so a tds 5.0 client reading an 0x81
 // would take it for a cursor-delete request rather than metadata.
 #define TOKEN_ROWFMT			0xEE
+// The tds 5.0 counterpart of TOKEN_INFO/TOKEN_ERROR - a single token
+// carrying what those two, plus a sqlstate and transaction state, carry
+// between them.  A tds 5.0 client reads this instead of TOKEN_INFO/
+// TOKEN_ERROR unless it granted itself TDS5_CAP_RES_NOEED at login.
+#define TOKEN_EED			0xE5
 
 // Tds 5.0 request tokens - what a client can send inside a
 // PRE_TDS7_NORMAL buffer.  Only TDS5_TOKEN_LANGUAGE is implemented; the
@@ -448,6 +453,7 @@
 
 // The response mask is inverted - a bit means "don't send me this" -
 // except for the SUPPRESS_ ones, which mean "you may leave this out".
+#define	TDS5_CAP_RES_NOEED		2
 #define	TDS5_CAP_RES_NOTDSDEBUG		33
 #define	TDS5_CAP_RES_DATA_NOINT8	35
 #define	TDS5_CAP_RES_DATA_NOCOLUMNSTATUS	38
@@ -2088,11 +2094,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						uint16_t capcount,
 						const byte_t *clientmask);
 
-		// What the login ended up agreeing to.  All three answer
+		// What the login ended up agreeing to.  All four answer
 		// false when the client sent no capability token at all.
 		bool	requestCapabilityGranted(uint16_t cap);
 		bool	responseCapabilityGranted(uint16_t cap);
 		bool	clientRequestedCapability(uint16_t cap);
+		bool	clientRequestedResponseCapability(uint16_t cap);
 
 		// The tds 5.0 encrypted-password exchange.
 		// preTds7SecEncryptLogin() drives the whole thing and hands
@@ -2817,6 +2824,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *procname,
 					uint32_t linenumber);
 		void	appendInfoOrError(byte_t token,
+					uint32_t number,
+					byte_t state,
+					byte_t infoerrclass,
+					const char *msgtext,
+					const char *servername,
+					const char *procname,
+					uint32_t linenumber);
+		void	preTds7AppendEed(byte_t token,
 					uint32_t number,
 					byte_t state,
 					byte_t infoerrclass,
@@ -5296,8 +5311,12 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// session out differently - starting with the login ack, where 4.2
 	// spells success as 1 rather than as 5 - so answering it as though
 	// it were 5.0 hands it a response it can't parse.  Refuse it here
-	// instead.  The error itself is written pre-tds7 style, which 4.2
-	// and 5.0 do have in common, so the client can display it.
+	// instead.  The error itself is written using TOKEN_INFO/TOKEN_ERROR
+	// rather than TOKEN_EED, which 4.2 and 5.0 do have in common - not
+	// because appendInfoOrError() singles this refusal out, but because
+	// negotiatedtdsversion is still whatever init() left it at (700, not
+	// 500) until negotiateTdsVersion() runs, below, and that's what its
+	// TOKEN_EED gate keys on.
 	if (clienttdsversion!=500) {
 		debugStart("pre-tds7 login");
 		debugWrite("unsupported pre-tds7 version: 0x%08x (%d)",
@@ -5305,10 +5324,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 		debugEnd();
 		// The login is refused whether or not the error makes it
 		// out, so the send result isn't the return value here, the
-		// same as the tls-required refusal above.  The error tokens
-		// are already shaped correctly - the only version-dependent
-		// choice in them is negotiatedtdsversion<720, and every
-		// pre-tds7 version is.
+		// same as the tls-required refusal above.
 		sendPreTds7VersionUnsupportedError();
 		return false;
 	}
@@ -5620,6 +5636,11 @@ bool sqlrprotocol_tds::clientRequestedCapability(uint16_t cap) {
 	return capabilityBitIsSet(clientrequestmask,clientrequestmasklen,cap);
 }
 
+bool sqlrprotocol_tds::clientRequestedResponseCapability(uint16_t cap) {
+	return capabilityBitIsSet(clientresponsemask,
+					clientresponsemasklen,cap);
+}
+
 // Answers the login's capability token.
 //
 // A real ase answers with what the client asked for and it supports -
@@ -5715,10 +5736,12 @@ void sqlrprotocol_tds::capability() {
 	// as (see rpcparamtds5types), so promising never to send a given
 	// type would be a promise this module can't keep.
 	//
-	// SUPPRESS_FMT is the odd one out - it means "you may leave the
-	// format out", not "don't send me one" - and it's offered here
-	// rather than hardcoded, so a client that doesn't ask for it
-	// doesn't get told it was granted.
+	// SUPPRESS_FMT and NOEED are the odd ones out - SUPPRESS_FMT means
+	// "you may leave the format out", not "don't send me one", and NOEED
+	// is answered rather than simply honored (see appendInfoOrError(),
+	// which falls back to TOKEN_INFO/TOKEN_ERROR once this is granted) -
+	// so both are offered here rather than hardcoded, so a client that
+	// doesn't ask for either doesn't get told it was granted.
 	static const uint16_t	responsecaps[]={
 		// no debug token is ever written
 		TDS5_CAP_RES_NOTDSDEBUG,
@@ -5728,7 +5751,8 @@ void sqlrprotocol_tds::capability() {
 		TDS5_CAP_RES_NO_WIDETABLES,
 		TDS5_CAP_RES_SUPPRESS_FMT,
 		// no control token is ever written
-		TDS5_CAP_RES_NO_TDSCONTROL
+		TDS5_CAP_RES_NO_TDSCONTROL,
+		TDS5_CAP_RES_NOEED
 	};
 
 	// Answer at the length the client declared.  The intersection is
@@ -15601,7 +15625,10 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	// Server Name:... Procedure Name:...
 	// (2 spaces before "Server Name", no space after the colons)
 	byte_t		state=1;
-	byte_t		errclass=0;
+	// 16 rather than 0 - this is always an error, and TOKEN_EED reads a
+	// class of 10 or less as informational.  Overwritten below when the
+	// error string carries its own severity.
+	byte_t		errclass=16;
 	uint32_t	linenumber=1;
 	char		*srvn=NULL;
 	char		*procn=NULL;
@@ -21778,6 +21805,27 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 		procname=procnameconv;
 	}
 
+	// A tds 5.0 client that hasn't turned EED off gets a TDS5_TOKEN_EED
+	// instead of this shape - see preTds7AppendEed().  The check has to
+	// wait until here rather than gating the whole function, because the
+	// charset conversion above is shared between both shapes.  This asks
+	// what the client's capability token requested rather than what
+	// capability() granted, because an auth failure or a sec-encrypt-
+	// login error can reach here before capability() has run -
+	// clientresponsemask is already parsed by then, but
+	// grantedresponsemask isn't filled in until capability() answers it,
+	// and this module always grants NOEED when asked, so the two agree
+	// everywhere capability() has already run.
+	if (pretds7 && negotiatedtdsversion==500 &&
+			!clientRequestedResponseCapability(TDS5_CAP_RES_NOEED)) {
+		preTds7AppendEed(token,number,state,infoerrclass,
+					msgtext,servername,procname,linenumber);
+		delete[] msgtextconv;
+		delete[] srvnameconv;
+		delete[] procnameconv;
+		return;
+	}
+
 	// the name lengths are sent as single bytes
 	size_t		srvnamelen=charstring::getLength(servername);
 	if (srvnamelen>255) {
@@ -21840,6 +21888,106 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 	delete[] procnameconv;
 }
 
+// The tds 5.0 shape of an info/error message - see TOKEN_EED.  Called by
+// appendInfoOrError() once its charset conversion has already run, so
+// msgtext/servername/procname here are already in the client's charset.
+//
+// sqlstate, status and transtate have no equivalent in appendInfoOrError()'s
+// argument list, because nothing upstream has a real value for any of them
+// yet: no connection module forwards a backend sqlstate through
+// appendQueryError() (a separate concern from this ticket), this module
+// never sends the TDS5_TOKEN_PARAMFMT/PARAMS pair that a status of
+// TDS_EED_FOLLOWS would promise, and the transaction state a real ASE puts
+// here doesn't match transState()'s TDS5_TRAN_* values (see done()) - it's
+// a plain in-transaction/not flag instead.  So all three are fixed here
+// rather than threaded through as arguments.
+void sqlrprotocol_tds::preTds7AppendEed(byte_t token,
+					uint32_t number,
+					byte_t state,
+					byte_t infoerrclass,
+					const char *msgtext,
+					const char *servername,
+					const char *procname,
+					uint32_t linenumber) {
+
+	byte_t		eedtoken=TOKEN_EED;
+
+	// no sqlstate is available yet (see the note above) - "ZZZZZ" is
+	// what a real ASE sends for its own informational messages, and
+	// what freetds treats as "no sqlstate" rather than looking one up
+	const char	*sqlstate="ZZZZZ";
+	size_t		sqlstatelen=charstring::getLength(sqlstate);
+
+	// no extended error data (a TDS5_TOKEN_PARAMFMT/PARAMS pair) ever
+	// follows
+	byte_t		status=0x00;
+
+	// a plain in-transaction/not flag - not transState()'s TDS5_TRAN_*
+	uint16_t	transtate=(cont->getInTransaction())?0:1;
+
+	// the name lengths are sent as single bytes
+	size_t		srvnamelen=charstring::getLength(servername);
+	if (srvnamelen>255) {
+		srvnamelen=255;
+	}
+	size_t		procnamelen=charstring::getLength(procname);
+	if (procnamelen>255) {
+		procnamelen=255;
+	}
+
+	// everything other than the message text
+	size_t		fixedsize=sizeof(uint32_t)+
+					sizeof(byte_t)+
+					sizeof(byte_t)+
+					varcharSize(sizeof(byte_t),sqlstatelen)+
+					sizeof(byte_t)+
+					sizeof(uint16_t)+
+					sizeof(uint16_t)+
+					varcharSize(sizeof(byte_t),srvnamelen)+
+					varcharSize(sizeof(byte_t),procnamelen)+
+					sizeof(uint16_t);
+
+	// truncate the message text so that the token size fits in 16 bits.
+	// charSize() is always 1 here - this is only ever reached on the
+	// pretds7 path.
+	size_t		msgtextlen=charstring::getLength(msgtext);
+	size_t		maxmsgtextlen=(65535-fixedsize)/charSize();
+	if (msgtextlen>maxmsgtextlen) {
+		msgtextlen=maxmsgtextlen;
+	}
+
+	uint16_t	tokensize=(uint16_t)
+				(fixedsize+msgtextlen*charSize());
+
+	debugStart((token==TOKEN_INFO)?"info":"error");
+	debugTokenType(eedtoken);
+	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("number: %d",number);
+	debugWrite("state: %d",state);
+	debugWrite("class: %d",infoerrclass);
+	debugWrite("sqlstate: %s",sqlstate);
+	debugWrite("status: 0x%02x",status);
+	debugWrite("transtate: %d",transtate);
+	debugWrite("msgtext: %s",msgtext);
+	debugWrite("srvname: %s",servername);
+	debugWrite("procname: %s",procname);
+	debugWrite("linenumber: %d",linenumber);
+	debugEnd();
+
+	write(&resppacket,eedtoken);
+	write(&resppacket,tokensize);
+	write(&resppacket,number);
+	write(&resppacket,state);
+	write(&resppacket,infoerrclass);
+	writeVarchar(&resppacket,sizeof(byte_t),sqlstate,sqlstatelen);
+	write(&resppacket,status);
+	write(&resppacket,transtate);
+	writeVarchar(&resppacket,sizeof(uint16_t),msgtext,msgtextlen);
+	writeVarchar(&resppacket,sizeof(byte_t),servername,srvnamelen);
+	writeVarchar(&resppacket,sizeof(byte_t),procname,procnamelen);
+	write(&resppacket,(uint16_t)linenumber);
+}
+
 bool sqlrprotocol_tds::sendError(uint32_t number,
 					byte_t state,
 					byte_t errclass,
@@ -21862,7 +22010,9 @@ bool sqlrprotocol_tds::sendError(uint32_t number,
 
 bool sqlrprotocol_tds::sendUnimplementedFeatureError() {
 	// FIXME: is there a real error message/number/state/class for this?
-	return sendError(0,1,10,"Unimplemented feature",1);
+	// class 16 rather than 10 - this is an error, and TOKEN_EED reads a
+	// class of 10 or less as informational
+	return sendError(0,1,16,"Unimplemented feature",1);
 }
 
 bool sqlrprotocol_tds::sendTlsRequiredError() {
@@ -21875,7 +22025,9 @@ bool sqlrprotocol_tds::sendTlsRequiredError() {
 
 bool sqlrprotocol_tds::sendTdsProtocolError() {
 	// FIXME: is there a real error message/number/state/class for this?
-	return sendError(0,0,10,"TDS Protocol Error",1);
+	// class 16 rather than 10 - this is an error, and TOKEN_EED reads a
+	// class of 10 or less as informational
+	return sendError(0,0,16,"TDS Protocol Error",1);
 }
 
 void sqlrprotocol_tds::queryTooLargeMessage(size_t querysize,
@@ -22712,6 +22864,9 @@ void sqlrprotocol_tds::debugTokenType(byte_t token) {
 			break;
 		case TOKEN_ROWFMT:
 			tokenstring="TOKEN_ROWFMT";
+			break;
+		case TOKEN_EED:
+			tokenstring="TOKEN_EED";
 			break;
 		default:
 			tokenstring="unknown token";
