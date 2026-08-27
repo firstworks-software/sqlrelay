@@ -6345,8 +6345,8 @@ int main(int argc, char **argv) {
 	// CS_FAIL and neither ever touches the value buffer, so there is
 	// no overflow risk through this call on either library.  Real
 	// cursor state introspection is reachable through
-	// ct_cmd_props(CS_GET,...) instead, on both libraries - this test
-	// does not exercise that path.
+	// ct_cmd_props(CS_GET,...) instead, on both libraries - the block
+	// below exercises that path.
 	stdoutput.printf("ct_res_info: CS_CUR_ family is not a valid "
 						"operation\n");
 	CS_INT	cursinfo[4]={CS_CUR_STATUS,CS_CUR_ID,
@@ -6369,6 +6369,72 @@ int main(int argc, char **argv) {
 		assertEquals(cursinfovalue.intvalue,-987654);
 		assertEquals(cursinfolen,(TDSTEST_LINKED_WITH_FREETDS)?-987654:0);
 	}
+	stdoutput.printf("\n");
+
+
+	// The same four properties answer through ct_cmd_props on both
+	// libraries.  Every combo reachable through this harness returns the
+	// same value for each property below whether the backend is reached
+	// natively or through sqlrelay.  curs1 is still open and read-only
+	// here, and the fetch loop has not run yet, so this is the state each
+	// value describes.
+	stdoutput.printf("ct_cmd_props: CS_CUR_ family\n");
+	cursinfobuffer	curspropvalue;
+	CS_INT		curspropoutlen;
+
+	bytestring::zero(&curspropvalue,sizeof(curspropvalue));
+	curspropvalue.intvalue=-987654;
+	curspropoutlen=-987654;
+	assertEquals(ct_cmd_props(cmd,CS_GET,CS_CUR_STATUS,
+				(CS_VOID *)&curspropvalue,CS_UNUSED,
+				&curspropoutlen),CS_SUCCEED);
+	// The status is the one value of the four the two libraries disagree
+	// on.  Sap's ct-lib reports what ase sent in the tds 5.0 curinfo
+	// token, which is open|rdonly.  freetds 1.3.3 never sees such a token
+	// over tds 7.x and tracks the status itself, adding rowcount once
+	// CS_CURSOR_ROWS is set - 42 rather than 10, against a real sql
+	// server and against sqlrelay in front of either backend.
+	assertEquals(curspropvalue.intvalue,
+			(TDSTEST_LINKED_WITH_FREETDS)?
+				(CS_CURSTAT_OPEN|CS_CURSTAT_RDONLY|
+						CS_CURSTAT_ROWCOUNT):
+				(CS_CURSTAT_OPEN|CS_CURSTAT_RDONLY));
+	assertEquals(curspropoutlen,4);
+
+	// the id is assigned by the server and comes back different under
+	// each library, so only that it was written at all can be checked
+	bytestring::zero(&curspropvalue,sizeof(curspropvalue));
+	curspropvalue.intvalue=-987654;
+	curspropoutlen=-987654;
+	assertEquals(ct_cmd_props(cmd,CS_GET,CS_CUR_ID,
+				(CS_VOID *)&curspropvalue,CS_UNUSED,
+				&curspropoutlen),CS_SUCCEED);
+	assertTrue(curspropvalue.intvalue!=-987654);
+	assertEquals(curspropoutlen,4);
+
+	// the only one of the four that takes a real buflen rather than
+	// CS_UNUSED, and sap's ct-lib counts the null terminator in the
+	// length it reports back while freetds does not
+	bytestring::zero(&curspropvalue,sizeof(curspropvalue));
+	curspropoutlen=-987654;
+	assertEquals(ct_cmd_props(cmd,CS_GET,CS_CUR_NAME,
+				(CS_VOID *)&curspropvalue,
+				(CS_INT)sizeof(curspropvalue.charvalue),
+				&curspropoutlen),CS_SUCCEED);
+	assertEquals(curspropvalue.charvalue,cursid);
+	assertEquals(curspropoutlen,(TDSTEST_LINKED_WITH_FREETDS)?5:6);
+
+	// this echoes the CS_CURSOR_ROWS count asked for at open time rather
+	// than counting rows, so it stays 1 no matter how many rows the
+	// select behind the cursor returns
+	bytestring::zero(&curspropvalue,sizeof(curspropvalue));
+	curspropvalue.intvalue=-987654;
+	curspropoutlen=-987654;
+	assertEquals(ct_cmd_props(cmd,CS_GET,CS_CUR_ROWCOUNT,
+				(CS_VOID *)&curspropvalue,CS_UNUSED,
+				&curspropoutlen),CS_SUCCEED);
+	assertEquals(curspropvalue.intvalue,1);
+	assertEquals(curspropoutlen,4);
 	stdoutput.printf("\n");
 
 
