@@ -844,6 +844,13 @@
 		valid ttc codes were invalid, added the missing TTC_IO_VECTOR
 		constant for one of them, and fixed putError() naming its ttc
 		error code with TTI_EXECUTE, a constant from an unrelated table
+	oracle protocol module: deleted cancel() (no wire input can reach it)
+		and the PACKET_MARKER constant (unused), the four
+		putTti1Response() through putTti4Response() stubs and their
+		unreachable switch arms (sendTtiResponse() never selects a
+		version below TTI_VERSION_MIN), and the always-false query3
+		branch of putColumnDefinition() (its only caller always passes
+		false)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -26,7 +26,6 @@
 #define	PACKET_NULL		7
 #define	PACKET_ABORT		9
 #define	PACKET_RESEND		11
-#define	PACKET_MARKER		12
 #define	PACKET_ATTENTION	13
 #define	PACKET_CONTROL_INFO	14
 
@@ -895,10 +894,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t runtimecapssize);
 		void	putTti6Response();
 		void	putTti5Response();
-		void	putTti4Response();
-		void	putTti3Response();
-		void	putTti2Response();
-		void	putTti1Response();
 
 		bool	dataTypeNegotiation();
 		bool	recvDataTypeRequest();
@@ -1042,11 +1037,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	cacheColumnDefinitions(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putColumnDefinitions(sqlrservercursor *cursor,
-							uint32_t colcount,
-							bool query3);
+							uint32_t colcount);
 		void	putColumnDefinition(sqlrservercursor *cursor,
-							uint32_t column,
-							bool query3);
+							uint32_t column);
 		uint16_t	getColumnType(const char *columntypestring,
 						uint16_t columntypesize,
 						uint32_t scale);
@@ -1086,9 +1079,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// disconnect...
 		bool	disconnect(const byte_t *rp);
 		bool	sendDisconnectResponse();
-
-		// cancel...
-		bool	cancel(const byte_t *rp);
 
 		// version
 		bool	version(const byte_t *rp);
@@ -3456,8 +3446,8 @@ bool sqlrprotocol_oracle::recvTtiRequest() {
 bool sqlrprotocol_oracle::sendTtiResponse() {
 
 	// pick the highest version the client offers that we implement
-	// (nothing requires the client's list to be in descending order, and
-	// anything below TTI_VERSION_MIN has only an empty stub to answer with)
+	// (nothing requires the client's list to be in descending order;
+	// anything below TTI_VERSION_MIN is unsupported and rejected below)
 	ttiversion=0;
 	for (uint32_t i=0; i<ttiversioncount; i++) {
 		if (ttiversions[i]>=TTI_VERSION_MIN &&
@@ -3488,22 +3478,6 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 		case 5:
 			debugWrite("calling putTti5Response");
 			putTti5Response();
-			break;
-		case 4:
-			debugWrite("calling putTti4Response");
-			putTti4Response();
-			break;
-		case 3:
-			debugWrite("calling putTti3Response");
-			putTti3Response();
-			break;
-		case 2:
-			debugWrite("calling putTti2Response");
-			putTti2Response();
-			break;
-		case 1:
-			debugWrite("calling putTti1Response");
-			putTti1Response();
 			break;
 	}
 
@@ -3767,54 +3741,6 @@ void sqlrprotocol_oracle::putTti5Response() {
 		debugEnd();
 	}
 	putTtiResponse(ttiversion,NULL,0,NULL,0);
-}
-
-void sqlrprotocol_oracle::putTti4Response() {
-
-	// oracle ??? supports TTI 4 (and lower)
-	// FIXME: implement this...
-	if (getDebug()) {
-		debugStart("tti 4 response");
-		debugWrite("protocol version: %d",ttiversion);
-		debugWrite("not implemented");
-		debugEnd();
-	}
-}
-
-void sqlrprotocol_oracle::putTti3Response() {
-
-	// oracle ??? supports TTI 3 (and lower)
-	// FIXME: implement this...
-	if (getDebug()) {
-		debugStart("tti 3 response");
-		debugWrite("protocol version: %d",ttiversion);
-		debugWrite("not implemented");
-		debugEnd();
-	}
-}
-
-void sqlrprotocol_oracle::putTti2Response() {
-
-	// oracle ??? supports TTI 2 (and lower)
-	// FIXME: implement this...
-	if (getDebug()) {
-		debugStart("tti 2 response");
-		debugWrite("protocol version: %d",ttiversion);
-		debugWrite("not implemented");
-		debugEnd();
-	}
-}
-
-void sqlrprotocol_oracle::putTti1Response() {
-
-	// oracle ??? supports TTI 1 (and lower)
-	// FIXME: implement this...
-	if (getDebug()) {
-		debugStart("tti 1 response");
-		debugWrite("protocol version: %d",ttiversion);
-		debugWrite("not implemented");
-		debugEnd();
-	}
 }
 
 // the layout of this exchange - the request header, the two length-prefixed
@@ -7630,7 +7556,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 			// send column definitions...
 			if (define) {
-				putColumnDefinitions(cursor,colcount,false);
+				putColumnDefinitions(cursor,colcount);
 			}
 
 			// send "iov" (whatever that is)...
@@ -7870,8 +7796,7 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 }
 
 void sqlrprotocol_oracle::putColumnDefinitions(sqlrservercursor *cursor,
-							uint32_t colcount,
-							bool query3) {
+							uint32_t colcount) {
 
 	byte_t	sizetotal=0;
 	for (uint32_t i=0; i<colcount; i++) {
@@ -7890,18 +7815,16 @@ void sqlrprotocol_oracle::putColumnDefinitions(sqlrservercursor *cursor,
 	debugEnd();
 
 	debugStart("column definitions");
-	debugWrite("query3: %d",(int)query3);
 
 	for (uint32_t i=0; i<colcount; i++) {
-		putColumnDefinition(cursor,i,query3);
+		putColumnDefinition(cursor,i);
 	}
 
 	debugEnd();
 }
 
 void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
-							uint32_t column,
-							bool query3) {
+							uint32_t column) {
 	uint16_t	curid=cont->getId(cursor);
 
 	//uint16_t	sqlrcolumntype=cont->getColumnType(cursor,column);
@@ -7955,13 +7878,8 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 	writeBE(&reqpacket,marker3);
 	writeBE(&reqpacket,nullable);
 	// yes, twice
-	if (query3) {
-		write(&reqpacket,(byte_t)namesize);
-		write(&reqpacket,(byte_t)namesize);
-	} else {
-		write(&reqpacket,alias);
-		write(&reqpacket,alias);
-	}
+	write(&reqpacket,alias);
+	write(&reqpacket,alias);
 	writeBE(&reqpacket,namesize);
 	write(&reqpacket,name,namesize);
 	writeBE(&reqpacket,marker4);
@@ -8530,19 +8448,6 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	debugEnd();
 
 	return sendPacket(true);
-}
-
-bool sqlrprotocol_oracle::cancel(const byte_t *rp) {
-
-	// FIXME: implement this
-
-	uint16_t	cursorid=hackcursorid;
-
-	debugStart("cancel request");
-	debugWrite("cursor id: %d",cursorid);
-	debugEnd();
-
-	return false;
 }
 
 bool sqlrprotocol_oracle::version(const byte_t *rp) {
