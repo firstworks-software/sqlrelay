@@ -19131,12 +19131,11 @@ void sqlrprotocol_tds::positionedBind(sqlrserverbindvar *bv,
 	// binds above work around it.  There's no exactness guard here like
 	// the integer branch has - a very wide decimal doesn't round-trip
 	// through a double either - but that's the same tradeoff those
-	// existing binds already make.
+	// existing binds already make.  "value" is safe to hand straight to
+	// convertToFloat() with no bindpool copy of its own - it comes out
+	// of tdsrows::setField(), which already null terminates it.
 	if (isFloatTypeInt((int16_t)coltype) && valuesize) {
-		char	*numvalue=(char *)bindpool->allocate(valuesize+1);
-		bytestring::copy(numvalue,value,valuesize);
-		numvalue[valuesize]='\0';
-		bulkDouble(bv,(double)charstring::convertToFloat(numvalue));
+		bulkDouble(bv,(double)charstring::convertToFloat(value));
 		return;
 	}
 
