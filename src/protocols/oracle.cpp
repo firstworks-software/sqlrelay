@@ -94,6 +94,7 @@
 #define TTC_ROW_DATA			0x07
 #define TTC_OK				0x08
 #define TTC_STATUS			0x09
+#define TTC_IO_VECTOR			0x0b
 #define TTC_DESCRIBE_INFO		0x10
 #define TTC_EXTENDED_TTI_FUNCTION	0x11
 #define TTC_BIT_VECTOR			0x15
@@ -6006,8 +6007,7 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 	// FIXME: decode this...
 
 	uint16_t	dataflags=0;
-	// FIXME: not a valid ttccode type...
-	byte_t	ttccode=4;
+	byte_t	ttccode=TTC_ERROR;
 	byte_t unknown1[]={
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00
@@ -6165,8 +6165,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 	if (binds) {
 
 		dataflags=0;
-		// FIXME: not a valid ttccode type...
-		ttccode=11;
+		ttccode=TTC_IO_VECTOR;
 
 		// FIXME: decode this...
 
@@ -7403,8 +7402,7 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 	// FIXME: decode this...
 
 	uint16_t	dataflags=0;
-	// FIXME: not a valid ttccode type...
-	byte_t	ttccode=4;
+	byte_t	ttccode=TTC_ERROR;
 	byte_t	unknown[]={
 		0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
@@ -8397,7 +8395,7 @@ void sqlrprotocol_oracle::putError(const char *error) {
 void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 
 	uint16_t	dataflags=0;
-	byte_t		ttccode=TTI_EXECUTE;
+	byte_t		ttccode=TTC_ERROR;
 
 	const byte_t	unknown1[]={
 		0x00, 0x00, 0x00, 0x00, 0x7B,
@@ -8479,8 +8477,7 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
-	// FIXME: not a valid ttccode type...
-	byte_t		ttccode=9;
+	byte_t		ttccode=TTC_STATUS;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
