@@ -986,6 +986,12 @@
 		ase's implicit-conversion refusal still hit those types;
 		they're bound as a number now too, the same way money and
 		decimal rpc parameters already were
+	fixed the oracle protocol module's execute() sending a misparsed
+		cursor id in the "cursor not open" error on a query3
+		session - execute() doesn't branch by session when parsing,
+		so a query3 session's request misparses under its legacy
+		layout; it now reports the last touched cursor's wire id
+		there instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

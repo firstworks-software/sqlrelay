@@ -7307,7 +7307,10 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	}
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError(cursorid);
+		// cursorid is misparsed in a query3 session - report the
+		// last touched cursor's wire id instead
+		return sendCursorNotOpenError((query3session)?
+				(uint16_t)(lastcursorid+1):cursorid);
 	}
 	if (!query3session) {
 		lastcursorid=cont->getId(cursor);
