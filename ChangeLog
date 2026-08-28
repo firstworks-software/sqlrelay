@@ -858,6 +858,13 @@
 		trailing 4 bytes, previously a fixed, unexplained value, are
 		now a packed version number derived from the banner's own
 		version
+	oracle protocol module: putField() wrote a CHAR/VARCHAR field's length
+		byte as a truncating single-byte cast of its actual size while
+		still writing the full, untruncated field data, desyncing the
+		wire stream for values of 256 bytes or more; such values are
+		now clamped to 255 bytes for both the length byte and the data
+		written, as a safety fix - the correct wire encoding for
+		longer legacy values is still unconfirmed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

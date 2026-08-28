@@ -8149,11 +8149,19 @@ void sqlrprotocol_oracle::putField(const char *field,
 	switch (columntype) {
 		case ORACLE_TYPE_CHAR:
 		case ORACLE_TYPE_VARCHAR:
-			// what about fields longer than 255 chars?
-			write(&reqpacket,(byte_t)fieldsize);
-			write(&reqpacket,field,fieldsize);
-			debugWrite("field size: %d",(byte_t)fieldsize);
-			debugWrite("field: \"%.*s\"",(int)fieldsize,field);
+			{
+			// The legacy form writes a one-byte size and that
+			// many bytes.  What a real server sends for a value
+			// longer than that hasn't been confirmed, so clamp
+			// rather than guess.  Writing the full value under a
+			// truncated size byte would desync the stream for the
+			// rest of the packet.
+			byte_t	size=(fieldsize>255)?255:(byte_t)fieldsize;
+			write(&reqpacket,size);
+			write(&reqpacket,field,(size_t)size);
+			debugWrite("field size: %d",size);
+			debugWrite("field: \"%.*s\"",(int)size,field);
+			}
 			break;
 		case ORACLE_TYPE_NUMBER:
 			// FIXME: implement this
