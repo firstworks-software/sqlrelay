@@ -809,6 +809,16 @@
 		as a tds 5.0 language or dynamic sql command instead of
 		running it on the backend, where it would have left the
 		pooled connection in bulk-copy mode
+	fixed the tds protocol module's appendInfoOrError() mangling a
+		multi-byte utf-8 info/error message, server name, or procedure
+		name for a tds 7.x client - the same defect class fixed in
+		colName() and returnValueHeader(), where writeVarchar() widened
+		the string to ucs-2 one unit per source byte instead of
+		decoding it; the strings are now converted through utf8ToUcs2()
+		up front, with the token's precomputed size math (the name
+		255-character clamp, the message-text truncation, and the
+		token size itself) reworked to count ucs-2 units instead of
+		utf-8 bytes to match
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

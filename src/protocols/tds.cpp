@@ -2802,6 +2802,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t lensize,
 					const wchar_t *str,
 					size_t length);
+		void	writeVarchar(bytebuffer *buffer,
+					size_t lensize,
+					const ucs2_t *str,
+					size_t length);
 
 		void	envChange(byte_t type,
 					const wchar_t *newvalue,
@@ -21766,6 +21770,26 @@ void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
 	}
 }
 
+// "str" is already ucs-2, e.g. from utf8ToUcs2(), and "length" is a count
+// of ucs-2 units - the caller has already done the real UTF-8-aware
+// conversion and sized things accordingly, so this just writes the length
+// prefix and the units, with no charset handling of its own.  Only ever
+// used on the tds7+ path, since a pre-tds7 client's strings never become
+// ucs-2 in the first place.
+void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
+					size_t lensize,
+					const ucs2_t *str,
+					size_t length) {
+
+	writeVarcharLength(buffer,lensize,length);
+
+	if (!length) {
+		return;
+	}
+
+	write(buffer,str,length);
+}
+
 void sqlrprotocol_tds::envChange(byte_t type,
 					const wchar_t *newvalue,
 					size_t newvaluelen,
@@ -21885,12 +21909,36 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 		return;
 	}
 
+	// A pre-tds7 client's strings are already single-byte, in the
+	// client's charset, from the utf8ToClientCharset() conversion above,
+	// so their lengths are plain byte counts.  A tds7+ client needs them
+	// as ucs-2, converted from utf-8 by utf8ToUcs2() - the real,
+	// UTF-8-decoding converter, not a byte-per-unit widening - so their
+	// lengths are ucs-2 character counts instead.  Everything below,
+	// from the truncation to the token size math, has to work in
+	// whichever of those two units actually lands on the wire, since
+	// varcharSize()/charSize() already vary by pretds7.
+	ucs2_t		*srvname16=NULL;
+	ucs2_t		*procname16=NULL;
+	ucs2_t		*msgtext16=NULL;
+
 	// the name lengths are sent as single bytes
-	size_t		srvnamelen=charstring::getLength(servername);
+	size_t		srvnamelen;
+	size_t		procnamelen;
+	if (pretds7) {
+		srvnamelen=charstring::getLength(servername);
+		procnamelen=charstring::getLength(procname);
+	} else {
+		srvname16=utf8ToUcs2(servername,
+					charstring::getLength(servername),
+					&srvnamelen);
+		procname16=utf8ToUcs2(procname,
+					charstring::getLength(procname),
+					&procnamelen);
+	}
 	if (srvnamelen>255) {
 		srvnamelen=255;
 	}
-	size_t		procnamelen=charstring::getLength(procname);
 	if (procnamelen>255) {
 		procnamelen=255;
 	}
@@ -21907,7 +21955,14 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 						sizeof(uint32_t));
 
 	// truncate the message text so that the token size fits in 16 bits
-	size_t		msgtextlen=charstring::getLength(msgtext);
+	size_t		msgtextlen;
+	if (pretds7) {
+		msgtextlen=charstring::getLength(msgtext);
+	} else {
+		msgtext16=utf8ToUcs2(msgtext,
+					charstring::getLength(msgtext),
+					&msgtextlen);
+	}
 	size_t		maxmsgtextlen=(65535-fixedsize)/charSize();
 	if (msgtextlen>maxmsgtextlen) {
 		msgtextlen=maxmsgtextlen;
@@ -21933,9 +21988,15 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 	write(&resppacket,number);
 	write(&resppacket,state);
 	write(&resppacket,infoerrclass);
-	writeVarchar(&resppacket,sizeof(uint16_t),msgtext,msgtextlen);
-	writeVarchar(&resppacket,sizeof(byte_t),servername,srvnamelen);
-	writeVarchar(&resppacket,sizeof(byte_t),procname,procnamelen);
+	if (pretds7) {
+		writeVarchar(&resppacket,sizeof(uint16_t),msgtext,msgtextlen);
+		writeVarchar(&resppacket,sizeof(byte_t),servername,srvnamelen);
+		writeVarchar(&resppacket,sizeof(byte_t),procname,procnamelen);
+	} else {
+		writeVarchar(&resppacket,sizeof(uint16_t),msgtext16,msgtextlen);
+		writeVarchar(&resppacket,sizeof(byte_t),srvname16,srvnamelen);
+		writeVarchar(&resppacket,sizeof(byte_t),procname16,procnamelen);
+	}
 	if (negotiatedtdsversion<720) {
 		write(&resppacket,(uint16_t)linenumber);
 	} else {
@@ -21945,6 +22006,9 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 	delete[] msgtextconv;
 	delete[] srvnameconv;
 	delete[] procnameconv;
+	delete[] srvname16;
+	delete[] procname16;
+	delete[] msgtext16;
 }
 
 // The tds 5.0 shape of an info/error message - see TOKEN_EED.  Called by
