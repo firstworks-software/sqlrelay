@@ -77,9 +77,23 @@ struct datebind {
 	int16_t		*hour;
 	int16_t		*minute;
 	int16_t		*second;
+	int32_t		*microsecond;
 	const char	**tz;
 	bool		*isnegative;
 	OCIDate		ocidate;
+	#ifdef OCI_DTYPE_TIMESTAMP
+	// OCIDate (SQLT_ODT, above) has no sub-second component, so
+	// microsecond-precision output binds go through an OCIDateTime
+	// descriptor instead
+	OCIDateTime	*ocidatetime;
+	datebind() : ocidatetime(NULL) {}
+	~datebind() {
+		if (ocidatetime) {
+			OCIDescriptorFree(ocidatetime,
+					OCI_DTYPE_TIMESTAMP);
+		}
+	}
+	#endif
 };
 
 class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
@@ -4252,24 +4266,48 @@ bool oraclecursor::outputBind(const char *variable,
 	db->hour=hour;
 	db->minute=minute;
 	db->second=second;
+	db->microsecond=microsecond;
 	db->tz=tz;
 	db->isnegative=isnegative;
 	outdatebind[oraoutbindcount]=db;
+
+	dvoid	*bindbuf;
+	sb4	bindbufsize;
+	ub2	bindtype;
+	#ifdef OCI_DTYPE_TIMESTAMP
+	if (OCIDescriptorAlloc((dvoid *)oracleconn->env,
+			(dvoid **)&(db->ocidatetime),
+			(ub4)OCI_DTYPE_TIMESTAMP,
+			(size_t)0,(dvoid **)0)!=OCI_SUCCESS) {
+		delete db;
+		outdatebind[oraoutbindcount]=NULL;
+		return false;
+	}
+	bindbuf=(dvoid *)&(db->ocidatetime);
+	bindbufsize=(sb4)sizeof(OCIDateTime *);
+	bindtype=SQLT_TIMESTAMP;
+	#else
+	bindbuf=(dvoid *)&(db->ocidate);
+	bindbufsize=(sb4)sizeof(OCIDate);
+	bindtype=SQLT_ODT;
+	#endif
 
 	if (charstring::isInteger(variable+1,variablesize-1)) {
 		ub4	pos=charstring::convertToInteger(variable+1);
 		if (!pos) {
 			bindformaterror=true;
+			delete db;
+			outdatebind[oraoutbindcount]=NULL;
 			return false;
 		}
 		if (OCIBindByPos(stmt,&outbindpp[oraoutbindcount],
 				oracleconn->err,pos,
-				(dvoid *)&(db->ocidate),
-				(sb4)sizeof(OCIDate),
-				SQLT_ODT,
+				bindbuf,bindbufsize,bindtype,
 				(dvoid *)isnull,(ub2 *)0,
 				(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
+			delete db;
+			outdatebind[oraoutbindcount]=NULL;
 			return false;
 		}
 		boundbypos[pos-1]=true;
@@ -4277,12 +4315,12 @@ bool oraclecursor::outputBind(const char *variable,
 		if (OCIBindByName(stmt,&outbindpp[oraoutbindcount],
 				oracleconn->err,
 				(text *)variable,(sb4)variablesize,
-				(dvoid *)&(db->ocidate),
-				(sb4)sizeof(OCIDate),
-				SQLT_ODT,
+				bindbuf,bindbufsize,bindtype,
 				(dvoid *)isnull,(ub2 *)0,
 				(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
+			delete db;
+			outdatebind[oraoutbindcount]=NULL;
 			return false;
 		}
 	}
@@ -4864,14 +4902,30 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 	for (uint16_t i=0; i<oraoutbindcount; i++) {
 		if (outdatebind[i]) {
 			datebind	*db=outdatebind[i];
-			sb2	year;
-			ub1	month;
-			ub1	day;
-			ub1	hour;
-			ub1	minute;
-			ub1	second;
+			sb2	year=0;
+			ub1	month=0;
+			ub1	day=0;
+			ub1	hour=0;
+			ub1	minute=0;
+			ub1	second=0;
+			#ifdef OCI_DTYPE_TIMESTAMP
+			ub4	fsec=0;
+			OCIDateTimeGetDate((dvoid *)oracleconn->env,
+					oracleconn->err,db->ocidatetime,
+					&year,&month,&day);
+			OCIDateTimeGetTime((dvoid *)oracleconn->env,
+					oracleconn->err,db->ocidatetime,
+					&hour,&minute,&second,&fsec);
+			// fsec is nanoseconds; year/month/day/hour/minute/
+			// second/fsec are pre-zeroed above in case either
+			// call fails
+			*db->microsecond=fsec/1000;
+			#else
 			OCIDateGetDate(&(db->ocidate),&year,&month,&day);
 			OCIDateGetTime(&(db->ocidate),&hour,&minute,&second);
+			// OCIDate has no sub-second component
+			*db->microsecond=0;
+			#endif
 			*db->year=year;
 			*db->month=month;
 			*db->day=day;
