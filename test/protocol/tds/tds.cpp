@@ -1997,8 +1997,26 @@ int main(int argc, char **argv) {
 		// conversion happens.  tdsfreetdssapprotocol.conf's connect
 		// string does set charset=utf8, so that combination gets real
 		// conversion and still expects "1" here.
+		//
+		// The native runs have no pooled backend, so @@char_convert
+		// answers for this test's own session, and a different thing
+		// decides it: whether the cs_locale CS_SYB_CHARSET "utf-8"
+		// set at tds.cpp:399-402 survives to login.  Sap's ct-lib
+		// honors it, so the session logs in as utf-8 against an iso_1
+		// server and really converts - "1".  Freetds drops it (see
+		// tds.cpp:1702-1706 - only a ct_con_props CS_SET of
+		// CS_CLIENTCHARSET reaches libtds' iconv layer), so it sends
+		// no charset at all in its login packet (still tds 5.0 on the
+		// wire here - tds5 tracks the linked ct-lib, not the wire
+		// version) and falls back to its own ISO-8859-1, which again
+		// matches iso_1, so nothing converts - "0".
+		//
+		// The two halves are independent mechanisms that only happen
+		// to line up as issqlrelay==tds5, so spell both out rather
+		// than lean on the coincidence.
 		stdoutput.printf("row data:\n");
-		assertEquals(csdata[0],(issqlrelay && tds5)?"0":"1");
+		assertEquals(csdata[0],((issqlrelay && tds5) ||
+					(nativease && !tds5))?"0":"1");
 		assertEquals(csdata[1],"1");
 		assertEquals(csdata[2],"1");
 		stdoutput.printf("\n");
