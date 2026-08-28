@@ -1028,6 +1028,13 @@
 		firebird's case, corrupting isc_encode_timestamp()'s
 		result); negative fields are now floored to 0 first, like
 		the mysql connection module already did
+	fixed the oracle connection module's input date/timestamp bind
+		silently dropping the caller's microsecond value; since the
+		OCIDate/SQLT_ODT type it used has no sub-second component
+		at all, input date/timestamp binds now go through an
+		OCIDateTime/SQLT_TIMESTAMP descriptor instead when the OCI
+		client headers support it, passing the microsecond value to
+		OCIDateTimeConstruct() as nanoseconds
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

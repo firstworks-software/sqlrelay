@@ -393,6 +393,8 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 
 		void		checkRePrepare();
 
+		void		freeInDateTimeBind();
+
 		void		dateToString(char *buffer,
 						uint16_t buffersize,
 						int16_t year,
@@ -431,6 +433,12 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		OCIBind		**curbindpp;
 		char		**inintbindstring;
 		OCIDate		*indatebind;
+		#ifdef OCI_DTYPE_TIMESTAMP
+		// OCIDate (SQLT_ODT, above) has no sub-second component, so
+		// microsecond-precision input binds go through OCIDateTime
+		// descriptors instead
+		OCIDateTime	**indatetimebind;
+		#endif
 		char		**outintbindstring;
 		datebind	**outdatebind;
 		int64_t		**outintbind;
@@ -3546,6 +3554,9 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 	curbindpp=new OCIBind *[maxbindcount];
 	inintbindstring=new char *[maxbindcount];
 	indatebind=new OCIDate[maxbindcount];
+	#ifdef OCI_DTYPE_TIMESTAMP
+	indatetimebind=new OCIDateTime *[maxbindcount];
+	#endif
 	outintbindstring=new char *[maxbindcount];
 	outdatebind=new datebind *[maxbindcount];
 	outintbind=new int64_t *[maxbindcount];
@@ -3562,6 +3573,9 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 		outbindpp[i]=NULL;
 		curbindpp[i]=NULL;
 		inintbindstring[i]=NULL;
+		#ifdef OCI_DTYPE_TIMESTAMP
+		indatetimebind[i]=NULL;
+		#endif
 		outintbindstring[i]=NULL;
 		outdatebind[i]=NULL;
 		outintbind[i]=NULL;
@@ -3605,6 +3619,12 @@ oraclecursor::~oraclecursor() {
 
 	for (uint16_t i=0; i<orainbindcount; i++) {
 		delete[] inintbindstring[i];
+		#ifdef OCI_DTYPE_TIMESTAMP
+		if (indatetimebind[i]) {
+			OCIDescriptorFree(indatetimebind[i],
+						OCI_DTYPE_TIMESTAMP);
+		}
+		#endif
 	}
 	for (uint16_t i=0; i<oraoutbindcount; i++) {
 		delete[] outintbindstring[i];
@@ -3616,6 +3636,9 @@ oraclecursor::~oraclecursor() {
 	delete[] curbindpp;
 	delete[] inintbindstring;
 	delete[] indatebind;
+	#ifdef OCI_DTYPE_TIMESTAMP
+	delete[] indatetimebind;
+	#endif
 	delete[] outintbindstring;
 	delete[] outdatebind;
 	delete[] outintbind;
@@ -3866,6 +3889,21 @@ void oraclecursor::checkRePrepare() {
 	}
 }
 
+void oraclecursor::freeInDateTimeBind() {
+
+	// free the descriptor for the input date/timestamp bind currently
+	// being set up, for the failure paths that abandon it before
+	// orainbindcount is incremented and the cleanup loops can see it
+
+	#ifdef OCI_DTYPE_TIMESTAMP
+	if (indatetimebind[orainbindcount]) {
+		OCIDescriptorFree(indatetimebind[orainbindcount],
+					OCI_DTYPE_TIMESTAMP);
+		indatetimebind[orainbindcount]=NULL;
+	}
+	#endif
+}
+
 static const char *shortmonths[]={
 	"JAN",
 	"FEB",
@@ -4072,22 +4110,60 @@ bool oraclecursor::inputBind(const char *variable,
 				int16_t *isnull) {
 	checkRePrepare();
 
+	dvoid	*bindbuf;
+	sb4	bindbufsize;
+	ub2	bindtype;
+	#ifdef OCI_DTYPE_TIMESTAMP
+	if (OCIDescriptorAlloc((dvoid *)oracleconn->env,
+			(dvoid **)&(indatetimebind[orainbindcount]),
+			(ub4)OCI_DTYPE_TIMESTAMP,
+			(size_t)0,(dvoid **)0)!=OCI_SUCCESS) {
+		indatetimebind[orainbindcount]=NULL;
+		return false;
+	}
+	// fsec is nanoseconds; floor negative fields to 0, matching the
+	// convention firebird/db2/informix/odbc/mysql's input date/timestamp
+	// binds already use, since OCIDateTimeConstruct (unlike the old
+	// OCIDateSetDate/OCIDateSetTime calls) rejects out-of-range values
+	// instead of silently accepting them
+	if (OCIDateTimeConstruct((dvoid *)oracleconn->env,oracleconn->err,
+			indatetimebind[orainbindcount],
+			(sb2)((year>=0)?year:0),
+			(ub1)((month>=0)?month:0),
+			(ub1)((day>=0)?day:0),
+			(ub1)((hour>=0)?hour:0),
+			(ub1)((minute>=0)?minute:0),
+			(ub1)((second>=0)?second:0),
+			(ub4)((int64_t)((microsecond>=0)?microsecond:0)*1000),
+			(OraText *)NULL,(size_t)0)!=OCI_SUCCESS) {
+		freeInDateTimeBind();
+		return false;
+	}
+	bindbuf=(dvoid *)&(indatetimebind[orainbindcount]);
+	bindbufsize=(sb4)sizeof(OCIDateTime *);
+	bindtype=SQLT_TIMESTAMP;
+	#else
+	// OCIDate has no sub-second component, microsecond is dropped here
 	OCIDateSetDate(&(indatebind[orainbindcount]),year,month,day);
 	OCIDateSetTime(&(indatebind[orainbindcount]),hour,minute,second);
+	bindbuf=(dvoid *)&(indatebind[orainbindcount]);
+	bindbufsize=(sb4)sizeof(OCIDate);
+	bindtype=SQLT_ODT;
+	#endif
 
 	if (charstring::isInteger(variable+1,variablesize-1)) {
 		ub4	pos=charstring::convertToInteger(variable+1);
 		if (!pos) {
 			bindformaterror=true;
+			freeInDateTimeBind();
 			return false;
 		}
 		if (OCIBindByPos(stmt,&inbindpp[orainbindcount],
 				oracleconn->err,pos,
-				(dvoid *)&(indatebind[orainbindcount]),
-				(sb4)sizeof(OCIDate),
-				SQLT_ODT,
+				bindbuf,bindbufsize,bindtype,
 				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
+			freeInDateTimeBind();
 			return false;
 		}
 		boundbypos[pos-1]=true;
@@ -4095,11 +4171,10 @@ bool oraclecursor::inputBind(const char *variable,
 		if (OCIBindByName(stmt,&inbindpp[orainbindcount],
 				oracleconn->err,
 				(text *)variable,(sb4)variablesize,
-				(dvoid *)&(indatebind[orainbindcount]),
-				(sb4)sizeof(OCIDate),
-				SQLT_ODT,
+				bindbuf,bindbufsize,bindtype,
 				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
+			freeInDateTimeBind();
 			return false;
 		}
 	}
@@ -5360,6 +5435,13 @@ void oraclecursor::closeResultSet() {
 	for (uint16_t i=0; i<orainbindcount; i++) {
 		delete[] inintbindstring[i];
 		inintbindstring[i]=NULL;
+		#ifdef OCI_DTYPE_TIMESTAMP
+		if (indatetimebind[i]) {
+			OCIDescriptorFree(indatetimebind[i],
+						OCI_DTYPE_TIMESTAMP);
+			indatetimebind[i]=NULL;
+		}
+		#endif
 	}
 	for (uint16_t i=0; i<oraoutbindcount; i++) {
 		delete[] outintbindstring[i];
