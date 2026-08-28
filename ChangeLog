@@ -825,6 +825,15 @@
 		nothing could read what it wrote; a negative value is now
 		written as two's complement in the existing 4-byte form instead,
 		which readLenPreInt() already handles
+	the tds protocol module now also refuses an "insert bulk" statement
+		that arrives as the sql argument of an sp_executesql,
+		sp_prepare, sp_prepexec, sp_prepexecrpc, sp_cursorprepare or
+		sp_cursorprepexec rpc, the way it already refused one sent as
+		a sql batch or a tds 5.0 language or dynamic sql command -
+		running it on the backend would have left the pooled
+		connection in bulk-copy mode; an rpc refusal answers with an
+		rpc error instead of the done a batch or dynamic sql refusal
+		uses, since rpc handlers don't own the closing done token
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

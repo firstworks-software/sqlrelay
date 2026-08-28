@@ -2519,6 +2519,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool	insertBulk(const char *sql);
 		bool	preTds7InsertBulk(const char *sql, bool more);
+		bool	rpcInsertBulk(const char *sql);
 		bool	bulkLoad();
 		bool	bulkColMetaData(const byte_t **rpinout,
 					size_t *rpsizeinout,
@@ -15759,6 +15760,30 @@ bool sqlrprotocol_tds::preTds7InsertBulk(const char *sql, bool more) {
 	return true;
 }
 
+// Refuses an "insert bulk" statement that arrived as the sql of an rpc,
+// and says whether it refused one.  Same reasoning as
+// preTds7InsertBulk() - running the statement would leave the backend's
+// own connection, which is pooled and outlives the client session, in
+// bulk-copy mode - but an rpc handler can't answer with a done of its
+// own.  rpc() and preTds7DbRpc() each append the done that closes the
+// call after the handler returns, so a second one here would desync the
+// client.  This replies the way an rpc error normally does instead.
+bool sqlrprotocol_tds::rpcInsertBulk(const char *sql) {
+
+	if (!insertBulk(sql)) {
+		return false;
+	}
+
+	// insertBulk() retains a table and column list for a bulk load
+	// that isn't going to happen
+	bulkpool.clear();
+	bulktable=NULL;
+	bulkcolumncount=0;
+
+	return rpcNumberedError(RPC_OP_UNSUPPORTED,
+				"Bulk copy is not supported yet.");
+}
+
 bool sqlrprotocol_tds::insertBulk(const char *sql) {
 
 	// "insert bulk <table> (<column> <type>, ...)"
@@ -18610,6 +18635,12 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 		return rpcQueryTooLargeError(stmtlen);
 	}
 
+	// refuse an insert bulk before it gets to the backend
+	if (rpcInsertBulk(stmt)) {
+		debugEnd();
+		return true;
+	}
+
 	// get an available cursor
 	sqlrservercursor	*cursor=availableCursor();
 	if (!cursor) {
@@ -18810,6 +18841,15 @@ bool sqlrprotocol_tds::prepare(bool prepexec,
 		delete[] query;
 		debugEnd();
 		return rpcQueryTooLargeError(querylen);
+	}
+
+	// refuse an insert bulk before it gets to the backend
+	if (rpcInsertBulk(query)) {
+		delete[] query;
+		// the handle never became valid
+		returnValueInteger(1,0,true);
+		debugEnd();
+		return true;
 	}
 
 	sqlrservercursor	*cursor=NULL;
@@ -19640,7 +19680,9 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 
 	// a real server only accepts a select or an exec/execute as a cursor
 	// statement - without this check, an update would just run as an
-	// ordinary query below, turning a cursor declare into a live write
+	// ordinary query below, turning a cursor declare into a live write.
+	// this is also what keeps an insert bulk out of this path, so no
+	// rpcInsertBulk() call is needed here.
 	if (!isCursorStatement(stmt)) {
 		debugWrite("not a cursor statement, rejecting");
 		debugEnd();
@@ -19722,6 +19764,14 @@ bool sqlrprotocol_tds::cursorPrepare() {
 	if (stmtlen>maxquerysize) {
 		debugEnd();
 		return rpcQueryTooLargeError(stmtlen);
+	}
+
+	// refuse an insert bulk before it gets to the backend
+	if (rpcInsertBulk(stmt)) {
+		// the handle never became valid
+		returnValueInteger(1,0,true);
+		debugEnd();
+		return true;
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
@@ -19850,6 +19900,15 @@ bool sqlrprotocol_tds::cursorPrepExec(bool nometadata) {
 	if (stmtlen>maxquerysize) {
 		debugEnd();
 		return rpcQueryTooLargeError(stmtlen);
+	}
+
+	// refuse an insert bulk before it gets to the backend
+	if (rpcInsertBulk(stmt)) {
+		// neither handle ever became valid
+		returnValueInteger(1,0,true);
+		returnValueInteger(2,0,true);
+		debugEnd();
+		return true;
 	}
 
 	stmtlen=stripForUpdateOf(stmt,stmtlen);
