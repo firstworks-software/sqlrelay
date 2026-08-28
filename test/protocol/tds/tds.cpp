@@ -7737,6 +7737,262 @@ int main(int argc, char **argv) {
 		ct_send(cmd);
 		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
 		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+		// Same as the poscursortable block above, but keyed by a
+		// decimal column rather than an int one.  positionedBind()
+		// binds a decimal/float/money key the same way it binds an
+		// integer one - as a number rather than a string, since ase
+		// refuses to compare any of those column types against a
+		// string - so this is the non-int side of that fix.  Only
+		// decimal is driven here: float and money key columns take
+		// the same isFloatTypeInt() branch in positionedBind(), so a
+		// decimal key already exercises the code path they share.
+		query="drop table posdecimaltable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+		stdoutput.printf("ct_command: create (decimal keyed)\n");
+		if (issybase) {
+			query="create table posdecimaltable ("
+					"cursid decimal(10,2) not null "
+						"primary key, "
+					"cursname varchar(20) null, "
+					"cursval int null"
+					") lock datarows";
+		} else {
+			query="create table posdecimaltable ("
+					"cursid decimal(10,2) not null "
+						"primary key, "
+					"cursname varchar(20) null, "
+					"cursval int null"
+					")";
+		}
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: insert (decimal keyed)\n");
+		const char	*posdecimalinsert[4]={
+			"insert into posdecimaltable values "
+							"(1.00,'one',10)",
+			"insert into posdecimaltable values "
+							"(2.00,'two',20)",
+			"insert into posdecimaltable values "
+							"(3.00,'three',30)",
+			"insert into posdecimaltable values "
+							"(4.00,'four',40)"};
+		for (CS_INT i=0; i<4; i++) {
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)posdecimalinsert[i],
+					charstring::getLength(
+							posdecimalinsert[i]),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(affectedrows,1);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		const char	*curspkdecimal="curspkdecimal";
+		const char	*posdecimalselect=
+				"select cursid, cursname, cursval "
+					"from posdecimaltable order by cursid";
+		const char	*posdecimalupdate=
+				"update posdecimaltable set cursval = 99";
+		const char	*posdecimalexpectid[4]=
+				{"1.00","2.00","3.00","4.00"};
+
+		stdoutput.printf("ct_cursor: positioned update and delete "
+					"against a decimal keyed table\n");
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+					(CS_CHAR *)curspkdecimal,CS_NULLTERM,
+					(CS_CHAR *)posdecimalselect,
+					CS_NULLTERM,
+					CS_FOR_UPDATE),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_INT)1),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+
+		// row 1: fetch, then a positioned update - the current row
+		// is the target, named by the key the cursor selected
+		// rather than by anything this call passes
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],posdecimalexpectid[0]);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_UPDATE,
+				(CS_CHAR *)"posdecimaltable",CS_NULLTERM,
+				(CS_CHAR *)posdecimalupdate,CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+
+		// row 2: fetch, then a positioned delete
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],posdecimalexpectid[1]);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DELETE,
+				(CS_CHAR *)"posdecimaltable",CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED,CS_UNUSED),
+							CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+
+		// rows 3 and 4 are untouched
+		for (CS_INT i=2; i<4; i++) {
+			bytestring::zero(cursdata[0],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(cursdata[0],posdecimalexpectid[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// row 1 changed, row 2 is gone, rows 3 and 4 are untouched
+		stdoutput.printf("ct_command: the decimal keyed table "
+								"changed\n");
+		query="select cursid, cursval from posdecimaltable "
+							"order by cursid";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+						query,charstring::getLength(query),
+						CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<2; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+		const char	*posdecimalexpectval[3]={"99","30","40"};
+		const char	*posdecimalremainid[3]=
+					{"1.00","3.00","4.00"};
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[0],256);
+			bytestring::zero(cursdata[1],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(cursdata[0],posdecimalremainid[i]);
+			assertEquals(cursdata[1],posdecimalexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		query="drop table posdecimaltable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 	}
 
 

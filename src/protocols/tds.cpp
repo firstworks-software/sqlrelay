@@ -2723,8 +2723,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		const char	*positionedColumn(sqlrservercursor *cursor,
 							uint16_t param);
-		// binds one key column's value, as an integer when the
-		// column is one and as a string otherwise
+		// binds one key column's value: as an integer or a double
+		// when the column is one of those, and as a string otherwise
 		void	positionedBind(sqlrserverbindvar *bv,
 						uint16_t bindindex,
 						memorypool *bindpool,
@@ -19122,6 +19122,22 @@ void sqlrprotocol_tds::positionedBind(sqlrserverbindvar *bv,
 			debugEnd();
 			return;
 		}
+	}
+
+	// A decimal, float/real, or money key column has the same problem -
+	// ase refuses to compare it against a string too ("Implicit
+	// conversion from datatype 'VARCHAR' to 'DECIMAL/MONEY/...' is not
+	// allowed"), the same way moneyValue() and the decimal rpc-param
+	// binds above work around it.  There's no exactness guard here like
+	// the integer branch has - a very wide decimal doesn't round-trip
+	// through a double either - but that's the same tradeoff those
+	// existing binds already make.
+	if (isFloatTypeInt((int16_t)coltype) && valuesize) {
+		char	*numvalue=(char *)bindpool->allocate(valuesize+1);
+		bytestring::copy(numvalue,value,valuesize);
+		numvalue[valuesize]='\0';
+		bulkDouble(bv,(double)charstring::convertToFloat(numvalue));
+		return;
 	}
 
 	bulkString(bv,bindpool,value,(size_t)valuesize);
