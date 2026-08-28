@@ -992,6 +992,11 @@
 		so a query3 session's request misparses under its legacy
 		layout; it now reports the last touched cursor's wire id
 		there instead
+	fixed the firebird connection module's output date/timestamp bind
+		storing caller pointers by call order but reading them back
+		by sqlvar slot index, which wrote the value to the wrong
+		output variable when date binds were registered out of
+		slot order
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

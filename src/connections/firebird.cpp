@@ -4142,18 +4142,6 @@ bool firebirdcursor::outputBind(const char *variable,
 				bool *isnegative,
 				int16_t *isnull) {
 
-	// store the pointers
-	outdatebind[outbindcount].year=year;
-	outdatebind[outbindcount].month=month;
-	outdatebind[outbindcount].day=day;
-	outdatebind[outbindcount].hour=hour;
-	outdatebind[outbindcount].minute=minute;
-	outdatebind[outbindcount].second=second;
-	outdatebind[outbindcount].tz=tz;
-	outdatebind[outbindcount].isnegative=isnegative;
-
-	char	*value=(char *)&(outdatebind[outbindcount].buffer);
-
 	outbindcount++;
 
 	// make bind vars 1 based like all other db's
@@ -4162,6 +4150,21 @@ bool firebirdcursor::outputBind(const char *variable,
 		bindformaterror=true;
 		return false;
 	}
+
+	// store the pointers, indexed by sqlvar slot (matching how
+	// executeQuery()'s post-execute readback loop reads them back),
+	// not by call order
+	outdatebind[index].year=year;
+	outdatebind[index].month=month;
+	outdatebind[index].day=day;
+	outdatebind[index].hour=hour;
+	outdatebind[index].minute=minute;
+	outdatebind[index].second=second;
+	outdatebind[index].tz=tz;
+	outdatebind[index].isnegative=isnegative;
+
+	char	*value=(char *)&(outdatebind[index].buffer);
+
 	outbindsqlda->sqlvar[index].sqltype=SQL_TIMESTAMP;
 	outbindsqlda->sqlvar[index].sqlscale=0;
 	outbindsqlda->sqlvar[index].sqlsubtype=0;
