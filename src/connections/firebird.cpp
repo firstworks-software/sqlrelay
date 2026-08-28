@@ -918,6 +918,7 @@ struct datebind {
         int16_t         *hour;
         int16_t         *minute;
         int16_t         *second;
+        int32_t         *microsecond;
         const char      **tz;
 	bool		*isnegative;
 	ISC_TIMESTAMP	buffer;
@@ -4160,6 +4161,7 @@ bool firebirdcursor::outputBind(const char *variable,
 	outdatebind[index].hour=hour;
 	outdatebind[index].minute=minute;
 	outdatebind[index].second=second;
+	outdatebind[index].microsecond=microsecond;
 	outdatebind[index].tz=tz;
 	outdatebind[index].isnegative=isnegative;
 
@@ -4421,14 +4423,23 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 
 				// copy out date bind data
 				tm	t;
-				isc_decode_timestamp((ISC_TIMESTAMP *)
-					outbindsqlda->sqlvar[i].sqldata,&t);
+				ISC_TIMESTAMP	*ts=(ISC_TIMESTAMP *)
+					outbindsqlda->sqlvar[i].sqldata;
+				isc_decode_timestamp(ts,&t);
 				*(outdatebind[i].year)=t.tm_year+1900;
 				*(outdatebind[i].month)=t.tm_mon+1;
 				*(outdatebind[i].day)=t.tm_mday;
 				*(outdatebind[i].hour)=t.tm_hour;
 				*(outdatebind[i].minute)=t.tm_min;
 				*(outdatebind[i].second)=t.tm_sec;
+				// timestamp_time is in units of
+				// 1/ISC_TIME_SECONDS_PRECISION (100us) of a
+				// second; isc_decode_timestamp() drops the
+				// sub-second part, so pull it out directly
+				*(outdatebind[i].microsecond)=
+					(ts->timestamp_time%
+						ISC_TIME_SECONDS_PRECISION)
+						*100;
 				*(outdatebind[i].tz)=NULL;
 				*(outdatebind[i].isnegative)=false;
 			}

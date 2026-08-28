@@ -1003,6 +1003,11 @@
 		a pattern anchored with a trailing $ silently stops matching
 		once a driver starts returning a multi-line message, as
 		newer oracle clients now do by appending a "Help: ..." line
+	fixed the firebird connection module's output date/timestamp bind
+		never writing back the caller's microsecond pointer; it's
+		now stored alongside the other date fields and derived from
+		the raw ISC_TIMESTAMP fraction, since isc_decode_timestamp()
+		doesn't carry sub-second precision
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
