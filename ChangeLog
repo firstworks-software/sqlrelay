@@ -975,6 +975,17 @@
 		only writes the terminator when it did; implemented NUMBER,
 		VARNUM, DATE and FIXED_CHAR, the four types worth encoding
 		given what the module already had
+	fixed a stale "writeLE?" comment on the byte order marker field in the
+		oracle protocol module's sendAccept(); confirmed writeHost() is
+		correct there - it's a self-reporting byte order marker the
+		client uses to detect our endianness, not a value with a fixed
+		wire endianness
+	extended the tds protocol module's positioned update/delete key bind
+		to decimal, float, and money primary key columns - only a
+		whole-number key got the corrected non-string bind before, so
+		ase's implicit-conversion refusal still hit those types;
+		they're bound as a number now too, the same way money and
+		decimal rpc parameters already were
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

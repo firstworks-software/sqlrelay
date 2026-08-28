@@ -2449,7 +2449,10 @@ bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 	writeBE(&reqpacket,gso);
 	writeBE(&reqpacket,(uint16_t)((sdu>0xffff)?0xffff:sdu));
 	writeBE(&reqpacket,(uint16_t)((tdu>0xffff)?0xffff:tdu));
-	// writeLE?
+	// byte order marker; always 1, written in host byte order on purpose
+	// (not writeLE()/writeBE() - the client compares the raw, unconverted
+	// bytes to detect our endianness; see the matching readHost() in
+	// recvConnectRequest())
 	writeHost(&reqpacket,(uint16_t)1);
 	writeBE(&reqpacket,datasize);
 	writeBE(&reqpacket,dataoffset);
