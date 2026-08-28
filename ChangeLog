@@ -937,6 +937,17 @@
 		itself is still not decoded, since where it sits in the legacy
 		fetch request isn't known without a live capture, so this is a
 		round-trip reduction rather than the real fix
+	oracle protocol module: query(), query2() and execute() each
+		discarded the client's cursor id and used one session-wide
+		variable instead, so only one cursor could be open per session;
+		they now honor the real id each request carries, using the
+		"wire id is the controller's own id plus 1" convention
+		query3()/close()/occa() already used; open() and query3() still
+		record that variable, since two calls still need a fallback
+		instead of a per-request id: the legacy Fetch request has no
+		cursor id field on the wire at all, and execute() doesn't branch
+		by session, so it misparses a query3 session's request using the
+		legacy layout
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

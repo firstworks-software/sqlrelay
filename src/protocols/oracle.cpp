@@ -1249,6 +1249,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		byte_t		callnumber;
 
 		bool		query3session;
+
+		// the cursor id most recently touched by open(), query(),
+		// query2(), query3() or execute() - two calls fall back to
+		// this instead of the id on the wire: the legacy (non-query3)
+		// Fetch request carries no cursor id of its own, and execute()
+		// doesn't branch by session, so it misparses a query3
+		// session's LPI-encoded request as the legacy layout and its
+		// own parsed id isn't trustworthy there
+		uint16_t	lastcursorid;
 };
 
 sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
@@ -1450,6 +1459,7 @@ void sqlrprotocol_oracle::init() {
 	datatypecount=0;
 
 	query3session=false;
+	lastcursorid=65535;
 	callnumber=0;
 
 	resppacket=NULL;
@@ -1498,8 +1508,6 @@ void sqlrprotocol_oracle::reInit() {
 	free();
 	init();
 }
-
-uint16_t hackcursorid=65535;
 
 clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 						filedescriptor *cs) {
@@ -5427,7 +5435,7 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	}
 
 	uint16_t	cursorid=cont->getId(cursor);
-hackcursorid=cursorid;
+	lastcursorid=cursorid;
 
 	debugStart("open request");
 	debugWrite("seq number: %d",seqnumber);
@@ -5930,7 +5938,6 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	read(rp,&unknown6,&rp);
 	read(rp,&unknown7,&rp);
 	query=(char *)rp;
-cursorid=hackcursorid;
 
 	debugStart("query request");
 	debugOptions(options,moreoptions);
@@ -5941,12 +5948,14 @@ cursorid=hackcursorid;
 	debugWrite("query: \"%*s\"",querysize,query);
 	debugEnd();
 
-	// get the requested cursor
-	sqlrservercursor	*cursor=cont->getCursor(cursorid);
+	// the id on the wire is the controller's plus 1
+	sqlrservercursor	*cursor=(cursorid)?
+			cont->getCursor((uint16_t)(cursorid-1)):NULL;
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
+	lastcursorid=cont->getId(cursor);
 
 	// reset column type cache flag
 	columntypescached[cont->getId(cursor)]=false;
@@ -6033,7 +6042,6 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
 	readBE(rp,&cursorid,&rp);
-cursorid=hackcursorid;
 	if (options&OPTION_PARSE) {
 		// no idea...
 		for (uint16_t i=0; i<7; i++) {
@@ -6062,12 +6070,14 @@ cursorid=hackcursorid;
 		debugEnd();
 	}
 
-	// get the requested cursor
-	sqlrservercursor	*cursor=cont->getCursor(cursorid);
+	// the id on the wire is the controller's plus 1
+	sqlrservercursor	*cursor=(cursorid)?
+			cont->getCursor((uint16_t)(cursorid-1)):NULL;
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
+	lastcursorid=cont->getId(cursor);
 
 	if (options&OPTION_PARSE) {
 
@@ -6551,8 +6561,8 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			debugWrite("couldn't get cursor");
 			return sendCursorNotOpenError();
 		}
-		hackcursorid=cont->getId(cursor);
-		cursorid=hackcursorid+1;
+		lastcursorid=cont->getId(cursor);
+		cursorid=lastcursorid+1;
 		debugStart("open request");
 		debugWrite("cursor id: %d",cursorid);
 		debugEnd();
@@ -6562,7 +6572,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			debugWrite("cursor id %d not found",cursorid);
 			return sendCursorNotOpenError(cursorid);
 		}
-		hackcursorid=cursorid-1;
+		lastcursorid=cursorid-1;
 	}
 
 	if (options&OPTION_PARSE) {
@@ -7355,7 +7365,6 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
 	readBE(rp,&cursorid,&rp);
-cursorid=hackcursorid;
 
 	if (getDebug()) {
 		debugStart("execute request");
@@ -7364,11 +7373,24 @@ cursorid=hackcursorid;
 		debugEnd();
 	}
 
-	// get the requested cursor
-	sqlrservercursor	*cursor=cont->getCursor(cursorid);
+	// execute() doesn't branch by session (unlike fetch()), so it
+	// misparses a query3 session's LPI-encoded request using this
+	// legacy layout - cursorid above isn't trustworthy there, so fall
+	// back to the cursor last touched instead of decoding it
+	sqlrservercursor	*cursor;
+	if (query3session) {
+		cursor=cont->getCursor(lastcursorid);
+	} else {
+		// the id on the wire is the controller's plus 1
+		cursor=(cursorid)?
+			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	}
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
+	}
+	if (!query3session) {
+		lastcursorid=cont->getId(cursor);
 	}
 
 	// execute the query
@@ -7538,7 +7560,10 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 	// FIXME: decode this...
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
-cursorid=hackcursorid;
+
+	// no cursor id follows on the wire here - use whichever cursor
+	// open(), query(), query2() or execute() touched last
+	cursorid=lastcursorid;
 
 	if (getDebug()) {
 		debugStart("fetch request");
@@ -8481,11 +8506,14 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	uint16_t	closingid=cont->getId(cursor);
 	clearParams(cursor);
-	pcounts[cont->getId(cursor)]=0;
+	pcounts[closingid]=0;
 	cont->abort(cursor);
 	cont->release(cursor);
-hackcursorid=65535;
+	if (lastcursorid==closingid) {
+		lastcursorid=65535;
+	}
 
 	return sendCloseResponse(cursor);
 }
@@ -8697,10 +8725,14 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 			debugWrite("cursor id %d not found",cursorid);
 			continue;
 		}
+		uint16_t	closingid=cont->getId(cursor);
 		clearParams(cursor);
-		pcounts[cont->getId(cursor)]=0;
+		pcounts[closingid]=0;
 		cont->abort(cursor);
 		cont->release(cursor);
+		if (lastcursorid==closingid) {
+			lastcursorid=65535;
+		}
 	}
 
 	debugEnd();
