@@ -266,6 +266,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 						int16_t *isnull);
 		bool		executeQuery(const char *query,
 						uint32_t size);
+		bool		nextResultSet(bool *nextresultsetavailable);
 		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t col);
@@ -310,6 +311,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		bool		parseRpcParams(const char *p);
 		void		deflateColumnSize(CS_INT index);
 		bool		drainResultSet();
+		bool		readResultSets();
 		bool		bindResultSetColumns();
 		bool		describeResultSetColumns();
 		bool		fetchOutputParams();
@@ -2781,6 +2783,10 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	dynamiccursor=false;
 	outputdescribed=false;
 
+	// no query has run yet, so there's nothing for nextResultSet() to
+	// advance - matches the state readResultSets() leaves behind when it
+	// runs out to the end of a query's result sets
+	results=CS_END_RESULTS;
 	rowresultstype=0;
 	rowsbuffered=false;
 	firstbatch=NULL;
@@ -3070,6 +3076,177 @@ static bool rewriteBindMarkersToPositional(const char *query, uint32_t size,
 	return foundmarker;
 }
 
+// True if the "select" keyword at p is introduced by a set operator
+// (union, union all, except or intersect) joining it to the select before
+// it, rather than starting a new statement - eg. in
+// "select a from t1 union select b from t2" the second select is still
+// part of the first statement.
+static bool isSetOperatorSelect(const char *query, const char *p) {
+
+	const char	*wordend=p;
+	while (wordend>query && character::isWhitespace(wordend[-1])) {
+		wordend--;
+	}
+	const char	*wordstart=wordend;
+	while (wordstart>query && (character::isAlphanumeric(wordstart[-1]) ||
+						wordstart[-1]=='_')) {
+		wordstart--;
+	}
+	size_t	wordlen=wordend-wordstart;
+
+	// skip back over a trailing "all" to find what precedes it - for
+	// "union all" the operator keyword is "union", not "all"
+	if (wordlen==3 && !charstring::compareIgnoringCase(wordstart,"all",3)) {
+		wordend=wordstart;
+		while (wordend>query && character::isWhitespace(wordend[-1])) {
+			wordend--;
+		}
+		wordstart=wordend;
+		while (wordstart>query &&
+				(character::isAlphanumeric(wordstart[-1]) ||
+						wordstart[-1]=='_')) {
+			wordstart--;
+		}
+		wordlen=wordend-wordstart;
+	}
+
+	return (wordlen==5 &&
+			!charstring::compareIgnoringCase(wordstart,"union",5)) ||
+		(wordlen==6 &&
+			!charstring::compareIgnoringCase(wordstart,"except",6)) ||
+		(wordlen==9 &&
+			!charstring::compareIgnoringCase(wordstart,"intersect",9));
+}
+
+// True if c can't be the character right before a fresh top-level word -
+// either because it's itself part of an identifier (alphanumeric or '_'),
+// or because it means whatever comes next is still part of a qualified or
+// quoted name rather than a new keyword: "." (schema.table.column), "@"
+// (a variable name), "#" (a temp table name), "\"" (a closing ansi-quoted
+// identifier) or "[" (an opening bracketed identifier) - eg. the "delete"
+// in "select * from t.delete" or "select * from [delete]" is a column or
+// table name, not the start of a DELETE statement.
+static bool isIdentifierContinuationChar(char c) {
+	return character::isAlphanumeric(c) || c=='_' ||
+		c=='.' || c=='@' || c=='#' || c=='"' || c=='[';
+}
+
+// Statement-leading keywords isMultiStatementBatch() looks for to recognize
+// where a second top-level statement starts in a batch that has no required
+// separator between statements.  Not exhaustive - deliberately limited to
+// keywords that are unambiguous as the first word of a statement, to avoid
+// misreading an identifier/alias as the start of a new one (eg. "set" and
+// "begin" are left out - both are common as column aliases or variable
+// names, unlike, say, "raiserror").
+struct sapstatementkeyword {
+	const char	*keyword;
+	size_t		len;
+};
+static const sapstatementkeyword sapstatementkeywords[]={
+	{"select",6}, {"insert",6}, {"update",6}, {"delete",6},
+	{"exec",4}, {"execute",7}, {"declare",7},
+	{"create",6}, {"drop",4}, {"alter",5}, {"truncate",8},
+	{"print",5}, {"raiserror",9}, {"waitfor",7},
+	{"grant",5}, {"revoke",6}, {"commit",6}, {"rollback",8}
+};
+static const size_t sapstatementkeywordcount=
+	sizeof(sapstatementkeywords)/sizeof(sapstatementkeywords[0]);
+
+// Returns the length of the statement-leading keyword at p, matched whole-
+// word (case insensitive), or 0 if none of sapstatementkeywords starts
+// there.
+static size_t matchStatementKeyword(const char *p, const char *end) {
+	for (size_t i=0; i<sapstatementkeywordcount; i++) {
+		size_t	len=sapstatementkeywords[i].len;
+		if ((size_t)(end-p)>=len &&
+			!charstring::compareIgnoringCase(p,
+					sapstatementkeywords[i].keyword,len) &&
+			(p+len==end || !(character::isAlphanumeric(p[len]) ||
+							p[len]=='_'))) {
+			return len;
+		}
+	}
+	return 0;
+}
+
+// True if the query text contains a second top-level statement - one that
+// isn't inside a quoted string literal or inside parentheses (a subquery),
+// and, if it's a select, isn't joined to the select before it by a set
+// operator.  ASE's ct_cursor(CS_CURSOR_DECLARE) refuses to declare a cursor
+// over more than one statement ("More than one SELECT statement is used to
+// define the cursor", regardless of what kind of statement the second one
+// is), so prepareQuery() uses this to decide whether a query that starts
+// with "select " is really a single statement (cursor it) or a
+// multi-statement tds LANGUAGE batch (run it un-cursored instead - see the
+// CS_LANG_CMD branch below).
+//
+// This is a heuristic, not a real parser: it doesn't skip comments, so a
+// statement keyword written inside a comment can cause a single statement
+// to be misdetected as a batch.  The query still runs correctly either way
+// - it's just routed through the un-cursored path instead of a cursor -
+// but that's not entirely free: ct-lib only allows one non-cursor command
+// per connection to have results pending, and a session's other cursors
+// share that connection, so a misdetected select holds that shared slot
+// until the client has fetched all of its rows, where a real cursor
+// wouldn't have.  It also can't catch every possible second statement -
+// only the keywords in sapstatementkeywords - so a single select followed
+// by some other kind of statement not in that list is still misrouted to
+// the cursor path, the same as before this function existed.
+static bool isMultiStatementBatch(const char *query, uint32_t size) {
+
+	const char	*p=query;
+	const char	*end=query+size;
+	bool		inquotes=false;
+	int32_t		parendepth=0;
+	bool		foundfirst=false;
+	while (p<end) {
+		char	c=*p;
+		if (inquotes) {
+			if (c=='\'') {
+				inquotes=false;
+			}
+			p++;
+			continue;
+		}
+		if (c=='\'') {
+			inquotes=true;
+			p++;
+			continue;
+		}
+		if (c=='(') {
+			parendepth++;
+			p++;
+			continue;
+		}
+		if (c==')') {
+			if (parendepth>0) {
+				parendepth--;
+			}
+			p++;
+			continue;
+		}
+		if (!parendepth &&
+			(p==query || !isIdentifierContinuationChar(p[-1]))) {
+			size_t	matchlen=matchStatementKeyword(p,end);
+			if (matchlen) {
+				bool	isselect=(matchlen==6 &&
+						!charstring::compareIgnoringCase(
+							p,"select",6));
+				if (!foundfirst) {
+					foundfirst=true;
+				} else if (!isselect ||
+						!isSetOperatorSelect(query,p)) {
+					return true;
+				}
+				p+=matchlen;
+				continue;
+			}
+		}
+		p++;
+	}
+	return false;
+}
+
 bool sapcursor::prepareDynamic() {
 
 	cmd=cursorcmd;
@@ -3207,7 +3384,8 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 
 	if ((!charstring::compare(query,"select",6) ||
 		!charstring::compare(query,"SELECT",6)) &&
-		character::isWhitespace(query[6])) {
+		character::isWhitespace(query[6]) &&
+		!isMultiStatementBatch(query,size)) {
 
 		positionalquerybuffer.clear();
 		bool	hasbindmarkers=rewriteBindMarkersToPositional(
@@ -3922,6 +4100,21 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
+	if (!readResultSets()) {
+		return false;
+	}
+
+	checkForTempTable(query,size);
+
+	// reset the prepared flag
+	prepared=false;
+
+	// return success only if no error was generated
+	return (!sapconn->errorcode);
+}
+
+bool sapcursor::readResultSets() {
+
 	for (;;) {
 
 		results=ct_results(cmd,&resultstype);
@@ -3942,9 +4135,10 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 		// A DML/DDL query will just send a CS_CMD_SUCCEED.
 		//
 		// If we're not using cursors, then selects will also just
-		// send a single CS_ROW_RESULT.
-		//
-		// But...
+		// send a single CS_ROW_RESULT - unless the query is a
+		// multi-statement tds LANGUAGE batch (see the CS_LANG_CMD
+		// branch of prepareQuery()), which sends one CS_ROW_RESULT
+		// (or CS_CMD_SUCCEED) per statement.
 		//
 		// If a cursor is used to execute a select, then each
 		// ct_cursor() call generates a results set, and then the
@@ -3956,10 +4150,11 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 		// or CS_COMPUTE_RESULT result sets, in any combination or
 		// order.
 		//
-		// SQL Relay only returns 1 result set per query to the client,
-		// so of the result sets that can carry rows - CS_ROW_RESULT,
+		// Of the result sets that can carry rows - CS_ROW_RESULT,
 		// CS_CURSOR_RESULT, CS_COMPUTE_RESULT and CS_PARAM_RESULT -
-		// we only use the first one and ignore the rest.
+		// this pass only uses the first one and ignores the rest;
+		// nextResultSet() picks this same loop back up on demand to
+		// expose the following ones, one at a time.
 		//
 		// The CS_STATUS_RESULT and CS_PARAM_RESULT sets are different
 		// though.  They don't carry the query's rows, they carry the
@@ -4087,13 +4282,58 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 		}
 	}
 
-	checkForTempTable(query,size);
+	return true;
+}
 
-	// reset the prepared flag
-	prepared=false;
+bool sapcursor::nextResultSet(bool *nextresultsetavailable) {
 
-	// return success only if no error was generated
-	return (!sapconn->errorcode);
+	*nextresultsetavailable=false;
+
+	// Only an un-cursored command (cmd==languagecmd - see the
+	// CS_LANG_CMD branch of prepareQuery(), taken by a multi-statement
+	// tds LANGUAGE batch, and by exec/execute/{call}) can have a second
+	// row-bearing result set left to advance to:
+	//  - a select cursor is always declared over a single statement's
+	//    text (see isMultiStatementBatch()), so it never has more than
+	//    the one result set the cursor's own ct_send() produced
+	//  - a query with output binds already buffered every row-bearing
+	//    result set it will ever expose, during executeQuery() (see
+	//    rowsbuffered / bufferRows())
+	//  - results!=CS_SUCCEED means readResultSets() already ran out to
+	//    CS_END_RESULTS on the last pass, or the query never got this
+	//    far in the first place - either way there's nothing left to
+	//    read
+	if (cmd!=languagecmd || rowsbuffered || results!=CS_SUCCEED) {
+		return true;
+	}
+
+	// run out whatever's left of the current row-bearing result set -
+	// ASE won't hand back the next one until this one has been
+	// completely processed (see drainResultSet())
+	if (!drainResultSet()) {
+		return false;
+	}
+
+	// reset per-result-set state, the same way executeQuery() does
+	// before reading the first one - affectedrows in particular, since
+	// the controller re-reads getAffectedRows() right after a successful
+	// advance (see sqlrservercontroller::nextResultSet()), and without
+	// this a result set that isn't itself preceded by a fresh
+	// CS_CMD_SUCCEED (eg. a plain select) would still be reporting
+	// whatever the previous result set left behind
+	affectedrows=0;
+	row=0;
+	maxrow=0;
+	totalrows=0;
+	rowresultstype=0;
+
+	// pick the ct_results() loop back up where it left off
+	if (!readResultSets()) {
+		return false;
+	}
+
+	*nextresultsetavailable=(rowresultstype!=0);
+	return true;
 }
 
 bool sapcursor::drainResultSet() {
@@ -4121,6 +4361,12 @@ bool sapcursor::bindResultSetColumns() {
 	// allocate buffers and limit column count if necessary
 	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
 	if (!maxcolumncount) {
+		// free any buffers left over from a previous result set of
+		// this same query (see nextResultSet()) before sizing new
+		// ones for this one - otherwise a query with more than one
+		// row-bearing result set leaks a set of buffers per result
+		// set advanced through
+		deallocateResultSetBuffers();
 		allocateResultSetBuffers(ncols);
 	} else if ((uint32_t)ncols>maxcolumncount) {
 		ncols=maxcolumncount;
@@ -4172,6 +4418,11 @@ bool sapcursor::describeResultSetColumns() {
 	// this query now
 	uint32_t	maxcolumncount=conn->cont->getMaxColumnCount();
 	if (!maxcolumncount) {
+		// free any buffers left over from a previous describe or
+		// bind on this same cursor (eg. a re-execute that goes
+		// through checkRePrepare()/prepareDynamic() again - see
+		// bindResultSetColumns()) before sizing new ones for this one
+		deallocateResultSetBuffers();
 		allocateResultSetBuffers(ncols);
 	} else if ((uint32_t)ncols>maxcolumncount) {
 		ncols=maxcolumncount;

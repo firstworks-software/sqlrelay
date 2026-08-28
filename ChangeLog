@@ -883,6 +883,22 @@
 		definitions now derive their character/numeric marker bytes
 		from the column's actual wire type, instead of always claiming
 		character type
+	sap connection module: a multi-statement tds 5.0 language batch (eg. a
+		client's own two-select batch, or the metadata queries sap's
+		blk_init sends as one language token) failed with ASE's "More
+		than one SELECT statement is used to define the cursor" -
+		prepareQuery() declared a cursor over any query starting with
+		"select ", and ASE refuses to declare a cursor over more than
+		one statement; a multi-statement batch now runs un-cursored
+		instead, detected with a lightweight scan for a second
+		top-level statement-leading keyword (skipping quoted strings,
+		parenthesized subqueries, and a select joined by a set
+		operator like union); also gave sapcursor a real
+		nextResultSet(), so the un-cursored path (this new case, and
+		the existing exec/execute/{call}/DML/DDL cases) can expose
+		more than the first row-bearing result set of a query - fixes
+		a latent buffer leak in the column-binding path along the way,
+		hit every time nextResultSet() rebinds a further result set
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
