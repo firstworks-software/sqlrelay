@@ -162,7 +162,14 @@
 					<pattern type="regex" from="ORA-00923" to="ORA-01923"/>
 					<pattern type="regex" from="ORA-01923" to="ORA-10923"/>
 				</pattern>
-				<pattern type="regex" from="^(ORA-[0-9]+): (.*)$"
+				<!-- no trailing $: a modern oracle client appends a
+				     second "Help: ..." line to the error message, and
+				     regex patterns aren't compiled with MULTILINE/DOTALL,
+				     so an end-of-subject anchor would never match a
+				     multi-line message; dropping it still matches
+				     through end-of-first-line and leaves any trailing
+				     line(s) untouched -->
+				<pattern type="regex" from="^(ORA-[0-9]+): (.*)"
 						to="\1: \2 (code \1)" backrefs="yes"/>
 			</errortranslation>
 		</errortranslations>

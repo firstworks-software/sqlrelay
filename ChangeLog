@@ -997,6 +997,12 @@
 		by sqlvar slot index, which wrote the value to the wrong
 		output variable when date binds were registered out of
 		slot order
+	documented that errortranslation patterns regex rules (like the
+		other patterns modules, filters and querytranslations, they
+		share the same engine) compile without multiline/dot-all, so
+		a pattern anchored with a trailing $ silently stops matching
+		once a driver starts returning a multi-line message, as
+		newer oracle clients now do by appending a "Help: ..." line
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

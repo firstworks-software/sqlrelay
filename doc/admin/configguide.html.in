@@ -7525,6 +7525,8 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>rewrites an Oracle error string, keeping the error number and message but changing how they're phrased.  Without backrefs="yes", \1 and \2 in <i>to</i> would be inserted literally, rather than being replaced with what the capture groups matched.</p>
 
+<p><b>A note on ^, $, and multi-line messages:</b> type="regex" patterns are compiled without the multiline or dot-all options, so ^ and $ anchor to the start and end of the <i>entire</i> string being matched (or, for $, immediately before one single trailing newline) rather than to the start and end of each line, and . never matches a newline.  This matters because some database client libraries add a second line to an error message - for example, newer Oracle clients append a line like "Help: https://docs.oracle.com/error-help/db/ora-00923/" after the error text.  A pattern anchored with a trailing $, written when errors were still single-line, will silently stop matching such a message: from/to substitution simply passes the string through unchanged when a pattern doesn't match, with no error and no log entry (outside of debug="yes").  To keep a pattern working against a message that may gain a trailing line, drop the trailing $ rather than anchoring all the way to the end of the string - an unanchored <i>from</i> like the one above still stops matching at the first newline, since . excludes it, so it captures only the first line and leaves any later lines untouched.</p>
+
 <p>Another powerful feature of the patterns translation module is nested matching:</p>
 
 <blockquote>
