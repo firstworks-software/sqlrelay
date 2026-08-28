@@ -948,6 +948,24 @@
 		cursor id field on the wire at all, and execute() doesn't branch
 		by session, so it misparses a query3 session's request using the
 		legacy layout
+	oracle protocol module: query2() hard-coded its bind count to 1 and its
+		bind type to VARCHAR instead of reading either from the request,
+		so a statement with more than one bind left the rest unparsed;
+		it now derives the real count by counting bind markers in the
+		prepared query text, since the Bind Value Request itself carries
+		no count or per-value type on the wire; bindParameters() had a
+		single live "assume varchar" arm below a large block of
+		commented-out mysql code that never applied here (it decoded
+		mysql's binary bind format against oracle's type codes) - the
+		dead block is gone and real arms now group oracle's bind type
+		codes by the right SQLRSERVERBINDVARTYPE (string, blob or
+		clob) while still reading the same length-prefixed text every
+		bind value arrives as, ready for when a real per-bind type
+		list can be sourced - every bind is still presented as varchar
+		today, since the request carries no type list yet; also fixed
+		a bind value leak on a second bind against the same cursor and
+		added bounds checks on the bind value header and size against
+		the received packet
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

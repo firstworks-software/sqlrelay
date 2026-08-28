@@ -1236,7 +1236,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		char		lobbuffer[32768];
 
-		uint16_t	*pcounts;
 		uint16_t	**ptypes;
 		bool		*columntypescached;
 		uint16_t	**columntypes;
@@ -1366,13 +1365,11 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		charstring::printf(&bindvarnames[i],":%d",i+1);
 	}
 
-	pcounts=new uint16_t[maxcursorcount];
 	ptypes=new uint16_t *[maxcursorcount];
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
 	rowssent=new uint32_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
-		pcounts[i]=0;
 		ptypes[i]=new uint16_t[maxbindcount];
 		columntypescached[i]=false;
 		rowssent[i]=0;
@@ -1401,7 +1398,6 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 		delete[] ptypes[i];
 		delete[] columntypes[i];
 	}
-	delete[] pcounts;
 	delete[] ptypes;
 	delete[] columntypescached;
 	delete[] columntypes;
@@ -6113,11 +6109,42 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 			return false;
 		}
 
-		// FIXME: get these somehow...
-		uint16_t	pcount=1;
-		uint16_t	ptypes[]={ORACLE_TYPE_VARCHAR};
-		
-		if (!bindParameters(cursor,pcount,ptypes)) {
+		// free binds from any previous bind exchange on this cursor
+		clearParams(cursor);
+
+		uint16_t	cursorid_idx=cont->getId(cursor);
+
+		// the query buffer reflects whatever was prepared most
+		// recently, whether by the parse phase above (this call or a
+		// prior one) or by the older query() call on this cursor, so
+		// recompute the count here rather than caching it - caching
+		// it against the cursor could go stale if a different query
+		// gets prepared into the same cursor between calls
+		uint16_t	pcount=cont->countBindVariables(
+						cont->getQueryBuffer(cursor),
+						cont->getQuerySize(cursor));
+
+		// clamp to the number of binds we can actually track
+		uint16_t	clampedpcount=
+				(pcount<=maxbindcount)?pcount:maxbindcount;
+		if (pcount>maxbindcount) {
+			debugWrite("query has %d binds, "
+					"truncating to maxbindcount %d",
+					pcount,maxbindcount);
+		}
+
+		// the Query2 Bind Value Request carries each value as
+		// length-prefixed text with no per-value type tag on the
+		// wire (see the Trac wiki: "Oracle Wire Protocol - Query2"),
+		// so there's no real type to source here - assume varchar
+		for (uint16_t i=0; i<clampedpcount; i++) {
+			ptypes[cursorid_idx][i]=ORACLE_TYPE_VARCHAR;
+		}
+
+		// pass the unclamped pcount - bindParameters() clamps
+		// internally, but needs the real count to know how many
+		// bind-value packets the client will actually send
+		if (!bindParameters(cursor,pcount,ptypes[cursorid_idx])) {
 			return false;
 		}
 	}
@@ -6235,6 +6262,14 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 		}
 
 		const byte_t	*rp=resppacket;
+		const byte_t	*end=resppacket+resppacketsize;
+
+		// bounds check before reading the fixed-size header below
+		if ((size_t)(end-rp)<sizeof(uint16_t)+sizeof(byte_t)+
+							sizeof(byte_t)) {
+			debugWrite("bind value packet too short");
+			return false;
+		}
 
 		uint16_t	dataflags;
 		byte_t		unknown;
@@ -6263,236 +6298,87 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 			continue;
 		}
 
-		// handle non-nulls
+		// every Bind Value Request value arrives on the wire as
+		// length-prefixed text - a UB1 size byte followed by that
+		// many raw bytes - with no per-value type tag, so the cases
+		// below only differ in which SQLRSERVERBINDVARTYPE the value
+		// gets bound as, not in how the bytes are read
 		switch (ptypes[i]) {
-			/*case MYSQL_TYPE_TINY:
-				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
-				bv->value.integerval=*((char *)rp);
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=sizeof(char);
-				break;
-			case MYSQL_TYPE_SHORT:
+			case ORACLE_TYPE_VARCHAR:
+			case ORACLE_TYPE_CHAR:
+			case ORACLE_TYPE_NUMBER:
+			case ORACLE_TYPE_VARNUM:
+			case ORACLE_TYPE_LONG:
+			case ORACLE_TYPE_DATE:
+			case ORACLE_TYPE_ROWID:
+			case ORACLE_TYPE_ROWID_DEPRECATED:
+			case ORACLE_TYPE_TIMESTAMP:
+			case ORACLE_TYPE_TIMESTAMPTZ:
+			case ORACLE_TYPE_TIMESTAMPLTZ:
+			case ORACLE_TYPE_INTERVALYM:
+			case ORACLE_TYPE_INTERVALDS:
+			// an unrecognized/non-bindable type code is taken as text
+			default:
 				{
-				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
-				uint16_t	val;
-				bytestring::copy(&val,rp,sizeof(uint16_t));
-				val=leToHost((uint16_t)val);
-				bv->value.integerval=(int16_t)val;
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=sizeof(int16_t);
-				}
-				break;
-			case MYSQL_TYPE_LONG:
-				{
-				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
-				uint32_t	val;
-				bytestring::copy(&val,rp,sizeof(uint32_t));
-				val=leToHost((uint32_t)val);
-				bv->value.integerval=(int32_t)val;
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=sizeof(int32_t);
-				}
-				break;
-			case MYSQL_TYPE_LONGLONG:
-				{
-				bv->type=SQLRSERVERBINDVARTYPE_INTEGER;
-				uint64_t	val;
-				bytestring::copy(&val,rp,sizeof(uint64_t));
-				val=leToHost((uint64_t)val);
-				bv->value.integerval=(int64_t)val;
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=sizeof(int64_t);
-				}
-				break;
-			case MYSQL_TYPE_FLOAT:
-				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-				bytestring::copy(&bv->value.doubleval.value,
-							rp,sizeof(float));
-				bv->value.doubleval.precision=0;
-				bv->value.doubleval.scale=0;
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=sizeof(float);
-				break;
-			case MYSQL_TYPE_DOUBLE:
-				bv->type=SQLRSERVERBINDVARTYPE_DOUBLE;
-				bytestring::copy(&bv->value.doubleval.value,
-							rp,sizeof(double));
-				bv->value.doubleval.precision=0;
-				bv->value.doubleval.scale=0;
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=sizeof(double);
-				break;
-			case MYSQL_TYPE_TIME:
-				{
-				bv->type=SQLRSERVERBINDVARTYPE_DATE;
-				bv->value.dateval.year=-1;
-				bv->value.dateval.month=-1;
-				bv->value.dateval.day=0;
-				bv->value.dateval.hour=0;
-				bv->value.dateval.minute=0;
-				bv->value.dateval.second=0;
-				bv->value.dateval.microsecond=0;
-				bv->value.dateval.tz=NULL;
-				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->getNonNullBindValue();
-				bv->value.dateval.buffersize=64;
-				bv->value.dateval.buffer=
-					new char[bv->value.dateval.buffersize];
+				byte_t	size;
+				read(rp,&size,&rp);
 
-				char	size=*((char *)rp);
-				rp+=sizeof(char);
-
-				if (size) {
-					char	isneg=*((char *)rp);
-					bv->value.dateval.isnegative=isneg;
-					rp+=sizeof(char);
-
-					int32_t	days;
-					bytestring::copy(&days,
-							rp,sizeof(int32_t));
-					bv->value.dateval.day=
-						leToHost((uint32_t)days);
-					rp+=sizeof(int32_t);
-					
-					bv->value.dateval.hour=
-							*((char *)rp);
-					rp+=sizeof(char);
-					bv->value.dateval.minute=
-							*((char *)rp);
-					rp+=sizeof(char);
-					bv->value.dateval.second=
-							*((char *)rp);
-					rp+=sizeof(char);
-					if (size>8) {
-						int32_t	ms;
-						bytestring::copy(&ms,
-							rp,sizeof(int32_t));
-						bv->value.dateval.
-							microsecond=
-							leToHost((uint32_t)ms);
-						rp+=sizeof(int32_t);
-					}
+				// bounds check before copying "size" bytes
+				if (rp>end || (size_t)(end-rp)<(size_t)size) {
+					debugWrite("bind value truncated, "
+						"needed %d bytes",
+						(uint32_t)size);
+					return false;
 				}
-				}
-				break;
-			case MYSQL_TYPE_DATE:
-				{
-				bv->type=SQLRSERVERBINDVARTYPE_DATE;
-				bv->value.dateval.year=0;
-				bv->value.dateval.month=0;
-				bv->value.dateval.day=0;
-				bv->value.dateval.hour=-1;
-				bv->value.dateval.minute=-1;
-				bv->value.dateval.second=-1;
-				bv->value.dateval.microsecond=-1;
-				bv->value.dateval.tz=NULL;
-				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->getNonNullBindValue();
-				bv->value.dateval.buffersize=64;
-				bv->value.dateval.buffer=
-					new char[bv->value.dateval.buffersize];
 
-				char	size=*((char *)rp);
-				rp+=sizeof(char);
-
-				if (size) {
-					int16_t	year;
-					bytestring::copy(&year,
-							rp,sizeof(int16_t));
-					bv->value.dateval.year=
-						leToHost((uint16_t)year);
-					rp+=sizeof(int16_t);
-					bv->value.dateval.month=*((char *)rp);
-					rp+=sizeof(char);
-					bv->value.dateval.day=*((char *)rp);
-					rp+=sizeof(char);
-
-					// ignore time parts
-					if (size>4) {
-						rp+=3*sizeof(char);
-						if (size>7) {
-							rp+=sizeof(int32_t);
-						}
-					}
-				}
-				}
-				break;
-			case MYSQL_TYPE_DATETIME:
-			case MYSQL_TYPE_TIMESTAMP:
-				{
-				bv->type=SQLRSERVERBINDVARTYPE_DATE;
-				bv->value.dateval.year=0;
-				bv->value.dateval.month=0;
-				bv->value.dateval.day=0;
-				bv->value.dateval.hour=0;
-				bv->value.dateval.minute=0;
-				bv->value.dateval.second=0;
-				bv->value.dateval.microsecond=0;
-				bv->value.dateval.tz=NULL;
-				bv->value.dateval.isnegative=false;
-				bv->isnull=cont->getNonNullBindValue();
-				bv->value.dateval.buffersize=64;
-				bv->value.dateval.buffer=
-					new char[bv->value.dateval.buffersize];
-
-				char	size=*((char *)rp);
-				rp+=sizeof(char);
-
-				if (size) {
-					int16_t	year;
-					bytestring::copy(&year,
-							rp,sizeof(int16_t));
-					bv->value.dateval.year=
-						leToHost((uint16_t)year);
-					rp+=sizeof(int16_t);
-					bv->value.dateval.month=*((char *)rp);
-					rp+=sizeof(char);
-					bv->value.dateval.day=*((char *)rp);
-					rp+=sizeof(char);
-					if (size>4) {
-						bv->value.dateval.hour=
-								*((char *)rp);
-						rp+=sizeof(char);
-						bv->value.dateval.minute=
-								*((char *)rp);
-						rp+=sizeof(char);
-						bv->value.dateval.second=
-								*((char *)rp);
-						rp+=sizeof(char);
-						if (size>7) {
-							int32_t	ms;
-							bytestring::copy(&ms,
-							rp,sizeof(int32_t));
-							bv->value.dateval.
-								microsecond=
-							leToHost((uint32_t)ms);
-							rp+=sizeof(int32_t);
-						}
-					}
-				}
-				}
-				break;
-			case MYSQL_TYPE_TINY_BLOB:
-			case MYSQL_TYPE_MEDIUM_BLOB:
-			case MYSQL_TYPE_LONG_BLOB:
-			case MYSQL_TYPE_BLOB:
-				bv->type=SQLRSERVERBINDVARTYPE_BLOB;
-				bv->valuesize=getLenEncInt(rp,&rp);
+				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				bv->valuesize=size;
 				bv->value.stringval=charstring::duplicate(
 							(const char *)rp,
 							bv->valuesize);
 				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
-			*/
-			case ORACLE_TYPE_VARCHAR:
-			// (for all other types, assume varchar)
-			default:
+				}
+			case ORACLE_TYPE_RAW:
+			case ORACLE_TYPE_LONG_RAW:
+			case ORACLE_TYPE_BLOB:
+			case ORACLE_TYPE_BFILE:
 				{
 				byte_t	size;
 				read(rp,&size,&rp);
 
-				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				// bounds check before copying "size" bytes
+				if (rp>end || (size_t)(end-rp)<(size_t)size) {
+					debugWrite("bind value truncated, "
+						"needed %d bytes",
+						(uint32_t)size);
+					return false;
+				}
+
+				bv->type=SQLRSERVERBINDVARTYPE_BLOB;
+				bv->valuesize=size;
+				bv->value.stringval=charstring::duplicate(
+							(const char *)rp,
+							bv->valuesize);
+				bv->isnull=cont->getNonNullBindValue();
+				rp+=bv->valuesize;
+				break;
+				}
+			case ORACLE_TYPE_CLOB:
+				{
+				byte_t	size;
+				read(rp,&size,&rp);
+
+				// bounds check before copying "size" bytes
+				if (rp>end || (size_t)(end-rp)<(size_t)size) {
+					debugWrite("bind value truncated, "
+						"needed %d bytes",
+						(uint32_t)size);
+					return false;
+				}
+
+				bv->type=SQLRSERVERBINDVARTYPE_CLOB;
 				bv->valuesize=size;
 				bv->value.stringval=charstring::duplicate(
 							(const char *)rp,
@@ -6520,6 +6406,16 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 						bv->value.doubleval.scale);
 			} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
 				// FIXME: print date...
+			} else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
+				debugWrite("type: BLOB");
+				stringbuffer	b;
+				b.safePrint(bv->value.stringval,
+							bv->valuesize);
+				debugWrite("value: %s",b.getString());
+			} else if (bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
+				debugWrite("type: CLOB");
+				debugWrite("value: %s",
+						bv->value.stringval);
 			}
 			debugWrite("value size: %d",bv->valuesize);
 			debugWrite("isnull: false");
@@ -8508,7 +8404,6 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 
 	uint16_t	closingid=cont->getId(cursor);
 	clearParams(cursor);
-	pcounts[closingid]=0;
 	cont->abort(cursor);
 	cont->release(cursor);
 	if (lastcursorid==closingid) {
@@ -8526,7 +8421,8 @@ void sqlrprotocol_oracle::clearParams(sqlrservercursor *cursor) {
 	for (uint16_t i=0; i<pcount; i++) {
 		sqlrserverbindvar	*bv=&(inbinds[i]);
 		if (bv->type==SQLRSERVERBINDVARTYPE_STRING ||
-			bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
+			bv->type==SQLRSERVERBINDVARTYPE_BLOB ||
+			bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
 			delete[] bv->value.stringval;
 		}
 	}
@@ -8727,7 +8623,6 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		}
 		uint16_t	closingid=cont->getId(cursor);
 		clearParams(cursor);
-		pcounts[closingid]=0;
 		cont->abort(cursor);
 		cont->release(cursor);
 		if (lastcursorid==closingid) {
