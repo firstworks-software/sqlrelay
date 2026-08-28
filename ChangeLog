@@ -865,6 +865,13 @@
 		now clamped to 255 bytes for both the length byte and the data
 		written, as a safety fix - the correct wire encoding for
 		longer legacy values is still unconfirmed
+	oracle protocol module: sendFetchResponse() wrote the data flags word
+		only inside its DEFINE block, so a legacy fetch that returned
+		rows without DEFINE sent a type 6 packet with no data flags,
+		shifting every field after it two bytes early; the word is now
+		written unconditionally at the top of the function, and
+		putError() no longer writes one of its own since its only
+		caller now writes it first
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

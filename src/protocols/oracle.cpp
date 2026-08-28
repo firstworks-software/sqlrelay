@@ -7520,6 +7520,15 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	resetSendPacketBuffer(PACKET_DATA);
 
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	if (getDebug()) {
+		debugStart("fetch response header");
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugEnd();
+	}
+
 	uint32_t	colcount=cont->colCount(cursor);
 	cacheColumnDefinitions(cursor,colcount);
 
@@ -7548,17 +7557,13 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 			if (define) {
 
-				uint16_t	dataflags=0;
 				// FIXME: not a valid ttccode type...
 				byte_t		ttccode=16;
 
-				writeBE(&reqpacket,dataflags);
 				write(&reqpacket,ttccode);
 
 				if (getDebug()) {
 					debugStart("fetch response header");
-					debugWrite("data flags: 0x%04x",
-								dataflags);
 					debugTtcCode(ttccode);
 					debugEnd();
 				}
@@ -8330,7 +8335,8 @@ void sqlrprotocol_oracle::putError(const char *error) {
 
 void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 
-	uint16_t	dataflags=0;
+	// the data flags word is per-packet, not per-message, so it's up
+	// to the caller to have already written it
 	byte_t		ttccode=TTC_ERROR;
 
 	const byte_t	unknown1[]={
@@ -8351,7 +8357,6 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 		0x0A
 	};
 
-	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
 	reqpacket.append(unknown1,sizeof(unknown1));
 	write(&reqpacket,(byte_t)errorsize);
@@ -8359,7 +8364,6 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 	reqpacket.append(unknown2,sizeof(unknown2));
 
 	debugStart("error response");
-	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("error size: %u",errorsize);
 	debugWrite("error: %*s",errorsize,error);
