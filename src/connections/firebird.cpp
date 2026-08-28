@@ -3703,17 +3703,17 @@ bool firebirdcursor::inputBind(const char *variable,
 
 	// build an ISC_TIMESTAMP
 	tm	t;
-	t.tm_sec=second;
-	t.tm_min=minute;
-	t.tm_hour=hour;
-	t.tm_mday=day;
-	t.tm_mon=month-1;
-	t.tm_year=year-1900;
+	t.tm_sec=(second>=0)?second:0;
+	t.tm_min=(minute>=0)?minute:0;
+	t.tm_hour=(hour>=0)?hour:0;
+	t.tm_mday=(day>=0)?day:0;
+	t.tm_mon=((month>=0)?month:0)-1;
+	t.tm_year=((year>=0)?year:0)-1900;
 	isc_encode_timestamp(&t,&(inbindts[index]));
 
 	// isc_encode_timestamp() only encodes whole seconds, so add in the
 	// sub-second part directly, in ISC_TIME's 100-microsecond units
-	inbindts[index].timestamp_time+=microsecond/100;
+	inbindts[index].timestamp_time+=((microsecond>=0)?microsecond:0)/100;
 
 	// low bit set makes firebird consult sqlind
 	inbindsqlda->sqlvar[index].sqltype=SQL_TIMESTAMP+1;

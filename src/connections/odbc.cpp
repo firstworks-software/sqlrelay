@@ -5002,9 +5002,9 @@ bool odbccursor::inputBind(const char *variable,
 	if (validdate && !validtime) {
 
 		SQL_DATE_STRUCT	*ts=&(indatebind[pos-1]);
-		ts->year=year;
-		ts->month=month;
-		ts->day=day;
+		ts->year=(year>=0)?year:0;
+		ts->month=(month>=0)?month:0;
+		ts->day=(day>=0)?day:0;
 
 		erg=SQLBindParameter(stmt,
 				pos,
@@ -5021,9 +5021,9 @@ bool odbccursor::inputBind(const char *variable,
 	} else if (!validdate && validtime && !odbcconn->timestampfortime) {
 
 		SQL_TIME_STRUCT	*ts=&(intimebind[pos-1]);
-		ts->hour=hour;
-		ts->minute=minute;
-		ts->second=second;
+		ts->hour=(hour>=0)?hour:0;
+		ts->minute=(minute>=0)?minute:0;
+		ts->second=(second>=0)?second:0;
 
 		erg=SQLBindParameter(stmt,
 				pos,
@@ -5042,17 +5042,17 @@ bool odbccursor::inputBind(const char *variable,
 	} else {
 
 		SQL_TIMESTAMP_STRUCT	*ts=&(intsbind[pos-1]);
-		ts->year=year;
-		ts->month=month;
-		ts->day=day;
-		ts->hour=hour;
-		ts->minute=minute;
-		ts->second=second;
+		ts->year=(year>=0)?year:0;
+		ts->month=(month>=0)?month:0;
+		ts->day=(day>=0)?day:0;
+		ts->hour=(hour>=0)?hour:0;
+		ts->minute=(minute>=0)?minute:0;
+		ts->second=(second>=0)?second:0;
 		if (odbcconn->supportsfraction) {
 			if (odbcconn->fractionscale==9) {
-				ts->fraction=microsecond*1000;
+				ts->fraction=((microsecond>=0)?microsecond:0)*1000;
 			} else if (odbcconn->fractionscale==6) {
-				ts->fraction=microsecond;
+				ts->fraction=(microsecond>=0)?microsecond:0;
 			}
 		} else {
 			ts->fraction=0;

@@ -2649,9 +2649,9 @@ bool db2cursor::inputBind(const char *variable,
 	if (validdate && !validtime) {
 
 		SQL_DATE_STRUCT	*ts=&(indatebind[pos-1]);
-		ts->year=year;
-		ts->month=month;
-		ts->day=day;
+		ts->year=(year>=0)?year:0;
+		ts->month=(month>=0)?month:0;
+		ts->day=(day>=0)?day:0;
 
 		erg=SQLBindParameter(stmt,
 				pos,
@@ -2667,13 +2667,13 @@ bool db2cursor::inputBind(const char *variable,
 	} else {
 
 		SQL_TIMESTAMP_STRUCT	*ts=&(intsbind[pos-1]);
-		ts->year=year;
-		ts->month=month;
-		ts->day=day;
-		ts->hour=hour;
-		ts->minute=minute;
-		ts->second=second;
-		ts->fraction=microsecond*1000;
+		ts->year=(year>=0)?year:0;
+		ts->month=(month>=0)?month:0;
+		ts->day=(day>=0)?day:0;
+		ts->hour=(hour>=0)?hour:0;
+		ts->minute=(minute>=0)?minute:0;
+		ts->second=(second>=0)?second:0;
+		ts->fraction=((microsecond>=0)?microsecond:0)*1000;
 
 		erg=SQLBindParameter(stmt,
 				pos,

@@ -1020,6 +1020,14 @@
 		when the OCI client headers support it, deriving the real
 		microsecond value from OCIDateTimeGetTime()'s fractional
 		second
+	fixed the firebird, db2, informix and odbc connection modules'
+		input date/timestamp binds propagating a caller-supplied
+		negative year/month/day/hour/minute/second/microsecond
+		into the encoded/native timestamp struct, wrapping to a
+		huge value in the struct's unsigned fields (or, in
+		firebird's case, corrupting isc_encode_timestamp()'s
+		result); negative fields are now floored to 0 first, like
+		the mysql connection module already did
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
