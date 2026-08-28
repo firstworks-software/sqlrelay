@@ -7650,7 +7650,11 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	if (rowsfetched) {
 
-		if (exactfetch) {
+		// unknown6 and unknown8 below were only captured for 1- and
+		// 2-column cursors, and how to compute them for wider ones
+		// isn't known, so fall back to the non-exact-fetch trailer
+		// rather than index past the end of them.
+		if (exactfetch && colcount && colcount<=2) {
 			const byte_t	unknown5[]={
 				// ???
 				0x08, 0x04, 0x00

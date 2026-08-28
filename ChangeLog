@@ -872,6 +872,13 @@
 		written unconditionally at the top of the function, and
 		putError() no longer writes one of its own since its only
 		caller now writes it first
+	oracle protocol module: sendFetchResponse()'s exact-fetch trailer
+		indexed two arrays using colcount-1 with no bound, underflowing
+		on a 0-column cursor and reading past the end of both arrays on
+		a cursor with 3 or more columns; it now only takes that path
+		for 1- and 2-column cursors, the only counts it has captured
+		wire data for, falling back to the existing non-exact-fetch
+		trailer otherwise
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
