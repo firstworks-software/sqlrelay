@@ -261,6 +261,16 @@
 #define SERVER_VERSION_NO_12_1		"202375680"
 #define SERVER_VERSION_SQL_12_1		"23"
 
+// the version that the version response's banner announces, split into its
+// components so the response can also send it as a packed version number.
+// these have to match the banner string in sendVersionResponse() - change one
+// and change the other.
+#define SERVERVERSION_MAJOR		8
+#define SERVERVERSION_MINOR		0
+#define SERVERVERSION_THIRD		5
+#define SERVERVERSION_PATCH		0
+#define SERVERVERSION_FIFTH		0
+
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
@@ -8473,23 +8483,33 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	const char	*serverversion=
 			"Oracle8 Release 8.0.5.0.0 - Production\n"
 			"PL/SQL Release 8.0.5.0.0 - Production";
-	byte_t		unknown[]={
-		0x50, 0x00, 0x08, 0x09
-	};
+	// the packed version number of the version the banner announces.  the
+	// nibbles are the version: major in bits 31-24, minor in 23-20, the
+	// third component in 15-12, the patchset in 11-8, and the fifth
+	// component in 7-0.  the other bits are zero.
+	uint32_t	packedversion=
+			(((uint32_t)SERVERVERSION_MAJOR)<<24)|
+			(((uint32_t)SERVERVERSION_MINOR)<<20)|
+			(((uint32_t)SERVERVERSION_THIRD)<<12)|
+			(((uint32_t)SERVERVERSION_PATCH)<<8)|
+			((uint32_t)SERVERVERSION_FIFTH);
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	// writeLE?
-	writeHost(&reqpacket,(uint16_t)charstring::getLength(serverversion));
+	// a real capture sends the banner length as a length-preceded int - a
+	// count byte and that many big-endian magnitude bytes (01 4c for 76) -
+	// rather than as a bare ub2, so writeLenPreInt() is correct here, not
+	// writeHost()/writeLE()/writeBE()
+	writeLenPreInt(&reqpacket,(uint32_t)charstring::getLength(serverversion));
 	write(&reqpacket,serverversion);
-	reqpacket.append(unknown,sizeof(unknown));
+	writeBE(&reqpacket,packedversion);
 
 	debugStart("version response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("server version:");
 	debugWrite("%s",serverversion);
-	debugHexDump(unknown,sizeof(unknown));
+	debugWrite("packed version: 0x%08x",packedversion);
 	debugEnd();
 
 	return sendPacket(true);

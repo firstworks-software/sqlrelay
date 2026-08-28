@@ -851,6 +851,13 @@
 		version below TTI_VERSION_MIN), and the always-false query3
 		branch of putColumnDefinition() (its only caller always passes
 		false)
+	oracle protocol module: sendVersionResponse() now writes the version
+		banner's length as a length-prefixed int, resolving a
+		longstanding "writeLE?" comment over a writeHost() call that
+		wrote it as a bare host-byte-order ub2 instead; and its
+		trailing 4 bytes, previously a fixed, unexplained value, are
+		now a packed version number derived from the banner's own
+		version
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
