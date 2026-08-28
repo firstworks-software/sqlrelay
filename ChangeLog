@@ -879,6 +879,10 @@
 		for 1- and 2-column cursors, the only counts it has captured
 		wire data for, falling back to the existing non-exact-fetch
 		trailer otherwise
+	oracle protocol module: putColumnDefinition()'s legacy column
+		definitions now derive their character/numeric marker bytes
+		from the column's actual wire type, instead of always claiming
+		character type
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -7850,6 +7850,7 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 	const char	*columntypestring=
 				cont->getColumnTypeName(cursor,column);
 	uint16_t	columntype=columntypes[curid][column];
+	bool	character=(getWireColumnType(columntype)!=ORACLE_TYPE_NUMBER);
 	/*uint16_t	columnflags=getColumnFlags(cursor,column,
 							sqlrcolumntype,
 							columntype,
@@ -7857,8 +7858,8 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 
 	// no idea
 	byte_t	marker1=1;
-	// no idea - 128 for char/varchar, 00 for numeric
-	byte_t	marker2=128;
+	// 128 for char/varchar, 0 for numeric
+	byte_t	marker2=(character)?128:0;
 	byte_t	precision=cont->getColumnPrecision(cursor,column);
 	byte_t	scale=cont->getColumnScale(cursor,column);
 	// 16 for non-integer decimal, otherwise actual size
@@ -7870,8 +7871,8 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00
 	};
-	// no idea - 1 for char/varchar, 0 for numeric
-	uint16_t	marker3=1;
+	// 1 for char/varchar, 0 for numeric
+	uint16_t	marker3=(character)?1:0;
 	uint16_t	nullable=(cont->getColumnIsNullable(cursor,column))?1:0;
 	// 1 for select from table
 	// 2 for select from table with alias
