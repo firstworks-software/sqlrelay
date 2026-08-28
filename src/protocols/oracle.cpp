@@ -129,6 +129,17 @@
 #define ORA_NO_DATA_FOUND		1403
 #define ORA_NO_DATA_FOUND_MESSAGE	"ORA-01403: no data found\n"
 
+// the oracle error for a cursor id the module has no cursor open for
+#define ORA_INVALID_CURSOR		1001
+#define ORA_INVALID_CURSOR_MESSAGE	"ORA-01001: invalid cursor\n"
+
+// what sendQueryError() sends when the backend left no usable error number
+// (0, which putSummary() reads as success) or message - ORA-20000 through
+// ORA-20999 is oracle's user-defined exception range, the closest fit for
+// an error this module can't attribute to a real ORA number
+#define ORA_QUERY_FAILED		20000
+#define ORA_QUERY_FAILED_MESSAGE	"ORA-20000: query failed\n"
+
 // the two ways the handshake can say no.  a refuse packet carries a tns error
 // number, which is what a listener reports; an error packet after the accept
 // carries an oracle error number, which is what a server reports.
@@ -1024,6 +1035,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t oranum,
 							uint32_t rowcount,
 							const char *message);
+		void	putSummary(uint32_t cursorid,
+							uint32_t oranum,
+							uint32_t rowcount,
+							const char *message,
+							uint32_t messagesize);
 		void	putSummaryExtension(uint32_t oranum,
 							uint32_t rowcount);
 		void	putNumberField(const char *field,
@@ -1078,8 +1094,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint64_t fieldsize,
 						uint16_t columntype);
 		void	putLobField(sqlrservercursor *cursor, uint32_t col);
-		void	putError(const char *error);
-		void	putError(const char *error, uint32_t errorsize);
+		void	putError(const char *error,
+					uint32_t oranum=ORA_NO_DATA_FOUND);
+		void	putError(const char *error, uint32_t errorsize,
+					uint32_t oranum);
 
 		// close...
 		bool	close(const byte_t *rp);
@@ -1106,8 +1124,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putGenericFooter();
 
 		bool	sendQueryError(sqlrservercursor *cursor);
-		bool	sendCursorNotOpenError();
-		bool	sendNotImplementedError();
+		bool	sendCursorNotOpenError(uint32_t cursorid=0);
 
 		uint16_t	connectversion;
 		uint16_t	connectlowestversion;
@@ -5907,7 +5924,7 @@ cursorid=hackcursorid;
 	sqlrservercursor	*cursor=cont->getCursor(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError();
+		return sendCursorNotOpenError(cursorid);
 	}
 
 	// reset column type cache flag
@@ -6028,7 +6045,7 @@ cursorid=hackcursorid;
 	sqlrservercursor	*cursor=cont->getCursor(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError();
+		return sendCursorNotOpenError(cursorid);
 	}
 
 	if (options&OPTION_PARSE) {
@@ -6522,7 +6539,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		cursor=cont->getCursor((uint16_t)(cursorid-1));
 		if (!cursor) {
 			debugWrite("cursor id %d not found",cursorid);
-			return sendCursorNotOpenError();
+			return sendCursorNotOpenError(cursorid);
 		}
 		hackcursorid=cursorid-1;
 	}
@@ -7112,6 +7129,17 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 						uint32_t oranum,
 						uint32_t rowcount,
 						const char *message) {
+	// message is only read when oranum is set, so it's only safe to
+	// measure then - the other caller passes NULL along with oranum 0
+	putSummary(cursorid,oranum,rowcount,message,
+			(oranum)?charstring::getLength(message):0);
+}
+
+void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
+						uint32_t oranum,
+						uint32_t rowcount,
+						const char *message,
+						uint32_t messagesize) {
 
 	// the same field sequence sendAuthenticationError() emits - captured
 	// whole from a live 11.2 server - written out one field at a time.
@@ -7163,7 +7191,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	putSummaryExtension(oranum,rowcount);
 
 	if (oranum) {
-		putLenBytes(message,charstring::getLength(message));
+		putLenBytes(message,messagesize);
 	}
 
 	debugStart("summary");
@@ -7172,7 +7200,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	debugWrite("row count: %d",rowcount);
 	debugWrite("error: %d",oranum);
 	if (oranum) {
-		debugWrite("message: %s",message);
+		debugWrite("message: %.*s",(int)messagesize,message);
 	}
 	debugEnd();
 }
@@ -7319,7 +7347,7 @@ cursorid=hackcursorid;
 	sqlrservercursor	*cursor=cont->getCursor(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError();
+		return sendCursorNotOpenError(cursorid);
 	}
 
 	// execute the query
@@ -7396,7 +7424,7 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 	sqlrservercursor	*cursor=cont->getCursor((uint16_t)(cursorid-1));
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError();
+		return sendCursorNotOpenError(cursorid);
 	}
 
 	return sendFetch3Response(cursor,cursorid,rowstofetch);
@@ -7502,7 +7530,7 @@ cursorid=hackcursorid;
 	sqlrservercursor	*cursor=cont->getCursor(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError();
+		return sendCursorNotOpenError(cursorid);
 	}
 
 	return sendFetchResponse(cursor,
@@ -8334,17 +8362,18 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 	}
 }
 
-void sqlrprotocol_oracle::putError(const char *error) {
-	putError(error,charstring::getLength(error));
+void sqlrprotocol_oracle::putError(const char *error, uint32_t oranum) {
+	putError(error,charstring::getLength(error),oranum);
 }
 
-void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
+void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize,
+							uint32_t oranum) {
 
 	// the data flags word is per-packet, not per-message, so it's up
 	// to the caller to have already written it
 	byte_t		ttccode=TTC_ERROR;
 
-	const byte_t	unknown1[]={
+	byte_t	unknown1[]={
 		0x00, 0x00, 0x00, 0x00, 0x7B,
 		0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
 		0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -8358,9 +8387,21 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 		0x00, 0x00, 0x01, 0x00, 0x00, 0x00
 	};
 
+	// the ora number, little-endian, at offsets 4 and 5 - 0x7b 0x05 above
+	// is 1403, the default
+	unknown1[4]=(byte_t)(oranum&0xff);
+	unknown1[5]=(byte_t)((oranum>>8)&0xff);
+
 	const byte_t	unknown2[]={
 		0x0A
 	};
+
+	// the message size on the wire is a single byte (ub1); truncate
+	// rather than let a longer message desync the length byte from the
+	// bytes actually appended after it
+	if (errorsize>255) {
+		errorsize=255;
+	}
 
 	write(&reqpacket,ttccode);
 	reqpacket.append(unknown1,sizeof(unknown1));
@@ -8370,8 +8411,9 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize) {
 
 	debugStart("error response");
 	debugTtcCode(ttccode);
+	debugWrite("error: %u",oranum);
 	debugWrite("error size: %u",errorsize);
-	debugWrite("error: %*s",errorsize,error);
+	debugWrite("error: %.*s",(int)errorsize,error);
 	debugEnd();
 }
 
@@ -8390,7 +8432,7 @@ cursorid=hackcursorid;
 	sqlrservercursor	*cursor=cont->getCursor(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		return sendCursorNotOpenError();
+		return sendCursorNotOpenError(cursorid);
 	}
 
 	clearParams(cursor);
@@ -8712,8 +8754,7 @@ void sqlrprotocol_oracle::putGenericFooter() {
 
 bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 
-	// FIXME: implement this;
-
+	// get the error the failed prepare/execute left on the cursor
 	const char	*errorstring;
 	uint32_t	errorsize;
 	int64_t		errnum;
@@ -8723,18 +8764,73 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 			&errorsize,
 			&errnum,
 			&liveconnection);
-	debugWrite("%*s",errorsize,errorstring);
-	return false;
+
+	// the backend's error number isn't necessarily a real, in-range ora
+	// number - it may be another backend's native code (positive or
+	// negative), or 0 (some filters set no error number at all).  0
+	// specifically can't be sent as-is: putSummary() reads an oranum of
+	// 0 as success.  fall back to a generic ora number - and, since the
+	// backend can likewise leave no message, a generic message - rather
+	// than send something a client would misread or that wouldn't fit
+	// the wire's ub2/ub1-sized number and length fields
+	uint32_t	oranum=ORA_QUERY_FAILED;
+	if (errnum>0 && errnum<=65535) {
+		oranum=(uint32_t)errnum;
+	}
+	const char	*message=ORA_QUERY_FAILED_MESSAGE;
+	uint32_t	messagesize=charstring::getLength(ORA_QUERY_FAILED_MESSAGE);
+	if (errorsize && errorstring) {
+		message=errorstring;
+		messagesize=errorsize;
+	}
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("query error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("error: %lld",(long long)errnum);
+	debugWrite("ora number sent: %u",oranum);
+	debugWrite("%.*s",(int)messagesize,message);
+	debugEnd();
+
+	// a query3 session gets a summary object, like a fetch does; an
+	// older session gets putError()'s capture, like a fetch does
+	if (query3session) {
+		putSummary(cont->getId(cursor)+1,oranum,
+					rowssent[cont->getId(cursor)],
+					message,messagesize);
+	} else {
+		putError(message,messagesize,oranum);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
 }
 
-bool sqlrprotocol_oracle::sendCursorNotOpenError() {
-	// FIXME: implement this;
-	return false;
-}
+bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {
 
-bool sqlrprotocol_oracle::sendNotImplementedError() {
-	// FIXME: implement this;
-	return false;
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("cursor not open error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(cursorid,ORA_INVALID_CURSOR,0,
+					ORA_INVALID_CURSOR_MESSAGE);
+	} else {
+		putError("ORA-01001: invalid cursor",ORA_INVALID_CURSOR);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
 }
 
 extern "C" {

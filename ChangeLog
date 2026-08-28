@@ -883,6 +883,20 @@
 		definitions now derive their character/numeric marker bytes
 		from the column's actual wire type, instead of always claiming
 		character type
+	oracle protocol module: sendQueryError() and sendCursorNotOpenError()
+		were stubs that sent nothing and returned false, ending the
+		session on any query error or reference to an unknown cursor
+		instead of reporting it; they now send a real ORA error - a
+		summary object through putSummary() on a query3 session,
+		putError()'s capture otherwise, with putError() now able to
+		carry a caller-supplied ORA number instead of always 1403 -
+		and the session continues; a backend error left with no usable
+		number or message (0, out of range, or empty) falls back to a
+		generic ORA-20000 rather than being sent as-is, since putSummary()
+		reads an ora number of 0 as success; putError()'s message is
+		now clamped to the wire's single-byte length field instead of
+		desyncing the packet past 255 bytes; sendNotImplementedError(),
+		an identical stub that nothing called, was removed
 	sap connection module: a multi-statement tds 5.0 language batch (eg. a
 		client's own two-select batch, or the metadata queries sap's
 		blk_init sends as one language token) failed with ASE's "More
