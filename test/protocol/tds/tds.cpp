@@ -7296,10 +7296,8 @@ int main(int argc, char **argv) {
 	// - so it is CS_FAIL on both.
 	//
 	// The positioned update and delete that do reach a table with a
-	// primary key are driven further down, against poscursortable, and
-	// only on mssql.  A tds 5 version of that needs a not null key
-	// column, and #9493 garbles a not null column's describe over sap's
-	// ct-lib, so it waits on that.
+	// primary key are driven in the tds5 block just below, and, for
+	// mssql, further down against its own poscursortable.
 	stdoutput.printf("ct_cursor: update and delete are refused\n");
 	const char	*cursid7="curs7";
 	const char	*cursupdate="update cursortable set cursval = 99";
@@ -7478,6 +7476,252 @@ int main(int argc, char **argv) {
 			while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
 			ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 		}
+	}
+
+
+	// The block above only ever gets refused, since cursortable has no
+	// primary key.  This drives the same TDS_CURUPDATE/TDS_CURDELETE
+	// path against a poscursortable-shaped table (cursortable's columns
+	// plus a not null primary key), so update and delete take effect.
+	// Seeded with cursortable's own four rows, so the row-by-row
+	// expectations below reuse cursexpectid.  This is tds5 only:
+	// freetds cannot emit CS_CURSOR_UPDATE/CS_CURSOR_DELETE at all, and
+	// the mssql equivalent is driven separately, further down, as a
+	// hand built sp_cursor rpc.
+	if (tds5) {
+
+		query="drop table poscursortable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
+
+
+		stdoutput.printf("ct_command: create (keyed)\n");
+		if (issybase) {
+			query="create table poscursortable ("
+					"cursid int not null primary key, "
+					"cursname varchar(20) null, "
+					"cursval int null"
+					") lock datarows";
+		} else {
+			query="create table poscursortable ("
+					"cursid int not null primary key, "
+					"cursname varchar(20) null, "
+					"cursval int null"
+					")";
+		}
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+					query,charstring::getLength(query),
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		stdoutput.printf("ct_command: insert (keyed)\n");
+		const char	*poscursinsert[4]={
+			"insert into poscursortable values (1,'one',10)",
+			"insert into poscursortable values (2,'two',20)",
+			"insert into poscursortable values (3,'three',30)",
+			"insert into poscursortable values (4,'four',40)"};
+		for (CS_INT i=0; i<4; i++) {
+			assertEquals(ct_command(cmd,CS_LANG_CMD,
+					(CS_CHAR *)poscursinsert[i],
+					charstring::getLength(poscursinsert[i]),
+					CS_UNUSED),CS_SUCCEED);
+			assertEquals(ct_send(cmd),CS_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+			assertEquals(affectedrows,1);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_END_RESULTS);
+			assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),
+								CS_SUCCEED);
+		}
+		stdoutput.printf("\n");
+
+
+		const char	*curspk="curspk";
+		const char	*poscursselect="select cursid, cursname, cursval "
+					"from poscursortable order by cursid";
+		const char	*poscursupdate=
+				"update poscursortable set cursval = 99";
+
+		stdoutput.printf("ct_cursor: positioned update and delete "
+							"against a keyed table\n");
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+					(CS_CHAR *)curspk,CS_NULLTERM,
+					(CS_CHAR *)poscursselect,CS_NULLTERM,
+					CS_FOR_UPDATE),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_INT)1),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+
+		// row 1: fetch, then a positioned update - the current row
+		// is the target, named by the key the cursor selected
+		// rather than by anything this call passes
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],cursexpectid[0]);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_UPDATE,
+				(CS_CHAR *)"poscursortable",CS_NULLTERM,
+				(CS_CHAR *)poscursupdate,CS_NULLTERM,
+				CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+
+		// row 2: fetch, then a positioned delete
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],cursexpectid[1]);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DELETE,
+				(CS_CHAR *)"poscursortable",CS_NULLTERM,
+				(CS_CHAR *)NULL,CS_UNUSED,CS_UNUSED),
+							CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		assertEquals(ct_res_info(cmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,1);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+
+		// rows 3 and 4 are untouched
+		for (CS_INT i=2; i<4; i++) {
+			bytestring::zero(cursdata[0],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(cursdata[0],cursexpectid[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// row 1 changed, row 2 is gone, rows 3 and 4 are untouched
+		stdoutput.printf("ct_command: the keyed table changed\n");
+		query="select cursid, cursval from poscursortable "
+							"order by cursid";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+						query,charstring::getLength(query),
+						CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<2; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+		const char	*poscursexpectid[3]={"1","3","4"};
+		const char	*poscursexpectval[3]={"99","30","40"};
+		for (CS_INT i=0; i<3; i++) {
+			bytestring::zero(cursdata[0],256);
+			bytestring::zero(cursdata[1],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(cursdata[0],poscursexpectid[i]);
+			assertEquals(cursdata[1],poscursexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		query="drop table poscursortable";
+		ct_command(cmd,CS_LANG_CMD,query,
+				charstring::getLength(query),CS_UNUSED);
+		ct_send(cmd);
+		while (ct_results(cmd,&resultstype)==CS_SUCCEED) {}
+		ct_cancel(NULL,cmd,CS_CANCEL_ALL);
 	}
 
 

@@ -840,11 +840,6 @@
 		host; readLenEncInt() also gained an isnull out-param so
 		callers can recognize putLobField()'s 0xfb null marker instead
 		of it being misread as the literal value 251
-	test/protocol/tds/tds.cpp now drives a tds 5.0 positioned update
-		and delete through ct_cursor() against a keyed table,
-		verified live against a real ase - both take effect and
-		report a row count of 1, unlike the no-key cursortable
-		case just above it, which stays refused
 	oracle protocol module: deleted four stale FIXME comments claiming
 		valid ttc codes were invalid, added the missing TTC_IO_VECTOR
 		constant for one of them, and fixed putError() naming its ttc
