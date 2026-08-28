@@ -412,7 +412,12 @@ bool sqlrprotocol::readBE(const byte_t *rp, uint64_t *value,
 
 bool sqlrprotocol::readLenEncInt(const byte_t *rp, const byte_t *end,
 						uint64_t *value,
-						const byte_t **rpout) {
+						const byte_t **rpout,
+						bool *isnull) {
+
+	if (isnull) {
+		*isnull=false;
+	}
 
 	// nothing to read
 	if (rp>=end) {
@@ -465,12 +470,25 @@ bool sqlrprotocol::readLenEncInt(const byte_t *rp, const byte_t *end,
 			*rpout=rp+3;
 			}
 			break;
+		case 0xfb:
+			if (isnull) {
+				// caller wants to know about the null
+				// marker putLobField() writes (see
+				// src/protocols/oracle.cpp)
+				*isnull=true;
+				*value=0;
+				*rpout=rp+1;
+				break;
+			}
+			// callers that don't ask for isnull have always
+			// treated 0xfb as a literal value; preserve that
+			// fall through
 		default:
 			// *rp should be <= 0xfb at this point
-			// (0xff/0xfb are reserved markers in the mysql
-			// protocol but callers of this function have
-			// always treated them as literal single-byte
-			// values, so preserve that behavior here)
+			// (0xff is a reserved marker in the mysql protocol
+			// but callers of this function have always treated
+			// it as a literal single-byte value, so preserve
+			// that behavior here)
 			*value=*rp;
 			*rpout=rp+1;
 	}
@@ -615,13 +633,13 @@ void sqlrprotocol::writeBE(bytebuffer *buffer, uint64_t value) {
 void sqlrprotocol::writeLenEncInt(bytebuffer *buffer, uint64_t value) {
 	if (value>=16777216) {
 		buffer->append((char)0xfe);
-		buffer->append((uint64_t)value);
+		buffer->append(hostToLE(value));
 	} else if (value>=65536) {
 		buffer->append((char)0xfd);
 		writeTriplet(buffer,(uint32_t)value);
 	} else if (value>=251) {
 		buffer->append((char)0xfc);
-		buffer->append((uint16_t)value);
+		buffer->append(hostToLE((uint16_t)value));
 	} else {
 		buffer->append((char)value);
 	}

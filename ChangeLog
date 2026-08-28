@@ -834,6 +834,12 @@
 		connection in bulk-copy mode; an rpc refusal answers with an
 		rpc error instead of the done a batch or dynamic sql refusal
 		uses, since rpc handlers don't own the closing done token
+	fixed sqlrprotocol::writeLenEncInt()'s two-byte and eight-byte forms
+		writing raw host byte order instead of little-endian, so they
+		only round-tripped with readLenEncInt() on a little-endian
+		host; readLenEncInt() also gained an isnull out-param so
+		callers can recognize putLobField()'s 0xfb null marker instead
+		of it being misread as the literal value 251
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1757,6 +1757,33 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// #9515 regression: writeLenEncInt() used to write the LEI 0xfc
+	// (2-byte) and 0xfe (8-byte) forms in host byte order while
+	// readLenEncInt() always read them as little-endian, so a value whose
+	// length crossed the 0xfc threshold (251 bytes) round-tripped
+	// correctly only on a little-endian host.  This forces a column
+	// value through that 0xfc form and checks that the client gets back
+	// exactly the length and content sent.  It can only exercise this
+	// dev host's own (little-endian) byte order, so it does not by
+	// itself prove the fix on a big-endian host; see the #if 0
+	// "multi-packet query" block below for the (currently disabled)
+	// precedent for forcing a value through the larger 0xfe form.
+	stdoutput.printf("\n====== #9515 LEI 0xfc round trip ======\n\n");
+	query="select repeat('A',1000)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	result=mysql_store_result(&mysql);
+	row=mysql_fetch_row(result);
+	assertEquals(charstring::getLength(row[0]),1000);
+	lengths=mysql_fetch_lengths(result);
+	assertEquals(lengths[0],1000);
+	char	repeatedachar[1001];
+	bytestring::set(repeatedachar,'A',1000);
+	repeatedachar[1000]='\0';
+	assertEquals(bytestring::compare(row[0],repeatedachar,1000),0);
+	mysql_free_result(result);
+	stdoutput.printf("\n");
+
+
 #if 0
 	stdoutput.printf("multi-packet query\n");
 	q.clear();

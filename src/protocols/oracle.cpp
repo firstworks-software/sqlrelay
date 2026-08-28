@@ -8329,7 +8329,8 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 	uint64_t	loblength;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		debugWrite("null");
-		// send NULL as 0xfb
+		// send NULL as 0xfb, recognized by readLenEncInt()'s
+		// isnull out-param (see src/server/sqlrprotocol.cpp)
 		reqpacket.append((char)0xfb);
 		cont->closeLobField(cursor,col);
 		debugEnd();
@@ -8363,7 +8364,9 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 			// no data - send null if nothing sent yet, else end
 			if (start) {
 				debugWrite("null");
-				// send NULL as 0xfb
+				// send NULL as 0xfb (see the comment
+				// above the other 0xfb send in this
+				// function)
 				reqpacket.append((char)0xfb);
 			}
 			cont->closeLobField(cursor,col);

@@ -6667,6 +6667,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		 *  additional bytes the encoding requires) is bounds-checked
 		 *  against it.
 		 *
+		 *  If "isnull" is non-NULL and the encoding's null marker
+		 *  (0xfb) is read, then "*isnull" is set to true, "value" is
+		 *  set to 0, and "out" is advanced past the marker byte.  If
+		 *  "isnull" is NULL, then 0xfb is instead treated as the
+		 *  literal single-byte value 251, matching this function's
+		 *  historical behavior.
+		 *
 		 *  Returns true if a complete length-encoded integer was
 		 *  read without running past "end", and false otherwise.  On
 		 *  false, "value" is set to 0 and "out" is set back to
@@ -6674,7 +6681,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		bool	readLenEncInt(const byte_t *in,
 						const byte_t *end,
 						uint64_t *value,
-						const byte_t **out);
+						const byte_t **out,
+						bool *isnull=NULL);
 
 		/** Reads a BER-encoded integer from byte string "rp" into
 		 *  buffer "value".
@@ -6793,7 +6801,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		void	writeBE(bytebuffer *buffer, uint64_t value);
 
 		/** Writes length-encoded-integer "value" to byte buffer
-		 *  "buffer". */
+		 *  "buffer".  The multi-byte forms are always written
+		 *  little-endian, regardless of host byte order. */
 		void	writeLenEncInt(bytebuffer *buffer,
 						uint64_t value);
 
