@@ -695,21 +695,10 @@ void sqlrprotocol::writeLenPreInt(bytebuffer *buffer, uint32_t value) {
 }
 
 void sqlrprotocol::writeLenPreInt(bytebuffer *buffer, int32_t value) {
-	if (value>=0) {
-		writeLenPreInt(buffer,(uint32_t)value);
-		return;
-	}
-	uint32_t	magnitude=(uint32_t)(-value);
-	if (magnitude<=0xff) {
-		buffer->append((byte_t)0x81);
-		buffer->append((byte_t)magnitude);
-	} else if (magnitude<=0xffff) {
-		buffer->append((byte_t)0x82);
-		buffer->append(hostToBE((uint16_t)magnitude));
-	} else {
-		buffer->append((byte_t)0x84);
-		buffer->append(hostToBE(magnitude));
-	}
+	// reinterpret as two's complement and defer to the unsigned form; a
+	// negative value always comes out >0xffff that way, so it always
+	// takes the 4-byte form, which readLenPreInt() already accepts
+	writeLenPreInt(buffer,(uint32_t)value);
 }
 
 uint16_t sqlrprotocol::toHost(uint16_t value) {

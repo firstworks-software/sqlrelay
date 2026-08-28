@@ -6707,8 +6707,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		 *  against it.
 		 *
 		 *  In this encoding, the first byte is a count of the
-		 *  significant big-endian bytes of magnitude that
-		 *  follow (0 to 4).
+		 *  significant big-endian bytes that follow (0 to 4).
+		 *  A negative value written by writeLenPreInt(int32_t)
+		 *  always uses the 4-byte count, holding the value's
+		 *  two's-complement bit pattern; a caller expecting a
+		 *  signed value recovers it by casting "value" to
+		 *  int32_t.
 		 *
 		 *  Returns true if a complete length-prefixed integer
 		 *  was read without running past "end", and false
@@ -6813,9 +6817,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol : public sqlrservermodule {
 		void	writeLenPreInt(bytebuffer *buffer, uint32_t value);
 
 		/** Writes length-prefixed-integer "value" to byte buffer
-		 *  "buffer".  A negative value is written as a length byte
-		 *  with its top bit set, followed by the magnitude, rather
-		 *  than as two's-complement. */
+		 *  "buffer".  A negative value is written using the 4-byte
+		 *  form of the unsigned overload, holding its two's-complement
+		 *  bit pattern, so readLenPreInt() can read back anything
+		 *  this writes. */
 		void	writeLenPreInt(bytebuffer *buffer, int32_t value);
 
 		/** Converts "value" from host byte order to big-endian, then

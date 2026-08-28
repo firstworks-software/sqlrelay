@@ -819,6 +819,12 @@
 		255-character clamp, the message-text truncation, and the
 		token size itself) reworked to count ucs-2 units instead of
 		utf-8 bytes to match
+	fixed sqlrprotocol::writeLenPreInt(int32_t) writing a negative value
+		as a length byte with its top bit set (0x81/0x82/0x84) followed
+		by the magnitude - a form readLenPreInt() always rejected, so
+		nothing could read what it wrote; a negative value is now
+		written as two's complement in the existing 4-byte form instead,
+		which readLenPreInt() already handles
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
