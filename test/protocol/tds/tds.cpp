@@ -6423,11 +6423,11 @@ int main(int argc, char **argv) {
 
 
 	// The same four properties answer through ct_cmd_props on both
-	// libraries.  Every combo reachable through this harness returns the
-	// same value for each property below whether the backend is reached
-	// natively or through sqlrelay.  curs1 is still open and read-only
-	// here, and the fetch loop has not run yet, so this is the state each
-	// value describes.
+	// libraries.  Only the status below depends on whether the backend
+	// is reached natively or through sqlrelay; the other three come
+	// back the same either way.  curs1 is still open and read-only
+	// here, and the fetch loop has not run yet, so this is the state
+	// each value describes.
 	stdoutput.printf("ct_cmd_props: CS_CUR_ family\n");
 	cursinfobuffer	curspropvalue;
 	CS_INT		curspropoutlen;
@@ -6443,9 +6443,13 @@ int main(int argc, char **argv) {
 	// token, which is open|rdonly.  freetds 1.3.3 never sees such a token
 	// over tds 7.x and tracks the status itself, adding rowcount once
 	// CS_CURSOR_ROWS is set - 42 rather than 10, against a real sql
-	// server and against sqlrelay in front of either backend.
+	// server and against sqlrelay in front of either backend.  Over a
+	// genuine tds 5.0 link (freetds native to a real ase), freetds does
+	// see the curinfo token and reports open|rdonly, matching sap's
+	// ct-lib, so the rowcount-tracking branch only applies when freetds
+	// isn't linked straight to ase.
 	assertEquals(curspropvalue.intvalue,
-			(TDSTEST_LINKED_WITH_FREETDS)?
+			(TDSTEST_LINKED_WITH_FREETDS && !nativease)?
 				(CS_CURSTAT_OPEN|CS_CURSTAT_RDONLY|
 						CS_CURSTAT_ROWCOUNT):
 				(CS_CURSTAT_OPEN|CS_CURSTAT_RDONLY));
@@ -6940,10 +6944,10 @@ int main(int argc, char **argv) {
 	// server never gets the chance to object, and the deallocate below
 	// is what makes the rest of this block reachable.  On a native ASE
 	// link that deallocate is also what keeps the declare after it
-	// clean: without it ASE answers server error 51, "There is already
-	// another cursor with the name", severity 2, makes the declare's own
-	// ack a CS_CMD_FAIL, and then opens the already-declared cursor and
-	// hands over all four rows anyway.  Worth knowing beyond this test:
+	// clean: without it ASE answers server error 563, "There is already
+	// another cursor with the name", severity 16, makes the declare's
+	// own ack a CS_CMD_FAIL, and then opens the already-declared cursor
+	// and hands over all four rows anyway.  Worth knowing beyond this test:
 	// a drain loop that treats any CS_CMD_FAIL as fatal throws away a
 	// result set that is right there, and
 	// src/connections/freetds.cpp:4627 does exactly that.
@@ -6987,7 +6991,18 @@ int main(int argc, char **argv) {
 	if (nativease || tds5) {
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
-		assertEquals(resultstype,CS_CMD_SUCCEED);
+		// on a native ase link reached through the freetds build, the
+		// "if (tds5)" dealloc above never ran (that block is tds5-only,
+		// and freetds's own tds5 boolean is false even over a genuine
+		// tds 5.0 wire), so ase still has curs4 declared from the block
+		// above and this declare's own ack comes back CS_CMD_FAIL
+		// (server error 563) rather than succeeding - see the comment
+		// above.  Sap's ct-lib is unaffected here even though it's also
+		// nativease, because tds5 is true for it, so the dealloc above
+		// did run.
+		assertEquals(resultstype,
+				(nativease && !tds5)?
+					CS_CMD_FAIL:CS_CMD_SUCCEED);
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CMD_DONE);
@@ -8356,6 +8371,22 @@ int main(int argc, char **argv) {
 				CS_UNUSED),(tds5)?CS_FAIL:CS_SUCCEED);
 	if (!tds5) {
 		assertEquals(ct_send(cmd),CS_SUCCEED);
+		// on a native ase link the wire is tds 5.0, so ase answers
+		// with the same declare-ack and setrows-ack pairs the
+		// nativease||tds5 block above drains for curs11 - without
+		// draining them here too, the ct_results below sees
+		// CS_CMD_SUCCEED instead of CS_CURSOR_RESULT and every token
+		// after it runs a beat behind for the rest of this block
+		if (nativease) {
+			for (CS_INT i=0; i<2; i++) {
+				results=ct_results(cmd,&resultstype);
+				assertEquals(results,CS_SUCCEED);
+				assertEquals(resultstype,CS_CMD_SUCCEED);
+				results=ct_results(cmd,&resultstype);
+				assertEquals(results,CS_SUCCEED);
+				assertEquals(resultstype,CS_CMD_DONE);
+			}
+		}
 		results=ct_results(cmd,&resultstype);
 		assertEquals(results,CS_SUCCEED);
 		assertEquals(resultstype,CS_CURSOR_RESULT);
