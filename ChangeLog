@@ -928,6 +928,15 @@
 		number; sendOpenResponse() now sends that same plus-1 cursor id
 		back to the client instead of a hardcoded 0, since close() needs
 		a real id to read back
+	oracle protocol module: sendFetchResponse() hard-coded its row count to
+		1, so a legacy (TTI 0x05) fetch carried at most one row per
+		round trip however many were available; it now sends every row
+		left in the result set, bounded only by the client's negotiated
+		packet size, since nothing after the fetch loop depends on the
+		row count being exactly one - the client's requested row count
+		itself is still not decoded, since where it sits in the legacy
+		fetch request isn't known without a live capture, so this is a
+		round-trip reduction rather than the real fix
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

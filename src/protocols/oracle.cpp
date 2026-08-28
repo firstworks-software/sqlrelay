@@ -7581,12 +7581,24 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	uint32_t	colcount=cont->colCount(cursor);
 	cacheColumnDefinitions(cursor,colcount);
 
-	// FIXME: get this from the client somehow
-	uint32_t rowstofetch=1;
+	// the row count in the legacy fetch request still isn't decoded - where
+	// it sits in the request body is unidentified, and finding it would take
+	// a live capture or the legacy client source.  until then, send every
+	// row that's left in the result set, rather than hard-stopping at one
+	// row per round trip.  the only bound is the negotiated packet size,
+	// less enough room for the largest trailer sent after this loop.
+	const uint32_t	trailerreserve=128;
 
 	// for each row...
 	uint32_t rowsfetched=0;
 	do {
+
+		// stop if there's no room left in the packet for another row
+		// and the trailer
+		if (reqpacket.getSize()+trailerreserve>=sdu) {
+			debugWrite("packet full");
+			break;
+		}
 
 		// fetch a row
 		bool	error;
@@ -7695,7 +7707,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 		rowsfetched++;
 
-	} while (rowsfetched<rowstofetch);
+	} while (true);
 
 	if (rowsfetched) {
 
