@@ -3711,6 +3711,10 @@ bool firebirdcursor::inputBind(const char *variable,
 	t.tm_year=year-1900;
 	isc_encode_timestamp(&t,&(inbindts[index]));
 
+	// isc_encode_timestamp() only encodes whole seconds, so add in the
+	// sub-second part directly, in ISC_TIME's 100-microsecond units
+	inbindts[index].timestamp_time+=microsecond/100;
+
 	// low bit set makes firebird consult sqlind
 	inbindsqlda->sqlvar[index].sqltype=SQL_TIMESTAMP+1;
 	inbindsqlda->sqlvar[index].sqlscale=0;

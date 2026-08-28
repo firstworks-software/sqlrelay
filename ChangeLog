@@ -1008,6 +1008,10 @@
 		now stored alongside the other date fields and derived from
 		the raw ISC_TIMESTAMP fraction, since isc_decode_timestamp()
 		doesn't carry sub-second precision
+	fixed the firebird connection module's input date/timestamp bind
+		silently dropping the caller's microsecond value; it's now
+		added into the raw ISC_TIMESTAMP after encoding, since
+		isc_encode_timestamp() only encodes whole seconds
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
