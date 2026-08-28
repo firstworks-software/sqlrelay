@@ -966,6 +966,15 @@
 		a bind value leak on a second bind against the same cursor and
 		added bounds checks on the bind value header and size against
 		the received packet
+	oracle protocol module's legacy row path wrote a terminator after
+		every non-null non-lob column regardless of whether putField()
+		wrote a value for it, and 21 of putField()'s 22 column types
+		were unimplemented stubs that wrote nothing at all, desyncing
+		the row for any of those types (NUMBER being the commonest);
+		putField() now reports whether it wrote a value and putRow()
+		only writes the terminator when it did; implemented NUMBER,
+		VARNUM, DATE and FIXED_CHAR, the four types worth encoding
+		given what the module already had
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

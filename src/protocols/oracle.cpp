@@ -959,6 +959,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putLenBytes(const char *bytes, uint32_t size);
 		void	putBytesWithLength(const char *bytes, uint32_t size);
 		void	putOracleDate(byte_t *out);
+		void	putOracleDate(byte_t *out,
+						int16_t year,
+						int16_t month,
+						int16_t day,
+						int16_t hour,
+						int16_t minute,
+						int16_t second);
 		void	putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags);
@@ -1090,7 +1097,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putRow(sqlrservercursor *cursor,
 						uint32_t colcount,
 						bool terminator);
-		void	putField(const char *field,
+		bool	putField(const char *field,
 						uint64_t fieldsize,
 						uint16_t columntype);
 		void	putLobField(sqlrservercursor *cursor, uint32_t col);
@@ -4760,19 +4767,33 @@ void sqlrprotocol_oracle::putOracleDate(byte_t *out) {
 	datetime	dt;
 	dt.initFromSystemDateTime();
 
-	int32_t	year=dt.getYear();
+	putOracleDate(out,
+			(int16_t)dt.getYear(),
+			(int16_t)dt.getMonth(),
+			(int16_t)dt.getDayOfMonth(),
+			(int16_t)dt.getHour(),
+			(int16_t)dt.getMinute(),
+			(int16_t)dt.getSecond());
+}
+
+void sqlrprotocol_oracle::putOracleDate(byte_t *out,
+					int16_t year,
+					int16_t month,
+					int16_t day,
+					int16_t hour,
+					int16_t minute,
+					int16_t second) {
 
 	out[0]=(byte_t)(year/100+100);
 	out[1]=(byte_t)(year%100+100);
-	out[2]=(byte_t)dt.getMonth();
-	out[3]=(byte_t)dt.getDayOfMonth();
-	out[4]=(byte_t)(dt.getHour()+1);
-	out[5]=(byte_t)(dt.getMinute()+1);
-	out[6]=(byte_t)(dt.getSecond()+1);
+	out[2]=(byte_t)month;
+	out[3]=(byte_t)day;
+	out[4]=(byte_t)(hour+1);
+	out[5]=(byte_t)(minute+1);
+	out[6]=(byte_t)(second+1);
 
 	debugWrite("date: %04d-%02d-%02d %02d:%02d:%02d",
-			year,dt.getMonth(),dt.getDayOfMonth(),
-			dt.getHour(),dt.getMinute(),dt.getSecond());
+			year,month,day,hour,minute,second);
 }
 
 void sqlrprotocol_oracle::putAuthField(const char *fieldname,
@@ -8115,10 +8136,12 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			putLobField(cursor,i);
 		} else if (!null) {
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
-			putField(field,fieldsize,ct[i]);
+			bool	wrote=putField(field,fieldsize,ct[i]);
 
-			// no idea
-			if (terminator) {
+			// no idea, but only if the field itself was
+			// actually written, otherwise the terminator
+			// desyncs the rest of the row
+			if (terminator && wrote) {
 				if (i==colcount-1) {
 					writeBE(&reqpacket,(uint16_t)0);
 				} else {
@@ -8134,13 +8157,14 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 	}
 }
 
-void sqlrprotocol_oracle::putField(const char *field,
+bool sqlrprotocol_oracle::putField(const char *field,
 					uint64_t fieldsize,
 					uint16_t columntype) {
 
 	switch (columntype) {
 		case ORACLE_TYPE_CHAR:
 		case ORACLE_TYPE_VARCHAR:
+		case ORACLE_TYPE_FIXED_CHAR:
 			{
 			// The legacy form writes a one-byte size and that
 			// many bytes.  What a real server sends for a value
@@ -8154,94 +8178,139 @@ void sqlrprotocol_oracle::putField(const char *field,
 			debugWrite("field size: %d",size);
 			debugWrite("field: \"%.*s\"",(int)size,field);
 			}
-			break;
+			return true;
 		case ORACLE_TYPE_NUMBER:
-			// FIXME: implement this
-			debugWrite("number (not implemented)");
-			break;
 		case ORACLE_TYPE_VARNUM:
-			// FIXME: implement this
-			debugWrite("varnum (not implemented)");
-			break;
+			// putNumberField wraps its own output in a CLR
+			putNumberField(field,(uint32_t)fieldsize);
+			return true;
 		case ORACLE_TYPE_LONG:
 			// FIXME: implement this
 			debugWrite("long (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_ROWID_DEPRECATED:
 			// FIXME: implement this
 			debugWrite("rowid (deprecated) (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_DATE:
-			// FIXME: implement this
-			debugWrite("date (not implemented)");
-			break;
+			{
+			int16_t	year;
+			int16_t	month;
+			int16_t	day;
+			int16_t	hour;
+			int16_t	minute;
+			int16_t	second;
+			int32_t	usec;
+			bool	isnegative;
+			// FIXME: set ddmm and yyyyddmm somehow
+			if (!datetime::parse(field,false,false,"/-.:",
+						&year,&month,&day,
+						&hour,&minute,&second,
+						&usec,&isnegative)) {
+				// better to send nothing at all than
+				// to send 7 bytes of garbage
+				debugWrite("date (failed to parse): "
+						"\"%.*s\"",
+						(int)fieldsize,field);
+				return false;
+			}
+
+			// parse returns -1 for parts that the text
+			// didn't have.  a date column ought to always
+			// have a date part, but default everything
+			// that's missing, just in case.
+			if (year==-1) {
+				year=0;
+			}
+			if (month==-1) {
+				month=1;
+			}
+			if (day==-1) {
+				day=1;
+			}
+			if (hour==-1) {
+				hour=0;
+			}
+			if (minute==-1) {
+				minute=0;
+			}
+			if (second==-1) {
+				second=0;
+			}
+
+			// a fixed 7 raw bytes, no length prefix
+			byte_t	date[7];
+			putOracleDate(date,year,month,day,
+						hour,minute,second);
+			write(&reqpacket,(const char *)date,sizeof(date));
+			}
+			return true;
 		case ORACLE_TYPE_RAW:
 			// FIXME: implement this
 			debugWrite("raw (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_LONG_RAW:
 			// FIXME: implement this
 			debugWrite("long raw (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_RESULT_SET:
 			// FIXME: implement this
 			debugWrite("result set (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_ROWID:
 			// FIXME: implement this
 			debugWrite("rowid (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_NAMED_TYPE:
 			// FIXME: implement this
 			debugWrite("named type (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_REF_TYPE:
 			// FIXME: implement this
 			debugWrite("ref type (not implemented)");
-			break;
+			return false;
+		// putRow handles lobs itself, before it ever gets here,
+		// so these three only come up if a column is declared a
+		// lob but the driver didn't flag it as one
 		case ORACLE_TYPE_CLOB:
 			// FIXME: implement this
 			debugWrite("clob (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_BLOB:
 			// FIXME: implement this
 			debugWrite("blob (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_BFILE:
 			// FIXME: implement this
 			debugWrite("bfile (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_TIMESTAMP:
 			// FIXME: implement this
 			debugWrite("timestamp (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_TIMESTAMPTZ:
 			// FIXME: implement this
 			debugWrite("timestamp tz (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_INTERVALYM:
 			// FIXME: implement this
 			debugWrite("interval year-month (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_INTERVALDS:
 			// FIXME: implement this
 			debugWrite("interval day-second (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_TIMESTAMPLTZ:
 			// FIXME: implement this
 			debugWrite("timestamp ltz (not implemented)");
-			break;
+			return false;
 		case ORACLE_TYPE_PLSQL_INDEX_TABLE:
 			// FIXME: implement this
 			debugWrite("plsql index table (not implemented)");
-			break;
-		case ORACLE_TYPE_FIXED_CHAR:
-			// FIXME: implement this
-			debugWrite("fixed char (not implemented)");
-			break;
+			return false;
 		default:
 			debugWrite("unknown column type: %d",columntype);
-			break;
+			return false;
 	}
 }
 
