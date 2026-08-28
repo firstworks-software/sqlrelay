@@ -5400,6 +5400,26 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	// call this to open a cursor
 	// sqlplus 10g+ use query3
 
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	byte_t		cursoridpointer=0;
+	uint32_t	opesiz=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated open sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	// a pointer flag for the cursor id, always 1 in the capture - the
+	// server allocates the cursor and returns its id, so no cursor id
+	// follows it here - then the open size (opesiz), meaning unknown
+	if (!getPointer(rp,end,&cursoridpointer,&rp) ||
+		!readLenPreInt(rp,end,&opesiz,&rp)) {
+		return false;
+	}
+
 	sqlrservercursor	*cursor=cont->getCursor();
 	if (!cursor) {
 		debugWrite("couldn't get cursor");
@@ -5409,13 +5429,11 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	uint16_t	cursorid=cont->getId(cursor);
 hackcursorid=cursorid;
 
-	// FIXME: decode the rest of this...
-	uint16_t	options=0;
-	readBE(rp,&options,&rp);
-
 	debugStart("open request");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("cursor id pointer: 0x%02x",cursoridpointer);
+	debugWrite("open size: %d",opesiz);
 	debugWrite("cursor id: %d",cursorid);
-	debugOptions(options);
 	debugEnd();
 
 	return sendOpenResponse(cursor);
@@ -5427,23 +5445,26 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
-	byte_t		unknown[]={
-		0x01, 0x00, 0x00, 0x00, 0x09
-	};
+	uint16_t	cursorid=cont->getId(cursor);
+	byte_t		unknown[]={0x00, 0x00};
+	byte_t		status=TTC_STATUS;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
+	// the id on the wire is this module's own cursor id plus 1 - the
+	// same convention close() and occa() use when reading a cursor id
+	// back, so a client that echoes this id back in a later close()
+	// finds the cursor again
+	writeLenPreInt(&reqpacket,(uint32_t)(cursorid+1));
 	reqpacket.append(unknown,sizeof(unknown));
-
-	uint16_t	cursorid=cont->getId(cursor);
+	write(&reqpacket,status);
 
 	debugStart("open response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("cursor id: %d",cursorid);
-	debugWrite("unknown: %02x %02x %02x %02x %02x",
-			unknown[0],unknown[1],unknown[2],
-			unknown[3],unknown[4]);
+	debugWrite("unknown: %02x %02x",unknown[0],unknown[1]);
+	debugTtcCode(status);
 	debugEnd();
 
 	return sendPacket(true);
@@ -8419,17 +8440,30 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize,
 
 bool sqlrprotocol_oracle::close(const byte_t *rp) {
 
-	uint16_t	cursorid;
+	const byte_t	*end=resppacket+resppacketsize;
 
-	// FIXME: decode this...
-cursorid=hackcursorid;
+	byte_t		seqnumber=0;
+	uint32_t	cursorid=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated close sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	if (!readLenPreInt(rp,end,&cursorid,&rp)) {
+		debugWrite("truncated close cursor id");
+		return false;
+	}
 
 	debugStart("close request");
+	debugWrite("seq number: %d",seqnumber);
 	debugWrite("cursor id: %d",cursorid);
 	debugEnd();
 
-	// get the requested cursor
-	sqlrservercursor	*cursor=cont->getCursor(cursorid);
+	// the id on the wire is the controller's plus 1
+	sqlrservercursor	*cursor=(cursorid)?
+			cont->getCursor((uint16_t)(cursorid-1)):NULL;
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -8521,11 +8555,41 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 
 bool sqlrprotocol_oracle::version(const byte_t *rp) {
 
-	// FIXME: decode this...
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	byte_t		rdbmsversion=0;
+	uint32_t	bufferlength=0;
+	byte_t		returnversionlength=0;
+	byte_t		returnversionnumber=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated version sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
 
 	debugStart("version request");
-	if (rp && rp<resppacket+resppacketsize) {
-		debugWrite("requested version: 0x%02x",*rp);
+	debugWrite("seq number: %d",seqnumber);
+
+	// this handler answers both TTI_VERSION and a bare (non-piggybacked)
+	// TTI_SWITCH_SESSION, and only the sequence number above is known to
+	// be common to both - so a short body here just means fewer fields
+	// to print, not a truncated request
+	if (end-rp>=1) {
+		read(rp,&rdbmsversion,&rp);
+		debugWrite("rdbms version: %d",rdbmsversion);
+	}
+	if (readLenPreInt(rp,end,&bufferlength,&rp)) {
+		debugWrite("buffer length: %d",bufferlength);
+	}
+	if (end-rp>=1) {
+		read(rp,&returnversionlength,&rp);
+		debugWrite("return version length: %d",returnversionlength);
+	}
+	if (end-rp>=1) {
+		read(rp,&returnversionnumber,&rp);
+		debugWrite("return version number: %d",returnversionnumber);
 	}
 	debugEnd();
 
@@ -8681,7 +8745,7 @@ bool sqlrprotocol_oracle::logonUnknown(const byte_t *rp) {
 
 	debugStart("logon unknown request");
 	if (rp && rp<resppacket+resppacketsize) {
-		debugWrite("function code: 0x%02x",*rp);
+		debugWrite("seq number: 0x%02x",*rp);
 	}
 	debugEnd();
 
