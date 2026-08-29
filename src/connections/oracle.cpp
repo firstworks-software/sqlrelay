@@ -81,19 +81,6 @@ struct datebind {
 	const char	**tz;
 	bool		*isnegative;
 	OCIDate		ocidate;
-	#ifdef OCI_DTYPE_TIMESTAMP
-	// OCIDate (SQLT_ODT, above) has no sub-second component, so
-	// microsecond-precision output binds go through an OCIDateTime
-	// descriptor instead
-	OCIDateTime	*ocidatetime;
-	datebind() : ocidatetime(NULL) {}
-	~datebind() {
-		if (ocidatetime) {
-			OCIDescriptorFree(ocidatetime,
-					OCI_DTYPE_TIMESTAMP);
-		}
-	}
-	#endif
 };
 
 class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
@@ -4346,26 +4333,9 @@ bool oraclecursor::outputBind(const char *variable,
 	db->isnegative=isnegative;
 	outdatebind[oraoutbindcount]=db;
 
-	dvoid	*bindbuf;
-	sb4	bindbufsize;
-	ub2	bindtype;
-	#ifdef OCI_DTYPE_TIMESTAMP
-	if (OCIDescriptorAlloc((dvoid *)oracleconn->env,
-			(dvoid **)&(db->ocidatetime),
-			(ub4)OCI_DTYPE_TIMESTAMP,
-			(size_t)0,(dvoid **)0)!=OCI_SUCCESS) {
-		delete db;
-		outdatebind[oraoutbindcount]=NULL;
-		return false;
-	}
-	bindbuf=(dvoid *)&(db->ocidatetime);
-	bindbufsize=(sb4)sizeof(OCIDateTime *);
-	bindtype=SQLT_TIMESTAMP;
-	#else
-	bindbuf=(dvoid *)&(db->ocidate);
-	bindbufsize=(sb4)sizeof(OCIDate);
-	bindtype=SQLT_ODT;
-	#endif
+	dvoid	*bindbuf=(dvoid *)&(db->ocidate);
+	sb4	bindbufsize=(sb4)sizeof(OCIDate);
+	ub2	bindtype=SQLT_ODT;
 
 	if (charstring::isInteger(variable+1,variablesize-1)) {
 		ub4	pos=charstring::convertToInteger(variable+1);
@@ -4983,24 +4953,10 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 			ub1	hour=0;
 			ub1	minute=0;
 			ub1	second=0;
-			#ifdef OCI_DTYPE_TIMESTAMP
-			ub4	fsec=0;
-			OCIDateTimeGetDate((dvoid *)oracleconn->env,
-					oracleconn->err,db->ocidatetime,
-					&year,&month,&day);
-			OCIDateTimeGetTime((dvoid *)oracleconn->env,
-					oracleconn->err,db->ocidatetime,
-					&hour,&minute,&second,&fsec);
-			// fsec is nanoseconds; year/month/day/hour/minute/
-			// second/fsec are pre-zeroed above in case either
-			// call fails
-			*db->microsecond=fsec/1000;
-			#else
 			OCIDateGetDate(&(db->ocidate),&year,&month,&day);
 			OCIDateGetTime(&(db->ocidate),&hour,&minute,&second);
 			// OCIDate has no sub-second component
 			*db->microsecond=0;
-			#endif
 			*db->year=year;
 			*db->month=month;
 			*db->day=day;

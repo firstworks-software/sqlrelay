@@ -1013,13 +1013,9 @@
 		added into the raw ISC_TIMESTAMP after encoding, since
 		isc_encode_timestamp() only encodes whole seconds
 	fixed the oracle connection module's output date/timestamp bind
-		never writing back the caller's microsecond pointer; since
-		the OCIDate/SQLT_ODT type it used has no sub-second
-		component at all, output date/timestamp binds now go
-		through an OCIDateTime/SQLT_TIMESTAMP descriptor instead
-		when the OCI client headers support it, deriving the real
-		microsecond value from OCIDateTimeGetTime()'s fractional
-		second
+		never writing back the caller's microsecond pointer; it's
+		now always written back as 0, since the OCIDate/SQLT_ODT
+		type it binds has no sub-second component at all
 	fixed the firebird, db2, informix and odbc connection modules'
 		input date/timestamp binds propagating a caller-supplied
 		negative year/month/day/hour/minute/second/microsecond
