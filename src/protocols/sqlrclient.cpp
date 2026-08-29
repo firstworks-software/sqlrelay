@@ -2952,7 +2952,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 			}
 
 			// get the tz
-			bv->value.dateval.tz=(char *)bindpool->allocate(tzsize);
+			bv->value.dateval.tz=(char *)bindpool->allocate(tzsize+1);
 			result=clientsock->read(bv->value.dateval.tz,tzsize,
 						idleclienttimeout,0);
 			if ((uint32_t)result!=(uint32_t)tzsize) {
@@ -2966,6 +2966,7 @@ bool sqlrprotocol_sqlrclient::getInputOutputBinds(sqlrservercursor *cursor) {
 				debugEnd();
 				return false;
 			}
+			bv->value.dateval.tz[tzsize]='\0';
 
 			// get the is-negative flag
 			result=clientsock->read(&bv->value.dateval.isnegative,
