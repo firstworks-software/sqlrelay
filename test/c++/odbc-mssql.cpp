@@ -1944,6 +1944,47 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// long output bind, followed by more result sets (#9545)
+	// The bind value is longer than the bind pool's first buffer, so the
+	// pool frees the buffer behind it at the end of the execute.
+	// nextResultSet() must not send that value back again.
+	stdoutput.printf("LONG OUTPUT BIND WITH MULTIPLE RESULT SETS: \n");
+	cur->sendQuery("drop procedure testproc");
+	charstring::printf(query,sizeof(query),
+		"create procedure testproc "
+		"@bindval varchar(%d) output as "
+		"set @bindval='%s'; "
+		"select 1 as col1 union select 2 union select 3 order by 1; "
+		"select 4 as col2 union select 5 order by 1",
+		LONG_OUTPUT_BIND_LENGTH,longoutputbindbuffer);
+	assertTrue(cur->sendQuery(query));
+	cur->prepareQuery("exec testproc ?");
+	cur->defineOutputBindString("1",LONG_OUTPUT_BIND_LENGTH);
+	assertTrue(cur->executeQuery());
+	assertEquals(cur->getOutputBindLength("1"),LONG_OUTPUT_BIND_LENGTH);
+	assertEquals(cur->getOutputBindString("1"),longoutputbindbuffer);
+	assertEquals(cur->colCount(),1);
+	assertEquals(cur->getColumnName(0),"col1");
+	assertEquals(cur->rowCount(),3);
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(1,(uint32_t)0),"2");
+	assertEquals(cur->getField(2,(uint32_t)0),"3");
+	assertTrue(cur->nextResultSet());
+	assertEquals(cur->colCount(),1);
+	assertEquals(cur->getColumnName(0),"col2");
+	assertEquals(cur->rowCount(),2);
+	assertEquals(cur->getField(0,(uint32_t)0),"4");
+	assertEquals(cur->getField(1,(uint32_t)0),"5");
+	// nextResultSet() discards the bind definitions before it parses the
+	// response, so no output bind value should have come back with it
+	nullvar=cur->getOutputBindString("1");
+	assertEquals(nullvar,NULL);
+	assertEquals(cur->getOutputBindLength("1"),0);
+	assertFalse(cur->nextResultSet());
+	assertTrue(cur->sendQuery("drop procedure testproc"));
+	stdoutput.printf("\n");
+
+
 	// negative input bind
 	stdoutput.printf("NEGATIVE INPUT BIND: \n");
 	cur->sendQuery("drop table testtable");

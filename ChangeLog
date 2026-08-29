@@ -1045,6 +1045,13 @@
 	fixed sqlrservercontroller::copyBind allocating an unzeroed byte
 		and pointing a date bind's tz at it when the source tz was
 		null, instead of leaving the copy's tz null too
+	fixed nextResultSet, resumeResultSet and fetchFromBindCursor sending
+		stale output/inputoutput bind values left over from the
+		previous command on that cursor, out of a bind pool already
+		cleared by then; covers string, lob and cursor output binds;
+		the c++ client already discards its bind definitions before
+		parsing these responses, so nothing is lost by no longer
+		sending them
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -119,20 +119,23 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 						memorypool *bindpool);
 		bool	getSendColumnInfo();
 		bool	getSkipAndFetch(bool initial, sqlrservercursor *cursor);
-		void	returnResultSetHeader(sqlrservercursor *cursor);
+		void	returnResultSetHeader(sqlrservercursor *cursor,
+							bool sendbindvalues);
 		void	returnColumnInfo(sqlrservercursor *cursor,
 							uint16_t format);
 		uint16_t	protocolAppropriateColumnType(uint16_t coltype);
 		void	sendRowCounts(bool knowsactual, uint64_t actual,
 					bool knowsaffected, uint64_t affected);
-		void	returnOutputBindValues(sqlrservercursor *cursor);
+		void	returnOutputBindValues(sqlrservercursor *cursor,
+							bool sendbindvalues);
 		void	returnOutputBindBlob(sqlrservercursor *cursor,
 							uint16_t index);
 		void	returnOutputBindClob(sqlrservercursor *cursor,
 							uint16_t index);
 		void	sendLobOutputBind(sqlrservercursor *cursor,
 							uint16_t index);
-		void	returnInputOutputBindValues(sqlrservercursor *cursor);
+		void	returnInputOutputBindValues(sqlrservercursor *cursor,
+							bool sendbindvalues);
 		void	sendColumnDefinition(const char *name,
 						uint16_t namesize,
 						uint16_t type, 
@@ -2217,7 +2220,7 @@ bool sqlrprotocol_sqlrclient::nextResultSetCommand(sqlrservercursor *cursor) {
 			clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 			clientsock->write(cont->getId(cursor));
 			clientsock->write((uint16_t)NO_SUSPENDED_RESULT_SET);
-			returnResultSetHeader(cursor);
+			returnResultSetHeader(cursor,false);
 			returnResultSetData(cursor,false,false);
 		}
 		cont->incrementNextResultSetCount();
@@ -2316,7 +2319,10 @@ bool sqlrprotocol_sqlrclient::processQueryOrBindCursor(
 			clientsock->write((uint16_t)NO_SUSPENDED_RESULT_SET);
 
 			// send a result set header
-			returnResultSetHeader(cursor);
+			// (a bind-cursor fetch doesn't re-read binds, so
+			// don't send stale bind values from the previous
+			// command on that cursor)
+			returnResultSetHeader(cursor,!bindcursor);
 
 			// return the result set
 			return returnResultSetData(cursor,false,false);
@@ -2668,6 +2674,11 @@ bool sqlrprotocol_sqlrclient::getOutputBinds(sqlrservercursor *cursor) {
 				return false;
 			}
 			cont->setState(curs,SQLRCURSORSTATE_BUSY);
+			// clear out leftover bind counts from whatever
+			// this cursor was used for previously
+			cont->setInputBindCount(curs,0);
+			cont->setOutputBindCount(curs,0);
+			cont->setInputOutputBindCount(curs,0);
 			bv->value.cursorid=cont->getId(curs);
 		}
 
@@ -3556,7 +3567,9 @@ bool sqlrprotocol_sqlrclient::getSkipAndFetch(bool initial,
 	return true;
 }
 
-void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
+void sqlrprotocol_sqlrclient::returnResultSetHeader(
+					sqlrservercursor *cursor,
+					bool sendbindvalues) {
 
 	debugStart("returning result set header");
 
@@ -3602,8 +3615,8 @@ void sqlrprotocol_sqlrclient::returnResultSetHeader(sqlrservercursor *cursor) {
 	}
 
 	// return the output bind vars
-	returnOutputBindValues(cursor);
-	returnInputOutputBindValues(cursor);
+	returnOutputBindValues(cursor,sendbindvalues);
+	returnInputOutputBindValues(cursor,sendbindvalues);
 
 	debugEnd();
 }
@@ -3742,13 +3755,20 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 	debugEnd();
 }
 
-void sqlrprotocol_sqlrclient::returnOutputBindValues(sqlrservercursor *cursor) {
+void sqlrprotocol_sqlrclient::returnOutputBindValues(
+					sqlrservercursor *cursor,
+					bool sendbindvalues) {
 
 	debugStart("returning output bind values");
 	debugWrite("count: %hd",cont->getOutputBindCount(cursor));
 
+	// bind values are leftovers from a previous command once the bind
+	// pool backing them has been cleared, don't send them in that case
+	uint16_t	bindcount=(sendbindvalues)?
+					cont->getOutputBindCount(cursor):0;
+
 	// run through the output bind values, sending them back
-	for (uint16_t i=0; i<cont->getOutputBindCount(cursor); i++) {
+	for (uint16_t i=0; i<bindcount; i++) {
 
 		sqlrserverbindvar	*bv=&(cont->getOutputBinds(cursor)[i]);
 
@@ -3969,7 +3989,8 @@ void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 }
 
 void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
-						sqlrservercursor *cursor) {
+						sqlrservercursor *cursor,
+						bool sendbindvalues) {
 
 	debugStart("returning input/output bind values");
 	debugWrite("count: %hd",cont->getInputOutputBindCount(cursor));
@@ -3980,8 +4001,13 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 		return;
 	}
 
+	// bind values are leftovers from a previous command once the bind
+	// pool backing them has been cleared, don't send them in that case
+	uint16_t	bindcount=(sendbindvalues)?
+				cont->getInputOutputBindCount(cursor):0;
+
 	// run through the input/output bind values, sending them back
-	for (uint16_t i=0; i<cont->getInputOutputBindCount(cursor); i++) {
+	for (uint16_t i=0; i<bindcount; i++) {
 
 		sqlrserverbindvar	*bv=
 				&(cont->getInputOutputBinds(cursor)[i]);
@@ -4607,7 +4633,7 @@ bool sqlrprotocol_sqlrclient::resumeResultSetCommand(
 				cont->getTotalRowsFetched(cursor);
 		clientsock->write((totalrowsfetched)?totalrowsfetched-1:0);
 
-		returnResultSetHeader(cursor);
+		returnResultSetHeader(cursor,false);
 		retval=returnResultSetData(cursor,true,false);
 
 	} else {
@@ -4970,7 +4996,7 @@ bool sqlrprotocol_sqlrclient::getObjectList(sqlrservercursor *cursor,
 	clientsock->write((uint16_t)NO_SUSPENDED_RESULT_SET);
 
 	// if the query processed ok then send a result set header and return...
-	returnResultSetHeader(cursor);
+	returnResultSetHeader(cursor,false);
 	if (!returnResultSetData(cursor,false,false)) {
 		return false;
 	}
@@ -5205,7 +5231,7 @@ bool sqlrprotocol_sqlrclient::getComponentList(
 	clientsock->write((uint16_t)NO_SUSPENDED_RESULT_SET);
 
 	// if the query processed ok then send a result set header and return...
-	returnResultSetHeader(cursor);
+	returnResultSetHeader(cursor,false);
 	if (!returnResultSetData(cursor,false,false)) {
 		return false;
 	}
