@@ -4779,6 +4779,7 @@ void sqlrprotocol_teradata::parseUsing() {
 						"TIMESTAMP",
 						inbindtype->typelen)) {
 			inbind->type=SQLRSERVERBINDVARTYPE_DATE;
+			inbind->value.dateval.tz=NULL;
 		}
 
 		// override some types...
@@ -5580,18 +5581,21 @@ bool sqlrprotocol_teradata::parseParameterExtension(
 			typestr="DATE";
 			inbind->type=SQLRSERVERBINDVARTYPE_DATE;
 			inbind->valuesize=0;
+			inbind->value.dateval.tz=NULL;
 			break;
 		case 760:
 		case 761:
 			typestr="TIME";
 			inbind->type=SQLRSERVERBINDVARTYPE_DATE;
 			inbind->valuesize=0;
+			inbind->value.dateval.tz=NULL;
 			break;
 		case 764:
 		case 765:
 			typestr="DATETIME";
 			inbind->type=SQLRSERVERBINDVARTYPE_DATE;
 			inbind->valuesize=0;
+			inbind->value.dateval.tz=NULL;
 			break;
 		case 480:
 		case 481:

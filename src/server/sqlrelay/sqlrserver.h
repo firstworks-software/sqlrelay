@@ -135,7 +135,12 @@ class SQLRSERVER_DLLSPEC sqlrserverbindvar {
 		// var that no protocol module ever segments (everything but
 		// firebird) can't pick up a stale pointer from a previous
 		// bind that reused this slot
-		sqlrserverbindvar() : segmentlengths(NULL), segmentcount(0) {}
+		sqlrserverbindvar() : segmentlengths(NULL), segmentcount(0) {
+			// value.dateval.tz has the same hazard, but it's
+			// a union member's field, so it can't be set in
+			// the initializer list
+			value.dateval.tz=NULL;
+		}
 
 		char	*variable;
 		int16_t	variablesize;

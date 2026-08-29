@@ -1031,6 +1031,14 @@
 		OCIDateTime/SQLT_TIMESTAMP descriptor instead when the OCI
 		client headers support it, passing the microsecond value to
 		OCIDateTimeConstruct() as nanoseconds
+	fixed sqlrserverbindvar not initializing a date bind's tz
+		pointer, so a declaration-only date bind could carry a
+		stale pointer into a bind-pool slot reused from a
+		previous query; the constructor now clears it as a
+		first-use backstop, and the teradata protocol's
+		declaration-only date/time/datetime cases now clear it
+		too, since that's the path that actually reuses a
+		cursor's bind slots across queries
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
