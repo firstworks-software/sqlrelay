@@ -1042,6 +1042,9 @@
 	fixed getInputOutputBind reading back an input/output date bind's
 		time zone without a null terminator, causing a buffer
 		overread into adjacent bind-pool memory on non-odbc backends
+	fixed sqlrservercontroller::copyBind allocating an unzeroed byte
+		and pointing a date bind's tz at it when the source tz was
+		null, instead of leaving the copy's tz null too
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -12536,12 +12536,17 @@ void sqlrservercontroller::copyBind(sqlrserverbindvar *source,
 		charstring::copy(dest->value.stringval,
 					source->value.stringval);
 	} else if (source->type==SQLRSERVERBINDVARTYPE_DATE) {
-		dest->value.dateval.tz=
-			(char *)destpool->allocate(
-				charstring::getLength(
-					source->value.dateval.tz)+1);
-		charstring::copy(dest->value.dateval.tz,
-					source->value.dateval.tz);
+		// leave tz null if source had none
+		if (source->value.dateval.tz) {
+			dest->value.dateval.tz=
+				(char *)destpool->allocate(
+					charstring::getLength(
+						source->value.dateval.tz)+1);
+			charstring::copy(dest->value.dateval.tz,
+						source->value.dateval.tz);
+		} else {
+			dest->value.dateval.tz=NULL;
+		}
 	}
 }
 
