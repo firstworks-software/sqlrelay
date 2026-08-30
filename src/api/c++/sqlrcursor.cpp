@@ -4459,6 +4459,169 @@ void sqlrcursor::createColumnBuffers() {
 	}
 }
 
+// consume and discard the wire-format bytes for one output/input-output
+// bind value that the server sent but the client never bound, so
+// parsing stays in sync with the stream without writing the value
+// anywhere or growing the client's bind-variable array
+bool sqlrcursor::discardBindValue(uint16_t type) {
+
+	char	discardbuffer[1024];
+
+	if (type==NULL_DATA) {
+
+		// no payload
+
+	} else if (type==STRING_DATA) {
+
+		// discard the value
+		uint32_t	length;
+		if (getLong(&length)!=sizeof(uint32_t)) {
+			setError("Failed to get string value length.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+		while (length) {
+			uint32_t	tocopy=(length<sizeof(discardbuffer))?
+						length:sizeof(discardbuffer);
+			if ((uint32_t)getString(discardbuffer,tocopy)!=tocopy) {
+				setError("Failed to get string value.\n "
+					"A network error may have occurred.");
+				return false;
+			}
+			length=length-tocopy;
+		}
+
+	} else if (type==INTEGER_DATA) {
+
+		// discard the value
+		uint64_t	value;
+		if (getLongLong(&value)!=sizeof(uint64_t)) {
+			setError("Failed to get integer value.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+
+	} else if (type==DOUBLE_DATA) {
+
+		// discard the value, precision and scale
+		double		value;
+		uint32_t	precision;
+		uint32_t	scale;
+		if (getDouble(&value)!=sizeof(double) ||
+			getLong(&precision)!=sizeof(uint32_t) ||
+			getLong(&scale)!=sizeof(uint32_t)) {
+			setError("Failed to get double value.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+
+	} else if (type==DATE_DATA) {
+
+		// discard year, month, day, hour, minute, second
+		uint16_t	temp;
+		for (uint16_t i=0; i<6; i++) {
+			if (getShort(&temp)!=sizeof(uint16_t)) {
+				setError("Failed to get long value.\n "
+					"A network error may have occurred.");
+				return false;
+			}
+		}
+
+		// discard the microsecond
+		uint32_t	temp32;
+		if (getLong(&temp32)!=sizeof(uint32_t)) {
+			setError("Failed to get long value.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+
+		// discard the timezone
+		uint16_t	length;
+		if (getShort(&length)!=sizeof(uint16_t)) {
+			setError("Failed to get timezone length.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+		while (length) {
+			uint16_t	tocopy=(length<sizeof(discardbuffer))?
+						length:sizeof(discardbuffer);
+			if ((uint16_t)getString(discardbuffer,tocopy)!=tocopy) {
+				setError("Failed to get timezone.\n "
+					"A network error may have occurred.");
+				return false;
+			}
+			length=length-tocopy;
+		}
+
+		// discard the isnegative flag
+		bool	tempbool;
+		if (getBool(&tempbool)!=sizeof(bool)) {
+			setError("Failed to get bool value.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+
+	} else if (type==CURSOR_DATA) {
+
+		// discard the cursor id
+		uint16_t	cursorid;
+		if (getShort(&cursorid)!=sizeof(uint16_t)) {
+			setError("Failed to get cursor id.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+
+	} else {
+
+		// must be START_LONG_DATA...
+		// discard the total length of the long data
+		uint64_t	totallength;
+		if (getLongLong(&totallength)!=sizeof(uint64_t)) {
+			setError("Failed to get total length.\n "
+				"A network error may have occurred.");
+			return false;
+		}
+
+		// discard each chunk
+		for (;;) {
+
+			uint16_t	chunktype;
+			if (getShort(&chunktype)!=sizeof(uint16_t)) {
+				setError("Failed to get chunk type.\n "
+					"A network error may have occurred.");
+				return false;
+			}
+
+			if (chunktype==END_LONG_DATA) {
+				break;
+			}
+
+			uint32_t	chunklength;
+			if (getLong(&chunklength)!=sizeof(uint32_t)) {
+				setError("Failed to get chunk length.\n "
+					"A network error may have occurred.");
+				return false;
+			}
+
+			while (chunklength) {
+				uint32_t	tocopy=(chunklength<
+							sizeof(discardbuffer))?
+						chunklength:sizeof(discardbuffer);
+				if ((uint32_t)getString(discardbuffer,
+							tocopy)!=tocopy) {
+					setError("Failed to get chunk data.\n "
+						"A network error may have "
+						"occurred.");
+					return false;
+				}
+				chunklength=chunklength-tocopy;
+			}
+		}
+	}
+
+	return true;
+}
+
 bool sqlrcursor::parseOutputBinds() {
 
 	if (pvt->_sqlrc->debug()) {
@@ -4471,6 +4634,11 @@ bool sqlrcursor::parseOutputBinds() {
 	uint16_t	type;
 	uint32_t	length;
 	uint16_t	count=0;
+
+	// bind vars beyond this point weren't defined by the client; the
+	// server shouldn't send values for them, but if it ever does,
+	// discard rather than grow the array to match
+	uint64_t	definedcount=pvt->_outbindvars->getCount();
 
 	// get the bind values
 	for (;;) {
@@ -4501,6 +4669,16 @@ bool sqlrcursor::parseOutputBinds() {
 		if (type==END_BIND_VARS) {
 
 			break;
+
+		} else if (count>=definedcount) {
+
+			// the server sent more output bind values than
+			// the client bound; discard this one
+			if (!discardBindValue(type)) {
+				return false;
+			}
+			count++;
+			continue;
 
 		} else if (type==NULL_DATA) {
 
@@ -5005,8 +5183,8 @@ bool sqlrcursor::parseOutputBinds() {
 		count++;
 	}
 
-	// cache the output binds
-	cacheOutputBinds(count);
+	// cache the output binds actually stored, not any discarded ones
+	cacheOutputBinds((count<definedcount)?count:definedcount);
 
 	return true;
 }
@@ -5024,6 +5202,11 @@ bool sqlrcursor::parseInputOutputBinds() {
 	uint16_t	type;
 	uint32_t	length;
 	uint16_t	count=0;
+
+	// bind vars beyond this point weren't defined by the client; the
+	// server shouldn't send values for them, but if it ever does,
+	// discard rather than grow the array to match
+	uint64_t	definedcount=pvt->_inoutbindvars->getCount();
 
 	// get the bind values
 	for (;;) {
@@ -5054,6 +5237,16 @@ bool sqlrcursor::parseInputOutputBinds() {
 		if (type==END_BIND_VARS) {
 
 			break;
+
+		} else if (count>=definedcount) {
+
+			// the server sent more input/output bind values
+			// than the client bound; discard this one
+			if (!discardBindValue(type)) {
+				return false;
+			}
+			count++;
+			continue;
 
 		} else if (type==NULL_DATA) {
 
@@ -5538,8 +5731,8 @@ bool sqlrcursor::parseInputOutputBinds() {
 		count++;
 	}
 
-	// cache the input/output binds
-	cacheInputOutputBinds(count);
+	// cache the input/output binds actually stored, not any discarded ones
+	cacheInputOutputBinds((count<definedcount)?count:definedcount);
 
 	return true;
 }

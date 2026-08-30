@@ -93,6 +93,7 @@
 		bool	parseColumnInfo();
 		bool	parseOutputBinds();
 		bool	parseInputOutputBinds();
+		bool	discardBindValue(uint16_t type);
 		bool	parseResults();
 		void	setError(const char *err);
 		void	getErrorFromServer();
