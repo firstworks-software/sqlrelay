@@ -693,12 +693,6 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 		cont->setCommandEnd(cursor,
 				dt.getSecond(),dt.getMicrosecond());
 
-		// free memory used by binds...
-		// FIXME: can we move this inside of processQueryOrBindCursor?
-		// verify that log/notification modules activated by
-		// raise*Event calls don't still need the bind values
-		cont->getBindPool(cursor)->clear();
-
 	} while (loop);
 
 	// close the client connection
@@ -2525,6 +2519,7 @@ bool sqlrprotocol_sqlrclient::getInputBinds(sqlrservercursor *cursor) {
 
 	// get the input bind buffers
 	memorypool		*bindpool=cont->getBindPool(cursor);
+	bindpool->clear();
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
 
 	// fill the buffers

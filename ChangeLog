@@ -1074,6 +1074,11 @@
 		or the array's own cleanup logic; bind values beyond the
 		client's own bound count are now discarded instead of
 		growing the array to match
+	fixed the sqlrclient protocol module clearing its bind pool at
+		the end of every command instead of immediately before
+		refilling it, matching every other protocol module; the old
+		timing left a cursor's bind counts pointing into freed pool
+		memory between commands
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
