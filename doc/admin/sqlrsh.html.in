@@ -18,6 +18,7 @@
   <li><a href="#commands">Commands</a></li>
   <li><a href="#exitcodes">Exit Codes</a></li>
   <li><a href="#files">The RC File and the History File</a></li>
+  <li><a href="#environment">Environment Variables</a></li>
 </ul>
 
 <p><b>sqlrsh</b> is the SQL Relay command line database shell.  It is similar to sqlplus, mysql, psql and isql.</p>
@@ -43,9 +44,10 @@ sqlrsh [-config CONFIGFILE] -id ID [OPTIONS]
 [-tls] [-tlsversion VERSION] [-tlscert CERTFILE] [-tlspassword PASSWORD]
 [-tlsciphers CIPHERLIST] [-tlsvalidate (no|ca|ca+domain|ca+host)]
 [-tlsca CA] [-tlsdepth DEPTH]
-[-script SCRIPT | -command COMMANDS]
-[-format (plain|csv|json|jsonl)]
+[-script SCRIPT | -command COMMANDS | -query QUERY]
+[-batch] [-agent] [-format (plain|csv|json|jsonl)]
 [-quiet (on|off)] [-headers (on|off)] [-divider (on|off)]
+[-vertical (on|off)] [-pager (on|off)]
 [-stats (on|off)] [-noelapsed (on|off)]
 [-fieldsas (raw|number|boolean|date)] [-getasnumber (on|off)]
 [-nextresultset (on|off)] [-lazyfetch (on|off)] [-txqueries (on|off)]
@@ -67,7 +69,7 @@ sqlrsh [-config CONFIGFILE] -id ID [OPTIONS]
 
 <a name="interactive"/><h2>Interactive Use</h2>
 
-<p>Run sqlrsh with no -script and no -command and it writes a banner, then a prompt, and reads a query or a command.</p>
+<p>Run sqlrsh with no -script, no -command, no -query and no -batch and it writes a banner, then a prompt, and reads a query or a command.</p>
 
 <blockquote>
   <pre>$ sqlrsh -id myinst
@@ -95,9 +97,9 @@ id descr         price
 </blockquote>
 <p>Everything ends with the delimiter, which is a semicolon unless -delimiter or the delimiter command changes it.  A query may be split over as many lines as it takes.  The prompt counts the lines, so a query that runs onto a second line is prompted with 1, a third with 2, and so on.</p>
 
-<p>Type help; at the prompt for the command reference, which is the same list as the <a href="#commands">Commands</a> section below.</p>
+<p>Type help; at the prompt for the command reference, which is the same list as the <a href="#commands">Commands</a> section below.  Type help brief; for a shorter, curated list of the commands used most.  Type help json; for the same reference as a json array, for a program to read.</p>
 
-<p>An interactive session always exits 0, even when a query at the prompt failed.  An interactive session is not a batch.</p>
+<p>A genuinely interactive session always exits 0, even when a query at the prompt failed - it is not a batch.</p>
 
 <a name="tabcompletion"/><h2>Tab Completion</h2>
 
@@ -116,14 +118,16 @@ id descr         price
 
 <a name="noninteractive"/><h2>Non-Interactive Use</h2>
 
-<p>This is how a script, a cron job or an AI agent uses sqlrsh.  There are two ways in:</p>
+<p>This is how a script, a cron job or an AI agent uses sqlrsh.  There are four ways in:</p>
 
 <ul>
   <li><b>-command</b> COMMANDS - runs the string and exits.  The string may hold one query or command, or a list of them, each ending in the delimiter.</li>
   <li><b>-script</b> SCRIPT - runs the file and exits.  The file may hold any queries or commands, each ending in the delimiter.</li>
+  <li><b>-query</b> QUERY - runs the string as one query and exits.  The whole string is the query, so an embedded delimiter runs to the database as part of it, rather than splitting or truncating the statement.  Best for a query built by another program, which should not have to know sqlrsh has a delimiter at all.</li>
+  <li><b>-batch</b> - reads queries and commands from standard input, the same as an interactive session, but without the banner or the prompts, so piped-in SQL doesn't come back mixed in with the output.  This is the one for piping a query straight into sqlrsh's stdin, or redirecting a file into it, where -script and -command would mean writing the query into a shell string or a temp file first.</li>
 </ul>
 
-<p>Both accept anything that could be typed at the prompt.  A query and a command are the same thing to sqlrsh.</p>
+<p>-command and -script accept anything that could be typed at the prompt.  A query and a command are the same thing to sqlrsh, and -query runs either, taking the entire argument as one statement, without scanning it for the delimiter.  -batch reads from stdin the same way an interactive session does, so it accepts anything the prompt would, but unlike a real interactive session, a failed statement counts, and the exit code reflects it, the same as -script and -command.</p>
 
 <p>Four things make a non-interactive run predictable:</p>
 
@@ -133,6 +137,8 @@ id descr         price
   <li><b>-format csv|json|jsonl</b> - gives output that another program can read.  json and jsonl also carry the column types, and write the banner and the prompt nowhere at all.</li>
   <li><b>-continueonerror on</b> - runs every statement, rather than stopping at the first one that failed.</li>
 </ul>
+
+<p><b>-agent</b> turns all four of the above on at once - -quiet, -format jsonl, -nullsasnulls on and -continueonerror on - the settings a script or an AI agent wants for output that's quiet, one json object per line, nulls distinguishable from empty strings, and a run that keeps going past a failed statement.  Anything set explicitly alongside it, such as -format csv, still wins.</p>
 
 <p>Errors go to stderr and rows go to stdout, so the two can be redirected apart.</p>
 
@@ -168,6 +174,21 @@ id descr         price
 
 <blockquote>
   <pre>sqlrsh -id myinst -continueonerror on -script ./script.sql 2&gt; errors.txt
+</pre>
+
+</blockquote>
+<p>Run a script with the machine-readable preset, in one switch:</p>
+
+<blockquote>
+  <pre>sqlrsh -id myinst -agent -script ./script.sql
+</pre>
+
+</blockquote>
+<p>Pipe a query straight into stdin, with no banner or prompts mixed into the output:</p>
+
+<blockquote>
+  <pre>echo "select 1;" | sqlrsh -id myinst -batch
+sqlrsh -id myinst -batch < script.sql
 </pre>
 
 </blockquote>
@@ -216,11 +237,19 @@ id descr         price
   <li><b>-tlsdepth</b> DEPTH - the maximum certificate chain validation depth</li>
 </ul>
 
+<h3>Presets</h3>
+
+<ul>
+  <li><b>-agent</b> - shorthand for -quiet -format jsonl -nullsasnulls on -continueonerror on: the settings a script or an AI agent wants for output that's quiet, one json object per line, nulls distinguishable from empty strings, and a run that keeps going past a failed statement.  Anything set explicitly alongside it, such as -format csv, still wins.</li>
+</ul>
+
 <h3>Command Options</h3>
 
 <ul>
   <li><b>-script</b> FILENAME - runs the given file, which holds commands or queries that could otherwise be run at the prompt</li>
   <li><b>-command</b> COMMANDS - runs the given string, which holds commands or queries that could otherwise be run at the prompt</li>
+  <li><b>-query</b> QUERY - runs the given string as exactly one query, never scanning it for the delimiter, so an embedded delimiter cannot split or truncate it.  Trailing whitespace and one trailing delimiter, if present, are trimmed as a courtesy, not a requirement.</li>
+  <li><b>-batch</b> - with none of -script, -command or -query given, reads and runs commands from standard input, the same as an interactive session, but without the banner or the prompts.  Unlike a real interactive session, a failed statement counts, and the exit code reflects it, the same as -script and -command.</li>
   <li><b>-delimiter</b> CHAR - end each command or query with the given character.  Defaults to a semicolon.  -delimeter is accepted as a spelling of it.  Unlike the delimiter command, the option does not echo the character back.</li>
   <li><b>-continueonerror</b> on|off - carry on past a statement that failed, rather than stopping at the first one.  Defaults to off.</li>
 </ul>
@@ -232,6 +261,8 @@ id descr         price
   <li><b>-quiet</b> on|off - shorthand for -headers off -stats off.  Defaults to off.</li>
   <li><b>-headers</b> on|off - write the column names above the result set.  plain format only.  Defaults to on.</li>
   <li><b>-divider</b> on|off - write a line of = signs under the column names.  plain format only.  Defaults to on.</li>
+  <li><b>-vertical</b> on|off - write one column per line, labeled with the column name, instead of one row per line.  plain format only.  Defaults to off.</li>
+  <li><b>-pager</b> on|off - pipe the output through a pager ($PAGER, else less, else more) in an interactive session.  plain format only.  Defaults to off.</li>
   <li><b>-stats</b> on|off - write the statistics after the result set.  plain writes a block of labels, json and jsonl carry the same numbers inside the document, and csv has no statistics at all.  Defaults to on.</li>
   <li><b>-noelapsed</b> on|off - leave the elapsed time out of the statistics.  Defaults to off.</li>
   <li><b>-fieldsas</b> raw|number|boolean|date - fetch each field with the matching getFieldAs method, where the column suits it.  Defaults to raw, the field as the database sent it.  See <a href="#fieldsas">Fetching Fields As A Type</a>.</li>
@@ -337,7 +368,7 @@ id descr         price
 </pre>
 
 </blockquote>
-<p>A null is written as the word NULL, which cannot be told apart from the four character string NULL.  -headers, -divider and the statistics block are this format only.</p>
+<p>A null is written as the word NULL, which cannot be told apart from the four character string NULL.  -headers, -divider, -vertical, -pager and the statistics block are this format only.</p>
 
 <h3>csv</h3>
 
@@ -422,6 +453,19 @@ id descr         price
 </pre>
 
 </blockquote>
+<p>show schema writes its own document instead of the usual columns/rows shape, nesting each table's columns under it, one object per column keyed by whichever list format is in effect (mysql format, the default, shown here):</p>
+
+<blockquote>
+  <pre>{"tables":[{"table":"mytable","columns":[
+{"column_name":"id","data_type":"INTEGER",
+"character_maximum_length":"","numeric_precision":"",
+"numeric_scale":"","is_nullable":"YES","column_key":"PRI",
+"column_default":"","extra":""}]}]}
+</pre>
+
+</blockquote>
+<p>jsonl gives the same table object its own line, typed "table" instead of "columns" or "row", with a stats line after the last one.  plain and csv print each table's own result set in turn, with a table name line between them, rather than merge tables with different columns into one result set.  A table that fails partway through the list reports the error in its place - inline under the table name in plain and csv, as an "error" member in place of "columns" in json and jsonl - and the loop continues; the other tables still come back.</p>
+
 <h3>Nulls in Every Format</h3>
 
 <p>csv, json and jsonl can only tell a null from an empty string while nullsasnulls is on.  With it off, which is the default, the client library hands back an empty string for a null, and sqlrsh cannot tell the two apart.</p>
@@ -466,6 +510,8 @@ id descr         price
   <li><b>@</b> FILE - same as run</li>
   <li><b>continueonerror</b> on|off - carries on past a statement that failed, rather than stopping at the first one</li>
   <li><b>help</b> - writes the command reference</li>
+  <li><b>help brief</b> - writes a shorter, curated command reference covering the commands used most</li>
+  <li><b>help json</b> - writes the command reference as a json array of {name, args, description} objects, for a program to read</li>
   <li><b>exit</b>, <b>quit</b> - exits</li>
 </ul>
 
@@ -475,6 +521,8 @@ id descr         price
   <li><b>format</b> plain|csv|json|jsonl - sets the output format</li>
   <li><b>headers</b> on|off - the column names above the result set.  plain format only.</li>
   <li><b>divider</b> on|off - the line of = signs under the column names.  plain format only.</li>
+  <li><b>vertical</b> on|off - one column per line, labeled with the column name, instead of one row per line.  plain format only.</li>
+  <li><b>pager</b> on|off - pipe the output through a pager ($PAGER, else less, else more) in an interactive session.  plain format only.</li>
   <li><b>stats</b> on|off - the statistics below the result set</li>
   <li><b>quiet</b> on|off - shorthand.  quiet on turns headers and stats off, quiet off turns them back on.</li>
   <li><b>noelapsed</b> on|off - leaves the elapsed time out of the statistics</li>
@@ -663,6 +711,7 @@ inputoutputbind [variable] [type] ... is null
   <li><b>show databases</b> - the known databases or schemas</li>
   <li><b>show catalogs</b> - the known catalogs</li>
   <li><b>show schemas</b> - the known schemas</li>
+  <li><b>show schema</b> - every matching table's columns, in one call - the equivalent of show tables plus describe for every table it lists</li>
   <li><b>show tables</b> - the known tables, views, aliases and synonyms</li>
   <li><b>show only tables</b> - tables only</li>
   <li><b>show only views</b> - views only</li>
@@ -692,13 +741,14 @@ show only views like 'v_%'
 </blockquote>
 <p>A pattern goes in single quotes, and a single quote inside one is doubled.  The wildcards are the database's own, usually % and _.</p>
 
-<p>databases, catalogs, schemas, tables, table types, columns, procedures, type info and the show only forms each take an optional list format, right after the category:</p>
+<p>databases, catalogs, schemas, schema, tables, table types, columns, procedures, type info and the show only forms each take an optional list format, right after the category:</p>
 
 <blockquote>
   <pre>show tables mysql
 show tables odbc like 'a%'
 show columns jdbc in mytable
 show only views odbc
+show schema odbc like 's%'
 </pre>
 
 </blockquote>
@@ -715,16 +765,16 @@ show only views odbc
 <a name="exitcodes"/><h2>Exit Codes</h2>
 
 <ul>
-  <li><b>0</b> - success.  An interactive session always exits 0, even if a query at the prompt failed.  An interactive session is not a batch.</li>
+  <li><b>0</b> - success.  A genuinely interactive session always exits 0, even if a query at the prompt failed - it is not a batch.  -batch is, so a failed statement there is a 4, the same as -script and -command.</li>
   <li><b>1</b> - usage error.  A run with no -id, no -host and no -socket, an option that takes a value given without one, an unrecognized -format or -fieldsas name, a -locale value that setlocale rejects, or an -id whose configured password encryption is missing or one-way.</li>
   <li><b>2</b> - the file named by -script could not be opened.  A file that the run command could not open is a failed command in the outer script, so that is a 4, not a 2.</li>
   <li><b>3</b> - connection or authentication failure.  The connection is checked at startup, so this is reported before any command runs, in every mode.</li>
-  <li><b>4</b> - at least one statement in a script or a -command list failed, not necessarily all of them.  Without -continueonerror the run stopped at that statement, and with it the run went on.</li>
+  <li><b>4</b> - at least one statement in a script, a -command list, a -query, or a -batch run failed, not necessarily all of them.  Without -continueonerror the run stopped at that statement, and with it the run went on.</li>
 </ul>
 
 <h3>Continuing Past An Error</h3>
 
-<p>-continueonerror, and the continueonerror command, make a script or a -command list run every statement rather than stopping at the first one that failed.</p>
+<p>-continueonerror, and the continueonerror command, make a script, a -command list, or a -batch run go through every statement rather than stopping at the first one that failed.</p>
 
 <p>A statement rejected before it reached the database, such as a bad format name or a run of a file that could not be opened, and a statement the database rejected count the same.  Each failed statement still writes its own error.</p>
 
@@ -759,6 +809,10 @@ columncase lower;
 
 </blockquote>
 <p>sqlrsh also keeps a history file, .sqlrsh_history in your home directory.  It holds the last 100 lines typed at the prompt.</p>
+
+<a name="environment"/><h2>Environment Variables</h2>
+
+<p><b>PAGER</b> names the program used when -pager or pager is on: $PAGER if it names something that can actually be run, else less, else more.  Users who want to customize less's own behavior (search highlighting, line wrapping, and so on) may want to set <b>LESS</b> as well; sqlrsh does not set it.</p>
 
 <!--#include virtual="../contentend.html"-->
 
