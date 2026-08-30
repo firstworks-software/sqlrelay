@@ -1107,6 +1107,17 @@
 		only get parsed once per definition today, but became a real
 		leak risk once nextResultSet() started preserving bind
 		definitions/values across advances
+	fixed sqlrcursor::defineInputOutputBindGeneric() in the c++ api
+		storing an input/output DATE bind's timezone argument as the
+		caller's own pointer instead of duplicating it;
+		deleteInputOutputBindVariables() and parseInputOutputBinds()
+		delete[] that field unconditionally, so a DATE bind that was
+		defined but never sent (send=false, via the opt-in
+		validateBinds() checking) could wild-free memory this object
+		never allocated, on cursor teardown, clearBinds(), or
+		redefine; the field is now always a cursor-owned duplicate,
+		freed on redefine like the string case, and the now-unneeded
+		null-out that used to run after sending was removed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

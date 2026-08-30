@@ -2126,6 +2126,8 @@ void sqlrcursor::defineInputOutputBindGeneric(const char *variable,
 		} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
 				bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
 			delete[] bv->value.lobval;
+		} else if (bv->type==SQLRCLIENTBINDVARTYPE_DATE) {
+			delete[] bv->value.dateval.tz;
 		}
 	}
 	if (pvt->_copyrefs) {
@@ -2160,7 +2162,12 @@ void sqlrcursor::defineInputOutputBindGeneric(const char *variable,
 		bv->value.dateval.minute=minute;
 		bv->value.dateval.second=second;
 		bv->value.dateval.microsecond=microsecond;
-		bv->value.dateval.tz=(char *)tz;
+		// duplicate the caller's tz string so this object owns it,
+		// the same as the string case above - both the cleanup block
+		// above and the destructor/clearBinds() path free this
+		// field whenever the type is DATE, so it can never point at
+		// caller-owned memory
+		bv->value.dateval.tz=charstring::duplicate(tz);
 		bv->value.dateval.isnegative=isnegative;
 	} else if (bv->type==SQLRCLIENTBINDVARTYPE_BLOB ||
 				bv->type==SQLRCLIENTBINDVARTYPE_CLOB) {
@@ -3758,12 +3765,6 @@ void sqlrcursor::sendInputOutputBinds() {
 			pvt->_sqlrc->debugPrint("\n");
 			pvt->_sqlrc->debugPreEnd();
 		}
-
-		// set this to NULL here because it will be deleted in
-		// deleteInputOutputVariables, and it needs to be NULL in case
-		// the query fails and parseInputOutputVariables (which
-		// allocates a buffer for it) is never called
-		(*pvt->_inoutbindvars)[i].value.dateval.tz=NULL;
 
 		i++;
 	}
