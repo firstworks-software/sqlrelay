@@ -1079,6 +1079,11 @@
 		refilling it, matching every other protocol module; the old
 		timing left a cursor's bind counts pointing into freed pool
 		memory between commands
+	fixed the teradata protocol module's bulk-load COPKIND_START path
+		leaking the earlier request's cursor too, when it ran while a
+		prior COPKIND_START sequence was still in progress; the
+		earlier fix to this same leak only covered the non-bulk-load
+		path
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

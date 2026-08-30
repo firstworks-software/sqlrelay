@@ -2095,6 +2095,16 @@ bool sqlrprotocol_teradata::copKindStart() {
 				goto end;
 			}
 
+			// release any request left over from an overlapping,
+			// unfinished start sequence, so its cursor isn't leaked
+			if (req) {
+				if (req->cur) {
+					cont->closeResultSet(req->cur);
+					cont->release(req->cur);
+				}
+				delete req;
+			}
+
 			// get a req/cursor so the stuff below will work...
 			// (for now, assume that getCursor() succeeds)
 			req=new request(cont->getConfig()->getMaxBindCount());
