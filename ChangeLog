@@ -1143,6 +1143,22 @@
 	fixed the mysql protocol module writing the ok packet's info field as a
 		raw string instead of length-encoded, causing mysql/mariadb
 		clients to misparse it
+	added setCursorName()/getCursorName() for "where current of"
+		positioned update/delete support: the server api
+		(sqlrservercursor) and a new supports_set_cursor_name db
+		feature; backend support in firebird (closing and
+		re-executing an already-open cursor when a name arrives
+		after the fact), freetds, sap, db2, informix and the odbc
+		connection module; wire support in the sqlrclient, firebird
+		and tds protocol modules; not supported on oracle, mysql,
+		sqlite or postgresql, whose PQprepare/PQexecPrepared
+		execution strategy and faked autocommit handling make a
+		real DECLARE CURSOR path too costly for this pass
+	added the matching setCursorName()/getCursorName() calls to the c and
+		c++ client apis, and passthroughs in the perl, python, php,
+		ruby, tcl, erlang and nodejs wrappers, the odbc driver, and
+		the jdbc driver (Statement.setCursorName()/
+		ResultSet.getCursorName() were previously stubbed to throw)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

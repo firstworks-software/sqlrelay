@@ -6199,6 +6199,17 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		 *  to setQueryTimeout(). */
 		uint64_t	getQueryTimeout();
 
+		/** Sets the cursor name to "cursorname", replacing any
+		 *  previously set cursor name.  Not all databases support
+		 *  named cursors.  The backend may ignore the cursor name
+		 *  if it doesn't support it. */
+		void	setCursorName(const char *cursorname);
+
+		/** Returns the cursor name as set by the most recent call
+		 *  to setCursorName(), or NULL if setCursorName() was never
+		 *  called. */
+		const char	*getCursorName();
+
 		/** Sets the execute-direct flag to "executedirect". */
 		void	setExecuteDirect(bool executedirect);
 

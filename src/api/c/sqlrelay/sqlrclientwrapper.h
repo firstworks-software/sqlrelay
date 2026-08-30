@@ -1332,6 +1332,39 @@ int	sqlrcur_getProcedureParameterList(sqlrcur sqlrcurref,
 
 
 /** @ingroup sqlrclientwrapper
+ *  Sets the name of this cursor to "cursorname",
+ *  replacing any previously set name.  The name is
+ *  sent to the server immediately, and the server
+ *  hands it to the database when the next query is
+ *  prepared.  Named cursors are mainly useful for
+ *  positioned updates and deletes, as in:
+ *  UPDATE ... WHERE CURRENT OF "cursorname".
+ *
+ *  Not all databases support this call.  Don't use
+ *  it for applications which are designed to be
+ *  portable across databases.  The name is ignored
+ *  by databases which don't support this option. */
+SQLRCLIENT_DLLSPEC
+void	sqlrcur_setCursorName(sqlrcur sqlrcurref, const char *cursorname);
+
+/** @ingroup sqlrclientwrapper
+ *  Returns the name most recently passed to
+ *  sqlrcur_setCursorName(), or NULL if
+ *  sqlrcur_setCursorName() was never called.  This is
+ *  a local copy of the name; no request is made to the
+ *  server.  It is not necessarily the name that the
+ *  database ended up using, as not all databases
+ *  support named cursors.
+ *
+ *  Not all databases support this call.  Don't use
+ *  it for applications which are designed to be
+ *  portable across databases. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcur_getCursorName(sqlrcur sqlrcurref);
+
+
+
+/** @ingroup sqlrclientwrapper
  *  Sends "query" directly and gets a result set. */
 SQLRCLIENT_DLLSPEC
 int	sqlrcur_sendQuery(sqlrcur sqlrcurref, const char *query);

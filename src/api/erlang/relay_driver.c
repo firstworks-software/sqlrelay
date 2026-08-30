@@ -1393,8 +1393,35 @@ int main() {
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
 			// call function and encode result
-			sqlrcur_cacheOff(cur); 	
-			ENCODE_VOID;   
+			sqlrcur_cacheOff(cur);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("setCursorName", command) == TRUE) {
+			char cursorname[2000];
+
+			// check number of arguments
+		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
+
+			// get input parameters
+			if (ei_decode_string(buf, &index, &cursorname[0])) {
+				return ERR_DECODING_ARGS;
+			}
+
+			// call function and encode result
+			sqlrcur_setCursorName(cur, cursorname);
+			ENCODE_VOID;
+		}
+
+		if (strcmp("getCursorName", command) == TRUE) {
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// call function and encode result
+			if (ei_x_encode_atom(&result, "ok") ||
+				ENCODE_STRING_OR_UNDEFINED(&result, sqlrcur_getCursorName(cur))) {
+				return ERR_ENCODING_ARGS;
+			}
 		}
 
 

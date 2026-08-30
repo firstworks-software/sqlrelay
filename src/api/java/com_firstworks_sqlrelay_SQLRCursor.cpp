@@ -350,6 +350,28 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getProcedureP
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    setCursorName
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_setCursorName
+  (JNIEnv *env, jobject self, jstring name) {
+	char	*namestring=curGetStringUTFChars(env,name,0);
+	getSqlrCursor(env,self)->setCursorName(namestring);
+	curReleaseStringUTFChars(env,name,namestring);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getCursorName
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getCursorName
+  (JNIEnv *env, jobject self) {
+	return curNewStringUTF(env,getSqlrCursor(env,self)->getCursorName());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    sendQuery
  * Signature: (Ljava/lang/String;)Z
  */

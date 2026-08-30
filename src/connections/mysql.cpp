@@ -872,6 +872,11 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";
 
+	// mysql's client protocol/c api has no server-side named-cursor
+	// or WHERE CURRENT OF support outside stored procedures
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"false";
+
 }
 
 

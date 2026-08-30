@@ -298,6 +298,28 @@ proc getProcedureParameterList {procedure parameters}
 
 
 
+# Sets the name of this cursor to "cursorname",
+# replacing any previously set name.  The name is
+# sent to the server immediately.
+#
+# Not all databases support this call.  Don't use
+# it for applications which are designed to be
+# portable across databases.
+proc setCursorName {cursorname}
+
+# Returns the name most recently passed to
+# setCursorName, or an empty string if
+# setCursorName was never called.  This is a
+# local copy of the name; no request is made to
+# the server.
+#
+# Not all databases support this call.  Don't use
+# it for applications which are designed to be
+# portable across databases.
+proc getCursorName {}
+
+
+
 # Sends "query" directly and gets a result set.
 proc sendQuery {query} 
 

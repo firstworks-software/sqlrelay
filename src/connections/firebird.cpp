@@ -1091,6 +1091,12 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		uint32_t	getInputBindPrecision(uint16_t index);
 		bool		getInputBindIsNullable(uint16_t index);
 
+		// hands the name set by setCursorName() to firebird.
+		// firebird only takes one between the prepare and the
+		// open, so this runs after isc_dsql_prepare() and
+		// before isc_dsql_execute()
+		bool		applyCursorName();
+
 
 		isc_stmt_handle	stmt;
 
@@ -1124,6 +1130,10 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 		bool	bindformaterror;
 		bool	querytoolarge;
 		bool	resultsetdescribed;
+
+		// the cursor name currently applied to "stmt", or NULL
+		// if no name has been applied to it
+		char	*appliedcursorname;
 
 		regularexpression	executeprocedure;
 };
@@ -1729,6 +1739,10 @@ void firebirdconnection::initDatabaseFeatures() {
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";
+
+	// isc_dsql_set_cursor_name() names a select's cursor
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"true";
 
 }
 
@@ -3368,6 +3382,8 @@ firebirdcursor::firebirdcursor(sqlrserverconnection *conn, uint16_t id) :
 	querytoolarge=false;
 	resultsetdescribed=false;
 
+	appliedcursorname=NULL;
+
 	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+");
 	executeprocedure.setPattern("(execute|EXECUTE)[ 	\n\r]+(procedure|PROCEDURE)");
 	executeprocedure.study();
@@ -3386,6 +3402,8 @@ firebirdcursor::~firebirdcursor() {
 	delete[] outbindblobhandle;
 	delete[] outbindblobisopen;
 	delete[] outdatebind;
+
+	delete[] appliedcursorname;
 
 	freeResultSetBuffers();
 }
@@ -3468,6 +3486,11 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 		stmt=0L;
 	}
 
+	// the new statement below carries no cursor name, whatever the old
+	// one had
+	delete[] appliedcursorname;
+	appliedcursorname=NULL;
+
 	// allocate a cursor handle
 	if (isc_dsql_allocate_statement(firebirdconn->error,
 					&firebirdconn->db,&stmt)) {
@@ -3519,6 +3542,14 @@ bool firebirdcursor::prepareQuery(const char *query, uint32_t size) {
 	// but old versions take char * and this cast works with both)
 	ISC_LONG	len=isc_vax_integer((char *)(resbuffer+1),2);
 	querytype=isc_vax_integer((char *)(resbuffer+3),len);
+
+	// name the cursor, if a name was set for it already.  this is the
+	// earliest firebird accepts one, and executeQuery() applies a name
+	// that is set (or changed) after this point.  querytype has to be
+	// known first - firebird only names cursors over selects.
+	if (!applyCursorName()) {
+		return false;
+	}
 
 	// find bind parameters, if any.  sqln is how many sqlvar entries
 	// isc_dsql_describe_bind() may fill in, so it has to be reset to the
@@ -4463,9 +4494,49 @@ bool firebirdcursor::executeQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
+	// name the cursor, if a name was set (or changed) since the prepare.
+	// this is the last moment firebird accepts one - it refuses a name
+	// for a cursor that is already open.  a re-execute gets here with the
+	// previous result set already closed (sqlrservercontroller::
+	// executeQuery() closes it), so this runs against a prepared,
+	// unopened statement either way.
+	if (!applyCursorName()) {
+		return false;
+	}
+
 	// Execute the query
 	return !isc_dsql_execute(firebirdconn->error,&firebirdconn->tr,
 							&stmt,1,inbindsqlda);
+}
+
+bool firebirdcursor::applyCursorName() {
+
+	// firebird only names cursors over selects
+	if (querytype!=isc_info_sql_stmt_select &&
+		querytype!=isc_info_sql_stmt_select_for_upd) {
+		return true;
+	}
+
+	const char	*cursorname=getCursorName();
+
+	// nothing to do if no name was set, or if the name that is already
+	// applied to this statement is the one that was set - firebird
+	// refuses a second isc_dsql_set_cursor_name on the same prepared
+	// statement, whether the name is being changed or just repeated
+	if (charstring::isNullOrEmpty(cursorname) ||
+		!charstring::compare(cursorname,appliedcursorname)) {
+		return true;
+	}
+
+	if (isc_dsql_set_cursor_name(firebirdconn->error,&stmt,
+						(char *)cursorname,0)) {
+		return false;
+	}
+
+	delete[] appliedcursorname;
+	appliedcursorname=charstring::duplicate(cursorname);
+
+	return true;
 }
 
 bool firebirdcursor::describeResultSet() {

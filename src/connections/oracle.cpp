@@ -966,6 +966,12 @@ void oracleconnection::initDatabaseFeatures() {
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";
+
+	// OCI has no client-settable cursor name call; a statement's
+	// identity is its OCI handle, and WHERE CURRENT OF requires a
+	// PL/SQL-declared named cursor, not reachable from plain OCI calls
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"false";
 }
 
 

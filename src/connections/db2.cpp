@@ -838,6 +838,9 @@ void db2connection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";
 
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"true";
+
 }
 
 void db2connection::handleConnectString() {
@@ -2513,6 +2516,15 @@ bool db2cursor::prepareQuery(const char *query, uint32_t size) {
 	erg=SQLPrepare(stmt,(SQLCHAR *)query,size);
 	if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
 		return false;
+	}
+
+	// set the cursor name, if one was specified
+	const char	*cursorname=getCursorName();
+	if (!charstring::isNullOrEmpty(cursorname)) {
+		erg=SQLSetCursorName(stmt,(SQLCHAR *)cursorname,SQL_NTS);
+		if (erg!=SQL_SUCCESS && erg!=SQL_SUCCESS_WITH_INFO) {
+			return false;
+		}
 	}
 
 	// get column info now, if it's available yet, so the result set can

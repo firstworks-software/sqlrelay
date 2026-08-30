@@ -146,6 +146,7 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		bool		prepareQuery(const char *query,
 						uint32_t size);
 		bool		allocateStatementHandle();
+		bool		applyCursorName();
 		void		initializeColCounts();
 		void		initializeRowCounts();
 		bool		inputBind(const char *variable, 
@@ -2186,6 +2187,13 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 				&usmallintbuf,sizeof(usmallintbuf),&size);
 	databasefeatures[FEATURE_MAX_CURSOR_NAME_LENGTH]=
 		charstring::parseNumber(usmallintbuf);
+
+	// SQLSetCursorName is a core-conformance ODBC function that's all but
+	// universally supported, and per the ODBC spec, a max cursor name
+	// length of 0 just means "no limit, or the limit is unknown" - not
+	// "unsupported" - so don't gate this off of usmallintbuf being 0
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		charstring::duplicate("true");
 
 	// SQL_MAX_IDENTIFIER_LEN -> usmallint
 	usmallintbuf=0;
@@ -4488,6 +4496,12 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 		return false;
 	}
 
+	// the name has to be attached to the fresh handle, before the
+	// statement is prepared or executed
+	if (!applyCursorName()) {
+		return false;
+	}
+
 	if (odbcconn->getcolumntables && !execdirect) {
 
 		// MS SQL Server only returns column table names when using a
@@ -4577,6 +4591,12 @@ bool odbccursor::prepareQuery(const char *query, uint32_t size) {
 			return false;
 		}
 
+		// the reallocation above dropped the name that was set on the
+		// old handle
+		if (!applyCursorName()) {
+			return false;
+		}
+
 		#ifdef HAVE_SQLCONNECTW
 		if (odbcconn->unicode) {
 
@@ -4659,6 +4679,19 @@ bool odbccursor::allocateStatementHandle() {
 	#else
 	erg=SQLAllocStmt(odbcconn->dbc,&stmt);
 	#endif
+	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
+}
+
+bool odbccursor::applyCursorName() {
+
+	// if the client never set a name then leave the driver to generate
+	// one of its own
+	const char	*cursorname=getCursorName();
+	if (charstring::isNullOrEmpty(cursorname)) {
+		return true;
+	}
+
+	erg=SQLSetCursorName(stmt,(SQLCHAR *)cursorname,SQL_NTS);
 	return (erg==SQL_SUCCESS || erg==SQL_SUCCESS_WITH_INFO);
 }
 

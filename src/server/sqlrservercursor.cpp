@@ -111,6 +111,7 @@ class sqlrservercursorprivate {
 		bool		*_nulls;
 
 		uint64_t	_querytimeout;
+		char		*_cursorname;
 		bool		_executedirect;
 		bool		_executerpc;
 		uint32_t	_fetchatonce;
@@ -233,6 +234,7 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
 	}
 
 	pvt->_querytimeout=conn->cont->getQueryTimeout();
+	pvt->_cursorname=NULL;
 	pvt->_executedirect=conn->cont->getExecuteDirect();
 	pvt->_executerpc=false;
 	pvt->_fetchatonce=conn->cont->getFetchAtOnce();
@@ -251,6 +253,7 @@ sqlrservercursor::~sqlrservercursor() {
 	delete[] pvt->_inoutbindvars;
 	delete pvt->_customquerycursor;
 	delete[] pvt->_errorbuffer;
+	delete[] pvt->_cursorname;
 	deallocateColumnPointers();
 	deallocateFieldPointers();
 	delete pvt;
@@ -2166,6 +2169,15 @@ void sqlrservercursor::setQueryTimeout(uint64_t querytimeout) {
 
 uint64_t sqlrservercursor::getQueryTimeout() {
 	return pvt->_querytimeout;
+}
+
+void sqlrservercursor::setCursorName(const char *cursorname) {
+	delete[] pvt->_cursorname;
+	pvt->_cursorname=charstring::duplicate(cursorname);
+}
+
+const char *sqlrservercursor::getCursorName() {
+	return pvt->_cursorname;
 }
 
 void sqlrservercursor::setExecuteDirect(bool executedirect) {

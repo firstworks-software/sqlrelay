@@ -753,6 +753,19 @@ void routerconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";
 
+	// depends on which backend is actually routed to; the router
+	// itself just forwards setCursorName()/getCursorName() calls onto
+	// whichever backend cursor a query is routed to (see prepareQuery()
+	// below).  Left unset ("") rather than "true", matching how this
+	// module already reports every other backend-dependent feature it
+	// can't know in advance (e.g. FEATURE_WHERE_CURRENT_OF_OPERATIONS
+	// above) - note this means a client talking the firebird wire
+	// protocol to a router-backed connection won't get the
+	// close-and-re-execute handling firebird.cpp gates on this flag
+	// being "true", even though the name is still forwarded
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"";
+
 }
 
 void routerconnection::handleConnectString() {
@@ -1832,6 +1845,12 @@ bool routercursor::prepareQuery(const char *query, uint32_t size) {
 	if (!emptyquery) {
 		if (routerconn->debug) {
 			stdoutput.printf("	query: %.*s\n",size,query);
+		}
+		// forward the cursor name, if one was set, to the
+		// backend cursor before preparing the query on it
+		const char	*cursorname=getCursorName();
+		if (!charstring::isNullOrEmpty(cursorname)) {
+			currentcur->setCursorName(cursorname);
 		}
 		currentcur->prepareQuery(query,size);
 	}

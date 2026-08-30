@@ -254,6 +254,8 @@ class SQLRCursor : public ObjectWrap {
 		static RET	getKeyAndIndexList(const ARGS &args);
 		static RET	getProcedureList(const ARGS &args);
 		static RET	getProcedureParameterList(const ARGS &args);
+		static RET	setCursorName(const ARGS &args);
+		static RET	getCursorName(const ARGS &args);
 		static RET	sendQuery(const ARGS &args);
 		static RET	sendFileQuery(const ARGS &args);
 		static RET	prepareQuery(const ARGS &args);
@@ -1197,6 +1199,8 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getProcedureList",getProcedureList);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getProcedureParameterList",
 						getProcedureParameterList);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"setCursorName",setCursorName);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"getCursorName",getCursorName);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"sendQuery",sendQuery);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"sendFileQuery",sendFileQuery);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"prepareQuery",prepareQuery);
@@ -1636,6 +1640,28 @@ RET SQLRCursor::getProcedureParameterList(const ARGS &args) {
 							toString(args[1]));
 
 	returnBoolean(result);
+}
+
+RET SQLRCursor::setCursorName(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,1);
+
+	sqlrcur(args)->setCursorName(toString(args[0]));
+
+	returnVoid();
+}
+
+RET SQLRCursor::getCursorName(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	const char	*result=sqlrcur(args)->getCursorName();
+
+	returnString(result);
 }
 
 RET SQLRCursor::sendQuery(const ARGS &args) {

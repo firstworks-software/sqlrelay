@@ -103,6 +103,8 @@ void sqlrcurDelete(ClientData data) {
  *   $cur getKeyAndIndexList table qualifier
  *   $cur getProcedureList procedures
  *   $cur getProcedureParameterList procedure parameters
+ *   $cur setCursorName cursorname
+ *   $cur getCursorName
  *   $cur sendQuery query
  *   $cur sendQueryWithLength query length
  *   $cur sendFileQuery path filename
@@ -282,6 +284,8 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "getKeyAndIndexList",
     "getProcedureList",
     "getProcedureParameterList",
+    "setCursorName",
+    "getCursorName",
     "sendQuery",
     "sendQueryWithLength",
     "sendFileQuery",
@@ -456,6 +460,8 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_getKeyAndIndexList,
     SQLRCUR_getProcedureList,
     SQLRCUR_getProcedureParameterList,
+    SQLRCUR_setCursorName,
+    SQLRCUR_getCursorName,
     SQLRCUR_sendQuery,
     SQLRCUR_sendQueryWithLength,
     SQLRCUR_sendFileQuery,
@@ -912,7 +918,25 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, Tcl_NewBooleanObj(result));
 	break;
       }
-    case SQLRCUR_sendQuery: 
+    case SQLRCUR_setCursorName:
+      {
+	if (objc != 3) {
+	  Tcl_WrongNumArgs(interp,2, objv, "cursorname");
+	  return TCL_ERROR;
+	}
+	cur->setCursorName(Tcl_GetString(objv[2]));
+	break;
+      }
+    case SQLRCUR_getCursorName:
+      {
+	if (objc > 2) {
+	  Tcl_WrongNumArgs(interp, 2, objv, NULL);
+	  return TCL_ERROR;
+	}
+	Tcl_AppendResult(interp, cur->getCursorName(), (char *)NULL);
+	break;
+      }
+    case SQLRCUR_sendQuery:
       {
 	int result = 0;
 	if (objc != 3) {

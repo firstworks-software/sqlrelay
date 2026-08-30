@@ -8017,6 +8017,11 @@ void sqlrservercontroller::endSession() {
 	for (int32_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]) {
 			pvt->_cur[i]->getTranslatedQueryBuffer()->clear();
+
+			// clear any cursor name a client set during the
+			// previous session, so it can't leak into the next
+			// session this pooled cursor serves
+			pvt->_cur[i]->setCursorName(NULL);
 		}
 	}
 

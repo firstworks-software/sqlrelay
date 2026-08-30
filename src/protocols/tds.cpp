@@ -2652,7 +2652,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// openCursorStatement() returns false either when no cursor
 		// was available - *cursorout is NULL then - or when the open
 		// itself failed, with *cursorout set so the caller can pull
-		// the error out of it and release it.
+		// the error out of it and release it.  "cursorname" is the
+		// name to declare the backend's cursor with, which only a
+		// tds 5.0 curdeclare supplies; an sp_cursoropen passes NULL.
 		//
 		// fetchCursorStatement() returns false when the query behind
 		// the cursor failed, and sets *unsupported when the fetch
@@ -2660,6 +2662,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	openCursorStatement(const char *stmt,
 					size_t stmtlen,
 					uint16_t firstvalue,
+					const char *cursorname,
 					sqlrservercursor **cursorout,
 					uint32_t *handleout);
 		bool	fetchCursorStatement(sqlrservercursor *cursor,
@@ -9917,7 +9920,7 @@ bool sqlrprotocol_tds::preTds7CurOpen(const byte_t **rpinout,
 	sqlrservercursor	*cursor=NULL;
 	uint32_t		handle=0;
 	bool	success=openCursorStatement(curs->stmt,curs->stmtsize,
-							0,&cursor,&handle);
+						0,curs->name,&cursor,&handle);
 
 	if (!cursor) {
 		debugWrite("no cursor available");
@@ -18057,6 +18060,12 @@ sqlrservercursor *sqlrprotocol_tds::availableCursor(sqlrservercursor *keep) {
 	// it back
 	if (cursor) {
 		pendingcursor=cursor;
+
+		// a cursor out of the pool still carries whatever name the
+		// tds 5.0 cursor that had it last was declared with, and
+		// nothing below here would clear it, so a query that wants
+		// no name would run under the old one
+		cursor->setCursorName(NULL);
 	}
 
 	debugWrite((cursor)?"got cursor":"no cursor available");
@@ -19628,6 +19637,7 @@ size_t sqlrprotocol_tds::stripForUpdateOf(const char *stmt, size_t stmtlen) {
 bool sqlrprotocol_tds::openCursorStatement(const char *stmt,
 						size_t stmtlen,
 						uint16_t firstvalue,
+						const char *cursorname,
 						sqlrservercursor **cursorout,
 						uint32_t *handleout) {
 
@@ -19640,6 +19650,16 @@ bool sqlrprotocol_tds::openCursorStatement(const char *stmt,
 		return false;
 	}
 	*cursorout=cursor;
+
+	// Hand the name the client declared the cursor with to the backend,
+	// which declares its own cursor with it if it can (see
+	// FEATURE_SUPPORTS_SET_CURSOR_NAME).  That has to happen in front of
+	// the prepare below, since that's where the backend declares it.
+	//
+	// It's what lets a "where current of <name>" that the client sends
+	// as an ordinary query find the cursor.  A name of NULL just leaves
+	// the backend to name the cursor itself.
+	cursor->setCursorName(cursorname);
 
 	// a statement that comes with no values has no bind variables - a
 	// single-@ name in one is a local variable or parameter declaration
@@ -19715,8 +19735,10 @@ bool sqlrprotocol_tds::cursorOpen(bool nometadata) {
 
 	sqlrservercursor	*cursor=NULL;
 	uint32_t		handle=0;
+	// an sp_cursoropen's cursor is referred to by handle, never by name,
+	// so there's no name to declare the backend's cursor with
 	bool	success=openCursorStatement(stmt,stmtlen,firstvalue,
-							&cursor,&handle);
+							NULL,&cursor,&handle);
 
 	if (!cursor) {
 		debugEnd();

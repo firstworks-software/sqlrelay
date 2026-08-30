@@ -294,6 +294,9 @@ class sqlrcursorprivate {
 		uint16_t	_cursorid;
 		bool		_havecursorid;
 
+		// cursor name
+		char		*_cursorname;
+
 		// query translation
 		char		*_querytree;
 		char		*_translatedquery;
@@ -407,6 +410,9 @@ void sqlrcursor::init(sqlrconnection *sqlrc, bool copyreferences) {
 	pvt->_cursorid=0;
 	pvt->_havecursorid=false;
 
+	// cursor name
+	pvt->_cursorname=NULL;
+
 	// query translation
 	pvt->_querytree=NULL;
 	pvt->_translatedquery=NULL;
@@ -498,6 +504,9 @@ sqlrcursor::~sqlrcursor() {
 	// query translation
 	delete[] pvt->_querytree;
 	delete[] pvt->_translatedquery;
+
+	// cursor name
+	delete[] pvt->_cursorname;
 
 	delete pvt;
 }
@@ -8026,6 +8035,90 @@ const char *sqlrcursor::getTranslatedQuery() {
 	pvt->_translatedquery[len]='\0';
 
 	return pvt->_translatedquery;
+}
+
+void sqlrcursor::setCursorName(const char *cursorname) {
+
+	// keep a local copy of the name, replacing any previous name
+	delete[] pvt->_cursorname;
+	pvt->_cursorname=charstring::duplicate(cursorname);
+
+	// reset per-query state the same way every other cursor-scoped
+	// command in this file does (getQueryTree(), getTranslatedQuery(),
+	// nextResultSet(), ...) before touching the result set below
+	pvt->_reexecute=false;
+	pvt->_validatebinds=false;
+	pvt->_resumed=false;
+	clearVariables();
+
+	// close out any pending result set first, the same way every other
+	// cursor-scoped command in this file does, so a cache file left open
+	// mid-result-set doesn't get a stray status word written into it by
+	// getErrorStatus() below
+	if (!pvt->_endofresultset) {
+		closeResultSet(false);
+	}
+	clearResultSet();
+
+	if (!pvt->_sqlrc->openSession()) {
+		return;
+	}
+
+	// clearResultSet() above leaves _cached set to whatever it was
+	// before; clear it explicitly so a later suspendResultSet()/
+	// closeResultSet() doesn't mistake a stale cached-result-set flag
+	// for a live one
+	pvt->_cached=false;
+
+	// refresh socket client
+	pvt->_cs=pvt->_sqlrc->cs();
+
+	if (pvt->_sqlrc->debug()) {
+		pvt->_sqlrc->debugPreStart();
+		pvt->_sqlrc->debugPrint("Setting Cursor Name: ");
+		pvt->_sqlrc->debugPrint((cursorname)?cursorname:"");
+		pvt->_sqlrc->debugPrint("\n");
+		pvt->_sqlrc->debugPreEnd();
+	}
+
+	// tell the server we want to set the cursor name
+	pvt->_cs->write((uint16_t)SET_CURSOR_NAME);
+
+	// tell the server whether we'll need a cursor or not
+	sendCursorStatus();
+
+	// send the cursor name.  The server bounds-checks the size (and ends
+	// the session if it's too large), so an oversized name here fails
+	// loudly on the next call rather than being silently truncated by an
+	// additional check on this end.
+	uint16_t	namesize=(uint16_t)charstring::getLength(cursorname);
+	pvt->_cs->write(namesize);
+	if (namesize) {
+		pvt->_cs->write(cursorname,namesize);
+	}
+
+	pvt->_sqlrc->flushWriteBuffer();
+
+	uint16_t	err=getErrorStatus();
+	if (err!=NO_ERROR_OCCURRED) {
+		if (err==TIMEOUT_GETTING_ERROR_STATUS) {
+			pvt->_sqlrc->endSession();
+			return;
+		}
+		getErrorFromServer();
+		if (err==ERROR_OCCURRED_DISCONNECT) {
+			pvt->_sqlrc->endSession();
+		}
+		return;
+	}
+
+	// get the id of the cursor that the server used, as it may have
+	// just been allocated
+	getCursorId();
+}
+
+const char *sqlrcursor::getCursorName() {
+	return pvt->_cursorname;
 }
 
 bool sqlrcursor::endofresultset() {

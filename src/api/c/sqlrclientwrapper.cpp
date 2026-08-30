@@ -415,6 +415,14 @@ int sqlrcur_getProcedureParameterList(sqlrcur sqlrcurref,
 	return sqlrcurref->getProcedureParameterList(procedure,parameters);
 }
 
+void sqlrcur_setCursorName(sqlrcur sqlrcurref, const char *cursorname) {
+	sqlrcurref->setCursorName(cursorname);
+}
+
+const char *sqlrcur_getCursorName(sqlrcur sqlrcurref) {
+	return sqlrcurref->getCursorName();
+}
+
 int sqlrcur_sendQuery(sqlrcur sqlrcurref, const char *query) {
 	return sqlrcurref->sendQuery(query);
 }

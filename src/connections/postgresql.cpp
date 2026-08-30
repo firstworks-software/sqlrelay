@@ -802,6 +802,15 @@ void postgresqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";
 
+	// libpq has no call analogous to SQLSetCursorName.  The only way to
+	// get a named cursor is DECLARE ... CURSOR FOR <query> plus FETCH,
+	// which is a different execution strategy than the PQprepare/
+	// PQexecPrepared (and PQsendQueryPrepared/single-row-mode) paths that
+	// this module uses, and the cursor's lifetime is tied to the
+	// transaction rather than to the statement.
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"false";
+
 }
 
 

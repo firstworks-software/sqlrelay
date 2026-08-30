@@ -999,6 +999,24 @@ static PyObject *getProcedureParameterList(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", (short)rc);
 }
 
+static PyObject *setCursorName(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  char *cursorname;
+  if (!PyArg_ParseTuple(args, "ls", &sqlrcur, &cursorname))
+    return NULL;
+  ((sqlrcursor *)sqlrcur)->setCursorName(cursorname);
+  return Py_BuildValue("h", 0);
+}
+
+static PyObject *getCursorName(PyObject *self, PyObject *args) {
+  long sqlrcur;
+  const char *rc;
+  if (!PyArg_ParseTuple(args, "l", &sqlrcur))
+    return NULL;
+  rc=((sqlrcursor *)sqlrcur)->getCursorName();
+  return Py_BuildValue("s", rc);
+}
+
 static PyObject *sendQuery(PyObject *self, PyObject *args) {
   char *sqlString;
   long sqlrcur;
@@ -3415,6 +3433,8 @@ static PyMethodDef SQLRMethods[] = {
   {"getKeyAndIndexList", getKeyAndIndexList, METH_VARARGS},
   {"getProcedureList", getProcedureList, METH_VARARGS},
   {"getProcedureParameterList", getProcedureParameterList, METH_VARARGS},
+  {"setCursorName", setCursorName, METH_VARARGS},
+  {"getCursorName", getCursorName, METH_VARARGS},
   {"sendQuery", sendQuery, METH_VARARGS},
   {"sendQueryWithLength", sendQueryWithLength, METH_VARARGS},
   {"sendFileQuery", sendFileQuery, METH_VARARGS},

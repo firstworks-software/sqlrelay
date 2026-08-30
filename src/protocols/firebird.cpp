@@ -11,6 +11,7 @@
 #include <rudiments/error.h>
 
 #include <datatypes.h>
+#include <defines.h>
 
 #include "firebirdsdl.h"
 #include "firebirdsrp.h"
@@ -6202,6 +6203,10 @@ bool sqlrprotocol_firebird::allocateStatement() {
 	clearBatch(&stmt->batch);
 	clearBlrRequest(&stmt->request);
 
+	// the cursor came out of the pool and may still carry the name that
+	// the statement it was used for last was given
+	cursor->setCursorName(NULL);
+
 	debugWrite("cursor id: %u",cursorid);
 	debugWrite("statement handle: %u",stmthandle);
 
@@ -6348,16 +6353,52 @@ bool sqlrprotocol_firebird::setCursor() {
 
 	debugWrite("cursor id: %u",cont->getId(cursor));
 
-	// the name is kept but never handed to the backend - SQL Relay has no
-	// way to name a backend cursor
-	// (firebird only takes a name between prepare and execute, and against
-	// a backend that can't describe a prepared statement it would be too
-	// late here anyway, since runPreparedQuery() has already run a select
-	// with no binds and opened the backend's cursor.  naming and fetching
-	// works; "where current of" fails at the backend with the -504 a real
-	// server sends for a cursor that doesn't exist.)
+	// remember the name on the statement, so it's cleared along with the
+	// rest of this statement's state whenever it's re-prepared or the
+	// cursor goes back to the pool
 	delete[] stmt->cursorname;
 	stmt->cursorname=cursorname;
+
+	// hand it to the backend, which names its cursor with it if it can
+	// (see FEATURE_SUPPORTS_SET_CURSOR_NAME)
+	cursor->setCursorName(cursorname);
+
+	const char * const	*features=cont->getDatabaseFeatures();
+	bool			backendcannameit=(features &&
+					!charstring::compare(features[
+					FEATURE_SUPPORTS_SET_CURSOR_NAME],
+					"true"));
+
+	// A backend that names cursors only takes a name between the prepare
+	// and the open.  A name that arrives before the query runs is just
+	// stored above, and the backend applies it when it prepares or
+	// executes, but runPreparedQuery() pre-executes a select with no
+	// binds, to answer the prepare with the shape of the result set, so
+	// the backend's cursor may already be open by now - too late to name.
+	// Re-executing closes that result set and opens it again with the
+	// name applied.
+	// (only a select with no binds is ever pre-executed, so re-executing
+	// here can't repeat the side effects of a write, and the client has
+	// done nothing but prepare, so no fetched rows are lost either)
+	if (stmt->preexecuted && backendcannameit &&
+			!charstring::isNullOrEmpty(cursorname)) {
+
+		debugWrite("re-executing to apply the cursor name");
+
+		if (!cont->executeQuery(cursor,true,true,true,true)) {
+			debugWrite("re-execute failed");
+			stmt->preexecuted=false;
+			stmt->cursoropen=false;
+			debugEnd();
+			return sendCursorError("set cursor response",
+							cursor,false);
+		}
+
+		stmt->cursoropen=(cont->colCount(cursor)>0);
+
+		debugWrite("re-execute succeeded");
+		debugWrite("cursor open: %s",(stmt->cursoropen)?"yes":"no");
+	}
 
 	debugEnd();
 
@@ -6528,6 +6569,9 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 		// the wire format only ever binds by "?", so a query has to
 		// be translated to whatever format the backend requires
 		cont->setRequireBindVariableTranslation(cursor,true);
+		// a pooled cursor comes back with whatever cursor name its
+		// last user left on it
+		cursor->setCursorName(NULL);
 	} else {
 		stmt=getStatement(stmthandle,&cursor);
 		if (!stmt) {
@@ -6547,6 +6591,14 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 		stmt->bindcount=0;
 		stmt->bindsdescribed=false;
 		clearProbeColumns(stmt);
+		// re-preparing drops the old statement and its backend cursor
+		// name along with it (firebird releases a cursor's name when
+		// its statement is re-prepared), so any name applied to the
+		// query this handle previously ran must not carry over to
+		// the new one
+		delete[] stmt->cursorname;
+		stmt->cursorname=NULL;
+		cursor->setCursorName(NULL);
 	}
 
 	debugWrite("cursor id: %u",cont->getId(cursor));
@@ -7018,6 +7070,9 @@ bool sqlrprotocol_firebird::execImmediate2() {
 	// the wire format only ever binds by "?", so a query has to be
 	// translated to whatever format the backend actually requires
 	cont->setRequireBindVariableTranslation(cursor,true);
+	// a pooled cursor comes back with whatever cursor name its last user
+	// left on it
+	cursor->setCursorName(NULL);
 	cont->getBindPool(cursor)->clear();
 	cont->setInputBindCount(cursor,0);
 
@@ -7362,6 +7417,10 @@ bool sqlrprotocol_firebird::compile() {
 	// the wire format only ever binds by "?", so a query has to be
 	// translated to whatever format the backend actually requires
 	cont->setRequireBindVariableTranslation(cursor,true);
+
+	// a pooled cursor comes back with whatever cursor name its last user
+	// left on it
+	cursor->setCursorName(NULL);
 
 	uint16_t	cursorid=cont->getId(cursor);
 
@@ -11528,8 +11587,10 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 	}
 	cont->setRequireBindVariableTranslation(probecursor,true);
 
-	// a pooled cursor comes back with whatever binds its last user left
-	// on it, and nothing between release() and prepare clears them
+	// a pooled cursor comes back with whatever binds, and whatever cursor
+	// name, its last user left on it, and nothing between release() and
+	// prepare clears them
+	probecursor->setCursorName(NULL);
 	cont->getBindPool(probecursor)->clear();
 	cont->setInputBindCount(probecursor,0);
 
@@ -11719,8 +11780,10 @@ bool sqlrprotocol_firebird::describeOutputColumns(sqlrservercursor *cursor,
 	}
 	cont->setRequireBindVariableTranslation(probecursor,true);
 
-	// a pooled cursor comes back with whatever binds its last user left
-	// on it, and nothing between release() and prepare clears them
+	// a pooled cursor comes back with whatever binds, and whatever cursor
+	// name, its last user left on it, and nothing between release() and
+	// prepare clears them
+	probecursor->setCursorName(NULL);
 	cont->getBindPool(probecursor)->clear();
 	cont->setInputBindCount(probecursor,0);
 

@@ -200,6 +200,13 @@ sqlrcursor::getProcedureParameterList(procedure,parameters)
 		const char *procedure
 		const char *parameters
 
+void
+sqlrcursor::setCursorName(cursorname)
+		const char *cursorname
+
+const char *
+sqlrcursor::getCursorName()
+
 bool
 sqlrcursor::sendQuery(query)
 		const char *query

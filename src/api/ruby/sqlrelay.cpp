@@ -2412,6 +2412,53 @@ static VALUE sqlrcur_getProcedureParameterList(VALUE self,
 	return INT2NUM(result);
 }
 
+static void setCursorName(params *p) {
+	p->sqlrc.sqlrcur->setCursorName(STR2CSTR(p->one));
+}
+/**
+ *  call-seq:
+ *  setCursorName(cursorname)
+ *
+ *  Sets the name of this cursor to "cursorname", replacing any
+ *  previously set name.  The name is sent to the server immediately,
+ *  and the server hands it to the database when the next query is
+ *  prepared.  Named cursors are mainly useful for positioned updates
+ *  and deletes, as in: UPDATE ... WHERE CURRENT OF "cursorname".
+ *
+ *  Not all databases support this call.  Don't use it for
+ *  applications which are designed to be portable across databases.
+ *  The name is ignored by databases which don't support this
+ *  option. */
+static VALUE sqlrcur_setCursorName(VALUE self, VALUE cursorname) {
+	sqlrcursordata	*sqlrcurdata;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	CUR1(sqlrcurdata->cur,setCursorName,cursorname);
+	return Qnil;
+}
+
+static void getCursorName(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcur->getCursorName();
+}
+/** Returns the name most recently passed to setCursorName(), or
+ *  nil if setCursorName() was never called.  This is a local copy
+ *  of the name; no request is made to the server.  It is not
+ *  necessarily the name that the database ended up using, as not
+ *  all databases support named cursors.
+ *
+ *  Not all databases support this call.  Don't use it for
+ *  applications which are designed to be portable across databases. */
+static VALUE sqlrcur_getCursorName(VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	const char	*result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR(result,ccpr,sqlrcurdata->cur,getCursorName);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return Qnil;
+	}
+}
+
 static void sendQuery(params *p) {
 	p->result.br=p->sqlrc.sqlrcur->sendQuery(STR2CSTR(p->one));
 }
@@ -5140,6 +5187,10 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_getProcedureList,1);
 	rb_define_method(csqlrcursor,"getProcedureParameterList",
 				(CAST)sqlrcur_getProcedureParameterList,2);
+	rb_define_method(csqlrcursor,"setCursorName",
+				(CAST)sqlrcur_setCursorName,1);
+	rb_define_method(csqlrcursor,"getCursorName",
+				(CAST)sqlrcur_getCursorName,0);
 	rb_define_method(csqlrcursor,"sendQuery",
 				(CAST)sqlrcur_sendQuery,1);
 	rb_define_method(csqlrcursor,"sendQueryWithLength",

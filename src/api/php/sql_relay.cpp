@@ -3581,6 +3581,82 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_getprocedureparameterlist) {
 
 /**
  *  call-seq:
+ *  sqlrcur_setCursorName($sqlrcurref, $cursorname)
+ *
+ *  Sets the name of this cursor to "cursorname", replacing any
+ *  previously set name.  The name is sent to the server immediately,
+ *  and the server hands it to the database when the next query is
+ *  prepared.  Named cursors are mainly useful for positioned updates
+ *  and deletes, as in: UPDATE ... WHERE CURRENT OF "cursorname".
+ *
+ *  Not all databases support this call.  Don't use it for
+ *  applications which are designed to be portable across databases.
+ *  The name is ignored by databases which don't support this
+ *  option. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_setcursorname) {
+	ZVAL sqlrcur;
+	ZVAL cursorname;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcur,
+				&cursorname) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_string_ex(cursorname);
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		cursor->setCursorName(SVAL(cursorname));
+	}
+}
+
+/**
+ *  call-seq:
+ *  sqlrcur_getCursorName($sqlrcurref)
+ *
+ *  Returns the name most recently passed to setCursorName(), or
+ *  false if setCursorName() was never called.  This is a local copy
+ *  of the name; no request is made to the server.  It is not
+ *  necessarily the name that the database ended up using, as not
+ *  all databases support named cursors.
+ *
+ *  Not all databases support this call.  Don't use it for
+ *  applications which are designed to be portable across databases. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_getcursorname) {
+	ZVAL sqlrcur;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->getCursorName();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RETURN_FALSE;
+}
+
+/**
+ *  call-seq:
  *  sqlrcur_sendQuery($sqlrcurref, $query)
  *
  *  Sends "query" directly and gets a result set. */
@@ -8502,6 +8578,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getprocedureparameterlist,0,0,3)
 	ZEND_ARG_INFO(0, wild)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_setcursorname,0,0,2)
+	ZEND_ARG_INFO(0, sqlrcurref)
+	ZEND_ARG_INFO(0, cursorname)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_getcursorname,0,0,1)
+	ZEND_ARG_INFO(0, sqlrcurref)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_sendquery,0,0,2)
 	ZEND_ARG_INFO(0, sqlrcurref)
 	ZEND_ARG_INFO(0, query)
@@ -9343,6 +9428,10 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_getprocedurelist))
 	ZEND_FE(sqlrcur_getprocedureparameterlist,
 		ARGINFO(arginfo_sqlrcur_getprocedureparameterlist))
+	ZEND_FE(sqlrcur_setcursorname,
+		ARGINFO(arginfo_sqlrcur_setcursorname))
+	ZEND_FE(sqlrcur_getcursorname,
+		ARGINFO(arginfo_sqlrcur_getcursorname))
 	ZEND_FE(sqlrcur_sendquery,
 		ARGINFO(arginfo_sqlrcur_sendquery))
 	ZEND_FE(sqlrcur_sendquerywithlength,

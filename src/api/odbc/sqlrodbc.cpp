@@ -12519,6 +12519,9 @@ SQLRETURN SQL_API SQLSetCursorName(SQLHSTMT statementhandle,
 								namelength);
 	}
 
+	// send the name to the server too
+	stmt->cur->setCursorName(stmt->name);
+
 	return SQL_SUCCESS;
 }
 

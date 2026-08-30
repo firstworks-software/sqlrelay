@@ -16,6 +16,12 @@
 #include <defaults.h>
 #include <defines.h>
 
+// There's no config option bounding the length of a cursor name, so the
+// SET_CURSOR_NAME command guards against oversized input with this fixed
+// limit.  It's far longer than any database allows an identifier to be, but
+// short enough to keep a bad client from making the server allocate much.
+#define MAX_CURSOR_NAME_SIZE 4096
+
 enum sqlrclientquerytype_t {
 	SQLRCLIENTQUERYTYPE_QUERY=0,
 	SQLRCLIENTQUERYTYPE_DATABASE_LIST,
@@ -220,6 +226,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		bool	getQueryTreeCommand(sqlrservercursor *cursor);
 		bool	getTranslatedQueryCommand(sqlrservercursor *cursor);
 		bool	nextResultSetCommand(sqlrservercursor *cursor);
+		bool	setCursorNameCommand(sqlrservercursor *cursor);
 
 		void	debugCommand(uint16_t command);
 		void	debugListFormat(sqlrserverlistformat_t listformat);
@@ -684,6 +691,8 @@ clientsessionexitstatus_t sqlrprotocol_sqlrclient::clientSession(
 			loop=getTranslatedQueryCommand(cursor);
 		} else if (command==NEXT_RESULT_SET) {
 			loop=nextResultSetCommand(cursor);
+		} else if (command==SET_CURSOR_NAME) {
+			loop=setCursorNameCommand(cursor);
 		} else {
 			loop=false;
 		}
@@ -857,7 +866,8 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 		command==GET_LAST_INSERT_ID_LIST ||
 		command==ABORT_RESULT_SET ||
 		command==GET_QUERY_TREE ||
-		command==GET_TRANSLATED_QUERY) {
+		command==GET_TRANSLATED_QUERY ||
+		command==SET_CURSOR_NAME) {
 		ssize_t	result=clientsock->read(&neednewcursor,
 						idleclienttimeout,0);
 		if (result!=sizeof(uint16_t)) {
@@ -5290,6 +5300,71 @@ bool sqlrprotocol_sqlrclient::getTranslatedQueryCommand(
 	return true;
 }
 
+bool sqlrprotocol_sqlrclient::setCursorNameCommand(sqlrservercursor *cursor) {
+
+	debugStart("setting cursor name");
+
+	// get the size of the cursor name
+	uint16_t	namesize;
+	ssize_t		result=clientsock->read(&namesize,
+						idleclienttimeout,0);
+	if (result!=sizeof(uint16_t)) {
+		cont->raiseClientProtocolErrorEvent(cursor,result,
+					"set cursor name failed: "
+					"failed to get cursor name size");
+		debugWrite("failed to get cursor name size");
+		debugEnd();
+		return false;
+	}
+
+	// bounds checking
+	if (namesize>MAX_CURSOR_NAME_SIZE) {
+		cont->raiseClientProtocolErrorEvent(cursor,1,
+					"set cursor name failed: "
+					"client sent bad cursor name size: %hd",
+					namesize);
+		debugWrite("client sent bad cursor name size: %hd",namesize);
+		debugEnd();
+		return false;
+	}
+
+	// read the cursor name into a buffer
+	char	*name=new char[namesize+1];
+	if (namesize) {
+		result=clientsock->read(name,namesize,idleclienttimeout,0);
+		if ((uint16_t)result!=namesize) {
+			delete[] name;
+			cont->raiseClientProtocolErrorEvent(cursor,result,
+					"set cursor name failed: "
+					"failed to get cursor name");
+			debugWrite("failed to get cursor name");
+			debugEnd();
+			return false;
+		}
+	}
+	name[namesize]='\0';
+
+	debugWrite("cursor name: %.*s",namesize,name);
+
+	// set the cursor name, treating an empty name the same as no name at
+	// all - some backends (db2, informix, router) only check for a NULL
+	// cursor name, not an empty one, and would otherwise try to apply an
+	// empty cursor name to the underlying statement
+	cursor->setCursorName((namesize)?name:NULL);
+
+	delete[] name;
+
+	// indicate that no error has occurred and send the client the id of
+	// the cursor that it's going to use, as it may have just been
+	// allocated
+	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
+	clientsock->write(cont->getId(cursor));
+	clientsock->flushWriteBuffer(-1,-1);
+
+	debugEnd();
+	return true;
+}
+
 void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 	debugWrite("command: %hd",command);
 	switch (command) {
@@ -5457,6 +5532,9 @@ void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
 			break;
 		case GET_DATABASE_IS_SCHEMA:
 			debugWrite("GET_DATABASE_IS_SCHEMA");
+			break;
+		case SET_CURSOR_NAME:
+			debugWrite("SET_CURSOR_NAME");
 			break;
 		default:
 			debugWrite("bad command");

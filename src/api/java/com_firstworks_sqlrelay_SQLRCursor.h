@@ -137,6 +137,22 @@ JNIEXPORT jboolean JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getColumnList
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    setCursorName
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_setCursorName
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    getCursorName
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_getCursorName
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    sendQuery
  * Signature: (Ljava/lang/String;)Z
  */

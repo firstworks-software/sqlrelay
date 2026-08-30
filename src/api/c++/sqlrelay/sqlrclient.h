@@ -1168,6 +1168,47 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 
 
 
+		/** Sets the name of this cursor to "cursorname",
+		 *  replacing any previously set name.  The name is
+		 *  sent to the server immediately (opening a session
+		 *  and discarding any result set currently pending on
+		 *  this cursor, the same as most other cursor-scoped
+		 *  calls), and the server hands it to the database
+		 *  when the next query is prepared.  Named cursors are
+		 *  mainly useful for positioned updates and deletes,
+		 *  as in: UPDATE ... WHERE CURRENT OF "cursorname".
+		 *
+		 *  The name is a client-side setting on this cursor
+		 *  object, not the underlying server-side connection;
+		 *  if the session ends and reconnects (for example
+		 *  after a network error), it is not automatically
+		 *  resent, and must be set again before it will take
+		 *  effect on the new session.
+		 *
+		 *  Not all databases support this call.  Don't use
+		 *  it for applications which are designed to be
+		 *  portable across databases.  The name is ignored
+		 *  by databases which don't support this option. */
+		void	setCursorName(const char *cursorname);
+
+		/** Returns the name most recently passed to
+		 *  setCursorName(), or NULL if setCursorName() was
+		 *  never called, or if it was most recently called
+		 *  with NULL.  This is a local copy of the name; no
+		 *  request is made to the server.  It is not
+		 *  necessarily the name that the database ended up
+		 *  using, as not all databases support named
+		 *  cursors, and it may not reflect the name actually
+		 *  in effect on the server if the session has since
+		 *  ended and reconnected (see setCursorName()).
+		 *
+		 *  Not all databases support this call.  Don't use
+		 *  it for applications which are designed to be
+		 *  portable across databases. */
+		const char	*getCursorName();
+
+
+
 		/** Sends "query" directly and gets a result set. */
 		bool	sendQuery(const char *query);
 

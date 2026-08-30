@@ -293,7 +293,18 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 		void		discardCursor();
 		void		discardDynamic();
 
-		char		*cursorname;
+		void		chooseCursorName();
+		void		chooseDynamicName();
+
+		// auto-generated cursor name, used unless the client
+		// supplied one of its own with setCursorName()
+		char		*autocursorname;
+		size_t		autocursornamesize;
+
+		// the name that the cursor was most recently declared with -
+		// either autocursorname or the client-supplied name.  Not
+		// owned by this class, don't delete it.
+		const char	*cursorname;
 		size_t		cursornamesize;
 
 		// name of the ct_dynamic(CS_PREPARE) statement that this
@@ -873,6 +884,9 @@ void sapconnection::initDatabaseFeatures() {
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";
+
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"true";
 
 }
 
@@ -2794,14 +2808,14 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 	currentbatch=NULL;
 	bufferedrows=0;
 
-	cursornamesize=charstring::getIntegerLength(id);
-	cursorname=charstring::parseNumber(id);
+	autocursornamesize=charstring::getIntegerLength(id);
+	autocursorname=charstring::parseNumber(id);
+	cursorname=autocursorname;
+	cursornamesize=autocursornamesize;
 
 	// the dynamic statement name has to be unique within the connection,
 	// and distinct from the cursor name
-	charstring::printf(dynamicname,sizeof(dynamicname),
-					"sqlrdyn%d",(int32_t)id);
-	dynamicnamesize=charstring::getLength(dynamicname);
+	chooseDynamicName();
 
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	parameter=new CS_DATAFMT[maxbindcount];
@@ -2846,7 +2860,7 @@ sapcursor::sapcursor(sqlrserverconnection *conn, uint16_t id) :
 
 sapcursor::~sapcursor() {
 	close();
-	delete[] cursorname;
+	delete[] autocursorname;
 	delete[] parameter;
 	delete[] inbindvalue;
 	delete[] inbinddatasize;
@@ -3247,6 +3261,57 @@ static bool isMultiStatementBatch(const char *query, uint32_t size) {
 	return false;
 }
 
+// Build a dynamic statement name that's unique within the connection and
+// distinct from whatever the cursor is currently named.  The normal form is
+// "sqlrdyn<cursor id>", with an underscore appended in the unlikely event
+// that the client supplied exactly that as its cursor name.  Only one of the
+// two forms can match the cursor name, so this always yields a distinct name.
+void sapcursor::chooseDynamicName() {
+
+	charstring::printf(dynamicname,sizeof(dynamicname),
+					"sqlrdyn%d",(int32_t)getId());
+	if (!charstring::compareIgnoringCase(cursorname,dynamicname)) {
+		charstring::printf(dynamicname,sizeof(dynamicname),
+					"sqlrdyn%d_",(int32_t)getId());
+	}
+	dynamicnamesize=charstring::getLength(dynamicname);
+}
+
+// Decide which name the cursor is about to be declared with.  Call this
+// immediately before ct_cursor(CS_CURSOR_DECLARE)/ct_dynamic(CS_CURSOR_DECLARE)
+// rather than from the constructor - the client can call setCursorName() any
+// time before the query is prepared, and the name it sets has to be the one
+// the cursor is declared with, since the client refers to it by name in
+// "where current of" queries.
+//
+// cursorname isn't owned by this class either way.  The auto-generated name
+// belongs to autocursorname and the client-supplied one belongs to the
+// sqlrservercursor that setCursorName() stored it in, and only ct_cursor()/
+// ct_dynamic() read it, right after this runs, so there's nothing to free
+// here and no chance of it going away in between.
+void sapcursor::chooseCursorName() {
+
+	cursorname=getCursorName();
+	if (charstring::isNullOrEmpty(cursorname)) {
+		cursorname=autocursorname;
+		cursornamesize=autocursornamesize;
+	} else {
+		cursornamesize=charstring::getLength(cursorname);
+	}
+
+	// The auto-generated cursor name is just the cursor id in decimal,
+	// so it can never match the "sqlrdyn"-prefixed dynamic statement
+	// name, but a client-supplied name can match it exactly.  The client
+	// name has to be used verbatim, so rename the dynamic statement
+	// instead - nothing outside of this class ever sees that name.
+	// Renaming it abandons any statement still prepared under the old
+	// name, so drop that first.
+	if (!charstring::compareIgnoringCase(cursorname,dynamicname)) {
+		discardDynamic();
+		chooseDynamicName();
+	}
+}
+
 bool sapcursor::prepareDynamic() {
 
 	cmd=cursorcmd;
@@ -3258,6 +3323,10 @@ bool sapcursor::prepareDynamic() {
 
 	// drop whatever statement this cursor prepared last
 	discardDynamic();
+
+	// decide what to declare the cursor as, and keep the dynamic
+	// statement name distinct from it
+	chooseCursorName();
 
 	// prepare the statement...
 	if (ct_dynamic(cursorcmd,CS_PREPARE,
@@ -3420,6 +3489,7 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 		// causes weird things to happen)
 		cmd=cursorcmd;
 		dynamiccursor=false;
+		chooseCursorName();
 		if (ct_cursor(cursorcmd,
 				CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursorname,

@@ -185,7 +185,17 @@ class SQLRSERVER_DLLSPEC freetdscursor : public sqlrservercursor {
 		void		discardResults();
 		void		discardCursor();
 
-		char		*cursorname;
+		void		chooseCursorName();
+
+		// auto-generated cursor name, used unless the client
+		// supplied one of its own with setCursorName()
+		char		*autocursorname;
+		size_t		autocursornamesize;
+
+		// the name that the cursor was most recently declared with -
+		// either autocursorname or the client-supplied name.  Not
+		// owned by this class, don't delete it.
+		const char	*cursorname;
 		size_t		cursornamesize;
 
 		void		checkRePrepare();
@@ -920,6 +930,18 @@ void freetdsconnection::initDatabaseFeatures() {
 
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"DELETE,UPDATE";
+
+	// chooseCursorName() (which is what actually applies a client-supplied
+	// name) only compiles in under FREETDS_SUPPORTS_CURSORS - keep this
+	// flag honest about that rather than advertising a capability that's
+	// silently a no-op in a default build
+	#ifdef FREETDS_SUPPORTS_CURSORS
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"true";
+	#else
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"false";
+	#endif
 
 }
 
@@ -4275,8 +4297,10 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 	languagecmd=NULL;
 	cursorcmd=NULL;
 
-	cursornamesize=charstring::getIntegerLength(id);
-	cursorname=charstring::parseNumber(id);
+	autocursornamesize=charstring::getIntegerLength(id);
+	autocursorname=charstring::parseNumber(id);
+	cursorname=autocursorname;
+	cursornamesize=autocursornamesize;
 
 	rpc=false;
 
@@ -4320,7 +4344,7 @@ freetdscursor::freetdscursor(sqlrserverconnection *conn, uint16_t id) :
 
 freetdscursor::~freetdscursor() {
 	close();
-	delete[] cursorname;
+	delete[] autocursorname;
 	delete[] parameter;
 	delete[] inbindvalue;
 	delete[] inbinddatasize;
@@ -4464,6 +4488,29 @@ static const char *getRpcName(const char *p, const char **namestart,
 	return p;
 }
 
+// Decide which name the cursor is about to be declared with.  Call this
+// immediately before ct_cursor(CS_CURSOR_DECLARE) rather than from the
+// constructor - the client can call setCursorName() any time before the
+// query is prepared, and the name it sets has to be the one the cursor is
+// declared with, since the client refers to it by name in "where current of"
+// queries.
+//
+// cursorname isn't owned by this class either way.  The auto-generated name
+// belongs to autocursorname and the client-supplied one belongs to the
+// sqlrservercursor that setCursorName() stored it in, and only ct_cursor()
+// reads it, right after this runs, so there's nothing to free here and no
+// chance of it going away in between.
+void freetdscursor::chooseCursorName() {
+
+	cursorname=getCursorName();
+	if (charstring::isNullOrEmpty(cursorname)) {
+		cursorname=autocursorname;
+		cursornamesize=autocursornamesize;
+	} else {
+		cursornamesize=charstring::getLength(cursorname);
+	}
+}
+
 bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 
 	// if the client aborts while a query is in the middle of running,
@@ -4492,6 +4539,7 @@ bool freetdscursor::prepareQuery(const char *query, uint32_t size) {
 		// initiate a cursor command
 		cmd=cursorcmd;
 		#ifdef FREETDS_SUPPORTS_CURSORS
+		chooseCursorName();
 		if (ct_cursor(cursorcmd,
 				CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursorname,

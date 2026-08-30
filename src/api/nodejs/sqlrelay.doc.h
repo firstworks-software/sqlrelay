@@ -1111,6 +1111,35 @@ class SQLRCursor {
 
 
 
+		/** Sets the name of this cursor to "cursorname",
+		 *  replacing any previously set name.  The name is
+		 *  sent to the server immediately, and the server
+		 *  hands it to the database when the next query is
+		 *  prepared.  Named cursors are mainly useful for
+		 *  positioned updates and deletes, as in:
+		 *  UPDATE ... WHERE CURRENT OF "cursorname".
+		 *
+		 *  Not all databases support this call.  Don't use
+		 *  it for applications which are designed to be
+		 *  portable across databases.  The name is ignored
+		 *  by databases which don't support this option. */
+		function setCursorName(var cursorname);
+
+		/** Returns the name most recently passed to
+		 *  setCursorName(), or null if setCursorName() was
+		 *  never called.  This is a local copy of the name;
+		 *  no request is made to the server.  It is not
+		 *  necessarily the name that the database ended up
+		 *  using, as not all databases support named
+		 *  cursors.
+		 *
+		 *  Not all databases support this call.  Don't use
+		 *  it for applications which are designed to be
+		 *  portable across databases. */
+		function getCursorName();
+
+
+
 		/** Sends "query" directly and gets a result set. */
 		function sendQuery(var query);
 

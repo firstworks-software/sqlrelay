@@ -681,6 +681,10 @@ void sqliteconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_WHERE_CURRENT_OF_OPERATIONS]=
 		"";
 
+	// embedded, no server-side cursors at all
+	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
+		"false";
+
 }
 
 
