@@ -484,7 +484,7 @@ pid_t scaler::openOneConnection() {
 
 	// build args
 	uint16_t	p=0;
-	const char	*args[18];
+	const char	*args[20];
 	args[p++]=cmdname.getString();
 	args[p++]="-silent";
 	args[p++]="-nodetach";
@@ -500,6 +500,8 @@ pid_t scaler::openOneConnection() {
 	}
 	args[p++]="-localstatedir";
 	args[p++]=sqlrpth->getLocalStateDir();
+	args[p++]="-libexecdir";
+	args[p++]=sqlrpth->getLibExecDir();
 	if (!charstring::isNullOrEmpty(backtrace)) {
 		args[p++]="-backtrace";
 		args[p++]=backtrace;

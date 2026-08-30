@@ -34,6 +34,7 @@ static bool startListener(sqlrpaths *sqlrpth,
 				const char *id,
 				const char *config,
 				const char *localstatedir,
+				const char *libexecdir,
 				const char *backtrace,
 				bool disablecrashhandler) {
 
@@ -53,7 +54,7 @@ static bool startListener(sqlrpaths *sqlrpth,
 
 	// build args
 	uint16_t	i=0;
-	const char	*args[11];
+	const char	*args[13];
 	args[i++]=cmdname.getString();
 	args[i++]="-id";
 	args[i++]=id;
@@ -65,6 +66,10 @@ static bool startListener(sqlrpaths *sqlrpth,
 		args[i++]="-localstatedir";
 		args[i++]=localstatedir;
 	}
+	if (!charstring::isNullOrEmpty(libexecdir)) {
+		args[i++]="-libexecdir";
+		args[i++]=libexecdir;
+	}
 	if (!charstring::isNullOrEmpty(backtrace)) {
 		args[i++]="-backtrace";
 		args[i++]=backtrace;
@@ -73,7 +78,7 @@ static bool startListener(sqlrpaths *sqlrpth,
 		args[i++]="-disable-crash-handler";
 	}
 	args[i]=NULL;
-	
+
 	// display command
 	stdoutput.printf("  ");
 	for (uint16_t index=0; index<i; index++) {
@@ -95,6 +100,7 @@ static bool startConnection(sqlrpaths *sqlrpth,
 				const char *connectionid,
 				const char *config,
 				const char *localstatedir,
+				const char *libexecdir,
 				const char *strace,
 				const char *backtrace,
 				bool disablecrashhandler) {
@@ -116,7 +122,7 @@ static bool startConnection(sqlrpaths *sqlrpth,
 
 	// build args
 	uint16_t	i=0;
-	const char	*args[18];
+	const char	*args[20];
 	if (!charstring::isNullOrEmpty(strace)) {
 		args[i++]="strace";
 		args[i++]="-ff";
@@ -137,6 +143,10 @@ static bool startConnection(sqlrpaths *sqlrpth,
 	if (!charstring::isNullOrEmpty(localstatedir)) {
 		args[i++]="-localstatedir";
 		args[i++]=localstatedir;
+	}
+	if (!charstring::isNullOrEmpty(libexecdir)) {
+		args[i++]="-libexecdir";
+		args[i++]=libexecdir;
 	}
 	if (!charstring::isNullOrEmpty(backtrace)) {
 		args[i++]="-backtrace";
@@ -170,6 +180,7 @@ static bool startConnections(sqlrpaths *sqlrpth,
 				const char *id,
 				const char *config,
 				const char *localstatedir,
+				const char *libexecdir,
 				const char *strace,
 				const char *backtrace,
 				bool disablecrashhandler) {
@@ -186,7 +197,8 @@ static bool startConnections(sqlrpaths *sqlrpth,
 	// if no connections were defined in the configuration,
 	// start 1 default one
 	if (!cfg->getConnectionCount()) {
-		return !startConnection(sqlrpth,id,config,localstatedir,NULL,
+		return !startConnection(sqlrpth,id,NULL,config,
+					localstatedir,libexecdir,
 					strace,backtrace,disablecrashhandler);
 	}
 
@@ -230,7 +242,8 @@ static bool startConnections(sqlrpaths *sqlrpth,
 		for (int32_t i=0; i<startup; i++) {
 			if (!startConnection(sqlrpth,id,
 					csc->getConnectionId(),
-					config,localstatedir,strace,
+					config,localstatedir,libexecdir,
+					strace,
 					backtrace,disablecrashhandler)) {
 				// it's ok if at least 1 connection started up
 				return (totalstarted>0 || i>0);
@@ -254,6 +267,7 @@ static bool startScaler(sqlrpaths *sqlrpth,
 			const char *id,
 			const char *config,
 			const char *localstatedir,
+			const char *libexecdir,
 			const char *backtrace,
 			bool disablecrashhandler) {
 
@@ -277,7 +291,7 @@ static bool startScaler(sqlrpaths *sqlrpth,
 
 	// build args
 	uint16_t	i=0;
-	const char	*args[11];
+	const char	*args[13];
 	args[i++]=cmdname.getString();
 	args[i++]="-id";
 	args[i++]=id;
@@ -288,6 +302,10 @@ static bool startScaler(sqlrpaths *sqlrpth,
 	if (!charstring::isNullOrEmpty(localstatedir)) {
 		args[i++]="-localstatedir";
 		args[i++]=localstatedir;
+	}
+	if (!charstring::isNullOrEmpty(libexecdir)) {
+		args[i++]="-libexecdir";
+		args[i++]=libexecdir;
 	}
 	if (!charstring::isNullOrEmpty(backtrace)) {
 		args[i++]="-backtrace";
@@ -442,6 +460,7 @@ int main(int argc, const char **argv) {
 
 	// get the command line args
 	const char	*localstatedir=sqlrpth.getLocalStateDir();
+	const char	*libexecdir=sqlrpth.getLibExecDir();
 	const char	*strace=cmdl.getValue("-strace");
 	const char	*id=cmdl.getValue("-id");
 	const char	*configurl=sqlrpth.getConfigUrl();
@@ -508,14 +527,14 @@ int main(int argc, const char **argv) {
 		sqlrconfig	*cfg=sqlrcfgs.load(configurl,thisid);
 		if (!cfg ||
 			!startListener(&sqlrpth,thisid,
-					config,localstatedir,
+					config,localstatedir,libexecdir,
 					backtrace,disablecrashhandler) ||
 			!startConnections(&sqlrpth,cfg,thisid,
-					config,localstatedir,
+					config,localstatedir,libexecdir,
 					strace,backtrace,
 					disablecrashhandler) ||
 			!startScaler(&sqlrpth,cfg,thisid,
-					config,localstatedir,
+					config,localstatedir,libexecdir,
 					backtrace,disablecrashhandler)
 			#ifndef _WIN32
 			|| (wait && !waitForInstance(&sqlrpth,cfg,thisid))
