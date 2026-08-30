@@ -1096,6 +1096,10 @@
 		reInit nor the destructor released it; free, which both call,
 		now runs the same close-result-set/release/delete cleanup used
 		elsewhere in this file and clears req
+	fixed sqlrcursor::nextResultSet() in the c++ api discarding bind
+		variable definitions/values on every successful advance to a
+		next result set; MS SQL/SAP output parameters, and any bound
+		values in general, now remain readable/usable after the advance
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

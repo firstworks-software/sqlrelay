@@ -7664,8 +7664,11 @@ bool sqlrcursor::nextResultSet() {
 		return false;
 	}
 
-	// clear the previous result set and fetch the new one
-	clearVariables();
+	// Keep bind definitions/values alive across the advance. A
+	// NEXT_RESULT_SET response carries no bind-value section (#9545), so
+	// nothing here will overwrite them, and the caller may still need to
+	// read an output parameter once the last result set is reached.
+	clearVariables(false);
 	clearResultSet();
 	pvt->_cached=false;
 	pvt->_endofresultset=false;

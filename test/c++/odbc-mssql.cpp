@@ -1975,12 +1975,17 @@ int main(int argc, char **argv) {
 	assertEquals(cur->rowCount(),2);
 	assertEquals(cur->getField(0,(uint32_t)0),"4");
 	assertEquals(cur->getField(1,(uint32_t)0),"5");
-	// nextResultSet() discards the bind definitions before it parses the
-	// response, so no output bind value should have come back with it
-	nullvar=cur->getOutputBindString("1");
-	assertEquals(nullvar,NULL);
-	assertEquals(cur->getOutputBindLength("1"),0);
+	// nextResultSet() no longer discards the bind definitions, and the
+	// response carries no bind values to overwrite them with, so the
+	// output bind from the original execute should still be readable
+	assertEquals(cur->getOutputBindLength("1"),LONG_OUTPUT_BIND_LENGTH);
+	assertEquals(cur->getOutputBindString("1"),longoutputbindbuffer);
 	assertFalse(cur->nextResultSet());
+	// still readable after the final result set too (#9548) - this is
+	// the point in the call sequence where a real driver would only now
+	// have output parameters available
+	assertEquals(cur->getOutputBindLength("1"),LONG_OUTPUT_BIND_LENGTH);
+	assertEquals(cur->getOutputBindString("1"),longoutputbindbuffer);
 	assertTrue(cur->sendQuery("drop procedure testproc"));
 	stdoutput.printf("\n");
 
