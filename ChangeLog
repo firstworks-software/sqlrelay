@@ -1057,6 +1057,12 @@
 		request pointer; also fixed a COPKIND_START received before a
 		prior one's sequence finished leaking the earlier request's
 		cursor instead of releasing it
+	fixed the tds protocol module leaving stale bind counts on a pooled
+		cursor: cursorExecute now zeroes the input/output bind counts
+		when sp_cursorexecute carries no parameters, matching its
+		sibling rpcs, and bindParams now zeroes the inputoutput bind
+		count too, matching the defensive zeroing used elsewhere in
+		the module
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -17843,6 +17843,7 @@ void sqlrprotocol_tds::bindParams(sqlrservercursor *cursor, uint16_t first,
 
 	cont->setInputBindCount(cursor,inbindcount);
 	cont->setOutputBindCount(cursor,outbindcount);
+	cont->setInputOutputBindCount(cursor,0);
 
 	debugWrite("input binds: %d",inbindcount);
 	debugWrite("output binds: %d",outbindcount);
@@ -19854,6 +19855,9 @@ bool sqlrprotocol_tds::cursorExecute(bool nometadata) {
 	// bind and run the prepared query
 	if (rpcparamcount>5) {
 		bindParams(cursor,5);
+	} else {
+		cont->setInputBindCount(cursor,0);
+		cont->setOutputBindCount(cursor,0);
 	}
 	bool	success=cont->executeQuery(cursor,true,true,true,true);
 	executeflag.setValue(cursor,false);
