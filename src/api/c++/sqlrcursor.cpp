@@ -5110,6 +5110,14 @@ bool sqlrcursor::parseOutputBinds() {
 			// include the NULL) is available from
 			// getOutputBindLength.
 			buffer[totallength]='\0';
+			// free the previous value before installing a new one
+			if ((*pvt->_outbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_BLOB ||
+					(*pvt->_outbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_CLOB) {
+				delete[] (*pvt->_outbindvars)[count].
+							value.lobval;
+			}
 			(*pvt->_outbindvars)[count].value.lobval=buffer;
 			(*pvt->_outbindvars)[count].resultvaluesize=totallength;
 		}
@@ -5667,6 +5675,14 @@ bool sqlrcursor::parseInputOutputBinds() {
 			// include the NULL) is available from
 			// getOutputBindLength.
 			buffer[totallength]='\0';
+			// free the previous value before installing a new one
+			if ((*pvt->_inoutbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_BLOB ||
+					(*pvt->_inoutbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_CLOB) {
+				delete[] (*pvt->_inoutbindvars)[count].
+							value.lobval;
+			}
 			(*pvt->_inoutbindvars)[count].value.lobval=buffer;
 			(*pvt->_inoutbindvars)[count].resultvaluesize=
 								totallength;

@@ -1118,6 +1118,11 @@
 		redefine; the field is now always a cursor-owned duplicate,
 		freed on redefine like the string case, and the now-unneeded
 		null-out that used to run after sending was removed
+	fixed sqlrcursor::parseOutputBinds() and parseInputOutputBinds() in
+		the c++ api overwriting a BLOB/CLOB output/input-output bind
+		variable's previous lobval buffer with a new allocation
+		without freeing it first; same root cause and fix as the
+		string/date-timezone case above, for the lobval union member
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
