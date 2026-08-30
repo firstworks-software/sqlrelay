@@ -18,6 +18,7 @@ sqlrpaths::sqlrpaths(sqlrcmdline *cmdl) {
 	stringbuffer	scratch;
 
 	char	*defaultlocalstatedir;
+	char	*defaultlibexecdir;
 
 #ifdef _WIN32
 
@@ -50,19 +51,34 @@ sqlrpaths::sqlrpaths(sqlrcmdline *cmdl) {
 	scratch.append(prefix)->append("\\etc\\");
 	sysconfdir=scratch.detachString();
 
-	// libexecdir
+	// build default libexecdir
 	scratch.append(prefix)->append("\\libexec\\");
 	scratch.append(SQLRELAY)->append("\\");
-	libexecdir=scratch.detachString();
+	defaultlibexecdir=scratch.detachString();
 
 #else
 	bindir=charstring::duplicate(BINDIR);
 	defaultlocalstatedir=charstring::duplicate(LOCALSTATEDIR);
 	sysconfdir=charstring::duplicate(SYSCONFDIR);
-	libexecdir=charstring::duplicate(LIBEXECDIR);
+	defaultlibexecdir=charstring::duplicate(LIBEXECDIR);
 #endif
 
 	char	slash=sys::getDirectorySeparator();
+
+	const char	*led=cmdl->getValue("-libexecdir");
+	if (!charstring::isNullOrEmpty(led)) {
+
+		// module file names get appended directly to libexecdir,
+		// so it has to end in a slash
+		scratch.append(led);
+		if (led[charstring::getLength(led)-1]!=slash) {
+			scratch.append(slash);
+		}
+		libexecdir=scratch.detachString();
+		delete[] defaultlibexecdir;
+	} else {
+		libexecdir=defaultlibexecdir;
+	}
 
 	const char	*lsd=cmdl->getValue("-localstatedir");
 	if (!charstring::isNullOrEmpty(lsd)) {
