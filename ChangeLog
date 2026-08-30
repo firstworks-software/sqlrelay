@@ -1090,6 +1090,12 @@
 		logging on, this could read or grow a garbage slot in
 		_inoutbindvars, the same hazard class hardened against
 		elsewhere in this function
+	fixed the teradata protocol module leaking sqlrprotocol_teradata's
+		req if a client disconnected before its COPKIND_START sequence
+		reached a COPKIND_CONTINUE that closed the result set; neither
+		reInit nor the destructor released it; free, which both call,
+		now runs the same close-result-set/release/delete cleanup used
+		elsewhere in this file and clears req
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

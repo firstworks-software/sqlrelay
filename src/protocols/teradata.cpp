@@ -712,7 +712,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_teradata : public sqlrprotocol {
 
 	private:
 		void	init();
-		void	free();
+		void	free(bool releasecursor=true);
 		void	reInit();
 
 		bool	initialHandshake();
@@ -1305,7 +1305,10 @@ sqlrprotocol_teradata::sqlrprotocol_teradata(sqlrservercontroller *cont,
 }
 
 sqlrprotocol_teradata::~sqlrprotocol_teradata() {
-	free();
+	// don't release the cursor here, the controller has already torn
+	// down all cursors by the time it gets around to deleting protocol
+	// modules, so req->cur would be a dangling pointer by now
+	free(false);
 	delete clientreqmessagepool;
 	delete backendreqmessagepool;
 }
@@ -1313,7 +1316,19 @@ sqlrprotocol_teradata::~sqlrprotocol_teradata() {
 void sqlrprotocol_teradata::init() {
 }
 
-void sqlrprotocol_teradata::free() {
+void sqlrprotocol_teradata::free(bool releasecursor) {
+
+	// release any request left over from a client that disconnected
+	// mid-sequence (eg. mid-COPKIND_START), so it isn't leaked
+	if (req) {
+		if (releasecursor && req->cur) {
+			cont->closeResultSet(req->cur);
+			cont->release(req->cur);
+		}
+		delete req;
+		req=NULL;
+	}
+
 	clientreqmessagepool->clear();
 	backendreqmessagepool->clear();
 }
