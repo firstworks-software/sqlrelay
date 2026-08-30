@@ -68,7 +68,7 @@
 <p>Use the <b>sqlr-start</b> program to start the SQL Relay server processes.</p>
 
 <blockquote>
-  <pre>sqlr-start [-id ID] [-config CONFIGFILE] [-localstatedir LOCALSTATEDIR]
+  <pre>sqlr-start [-id ID] [-config CONFIGFILE] [-localstatedir LOCALSTATEDIR] [-libexecdir LIBEXECDIR] [-bindir BINDIR]
 </pre>
 
 </blockquote>
@@ -79,6 +79,10 @@
 <p>The optional -config CONFIGFILE argument may be used to specify a config file, directory containing a set of config files, a url that resolves to a config file, or a comma-separated list of any of the above.  See the sections on <a href="configguide.html#specifying">Specifying Configuration Files</a> and <a href="configguide.html#remote">Remote Configuration Files</a> in the SQL Relay Configuration Guide for more info.</p>
 
 <p>If the optional -localstatedir LOCALSTATEDIR argument is used, it is passed to the programs started by <b>sqlr-start</b> as appropriate.</p>
+
+<p>If the optional -libexecdir LIBEXECDIR argument is used, it overrides the default directory that protocol, connection, auth, filter, and other modules are loaded from, and is passed to the programs started by <b>sqlr-start</b> as appropriate.</p>
+
+<p>If the optional -bindir BINDIR argument is used, it overrides the default directory that the <b>sqlr-listener</b>, <b>sqlr-connection</b>, and <b>sqlr-scaler</b> programs are spawned from, and is passed to <b>sqlr-scaler</b> (the only other program <b>sqlr-start</b> spawns that itself spawns further processes).</p>
 
 <a name="stopping"/><h2>Stopping SQL Relay</h2>
 

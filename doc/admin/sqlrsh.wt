@@ -57,7 +57,7 @@ The options are:
 [-validatebinds (on|off)] [-bindvariabledelimiters DELIMITERS]
 [-debug (on|off|FILE)]
 [-resultsetbuffersize ROWS] [-delimiter CHAR]
-[-locale (env|NAME)] [-localstatedir DIR]
+[-locale (env|NAME)] [-localstatedir DIR] [-libexecdir DIR]
 }}}
 }}}
 
@@ -283,6 +283,7 @@ If the instance's password is encrypted, sqlrsh decrypts it with the module name
 
 * '''-locale''' env|NAME - calls setlocale(LC_ALL, NAME).  env means use the LC environment variables.  This matters when the locale changes how a number is written.
 * '''-localstatedir''' DIR - overrides the default directory for working and stateful files, the result set cache among them
+* '''-libexecdir''' DIR - overrides the default directory that config and password encryption modules are loaded from
 * '''-help''' - write the help and exit.  Has to be the only option on the command line.
 * '''-version''' - write the version and exit.  Has to be the only option on the command line.
 

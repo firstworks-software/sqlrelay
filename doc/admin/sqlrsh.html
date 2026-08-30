@@ -102,7 +102,7 @@ sqlrsh [-config CONFIGFILE] -id ID [OPTIONS]
 [-validatebinds (on|off)] [-bindvariabledelimiters DELIMITERS]
 [-debug (on|off|FILE)]
 [-resultsetbuffersize ROWS] [-delimiter CHAR]
-[-locale (env|NAME)] [-localstatedir DIR]
+[-locale (env|NAME)] [-localstatedir DIR] [-libexecdir DIR]
 </pre>
 
 </blockquote>
@@ -346,6 +346,7 @@ sqlrsh -id myinst -batch < script.sql
 <ul>
   <li><b>-locale</b> env|NAME - calls setlocale(LC_ALL, NAME).  env means use the LC environment variables.  This matters when the locale changes how a number is written.</li>
   <li><b>-localstatedir</b> DIR - overrides the default directory for working and stateful files, the result set cache among them</li>
+  <li><b>-libexecdir</b> DIR - overrides the default directory that config and password encryption modules are loaded from</li>
   <li><b>-help</b> - write the help and exit.  Has to be the only option on the command line.</li>
   <li><b>-version</b> - write the version and exit.  Has to be the only option on the command line.</li>
 </ul>
