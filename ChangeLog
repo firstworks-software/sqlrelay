@@ -1123,6 +1123,15 @@
 		variable's previous lobval buffer with a new allocation
 		without freeing it first; same root cause and fix as the
 		string/date-timezone case above, for the lobval union member
+	added -libexecdir and -bindir runtime overrides to sqlr-listener,
+		sqlr-connection, sqlr-scaler, sqlr-start and sqlrsh, so the
+		module search path and server binary directory no longer have
+		to be the compiled-in ones; added a "make stagemodules
+		STAGEDIR=..." target that collects a build's modules into one
+		directory for use with -libexecdir; the protocol test suites
+		can now run against a build tree with no install (test.sh
+		-buildtree) and pick their own free ports to avoid colliding
+		with a concurrent run (test.sh -randomports)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
