@@ -1137,6 +1137,9 @@
 	brought the sqlr-listener, sqlr-connection, sqlr-scaler, sqlr-start,
 		sqlr-status, sqlr-stop and sqlrsh man pages up to date with the
 		-libexecdir and -bindir options
+	fixed sqlr-start inverting the success/failure result when starting
+		the default connection for a config with no connections
+		explicitly defined
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

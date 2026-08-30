@@ -197,7 +197,7 @@ static bool startConnections(sqlrpaths *sqlrpth,
 	// if no connections were defined in the configuration,
 	// start 1 default one
 	if (!cfg->getConnectionCount()) {
-		return !startConnection(sqlrpth,id,NULL,config,
+		return startConnection(sqlrpth,id,NULL,config,
 					localstatedir,libexecdir,
 					strace,backtrace,disablecrashhandler);
 	}
