@@ -1084,6 +1084,12 @@
 		prior COPKIND_START sequence was still in progress; the
 		earlier fix to this same leak only covered the non-bulk-load
 		path
+	fixed sqlrcursor::parseOutputBinds in the c++ api printing an
+		output DATE bind's microsecond field from _inoutbindvars
+		instead of _outbindvars in its debug-print block; with debug
+		logging on, this could read or grow a garbage slot in
+		_inoutbindvars, the same hazard class hardened against
+		elsewhere in this function
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

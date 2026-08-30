@@ -5165,7 +5165,7 @@ bool sqlrcursor::parseOutputBinds() {
 							value.dateval.second);
 				pvt->_sqlrc->debugPrint(".");
 				pvt->_sqlrc->debugPrint((int64_t)
-						(*pvt->_inoutbindvars)[count].
+						(*pvt->_outbindvars)[count].
 						value.dateval.microsecond);
 				pvt->_sqlrc->debugPrint(" ");
 				pvt->_sqlrc->debugPrint(
