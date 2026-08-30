@@ -2310,15 +2310,24 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 			clientcapabilityflags&CLIENT_TRANSACTIONS) {
 		writeLE(&resppacket,statusflags);
 	}
-	if (servercapabilityflags&CLIENT_SESSION_TRACK &&
-			clientcapabilityflags&CLIENT_SESSION_TRACK) {
+	// The protocol docs say that the info field is only length-encoded if
+	// CLIENT_SESSION_TRACK was negotiated, and is a plain string running to
+	// the end of the packet otherwise.  No real implementation does that.
+	// Mysql and mariadb servers always write it length-encoded, and mysql,
+	// mariadb and mysqlnd clients always read it that way.  Writing it raw
+	// makes them consume its first character as a length byte and then
+	// reject the packet as malformed.  It's omitted entirely, rather than
+	// written as a zero length, when there's nothing to send.
+	bool	sessionstatechanged=
+			(servercapabilityflags&CLIENT_SESSION_TRACK &&
+			clientcapabilityflags&CLIENT_SESSION_TRACK &&
+			statusflags&SERVER_SESSION_STATE_CHANGED);
+	if (!charstring::isNullOrEmpty(info) || sessionstatechanged) {
 		writeLenEncStr(&resppacket,info);
-		if (statusflags&SERVER_SESSION_STATE_CHANGED) {
-			write(&resppacket,sessionstatechangetype);
-			writeLenEncStr(&resppacket,sessionstatechangedata);
-		}
-	} else {
-		write(&resppacket,info,charstring::getLength(info));
+	}
+	if (sessionstatechanged) {
+		write(&resppacket,sessionstatechangetype);
+		writeLenEncStr(&resppacket,sessionstatechangedata);
 	}
 
 	return sendPacket(true);

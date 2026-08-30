@@ -1140,6 +1140,9 @@
 	fixed sqlr-start inverting the success/failure result when starting
 		the default connection for a config with no connections
 		explicitly defined
+	fixed the mysql protocol module writing the ok packet's info field as a
+		raw string instead of length-encoded, causing mysql/mariadb
+		clients to misparse it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
