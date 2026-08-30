@@ -39,6 +39,7 @@ static const char * const	connectionoptions[]={
 	"tlsdepth",
 	"localstatedir",
 	"libexecdir",
+	"bindir",
 	NULL
 };
 

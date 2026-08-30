@@ -5,7 +5,7 @@
 # POSTGRESQLPROTOCOLTLSPORT1 names the port that instance ended up on,
 # following the @INSTANCENAMEPORTn@ convention
 # test/sqlrelay.conf.d/*.conf.in uses.  there's no postgresqlprotocoltls
-# instance in test/sqlrelay.conf.d yet, so nothing generates that token
+# instance in test/sqlrelay.conf.d yet (#9560), so nothing generates that token
 # today; unset means 5432, as before
 if ( test -z "$POSTGRESQLPROTOCOLTLSPORT1" )
 then

@@ -17,6 +17,7 @@ sqlrpaths::sqlrpaths(sqlrcmdline *cmdl) {
 
 	stringbuffer	scratch;
 
+	char	*defaultbindir;
 	char	*defaultlocalstatedir;
 	char	*defaultlibexecdir;
 
@@ -41,7 +42,7 @@ sqlrpaths::sqlrpaths(sqlrcmdline *cmdl) {
 
 	// build default bindir
 	scratch.append(prefix)->append("\\bin\\");
-	bindir=scratch.detachString();
+	defaultbindir=scratch.detachString();
 
 	// build default localstatedir
 	scratch.append(prefix)->append("\\var\\");
@@ -57,13 +58,27 @@ sqlrpaths::sqlrpaths(sqlrcmdline *cmdl) {
 	defaultlibexecdir=scratch.detachString();
 
 #else
-	bindir=charstring::duplicate(BINDIR);
+	defaultbindir=charstring::duplicate(BINDIR);
 	defaultlocalstatedir=charstring::duplicate(LOCALSTATEDIR);
 	sysconfdir=charstring::duplicate(SYSCONFDIR);
 	defaultlibexecdir=charstring::duplicate(LIBEXECDIR);
 #endif
 
 	char	slash=sys::getDirectorySeparator();
+
+	// sqlr-start and sqlr-scaler append a program name directly to
+	// bindir, so it has to end in a slash, same as libexecdir below
+	const char	*bd=cmdl->getValue("-bindir");
+	if (!charstring::isNullOrEmpty(bd)) {
+		scratch.append(bd);
+		if (bd[charstring::getLength(bd)-1]!=slash) {
+			scratch.append(slash);
+		}
+		bindir=scratch.detachString();
+		delete[] defaultbindir;
+	} else {
+		bindir=defaultbindir;
+	}
 
 	const char	*led=cmdl->getValue("-libexecdir");
 	if (!charstring::isNullOrEmpty(led)) {

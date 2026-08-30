@@ -165,6 +165,14 @@ CONFIG \
 "				specified directory.\n" \
 "\n"
 
+#define BINDIR \
+"	-bindir dir		Override the default directory that the\n" \
+"				listener, connection, and scaler programs\n" \
+"				are spawned from with the specified\n" \
+"				directory.  Only the programs that spawn\n" \
+"				others honor this.\n" \
+"\n"
+
 #define SERVEROPTIONS \
 CONFIGID \
 LOCALSTATEDIR \

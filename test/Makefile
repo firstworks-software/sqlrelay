@@ -2,8 +2,22 @@ top_builddir = ..
 
 include ../config.mk
 
-all: $(TESTALLSUBDIRS) $(TESTSCRIPTS)
+.SUFFIXES: .lo .obj .cpp
+
+.cpp.lo:
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) $< $(OUT)$@
+
+.cpp.obj:
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) $<
+
+all: $(TESTALLSUBDIRS) $(TESTSCRIPTS) freeport$(EXE)
 	$(MKINSTALLDIRS) log/extensions
+
+# test.sh -randomports shells out to this to pick listener ports.  it only
+# needs rudiments, so it builds everywhere, regardless of which databases and
+# apis are configured
+freeport: freeport.cpp freeport.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freeport.$(OBJ) $(RUDIMENTSLIBS)
 
 all-c:
 	cd c $(AND) $(MAKE) all
@@ -68,13 +82,16 @@ clean:
 	cd legacy $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd stress $(AND) $(MAKE) clean
-	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3 testexitstatus-*.tmp $(TESTSCRIPTS) *.out1 *.out2
-	$(RMTREE) log
+	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3 testexitstatus-*.tmp $(TESTSCRIPTS) *.out1 *.out2 *.lo *.o *.obj freeport$(EXE)
+	$(RMTREE) log .libs stagedmodules
 
 tests: all
 	$(SCRIPTINT) $(THISDIR)test$(SCRIPTEXT)
 
-testscripts: $(TESTSCRIPTS)
+# freeport rides along here, rather than only in all, so that a plain
+# top-level make leaves test.sh -randomports usable.  it only needs
+# rudiments, so it builds whatever else is or isn't configured
+testscripts: $(TESTSCRIPTS) freeport$(EXE)
 
 test.sh: test.sh.in
 	$(REPLACE) @abs_top_builddir@ "$(abs_top_builddir)" $@.in > $@.out1
@@ -82,7 +99,24 @@ test.sh: test.sh.in
 	$(REPLACE) @PYTHON@ "$(PYTHON)" $@.out2 > $@.out1
 	$(REPLACE) @TESTINSTANCES@ "$(TESTINSTANCES)" $@.out1 > $@.out2
 	$(REPLACE) @TESTAPIS@ "$(TESTAPIS)" $@.out2 > $@.out1
-	$(MV) $@.out1 $@
+	$(REPLACE) @HOSTNAME@ "$(HOSTNAME)" $@.out1 > $@.out2
+	$(REPLACE) @ORACLEPROTOCOLPORT1@ "$(ORACLEPROTOCOLPORT1)" $@.out2 > $@.out1
+	$(REPLACE) @ORACLEPROTOCOLPORT2@ "$(ORACLEPROTOCOLPORT2)" $@.out1 > $@.out2
+	$(REPLACE) @ORACLEPROTOCOLPORT3@ "$(ORACLEPROTOCOLPORT3)" $@.out2 > $@.out1
+	$(REPLACE) @ORACLEPROTOCOLPORT4@ "$(ORACLEPROTOCOLPORT4)" $@.out1 > $@.out2
+	$(REPLACE) @FIREBIRDPROTOCOLPORT1@ "$(FIREBIRDPROTOCOLPORT1)" $@.out2 > $@.out1
+	$(REPLACE) @FIREBIRDPROTOCOLPORT2@ "$(FIREBIRDPROTOCOLPORT2)" $@.out1 > $@.out2
+	$(REPLACE) @FIREBIRDPROTOCOLPORT3@ "$(FIREBIRDPROTOCOLPORT3)" $@.out2 > $@.out1
+	$(REPLACE) @MYSQLPROTOCOLPORT1@ "$(MYSQLPROTOCOLPORT1)" $@.out1 > $@.out2
+	$(REPLACE) @MYSQLPROTOCOLSOCKET@ "$(MYSQLPROTOCOLSOCKET)" $@.out2 > $@.out1
+	$(REPLACE) @POSTGRESQLPROTOCOLPORT1@ "$(POSTGRESQLPROTOCOLPORT1)" $@.out1 > $@.out2
+	$(REPLACE) @POSTGRESQLPROTOCOLPORT2@ "$(POSTGRESQLPROTOCOLPORT2)" $@.out2 > $@.out1
+	$(REPLACE) @TDSPROTOCOLPORT1@ "$(TDSPROTOCOLPORT1)" $@.out1 > $@.out2
+	$(REPLACE) @TDSSAPPROTOCOLPORT1@ "$(TDSSAPPROTOCOLPORT1)" $@.out2 > $@.out1
+	$(REPLACE) @TDSSAPPROTOCOLPORT2@ "$(TDSSAPPROTOCOLPORT2)" $@.out1 > $@.out2
+	$(REPLACE) @TERADATAPROTOCOLPORT1@ "$(TERADATAPROTOCOLPORT1)" $@.out2 > $@.out1
+	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.out1 > $@.out2
+	$(MV) $@.out2 $@
 	$(RM) $@.out2
 	$(CHMOD) 755 $@
 

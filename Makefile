@@ -113,6 +113,7 @@ distclean: clean
 		src/api/cs/SQLRClient/SQLRClient.suo \
 		test/erlang/run \
 		test/sqlrelay.conf.d/*.conf \
+		test/sqlrelay.conf.d/freetds/etc/freetds.conf \
 		msvc/setupx64/setupx64.vdproj \
 		msvc/setupx86/setupx86.vdproj \
 		doc/installingpkg.wt \

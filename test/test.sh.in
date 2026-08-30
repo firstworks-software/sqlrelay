@@ -2,20 +2,65 @@
 
 # print the usage message
 usage() {
-	echo "usage: test.sh [-n] [instances [apis]]"
+	echo "usage: test.sh [-n] [-randomports] [-buildtree] [instances [apis]]"
 	echo "       test.sh -h"
 	echo
 	echo "  For each instance, start it, run the client API tests against it,"
 	echo "  then stop it."
 	echo
-	echo "    instances  space-separated list of instances to test"
-	echo "               (default: every instance built)"
-	echo "    apis       space-separated list of client APIs to test"
-	echo "               (default: every API built)"
+	echo "    instances     space-separated list of instances to test"
+	echo "                  (default: every instance built)"
+	echo "    apis          space-separated list of client APIs to test"
+	echo "                  (default: every API built)"
 	echo
-	echo "    -n         do not manage instances; assume each is already running"
-	echo "               and just run the tests against it"
-	echo "    -h         show this help and exit"
+	echo "    -n            do not manage instances; assume each is already"
+	echo "                  running and just run the tests against it"
+	echo "    -randomports  put the protocol suites' listeners on free ports"
+	echo "                  picked at run time, rather than on the well known"
+	echo "                  ports they default to"
+	echo "    -buildtree    run the build tree's own server programs and"
+	echo "                  modules, rather than the ones installed in the"
+	echo "                  prefix.  no make install needed"
+	echo "    -h            show this help and exit"
+	echo
+	echo "  Neither -randomports nor -buildtree is on by default: with neither,"
+	echo "  this runs exactly what it always ran - the installed programs and"
+	echo "  modules, on the ports configure baked into the config files."
+	echo
+	echo "  -randomports.  The protocol suites listen on the real database's"
+	echo "  well known port - 1521 for oracle, 3306 for mysql, and so on - so"
+	echo "  only one run per host can have them, and a run disturbs anyone"
+	echo "  already using them.  With -randomports, test/freeport picks a free"
+	echo "  port for each listener, and this rewrites, from their .in"
+	echo "  templates:"
+	echo
+	echo "    test/sqlrelay.conf.d/*protocol*.conf   the listeners"
+	echo "    test/sqlrelay.conf.d/freetds/etc/freetds.conf   freetds/tsql"
+	echo "    test/protocol/oracle/tnsnames.ora      the oracle client"
+	echo "    test/protocol/teradata/odbc.ini        the teradata client"
+	echo
+	echo "  and exports the same values (MYSQLPROTOCOLPORT1 and friends) for"
+	echo "  the test programs that read them from the environment.  The"
+	echo "  rewritten files stay behind after the run; rerunning configure, or"
+	echo "  a plain run of this script, puts the well known ports back."
+	echo
+	echo "  -buildtree.  The module search path is compiled into the binaries,"
+	echo "  so a listener normally loads its protocol, auth and config modules"
+	echo "  out of the installed prefix no matter where it was started from -"
+	echo "  which means testing a freshly built module used to need a make"
+	echo "  install first.  With -buildtree, this runs make stagemodules to"
+	echo "  copy every module this build produced into test/stagedmodules,"
+	echo "  then starts the build tree's own sqlr-start, sqlr-stop and sqlrsh"
+	echo "  with -libexecdir pointing at that directory and -bindir pointing"
+	echo "  at src/server, so the listener, connections and scaler all come"
+	echo "  out of the tree too."
+	echo
+	echo "  The two combine.  Together they give a protocol suite run that"
+	echo "  touches neither the installed prefix nor any well known port:"
+	echo
+	echo "    ./test.sh -buildtree -randomports mysqlprotocol"
+	echo
+	echo "  See test/README.md for more."
 	echo
 	echo "  Runs against different backend servers can go on at the same time,"
 	echo "  on one host.  But concurrency is per backend server, not per test."
@@ -50,29 +95,29 @@ stop_instances() {
 		# the router test also has master/slave instances
 		if ( test "$_instance" = "router" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id routermaster
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id routerslave
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id routermaster
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id routerslave
 		fi
 
 		# the firebird test also has a small-maxerrorsize instance
 		if ( test "$_instance" = "firebird" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdmaxerrorsize
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id firebirdmaxerrorsize
 		fi
 
 		# the firebirdprotocol test also has a fakeinputbindvariables
 		# instance, to exercise the faked-bind describe probe
 		if ( test "$_instance" = "firebirdprotocol" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdprotocolfakebinds
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id firebirdprotocolwirecrypt
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id firebirdprotocolfakebinds
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id firebirdprotocolwirecrypt
 		fi
 
 		# the odbc-mssql test also has a small-maxfieldsize instance, to
 		# exercise wide nvarchar column truncation (#9411)
 		if ( test "$_instance" = "odbc-mssql" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id odbcmssqlmaxfieldsize
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id odbcmssqlmaxfieldsize
 		fi
 
 		# the oracleprotocol test also has 11g and 12c
@@ -80,12 +125,12 @@ stop_instances() {
 		# instance
 		if ( test "$_instance" = "oracleprotocol" )
 		then
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id oracleprotocol12c
-			$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol12c
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
 		fi
 
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${_instance}.conf -id ${_instance}
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id ${_instance}
 	done
 	sleep 2
 }
@@ -129,7 +174,7 @@ instance_applicable() {
 	esac
 
 	# skip if that module was not built
-	if ( test -z "`ls $PREFIX/lib*/sqlrelay/sqlrconnection_$MODULE.* 2> /dev/null`" )
+	if ( test -z "`ls $MODULEDIR/sqlrconnection_$MODULE.* 2> /dev/null`" )
 	then
 		return 1
 	fi
@@ -137,7 +182,7 @@ instance_applicable() {
 	# the router test also needs mysql
 	if ( test "$instance" = "router" )
 	then
-		if ( test -z "`ls $PREFIX/lib*/sqlrelay/sqlrconnection_mysql.* 2> /dev/null`" )
+		if ( test -z "`ls $MODULEDIR/sqlrconnection_mysql.* 2> /dev/null`" )
 		then
 			return 1
 		fi
@@ -196,10 +241,10 @@ start_instance() {
 	# for the router test, start the master/slave instances
 	if ( test "$instance" = "router" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id routermaster -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id routermaster -backtrace $BACKTRACEDIR
 		sleep 2
 
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id routerslave -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id routerslave -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -207,7 +252,7 @@ start_instance() {
 	# maxerrorsize, to exercise truncated error messages
 	if ( test "$instance" = "firebird" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -216,9 +261,9 @@ start_instance() {
 	# probe
 	if ( test "$instance" = "firebirdprotocol" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id firebirdprotocolfakebinds -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdprotocolfakebinds -backtrace $BACKTRACEDIR
 		sleep 2
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id firebirdprotocolwirecrypt -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdprotocolwirecrypt -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -229,11 +274,11 @@ start_instance() {
 	# auth path (#9309)
 	if ( test "$instance" = "oracleprotocol" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
 		sleep 2
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id oracleprotocol12c -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol12c -backtrace $BACKTRACEDIR
 		sleep 2
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -241,12 +286,12 @@ start_instance() {
 	# maxfieldsize, to exercise wide nvarchar column truncation (#9411)
 	if ( test "$instance" = "odbc-mssql" )
 	then
-		$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize -backtrace $BACKTRACEDIR
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
 	# start the instance
-	$PREFIX/bin/sqlr-start -config $CONFDIR/${instance}.conf -id ${instance} -backtrace $BACKTRACEDIR
+	$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance} -backtrace $BACKTRACEDIR
 	sleep 2
 }
 
@@ -258,38 +303,38 @@ stop_instance() {
 	if ( test "$instance" = "router" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id routermaster
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id routermaster
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id routerslave
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id routerslave
 	fi
 	if ( test "$instance" = "firebird" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize
 	fi
 	if ( test "$instance" = "firebirdprotocol" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id firebirdprotocolfakebinds
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdprotocolfakebinds
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id firebirdprotocolwirecrypt
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdprotocolwirecrypt
 	fi
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocol11g
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocol12c
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol12c
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
 	fi
 	if ( test "$instance" = "odbc-mssql" )
 	then
 		sleep 2
-		$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize
 	fi
 	sleep 2
-	$PREFIX/bin/sqlr-stop -config $CONFDIR/${instance}.conf -id ${instance}
+	$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance}
 	sleep 2
 }
 
@@ -328,60 +373,60 @@ ping_instance() {
 			# authCommand() in src/protocols/sqlrclient.cpp only
 			# authenticates by client certificate when the user is
 			# empty, so pass the port instead
-			PING=`$PREFIX/bin/sqlrsh -host localhost -port 9012 -tls -tlscert $CONFDIR/tls/client.pem -tlsca $CONFDIR/tls/ca.pem -tlsvalidate ca -command ping 2>&1`
+			PING=`$SQLRSHDIR/sqlrsh $PATHOPTS -host localhost -port 9012 -tls -tlscert $CONFDIR/tls/client.pem -tlsca $CONFDIR/tls/ca.pem -tlsvalidate ca -command ping 2>&1`
 		elif ( test "$instance" = "mysqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 3306
+			if port_listening $MYSQLPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "postgresqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 5432
+			if port_listening $POSTGRESQLPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "tdsfreetdsmssqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 1433
+			if port_listening $TDSPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "tdsfreetdssapprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 9030
+			if port_listening $TDSSAPPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "tdssapprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 9031
+			if port_listening $TDSSAPPROTOCOLPORT2
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "firebirdprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 3050
+			if port_listening $FIREBIRDPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "oracleprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 1521
+			if port_listening $ORACLEPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
 		elif ( test "$instance" = "teradataprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
-			if port_listening 1025
+			if port_listening $TERADATAPROTOCOLPORT1
 			then
 				PING="The database is up."
 			fi
@@ -390,7 +435,7 @@ ping_instance() {
 			# extensions comes through here too - -config/-id
 			# picks up its port, socket, user and password from
 			# extensions.conf
-			PING=`$PREFIX/bin/sqlrsh -config $CONFDIR/${instance}.conf -id ${instance} -command ping 2>&1`
+			PING=`$SQLRSHDIR/sqlrsh $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance} -command ping 2>&1`
 		fi
 
 		# (this collapses whitespace)
@@ -726,15 +771,17 @@ run_protocol_test() {
 
 	# firebirdprotocol runs the firebird test twice against two listeners
 	# on the same instance's config - once against the default instance
-	# (no argument, port 3050) and once against the
-	# firebirdprotocolfakebinds instance (127.0.0.1/3051), which sets
-	# fakeinputbindvariables="yes" to exercise the faked-bind describe
-	# probe.  both runs have to succeed for the instance to pass
+	# (no argument, so the test picks the listener up from
+	# FIREBIRDPROTOCOLPORT1, 3050 by default) and once against the
+	# firebirdprotocolfakebinds instance on FIREBIRDPROTOCOLPORT2, 3051 by
+	# default, which sets fakeinputbindvariables="yes" to exercise the
+	# faked-bind describe probe.  both runs have to succeed for the
+	# instance to pass
 	if ( test "$instance" = "firebirdprotocol" )
 	then
 		./$prog
 		resultdefault="$?"
-		./$prog 127.0.0.1/3051
+		./$prog 127.0.0.1/$FIREBIRDPROTOCOLPORT2
 		resultfakebinds="$?"
 		if ( test "$resultdefault" = "0" ) && ( test "$resultfakebinds" = "0" )
 		then
@@ -756,12 +803,15 @@ run_protocol_test() {
 
 	# oracleprotocol runs the oracle test four times, against the four
 	# instances in its config - the default one (tnsnames alias sqlrelay,
-	# port 1521), the verifiertype="11g" one (sqlrelay11g, port 1522), the
-	# verifiertype="12c" one (sqlrelay12c, port 1523) - so both o5logon
-	# verifier types get covered - and the no-<auths>-block one
-	# (sqlrelayconnectstrings, port 1524), which covers the default
-	# oracle_connectstrings auth path (#9309).  all four runs have to
-	# succeed for the instance to pass
+	# ORACLEPROTOCOLPORT1), the verifiertype="11g" one (sqlrelay11g,
+	# ORACLEPROTOCOLPORT2), the verifiertype="12c" one (sqlrelay12c,
+	# ORACLEPROTOCOLPORT3) - so both o5logon verifier types get covered -
+	# and the no-<auths>-block one (sqlrelayconnectstrings,
+	# ORACLEPROTOCOLPORT4), which covers the default oracle_connectstrings
+	# auth path (#9309).  the ports are 1521 through 1524 by default; the
+	# test reaches each one through its tnsnames.ora alias, which carries
+	# whatever port the run picked.  all four runs have to succeed for the
+	# instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -901,22 +951,211 @@ run_instance_tests() {
 	esac
 }
 
+# give every protocol listener a port nothing else on the host is using.
+#
+# each port is picked on its own rather than as a base plus an offset.  only
+# the ports freeport actually bound are known to be free, and a contiguous run
+# starting at a free port isn't free just because its first port is.  nothing
+# needs them contiguous either - substitution is per token, so any set of
+# numbers works.
+#
+# freeport binds them all at once and prints them in one go, so no two of them
+# can come back the same.
+pick_ports() {
+
+	if ( test ! -x "$TESTDIR/freeport" )
+	then
+		echo "$TESTDIR/freeport is not built - run make in $TESTDIR" 1>&2
+		exit 1
+	fi
+
+	_count=`echo $PORTTOKENS | wc -w`
+	_ports=`$TESTDIR/freeport $_count`
+	if ( test -z "$_ports" )
+	then
+		echo "$TESTDIR/freeport could not find $_count free ports" 1>&2
+		exit 1
+	fi
+
+	for _token in $PORTTOKENS
+	do
+		_port=`echo "$_ports" | head -1`
+		_ports=`echo "$_ports" | tail -n +2`
+		eval "$_token=$_port"
+	done
+
+	# the mysqlprotocol listener has a unix socket as well as a port, and
+	# two runs would collide on the path just as they would on the port.
+	# it goes in /tmp rather than under the build tree because a socket
+	# path has a hard length limit (108 bytes on linux) that a deep build
+	# directory could push it past
+	MYSQLPROTOCOLSOCKET=/tmp/mysqlprotocol-$MYSQLPROTOCOLPORT1.socket
+}
+
+# export the ports for the test programs and scripts that read them from the
+# environment.  the variable names are the token names, so one value drives
+# the listener and the client that dials it
+export_ports() {
+
+	for _token in $PORTTOKENS
+	do
+		export $_token
+	done
+	export MYSQLPROTOCOLSOCKET
+}
+
+# regenerate one generated file from its .in template, with this run's ports.
+# configure does this at configure time from the same tokens; this does it
+# again at run time, with values the run picked for itself.
+regenerate_file() {
+
+	_in="$1"
+	_out="$2"
+
+	if ( test ! -r "$_in" )
+	then
+		echo "$_in not found" 1>&2
+		exit 1
+	fi
+
+	# the patterns are built rather than written out, because a literal
+	# @token@ here would be substituted when make generates this script
+	cp "$_in" "$_out.tmp1"
+	for _token in $PORTTOKENS $OTHERTOKENS
+	do
+		eval "_value=\$$_token"
+		$REPLACE "@$_token@" "$_value" "$_out.tmp1" > "$_out.tmp2"
+		mv "$_out.tmp2" "$_out.tmp1"
+	done
+
+	# a leftover token means the template grew one this script doesn't know
+	# about.  writing it out anyway would leave a literal @SOMETHING@ in a
+	# config file, and the failure that came of it would be a long way from
+	# here, so stop instead
+	_leftover=`grep '@[A-Za-z_][A-Za-z0-9_]*@' "$_out.tmp1"`
+	if ( test -n "$_leftover" )
+	then
+		echo "$_in has tokens test.sh can't substitute:" 1>&2
+		echo "$_leftover" 1>&2
+		rm -f "$_out.tmp1"
+		exit 1
+	fi
+
+	mv "$_out.tmp1" "$_out"
+	echo "regenerated $_out"
+}
+
+# regenerate everything that carries a listener port - both ends: the configs
+# the listeners read, and the client-side config the test programs read
+regenerate_files() {
+
+	for _conf in $PROTOCOLCONFS
+	do
+		regenerate_file "$CONFDIR/${_conf}.conf.in" "$CONFDIR/${_conf}.conf"
+	done
+
+	# freetds and tsql read the listener's port only from here - there is
+	# no command line option and no environment variable for it
+	regenerate_file "$CONFDIR/freetds/etc/freetds.conf.in" "$CONFDIR/freetds/etc/freetds.conf"
+
+	# oracle client config, read through TNS_ADMIN
+	regenerate_file "$TESTDIR/protocol/oracle/tnsnames.ora.in" "$TESTDIR/protocol/oracle/tnsnames.ora"
+
+	# teradata client config, read through ODBCINI
+	regenerate_file "$TESTDIR/protocol/teradata/odbc.ini.in" "$TESTDIR/protocol/teradata/odbc.ini"
+}
+
+# copy every module this build produced into one flat directory, so that
+# -libexecdir can point the server programs at it
+stage_modules() {
+
+	echo "staging modules into $STAGEDIR..."
+	rm -rf "$STAGEDIR"
+	mkdir -p "$STAGEDIR"
+	( cd "$BUILDDIR" && $MAKE stagemodules STAGEDIR="$STAGEDIR" )
+	if ( test "$?" -ne "0" )
+	then
+		echo "make stagemodules failed" 1>&2
+		exit 1
+	fi
+	echo
+}
+
 
 # paths
 PREFIX=@prefix@
+BUILDDIR=@abs_top_builddir@
 TESTDIR=@abs_top_builddir@/test
 CONFDIR=@abs_top_builddir@/test/sqlrelay.conf.d
 BACKTRACEDIR=@abs_top_builddir@/test
+REPLACE=@abs_top_builddir@/replace.sh
+MAKE=${MAKE:-make}
+HOSTNAME=@HOSTNAME@
+DONOTEDIT="@DONOTEDIT@"
+
+# where the server programs come from, where they look for modules, and the
+# options that tell them so.  the default is the installed prefix with no path
+# options at all, exactly as before; -buildtree points all of it at the build
+# tree instead
+SQLRBINDIR=$PREFIX/bin
+SQLRSHDIR=$PREFIX/bin
+MODULEDIR=$PREFIX/lib*/sqlrelay
+PATHOPTS=""
+STAGEDIR=$TESTDIR/stagedmodules
+
+# the listener ports the protocol suites' instances were configured with.
+# these are the same values configure substituted into the .conf files, so
+# with no -randomports both ends already agree and nothing has to be
+# regenerated.  -randomports replaces them with free ports picked at run time.
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1"
+ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
+ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
+ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
+ORACLEPROTOCOLPORT4=@ORACLEPROTOCOLPORT4@
+FIREBIRDPROTOCOLPORT1=@FIREBIRDPROTOCOLPORT1@
+FIREBIRDPROTOCOLPORT2=@FIREBIRDPROTOCOLPORT2@
+FIREBIRDPROTOCOLPORT3=@FIREBIRDPROTOCOLPORT3@
+MYSQLPROTOCOLPORT1=@MYSQLPROTOCOLPORT1@
+POSTGRESQLPROTOCOLPORT1=@POSTGRESQLPROTOCOLPORT1@
+POSTGRESQLPROTOCOLPORT2=@POSTGRESQLPROTOCOLPORT2@
+TDSPROTOCOLPORT1=@TDSPROTOCOLPORT1@
+TDSSAPPROTOCOLPORT1=@TDSSAPPROTOCOLPORT1@
+TDSSAPPROTOCOLPORT2=@TDSSAPPROTOCOLPORT2@
+TERADATAPROTOCOLPORT1=@TERADATAPROTOCOLPORT1@
+MYSQLPROTOCOLSOCKET=@MYSQLPROTOCOLSOCKET@
+
+# the rest of what the templates regenerate_file() rewrites carry.  they are
+# not ports, but they have to be substituted too, or the file would come out
+# with a token left in it
+OTHERTOKENS="MYSQLPROTOCOLSOCKET HOSTNAME DONOTEDIT abs_top_builddir"
+abs_top_builddir=$BUILDDIR
+
+# the instance configs that carry a listener port
+PROTOCOLCONFS="firebirdprotocol mysqlprotocol oracleprotocol postgresqlprotocol tdsprotocol tdsfreetdsmssqlprotocol tdsfreetdssapprotocol tdssapprotocol teradataprotocol"
 
 # parse the options
 manage="yes"
 nflag=""
+randomports="no"
+randomportsflag=""
+buildtree="no"
+buildtreeflag=""
 while ( test $# -gt 0 )
 do
 	case "$1" in
 		-n)
 			manage="no"
 			nflag="-n"
+			shift
+			;;
+		-randomports)
+			randomports="yes"
+			randomportsflag="-randomports"
+			shift
+			;;
+		-buildtree)
+			buildtree="yes"
+			buildtreeflag="-buildtree"
 			shift
 			;;
 		-h)
@@ -962,12 +1201,35 @@ EXITSTATUSFILE=$TESTDIR/testexitstatus-$TAG.tmp
 # tee output to the details log, preserving the child's exit status
 if ( test "$CHILD" != "1" )
 then
-	{ CHILD=1 $0 $nflag "$@"; echo $? > "$EXITSTATUSFILE"; } 2>&1 | tee "$DETAILSLOG"
+	{ CHILD=1 $0 $nflag $randomportsflag $buildtreeflag "$@"; echo $? > "$EXITSTATUSFILE"; } 2>&1 | tee "$DETAILSLOG"
 	childstatus=`cat "$EXITSTATUSFILE" 2> /dev/null`
 	rm -f "$EXITSTATUSFILE"
 	exit ${childstatus:-0}
 fi
 
+
+# run the build tree's own programs and modules rather than the installed
+# ones.  this has to happen before anything is started or stopped, and before
+# instance_applicable looks for a connection module
+if ( test "$buildtree" = "yes" )
+then
+	SQLRBINDIR=$BUILDDIR/src/server
+	SQLRSHDIR=$BUILDDIR/src/cmdline
+	MODULEDIR=$STAGEDIR
+	PATHOPTS="-libexecdir $STAGEDIR -bindir $SQLRBINDIR"
+	stage_modules
+fi
+
+# move the protocol listeners off the well known ports, and rewrite both ends
+# to match.  same ordering requirement - the configs have to be right before
+# any instance is stopped or started
+if ( test "$randomports" = "yes" )
+then
+	pick_ports
+	regenerate_files
+	export_ports
+	echo
+fi
 
 
 echo "SQL Relay test results:" > "$RESULTSLOG"

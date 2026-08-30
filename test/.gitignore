@@ -1,0 +1,8 @@
+/freeport
+*.o
+*.obj
+*.lo
+/.libs/
+
+# where test.sh -buildtree stages the modules it points -libexecdir at
+/stagedmodules/

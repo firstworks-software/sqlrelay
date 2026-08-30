@@ -1,3 +1,21 @@
+; This file is generated from freetds.conf.in.  Edit the .in template, not
+; the generated file.
+;
+; The sqlrelay* entries below point at listeners this test suite starts, so
+; their ports are substitution tokens rather than literals - the
+; TDSPROTOCOLPORT1 and TDSSAPPROTOCOLPORT1 tokens that
+; test/sqlrelay.conf.d/tdsprotocol.conf.in,
+; tdsfreetdsmssqlprotocol.conf.in and tdsfreetdssapprotocol.conf.in use for
+; the listener side, so one value drives both ends.  configure fills them in
+; with the well known ports by default, and test.sh -randomports rewrites
+; this file with the ports that run actually picked.  freetds and tsql read
+; the port only from here - there is no command line option and no
+; environment variable for it - so a suite run on other ports has to have
+; this file rewritten too.
+;
+; The other entries name real database servers rather than listeners of
+; ours, so their ports stay literal.
+
 [global]
 	tds version = auto
 
@@ -59,7 +77,7 @@
 
 [sqlrelay]
 	host = localhost
-	port = 1433
+	port = @TDSPROTOCOLPORT1@
 	tds version = 7.0
 
 ; same instance as [sqlrelay] above, but requesting tds 7.4 - #9199 - the
@@ -68,7 +86,7 @@
 
 [sqlrelay74]
 	host = localhost
-	port = 1433
+	port = @TDSPROTOCOLPORT1@
 	tds version = 7.4
 
 ; a second sqlrelay instance, fronting a sap/sybase backend instead of mssql,
@@ -78,7 +96,7 @@
 
 [sqlrelaysap]
 	host = localhost
-	port = 9030
+	port = @TDSSAPPROTOCOLPORT1@
 	tds version = 7.0
 
 ; the tls scripts in test/protocol/tds drive these.  freetds takes its tls
@@ -93,7 +111,7 @@
 
 [sqlrelaytls]
 	host = localhost
-	port = 1433
+	port = @TDSPROTOCOLPORT1@
 	tds version = 7.4
 	client charset = UTF-8
 	encryption = require
@@ -108,7 +126,7 @@
 
 [sqlrelaytlsserverauth]
 	host = localhost
-	port = 1433
+	port = @TDSPROTOCOLPORT1@
 	tds version = 7.4
 	client charset = UTF-8
 	encryption = require

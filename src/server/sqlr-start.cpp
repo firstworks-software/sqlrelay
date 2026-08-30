@@ -291,7 +291,7 @@ static bool startScaler(sqlrpaths *sqlrpth,
 
 	// build args
 	uint16_t	i=0;
-	const char	*args[13];
+	const char	*args[15];
 	args[i++]=cmdname.getString();
 	args[i++]="-id";
 	args[i++]=id;
@@ -307,6 +307,12 @@ static bool startScaler(sqlrpaths *sqlrpth,
 		args[i++]="-libexecdir";
 		args[i++]=libexecdir;
 	}
+
+	// the scaler spawns connections of its own, so it needs the bindir we
+	// spawned it out of.  without this, a scaler started from a build tree
+	// would go back to the compiled-in prefix for its connections
+	args[i++]="-bindir";
+	args[i++]=sqlrpth->getBinDir();
 	if (!charstring::isNullOrEmpty(backtrace)) {
 		args[i++]="-backtrace";
 		args[i++]=backtrace;
@@ -393,6 +399,7 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"Options:\n"
 		SERVEROPTIONS
+		BINDIR
 		"	-abs-max-connections	Displays the absolute maximum number of\n"
 		"				database connections that may be opened by\n"
 		"				instance of SQL Relay and exits.n\n"
