@@ -22,6 +22,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)protocol_sqlrclient.$(LIBEXT): sqlrclient.cpp sqlrclient.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ sqlrclient.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 

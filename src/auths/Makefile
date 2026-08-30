@@ -34,6 +34,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT): sqlrclient_connectstrings.cpp sqlrclient_connectstrings.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ sqlrclient_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 

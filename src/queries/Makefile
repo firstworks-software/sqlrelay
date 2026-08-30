@@ -17,6 +17,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)query_sqlrcmdgstat.$(LIBEXT): sqlrcmdgstat.cpp sqlrcmdgstat.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ sqlrcmdgstat.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 

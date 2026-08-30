@@ -20,6 +20,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)querytranslation_normalize.$(LIBEXT): normalize.cpp normalize.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ normalize.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 

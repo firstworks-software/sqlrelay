@@ -20,6 +20,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)trigger_replay.$(LIBEXT): replay.cpp replay.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ replay.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 

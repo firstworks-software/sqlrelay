@@ -16,6 +16,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)schedule_cron_userlist.$(LIBEXT): cron_userlist.cpp cron_userlist.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ cron_userlist.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 

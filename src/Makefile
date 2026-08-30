@@ -188,6 +188,78 @@ install-connections:
 install-cmdline:
 	cd cmdline $(AND) $(MAKE) install
 
+stagemodules: $(SRCSTAGEMODULESSUBDIRS)
+
+stagemodules-notshared:
+	echo "stagemodules: this is a static build, so there are no module files to stage"
+	exit 1
+
+stagemodules-configs:
+	cd configs $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-pwdencs:
+	cd pwdencs $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-parsers:
+	cd parsers $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-queries:
+	cd queries $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-loggers:
+	cd loggers $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-notifications:
+	cd notifications $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-schedules:
+	cd schedules $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-routers:
+	cd routers $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-protocols:
+	cd protocols $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-auths:
+	cd auths $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-directives:
+	cd directives $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-querytranslations:
+	cd querytranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-bindvariabletranslations:
+	cd bindvariabletranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-resultsettranslations:
+	cd resultsettranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-resultsetrowtranslations:
+	cd resultsetrowtranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-resultsetrowblocktranslations:
+	cd resultsetrowblocktranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-resultsetheadertranslations:
+	cd resultsetheadertranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-errortranslations:
+	cd errortranslations $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-filters:
+	cd filters $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-triggers:
+	cd triggers $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-moduledatas:
+	cd moduledatas $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
+stagemodules-connections:
+	cd connections $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
 uninstall:
 	cd util $(AND) $(MAKE) uninstall
 	cd api $(AND) $(MAKE) uninstall

@@ -910,6 +910,7 @@ SOSUFFIX = @SOSUFFIX@
 MODULESUFFIX = @MODULESUFFIX@
 JNISUFFIX = @JNISUFFIX@
 MODULERENAME = $(top_builddir)/modulerename.sh
+STAGEMODULES = $(top_builddir)/stagemodules.sh
 
 
 # build directories
@@ -953,6 +954,19 @@ endif
 ifeq ($(ENABLE_CMDLINE),yes)
 SRCALLSUBDIRS += all-cmdline
 SRCINSTALLSUBDIRS += install-cmdline
+endif
+
+# the module directories that "make stagemodules" copies module files out of
+ifeq ($(SQLRELAY_ENABLE_SHARED),yes)
+SRCSTAGEMODULESSUBDIRS =
+ifeq ($(ENABLE_UTIL),yes)
+SRCSTAGEMODULESSUBDIRS += stagemodules-configs stagemodules-pwdencs
+endif
+ifeq ($(ENABLE_SERVER),yes)
+SRCSTAGEMODULESSUBDIRS += stagemodules-parsers stagemodules-queries stagemodules-loggers stagemodules-notifications stagemodules-schedules stagemodules-routers stagemodules-protocols stagemodules-auths stagemodules-directives stagemodules-querytranslations stagemodules-bindvariabletranslations stagemodules-resultsettranslations stagemodules-resultsetrowtranslations stagemodules-resultsetrowblocktranslations stagemodules-resultsetheadertranslations stagemodules-errortranslations stagemodules-filters stagemodules-triggers stagemodules-moduledatas stagemodules-connections
+endif
+else
+SRCSTAGEMODULESSUBDIRS = stagemodules-notshared
 endif
 
 

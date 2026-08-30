@@ -48,6 +48,13 @@ install-pkgconfig:
 	$(CP) sqlrelay-c++.pc $(libdir)/pkgconfig/$(SQLRELAY)-c++.pc
 	$(CHMOD) 0644 $(libdir)/pkgconfig/$(SQLRELAY)-c++.pc
 
+# Copies every module that this build produced into one flat directory, so a
+# listener or connection started out of the build tree can be pointed at it
+# with -libexecdir and load freshly built modules, with no make install.
+# STAGEDIR has to be an absolute path.
+stagemodules:
+	cd src $(AND) $(MAKE) stagemodules STAGEDIR=$(STAGEDIR)
+
 uninstall: $(UNINSTALLSUBDIRS)
 	$(RMTREE) $(libexecdir)
 

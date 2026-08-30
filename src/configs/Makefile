@@ -16,6 +16,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)config_xmldom.$(LIBEXT): xmldom.cpp xmldom.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ xmldom.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
 

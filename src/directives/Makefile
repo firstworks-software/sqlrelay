@@ -18,6 +18,9 @@ clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
 	$(RMTREE) .libs
 
+stagemodules: all
+	$(STAGEMODULES) $(STAGEDIR) $(MODULESUFFIX)
+
 $(SQLR)directive_custom_wf.$(LIBEXT): custom_wf.cpp custom_wf.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ custom_wf.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
