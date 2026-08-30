@@ -141,7 +141,7 @@ int main(int argc, const char **argv) {
 	if (charstring::isNullOrEmpty(id)) {
 		stdoutput.printf("usage:\n"
 			" %s-status [-config config] -id id "
-			"[-localstatedir dir] [-short] "
+			"[-localstatedir dir] [-libexecdir dir] [-short] "
 			"[-connection-detail [-query]]\n",SQLR);
 		process::exit(1);
 	}

@@ -282,6 +282,7 @@ static void helpmessage(const char *progname) {
 		"Options:\n"
 		CONFIG
 		LOCALSTATEDIR
+		LIBEXECDIR
 		"\n"
 		"Examples:\n"
 		"\n"

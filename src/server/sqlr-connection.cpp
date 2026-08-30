@@ -152,7 +152,7 @@ int main(int argc, const char **argv) {
 		stdoutput.printf("usage: \n"
 			" %s-connection [-config config] "
 			"-id id -connectionid connectionid\n"
-			"                 [-localstatedir dir] "
+			"                 [-localstatedir dir] [-libexecdir dir] "
 			"[-scaler] [-ttl sec] [-silent] [-nodetach]\n",
 			SQLR);
 		process::exit(0);

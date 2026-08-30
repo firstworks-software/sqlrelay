@@ -158,9 +158,17 @@ CONFIG \
 "				directory.\n" \
 "\n"
 
+#define LIBEXECDIR \
+"	-libexecdir dir 	Override the default directory that\n" \
+"				protocol, connection, auth, filter, and\n" \
+"				other modules are loaded from with the\n" \
+"				specified directory.\n" \
+"\n"
+
 #define SERVEROPTIONS \
 CONFIGID \
-LOCALSTATEDIR
+LOCALSTATEDIR \
+LIBEXECDIR
 
 #define DISABLECRASHHANDLER \
 "	-disable-crash-handler	Disable the built-in crash handler.\n" \

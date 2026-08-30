@@ -91,7 +91,7 @@ int main(int argc, const char **argv) {
 	if (!cmdl.isFound("-id")) {
 		stdoutput.printf("usage:\n"
 			" %s-listener [-config config] -id id "
-			"[-localstatedir dir] [-nodetach]\n",
+			"[-localstatedir dir] [-libexecdir dir] [-nodetach]\n",
 			SQLR);
 		process::exit(0);
 	}
