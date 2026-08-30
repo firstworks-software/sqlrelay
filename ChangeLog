@@ -1052,6 +1052,11 @@
 		the c++ client already discards its bind definitions before
 		parsing these responses, so nothing is lost by no longer
 		sending them
+	fixed the teradata protocol module crashing on an unsolicited or
+		out-of-sequence COPKIND_CONTINUE, which dereferenced a null
+		request pointer; also fixed a COPKIND_START received before a
+		prior one's sequence finished leaking the earlier request's
+		cursor instead of releasing it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

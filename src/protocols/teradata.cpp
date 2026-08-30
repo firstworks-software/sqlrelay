@@ -1817,6 +1817,13 @@ bool sqlrprotocol_teradata::copKindContinue() {
 		return passthrough();
 	}
 
+	// bail if there's no request in progress
+	if (!req) {
+		appendConnectionErrorParcel();
+		debugEnd();
+		return sendResponseToClient();
+	}
+
 	// respond
 	respdata.clear();
 	bool	eors=true;
@@ -4469,6 +4476,16 @@ bool sqlrprotocol_teradata::parseOptionsParcel(
 	}
 
 	debugParcelStart("recv","options",parcelflavor,parceldatasize);
+
+	// release any request left over from an overlapping,
+	// unfinished start sequence, so its cursor isn't leaked
+	if (req) {
+		if (req->cur) {
+			cont->closeResultSet(req->cur);
+			cont->release(req->cur);
+		}
+		delete req;
+	}
 
 	// get a request
 	req=new request(cont->getConfig()->getMaxBindCount());
