@@ -9,7 +9,7 @@
 	     mutual-auth counterpart to this instance -->
 	<instance id="tdsprotocoltls" dbase="odbc" translatebindvariables="yes">
 		<listeners>
-			<listener protocol="tds" port="1433"
+			<listener protocol="tds" port="@TDSPROTOCOLPORT1@"
 				tls="yes"
 				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
 				tlspassword="password"/>

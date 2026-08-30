@@ -1178,6 +1178,80 @@ AC_SUBST(HOSTNAME)
 AC_SUBST(SHORTHOSTNAME)
 
 
+dnl Listener ports for the protocol test suites - the instances in
+dnl test/sqlrelay.conf.d/*protocol.conf.in.  Each suite listens on the real
+dnl database's well known port by default, so only one run per host can use
+dnl them at a time.  Every listener port is a substitution token instead of a
+dnl literal, so a run that needs to get out of the way can move a whole suite
+dnl by moving its base.  The defaults below reproduce the well known ports.
+dnl
+dnl Each suite's ports run contiguously up from its base, so a base of N gives
+dnl N, N+1, N+2 ... in the order the tokens are numbered here.  The bases can
+dnl be set in the environment before configure runs.  Nothing computes them at
+dnl substitution time - substitution is plain text replacement, in configure
+dnl here and in test.sh at run time - so each port gets its own precomputed
+dnl token.
+dnl
+dnl A suite whose ports are not contiguous today gets one base per run of
+dnl contiguous ports.  That is why tds has two: 1433 for the mssql combos and
+dnl 9030 for the sap ones.
+dnl
+dnl Not covered here: multiprotocol.conf, which is a config-guide example that
+dnl no test starts, and the ports in connection strings and in the teradata
+dnl sidechannel auth, which are the real database servers' ports, not ours.
+
+test -z "$ORACLEPROTOCOLPORTBASE" && ORACLEPROTOCOLPORTBASE=1521
+ORACLEPROTOCOLPORT1=$ORACLEPROTOCOLPORTBASE
+ORACLEPROTOCOLPORT2=`expr $ORACLEPROTOCOLPORTBASE + 1`
+ORACLEPROTOCOLPORT3=`expr $ORACLEPROTOCOLPORTBASE + 2`
+ORACLEPROTOCOLPORT4=`expr $ORACLEPROTOCOLPORTBASE + 3`
+AC_SUBST(ORACLEPROTOCOLPORT1)
+AC_SUBST(ORACLEPROTOCOLPORT2)
+AC_SUBST(ORACLEPROTOCOLPORT3)
+AC_SUBST(ORACLEPROTOCOLPORT4)
+
+test -z "$FIREBIRDPROTOCOLPORTBASE" && FIREBIRDPROTOCOLPORTBASE=3050
+FIREBIRDPROTOCOLPORT1=$FIREBIRDPROTOCOLPORTBASE
+FIREBIRDPROTOCOLPORT2=`expr $FIREBIRDPROTOCOLPORTBASE + 1`
+FIREBIRDPROTOCOLPORT3=`expr $FIREBIRDPROTOCOLPORTBASE + 2`
+AC_SUBST(FIREBIRDPROTOCOLPORT1)
+AC_SUBST(FIREBIRDPROTOCOLPORT2)
+AC_SUBST(FIREBIRDPROTOCOLPORT3)
+
+dnl The mysql suite's listener has a unix socket as well as a port.  Two runs
+dnl would collide on the socket path just as they would on the port, so it is
+dnl a token too - a different kind of value, substituted the same way.
+test -z "$MYSQLPROTOCOLPORTBASE" && MYSQLPROTOCOLPORTBASE=3306
+MYSQLPROTOCOLPORT1=$MYSQLPROTOCOLPORTBASE
+test -z "$MYSQLPROTOCOLSOCKET" && MYSQLPROTOCOLSOCKET=/tmp/mysqlprotocol.socket
+AC_SUBST(MYSQLPROTOCOLPORT1)
+AC_SUBST(MYSQLPROTOCOLSOCKET)
+
+test -z "$POSTGRESQLPROTOCOLPORTBASE" && POSTGRESQLPROTOCOLPORTBASE=5432
+POSTGRESQLPROTOCOLPORT1=$POSTGRESQLPROTOCOLPORTBASE
+POSTGRESQLPROTOCOLPORT2=`expr $POSTGRESQLPROTOCOLPORTBASE + 1`
+AC_SUBST(POSTGRESQLPROTOCOLPORT1)
+AC_SUBST(POSTGRESQLPROTOCOLPORT2)
+
+dnl tdsprotocol (tls) and tdsfreetdsmssqlprotocol (plain) share this one -
+dnl they are never started at the same time.
+test -z "$TDSPROTOCOLPORTBASE" && TDSPROTOCOLPORTBASE=1433
+TDSPROTOCOLPORT1=$TDSPROTOCOLPORTBASE
+AC_SUBST(TDSPROTOCOLPORT1)
+
+dnl port 1 is tdsfreetdssapprotocol, port 2 is tdssapprotocol
+test -z "$TDSSAPPROTOCOLPORTBASE" && TDSSAPPROTOCOLPORTBASE=9030
+TDSSAPPROTOCOLPORT1=$TDSSAPPROTOCOLPORTBASE
+TDSSAPPROTOCOLPORT2=`expr $TDSSAPPROTOCOLPORTBASE + 1`
+AC_SUBST(TDSSAPPROTOCOLPORT1)
+AC_SUBST(TDSSAPPROTOCOLPORT2)
+
+dnl both teradata instances share this one - they are mutually exclusive
+test -z "$TERADATAPROTOCOLPORTBASE" && TERADATAPROTOCOLPORTBASE=1025
+TERADATAPROTOCOLPORT1=$TERADATAPROTOCOLPORTBASE
+AC_SUBST(TERADATAPROTOCOLPORT1)
+
+
 MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/postgresqlkeepdenserank.conf test/sqlrelay.conf.d/postgresqlslashescape.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf doc/admin/installingpkg.wt"
 AC_CONFIG_FILES([$MAKELIST])
 

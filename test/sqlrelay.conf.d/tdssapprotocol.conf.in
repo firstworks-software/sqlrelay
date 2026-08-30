@@ -5,10 +5,11 @@
 	     binary), which resolves the server name "sqlrelaysapct" via
 	     $SYBASE/interfaces rather than a freetds.conf stanza, so a test
 	     host running this combo needs an interfaces entry named
-	     sqlrelaysapct pointing at localhost:9031 -->
+	     sqlrelaysapct pointing at localhost, on whatever port this
+	     instance's listener ended up on - 9031 by default -->
 	<instance id="tdssapprotocol" dbase="sap" translatebindvariables="yes">
 		<listeners>
-			<listener protocol="tds" port="9031"/>
+			<listener protocol="tds" port="@TDSSAPPROTOCOLPORT2@"/>
 		</listeners>
 		<connections>
 			<connection string="sybase=/opt/sap;lang=en_US;server=SAP;user=testuser;password=testpassword;db=@HOSTNAME@"/>

@@ -3,7 +3,7 @@
 
 	<instance id="mysqlprotocol" dbase="mysql">
 		<listeners>
-			<listener protocol="mysql" port="3306" socket="/tmp/mysqlprotocol.socket"/>
+			<listener protocol="mysql" port="@MYSQLPROTOCOLPORT1@" socket="@MYSQLPROTOCOLSOCKET@"/>
 		</listeners>
 		<connections>
 			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>

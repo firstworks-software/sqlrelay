@@ -6,7 +6,7 @@
 	     default cursor count is nowhere near enough -->
 	<instance id="firebirdprotocol" dbase="firebird" debug="protocols" maxcursors="64">
 		<listeners>
-			<listener protocol="firebird" port="3050"/>
+			<listener protocol="firebird" port="@FIREBIRDPROTOCOLPORT1@"/>
 		</listeners>
 		<connections>
 			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
@@ -18,7 +18,7 @@
 	     the prepare and fakes the input binds itself -->
 	<instance id="firebirdprotocolfakebinds" dbase="firebird" debug="protocols" fakeinputbindvariables="yes" maxcursors="64">
 		<listeners>
-			<listener protocol="firebird" port="3051"/>
+			<listener protocol="firebird" port="@FIREBIRDPROTOCOLPORT2@"/>
 		</listeners>
 		<connections>
 			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
@@ -31,7 +31,7 @@
 	     query that succeeds here proves a real encrypted round trip -->
 	<instance id="firebirdprotocolwirecrypt" dbase="firebird" debug="protocols" maxcursors="64">
 		<listeners>
-			<listener protocol="firebird" port="3052" wirecrypt="required"/>
+			<listener protocol="firebird" port="@FIREBIRDPROTOCOLPORT3@" wirecrypt="required"/>
 		</listeners>
 		<connections>
 			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>

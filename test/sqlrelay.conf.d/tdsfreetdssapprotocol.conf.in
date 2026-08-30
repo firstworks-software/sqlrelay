@@ -3,7 +3,7 @@
 
 	<instance id="tdsfreetdssapprotocol" dbase="sap" translatebindvariables="yes">
 		<listeners>
-			<listener protocol="tds" port="9030"/>
+			<listener protocol="tds" port="@TDSSAPPROTOCOLPORT1@"/>
 		</listeners>
 		<connections>
 			<connection string="sybase=/opt/sap;lang=en_US;charset=utf8;server=SAP;user=testuser;password=testpassword;db=@HOSTNAME@"/>

@@ -3,8 +3,8 @@
 
 	<instance id="postgresqlprotocol" dbase="postgresql">
 		<listeners>
-			<listener protocol="postgresql" port="5432"/>
-			<listener protocol="postgresql" port="5433" passwords="cleartext"/>
+			<listener protocol="postgresql" port="@POSTGRESQLPROTOCOLPORT1@"/>
+			<listener protocol="postgresql" port="@POSTGRESQLPROTOCOLPORT2@" passwords="cleartext"/>
 		</listeners>
 		<connections>
 			<connection string="lastinsertidfunction=testfunc();user=testuser;password=testpassword;db=@HOSTNAME@;host=postgresql;typemangling=lookup;tablemangling=no"/>
