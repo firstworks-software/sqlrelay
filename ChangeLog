@@ -1063,6 +1063,9 @@
 		sibling rpcs, and bindParams now zeroes the inputoutput bind
 		count too, matching the defensive zeroing used elsewhere in
 		the module
+	fixed the firebird protocol module leaving stale binds on a reused
+		cursor: runPreparedQuery now clears the bind pool
+		unconditionally instead of only when it was already empty
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

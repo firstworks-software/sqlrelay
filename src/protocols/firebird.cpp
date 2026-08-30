@@ -6557,12 +6557,9 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	querybuffer[querylen]='\0';
 	cont->setQuerySize(cursor,querylen);
 
-	// op_exec_immediate2 filled the binds before the query arrived, so
-	// only clear them when nothing did
-	if (!cont->getInputBindCount(cursor)) {
-		cont->getBindPool(cursor)->clear();
-		cont->setInputBindCount(cursor,0);
-	}
+	// clear any binds left over from prior use of the cursor
+	cont->getBindPool(cursor)->clear();
+	cont->setInputBindCount(cursor,0);
 
 	// prepare
 	// (a transaction asked for in sql is driven through the controller by
