@@ -802,6 +802,7 @@ static void helpmessage(const char *progname) {
 		"\n"
 		"Options:\n"
 		SERVEROPTIONS
+		BINDIR
 		"	-nodetach	Suppresses detachment from the controlling terminal.\n"
 		"			Useful for debugging.\n"
 		"\n"

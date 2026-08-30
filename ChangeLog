@@ -1132,6 +1132,11 @@
 		can now run against a build tree with no install (test.sh
 		-buildtree) and pick their own free ports to avoid colliding
 		with a concurrent run (test.sh -randomports)
+	fixed sqlr-scaler --help not documenting -bindir, even though it
+		genuinely accepts and uses it to spawn sqlr-connection
+	brought the sqlr-listener, sqlr-connection, sqlr-scaler, sqlr-start,
+		sqlr-status, sqlr-stop and sqlrsh man pages up to date with the
+		-libexecdir and -bindir options
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
