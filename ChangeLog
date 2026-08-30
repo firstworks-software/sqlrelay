@@ -1100,6 +1100,13 @@
 		variable definitions/values on every successful advance to a
 		next result set; MS SQL/SAP output parameters, and any bound
 		values in general, now remain readable/usable after the advance
+	fixed sqlrcursor::parseOutputBinds() and parseInputOutputBinds() in
+		the c++ api overwriting a bind variable's previous string or
+		date-timezone buffer with a new allocation (or with NULL)
+		without freeing it first; not reachable yet since bind values
+		only get parsed once per definition today, but became a real
+		leak risk once nextResultSet() started preserving bind
+		definitions/values across advances
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

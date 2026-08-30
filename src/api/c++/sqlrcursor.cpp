@@ -4693,6 +4693,10 @@ bool sqlrcursor::parseOutputBinds() {
 			(*pvt->_outbindvars)[count].resultvaluesize=0;
 			if ((*pvt->_outbindvars)[count].type==
 						SQLRCLIENTBINDVARTYPE_STRING) {
+				// free the previous value before
+				// installing a new one
+				delete[] (*pvt->_outbindvars)[count].
+							value.stringval;
 				if (pvt->_returnnulls) {
 					(*pvt->_outbindvars)[count].value.
 							stringval=NULL;
@@ -4729,6 +4733,10 @@ bool sqlrcursor::parseOutputBinds() {
 						value.dateval.second=0;
 				(*pvt->_outbindvars)[count].
 						value.dateval.microsecond=0;
+				// free the previous value before
+				// installing a new one
+				delete[] (*pvt->_outbindvars)[count].
+						value.dateval.tz;
 				if (pvt->_returnnulls) {
 					(*pvt->_outbindvars)[count].
 						value.dateval.tz=NULL;
@@ -4738,7 +4746,7 @@ bool sqlrcursor::parseOutputBinds() {
 					(*pvt->_outbindvars)[count].
 						value.dateval.tz[0]='\0';
 				}
-			} 
+			}
 
 			if (pvt->_sqlrc->debug()) {
 				pvt->_sqlrc->debugPrint("		");
@@ -4761,6 +4769,12 @@ bool sqlrcursor::parseOutputBinds() {
 				return false;
 			}
 			(*pvt->_outbindvars)[count].resultvaluesize=length;
+			// free the previous value before installing a new one
+			if ((*pvt->_outbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_STRING) {
+				delete[] (*pvt->_outbindvars)[count].
+							value.stringval;
+			}
 			(*pvt->_outbindvars)[count].value.stringval=
 							new char[length+1];
 
@@ -4940,6 +4954,12 @@ bool sqlrcursor::parseOutputBinds() {
 				setError("Failed to get timezone length.\n "
 					"A network error may have occurred.");
 				return false;
+			}
+			// free the previous value before installing a new one
+			if ((*pvt->_outbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_DATE) {
+				delete[] (*pvt->_outbindvars)[count].
+						value.dateval.tz;
 			}
 			(*pvt->_outbindvars)[count].
 					value.dateval.tz=new char[length+1];
@@ -5304,11 +5324,15 @@ bool sqlrcursor::parseInputOutputBinds() {
 						value.dateval.second=0;
 				(*pvt->_inoutbindvars)[count].
 						value.dateval.microsecond=0;
+				// free the previous value before
+				// installing a new one
+				delete[] (*pvt->_inoutbindvars)[count].
+						value.dateval.tz;
 				(*pvt->_inoutbindvars)[count].
 						value.dateval.tz=new char[1];
 				(*pvt->_inoutbindvars)[count].
 						value.dateval.tz[0]='\0';
-			} 
+			}
 
 			if (pvt->_sqlrc->debug()) {
 				pvt->_sqlrc->debugPrint("		");
@@ -5511,6 +5535,12 @@ bool sqlrcursor::parseInputOutputBinds() {
 				setError("Failed to get timezone length.\n "
 					"A network error may have occurred.");
 				return false;
+			}
+			// free the previous value before installing a new one
+			if ((*pvt->_inoutbindvars)[count].type==
+						SQLRCLIENTBINDVARTYPE_DATE) {
+				delete[] (*pvt->_inoutbindvars)[count].
+						value.dateval.tz;
 			}
 			(*pvt->_inoutbindvars)[count].value.
 					dateval.tz=new char[length+1];
