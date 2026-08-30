@@ -2,8 +2,15 @@
 
 # run with mysqlprotocoltlsmutualauth instance
 
+# see the note in mysqltls.sh - same idea, for the mutual-auth instance
+if ( test -z "$MYSQLPROTOCOLTLSMUTUALAUTHPORT1" )
+then
+	MYSQLPROTOCOLTLSMUTUALAUTHPORT1=3306
+fi
+
 mysql \
 	-h sqlrelay \
+	-P $MYSQLPROTOCOLTLSMUTUALAUTHPORT1 \
 	-u testuser \
 	-ptestpassword \
 	--ssl-cert=/usr/local/firstworks/etc/sqlrelay.conf.d/client.pem \

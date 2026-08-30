@@ -2,11 +2,21 @@
 
 # run with postgresqlprotocoltls instance
 
+# POSTGRESQLPROTOCOLTLSPORT1 names the port that instance ended up on,
+# following the @INSTANCENAMEPORTn@ convention
+# test/sqlrelay.conf.d/*.conf.in uses.  there's no postgresqlprotocoltls
+# instance in test/sqlrelay.conf.d yet, so nothing generates that token
+# today; unset means 5432, as before
+if ( test -z "$POSTGRESQLPROTOCOLTLSPORT1" )
+then
+	POSTGRESQLPROTOCOLTLSPORT1=5432
+fi
 
 PGPASSFILE=`pwd`/pgpass \
 PGSSLMODE=require \
 psql \
 	-h sqlrelay \
+	-p $POSTGRESQLPROTOCOLTLSPORT1 \
 	-U testuser \
 	-w \
 > /dev/null << EOF

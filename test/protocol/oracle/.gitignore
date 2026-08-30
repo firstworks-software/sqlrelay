@@ -6,6 +6,12 @@
 *.class
 /.libs/
 
+# scratch files the tnsnames.ora rule writes.  tnsnames.ora itself stays
+# checked in - test/protocol/oracle is never in TESTPROTOCOLSUBDIRS, so a
+# plain make never visits this directory to generate it
+*.out1
+*.out2
+
 # captures and traces written by running the tests.  the intentional,
 # checked-in captures live under samples/ and are not ignored.
 /*.cap

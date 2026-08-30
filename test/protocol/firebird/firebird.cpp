@@ -474,7 +474,12 @@ int main(int argc, char **argv) {
 	// the full host name.
 	// in sqlrelay mode, an argument names the listener, in firebird's
 	// "host" or "host/port" form, so an instance on a port other than 3050
-	// can be reached.
+	// can be reached.  with no argument, FIREBIRDPROTOCOLPORT1 does the
+	// same for 127.0.0.1 - it's the same variable
+	// test/sqlrelay.conf.d/firebirdprotocol.conf.in's
+	// @FIREBIRDPROTOCOLPORT1@ is generated from, so one value drives both
+	// ends.  an argument wins over it; both unset means 3050, as before.
+	char		serverbuffer[256];
 	bool		issqlrelay=!(argc>=2 &&
 					!charstring::compare(argv[1],"native"));
 	const char	*server="127.0.0.1";
@@ -482,6 +487,14 @@ int main(int argc, char **argv) {
 		server=(argc>=3)?argv[2]:"firebird";
 	} else if (argc>=2) {
 		server=argv[1];
+	} else {
+		const char	*portoverride=
+			environment::getValue("FIREBIRDPROTOCOLPORT1");
+		if (!charstring::isNullOrEmpty(portoverride)) {
+			charstring::printf(serverbuffer,sizeof(serverbuffer),
+						"127.0.0.1/%s",portoverride);
+			server=serverbuffer;
+		}
 	}
 
 	// short hostname, matching the db the native odbc tests use

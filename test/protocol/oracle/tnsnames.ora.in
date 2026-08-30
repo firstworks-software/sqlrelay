@@ -1,4 +1,4 @@
-# DO NOT EDIT - this is a generated file; edit the corresponding .in template and rerun make in this directory
+# @DONOTEDIT@
 #
 # The sqlrelay* aliases below point at the oracleprotocol listeners in
 # test/sqlrelay.conf.d/oracleprotocol.conf.in.  Those listeners don't have to
@@ -20,25 +20,25 @@ ora1 =
 
 sqlrelay =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1521))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT1@))
     (CONNECT_DATA = (SID = ora1))
   )
 
 sqlrelay11g =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1522))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT2@))
     (CONNECT_DATA = (SID = ora1))
   )
 
 sqlrelay12c =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1523))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT3@))
     (CONNECT_DATA = (SID = ora1))
   )
 
 sqlrelayconnectstrings =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1524))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT4@))
     (CONNECT_DATA = (SID = ora1))
   )
 
@@ -53,24 +53,24 @@ ora1bad =
 
 sqlrelaybad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1521))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT1@))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
 sqlrelay11gbad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1522))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT2@))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
 sqlrelay12cbad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1523))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT3@))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
 sqlrelayconnectstringsbad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1524))
+    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= @ORACLEPROTOCOLPORT4@))
     (CONNECT_DATA = (SID = nosuchsid))
   )

@@ -5,6 +5,7 @@
 #include <rudiments/bytebuffer.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/charstring.h>
+#include <rudiments/environment.h>
 #include <rudiments/stdio.h>
 
 // Regression coverage for ticket #9481: recvPacket() in src/protocols/tds.cpp
@@ -252,6 +253,17 @@ int main(int argc, char **argv) {
 	uint16_t	port=9031;
 	const char	*user="testuser";
 	const char	*password="testpassword";
+
+	// that instance doesn't have to be on 9031 - two sessions running
+	// this suite at once can't both have it.  TDSSAPPROTOCOLPORT2 names
+	// the port it actually ended up on; it's the same variable
+	// tdssapprotocol.conf.in's @TDSSAPPROTOCOLPORT2@ is generated from,
+	// so one value drives both ends.  unset means 9031, as before.
+	const char	*portoverride=
+			environment::getValue("TDSSAPPROTOCOLPORT2");
+	if (!charstring::isNullOrEmpty(portoverride)) {
+		port=(uint16_t)charstring::convertToInteger(portoverride);
+	}
 
 	inetsocketclient	sock;
 	sock.setHost(host);

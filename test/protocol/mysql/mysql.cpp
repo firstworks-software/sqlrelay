@@ -169,6 +169,18 @@ int main(int argc, char **argv) {
 	if (issqlrelay) {
 		host="127.0.0.1";
 		db="";
+		// the mysqlprotocol listener doesn't have to be on 3306 -
+		// two sessions running this suite at once can't both have
+		// it.  MYSQLPROTOCOLPORT1 names the port it actually ended
+		// up on; it's the same variable
+		// test/sqlrelay.conf.d/mysqlprotocol.conf.in's
+		// @MYSQLPROTOCOLPORT1@ is generated from, so one value
+		// drives both ends.  unset means 3306, as before.
+		const char	*portoverride=
+				environment::getValue("MYSQLPROTOCOLPORT1");
+		if (!charstring::isNullOrEmpty(portoverride)) {
+			port=portoverride;
+		}
 	} else {
 		// short hostname, matching the db the native odbc tests use
 		char	*hostname=sys::getHostName();

@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
 
 	const char	*host;
 	const char	*port;
+	const char	*cleartextport;
 	const char	*user;
 	const char	*password;
 	const char	*db;
@@ -40,8 +41,30 @@ int main(int argc, char **argv) {
 		db=hostname;
 	}
 	port="5432";
+	cleartextport="5433";
 	user="testuser";
 	password="testpassword";
+
+	// neither postgresqlprotocol listener has to be on its default port -
+	// two sessions running this suite at once can't both have 5432/5433.
+	// POSTGRESQLPROTOCOLPORT1 and POSTGRESQLPROTOCOLPORT2 name the ports
+	// they actually ended up on; they're the same variables
+	// test/sqlrelay.conf.d/postgresqlprotocol.conf.in's
+	// @POSTGRESQLPROTOCOLPORT1@ and @POSTGRESQLPROTOCOLPORT2@ are
+	// generated from, so one pair of values drives both ends.  unset
+	// means 5432 and 5433, as before.
+	if (issqlrelay) {
+		const char	*portoverride=
+			environment::getValue("POSTGRESQLPROTOCOLPORT1");
+		if (!charstring::isNullOrEmpty(portoverride)) {
+			port=portoverride;
+		}
+		const char	*cleartextportoverride=
+			environment::getValue("POSTGRESQLPROTOCOLPORT2");
+		if (!charstring::isNullOrEmpty(cleartextportoverride)) {
+			cleartextport=cleartextportoverride;
+		}
+	}
 
 	stdoutput.printf("PQresStatus:\n");
 	assertEquals(PQresStatus(PGRES_EMPTY_QUERY),"PGRES_EMPTY_QUERY");
@@ -59,14 +82,14 @@ int main(int argc, char **argv) {
 	// wrong password is rejected
 	if (issqlrelay) {
 		stdoutput.printf("cleartext auth - right password:\n");
-		PGconn	*ctok=PQsetdbLogin(host,"5433",NULL,NULL,
+		PGconn	*ctok=PQsetdbLogin(host,cleartextport,NULL,NULL,
 						db,user,password);
 		assertEquals(PQstatus(ctok),CONNECTION_OK);
 		PQfinish(ctok);
 		stdoutput.printf("\n");
 
 		stdoutput.printf("cleartext auth - wrong password:\n");
-		PGconn	*ctbad=PQsetdbLogin(host,"5433",NULL,NULL,
+		PGconn	*ctbad=PQsetdbLogin(host,cleartextport,NULL,NULL,
 						db,user,"wrongpassword");
 		assertEquals(PQstatus(ctbad),CONNECTION_BAD);
 		PQfinish(ctbad);
@@ -95,8 +118,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 	stdoutput.printf("PQport:\n");
-	assertEquals(PQport(pgconn),
-			(charstring::getLength(port)?port:(char *)"5432"));
+	assertEquals(PQport(pgconn),port);
 	stdoutput.printf("\n");
 
 	stdoutput.printf("PQtty:\n");

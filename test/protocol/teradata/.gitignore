@@ -1,0 +1,7 @@
+*.class
+
+# scratch files the odbc.ini rule writes.  odbc.ini itself stays checked in -
+# test/protocol/teradata is never in TESTPROTOCOLSUBDIRS, so a plain make
+# never visits this directory to generate it
+*.out1
+*.out2

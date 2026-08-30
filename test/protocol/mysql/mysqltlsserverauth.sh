@@ -2,8 +2,15 @@
 
 # run with mysqlprotocoltls instance
 
+# see the note in mysqltls.sh - same instance, same variable
+if ( test -z "$MYSQLPROTOCOLTLSPORT1" )
+then
+	MYSQLPROTOCOLTLSPORT1=3306
+fi
+
 mysql \
 	-h sqlrelay \
+	-P $MYSQLPROTOCOLTLSPORT1 \
 	-u testuser \
 	-ptestpassword \
 	--ssl-ca=/usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem \

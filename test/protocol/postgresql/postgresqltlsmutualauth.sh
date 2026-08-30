@@ -2,6 +2,11 @@
 
 # run with postgresqlprotocoltls instance
 
+# see the note in postgresqltls.sh - same instance, same variable
+if ( test -z "$POSTGRESQLPROTOCOLTLSPORT1" )
+then
+	POSTGRESQLPROTOCOLTLSPORT1=5432
+fi
 
 PGPASSFILE=`pwd`/pgpass \
 PGSSLMODE=verify-ca \
@@ -10,6 +15,7 @@ PGSSLKEY=/usr/local/firstworks/etc/sqlrelay.conf.d/client.pem \
 PGSSLROOTCERT=/usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem \
 psql \
 	-h sqlrelay \
+	-p $POSTGRESQLPROTOCOLTLSPORT1 \
 	-U testuser \
 	-w \
 > /dev/null << EOF

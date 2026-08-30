@@ -1,4 +1,4 @@
-# DO NOT EDIT - this is a generated file; edit the corresponding .in template and rerun make in this directory
+# @DONOTEDIT@
 #
 # The [sqlr-teradata] DSN below points at the teradataprotocol listener in
 # test/sqlrelay.conf.d/teradataprotocol.conf.in.  That listener doesn't have
@@ -92,7 +92,7 @@ SessionMode=System Default
 SplOption=Y
 TABLEQUALIFIER=0
 TCPNoDelay=1
-TdmstPortNumber=1025
+TdmstPortNumber=@TERADATAPROTOCOLPORT1@
 UPTMode=Not set
 USE2XAPPCUSTOMCATALOGMODE=0
 UseDataEncryption=0

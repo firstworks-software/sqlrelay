@@ -58,12 +58,32 @@ class teradata {
 			host=args[0];
 		}
 
+		// the teradataprotocol listener doesn't have to be on 1025 -
+		// two sessions running this suite at once can't both have it.
+		// a second argument names the port it actually ended up on,
+		// and TERADATAPROTOCOLPORT1 does the same - it's the variable
+		// test/sqlrelay.conf.d/teradataprotocol.conf.in's
+		// @TERADATAPROTOCOLPORT1@ is generated from, so one value
+		// drives both ends.  an argument wins over it.  with neither
+		// set the url carries no DBS_PORT at all, so the driver's own
+		// default of 1025 applies, as before
+		String	port=null;
+		if (args.length>1) {
+			port=args[1];
+		} else {
+			port=System.getenv("TERADATAPROTOCOLPORT1");
+		}
+
+		String	url="jdbc:teradata://"+host+"/";
+		if (port!=null && port.length()>0) {
+			url=url+"DBS_PORT="+port;
+		}
+
 		Class.forName("com.teradata.jdbc.TeraDriver");
 
 
 		// connect
-		Connection	con=DriverManager.getConnection(
-					"jdbc:teradata://"+host+"/",
+		Connection	con=DriverManager.getConnection(url,
 					"testuser","testpassword");
 		Statement	stmt=con.createStatement();
 
