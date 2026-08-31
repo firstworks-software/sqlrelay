@@ -50,6 +50,22 @@
 #define	PACKET_CONTROL_INFO	14
 #define	PACKET_DATA_DESCRIPTOR	15
 
+// marker types - a marker packet's 3-byte body is always
+// { 1, 0, marker type }; see python-oracledb's
+// src/oracledb/impl/thin/protocol.pyx BaseProtocol._send_marker() and
+// constants.pxi (Universal Permissive License 1.0)
+#define	MARKER_TYPE_BREAK	1
+#define	MARKER_TYPE_RESET	2
+#define	MARKER_TYPE_INTERRUPT	3
+
+// a marker packet also carries this bit in the packet header's normally
+// unused reserved byte; see go-ora's v2/network/marker_packet.go
+// newMarkerPacket() (MIT license), which sets it on every marker it
+// sends - a real client's marker (captured for this ticket) carries it
+// too, and a reply without it goes unrecognized, leaving the client
+// blocked in read()
+#define	PACKET_FLAG_MARKER	0x20
+
 // protocol versions
 #define PROTOCOL_VERSION_7		0x0134
 #define PROTOCOL_VERSION_8		0x0136
@@ -175,6 +191,13 @@
 // the oracle error for a cursor id the module has no cursor open for
 #define ORA_INVALID_CURSOR		1001
 #define ORA_INVALID_CURSOR_MESSAGE	"ORA-01001: invalid cursor\n"
+
+// what completes the call a client's marker interrupted (see the
+// "Oracle Wire Protocol - Cancel" wiki page and #9591) - a real server's
+// documented response to a break/reset
+#define ORA_USER_REQUESTED_CANCEL	1013
+#define ORA_USER_REQUESTED_CANCEL_MESSAGE \
+	"ORA-01013: user requested cancel of current operation\n"
 
 // what sendUnimplementedFunctionError() sends for a tti function this
 // module doesn't implement, or doesn't recognize at all - a real ora
@@ -902,6 +925,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendAccept(const byte_t *data, uint16_t datasize);
 		bool	sendResend();
 		bool	sendRefuse(uint32_t tnserror);
+		bool	sendMarker(byte_t markertype);
 
 		bool	anoNegotiation();
 		bool	recvAnoRequest();
@@ -1205,6 +1229,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendQueryError(sqlrservercursor *cursor);
 		bool	sendCursorNotOpenError(uint32_t cursorid=0);
 		bool	sendUnimplementedFunctionError();
+		bool	sendMarkerCancelError();
 
 		uint16_t	connectversion;
 		uint16_t	connectlowestversion;
@@ -1283,6 +1308,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bytebuffer	reqpacket;
 		byte_t		reqpackettype;
+		byte_t		reqpacketflags;
 
 		memorypool	*resppacketpool;
 		byte_t		*resppacket;
@@ -1772,6 +1798,7 @@ void sqlrprotocol_oracle::resetSendPacketBuffer(byte_t packettype) {
 	reqpacket.clear();
 	reqpacket.append((uint64_t)0);
 	reqpackettype=packettype;
+	reqpacketflags=0;
 }
 
 bool sqlrprotocol_oracle::sendPacket() {
@@ -1782,7 +1809,6 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 
 	uint32_t	reqpacketsize=(uint32_t)reqpacket.getSize();
 	uint16_t	packetchecksum=0;
-	byte_t		packetflags=0;
 	uint16_t	headerchecksum=0;
 
 	// overwrite the first 8 bytes of the reqpacket with the packet header
@@ -1798,7 +1824,7 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 		reqpacket.write(hostToBE(packetchecksum));
 	}
 	reqpacket.write(reqpackettype);
-	reqpacket.write(packetflags);
+	reqpacket.write(reqpacketflags);
 	reqpacket.write(hostToBE(headerchecksum));
 
 	if (getDebug()) {
@@ -1809,7 +1835,7 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 			debugWrite("packet checksum: %d",packetchecksum);
 		}
 		debugWrite("packet type: %d",reqpackettype);
-		debugWrite("packet flags: 0x%04x",packetflags);
+		debugWrite("packet flags: 0x%04x",reqpacketflags);
 		debugWrite("header checksum: %d",headerchecksum);
 		debugWrite("body size: %d",reqpacketsize-8);
 		debugHexDump(reqpacket.getBuffer()+8,reqpacketsize-8);
@@ -2472,6 +2498,26 @@ bool sqlrprotocol_oracle::sendResend() {
 
 	// build packet
 	resetSendPacketBuffer(PACKET_RESEND);
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendMarker(byte_t markertype) {
+
+	// debug
+	debugStart("marker");
+	debugWrite("packet type: %d",PACKET_MARKER);
+	debugWrite("marker type: %d",markertype);
+	debugEnd();
+
+	// build packet - 1 (one data byte follows), 0 (reserved), then
+	// the marker type.  the header's reserved byte carries the marker
+	// flag, same as a real client's marker does
+	resetSendPacketBuffer(PACKET_MARKER);
+	reqpacketflags=PACKET_FLAG_MARKER;
+	write(&reqpacket,(byte_t)1);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,markertype);
 
 	return sendPacket(true);
 }
@@ -5932,14 +5978,37 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 					rp>=resppacket+resppacketsize);
 
 	if (newpacket) {
-		if (!recvPacket()) {
-			return false;
-		}
 
-		// a modern client cancels with a PACKET_MARKER packet rather
-		// than a tti call, and this is where it lands - rejecting it
-		// ends the session cleanly, which is what the docs prescribe
-		if (resppackettype!=PACKET_DATA) {
+		// a modern client cancels an abandoned call (eg. a fetch it
+		// stopped reading) with a marker rather than a tti call.  it
+		// is not a framing error and not end of session - answer
+		// with a reset marker of our own, so the client's resync
+		// loop sees it and the interrupted call is discarded, then
+		// go back to waiting for the real next tti function
+		for (;;) {
+
+			if (!recvPacket()) {
+				return false;
+			}
+
+			if (resppackettype==PACKET_DATA) {
+				break;
+			}
+
+			if (resppackettype==PACKET_MARKER) {
+				if (!sendMarker(MARKER_TYPE_RESET)) {
+					return false;
+				}
+
+				// the client is waiting to read the interrupted
+				// call's result, not another marker, before it
+				// will send anything else
+				if (!sendMarkerCancelError()) {
+					return false;
+				}
+				continue;
+			}
+
 			debugWrite("bad packet type %d, expected %d",
 						resppackettype,PACKET_DATA);
 			return false;
@@ -9048,6 +9117,33 @@ bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {
 					ORA_INVALID_CURSOR_MESSAGE);
 	} else {
 		putError("ORA-01001: invalid cursor",ORA_INVALID_CURSOR);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
+}
+
+// what completes the call a client's marker packet interrupted - a real
+// server answers a break/reset with ora-01013 for whatever was in flight,
+// and the client is waiting to read that, not another marker, before it
+// will send anything else (see #9591)
+bool sqlrprotocol_oracle::sendMarkerCancelError() {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("marker cancel error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(0,ORA_USER_REQUESTED_CANCEL,0,
+					ORA_USER_REQUESTED_CANCEL_MESSAGE);
+	} else {
+		putError(ORA_USER_REQUESTED_CANCEL_MESSAGE,
+					ORA_USER_REQUESTED_CANCEL);
 		putGenericFooter();
 	}
 
