@@ -1229,6 +1229,11 @@
 		byte count, and telling that apart from the byte count only by
 		whether it fits in the packet doesn't work for a statement
 		short enough that both fit, so "commit" came back ora-00911
+	the oracle protocol module now reports the affected row count in a
+		query3 response's summary object, so an insert or a delete
+		answers oci_attr_row_count with the rows it affected instead
+		of 0 - a statement with no result set has no rows sent to
+		report, and the count comes from the controller
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

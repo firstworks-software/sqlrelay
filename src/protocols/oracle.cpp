@@ -6943,14 +6943,26 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 	rowssent[cont->getId(cursor)]+=rowsfetched;
 
+	// the row count the summary object carries, which a client reads back
+	// as OCI_ATTR_ROW_COUNT: the rows sent so far for a statement with a
+	// result set, and the affected row count for one without - an insert
+	// or a delete sends no rows, so it answered 0.  only look at the
+	// controller's count after an execute: it holds the count from the
+	// last execution on the cursor, and a parse alone doesn't clear it
+	uint32_t	rowcount=rowssent[cont->getId(cursor)];
+	if (!colcount && (options&OPTION_EXECUTE) &&
+				cont->knowsAffectedRows(cursor)) {
+		rowcount=(uint32_t)cont->getAffectedRows(cursor);
+	}
+
 	// a prefetch that ran out of rows ends in ORA-01403, which the client
 	// reads as "no more rows"; one that filled it ends clean
 	if (endofrows) {
 		putSummary(cursorid,ORA_NO_DATA_FOUND,
-					rowssent[cont->getId(cursor)],
+					rowcount,
 					ORA_NO_DATA_FOUND_MESSAGE);
 	} else {
-		putSummary(cursorid,0,rowssent[cont->getId(cursor)],NULL);
+		putSummary(cursorid,0,rowcount,NULL);
 	}
 
 	if (getDebug()) {
