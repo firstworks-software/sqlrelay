@@ -70,7 +70,7 @@ void sqlrservermodule::debugStart(const char *title, ...) {
 	va_start(argp,title);
 	pvt->_logbuffer.printf(title,&argp);
 	va_end(argp);
-	cont->raiseDebugStartEvent(pvt->_logbuffer.getString());
+	cont->raiseDebugStartEvent("%s",pvt->_logbuffer.getString());
 }
 
 void sqlrservermodule::debugWrite(const char *string, ...) {
@@ -85,7 +85,7 @@ void sqlrservermodule::debugWrite(const char *string, ...) {
 	va_start(argp,string);
 	pvt->_logbuffer.printf(string,&argp);
 	va_end(argp);
-	cont->raiseDebugWriteEvent(pvt->_logbuffer.getString());
+	cont->raiseDebugWriteEvent("%s",pvt->_logbuffer.getString());
 }
 
 void sqlrservermodule::debugHexDump(const byte_t *data, uint64_t size) {

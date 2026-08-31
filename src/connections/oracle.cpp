@@ -1373,7 +1373,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 			debugstr.append(stmtcachesize);
 			if (cont->getDebug()) {
 				cont->raiseDebugWriteEvent(
-						debugstr.getString());
+						"%s",debugstr.getString());
 			}
 		}
 	}

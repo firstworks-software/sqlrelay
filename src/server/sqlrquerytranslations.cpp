@@ -206,7 +206,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 							"parse";
 					sqlrcon->cont->
 						raiseParseFailureEvent(
-								sqlrcur,query);
+								sqlrcur,"%s",query);
 					return false;
 				}
 				pvt->_tree=sqlrp->getQueryTree();
@@ -274,7 +274,7 @@ bool sqlrquerytranslations::run(sqlrserverconnection *sqlrcon,
 		if (sqlrp->parse(translatedquery->getString())) {
 			pvt->_tree=sqlrp->getQueryTree();
 		} else {
-			sqlrcon->cont->raiseParseFailureEvent(sqlrcur,
+			sqlrcon->cont->raiseParseFailureEvent(sqlrcur,"%s",
 						translatedquery->getString());
 			// FIXME: shouldn't I return false if this happens?
 		}

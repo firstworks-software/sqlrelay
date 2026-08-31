@@ -2339,7 +2339,7 @@ void sqlrservercontroller::clientSession() {
 			info="server closed connection";
 			break;
 	}
-	raiseClientDisconnectedEvent(info);
+	raiseClientDisconnectedEvent("%s",info);
 
 	decrementOpenClientConnections();
 
@@ -2455,7 +2455,7 @@ bool sqlrservercontroller::auth(sqlrcredentials *cred) {
 			!pvt->_sqlrs->allowed(pvt->_conn,
 						getAuthenticatedUser())) {
 			debugWrite("connection schedule violation");
-			raiseScheduleViolationEvent(getAuthenticatedUser());
+			raiseScheduleViolationEvent("%s",getAuthenticatedUser());
 			debugEnd();
 			return false;
 		}
@@ -4690,7 +4690,7 @@ bool sqlrservercontroller::translateQuery(sqlrservercursor *cursor) {
 	translatedquery->clear();
 	if (!pvt->_sqlrt->run(pvt->_conn,cursor,pvt->_sqlrp,
 					query,querysize,translatedquery)) {
-		raiseTranslationFailureEvent(cursor,query);
+		raiseTranslationFailureEvent(cursor,"%s",query);
 		if (pvt->_sqlrt->getUseOriginalOnError()) {
 			if (pvt->_debugsqlrquerytranslations) {
 				stdoutput.write("translation failed, "
@@ -10776,7 +10776,7 @@ void sqlrservercontroller::debugStart(const char *title, ...) {
 	va_start(argp,title);
 	pvt->_logbuffer.printf(title,&argp);
 	va_end(argp);
-	raiseDebugStartEvent(pvt->_logbuffer.getString());
+	raiseDebugStartEvent("%s",pvt->_logbuffer.getString());
 }
 
 void sqlrservercontroller::debugWrite(const char *string, ...) {
@@ -10788,7 +10788,7 @@ void sqlrservercontroller::debugWrite(const char *string, ...) {
 	va_start(argp,string);
 	pvt->_logbuffer.printf(string,&argp);
 	va_end(argp);
-	raiseDebugWriteEvent(pvt->_logbuffer.getString());
+	raiseDebugWriteEvent("%s",pvt->_logbuffer.getString());
 }
 
 void sqlrservercontroller::debugEnd() {

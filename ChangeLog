@@ -1189,6 +1189,13 @@
 		bad ttc code
 	fixed the debug logger passing client-controlled text as a printf
 		format string
+	fixed several more format-string vulnerabilities one layer up from
+		the debug logger fix - sqlrservermodule/sqlrservermodules/
+		sqlrservercontroller's debugStart()/debugWrite() and several
+		raise*Event() calls (parse/translation failure, schedule
+		violation, client disconnected, and the oracle and router
+		connection modules) were re-formatting already-rendered text
+		as a printf format string
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

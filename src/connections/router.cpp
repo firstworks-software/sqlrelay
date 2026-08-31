@@ -1724,7 +1724,7 @@ void routerconnection::raiseIntegrityViolationEvent(const char *command,
 	info.append(command);
 	info.append(" failed on connectionid: ");
 	info.append(conids[index]);
-	cont->raiseIntegrityViolationEvent(info.getString());
+	cont->raiseIntegrityViolationEvent("%s",info.getString());
 
 	cont->setInstanceDisabled(true);
 }
