@@ -1667,6 +1667,155 @@ int main(int argc, char **argv) {
 
 
 
+	stdoutput.printf("\n============ Long-form CLR ===========\n\n");
+
+	// #9594 - a value over CLR_MAX_SHORT_LENGTH (252 bytes,
+	// src/protocols/oracle.cpp:366) goes out from the server using
+	// oracle's long-form CLR framing: a 0xfe marker, a run of
+	// length-prefixed chunks, then a zero-length chunk to end it.
+	// These cases round-trip values right at that boundary, then well
+	// past it, to catch a wrong chunk length or a wrong chunk boundary
+	// in putLenBytes() (src/protocols/oracle.cpp:4811).
+
+	OCIStmt	*clrstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&clrstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	stdoutput.printf("create table\n");
+	execImmediate("drop table protocoltestclr");
+	assertEquals(
+		execImmediate("create table protocoltestclr "
+				"(testvarchar varchar2(4000))"),
+		OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	const char	*clrquery="select testvarchar from protocoltestclr";
+	char		clrvarchar[4096];
+	sb2		clrind=0;
+	ub2		clrlen=0;
+	OCIDefine	*clrdef=NULL;
+
+	stdoutput.printf("select - 252 bytes, at the short-form boundary\n");
+	assertEquals(
+		execImmediate("insert into protocoltestclr values "
+				"(rpad('A',252,'A'))"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	char	clr252[253];
+	bytestring::zero(clr252,sizeof(clr252));
+	for (ub4 i=0; i<252; i++) {
+		clr252[i]='A';
+	}
+	assertEquals(
+		OCIStmtPrepare(clrstmt,err,(text *)clrquery,
+				charstring::getLength(clrquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,clrstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bytestring::zero(clrvarchar,sizeof(clrvarchar));
+	assertEquals(
+		OCIDefineByPos(clrstmt,&clrdef,err,1,
+				clrvarchar,sizeof(clrvarchar),SQLT_CHR,
+				&clrind,&clrlen,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(clrstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)clrind,OCI_IND_NOTNULL);
+	assertEquals((int)clrlen,252);
+	assertEquals((const char *)clrvarchar,(const char *)clr252);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select - 253 bytes, just into long form\n");
+	assertEquals(
+		execImmediate("delete from protocoltestclr"),OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestclr values "
+				"(rpad('B',253,'B'))"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	char	clr253[254];
+	bytestring::zero(clr253,sizeof(clr253));
+	for (ub4 i=0; i<253; i++) {
+		clr253[i]='B';
+	}
+	// re-prepare before re-executing an already-fetched-to-completion
+	// cursor - executing it again as-is sends a different tti function
+	// (an oracle re-execute/resync call) that this module doesn't
+	// implement yet, unrelated to #9594's chunk framing
+	assertEquals(
+		OCIStmtPrepare(clrstmt,err,(text *)clrquery,
+				charstring::getLength(clrquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,clrstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bytestring::zero(clrvarchar,sizeof(clrvarchar));
+	assertEquals(
+		OCIDefineByPos(clrstmt,&clrdef,err,1,
+				clrvarchar,sizeof(clrvarchar),SQLT_CHR,
+				&clrind,&clrlen,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(clrstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)clrind,OCI_IND_NOTNULL);
+	assertEquals((int)clrlen,253);
+	assertEquals((const char *)clrvarchar,(const char *)clr253);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("select - 1000 bytes, several long-form chunks\n");
+	assertEquals(
+		execImmediate("delete from protocoltestclr"),OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestclr values "
+				"(rpad('C',1000,'C'))"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	char	clr1000[1001];
+	bytestring::zero(clr1000,sizeof(clr1000));
+	for (ub4 i=0; i<1000; i++) {
+		clr1000[i]='C';
+	}
+	// re-prepare - see the same note above the 253-byte case
+	assertEquals(
+		OCIStmtPrepare(clrstmt,err,(text *)clrquery,
+				charstring::getLength(clrquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,clrstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	bytestring::zero(clrvarchar,sizeof(clrvarchar));
+	assertEquals(
+		OCIDefineByPos(clrstmt,&clrdef,err,1,
+				clrvarchar,sizeof(clrvarchar),SQLT_CHR,
+				&clrind,&clrlen,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(clrstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)clrind,OCI_IND_NOTNULL);
+	assertEquals((int)clrlen,1000);
+	assertEquals((const char *)clrvarchar,(const char *)clr1000);
+	stdoutput.printf("\n\n");
+
+
+	// coverage stops at 1000 bytes.  getting a larger value into a
+	// column needs either a bind over 255 bytes or a lob write, and
+	// neither is implemented yet - see #9587 and #9589
+	assertEquals(OCIHandleFree(clrstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
 	stdoutput.printf("\n================ Lobs ================\n\n");
 
 	OCIStmt	*lobstmt=NULL;
@@ -2301,6 +2450,7 @@ int main(int argc, char **argv) {
 		execImmediate("drop table protocoltestlongraw"),OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestlob"),OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestarray"),OCI_SUCCESS);
+	assertEquals(execImmediate("drop table protocoltestclr"),OCI_SUCCESS);
 	stdoutput.printf("\n\n");
 
 

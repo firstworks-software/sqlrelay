@@ -365,7 +365,7 @@
 // form and 0xff marks a null.
 #define CLR_MAX_SHORT_LENGTH		252
 #define CLR_LONG_FORM_MARKER		0xfe
-#define CLR_MAX_CHUNK_SIZE		32767
+#define CLR_MAX_CHUNK_SIZE		255
 
 // describe info constants.  the last three are advisory - a client is free to
 // ignore them - and these are what a live 11.2 server sends.
@@ -4818,8 +4818,8 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		return;
 	}
 
-	// the long form: a 0xfe marker, then an lpi chunk size and that many
-	// bytes per chunk, then a zero-length chunk
+	// the long form: a 0xfe marker, then a single raw length byte and
+	// that many bytes per chunk, then a zero-length chunk
 	// (a row value needs it and an authentication field never did, which
 	// is why putLenString() doesn't have it)
 	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
@@ -4829,11 +4829,11 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		if (chunk>CLR_MAX_CHUNK_SIZE) {
 			chunk=CLR_MAX_CHUNK_SIZE;
 		}
-		writeLenPreInt(&reqpacket,chunk);
+		write(&reqpacket,(byte_t)chunk);
 		write(&reqpacket,bytes+offset,(size_t)chunk);
 		offset+=chunk;
 	}
-	writeLenPreInt(&reqpacket,0);
+	write(&reqpacket,(byte_t)0);
 }
 
 // a dalc - an lpi total size, then the value as a clr
@@ -6809,10 +6809,8 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			// chunked (long form) query text: the marker, then a
 			// run of chunks - each a single raw length byte
 			// (0-255) followed by that many bytes - concatenated
-			// together and ended by a zero-length chunk.  Unlike
-			// the lpi-prefixed long form this module's own
-			// putLenBytes() writes (:4787-4810), a live client's
-			// chunk length here is one plain byte, confirmed
+			// together and ended by a zero-length chunk.  A
+			// client's chunk length is one plain byte, confirmed
 			// against a capture: 0xfe, 0xff (255), 255 bytes of
 			// text, 0x1f (31), 31 more bytes, 0x00 to end - a
 			// 286-byte "create table" statement split at the

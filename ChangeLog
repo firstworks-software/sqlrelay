@@ -1237,6 +1237,13 @@
 	the oracle protocol module now implements commit, rollback,
 		autocommit on/off and commit-on-success (OCI_COMMIT_ON_SUCCESS)
 		instead of answering them as unimplemented
+	fixed the oracle protocol module's long-form (chunked) value framing on
+		the way out to a client - each chunk's length was written as a
+		length-prefixed integer, with the run terminated the same way,
+		but a client reads a single raw length byte (255 bytes per
+		chunk at most) and a single zero byte to end the run, unless
+		big chunks have been negotiated, which the module doesn't
+		advertise
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
