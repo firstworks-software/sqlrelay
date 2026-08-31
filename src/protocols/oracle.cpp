@@ -6078,8 +6078,16 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 		return false;
 	}
 
-	if (!read(rp,&ttccode,"ttccode",TTC_TTI_FUNCTION,&rp) &&
-		!read(rp,&ttccode,"ttccode",TTC_PIGGYBACK_TTI_FUNCTION,&rp)) {
+	// both ttc types are legitimate here - an ordinary tti function call
+	// and a piggybacked one.  the shared read() that verifies an expected
+	// value logs every mismatch, so probing for one type and falling back
+	// to the other makes an ordinary piggybacked call look like an error
+	read(rp,&ttccode,&rp);
+	if (ttccode!=TTC_TTI_FUNCTION &&
+		ttccode!=TTC_PIGGYBACK_TTI_FUNCTION) {
+		debugWrite("bad ttccode 0x%02x, expected 0x%02x or 0x%02x",
+					ttccode,TTC_TTI_FUNCTION,
+					TTC_PIGGYBACK_TTI_FUNCTION);
 		*rpout=rpin;
 		return false;
 	}
@@ -8844,16 +8852,23 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 			(((uint32_t)SERVERVERSION_THIRD)<<12)|
 			(((uint32_t)SERVERVERSION_PATCH)<<8)|
 			((uint32_t)SERVERVERSION_FIFTH);
+	byte_t		statusttccode=TTC_STATUS;
+	uint32_t	callstatus=1;
+	uint32_t	endtoendseqnumber=0;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	// a real capture sends the banner length as a length-preceded int - a
-	// count byte and that many big-endian magnitude bytes (01 4c for 76) -
-	// rather than as a bare ub2, so writeLenPreInt() is correct here, not
-	// writeHost()/writeLE()/writeBE()
-	writeLenPreInt(&reqpacket,(uint32_t)charstring::getLength(serverversion));
-	write(&reqpacket,serverversion);
-	writeBE(&reqpacket,packedversion);
+	// a capture of a real 12.2 server answering an oci client settles the
+	// three fields below: the banner is a dalc - an lpi total size, then
+	// the text as a clr - the packed version number after it is an lpi
+	// rather than a bare ub4, and the response ends with the same status
+	// message a logoff gets
+	// see "Oracle Wire Protocol - Version"
+	putDalc(serverversion,(uint32_t)charstring::getLength(serverversion));
+	writeLenPreInt(&reqpacket,packedversion);
+	write(&reqpacket,statusttccode);
+	writeLenPreInt(&reqpacket,callstatus);
+	writeLenPreInt(&reqpacket,endtoendseqnumber);
 
 	debugStart("version response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -8861,6 +8876,9 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	debugWrite("server version:");
 	debugWrite("%s",serverversion);
 	debugWrite("packed version: 0x%08x",packedversion);
+	debugTtcCode(statusttccode);
+	debugWrite("call status: %d",callstatus);
+	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugEnd();
 
 	return sendPacket(true);

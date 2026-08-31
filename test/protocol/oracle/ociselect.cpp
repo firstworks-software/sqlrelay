@@ -11,9 +11,15 @@
 // point an OCI client through oraproxy's banner-rewriting mode at a real
 // oracle server and see what a real server answers an OCI client with in
 // the portable encoding.
+//
+// Set OCISELECT_SERVER_VERSION=1 in the environment to also call
+// OCIServerVersion after the login and print the banner it returns.  Off
+// by default, so an ordinary capture still holds only the login and the
+// one query.
 
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
+#include <rudiments/environment.h>
 #include <rudiments/stdio.h>
 #include <config.h>
 
@@ -78,6 +84,26 @@ int main(int argc, const char **argv) {
 		return 1;
 	}
 	stdoutput.printf("login ok\n");
+
+	// OCIServerVersion, only when asked for, so the default capture is
+	// still nothing but the login and the one query
+	if (charstring::isYes(
+		environment::getValue("OCISELECT_SERVER_VERSION"))) {
+
+		stdoutput.printf("getting server version...\n");
+
+		char	versionbuffer[1024];
+		bytestring::zero(versionbuffer,sizeof(versionbuffer));
+		status=OCIServerVersion(svc,err,
+					(text *)versionbuffer,
+					sizeof(versionbuffer),
+					OCI_HTYPE_SVCCTX);
+		if (status!=OCI_SUCCESS && status!=OCI_SUCCESS_WITH_INFO) {
+			printError("OCIServerVersion",status);
+			return 1;
+		}
+		stdoutput.printf("server version: %s\n",versionbuffer);
+	}
 
 	OCIStmt	*stmt=NULL;
 	if (OCIHandleAlloc(env,(void **)&stmt,

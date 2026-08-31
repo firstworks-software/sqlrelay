@@ -88,6 +88,11 @@ and the one query.
 
     ./ociselect CONNECTSTRING [USER PASSWORD [QUERY]]
 
+With OCISELECT_SERVER_VERSION=1 in the environment it also calls
+OCIServerVersion right after the login and prints the banner that comes
+back, so the capture holds a TTI_VERSION (function code 0x3B) request and
+its response. It is off by default, so an ordinary capture is unchanged.
+
 ocibannerrewritetest drives ociselect through oraproxy's banner-rewriting
 mode against the real oracle122 server, and decodes the result.
 
@@ -151,6 +156,12 @@ the decoder can be exercised without live server access:
                                       prefixed integer representation the
                                       module uses - the reference the
                                       #9174 fix was written against
+    oracle122-oci-portable-universalreps-login-version-select.cap
+                                     the same again, with
+                                      OCISELECT_SERVER_VERSION=1 set as
+                                      well, so it also holds the
+                                      TTI_VERSION request and the real
+                                      server's version response
 
 The two real Oracle test servers on this network
 --------------------------------------------------

@@ -52,7 +52,7 @@ proxypid=$!
 
 sleep 1
 
-./ociselect "//localhost:$port/$service"
+OCISELECT_SERVER_VERSION= ./ociselect "//localhost:$port/$service"
 
 # oraproxy exits on its own once the one connection it handles closes;
 # this kill only matters if the client failed before ever connecting

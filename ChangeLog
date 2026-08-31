@@ -1181,6 +1181,12 @@
 		which made the oracleprotocol and teradataprotocol test suites
 		fail before they even reached the module; their java clients
 		still build only when a jdk is configured
+	oracle protocol module: fixed an oci client hanging forever on
+		OCIServerVersion - the version response's banner and packed
+		version number were both a byte short of what a real server
+		sends, and it was missing its trailing status message
+	oracle protocol module: stopped logging a piggybacked tti call as a
+		bad ttc code
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

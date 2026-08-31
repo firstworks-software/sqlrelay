@@ -41,7 +41,7 @@ proxypid=$!
 
 sleep 1
 
-./ociselect \
+OCISELECT_SERVER_VERSION= ./ociselect \
 	"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=$PROXYPORT))(CONNECT_DATA=(SID=ora1)))" \
 	testuser testpassword "select 1 from dual"
 
