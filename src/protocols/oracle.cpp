@@ -176,6 +176,12 @@
 #define ORA_INVALID_CURSOR		1001
 #define ORA_INVALID_CURSOR_MESSAGE	"ORA-01001: invalid cursor\n"
 
+// what sendUnimplementedFunctionError() sends for a tti function this
+// module doesn't implement, or doesn't recognize at all - a real ora
+// number, unlike ORA_QUERY_FAILED below
+#define ORA_UNIMPLEMENTED_FEATURE		3001
+#define ORA_UNIMPLEMENTED_FEATURE_MESSAGE	"ORA-03001: unimplemented feature\n"
+
 // what sendQueryError() sends when the backend left no usable error number
 // (0, which putSummary() reads as success) or message - ORA-20000 through
 // ORA-20999 is oracle's user-defined exception range, the closest fit for
@@ -1198,6 +1204,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool	sendQueryError(sqlrservercursor *cursor);
 		bool	sendCursorNotOpenError(uint32_t cursorid=0);
+		bool	sendUnimplementedFunctionError();
 
 		uint16_t	connectversion;
 		uint16_t	connectlowestversion;
@@ -1667,157 +1674,54 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_AUTOCOMMIT_ON:
-					debugWrite("unimplemented tti "
-						"function TTI_AUTOCOMMIT_ON, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_AUTOCOMMIT_OFF:
-					debugWrite("unimplemented tti "
-						"function TTI_AUTOCOMMIT_OFF, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_COMMIT:
-					debugWrite("unimplemented tti "
-						"function TTI_COMMIT, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_ROLLBACK:
-					debugWrite("unimplemented tti "
-						"function TTI_ROLLBACK, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_CANCEL:
-					debugWrite("unimplemented tti "
-						"function TTI_CANCEL, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_DESCRIBE:
 				case TTI_DESCRIBE2:
-					debugWrite("unimplemented tti "
-						"function TTI_DESCRIBE"
-						"%s, ending session",
-						(ttifunction==TTI_DESCRIBE2)?
-							"2":"");
-					loop=false;
-					break;
 				case TTI_STARTUP:
 				case TTI_STARTUP2:
-					debugWrite("unimplemented tti "
-						"function TTI_STARTUP"
-						"%s, ending session",
-						(ttifunction==TTI_STARTUP2)?
-							"2":"");
-					loop=false;
-					break;
 				case TTI_SHUTDOWN:
-					debugWrite("unimplemented tti "
-						"function TTI_SHUTDOWN, "
-						"ending session");
-					loop=false;
+					// unimplemented - return an oracle error and
+					// keep the session alive instead of dropping
+					// it; rp is discarded, the call's body (and
+					// anything piggybacked behind it) go unread
+					loop=sendUnimplementedFunctionError();
+					rp=NULL;
 					break;
 				case TTI_VERSION:
 					loop=version(rp,true);
 					rp=NULL;
 					break;
 				case TTI_K2_TRANSACTIONS:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_K2_TRANSACTIONS, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_OSQL7:
-					debugWrite("unimplemented tti "
-						"function TTI_OSQL7, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_OKOD:
-					debugWrite("unimplemented tti "
-						"function TTI_OKOD, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_LOB_OPERATIONS:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_LOB_OPERATIONS, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_ODNY:
-					debugWrite("unimplemented tti "
-						"function TTI_ODNY, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_TRANSACTION_END:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_TRANSACTION_END, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_TRANSACTION_BEGIN:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_TRANSACTION_BEGIN, "
-						"ending session");
-					loop=false;
+					loop=sendUnimplementedFunctionError();
+					rp=NULL;
 					break;
 				case TTI_OCCA:
 					loop=occa(rp,&rp);
 					break;
 				case TTI_LOGON_PRESENT_PWD:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_LOGON_PRESENT_PWD, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_LOGON_PRESENT_USER:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_LOGON_PRESENT_USER, "
-						"ending session");
-					loop=false;
+					loop=sendUnimplementedFunctionError();
+					rp=NULL;
 					break;
 				case TTI_UNIDENTIFIED_0X54:
 					loop=unidentified54(rp);
 					rp=NULL;
 					break;
 				case TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_LOGON_PRESENT_PWD_"
-						"SEND_AUTH_PASSWORD, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY:
-					debugWrite("unimplemented tti "
-						"function "
-						"TTI_LOGON_PRESENT_USER_"
-						"REQ_AUTH_SESSKEY, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_OOTCM:
-					debugWrite("unimplemented tti "
-						"function TTI_OOTCM, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_OKPFC:
-					debugWrite("unimplemented tti "
-						"function TTI_OKPFC, "
-						"ending session");
-					loop=false;
+					loop=sendUnimplementedFunctionError();
+					rp=NULL;
 					break;
 				case TTI_SWITCH_SESSION:
 					// one function code, two meanings
@@ -1834,26 +1738,15 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					}
 					break;
 				case TTI_OSCID:
-					debugWrite("unimplemented tti "
-						"function TTI_OSCID, "
-						"ending session");
-					loop=false;
-					break;
 				case TTI_OSKEYVAL:
-					debugWrite("unimplemented tti "
-						"function TTI_OSKEYVAL, "
-						"ending session");
-					loop=false;
+					loop=sendUnimplementedFunctionError();
+					rp=NULL;
 					break;
 				default:
-					// an unrecognized function code ends
-					// the session cleanly, which is what
-					// the docs prescribe
-					debugWrite("unrecognized tti "
-						"function 0x%02x, "
-						"ending session",
-						ttifunction);
-					loop=false;
+					// an unrecognized function code - same
+					// treatment as an unimplemented one
+					loop=sendUnimplementedFunctionError();
+					rp=NULL;
 					break;
 			}
 
@@ -9155,6 +9048,32 @@ bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {
 					ORA_INVALID_CURSOR_MESSAGE);
 	} else {
 		putError("ORA-01001: invalid cursor",ORA_INVALID_CURSOR);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
+}
+
+// what a tti function this module doesn't implement (or doesn't recognize
+// at all) gets back, instead of the caller dropping the session - keeps
+// the client connected so the rest of the session can still run
+bool sqlrprotocol_oracle::sendUnimplementedFunctionError() {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("unimplemented function error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(0,ORA_UNIMPLEMENTED_FEATURE,0,
+					ORA_UNIMPLEMENTED_FEATURE_MESSAGE);
+	} else {
+		putError(ORA_UNIMPLEMENTED_FEATURE_MESSAGE,
+					ORA_UNIMPLEMENTED_FEATURE);
 		putGenericFooter();
 	}
 

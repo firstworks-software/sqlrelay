@@ -1205,6 +1205,10 @@
 		mismatched-arity format argument is caught at compile time; fixed
 		a dozen call sites the resulting warnings turned up, including a
 		latent size_t-as-int precision bug in debugHexDump()
+	the oracle protocol module now returns an oracle error and keeps the
+		session alive when a client sends a tti function it doesn't
+		implement (or doesn't recognize), instead of dropping the
+		connection
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
