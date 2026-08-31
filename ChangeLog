@@ -1196,6 +1196,10 @@
 		violation, client disconnected, and the oracle and router
 		connection modules) were re-formatting already-rendered text
 		as a printf format string
+	fixed the oracle protocol module's version response reporting 8.0.5
+		instead of the version it reports at login
+	the oracle protocol module's version response now honors the buffer
+		length the client sends, rather than overrunning it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

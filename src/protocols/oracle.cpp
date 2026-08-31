@@ -313,21 +313,14 @@
 // serverversion attribute selects them.  AUTH_VERSION_NO's nibbles are the
 // version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
 // reports 0x0c200100, so 0x0c100200 is 12.1.0.2.0.  AUTH_VERSION_SQL is 22 on
-// that 11.2 server and 24 on that 12.2 one.
+// that 11.2 server and 24 on that 12.2 one.  the banner and packed version
+// number that the version response sends are derived from AUTH_VERSION_NO, so
+// that a client is told the same version after the login that it was told
+// during it.
 #define SERVER_VERSION_NO_11_2		"186646784"
 #define SERVER_VERSION_SQL_11_2		"22"
 #define SERVER_VERSION_NO_12_1		"202375680"
 #define SERVER_VERSION_SQL_12_1		"23"
-
-// the version that the version response's banner announces, split into its
-// components so the response can also send it as a packed version number.
-// these have to match the banner string in sendVersionResponse() - change one
-// and change the other.
-#define SERVERVERSION_MAJOR		8
-#define SERVERVERSION_MINOR		0
-#define SERVERVERSION_THIRD		5
-#define SERVERVERSION_PATCH		0
-#define SERVERVERSION_FIFTH		0
 
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
@@ -1189,8 +1182,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendDisconnectResponse();
 
 		// version
-		bool	version(const byte_t *rp);
-		bool	sendVersionResponse();
+		bool	version(const byte_t *rp, bool istticall);
+		bool	sendVersionResponse(uint32_t bufferlength);
 
 		// occa
 		bool	occa(const byte_t *rp, const byte_t **rpout);
@@ -1255,6 +1248,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		byte_t		serverfieldversion;
 		const char	*serverversionno;
 		const char	*serverversionsql;
+		uint32_t	serverversionpacked;
+		char		serverversionbanner[128];
 
 		// whether the client marshals in its own memory layout
 		bool		nativeencoding;
@@ -1397,6 +1392,23 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		serverversionno=SERVER_VERSION_NO_12_1;
 		serverversionsql=SERVER_VERSION_SQL_12_1;
 	}
+
+	// build the version response's banner from that version.  the nibbles
+	// of AUTH_VERSION_NO are the version: major in bits 31-24, minor in
+	// 23-20, the third component in 15-12, the patchset in 11-8, and the
+	// fifth component in 7-0.  the other bits are zero.
+	serverversionpacked=(uint32_t)
+			charstring::convertToUnsignedInteger(serverversionno);
+	int	major=(int)((serverversionpacked>>24)&0xff);
+	int	minor=(int)((serverversionpacked>>20)&0x0f);
+	int	third=(int)((serverversionpacked>>12)&0x0f);
+	int	patch=(int)((serverversionpacked>>8)&0x0f);
+	int	fifth=(int)(serverversionpacked&0xff);
+	charstring::printf(serverversionbanner,sizeof(serverversionbanner),
+			"Oracle Database %d%s Enterprise Edition "
+			"Release %d.%d.%d.%d.%d - 64bit Production",
+			major,(major>=12)?"c":"g",
+			major,minor,third,patch,fifth);
 
 	// which o5logon verifier type to offer
 	// (a 12c verifier can't exist on an 11.2 database, so the default
@@ -1709,7 +1721,7 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=false;
 					break;
 				case TTI_VERSION:
-					loop=version(rp);
+					loop=version(rp,true);
 					rp=NULL;
 					break;
 				case TTI_K2_TRANSACTIONS:
@@ -1817,7 +1829,7 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 						TTC_PIGGYBACK_TTI_FUNCTION) {
 						loop=switchSession(rp,&rp);
 					} else {
-						loop=version(rp);
+						loop=version(rp,false);
 						rp=NULL;
 					}
 					break;
@@ -8789,7 +8801,7 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	return sendPacket(true);
 }
 
-bool sqlrprotocol_oracle::version(const byte_t *rp) {
+bool sqlrprotocol_oracle::version(const byte_t *rp, bool istticall) {
 
 	const byte_t	*end=resppacket+resppacketsize;
 
@@ -8829,32 +8841,29 @@ bool sqlrprotocol_oracle::version(const byte_t *rp) {
 	}
 	debugEnd();
 
-	return sendVersionResponse();
+	// only a genuine tti version call states the size of the buffer the
+	// client passed in - a bare switch session reuses this response, but
+	// its body has a different shape, so the bytes read above aren't a
+	// buffer length.  0, or absent, means don't cap the banner.
+	return sendVersionResponse((istticall)?bufferlength:0);
 }
 
-bool sqlrprotocol_oracle::sendVersionResponse() {
+bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
-	// FIXME: get this from the db
-	const char	*serverversion=
-			"Oracle8 Release 8.0.5.0.0 - Production\n"
-			"PL/SQL Release 8.0.5.0.0 - Production";
-	// the packed version number of the version the banner announces.  the
-	// nibbles are the version: major in bits 31-24, minor in 23-20, the
-	// third component in 15-12, the patchset in 11-8, and the fifth
-	// component in 7-0.  the other bits are zero.
-	uint32_t	packedversion=
-			(((uint32_t)SERVERVERSION_MAJOR)<<24)|
-			(((uint32_t)SERVERVERSION_MINOR)<<20)|
-			(((uint32_t)SERVERVERSION_THIRD)<<12)|
-			(((uint32_t)SERVERVERSION_PATCH)<<8)|
-			((uint32_t)SERVERVERSION_FIFTH);
 	byte_t		statusttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
 	uint32_t	endtoendseqnumber=0;
+
+	// don't overrun the buffer the client passed in
+	uint32_t	bannerlength=
+			(uint32_t)charstring::getLength(serverversionbanner);
+	if (bufferlength && bufferlength<bannerlength) {
+		bannerlength=bufferlength;
+	}
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
@@ -8864,8 +8873,8 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	// rather than a bare ub4, and the response ends with the same status
 	// message a logoff gets
 	// see "Oracle Wire Protocol - Version"
-	putDalc(serverversion,(uint32_t)charstring::getLength(serverversion));
-	writeLenPreInt(&reqpacket,packedversion);
+	putDalc(serverversionbanner,bannerlength);
+	writeLenPreInt(&reqpacket,serverversionpacked);
 	write(&reqpacket,statusttccode);
 	writeLenPreInt(&reqpacket,callstatus);
 	writeLenPreInt(&reqpacket,endtoendseqnumber);
@@ -8874,8 +8883,8 @@ bool sqlrprotocol_oracle::sendVersionResponse() {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("server version:");
-	debugWrite("%s",serverversion);
-	debugWrite("packed version: 0x%08x",packedversion);
+	debugWrite("%s",serverversionbanner);
+	debugWrite("packed version: 0x%08x",serverversionpacked);
 	debugTtcCode(statusttccode);
 	debugWrite("call status: %d",callstatus);
 	debugWrite("end to end seq number: %d",endtoendseqnumber);

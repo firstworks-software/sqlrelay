@@ -512,8 +512,11 @@ int main(int argc, char **argv) {
 				(text *)versionbuf,sizeof(versionbuf),
 				OCI_HTYPE_SVCCTX),
 		OCI_SUCCESS);
-	assertTrue(charstring::getLength(versionbuf)>0);
-	assertTrue(charstring::contains(versionbuf,"Oracle"));
+	// the test configs all set serverversion="11.2", which the protocol
+	// module packs as 0x0b200100 and expands into this exact banner
+	assertEquals(versionbuf,
+		"Oracle Database 11g Enterprise Edition "
+		"Release 11.2.0.1.0 - 64bit Production");
 	stdoutput.printf("\n%s\n",versionbuf);
 	stdoutput.printf("\n\n");
 

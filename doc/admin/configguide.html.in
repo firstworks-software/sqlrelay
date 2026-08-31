@@ -4066,7 +4066,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>So the Oracle protocol module imitates one Oracle version, consistently, and the <i>serverversion</i> option chooses which one.  It accepts 11.2 or 12.1, and defaults to 12.1.  Any other value, including a misspelled one, is the same as leaving it out.</p>
 
-<p>The setting moves everything a client picks a reader from, all at once: the TTC field version the module negotiates, the shape of the summary object that ends every response, the server version and SQL version the module reports while authenticating, and the default password verifier type described below.  Both settings describe a server that could really exist.  There is no setting that mixes them.</p>
+<p>The setting moves everything a client picks a reader from, all at once: the TTC field version the module negotiates, the shape of the summary object that ends every response, the server version and SQL version the module reports while authenticating, the version banner and packed version number an OCIServerVersion call gets back, and the default password verifier type described below.  Both settings describe a server that could really exist.  There is no setting that mixes them.</p>
 
 <p><b>This option decides which clients can use the instance at all.</b>  As of SQL Relay 2.3.0, measured against the module:</p>
 
