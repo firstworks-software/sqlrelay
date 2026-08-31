@@ -1216,6 +1216,13 @@
 		call the marker interrupted with ora-01013 before going back to
 		waiting for the next tti function, instead of treating the
 		marker as a framing error and ending the session
+	the oracle protocol module now parses long-form (chunked) query text
+		in a query3 request instead of ending the session - a client
+		sends the query text as a run of raw length-byte-prefixed
+		chunks (terminated by a zero-length chunk) once it's long
+		enough, and the module reassembles them before handing the
+		query off, the same as it always did for the ordinary,
+		unchunked form
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -6769,37 +6769,80 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		}
 
 		if (rp<end && *rp==CLR_LONG_FORM_MARKER) {
-			debugWrite("chunked query text, not supported");
-			return false;
-		}
 
-		// a length byte in front of the text.  python-oracledb's
-		// declared size is the byte count and matches it; OCI's is a
-		// buffer size - the character count times the bytes per
-		// character of its charset - the same thing it does with the
-		// user name in the login, and the length byte is the one to
-		// believe either way.  OCI's case is only taken when the
-		// declared size is more than the packet has left, which is
-		// what makes it unambiguous.
-		if (rp<end && *rp && (uint32_t)(*rp)<*querysize &&
-			(size_t)(end-rp)<(size_t)*querysize &&
-			(*querysize==(uint32_t)(*rp)*2 ||
-				*querysize==(uint32_t)(*rp)*3 ||
-				*querysize==(uint32_t)(*rp)*4)) {
-			*querysize=*rp;
+			// chunked (long form) query text: the marker, then a
+			// run of chunks - each a single raw length byte
+			// (0-255) followed by that many bytes - concatenated
+			// together and ended by a zero-length chunk.  Unlike
+			// the lpi-prefixed long form this module's own
+			// putLenBytes() writes (:4787-4810), a live client's
+			// chunk length here is one plain byte, confirmed
+			// against a capture: 0xfe, 0xff (255), 255 bytes of
+			// text, 0x1f (31), 31 more bytes, 0x00 to end - a
+			// 286-byte "create table" statement split at the
+			// 255-byte mark.  the chunks aren't contiguous (each
+			// is separated from the next by its length byte), so
+			// reassemble them into one buffer; (end-rp) is a safe
+			// upper bound on the reassembled size, since the
+			// length bytes only take space away from it
 			rp++;
-		} else if (rp<end && *querysize<=CLR_MAX_SHORT_LENGTH &&
-					(uint32_t)(*rp)==*querysize) {
-			rp++;
-		}
+			char	*querytext=(char *)resppacketpool->allocate(
+							(size_t)(end-rp));
+			uint32_t	querytextsize=0;
+			for (;;) {
+				if (rp>=end) {
+					debugWrite("truncated chunked "
+							"query text");
+					return false;
+				}
+				byte_t	chunksize=0;
+				read(rp,&chunksize,&rp);
+				if (!chunksize) {
+					break;
+				}
+				if ((size_t)(end-rp)<(size_t)chunksize) {
+					debugWrite("truncated chunked "
+							"query text");
+					return false;
+				}
+				bytestring::copy(querytext+querytextsize,
+							rp,chunksize);
+				rp+=chunksize;
+				querytextsize+=chunksize;
+			}
+			*query=querytext;
+			*querysize=querytextsize;
 
-		if ((size_t)(end-rp)<(size_t)*querysize) {
-			debugWrite("truncated query text");
-			return false;
-		}
+		} else {
 
-		*query=(const char *)rp;
-		rp+=*querysize;
+			// a length byte in front of the text.  python-oracledb's
+			// declared size is the byte count and matches it; OCI's is a
+			// buffer size - the character count times the bytes per
+			// character of its charset - the same thing it does with the
+			// user name in the login, and the length byte is the one to
+			// believe either way.  OCI's case is only taken when the
+			// declared size is more than the packet has left, which is
+			// what makes it unambiguous.
+			if (rp<end && *rp && (uint32_t)(*rp)<*querysize &&
+				(size_t)(end-rp)<(size_t)*querysize &&
+				(*querysize==(uint32_t)(*rp)*2 ||
+					*querysize==(uint32_t)(*rp)*3 ||
+					*querysize==(uint32_t)(*rp)*4)) {
+				*querysize=*rp;
+				rp++;
+			} else if (rp<end && *querysize<=CLR_MAX_SHORT_LENGTH &&
+						(uint32_t)(*rp)==*querysize) {
+				rp++;
+			}
+
+			if ((size_t)(end-rp)<(size_t)*querysize) {
+				debugWrite("truncated query text");
+				return false;
+			}
+
+			*query=(const char *)rp;
+			rp+=*querysize;
+		}
 	}
 
 	// the summary object has to echo this back
