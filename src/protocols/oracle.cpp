@@ -6815,19 +6815,26 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 
 		} else {
 
-			// a length byte in front of the text.  python-oracledb's
-			// declared size is the byte count and matches it; OCI's is a
-			// buffer size - the character count times the bytes per
-			// character of its charset - the same thing it does with the
-			// user name in the login, and the length byte is the one to
-			// believe either way.  OCI's case is only taken when the
-			// declared size is more than the packet has left, which is
-			// what makes it unambiguous.
+			// a length byte in front of the text.  python-oracledb and
+			// node-oracledb declare the byte count and write a length
+			// byte that matches it, OCI declares a buffer size - the
+			// character count times the bytes per character of its
+			// charset, the same thing it does with the user name in the
+			// login - and writes a length byte with the real byte count,
+			// and ojdbc declares the byte count and writes no length byte
+			// at all.  so the declared size is only wrong for OCI, and
+			// only OCI's length byte can be believed over it - believing
+			// ojdbc's first character as a length would eat it.  telling
+			// OCI's case from ojdbc's by whether the declared size
+			// overflows the packet works for a long statement, but not
+			// for one short enough that both fit - "commit" on a 4 byte
+			// per character charset declares 24 with 24 bytes still in
+			// the packet, and the 18 bytes past the text went to the
+			// backend as part of the query, which is the ORA-00911 this
+			// fixes - so fall back on the module's own oci discriminator
 			if (rp<end && *rp && (uint32_t)(*rp)<*querysize &&
-				(size_t)(end-rp)<(size_t)*querysize &&
-				(*querysize==(uint32_t)(*rp)*2 ||
-					*querysize==(uint32_t)(*rp)*3 ||
-					*querysize==(uint32_t)(*rp)*4)) {
+				(ociclient ||
+					(size_t)(end-rp)<(size_t)*querysize)) {
 				*querysize=*rp;
 				rp++;
 			} else if (rp<end && *querysize<=CLR_MAX_SHORT_LENGTH &&

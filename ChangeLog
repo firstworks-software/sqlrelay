@@ -1223,6 +1223,12 @@
 		enough, and the module reassembles them before handing the
 		query off, the same as it always did for the ordinary,
 		unchunked form
+	fixed the oracle protocol module sending trailing bytes past a short
+		statement's text to the backend on the query3 path - an oci
+		client declares the query size as a buffer size rather than a
+		byte count, and telling that apart from the byte count only by
+		whether it fits in the packet doesn't work for a statement
+		short enough that both fit, so "commit" came back ora-00911
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
