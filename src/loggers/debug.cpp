@@ -139,7 +139,7 @@ bool sqlrlogger_debug::write(sqlrlistener *sqlrl,
 	if (level!=SQLRLOGGER_LOGLEVEL_DEBUG) {
 		return true;
 	}
-	debuglogger->write(0,NULL,indent,info);
+	debuglogger->write(0,NULL,indent,"%s",info);
 	return true;
 }
 

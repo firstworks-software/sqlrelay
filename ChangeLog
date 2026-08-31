@@ -1187,6 +1187,8 @@
 		sends, and it was missing its trailing status message
 	oracle protocol module: stopped logging a piggybacked tti call as a
 		bad ttc code
+	fixed the debug logger passing client-controlled text as a printf
+		format string
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
