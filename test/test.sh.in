@@ -869,8 +869,12 @@ run_protocol_test() {
 			prog=`basename $dir`
 			;;
 		teradataprotocol)
+			# unlike the other protocol instances, this one's
+			# test program is a java class, launched by the
+			# directory's own run wrapper rather than a native
+			# binary
 			dir="protocol/teradata"
-			prog=`basename $dir`
+			prog="run"
 			;;
 	esac
 
