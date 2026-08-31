@@ -6,8 +6,8 @@
 
 #include <sqlrelay/private/sqlrserverincludes.h>
 
-// enables -Wformat checking of debugStart()/debugWrite() calls against
-// their printf-style arguments
+// enables -Wformat checking of debugStart()/debugWrite()/raise*Event() calls
+// against their printf-style arguments
 #ifdef __GNUC__
 	#define SQLR_PRINTF_FORMAT(fmt,args) \
 			__attribute__((format(printf,fmt,args)))
@@ -1441,11 +1441,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 
 		/** Raises a debug-start event with information "info", which
 		 *  may be logged, or which may trigger a notification. */
-		void	raiseDebugStartEvent(const char *info, ...);
+		void	raiseDebugStartEvent(const char *info, ...)
+						SQLR_PRINTF_FORMAT(2,3);
 
 		/** Raises a debug-write event with information "info", which
 		 *  may be logged, or which may trigger a notification. */
-		void	raiseDebugWriteEvent(const char *info, ...);
+		void	raiseDebugWriteEvent(const char *info, ...)
+						SQLR_PRINTF_FORMAT(2,3);
 
 		/** Raises a debug-end event, which may be logged, or which may
 		 *  trigger a notification. */
@@ -1459,11 +1461,13 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  "info", which may be logged, or which may trigger a
 		 *  notification. */
 		void	raiseClientConnectionRefusedEvent(
-						const char *info, ...);
+						const char *info, ...)
+						SQLR_PRINTF_FORMAT(2,3);
 
 		/** Raises a client-disconnected event with information "info",
 		 *  which may be logged, or which may trigger a notification. */
-		void	raiseClientDisconnectedEvent(const char *info, ...);
+		void	raiseClientDisconnectedEvent(const char *info, ...)
+						SQLR_PRINTF_FORMAT(2,3);
 
 		/** Raises a client-protocol-error event on cursor "cursor",
 		 *  with information "info", and with result code "result"
@@ -1472,7 +1476,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  which may trigger a notification. */
 		void	raiseClientProtocolErrorEvent(sqlrservercursor *cursor,
 							ssize_t result,
-							const char *info, ...);
+							const char *info, ...)
+							SQLR_PRINTF_FORMAT(4,5);
 
 		/** Raises a database-login event, which may be logged, or
 		 *  which may trigger a notification. */
@@ -1514,31 +1519,37 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseInternalErrorEvent(sqlrservercursor *cursor,
-							const char *info, ...);
+							const char *info, ...)
+							SQLR_PRINTF_FORMAT(3,4);
 
 		/** Raises an internal-warning event on cursor "cursor", with
 		 *  information "info", which may be logged, or which may
 		 *  trigger a notification. */
 		void	raiseInternalWarningEvent(sqlrservercursor *cursor,
-							const char *info, ...);
+							const char *info, ...)
+							SQLR_PRINTF_FORMAT(3,4);
 
 		/** Raises a schedule-violation event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
-		void	raiseScheduleViolationEvent(const char *info, ...);
+		void	raiseScheduleViolationEvent(const char *info, ...)
+						SQLR_PRINTF_FORMAT(2,3);
 
 		/** Raises a integrity-violation event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
-		void	raiseIntegrityViolationEvent(const char *info, ...);
+		void	raiseIntegrityViolationEvent(const char *info, ...)
+						SQLR_PRINTF_FORMAT(2,3);
 
 		/** Raises a translation-failure event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
 		void	raiseTranslationFailureEvent(sqlrservercursor *cursor,
-							const char *info, ...);
+							const char *info, ...)
+							SQLR_PRINTF_FORMAT(3,4);
 
 		/** Raises a parse-failure event, with information "info",
 		 *  which may be logged, or which may trigger a notification. */
 		void	raiseParseFailureEvent(sqlrservercursor *cursor,
-							const char *info, ...);
+							const char *info, ...)
+							SQLR_PRINTF_FORMAT(3,4);
 
 		/** Raises a cursor-open event, on cursor "cursor", which may
 		 *  be logged, or which may trigger a notification. */

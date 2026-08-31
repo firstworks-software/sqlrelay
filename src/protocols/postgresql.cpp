@@ -647,7 +647,7 @@ bool sqlrprotocol_postgresql::recvStartupMessage() {
 
 			// Yes=S, No=N
 			const char	*response=(useTls())?"S":"N";
-			debugStart(response);
+			debugStart("%s",response);
 			debugEnd();
 
 			// return a single byte

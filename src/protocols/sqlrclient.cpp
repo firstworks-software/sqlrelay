@@ -3247,7 +3247,7 @@ bool sqlrprotocol_sqlrclient::getIntegerBind(sqlrserverbindvar *bv) {
 	bv->value.integerval=(int64_t)value;
 
 	char	*intval=charstring::parseNumber(bv->value.integerval);
-	debugWrite(intval);
+	debugWrite("%s",intval);
 	delete[] intval;
 
 	return true;
@@ -3291,7 +3291,7 @@ bool sqlrprotocol_sqlrclient::getDoubleBind(sqlrserverbindvar *bv) {
 	}
 
 	char	*doubleval=charstring::parseNumber(bv->value.doubleval.value);
-	debugWrite(doubleval);
+	debugWrite("%s",doubleval);
 	delete[] doubleval;
 
 	return true;
@@ -3726,7 +3726,7 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 		char	string[30];
 		charstring::printf(string,sizeof(string),
 				"actual rows: %lld",(long long)actual);
-		debugWrite(string);
+		debugWrite("%s",string);
 
 		clientsock->write((uint16_t)ACTUAL_ROWS);
 		clientsock->write(actual);
@@ -3745,7 +3745,7 @@ void sqlrprotocol_sqlrclient::sendRowCounts(bool knowsactual,
 		char	string[46];
 		charstring::printf(string,46,
 				"affected rows: %lld",(long long)affected);
-		debugWrite(string);
+		debugWrite("%s",string);
 
 		clientsock->write((uint16_t)AFFECTED_ROWS);
 		clientsock->write(affected);

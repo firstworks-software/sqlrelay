@@ -4786,7 +4786,7 @@ bool sqlrprotocol_firebird::genericResponse(const char *title,
 	// 	int32_t[]	status vector
 	// }
 
-	debugStart(title);
+	debugStart("%s",title);
 
 	uint32_t	byteswritten=0;
 
@@ -8480,7 +8480,7 @@ bool sqlrprotocol_firebird::createBlobCommon(const char *title, bool hasbpb) {
 	//
 	// (the bpb comes in front of the transaction handle, not after it)
 
-	debugStart(title);
+	debugStart("%s",title);
 
 	uint32_t	bytesread=0;
 
@@ -8550,7 +8550,7 @@ bool sqlrprotocol_firebird::openBlobCommon(const char *title, bool hasbpb) {
 	// 	int32_t		blob id, low word
 	// }
 
-	debugStart(title);
+	debugStart("%s",title);
 
 	uint32_t	bytesread=0;
 
@@ -8733,7 +8733,7 @@ bool sqlrprotocol_firebird::putSegmentCommon(const char *title, bool batch) {
 	// op_batch_segments packs several, each behind a 2-byte little-endian
 	// length, with no padding between them.
 
-	debugStart(title);
+	debugStart("%s",title);
 
 	uint32_t	bytesread=0;
 
@@ -10530,7 +10530,7 @@ bool sqlrprotocol_firebird::batchCompletionState(const char *title,
 	// name disjoint sets - a failure is either detailed by a status
 	// vector or named by position alone, never both)
 
-	debugStart(title);
+	debugStart("%s",title);
 
 	uint32_t	byteswritten=0;
 

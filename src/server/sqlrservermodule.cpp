@@ -98,7 +98,7 @@ void sqlrservermodule::debugHexDump(const byte_t *data, uint64_t size) {
 	pvt->_logbuffer.clear();
 	pvt->_logbuffer.printHex(data,size,0);
 	cont->raiseDebugWriteEvent("%.*s",
-			pvt->_logbuffer.getSize(),
+			(int)pvt->_logbuffer.getSize(),
 			pvt->_logbuffer.getString());
 }
 

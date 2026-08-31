@@ -26,6 +26,11 @@ AC_ARG_ENABLE(werror,
 	[  --disable-werror        compile without -Werror, even if supported],
 	ENABLE_WERROR="",
 	ENABLE_WERROR="yes")
+AC_ARG_ENABLE(format-checks,
+	[  --disable-format-checks compile without -Wformat-nonliteral
+	                           -Wformat-security, even if supported],
+	ENABLE_WFORMATCHECKS="",
+	ENABLE_WFORMATCHECKS="yes")
 
 CFLAGS="$SMALLCODE $CFLAGS"
 CXXFLAGS="$SMALLCODE $CXXFLAGS"
@@ -641,6 +646,25 @@ FW_CHECK_FPIC
 FW_CHECK_WERROR
 FW_CHECK_WALL
 FW_CHECK_WALL_WUNUSED
+dnl checks for -Wformat-nonliteral and -Wformat-security support, used to
+dnl catch a non-literal or mismatched-arity printf-style format argument
+dnl to the raise*Event(), debugStart() and debugWrite() methods at compile
+dnl time; if unsupported, WFORMATCHECKS stays empty
+WFORMATCHECKS=""
+if ( test "$ENABLE_WFORMATCHECKS" = "yes" )
+then
+	AC_MSG_CHECKING(for -Wformat-nonliteral -Wformat-security)
+	FW_TRY_LINK([#include <stdio.h>],[printf("hello");],
+			[-Wformat-nonliteral -Wformat-security],[],[],
+			[WFORMATCHECKS="-Wformat-nonliteral -Wformat-security"])
+	if ( test -n "$WFORMATCHECKS" )
+	then
+		AC_MSG_RESULT(yes)
+	else
+		AC_MSG_RESULT(no)
+	fi
+fi
+AC_SUBST(WFORMATCHECKS)
 FW_CHECK_WNOOVERLOADEDVIRTUAL
 FW_CHECK_WNOMISMATCHEDTAGS
 FW_CHECK_WNOUNKNOWNPRAGMAS

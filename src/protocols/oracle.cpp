@@ -5519,7 +5519,7 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
 
-	debugStart(what);
+	debugStart("%s",what);
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("encoding: %s",(nativeencoding)?"native":"portable");
