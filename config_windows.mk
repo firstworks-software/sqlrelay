@@ -434,13 +434,16 @@ PROTOCOLSINSTALLTARGETS = installdll-tds
 TESTALLSUBDIRS = all-c all-cpp all-legacy all-extensions all-odbc all-cs all-adonet all-java all-jdbc all-protocol all-stress all-tcl all-crud
 # mysql (connector c) and postgresql (libpq) are always built on windows, so
 # always build their wire-protocol tests; unix sets this conditionally in
-# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  firebird and tds are
-# conditional, so they reuse @ALLFIREBIRD@ and @ALLTDS@, which configure.vbs
-# sets to all-firebird / all-tds when it finds ibase.h/fbclient_ms.lib or
-# ctpublic.h/libsybct64.lib respectively.  the tds protocol test's freetds
-# ct-lib target is never built here since windows doesn't build freetds; only
-# its sap ct-lib target is
-TESTPROTOCOLSUBDIRS = all-mysql all-postgresql @ALLFIREBIRD@ @ALLTDS@
+# config.mk.in from MYSQLLIBS/POSTGRESQLLIBS.  firebird, tds, and oracle are
+# conditional, so they reuse @ALLFIREBIRD@, @ALLTDS@, and @ALLORACLE@, which
+# configure.vbs sets to all-firebird / all-tds / all-oracle when it finds
+# ibase.h/fbclient_ms.lib, ctpublic.h/libsybct64.lib, or the oracle client
+# respectively.  the tds protocol test's freetds ct-lib target is never
+# built here since windows doesn't build freetds; only its sap ct-lib target
+# is.  teradata has no client library to probe for - its protocol test
+# directory's other target, odbc.ini, needs nothing - so all-teradata is
+# always built
+TESTPROTOCOLSUBDIRS = all-mysql all-postgresql @ALLFIREBIRD@ @ALLTDS@ @ALLORACLE@ all-teradata
 
 CPPTESTCPPFLAGS = $(BASECPPFLAGS) /I $(includedir) $(RUDIMENTSINCLUDES) /I $(top_builddir)
 CPPTESTLIBS = /LIBPATH:$(libdir) lib$(SQLR)client.lib $(RUDIMENTSLIBS)
@@ -457,6 +460,11 @@ TDSTESTALLTARGETS = tds-sap
 TDSTESTSAPCPPFLAGS = $(CPPTESTCPPFLAGS) $(SYBASEINCLUDES)
 TDSTESTSAPLIBS = $(SYBASELIBS) $(RUDIMENTSLIBS)
 
+# windows always assumes a jdk (see JAVAC above), unlike unix's
+# HAVE_JAVA-gated ORACLEPROTOCOLTESTTARGETS / TERADATAPROTOCOLTESTTARGETS in
+# config.mk.in, so these are unconditional
+ORACLEPROTOCOLTESTTARGETS = oracle.class
+TERADATAPROTOCOLTESTTARGETS = teradata.class
 
 # bench
 BENCHCPPFLAGS = $(BASECPPFLAGS) $(RUDIMENTSINCLUDES) /I$(top_builddir)\src\api\c++

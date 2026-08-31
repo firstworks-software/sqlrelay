@@ -13,7 +13,9 @@ include ../../../config.mk
 #
 TERADATAPROTOCOLPORT1 ?= 1025
 
-all: teradata.class odbc.ini
+# teradata.class only builds if a jdk is configured - see
+# TERADATAPROTOCOLTESTTARGETS in config.mk.in
+all: $(TERADATAPROTOCOLTESTTARGETS) odbc.ini
 
 odbc.ini: odbc.ini.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1

@@ -879,6 +879,17 @@ ifneq ($(strip $(SYBASELIBS)),)
 TDSTESTALLTARGETS += tds-sap
 endif
 
+# oracle and teradata protocol tests build a java client too, but only
+# if a jdk is configured
+ORACLEPROTOCOLTESTTARGETS =
+ifneq ($(HAVE_JAVA),)
+ORACLEPROTOCOLTESTTARGETS += oracle.class
+endif
+TERADATAPROTOCOLTESTTARGETS =
+ifneq ($(HAVE_JAVA),)
+TERADATAPROTOCOLTESTTARGETS += teradata.class
+endif
+
 TESTPROTOCOLSUBDIRS =
 ifneq ($(strip $(MYSQLLIBS)),)
 TESTPROTOCOLSUBDIRS += all-mysql
@@ -892,6 +903,12 @@ endif
 ifneq ($(strip $(FIREBIRDLIBS)),)
 TESTPROTOCOLSUBDIRS += all-firebird
 endif
+ifneq ($(strip $(ORACLELIBS)),)
+TESTPROTOCOLSUBDIRS += all-oracle
+endif
+# there's no teradata client library to probe for, and the teradata
+# protocol test directory's other target, odbc.ini, needs nothing
+TESTPROTOCOLSUBDIRS += all-teradata
 ifneq ($(strip $(APACHELINKFLAGS)),)
 MODMVCCRUD=mod_mvccrud.$(LIBEXT)
 endif

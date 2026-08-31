@@ -1177,6 +1177,10 @@
 	oracle protocol module: pointed the source at the oracle wire protocol
 		docs, marked the blobs that are still guesses, and brought its
 		constant and function names in line with the docs
+	fixed make never building test/protocol/oracle or test/protocol/teradata,
+		which made the oracleprotocol and teradataprotocol test suites
+		fail before they even reached the module; their java clients
+		still build only when a jdk is configured
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1,7 +1,8 @@
 *.class
 
-# scratch files the odbc.ini rule writes.  odbc.ini itself stays checked in -
-# test/protocol/teradata is never in TESTPROTOCOLSUBDIRS, so a plain make
-# never visits this directory to generate it
+# scratch files the odbc.ini rule writes.  odbc.ini itself stays checked in
+# so the default port works without running make first, even though a
+# plain make now regenerates it too (test/protocol/teradata is
+# unconditionally in TESTPROTOCOLSUBDIRS)
 *.out1
 *.out2
