@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqlprotocoltlsmutualauth" dbase="postgresql">
+		<listeners>
+			<listener protocol="postgresql" port="@POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1@"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"
+				tlsvalidate="yes"
+				tlsca="@abs_top_builddir@/test/sqlrelay.conf.d/tls/ca.pem"/>
+		</listeners>
+		<connections>
+			<connection string="lastinsertidfunction=testfunc();user=testuser;password=testpassword;db=@HOSTNAME@;host=postgresql;typemangling=lookup;tablemangling=no"/>
+		</connections>
+	</instance>
+
+</instances>

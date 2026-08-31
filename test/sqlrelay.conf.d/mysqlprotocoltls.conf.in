@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="mysqlprotocoltls" dbase="mysql">
+		<listeners>
+			<listener protocol="mysql" port="@MYSQLPROTOCOLTLSPORT1@"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"/>
+		</listeners>
+		<connections>
+			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
+		</connections>
+	</instance>
+
+</instances>

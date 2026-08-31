@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- separate instance/port from tdsprotocoltls so each script
+	     (tdstls.sh vs tdstlsserverauth.sh) owns its own listener; the
+	     listener attributes here are server-side identical to
+	     tdsprotocoltls - what differs is entirely client-side, i.e.
+	     which freetds.conf stanza is used -->
+
+	<!-- freetds cannot present a client certificate, so there is no
+	     mutual-auth counterpart to this instance -->
+	<instance id="tdsprotocoltlsserverauth" dbase="odbc" translatebindvariables="yes">
+		<listeners>
+			<listener protocol="tds" port="@TDSPROTOCOLTLSSERVERAUTHPORT1@"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=mssqlodbc;user=testuser;password=testpassword;mars=yes"/>
+		</connections>
+	</instance>
+
+</instances>

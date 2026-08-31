@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqlprotocoltls" dbase="postgresql">
+		<listeners>
+			<listener protocol="postgresql" port="@POSTGRESQLPROTOCOLTLSPORT1@"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"/>
+		</listeners>
+		<connections>
+			<connection string="lastinsertidfunction=testfunc();user=testuser;password=testpassword;db=@HOSTNAME@;host=postgresql;typemangling=lookup;tablemangling=no"/>
+		</connections>
+	</instance>
+
+</instances>

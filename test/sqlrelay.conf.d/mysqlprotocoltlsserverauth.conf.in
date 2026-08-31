@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- server side is identical to mysqlprotocoltls - what differs is
+	     entirely client side: the client is given the CA and told to
+	     validate the chain.  This is a separate instance, with its own
+	     listener and port, so that a future change to one cannot
+	     silently change the other -->
+	<instance id="mysqlprotocoltlsserverauth" dbase="mysql">
+		<listeners>
+			<listener protocol="mysql" port="@MYSQLPROTOCOLTLSSERVERAUTHPORT1@"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"/>
+		</listeners>
+		<connections>
+			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
+		</connections>
+	</instance>
+
+</instances>

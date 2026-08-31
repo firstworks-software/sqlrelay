@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- server side is identical to postgresqlprotocoltls - encryption
+	     only, no client certificate required.  what differs is entirely
+	     client side: postgresqltlsserverauth.sh gives the client the CA
+	     and tells it to validate the chain.  kept as a separate instance
+	     so each script owns its own listener, rather than merging this
+	     back into postgresqlprotocoltls. -->
+	<instance id="postgresqlprotocoltlsserverauth" dbase="postgresql">
+		<listeners>
+			<listener protocol="postgresql" port="@POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1@"
+				tls="yes"
+				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
+				tlspassword="password"/>
+		</listeners>
+		<connections>
+			<connection string="lastinsertidfunction=testfunc();user=testuser;password=testpassword;db=@HOSTNAME@;host=postgresql;typemangling=lookup;tablemangling=no"/>
+		</connections>
+	</instance>
+
+</instances>
