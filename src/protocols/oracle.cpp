@@ -388,8 +388,18 @@
 #define MIN_NUMBER_EXPONENT		(-193)
 #define MAX_NUMBER_EXPONENT		62
 
+// an oracle date is a fixed 7 bytes, and a column of them is described that
+// wide
+#define ORACLE_DATE_SIZE		7
+
 // what a column with no size of its own is described as
 #define MAX_VARCHAR_SIZE		4000
+
+// what a number with no declared scale is described as, which tells the
+// client not to rescale the value.  the controller hands oracle's scale back
+// through an unsigned byte, so -127 arrives from it as 129.
+#define NO_SCALE			(-127)
+#define NO_SCALE_UNSIGNED		129
 
 // character set ids
 #define CHARSET_US7ASCII		1
@@ -408,6 +418,8 @@
 #define OPTION_EXACTFETCH	(1<<9)
 #define OPTION_SNDIOV		(1<<10)
 #define OPTION_NOPLSQL		(1<<15)
+// a describe-only execute sets this instead of OPTION_EXECUTE
+#define OPTION_DESCRIBE		(1<<17)
 
 // ano field types.  no source names 0 or 4.
 #define ANO_FIELD_TYPE_STRING		0
@@ -1060,6 +1072,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putLenString(const char *string, uint32_t size);
 		void	putLenBytes(const char *bytes, uint32_t size);
 		void	putDalc(const char *bytes, uint32_t size);
+		bool	getOracleDate(const char *field,
+						uint64_t fieldsize,
+						byte_t *out);
 		void	putOracleDate(byte_t *out);
 		void	putOracleDate(byte_t *out,
 						int16_t year,
@@ -1088,7 +1103,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	debugTtcCode(byte_t ttccode);
 		void	debugTtiFunction(byte_t ttifunction);
 		void	debugOptions(uint16_t options, uint16_t moreoptions);
-		void	debugOptions(uint16_t options);
+		void	debugOptions(uint32_t options);
 		void	debugCharacterSet(byte_t characterset);
 		void	debugStatusFlags(uint16_t statusflags);
 		void	debugColumnType(const char *name, uint16_t columntype);
@@ -1131,8 +1146,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putColumnPrecisionScale(int8_t precision,
 							int8_t scale);
 		uint16_t	getWireColumnType(uint16_t columntype);
+		bool		isCharacterColumn(
+							const char *columntypestring,
+							uint16_t columntype);
 		uint32_t	getWireColumnSize(sqlrservercursor *cursor,
 							uint32_t column,
+							const char *columntypestring,
+							uint16_t columntype,
 							uint16_t wiretype);
 		void	putRowHeader(byte_t flags,
 							uint32_t colcount,
@@ -4847,6 +4867,58 @@ void sqlrprotocol_oracle::putDalc(const char *bytes, uint32_t size) {
 	}
 }
 
+bool sqlrprotocol_oracle::getOracleDate(const char *field,
+					uint64_t fieldsize,
+					byte_t *out) {
+
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	hour;
+	int16_t	minute;
+	int16_t	second;
+	int32_t	usec;
+	bool	isnegative;
+	// FIXME: set ddmm and yyyyddmm somehow
+	//
+	// a 2-digit year needs century inference - oracle's default date
+	// text conversion (eg. "03-MAR-03") carries no century of its own
+	if (!datetime::parse(field,false,false,"/-.:",true,
+				&year,&month,&day,
+				&hour,&minute,&second,
+				&usec,&isnegative)) {
+		debugWrite("date (failed to parse): \"%.*s\"",
+					(int)fieldsize,field);
+		return false;
+	}
+
+	// parse returns -1 for parts that the text didn't have.  a date
+	// column ought to always have a date part, but default everything
+	// that's missing, just in case.
+	if (year==-1) {
+		year=0;
+	}
+	if (month==-1) {
+		month=1;
+	}
+	if (day==-1) {
+		day=1;
+	}
+	if (hour==-1) {
+		hour=0;
+	}
+	if (minute==-1) {
+		minute=0;
+	}
+	if (second==-1) {
+		second=0;
+	}
+
+	putOracleDate(out,year,month,day,hour,minute,second);
+
+	return true;
+}
+
 void sqlrprotocol_oracle::putOracleDate(byte_t *out) {
 
 	datetime	dt;
@@ -5844,7 +5916,7 @@ void sqlrprotocol_oracle::debugOptions(uint16_t options,
 	debugEnd();
 }
 
-void sqlrprotocol_oracle::debugOptions(uint16_t options) {
+void sqlrprotocol_oracle::debugOptions(uint32_t options) {
 	if (options&OPTION_PARSE) {
 		debugWrite("OPTION_PARSE");
 	}
@@ -5874,6 +5946,9 @@ void sqlrprotocol_oracle::debugOptions(uint16_t options) {
 	}
 	if (options&OPTION_NOPLSQL) {
 		debugWrite("OPTION_NOPLSQL");
+	}
+	if (options&OPTION_DESCRIBE) {
+		debugWrite("OPTION_DESCRIBE");
 	}
 }
 
@@ -6711,7 +6786,14 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		}
 	}
 
-	if (options&OPTION_EXECUTE) {
+	// a describe executes too - the column info it answers with only
+	// comes from an executed statement.  but a describe alone (no
+	// explicit execute) should never run anything other than a select -
+	// running dml just to answer a describe would perform work the
+	// client never asked for
+	bool	describecanexecute=(options&OPTION_DESCRIBE) &&
+					cursor->getQueryType()==SQLRQUERYTYPE_SELECT;
+	if ((options&OPTION_EXECUTE) || describecanexecute) {
 
 		// execute the query
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -6893,7 +6975,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		debugStart("query3 request");
 		debugWrite("sequence: %d",sequence);
 		debugWrite("options: 0x%08x",*options);
-		debugOptions((uint16_t)*options);
+		debugOptions(*options);
 		debugWrite("cursor id: %d",*cursorid);
 		debugWrite("prefetch rows: %d",*prefetchrows);
 		debugWrite("bind count: %d",bindcount);
@@ -6934,7 +7016,7 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 		// the describe, which the client needs before it can make
 		// sense of a row
-		if (options&OPTION_PARSE) {
+		if (options&(OPTION_PARSE|OPTION_DESCRIBE)) {
 			putDescribeInfo(cursor,colcount);
 		}
 
@@ -6944,6 +7026,13 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		uint32_t	rowstofetch=prefetchrows;
 		if (!rowstofetch && (options&OPTION_FETCH)) {
 			rowstofetch=1;
+		}
+
+		// A describe asks about the statement, not for its data.  A
+		// row sent in answer to one leaves the client a row ahead
+		// for the rest of the result set.
+		if (options&OPTION_DESCRIBE) {
+			rowstofetch=0;
 		}
 
 		if (rowstofetch) {
@@ -7039,10 +7128,13 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 		putLenBytes((const char *)prologue,sizeof(prologue));
 	}
 
+	uint16_t	curid=cont->getId(cursor);
 	uint32_t	maxrowsize=0;
 	for (uint32_t i=0; i<colcount; i++) {
 		maxrowsize+=getWireColumnSize(cursor,i,
-			getWireColumnType(columntypes[cont->getId(cursor)][i]));
+				cont->getColumnTypeName(cursor,i),
+				columntypes[curid][i],
+				getWireColumnType(columntypes[curid][i]));
 	}
 
 	writeLenPreInt(&reqpacket,maxrowsize);
@@ -7062,7 +7154,7 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 
 	debugEnd();
 
-	byte_t	date[7];
+	byte_t	date[ORACLE_DATE_SIZE];
 	putOracleDate(date);
 	putDalc((const char *)date,sizeof(date));
 
@@ -7079,20 +7171,31 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	uint16_t	curid=cont->getId(cursor);
 	const char	*columntypestring=
 				cont->getColumnTypeName(cursor,column);
-	uint16_t	wiretype=getWireColumnType(columntypes[curid][column]);
-	uint32_t	size=getWireColumnSize(cursor,column,wiretype);
+	uint16_t	columntype=columntypes[curid][column];
+	uint16_t	wiretype=getWireColumnType(columntype);
+	uint32_t	size=getWireColumnSize(cursor,column,
+						columntypestring,
+						columntype,wiretype);
 
-	bool	character=(wiretype!=ORACLE_TYPE_NUMBER);
+	// the wire protocol's "0x80" flag and several fields below it are
+	// gated on "any type other than NUMBER", not on being a character
+	// type - NUMBER is the only column type that gets the abbreviated
+	// encoding
+	bool	notnumber=(wiretype!=ORACLE_TYPE_NUMBER);
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
 
-	write(&reqpacket,(byte_t)wiretype);
-	write(&reqpacket,(byte_t)((character)?0x80:0x00));
+	// the precision and scale, as the backend reports them
+	uint32_t	precision=cont->getColumnPrecision(cursor,column);
+	uint32_t	scale=cont->getColumnScale(cursor,column);
+	int8_t		wirescale=(scale==NO_SCALE_UNSIGNED)?
+					NO_SCALE:(int8_t)scale;
 
-	// a real server reports scale -127 for a number with no declared
-	// scale, which tells the client not to rescale the value
-	putColumnPrecisionScale(0,(character)?0:-127);
+	write(&reqpacket,(byte_t)wiretype);
+	write(&reqpacket,(byte_t)((notnumber)?0x80:0x00));
+
+	putColumnPrecisionScale((int8_t)precision,wirescale);
 
 	// a buffer size of 0 means "this column is null by describe", so it
 	// can never be sent as 0 for a column that has values
@@ -7102,9 +7205,9 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,(character)?charset:0);
-	write(&reqpacket,(byte_t)((character)?1:0));
-	writeLenPreInt(&reqpacket,(character)?size:0);
+	writeLenPreInt(&reqpacket,(notnumber)?charset:0);
+	write(&reqpacket,(byte_t)((notnumber)?1:0));
+	writeLenPreInt(&reqpacket,(notnumber)?size:0);
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)namesize);
 	putDalc(name,namesize);
@@ -7168,10 +7271,15 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_FIXED_CHAR:
 			wiretype=ORACLE_TYPE_CHAR;
 			break;
+		case ORACLE_TYPE_DATE:
+			wiretype=ORACLE_TYPE_DATE;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
-			// type and sending text desyncs the client
+			// type and sending text desyncs the client - so a type
+			// only moves out of here once putRowData() can write
+			// its binary form
 			wiretype=ORACLE_TYPE_VARCHAR;
 			break;
 	}
@@ -7184,22 +7292,55 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 	return wiretype;
 }
 
-uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
-						uint32_t column,
-						uint16_t wiretype) {
+bool sqlrprotocol_oracle::isCharacterColumn(const char *columntypestring,
+						uint16_t columntype) {
 
-	if (wiretype==ORACLE_TYPE_NUMBER) {
-		debugStart("wire column size");
-		debugWrite("column: %d",column);
-		debugColumnType(wiretype);
-		debugWrite("size: %d",MAX_NUMBER_SIZE);
-		debugEnd();
-		return MAX_NUMBER_SIZE;
+	if (columntype!=ORACLE_TYPE_CHAR &&
+		columntype!=ORACLE_TYPE_FIXED_CHAR &&
+		columntype!=ORACLE_TYPE_VARCHAR) {
+		return false;
 	}
 
-	uint32_t	size=cont->getColumnSize(cursor,column);
-	if (!size || size>MAX_VARCHAR_SIZE) {
+	// a type the backend didn't recognize comes through named UNKNOWN,
+	// and getColumnType() maps that to a varchar2 like it does a real
+	// one.  nothing the backend says about such a column is dependable,
+	// its size least of all
+	const char * const	*datatypestring=cont->dataTypeStrings();
+	return charstring::compareIgnoringCase(columntypestring,
+						datatypestring[0])!=0;
+}
+
+uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
+						uint32_t column,
+						const char *columntypestring,
+						uint16_t columntype,
+						uint16_t wiretype) {
+
+	// the types the module encodes itself are always the same width on
+	// the wire, whatever the backend reports for them
+	uint32_t	size;
+	if (wiretype==ORACLE_TYPE_NUMBER) {
+		size=MAX_NUMBER_SIZE;
+	} else if (wiretype==ORACLE_TYPE_DATE) {
+		size=ORACLE_DATE_SIZE;
+	} else if (!isCharacterColumn(columntypestring,columntype)) {
+		// everything else goes out as text, and this size is the
+		// buffer the client reads that text into.  the backend's
+		// size is the width of the column's own storage, and that
+		// only matches the text for a character column - a rowid
+		// stores in 8 bytes and prints as 18, a timestamp stores in
+		// 11 and prints as 28, a raw(20) prints as 40.  describing
+		// the storage width hands the client a buffer too small for
+		// the value it gets, and it stops reading part way through
+		// the row and waits for bytes that never come - so describe
+		// a column whose text width isn't known as the widest a
+		// varchar2 can be
 		size=MAX_VARCHAR_SIZE;
+	} else {
+		size=cont->getColumnSize(cursor,column);
+		if (!size || size>MAX_VARCHAR_SIZE) {
+			size=MAX_VARCHAR_SIZE;
+		}
 	}
 
 	debugStart("wire column size");
@@ -7263,6 +7404,8 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 
 		debugStart("col %d",i);
 
+		uint16_t	wiretype=getWireColumnType(ct[i]);
+
 		// one zero byte stands for null, lob and unreadable alike.
 		// no modern path lob encoding is documented, so a lob goes
 		// out as this same byte.
@@ -7270,9 +7413,20 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		if (null || lob || !field) {
 			debugWrite("null");
 			write(&reqpacket,(byte_t)0);
-		} else if (getWireColumnType(ct[i])==ORACLE_TYPE_NUMBER) {
+		} else if (wiretype==ORACLE_TYPE_NUMBER) {
 			debugWrite("number: %.*s",(int)fieldsize,field);
 			putNumberField(field,(uint32_t)fieldsize);
+		} else if (wiretype==ORACLE_TYPE_DATE) {
+			debugWrite("date: %.*s",(int)fieldsize,field);
+			byte_t	date[ORACLE_DATE_SIZE];
+			if (getOracleDate(field,fieldsize,date)) {
+				putLenBytes((const char *)date,sizeof(date));
+			} else {
+				// every column has to write something, and
+				// a date that won't parse is no more use to
+				// the client than a null
+				write(&reqpacket,(byte_t)0);
+			}
 		} else {
 			debugWrite("\"%.*s\"",(int)fieldsize,field);
 			putLenBytes(field,(uint32_t)fieldsize);
@@ -8103,7 +8257,13 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 		debugWrite("%s: %d",cont->getColumnTypeName(cursor,i),ct[i]);
 	}
 
-	columntypescached[curid]=true;
+	// A cursor with no columns has nothing to cache.  Marking it cached
+	// anyway hands every later execute on the cursor an array that was
+	// never filled in - which is what a parse-only request does, since it
+	// executes nothing.
+	if (colcount) {
+		columntypescached[curid]=true;
+	}
 
 	debugEnd();
 }
@@ -8493,54 +8653,13 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			return false;
 		case ORACLE_TYPE_DATE:
 			{
-			int16_t	year;
-			int16_t	month;
-			int16_t	day;
-			int16_t	hour;
-			int16_t	minute;
-			int16_t	second;
-			int32_t	usec;
-			bool	isnegative;
-			// FIXME: set ddmm and yyyyddmm somehow
-			if (!datetime::parse(field,false,false,"/-.:",
-						&year,&month,&day,
-						&hour,&minute,&second,
-						&usec,&isnegative)) {
+			// a fixed 7 raw bytes, no length prefix
+			byte_t	date[ORACLE_DATE_SIZE];
+			if (!getOracleDate(field,fieldsize,date)) {
 				// better to send nothing at all than
 				// to send 7 bytes of garbage
-				debugWrite("date (failed to parse): "
-						"\"%.*s\"",
-						(int)fieldsize,field);
 				return false;
 			}
-
-			// parse returns -1 for parts that the text
-			// didn't have.  a date column ought to always
-			// have a date part, but default everything
-			// that's missing, just in case.
-			if (year==-1) {
-				year=0;
-			}
-			if (month==-1) {
-				month=1;
-			}
-			if (day==-1) {
-				day=1;
-			}
-			if (hour==-1) {
-				hour=0;
-			}
-			if (minute==-1) {
-				minute=0;
-			}
-			if (second==-1) {
-				second=0;
-			}
-
-			// a fixed 7 raw bytes, no length prefix
-			byte_t	date[7];
-			putOracleDate(date,year,month,day,
-						hour,minute,second);
 			write(&reqpacket,(const char *)date,sizeof(date));
 			}
 			return true;

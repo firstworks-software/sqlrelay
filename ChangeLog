@@ -1244,6 +1244,17 @@
 		chunk at most) and a single zero byte to end the run, unless
 		big chunks have been negotiated, which the module doesn't
 		advertise
+	fixed the oracle protocol module's describe-only execute
+		(OCI_DESCRIBE_ONLY) not executing internally, so it never
+		reported column metadata and left clients believing the
+		statement was never run; column metadata now reports real
+		precision, scale and date typing instead of collapsing every
+		type down to number/char/varchar2; fixed a stale column-type
+		cache that could serve a describe's types to a later execute,
+		a too-small described buffer size for a still-text-encoded
+		column that could stall a client mid-fetch, a describe-only
+		request that could run dml, and a two-digit date year with no
+		century inference
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
