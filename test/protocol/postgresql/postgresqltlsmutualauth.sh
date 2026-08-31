@@ -1,28 +1,41 @@
 #!/bin/sh
 
-# run with postgresqlprotocoltls instance
+# run with postgresqlprotocoltlsmutualauth instance
 
-# see the note in postgresqltls.sh - same instance, same variable
-if ( test -z "$POSTGRESQLPROTOCOLTLSPORT1" )
+# POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 names the port that instance ended up
+# on, following the @INSTANCENAMEPORTn@ convention
+# test/sqlrelay.conf.d/*.conf.in uses.  unset means 5436, the default
+if ( test -z "$POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1" )
 then
-	POSTGRESQLPROTOCOLTLSPORT1=5432
+	POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1=5436
 fi
+
+# libpq refuses a PGSSLKEY file with any group or world permission bits, and
+# the repo's client.pem is 0664, so copy it to a run-local 0600 file rather
+# than chmod the repo file itself
+CLIENTPEM=./client.pem.tmp
+cp ../../sqlrelay.conf.d/tls/client.pem $CLIENTPEM
+chmod 600 $CLIENTPEM
 
 PGPASSFILE=`pwd`/pgpass \
 PGSSLMODE=verify-ca \
-PGSSLCERT=/usr/local/firstworks/etc/sqlrelay.conf.d/client.pem \
-PGSSLKEY=/usr/local/firstworks/etc/sqlrelay.conf.d/client.pem \
-PGSSLROOTCERT=/usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem \
+PGSSLCERT=$CLIENTPEM \
+PGSSLKEY=$CLIENTPEM \
+PGSSLROOTCERT=../../sqlrelay.conf.d/tls/ca.pem \
 psql \
 	-h sqlrelay \
-	-p $POSTGRESQLPROTOCOLTLSPORT1 \
+	-p $POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 \
 	-U testuser \
 	-w \
 > /dev/null << EOF
 select 1
 EOF
 
-if ( test "$?" = "0" )
+STATUS=$?
+
+rm -f $CLIENTPEM
+
+if ( test "$STATUS" = "0" )
 then
 	echo success
 	exit 0

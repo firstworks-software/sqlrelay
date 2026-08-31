@@ -2,14 +2,16 @@
 <instances>
 
 	<!-- this file now holds only the TLS instance, driven by
-	     tdstls.sh / tdstlsserverauth.sh; the plain (non-TLS) tds-vs-mssql
-	     combo lives in tdsfreetdsmssqlprotocol.conf.in -->
+	     tdstls.sh; the server-auth counterpart is its own instance in
+	     tdsprotocoltlsserverauth.conf.in, driven by tdstlsserverauth.sh;
+	     the plain (non-TLS) tds-vs-mssql combo lives in
+	     tdsfreetdsmssqlprotocol.conf.in -->
 
 	<!-- freetds cannot present a client certificate, so there is no
 	     mutual-auth counterpart to this instance -->
 	<instance id="tdsprotocoltls" dbase="odbc" translatebindvariables="yes">
 		<listeners>
-			<listener protocol="tds" port="@TDSPROTOCOLPORT1@"
+			<listener protocol="tds" port="@TDSPROTOCOLTLSPORT1@"
 				tls="yes"
 				tlscert="@abs_top_builddir@/test/sqlrelay.conf.d/tls/server.pem"
 				tlspassword="password"/>

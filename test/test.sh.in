@@ -62,6 +62,25 @@ usage() {
 	echo
 	echo "  See test/README.md for more."
 	echo
+	echo "  TLS protocol instances.  Eight instances put a protocol listener"
+	echo "  behind TLS, and are driven by the database's own native client:"
+	echo
+	echo "    mysqlprotocoltls, mysqlprotocoltlsserverauth and"
+	echo "    mysqlprotocoltlsmutualauth"
+	echo "    postgresqlprotocoltls, postgresqlprotocoltlsserverauth and"
+	echo "    postgresqlprotocoltlsmutualauth"
+	echo "    tdsprotocoltls and tdsprotocoltlsserverauth"
+	echo
+	echo "  None of them is part of a default run.  They are not in the"
+	echo "  built-in instance list, so they run only when named on the"
+	echo "  command line:"
+	echo
+	echo "    ./test.sh -buildtree tdsprotocoltls"
+	echo
+	echo "  Each one needs the matching native client installed - mysql for"
+	echo "  the mysql instances, psql for the postgresql instances, tsql for"
+	echo "  the tds instances - and is skipped on a host without it."
+	echo
 	echo "  Runs against different backend servers can go on at the same time,"
 	echo "  on one host.  But concurrency is per backend server, not per test."
 	echo "  Every instance connects to a database named after the host, so tests"
@@ -69,13 +88,18 @@ usage() {
 	echo "  have to run one at a time relative to each other:"
 	echo
 	echo "    mysql, mysqlupsert, mysqldeadlockreplay, mysqlsplitmultiinsert,"
-	echo "    mysqlimportexport and mysqlprotocol all hit the mysql server"
-	echo "    the postgresql family likewise"
+	echo "    mysqlimportexport, mysqlprotocol, mysqlprotocoltls,"
+	echo "    mysqlprotocoltlsserverauth and mysqlprotocoltlsmutualauth all"
+	echo "    hit the mysql server"
+	echo "    the postgresql family likewise, including postgresqlprotocoltls,"
+	echo "    postgresqlprotocoltlsserverauth and"
+	echo "    postgresqlprotocoltlsmutualauth"
 	echo "    oracle, tls, krb, extensions, crud and oracleprotocol all hit oracle"
 	echo "    sap, freetds-sap, tdsfreetdssapprotocol and tdssapprotocol all hit"
 	echo "    the sap server"
-	echo "    odbc-mssql, freetds-mssql and tdsfreetdsmssqlprotocol all hit the"
-	echo "    mssql server, so that group runs alongside the sap group"
+	echo "    odbc-mssql, freetds-mssql, tdsfreetdsmssqlprotocol,"
+	echo "    tdsprotocoltls and tdsprotocoltlsserverauth all hit the mssql"
+	echo "    server, so that group runs alongside the sap group"
 }
 
 # stop any instances left running from a previous run.  only the instances
@@ -162,6 +186,9 @@ instance_applicable() {
 		tdsfreetdsmssqlprotocol)
 			MODULE=odbc
 			;;
+		tdsprotocoltls|tdsprotocoltlsserverauth)
+			MODULE=odbc
+			;;
 		tdsfreetdssapprotocol|tdssapprotocol)
 			MODULE=sap
 			;;
@@ -189,13 +216,14 @@ instance_applicable() {
 	fi
 
 	# the instances that talk to the mssql server also need an odbc config
-	# for it.  odbc-mssql and tdsfreetdsmssqlprotocol connect through the
-	# dsn directly, but freetds-mssql reaches the server through freetds
+	# for it.  odbc-mssql, tdsfreetdsmssqlprotocol and the two tds tls
+	# instances connect through the dsn directly, but freetds-mssql
+	# reaches the server through freetds
 	# rather than odbc, so it has no use for the dsn itself - for it, the
 	# odbc.ini entry is only the host-level sign that an mssql server is
 	# there at all.  without this it would be started on any host that
 	# builds freetds, and then spend the ping retries timing out
-	if ( test "$instance" = "odbc-mssql" -o "$instance" = "freetds-mssql" -o "$instance" = "tdsfreetdsmssqlprotocol" )
+	if ( test "$instance" = "odbc-mssql" -o "$instance" = "freetds-mssql" -o "$instance" = "tdsfreetdsmssqlprotocol" -o "$instance" = "tdsprotocoltls" -o "$instance" = "tdsprotocoltlsserverauth" )
 	then
 		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
 		then
@@ -225,6 +253,32 @@ instance_applicable() {
 	if ( test "$instance" = "tdssapprotocol" )
 	then
 		if ( test -z "`grep sqlrelaysapct ${SYBASE:-/opt/sap}/interfaces 2> /dev/null`" )
+		then
+			return 1
+		fi
+	fi
+
+	# the tls protocol instances are driven by the database's own native
+	# client rather than by a test program of ours, so each needs that
+	# client installed.  a host without it skips the instance instead of
+	# failing it (#9560)
+	if ( test "$instance" = "mysqlprotocoltls" -o "$instance" = "mysqlprotocoltlsserverauth" -o "$instance" = "mysqlprotocoltlsmutualauth" )
+	then
+		if ( test -z "`which mysql 2> /dev/null`" )
+		then
+			return 1
+		fi
+	fi
+	if ( test "$instance" = "postgresqlprotocoltls" -o "$instance" = "postgresqlprotocoltlsserverauth" -o "$instance" = "postgresqlprotocoltlsmutualauth" )
+	then
+		if ( test -z "`which psql 2> /dev/null`" )
+		then
+			return 1
+		fi
+	fi
+	if ( test "$instance" = "tdsprotocoltls" -o "$instance" = "tdsprotocoltlsserverauth" )
+	then
+		if ( test -z "`which tsql 2> /dev/null`" )
 		then
 			return 1
 		fi
@@ -381,6 +435,27 @@ ping_instance() {
 			then
 				PING="The database is up."
 			fi
+		elif ( test "$instance" = "mysqlprotocoltls" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $MYSQLPROTOCOLTLSPORT1
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$instance" = "mysqlprotocoltlsserverauth" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $MYSQLPROTOCOLTLSSERVERAUTHPORT1
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$instance" = "mysqlprotocoltlsmutualauth" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $MYSQLPROTOCOLTLSMUTUALAUTHPORT1
+			then
+				PING="The database is up."
+			fi
 		elif ( test "$instance" = "postgresqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
@@ -388,10 +463,45 @@ ping_instance() {
 			then
 				PING="The database is up."
 			fi
+		elif ( test "$instance" = "postgresqlprotocoltls" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $POSTGRESQLPROTOCOLTLSPORT1
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$instance" = "postgresqlprotocoltlsserverauth" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$instance" = "postgresqlprotocoltlsmutualauth" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1
+			then
+				PING="The database is up."
+			fi
 		elif ( test "$instance" = "tdsfreetdsmssqlprotocol" )
 		then
 			PING="0: Couldn't connect to the listener."
 			if port_listening $TDSPROTOCOLPORT1
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$instance" = "tdsprotocoltls" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $TDSPROTOCOLTLSPORT1
+			then
+				PING="The database is up."
+			fi
+		elif ( test "$instance" = "tdsprotocoltlsserverauth" )
+		then
+			PING="0: Couldn't connect to the listener."
+			if port_listening $TDSPROTOCOLTLSSERVERAUTHPORT1
 			then
 				PING="The database is up."
 			fi
@@ -700,9 +810,41 @@ run_protocol_test() {
 			dir="protocol/mysql"
 			prog=`basename $dir`
 			;;
+		mysqlprotocoltls)
+			dir="protocol/mysql"
+			prog="mysqltls.sh"
+			;;
+		mysqlprotocoltlsserverauth)
+			dir="protocol/mysql"
+			prog="mysqltlsserverauth.sh"
+			;;
+		mysqlprotocoltlsmutualauth)
+			dir="protocol/mysql"
+			prog="mysqltlsmutualauth.sh"
+			;;
 		postgresqlprotocol)
 			dir="protocol/postgresql"
 			prog=`basename $dir`
+			;;
+		postgresqlprotocoltls)
+			dir="protocol/postgresql"
+			prog="postgresqltls.sh"
+			;;
+		postgresqlprotocoltlsserverauth)
+			dir="protocol/postgresql"
+			prog="postgresqltlsserverauth.sh"
+			;;
+		postgresqlprotocoltlsmutualauth)
+			dir="protocol/postgresql"
+			prog="postgresqltlsmutualauth.sh"
+			;;
+		tdsprotocoltls)
+			dir="protocol/tds"
+			prog="tdstls.sh"
+			;;
+		tdsprotocoltlsserverauth)
+			dir="protocol/tds"
+			prog="tdstlsserverauth.sh"
 			;;
 		tdsfreetdsmssqlprotocol)
 			dir="protocol/tds"
@@ -933,7 +1075,7 @@ run_instance_tests() {
 	echo
 
 	case "$instance" in
-		mysqlprotocol|postgresqlprotocol|tdsfreetdsmssqlprotocol|tdsfreetdssapprotocol|tdssapprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
+		mysqlprotocol|mysqlprotocoltls|mysqlprotocoltlsserverauth|mysqlprotocoltlsmutualauth|postgresqlprotocol|postgresqlprotocoltls|postgresqlprotocoltlsserverauth|postgresqlprotocoltlsmutualauth|tdsprotocoltls|tdsprotocoltlsserverauth|tdsfreetdsmssqlprotocol|tdsfreetdssapprotocol|tdssapprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
 			run_protocol_test "$instance"
 			failures=`expr $failures + $?`
 			;;
@@ -1107,7 +1249,7 @@ STAGEDIR=$TESTDIR/stagedmodules
 # these are the same values configure substituted into the .conf files, so
 # with no -randomports both ends already agree and nothing has to be
 # regenerated.  -randomports replaces them with free ports picked at run time.
-PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1"
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
 ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
@@ -1122,6 +1264,14 @@ TDSPROTOCOLPORT1=@TDSPROTOCOLPORT1@
 TDSSAPPROTOCOLPORT1=@TDSSAPPROTOCOLPORT1@
 TDSSAPPROTOCOLPORT2=@TDSSAPPROTOCOLPORT2@
 TERADATAPROTOCOLPORT1=@TERADATAPROTOCOLPORT1@
+MYSQLPROTOCOLTLSPORT1=@MYSQLPROTOCOLTLSPORT1@
+MYSQLPROTOCOLTLSSERVERAUTHPORT1=@MYSQLPROTOCOLTLSSERVERAUTHPORT1@
+MYSQLPROTOCOLTLSMUTUALAUTHPORT1=@MYSQLPROTOCOLTLSMUTUALAUTHPORT1@
+POSTGRESQLPROTOCOLTLSPORT1=@POSTGRESQLPROTOCOLTLSPORT1@
+POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1=@POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1@
+POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1=@POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1@
+TDSPROTOCOLTLSPORT1=@TDSPROTOCOLTLSPORT1@
+TDSPROTOCOLTLSSERVERAUTHPORT1=@TDSPROTOCOLTLSSERVERAUTHPORT1@
 MYSQLPROTOCOLSOCKET=@MYSQLPROTOCOLSOCKET@
 
 # the rest of what the templates regenerate_file() rewrites carry.  they are
@@ -1131,7 +1281,7 @@ OTHERTOKENS="MYSQLPROTOCOLSOCKET HOSTNAME DONOTEDIT abs_top_builddir"
 abs_top_builddir=$BUILDDIR
 
 # the instance configs that carry a listener port
-PROTOCOLCONFS="firebirdprotocol mysqlprotocol oracleprotocol postgresqlprotocol tdsprotocol tdsfreetdsmssqlprotocol tdsfreetdssapprotocol tdssapprotocol teradataprotocol"
+PROTOCOLCONFS="firebirdprotocol mysqlprotocol mysqlprotocoltls mysqlprotocoltlsserverauth mysqlprotocoltlsmutualauth oracleprotocol postgresqlprotocol postgresqlprotocoltls postgresqlprotocoltlsserverauth postgresqlprotocoltlsmutualauth tdsprotocoltls tdsprotocoltlsserverauth tdsfreetdsmssqlprotocol tdsfreetdssapprotocol tdssapprotocol teradataprotocol"
 
 # parse the options
 manage="yes"

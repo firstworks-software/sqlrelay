@@ -3,10 +3,15 @@
 ;
 ; The sqlrelay* entries below point at listeners this test suite starts, so
 ; their ports are substitution tokens rather than literals - the
-; TDSPROTOCOLPORT1 and TDSSAPPROTOCOLPORT1 tokens that
-; test/sqlrelay.conf.d/tdsprotocol.conf.in,
-; tdsfreetdsmssqlprotocol.conf.in and tdsfreetdssapprotocol.conf.in use for
-; the listener side, so one value drives both ends.  configure fills them in
+; TDSPROTOCOLPORT1, TDSSAPPROTOCOLPORT1, TDSPROTOCOLTLSPORT1 and
+; TDSPROTOCOLTLSSERVERAUTHPORT1 tokens that
+; test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf.in,
+; tdsfreetdssapprotocol.conf.in, tdsprotocoltls.conf.in and
+; tdsprotocoltlsserverauth.conf.in use for the listener side, so one value
+; drives both ends.  tdsprotocoltls.conf.in was renamed from
+; tdsprotocol.conf.in earlier in this ticket - it and
+; tdsprotocoltlsserverauth.conf.in hold only the two tls instances, separate
+; from tdsfreetdsmssqlprotocol.conf.in.  configure fills these tokens in
 ; with the well known ports by default, and test.sh -randomports rewrites
 ; this file with the ports that run actually picked.  freetds and tsql read
 ; the port only from here - there is no command line option and no
@@ -111,7 +116,7 @@
 
 [sqlrelaytls]
 	host = localhost
-	port = @TDSPROTOCOLPORT1@
+	port = @TDSPROTOCOLTLSPORT1@
 	tds version = 7.4
 	client charset = UTF-8
 	encryption = require
@@ -126,9 +131,9 @@
 
 [sqlrelaytlsserverauth]
 	host = localhost
-	port = @TDSPROTOCOLPORT1@
+	port = @TDSPROTOCOLTLSSERVERAUTHPORT1@
 	tds version = 7.4
 	client charset = UTF-8
 	encryption = require
-	ca file = /usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem
+	ca file = @abs_top_builddir@/test/sqlrelay.conf.d/tls/ca.pem
 	check certificate hostname = no

@@ -2,10 +2,12 @@
 
 # run with mysqlprotocoltlsmutualauth instance
 
-# see the note in mysqltls.sh - same idea, for the mutual-auth instance
+# MYSQLPROTOCOLTLSMUTUALAUTHPORT1 names the port that instance ended up on,
+# following the @INSTANCENAMEPORTn@ convention
+# test/sqlrelay.conf.d/*.conf.in uses.  unset means 3309, the default
 if ( test -z "$MYSQLPROTOCOLTLSMUTUALAUTHPORT1" )
 then
-	MYSQLPROTOCOLTLSMUTUALAUTHPORT1=3306
+	MYSQLPROTOCOLTLSMUTUALAUTHPORT1=3309
 fi
 
 mysql \
@@ -13,8 +15,10 @@ mysql \
 	-P $MYSQLPROTOCOLTLSMUTUALAUTHPORT1 \
 	-u testuser \
 	-ptestpassword \
-	--ssl-cert=/usr/local/firstworks/etc/sqlrelay.conf.d/client.pem \
-	--ssl-ca=/usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem \
+	--ssl-mode=VERIFY_CA \
+	--ssl-ca=../../sqlrelay.conf.d/tls/ca.pem \
+	--ssl-cert=../../sqlrelay.conf.d/tls/client.pem \
+	--ssl-key=../../sqlrelay.conf.d/tls/client.pem \
 > /dev/null << EOF
 select 1
 EOF

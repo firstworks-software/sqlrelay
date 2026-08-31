@@ -4,11 +4,10 @@
 
 # MYSQLPROTOCOLTLSPORT1 names the port that instance ended up on, following
 # the @INSTANCENAMEPORTn@ convention test/sqlrelay.conf.d/*.conf.in uses.
-# there is no mysqlprotocoltls instance in test/sqlrelay.conf.d yet (#9560),
-# so nothing generates that token today; unset means 3306, as before
+# unset means 3307, the default
 if ( test -z "$MYSQLPROTOCOLTLSPORT1" )
 then
-	MYSQLPROTOCOLTLSPORT1=3306
+	MYSQLPROTOCOLTLSPORT1=3307
 fi
 
 mysql \
@@ -16,7 +15,7 @@ mysql \
 	-P $MYSQLPROTOCOLTLSPORT1 \
 	-u testuser \
 	-ptestpassword \
-	--ssl \
+	--ssl-mode=REQUIRED \
 > /dev/null << EOF
 select 1
 EOF

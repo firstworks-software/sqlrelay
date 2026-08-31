@@ -1,19 +1,21 @@
 #!/bin/sh
 
-# run with postgresqlprotocoltls instance
+# run with postgresqlprotocoltlsserverauth instance
 
-# see the note in postgresqltls.sh - same instance, same variable
-if ( test -z "$POSTGRESQLPROTOCOLTLSPORT1" )
+# POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 names the port that instance ended up
+# on, following the @INSTANCENAMEPORTn@ convention
+# test/sqlrelay.conf.d/*.conf.in uses.  unset means 5435, the default
+if ( test -z "$POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1" )
 then
-	POSTGRESQLPROTOCOLTLSPORT1=5432
+	POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1=5435
 fi
 
 PGPASSFILE=`pwd`/pgpass \
 PGSSLMODE=verify-ca \
-PGSSLROOTCERT=/usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem \
+PGSSLROOTCERT=../../sqlrelay.conf.d/tls/ca.pem \
 psql \
 	-h sqlrelay \
-	-p $POSTGRESQLPROTOCOLTLSPORT1 \
+	-p $POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 \
 	-U testuser \
 	-w \
 > /dev/null << EOF

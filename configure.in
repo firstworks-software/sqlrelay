@@ -1233,8 +1233,7 @@ POSTGRESQLPROTOCOLPORT2=`expr $POSTGRESQLPROTOCOLPORTBASE + 1`
 AC_SUBST(POSTGRESQLPROTOCOLPORT1)
 AC_SUBST(POSTGRESQLPROTOCOLPORT2)
 
-dnl tdsprotocol (tls) and tdsfreetdsmssqlprotocol (plain) share this one -
-dnl they are never started at the same time.
+dnl tdsfreetdsmssqlprotocol (plain) owns this one.
 test -z "$TDSPROTOCOLPORTBASE" && TDSPROTOCOLPORTBASE=1433
 TDSPROTOCOLPORT1=$TDSPROTOCOLPORTBASE
 AC_SUBST(TDSPROTOCOLPORT1)
@@ -1246,13 +1245,35 @@ TDSSAPPROTOCOLPORT2=`expr $TDSSAPPROTOCOLPORTBASE + 1`
 AC_SUBST(TDSSAPPROTOCOLPORT1)
 AC_SUBST(TDSSAPPROTOCOLPORT2)
 
+test -z "$MYSQLPROTOCOLTLSPORTBASE" && MYSQLPROTOCOLTLSPORTBASE=3307
+MYSQLPROTOCOLTLSPORT1=$MYSQLPROTOCOLTLSPORTBASE
+MYSQLPROTOCOLTLSSERVERAUTHPORT1=`expr $MYSQLPROTOCOLTLSPORTBASE + 1`
+MYSQLPROTOCOLTLSMUTUALAUTHPORT1=`expr $MYSQLPROTOCOLTLSPORTBASE + 2`
+AC_SUBST(MYSQLPROTOCOLTLSPORT1)
+AC_SUBST(MYSQLPROTOCOLTLSSERVERAUTHPORT1)
+AC_SUBST(MYSQLPROTOCOLTLSMUTUALAUTHPORT1)
+
+test -z "$POSTGRESQLPROTOCOLTLSPORTBASE" && POSTGRESQLPROTOCOLTLSPORTBASE=5434
+POSTGRESQLPROTOCOLTLSPORT1=$POSTGRESQLPROTOCOLTLSPORTBASE
+POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1=`expr $POSTGRESQLPROTOCOLTLSPORTBASE + 1`
+POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1=`expr $POSTGRESQLPROTOCOLTLSPORTBASE + 2`
+AC_SUBST(POSTGRESQLPROTOCOLTLSPORT1)
+AC_SUBST(POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1)
+AC_SUBST(POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1)
+
+test -z "$TDSPROTOCOLTLSPORTBASE" && TDSPROTOCOLTLSPORTBASE=1434
+TDSPROTOCOLTLSPORT1=$TDSPROTOCOLTLSPORTBASE
+TDSPROTOCOLTLSSERVERAUTHPORT1=`expr $TDSPROTOCOLTLSPORTBASE + 1`
+AC_SUBST(TDSPROTOCOLTLSPORT1)
+AC_SUBST(TDSPROTOCOLTLSSERVERAUTHPORT1)
+
 dnl both teradata instances share this one - they are mutually exclusive
 test -z "$TERADATAPROTOCOLPORTBASE" && TERADATAPROTOCOLPORTBASE=1025
 TERADATAPROTOCOLPORT1=$TERADATAPROTOCOLPORTBASE
 AC_SUBST(TERADATAPROTOCOLPORT1)
 
 
-MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/tdsprotocol.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/postgresqlkeepdenserank.conf test/sqlrelay.conf.d/postgresqlslashescape.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf test/sqlrelay.conf.d/freetds/etc/freetds.conf doc/admin/installingpkg.wt"
+MAKELIST="config.mk src/common/defines.h src/server/sqlrelay/private/sqlrshm.h sqlrelay-c++.pc sqlrelay-c.pc test/sqlrelay.conf.d/db2.conf test/sqlrelay.conf.d/firebird.conf test/sqlrelay.conf.d/freetds-sap.conf test/sqlrelay.conf.d/freetds-mssql.conf test/sqlrelay.conf.d/informix.conf test/sqlrelay.conf.d/odbc-mssql.conf test/sqlrelay.conf.d/mysql.conf test/sqlrelay.conf.d/oracle.conf test/sqlrelay.conf.d/postgresql.conf test/sqlrelay.conf.d/router.conf test/sqlrelay.conf.d/sap.conf test/sqlrelay.conf.d/sqlite.conf test/sqlrelay.conf.d/teradata.conf test/sqlrelay.conf.d/tls.conf test/sqlrelay.conf.d/extensions.conf test/sqlrelay.conf.d/mysqlprotocol.conf test/sqlrelay.conf.d/oracleprotocol.conf test/sqlrelay.conf.d/postgresqlprotocol.conf test/sqlrelay.conf.d/firebirdprotocol.conf test/sqlrelay.conf.d/mysqlprotocoltls.conf test/sqlrelay.conf.d/mysqlprotocoltlsserverauth.conf test/sqlrelay.conf.d/mysqlprotocoltlsmutualauth.conf test/sqlrelay.conf.d/postgresqlprotocoltls.conf test/sqlrelay.conf.d/postgresqlprotocoltlsserverauth.conf test/sqlrelay.conf.d/postgresqlprotocoltlsmutualauth.conf test/sqlrelay.conf.d/tdsprotocoltls.conf test/sqlrelay.conf.d/tdsprotocoltlsserverauth.conf test/sqlrelay.conf.d/tdsfreetdsmssqlprotocol.conf test/sqlrelay.conf.d/tdsfreetdssapprotocol.conf test/sqlrelay.conf.d/tdssapprotocol.conf test/sqlrelay.conf.d/teradataprotocol.conf test/sqlrelay.conf.d/postgresqlupsert.conf test/sqlrelay.conf.d/postgresqlsavepoint.conf test/sqlrelay.conf.d/postgresqlglobaltemptables.conf test/sqlrelay.conf.d/postgresqlstringagg.conf test/sqlrelay.conf.d/postgresqlsequencenextval.conf test/sqlrelay.conf.d/postgresqlkeepdenserank.conf test/sqlrelay.conf.d/postgresqlslashescape.conf test/sqlrelay.conf.d/mysqlupsert.conf test/sqlrelay.conf.d/mysqldeadlockreplay.conf test/sqlrelay.conf.d/mysqlsplitmultiinsert.conf test/sqlrelay.conf.d/mysqlimportexport.conf test/sqlrelay.conf.d/multiprotocol.conf test/sqlrelay.conf.d/freetds/etc/freetds.conf doc/admin/installingpkg.wt"
 AC_CONFIG_FILES([$MAKELIST])
 
 dnl Post-processing is attached to the files themselves rather than run after

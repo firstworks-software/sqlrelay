@@ -1,19 +1,22 @@
 #!/bin/sh
 
-# run with mysqlprotocoltls instance
+# run with mysqlprotocoltlsserverauth instance
 
-# see the note in mysqltls.sh - same instance, same variable
-if ( test -z "$MYSQLPROTOCOLTLSPORT1" )
+# MYSQLPROTOCOLTLSSERVERAUTHPORT1 names the port that instance ended up on,
+# following the @INSTANCENAMEPORTn@ convention
+# test/sqlrelay.conf.d/*.conf.in uses.  unset means 3308, the default
+if ( test -z "$MYSQLPROTOCOLTLSSERVERAUTHPORT1" )
 then
-	MYSQLPROTOCOLTLSPORT1=3306
+	MYSQLPROTOCOLTLSSERVERAUTHPORT1=3308
 fi
 
 mysql \
 	-h sqlrelay \
-	-P $MYSQLPROTOCOLTLSPORT1 \
+	-P $MYSQLPROTOCOLTLSSERVERAUTHPORT1 \
 	-u testuser \
 	-ptestpassword \
-	--ssl-ca=/usr/local/firstworks/etc/sqlrelay.conf.d/ca.pem \
+	--ssl-mode=VERIFY_CA \
+	--ssl-ca=../../sqlrelay.conf.d/tls/ca.pem \
 > /dev/null << EOF
 select 1
 EOF
