@@ -2432,6 +2432,30 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCIStmtExecute - error mid-fetch\n");
+	// this result set only has 3 rows, well under the connection's
+	// fetchatonce (10 by default here - see FETCH_AT_ONCE in
+	// sqlrserverconnection.cpp), so the query3 protocol's inline
+	// prefetch on execute pulls the whole result set in one backend
+	// fetch - including the row 2 divide by zero, which oracle only
+	// evaluates once it actually produces that row.  the error surfaces
+	// on the execute response here rather than on a later, separate
+	// fetch
+	const char	*divzero="select 1/(level-2) from dual "
+				"connect by level<=3";
+	assertEquals(
+		OCIStmtPrepare(errstmt,err,(text *)divzero,
+				charstring::getLength(divzero),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,errstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_ERROR);
+	// ORA-01476, divisor is equal to zero
+	assertEquals((int)errorCode(),1476);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIHandleFree - statement\n");
 	assertEquals(OCIHandleFree(errstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
 	stdoutput.printf("\n\n");

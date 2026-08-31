@@ -5203,9 +5203,21 @@ bool oraclecursor::fetchRow(bool *error) {
 		return false;
 	}
 	if (!row) {
-		OCIStmtFetch(stmt,oracleconn->err,
+		// a row can fail to evaluate - a divide by zero or similar,
+		// raised lazily as oracle produces that row rather than at
+		// execute time - and that's a real error, not end of data.
+		// unlike an odbc-style driver, a final, partial batch that
+		// legitimately still holds rows is signaled by OCI_NO_DATA
+		// here, not OCI_SUCCESS, so only OCI_ERROR - a real failure -
+		// short-circuits; anything else still falls through to the
+		// row count check below, which is what actually distinguishes
+		// a partial last batch from a genuinely empty one
+		if (OCIStmtFetch(stmt,oracleconn->err,
 				(ub4)getFetchAtOnce(),
-				OCI_FETCH_NEXT,OCI_DEFAULT);
+				OCI_FETCH_NEXT,OCI_DEFAULT)==OCI_ERROR) {
+			*error=true;
+			return false;
+		}
 		ub4	currentrow;
 		OCIAttrGet(stmt,OCI_HTYPE_STMT,
 				(dvoid *)&currentrow,(ub4 *)NULL,

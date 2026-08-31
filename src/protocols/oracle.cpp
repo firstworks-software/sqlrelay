@@ -7044,7 +7044,7 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 				bool	error=false;
 				if (!cont->fetchRow(cursor,&error)) {
 					if (error) {
-						// FIXME: handle error
+						return sendQueryError(cursor);
 					}
 					endofrows=true;
 					break;
@@ -7843,7 +7843,7 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			bool	error=false;
 			if (!cont->fetchRow(cursor,&error)) {
 				if (error) {
-					// FIXME: handle error
+					return sendQueryError(cursor);
 				}
 				endofrows=true;
 				break;
@@ -7979,10 +7979,10 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		}
 
 		// fetch a row
-		bool	error;
+		bool	error=false;
 		if (!cont->fetchRow(cursor,&error)) {
 			if (error) {
-				// FIXME: handle error
+				return sendQueryError(cursor);
 			}
 			break;
 		}
