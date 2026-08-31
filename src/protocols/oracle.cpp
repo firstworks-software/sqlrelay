@@ -16,6 +16,25 @@
 #include <rudiments/process.h>
 #include <rudiments/error.h>
 
+// This module is developed against the Oracle Wire Protocol doc set on the
+// Firstworks trac wiki, at http://trac.firstworks.com/trac/wiki/ - start at
+// the "Oracle Wire Protocol" index page, which links "Oracle Wire Protocol -
+// Sources", "Oracle Wire Protocol - Packet Structure", "Oracle Wire Protocol
+// - Known Unknowns", and the rest of the set.
+//
+// The docs are derived from open source clients, from one 2003 capture of a
+// live 8i session, and from proxy captures against live 11.2 and 12.1
+// servers. What that adds up to is the client side. A server's half of a call
+// is mirrored from what a client sends and parses, and no source enumerates
+// every byte a server may legitimately send. Blobs that are still unexplained
+// carry a pointer at the site to the page that covers them, and the ones the
+// docs themselves track are indexed on "Oracle Wire Protocol - Known
+// Unknowns". Either way they need captures against a real Oracle server to
+// resolve. Native network encryption is a gap the docs inherit:
+// python-oracledb does not implement it at all, and go-ora's advanced_nego is
+// the only source that does. Bind and define descriptors, modern path lob
+// encoding, the clr long form for query text, and tls are not covered either.
+
 // packet types
 #define	PACKET_CONNECT		1
 #define	PACKET_ACCEPT 		2
@@ -26,8 +45,10 @@
 #define	PACKET_NULL		7
 #define	PACKET_ABORT		9
 #define	PACKET_RESEND		11
+#define	PACKET_MARKER		12
 #define	PACKET_ATTENTION	13
 #define	PACKET_CONTROL_INFO	14
+#define	PACKET_DATA_DESCRIPTOR	15
 
 // protocol versions
 #define PROTOCOL_VERSION_7		0x0134
@@ -76,33 +97,55 @@
 #define ENC_AES192	16
 #define ENC_AES256	17
 
-// checksumming types (1-3 from an 8i trace, the rest from go-ora)
-#define	CS_NONE		0
-#define	CS_SHA1		3
-#define CS_MD5		1
-#define CS_SHA512	4
-#define CS_SHA256	5
-#define CS_SHA384	6
+// data integrity algorithm ids (1-3 from an 8i trace, the rest from go-ora)
+#define	DI_NONE		0
+#define	DI_SHA1		3
+#define DI_MD5		1
+#define DI_SHA512	4
+#define DI_SHA256	5
+#define DI_SHA384	6
 
-// two task common (ttc) types
+// two task common (ttc) types.  0x20 and 0x44 are unverified - no capture
+// and no client source assigns either value.
 #define TTC_PROTOCOL_NEGOTIATION	0x01
 #define TTC_DATATYPE_NEGOTIATION	0x02
 #define TTC_TTI_FUNCTION		0x03
 #define TTC_ERROR			0x04
+#define TTC_ACCESS_USER_ADDRESS_SPACE	0x05
 #define TTC_ROW_HEADER			0x06
 #define TTC_ROW_DATA			0x07
 #define TTC_OK				0x08
 #define TTC_STATUS			0x09
+#define TTC_NUMBER_OF_ERROR_RECORDS	0x0a
 #define TTC_IO_VECTOR			0x0b
+#define TTC_SEND_LONG			0x0c
+#define TTC_ORACLE_ACCESSOR		0x0d
+#define TTC_LOB_AND_BFILE_DATA		0x0e
+#define TTC_WARNING_MESSAGES		0x0f
 #define TTC_DESCRIBE_INFO		0x10
-#define TTC_EXTENDED_TTI_FUNCTION	0x11
+#define TTC_PIGGYBACK_TTI_FUNCTION	0x11
+#define TTC_UNTRUSTED_CALLOUTS		0x12
+#define TTC_FLUSH_OUT_BINDS		0x13
 #define TTC_BIT_VECTOR			0x15
+#define TTC_END_OF_BIND			0x16
+#define TTC_SERVER_PIGGYBACK_FUNCTION	0x17
+#define TTC_ONE_WAY_FUNCTION		0x1a
+#define TTC_IMPLICIT_RESULT_SET		0x1b
+#define TTC_RENEGOTIATE			0x1c
+#define TTC_END_OF_RESPONSE		0x1d
 #define TTC_EXTPROC1			0x20
+#define TTC_TOKEN			0x21
+#define TTC_FAST_AUTHENTICATION		0x22
 #define TTC_EXTPROC2			0x44
+#define TTC_SECURE_NETWORK_SERVICES	0xde
 
 // data flags.  one pair of bytes at the front of a data packet, describing the
 // packet rather than any one message in it.
 #define DATA_FLAGS_EOF			0x0040
+#define DATA_FLAGS_COMPRESSED		0x0400
+#define DATA_FLAGS_END_OF_REQUEST	0x0800
+#define DATA_FLAGS_BEGIN_PIPELINE	0x1000
+#define DATA_FLAGS_END_OF_RESPONSE	0x2000
 
 // o5logon verifier types, and the corresponding session key sizes, which are
 // what a client tells the two verifier types apart by
@@ -153,8 +196,9 @@
 // CONNECT_DATA names a SID/SERVICE_NAME the listener isn't configured for
 #define TNS_NO_SUCH_SERVICE		12514
 
-// the version the module reports as its own - oracle 11.2.0.1.0, 0x0b200100,
-// which is the version the rest of it answers as.
+// the vsnnum both refuse message texts carry - oracle 11.2.0.1.0,
+// 0x0b200100.  it is fixed at 11.2 whatever the serverversion attribute
+// says, and it duplicates SERVER_VERSION_NO_11_2 below.
 #define SERVER_VERSION_NUMBER		"186646784"
 
 // what a live 11.2 listener puts in the two reason bytes of a refuse
@@ -190,7 +234,7 @@
 #define TTI_STARTUP2		0x6D
 #define TTI_LOGON_PRESENT_PWD	0x51
 #define TTI_LOGON_PRESENT_USER	0x52
-#define TTI_LOGON_UNKNOWN	0x54
+#define TTI_UNIDENTIFIED_0X54	0x54
 #define TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD	0x73
 #define TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY		0x76
 #define TTI_DESCRIBE2		0x77
@@ -239,6 +283,9 @@
 #define CCAP_O5LOGON_NP			0x02
 #define CCAP_O5LOGON			0x08
 #define CCAP_O7LOGON			0x20
+// CCAP_TTC1 bit 0x01, and CCAP_OCI1 bit 0x01 per go-ora - another reading
+// names fast session propagate as 0x10 in that same index, and nothing on
+// the wire settles which is right
 #define CCAP_END_OF_CALL_STATUS		0x01
 #define CCAP_FAST_SESSION_PROPAGATE	0x10
 #define CCAP_END_OF_RESPONSE		0x20
@@ -288,9 +335,9 @@
 
 // a length byte over 252 isn't a length.  0xfe introduces the chunked long
 // form and 0xff marks a null.
-#define MAX_SHORT_LENGTH		252
-#define LONG_LENGTH_INDICATOR		0xfe
-#define CHUNK_SIZE			32767
+#define CLR_MAX_SHORT_LENGTH		252
+#define CLR_LONG_FORM_MARKER		0xfe
+#define CLR_MAX_CHUNK_SIZE		32767
 
 // describe info constants.  the last three are advisory - a client is free to
 // ignore them - and these are what a live 11.2 server sends.
@@ -298,6 +345,12 @@
 #define DCB_MAX_DATA_BLOCK_SIZE		8168
 #define DCB_MIN_PREFETCH		2
 #define DCB_MAX_PREFETCH		2
+
+// the two unrelated 51 values the docs warn about: describe info carries
+// the byte 0x51, column definitions carries the ub4 51 decimal.  neither
+// meaning is sourced.
+#define DESCRIBE_INFO_CONSTANT		0x51
+#define COLUMN_DEFINITIONS_CONSTANT	51
 
 // an oracle number is an exponent byte and up to 20 base 100 digits, and a
 // column of them is described as 22 bytes wide
@@ -328,14 +381,31 @@
 #define OPTION_SNDIOV		(1<<10)
 #define OPTION_NOPLSQL		(1<<15)
 
-// data types
-#define DATA_TYPE_STRING	0
-#define DATA_TYPE_UB2ARRAY	1
-#define DATA_TYPE_UB1		2
-#define DATA_TYPE_UB2		3
-#define DATA_TYPE_UB4		4
-#define DATA_TYPE_VERSION	5
-#define DATA_TYPE_STATUS	6
+// ano field types.  no source names 0 or 4.
+#define ANO_FIELD_TYPE_STRING		0
+#define ANO_FIELD_TYPE_RAW_BYTES	1
+#define ANO_FIELD_TYPE_UB1		2
+#define ANO_FIELD_TYPE_UB2		3
+#define ANO_FIELD_TYPE_UB4		4
+#define ANO_FIELD_TYPE_VERSION		5
+#define ANO_FIELD_TYPE_STATUS		6
+
+// ano service ids
+#define ANO_SERVICE_AUTHENTICATION	1
+#define ANO_SERVICE_ENCRYPTION		2
+#define ANO_SERVICE_DATA_INTEGRITY	3
+#define ANO_SERVICE_SUPERVISOR		4
+
+// ano status values.  each reports success, and each is the only value
+// that's been seen for its service.
+#define ANO_STATUS_SUPERVISOR_OK	0x001f
+#define ANO_STATUS_AUTHENTICATION_OK	0xfbff
+
+// ano markers.  the deadbeef marker heads the request and response, and
+// heads a ub2 array inside a raw bytes field, where the array marker
+// follows it.
+#define ANO_MARKER			0xdeadbeef
+#define ANO_ARRAY_MARKER		0x0003
 
 // column types
 #define ORACLE_TYPE_VARCHAR		1
@@ -359,6 +429,9 @@
 #define ORACLE_TYPE_INTERVALYM		182
 #define ORACLE_TYPE_INTERVALDS		183
 #define ORACLE_TYPE_TIMESTAMPLTZ	231
+// internal sentinels, not wire codes - the describe info and column
+// definition type fields are both ub1, and getWireColumnType() folds these
+// two away before anything is written
 #define ORACLE_TYPE_PLSQL_INDEX_TABLE	998
 #define ORACLE_TYPE_FIXED_CHAR		999
 
@@ -854,7 +927,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout);
-		bool	getCryptoChecksummingService(const byte_t *rp,
+		bool	getDataIntegrityService(const byte_t *rp,
 						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout);
@@ -896,7 +969,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	putSupervisorService();
 		uint16_t	putAuthenticationService();
 		uint16_t	putEncryptionService();
-		uint16_t	putCryptoChecksummingService();
+		uint16_t	putDataIntegrityService();
 		uint16_t	putAnoServiceHeader(uint16_t type,
 							uint16_t fieldcount);
 		uint16_t	putAnoVersionField(uint32_t version);
@@ -957,7 +1030,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putAuthCount(uint32_t value, byte_t nativesize);
 		void	putLenString(const char *string, uint32_t size);
 		void	putLenBytes(const char *bytes, uint32_t size);
-		void	putBytesWithLength(const char *bytes, uint32_t size);
+		void	putDalc(const char *bytes, uint32_t size);
 		void	putOracleDate(byte_t *out);
 		void	putOracleDate(byte_t *out,
 						int16_t year,
@@ -1124,9 +1197,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	switchSession(const byte_t *rp,
 						const byte_t **rpout);
 
-		// logon unknown
-		bool	logonUnknown(const byte_t *rp);
-		bool	sendLogonUnknownResponse();
+		// the unidentified 0x54 call
+		bool	unidentified54(const byte_t *rp);
+		bool	sendUnidentified54Response();
 
 		void	putGenericFooter();
 
@@ -1148,12 +1221,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	supervisorversion;
 		uint32_t	authenticationversion;
 		uint32_t	encryptionversion;
-		uint32_t	cryptochecksummingversion;
+		uint32_t	dataintegrityversion;
 
 		uint16_t	*encryptiondrivers;
 		uint32_t	encryptiondrivercount;
-		uint16_t	*cryptochecksummingdrivers;
-		uint32_t	cryptochecksummingdrivercount;
+		uint16_t	*dataintegritydrivers;
+		uint32_t	dataintegritydrivercount;
 
 		byte_t		*ttiversions;
 		uint32_t	ttiversioncount;
@@ -1428,12 +1501,12 @@ void sqlrprotocol_oracle::init() {
 	supervisorversion=0;
 	authenticationversion=0;
 	encryptionversion=0;
-	cryptochecksummingversion=0;
+	dataintegrityversion=0;
 
 	encryptiondrivers=NULL;
 	encryptiondrivercount=0;
-	cryptochecksummingdrivers=NULL;
-	cryptochecksummingdrivercount=0;
+	dataintegritydrivers=NULL;
+	dataintegritydrivercount=0;
 
 	ttiversions=NULL;
 	ttiversioncount=0;
@@ -1487,8 +1560,8 @@ void sqlrprotocol_oracle::free() {
 
 	delete[] encryptiondrivers;
 	encryptiondrivers=NULL;
-	delete[] cryptochecksummingdrivers;
-	cryptochecksummingdrivers=NULL;
+	delete[] dataintegritydrivers;
+	dataintegritydrivers=NULL;
 
 	delete[] ttiversions;
 	ttiversions=NULL;
@@ -1702,8 +1775,8 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 						"ending session");
 					loop=false;
 					break;
-				case TTI_LOGON_UNKNOWN:
-					loop=logonUnknown(rp);
+				case TTI_UNIDENTIFIED_0X54:
+					loop=unidentified54(rp);
 					rp=NULL;
 					break;
 				case TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD:
@@ -1741,7 +1814,7 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					// call is an 8.0.5 client asking for
 					// the server version)
 					if (lastttccode==
-						TTC_EXTENDED_TTI_FUNCTION) {
+						TTC_PIGGYBACK_TTI_FUNCTION) {
 						loop=switchSession(rp,&rp);
 					} else {
 						loop=version(rp);
@@ -1761,7 +1834,9 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=false;
 					break;
 				default:
-					// FIXME: bad options...
+					// an unrecognized function code ends
+					// the session cleanly, which is what
+					// the docs prescribe
 					debugWrite("unrecognized tti "
 						"function 0x%02x, "
 						"ending session",
@@ -2456,7 +2531,9 @@ bool sqlrprotocol_oracle::sendAccept(const byte_t *data, uint16_t datasize) {
 	writeHost(&reqpacket,(uint16_t)1);
 	writeBE(&reqpacket,datasize);
 	writeBE(&reqpacket,dataoffset);
-	// echo the client's ano flags back
+	// echo the client's ano flags back.  the docs call this a pair of
+	// ub1s, the bitmask and the same bitmask repeated; every client
+	// writes them identically, so one big-endian ub2 says the same thing.
 	// (the client decides whether to send an ano request from the flags in
 	// the accept, so echoing means both ends reach the same decision from
 	// the same bits)
@@ -2589,12 +2666,12 @@ void sqlrprotocol_oracle::warnAnoDeclined() {
 			encdrivers);
 	}
 
-	uint32_t	csdrivers=anoDriversOffered(
-						cryptochecksummingdrivers,
-						cryptochecksummingdrivercount);
-	if (csdrivers) {
-		debugWrite("declining %d offered crypto-checksumming "
-						"driver(s)",csdrivers);
+	uint32_t	didrivers=anoDriversOffered(
+						dataintegritydrivers,
+						dataintegritydrivercount);
+	if (didrivers) {
+		debugWrite("declining %d offered data integrity "
+						"driver(s)",didrivers);
 		cont->raiseInternalWarningEvent(NULL,
 			"client requested oracle crypto-checksumming "
 			"(%d algorithms).  this module doesn't implement it "
@@ -2602,12 +2679,12 @@ void sqlrprotocol_oracle::warnAnoDeclined() {
 			"SQLNET.CRYPTO_CHECKSUM_CLIENT=REQUIRED will fail "
 			"with ORA-12660; use ACCEPTED, REQUESTED or "
 			"REJECTED.",
-			csdrivers);
+			didrivers);
 	}
 
-	if (!encdrivers && !csdrivers) {
+	if (!encdrivers && !didrivers) {
 		debugWrite("nothing declined - client offered no "
-					"encryption or checksumming drivers");
+				"encryption or data integrity drivers");
 	}
 
 	debugEnd();
@@ -2657,7 +2734,7 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 	}
 
 	readBE(rp,&dataflags,&rp);
-	if (!readMarker32(rp,0xdeadbeef,&rp)) {
+	if (!readMarker32(rp,ANO_MARKER,&rp)) {
 		return false;
 	}
 	readBE(rp,&overallsize,&rp);
@@ -2693,20 +2770,20 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 		}
 
 		switch (service) {
-			case 4:
+			case ANO_SERVICE_SUPERVISOR:
 				success=getSupervisorService(
 							rp,end,fieldcount,&rp);
 				break;
-			case 1:
+			case ANO_SERVICE_AUTHENTICATION:
 				success=getAuthenticationService(
 							rp,end,fieldcount,&rp);
 				break;
-			case 2:
+			case ANO_SERVICE_ENCRYPTION:
 				success=getEncryptionService(
 							rp,end,fieldcount,&rp);
 				break;
-			case 3:
-				success=getCryptoChecksummingService(
+			case ANO_SERVICE_DATA_INTEGRITY:
+				success=getDataIntegrityService(
 							rp,end,fieldcount,&rp);
 				break;
 			default:
@@ -2864,18 +2941,18 @@ bool sqlrprotocol_oracle::getEncryptionService(const byte_t *rp,
 	return true;
 }
 
-bool sqlrprotocol_oracle::getCryptoChecksummingService(
+bool sqlrprotocol_oracle::getDataIntegrityService(
 						const byte_t *rp,
 						const byte_t *end,
 						uint16_t fieldcount,
 						const byte_t **rpout) {
 
-	debugStart("crypto-checksumming");
-	debugWrite("service: ANO Crypto-Checksumming");
+	debugStart("data integrity");
+	debugWrite("service: ANO Data Integrity");
 
 	uint16_t	*drivers=NULL;
 	uint32_t	drivercount;
-	if (!getAnoVersionField(rp,end,&cryptochecksummingversion,&rp) ||
+	if (!getAnoVersionField(rp,end,&dataintegrityversion,&rp) ||
 		!getAnoDriverListField(rp,end,&drivers,&drivercount,&rp)) {
 		delete[] drivers;
 		debugEnd();
@@ -2883,9 +2960,9 @@ bool sqlrprotocol_oracle::getCryptoChecksummingService(
 	}
 
 	// see getEncryptionService()
-	delete[] cryptochecksummingdrivers;
-	cryptochecksummingdrivers=drivers;
-	cryptochecksummingdrivercount=drivercount;
+	delete[] dataintegritydrivers;
+	dataintegritydrivers=drivers;
+	dataintegritydrivercount=drivercount;
 
 	debugEnd();
 
@@ -2907,7 +2984,7 @@ bool sqlrprotocol_oracle::getAnoVersionField(const byte_t *rp,
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",4,&rp) ||
-		!readBE(rp,&type,"type",5,&rp)) {
+		!readBE(rp,&type,"type",ANO_FIELD_TYPE_VERSION,&rp)) {
 		debugEnd();
 		return false;
 	}
@@ -2940,7 +3017,7 @@ bool sqlrprotocol_oracle::getAnoConnectionInfoField(
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",8,&rp) ||
-		!readBE(rp,&type,"type",1,&rp)) {
+		!readBE(rp,&type,"type",ANO_FIELD_TYPE_RAW_BYTES,&rp)) {
 		debugEnd();
 		return false;
 	}
@@ -2982,9 +3059,11 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 	uint16_t	size;
 	readBE(rp,&size,&rp);
 
-	// get the field type, should be 1 (UB2Array)
+	// get the field type, should be raw bytes.  a raw bytes field whose
+	// contents are a deadbeef-marked ub2 array is what this reads.
+	// see "Oracle Wire Protocol - ANO Negotiation"
 	uint16_t	type;
-	if (!readBE(rp,&type,"type",1,&rp)) {
+	if (!readBE(rp,&type,"type",ANO_FIELD_TYPE_RAW_BYTES,&rp)) {
 		return false;
 	}
 
@@ -3009,17 +3088,17 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 	// look for a deadbeef marker, followed by an array marker.
 	// 10 bytes for the two markers and the array count.
 	if (size<10 ||
-		!readMarker32(rp,0xdeadbeef,&rp) ||
-		!readMarker16(rp,0x0003,&rp)) {
+		!readMarker32(rp,ANO_MARKER,&rp) ||
+		!readMarker16(rp,ANO_ARRAY_MARKER,&rp)) {
 
 		// a field sometimes has an array marker and no deadbeef, and
 		// sometimes neither.  both shapes are the encryption and
-		// crypto-checksumming services' driver lists - one byte per
+		// data integrity services' driver lists - one byte per
 		// algorithm id, with a field header identical to this one -
 		// and they have their own reader now, so neither reaches this
 		// function.  the two differ only in whether the first two
 		// algorithm ids happen to spell the array marker: ojdbc 23.26
-		// offers 0, 3, 4, 5 and 6 for crypto-checksumming, and the
+		// offers 0, 3, 4, 5 and 6 for data integrity, and the
 		// first two of those are the bytes 00 03.
 		//
 		// the one caller left is getSupervisorService(), and both
@@ -3027,6 +3106,9 @@ bool sqlrprotocol_oracle::getAnoArrayField(const byte_t *rp,
 		// so this is a guard rather than a decoder - hence the dump.
 		// returning NULL/0 without failing is deliberate: a supervisor
 		// list nobody can read is not worth refusing a connection over.
+		//
+		// the dumped bytes are unexplained
+		// see "Oracle Wire Protocol - ANO Negotiation"
 		debugStart("unrecognized array field");
 		debugHexDump(fieldend-size,size);
 		debugEnd();
@@ -3079,7 +3161,7 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 	readBE(rp,&size,&rp);
 
 	uint16_t	type;
-	if (!readBE(rp,&type,"type",1,&rp)) {
+	if (!readBE(rp,&type,"type",ANO_FIELD_TYPE_RAW_BYTES,&rp)) {
 		debugEnd();
 		return false;
 	}
@@ -3090,7 +3172,7 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 		return false;
 	}
 
-	// the encryption and crypto-checksumming services send one byte per
+	// the encryption and data integrity services send one byte per
 	// algorithm id even though the field header is identical to the ub2
 	// array getAnoArrayField() reads - and a field of this shape could
 	// carry that instead, so skip it rather than report nonsense
@@ -3102,6 +3184,8 @@ bool sqlrprotocol_oracle::getAnoDriverListField(const byte_t *rp,
 	// single byte through sendRaw(), which writes a size, a type of 1,
 	// and then raw bytes.  and ojdbc8 sends "00 04 00 01 00 0f 10 11",
 	// which is none, aes128, aes192 and aes256.
+	// the array itself is unexplained
+	// see "Oracle Wire Protocol - ANO Negotiation"
 	if (size>=4 && rp[0]==0xde && rp[1]==0xad &&
 					rp[2]==0xbe && rp[3]==0xef) {
 		debugWrite("driver list is a ub2 array, not decoded");
@@ -3141,7 +3225,7 @@ bool sqlrprotocol_oracle::getAnoConstantField(const byte_t *rp,
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",2,&rp) ||
-		!readBE(rp,&type,"type",3,&rp)) {
+		!readBE(rp,&type,"type",ANO_FIELD_TYPE_UB2,&rp)) {
 		debugEnd();
 		return false;
 	}
@@ -3169,7 +3253,7 @@ bool sqlrprotocol_oracle::getAnoConstantField(const byte_t *rp,
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",1,&rp) ||
-		!readBE(rp,&type,"type",2,&rp)) {
+		!readBE(rp,&type,"type",ANO_FIELD_TYPE_UB1,&rp)) {
 		debugEnd();
 		return false;
 	}
@@ -3197,7 +3281,7 @@ bool sqlrprotocol_oracle::getAnoStatusField(const byte_t *rp,
 	uint16_t	size;
 	uint16_t	type;
 	if (!readBE(rp,&size,"size",2,&rp) ||
-		!readBE(rp,&type,"type",6,&rp)) {
+		!readBE(rp,&type,"type",ANO_FIELD_TYPE_STATUS,&rp)) {
 		debugEnd();
 		return false;
 	}
@@ -3226,7 +3310,7 @@ bool sqlrprotocol_oracle::sendAnoResponse() {
 	byte_t		servicestobeused=0;
 
 	writeBE(&reqpacket,dataflags);
-	writeBE(&reqpacket,(uint32_t)0xdeadbeef);
+	writeBE(&reqpacket,(uint32_t)ANO_MARKER);
 	overallsizepos=reqpacket.getPosition();
 	writeBE(&reqpacket,overallsize);
 	writeBE(&reqpacket,version);
@@ -3247,7 +3331,7 @@ bool sqlrprotocol_oracle::sendAnoResponse() {
 	servicecount++;
 	overallsize+=putEncryptionService();
 	servicecount++;
-	overallsize+=putCryptoChecksummingService();
+	overallsize+=putDataIntegrityService();
 	servicecount++;
 
 
@@ -3269,11 +3353,13 @@ uint16_t sqlrprotocol_oracle::putSupervisorService() {
 	debugStart("supervisor");
 	debugWrite("service: ANO Supervisor");
 
+	// the driver pair is unexplained.  the status reports success
+	// see "Oracle Wire Protocol - ANO Negotiation"
 	uint16_t drivers[]={0x0004,0x0001};
 
-	uint16_t	size=putAnoServiceHeader(4,3)+
+	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_SUPERVISOR,3)+
 				putAnoVersionField(supervisorversion)+
-				putAnoStatusField(0x001f)+
+				putAnoStatusField(ANO_STATUS_SUPERVISOR_OK)+
 				putAnoArrayField(drivers,2);
 
 	debugEnd();
@@ -3285,9 +3371,12 @@ uint16_t sqlrprotocol_oracle::putAuthenticationService() {
 	debugStart("authentication");
 	debugWrite("service: ANO Authentication");
 
-	uint16_t	size=putAnoServiceHeader(1,2)+
+	// the status reports success.  its bit layout is unexplained
+	// see "Oracle Wire Protocol - ANO Negotiation"
+	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_AUTHENTICATION,2)+
 				putAnoVersionField(authenticationversion)+
-				putAnoStatusField(0xfbff);
+				putAnoStatusField(
+					ANO_STATUS_AUTHENTICATION_OK);
 
 	debugEnd();
 	return size;
@@ -3310,7 +3399,7 @@ uint16_t sqlrprotocol_oracle::putEncryptionService() {
 	// captured canned response sends.  a client only fails on it if
 	// SQLNET.ENCRYPTION_CLIENT is REQUIRED, which raises ORA-12660 on the
 	// client; REJECTED, ACCEPTED and REQUESTED all connect unencrypted.
-	uint16_t	size=putAnoServiceHeader(2,2)+
+	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_ENCRYPTION,2)+
 				putAnoVersionField(encryptionversion)+
 				putAnoConstant((byte_t)ENC_NONE);
 
@@ -3318,15 +3407,15 @@ uint16_t sqlrprotocol_oracle::putEncryptionService() {
 	return size;
 }
 
-uint16_t sqlrprotocol_oracle::putCryptoChecksummingService() {
+uint16_t sqlrprotocol_oracle::putDataIntegrityService() {
 
-	debugStart("crypto-checksumming");
-	debugWrite("service: ANO Crypto-Checksumming");
+	debugStart("data integrity");
+	debugWrite("service: ANO Data Integrity");
 
 	// declined for the reasons in putEncryptionService()
-	uint16_t	size=putAnoServiceHeader(3,2)+
-				putAnoVersionField(cryptochecksummingversion)+
-				putAnoConstant((byte_t)CS_NONE);
+	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_DATA_INTEGRITY,2)+
+				putAnoVersionField(dataintegrityversion)+
+				putAnoConstant((byte_t)DI_NONE);
 
 	debugEnd();
 	return size;
@@ -3339,16 +3428,16 @@ uint16_t sqlrprotocol_oracle::putAnoServiceHeader(uint16_t service,
 	debugWrite("service: %d",service);
 	debugWrite("field count: %d",fieldcount);
 	switch (service) {
-		case 1:
+		case ANO_SERVICE_AUTHENTICATION:
 			debugWrite("service name: ANO Authentication");
 			break;
-		case 2:
+		case ANO_SERVICE_ENCRYPTION:
 			debugWrite("service name: ANO Encryption");
 			break;
-		case 3:
-			debugWrite("service name: ANO Crypto-Checksumming");
+		case ANO_SERVICE_DATA_INTEGRITY:
+			debugWrite("service name: ANO Data Integrity");
 			break;
-		case 4:
+		case ANO_SERVICE_SUPERVISOR:
 			debugWrite("service name: ANO Supervisor");
 			break;
 		default:
@@ -3360,6 +3449,7 @@ uint16_t sqlrprotocol_oracle::putAnoServiceHeader(uint16_t service,
 	writeBE(&reqpacket,service);
 	writeBE(&reqpacket,fieldcount);
 	// FIXME; send something other than 0x00000000 if there was an error...
+	// no wiki page covers what else may go here
 	writeBE(&reqpacket,(uint32_t)0x00000000);
 	return 8;
 }
@@ -3372,7 +3462,7 @@ uint16_t sqlrprotocol_oracle::putAnoVersionField(uint32_t version) {
 
 	// data size, field type, version, return total size
 	writeBE(&reqpacket,(uint16_t)4);
-	writeBE(&reqpacket,(uint16_t)5);
+	writeBE(&reqpacket,(uint16_t)ANO_FIELD_TYPE_VERSION);
 	writeBE(&reqpacket,version);
 	return 8;
 }
@@ -3385,7 +3475,7 @@ uint16_t sqlrprotocol_oracle::putAnoStatusField(uint16_t status) {
 
 	// data size, field type, status, return total size
 	writeBE(&reqpacket,(uint16_t)2);
-	writeBE(&reqpacket,(uint16_t)6);
+	writeBE(&reqpacket,(uint16_t)ANO_FIELD_TYPE_STATUS);
 	writeBE(&reqpacket,status);
 	return 6;
 }
@@ -3398,7 +3488,7 @@ uint16_t sqlrprotocol_oracle::putAnoConstant(byte_t constant) {
 
 	// data size, field type, constant, return total size
 	writeBE(&reqpacket,(uint16_t)1);
-	writeBE(&reqpacket,(uint16_t)2);
+	writeBE(&reqpacket,(uint16_t)ANO_FIELD_TYPE_UB1);
 	write(&reqpacket,constant);
 	return 5;
 }
@@ -3411,7 +3501,7 @@ uint16_t sqlrprotocol_oracle::putAnoArrayField(uint16_t *array,
 	// data size, field type
 	uint16_t datasize=((arraycount)?(4+2+4+arraycount*2):1);
 	writeBE(&reqpacket,(uint16_t)((arraycount)?(4+2+4+arraycount*2):1));
-	writeBE(&reqpacket,(uint16_t)1);
+	writeBE(&reqpacket,(uint16_t)ANO_FIELD_TYPE_RAW_BYTES);
 
 	debugWrite("array count: %d",arraycount);
 
@@ -3419,8 +3509,8 @@ uint16_t sqlrprotocol_oracle::putAnoArrayField(uint16_t *array,
 
 		// deadbeef marker, array marker,
 		// array count, array members
-		writeBE(&reqpacket,(uint32_t)0xdeadbeef);
-		writeBE(&reqpacket,(uint16_t)0x003);
+		writeBE(&reqpacket,(uint32_t)ANO_MARKER);
+		writeBE(&reqpacket,(uint16_t)ANO_ARRAY_MARKER);
 		writeBE(&reqpacket,arraycount);
 		for (uint32_t i=0; i<arraycount; i++) {
 			debugWrite("array[%d]: %d",i,array[i]);
@@ -3626,7 +3716,9 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 	write(&reqpacket,'\0');
 
 
-	// database charset
+	// database charset.  it goes out twice in two byte orders - this one
+	// little-endian, and again big-endian inside the fdo block below.
+	// the 8i capture calls this one native byte order.
 	writeLE(&reqpacket,charset);
 
 
@@ -3646,6 +3738,7 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 
 	// fdo... (whatever that is)
+	// see "Oracle Wire Protocol - TTI Protocol Negotiation"
 	uint16_t	fdosize=100;
 	uint32_t	fdodatasize=fdosize-4;
 	// meaning unknown - only the sizes matter, since the client adds them
@@ -3957,7 +4050,10 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		return false;
 	}
 
-	// the client's remote-in and remote-out character sets, in host order.
+	// the client's remote-in and remote-out character sets, two ub2s,
+	// little-endian.  the 8i capture calls them native byte order rather
+	// than little-endian, which is where the two words get used
+	// interchangeably; no big-endian client has been measured.
 	// every client measured writes the same value in both.  neither is the
 	// national character set, which is a separate field further down,
 	// inside the db time zone group.
@@ -4545,6 +4641,8 @@ void sqlrprotocol_oracle::resetLoginAttempt() {
 	fabricatedchallenge=false;
 }
 
+// reads a text
+// see "Oracle Wire Protocol - Data Types"
 bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 					const byte_t *end,
 					char **string,
@@ -4564,7 +4662,7 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 
 	// 0xfe introduces a chunked long form that nothing in the
 	// authentication exchange uses, so bail rather than desync
-	if (length==0xfe) {
+	if (length==CLR_LONG_FORM_MARKER) {
 		debugWrite("malformed string: chunked, not supported");
 		return false;
 	}
@@ -4722,14 +4820,20 @@ bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 	return true;
 }
 
+// a text - one length byte, then that many bytes.  there is no long form;
+// a value over 252 bytes takes a clr instead
+// see "Oracle Wire Protocol - Data Types"
 void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
 	write(&reqpacket,(byte_t)size);
 	write(&reqpacket,string,(size_t)size);
 }
 
+// a clr - the text-shaped short form up to 252 bytes, the chunked long form
+// above that
+// see "Oracle Wire Protocol - Data Types"
 void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 
-	if (size<=MAX_SHORT_LENGTH) {
+	if (size<=CLR_MAX_SHORT_LENGTH) {
 		write(&reqpacket,(byte_t)size);
 		if (size) {
 			write(&reqpacket,bytes,(size_t)size);
@@ -4737,16 +4841,16 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		return;
 	}
 
-	// the long form: a 0xfe marker, then a ub4 length and that many bytes
-	// per chunk, then a zero length
+	// the long form: a 0xfe marker, then an lpi chunk size and that many
+	// bytes per chunk, then a zero-length chunk
 	// (a row value needs it and an authentication field never did, which
 	// is why putLenString() doesn't have it)
-	write(&reqpacket,(byte_t)LONG_LENGTH_INDICATOR);
+	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
 	uint32_t	offset=0;
 	while (offset<size) {
 		uint32_t	chunk=size-offset;
-		if (chunk>CHUNK_SIZE) {
-			chunk=CHUNK_SIZE;
+		if (chunk>CLR_MAX_CHUNK_SIZE) {
+			chunk=CLR_MAX_CHUNK_SIZE;
 		}
 		writeLenPreInt(&reqpacket,chunk);
 		write(&reqpacket,bytes+offset,(size_t)chunk);
@@ -4755,9 +4859,10 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 	writeLenPreInt(&reqpacket,0);
 }
 
-void sqlrprotocol_oracle::putBytesWithLength(const char *bytes,
-							uint32_t size) {
-	debugWrite("bytes with length: %d",size);
+// a dalc - an lpi total size, then the value as a clr
+// see "Oracle Wire Protocol - Data Types"
+void sqlrprotocol_oracle::putDalc(const char *bytes, uint32_t size) {
+	debugWrite("dalc: %d",size);
 	debugHexDump((const byte_t *)bytes,size);
 	writeLenPreInt(&reqpacket,size);
 	if (size) {
@@ -5106,6 +5211,8 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	// trailer after the last pair, from an 11.2 capture.  it is a summary
 	// object, so putAuthTrailer() adds the 12.1 fields to it.
+	// its fields are unexplained
+	// see "Oracle Wire Protocol - Authentication - Username"
 	static const byte_t	trailer[]={
 		0x04, 0x01, 0x01, 0x01, 0x02,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -5183,6 +5290,8 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 	// summary extension.  no client reaches it now that the module answers
 	// a banner none of them match; it is kept as the fallback if one ever
 	// does.  the live pointer value the 11.2 capture carried is zeroed.
+	// the rest of the trailer is unexplained
+	// see "Oracle Wire Protocol - Authentication - Username"
 	static const byte_t	nativetrailer[]={
 		0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -5284,6 +5393,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 	// the phase two trailer, from an 11.2 capture, and not identified
 	// either.  it differs from the phase one trailer in two bytes.
+	// see "Oracle Wire Protocol - Authentication - Password"
 	static const byte_t	trailer[]={
 		0x04, 0x01, 0x01, 0x01, 0x03,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -5357,6 +5467,7 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	// a ub4 stream: a 1, two zeros, the ora number, then a run of zero
 	// ub4s, then the message.  reproduced byte for byte from an 11.2
 	// server, since what the client's parser keys off isn't known.
+	// see "Oracle Wire Protocol - Authentication - Password"
 	static const byte_t	prefix[]={
 		0x01, 0x01, 0x00, 0x00
 	};
@@ -5443,6 +5554,7 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	// a pointer flag for the cursor id, always 1 in the capture - the
 	// server allocates the cursor and returns its id, so no cursor id
 	// follows it here - then the open size (opesiz), meaning unknown
+	// see "Oracle Wire Protocol - Open"
 	if (!getPointer(rp,end,&cursoridpointer,&rp) ||
 		!readLenPreInt(rp,end,&opesiz,&rp)) {
 		return false;
@@ -5474,6 +5586,7 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 	uint16_t	cursorid=cont->getId(cursor);
+	// unexplained.  see "Oracle Wire Protocol - Open"
 	byte_t		unknown[]={0x00, 0x00};
 	byte_t		status=TTC_STATUS;
 
@@ -5516,6 +5629,9 @@ void sqlrprotocol_oracle::debugTtcCode(byte_t ttccode) {
 		case TTC_ERROR:
 			code="TTC_ERROR";
 			break;
+		case TTC_ACCESS_USER_ADDRESS_SPACE:
+			code="TTC_ACCESS_USER_ADDRESS_SPACE";
+			break;
 		case TTC_ROW_HEADER:
 			code="TTC_ROW_HEADER";
 			break;
@@ -5528,20 +5644,71 @@ void sqlrprotocol_oracle::debugTtcCode(byte_t ttccode) {
 		case TTC_STATUS:
 			code="TTC_STATUS";
 			break;
+		case TTC_NUMBER_OF_ERROR_RECORDS:
+			code="TTC_NUMBER_OF_ERROR_RECORDS";
+			break;
+		case TTC_IO_VECTOR:
+			code="TTC_IO_VECTOR";
+			break;
+		case TTC_SEND_LONG:
+			code="TTC_SEND_LONG";
+			break;
+		case TTC_ORACLE_ACCESSOR:
+			code="TTC_ORACLE_ACCESSOR";
+			break;
+		case TTC_LOB_AND_BFILE_DATA:
+			code="TTC_LOB_AND_BFILE_DATA";
+			break;
+		case TTC_WARNING_MESSAGES:
+			code="TTC_WARNING_MESSAGES";
+			break;
 		case TTC_DESCRIBE_INFO:
 			code="TTC_DESCRIBE_INFO";
 			break;
 		case TTC_BIT_VECTOR:
 			code="TTC_BIT_VECTOR";
 			break;
-		case TTC_EXTENDED_TTI_FUNCTION:
-			code="TTC_EXTENDED_TTI_FUNCTION";
+		case TTC_END_OF_BIND:
+			code="TTC_END_OF_BIND";
+			break;
+		case TTC_SERVER_PIGGYBACK_FUNCTION:
+			code="TTC_SERVER_PIGGYBACK_FUNCTION";
+			break;
+		case TTC_ONE_WAY_FUNCTION:
+			code="TTC_ONE_WAY_FUNCTION";
+			break;
+		case TTC_IMPLICIT_RESULT_SET:
+			code="TTC_IMPLICIT_RESULT_SET";
+			break;
+		case TTC_RENEGOTIATE:
+			code="TTC_RENEGOTIATE";
+			break;
+		case TTC_END_OF_RESPONSE:
+			code="TTC_END_OF_RESPONSE";
+			break;
+		case TTC_PIGGYBACK_TTI_FUNCTION:
+			code="TTC_PIGGYBACK_TTI_FUNCTION";
+			break;
+		case TTC_UNTRUSTED_CALLOUTS:
+			code="TTC_UNTRUSTED_CALLOUTS";
+			break;
+		case TTC_FLUSH_OUT_BINDS:
+			code="TTC_FLUSH_OUT_BINDS";
 			break;
 		case TTC_EXTPROC1:
 			code="TTC_EXTPROC1";
 			break;
+		case TTC_TOKEN:
+			code="TTC_TOKEN";
+			break;
+		case TTC_FAST_AUTHENTICATION:
+			code="TTC_FAST_AUTHENTICATION";
+			break;
 		case TTC_EXTPROC2:
 			code="TTC_EXTPROC2";
+			break;
+		case TTC_SECURE_NETWORK_SERVICES:
+			code="TTC_SECURE_NETWORK_SERVICES";
 			break;
 		default:
 			code="UNKNOWN";
@@ -5640,8 +5807,8 @@ void sqlrprotocol_oracle::debugTtiFunction(byte_t ttifunction) {
 		case TTI_LOGON_PRESENT_USER:
 			func="TTI_LOGON_PRESENT_USER";
 			break;
-		case TTI_LOGON_UNKNOWN:
-			func="TTI_LOGON_UNKNOWN";
+		case TTI_UNIDENTIFIED_0X54:
+			func="TTI_UNIDENTIFIED_0X54";
 			break;
 		case TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD:
 			func="TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD";
@@ -5864,6 +6031,9 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 			return false;
 		}
 
+		// a modern client cancels with a PACKET_MARKER packet rather
+		// than a tti call, and this is where it lands - rejecting it
+		// ends the session cleanly, which is what the docs prescribe
 		if (resppackettype!=PACKET_DATA) {
 			debugWrite("bad packet type %d, expected %d",
 						resppackettype,PACKET_DATA);
@@ -5895,7 +6065,7 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 			debugStart("get tti function");
 			debugWrite("data flags: 0x%04x",dataflags);
 			debugWrite("%s",(dataflags&DATA_FLAGS_EOF)?
-						"end of file":"empty packet");
+						"eof flag":"empty packet");
 			debugEnd();
 			*rpout=rpin;
 			return false;
@@ -5909,7 +6079,7 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 	}
 
 	if (!read(rp,&ttccode,"ttccode",TTC_TTI_FUNCTION,&rp) &&
-		!read(rp,&ttccode,"ttccode",TTC_EXTENDED_TTI_FUNCTION,&rp)) {
+		!read(rp,&ttccode,"ttccode",TTC_PIGGYBACK_TTI_FUNCTION,&rp)) {
 		*rpout=rpin;
 		return false;
 	}
@@ -5932,11 +6102,12 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 
 bool sqlrprotocol_oracle::query(const byte_t *rp) {
 
-	// sqlplus 8.0.5, 8i, 9i
-	// call this to prepare some initial queries
-	// sqlplus 10g+ use query3
+	// legacy path (pre-10g): parse only - execution and row transfer
+	// happen on a later execute() or fetch()
 
 	// parse the request...
+	// moreoptions and unknown3-7 are unexplained
+	// see "Oracle Wire Protocol - Query"
 	uint16_t	options;
 	uint16_t	moreoptions;
 	uint16_t	cursorid;
@@ -6007,7 +6178,7 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
-	// FIXME: decode this...
+	// FIXME: decode this... see "Oracle Wire Protocol - Query"
 
 	uint16_t	dataflags=0;
 	byte_t	ttccode=TTC_ERROR;
@@ -6047,12 +6218,11 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
-	// sqlplus 8.0.5, 8i, 9i
-	// call this to prepare/execute some initial queries
-	// sqlplus 10g+ use query3
+	// legacy path (pre-10g): combined parse/bind/execute
 	// can apparently be used for fetch too
 
 	// parse the request...
+	// see "Oracle Wire Protocol - Query2"
 	uint16_t	options;
 	uint16_t	moreoptions;
 	uint16_t	cursorid;
@@ -6202,7 +6372,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 		dataflags=0;
 		ttccode=TTC_IO_VECTOR;
 
-		// FIXME: decode this...
+		// FIXME: decode this... see "Oracle Wire Protocol - Query2"
 
 		byte_t unknown[]={
 			0x05, 0xFE, 0x01, 0x00, 0x00,
@@ -6218,7 +6388,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 		dataflags=0;
 		ttccode=TTC_OK;
 
-		// FIXME: decode this...
+		// FIXME: decode this... see "Oracle Wire Protocol - Query2"
 
 		byte_t unknown[]={
 
@@ -6296,6 +6466,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 		}
 
 		uint16_t	dataflags;
+		// unexplained.  see "Oracle Wire Protocol - Query2"
 		byte_t		unknown;
 
 		readBE(rp,&dataflags,&rp);
@@ -6312,7 +6483,7 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 		debugWrite("data flags: 0x%04x",dataflags);
 		debugWrite("variable: %s",bv->variable);
 
-		// FIXME: handle nulls
+		// FIXME: handle nulls - the null wire form is unexplained
 		if (false) {
 			bv->type=SQLRSERVERBINDVARTYPE_NULL;
 			bv->isnull=cont->getNullBindValue();
@@ -6452,7 +6623,8 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 
 bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 
-	// all versions call this to open/prepare/describe/execute most queries
+	// modern path (10g and later): combined open/prepare/describe/execute
+	// the first one puts the session on the modern path for good
 	// can apparently be used for fetch too
 
 	// parse the request...
@@ -6560,6 +6732,8 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	*querysize=0;
 
 	byte_t		sequence=0;
+	// pointer and unused stand in for unexplained flags and counts
+	// see "Oracle Wire Protocol - Query3"
 	byte_t		pointer=0;
 	uint32_t	vectorsize=0;
 	uint32_t	prefetchbuffersize=0;
@@ -6612,7 +6786,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			rp++;
 		}
 
-		if (rp<end && *rp==LONG_LENGTH_INDICATOR) {
+		if (rp<end && *rp==CLR_LONG_FORM_MARKER) {
 			debugWrite("chunked query text, not supported");
 			return false;
 		}
@@ -6632,7 +6806,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 				*querysize==(uint32_t)(*rp)*4)) {
 			*querysize=*rp;
 			rp++;
-		} else if (rp<end && *querysize<=MAX_SHORT_LENGTH &&
+		} else if (rp<end && *querysize<=CLR_MAX_SHORT_LENGTH &&
 					(uint32_t)(*rp)==*querysize) {
 			rp++;
 		}
@@ -6666,6 +6840,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	}
 
 	// FIXME: bind variables and defines are still ignored
+	// see "Oracle Wire Protocol - Known Unknowns"
 	return true;
 }
 
@@ -6795,7 +6970,8 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,maxrowsize);
 	writeLenPreInt(&reqpacket,colcount);
 	if (colcount) {
-		write(&reqpacket,(byte_t)0x51);
+		// unexplained.  see "Oracle Wire Protocol - Describe Info"
+		write(&reqpacket,(byte_t)DESCRIBE_INFO_CONSTANT);
 	}
 
 	debugStart("describe info");
@@ -6810,7 +6986,7 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 
 	byte_t	date[7];
 	putOracleDate(date);
-	putBytesWithLength((const char *)date,sizeof(date));
+	putDalc((const char *)date,sizeof(date));
 
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,DCB_MAX_DATA_BLOCK_SIZE);
@@ -6853,7 +7029,7 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,(character)?size:0);
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)namesize);
-	putBytesWithLength(name,namesize);
+	putDalc(name,namesize);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,column);
@@ -6965,15 +7141,22 @@ void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 
 	// 0x22 in the answer to an execute and 0x02 in the answer to a fetch
 	write(&reqpacket,flags);
+
+	// column count (rxh.numRqsts), iteration number (rxh.iterNum), row
+	// count (rxh.numItersThisTime), uac buffer length (rxh.uacBufLength)
 	writeLenPreInt(&reqpacket,colcount);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,prefetchrows);
 	writeLenPreInt(&reqpacket,0);
 
-	// no bit vector.  a real server sends one to say which columns repeat
-	// the previous row's value; without one every column is sent in full.
+	// bit vector size.  a real server sends a bit vector here to say which
+	// columns repeat the previous row's value; a zero size sends every
+	// column of every row in full.
 	writeLenPreInt(&reqpacket,0);
 
+	// meaning unknown.  the 8i capture ends its row header at the uac
+	// buffer length, so this and the bit vector size are later additions.
+	// see "Oracle Wire Protocol - Row Header"
 	writeLenPreInt(&reqpacket,0);
 
 	debugStart("row header");
@@ -7002,7 +7185,10 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 
 		debugStart("col %d",i);
 
-		// FIXME: lobs are sent as null
+		// one zero byte stands for null, lob and unreadable alike.
+		// no modern path lob encoding is documented, so a lob goes
+		// out as this same byte.
+		// see "Oracle Wire Protocol - Row Data"
 		if (null || lob || !field) {
 			debugWrite("null");
 			write(&reqpacket,(byte_t)0);
@@ -7029,6 +7215,7 @@ void sqlrprotocol_oracle::putReturnParameters() {
 		writeLenPreInt(&reqpacket,0);
 	}
 
+	// al8txl size, session-state key/value pair count, registration id
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
@@ -7273,15 +7460,15 @@ void sqlrprotocol_oracle::putNumberField(const char *field,
 
 bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 
-	// sqlplus 8.0.5 (at least)
-	// call this to execute a commit at the end of initialization
+	// path-independent: executes a statement query2() or query3() already
+	// parsed
 
 	// parse the request...
 	uint16_t	options;
 	uint16_t	moreoptions;
 	uint16_t	cursorid;
 
-	// FIXME: decode this...
+	// FIXME: decode this... see "Oracle Wire Protocol - Execute"
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
 	readBE(rp,&cursorid,&rp);
@@ -7329,7 +7516,7 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
-	// FIXME: decode this...
+	// FIXME: decode this... see "Oracle Wire Protocol - Execute"
 
 	uint16_t	dataflags=0;
 	byte_t	ttccode=TTC_ERROR;
@@ -7357,6 +7544,8 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 }
 
 bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
+
+	// the modern path fetch request body
 
 	const byte_t	*end=resppacket+resppacketsize;
 
@@ -7400,8 +7589,9 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 						uint32_t cursorid,
 						uint32_t rowstofetch) {
 
-	// the same as an execute's answer minus the describe and the return
-	// parameters: a row header, the rows, and a summary object
+	// the modern path body: the same as an execute's answer minus the
+	// describe and the return parameters - a row header, the rows, and a
+	// summary object
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint32_t	colcount=cont->colCount(cursor);
@@ -7469,7 +7659,9 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 
 bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 
-	// all versions call this to fetch
+	// path-independent, but which shape a fetch takes is a property of
+	// the session, not of the packet - once a session has sent one
+	// query3(), every later fetch on every cursor takes the modern shape
 
 	if (query3session) {
 		return fetch3(rp);
@@ -7480,7 +7672,7 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 	uint16_t	moreoptions;
 	uint16_t	cursorid;
 
-	// FIXME: decode this...
+	// FIXME: decode this... see "Oracle Wire Protocol - Fetch"
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
 
@@ -7515,8 +7707,14 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 							bool sndiov,
 							bool exactfetch) {
 
+	// the legacy path body
 	resetSendPacketBuffer(PACKET_DATA);
 
+	// a captured legacy response that returns rows without DEFINE set
+	// carries no data flags word at all.  every other type 6 packet in
+	// the protocol carries it unconditionally, so the gap looks like an
+	// accident, and sending it here is the safer read.
+	// see "Oracle Wire Protocol - Fetch"
 	uint16_t	dataflags=0;
 	writeBE(&reqpacket,dataflags);
 
@@ -7563,11 +7761,13 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 			// FIXME: the headers/col-defs appear to be very
 			// different when sent from 8i
+			// see "Oracle Wire Protocol - Column Definitions"
 
 			if (define) {
 
-				// FIXME: not a valid ttccode type...
-				byte_t		ttccode=16;
+				// ttc type 0x10 reused bare as a response
+				// header - not a describe info message
+				byte_t		ttccode=TTC_DESCRIBE_INFO;
 
 				write(&reqpacket,ttccode);
 
@@ -7584,6 +7784,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			}
 
 			// send "iov" (whatever that is)...
+			// see "Oracle Wire Protocol - Fetch"
 			if (sndiov) {
 				if (getDebug()) {
 					debugStart("fetch response header");
@@ -7604,6 +7805,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				}
 			}
 
+			// unknown2 through unknown4 are unexplained
+			// see "Oracle Wire Protocol - Fetch"
 			// always appears to be the same...
 			const byte_t	unknown2[]={
 				0x06, 0x02,
@@ -7640,7 +7843,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			}
 		}
 
-		// no idea...
+		// row marker, written ahead of each row
+		// see "Oracle Wire Protocol - Row Data"
 		write(&reqpacket,(byte_t)7);
 
 		debugStart("fetch response row");
@@ -7664,6 +7868,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// isn't known, so fall back to the non-exact-fetch trailer
 		// rather than index past the end of them.
 		if (exactfetch && colcount && colcount<=2) {
+			// unknown5 through unknown11 are unexplained
+			// see "Oracle Wire Protocol - Fetch"
 			const byte_t	unknown5[]={
 				// ???
 				0x08, 0x04, 0x00
@@ -7751,6 +7957,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 		} else {
 
+			// unexplained.  see "Oracle Wire Protocol - Fetch"
 			const byte_t	unknown[]={
 				0x04, 0x01, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -7830,7 +8037,8 @@ void sqlrprotocol_oracle::putColumnDefinitions(sqlrservercursor *cursor,
 	for (uint32_t i=0; i<colcount; i++) {
 		sizetotal+=cont->getColumnSize(cursor,i);
 	}
-	uint32_t	constant=51;
+	// unexplained.  see "Oracle Wire Protocol - Column Definitions"
+	uint32_t	constant=COLUMN_DEFINITIONS_CONSTANT;
 
 	write(&reqpacket,sizetotal);
 	writeBE(&reqpacket,colcount);
@@ -7865,7 +8073,8 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 							columntype,
 							columntypestring);*/
 
-	// no idea
+	// see "Oracle Wire Protocol - Column Definitions"
+	// meaning unknown
 	byte_t	marker1=1;
 	// 128 for char/varchar, 0 for numeric
 	byte_t	marker2=(character)?128:0;
@@ -7873,6 +8082,7 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 	byte_t	scale=cont->getColumnScale(cursor,column);
 	// 16 for non-integer decimal, otherwise actual size
 	byte_t	size=cont->getColumnSize(cursor,column);
+	// its 18 zero bytes are unexplained
 	byte_t	unknown1[]={
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00,
@@ -7890,9 +8100,10 @@ void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
 	byte_t		alias=1;
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
-	// no idea
+	// see "Oracle Wire Protocol - Column Definitions"
+	// meaning unknown
 	uint32_t	marker4=0;
-	// no idea
+	// meaning unknown
 	uint32_t	marker5=0;
 
 	write(&reqpacket,marker1);
@@ -8083,6 +8294,7 @@ void sqlrprotocol_oracle::putIov() {
 
 	debugStart("iov");
 
+	// unexplained.  see "Oracle Wire Protocol - Fetch"
 	// always appears to be the same...
 	const byte_t	unknown[]={
 		0x07, 0x00, 0x00, 0x00,
@@ -8144,9 +8356,12 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
 			bool	wrote=putField(field,fieldsize,ct[i]);
 
-			// no idea, but only if the field itself was
-			// actually written, otherwise the terminator
-			// desyncs the rest of the row
+			// the terminator: a ub4 after every column but the
+			// last, a ub2 after the last.  it belongs to the row
+			// rather than to the value, but write it only if the
+			// value itself was written, otherwise it desyncs the
+			// rest of the row.
+			// see "Oracle Wire Protocol - Row Data"
 			if (terminator && wrote) {
 				if (i==colcount-1) {
 					writeBE(&reqpacket,(uint16_t)0);
@@ -8402,6 +8617,8 @@ void sqlrprotocol_oracle::putError(const char *error, uint32_t errorsize,
 	// to the caller to have already written it
 	byte_t		ttccode=TTC_ERROR;
 
+	// unknown1 and unknown2 are unexplained
+	// see "Oracle Wire Protocol - Fetch"
 	byte_t	unknown1[]={
 		0x00, 0x00, 0x00, 0x00, 0x7B,
 		0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
@@ -8725,6 +8942,7 @@ bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 	byte_t		seqnumber=0;
 	uint32_t	sessionid=0;
 	uint32_t	serialnumber=0;
+	// unexplained.  see "Oracle Wire Protocol - Switch Session"
 	uint32_t	unknown=0;
 
 	if (end-rp<1) {
@@ -8751,22 +8969,23 @@ bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 	return true;
 }
 
-bool sqlrprotocol_oracle::logonUnknown(const byte_t *rp) {
+bool sqlrprotocol_oracle::unidentified54(const byte_t *rp) {
 
 	// no idea
 
 	// FIXME: decode this...
+	// see "Oracle Wire Protocol - The Unidentified 0x54 Call"
 
-	debugStart("logon unknown request");
+	debugStart("unidentified 0x54 request");
 	if (rp && rp<resppacket+resppacketsize) {
 		debugWrite("seq number: 0x%02x",*rp);
 	}
 	debugEnd();
 
-	return sendLogonUnknownResponse();
+	return sendUnidentified54Response();
 }
 
-bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
+bool sqlrprotocol_oracle::sendUnidentified54Response() {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -8774,6 +8993,7 @@ bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
 	byte_t		ttccode=TTC_OK;
 
 	// no idea
+	// see "Oracle Wire Protocol - The Unidentified 0x54 Call"
 	byte_t	unknown[]={
 		0x0C,
 		0x00, 0x00, 0x00, 0x67,
@@ -8785,7 +9005,7 @@ bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
 	write(&reqpacket,ttccode);
 	reqpacket.append(unknown,sizeof(unknown));
 
-	debugStart("logon unknown response");
+	debugStart("unidentified 0x54 response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugHexDump(unknown,sizeof(unknown));
@@ -8798,6 +9018,7 @@ bool sqlrprotocol_oracle::sendLogonUnknownResponse() {
 void sqlrprotocol_oracle::putGenericFooter() {
 
 	// no idea...
+	// see "Oracle Wire Protocol - Known Unknowns"
 
 	// not on the query path - a 10g-or-later client's query goes through
 	// query3() and fetch3(), which build a summary object field by field,
@@ -8850,7 +9071,9 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 	// 0 as success.  fall back to a generic ora number - and, since the
 	// backend can likewise leave no message, a generic message - rather
 	// than send something a client would misread or that wouldn't fit
-	// the wire's ub2/ub1-sized number and length fields
+	// putError()'s ub2 number and ub1 message length.  the modern path's
+	// summary object writes an lpi number and a clr message, neither of
+	// which is capped that way, but sendQueryError() feeds both paths.
 	uint32_t	oranum=ORA_QUERY_FAILED;
 	if (errnum>0 && errnum<=65535) {
 		oranum=(uint32_t)errnum;

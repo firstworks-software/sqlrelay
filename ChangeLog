@@ -1174,6 +1174,9 @@
 		a closed statement, which could make an unrelated statement's
 		attempt to use the same name fail with "already has a cursor
 		assigned" once that statement got reused by another session
+	oracle protocol module: pointed the source at the oracle wire protocol
+		docs, marked the blobs that are still guesses, and brought its
+		constant and function names in line with the docs
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
