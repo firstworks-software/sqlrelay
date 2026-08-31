@@ -212,6 +212,12 @@
 #define ORA_QUERY_FAILED		20000
 #define ORA_QUERY_FAILED_MESSAGE	"ORA-20000: query failed\n"
 
+// what sendTransactionError() sends when a commit, rollback or autocommit
+// change fails and the backend left no usable error number or message -
+// same rationale and range as ORA_QUERY_FAILED above
+#define ORA_TRANSACTION_FAILED		20001
+#define ORA_TRANSACTION_FAILED_MESSAGE	"ORA-20001: transaction failed\n"
+
 // the two ways the handshake can say no.  a refuse packet carries a tns error
 // number, which is what a listener reports; an error packet after the accept
 // carries an oracle error number, which is what a server reports.
@@ -1211,6 +1217,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	disconnect(const byte_t *rp);
 		bool	sendDisconnectResponse();
 
+		// commit, rollback, autocommit...
+		bool	commit(const byte_t *rp);
+		bool	rollback(const byte_t *rp);
+		bool	autoCommitOn(const byte_t *rp);
+		bool	autoCommitOff(const byte_t *rp);
+		bool	sendTransactionResponse();
+		bool	sendTransactionError(uint32_t cursorid=0);
+
 		// version
 		bool	version(const byte_t *rp, bool istticall);
 		bool	sendVersionResponse(uint32_t bufferlength);
@@ -1700,9 +1714,21 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					rp=NULL;
 					break;
 				case TTI_AUTOCOMMIT_ON:
+					loop=autoCommitOn(rp);
+					rp=NULL;
+					break;
 				case TTI_AUTOCOMMIT_OFF:
+					loop=autoCommitOff(rp);
+					rp=NULL;
+					break;
 				case TTI_COMMIT:
+					loop=commit(rp);
+					rp=NULL;
+					break;
 				case TTI_ROLLBACK:
+					loop=rollback(rp);
+					rp=NULL;
+					break;
 				case TTI_CANCEL:
 				case TTI_DESCRIBE:
 				case TTI_DESCRIBE2:
@@ -6335,7 +6361,12 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	}
 
 	if (options&OPTION_COMMIT) {
-		// FIXME: commit...
+		// the execute above already returned on failure, so this
+		// only runs on success - which is what OCI_COMMIT_ON_SUCCESS
+		// asks for
+		if (!cont->commit()) {
+			return sendTransactionError(cont->getId(cursor)+1);
+		}
 	}
 
 	return sendQuery2Response(cursor,false);
@@ -6690,7 +6721,12 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	}
 
 	if (options&OPTION_COMMIT) {
-		// FIXME: commit...
+		// the execute above already returned on failure, so this
+		// only runs on success - which is what OCI_COMMIT_ON_SUCCESS
+		// asks for
+		if (!cont->commit()) {
+			return sendTransactionError(cont->getId(cursor)+1);
+		}
 	}
 
 	return sendQuery3Response(cursor,options,cursorid,prefetchrows);
@@ -8821,6 +8857,171 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	debugWrite("call status: %d",callstatus);
 	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugEnd();
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::commit(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t	seqnumber=0;
+	if (end-rp<1) {
+		debugWrite("truncated commit sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	// the summary object has to echo this back
+	callnumber=seqnumber;
+
+	debugStart("commit request");
+	debugWrite("seq number: %d",seqnumber);
+	debugEnd();
+
+	if (!cont->commit()) {
+		return sendTransactionError();
+	}
+	return sendTransactionResponse();
+}
+
+bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t	seqnumber=0;
+	if (end-rp<1) {
+		debugWrite("truncated rollback sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	callnumber=seqnumber;
+
+	debugStart("rollback request");
+	debugWrite("seq number: %d",seqnumber);
+	debugEnd();
+
+	if (!cont->rollback()) {
+		return sendTransactionError();
+	}
+	return sendTransactionResponse();
+}
+
+bool sqlrprotocol_oracle::autoCommitOn(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t	seqnumber=0;
+	if (end-rp<1) {
+		debugWrite("truncated autocommit-on sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	callnumber=seqnumber;
+
+	debugStart("autocommit-on request");
+	debugWrite("seq number: %d",seqnumber);
+	debugEnd();
+
+	if (!cont->setAutoCommitOn()) {
+		return sendTransactionError();
+	}
+	return sendTransactionResponse();
+}
+
+bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t	seqnumber=0;
+	if (end-rp<1) {
+		debugWrite("truncated autocommit-off sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	callnumber=seqnumber;
+
+	debugStart("autocommit-off request");
+	debugWrite("seq number: %d",seqnumber);
+	debugEnd();
+
+	if (!cont->setAutoCommitOff()) {
+		return sendTransactionError();
+	}
+	return sendTransactionResponse();
+}
+
+// what a bare commit, rollback or autocommit change gets back on success -
+// the same summary-object/putError+footer split every other cursorless ack
+// in this module uses (sendCursorNotOpenError, sendMarkerCancelError,
+// sendUnimplementedFunctionError), with success field values in place of
+// an error
+bool sqlrprotocol_oracle::sendTransactionResponse() {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("transaction response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(0,0,0,NULL);
+	} else {
+		putError("",0,0);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
+}
+
+// what a commit, rollback or autocommit change gets back when the
+// controller call fails.  unlike sendQueryError(), there's no cursor here -
+// a bare commit isn't tied to one - so this reads the connection-level
+// error instead of the cursor-level one
+bool sqlrprotocol_oracle::sendTransactionError(uint32_t cursorid) {
+
+	const char	*errorstring;
+	uint32_t	errorsize;
+	int64_t		errnum;
+	bool		liveconnection;
+	cont->getError(&errorstring,&errorsize,&errnum,&liveconnection);
+
+	uint32_t	oranum=ORA_TRANSACTION_FAILED;
+	if (errnum>0 && errnum<=65535) {
+		oranum=(uint32_t)errnum;
+	}
+	const char	*message=ORA_TRANSACTION_FAILED_MESSAGE;
+	uint32_t	messagesize=
+			charstring::getLength(ORA_TRANSACTION_FAILED_MESSAGE);
+	if (errorsize && errorstring) {
+		message=errorstring;
+		messagesize=errorsize;
+	}
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("transaction error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("error: %lld",(long long)errnum);
+	debugWrite("ora number sent: %u",oranum);
+	debugWrite("%.*s",(int)messagesize,message);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(cursorid,oranum,0,message,messagesize);
+	} else {
+		putError(message,messagesize,oranum);
+		putGenericFooter();
+	}
 
 	return sendPacket(true);
 }

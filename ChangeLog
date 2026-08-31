@@ -1234,6 +1234,9 @@
 		answers oci_attr_row_count with the rows it affected instead
 		of 0 - a statement with no result set has no rows sent to
 		report, and the count comes from the controller
+	the oracle protocol module now implements commit, rollback,
+		autocommit on/off and commit-on-success (OCI_COMMIT_ON_SUCCESS)
+		instead of answering them as unimplemented
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
