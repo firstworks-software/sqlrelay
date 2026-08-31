@@ -883,6 +883,20 @@ run_protocol_test() {
 		export SYBASE
 	fi
 
+	# the oracle client needs TNS_ADMIN set to find tnsnames.ora - #9570
+	if ( test "$instance" = "oracleprotocol" )
+	then
+		TNS_ADMIN=$TESTDIR/protocol/oracle
+		export TNS_ADMIN
+	fi
+
+	# unixODBC needs ODBCINI set to find odbc.ini
+	if ( test "$instance" = "teradataprotocol" )
+	then
+		ODBCINI=$TESTDIR/protocol/teradata/odbc.ini
+		export ODBCINI
+	fi
+
 	# tdsfreetdsmssqlprotocol runs tds-freetds twice against the same
 	# instance - once requesting tds 7.0 ([sqlrelay]) and once requesting
 	# tds 7.4 ([sqlrelay74]) - #9199 - so both wire-shape variants get
