@@ -3490,13 +3490,18 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 		cmd=cursorcmd;
 		dynamiccursor=false;
 		chooseCursorName();
+		// a client-supplied cursor name signals a positioned update/
+		// delete is coming, so let ase decide updatability from the
+		// select rather than declaring the cursor read only
+		CS_INT	cursorreadonly=charstring::isNullOrEmpty(getCursorName())?
+						CS_READ_ONLY:CS_UNUSED;
 		if (ct_cursor(cursorcmd,
 				CS_CURSOR_DECLARE,
 				(CS_CHAR *)cursorname,
 				(CS_INT)cursornamesize,
 				(CS_CHAR *)positionalquerybuffer.getString(),
 				(CS_INT)positionalquerybuffer.getSize(),
-				CS_READ_ONLY)!=CS_SUCCEED) {
+				cursorreadonly)!=CS_SUCCEED) {
 			return false;
 		}
 
