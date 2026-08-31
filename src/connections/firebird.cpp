@@ -5736,7 +5736,30 @@ void firebirdcursor::closeResultSet() {
 	outbindcount=0;
 	resultsetdescribed=false;
 	if (stmt) {
-		isc_dsql_free_statement(firebirdconn->error,&stmt,DSQL_close);
+
+		// DSQL_close leaves whatever name isc_dsql_set_cursor_name()
+		// attached still claimed on this statement - firebird has no
+		// call to detach just the name.  Left alone, that claim
+		// outlives this cursor's use of it: if this statement is
+		// never re-prepared (eg. the client session ends and the
+		// cursor just sits idle in the pool), the name stays claimed
+		// against an unrelated statement that later tries to use it,
+		// and that statement's isc_dsql_set_cursor_name() fails with
+		// "already has a cursor assigned".  Drop the statement
+		// instead, which does release the name, and force a
+		// re-prepare before the next execute since the statement is
+		// now gone.
+		if (appliedcursorname) {
+			isc_dsql_free_statement(firebirdconn->error,
+							&stmt,DSQL_drop);
+			stmt=0L;
+			delete[] appliedcursorname;
+			appliedcursorname=NULL;
+			setQueryHasBeenPrepared(false);
+		} else {
+			isc_dsql_free_statement(firebirdconn->error,
+							&stmt,DSQL_close);
+		}
 	}
 }
 
