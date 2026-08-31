@@ -1751,6 +1751,100 @@ assertFalse(cur.sendQuery("create table testtable"))
 assertFalse(cur.sendQuery("create table testtable"))
 print "\n"
 
+
+# cursor name
+# a positioned update or delete refers to the select's cursor by
+# name, so the name has to reach firebird before the select opens
+# the cursor (#9564)
+print "CURSOR NAME: \n"
+
+# start from a known two rows
+assertTrue(cur.sendQuery("delete from testtable"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"	(testinteger,testvarchar) "+
+	"values "+
+	"	(1,'one')"))
+assertTrue(cur.sendQuery(
+	"insert into "+
+	"	testtable "+
+	"	(testinteger,testvarchar) "+
+	"values "+
+	"	(2,'two')"))
+assertTrue(con.commit())
+
+# the name is a local copy, so it reads back without a round trip
+secondcur=SQLRCursor.new(con)
+setSecondCursor(secondcur)
+assertEqual(secondcur.getCursorName(),nil)
+secondcur.setCursorName("testcursor")
+assertEqual(secondcur.getCursorName(),"testcursor")
+
+# fetching to the end of the result set leaves firebird's cursor
+# past the last row, where a positioned statement has no current
+# record to work with; buffering one row at a time stops the fetch
+# on the row the positioned statements below target
+secondcur.setResultSetBufferSize(1)
+
+# positioned update
+assertTrue(secondcur.sendQuery(
+	"select "+
+	"	testinteger,testvarchar "+
+	"from "+
+	"	testtable "+
+	"where "+
+	"	testinteger=1 "+
+	"for update"))
+assertEqual(secondcur.getCursorName(),"testcursor")
+assertEqual(secondcur.getField(0,0),"1")
+assertEqual(secondcur.getField(0,1),"one")
+assertTrue(cur.sendQuery(
+	"update testtable "+
+	"set testvarchar='updated' "+
+	"where current of testcursor"))
+assertTrue(cur.sendQuery(
+	"select "+
+	"	testvarchar "+
+	"from "+
+	"	testtable "+
+	"where "+
+	"	testinteger=1"))
+assertEqual(cur.getField(0,0),"updated")
+assertTrue(con.commit())
+print "\n"
+
+# positioned delete
+# the name applies to the next query this cursor runs, so setting
+# a different one before the second select renames the cursor
+secondcur.setCursorName("testcursor2")
+assertEqual(secondcur.getCursorName(),"testcursor2")
+assertTrue(secondcur.sendQuery(
+	"select "+
+	"	testinteger,testvarchar "+
+	"from "+
+	"	testtable "+
+	"where "+
+	"	testinteger=2 "+
+	"for update"))
+assertEqual(secondcur.getCursorName(),"testcursor2")
+assertEqual(secondcur.getField(0,0),"2")
+assertEqual(secondcur.getField(0,1),"two")
+assertTrue(cur.sendQuery(
+	"delete from testtable "+
+	"where current of testcursor2"))
+assertTrue(cur.sendQuery("select count(*) from testtable"))
+assertEqual(cur.getField(0,0),"1")
+assertTrue(con.commit())
+secondcur.closeResultSet()
+print "\n"
+
+# leave testtable empty
+assertTrue(cur.sendQuery("delete from testtable"))
+assertTrue(con.commit())
+print "\n"
+
+
 reportTestStatus()
 
 exit($status)

@@ -1494,6 +1494,20 @@ main() ->
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     io:format("~n"),
 
+    %% CURSOR NAME
+    %% SKIPPED (positioned update/delete): "where current of" needs a
+    %% second cursor held open on the connection while another
+    %% statement runs against it, but this binding exposes only one
+    %% cursor per connection (see NESTED SELECTS above).  Only the
+    %% local setCursorName/getCursorName round trip is exercised here;
+    %% the Tcl and Node.js tests exercise the positioned update and
+    %% delete end to end (#9564).
+    io:format("CURSOR NAME: ~n"),
+    assertEqualsString(sqlrelay:getCursorName(), null),
+    sqlrelay:setCursorName("testcursor"),
+    assertEqualsString(sqlrelay:getCursorName(), "testcursor"),
+    io:format("~n"),
+
     reportTestStatus(),
 
     sqlrelay:cursorFree(),

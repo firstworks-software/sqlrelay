@@ -7775,6 +7775,295 @@ int main(int argc, char **argv) {
 		stdoutput.printf("\n");
 
 
+		// The block above positions with
+		// ct_cursor(CS_CURSOR_UPDATE/CS_CURSOR_DELETE), which never
+		// needs the cursor's name to have reached the backend - ct-lib
+		// refers to the cursor by its own handle and builds the "where
+		// current of" itself.  The two blocks below send "where
+		// current of <name>" as ordinary sql text instead, and that
+		// only resolves if the name the curdeclare carried is the name
+		// the backend's cursor was declared with.  That is what #9564
+		// added: before it the backend cursor was named by whichever
+		// module opened it and the client's name meant nothing to it.
+		//
+		// The sql text goes out on a command handle of its own, since
+		// ct-lib keeps the cursor on the handle it was declared on and
+		// refuses a language command there (see "ct_command: one
+		// cancel is not enough", above).
+		//
+		// Each cursor selects a single row, so which row is current is
+		// a property of the cursor rather than of how far ahead the
+		// backend read.
+		//
+		// A native ase link runs both: ct-lib's curdeclare carries
+		// CS_FOR_UPDATE, ase declares the cursor updatable, and the
+		// positioned update and delete take effect.
+		//
+		// Through sqlrelay both are refused.  The CS_FOR_UPDATE below
+		// reaches the tds protocol module, which keeps it only for the
+		// curinfo status bits it acks - just the name is forwarded to
+		// the backend, never the updatability - and the sap connection
+		// module has nothing else to decide updatability from, so it
+		// declares every cursor CS_READ_ONLY and ase refuses both with
+		// error 7732, "the cursor is read only".  That is a gap in the
+		// connection module rather than in this test, and it is
+		// tracked separately, in #9566.  So the two blocks below
+		// branch on nativease, and the select after them reads back
+		// whichever table state that leaves.
+		//
+		// The name forwarding #9564 added is proven either way: ase
+		// has to have resolved "curspk2" to a cursor of its own to
+		// have an opinion about whether it is updatable, and the 7732
+		// it answers with names that cursor.  An unforwarded name
+		// would not get that far - ase would not know the cursor at
+		// all.
+		stdoutput.printf("ct_cmd_alloc: poscmd\n");
+		CS_COMMAND	*poscmd=NULL;
+		assertEquals(ct_cmd_alloc(dbconn,&poscmd),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		const char	*curspk2="curspk2";
+		const char	*poscursupdselect=
+					"select cursid, cursname, cursval "
+					"from poscursortable where cursid = 1";
+		const char	*poscurswhereupdate=
+					"update poscursortable "
+					"set cursval = 199 "
+					"where current of curspk2";
+
+		stdoutput.printf("ct_command: positioned update by cursor "
+								"name\n");
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+					(CS_CHAR *)curspk2,CS_NULLTERM,
+					(CS_CHAR *)poscursupdselect,CS_NULLTERM,
+					CS_FOR_UPDATE),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_INT)1),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],"1");
+
+		// the row the cursor is on, named in plain sql
+		assertEquals(ct_command(poscmd,CS_LANG_CMD,
+				(CS_CHAR *)poscurswhereupdate,
+				charstring::getLength(poscurswhereupdate),
+				CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(poscmd),CS_SUCCEED);
+		results=ct_results(poscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		// this is where the two paths part.  sqlrelay's sap module
+		// declares every cursor read only (#9566), so ase refuses the
+		// positioned update with 7732 and this comes back CS_CMD_FAIL
+		// instead of CS_CMD_SUCCEED, with no row count rather than
+		// one row.  Only the two values below differ - the rest of
+		// this block, the results drain and the cancel included,
+		// runs the same either way.
+		assertEquals(resultstype,
+			(nativease)?CS_CMD_SUCCEED:CS_CMD_FAIL);
+		assertEquals(ct_res_info(poscmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,(nativease)?1:-1);
+		results=ct_results(poscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(poscmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,poscmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		const char	*curspk3="curspk3";
+		const char	*poscursdelselect=
+					"select cursid, cursname, cursval "
+					"from poscursortable where cursid = 3";
+		const char	*poscurswheredelete=
+					"delete from poscursortable "
+					"where current of curspk3";
+
+		stdoutput.printf("ct_command: positioned delete by cursor "
+								"name\n");
+		assertEquals(ct_cursor(cmd,CS_CURSOR_DECLARE,
+					(CS_CHAR *)curspk3,CS_NULLTERM,
+					(CS_CHAR *)poscursdelselect,CS_NULLTERM,
+					CS_FOR_UPDATE),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_ROWS,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_INT)1),CS_SUCCEED);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_OPEN,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		for (CS_INT i=0; i<2; i++) {
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_SUCCEED);
+			results=ct_results(cmd,&resultstype);
+			assertEquals(results,CS_SUCCEED);
+			assertEquals(resultstype,CS_CMD_DONE);
+		}
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CURSOR_RESULT);
+		for (CS_INT i=0; i<3; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+		bytestring::zero(cursdata[0],256);
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+		assertEquals(cursdata[0],"3");
+
+		assertEquals(ct_command(poscmd,CS_LANG_CMD,
+				(CS_CHAR *)poscurswheredelete,
+				charstring::getLength(poscurswheredelete),
+				CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(poscmd),CS_SUCCEED);
+		results=ct_results(poscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		// refused the same way the update above was, and for the same
+		// reason - #9566
+		assertEquals(resultstype,
+			(nativease)?CS_CMD_SUCCEED:CS_CMD_FAIL);
+		assertEquals(ct_res_info(poscmd,CS_ROW_COUNT,
+					(CS_VOID *)&affectedrows,CS_UNUSED,
+					(CS_INT *)NULL),CS_SUCCEED);
+		assertEquals(affectedrows,(nativease)?1:-1);
+		results=ct_results(poscmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(poscmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,poscmd,CS_CANCEL_ALL),CS_SUCCEED);
+
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cursor(cmd,CS_CURSOR_CLOSE,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					(CS_CHAR *)NULL,CS_UNUSED,
+					CS_DEALLOC),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		assertEquals(ct_cmd_drop(poscmd),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
+		// Natively, row 1 took the update, row 3 is gone and row 4 is
+		// untouched.  Through sqlrelay neither positioned statement
+		// ran (#9566), so all three rows the block before this one
+		// left are still exactly as it left them.
+		stdoutput.printf("ct_command: the named cursor's rows\n");
+		query="select cursid, cursval from poscursortable "
+							"order by cursid";
+		assertEquals(ct_command(cmd,CS_LANG_CMD,
+						query,charstring::getLength(query),
+						CS_UNUSED),CS_SUCCEED);
+		assertEquals(ct_send(cmd),CS_SUCCEED);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_ROW_RESULT);
+		for (CS_INT i=0; i<2; i++) {
+			assertEquals(ct_bind(cmd,i+1,&(cursfmt[i]),
+						(CS_VOID *)cursdata[i],
+						&(cursdatalength[i]),
+						&(cursnullindicator[i])),
+									CS_SUCCEED);
+		}
+		const char	*natwherecursexpectid[2]={"1","4"};
+		const char	*natwherecursexpectval[2]={"199","40"};
+		const char	*relwherecursexpectid[3]={"1","3","4"};
+		const char	*relwherecursexpectval[3]={"99","30","40"};
+		CS_INT		wherecurscount=(nativease)?2:3;
+		const char	**wherecursexpectid=
+			(nativease)?natwherecursexpectid:relwherecursexpectid;
+		const char	**wherecursexpectval=
+			(nativease)?natwherecursexpectval:relwherecursexpectval;
+		for (CS_INT i=0; i<wherecurscount; i++) {
+			bytestring::zero(cursdata[0],256);
+			bytestring::zero(cursdata[1],256);
+			assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_SUCCEED);
+			assertEquals(cursdata[0],wherecursexpectid[i]);
+			assertEquals(cursdata[1],wherecursexpectval[i]);
+		}
+		assertEquals(ct_fetch(cmd,CS_UNUSED,CS_UNUSED,
+						CS_UNUSED,&rowsread),CS_END_DATA);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_SUCCEED);
+		assertEquals(resultstype,CS_CMD_DONE);
+		results=ct_results(cmd,&resultstype);
+		assertEquals(results,CS_END_RESULTS);
+		assertEquals(ct_cancel(NULL,cmd,CS_CANCEL_ALL),CS_SUCCEED);
+		stdoutput.printf("\n");
+
+
 		query="drop table poscursortable";
 		ct_command(cmd,CS_LANG_CMD,query,
 				charstring::getLength(query),CS_UNUSED);

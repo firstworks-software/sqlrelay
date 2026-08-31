@@ -1948,6 +1948,98 @@ int main(int argc, char **argv) {
 	delete[] fullerror;
 	stdoutput.printf("\n");
 
+
+	// cursor name
+	// A positioned update or delete refers to the select's cursor by
+	// name, so the name has to reach firebird before the select opens
+	// the cursor.  The firebird protocol module used to drop the name
+	// on the floor, leaving "where current of" nothing to find (#9564).
+	stdoutput.printf("CURSOR NAME: \n");
+
+	// start from a known two rows
+	assertTrue(cur->sendQuery("delete from testtable"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"	(testinteger,testvarchar) "
+		"values "
+		"	(1,'one')"));
+	assertTrue(cur->sendQuery(
+		"insert into "
+		"	testtable "
+		"	(testinteger,testvarchar) "
+		"values "
+		"	(2,'two')"));
+	assertTrue(con->commit());
+
+	// the name is a local copy, so it reads back without a round trip
+	secondcur=new sqlrcursor(con);
+	assertTrue(secondcur->getCursorName()==NULL);
+	secondcur->setCursorName("testcursor");
+	assertEquals(secondcur->getCursorName(),"testcursor");
+
+	// Fetching to the end of the result set leaves firebird's cursor
+	// past the last row, where a positioned statement has no current
+	// record to work with.  Buffering one row at a time stops the fetch
+	// on the row the positioned statements below target.
+	secondcur->setResultSetBufferSize(1);
+
+	// positioned update
+	assertTrue(secondcur->sendQuery(
+		"select "
+		"	testinteger,testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=1 "
+		"for update"));
+	assertEquals(secondcur->getCursorName(),"testcursor");
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"one");
+	assertTrue(cur->sendQuery("update testtable "
+					"set testvarchar='updated' "
+					"where current of testcursor"));
+	assertTrue(cur->sendQuery(
+		"select "
+		"	testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=1"));
+	assertEquals(cur->getField(0,(uint32_t)0),"updated");
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+	// positioned delete
+	// The name applies to the next query this cursor runs, so setting a
+	// different one before the second select renames the cursor.
+	secondcur->setCursorName("testcursor2");
+	assertEquals(secondcur->getCursorName(),"testcursor2");
+	assertTrue(secondcur->sendQuery(
+		"select "
+		"	testinteger,testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=2 "
+		"for update"));
+	assertEquals(secondcur->getCursorName(),"testcursor2");
+	assertEquals(secondcur->getField(0,(uint32_t)0),"2");
+	assertEquals(secondcur->getField(0,1),"two");
+	assertTrue(cur->sendQuery("delete from testtable "
+					"where current of testcursor2"));
+	assertTrue(cur->sendQuery("select count(*) from testtable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertTrue(con->commit());
+	delete secondcur;
+	secondcur=NULL;
+	stdoutput.printf("\n");
+
+	// leave testtable empty
+	assertTrue(cur->sendQuery("delete from testtable"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
 	reportTestStatus();
 
 	return status;

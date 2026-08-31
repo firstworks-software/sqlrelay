@@ -1781,6 +1781,53 @@ assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));
 console.log();
 
+
+// cursor name
+console.log("CURSOR NAME: ");
+assertTrue(cur.sendQuery("delete from testtable"));
+assertTrue(cur.sendQuery(
+	"insert into testtable (testinteger,testvarchar) "+
+	"values (100,'cursorrow100')"));
+assertTrue(cur.sendQuery(
+	"insert into testtable (testinteger,testvarchar) "+
+	"values (101,'cursorrow101')"));
+var	poscur=new sqlrelay.SQLRCursor(con);
+assertEqStr(cur.getCursorName(),null);
+cur.setCursorName("testcursor");
+assertEqStr(cur.getCursorName(),"testcursor");
+// fetching to the end of the result set leaves firebird's cursor past
+// the last row, with nothing current for the positioned statements
+// below, so buffer one row at a time instead
+cur.setResultSetBufferSize(1);
+assertTrue(cur.sendQuery(
+	"select testinteger,testvarchar from testtable "+
+	"where testinteger=100 for update"));
+assertEqStr(cur.getField(0,0),"100");
+// the positioned update runs on a second cursor over the same
+// connection: sending a new query on cur would drop the cursor
+// that setCursorName just named before the update could see it
+// (#9564)
+assertTrue(poscur.sendQuery(
+	"update testtable set testvarchar='updatedrow100' "+
+	"where current of testcursor"));
+assertTrue(cur.sendQuery(
+	"select testvarchar from testtable where testinteger=100"));
+assertEqStr(cur.getField(0,0),"updatedrow100");
+cur.setCursorName("testcursor");
+assertTrue(cur.sendQuery(
+	"select testinteger,testvarchar from testtable "+
+	"where testinteger=101 for update"));
+assertTrue(poscur.sendQuery(
+	"delete from testtable where current of testcursor"));
+assertTrue(cur.sendQuery(
+	"select count(*) from testtable where testinteger=101"));
+assertEqStr(cur.getField(0,0),"0");
+cur.setResultSetBufferSize(0);
+poscur.closeResultSet();
+assertTrue(cur.sendQuery("delete from testtable"));
+assertTrue(con.commit());
+console.log();
+
 reportTestStatus();
 
 process.exit(getStatus());

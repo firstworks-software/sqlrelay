@@ -2795,27 +2795,13 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	// A positioned update needs the backend's cursor to carry the name the
-	// client gave it, and op_set_cursor can't hand the name down - see
-	// #9087.  So this works against a real server and fails against the
-	// module, with the -504 a real server sends for a cursor that doesn't
-	// exist.  The sqlrelay half of each branch below goes back to
-	// asserting success when #9087 lands.
+	// op_set_cursor hands the name down to the backend's cursor, so
+	// positioned statements work on both paths (#9564)
 	stdoutput.printf("update where current of\n");
 	const char	*posupdate="update testtable set testvarchar='updated8' "
 					"where current of testcursor";
-	if (issqlrelay) {
-		assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
-				posupdate,SQL_DIALECT_V6,NULL)!=0);
-		firstErrorMessage(errmsg,sizeof(errmsg));
-		assertEquals(errmsg,"Dynamic SQL Error");
-		assertEquals((int)isc_sqlcode(fbstatus),-504);
-		fb_sqlstate(sqlstate,fbstatus);
-		assertEquals(sqlstate,"24000");
-	} else {
-		assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+	assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
 				posupdate,SQL_DIALECT_V6,NULL),0);
-	}
 	XSQLDA	*vfsqlda=(XSQLDA *)new char[XSQLDA_LENGTH(1)];
 	bytestring::zero(vfsqlda,XSQLDA_LENGTH(1));
 	vfsqlda->version=SQLDA_VERSION1;
@@ -2842,9 +2828,8 @@ int main(int argc, char **argv) {
 		charstring::copy(vfvarchar,(char *)vfvary->vary_string,
 							vfvary->vary_length);
 		vfvarchar[vfvary->vary_length]='\0';
-		// nothing half-applied - the row is untouched when the
-		// update failed
-		assertEquals(vfvarchar,(issqlrelay)?"testvarchar8":"updated8");
+		// the positioned update hit the row the cursor was on
+		assertEquals(vfvarchar,"updated8");
 	}
 	isc_dsql_free_statement(fbstatus,&vfstmt,DSQL_drop);
 	freeOutputBuffers(vfcolcount,vfbuffer);
@@ -2855,20 +2840,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("delete where current of\n");
 	const char	*posdelete="delete from testtable "
 					"where current of testcursor";
-	if (issqlrelay) {
-		assertTrue(isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
-				posdelete,SQL_DIALECT_V6,NULL)!=0);
-		firstErrorMessage(errmsg,sizeof(errmsg));
-		assertEquals(errmsg,"Dynamic SQL Error");
-		assertEquals((int)isc_sqlcode(fbstatus),-504);
-		fb_sqlstate(sqlstate,fbstatus);
-		assertEquals(sqlstate,"24000");
-	} else {
-		assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
+	assertEquals((int)isc_dsql_execute_immediate(fbstatus,&db,&tr,0,
 				posdelete,SQL_DIALECT_V6,NULL),0);
-	}
-	// the row survives when the delete failed
-	assertEquals(countRows("testtable"),(issqlrelay)?8:7);
+	// the positioned delete took the row the cursor was on
+	assertEquals(countRows("testtable"),7);
 	stdoutput.printf("\n\n");
 
 

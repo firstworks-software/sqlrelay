@@ -1159,6 +1159,14 @@
 		ruby, tcl, erlang and nodejs wrappers, the odbc driver, and
 		the jdbc driver (Statement.setCursorName()/
 		ResultSet.getCursorName() were previously stubbed to throw)
+	fixed the c++ client api reusing a cursor id after aborting its result
+		set, which handed the same server-side cursor to two cursors
+		on the same connection and ran one's query out from under the
+		other
+	fixed the odbc driver buffering the whole result set on the first query
+		a statement handle runs, which ran the backend cursor off the
+		end of its rows and left a positioned update or delete against
+		the cursor name with no current row
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

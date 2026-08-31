@@ -1773,6 +1773,115 @@ class firebird extends sqlrtest {
 		System.out.println();
 
 
+		// cursor name
+		System.out.println("CURSOR NAME: ");
+
+		// known rows for the positioned statements below
+		assertTrue(cur.sendQuery("delete from testtable"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"	(testinteger,testvarchar) "+
+			"values ("+
+			"	1,'testvarchar1')"));
+		assertTrue(cur.sendQuery(
+			"insert into "+
+			"	testtable "+
+			"	(testinteger,testvarchar) "+
+			"values ("+
+			"	2,'testvarchar2')"));
+		assertTrue(con.commit());
+
+		// name the cursor before running the select - firebird refuses
+		// a name for a cursor that is already open
+		cur.setCursorName("testcursor");
+		assertEquals(cur.getCursorName(),"testcursor");
+
+		// fetch a row at a time, so the backend cursor is left sitting
+		// on the row the positioned statements target rather than run
+		// off the end of the result set
+		cur.setResultSetBufferSize(1);
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	testinteger, "+
+			"	testvarchar "+
+			"from "+
+			"	testtable "+
+			"where "+
+			"	testinteger=1 "+
+			"for update"));
+		// the name survives the query it named
+		assertEquals(cur.getCursorName(),"testcursor");
+		assertEquals(cur.getField(0,0),"1");
+		System.out.println();
+
+		// positioned update, on a second cursor so the select's cursor
+		// stays open
+		SQLRCursor poscur=new SQLRCursor(con);
+		assertTrue(poscur.sendQuery(
+			"update "+
+			"	testtable "+
+			"set "+
+			"	testvarchar='updated1' "+
+			"where current of testcursor"));
+		assertEquals(poscur.affectedRows(),1);
+		// the positioned update hit the row the cursor was on
+		assertTrue(poscur.sendQuery(
+			"select "+
+			"	testinteger,testvarchar "+
+			"from "+
+			"	testtable "+
+			"order by "+
+			"	testinteger"));
+		assertEquals(poscur.rowCount(),2);
+		assertEquals(poscur.getField(0,1),"updated1");
+		assertEquals(poscur.getField(1,1),"testvarchar2");
+		System.out.println();
+
+		// positioned delete, against the other row - the name applies
+		// to the next query this cursor runs, so it has to be set
+		// again here even though it hasn't changed
+		cur.closeResultSet();
+		cur.setCursorName("testcursor");
+		assertTrue(cur.sendQuery(
+			"select "+
+			"	testinteger, "+
+			"	testvarchar "+
+			"from "+
+			"	testtable "+
+			"where "+
+			"	testinteger=2 "+
+			"for update"));
+		assertEquals(cur.getField(0,0),"2");
+		assertTrue(poscur.sendQuery(
+			"delete from "+
+			"	testtable "+
+			"where current of testcursor"));
+		assertEquals(poscur.affectedRows(),1);
+		// the positioned delete took the row the cursor was on
+		assertTrue(poscur.sendQuery(
+			"select "+
+			"	testinteger "+
+			"from "+
+			"	testtable"));
+		assertEquals(poscur.rowCount(),1);
+		assertEquals(poscur.getField(0,0),"1");
+		System.out.println();
+
+		// clearing the name puts the cursor back to unnamed
+		cur.closeResultSet();
+		cur.setCursorName(null);
+		assertEquals(cur.getCursorName(),null);
+		cur.setResultSetBufferSize(0);
+		System.out.println();
+
+		// leave testtable empty
+		assertTrue(poscur.sendQuery("delete from testtable"));
+		assertTrue(con.commit());
+		poscur.closeResultSet();
+		System.out.println();
+
+
 		// invalid queries
 		System.out.println("INVALID QUERIES: ");
 		assertFalse(cur.sendQuery(

@@ -1774,6 +1774,101 @@
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	echo("\n");
 
+
+	# cursor name
+	echo("CURSOR NAME: \n");
+	# start with 2 known rows
+	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable"));
+	assertTrue(sqlrcur_sendQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	101, ".
+		"	1, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	'01-JAN-2001', ".
+		"	'01:00:00', ".
+		"	'testchar1', ".
+		"	'cursorrow101', ".
+		"	NULL, ".
+		"	'testblob1')"));
+	assertTrue(sqlrcur_sendQuery($cur,
+		"insert into ".
+		"	testtable ".
+		"values (".
+		"	102, ".
+		"	1, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	1.5, ".
+		"	'01-JAN-2001', ".
+		"	'01:00:00', ".
+		"	'testchar1', ".
+		"	'cursorrow102', ".
+		"	NULL, ".
+		"	'testblob1')"));
+
+	# name must be set before the query that opens the cursor (#9564)
+	# - setCursorName() returns nothing, so there's nothing to assert here
+	sqlrcur_setCursorName($cur,"testcursor");
+	assertEqStr(sqlrcur_getCursorName($cur),"testcursor");
+
+	# fetching to the end of the result set leaves firebird's cursor
+	# past the last row, with nothing current for the positioned
+	# statements below, so buffer one row at a time instead
+	sqlrcur_setResultSetBufferSize($cur,1);
+
+	# open the named cursor, positioned on the first row
+	assertTrue(sqlrcur_sendQuery($cur,
+		"select ".
+		"	testinteger, ".
+		"	testvarchar ".
+		"from ".
+		"	testtable ".
+		"where ".
+		"	testinteger=101 ".
+		"for update"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"101");
+
+	# a second cursor on the same connection runs the positioned
+	# statements; reusing $cur would reprepare its statement and
+	# drop the named cursor
+	$secondcur=sqlrcur_alloc($con);
+	assertTrue(sqlrcur_sendQuery($secondcur,
+		"update testtable set testvarchar='cursorupdated' ".
+		"where current of testcursor"));
+	assertTrue(sqlrcur_sendQuery($secondcur,
+		"select testvarchar from testtable where testinteger=101"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"cursorupdated");
+
+	# reposition the named cursor on the second row, then delete it
+	sqlrcur_setCursorName($cur,"testcursor");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"select ".
+		"	testinteger, ".
+		"	testvarchar ".
+		"from ".
+		"	testtable ".
+		"where ".
+		"	testinteger=102 ".
+		"for update"));
+	assertEqStr(sqlrcur_getField($cur,0,0),"102");
+	assertTrue(sqlrcur_sendQuery($secondcur,
+		"delete from testtable where current of testcursor"));
+	assertTrue(sqlrcur_sendQuery($secondcur,
+		"select count(*) from testtable where testinteger=102"));
+	assertEqStr(sqlrcur_getField($secondcur,0,0),"0");
+	sqlrcur_setResultSetBufferSize($cur,0);
+
+	# leave testtable empty
+	assertTrue(sqlrcur_sendQuery($cur,"delete from testtable"));
+	echo("\n");
+
+
 	reportTestStatus();
 
 	exit($status);

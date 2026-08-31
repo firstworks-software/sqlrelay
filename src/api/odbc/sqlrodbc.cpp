@@ -4526,6 +4526,21 @@ static uint32_t SQLR_TrimQuery(SQLCHAR *statementtext, SQLINTEGER textlength) {
 	}
 }
 
+static void SQLR_SetResultSetBufferSize(STMT *stmt) {
+
+	// The execute buffers the first block of rows itself, so the buffer
+	// size has to be set before the execute rather than only in
+	// SQLR_Fetch(), which runs after it.  Otherwise the first query that
+	// a statement handle runs buffers the entire result set, which runs
+	// the backend cursor off the end of its rows, leaving a positioned
+	// update or delete against the cursor name (see SQLSetCursorName())
+	// with no current row to work with.
+	uint64_t	rows=(stmt->rowarraysize>stmt->rowsetsize)?
+					stmt->rowarraysize:stmt->rowsetsize;
+	debugPrintf("  result set buffer size: %lld\n",(long long)rows);
+	stmt->cur->setResultSetBufferSize(rows);
+}
+
 static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 						SQLCHAR *statementtext,
 						SQLINTEGER textlength) {
@@ -4569,6 +4584,9 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 
 	// clear the error
 	SQLR_STMTClearError(stmt);
+
+	// set the result set buffer size
+	SQLR_SetResultSetBufferSize(stmt);
 
 	// execute the prepared query
 	bool	result=stmt->cur->executeQuery();
@@ -4635,6 +4653,9 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
 	// clear the error
 	SQLR_STMTClearError(stmt);
 
+	// set the result set buffer size
+	SQLR_SetResultSetBufferSize(stmt);
+
 	// run the query
 	bool	result=stmt->cur->executeQuery();
 
@@ -4690,7 +4711,8 @@ static SQLRETURN SQLR_Fetch(SQLHSTMT statementhandle,
 	STMT	*stmt=(STMT *)statementhandle;
 
 	// set the result set buffer size
-	// (it's safe to set this here because we always lazy-fetch)
+	// (the execute set it too, but the row array/rowset size can change
+	// between fetches)
 	stmt->cur->setResultSetBufferSize(rowstofetch);
 
 	// fetch the row(s)

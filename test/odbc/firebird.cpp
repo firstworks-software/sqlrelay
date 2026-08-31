@@ -7870,6 +7870,161 @@ int main(int argc, char **argv) {
 
 
 
+	// cursor name
+	// A positioned update or delete refers to the select's cursor by
+	// name, so the name has to reach the backend before the select
+	// opens the cursor.  SQLSetCursorName used to stop at the driver,
+	// leaving "where current of" nothing to find (#9564).
+	stdoutput.printf("CURSOR NAME: \n");
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable",SQL_NTS);
+
+	// start from a known two rows
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable (testinteger,testvarchar) "
+		"values (1,'one')",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"insert into testtable (testinteger,testvarchar) "
+		"values (2,'two')",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+
+	// second statement handle to hold the named cursor open while the
+	// positioned statements run on the first one
+	SQLHSTMT	cnstmt;
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc,&cnstmt);
+	assertSuccessDbc(dbc,erg);
+
+	// the name reads back after it's set
+	SQLCHAR		cnname[64];
+	SQLSMALLINT	cnnamelen=0;
+	erg=SQLSetCursorName(cnstmt,(SQLCHAR *)"testcursor",SQL_NTS);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLGetCursorName(cnstmt,cnname,sizeof(cnname),&cnnamelen);
+	assertSuccessStmt(cnstmt,erg);
+	assertEqualStmt(cnstmt,(const char *)cnname,"testcursor");
+	assertEqualStmt(cnstmt,(int)cnnamelen,10);
+
+	// open the named cursor on row 1
+	// SQL_ATTR_ROW_ARRAY_SIZE is 1, so this stops the fetch on the row
+	// the positioned update below targets rather than running off the
+	// end of the cursor.
+	erg=SQLPrepare(cnstmt,(SQLCHAR *)
+		"select testinteger,testvarchar from testtable "
+		"where testinteger=1 for update",SQL_NTS);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLExecute(cnstmt);
+	assertSuccessStmt(cnstmt,erg);
+	SQLINTEGER	cnint=0;
+	SQLCHAR		cnvarchar[64]={0};
+	SQLLEN		cnintind=0;
+	SQLLEN		cnvarcharind=0;
+	erg=SQLBindCol(cnstmt,1,SQL_C_SLONG,
+			(SQLPOINTER)&cnint,0,&cnintind);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLBindCol(cnstmt,2,SQL_C_CHAR,
+			cnvarchar,sizeof(cnvarchar),&cnvarcharind);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLFetch(cnstmt);
+	assertSuccessStmt(cnstmt,erg);
+	assertEqualStmt(cnstmt,(int)cnint,1);
+	assertEqualStmt(cnstmt,(const char *)cnvarchar,"one");
+
+	// the name survives the execute
+	cnnamelen=0;
+	erg=SQLGetCursorName(cnstmt,cnname,sizeof(cnname),&cnnamelen);
+	assertSuccessStmt(cnstmt,erg);
+	assertEqualStmt(cnstmt,(const char *)cnname,"testcursor");
+	assertEqualStmt(cnstmt,(int)cnnamelen,10);
+
+	// positioned update
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"update testtable set testvarchar='updated' "
+		"where current of testcursor",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select testvarchar from testtable where testinteger=1",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLCHAR	cnout[64]={0};
+	SQLLEN	cnoutind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_CHAR,cnout,sizeof(cnout),&cnoutind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	// the positioned update hit the row the cursor was on
+	assertEqualStmt(stmt,(const char *)cnout,"updated");
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+
+	// rename the cursor and open it on row 2
+	// The name applies to the next query this statement runs, so
+	// setting a different one before the second select renames the
+	// cursor.
+	SQLFreeStmt(cnstmt,SQL_CLOSE);
+	SQLFreeStmt(cnstmt,SQL_UNBIND);
+	erg=SQLSetCursorName(cnstmt,(SQLCHAR *)"testcursor2",SQL_NTS);
+	assertSuccessStmt(cnstmt,erg);
+	cnnamelen=0;
+	erg=SQLGetCursorName(cnstmt,cnname,sizeof(cnname),&cnnamelen);
+	assertSuccessStmt(cnstmt,erg);
+	assertEqualStmt(cnstmt,(const char *)cnname,"testcursor2");
+	assertEqualStmt(cnstmt,(int)cnnamelen,11);
+	erg=SQLPrepare(cnstmt,(SQLCHAR *)
+		"select testinteger,testvarchar from testtable "
+		"where testinteger=2 for update",SQL_NTS);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLExecute(cnstmt);
+	assertSuccessStmt(cnstmt,erg);
+	cnint=0;
+	cnvarchar[0]='\0';
+	erg=SQLBindCol(cnstmt,1,SQL_C_SLONG,
+			(SQLPOINTER)&cnint,0,&cnintind);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLBindCol(cnstmt,2,SQL_C_CHAR,
+			cnvarchar,sizeof(cnvarchar),&cnvarcharind);
+	assertSuccessStmt(cnstmt,erg);
+	erg=SQLFetch(cnstmt);
+	assertSuccessStmt(cnstmt,erg);
+	assertEqualStmt(cnstmt,(int)cnint,2);
+	assertEqualStmt(cnstmt,(const char *)cnvarchar,"two");
+
+	// positioned delete
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"delete from testtable where current of testcursor2",
+		SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select count(*) from testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	cncount=0;
+	SQLLEN		cncountind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			(SQLPOINTER)&cncount,0,&cncountind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	// the positioned delete took the row the cursor was on
+	assertEqualStmt(stmt,(int)cncount,1);
+
+	// clean up
+	SQLFreeStmt(cnstmt,SQL_CLOSE);
+	SQLFreeStmt(cnstmt,SQL_UNBIND);
+	SQLFreeHandle(SQL_HANDLE_STMT,cnstmt);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLExecDirect(stmt,(SQLCHAR *)"delete from testtable",SQL_NTS);
+	stdoutput.printf("\n");
+
+
+
 	// invalid queries
 	stdoutput.printf("INVALID QUERIES: \n");
 	SQLFreeStmt(stmt,SQL_CLOSE);

@@ -7791,6 +7791,14 @@ void sqlrcursor::closeResultSet(bool closeremote) {
 			pvt->_cs->write((uint16_t)DONT_NEED_NEW_CURSOR);
 			pvt->_cs->write(pvt->_cursorid);
 			pvt->_sqlrc->flushWriteBuffer();
+
+			// Aborting the result set makes the server release
+			// the cursor, and the next cursor on this connection
+			// that asks for a new one can be given it.  Ask for a
+			// new cursor for the next query rather than reusing
+			// one that another cursor may have taken over, which
+			// would run that cursor's query out from under it.
+			pvt->_havecursorid=false;
 		}
 	}
 }

@@ -1708,6 +1708,93 @@ assertEquals($cur->getField(7,"ordinal_position"),"4");
 print("\n");
 
 
+# cursor name
+print("CURSOR NAME: \n");
+# reset testtable to 2 known rows
+assertTrue($cur->sendQuery("delete from testtable"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	101, ".
+	"	1, ".
+	"	1.5, ".
+	"	1.5, ".
+	"	1.5, ".
+	"	1.5, ".
+	"	'01-JAN-2001', ".
+	"	'01:00:00', ".
+	"	'testchar101', ".
+	"	'testvarchar101', ".
+	"	NULL, ".
+	"	'testblob101')"));
+assertTrue($cur->sendQuery(
+	"insert into ".
+	"	testtable ".
+	"values (".
+	"	102, ".
+	"	2, ".
+	"	2.5, ".
+	"	2.5, ".
+	"	2.5, ".
+	"	2.5, ".
+	"	'02-JAN-2001', ".
+	"	'02:00:00', ".
+	"	'testchar102', ".
+	"	'testvarchar102', ".
+	"	NULL, ".
+	"	'testblob102')"));
+# never set on this cursor yet
+assertUndef($cur->getCursorName());
+# name must be set before the query that opens the cursor
+$cur->setCursorName("testcursor");
+assertEquals($cur->getCursorName(),"testcursor");
+# fetching to the end of the result set leaves firebird's cursor
+# past the last row, with nothing current for the positioned
+# statements below, so buffer one row at a time instead
+$cur->setResultSetBufferSize(1);
+assertTrue($cur->sendQuery(
+	"select ".
+	"	* ".
+	"from ".
+	"	testtable ".
+	"where ".
+	"	testinteger=101 ".
+	"for update "));
+assertEquals($cur->getField(0,0),"101");
+assertEquals($cur->getField(0,9),"testvarchar101");
+# a second cursor, on the same session, runs the positioned
+# statements while $cur's cursor stays open on its row (#9564)
+$secondcur=SQLRelay::Cursor->new($con);
+assertTrue($secondcur->sendQuery(
+	"update testtable set testvarchar='cursorupdated' ".
+	"where current of testcursor"));
+assertTrue($secondcur->sendQuery(
+	"select testvarchar from testtable where testinteger=101"));
+assertEquals($secondcur->getField(0,0),"cursorupdated");
+# set up a positioned cursor on the other row for the delete
+$cur->setCursorName("testcursor");
+assertEquals($cur->getCursorName(),"testcursor");
+assertTrue($cur->sendQuery(
+	"select ".
+	"	* ".
+	"from ".
+	"	testtable ".
+	"where ".
+	"	testinteger=102 ".
+	"for update "));
+assertEquals($cur->getField(0,0),"102");
+assertTrue($secondcur->sendQuery(
+	"delete from testtable where current of testcursor"));
+assertTrue($secondcur->sendQuery(
+	"select count(*) from testtable where testinteger=102"));
+assertEquals($secondcur->getField(0,0),"0");
+$cur->setResultSetBufferSize(0);
+# leave testtable empty
+assertTrue($cur->sendQuery("delete from testtable"));
+print("\n");
+
+
 # invalid queries
 print("INVALID QUERIES: \n");
 assertFalse($cur->sendQuery(

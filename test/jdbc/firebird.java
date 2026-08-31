@@ -2369,9 +2369,13 @@ class firebird extends sqlrtest {
 		secondstmt.close();
 		secondcon.close();
 
-		// restore con's autocommit to off and clear the table
+		// restore con's autocommit to off and clear the table.
+		// autocommit is off now, so the delete has to be committed
+		// here - left open, its row locks block every later write to
+		// testtable, and firebird waits for them forever
 		con.setAutoCommit(false);
 		stmt.executeUpdate("delete from testtable");
+		con.commit();
 		System.out.println();
 
 
@@ -2639,6 +2643,10 @@ class firebird extends sqlrtest {
 
 		// client info properties
 		System.out.println("CLIENT INFO PROPERTIES:");
+		// close the old connection before replacing it - an abandoned
+		// connection keeps its session, and any transaction it still
+		// has open, alive for the rest of the run
+		con.close();
 		con=DriverManager.getConnection(url,props);
 		md=con.getMetaData();
 		// sqlrelay doesn't support this yet
@@ -3059,6 +3067,135 @@ class firebird extends sqlrtest {
 		assertEquals(rs.getString("TYPE_NAME"),"BLOB SUB_TYPE BINARY");
 		assertEquals(rs.getString("ORDINAL_POSITION"),"4");
 		rs.close();
+		System.out.println();
+
+
+		// cursor name
+		System.out.println("CURSOR NAME:");
+		// native jaybird doesn't implement ResultSet.getCursorName(),
+		// so this section only runs against sqlrelay
+		if (issqlrelay) {
+
+			boolean	wasautocommit=con.getAutoCommit();
+
+			// the select and the positioned statements have to
+			// share a transaction, so autocommit can't be on
+			con.setAutoCommit(false);
+
+			// known rows for the positioned statements below
+			stmt.executeUpdate("delete from testtable");
+			assertEquals(stmt.executeUpdate(
+				"insert into "+
+				"	testtable "+
+				"	(testinteger,testvarchar) "+
+				"values ("+
+				"	1,'varchar1')"),1);
+			assertEquals(stmt.executeUpdate(
+				"insert into "+
+				"	testtable "+
+				"	(testinteger,testvarchar) "+
+				"values ("+
+				"	2,'varchar2')"),1);
+			con.commit();
+			System.out.println();
+
+			Statement	cursorstmt=con.createStatement();
+			Statement	posstmt=con.createStatement();
+
+			// name the cursor before running the select -
+			// firebird refuses a name for a cursor that is
+			// already open
+			cursorstmt.setCursorName("testcursor");
+
+			// fetch a row at a time, so the backend cursor is
+			// left sitting on the row the positioned statements
+			// target rather than run off the end of the result set
+			cursorstmt.setFetchSize(1);
+			ResultSet	cursorrs=cursorstmt.executeQuery(
+				"select "+
+				"	testinteger, "+
+				"	testvarchar "+
+				"from "+
+				"	testtable "+
+				"where "+
+				"	testinteger=1 "+
+				"for update");
+			assertTrue((cursorrs!=null));
+			// the jdbc api answers this from the result set, not
+			// from the statement the name was set on
+			assertEquals(cursorrs.getCursorName(),"testcursor");
+			assertTrue(cursorrs.next());
+			assertEquals(cursorrs.getInt(1),1);
+			System.out.println();
+
+			// positioned update, on a second statement so the
+			// select's cursor stays open
+			assertEquals(posstmt.executeUpdate(
+				"update "+
+				"	testtable "+
+				"set "+
+				"	testvarchar='updated1' "+
+				"where current of testcursor"),1);
+			// the positioned update hit the row the cursor was on
+			rs=posstmt.executeQuery(
+				"select "+
+				"	testinteger,testvarchar "+
+				"from "+
+				"	testtable "+
+				"order by "+
+				"	testinteger");
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),1);
+			assertEquals(rs.getString(2),"updated1");
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),2);
+			assertEquals(rs.getString(2),"varchar2");
+			assertFalse(rs.next());
+			rs.close();
+			System.out.println();
+
+			// positioned delete, against the other row - the name
+			// applies to the next query this statement runs, so it
+			// has to be set again here even though it hasn't changed
+			cursorrs.close();
+			cursorstmt.setCursorName("testcursor");
+			cursorrs=cursorstmt.executeQuery(
+				"select "+
+				"	testinteger, "+
+				"	testvarchar "+
+				"from "+
+				"	testtable "+
+				"where "+
+				"	testinteger=2 "+
+				"for update");
+			assertTrue((cursorrs!=null));
+			assertEquals(cursorrs.getCursorName(),"testcursor");
+			assertTrue(cursorrs.next());
+			assertEquals(cursorrs.getInt(1),2);
+			assertEquals(posstmt.executeUpdate(
+				"delete from "+
+				"	testtable "+
+				"where current of testcursor"),1);
+			// the positioned delete took the row the cursor was on
+			rs=posstmt.executeQuery(
+				"select "+
+				"	testinteger "+
+				"from "+
+				"	testtable");
+			assertTrue(rs.next());
+			assertEquals(rs.getInt(1),1);
+			assertFalse(rs.next());
+			rs.close();
+			cursorrs.close();
+			System.out.println();
+
+			// leave testtable empty
+			posstmt.executeUpdate("delete from testtable");
+			con.commit();
+			cursorstmt.close();
+			posstmt.close();
+			con.setAutoCommit(wasautocommit);
+		}
 		System.out.println();
 
 

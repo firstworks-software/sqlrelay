@@ -1763,6 +1763,108 @@ def main():
 	output()
 
 
+	# cursor name
+	output("CURSOR NAME: ")
+
+	# start with 2 known rows
+	assertTrue(cur.sendQuery("delete from testtable"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	101, "
+		"	1, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
+		"	'01-JAN-2001', "
+		"	'01:00:00', "
+		"	'testchar1', "
+		"	'testvarchar101', "
+		"	NULL, "
+		"	'testblob1')"))
+	assertTrue(cur.sendQuery(
+		"insert into "
+		"	testtable "
+		"values ("
+		"	102, "
+		"	1, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
+		"	1.5, "
+		"	'01-JAN-2001', "
+		"	'01:00:00', "
+		"	'testchar1', "
+		"	'testvarchar102', "
+		"	NULL, "
+		"	'testblob1')"))
+
+	# name is unset until explicitly set
+	assertNone(cur.getCursorName())
+
+	# a second cursor on the same connection runs the positioned
+	# statements - reusing cur would free its statement, and the named
+	# cursor riding on it, before the positioned update/delete could run
+	poscur=PySQLRClient.sqlrcursor(con)
+
+	# name must be set before the query that opens the cursor (#9564)
+	cur.setCursorName("testcursor")
+	assertEquals(cur.getCursorName(),"testcursor")
+
+	# fetching to the end of the result set leaves firebird's cursor
+	# past the last row, with nothing current for the positioned
+	# statements below, so buffer one row at a time instead
+	cur.setResultSetBufferSize(1)
+	assertTrue(cur.sendQuery(
+		"select "
+		"	testinteger, "
+		"	testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=101 "
+		"for update"))
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"101")
+	assertEquals(cur.getField(0,1),"testvarchar101")
+
+	# positioned update against the named cursor
+	assertTrue(poscur.sendQuery(
+		"update testtable set testvarchar='cursorupdated' "
+		"where current of testcursor"))
+	assertTrue(poscur.sendQuery(
+		"select testvarchar from testtable where testinteger=101"))
+	assertEquals(poscur.getField(0,0),"cursorupdated")
+
+	# repeat for a positioned delete on the other row
+	cur.setCursorName("testcursor")
+	assertEquals(cur.getCursorName(),"testcursor")
+	assertTrue(cur.sendQuery(
+		"select "
+		"	testinteger, "
+		"	testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=102 "
+		"for update"))
+	assertEquals(cur.rowCount(),1)
+	assertEquals(cur.getField(0,0),"102")
+	assertEquals(cur.getField(0,1),"testvarchar102")
+	assertTrue(poscur.sendQuery(
+		"delete from testtable where current of testcursor"))
+	assertTrue(poscur.sendQuery(
+		"select count(*) from testtable where testinteger=102"))
+	assertEquals(poscur.getField(0,0),"0")
+	cur.setResultSetBufferSize(0)
+
+	# leave testtable empty
+	assertTrue(cur.sendQuery("delete from testtable"))
+	output()
+
+
 	reportTestStatus()
 	sys.exit(asserts.status)
 

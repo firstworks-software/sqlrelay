@@ -1852,6 +1852,98 @@ int main(int argc, char **argv) {
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
 	printf("\n");
 
+
+	// cursor name
+	// A positioned update or delete refers to the select's cursor by
+	// name, so the name has to reach firebird before the select opens
+	// the cursor.  The firebird protocol module used to drop the name
+	// on the floor, leaving "where current of" nothing to find (#9564).
+	printf("CURSOR NAME: \n");
+
+	// start from a known two rows
+	assertTrue(sqlrcur_sendQuery(cur,"delete from testtable"));
+	assertTrue(sqlrcur_sendQuery(cur,
+		"insert into "
+		"	testtable "
+		"	(testinteger,testvarchar) "
+		"values "
+		"	(1,'one')"));
+	assertTrue(sqlrcur_sendQuery(cur,
+		"insert into "
+		"	testtable "
+		"	(testinteger,testvarchar) "
+		"values "
+		"	(2,'two')"));
+	assertTrue(sqlrcon_commit(con));
+
+	// the name is a local copy, so it reads back without a round trip
+	secondcur=sqlrcur_alloc(con);
+	assertTrue(sqlrcur_getCursorName(secondcur)==NULL);
+	sqlrcur_setCursorName(secondcur,"testcursor");
+	assertEqStr(sqlrcur_getCursorName(secondcur),"testcursor");
+
+	// Fetching to the end of the result set leaves firebird's cursor
+	// past the last row, where a positioned statement has no current
+	// record to work with.  Buffering one row at a time stops the fetch
+	// on the row the positioned statements below target.
+	sqlrcur_setResultSetBufferSize(secondcur,1);
+
+	// positioned update
+	assertTrue(sqlrcur_sendQuery(secondcur,
+		"select "
+		"	testinteger,testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=1 "
+		"for update"));
+	assertEqStr(sqlrcur_getCursorName(secondcur),"testcursor");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"1");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,1),"one");
+	assertTrue(sqlrcur_sendQuery(cur,"update testtable "
+					"set testvarchar='updated' "
+					"where current of testcursor"));
+	assertTrue(sqlrcur_sendQuery(cur,
+		"select "
+		"	testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=1"));
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"updated");
+	assertTrue(sqlrcon_commit(con));
+	printf("\n");
+
+	// positioned delete
+	// The name applies to the next query this cursor runs, so setting a
+	// different one before the second select renames the cursor.
+	sqlrcur_setCursorName(secondcur,"testcursor2");
+	assertEqStr(sqlrcur_getCursorName(secondcur),"testcursor2");
+	assertTrue(sqlrcur_sendQuery(secondcur,
+		"select "
+		"	testinteger,testvarchar "
+		"from "
+		"	testtable "
+		"where "
+		"	testinteger=2 "
+		"for update"));
+	assertEqStr(sqlrcur_getCursorName(secondcur),"testcursor2");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,0),"2");
+	assertEqStr(sqlrcur_getFieldByIndex(secondcur,0,1),"two");
+	assertTrue(sqlrcur_sendQuery(cur,"delete from testtable "
+					"where current of testcursor2"));
+	assertTrue(sqlrcur_sendQuery(cur,"select count(*) from testtable"));
+	assertEqStr(sqlrcur_getFieldByIndex(cur,0,0),"1");
+	assertTrue(sqlrcon_commit(con));
+	sqlrcur_free(secondcur);
+	secondcur=NULL;
+	printf("\n");
+
+	// leave testtable empty
+	assertTrue(sqlrcur_sendQuery(cur,"delete from testtable"));
+	assertTrue(sqlrcon_commit(con));
+	printf("\n");
+
 	reportTestStatus();
 
 	return status;
