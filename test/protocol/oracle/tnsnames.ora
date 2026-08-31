@@ -10,7 +10,9 @@
 # before.
 #
 # The ora1 aliases are the real oracle server behind sqlrelay, not a
-# listener, so their port stays 1521.
+# listener, so their port stays 1521.  The sqlrelay* aliases resolve to
+# this suite's own local listeners, so their Host is localhost; ora1's Host
+# stays the real oracle server they connect through.
 
 ora1 =
   (DESCRIPTION =
@@ -20,25 +22,25 @@ ora1 =
 
 sqlrelay =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1521))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1521))
     (CONNECT_DATA = (SID = ora1))
   )
 
 sqlrelay11g =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1522))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1522))
     (CONNECT_DATA = (SID = ora1))
   )
 
 sqlrelay12c =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1523))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1523))
     (CONNECT_DATA = (SID = ora1))
   )
 
 sqlrelayconnectstrings =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1524))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1524))
     (CONNECT_DATA = (SID = ora1))
   )
 
@@ -53,24 +55,24 @@ ora1bad =
 
 sqlrelaybad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1521))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1521))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
 sqlrelay11gbad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1522))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1522))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
 sqlrelay12cbad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1523))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1523))
     (CONNECT_DATA = (SID = nosuchsid))
   )
 
 sqlrelayconnectstringsbad =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL= TCP)(Host= sqlrelay.firstworks.com)(Port= 1524))
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1524))
     (CONNECT_DATA = (SID = nosuchsid))
   )
