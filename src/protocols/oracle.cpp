@@ -8814,8 +8814,17 @@ void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 				debugWrite("bind %d: cursor %d",
 					i+1,(uint16_t)bv->value.cursorid);
 				putRefCursorBindValue(child);
-				continue;
+			} else {
+				// the child cursor is gone - answer null rather
+				// than reading the value union as a stringval
+				debugWrite("bind %d: NULL (cursor gone)",i+1);
+				write(&reqpacket,(byte_t)0);
+				write(&reqpacket,
+					(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
+				write(&reqpacket,
+					(byte_t)OUT_BIND_NULL_INDICATOR_VALUE);
 			}
+			continue;
 		}
 
 		if (!bv || cont->getBindValueIsNull(bv->isnull)) {

@@ -1394,6 +1394,10 @@
 		cursors in a loop doesn't run the pool dry.  the client drives
 		the cursor it gets back with ordinary fetches on the same
 		connection, which the existing fetch path already serves
+	oracle protocol module: hardened putOutBindValues() against a ref
+		cursor bind whose backing cursor is gone by the time the
+		response is written - it now answers null instead of reading
+		the bind value union as a string pointer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
