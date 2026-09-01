@@ -12562,7 +12562,13 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 	for (uint32_t i=0; i<colcount; i++) {
 
 		debugStart("col %d",i);
-		debugColumnType(ct[i]);
+
+		// ct[i] can be an internal-only type code (LOB_CLOB rather
+		// than CLOB, for example), but putField() dispatches on the
+		// wire type
+		uint16_t	wiretype=getWireColumnType(ct[i]);
+
+		debugColumnType(wiretype);
 
 		// get the field (again)
 		fieldsize=0;
@@ -12573,30 +12579,39 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			return false;
 		}
 
+		// every column has to write something, otherwise the client,
+		// which knows the column count from the describe, desyncs
+		bool	wrote=true;
+
 		// put the field
 		if (lob) {
 			debugWrite("LOB");
+			// putLobField() has no way to report failure, but it
+			// writes something either way, a null marker at worst
 			putLobField(cursor,i);
-		} else if (!null) {
+		} else if (!null && field) {
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
-			bool	wrote=putField(field,fieldsize,ct[i]);
-
-			// the terminator: a ub4 after every column but the
-			// last, a ub2 after the last.  it belongs to the row
-			// rather than to the value, but write it only if the
-			// value itself was written, otherwise it desyncs the
-			// rest of the row.
-			// see "Oracle Wire Protocol - Row Data"
-			if (terminator && wrote) {
-				if (i==colcount-1) {
-					writeBE(&reqpacket,(uint16_t)0);
-				} else {
-					writeBE(&reqpacket,(uint32_t)0);
-				}
-				debugWrite("terminator");
-			}
+			wrote=putField(field,fieldsize,wiretype);
 		} else {
+			// getField() can hand back a NULL field without
+			// setting null.  one zero byte stands for null and
+			// unreadable alike - see putRowData().
 			debugWrite("null");
+			write(&reqpacket,(byte_t)0);
+		}
+
+		// the terminator: a ub4 after every column but the last, a
+		// ub2 after the last.  it belongs to the row rather than to
+		// the value, but write it only if the value itself was
+		// written, otherwise it desyncs the rest of the row.
+		// see "Oracle Wire Protocol - Row Data"
+		if (terminator && wrote) {
+			if (i==colcount-1) {
+				writeBE(&reqpacket,(uint16_t)0);
+			} else {
+				writeBE(&reqpacket,(uint32_t)0);
+			}
+			debugWrite("terminator");
 		}
 
 		debugEnd();
