@@ -2278,6 +2278,98 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCIStmtFetch2 - array fetch wider than one packet\n");
+	// rows wide enough that a 6-row batch can't fit in one negotiated
+	// packet - this exercises the SDU bound in sendFetch3Response() and
+	// sendQuery3Response()'s inline prefetch, which have to split the
+	// batch across more than one on-the-wire fetch
+	execImmediate("drop table protocoltestwide");
+	assertEquals(
+		execImmediate("create table protocoltestwide ("
+				"testnumber number(10),"
+				"testvarchar varchar2(2000))"),
+		OCI_SUCCESS);
+	assertEquals(
+		execImmediate("insert into protocoltestwide "
+				"select level,rpad('row'||level,2000,'x') "
+				"from dual connect by level<=6"),
+		OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(countRows("protocoltestwide"),6);
+
+	const char	*widequery="select testnumber,testvarchar "
+					"from protocoltestwide "
+					"order by testnumber";
+	assertEquals(
+		OCIStmtPrepare(curstmt,err,(text *)widequery,
+				charstring::getLength(widequery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	ub4	wideprefetch=6;
+	assertEquals(
+		OCIAttrSet(curstmt,OCI_HTYPE_STMT,
+				&wideprefetch,0,OCI_ATTR_PREFETCH_ROWS,err),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,curstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+
+	OCIDefine	*widedef[2];
+	char		widenumbers[6][32];
+	char		widevarchars[6][2001];
+	sb2		wideinds[2][6];
+	ub2		widelens[2][6];
+	bytestring::zero(widedef,sizeof(widedef));
+	bytestring::zero(widenumbers,sizeof(widenumbers));
+	bytestring::zero(widevarchars,sizeof(widevarchars));
+	bytestring::zero(wideinds,sizeof(wideinds));
+	bytestring::zero(widelens,sizeof(widelens));
+	assertEquals(
+		OCIDefineByPos(curstmt,&widedef[0],err,1,
+				widenumbers,sizeof(widenumbers[0]),SQLT_STR,
+				&wideinds[0][0],&widelens[0][0],NULL,
+				OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIDefineByPos(curstmt,&widedef[1],err,2,
+				widevarchars,sizeof(widevarchars[0]),SQLT_STR,
+				&wideinds[1][0],&widelens[1][0],NULL,
+				OCI_DEFAULT),
+		OCI_SUCCESS);
+
+	// all 6 rows in one array fetch call - the module can only pack a
+	// few of these into any single on-the-wire packet, so the client has
+	// to ask again to fill the array
+	assertEquals(
+		OCIStmtFetch2(curstmt,err,6,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	for (int wi=0; wi<6; wi++) {
+		char	widenum[32];
+		charstring::printf(widenum,sizeof(widenum),"%d",wi+1);
+		assertEquals((const char *)widenumbers[wi],widenum);
+		char	wideexpected[2001];
+		charstring::printf(wideexpected,sizeof(wideexpected),
+					"row%d",wi+1);
+		size_t	widelen=charstring::getLength(wideexpected);
+		for (size_t wj=widelen; wj<2000; wj++) {
+			wideexpected[wj]='x';
+		}
+		wideexpected[2000]='\0';
+		assertEquals((const char *)widevarchars[wi],wideexpected);
+	}
+	ub4	widefetched=0;
+	assertEquals(
+		OCIAttrGet(curstmt,OCI_HTYPE_STMT,
+				&widefetched,NULL,OCI_ATTR_ROW_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)widefetched,6);
+	assertEquals(
+		OCIStmtFetch2(curstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals(execImmediate("drop table protocoltestwide"),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIHandleFree - statement\n");
 	assertEquals(OCIHandleFree(curstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
 	stdoutput.printf("\n\n");

@@ -1262,6 +1262,12 @@
 		oracle protocol module compounded this by reporting such an
 		error, when it did reach it, as ora-01403 "no data found"
 		instead of the real error
+	fixed the oracle protocol module's sendFetch3Response() and
+		sendQuery3Response() packing an array fetch or a prefetch into
+		one packet with no bound on its size, so a wide enough batch
+		grew past the negotiated packet size and desynced the client;
+		both now stop and let the client come back for the rest once
+		a packet fills up
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

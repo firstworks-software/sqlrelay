@@ -1386,6 +1386,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// since a fetch's summary has to carry the running total
 		uint32_t	*rowssent;
 
+		// a row already fetched and formatted, but not sent because
+		// it didn't fit in the current packet.  the connection has
+		// already advanced past it - fetchRow()/nextRow() can't
+		// un-fetch a row on every backend - so it's held here and
+		// sent first on the next fetch/prefetch instead of being
+		// re-fetched
+		bytebuffer	*pendingrow;
+
 		// the sequence number the summary object has to echo back
 		byte_t		callnumber;
 
@@ -1528,6 +1536,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
 	rowssent=new uint32_t[maxcursorcount];
+	pendingrow=new bytebuffer[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		ptypes[i]=new uint16_t[maxbindcount];
 		columntypescached[i]=false;
@@ -1561,6 +1570,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] columntypescached;
 	delete[] columntypes;
 	delete[] rowssent;
+	delete[] pendingrow;
 
 	delete resppacketpool;
 }
@@ -6428,6 +6438,10 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
 	if (options&OPTION_EXECUTE) {
 
+		// a fresh execute means a new result set - drop any row
+		// held over from a previous one on this cursor
+		pendingrow[cont->getId(cursor)].clear();
+
 		// execute the query
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
 			debugWrite("execute query failed");
@@ -6763,6 +6777,10 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		// re-start the running row count
 		rowssent[cont->getId(cursor)]=0;
 
+		// a re-parse means a new result set - drop any row held
+		// over from the previous one
+		pendingrow[cont->getId(cursor)].clear();
+
 		// bounds checking
 		if (querysize>maxquerysize) {
 			// FIXME: implement this
@@ -6794,6 +6812,10 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	bool	describecanexecute=(options&OPTION_DESCRIBE) &&
 					cursor->getQueryType()==SQLRQUERYTYPE_SELECT;
 	if ((options&OPTION_EXECUTE) || describecanexecute) {
+
+		// a fresh execute means a new result set - drop any row
+		// held over from a previous one on this cursor
+		pendingrow[cont->getId(cursor)].clear();
 
 		// execute the query
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -7039,7 +7061,36 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 			putRowHeader(0x22,colcount,rowstofetch);
 
+			// the only bound on how many rows to send back in
+			// this packet is the negotiated packet size, less
+			// enough room for the return parameters and the
+			// trailing summary
+			const uint32_t	trailerreserve=128;
+			uint32_t	curid=cont->getId(cursor);
+
 			while (rowsfetched<rowstofetch) {
+
+				// a row held over from a previous
+				// packet-full response goes out first,
+				// ahead of anything freshly fetched
+				if (pendingrow[curid].getSize()) {
+					if (rowsfetched &&
+						reqpacket.getSize()+
+						pendingrow[curid].getSize()+
+						trailerreserve>=sdu) {
+						debugWrite("packet full");
+						break;
+					}
+					reqpacket.append(
+						pendingrow[curid].getBuffer(),
+						pendingrow[curid].getSize());
+					pendingrow[curid].clear();
+					rowsfetched++;
+					continue;
+				}
+
+				uint32_t	sizebeforerow=
+						(uint32_t)reqpacket.getSize();
 
 				bool	error=false;
 				if (!cont->fetchRow(cursor,&error)) {
@@ -7054,8 +7105,37 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 				putRowData(cursor,colcount);
 				debugEnd();
 
+				// the row is consumed from the result set as
+				// soon as it's fetched - fetchRow()/nextRow()
+				// can't un-fetch it on every backend, so a row
+				// that doesn't fit here is stashed in
+				// pendingrow and sent first next time, rather
+				// than left for a re-fetch that some backends
+				// can't do
 				// FIXME: kludgy
 				cont->nextRow(cursor);
+
+				// a row's size isn't known until it's
+				// written, so the check comes after - stash
+				// it and stop if it doesn't fit, unless it's
+				// the first row, which goes out regardless of
+				// its size since the packet can't say "zero
+				// rows" when more remain
+				if (rowsfetched &&
+					reqpacket.getSize()+trailerreserve
+									>=sdu) {
+					debugWrite("packet full");
+					uint32_t	rowsize=(uint32_t)
+						reqpacket.getSize()-
+						sizebeforerow;
+					pendingrow[curid].append(
+						reqpacket.getBuffer()+
+							sizebeforerow,
+						(size_t)rowsize);
+					reqpacket.truncate(
+							(size_t)sizebeforerow);
+					break;
+				}
 
 				rowsfetched++;
 			}
@@ -7735,6 +7815,10 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		lastcursorid=cont->getId(cursor);
 	}
 
+	// a fresh execute means a new result set - drop any row held
+	// over from a previous one on this cursor
+	pendingrow[cont->getId(cursor)].clear();
+
 	// execute the query
 	if (!cont->executeQuery(cursor,true,true,true,true)) {
 		debugWrite("execute query failed");
@@ -7838,7 +7922,42 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 
 		endofrows=false;
 
+		// the only bound on how many rows to send back in this
+		// packet is the negotiated packet size, less enough room
+		// for the trailing summary
+		const uint32_t	trailerreserve=128;
+		uint32_t	curid=cont->getId(cursor);
+
 		while (rowsfetched<rowstofetch) {
+
+			// a row held over from a previous packet-full
+			// response goes out first, ahead of anything
+			// freshly fetched
+			if (pendingrow[curid].getSize()) {
+				if (rowsfetched &&
+					reqpacket.getSize()+
+					pendingrow[curid].getSize()+
+					trailerreserve>=sdu) {
+					debugWrite("packet full");
+					break;
+				}
+				// a fetch with no rows left is answered
+				// with the summary object alone, so the row
+				// header is only written once the first row
+				// is in hand
+				if (!rowsfetched) {
+					putRowHeader(0x02,colcount,
+								rowstofetch);
+				}
+				reqpacket.append(
+					pendingrow[curid].getBuffer(),
+					pendingrow[curid].getSize());
+				pendingrow[curid].clear();
+				rowsfetched++;
+				continue;
+			}
+
+			uint32_t	sizebeforerow=(uint32_t)reqpacket.getSize();
 
 			bool	error=false;
 			if (!cont->fetchRow(cursor,&error)) {
@@ -7860,8 +7979,31 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			putRowData(cursor,colcount);
 			debugEnd();
 
+			// the row is consumed from the result set as soon
+			// as it's fetched - fetchRow()/nextRow() can't
+			// un-fetch it on every backend, so a row that
+			// doesn't fit here is stashed in pendingrow and sent
+			// first next time, rather than left for a re-fetch
+			// that some backends can't do
 			// FIXME: kludgy
 			cont->nextRow(cursor);
+
+			// a row's size isn't known until it's written, so
+			// the check comes after - stash it and stop if it
+			// doesn't fit, unless it's the first row, which
+			// goes out regardless of its size since the packet
+			// can't say "zero rows" when more remain
+			if (rowsfetched &&
+				reqpacket.getSize()+trailerreserve>=sdu) {
+				debugWrite("packet full");
+				uint32_t	rowsize=(uint32_t)
+					reqpacket.getSize()-sizebeforerow;
+				pendingrow[curid].append(
+					reqpacket.getBuffer()+sizebeforerow,
+					(size_t)rowsize);
+				reqpacket.truncate((size_t)sizebeforerow);
+				break;
+			}
 
 			rowsfetched++;
 		}
@@ -8895,6 +9037,7 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	clearParams(cursor);
 	cont->abort(cursor);
 	cont->release(cursor);
+	pendingrow[closingid].clear();
 	if (lastcursorid==closingid) {
 		lastcursorid=65535;
 	}
@@ -9286,6 +9429,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		clearParams(cursor);
 		cont->abort(cursor);
 		cont->release(cursor);
+		pendingrow[closingid].clear();
 		if (lastcursorid==closingid) {
 			lastcursorid=65535;
 		}
