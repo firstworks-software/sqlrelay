@@ -1380,9 +1380,20 @@
 		pre-filled with what the wire sent - a plain bidirectional
 		bind over a buffer this side owns behaves as in-out once
 		what's in it at execute time is what the statement reads.
-		dates, timestamps, intervals, raws and lobs stay input only,
-		as does a ref cursor bind, whose output slot is a whole
-		describe rather than a value
+		dates, timestamps, intervals, raws and lobs stay input only
+	oracle protocol module: ref cursor bind variables work on the modern
+		(10g and later) path now - a block that opens a cursor for a
+		select into an out parameter hands the client a cursor it can
+		describe and fetch from.  a ref cursor's out bind slot isn't a
+		value, it's the whole describe of the cursor the block opened
+		followed by the id the client drives it with, and no null
+		indicator behind it.  the module takes a cursor out of its own
+		pool for each ref cursor bind, fetches from it once the
+		block's execute has filled it in, and gives it back when the
+		statement re-executes or closes - so a client that opens ref
+		cursors in a loop doesn't run the pool dry.  the client drives
+		the cursor it gets back with ordinary fetches on the same
+		connection, which the existing fetch path already serves
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

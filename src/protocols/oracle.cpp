@@ -436,6 +436,11 @@
 #define DESCRIBE_INFO_CONSTANT		0x51
 #define COLUMN_DEFINITIONS_CONSTANT	51
 
+// what a ref cursor's out bind slot leads with.  it isn't a length - it's
+// 0x4c whatever the cursor describes - and no source explains it.  thin
+// drivers skip exactly one byte here and call it a fixed value
+#define REF_CURSOR_CONSTANT		0x4c
+
 // an oracle number is an exponent byte and up to 20 base 100 digits, and a
 // column of them is described as 22 bytes wide
 #define MAX_NUMBER_MANTISSA		20
@@ -1448,7 +1453,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t colcount);
 		void	putIoVector();
 		void	putOutBindValues(sqlrservercursor *cursor);
+		void	putRefCursorBindValue(sqlrservercursor *child);
+		bool	fetchFromRefCursors(sqlrservercursor *cursor,
+						sqlrservercursor **failed);
+		void	releaseRefCursors(uint16_t parentid);
+		void	forgetRefCursor(uint16_t childid);
 		void	putDescribeInfo(sqlrservercursor *cursor,
+							uint32_t colcount);
+		void	putDescribeInfoBody(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putColumnMetadata(sqlrservercursor *cursor,
 							uint32_t column);
@@ -1836,6 +1848,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		oraclequery3bind	**cursorbinds;
 		uint32_t		*cursorbindcounts;
 
+		// the cursors each statement's ref cursor binds are holding.
+		// one comes out of the pool per bind at execute time and
+		// nothing else gives it back, so the statement that took it
+		// has to remember it
+		uint16_t		**refcursorids;
+		uint16_t		*refcursorcounts;
+
 		// whether the statement has a placeholder the client never
 		// bound anything to, which is an ORA-01008 rather than an
 		// execute
@@ -2003,6 +2022,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	lobpingeneration=new uint16_t[maxcursorcount];
 	cursorbinds=new oraclequery3bind *[maxcursorcount];
 	cursorbindcounts=new uint32_t[maxcursorcount];
+	refcursorids=new uint16_t *[maxcursorcount];
+	refcursorcounts=new uint16_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		ptypes[i]=new uint16_t[maxbindcount];
 		columntypescached[i]=false;
@@ -2012,6 +2033,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		lobpingeneration[i]=0;
 		cursorbinds[i]=new oraclequery3bind[maxbindcount];
 		cursorbindcounts[i]=0;
+		refcursorids[i]=new uint16_t[maxbindcount];
+		refcursorcounts[i]=0;
 		if (cont->getMaxColumnCount()) {
 			columntypes[i]=new uint16_t[cont->getMaxColumnCount()];
 		} else {
@@ -2037,9 +2060,12 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 		delete[] ptypes[i];
 		delete[] columntypes[i];
 		delete[] cursorbinds[i];
+		delete[] refcursorids[i];
 	}
 	delete[] cursorbinds;
 	delete[] cursorbindcounts;
+	delete[] refcursorids;
+	delete[] refcursorcounts;
 	delete[] ptypes;
 	delete[] columntypescached;
 	delete[] columntypes;
@@ -7489,6 +7515,14 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 				return sendQueryError(cursor);
 			}
 
+			// a ref cursor bind's result set isn't readable
+			// until the execute that opened it has run
+			sqlrservercursor	*failed=NULL;
+			if (!fetchFromRefCursors(cursor,&failed)) {
+				return sendQueryError((failed)?
+							failed:cursor);
+			}
+
 			if (cont->knowsAffectedRows(cursor)) {
 				query3knowsaffectedrows=true;
 				query3affectedrows+=(uint32_t)
@@ -7957,12 +7991,19 @@ void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
 
 		oraclequery3bind	*bd=&(query3binds[i]);
 
+		// a ref cursor carries no indicator flag - the client binds
+		// a statement handle rather than a buffer - so it's read off
+		// the type alone.  it goes out in-out, the way a live server
+		// sends one
+		if (bd->type==ORACLE_TYPE_RESULT_SET) {
+			bd->direction=BIND_DIRECTION_INOUT;
+			continue;
+		}
+
 		if (!(bd->flags&BIND_FLAG_USE_INDICATORS)) {
 			continue;
 		}
 
-		// a ref cursor's out slot is a whole describe rather than a
-		// value, which is its own job
 		switch (bd->type) {
 			case ORACLE_TYPE_NUMBER:
 			case ORACLE_TYPE_VARNUM:
@@ -8093,6 +8134,11 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 
 	debugStart("installing binds");
 
+	// whatever the previous execute's ref cursor binds took out of the
+	// pool goes back before this one takes any
+	uint16_t	parentid=cont->getId(cursor);
+	releaseRefCursors(parentid);
+
 	uint16_t	incount=0;
 	uint16_t	outcount=0;
 	for (uint32_t i=0; i<query3binddescs && incount<maxbindcount; i++) {
@@ -8101,10 +8147,10 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 
 		bd->outindex=-1;
 
-		// a ref cursor and an output-only bind still take a value
-		// slot on the wire, but there's no input value to install
-		if (!(bd->flags&BIND_FLAG_USE_INDICATORS) ||
-			bd->type==ORACLE_TYPE_RESULT_SET) {
+		// an output-only bind still takes a value slot on the wire,
+		// but there's no input value to install
+		if (!(bd->flags&BIND_FLAG_USE_INDICATORS) &&
+			bd->type!=ORACLE_TYPE_RESULT_SET) {
 			continue;
 		}
 
@@ -8115,6 +8161,64 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 			debugWrite("no placeholder %d in the query",i+1);
 			debugEnd();
 			return false;
+		}
+
+		// a ref cursor's value is a cursor of its own rather than a
+		// buffer.  the statement opens it, and the client drives it
+		// afterwards from the id the response hands back, so one
+		// comes out of the pool here and the statement holds it
+		// until it re-executes or closes
+		if (bd->type==ORACLE_TYPE_RESULT_SET) {
+
+			if (outcount>=maxbindcount) {
+				continue;
+			}
+
+			sqlrservercursor	*child=cont->getCursor();
+			if (!child) {
+				debugWrite("couldn't get cursor");
+				debugEnd();
+				return false;
+			}
+			uint16_t	childid=cont->getId(child);
+
+			// the cursor comes out of the pool with whatever its
+			// last user left on it, and nothing else clears it
+			cont->setInputBindCount(child,0);
+			cont->setOutputBindCount(child,0);
+			cont->setInputOutputBindCount(child,0);
+			cursorbindcounts[childid]=0;
+			columntypescached[childid]=false;
+			rowssent[childid]=0;
+			pendingrow[childid].clear();
+			clearLobPin(childid);
+
+			sqlrserverbindvar	*cbv=&(outbinds[outcount]);
+
+			cbv->variablesize=(int16_t)(namesize+1);
+			cbv->variable=(char *)bindpool->allocate(
+						(size_t)(namesize+2));
+			cbv->variable[0]=cont->getBindFormat()[0];
+			bytestring::copy(cbv->variable+1,name,
+						(size_t)namesize);
+			cbv->variable[namesize+1]='\0';
+			cbv->type=SQLRSERVERBINDVARTYPE_CURSOR;
+			cbv->valuesize=0;
+			cbv->segmentlengths=NULL;
+			cbv->segmentcount=0;
+			cbv->value.cursorid=childid;
+			cbv->isnull=cont->getNonNullBindValue();
+
+			refcursorids[parentid][refcursorcounts[parentid]]=
+								childid;
+			refcursorcounts[parentid]++;
+
+			bd->outindex=(int16_t)outcount;
+			outcount++;
+
+			debugWrite("ref cursor bind: %s (cursor %d)",
+						cbv->variable,childid);
+			continue;
 		}
 
 		sqlrserverbindvar	*bv=&(inbinds[incount]);
@@ -8316,6 +8420,94 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 	debugEnd();
 
 	return true;
+}
+
+// opens each ref cursor bind's result set.  the statement's execute is what
+// fills the cursor in, but nothing reads its column metadata until this
+// runs - and the response can't describe a cursor it hasn't described yet
+bool sqlrprotocol_oracle::fetchFromRefCursors(sqlrservercursor *cursor,
+						sqlrservercursor **failed) {
+
+	*failed=NULL;
+
+	for (uint32_t i=0; i<query3binddescs; i++) {
+
+		oraclequery3bind	*bd=&(query3binds[i]);
+
+		if (bd->type!=ORACLE_TYPE_RESULT_SET || bd->outindex<0) {
+			continue;
+		}
+
+		sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
+		if (bd->outindex>=(int16_t)cont->getOutputBindCount(cursor)) {
+			continue;
+		}
+
+		uint16_t	childid=(uint16_t)
+				outbinds[bd->outindex].value.cursorid;
+		sqlrservercursor	*child=cont->getCursor(childid);
+		if (!child) {
+			continue;
+		}
+
+		debugWrite("fetching from ref cursor %d",childid);
+
+		if (!cont->fetchFromBindCursor(child)) {
+			debugWrite("fetch from ref cursor failed");
+			*failed=child;
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// hands back what a statement's ref cursor binds took out of the pool.  a
+// client that opens ref cursors in a loop runs the pool dry without this
+void sqlrprotocol_oracle::releaseRefCursors(uint16_t parentid) {
+
+	for (uint16_t i=0; i<refcursorcounts[parentid]; i++) {
+
+		uint16_t	childid=refcursorids[parentid][i];
+
+		sqlrservercursor	*child=cont->getCursor(childid);
+		if (!child) {
+			continue;
+		}
+
+		debugWrite("releasing ref cursor %d",childid);
+
+		cont->abort(child);
+		cont->release(child);
+		columntypescached[childid]=false;
+		rowssent[childid]=0;
+		pendingrow[childid].clear();
+		clearLobPin(childid);
+		if (lastcursorid==childid) {
+			lastcursorid=65535;
+		}
+	}
+
+	refcursorcounts[parentid]=0;
+}
+
+// drops a cursor the client closed itself from whatever statement was
+// holding it, so the statement doesn't hand back a cursor the pool has
+// since given to something else
+void sqlrprotocol_oracle::forgetRefCursor(uint16_t childid) {
+
+	for (uint16_t i=0; i<maxcursorcount; i++) {
+
+		uint16_t	count=refcursorcounts[i];
+		uint16_t	kept=0;
+		for (uint16_t j=0; j<count; j++) {
+			if (refcursorids[i][j]!=childid) {
+				refcursorids[i][kept]=refcursorids[i][j];
+				kept++;
+			}
+		}
+		refcursorcounts[i]=kept;
+	}
 }
 
 // keeps the descriptors that came with the statement, since a re-execute
@@ -8613,6 +8805,19 @@ void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 					bd->outindex<(int16_t)outbindcount)?
 					&(outbinds[bd->outindex]):NULL;
 
+		// a ref cursor's slot is a whole describe and the id of the
+		// cursor it describes, rather than a value
+		if (bv && bv->type==SQLRSERVERBINDVARTYPE_CURSOR) {
+			sqlrservercursor	*child=cont->getCursor(
+					(uint16_t)bv->value.cursorid);
+			if (child) {
+				debugWrite("bind %d: cursor %d",
+					i+1,(uint16_t)bv->value.cursorid);
+				putRefCursorBindValue(child);
+				continue;
+			}
+		}
+
 		if (!bv || cont->getBindValueIsNull(bv->isnull)) {
 			debugWrite("bind %d: NULL",i+1);
 			write(&reqpacket,(byte_t)0);
@@ -8642,6 +8847,22 @@ void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 	debugEnd();
 }
 
+// what a ref cursor's out bind slot carries: a constant, the describe of
+// the cursor the statement opened, and the id the client drives it with.
+// unlike a scalar out bind's slot, no null indicator follows
+// see "Oracle Wire Protocol - Query3"
+void sqlrprotocol_oracle::putRefCursorBindValue(sqlrservercursor *child) {
+
+	write(&reqpacket,(byte_t)REF_CURSOR_CONSTANT);
+
+	uint32_t	colcount=cont->colCount(child);
+	cacheColumnDefinitions(child,colcount);
+	putDescribeInfoBody(child,colcount);
+
+	// the ids on the wire are the controller's plus 1
+	writeLenPreInt(&reqpacket,(uint32_t)(cont->getId(child)+1));
+}
+
 void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 						uint32_t colcount) {
 
@@ -8669,6 +8890,15 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 	} else {
 		putLenBytes((const char *)prologue,sizeof(prologue));
 	}
+
+	putDescribeInfoBody(cursor,colcount);
+}
+
+// everything a describe says about a statement's columns, from the max row
+// size on.  a ref cursor's out bind slot carries the same fields with no ttc
+// code and no prologue in front of them, so both writers share this
+void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
+						uint32_t colcount) {
 
 	uint16_t	curid=cont->getId(cursor);
 	uint32_t	maxrowsize=0;
@@ -11203,6 +11433,13 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 			return sendQueryError(cursor);
 		}
 
+		// a ref cursor bind's result set isn't readable until the
+		// execute that opened it has run
+		sqlrservercursor	*failed=NULL;
+		if (!fetchFromRefCursors(cursor,&failed)) {
+			return sendQueryError((failed)?failed:cursor);
+		}
+
 		if (cont->knowsAffectedRows(cursor)) {
 			query3knowsaffectedrows=true;
 			query3affectedrows+=(uint32_t)
@@ -12614,6 +12851,7 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	}
 
 	uint16_t	closingid=cont->getId(cursor);
+	forgetRefCursor(closingid);
 	clearParams(cursor);
 	cont->abort(cursor);
 	cont->release(cursor);
@@ -12633,6 +12871,9 @@ void sqlrprotocol_oracle::clearParams(sqlrservercursor *cursor) {
 	// counts only - the bind pool owns the values and frees them itself
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
+	// a ref cursor bind holds a real cursor, which isn't the bind pool's
+	// to give back
+	releaseRefCursors(cont->getId(cursor));
 }
 
 bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
@@ -13000,6 +13241,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 			continue;
 		}
 		uint16_t	closingid=cont->getId(cursor);
+		forgetRefCursor(closingid);
 		clearParams(cursor);
 		cont->abort(cursor);
 		cont->release(cursor);
