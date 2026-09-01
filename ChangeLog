@@ -1342,6 +1342,25 @@
 		column from one of those backends fronted through this module
 		now falls back to null instead of risking a plausible-looking
 		but wrong value
+	oracle protocol module: clob, blob and bfile columns now describe as
+		their real oracle types and hand out a real lob locator per
+		row, and the lob operation call (tti function 0x60) is
+		implemented for the read side - get length, read (single call
+		and piecewise), file exists, open and close; the connection
+		holds its position on the row a locator was handed out for
+		until the client fetches past it, and a locator quoted after
+		that is refused with ORA-22275 rather than read against
+		whatever row is current.  every write side lob operation -
+		write, trim, erase, create/free temporary - is read in full,
+		along with the lob data the client sends behind it, and then
+		refused with ORA-03001; before this every lob operation, read
+		or write, fell into the generic unimplemented path, which
+		doesn't read the request body at all and so desynced the
+		session.  a bfile's directory alias and file name are the one
+		gap: no server side call hands either of them over, and the
+		client reads them out of the locator without asking, so
+		OCILobFileGetName answers with two empty names rather than a
+		made up pair
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

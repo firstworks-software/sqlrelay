@@ -222,6 +222,14 @@
 #define ORA_UNIMPLEMENTED_FEATURE		3001
 #define ORA_UNIMPLEMENTED_FEATURE_MESSAGE	"ORA-03001: unimplemented feature\n"
 
+// what a lob operation gets back when the locator it quotes doesn't decode
+// to a row the module is still holding - a locator from a cursor that has
+// since been closed, re-executed or fetched past, or one this module never
+// minted at all
+#define ORA_INVALID_LOB_LOCATOR			22275
+#define ORA_INVALID_LOB_LOCATOR_MESSAGE \
+	"ORA-22275: invalid LOB locator specified\n"
+
 // what sendQueryError() sends when the backend left no usable error number
 // (0, which putSummary() reads as success) or message - ORA-20000 through
 // ORA-20999 is oracle's user-defined exception range, the closest fit for
@@ -487,6 +495,120 @@
 // what a column with no size of its own is described as
 #define MAX_VARCHAR_SIZE		4000
 
+// a lob column is described the width of the buffer the client reads a
+// locator into rather than the width of the lob itself - a clob and a blob
+// 4000 bytes wide and a bfile 530, which is what oci reports back for one
+#define ORACLE_LOB_SIZE			4000
+#define ORACLE_BFILE_SIZE		530
+
+// a lob column's value is a locator rather than the lob's bytes.  the
+// client never looks inside one beyond the type byte - it echoes the whole
+// thing back in every lob operation request it makes - so the layout below
+// is a real 12.2 server's skeleton with the module's own bookkeeping in the
+// fields a real server fills with a per-lob id.
+// see "Oracle Wire Protocol - Lob Locator"
+#define LOB_LOCATOR_SIZE		114
+#define BFILE_LOCATOR_SIZE		43
+#define LOB_LOCATOR_CLOB		0x02
+#define LOB_LOCATOR_BLOB		0x01
+#define LOB_LOCATOR_BFILE		0x08
+#define LOB_LOCATOR_CHARSET_PRESENT	0x80
+#define LOB_LOCATOR_LENGTH_OFFSET	0x00
+#define LOB_LOCATOR_VERSION_OFFSET	0x02
+#define LOB_LOCATOR_TYPE_OFFSET		0x04
+#define LOB_LOCATOR_KIND_OFFSET		0x05
+#define LOB_LOCATOR_FLAGS_OFFSET	0x06
+#define LOB_LOCATOR_INIT_OFFSET		0x07
+#define LOB_LOCATOR_TYPE2_OFFSET	0x09
+#define LOB_LOCATOR_SEQUENCE_OFFSET	0x0c
+#define LOB_LOCATOR_ID_OFFSET		0x10
+#define LOB_LOCATOR_CHARSET_OFFSET	0x20
+#define LOB_LOCATOR_MAGIC_OFFSET	0x22
+#define LOB_LOCATOR_GENERATION_OFFSET	0x26
+#define LOB_LOCATOR_TRAILER_OFFSET	0x46
+
+// a bfile locator carries a directory alias and a file name where a clob
+// or a blob carries a charset, so its bookkeeping sits elsewhere
+#define BFILE_LOCATOR_DIRECTORY_OFFSET	0x10
+#define BFILE_LOCATOR_FILENAME_OFFSET	0x19
+#define BFILE_LOCATOR_ID_OFFSET		0x1c
+#define BFILE_LOCATOR_MAGIC_OFFSET	0x20
+#define BFILE_LOCATOR_GENERATION_OFFSET	0x24
+
+// what marks a locator as this module's own, so one left over from a
+// cursor that has since been closed and reused can be told apart
+#define LOB_LOCATOR_MAGIC		"SQLR"
+#define LOB_LOCATOR_MAGIC_SIZE		4
+
+// the constant a real 12.2 server leaves in a locator's tail
+#define LOB_LOCATOR_TRAILER		0xdeadbeef
+
+// the rest of a real 12.2 server's locator header, taken from the capture.
+// the meanings aren't known - a version of 2 for a clob or a blob and 1 for
+// a bfile, a kind byte, an initialized byte and a sequence of 1 is what the
+// bytes look like - and no client has been seen to read them, but a locator
+// is the one thing in a row a client hands straight back to the server, so
+// it goes out as captured rather than as a guess.
+// see "Oracle Wire Protocol - Lob Locator"
+#define LOB_LOCATOR_VERSION		2
+#define BFILE_LOCATOR_VERSION		1
+#define LOB_LOCATOR_KIND		0x0c
+#define BFILE_LOCATOR_KIND		0x08
+#define LOB_LOCATOR_INIT		0x80
+#define LOB_LOCATOR_SEQUENCE		1
+#define BFILE_LOCATOR_TYPE2		0x01
+
+// the chunk size that goes out in front of a locator.  the client reads it
+// back as OCI_ATTR_CHUNK_SIZE and reads the lob in multiples of it
+#define LOB_CHUNK_SIZE			8060
+
+// what a lob operation request asks for.  every one of these was read off a
+// real 12.2 exchange except the write side ones, which are only recognized
+// so they can be refused cleanly.
+// see "Oracle Wire Protocol - Lob Operations"
+#define LOB_OP_GET_LENGTH		0x00001
+#define LOB_OP_READ			0x00002
+#define LOB_OP_WRITE			0x00040
+#define LOB_OP_TRIM			0x00080
+#define LOB_OP_FILE_OPEN		0x00100
+#define LOB_OP_FILE_IS_OPEN		0x00200
+#define LOB_OP_FILE_CLOSE		0x00400
+#define LOB_OP_FILE_EXISTS		0x00800
+#define LOB_OP_FILE_GET_NAME		0x01000
+#define LOB_OP_CREATE_TEMPORARY		0x00110
+#define LOB_OP_FREE_TEMPORARY		0x00111
+#define LOB_OP_IS_OPEN			0x01100
+#define LOB_OP_OPEN			0x08000
+#define LOB_OP_CLOSE			0x10000
+
+// what a lob operation's answer carries between the locator and the
+// summary object: a count prefixed 8 byte value, or nothing at all for a
+// close.  a file exists answers with the same count prefixed value as the
+// rest, carrying 1 or 0 - measured, a bare boolean byte instead gets
+// ORA-03108 from OCI 23.26 and kills the call
+#define LOB_RESULT_NONE			0
+#define LOB_RESULT_UB8			1
+
+// a lob data packet's fixed parts: the 64 byte descriptor block in front of
+// the data, and the more-data flag that says whether another chunk follows.
+// the tns length of one of these packets counts the descriptor alone - the
+// lob bytes ride after the packet's declared end
+#define LOB_DATA_DESCRIPTOR_SIZE	64
+#define LOB_DATA_PADDING_SIZE		50
+#define LOB_DATA_MORE			2
+#define LOB_DATA_LAST			3
+#define LOB_DATA_CONSTANT		1
+
+// the bit a lob data packet carries in the packet header's normally unused
+// reserved byte - the same one a marker packet sets.  a real 12.2 server
+// sets it on every lob data packet it sends
+#define LOB_DATA_PACKET_FLAGS		0x20
+
+// a clob's bytes go out two per character, utf-16 big endian, whatever
+// charset the session negotiated - a real 12.2 server answers a 400
+// character read with 800 bytes
+#define LOB_CLOB_BYTES_PER_CHAR		2
+
 // what a number with no declared scale is described as, which tells the
 // client not to rescale the value.  the controller hands oracle's scale back
 // through an unsigned byte, so -127 arrives from it as 129.
@@ -566,6 +688,15 @@
 // two away before anything is written
 #define ORACLE_TYPE_PLSQL_INDEX_TABLE	998
 #define ORACLE_TYPE_FIXED_CHAR		999
+
+// and three more, for the three lob types when the column really is a lob.
+// a column only reaches these once getLobColumnType() has established that
+// the backend is oracle and that the column is one of its own lob types -
+// a blob is what the type map folds a good many unrelated types onto as a
+// catch-all, from a bytea to a json to a postgresql array
+#define ORACLE_TYPE_LOB_CLOB		995
+#define ORACLE_TYPE_LOB_BLOB		996
+#define ORACLE_TYPE_LOB_BFILE		997
 
 
 static uint16_t	oracletypemap[]={
@@ -1301,6 +1432,56 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t prefetchrows);
 		void	putRowData(sqlrservercursor *cursor,
 							uint32_t colcount);
+		bool	isLobColumnType(uint16_t columntype);
+		bool	hasLobColumn(sqlrservercursor *cursor,
+							uint32_t colcount);
+		void	putLenPreUB8(uint64_t value);
+		uint32_t	buildLobLocator(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t wiretype,
+							byte_t *locator);
+		void	putLobLocator(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t wiretype,
+							bool null);
+		void	pinLobRow(sqlrservercursor *cursor,
+							uint32_t colcount);
+		void	releaseLobPin(sqlrservercursor *cursor);
+		void	clearLobPin(uint16_t curid);
+
+		// lob operations...
+		bool	lobOperations(const byte_t *rp);
+		bool	readLenPreUB8(const byte_t *rp,
+							const byte_t *end,
+							uint64_t *value,
+							const byte_t **rpout);
+		bool	decodeLobLocator(const byte_t *locator,
+							uint32_t locatorsize,
+							sqlrservercursor **cursor,
+							uint32_t *column,
+							uint16_t *wiretype);
+		uint32_t	putUtf16Chars(const char *in,
+							uint64_t insize,
+							uint64_t chars,
+							byte_t *out);
+		bool	discardLobDataPacket();
+		bool	sendLobDataMarker();
+		bool	sendLobDataChunk(const byte_t *data,
+							uint32_t size,
+							bool last);
+		bool	sendLobReadResponse(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t wiretype,
+							const byte_t *locator,
+							uint32_t locatorsize,
+							uint64_t offset,
+							uint64_t amount);
+		bool	sendLobOperationResponse(const byte_t *locator,
+							uint32_t locatorsize,
+							byte_t resulttype,
+							uint64_t result);
+		bool	sendLobOperationError(uint32_t oranum,
+							const char *message);
 		void	putReturnParameters();
 		void	putSummary(uint32_t cursorid,
 							uint32_t oranum,
@@ -1378,6 +1559,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t column,
 						uint16_t columntype);
 		uint16_t	getLongColumnType(
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype);
+		uint16_t	getLobColumnType(
 						sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t columntype);
@@ -1577,6 +1762,22 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// re-fetched
 		bytebuffer	*pendingrow;
 
+		// the row a lob locator was sent for.  the controller's lob
+		// calls only ever address a cursor's current row, so the row a
+		// locator points at has to stay current until the client is
+		// done with it - the connection is held back a row instead of
+		// being advanced past it.  see releaseLobPin()
+		bool		*lobpinned;
+		uint32_t	*lobpincolcount;
+
+		// bumped every time a pin comes off, and carried in every
+		// locator, so one echoed back after its row has gone can be
+		// told from one that's still good
+		uint16_t	*lobpingeneration;
+
+		// whether the row putRowData() just wrote handed out a locator
+		bool		rowhaslob;
+
 		// the sequence number the summary object has to echo back
 		byte_t		callnumber;
 
@@ -1758,12 +1959,18 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	columntypes=new uint16_t *[maxcursorcount];
 	rowssent=new uint32_t[maxcursorcount];
 	pendingrow=new bytebuffer[maxcursorcount];
+	lobpinned=new bool[maxcursorcount];
+	lobpincolcount=new uint32_t[maxcursorcount];
+	lobpingeneration=new uint16_t[maxcursorcount];
 	cursorbinds=new oraclequery3bind *[maxcursorcount];
 	cursorbindcounts=new uint32_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		ptypes[i]=new uint16_t[maxbindcount];
 		columntypescached[i]=false;
 		rowssent[i]=0;
+		lobpinned[i]=false;
+		lobpincolcount[i]=0;
+		lobpingeneration[i]=0;
 		cursorbinds[i]=new oraclequery3bind[maxbindcount];
 		cursorbindcounts[i]=0;
 		if (cont->getMaxColumnCount()) {
@@ -1799,6 +2006,9 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] columntypes;
 	delete[] rowssent;
 	delete[] pendingrow;
+	delete[] lobpinned;
+	delete[] lobpincolcount;
+	delete[] lobpingeneration;
 
 	delete[] query3binds;
 	delete[] query3bindvalues;
@@ -1874,6 +2084,8 @@ void sqlrprotocol_oracle::init() {
 
 	nativeencoding=false;
 	lastttccode=0;
+
+	rowhaslob=false;
 }
 
 void sqlrprotocol_oracle::free() {
@@ -1903,6 +2115,12 @@ void sqlrprotocol_oracle::free() {
 void sqlrprotocol_oracle::reInit() {
 	free();
 	init();
+
+	// the per-cursor arrays outlive a session, so anything a previous
+	// one pinned has to go
+	for (uint16_t i=0; i<maxcursorcount; i++) {
+		clearLobPin(i);
+	}
 }
 
 clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
@@ -2007,10 +2225,13 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=version(rp,true);
 					rp=NULL;
 					break;
+				case TTI_LOB_OPERATIONS:
+					loop=lobOperations(rp);
+					rp=NULL;
+					break;
 				case TTI_K2_TRANSACTIONS:
 				case TTI_OSQL7:
 				case TTI_OKOD:
-				case TTI_LOB_OPERATIONS:
 				case TTI_ODNY:
 				case TTI_TRANSACTION_END:
 				case TTI_TRANSACTION_BEGIN:
@@ -6375,6 +6596,15 @@ void sqlrprotocol_oracle::debugColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_BFILE:
 			debugWrite("ORACLE_TYPE_BFILE");
 			break;
+		case ORACLE_TYPE_LOB_CLOB:
+			debugWrite("ORACLE_TYPE_LOB_CLOB");
+			break;
+		case ORACLE_TYPE_LOB_BLOB:
+			debugWrite("ORACLE_TYPE_LOB_BLOB");
+			break;
+		case ORACLE_TYPE_LOB_BFILE:
+			debugWrite("ORACLE_TYPE_LOB_BFILE");
+			break;
 		case ORACLE_TYPE_TIMESTAMP:
 			debugWrite("ORACLE_TYPE_TIMESTAMP");
 			break;
@@ -6444,6 +6674,17 @@ bool sqlrprotocol_oracle::getTtiFunction(const byte_t *rp,
 				// call's result, not another marker, before it
 				// will send anything else
 				if (!sendMarkerCancelError()) {
+					return false;
+				}
+				continue;
+			}
+
+			// the data a lob write sends behind its request.  it
+			// goes out whether the write is going to be answered
+			// or not, so a refused one leaves it here, in front
+			// of the next tti call.  read it and throw it away
+			if (resppackettype==PACKET_DATA_DESCRIPTOR) {
+				if (!discardLobDataPacket()) {
 					return false;
 				}
 				continue;
@@ -6572,6 +6813,9 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 
 	// reset column type cache flag
 	columntypescached[cont->getId(cursor)]=false;
+
+	// and any row it was pinning for a lob read
+	clearLobPin(cont->getId(cursor));
 
 	// bounds checking
 	if (querysize>maxquerysize) {
@@ -6770,6 +7014,9 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// a fresh execute means a new result set - drop any row
 		// held over from a previous one on this cursor
 		pendingrow[cont->getId(cursor)].clear();
+
+		// and any row it was pinning for a lob read
+		clearLobPin(cont->getId(cursor));
 
 		// execute the query
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -7131,6 +7378,9 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		// over from the previous one
 		pendingrow[cont->getId(cursor)].clear();
 
+		// and any row it was pinning for a lob read
+		clearLobPin(cont->getId(cursor));
+
 		// bounds checking
 		if (querysize>maxquerysize) {
 			// FIXME: implement this
@@ -7172,6 +7422,9 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		// a fresh execute means a new result set - drop any row
 		// held over from a previous one on this cursor
 		pendingrow[cont->getId(cursor)].clear();
+
+		// and any row it was pinning for a lob read
+		clearLobPin(cont->getId(cursor));
 
 		// an array bind sends one row data block per element, and a
 		// re-parse without one means the previous statement's binds
@@ -7953,6 +8206,22 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 			rowstofetch=0;
 		}
 
+		// a lob's contents are read out of the connection's current
+		// row - there's no way to address a row it has moved on from -
+		// so a result set with a lob column in it sends one row per
+		// response, and that row stays current until the pin comes off.
+		//
+		// none at all go out on an execute, the same way none go out
+		// for a long: OCI allocates the lob descriptors its defines
+		// name as the answer to the execute comes in, and a locator
+		// that arrives ahead of them is ORA-24813 - "cannot send or
+		// receive an unsupported LOB" - which kills the call.  the
+		// fetch that follows carries the row instead
+		if (hasLobColumn(cursor,colcount)) {
+			debugWrite("lob column, no rows on the execute");
+			rowstofetch=0;
+		}
+
 		if (rowstofetch) {
 
 			putRowHeader(0x22,colcount,rowstofetch);
@@ -7997,9 +8266,22 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 					break;
 				}
 
+				rowhaslob=false;
+
 				debugStart("query3 response row");
 				putRowData(cursor,colcount);
 				debugEnd();
+
+				// a row that handed out a locator pins the
+				// connection to itself, so the cursor doesn't
+				// advance past it and the row never goes into
+				// pendingrow - which assumes the connection has
+				// already moved on
+				if (rowhaslob) {
+					pinLobRow(cursor,colcount);
+					rowsfetched++;
+					break;
+				}
 
 				// the row is consumed from the result set as
 				// soon as it's fetched - fetchRow()/nextRow()
@@ -8168,7 +8450,9 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 				wiretype!=ORACLE_TYPE_INTERVALYM &&
 				wiretype!=ORACLE_TYPE_INTERVALDS &&
 				wiretype!=ORACLE_TYPE_TIMESTAMP &&
-				wiretype!=ORACLE_TYPE_TIMESTAMPTZ);
+				wiretype!=ORACLE_TYPE_TIMESTAMPTZ &&
+				wiretype!=ORACLE_TYPE_BLOB &&
+				wiretype!=ORACLE_TYPE_BFILE);
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
@@ -8289,6 +8573,15 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_TIMESTAMPTZ:
 			wiretype=ORACLE_TYPE_TIMESTAMPTZ;
 			break;
+		case ORACLE_TYPE_LOB_CLOB:
+			wiretype=ORACLE_TYPE_CLOB;
+			break;
+		case ORACLE_TYPE_LOB_BLOB:
+			wiretype=ORACLE_TYPE_BLOB;
+			break;
+		case ORACLE_TYPE_LOB_BFILE:
+			wiretype=ORACLE_TYPE_BFILE;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
@@ -8333,6 +8626,27 @@ bool sqlrprotocol_oracle::hasLongColumn(sqlrservercursor *cursor,
 		uint16_t	wiretype=getWireColumnType(ct[i]);
 		if (wiretype==ORACLE_TYPE_LONG ||
 			wiretype==ORACLE_TYPE_LONG_RAW) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool sqlrprotocol_oracle::isLobColumnType(uint16_t columntype) {
+	return (columntype==ORACLE_TYPE_LOB_CLOB ||
+		columntype==ORACLE_TYPE_LOB_BLOB ||
+		columntype==ORACLE_TYPE_LOB_BFILE);
+}
+
+bool sqlrprotocol_oracle::hasLobColumn(sqlrservercursor *cursor,
+						uint32_t colcount) {
+
+	uint16_t	*ct=columntypes[cont->getId(cursor)];
+	if (!ct) {
+		return false;
+	}
+	for (uint32_t i=0; i<colcount; i++) {
+		if (isLobColumnType(ct[i])) {
 			return true;
 		}
 	}
@@ -8384,6 +8698,15 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		// the way it does an interval, and oci works the 13 it
 		// reports back out from the type
 		size=ORACLE_TIMESTAMPTZ_WIRE_SIZE;
+	} else if (wiretype==ORACLE_TYPE_CLOB ||
+			wiretype==ORACLE_TYPE_BLOB) {
+		// not the width of the lob, which has no bound - the width of
+		// the buffer the client reads a locator into
+		size=ORACLE_LOB_SIZE;
+	} else if (wiretype==ORACLE_TYPE_BFILE) {
+		// same, and a bfile's locator is described wider still since
+		// it carries a directory alias and a file name
+		size=ORACLE_BFILE_SIZE;
 	} else if (!isCharacterColumn(columntypestring,columntype)) {
 		// everything else goes out as text, and this size is the
 		// buffer the client reads that text into.  the backend's
@@ -8467,11 +8790,21 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 
 		uint16_t	wiretype=getWireColumnType(ct[i]);
 
-		// one zero byte stands for null, lob and unreadable alike.
-		// no modern path lob encoding is documented, so a lob goes
-		// out as this same byte.
+		// a lob column's value is a locator rather than the lob's
+		// bytes - the client reads the bytes themselves back with lob
+		// operation requests of its own, quoting the locator
+		if (wiretype==ORACLE_TYPE_CLOB ||
+			wiretype==ORACLE_TYPE_BLOB ||
+			wiretype==ORACLE_TYPE_BFILE) {
+			debugWrite("lob");
+			putLobLocator(cursor,i,wiretype,(null || !lob));
+			if (!null && lob) {
+				rowhaslob=true;
+			}
+
+		// one zero byte stands for null and unreadable alike.
 		// see "Oracle Wire Protocol - Row Data"
-		if (null || lob || !field) {
+		} else if (null || lob || !field) {
 			debugWrite("null");
 			if (wiretype==ORACLE_TYPE_LONG ||
 				wiretype==ORACLE_TYPE_LONG_RAW) {
@@ -8573,6 +8906,867 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 
 		debugEnd();
 	}
+}
+
+// writes "value" as a count prefixed 8 byte integer, which is what a lob
+// length goes out as.  the base class only writes the 4 byte form
+void sqlrprotocol_oracle::putLenPreUB8(uint64_t value) {
+
+	if (!value) {
+		write(&reqpacket,(byte_t)0);
+		return;
+	}
+
+	byte_t	bytes[8];
+	for (uint16_t i=0; i<8; i++) {
+		bytes[i]=(byte_t)((value>>((7-i)*8))&0xff);
+	}
+
+	uint16_t	first=0;
+	while (!bytes[first]) {
+		first++;
+	}
+
+	write(&reqpacket,(byte_t)(8-first));
+	write(&reqpacket,(const byte_t *)(bytes+first),(size_t)(8-first));
+}
+
+static void putLocatorUB2(byte_t *bytes, uint16_t value) {
+	bytes[0]=(byte_t)(value>>8);
+	bytes[1]=(byte_t)(value&0xff);
+}
+
+// builds the locator a lob column's value is made of, and returns how many
+// bytes of "locator" it filled in.  what identifies the lob is the cursor
+// and the column it came from, in the four bytes a real server fills with a
+// per-lob id - two locators in the same row have to differ there - and the
+// cursor's pin generation, so a locator echoed back after its row has gone
+// can be told from one that's still good.  which row is never encoded: only
+// one row per cursor is ever pinned, so the row is whichever one the pin is
+// on
+uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						byte_t *locator) {
+
+	uint16_t	curid=cont->getId(cursor);
+
+	if (wiretype==ORACLE_TYPE_BFILE) {
+
+		bytestring::zero(locator,BFILE_LOCATOR_SIZE);
+
+		// the byte count of everything after the count itself
+		putLocatorUB2(locator+LOB_LOCATOR_LENGTH_OFFSET,
+				(uint16_t)(BFILE_LOCATOR_SIZE-2));
+
+		putLocatorUB2(locator+LOB_LOCATOR_VERSION_OFFSET,
+						BFILE_LOCATOR_VERSION);
+		locator[LOB_LOCATOR_TYPE_OFFSET]=LOB_LOCATOR_BFILE;
+		locator[LOB_LOCATOR_KIND_OFFSET]=BFILE_LOCATOR_KIND;
+		locator[LOB_LOCATOR_TYPE2_OFFSET]=BFILE_LOCATOR_TYPE2;
+
+		// the directory alias and the file name, both empty - no
+		// server side call hands either of them over
+		putLocatorUB2(locator+BFILE_LOCATOR_DIRECTORY_OFFSET,0);
+		putLocatorUB2(locator+BFILE_LOCATOR_FILENAME_OFFSET,0);
+
+		putLocatorUB2(locator+BFILE_LOCATOR_ID_OFFSET,curid);
+		putLocatorUB2(locator+BFILE_LOCATOR_ID_OFFSET+2,
+						(uint16_t)column);
+		bytestring::copy(locator+BFILE_LOCATOR_MAGIC_OFFSET,
+					LOB_LOCATOR_MAGIC,
+					LOB_LOCATOR_MAGIC_SIZE);
+		putLocatorUB2(locator+BFILE_LOCATOR_GENERATION_OFFSET,
+						lobpingeneration[curid]);
+
+		return BFILE_LOCATOR_SIZE;
+	}
+
+	bytestring::zero(locator,LOB_LOCATOR_SIZE);
+
+	byte_t	loctype=(wiretype==ORACLE_TYPE_CLOB)?
+				LOB_LOCATOR_CLOB:LOB_LOCATOR_BLOB;
+
+	putLocatorUB2(locator+LOB_LOCATOR_LENGTH_OFFSET,
+			(uint16_t)(LOB_LOCATOR_SIZE-2));
+
+	putLocatorUB2(locator+LOB_LOCATOR_VERSION_OFFSET,LOB_LOCATOR_VERSION);
+	locator[LOB_LOCATOR_TYPE_OFFSET]=loctype;
+	locator[LOB_LOCATOR_KIND_OFFSET]=LOB_LOCATOR_KIND;
+	locator[LOB_LOCATOR_INIT_OFFSET]=LOB_LOCATOR_INIT;
+	locator[LOB_LOCATOR_TYPE2_OFFSET]=loctype;
+	putLocatorUB2(locator+LOB_LOCATOR_SEQUENCE_OFFSET,LOB_LOCATOR_SEQUENCE);
+
+	// only a clob has a character set
+	if (wiretype==ORACLE_TYPE_CLOB) {
+		locator[LOB_LOCATOR_FLAGS_OFFSET]=LOB_LOCATOR_CHARSET_PRESENT;
+		putLocatorUB2(locator+LOB_LOCATOR_CHARSET_OFFSET,
+						(uint16_t)CHARSET_AL32UTF8);
+	}
+
+	putLocatorUB2(locator+LOB_LOCATOR_ID_OFFSET,curid);
+	putLocatorUB2(locator+LOB_LOCATOR_ID_OFFSET+2,(uint16_t)column);
+	bytestring::copy(locator+LOB_LOCATOR_MAGIC_OFFSET,
+				LOB_LOCATOR_MAGIC,
+				LOB_LOCATOR_MAGIC_SIZE);
+	putLocatorUB2(locator+LOB_LOCATOR_GENERATION_OFFSET,
+						lobpingeneration[curid]);
+
+	// the tail a real server leaves behind
+	putLocatorUB2(locator+LOB_LOCATOR_TRAILER_OFFSET,
+			(uint16_t)(LOB_LOCATOR_TRAILER>>16));
+	putLocatorUB2(locator+LOB_LOCATOR_TRAILER_OFFSET+2,
+			(uint16_t)(LOB_LOCATOR_TRAILER&0xffff));
+
+	return LOB_LOCATOR_SIZE;
+}
+
+// writes what a lob column carries in a row: the locator's length, the
+// lob's length, the chunk size, the length again as a raw byte, and the
+// locator itself.  a null lob is the length alone, as zero
+void sqlrprotocol_oracle::putLobLocator(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						bool null) {
+
+	if (null) {
+		debugWrite("null lob");
+		writeLenPreInt(&reqpacket,(uint32_t)0);
+		return;
+	}
+
+	// characters for a clob and bytes for a blob, which is what
+	// getLobFieldLength() answers either way.  a bfile's length isn't
+	// available without opening the file, and a real server sends 0 for
+	// one
+	uint64_t	loblength=0;
+	if (wiretype!=ORACLE_TYPE_BFILE &&
+		!cont->getLobFieldLength(cursor,column,&loblength)) {
+		loblength=0;
+	}
+
+	byte_t		locator[LOB_LOCATOR_SIZE];
+	uint32_t	locatorsize=
+			buildLobLocator(cursor,column,wiretype,locator);
+
+	writeLenPreInt(&reqpacket,locatorsize);
+	putLenPreUB8(loblength);
+	if (wiretype!=ORACLE_TYPE_BFILE) {
+		writeLenPreInt(&reqpacket,(uint32_t)LOB_CHUNK_SIZE);
+	}
+	write(&reqpacket,(byte_t)locatorsize);
+	write(&reqpacket,(const byte_t *)locator,(size_t)locatorsize);
+
+	debugWrite("lob length: %lld",(long long)loblength);
+	debugWrite("locator size: %d",locatorsize);
+}
+
+// holds the connection on the row a locator was just sent for.  the
+// controller's lob calls only ever address a cursor's current row, so the
+// row a locator points at has to stay current until the client is done
+// reading it
+void sqlrprotocol_oracle::pinLobRow(sqlrservercursor *cursor,
+						uint32_t colcount) {
+	uint16_t	curid=cont->getId(cursor);
+	lobpinned[curid]=true;
+	lobpincolcount[curid]=colcount;
+	debugWrite("lob row pinned on cursor %d",curid);
+}
+
+// takes the pin off and catches the connection up.  a client closing a
+// locator isn't visible on the wire, so this runs at the cursor's next
+// fetch instead - by then the client has moved on from the row whatever it
+// did with the locator
+void sqlrprotocol_oracle::releaseLobPin(sqlrservercursor *cursor) {
+
+	uint16_t	curid=cont->getId(cursor);
+	if (!lobpinned[curid]) {
+		return;
+	}
+
+	debugWrite("lob row released on cursor %d",curid);
+
+	// close whatever the row left open, then step over it
+	uint16_t	*ct=columntypes[curid];
+	if (ct) {
+		for (uint32_t i=0; i<lobpincolcount[curid]; i++) {
+			if (isLobColumnType(ct[i])) {
+				cont->closeLobField(cursor,i);
+			}
+		}
+	}
+	cont->nextRow(cursor);
+
+	clearLobPin(curid);
+}
+
+// forgets a pin without stepping over the row, for the places the result
+// set itself is going away
+void sqlrprotocol_oracle::clearLobPin(uint16_t curid) {
+	lobpinned[curid]=false;
+	lobpincolcount[curid]=0;
+	lobpingeneration[curid]++;
+}
+
+static uint16_t getLocatorUB2(const byte_t *bytes) {
+	return (uint16_t)((((uint16_t)bytes[0])<<8)|bytes[1]);
+}
+
+// reads a count prefixed 8 byte integer, the counterpart of putLenPreUB8().
+// the base class only reads the 4 byte form, and a lob offset or amount
+// doesn't fit in one
+bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
+						const byte_t *end,
+						uint64_t *value,
+						const byte_t **rpout) {
+
+	*value=0;
+
+	if (end-rp<1) {
+		*rpout=rp;
+		return false;
+	}
+
+	const byte_t	*start=rp;
+	byte_t		count;
+	read(rp,&count,&rp);
+
+	if (count>sizeof(uint64_t) || (size_t)(end-rp)<(size_t)count) {
+		*rpout=start;
+		return false;
+	}
+
+	for (byte_t i=0; i<count; i++) {
+		byte_t	b;
+		read(rp,&b,&rp);
+		*value=((*value)<<8)|b;
+	}
+	*rpout=rp;
+	return true;
+}
+
+// works out which cursor and column minted the locator a lob operation
+// request quotes.  a locator only means anything while the row it came from
+// is still pinned, and only if the pin is the one that minted it - the
+// generation counter goes up every time a pin comes off, so a locator from a
+// cursor that has since been fetched past, re-executed, or closed and reused
+// doesn't decode, rather than being read against whatever row is there now
+bool sqlrprotocol_oracle::decodeLobLocator(const byte_t *locator,
+						uint32_t locatorsize,
+						sqlrservercursor **cursor,
+						uint32_t *column,
+						uint16_t *wiretype) {
+
+	*cursor=NULL;
+	*column=0;
+	*wiretype=0;
+
+	if (!locator) {
+		debugWrite("no locator");
+		return false;
+	}
+
+	uint16_t	idoffset;
+	uint16_t	magicoffset;
+	uint16_t	generationoffset;
+	if (locatorsize==LOB_LOCATOR_SIZE) {
+		idoffset=LOB_LOCATOR_ID_OFFSET;
+		magicoffset=LOB_LOCATOR_MAGIC_OFFSET;
+		generationoffset=LOB_LOCATOR_GENERATION_OFFSET;
+	} else if (locatorsize==BFILE_LOCATOR_SIZE) {
+		idoffset=BFILE_LOCATOR_ID_OFFSET;
+		magicoffset=BFILE_LOCATOR_MAGIC_OFFSET;
+		generationoffset=BFILE_LOCATOR_GENERATION_OFFSET;
+	} else {
+		debugWrite("locator size %d isn't one this module mints",
+								locatorsize);
+		return false;
+	}
+
+	// a locator without the magic is one this module never handed out
+	if (bytestring::compare(locator+magicoffset,
+					LOB_LOCATOR_MAGIC,
+					LOB_LOCATOR_MAGIC_SIZE)) {
+		debugWrite("locator isn't this module's");
+		return false;
+	}
+
+	uint16_t	curid=getLocatorUB2(locator+idoffset);
+	uint32_t	col=getLocatorUB2(locator+idoffset+2);
+	uint16_t	generation=getLocatorUB2(locator+generationoffset);
+
+	debugWrite("locator cursor: %d",curid);
+	debugWrite("locator column: %d",col);
+	debugWrite("locator generation: %d",generation);
+
+	if (curid>=maxcursorcount) {
+		debugWrite("locator cursor out of range");
+		return false;
+	}
+	if (!lobpinned[curid]) {
+		debugWrite("cursor %d isn't holding a lob row",curid);
+		return false;
+	}
+	if (generation!=lobpingeneration[curid]) {
+		debugWrite("locator is from generation %d, cursor %d is on %d",
+					generation,curid,lobpingeneration[curid]);
+		return false;
+	}
+	if (col>=lobpincolcount[curid]) {
+		debugWrite("locator column out of range");
+		return false;
+	}
+
+	uint16_t	*ct=columntypes[curid];
+	if (!ct || !isLobColumnType(ct[col])) {
+		debugWrite("locator column isn't a lob");
+		return false;
+	}
+
+	sqlrservercursor	*c=cont->getCursor(curid);
+	if (!c) {
+		debugWrite("cursor id %d not found",curid);
+		return false;
+	}
+
+	*cursor=c;
+	*column=col;
+	*wiretype=getWireColumnType(ct[col]);
+	return true;
+}
+
+// converts "chars" characters of utf-8 "in" to utf-16 big endian in "out",
+// which has room for two bytes per character, and returns how many bytes it
+// wrote.  a character above the basic multilingual plane, and a byte that
+// doesn't start a valid sequence, go out as the lead byte's own value
+// widened - two bytes per character has to hold either way, since the count
+// is what the client works the character count back out from
+uint32_t sqlrprotocol_oracle::putUtf16Chars(const char *in,
+						uint64_t insize,
+						uint64_t chars,
+						byte_t *out) {
+
+	const byte_t	*i=(const byte_t *)in;
+	const byte_t	*end=i+insize;
+	uint32_t	outsize=0;
+
+	for (uint64_t c=0; c<chars; c++) {
+
+		// a character count the buffer doesn't back up pads out
+		// with nulls rather than running off the end
+		if (i>=end) {
+			out[outsize++]=0;
+			out[outsize++]=0;
+			continue;
+		}
+
+		const byte_t	*start=i;
+		uint32_t	ch=*i;
+		uint16_t	extra=0;
+		if ((ch&0xe0)==0xc0) {
+			ch=ch&0x1f;
+			extra=1;
+		} else if ((ch&0xf0)==0xe0) {
+			ch=ch&0x0f;
+			extra=2;
+		} else if ((ch&0xf8)==0xf0) {
+			ch=ch&0x07;
+			extra=3;
+		}
+		i++;
+
+		bool	valid=true;
+		for (uint16_t e=0; e<extra; e++) {
+			if (i>=end || ((*i)&0xc0)!=0x80) {
+				valid=false;
+				break;
+			}
+			ch=(ch<<6)|((*i)&0x3f);
+			i++;
+		}
+
+		if (!valid || ch>0xffff) {
+			i=start+1;
+			ch=*start;
+		}
+
+		out[outsize++]=(byte_t)(ch>>8);
+		out[outsize++]=(byte_t)(ch&0xff);
+	}
+
+	return outsize;
+}
+
+// reads and throws away one of the lob data packets a client sends behind
+// a lob write request.  the layout is the one sendLobDataChunk() writes -
+// a 64 byte descriptor whose second field is the byte count, and the bytes
+// themselves riding after the packet's declared end
+bool sqlrprotocol_oracle::discardLobDataPacket() {
+
+	if (resppacketsize<LOB_DATA_DESCRIPTOR_SIZE) {
+		debugWrite("truncated lob data descriptor: %d",resppacketsize);
+		return false;
+	}
+
+	const byte_t	*rp=resppacket;
+	uint32_t	flags=0;
+	uint32_t	size=0;
+	readBE(rp,&flags,&rp);
+	readBE(rp,&size,&rp);
+
+	debugStart("discarding lob data");
+	debugWrite("bytes: %d",size);
+	debugWrite("last: %s",(flags==LOB_DATA_LAST)?"true":"false");
+	debugEnd();
+
+	byte_t	discard[1024];
+	while (size) {
+		uint32_t	chunk=(size<(uint32_t)sizeof(discard))?
+					size:(uint32_t)sizeof(discard);
+		if (clientsock->read(discard,(size_t)chunk)!=(ssize_t)chunk) {
+			debugWrite("read lob data failed");
+			debugSystemError();
+			return false;
+		}
+		size=size-chunk;
+	}
+
+	return true;
+}
+
+// the packet that says lob data follows - the ttc code and nothing else
+bool sqlrprotocol_oracle::sendLobDataMarker() {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_LOB_AND_BFILE_DATA;
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+
+	debugStart("lob data marker");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugEnd();
+
+	return sendPacket();
+}
+
+// one chunk of a lob read's answer.  the packet's own length counts the
+// 64 byte descriptor alone - the lob bytes ride after the packet's declared
+// end, which is what a real 12.2 server does and what the client reads
+bool sqlrprotocol_oracle::sendLobDataChunk(const byte_t *data,
+						uint32_t size,
+						bool last) {
+
+	resetSendPacketBuffer(PACKET_DATA_DESCRIPTOR);
+	reqpacketflags=LOB_DATA_PACKET_FLAGS;
+
+	// whether another chunk follows, this chunk's byte count, a constant,
+	// the byte count again as a ub2, then padding out to 64 bytes
+	writeBE(&reqpacket,(uint32_t)((last)?LOB_DATA_LAST:LOB_DATA_MORE));
+	writeBE(&reqpacket,size);
+	writeBE(&reqpacket,(uint32_t)LOB_DATA_CONSTANT);
+	writeBE(&reqpacket,(uint16_t)size);
+	for (uint16_t i=0; i<LOB_DATA_PADDING_SIZE; i++) {
+		write(&reqpacket,(byte_t)0);
+	}
+
+	debugStart("lob data chunk");
+	debugWrite("bytes: %d",size);
+	debugWrite("last: %s",(last)?"true":"false");
+	debugEnd();
+
+	if (!sendPacket()) {
+		return false;
+	}
+
+	if (size && clientsock->write(data,(size_t)size)!=(ssize_t)size) {
+		debugWrite("write lob data failed");
+		debugSystemError();
+		return false;
+	}
+
+	clientsock->flushWriteBuffer(-1,-1);
+
+	return true;
+}
+
+// a read of the pinned row's lob column, sent as the marker, then a chunk
+// per packet, then the ordinary answer carrying how much came back
+bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t wiretype,
+						const byte_t *locator,
+						uint32_t locatorsize,
+						uint64_t offset,
+						uint64_t amount) {
+
+	// a clob's characters go out two bytes each and a blob's or a
+	// bfile's one, so a chunk of the negotiated size carries half as
+	// many characters of a clob as it does of a blob
+	bool		clob=(wiretype==ORACLE_TYPE_CLOB);
+	uint64_t	charsperchunk=(clob)?
+				LOB_CHUNK_SIZE/LOB_CLOB_BYTES_PER_CHAR:
+				LOB_CHUNK_SIZE;
+
+	// the client counts from 1 where the controller counts from 0
+	uint64_t	position=(offset)?offset-1:0;
+	uint64_t	remaining=amount;
+	uint64_t	charsread=0;
+
+	debugStart("lob read");
+	debugWrite("column: %d",column);
+	debugColumnType(wiretype);
+	debugWrite("offset: %lld",(long long)offset);
+	debugWrite("amount: %lld",(long long)amount);
+	debugEnd();
+
+	// the chunk held back, so that the one before it can go out with the
+	// right "more follows" flag - which isn't known until the read after
+	// it comes back empty
+	byte_t		chunk[LOB_CHUNK_SIZE];
+	uint32_t	chunksize=0;
+	bool		held=false;
+	bool		markersent=false;
+
+	for (;;) {
+
+		// read the next chunk's worth
+		uint64_t	charstoread=charsperchunk;
+		if (remaining<charstoread) {
+			charstoread=remaining;
+		}
+		uint64_t	got=0;
+		if (charstoread &&
+			!cont->getLobFieldSegment(cursor,column,
+					lobbuffer,sizeof(lobbuffer),
+					position,charstoread,&got)) {
+			got=0;
+		}
+
+		// send the chunk held back, now that whether another follows
+		// is known
+		if (held) {
+			if (!markersent) {
+				if (!sendLobDataMarker()) {
+					return false;
+				}
+				markersent=true;
+			}
+			if (!sendLobDataChunk(chunk,chunksize,!got)) {
+				return false;
+			}
+			held=false;
+		}
+
+		if (!got) {
+			break;
+		}
+
+		// hold this one back
+		if (clob) {
+			chunksize=putUtf16Chars(lobbuffer,
+						sizeof(lobbuffer),got,chunk);
+		} else {
+			chunksize=(uint32_t)got;
+			bytestring::copy(chunk,lobbuffer,(size_t)chunksize);
+		}
+		held=true;
+
+		charsread=charsread+got;
+		position=position+got;
+		remaining=remaining-got;
+	}
+
+	debugWrite("lob read %lld",(long long)charsread);
+
+	return sendLobOperationResponse(locator,locatorsize,
+					LOB_RESULT_UB8,charsread);
+}
+
+// what every lob operation that worked gets back: the locator it quoted,
+// the operation's result, and the same summary object the rest of the
+// modern path ends a call with
+bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
+						uint32_t locatorsize,
+						byte_t resulttype,
+						uint64_t result) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_OK;
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+
+	// the locator goes back exactly as it came in, and with no length in
+	// front of it - it carries its own
+	write(&reqpacket,locator,(size_t)locatorsize);
+
+	if (resulttype==LOB_RESULT_UB8) {
+		putLenPreUB8(result);
+	}
+
+	debugStart("lob operation response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("locator size: %d",locatorsize);
+	if (resulttype!=LOB_RESULT_NONE) {
+		debugWrite("result: %lld",(long long)result);
+	}
+	debugEnd();
+
+	if (query3session) {
+		putSummary(0,0,0,NULL);
+	} else {
+		putError("",0,0);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
+}
+
+// what a lob operation that can't be answered gets back.  unlike
+// sendUnimplementedFunctionError(), the request has already been read in
+// full by the time this runs, so the session carries on in step
+bool sqlrprotocol_oracle::sendLobOperationError(uint32_t oranum,
+						const char *message) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("lob operation error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("error: %d",oranum);
+	debugWrite("message: %s",message);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(0,oranum,0,message);
+	} else {
+		putError(message,oranum);
+		putGenericFooter();
+	}
+
+	return sendPacket(true);
+}
+
+// the call a client makes to work with a lob it was handed a locator for.
+// the read side operations are answered for real; the write side ones are
+// parsed in full and then refused, so the stream stays in step either way -
+// falling through to sendUnimplementedFunctionError() wouldn't read the
+// request body at all, and the session would desync on the next call
+// see "Oracle Wire Protocol - Lob Operations"
+bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		sequence=0;
+	byte_t		sourcepresent=0;
+	uint32_t	sourcesize=0;
+	byte_t		destpresent=0;
+	uint32_t	destsize=0;
+	uint32_t	shortamount=0;
+	byte_t		opflags[4];
+	uint32_t	operation=0;
+	byte_t		scnpresent=0;
+	uint32_t	scn=0;
+	uint64_t	sourceoffset=0;
+	uint32_t	amountkind=0;
+	byte_t		amountpresent=0;
+	uint64_t	amount=0;
+
+	// the request's fixed part: the sequence number, a length for each
+	// locator that follows, four flag bytes - the last of which is set
+	// for a file exists - and then the operation itself
+	if (end-rp<1) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+	if (end-rp<1) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	read(rp,&sourcepresent,&rp);
+	if (!readLenPreInt(rp,end,&sourcesize,&rp)) {
+		debugWrite("truncated source locator size");
+		return false;
+	}
+	if (end-rp<1) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	read(rp,&destpresent,&rp);
+	if (!readLenPreInt(rp,end,&destsize,&rp) ||
+		!readLenPreInt(rp,end,&shortamount,&rp)) {
+		debugWrite("truncated destination locator size");
+		return false;
+	}
+	if (end-rp<(ssize_t)sizeof(opflags)) {
+		debugWrite("truncated lob operation flags");
+		return false;
+	}
+	for (uint16_t i=0; i<sizeof(opflags); i++) {
+		read(rp,&(opflags[i]),&rp);
+	}
+	if (!readLenPreInt(rp,end,&operation,&rp)) {
+		debugWrite("truncated lob operation code");
+		return false;
+	}
+
+	// the scn, the offset to work from, what the amount counts, and
+	// whether an amount follows the locators at all
+	if (end-rp<1) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	read(rp,&scnpresent,&rp);
+	if (!readLenPreInt(rp,end,&scn,&rp) ||
+		!readLenPreUB8(rp,end,&sourceoffset,&rp) ||
+		!readLenPreInt(rp,end,&amountkind,&rp)) {
+		debugWrite("truncated lob operation offset");
+		return false;
+	}
+	if (end-rp<1) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	read(rp,&amountpresent,&rp);
+
+	// three zero ub2s that a real client always sends and a real server
+	// appears to ignore
+	if (end-rp<6) {
+		debugWrite("truncated lob operation request");
+		return false;
+	}
+	rp=rp+6;
+
+	// the locators themselves, echoed back exactly as this module minted
+	// them
+	const byte_t	*sourcelocator=NULL;
+	if (sourcepresent && sourcesize) {
+		if ((uint32_t)(end-rp)<sourcesize) {
+			debugWrite("truncated source locator");
+			return false;
+		}
+		sourcelocator=rp;
+		rp=rp+sourcesize;
+	}
+	if (destpresent && destsize) {
+		if ((uint32_t)(end-rp)<destsize) {
+			debugWrite("truncated destination locator");
+			return false;
+		}
+		rp=rp+destsize;
+	}
+
+	if (amountpresent && !readLenPreUB8(rp,end,&amount,&rp)) {
+		debugWrite("truncated lob operation amount");
+		return false;
+	}
+
+	// the summary object has to echo this back
+	callnumber=sequence;
+
+	if (getDebug()) {
+		debugStart("lob operation request");
+		debugWrite("sequence: %d",sequence);
+		debugWrite("operation: 0x%05x",operation);
+		debugWrite("source locator size: %d",
+					(sourcelocator)?sourcesize:0);
+		debugWrite("destination locator size: %d",
+					(destpresent)?destsize:0);
+		debugWrite("short amount: %d",shortamount);
+		debugWrite("flags: 0x%02x 0x%02x 0x%02x 0x%02x",
+					opflags[0],opflags[1],
+					opflags[2],opflags[3]);
+		debugWrite("scn present: %d",scnpresent);
+		debugWrite("scn: %d",scn);
+		debugWrite("source offset: %lld",(long long)sourceoffset);
+		debugWrite("amount kind: %d",amountkind);
+		debugWrite("amount: %lld",
+					(long long)((amountpresent)?amount:0));
+		debugEnd();
+	}
+
+	// only the read side is implemented.  a write, a temporary lob, a
+	// trim or an erase gets a real oracle error rather than a wrong
+	// answer, and so does a file's name, which no server side call hands
+	// over
+	if (operation!=LOB_OP_GET_LENGTH &&
+		operation!=LOB_OP_READ &&
+		operation!=LOB_OP_FILE_EXISTS &&
+		operation!=LOB_OP_OPEN &&
+		operation!=LOB_OP_FILE_OPEN &&
+		operation!=LOB_OP_CLOSE &&
+		operation!=LOB_OP_FILE_CLOSE) {
+		debugWrite("lob operation 0x%05x not implemented",operation);
+		return sendLobOperationError(ORA_UNIMPLEMENTED_FEATURE,
+					ORA_UNIMPLEMENTED_FEATURE_MESSAGE);
+	}
+
+	// the locator says which cursor and column to work on, and whether
+	// the row it came from is still there
+	sqlrservercursor	*cursor=NULL;
+	uint32_t		column=0;
+	uint16_t		wiretype=0;
+	if (!decodeLobLocator(sourcelocator,sourcesize,
+					&cursor,&column,&wiretype)) {
+		return sendLobOperationError(ORA_INVALID_LOB_LOCATOR,
+					ORA_INVALID_LOB_LOCATOR_MESSAGE);
+	}
+
+	// the length, in characters for a clob and bytes for a blob, which
+	// is what getLobFieldLength() answers either way
+	if (operation==LOB_OP_GET_LENGTH) {
+		uint64_t	loblength=0;
+		if (!cont->getLobFieldLength(cursor,column,&loblength)) {
+			loblength=0;
+		}
+		return sendLobOperationResponse(sourcelocator,sourcesize,
+						LOB_RESULT_UB8,loblength);
+	}
+
+	if (operation==LOB_OP_READ) {
+		return sendLobReadResponse(cursor,column,wiretype,
+						sourcelocator,sourcesize,
+						sourceoffset,
+						(amountpresent)?amount:0);
+	}
+
+	// no server side call opens a bfile and asks whether the file is
+	// there, so the length stands in for it: a bfile whose file isn't
+	// there has none.  getLobFieldLength() itself answers a bfile
+	// column either way, so its success alone says nothing
+	if (operation==LOB_OP_FILE_EXISTS) {
+		uint64_t	loblength=0;
+		uint64_t	exists=(cont->getLobFieldLength(cursor,column,
+						&loblength) && loblength)?1:0;
+		return sendLobOperationResponse(sourcelocator,sourcesize,
+						LOB_RESULT_UB8,exists);
+	}
+
+	// opening a lob is a client side state change - there's nothing to
+	// do here but agree to it, and hand back the mode it asked for
+	if (operation==LOB_OP_OPEN || operation==LOB_OP_FILE_OPEN) {
+		return sendLobOperationResponse(sourcelocator,sourcesize,
+					LOB_RESULT_UB8,
+					(amountpresent)?amount:1);
+	}
+
+	// an explicit close of one locator.  the pin stays on - the row can
+	// have handed out more than one locator, and the others are still
+	// good - and comes off at the cursor's next fetch, the way it would
+	// have without this call.  see releaseLobPin()
+	cont->closeLobField(cursor,column);
+	return sendLobOperationResponse(sourcelocator,sourcesize,
+						LOB_RESULT_NONE,0);
 }
 
 void sqlrprotocol_oracle::putReturnParameters() {
@@ -9638,6 +10832,9 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// over from a previous one on this cursor
 	pendingrow[cont->getId(cursor)].clear();
 
+	// and any row it was pinning for a lob read
+	clearLobPin(cont->getId(cursor));
+
 	// execute the query
 	if (!cont->executeQuery(cursor,true,true,true,true)) {
 		debugWrite("execute query failed");
@@ -9705,6 +10902,9 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 	// count and drop any row held over from the previous one
 	rowssent[cont->getId(cursor)]=0;
 	pendingrow[cont->getId(cursor)].clear();
+
+	// and any row it was pinning for a lob read
+	clearLobPin(cont->getId(cursor));
 
 	// one execution per row data block, as in query3()
 	for (uint32_t block=0; block<query3blocks || !block; block++) {
@@ -9821,6 +11021,10 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	// whatever row the cursor was holding for a lob read, the client has
+	// moved on from it - it's asking for the next one
+	releaseLobPin(cursor);
+
 	return sendFetch3Response(cursor,cursorid,rowstofetch);
 }
 
@@ -9844,6 +11048,15 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 	if (colcount && rowstofetch) {
 
 		endofrows=false;
+
+		// a lob's contents are read out of the connection's current
+		// row - there's no way to address a row it has moved on from -
+		// so a result set with a lob column in it sends one row per
+		// response, and that row stays current until the pin comes off
+		if (rowstofetch>1 && hasLobColumn(cursor,colcount)) {
+			debugWrite("lob column, one row at a time");
+			rowstofetch=1;
+		}
 
 		// the only bound on how many rows to send back in this
 		// packet is the negotiated packet size, less enough room
@@ -9898,9 +11111,21 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 				putRowHeader(0x02,colcount,rowstofetch);
 			}
 
+			rowhaslob=false;
+
 			debugStart("fetch response row");
 			putRowData(cursor,colcount);
 			debugEnd();
+
+			// a row that handed out a locator pins the connection
+			// to itself, so the cursor doesn't advance past it and
+			// the row never goes into pendingrow - which assumes
+			// the connection has already moved on
+			if (rowhaslob) {
+				pinLobRow(cursor,colcount);
+				rowsfetched++;
+				break;
+			}
 
 			// the row is consumed from the result set as soon
 			// as it's fetched - fetchRow()/nextRow() can't
@@ -10321,6 +11546,7 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 					cont->getColumnScale(cursor,i));
 		ct[i]=getUnknownColumnType(cursor,i,ct[i]);
 		ct[i]=getLongColumnType(cursor,i,ct[i]);
+		ct[i]=getLobColumnType(cursor,i,ct[i]);
 		debugWrite("%s: %d",cont->getColumnTypeName(cursor,i),ct[i]);
 	}
 
@@ -10615,6 +11841,39 @@ uint16_t sqlrprotocol_oracle::getLongColumnType(sqlrservercursor *cursor,
 		return columntype;
 	}
 	return ORACLE_TYPE_LONG;
+}
+
+uint16_t sqlrprotocol_oracle::getLobColumnType(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype) {
+
+	// a locator is only any use if there's a real lob behind it - the
+	// module reads one back through the controller's lob calls, and only
+	// a backend that hands the field over as a lob answers those.  a blob
+	// is also what the type map folds a good many unrelated types onto as
+	// a catch-all - a bytea, a json, a postgresql array - so it's the
+	// backend's own identity that decides here, the way it does in
+	// getLongColumnType()
+	if (columntype!=ORACLE_TYPE_CLOB &&
+		columntype!=ORACLE_TYPE_BLOB &&
+		columntype!=ORACLE_TYPE_BFILE) {
+		return columntype;
+	}
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return columntype;
+	}
+
+	const char	*name=cont->getColumnTypeName(cursor,column);
+	if (!charstring::compareIgnoringCase(name,"CLOB")) {
+		return ORACLE_TYPE_LOB_CLOB;
+	}
+	if (!charstring::compareIgnoringCase(name,"BLOB")) {
+		return ORACLE_TYPE_LOB_BLOB;
+	}
+	if (!charstring::compareIgnoringCase(name,"BFILE")) {
+		return ORACLE_TYPE_LOB_BFILE;
+	}
+	return columntype;
 }
 
 uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
@@ -11069,6 +12328,7 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	cont->abort(cursor);
 	cont->release(cursor);
 	pendingrow[closingid].clear();
+	clearLobPin(closingid);
 	if (lastcursorid==closingid) {
 		lastcursorid=65535;
 	}
@@ -11452,6 +12712,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		cont->abort(cursor);
 		cont->release(cursor);
 		pendingrow[closingid].clear();
+		clearLobPin(closingid);
 		if (lastcursorid==closingid) {
 			lastcursorid=65535;
 		}

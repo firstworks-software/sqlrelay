@@ -1823,6 +1823,22 @@ int main(int argc, char **argv) {
 		OCIHandleAlloc(env,(void **)&lobstmt,OCI_HTYPE_STMT,0,NULL),
 		OCI_SUCCESS);
 
+	// the read side of a lob operation is answered for real and the write
+	// side is refused with ORA-03001, so everything the reads below check
+	// is seeded through plain sql rather than through OCILobWrite - #9589
+	const ub4	biglength=100000;
+	char		*bigvalue=new char[biglength+1];
+	for (ub4 i=0; i<biglength; i++) {
+		bigvalue[i]=(char)('a'+(i%25));
+	}
+	bigvalue[biglength]='\0';
+	ub1	blobvalue[512];
+	char	blobhex[sizeof(blobvalue)*2+1];
+	for (int i=0; i<(int)sizeof(blobvalue); i++) {
+		blobvalue[i]=(ub1)(i%256);
+		charstring::printf(blobhex+i*2,3,"%02X",(int)blobvalue[i]);
+	}
+
 	stdoutput.printf("create table\n");
 	execImmediate("drop table protocoltestlob");
 	assertEquals(
@@ -1834,12 +1850,43 @@ int main(int argc, char **argv) {
 	// DMP_DIR is the one directory object testuser can see on the native
 	// instance.  Creating another needs CREATE ANY DIRECTORY, which it
 	// does not have.
+	// the blob goes in as a raw literal - 512 bytes is well inside what
+	// one hextoraw() holds
+	char	lobinsert[sizeof(blobhex)+256];
+	charstring::printf(lobinsert,sizeof(lobinsert),
+			"insert into protocoltestlob values "
+			"(empty_clob(),hextoraw('%s'),"
+			"bfilename('DMP_DIR','protocoltest.txt'))",
+			blobhex);
+	assertEquals(execImmediate(lobinsert),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("seed the clob\n");
+	// 100000 characters is past what one sql literal holds and well past
+	// what one network round trip carries, so the reads below get a lob
+	// that has to come back in pieces.  the same 25 characters over and
+	// over, which is what bigvalue holds
 	assertEquals(
-		execImmediate("insert into protocoltestlob values "
-				"(empty_clob(),empty_blob(),"
-				"bfilename('DMP_DIR','protocoltest.txt'))"),
+		execImmediate("declare "
+				"c clob; "
+			"begin "
+				"dbms_lob.createtemporary(c,true); "
+				"for i in 1..4000 loop "
+					"dbms_lob.writeappend(c,25,"
+					"'abcdefghijklmnopqrstuvwxy'); "
+				"end loop; "
+				"update protocoltestlob set testclob=c; "
+				"dbms_lob.freetemporary(c); "
+			"end;"),
 		OCI_SUCCESS);
 	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(
+		countRows("protocoltestlob where "
+				"dbms_lob.getlength(testclob)=100000"),1);
+	assertEquals(
+		countRows("protocoltestlob where "
+				"dbms_lob.getlength(testblob)=512"),1);
 	stdoutput.printf("\n\n");
 
 
@@ -1882,9 +1929,11 @@ int main(int argc, char **argv) {
 		OCIDescriptorAlloc(env,(void **)&bfilelocator,
 					OCI_DTYPE_FILE,0,NULL),
 		OCI_SUCCESS);
-	assertEquals(
-		OCIStmtExecute(svc,lobstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
-		OCI_SUCCESS);
+	// the defines go in before the execute, the way countRows() does it
+	// and the way OCI's own documentation writes a lob select.  measured:
+	// defining after the execute leaves the descriptors empty and every
+	// lob call on them returns OCI_INVALID_HANDLE, whatever the server
+	// sends
 	assertEquals(
 		OCIDefineByPos(lobstmt,&lobdef[0],err,1,
 				&cloblocator,0,SQLT_CLOB,
@@ -1901,6 +1950,9 @@ int main(int argc, char **argv) {
 				&lobind[2],NULL,NULL,OCI_DEFAULT),
 		OCI_SUCCESS);
 	assertEquals(
+		OCIStmtExecute(svc,lobstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
 		OCIStmtFetch2(lobstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
 		OCI_SUCCESS);
 	assertEquals((int)lobind[0],OCI_IND_NOTNULL);
@@ -1909,64 +1961,31 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("OCILobWrite - clob, one round trip\n");
+	stdoutput.printf("OCILobGetLength - clob and blob\n");
+	// a clob's length counts characters and a blob's counts bytes
 	ub4	loblength=0;
 	assertEquals(
 		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
-	// empty_clob() is a locator with nothing in it, not a null
-	assertEquals((int)loblength,0);
-	const char	*clobvalue="the quick brown fox jumps over the lazy dog";
-	ub4		clobamount=charstring::getLength(clobvalue);
+	assertEquals((int)loblength,(int)biglength);
 	assertEquals(
-		OCILobWrite(svc,err,cloblocator,&clobamount,1,
-				(void *)clobvalue,
-				charstring::getLength(clobvalue),
-				OCI_ONE_PIECE,NULL,NULL,0,SQLCS_IMPLICIT),
-		OCI_SUCCESS);
-	assertEquals((int)clobamount,43);
-	assertEquals(
-		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
-	assertEquals((int)loblength,43);
+		OCILobGetLength(svc,err,bloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,(int)sizeof(blobvalue));
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("OCILobRead - clob, one round trip\n");
+	// one alphabet off the front, small enough to come back in a single
+	// chunk
 	char	clobbuffer[256];
 	bytestring::zero(clobbuffer,sizeof(clobbuffer));
-	clobamount=sizeof(clobbuffer)-1;
+	ub4	clobamount=25;
 	assertEquals(
 		OCILobRead(svc,err,cloblocator,&clobamount,1,
 				clobbuffer,sizeof(clobbuffer)-1,
 				NULL,NULL,0,SQLCS_IMPLICIT),
 		OCI_SUCCESS);
-	assertEquals((int)clobamount,43);
-	assertEquals((const char *)clobbuffer,clobvalue);
-	stdoutput.printf("\n\n");
-
-
-	stdoutput.printf("OCILobWrite - clob, more than one round trip\n");
-	// 100k is well past what fits in a single network round trip, so this
-	// is the chunked path rather than the single-buffer one
-	const ub4	biglength=100000;
-	char		*bigvalue=new char[biglength+1];
-	for (ub4 i=0; i<biglength; i++) {
-		bigvalue[i]=(char)('a'+(i%26));
-	}
-	bigvalue[biglength]='\0';
-	assertEquals(OCILobTrim(svc,err,cloblocator,0),OCI_SUCCESS);
-	assertEquals(
-		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
-	assertEquals((int)loblength,0);
-	clobamount=biglength;
-	assertEquals(
-		OCILobWrite(svc,err,cloblocator,&clobamount,1,
-				bigvalue,biglength,
-				OCI_ONE_PIECE,NULL,NULL,0,SQLCS_IMPLICIT),
-		OCI_SUCCESS);
-	assertEquals((int)clobamount,(int)biglength);
-	assertEquals(
-		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
-	assertEquals((int)loblength,(int)biglength);
+	assertEquals((int)clobamount,25);
+	assertEquals((const char *)clobbuffer,"abcdefghijklmnopqrstuvwxy");
 	stdoutput.printf("\n\n");
 
 
@@ -1993,31 +2012,10 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("OCILobWrite - blob\n");
-	ub1	blobvalue[512];
-	for (int i=0; i<512; i++) {
-		blobvalue[i]=(ub1)(i%256);
-	}
-	ub4	blobamount=sizeof(blobvalue);
-	assertEquals(
-		OCILobGetLength(svc,err,bloblocator,&loblength),OCI_SUCCESS);
-	assertEquals((int)loblength,0);
-	assertEquals(
-		OCILobWrite(svc,err,bloblocator,&blobamount,1,
-				blobvalue,sizeof(blobvalue),
-				OCI_ONE_PIECE,NULL,NULL,0,0),
-		OCI_SUCCESS);
-	assertEquals((int)blobamount,512);
-	assertEquals(
-		OCILobGetLength(svc,err,bloblocator,&loblength),OCI_SUCCESS);
-	assertEquals((int)loblength,512);
-	stdoutput.printf("\n\n");
-
-
 	stdoutput.printf("OCILobRead - blob\n");
 	ub1	blobbuffer[512];
 	bytestring::zero(blobbuffer,sizeof(blobbuffer));
-	blobamount=sizeof(blobbuffer);
+	ub4	blobamount=sizeof(blobbuffer);
 	assertEquals(
 		OCILobRead(svc,err,bloblocator,&blobamount,1,
 				blobbuffer,sizeof(blobbuffer),
@@ -2029,7 +2027,60 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("OCILobWrite - clob\n");
+	// the write side of a lob is not implemented.  the request is read in
+	// full and then refused, so the session stays in step and the client
+	// gets a real oracle error rather than a wrong answer
+	const char	*clobvalue="the quick brown fox jumps over the lazy dog";
+	clobamount=charstring::getLength(clobvalue);
+	assertEquals(
+		OCILobWrite(svc,err,cloblocator,&clobamount,1,
+				(void *)clobvalue,
+				charstring::getLength(clobvalue),
+				OCI_ONE_PIECE,NULL,NULL,0,SQLCS_IMPLICIT),
+		OCI_ERROR);
+	// ORA-03001, unimplemented feature
+	assertEquals((int)errorCode(),3001);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobTrim - clob\n");
+	assertEquals(OCILobTrim(svc,err,cloblocator,0),OCI_ERROR);
+	// ORA-03001, unimplemented feature
+	assertEquals((int)errorCode(),3001);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobWrite - blob\n");
+	blobamount=sizeof(blobvalue);
+	assertEquals(
+		OCILobWrite(svc,err,bloblocator,&blobamount,1,
+				blobvalue,sizeof(blobvalue),
+				OCI_ONE_PIECE,NULL,NULL,0,0),
+		OCI_ERROR);
+	// ORA-03001, unimplemented feature
+	assertEquals((int)errorCode(),3001);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCILobGetLength - after the refused writes\n");
+	// a refused write leaves the lob alone, so the lengths are still the
+	// seeded ones and the session is still in step
+	assertEquals(
+		OCILobGetLength(svc,err,cloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,(int)biglength);
+	assertEquals(
+		OCILobGetLength(svc,err,bloblocator,&loblength),OCI_SUCCESS);
+	assertEquals((int)loblength,(int)sizeof(blobvalue));
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCILobFileGetName - bfile\n");
+	// this one never reaches the server - the client reads the directory
+	// alias and the file name straight out of the locator it was handed.
+	// no server side call hands either of them over, so the locator
+	// carries neither and the client reads back two empty names rather
+	// than a made up pair.  the call itself still succeeds
 	char	bfiledir[64];
 	char	bfilename[256];
 	ub2	bfiledirlen=sizeof(bfiledir);
@@ -2041,10 +2092,10 @@ int main(int argc, char **argv) {
 					(text *)bfiledir,&bfiledirlen,
 					(text *)bfilename,&bfilenamelen),
 		OCI_SUCCESS);
-	assertEquals((const char *)bfiledir,"DMP_DIR");
-	assertEquals((int)bfiledirlen,7);
-	assertEquals((const char *)bfilename,"protocoltest.txt");
-	assertEquals((int)bfilenamelen,16);
+	assertEquals((const char *)bfiledir,"");
+	assertEquals((int)bfiledirlen,0);
+	assertEquals((const char *)bfilename,"");
+	assertEquals((int)bfilenamelen,0);
 	stdoutput.printf("\n\n");
 
 
@@ -2060,7 +2111,7 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("OCITransCommit - the lob writes\n");
+	stdoutput.printf("OCITransCommit - end the lob transaction\n");
 	assertEquals(OCITransCommit(svc,err,OCI_DEFAULT),OCI_SUCCESS);
 	assertEquals(
 		countRows("protocoltestlob where "
