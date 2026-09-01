@@ -1478,7 +1478,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putRowHeader(byte_t flags,
 							uint32_t colcount,
 							uint32_t prefetchrows);
-		void	putRowData(sqlrservercursor *cursor,
+		bool	putRowData(sqlrservercursor *cursor,
 							uint32_t colcount);
 		bool	isLobColumnType(uint16_t columntype);
 		bool	hasLobColumn(sqlrservercursor *cursor,
@@ -8672,7 +8672,10 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 				rowhaslob=false;
 
 				debugStart("query3 response row");
-				putRowData(cursor,colcount);
+				if (!putRowData(cursor,colcount)) {
+					debugEnd();
+					return sendQueryError(cursor);
+				}
 				debugEnd();
 
 				// a row that handed out a locator pins the
@@ -9299,7 +9302,7 @@ void sqlrprotocol_oracle::putRowHeader(byte_t flags,
 	debugEnd();
 }
 
-void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
+bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 						uint32_t colcount) {
 
 	write(&reqpacket,(byte_t)TTC_ROW_DATA);
@@ -9313,7 +9316,7 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		bool		lob=false;
 		bool		null=false;
 		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
-			null=true;
+			return false;
 		}
 
 		debugStart("col %d",i);
@@ -9436,6 +9439,8 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 
 		debugEnd();
 	}
+
+	return true;
 }
 
 // writes "value" as a count prefixed 8 byte integer, which is what a lob
@@ -11657,7 +11662,10 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			rowhaslob=false;
 
 			debugStart("fetch response row");
-			putRowData(cursor,colcount);
+			if (!putRowData(cursor,colcount)) {
+				debugEnd();
+				return sendQueryError(cursor);
+			}
 			debugEnd();
 
 			// a row that handed out a locator pins the connection

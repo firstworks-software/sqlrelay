@@ -1407,6 +1407,10 @@
 		now answers from the cursor's cached column metadata instead,
 		so a describe issued while a result set is mid-fetch no longer
 		rewinds it or leaves the row count stale
+	fixed the oracle protocol module's modern (query3) fetch response
+		path ignoring a getField() failure and sending the client a
+		null value in its place; it now reports the error back to the
+		client instead, same as the legacy fetch response path
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
