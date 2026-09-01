@@ -175,6 +175,12 @@ int main(int argc, char **argv) {
 	// sqlrelay's oracle protocol
 	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
 
+	// the oracleprotocolfetchatonce instance sets fetchatonce=1 on its
+	// connection string, so the module pulls one row per backend fetch
+	// rather than the default 10 - which moves where a row that fails to
+	// evaluate shows up.  see the Errors section below
+	bool	isfetchatonce=false;
+
 	// select verifier-specific sqlrelay target, if given
 	if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
 		sid="sqlrelay11g";
@@ -185,6 +191,10 @@ int main(int argc, char **argv) {
 	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayconnectstrings")) {
 		sid="sqlrelayconnectstrings";
 		badsid="sqlrelayconnectstringsbad";
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayfetchatonce")) {
+		sid="sqlrelayfetchatonce";
+		badsid="sqlrelayfetchatoncebad";
+		isfetchatonce=true;
 	} else {
 		sid=(issqlrelay)?"sqlrelay":"ora1";
 		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
@@ -2641,28 +2651,98 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("OCIStmtExecute - error mid-fetch\n");
-	// this result set only has 3 rows, well under the connection's
-	// fetchatonce (10 by default here - see FETCH_AT_ONCE in
-	// sqlrserverconnection.cpp), so the query3 protocol's inline
-	// prefetch on execute pulls the whole result set in one backend
-	// fetch - including the row 2 divide by zero, which oracle only
-	// evaluates once it actually produces that row.  the error surfaces
-	// on the execute response here rather than on a later, separate
-	// fetch
+	// row 2 of this result set divides by zero.  oracle only evaluates
+	// the expression as it produces each row, so how many rows the
+	// connection pulls from the backend at a time - fetchatonce - decides
+	// whether the failure lands on the execute or on a later fetch.  both
+	// halves are covered, one instance each
 	const char	*divzero="select 1/(level-2) from dual "
 				"connect by level<=3";
-	assertEquals(
-		OCIStmtPrepare(errstmt,err,(text *)divzero,
-				charstring::getLength(divzero),
-				OCI_NTV_SYNTAX,OCI_DEFAULT),
-		OCI_SUCCESS);
-	assertEquals(
-		OCIStmtExecute(svc,errstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
-		OCI_ERROR);
-	// ORA-01476, divisor is equal to zero
-	assertEquals((int)errorCode(),1476);
-	stdoutput.printf("\n\n");
+
+	if (!isfetchatonce) {
+
+		stdoutput.printf("OCIStmtExecute - error mid-fetch\n");
+		// this result set only has 3 rows, well under the connection's
+		// fetchatonce (10 by default here - see FETCH_AT_ONCE in
+		// sqlrserverconnection.cpp), so the query3 protocol's inline
+		// prefetch on execute pulls the whole result set in one
+		// backend fetch - including the row 2 divide by zero, which
+		// oracle only evaluates once it actually produces that row.
+		// the error surfaces on the execute response here rather than
+		// on a later, separate fetch, so this is sendQuery3Response()'s
+		// fetchRow() error branch (#9585).  the sqlrelayfetchatonce
+		// instance takes the other branch below
+		assertEquals(
+			OCIStmtPrepare(errstmt,err,(text *)divzero,
+					charstring::getLength(divzero),
+					OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,errstmt,err,0,0,
+						NULL,NULL,OCI_DEFAULT),
+			OCI_ERROR);
+		// ORA-01476, divisor is equal to zero
+		assertEquals((int)errorCode(),1476);
+		stdoutput.printf("\n\n");
+
+	} else {
+
+		stdoutput.printf("OCIStmtFetch2 - error mid-fetch\n");
+		// the fetch-time counterpart of the case above (#9601).  this
+		// instance's connection string sets fetchatonce=1, so the
+		// connection asks the backend for one row per fetch, and a
+		// prefetch of 1 row - with no prefetch memory to raise it -
+		// holds the execute's inline prefetch to row 1 as well.  so
+		// the execute succeeds, and the row 2 divide by zero is only
+		// discovered on a genuine second fetch, where the error goes
+		// out on a fetch response.  that's sendFetch3Response()'s
+		// fetchRow() error branch rather than sendQuery3Response()'s
+		assertEquals(
+			OCIStmtPrepare(errstmt,err,(text *)divzero,
+					charstring::getLength(divzero),
+					OCI_NTV_SYNTAX,OCI_DEFAULT),
+			OCI_SUCCESS);
+		ub4	divzerorows=1;
+		assertEquals(
+			OCIAttrSet(errstmt,OCI_HTYPE_STMT,
+					&divzerorows,0,
+					OCI_ATTR_PREFETCH_ROWS,err),
+			OCI_SUCCESS);
+		ub4	divzeromemory=0;
+		assertEquals(
+			OCIAttrSet(errstmt,OCI_HTYPE_STMT,
+					&divzeromemory,0,
+					OCI_ATTR_PREFETCH_MEMORY,err),
+			OCI_SUCCESS);
+		assertEquals(
+			OCIStmtExecute(svc,errstmt,err,0,0,
+						NULL,NULL,OCI_DEFAULT),
+			OCI_SUCCESS);
+		OCIDefine	*divzerodef=NULL;
+		char		divzerovalue[64];
+		sb2		divzeroind=0;
+		bytestring::zero(divzerovalue,sizeof(divzerovalue));
+		assertEquals(
+			OCIDefineByPos(errstmt,&divzerodef,err,1,
+					divzerovalue,sizeof(divzerovalue),
+					SQLT_STR,&divzeroind,NULL,NULL,
+					OCI_DEFAULT),
+			OCI_SUCCESS);
+		// row 1 is 1/(1-2), which evaluates fine
+		assertEquals(
+			OCIStmtFetch2(errstmt,err,1,
+					OCI_FETCH_NEXT,0,OCI_DEFAULT),
+			OCI_SUCCESS);
+		assertEquals((const char *)divzerovalue,"-1");
+		// row 2 is 1/(2-2), which doesn't
+		assertEquals(
+			OCIStmtFetch2(errstmt,err,1,
+					OCI_FETCH_NEXT,0,OCI_DEFAULT),
+			OCI_ERROR);
+		// ORA-01476, divisor is equal to zero
+		assertEquals((int)errorCode(),1476);
+		stdoutput.printf("\n\n");
+	}
 
 
 	stdoutput.printf("OCIHandleFree - statement\n");

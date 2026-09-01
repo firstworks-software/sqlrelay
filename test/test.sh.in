@@ -145,13 +145,14 @@ stop_instances() {
 		fi
 
 		# the oracleprotocol test also has 11g and 12c
-		# verifier-type instances, and a connectstrings-default-auth
-		# instance
+		# verifier-type instances, a connectstrings-default-auth
+		# instance, and a fetchatonce=1 instance
 		if ( test "$_instance" = "oracleprotocol" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol12c
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolfetchatonce
 		fi
 
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id ${_instance}
@@ -325,7 +326,9 @@ start_instance() {
 	# verifier type, since the verifier type is chosen at listener
 	# configuration time and can't be varied per connection, plus one
 	# more with no <auths> block, to cover the default oracle_connectstrings
-	# auth path (#9309)
+	# auth path (#9309), plus one more with fetchatonce=1 on the
+	# connection string, to cover a backend error landing on a row past
+	# the first fetch (#9601)
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
@@ -333,6 +336,8 @@ start_instance() {
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol12c -backtrace $BACKTRACEDIR
 		sleep 2
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings -backtrace $BACKTRACEDIR
+		sleep 2
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolfetchatonce -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -381,6 +386,8 @@ stop_instance() {
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol12c
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolfetchatonce
 	fi
 	if ( test "$instance" = "odbc-mssql" )
 	then
@@ -961,17 +968,19 @@ run_protocol_test() {
 		return 1
 	fi
 
-	# oracleprotocol runs the oracle test four times, against the four
+	# oracleprotocol runs the oracle test five times, against the five
 	# instances in its config - the default one (tnsnames alias sqlrelay,
 	# ORACLEPROTOCOLPORT1), the verifiertype="11g" one (sqlrelay11g,
 	# ORACLEPROTOCOLPORT2), the verifiertype="12c" one (sqlrelay12c,
 	# ORACLEPROTOCOLPORT3) - so both o5logon verifier types get covered -
-	# and the no-<auths>-block one (sqlrelayconnectstrings,
+	# the no-<auths>-block one (sqlrelayconnectstrings,
 	# ORACLEPROTOCOLPORT4), which covers the default oracle_connectstrings
-	# auth path (#9309).  the ports are 1521 through 1524 by default; the
-	# test reaches each one through its tnsnames.ora alias, which carries
-	# whatever port the run picked.  all four runs have to succeed for the
-	# instance to pass
+	# auth path (#9309), and the fetchatonce=1 one (sqlrelayfetchatonce,
+	# ORACLEPROTOCOLPORT5), which covers a backend error landing on a
+	# row past the first fetch (#9601).  the ports are 1521 through 1525
+	# by default; the test reaches each one through its tnsnames.ora
+	# alias, which carries whatever port the run picked.  all five runs
+	# have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -982,7 +991,9 @@ run_protocol_test() {
 		result12c="$?"
 		./$prog sqlrelayconnectstrings
 		resultconnectstrings="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" )
+		./$prog sqlrelayfetchatonce
+		resultfetchatonce="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1003,6 +1014,10 @@ run_protocol_test() {
 		if ( test "$resultconnectstrings" != "0" )
 		then
 			printf "    % 8s: failed (connectstrings)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultfetchatonce" != "0" )
+		then
+			printf "    % 8s: failed (fetchatonce)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
@@ -1267,11 +1282,12 @@ STAGEDIR=$TESTDIR/stagedmodules
 # these are the same values configure substituted into the .conf files, so
 # with no -randomports both ends already agree and nothing has to be
 # regenerated.  -randomports replaces them with free ports picked at run time.
-PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
 ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
 ORACLEPROTOCOLPORT4=@ORACLEPROTOCOLPORT4@
+ORACLEPROTOCOLPORT5=@ORACLEPROTOCOLPORT5@
 FIREBIRDPROTOCOLPORT1=@FIREBIRDPROTOCOLPORT1@
 FIREBIRDPROTOCOLPORT2=@FIREBIRDPROTOCOLPORT2@
 FIREBIRDPROTOCOLPORT3=@FIREBIRDPROTOCOLPORT3@

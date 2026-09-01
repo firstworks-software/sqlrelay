@@ -69,4 +69,27 @@
 		</connections>
 	</instance>
 
+	<!-- same as oracleprotocol, but with fetchatonce=1 on the connection
+	     string.  the default fetchatonce=10 pulls a small test result
+	     set entirely into execute-time inline prefetch, so a backend
+	     error that only shows up on a later row (from OCIStmtFetch2)
+	     can never actually happen - it always surfaces during
+	     OCIStmtExecute instead.  fetchatonce=1 forces a real second
+	     fetch call, so an error on the second-or-later row lands where
+	     sendFetch3Response() actually handles it (#9601).  the
+	     tnsnames.ora alias sqlrelayfetchatonce points here. -->
+	<instance id="oracleprotocolfetchatonce" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT5@" serverversion="11.2" sid="ora1"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;fetchatonce=1"/>
+		</connections>
+	</instance>
+
 </instances>

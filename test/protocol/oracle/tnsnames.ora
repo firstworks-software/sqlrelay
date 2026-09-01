@@ -44,6 +44,17 @@ sqlrelayconnectstrings =
     (CONNECT_DATA = (SID = ora1))
   )
 
+# the oracleprotocolfetchatonce instance (see
+# test/sqlrelay.conf.d/oracleprotocol.conf.in) - fetchatonce=1 on its
+# connection string forces a real second fetch call, driving
+# sendFetch3Response()'s error path instead of sendQuery3Response()'s (#9601)
+
+sqlrelayfetchatonce =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1525))
+    (CONNECT_DATA = (SID = ora1))
+  )
+
 # the same, naming a service that is not there, for the authentication
 # section's attach failure case
 
@@ -74,5 +85,11 @@ sqlrelay12cbad =
 sqlrelayconnectstringsbad =
   (DESCRIPTION =
     (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1524))
+    (CONNECT_DATA = (SID = nosuchsid))
+  )
+
+sqlrelayfetchatoncebad =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= 1525))
     (CONNECT_DATA = (SID = nosuchsid))
   )
