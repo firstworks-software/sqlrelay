@@ -467,6 +467,23 @@
 // and an 11 it reports 25 and 121
 #define ORACLE_INTERVAL_SIZE		1
 
+// a timestamp's binary form is a date's 7 bytes and then 4 more for the
+// nanoseconds, and a timestamp with time zone's is those 11 and then 2 more
+// for the offset - its hours biased by 84 and its minutes by 60.  see
+// putTimestampField()
+#define ORACLE_TIMESTAMP_SIZE		11
+#define ORACLE_TIMESTAMPTZ_SIZE		13
+#define ORACLE_TZ_HOUR_BIAS		84
+#define ORACLE_TZ_MINUTE_BIAS		60
+#define ORACLE_TIMESTAMP_FRACTION_DIGITS	9
+#define MAX_TIMESTAMP_DATE_TEXT		32
+
+// a timestamp column is described the 11 bytes its value really takes, but
+// a timestamp with time zone is described 1 byte wide the way an interval
+// is, and oci works the 13 it reports back out from the type.  a live 12.2
+// server sends both of those
+#define ORACLE_TIMESTAMPTZ_WIRE_SIZE	1
+
 // what a column with no size of its own is described as
 #define MAX_VARCHAR_SIZE		4000
 
@@ -1322,6 +1339,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putIntervalLeading(byte_t *out,
 							uint32_t value,
 							bool negative);
+		bool	putTimestampField(const char *field,
+							uint64_t fieldsize,
+							bool withtimezone);
+		uint16_t	getTimestampDigits(const char **f,
+							const char *end,
+							uint32_t *value);
 
 		// execute...
 		bool	execute(const byte_t *rp);
@@ -8135,14 +8158,17 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	// 12.2 server sends the abbreviated encoding - a 0x00 flag byte, no
 	// character set and no second size - for the types that have no
 	// character set of their own, and the full encoding for everything
-	// else.  a raw, a long raw and both interval types are binary and
-	// get the abbreviated form, but a long is text and gets the full one
+	// else.  a raw, a long raw, both interval types and both timestamp
+	// types are binary and get the abbreviated form, but a long is text
+	// and gets the full one
 	bool	fullencoding=(wiretype!=ORACLE_TYPE_NUMBER &&
 				wiretype!=ORACLE_TYPE_ROWID_DEPRECATED &&
 				wiretype!=ORACLE_TYPE_RAW &&
 				wiretype!=ORACLE_TYPE_LONG_RAW &&
 				wiretype!=ORACLE_TYPE_INTERVALYM &&
-				wiretype!=ORACLE_TYPE_INTERVALDS);
+				wiretype!=ORACLE_TYPE_INTERVALDS &&
+				wiretype!=ORACLE_TYPE_TIMESTAMP &&
+				wiretype!=ORACLE_TYPE_TIMESTAMPTZ);
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
@@ -8257,6 +8283,12 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_INTERVALDS:
 			wiretype=ORACLE_TYPE_INTERVALDS;
 			break;
+		case ORACLE_TYPE_TIMESTAMP:
+			wiretype=ORACLE_TYPE_TIMESTAMP;
+			break;
+		case ORACLE_TYPE_TIMESTAMPTZ:
+			wiretype=ORACLE_TYPE_TIMESTAMPTZ;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
@@ -8342,6 +8374,16 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		// server describes either interval 1 byte wide, and oci
 		// works the size it reports out from the type
 		size=ORACLE_INTERVAL_SIZE;
+	} else if (wiretype==ORACLE_TYPE_TIMESTAMP) {
+		// the 11 bytes the binary form really takes, which is what
+		// a live 12.2 server describes a timestamp column as
+		size=ORACLE_TIMESTAMP_SIZE;
+	} else if (wiretype==ORACLE_TYPE_TIMESTAMPTZ) {
+		// not the 13 bytes the binary form takes - a live 12.2
+		// server describes a timestamp with time zone 1 byte wide,
+		// the way it does an interval, and oci works the 13 it
+		// reports back out from the type
+		size=ORACLE_TIMESTAMPTZ_WIRE_SIZE;
 	} else if (!isCharacterColumn(columntypestring,columntype)) {
 		// everything else goes out as text, and this size is the
 		// buffer the client reads that text into.  the backend's
@@ -8489,6 +8531,17 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				// same as a date that won't parse - an
 				// interval the module can't take apart is no
 				// more use to the client than a null
+				write(&reqpacket,(byte_t)0);
+			}
+		} else if (wiretype==ORACLE_TYPE_TIMESTAMP ||
+				wiretype==ORACLE_TYPE_TIMESTAMPTZ) {
+			debugWrite("timestamp: %.*s",(int)fieldsize,field);
+			bool	withtimezone=
+				(wiretype==ORACLE_TYPE_TIMESTAMPTZ);
+			if (!putTimestampField(field,fieldsize,withtimezone)) {
+				// same as a date that won't parse - a
+				// timestamp the module can't take apart is
+				// no more use to the client than a null
 				write(&reqpacket,(byte_t)0);
 			}
 		} else {
@@ -9265,6 +9318,254 @@ bool sqlrprotocol_oracle::putIntervalField(const char *field,
 		debugWrite("seconds: %s%d",(negative)?"-":"",seconds);
 		debugWrite("nanoseconds: %s%d",
 				(negative)?"-":"",nanoseconds);
+	}
+
+	putLenBytes((const char *)out,outsize);
+
+	debugHexDump(out,outsize);
+	debugEnd();
+
+	return true;
+}
+
+uint16_t sqlrprotocol_oracle::getTimestampDigits(const char **f,
+						const char *end,
+						uint32_t *value) {
+
+	// reads the run of digits at *f, and answers how many there were so
+	// the caller can tell an empty field from a zero one and can scale
+	// a fraction out to nanoseconds
+	*value=0;
+
+	uint16_t	digits=0;
+	while (*f<end && character::isDigit(**f) &&
+			digits<ORACLE_TIMESTAMP_FRACTION_DIGITS) {
+		*value=(*value)*10+(uint32_t)(**f-'0');
+		digits++;
+		(*f)++;
+	}
+	return digits;
+}
+
+bool sqlrprotocol_oracle::putTimestampField(const char *field,
+						uint64_t fieldsize,
+						bool withtimezone) {
+
+	debugStart("timestamp field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
+	// the backend hands a timestamp over in the text form oracle prints
+	// one as - the session's date, then the time on a 12 hour clock,
+	// then the fraction, then the half of the day, and then, for a
+	// timestamp with time zone, the offset - and the wire wants the
+	// fixed width binary form behind a length byte.  captured from a
+	// live 12.2 server:
+	//
+	//	2004-04-04 04:04:04.444444
+	//		-> 0b 78 68 04 04 05 05 05 1a 7d ad 60
+	//	1899-12-31 23:59:58.000001
+	//		-> 0b 76 c7 0c 1f 18 3c 3b 00 00 03 e8
+	//	2004-04-04 12:00:00.5
+	//		-> 0b 78 68 04 04 0d 01 01 1d cd 65 00
+	//	2005-05-05 05:05:05.555555 -05:00
+	//		-> 0d 78 69 05 05 06 06 06 21 1d 18 b8 4f 3c
+	//	2005-05-05 05:05:05.555555 -09:30
+	//		-> 0d 78 69 05 05 06 06 06 21 1d 18 b8 4b 1e
+	//	2006-06-06 06:06:06.666666 +05:30
+	//		-> 0d 78 6a 06 06 07 07 07 27 bc 84 10 59 5a
+	//	2005-05-05 00:30:00 +00:00
+	//		-> 0d 78 69 05 05 01 1f 01 00 00 00 00 54 3c
+	//
+	// so the first 7 bytes are a date's, biased the same ways, the next
+	// 4 are the nanoseconds most significant byte first and unbiased,
+	// and a timestamp with time zone adds the offset's hours biased by
+	// 84 and its minutes biased by 60.  a negative offset carries one
+	// sign in the text and both of its fields go out negative.  the
+	// date and the time are the local ones, not the utc ones a
+	// timestamp with time zone is stored as
+	const char	*f=field;
+	const char	*end=field+fieldsize;
+
+	// the date runs to the first space, and datetime::parse() reads it
+	// the same way getOracleDate() reads a date column, century
+	// inference for a 2 digit year and all
+	const char	*datestart=f;
+	while (f<end && *f!=' ') {
+		f++;
+	}
+	uint64_t	datesize=(uint64_t)(f-datestart);
+	if (datesize>=MAX_TIMESTAMP_DATE_TEXT) {
+		debugWrite("date too long");
+		debugEnd();
+		return false;
+	}
+	char	datebuffer[MAX_TIMESTAMP_DATE_TEXT];
+	bytestring::copy(datebuffer,datestart,datesize);
+	datebuffer[datesize]='\0';
+
+	int16_t	year;
+	int16_t	month;
+	int16_t	day;
+	int16_t	parsedhour;
+	int16_t	parsedminute;
+	int16_t	parsedsecond;
+	int32_t	usec;
+	bool	isnegative;
+	if (!datetime::parse(datebuffer,false,false,"/-.:",true,
+				&year,&month,&day,
+				&parsedhour,&parsedminute,&parsedsecond,
+				&usec,&isnegative)) {
+		debugWrite("bad date");
+		debugEnd();
+		return false;
+	}
+	if (year==-1) {
+		year=0;
+	}
+	if (month==-1) {
+		month=1;
+	}
+	if (day==-1) {
+		day=1;
+	}
+
+	uint32_t	hours=0;
+	uint32_t	minutes=0;
+	uint32_t	seconds=0;
+	uint32_t	nanoseconds=0;
+
+	if (f<end) {
+
+		// the hours, minutes and seconds, in whatever the session's
+		// time format separates them with - a dot by default, but a
+		// colon in plenty of other formats
+		f++;
+		if (!getTimestampDigits(&f,end,&hours) ||
+			f==end || (*f!='.' && *f!=':')) {
+			debugWrite("bad hours");
+			debugEnd();
+			return false;
+		}
+		f++;
+		if (!getTimestampDigits(&f,end,&minutes) ||
+			f==end || (*f!='.' && *f!=':')) {
+			debugWrite("bad minutes");
+			debugEnd();
+			return false;
+		}
+		f++;
+		if (!getTimestampDigits(&f,end,&seconds)) {
+			debugWrite("bad seconds");
+			debugEnd();
+			return false;
+		}
+
+		// the fraction is however many digits the column's seconds
+		// precision calls for, and the wire always wants
+		// nanoseconds, so it's scaled up to 9 digits
+		if (f<end && (*f=='.' || *f==':')) {
+			f++;
+			uint16_t	digits=
+				getTimestampDigits(&f,end,&nanoseconds);
+			while (digits<ORACLE_TIMESTAMP_FRACTION_DIGITS) {
+				nanoseconds*=10;
+				digits++;
+			}
+		}
+
+		// the half of the day, if the session's time format is a 12
+		// hour one.  noon is 12 PM and midnight is 12 AM
+		while (f<end && *f==' ') {
+			f++;
+		}
+		if (f+1<end &&
+			character::upper(f[1])=='M' &&
+			(character::upper(f[0])=='A' ||
+				character::upper(f[0])=='P')) {
+			bool	pm=(character::upper(f[0])=='P');
+			if (hours==12) {
+				hours=(pm)?12:0;
+			} else if (pm) {
+				hours+=12;
+			}
+			f+=2;
+		}
+	}
+
+	int16_t	tzhour=0;
+	int16_t	tzminute=0;
+
+	if (withtimezone) {
+
+		while (f<end && *f==' ') {
+			f++;
+		}
+
+		// oracle prints a fixed offset as a sign and an hours:minutes
+		// pair, but a named region as its name - and a region only
+		// goes on the wire as an id out of oracle's own time zone
+		// table, which the module has no copy of
+		bool	tznegative=false;
+		if (f<end && (*f=='+' || *f=='-')) {
+			tznegative=(*f=='-');
+			f++;
+		} else {
+			debugWrite("time zone is not an offset");
+			debugEnd();
+			return false;
+		}
+
+		uint32_t	offsethours=0;
+		uint32_t	offsetminutes=0;
+		if (!getTimestampDigits(&f,end,&offsethours) ||
+			f==end || *f!=':') {
+			debugWrite("bad time zone hours");
+			debugEnd();
+			return false;
+		}
+		f++;
+		if (!getTimestampDigits(&f,end,&offsetminutes)) {
+			debugWrite("bad time zone minutes");
+			debugEnd();
+			return false;
+		}
+
+		tzhour=(int16_t)((tznegative)?
+				-(int32_t)offsethours:(int32_t)offsethours);
+		tzminute=(int16_t)((tznegative)?
+				-(int32_t)offsetminutes:(int32_t)offsetminutes);
+	}
+
+	while (f<end && *f==' ') {
+		f++;
+	}
+	if (f!=end) {
+		debugWrite("trailing characters");
+		debugEnd();
+		return false;
+	}
+
+	byte_t		out[ORACLE_TIMESTAMPTZ_SIZE];
+	uint32_t	outsize=(withtimezone)?
+				ORACLE_TIMESTAMPTZ_SIZE:
+				ORACLE_TIMESTAMP_SIZE;
+	bytestring::zero(out,sizeof(out));
+
+	putOracleDate(out,year,month,day,
+			(int16_t)hours,(int16_t)minutes,(int16_t)seconds);
+
+	out[7]=(byte_t)((nanoseconds>>24)&0xff);
+	out[8]=(byte_t)((nanoseconds>>16)&0xff);
+	out[9]=(byte_t)((nanoseconds>>8)&0xff);
+	out[10]=(byte_t)(nanoseconds&0xff);
+
+	debugWrite("nanoseconds: %d",nanoseconds);
+
+	if (withtimezone) {
+		out[11]=(byte_t)(tzhour+ORACLE_TZ_HOUR_BIAS);
+		out[12]=(byte_t)(tzminute+ORACLE_TZ_MINUTE_BIAS);
+		debugWrite("time zone: %d:%d",
+				(int32_t)tzhour,(int32_t)tzminute);
 	}
 
 	putLenBytes((const char *)out,outsize);
@@ -10194,18 +10495,17 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 
 	// a type the backend has no datatype of its own for comes through
 	// named UNKNOWN, and getColumnType() takes that for a varchar2.
-	// both interval types arrive that way, and so do both timestamp
-	// types.  oci converts a timestamp out of the text the backend
-	// hands over, but it will not convert an interval - an interval
-	// column described as a varchar2 leaves the client's descriptor
-	// untouched and OCIIntervalGet...() answers ORA-01891 - so the two
-	// of them have to be picked back out here and encoded on the wire.
+	// both interval types arrive that way, and so do all three
+	// timestamp types, and a varchar2 is a lie about every one of them
+	// - a client that asks what the column is gets 1 and 4000 back
+	// instead of the type and the width the value really has - so they
+	// have to be picked back out here and encoded on the wire.
 	//
 	// the size and precision the backend does report tell them apart
 	// from everything else that arrives UNKNOWN.  an interval's size is
 	// its fixed internal width and its precision is the leading field's,
-	// 1 through 9; a timestamp is 11 bytes wide too but has no leading
-	// field, and oracle reports no precision for one:
+	// 1 through 9; a timestamp is as wide as its own binary form and has
+	// no leading field, so oracle reports no precision for one:
 	//
 	//	interval year to month		size 5, precision 2
 	//	interval day to second		size 11, precision 2
@@ -10214,6 +10514,14 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 	//
 	// (the precisions are the defaults - a declared "interval day(4) to
 	// second(9)" reports 4)
+	//
+	// a timestamp with local time zone reports size 11 and precision 0
+	// too, exactly as a plain timestamp does, so it comes out of here a
+	// timestamp.  nothing the backend reports tells the two apart, and
+	// the backend hands a local time zone column's value over in the
+	// same text a plain timestamp's comes in, so the timestamp encoding
+	// is right for it as far as it goes - it is only the type the
+	// client is told that is off by one
 	if (columntype!=ORACLE_TYPE_VARCHAR) {
 		return columntype;
 	}
@@ -10225,16 +10533,23 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 		return columntype;
 	}
 
-	if (!cont->getColumnPrecision(cursor,column)) {
+	uint32_t	size=cont->getColumnSize(cursor,column);
+
+	if (cont->getColumnPrecision(cursor,column)) {
+		if (size==ORACLE_INTERVALYM_SIZE) {
+			return ORACLE_TYPE_INTERVALYM;
+		}
+		if (size==ORACLE_INTERVALDS_SIZE) {
+			return ORACLE_TYPE_INTERVALDS;
+		}
 		return columntype;
 	}
 
-	uint32_t	size=cont->getColumnSize(cursor,column);
-	if (size==ORACLE_INTERVALYM_SIZE) {
-		return ORACLE_TYPE_INTERVALYM;
+	if (size==ORACLE_TIMESTAMP_SIZE) {
+		return ORACLE_TYPE_TIMESTAMP;
 	}
-	if (size==ORACLE_INTERVALDS_SIZE) {
-		return ORACLE_TYPE_INTERVALDS;
+	if (size==ORACLE_TIMESTAMPTZ_SIZE) {
+		return ORACLE_TYPE_TIMESTAMPTZ;
 	}
 	return columntype;
 }

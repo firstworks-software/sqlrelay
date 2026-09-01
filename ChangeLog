@@ -1311,6 +1311,17 @@
 		for character data, sap/freetds for CS_LONG_TYPE, which is
 		binary), so a column is only recognized as oracle's long when the
 		real backend, per getNativeDbType(), actually is oracle
+	oracle protocol module: timestamp and timestamp with time zone
+		columns now describe as their real types and encode correctly on
+		the wire instead of falling back to varchar2 - the fetched value
+		already round-tripped through oci's implicit text conversion, but
+		the describe metadata was wrong (type 1 and size 4000 instead of
+		the real type and width); putRowData() now writes the real
+		binary form (a date's 7 bytes plus 4 more for nanoseconds, and 2
+		more again for a time zone's offset) a live server sends; the
+		oracle connection module reports both as UNKNOWN like it does an
+		interval, so getUnknownColumnType() now recovers all five of
+		these types from the backend's own size and precision
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
