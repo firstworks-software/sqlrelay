@@ -1361,6 +1361,28 @@
 		client reads them out of the locator without asking, so
 		OCILobFileGetName answers with two empty names rather than a
 		made up pair
+	oracle protocol module: output and in-out bind variables work on the
+		modern (10g and later) path now - a placeholder in a pl/sql
+		block is answered with the value the block left in it, so an
+		output bind, an in-out bind and a bind the block sets to null
+		all work.  the wire says nothing about which way a bind
+		travels - an in-only, an out-only and an in-out descriptor are
+		byte identical - so a placeholder in a block is declared
+		in-out, which keeps a re-execute's request shape unchanged and
+		leaves a block that only reads the value behaving as it always
+		did.  the response carries the io vector (ttc 0x0b) that says
+		which way each bind went, and then the values themselves (ttc
+		0x07), each with a signed null indicator behind it; a
+		re-execute answers with the values alone, since the client
+		already learned the directions from the execute before it.
+		the oracle connection module has no in-out bind of its own, so
+		the values go through its output binds, whose buffers are
+		pre-filled with what the wire sent - a plain bidirectional
+		bind over a buffer this side owns behaves as in-out once
+		what's in it at execute time is what the statement reads.
+		dates, timestamps, intervals, raws and lobs stay input only,
+		as does a ref cursor bind, whose output slot is a whole
+		describe rather than a value
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

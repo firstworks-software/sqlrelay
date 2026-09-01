@@ -399,6 +399,26 @@
 #define BIND_FLAG_USE_INDICATORS	0x01
 #define BIND_FLAG_UNBOUND		0x80
 
+// which way a bind's value travels, as the io vector reports it.  the wire's
+// bind descriptors say nothing about direction - every one of them looks the
+// same whether the client bound it in, out, or both - so the module works it
+// out from the statement itself
+// see "Oracle Wire Protocol - Query3"
+#define BIND_DIRECTION_OUT		0x10
+#define BIND_DIRECTION_IN		0x20
+#define BIND_DIRECTION_INOUT		0x30
+
+// the io vector's second byte, which never varied in any capture
+#define IO_VECTOR_CONSTANT		0x05
+
+// what a null out bind's indicator goes out as - the count byte's high bit
+// means negative, so 81 01 is -1, which is oci's own OCI_IND_NULL
+#define OUT_BIND_NULL_INDICATOR_COUNT	0x81
+#define OUT_BIND_NULL_INDICATOR_VALUE	0x01
+
+// how big an out bind's buffer is, when the descriptor doesn't ask for more
+#define MIN_OUT_BIND_SIZE		128
+
 // how many bind values one query3 request may carry, across all of its
 // execution iterations
 #define MAX_QUERY3_BIND_VALUES		65536
@@ -1108,8 +1128,14 @@ enum oraclelisttype_t {
 // descriptor carries no name and no position - binds are strictly positional,
 // in the order the placeholders appear in the query text
 struct oraclequery3bind {
-	byte_t	type;
-	byte_t	flags;
+	byte_t		type;
+	byte_t		flags;
+	uint32_t	buffersize;
+	// BIND_DIRECTION_*, worked out from the statement rather than read
+	// off the wire
+	byte_t		direction;
+	// which of the cursor's output binds this descriptor filled, or -1
+	int16_t		outindex;
 };
 
 // one placeholder's value for one execution iteration.  the bytes are left
@@ -1385,12 +1411,20 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const byte_t *end,
 							uint32_t vectorsize,
 							uint32_t bindcount,
-							uint32_t definecount);
+							uint32_t definecount,
+							uint32_t options,
+							const char *query,
+							uint32_t querysize);
 		bool	getQuery3BindDescriptor(const byte_t *rp,
 							const byte_t *end,
 							byte_t *type,
 							byte_t *flags,
+							uint32_t *buffersize,
 							const byte_t **rpout);
+		void	classifyQuery3Binds(uint32_t options,
+							const char *query,
+							uint32_t querysize);
+		bool	hasQuery3OutBinds();
 		bool	getQuery3BindValues(const byte_t *rp,
 							const byte_t *end,
 							uint32_t bindcount,
@@ -1412,6 +1446,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t maxlongsize);
 		bool	hasLongColumn(sqlrservercursor *cursor,
 							uint32_t colcount);
+		void	putIoVector();
+		void	putOutBindValues(sqlrservercursor *cursor);
 		void	putDescribeInfo(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putColumnMetadata(sqlrservercursor *cursor,
@@ -1741,6 +1777,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	maxcursorcount;
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
+		uint32_t	maxstringbindvaluesize;
 
 		char		**bindvarnames;
 
@@ -1948,6 +1985,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	maxcursorcount=cont->getConfig()->getMaxCursors();
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();
+	maxstringbindvaluesize=
+			cont->getConfig()->getMaxStringBindValueSize();
 
 	bindvarnames=new char *[maxbindcount];
 	for (uint16_t i=0; i<maxbindcount; i++) {
@@ -7432,6 +7471,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		uint32_t	blocks=query3blocks;
 		if (!blocks && (options&OPTION_PARSE)) {
 			cont->setInputBindCount(cursor,0);
+			cont->setOutputBindCount(cursor,0);
 		}
 
 		// execute the query, once per row data block - the wire's
@@ -7646,7 +7686,8 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 
 	// the al8i4 vector, the bind and define descriptors, and the bind
 	// values all follow the query text
-	return getQuery3Binds(rp,end,vectorsize,bindcount,definecount);
+	return getQuery3Binds(rp,end,vectorsize,bindcount,definecount,
+						*options,*query,*querysize);
 }
 
 // reads the tail of a query3 request: the al8i4 vector, then one descriptor
@@ -7658,7 +7699,10 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 						const byte_t *end,
 						uint32_t vectorsize,
 						uint32_t bindcount,
-						uint32_t definecount) {
+						uint32_t definecount,
+						uint32_t options,
+						const char *query,
+						uint32_t querysize) {
 
 	query3binddescs=0;
 	query3blocks=0;
@@ -7696,10 +7740,13 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		if (!getQuery3BindDescriptor(rp,end,
 						&(query3binds[i].type),
 						&(query3binds[i].flags),
+						&(query3binds[i].buffersize),
 						&rp)) {
 			debugEnd();
 			return false;
 		}
+		query3binds[i].direction=BIND_DIRECTION_IN;
+		query3binds[i].outindex=-1;
 		if (getDebug()) {
 			debugWrite("bind %d:",i+1);
 			debugColumnType(query3binds[i].type);
@@ -7713,13 +7760,18 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 
 	// the define descriptors, which need consuming but nothing else
 	for (uint32_t i=0; i<definecount; i++) {
-		byte_t	type=0;
-		byte_t	flags=0;
-		if (!getQuery3BindDescriptor(rp,end,&type,&flags,&rp)) {
+		byte_t		type=0;
+		byte_t		flags=0;
+		uint32_t	buffersize=0;
+		if (!getQuery3BindDescriptor(rp,end,&type,&flags,
+							&buffersize,&rp)) {
 			debugEnd();
 			return false;
 		}
 	}
+
+	// which way each of them travels
+	classifyQuery3Binds(options,query,querysize);
 
 	// an unbound placeholder means no row data at all
 	if (!bindcount || query3unbound) {
@@ -7785,16 +7837,17 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 						const byte_t *end,
 						byte_t *type,
 						byte_t *flags,
+						uint32_t *buffersize,
 						const byte_t **rpout) {
 
 	*type=0;
 	*flags=0;
+	*buffersize=0;
 	*rpout=rp;
 
 	byte_t		precision=0;
 	byte_t		scale=0;
 	byte_t		csfrm=0;
-	uint32_t	buffersize=0;
 	uint32_t	maxelements=0;
 	uint32_t	contflags=0;
 	uint32_t	oidlength=0;
@@ -7812,7 +7865,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	read(rp,&precision,&rp);
 	read(rp,&scale,&rp);
 
-	if (!readLenPreInt(rp,end,&buffersize,&rp) ||
+	if (!readLenPreInt(rp,end,buffersize,&rp) ||
 		!readLenPreInt(rp,end,&maxelements,&rp) ||
 		!readLenPreInt(rp,end,&contflags,&rp) ||
 		!readLenPreInt(rp,end,&oidlength,&rp)) {
@@ -7857,6 +7910,88 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	*rpout=rp;
 
 	return true;
+}
+
+// which way each bind's value travels.  the wire can't say - an out-only, an
+// in-out and an in-only descriptor are byte-identical, right down to the
+// garbage value every one of them carries - so the direction has to come off
+// the statement.  a placeholder in a pl/sql block is declared in-out, which
+// is the safe reading of an unknowable: a value goes in either way, so a
+// block that only reads it behaves as it always did, and one that writes it
+// has somewhere to write to.  keeping the in bit also keeps a re-execute's
+// request shape unchanged - oci sends a value for every bind that has it
+// see "Oracle Wire Protocol - Query3"
+void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
+						const char *query,
+						uint32_t querysize) {
+
+	// a client that didn't ask for an io vector isn't expecting out binds,
+	// and a request that didn't carry the text says nothing about what
+	// the statement does with its placeholders
+	if (!(options&OPTION_SNDIOV) || (options&OPTION_NOPLSQL) ||
+						!query || !querysize) {
+		return;
+	}
+
+	// only oracle's own wire types round trip through the encoders below
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return;
+	}
+
+	// a block, rather than the dml-with-returning-into that also asks
+	// for an io vector - that one needs a row count in front of its
+	// values, which nothing here writes
+	const char	*ptr=query;
+	const char	*endptr=query+querysize;
+	while (ptr<endptr && character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	size_t	left=(size_t)(endptr-ptr);
+	if (!(left>=5 && !charstring::compareIgnoringCase(ptr,"begin",5)) &&
+		!(left>=7 && !charstring::compareIgnoringCase(ptr,
+							"declare",7))) {
+		return;
+	}
+
+	for (uint32_t i=0; i<query3binddescs; i++) {
+
+		oraclequery3bind	*bd=&(query3binds[i]);
+
+		if (!(bd->flags&BIND_FLAG_USE_INDICATORS)) {
+			continue;
+		}
+
+		// a ref cursor's out slot is a whole describe rather than a
+		// value, which is its own job
+		switch (bd->type) {
+			case ORACLE_TYPE_NUMBER:
+			case ORACLE_TYPE_VARNUM:
+			case ORACLE_TYPE_VARCHAR:
+			case ORACLE_TYPE_CHAR:
+				bd->direction=BIND_DIRECTION_INOUT;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (getDebug()) {
+		debugStart("bind directions");
+		for (uint32_t i=0; i<query3binddescs; i++) {
+			debugWrite("bind %d: 0x%02x",
+					i+1,query3binds[i].direction);
+		}
+		debugEnd();
+	}
+}
+
+bool sqlrprotocol_oracle::hasQuery3OutBinds() {
+	for (uint32_t i=0; i<query3binddescs; i++) {
+		if (query3binds[i].direction&BIND_DIRECTION_OUT) {
+			return true;
+		}
+	}
+	return false;
 }
 
 // the name of the "index"th bind variable in the query text, without its
@@ -7954,13 +8089,17 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 	memorypool		*bindpool=cont->getBindPool(cursor);
 	bindpool->clear();
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
+	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
 
 	debugStart("installing binds");
 
 	uint16_t	incount=0;
+	uint16_t	outcount=0;
 	for (uint32_t i=0; i<query3binddescs && incount<maxbindcount; i++) {
 
 		oraclequery3bind	*bd=&(query3binds[i]);
+
+		bd->outindex=-1;
 
 		// a ref cursor and an output-only bind still take a value
 		// slot on the wire, but there's no input value to install
@@ -8113,11 +8252,67 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 		}
 
 		incount++;
+
+		// an in-out bind gets a second, writable slot.  the backend
+		// has no in-out bind of its own - the base class's is a
+		// no-op - so the value goes out through the output bind,
+		// whose buffer is a plain bidirectional OCIBindByName over a
+		// buffer this side owns.  pre-filling that buffer with the
+		// value the wire sent is what makes it behave as in-out:
+		// what's in the buffer at execute time is what the statement
+		// reads, and what the statement writes is what's in it after
+		if (bd->direction!=BIND_DIRECTION_INOUT ||
+						outcount>=maxbindcount) {
+			continue;
+		}
+
+		sqlrserverbindvar	*obv=&(outbinds[outcount]);
+
+		obv->variable=bv->variable;
+		obv->variablesize=bv->variablesize;
+		obv->type=SQLRSERVERBINDVARTYPE_STRING;
+		obv->segmentlengths=NULL;
+		obv->segmentcount=0;
+
+		// room for whatever the statement writes back, which can be
+		// wider than what came in
+		uint32_t	outsize=bv->valuesize;
+		if (bd->buffersize>outsize) {
+			outsize=bd->buffersize;
+		}
+		if (outsize<MIN_OUT_BIND_SIZE) {
+			outsize=MIN_OUT_BIND_SIZE;
+		}
+		if (maxstringbindvaluesize && outsize>maxstringbindvaluesize) {
+			outsize=maxstringbindvaluesize;
+		}
+
+		obv->valuesize=outsize;
+		obv->value.stringval=(char *)bindpool->allocate(outsize+1);
+		bytestring::zero(obv->value.stringval,(size_t)outsize+1);
+
+		// the value going in.  a null one is still bound not-null
+		// with an empty buffer, since the statement may well be
+		// about to write something into it
+		if (bv->type==SQLRSERVERBINDVARTYPE_STRING &&
+						bv->valuesize<=outsize) {
+			bytestring::copy(obv->value.stringval,
+					bv->value.stringval,
+					(size_t)bv->valuesize);
+		}
+		obv->isnull=cont->getNonNullBindValue();
+
+		bd->outindex=(int16_t)outcount;
+		outcount++;
+
+		debugWrite("out bind: %s (%d bytes)",obv->variable,outsize);
 	}
 
 	cont->setInputBindCount(cursor,incount);
+	cont->setOutputBindCount(cursor,outcount);
 
 	debugWrite("bind count: %d",incount);
+	debugWrite("out bind count: %d",outcount);
 	debugEnd();
 
 	return true;
@@ -8166,6 +8361,15 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 	uint16_t	dataflags=0;
 	writeBE(&reqpacket,dataflags);
+
+	// an out bind's direction and its value go in front of everything
+	// else the response carries.  a statement with out binds has no
+	// result set of its own, so this never runs alongside the describe
+	// and rows below
+	if ((options&OPTION_SNDIOV) && hasQuery3OutBinds()) {
+		putIoVector();
+		putOutBindValues(cursor);
+	}
 
 	uint32_t	rowsfetched=0;
 	bool		endofrows=false;
@@ -8356,6 +8560,86 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 	}
 
 	return sendPacket(true);
+}
+
+// tells the client which way each bind went.  four of the six header fields
+// were zero in every capture and nothing explains them; the third was always
+// one.  they go out exactly as the live server sends them
+// see "Oracle Wire Protocol - Query3"
+void sqlrprotocol_oracle::putIoVector() {
+
+	write(&reqpacket,(byte_t)TTC_IO_VECTOR);
+	write(&reqpacket,(byte_t)IO_VECTOR_CONSTANT);
+	writeLenPreInt(&reqpacket,query3binddescs);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+	writeLenPreInt(&reqpacket,(uint32_t)1);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+
+	debugStart("io vector");
+	debugWrite("bind count: %d",query3binddescs);
+	for (uint32_t i=0; i<query3binddescs; i++) {
+		write(&reqpacket,query3binds[i].direction);
+		debugWrite("bind %d: 0x%02x",i+1,query3binds[i].direction);
+	}
+	debugEnd();
+}
+
+// what the statement left in each out bind, in descriptor order.  an in-only
+// bind contributes nothing here - the client isn't expecting one for it -
+// and every value carries a signed indicator behind it
+// see "Oracle Wire Protocol - Query3"
+void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
+
+	write(&reqpacket,(byte_t)TTC_ROW_DATA);
+
+	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
+	uint16_t		outbindcount=cont->getOutputBindCount(cursor);
+
+	debugStart("out bind values");
+
+	for (uint32_t i=0; i<query3binddescs; i++) {
+
+		oraclequery3bind	*bd=&(query3binds[i]);
+
+		if (!(bd->direction&BIND_DIRECTION_OUT)) {
+			continue;
+		}
+
+		// a descriptor the install didn't get to still owes the
+		// client a slot, and null is the honest answer for one
+		sqlrserverbindvar	*bv=(bd->outindex>=0 &&
+					bd->outindex<(int16_t)outbindcount)?
+					&(outbinds[bd->outindex]):NULL;
+
+		if (!bv || cont->getBindValueIsNull(bv->isnull)) {
+			debugWrite("bind %d: NULL",i+1);
+			write(&reqpacket,(byte_t)0);
+			write(&reqpacket,
+				(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
+			write(&reqpacket,
+				(byte_t)OUT_BIND_NULL_INDICATOR_VALUE);
+			continue;
+		}
+
+		// the buffer is bound the width of the whole allocation, so
+		// what came back out of it is however much of it is text
+		const char	*value=bv->value.stringval;
+		uint32_t	size=(uint32_t)charstring::getLength(value);
+
+		debugWrite("bind %d: \"%.*s\"",i+1,(int)size,value);
+
+		if (bd->type==ORACLE_TYPE_NUMBER ||
+				bd->type==ORACLE_TYPE_VARNUM) {
+			putNumberField(value,size);
+		} else {
+			putLenBytes(value,size);
+		}
+		write(&reqpacket,(byte_t)0);
+	}
+
+	debugEnd();
 }
 
 void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
@@ -10939,6 +11223,12 @@ bool sqlrprotocol_oracle::sendReexecuteResponse(sqlrservercursor *cursor,
 	uint16_t	dataflags=0;
 	writeBE(&reqpacket,dataflags);
 
+	// the out bind values, but no io vector - the client learned the
+	// directions from the full execute that came before this
+	if (hasQuery3OutBinds()) {
+		putOutBindValues(cursor);
+	}
+
 	uint32_t	rowcount=(query3knowsaffectedrows)?query3affectedrows:0;
 
 	putSummary(cursorid,0,rowcount,NULL);
@@ -12340,7 +12630,9 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 // cursor's bind pool, which owns them - freeing one individually is a free
 // of pool memory, and glibc rejects it
 void sqlrprotocol_oracle::clearParams(sqlrservercursor *cursor) {
+	// counts only - the bind pool owns the values and frees them itself
 	cont->setInputBindCount(cursor,0);
+	cont->setOutputBindCount(cursor,0);
 }
 
 bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
