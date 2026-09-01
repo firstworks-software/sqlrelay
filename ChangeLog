@@ -1420,6 +1420,12 @@
 		whose internal type had no wire type fell through the field
 		writer silently; it also no longer hands the field writer a
 		NULL field pointer that getField() left behind
+	fixed the oracle protocol module's close, occa, and releaseRefCursors
+		cursor-close paths to also clear cursorbindcounts and the
+		input-output bind count when releasing a cursor back to the
+		pool, for consistency with the columntypescached/rowssent fix
+		above; another latent asymmetry with no known live reproducer,
+		found by inspection
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

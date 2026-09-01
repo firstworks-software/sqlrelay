@@ -8486,6 +8486,8 @@ void sqlrprotocol_oracle::releaseRefCursors(uint16_t parentid) {
 
 		cont->abort(child);
 		cont->release(child);
+		cursorbindcounts[childid]=0;
+		cont->setInputOutputBindCount(child,0);
 		columntypescached[childid]=false;
 		rowssent[childid]=0;
 		pendingrow[childid].clear();
@@ -12900,6 +12902,8 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	clearParams(cursor);
 	cont->abort(cursor);
 	cont->release(cursor);
+	cursorbindcounts[closingid]=0;
+	cont->setInputOutputBindCount(cursor,0);
 	columntypescached[closingid]=false;
 	rowssent[closingid]=0;
 	pendingrow[closingid].clear();
@@ -13292,6 +13296,8 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		clearParams(cursor);
 		cont->abort(cursor);
 		cont->release(cursor);
+		cursorbindcounts[closingid]=0;
+		cont->setInputOutputBindCount(cursor,0);
 		columntypescached[closingid]=false;
 		rowssent[closingid]=0;
 		pendingrow[closingid].clear();
