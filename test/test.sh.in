@@ -979,8 +979,14 @@ run_protocol_test() {
 	# ORACLEPROTOCOLPORT5), which covers a backend error landing on a
 	# row past the first fetch (#9601).  the ports are 1521 through 1525
 	# by default; the test reaches each one through its tnsnames.ora
-	# alias, which carries whatever port the run picked.  all five runs
-	# have to succeed for the instance to pass
+	# alias, which carries whatever port the run picked.  it also runs
+	# oracledescribeonly, a raw-socket test (a hand-built login and wire
+	# protocol, no OCI) for #9606 - the re-execute guard from #9599 can't
+	# be reached through OCI, which answers a describe-only request on an
+	# already-executed statement from its own client-side cache rather
+	# than putting a second describe on the wire.  it talks to the
+	# default instance's port directly, so it needs neither $server nor
+	# TNS_ADMIN.  all six runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -993,7 +999,9 @@ run_protocol_test() {
 		resultconnectstrings="$?"
 		./$prog sqlrelayfetchatonce
 		resultfetchatonce="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" )
+		./oracledescribeonly
+		resultdescribeonly="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1018,6 +1026,10 @@ run_protocol_test() {
 		if ( test "$resultfetchatonce" != "0" )
 		then
 			printf "    % 8s: failed (fetchatonce)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultdescribeonly" != "0" )
+		then
+			printf "    % 8s: failed (describe only)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
@@ -1411,9 +1423,14 @@ if ( test "$randomports" = "yes" )
 then
 	pick_ports
 	regenerate_files
-	export_ports
 	echo
 fi
+
+# export the ports unconditionally, not just under -randomports - a
+# raw-socket test like oracledescribeonly reads its port straight from the
+# environment rather than through a generated config/tnsnames alias, and
+# needs the configure-baked defaults here just as much as a randomports run
+export_ports
 
 
 echo "SQL Relay test results:" > "$RESULTSLOG"

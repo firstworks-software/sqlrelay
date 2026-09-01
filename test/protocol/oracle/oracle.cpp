@@ -871,8 +871,10 @@ int main(int argc, char **argv) {
 	// note: OCI answers OCI_DESCRIBE_ONLY on an already-executed statement
 	// from its own client-side cache, so this case never actually puts a
 	// second describe on the wire - it doesn't exercise the server-side
-	// guard, only the client-visible behavior it protects.  #9606 covers
-	// adding a raw-packet test that can reach the guard directly
+	// guard, only the client-visible behavior it protects.
+	// oracledescribeonly in this directory is the test that reaches the
+	// guard itself: it builds the describe-only TTI_QUERY3 by hand and
+	// puts it on the wire, with no OCI in the way
 	stdoutput.printf("OCIStmtExecute - describe only, mid-fetch\n");
 	OCIStmt	*midfetchstmt=NULL;
 	assertEquals(

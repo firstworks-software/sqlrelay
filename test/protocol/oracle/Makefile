@@ -27,7 +27,11 @@ ORACLEPROTOCOLPORT5 ?= 1525
 
 # oracle.class only builds if a jdk is configured - see
 # ORACLEPROTOCOLTESTTARGETS in config.mk.in
-all: oracle ociselect $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+#
+# oracledescribeonly only needs rudiments (raw sockets), so it builds
+# whether or not OCI is configured - it speaks the oracle wire protocol
+# itself rather than going through a client library
+all: oracle ociselect oracledescribeonly $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -48,6 +52,17 @@ oracle: oracle.cpp oracle.$(OBJ)
 ociselect: ociselect.cpp ociselect.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
+# oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
+# the test's main, the same way asserts.cpp is.  the explicit dependency
+# below is needed because the .cpp.$(OBJ) suffix rule only depends on
+# oracledescribeonly.cpp - without it, editing oracleprotocolclient.cpp
+# alone would relink but not recompile, leaving a stale object (see
+# AGENTS.md's note on this build tracking no header dependencies)
+oracledescribeonly.$(OBJ): oracleprotocolclient.cpp
+
+oracledescribeonly: oracledescribeonly.cpp oracleprotocolclient.cpp oracledescribeonly.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracledescribeonly.$(OBJ) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oracle$(EXE) ociselect$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oracle$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) tnsnames.ora
 	$(RMTREE) .libs
