@@ -1398,6 +1398,10 @@
 		cursor bind whose backing cursor is gone by the time the
 		response is written - it now answers null instead of reading
 		the bind value union as a string pointer
+	fixed the oracle protocol module's legacy (pre-query3) fetch response
+		path ignoring a getField() failure and falling through to send
+		the stale, untranslated field it left behind as though it were
+		good; it now reports the error back to the client instead
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

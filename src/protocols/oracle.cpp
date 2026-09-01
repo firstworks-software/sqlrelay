@@ -1632,7 +1632,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						bool isbinary,
 						bool isautoincrement);
 		void	putIov();
-		void	putRow(sqlrservercursor *cursor,
+		bool	putRow(sqlrservercursor *cursor,
 						uint32_t colcount,
 						bool terminator);
 		bool	putField(const char *field,
@@ -11908,7 +11908,10 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		debugStart("fetch response row");
 		debugWrite("row marker: 0x07");
 
-		putRow(cursor,colcount,exactfetch);
+		if (!putRow(cursor,colcount,exactfetch)) {
+			debugEnd();
+			return sendQueryError(cursor);
+		}
 
 		debugEnd();
 
@@ -12527,7 +12530,7 @@ void sqlrprotocol_oracle::putIov() {
 	debugEnd();
 }
 
-void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
+bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 						uint32_t colcount,
 						bool terminator) {
 
@@ -12551,7 +12554,8 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		lob=false;
 		null=false;
 		if (!cont->getField(cursor,i,&field,&fieldsize,&lob,&null)) {
-			// FIXME: handle error
+			debugEnd();
+			return false;
 		}
 
 		// put the field
@@ -12582,6 +12586,8 @@ void sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 
 		debugEnd();
 	}
+
+	return true;
 }
 
 bool sqlrprotocol_oracle::putField(const char *field,
