@@ -8525,9 +8525,21 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		} else if (wiretype==ORACLE_TYPE_INTERVALYM ||
 				wiretype==ORACLE_TYPE_INTERVALDS) {
 			debugWrite("interval: %.*s",(int)fieldsize,field);
+			// putIntervalField() hand-parses oracle's own
+			// interval text - a column that reaches this wire
+			// type via the backend-agnostic type name table (see
+			// oracletypemap[]'s "INTERVAL" entry) can come from a
+			// postgresql column fronted through this module, and
+			// postgresql's interval text doesn't look like
+			// oracle's - encoding it as though it did risks
+			// silently plausible-but-wrong bytes, so only a
+			// genuine oracle backend gets the real encoder
 			bool	daytosecond=
 				(wiretype==ORACLE_TYPE_INTERVALDS);
-			if (!putIntervalField(field,fieldsize,daytosecond)) {
+			if (charstring::compare(
+					cont->getNativeDbType(),"oracle") ||
+				!putIntervalField(field,fieldsize,
+							daytosecond)) {
 				// same as a date that won't parse - an
 				// interval the module can't take apart is no
 				// more use to the client than a null
@@ -8536,9 +8548,19 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		} else if (wiretype==ORACLE_TYPE_TIMESTAMP ||
 				wiretype==ORACLE_TYPE_TIMESTAMPTZ) {
 			debugWrite("timestamp: %.*s",(int)fieldsize,field);
+			// same reasoning as the interval case just above -
+			// db2, mysql, firebird, postgresql, sap, odbc and
+			// freetds all report their own native timestamp
+			// columns under the same "TIMESTAMP"/"TIMESTAMPTZ"
+			// names oracle's real ones use, and their timestamp
+			// text doesn't parse like oracle's - only encode the
+			// real binary form for a genuine oracle backend
 			bool	withtimezone=
 				(wiretype==ORACLE_TYPE_TIMESTAMPTZ);
-			if (!putTimestampField(field,fieldsize,withtimezone)) {
+			if (charstring::compare(
+					cont->getNativeDbType(),"oracle") ||
+				!putTimestampField(field,fieldsize,
+							withtimezone)) {
 				// same as a date that won't parse - a
 				// timestamp the module can't take apart is
 				// no more use to the client than a null
@@ -10494,35 +10516,48 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 						uint16_t columntype) {
 
 	// a type the backend has no datatype of its own for comes through
-	// named UNKNOWN, and getColumnType() takes that for a varchar2.
-	// both interval types arrive that way, and so do all three
-	// timestamp types, and a varchar2 is a lie about every one of them
-	// - a client that asks what the column is gets 1 and 4000 back
-	// instead of the type and the width the value really has - so they
-	// have to be picked back out here and encoded on the wire.
+	// named UNKNOWN, and getColumnType() takes that for a varchar2.  a
+	// plain timestamp and a timestamp with local time zone are picked
+	// out of that earlier, in the connection module, by their own oci
+	// type codes (see getColumnType()'s TIMESTAMP_TYPE/TIMESTAMP_LTZ_TYPE
+	// cases in src/connections/oracle.cpp) - what's left to recover here
+	// is interval year to month, interval day to second, and timestamp
+	// with time zone, none of which have an oci type code of their own
+	// in the connection module yet, and a varchar2 is a lie about all
+	// three - a client that asks what the column is gets 1 and 4000
+	// back instead of the type and the width the value really has.
 	//
-	// the size and precision the backend does report tell them apart
-	// from everything else that arrives UNKNOWN.  an interval's size is
-	// its fixed internal width and its precision is the leading field's,
-	// 1 through 9; a timestamp is as wide as its own binary form and has
-	// no leading field, so oracle reports no precision for one:
+	// the size the backend reports tells the three apart, and, now that
+	// a plain/local-tz timestamp is resolved before reaching here, tells
+	// them apart from everything else that arrives UNKNOWN too:
 	//
-	//	interval year to month		size 5, precision 2
-	//	interval day to second		size 11, precision 2
-	//	timestamp			size 11, precision 0
-	//	timestamp with time zone	size 13, precision 0
+	//	interval year to month		size 5
+	//	interval day to second		size 11
+	//	timestamp with time zone	size 13
 	//
-	// (the precisions are the defaults - a declared "interval day(4) to
-	// second(9)" reports 4)
-	//
-	// a timestamp with local time zone reports size 11 and precision 0
-	// too, exactly as a plain timestamp does, so it comes out of here a
-	// timestamp.  nothing the backend reports tells the two apart, and
-	// the backend hands a local time zone column's value over in the
-	// same text a plain timestamp's comes in, so the timestamp encoding
-	// is right for it as far as it goes - it is only the type the
-	// client is told that is off by one
+	// precision isn't part of that test.  it was, in an earlier version
+	// of this function, as a stand-in for "is this really an interval,
+	// or a plain timestamp that happens to also be 11 bytes wide" - but
+	// oracle allows an interval's leading field precision to be declared
+	// 0 ("interval day(0) to second"), which reports precision 0, the
+	// same as a timestamp's - a live server confirms both read (size 11,
+	// precision 0) identically, so precision can't tell them apart, and
+	// doesn't need to now that the timestamp side of that collision is
+	// resolved earlier instead
 	if (columntype!=ORACLE_TYPE_VARCHAR) {
+		return columntype;
+	}
+
+	// this size/name-based recovery is only safe for a genuine oracle
+	// backend.  postgresql reports its own interval and timestamp with
+	// time zone columns under the same "INTERVAL"/"TIMESTAMPTZ" names a
+	// real oracle column would (see oracletypemap[]), and there's no
+	// guarantee its own reported column size ever collides with 5, 11 or
+	// 13 - but there's no guarantee it doesn't, either, and getting this
+	// wrong would silently mis-type a postgresql column, not just
+	// mis-encode its value (that part putRowData() already gates - see
+	// the callers of putIntervalField()/putTimestampField())
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
 		return columntype;
 	}
 
@@ -10535,18 +10570,11 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 
 	uint32_t	size=cont->getColumnSize(cursor,column);
 
-	if (cont->getColumnPrecision(cursor,column)) {
-		if (size==ORACLE_INTERVALYM_SIZE) {
-			return ORACLE_TYPE_INTERVALYM;
-		}
-		if (size==ORACLE_INTERVALDS_SIZE) {
-			return ORACLE_TYPE_INTERVALDS;
-		}
-		return columntype;
+	if (size==ORACLE_INTERVALYM_SIZE) {
+		return ORACLE_TYPE_INTERVALYM;
 	}
-
-	if (size==ORACLE_TIMESTAMP_SIZE) {
-		return ORACLE_TYPE_TIMESTAMP;
+	if (size==ORACLE_INTERVALDS_SIZE) {
+		return ORACLE_TYPE_INTERVALDS;
 	}
 	if (size==ORACLE_TIMESTAMPTZ_SIZE) {
 		return ORACLE_TYPE_TIMESTAMPTZ;

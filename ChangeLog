@@ -1322,6 +1322,26 @@
 		oracle connection module reports both as UNKNOWN like it does an
 		interval, so getUnknownColumnType() now recovers all five of
 		these types from the backend's own size and precision
+	oracle connection module: recognizes a real timestamp/timestamp with
+		local time zone column by its own oci type code instead of
+		leaving both to be guessed at by size and precision - an oracle
+		interval day to second column can legally declare a leading
+		field precision of 0, which reads back identically to a plain
+		timestamp's (size 11, precision 0), so the old guess
+		misidentified one as the other and lost the interval's value;
+		a timestamp(0) column, which describes narrower than a normal
+		timestamp's binary form, is left alone as before
+	oracle protocol module: putRowData() only encodes a real oracle
+		timestamp, timestamp with time zone, or interval's binary form
+		for a genuine oracle backend (per getNativeDbType(), the same
+		check the long fix added) - db2, mysql, firebird, postgresql,
+		sap, odbc and freetds all report their own native timestamp
+		columns, and postgresql its own interval and timestamp with
+		time zone columns, under the same type names a real oracle
+		column would, and none of their text looks like oracle's; a
+		column from one of those backends fronted through this module
+		now falls back to null instead of risking a plausible-looking
+		but wrong value
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

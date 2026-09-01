@@ -53,6 +53,11 @@ extern "C" {
 	#define CLOB_TYPE 112
 	#define BLOB_TYPE 113
 	#define BFILE_TYPE 114
+	#define TIMESTAMP_TYPE 187
+	// oci describes a timestamp with local time zone as its own code,
+	// but nothing distinguishes its value from a plain timestamp's once
+	// it arrives as text, so it's reported as the same datatype
+	#define TIMESTAMP_LTZ_TYPE 232
 
 	#define LONG_BIND_TYPE 3
 	#define DOUBLE_BIND_TYPE 4
@@ -5125,6 +5130,18 @@ uint16_t oraclecursor::getColumnNameSize(uint32_t col) {
 }
 
 uint16_t oraclecursor::getColumnType(uint32_t col) {
+
+	// a timestamp(0) column - no fractional seconds - describes 7 bytes
+	// wide instead of the usual 11; the protocol module's binary
+	// encoder for a real timestamp only knows the 11-byte form, so a
+	// narrower one is left to fall through to UNKNOWN/text below rather
+	// than guess at an encoding nothing has verified
+	if ((desc[col].dbtype==TIMESTAMP_TYPE ||
+			desc[col].dbtype==TIMESTAMP_LTZ_TYPE) &&
+			desc[col].dbsize==11) {
+		return TIMESTAMP_DATATYPE;
+	}
+
 	switch (desc[col].dbtype) {
 		case VARCHAR2_TYPE:
 			return VARCHAR2_DATATYPE;
