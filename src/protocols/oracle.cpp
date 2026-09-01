@@ -1354,6 +1354,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t columntype);
+		uint16_t	getLongColumnType(
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype);
 		uint16_t	getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,
@@ -8244,6 +8248,9 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_LONG_RAW:
 			wiretype=ORACLE_TYPE_LONG_RAW;
 			break;
+		case ORACLE_TYPE_LONG:
+			wiretype=ORACLE_TYPE_LONG;
+			break;
 		case ORACLE_TYPE_INTERVALYM:
 			wiretype=ORACLE_TYPE_INTERVALYM;
 			break;
@@ -8326,7 +8333,8 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		if (!size) {
 			size=MAX_RAW_SIZE;
 		}
-	} else if (wiretype==ORACLE_TYPE_LONG_RAW) {
+	} else if (wiretype==ORACLE_TYPE_LONG_RAW ||
+			wiretype==ORACLE_TYPE_LONG) {
 		size=ORACLE_LONG_SIZE;
 	} else if (wiretype==ORACLE_TYPE_INTERVALYM ||
 			wiretype==ORACLE_TYPE_INTERVALDS) {
@@ -8465,6 +8473,13 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 					write(&reqpacket,(byte_t)0);
 				}
 			}
+		} else if (wiretype==ORACLE_TYPE_LONG) {
+			debugWrite("long: %.*s",(int)fieldsize,field);
+			// a long is text, so nothing has to be decoded the
+			// way a long raw does - but it goes out in the same
+			// long form, since a long can be far bigger than
+			// the short form's 252 bytes
+			putLongBytes(field,(uint32_t)fieldsize);
 		} else if (wiretype==ORACLE_TYPE_INTERVALYM ||
 				wiretype==ORACLE_TYPE_INTERVALDS) {
 			debugWrite("interval: %.*s",(int)fieldsize,field);
@@ -9982,6 +9997,7 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 					cont->getColumnTypeNameSize(cursor,i),
 					cont->getColumnScale(cursor,i));
 		ct[i]=getUnknownColumnType(cursor,i,ct[i]);
+		ct[i]=getLongColumnType(cursor,i,ct[i]);
 		debugWrite("%s: %d",cont->getColumnTypeName(cursor,i),ct[i]);
 	}
 
@@ -10221,6 +10237,41 @@ uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
 		return ORACLE_TYPE_INTERVALDS;
 	}
 	return columntype;
+}
+
+uint16_t sqlrprotocol_oracle::getLongColumnType(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype) {
+
+	// "LONG" is one type name in the controller's table that means two
+	// different things.  oracle returns it for its own LONG, which is
+	// character data, and sap/freetds return it for CS_LONG_TYPE, which
+	// is binary - see isBlobTypeChar() in src/common/datatypes.h, which
+	// keeps it among the binary types for exactly that reason.
+	// oracletypemap[] has to answer for both backends at once, so it
+	// leaves the name mapped to a blob, and a real oracle LONG is
+	// picked back out here instead.
+	//
+	// which means the real backend has to be oracle.  any backend can
+	// be fronted by any protocol module, so this same describe runs
+	// over a sap column named LONG too, and encoding that column's
+	// binary as oracle's text LONG would quietly corrupt it.  nothing
+	// narrower tells the two apart - both arrive mapped to a blob,
+	// neither has a declared width - so it is the backend's own
+	// identity that decides, which is what getNativeDbType() answers
+	// (getDbType() answers what the client was told to expect, which
+	// is not the same question)
+	if (columntype!=ORACLE_TYPE_BLOB) {
+		return columntype;
+	}
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return columntype;
+	}
+	if (charstring::compareIgnoringCase(
+			cont->getColumnTypeName(cursor,column),"LONG")) {
+		return columntype;
+	}
+	return ORACLE_TYPE_LONG;
 }
 
 uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
