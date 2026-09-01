@@ -12885,6 +12885,8 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	clearParams(cursor);
 	cont->abort(cursor);
 	cont->release(cursor);
+	columntypescached[closingid]=false;
+	rowssent[closingid]=0;
 	pendingrow[closingid].clear();
 	clearLobPin(closingid);
 	if (lastcursorid==closingid) {
@@ -13275,6 +13277,8 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		clearParams(cursor);
 		cont->abort(cursor);
 		cont->release(cursor);
+		columntypescached[closingid]=false;
+		rowssent[closingid]=0;
 		pendingrow[closingid].clear();
 		clearLobPin(closingid);
 		if (lastcursorid==closingid) {

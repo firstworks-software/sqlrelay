@@ -1411,6 +1411,9 @@
 		path ignoring a getField() failure and sending the client a
 		null value in its place; it now reports the error back to the
 		client instead, same as the legacy fetch response path
+	fixed the oracle protocol module's close and occa cursor-close
+		handlers to also clear columntypescached and rowssent when
+		releasing a cursor back to the pool, matching releaseRefCursors()
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
