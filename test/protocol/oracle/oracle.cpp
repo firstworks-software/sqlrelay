@@ -857,6 +857,72 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #9599 - a describe-only on a mid-fetch cursor must not rewind it.
+	// note: OCI answers OCI_DESCRIBE_ONLY on an already-executed statement
+	// from its own client-side cache, so this case never actually puts a
+	// second describe on the wire - it doesn't exercise the server-side
+	// guard, only the client-visible behavior it protects.  #9606 covers
+	// adding a raw-packet test that can reach the guard directly
+	stdoutput.printf("OCIStmtExecute - describe only, mid-fetch\n");
+	OCIStmt	*midfetchstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&midfetchstmt,
+					OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(midfetchstmt,err,
+				(text *)query,charstring::getLength(query),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,midfetchstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	OCIDefine	*midfetchdef=NULL;
+	char		midfetchnumber[64];
+	sb2		midfetchind=0;
+	ub2		midfetchretlen=0;
+	ub2		midfetchretcode=0;
+	bytestring::zero(midfetchnumber,sizeof(midfetchnumber));
+	assertEquals(
+		OCIDefineByPos(midfetchstmt,&midfetchdef,err,1,
+				midfetchnumber,sizeof(midfetchnumber),SQLT_STR,
+				&midfetchind,&midfetchretlen,&midfetchretcode,
+				OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(midfetchstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)midfetchnumber,"1");
+	assertEquals(
+		OCIStmtExecute(svc,midfetchstmt,err,0,0,NULL,NULL,
+						OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	ub4	midfetchncols=0;
+	assertEquals(
+		OCIAttrGet(midfetchstmt,OCI_HTYPE_STMT,
+				&midfetchncols,NULL,OCI_ATTR_PARAM_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)midfetchncols,4);
+	assertColumn(midfetchstmt,1,"TESTNUMBER",SQLT_NUM,22,10,0);
+	assertColumn(midfetchstmt,2,"TESTCHAR",SQLT_AFC,20,0,0);
+	assertColumn(midfetchstmt,3,"TESTVARCHAR",SQLT_CHR,40,0,0);
+	assertColumn(midfetchstmt,4,"TESTDATE",SQLT_DAT,7,0,0);
+	// the fetch picks up where it left off, rather than back at row 1
+	assertEquals(
+		OCIStmtFetch2(midfetchstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)midfetchnumber,"2");
+	assertEquals(
+		OCIStmtFetch2(midfetchstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((const char *)midfetchnumber,"3");
+	assertEquals(
+		OCIStmtFetch2(midfetchstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_NO_DATA);
+	assertEquals(OCIHandleFree(midfetchstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 
 	stdoutput.printf("\n=============== Binds ================\n\n");
 

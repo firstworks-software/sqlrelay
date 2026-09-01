@@ -7473,9 +7473,16 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	// comes from an executed statement.  but a describe alone (no
 	// explicit execute) should never run anything other than a select -
 	// running dml just to answer a describe would perform work the
-	// client never asked for
-	bool	describecanexecute=(options&OPTION_DESCRIBE) &&
-					cursor->getQueryType()==SQLRQUERYTYPE_SELECT;
+	// client never asked for.  and a describe alone should never re-run
+	// a cursor that has already been executed - its columns are already
+	// cached, and re-running it would rewind a result set that the client
+	// may be in the middle of fetching
+	uint16_t	curid=cont->getId(cursor);
+	bool		describecanexecute=(options&OPTION_DESCRIBE) &&
+					cursor->getQueryType()==
+							SQLRQUERYTYPE_SELECT &&
+					!columntypescached[curid] &&
+					!rowssent[curid];
 	if ((options&OPTION_EXECUTE) || describecanexecute) {
 
 		// a placeholder the client never bound anything to

@@ -1402,6 +1402,11 @@
 		path ignoring a getField() failure and falling through to send
 		the stale, untranslated field it left behind as though it were
 		good; it now reports the error back to the client instead
+	fixed the oracle protocol module's describe-only handling so it no
+		longer re-executes a cursor that's already been executed - it
+		now answers from the cursor's cached column metadata instead,
+		so a describe issued while a result set is mid-fetch no longer
+		rewinds it or leaves the row count stale
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
