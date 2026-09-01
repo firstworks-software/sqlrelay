@@ -424,6 +424,20 @@
 // wide
 #define ORACLE_DATE_SIZE		7
 
+// an oracle rowid's external form is 18 base 64 characters: 6 for the data
+// object number, 3 for the relative file number, 6 for the block number and
+// 3 for the row number.  a live 12.2 server describes such a column 1 byte
+// wide and puts a constant 0x0e in front of the value, whatever the four
+// numbers in it come to - see putRowidField()
+#define ORACLE_ROWID_TEXT_SIZE		18
+#define ORACLE_ROWID_OBJECT_DIGITS	6
+#define ORACLE_ROWID_FILE_DIGITS	3
+#define ORACLE_ROWID_BLOCK_DIGITS	6
+#define ORACLE_ROWID_ROW_DIGITS		3
+#define ORACLE_ROWID_PARTS		4
+#define ORACLE_ROWID_SIZE		1
+#define ORACLE_ROWID_LENGTH_BYTE	0x0e
+
 // what a column with no size of its own is described as
 #define MAX_VARCHAR_SIZE		4000
 
@@ -1256,6 +1270,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							char *out,
 							uint32_t outsize,
 							uint32_t *outlen);
+		bool	putRowidField(const char *field,
+							uint64_t fieldsize);
+		int16_t	getRowidDigit(char c);
 
 		// execute...
 		bool	execute(const byte_t *rp);
@@ -8040,10 +8057,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 						columntype,wiretype);
 
 	// the wire protocol's "0x80" flag and several fields below it are
-	// gated on "any type other than NUMBER", not on being a character
-	// type - NUMBER is the only column type that gets the abbreviated
-	// encoding
-	bool	notnumber=(wiretype!=ORACLE_TYPE_NUMBER);
+	// gated on the type rather than on being a character type.  a live
+	// 12.2 server sends the abbreviated encoding - a 0x00 flag byte, no
+	// character set and no second size - for a rowid as well as for a
+	// number, and the full encoding for everything else
+	bool	fullencoding=(wiretype!=ORACLE_TYPE_NUMBER &&
+				wiretype!=ORACLE_TYPE_ROWID_DEPRECATED);
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
@@ -8055,7 +8074,7 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 					NO_SCALE:(int8_t)scale;
 
 	write(&reqpacket,(byte_t)wiretype);
-	write(&reqpacket,(byte_t)((notnumber)?0x80:0x00));
+	write(&reqpacket,(byte_t)((fullencoding)?0x80:0x00));
 
 	putColumnPrecisionScale((int8_t)precision,wirescale);
 
@@ -8067,9 +8086,9 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
-	writeLenPreInt(&reqpacket,(notnumber)?charset:0);
-	write(&reqpacket,(byte_t)((notnumber)?1:0));
-	writeLenPreInt(&reqpacket,(notnumber)?size:0);
+	writeLenPreInt(&reqpacket,(fullencoding)?charset:0);
+	write(&reqpacket,(byte_t)((fullencoding)?1:0));
+	writeLenPreInt(&reqpacket,(fullencoding)?size:0);
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)namesize);
 	putDalc(name,namesize);
@@ -8136,6 +8155,13 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_DATE:
 			wiretype=ORACLE_TYPE_DATE;
 			break;
+		case ORACLE_TYPE_ROWID:
+		case ORACLE_TYPE_ROWID_DEPRECATED:
+			// a live 12.2 server describes a rowid column, real
+			// or the pseudo-column, as 11 rather than 104, to an
+			// oci client and to a thin driver alike
+			wiretype=ORACLE_TYPE_ROWID_DEPRECATED;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
@@ -8185,6 +8211,11 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		size=MAX_NUMBER_SIZE;
 	} else if (wiretype==ORACLE_TYPE_DATE) {
 		size=ORACLE_DATE_SIZE;
+	} else if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
+		// not the 18 characters a rowid prints as, and not the 8
+		// bytes it stores in - a live 12.2 server describes one as 1
+		// byte wide, and oci works the display size out from the type
+		size=ORACLE_ROWID_SIZE;
 	} else if (!isCharacterColumn(columntypestring,columntype)) {
 		// everything else goes out as text, and this size is the
 		// buffer the client reads that text into.  the backend's
@@ -8287,6 +8318,14 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				// every column has to write something, and
 				// a date that won't parse is no more use to
 				// the client than a null
+				write(&reqpacket,(byte_t)0);
+			}
+		} else if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
+			debugWrite("rowid: %.*s",(int)fieldsize,field);
+			if (!putRowidField(field,fieldsize)) {
+				// same as a date that won't parse - a rowid
+				// the module can't take apart is no more use
+				// to the client than a null
 				write(&reqpacket,(byte_t)0);
 			}
 		} else {
@@ -8667,6 +8706,92 @@ bool sqlrprotocol_oracle::getNumberField(const byte_t *bytes,
 	out[len]='\0';
 
 	*outlen=len;
+
+	return true;
+}
+
+int16_t sqlrprotocol_oracle::getRowidDigit(char c) {
+	if (c>='A' && c<='Z') {
+		return (int16_t)(c-'A');
+	}
+	if (c>='a' && c<='z') {
+		return (int16_t)(c-'a'+26);
+	}
+	if (c>='0' && c<='9') {
+		return (int16_t)(c-'0'+52);
+	}
+	if (c=='+') {
+		return 62;
+	}
+	if (c=='/') {
+		return 63;
+	}
+	return -1;
+}
+
+bool sqlrprotocol_oracle::putRowidField(const char *field,
+						uint64_t fieldsize) {
+
+	debugStart("rowid field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
+	// the backend hands a rowid over in the 18 character base 64 form
+	// oracle prints it as, and the wire wants the four numbers packed
+	// into it back: a constant length byte, then the data object number
+	// and the relative file number, a zero byte, and the block number
+	// and the row number, each a count prefixed integer.  captured from
+	// a live 12.2 server, which sends the same bytes whether the client
+	// defined the column a rowid or a string:
+	//
+	//	AAScpAAAFAAAAQvAAh ->
+	//		0e 03 49 ca 40 01 05 00 02 04 2f 01 21
+	//
+	// the length byte is 0x0e in every capture, whatever the numbers
+	// after it come to, so it is a constant rather than a count of them.
+	// the zero byte is one the thin drivers skip without reading
+	if (fieldsize!=ORACLE_ROWID_TEXT_SIZE) {
+		debugWrite("not %d characters",
+				(uint32_t)ORACLE_ROWID_TEXT_SIZE);
+		debugEnd();
+		return false;
+	}
+
+	static const uint16_t	partdigits[ORACLE_ROWID_PARTS]={
+					ORACLE_ROWID_OBJECT_DIGITS,
+					ORACLE_ROWID_FILE_DIGITS,
+					ORACLE_ROWID_BLOCK_DIGITS,
+					ORACLE_ROWID_ROW_DIGITS};
+
+	// decode, most significant digit first
+	uint32_t	parts[ORACLE_ROWID_PARTS];
+	uint16_t	pos=0;
+	for (uint16_t i=0; i<ORACLE_ROWID_PARTS; i++) {
+		parts[i]=0;
+		for (uint16_t j=0; j<partdigits[i]; j++) {
+			int16_t	digit=getRowidDigit(field[pos]);
+			if (digit<0) {
+				debugWrite("bad character at %d",
+							(uint32_t)pos);
+				debugEnd();
+				return false;
+			}
+			parts[i]=(parts[i]<<6)+(uint32_t)digit;
+			pos++;
+		}
+	}
+
+	write(&reqpacket,(byte_t)ORACLE_ROWID_LENGTH_BYTE);
+	writeLenPreInt(&reqpacket,parts[0]);
+	writeLenPreInt(&reqpacket,parts[1]);
+	write(&reqpacket,(byte_t)0);
+	writeLenPreInt(&reqpacket,parts[2]);
+	writeLenPreInt(&reqpacket,parts[3]);
+
+	debugWrite("object: %d",parts[0]);
+	debugWrite("file: %d",parts[1]);
+	debugWrite("block: %d",parts[2]);
+	debugWrite("row: %d",parts[3]);
+	debugEnd();
 
 	return true;
 }

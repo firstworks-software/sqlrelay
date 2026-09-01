@@ -1277,6 +1277,13 @@
 		re-execute call that a second execute of an already-bound
 		statement arrives as, and moved both bind paths' values onto
 		the cursor's bind pool, so nothing frees them individually
+	oracle protocol module: rowid columns now describe as their real
+		type and encode correctly on the wire, rather than falling
+		back to varchar2 text - putRowData() packs the four numbers
+		in a rowid's base 64 external form back into the binary form
+		a live server sends; the oracle connection module now also
+		recognizes oci's rowid type code 104 alongside the older 11,
+		so getColumnType() no longer reports such a column unknown
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

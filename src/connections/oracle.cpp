@@ -42,6 +42,9 @@ extern "C" {
 	#define	NUMBER_TYPE 2
 	#define	LONG_TYPE 8
 	#define ROWID_TYPE 11
+	// oci describes a rowid column as 104 rather than 11 - 11 is the
+	// older code and a describe hasn't reported it in a long time
+	#define ROWID_DESCRIPTOR_TYPE 104
 	#define DATE_TYPE 12
 	#define RAW_TYPE 23
 	#define LONG_RAW_TYPE 24
@@ -5130,6 +5133,7 @@ uint16_t oraclecursor::getColumnType(uint32_t col) {
 		case LONG_TYPE:
 			return LONG_DATATYPE;
 		case ROWID_TYPE:
+		case ROWID_DESCRIPTOR_TYPE:
 			return ROWID_DATATYPE;
 		case DATE_TYPE:
 			return DATE_DATATYPE;
