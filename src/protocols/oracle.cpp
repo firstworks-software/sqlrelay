@@ -16,6 +16,13 @@
 #include <rudiments/process.h>
 #include <rudiments/error.h>
 
+// the wire carries binds by position, so a bind's name has to come back out
+// of the query text, walked the same way the rest of the server walks it
+#define NEED_BEFORE_BIND_VARIABLE
+#define NEED_IS_BIND_DELIMITER
+#define NEED_AFTER_BIND_VARIABLE
+#include <bindvariables.h>
+
 // This module is developed against the Oracle Wire Protocol doc set on the
 // Firstworks trac wiki, at http://trac.firstworks.com/trac/wiki/ - start at
 // the "Oracle Wire Protocol" index page, which links "Oracle Wire Protocol -
@@ -192,6 +199,16 @@
 #define ORA_INVALID_CURSOR		1001
 #define ORA_INVALID_CURSOR_MESSAGE	"ORA-01001: invalid cursor\n"
 
+// the oracle errors a bind can end a call in - one for a placeholder the
+// statement has but the client never bound, one for a bind naming a
+// placeholder the statement doesn't have
+#define ORA_NOT_ALL_VARIABLES_BOUND	1008
+#define ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE \
+	"ORA-01008: not all variables bound\n"
+#define ORA_ILLEGAL_VARIABLE_NAME	1036
+#define ORA_ILLEGAL_VARIABLE_NAME_MESSAGE \
+	"ORA-01036: illegal variable name/number\n"
+
 // what completes the call a client's marker interrupted (see the
 // "Oracle Wire Protocol - Cancel" wiki page and #9591) - a real server's
 // documented response to a break/reset
@@ -361,11 +378,22 @@
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
 
-// a length byte over 252 isn't a length.  0xfe introduces the chunked long
-// form and 0xff marks a null.
+// a length byte over 252 isn't a length.  0xfd introduces a null, 0xfe the
+// chunked long form.
 #define CLR_MAX_SHORT_LENGTH		252
+#define CLR_NULL_MARKER			0xfd
 #define CLR_LONG_FORM_MARKER		0xfe
 #define CLR_MAX_CHUNK_SIZE		255
+
+// bind descriptor flags.  0x01 says a normal bound value follows, 0x80 says
+// the statement has the placeholder but the client never bound anything to
+// it - and that no row data follows at all
+#define BIND_FLAG_USE_INDICATORS	0x01
+#define BIND_FLAG_UNBOUND		0x80
+
+// how many bind values one query3 request may carry, across all of its
+// execution iterations
+#define MAX_QUERY3_BIND_VALUES		65536
 
 // describe info constants.  the last three are advisory - a client is free to
 // ignore them - and these are what a live 11.2 server sends.
@@ -387,6 +415,10 @@
 #define MAX_NUMBER_DIGITS		128
 #define MIN_NUMBER_EXPONENT		(-193)
 #define MAX_NUMBER_EXPONENT		62
+
+// the widest text an oracle number decodes to: 40 digits, a sign, a decimal
+// point, and the run of zeros the smallest exponent puts in front of them
+#define MAX_NUMBER_TEXT_SIZE		512
 
 // an oracle date is a fixed 7 bytes, and a column of them is described that
 // wide
@@ -881,6 +913,22 @@ enum oraclelisttype_t {
 	ORACLELISTTYPE_COLUMN_LIST
 };
 
+// what a query3 request's bind section says about one placeholder.  the
+// descriptor carries no name and no position - binds are strictly positional,
+// in the order the placeholders appear in the query text
+struct oraclequery3bind {
+	byte_t	type;
+	byte_t	flags;
+};
+
+// one placeholder's value for one execution iteration.  the bytes are left
+// where they are in the request packet, which outlives the call reading it
+struct oraclequery3bindvalue {
+	const byte_t	*value;
+	uint32_t	size;
+	bool		isnull;
+};
+
 class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 	public:
 		sqlrprotocol_oracle(sqlrservercontroller *cont,
@@ -1071,6 +1119,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putAuthCount(uint32_t value, byte_t nativesize);
 		void	putLenString(const char *string, uint32_t size);
 		void	putLenBytes(const char *bytes, uint32_t size);
+		bool	getLenBytes(const byte_t *rp,
+						const byte_t *end,
+						const byte_t **bytes,
+						uint32_t *size,
+						bool *isnull,
+						const byte_t **rpout);
 		void	putDalc(const char *bytes, uint32_t size);
 		bool	getOracleDate(const char *field,
 						uint64_t fieldsize,
@@ -1135,6 +1189,30 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t *prefetchrows,
 							const char **query,
 							uint32_t *querysize);
+		bool	getQuery3Binds(const byte_t *rp,
+							const byte_t *end,
+							uint32_t vectorsize,
+							uint32_t bindcount,
+							uint32_t definecount);
+		bool	getQuery3BindDescriptor(const byte_t *rp,
+							const byte_t *end,
+							byte_t *type,
+							byte_t *flags,
+							const byte_t **rpout);
+		bool	getQuery3BindValues(const byte_t *rp,
+							const byte_t *end,
+							uint32_t bindcount,
+							uint32_t iterations);
+		void	saveQuery3Binds(sqlrservercursor *cursor);
+		void	restoreQuery3Binds(sqlrservercursor *cursor);
+		bool	installQuery3Binds(sqlrservercursor *cursor,
+							uint32_t block);
+		bool	getBindVariableName(const char *query,
+							uint32_t querysize,
+							uint16_t index,
+							const char **name,
+							uint16_t *namesize);
+		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
 							uint32_t cursorid,
@@ -1173,9 +1251,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t rowcount);
 		void	putNumberField(const char *field,
 							uint32_t fieldsize);
+		bool	getNumberField(const byte_t *bytes,
+							uint32_t size,
+							char *out,
+							uint32_t outsize,
+							uint32_t *outlen);
 
 		// execute...
 		bool	execute(const byte_t *rp);
+		bool	reexecute(const byte_t *rp);
+		bool	sendReexecuteResponse(sqlrservercursor *cursor,
+							uint32_t cursorid);
 		bool	sendExecuteResponse(sqlrservercursor *cursor);
 
 		// fetch...
@@ -1399,6 +1485,34 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool		query3session;
 
+		// the bind section of the query3 request being handled: one
+		// descriptor per placeholder in the statement, and one value
+		// per placeholder per execution iteration
+		oraclequery3bind	*query3binds;
+		uint32_t		query3bindavail;
+		uint32_t		query3binddescs;
+		oraclequery3bindvalue	*query3bindvalues;
+		uint32_t		query3bindvalueavail;
+		uint32_t		query3blocks;
+
+		// each cursor's descriptors from its last full execute.  a
+		// re-execute sends fresh values but no descriptors, so the
+		// ones that came with the statement have to be kept
+		oraclequery3bind	**cursorbinds;
+		uint32_t		*cursorbindcounts;
+
+		// whether the statement has a placeholder the client never
+		// bound anything to, which is an ORA-01008 rather than an
+		// execute
+		bool		query3unbound;
+
+		// the rows the last query3 execute affected, summed over its
+		// iterations, and whether the backend knew the count.  an
+		// array bind runs the statement once per iteration, and the
+		// summary object has to report the total
+		uint32_t	query3affectedrows;
+		bool		query3knowsaffectedrows;
+
 		// the cursor id most recently touched by open(), query(),
 		// query2(), query3() or execute() - two calls fall back to
 		// this instead of the id on the wire: the legacy (non-query3)
@@ -1523,6 +1637,16 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 
 	resppacketpool=new memorypool(1024,1024,10240);
 
+	query3binds=NULL;
+	query3bindavail=0;
+	query3binddescs=0;
+	query3bindvalues=NULL;
+	query3bindvalueavail=0;
+	query3blocks=0;
+	query3unbound=false;
+	query3affectedrows=0;
+	query3knowsaffectedrows=false;
+
 	maxcursorcount=cont->getConfig()->getMaxCursors();
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
 	maxbindcount=cont->getConfig()->getMaxBindCount();
@@ -1537,10 +1661,14 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	columntypes=new uint16_t *[maxcursorcount];
 	rowssent=new uint32_t[maxcursorcount];
 	pendingrow=new bytebuffer[maxcursorcount];
+	cursorbinds=new oraclequery3bind *[maxcursorcount];
+	cursorbindcounts=new uint32_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		ptypes[i]=new uint16_t[maxbindcount];
 		columntypescached[i]=false;
 		rowssent[i]=0;
+		cursorbinds[i]=new oraclequery3bind[maxbindcount];
+		cursorbindcounts[i]=0;
 		if (cont->getMaxColumnCount()) {
 			columntypes[i]=new uint16_t[cont->getMaxColumnCount()];
 		} else {
@@ -1565,12 +1693,18 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		delete[] ptypes[i];
 		delete[] columntypes[i];
+		delete[] cursorbinds[i];
 	}
+	delete[] cursorbinds;
+	delete[] cursorbindcounts;
 	delete[] ptypes;
 	delete[] columntypescached;
 	delete[] columntypes;
 	delete[] rowssent;
 	delete[] pendingrow;
+
+	delete[] query3binds;
+	delete[] query3bindvalues;
 
 	delete resppacketpool;
 }
@@ -4866,6 +5000,104 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 	write(&reqpacket,(byte_t)0);
 }
 
+// reads a clr - a length byte, then that many bytes.  0xfd introduces a null
+// and 0xfe the chunked long form, which isn't contiguous and so is
+// reassembled into the response packet pool, which lives as long as the
+// packet the value came out of
+// see "Oracle Wire Protocol - Data Types"
+bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
+					const byte_t *end,
+					const byte_t **bytes,
+					uint32_t *size,
+					bool *isnull,
+					const byte_t **rpout) {
+
+	*bytes=NULL;
+	*size=0;
+	*isnull=false;
+	*rpout=rp;
+
+	if (end-rp<1) {
+		debugWrite("malformed clr: truncated length");
+		return false;
+	}
+
+	byte_t	length;
+	read(rp,&length,&rp);
+
+	// a zero length is a null, and so is the 0xfd marker, which carries a
+	// count byte of its own
+	if (!length) {
+		*isnull=true;
+		*rpout=rp;
+		return true;
+	}
+	if (length==CLR_NULL_MARKER) {
+		if (end-rp<1) {
+			debugWrite("malformed clr: truncated null");
+			return false;
+		}
+		byte_t	nullcount;
+		read(rp,&nullcount,&rp);
+		*isnull=true;
+		*rpout=rp;
+		return true;
+	}
+
+	// the short form
+	if (length<=CLR_MAX_SHORT_LENGTH) {
+		if ((size_t)(end-rp)<(size_t)length) {
+			debugWrite("malformed clr: truncated");
+			return false;
+		}
+		*bytes=rp;
+		*size=length;
+		*rpout=rp+length;
+		return true;
+	}
+
+	if (length!=CLR_LONG_FORM_MARKER) {
+		debugWrite("malformed clr: bad length 0x%02x",length);
+		return false;
+	}
+
+	// the long form: a run of chunks, each a single raw length byte and
+	// that many bytes, ended by a zero-length chunk.  (end-rp) is a safe
+	// upper bound on the reassembled size, since the length bytes only
+	// take space away from it
+	if (end-rp<1) {
+		debugWrite("malformed clr: truncated chunk");
+		return false;
+	}
+	byte_t		*value=(byte_t *)resppacketpool->allocate(
+							(size_t)(end-rp));
+	uint32_t	valuesize=0;
+	for (;;) {
+		if (rp>=end) {
+			debugWrite("malformed clr: truncated chunk");
+			return false;
+		}
+		byte_t	chunksize;
+		read(rp,&chunksize,&rp);
+		if (!chunksize) {
+			break;
+		}
+		if ((size_t)(end-rp)<(size_t)chunksize) {
+			debugWrite("malformed clr: truncated chunk");
+			return false;
+		}
+		bytestring::copy(value+valuesize,rp,chunksize);
+		rp+=chunksize;
+		valuesize+=chunksize;
+	}
+
+	*bytes=value;
+	*size=valuesize;
+	*rpout=rp;
+
+	return true;
+}
+
 // a dalc - an lpi total size, then the value as a clr
 // see "Oracle Wire Protocol - Data Types"
 void sqlrprotocol_oracle::putDalc(const char *bytes, uint32_t size) {
@@ -6539,6 +6771,11 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 
 	cont->setInputBindCount(cursor,
 				(pcount<=maxbindcount)?pcount:maxbindcount);
+
+	// the pool owns every bind value, for the life of the statement -
+	// clear it once, in front of the whole set
+	memorypool	*bindpool=cont->getBindPool(cursor);
+	bindpool->clear();
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
 
 	for (uint16_t i=0; i<pcount; i++) {
@@ -6630,9 +6867,11 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
 				bv->valuesize=size;
-				bv->value.stringval=charstring::duplicate(
-							(const char *)rp,
-							bv->valuesize);
+				bv->value.stringval=(char *)
+					bindpool->allocate(bv->valuesize+1);
+				bytestring::copy(bv->value.stringval,
+							rp,(size_t)size);
+				bv->value.stringval[bv->valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
@@ -6655,9 +6894,11 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 
 				bv->type=SQLRSERVERBINDVARTYPE_BLOB;
 				bv->valuesize=size;
-				bv->value.stringval=charstring::duplicate(
-							(const char *)rp,
-							bv->valuesize);
+				bv->value.stringval=(char *)
+					bindpool->allocate(bv->valuesize+1);
+				bytestring::copy(bv->value.stringval,
+							rp,(size_t)size);
+				bv->value.stringval[bv->valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
@@ -6677,9 +6918,11 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 
 				bv->type=SQLRSERVERBINDVARTYPE_CLOB;
 				bv->valuesize=size;
-				bv->value.stringval=charstring::duplicate(
-							(const char *)rp,
-							bv->valuesize);
+				bv->value.stringval=(char *)
+					bindpool->allocate(bv->valuesize+1);
+				bytestring::copy(bv->value.stringval,
+							rp,(size_t)size);
+				bv->value.stringval[bv->valuesize]='\0';
 				bv->isnull=cont->getNonNullBindValue();
 				rp+=bv->valuesize;
 				break;
@@ -6736,6 +6979,9 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	uint32_t	querysize=0;
 	const char	*query=NULL;
 
+	query3affectedrows=0;
+	query3knowsaffectedrows=false;
+
 	if (!getQuery3Request(rp,resppacket+resppacketsize,
 					&options,&cursorid,&prefetchrows,
 					&query,&querysize)) {
@@ -6767,6 +7013,12 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			return sendCursorNotOpenError(cursorid);
 		}
 		lastcursorid=cursorid-1;
+	}
+
+	// a re-execute of this statement will send values without
+	// descriptors, so keep the ones that came with it
+	if (query3binddescs || (options&OPTION_PARSE)) {
+		saveQuery3Binds(cursor);
 	}
 
 	if (options&OPTION_PARSE) {
@@ -6813,14 +7065,44 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 					cursor->getQueryType()==SQLRQUERYTYPE_SELECT;
 	if ((options&OPTION_EXECUTE) || describecanexecute) {
 
+		// a placeholder the client never bound anything to
+		if (query3unbound) {
+			debugWrite("not all variables bound");
+			return sendNotAllVariablesBoundError(cursorid);
+		}
+
 		// a fresh execute means a new result set - drop any row
 		// held over from a previous one on this cursor
 		pendingrow[cont->getId(cursor)].clear();
 
-		// execute the query
-		if (!cont->executeQuery(cursor,true,true,true,true)) {
-			debugWrite("execute query failed");
-			return sendQueryError(cursor);
+		// an array bind sends one row data block per element, and a
+		// re-parse without one means the previous statement's binds
+		// have to go
+		uint32_t	blocks=query3blocks;
+		if (!blocks && (options&OPTION_PARSE)) {
+			cont->setInputBindCount(cursor,0);
+		}
+
+		// execute the query, once per row data block - the wire's
+		// array bind is many complete bind rows rather than one bind
+		// with many elements, so each block is its own execution
+		for (uint32_t block=0; block<blocks || !block; block++) {
+
+			if (block<blocks &&
+				!installQuery3Binds(cursor,block)) {
+				return sendNotAllVariablesBoundError(cursorid);
+			}
+
+			if (!cont->executeQuery(cursor,true,true,true,true)) {
+				debugWrite("execute query failed");
+				return sendQueryError(cursor);
+			}
+
+			if (cont->knowsAffectedRows(cursor)) {
+				query3knowsaffectedrows=true;
+				query3affectedrows+=(uint32_t)
+					cont->getAffectedRows(cursor);
+			}
 		}
 	}
 
@@ -7009,9 +7291,509 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		debugEnd();
 	}
 
-	// FIXME: bind variables and defines are still ignored
-	// see "Oracle Wire Protocol - Known Unknowns"
+	// the al8i4 vector, the bind and define descriptors, and the bind
+	// values all follow the query text
+	return getQuery3Binds(rp,end,vectorsize,bindcount,definecount);
+}
+
+// reads the tail of a query3 request: the al8i4 vector, then one descriptor
+// per bind and one per define, then one row data block per execution
+// iteration.  binds are positional, so a descriptor and its values are only
+// tied to a placeholder by their order.
+// see "Oracle Wire Protocol - Query3"
+bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
+						const byte_t *end,
+						uint32_t vectorsize,
+						uint32_t bindcount,
+						uint32_t definecount) {
+
+	query3binddescs=0;
+	query3blocks=0;
+	query3unbound=false;
+
+	// nothing else in the request needs reading
+	if (!bindcount && !definecount) {
+		return true;
+	}
+
+	debugStart("query3 binds");
+
+	// the al8i4 vector, whose second element is the iteration count
+	uint32_t	iterations=0;
+	for (uint32_t i=0; i<vectorsize; i++) {
+		uint32_t	value=0;
+		if (!readLenPreInt(rp,end,&value,&rp)) {
+			debugWrite("truncated al8i4 vector");
+			debugEnd();
+			return false;
+		}
+		if (i==1) {
+			iterations=value;
+		}
+	}
+	debugWrite("iterations: %d",iterations);
+
+	// the bind descriptors
+	if (bindcount>query3bindavail) {
+		delete[] query3binds;
+		query3binds=new oraclequery3bind[bindcount];
+		query3bindavail=bindcount;
+	}
+	for (uint32_t i=0; i<bindcount; i++) {
+		if (!getQuery3BindDescriptor(rp,end,
+						&(query3binds[i].type),
+						&(query3binds[i].flags),
+						&rp)) {
+			debugEnd();
+			return false;
+		}
+		if (getDebug()) {
+			debugWrite("bind %d:",i+1);
+			debugColumnType(query3binds[i].type);
+			debugWrite("flags: 0x%02x",query3binds[i].flags);
+		}
+		if (query3binds[i].flags&BIND_FLAG_UNBOUND) {
+			query3unbound=true;
+		}
+	}
+	query3binddescs=bindcount;
+
+	// the define descriptors, which need consuming but nothing else
+	for (uint32_t i=0; i<definecount; i++) {
+		byte_t	type=0;
+		byte_t	flags=0;
+		if (!getQuery3BindDescriptor(rp,end,&type,&flags,&rp)) {
+			debugEnd();
+			return false;
+		}
+	}
+
+	// an unbound placeholder means no row data at all
+	if (!bindcount || query3unbound) {
+		debugEnd();
+		return true;
+	}
+
+	if (!getQuery3BindValues(rp,end,bindcount,iterations)) {
+		debugEnd();
+		return false;
+	}
+
+	debugEnd();
+
 	return true;
+}
+
+// one row data block per execution iteration, each carrying a value for
+// every bind, in descriptor order.  there is no per-value type tag - the
+// type comes from the matching descriptor
+// see "Oracle Wire Protocol - Query3"
+bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
+						const byte_t *end,
+						uint32_t bindcount,
+						uint32_t iterations) {
+
+	query3blocks=0;
+
+	uint64_t	valuecount=(uint64_t)iterations*(uint64_t)bindcount;
+	if (valuecount>MAX_QUERY3_BIND_VALUES) {
+		debugWrite("too many bind values: %lld",(long long)valuecount);
+		return false;
+	}
+	if ((uint32_t)valuecount>query3bindvalueavail) {
+		delete[] query3bindvalues;
+		query3bindvalues=new
+				oraclequery3bindvalue[(uint32_t)valuecount];
+		query3bindvalueavail=(uint32_t)valuecount;
+	}
+
+	while (rp<end && *rp==TTC_ROW_DATA && query3blocks<iterations) {
+		rp++;
+		for (uint32_t i=0; i<bindcount; i++) {
+			oraclequery3bindvalue	*v=&(query3bindvalues[
+						query3blocks*bindcount+i]);
+			if (!getLenBytes(rp,end,&(v->value),&(v->size),
+							&(v->isnull),&rp)) {
+				debugWrite("truncated bind value");
+				return false;
+			}
+		}
+		query3blocks++;
+	}
+	debugWrite("row data blocks: %d",query3blocks);
+
+	return true;
+}
+
+// a bind or define descriptor - twelve fields, no name and no position, and
+// a thirteenth once the negotiated field version reaches 12.2
+// see "Oracle Wire Protocol - Query3"
+bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
+						const byte_t *end,
+						byte_t *type,
+						byte_t *flags,
+						const byte_t **rpout) {
+
+	*type=0;
+	*flags=0;
+	*rpout=rp;
+
+	byte_t		precision=0;
+	byte_t		scale=0;
+	byte_t		csfrm=0;
+	uint32_t	buffersize=0;
+	uint32_t	maxelements=0;
+	uint32_t	contflags=0;
+	uint32_t	oidlength=0;
+	uint32_t	version=0;
+	uint32_t	charsetid=0;
+	uint32_t	maxdatasize=0;
+	uint32_t	oaccolid=0;
+
+	if ((size_t)(end-rp)<4) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
+	read(rp,type,&rp);
+	read(rp,flags,&rp);
+	read(rp,&precision,&rp);
+	read(rp,&scale,&rp);
+
+	if (!readLenPreInt(rp,end,&buffersize,&rp) ||
+		!readLenPreInt(rp,end,&maxelements,&rp) ||
+		!readLenPreInt(rp,end,&contflags,&rp) ||
+		!readLenPreInt(rp,end,&oidlength,&rp)) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
+
+	// no capture has a non-zero oid length, but a declared length that
+	// isn't followed by its bytes would be the odd one out
+	if (oidlength) {
+		if ((size_t)(end-rp)<(size_t)oidlength) {
+			debugWrite("truncated bind descriptor oid");
+			return false;
+		}
+		rp+=oidlength;
+	}
+
+	if (!readLenPreInt(rp,end,&version,&rp) ||
+		!readLenPreInt(rp,end,&charsetid,&rp)) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
+
+	if ((size_t)(end-rp)<1) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
+	read(rp,&csfrm,&rp);
+
+	if (!readLenPreInt(rp,end,&maxdatasize,&rp)) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
+
+	// 12.2 and later append an oaccolid
+	if (fieldversion>=CCAP_FIELD_VERSION_12_2 &&
+			!readLenPreInt(rp,end,&oaccolid,&rp)) {
+		debugWrite("truncated bind descriptor");
+		return false;
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
+// the name of the "index"th bind variable in the query text, without its
+// leading marker.  the wire carries no names, so a positional descriptor's
+// name has to come back out of the query.  the walk matches the one
+// countBindVariables() does in src/common/bindvariables.h
+bool sqlrprotocol_oracle::getBindVariableName(const char *query,
+						uint32_t querysize,
+						uint16_t index,
+						const char **name,
+						uint16_t *namesize) {
+
+	*name=NULL;
+	*namesize=0;
+
+	if (!query || !querysize) {
+		return false;
+	}
+
+	queryparsestate_t	parsestate=IN_QUERY;
+	const char		*ptr=query;
+	const char		*endptr=query+querysize;
+	const char		*bindstart=NULL;
+	char			prev='\0';
+	uint16_t		count=0;
+
+	while (ptr<endptr) {
+
+		if (parsestate==IN_QUERY) {
+			if (*ptr=='\'') {
+				parsestate=IN_QUOTES;
+			}
+			if (beforeBindVariable(ptr)) {
+				parsestate=BEFORE_BIND;
+			}
+			prev=(*ptr=='\\' && prev=='\\')?'\0':*ptr;
+			ptr++;
+			continue;
+		}
+
+		if (parsestate==IN_QUOTES) {
+			if (*ptr=='\'' && prev!='\\') {
+				parsestate=IN_QUERY;
+			}
+			prev=(*ptr=='\\' && prev=='\\')?'\0':*ptr;
+			ptr++;
+			continue;
+		}
+
+		if (parsestate==BEFORE_BIND) {
+			if (isBindDelimiter(ptr,false,true,false,false)) {
+				bindstart=ptr+1;
+				count++;
+				parsestate=IN_BIND;
+			} else {
+				parsestate=IN_QUERY;
+			}
+			continue;
+		}
+
+		// in a bind variable
+		if (afterBindVariable(ptr)) {
+			if (count==index+1) {
+				*name=bindstart;
+				*namesize=(uint16_t)(ptr-bindstart);
+				return true;
+			}
+			parsestate=IN_QUERY;
+			continue;
+		}
+		prev=(*ptr=='\\' && prev=='\\')?'\0':*ptr;
+		ptr++;
+	}
+
+	// a bind variable can run to the end of the query
+	if (parsestate==IN_BIND && count==index+1) {
+		*name=bindstart;
+		*namesize=(uint16_t)(ptr-bindstart);
+		return true;
+	}
+
+	return false;
+}
+
+// fills the cursor's input binds from one row data block of the query3
+// request being handled
+bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
+						uint32_t block) {
+
+	// the names come out of the query the cursor last prepared, which is
+	// the one about to run, whether or not this request re-parsed it
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+
+	memorypool		*bindpool=cont->getBindPool(cursor);
+	bindpool->clear();
+	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
+
+	debugStart("installing binds");
+
+	uint16_t	incount=0;
+	for (uint32_t i=0; i<query3binddescs && incount<maxbindcount; i++) {
+
+		oraclequery3bind	*bd=&(query3binds[i]);
+
+		// a ref cursor and an output-only bind still take a value
+		// slot on the wire, but there's no input value to install
+		if (!(bd->flags&BIND_FLAG_USE_INDICATORS) ||
+			bd->type==ORACLE_TYPE_RESULT_SET) {
+			continue;
+		}
+
+		const char	*name=NULL;
+		uint16_t	namesize=0;
+		if (!getBindVariableName(query,querysize,
+						(uint16_t)i,&name,&namesize)) {
+			debugWrite("no placeholder %d in the query",i+1);
+			debugEnd();
+			return false;
+		}
+
+		sqlrserverbindvar	*bv=&(inbinds[incount]);
+
+		bv->variablesize=(int16_t)(namesize+1);
+		bv->variable=(char *)bindpool->allocate(
+						(size_t)(namesize+2));
+		bv->variable[0]=cont->getBindFormat()[0];
+		bytestring::copy(bv->variable+1,name,(size_t)namesize);
+		bv->variable[namesize+1]='\0';
+
+		// the bind var array is allocated once per cursor and nothing
+		// else clears these, so a slot can still hold a pointer from
+		// whatever segmented a bind here last
+		bv->segmentlengths=NULL;
+		bv->segmentcount=0;
+
+		oraclequery3bindvalue	*v=&(query3bindvalues[
+					block*query3binddescs+i]);
+
+		bv->valuesize=0;
+		bv->isnull=cont->getNonNullBindValue();
+
+		char		numbertext[MAX_NUMBER_TEXT_SIZE];
+		uint32_t	numbertextlen=0;
+
+		if (v->isnull) {
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+		} else {
+			switch (bd->type) {
+				case ORACLE_TYPE_NUMBER:
+				case ORACLE_TYPE_VARNUM:
+					if (!getNumberField(v->value,v->size,
+							numbertext,
+							sizeof(numbertext),
+							&numbertextlen)) {
+						debugWrite("undecodable "
+								"number");
+						bv->type=
+						SQLRSERVERBINDVARTYPE_NULL;
+						break;
+					}
+					bv->type=SQLRSERVERBINDVARTYPE_STRING;
+					bv->valuesize=numbertextlen;
+					bv->value.stringval=(char *)
+						bindpool->allocate(
+							numbertextlen+1);
+					bytestring::copy(bv->value.stringval,
+							numbertext,
+							(size_t)numbertextlen);
+					bv->value.stringval[numbertextlen]=
+									'\0';
+					break;
+				case ORACLE_TYPE_DATE:
+				case ORACLE_TYPE_TIMESTAMP:
+				case ORACLE_TYPE_TIMESTAMPTZ:
+				case ORACLE_TYPE_TIMESTAMPLTZ:
+					if (v->size<ORACLE_DATE_SIZE) {
+						debugWrite("truncated date");
+						bv->type=
+						SQLRSERVERBINDVARTYPE_NULL;
+						break;
+					}
+					bv->type=SQLRSERVERBINDVARTYPE_DATE;
+					bv->value.dateval.year=(int16_t)
+						((v->value[0]-100)*100+
+							v->value[1]-100);
+					bv->value.dateval.month=
+						(int16_t)v->value[2];
+					bv->value.dateval.day=
+						(int16_t)v->value[3];
+					bv->value.dateval.hour=
+						(int16_t)(v->value[4]-1);
+					bv->value.dateval.minute=
+						(int16_t)(v->value[5]-1);
+					bv->value.dateval.second=
+						(int16_t)(v->value[6]-1);
+					bv->value.dateval.microsecond=0;
+					bv->value.dateval.tz=NULL;
+					bv->value.dateval.isnegative=false;
+					break;
+				case ORACLE_TYPE_RAW:
+				case ORACLE_TYPE_LONG_RAW:
+				case ORACLE_TYPE_BLOB:
+				case ORACLE_TYPE_BFILE:
+				case ORACLE_TYPE_CLOB:
+					bv->type=(bd->type==ORACLE_TYPE_CLOB)?
+						SQLRSERVERBINDVARTYPE_CLOB:
+						SQLRSERVERBINDVARTYPE_BLOB;
+					bv->valuesize=v->size;
+					bv->value.stringval=(char *)
+						bindpool->allocate(v->size+1);
+					bytestring::copy(bv->value.stringval,
+							v->value,
+							(size_t)v->size);
+					bv->value.stringval[v->size]='\0';
+					break;
+				default:
+					bv->type=SQLRSERVERBINDVARTYPE_STRING;
+					bv->valuesize=v->size;
+					bv->value.stringval=(char *)
+						bindpool->allocate(v->size+1);
+					bytestring::copy(bv->value.stringval,
+							v->value,
+							(size_t)v->size);
+					bv->value.stringval[v->size]='\0';
+					break;
+			}
+		}
+
+		if (bv->type==SQLRSERVERBINDVARTYPE_NULL) {
+			bv->value.stringval=(char *)bindpool->allocate(1);
+			bv->value.stringval[0]='\0';
+			bv->valuesize=0;
+			bv->isnull=cont->getNullBindValue();
+		}
+
+		if (getDebug()) {
+			debugWrite("variable: %s",bv->variable);
+			if (bv->type==SQLRSERVERBINDVARTYPE_NULL) {
+				debugWrite("value: NULL");
+			} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
+				debugWrite("value: %d-%d-%d %d:%d:%d",
+					bv->value.dateval.year,
+					bv->value.dateval.month,
+					bv->value.dateval.day,
+					bv->value.dateval.hour,
+					bv->value.dateval.minute,
+					bv->value.dateval.second);
+			} else {
+				debugWrite("value: %.*s",
+					(int)bv->valuesize,
+					bv->value.stringval);
+			}
+		}
+
+		incount++;
+	}
+
+	cont->setInputBindCount(cursor,incount);
+
+	debugWrite("bind count: %d",incount);
+	debugEnd();
+
+	return true;
+}
+
+// keeps the descriptors that came with the statement, since a re-execute
+// sends fresh values without them
+void sqlrprotocol_oracle::saveQuery3Binds(sqlrservercursor *cursor) {
+	uint32_t	count=(query3binddescs<maxbindcount)?
+					query3binddescs:maxbindcount;
+	oraclequery3bind	*saved=cursorbinds[cont->getId(cursor)];
+	for (uint32_t i=0; i<count; i++) {
+		saved[i]=query3binds[i];
+	}
+	cursorbindcounts[cont->getId(cursor)]=count;
+}
+
+void sqlrprotocol_oracle::restoreQuery3Binds(sqlrservercursor *cursor) {
+	uint32_t	count=cursorbindcounts[cont->getId(cursor)];
+	if (count>query3bindavail) {
+		delete[] query3binds;
+		query3binds=new oraclequery3bind[count];
+		query3bindavail=count;
+	}
+	oraclequery3bind	*saved=cursorbinds[cont->getId(cursor)];
+	for (uint32_t i=0; i<count; i++) {
+		query3binds[i]=saved[i];
+	}
+	query3binddescs=count;
 }
 
 bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
@@ -7149,13 +7931,13 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 	// the row count the summary object carries, which a client reads back
 	// as OCI_ATTR_ROW_COUNT: the rows sent so far for a statement with a
 	// result set, and the affected row count for one without - an insert
-	// or a delete sends no rows, so it answered 0.  only look at the
-	// controller's count after an execute: it holds the count from the
-	// last execution on the cursor, and a parse alone doesn't clear it
+	// or a delete sends no rows, so it answered 0.  the affected count is
+	// summed over the request's execution iterations by query3(), and is
+	// only meaningful when it actually executed - a parse alone leaves
+	// the last execution's count sitting on the cursor
 	uint32_t	rowcount=rowssent[cont->getId(cursor)];
-	if (!colcount && (options&OPTION_EXECUTE) &&
-				cont->knowsAffectedRows(cursor)) {
-		rowcount=(uint32_t)cont->getAffectedRows(cursor);
+	if (!colcount && (options&OPTION_EXECUTE) && query3knowsaffectedrows) {
+		rowcount=query3affectedrows;
 	}
 
 	// a prefetch that ran out of rows ends in ORA-01403, which the client
@@ -7770,10 +8552,134 @@ void sqlrprotocol_oracle::putNumberField(const char *field,
 	putLenBytes((const char *)out,outcount);
 }
 
+// the inverse of putNumberField() - oracle's internal number format back to
+// decimal text.  a bound number goes to the database as that text, which the
+// database implicitly converts, rather than as an oracle number the server
+// side has no bind type for
+bool sqlrprotocol_oracle::getNumberField(const byte_t *bytes,
+						uint32_t size,
+						char *out,
+						uint32_t outsize,
+						uint32_t *outlen) {
+
+	*outlen=0;
+
+	if (!bytes || !size || outsize<2) {
+		return false;
+	}
+
+	// zero is a single 0x80
+	if (size==1 && bytes[0]==0x80) {
+		out[0]='0';
+		out[1]='\0';
+		*outlen=1;
+		return true;
+	}
+
+	// the exponent byte carries the sign in its high bit
+	bool	negative=!(bytes[0]&0x80);
+	int32_t	e=(negative)?(62-(int32_t)bytes[0]):((int32_t)bytes[0]-193);
+	if (e<MIN_NUMBER_EXPONENT || e>MAX_NUMBER_EXPONENT) {
+		return false;
+	}
+
+	// each mantissa byte is one base 100 digit, so two decimal digits
+	const int32_t	maxdigits=MAX_NUMBER_MANTISSA*2;
+	char		digits[maxdigits];
+	int32_t		digitcount=0;
+	for (uint32_t i=1; i<size && digitcount+2<=maxdigits; i++) {
+		int32_t	d=(int32_t)bytes[i];
+		// a negative number ends in a 0x66 terminator, unless the
+		// mantissa fills all 20 bytes
+		if (negative && d==0x66) {
+			break;
+		}
+		d=(negative)?(101-d):(d-1);
+		if (d<0 || d>99) {
+			return false;
+		}
+		digits[digitcount++]=(char)('0'+d/10);
+		digits[digitcount++]=(char)('0'+d%10);
+	}
+	if (!digitcount) {
+		return false;
+	}
+
+	// where the decimal point falls in that run of digits
+	int32_t	point=2*(e+1);
+
+	// a leading zero moves the point rather than the value, and a
+	// trailing one past the point isn't part of the value at all - both
+	// come from the base 100 padding putNumberField() adds
+	int32_t	first=0;
+	while (first+1<digitcount && digits[first]=='0' && point>1) {
+		first++;
+		point--;
+	}
+	while (digitcount>first+1 && digitcount-first>point &&
+					digits[digitcount-1]=='0') {
+		digitcount--;
+	}
+	int32_t	dcount=digitcount-first;
+
+	// how much room the text needs, sign and terminator included
+	uint32_t	needed=(negative)?2:1;
+	if (point<=0) {
+		needed+=(uint32_t)(2-point+dcount);
+	} else if (point>=dcount) {
+		needed+=(uint32_t)point;
+	} else {
+		needed+=(uint32_t)(dcount+1);
+	}
+	if (needed>outsize) {
+		return false;
+	}
+
+	uint32_t	len=0;
+	if (negative) {
+		out[len++]='-';
+	}
+	if (point<=0) {
+		out[len++]='0';
+		out[len++]='.';
+		for (int32_t i=0; i<-point; i++) {
+			out[len++]='0';
+		}
+		for (int32_t i=0; i<dcount; i++) {
+			out[len++]=digits[first+i];
+		}
+	} else if (point>=dcount) {
+		for (int32_t i=0; i<dcount; i++) {
+			out[len++]=digits[first+i];
+		}
+		for (int32_t i=dcount; i<point; i++) {
+			out[len++]='0';
+		}
+	} else {
+		for (int32_t i=0; i<point; i++) {
+			out[len++]=digits[first+i];
+		}
+		out[len++]='.';
+		for (int32_t i=point; i<dcount; i++) {
+			out[len++]=digits[first+i];
+		}
+	}
+	out[len]='\0';
+
+	*outlen=len;
+
+	return true;
+}
+
 bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 
-	// path-independent: executes a statement query2() or query3() already
-	// parsed
+	// executes a statement query2() or query3() already parsed.  the two
+	// paths share the function code and nothing else: a query3 session's
+	// is the modern re-execute, in the lpi-encoded layout, and carries
+	// the statement's bind values again
+	if (query3session) {
+		return reexecute(rp);
+	}
 
 	// parse the request...
 	uint16_t	options;
@@ -7792,28 +8698,14 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		debugEnd();
 	}
 
-	// execute() doesn't branch by session (unlike fetch()), so it
-	// misparses a query3 session's LPI-encoded request using this
-	// legacy layout - cursorid above isn't trustworthy there, so fall
-	// back to the cursor last touched instead of decoding it
-	sqlrservercursor	*cursor;
-	if (query3session) {
-		cursor=cont->getCursor(lastcursorid);
-	} else {
-		// the id on the wire is the controller's plus 1
-		cursor=(cursorid)?
+	// the id on the wire is the controller's plus 1
+	sqlrservercursor	*cursor=(cursorid)?
 			cont->getCursor((uint16_t)(cursorid-1)):NULL;
-	}
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
-		// cursorid is misparsed in a query3 session - report the
-		// last touched cursor's wire id instead
-		return sendCursorNotOpenError((query3session)?
-				(uint16_t)(lastcursorid+1):cursorid);
+		return sendCursorNotOpenError(cursorid);
 	}
-	if (!query3session) {
-		lastcursorid=cont->getId(cursor);
-	}
+	lastcursorid=cont->getId(cursor);
 
 	// a fresh execute means a new result set - drop any row held
 	// over from a previous one on this cursor
@@ -7826,6 +8718,110 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	}
 
 	return sendExecuteResponse(cursor);
+}
+
+// the modern path's second and later executes of a statement whose binds
+// changed: fresh values for the descriptors the statement was parsed with,
+// and no query text, descriptors or defines of its own
+// see "Oracle Wire Protocol - Execute"
+bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		sequence=0;
+	uint32_t	cursorid=0;
+	uint32_t	iterations=0;
+	uint32_t	options=0;
+	uint32_t	moreoptions=0;
+
+	if (!getPointer(rp,end,&sequence,&rp) ||
+		!readLenPreInt(rp,end,&cursorid,&rp) ||
+		!readLenPreInt(rp,end,&iterations,&rp) ||
+		!readLenPreInt(rp,end,&options,&rp) ||
+		!readLenPreInt(rp,end,&moreoptions,&rp)) {
+		debugWrite("truncated re-execute request");
+		return false;
+	}
+
+	// the summary object has to echo this back
+	callnumber=sequence;
+
+	if (getDebug()) {
+		debugStart("re-execute request");
+		debugWrite("sequence: %d",sequence);
+		debugWrite("cursor id: %d",cursorid);
+		debugWrite("iterations: %d",iterations);
+		debugWrite("options: 0x%08x",options);
+		debugWrite("more options: 0x%08x",moreoptions);
+		debugEnd();
+	}
+
+	// the id on the wire is the controller's plus 1
+	sqlrservercursor	*cursor=(cursorid)?
+			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	if (!cursor) {
+		debugWrite("cursor id %d not found",cursorid);
+		return sendCursorNotOpenError(cursorid);
+	}
+	lastcursorid=cont->getId(cursor);
+
+	query3affectedrows=0;
+	query3knowsaffectedrows=false;
+
+	// only the values are on the wire
+	restoreQuery3Binds(cursor);
+	if (!getQuery3BindValues(rp,end,query3binddescs,iterations)) {
+		return false;
+	}
+
+	// a fresh execute means a new result set - re-start the running row
+	// count and drop any row held over from the previous one
+	rowssent[cont->getId(cursor)]=0;
+	pendingrow[cont->getId(cursor)].clear();
+
+	// one execution per row data block, as in query3()
+	for (uint32_t block=0; block<query3blocks || !block; block++) {
+
+		if (block<query3blocks &&
+			!installQuery3Binds(cursor,block)) {
+			return sendNotAllVariablesBoundError(cursorid);
+		}
+
+		if (!cont->executeQuery(cursor,true,true,true,true)) {
+			debugWrite("execute query failed");
+			return sendQueryError(cursor);
+		}
+
+		if (cont->knowsAffectedRows(cursor)) {
+			query3knowsaffectedrows=true;
+			query3affectedrows+=(uint32_t)
+					cont->getAffectedRows(cursor);
+		}
+	}
+
+	return sendReexecuteResponse(cursor,cursorid);
+}
+
+// a re-execute answers with the summary object alone - the return
+// parameters block belongs to a full execute
+bool sqlrprotocol_oracle::sendReexecuteResponse(sqlrservercursor *cursor,
+						uint32_t cursorid) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	uint32_t	rowcount=(query3knowsaffectedrows)?query3affectedrows:0;
+
+	putSummary(cursorid,0,rowcount,NULL);
+
+	debugStart("re-execute response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("row count: %d",rowcount);
+	debugEnd();
+
+	return sendPacket(true);
 }
 
 bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
@@ -9045,19 +10041,10 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	return sendCloseResponse(cursor);
 }
 
+// forgets the cursor's binds.  the values themselves come out of the
+// cursor's bind pool, which owns them - freeing one individually is a free
+// of pool memory, and glibc rejects it
 void sqlrprotocol_oracle::clearParams(sqlrservercursor *cursor) {
-
-	uint16_t		pcount=cont->getInputBindCount(cursor);
-	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
-
-	for (uint16_t i=0; i<pcount; i++) {
-		sqlrserverbindvar	*bv=&(inbinds[i]);
-		if (bv->type==SQLRSERVERBINDVARTYPE_STRING ||
-			bv->type==SQLRSERVERBINDVARTYPE_BLOB ||
-			bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
-			delete[] bv->value.stringval;
-		}
-	}
 	cont->setInputBindCount(cursor,0);
 }
 
@@ -9620,6 +10607,27 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 		putError(message,messagesize,oranum);
 		putGenericFooter();
 	}
+
+	return sendPacket(true);
+}
+
+// answers an execute that the statement's placeholders weren't all bound
+// for.  only the query3 path can see it - the descriptor flag that says so
+// is part of that request's bind section
+bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("not all variables bound error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	putSummary(cursorid,ORA_NOT_ALL_VARIABLES_BOUND,0,
+				ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
 
 	return sendPacket(true);
 }

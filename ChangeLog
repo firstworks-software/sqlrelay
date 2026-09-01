@@ -1268,6 +1268,15 @@
 		grew past the negotiated packet size and desynced the client;
 		both now stop and let the client come back for the rest once
 		a packet fills up
+	oracle protocol module: input bind variables work on the modern (10g
+		and later) path now - the bind section of a query3 request is
+		read rather than skipped, covering bind by name, bind by
+		position, null binds, array binds and bind once/execute many,
+		and a placeholder the client never bound is answered with
+		ora-01008 instead of desyncing the session; added the
+		re-execute call that a second execute of an already-bound
+		statement arrives as, and moved both bind paths' values onto
+		the cursor's bind pool, so nothing frees them individually
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
