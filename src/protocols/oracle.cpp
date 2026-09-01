@@ -449,6 +449,24 @@
 // for the whole row's width too
 #define ORACLE_LONG_SIZE		0
 
+// an interval's binary form is a fixed width - 5 bytes for a year to month
+// and 11 for a day to second - and every field of it is biased: the leading
+// field by 2^31 over 4 bytes, and each of the smaller ones by 60 over 1
+// byte.  see putIntervalField()
+#define ORACLE_INTERVALYM_SIZE		5
+#define ORACLE_INTERVALDS_SIZE		11
+#define ORACLE_INTERVAL_LEADING_BIAS	0x80000000
+#define ORACLE_INTERVAL_FIELD_BIAS	60
+#define ORACLE_INTERVAL_FRACTION_DIGITS	9
+#define MAX_INTERVAL_LEADING		999999999
+
+// and, like a rowid, an interval column is described 1 byte wide rather
+// than as the width of the value.  a live 12.2 server sends 1 for either
+// interval, and oci scales what it is given by the type's own width to get
+// the size it reports back: given the 1 it reports 5 and 11, and given a 5
+// and an 11 it reports 25 and 121
+#define ORACLE_INTERVAL_SIZE		1
+
 // what a column with no size of its own is described as
 #define MAX_VARCHAR_SIZE		4000
 
@@ -1294,6 +1312,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		int16_t	getRawDigit(char c);
 		void	putLongBytes(const char *bytes, uint32_t size);
 		void	putNullLongField();
+		bool	putIntervalField(const char *field,
+							uint64_t fieldsize,
+							bool daytosecond);
+		bool	getIntervalNumber(const char **f,
+							const char *end,
+							char separator,
+							uint32_t *value);
+		void	putIntervalLeading(byte_t *out,
+							uint32_t value,
+							bool negative);
 
 		// execute...
 		bool	execute(const byte_t *rp);
@@ -1322,6 +1350,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	getColumnType(const char *columntypestring,
 						uint16_t columntypesize,
 						uint32_t scale);
+		uint16_t	getUnknownColumnType(
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype);
 		uint16_t	getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,
@@ -8099,12 +8131,14 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	// 12.2 server sends the abbreviated encoding - a 0x00 flag byte, no
 	// character set and no second size - for the types that have no
 	// character set of their own, and the full encoding for everything
-	// else.  a raw and a long raw are binary and get the abbreviated
-	// form, but a long is text and gets the full one
+	// else.  a raw, a long raw and both interval types are binary and
+	// get the abbreviated form, but a long is text and gets the full one
 	bool	fullencoding=(wiretype!=ORACLE_TYPE_NUMBER &&
 				wiretype!=ORACLE_TYPE_ROWID_DEPRECATED &&
 				wiretype!=ORACLE_TYPE_RAW &&
-				wiretype!=ORACLE_TYPE_LONG_RAW);
+				wiretype!=ORACLE_TYPE_LONG_RAW &&
+				wiretype!=ORACLE_TYPE_INTERVALYM &&
+				wiretype!=ORACLE_TYPE_INTERVALDS);
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
@@ -8210,6 +8244,12 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_LONG_RAW:
 			wiretype=ORACLE_TYPE_LONG_RAW;
 			break;
+		case ORACLE_TYPE_INTERVALYM:
+			wiretype=ORACLE_TYPE_INTERVALYM;
+			break;
+		case ORACLE_TYPE_INTERVALDS:
+			wiretype=ORACLE_TYPE_INTERVALDS;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
@@ -8288,6 +8328,12 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		}
 	} else if (wiretype==ORACLE_TYPE_LONG_RAW) {
 		size=ORACLE_LONG_SIZE;
+	} else if (wiretype==ORACLE_TYPE_INTERVALYM ||
+			wiretype==ORACLE_TYPE_INTERVALDS) {
+		// not the 5 or 11 bytes the binary form takes - a live 12.2
+		// server describes either interval 1 byte wide, and oci
+		// works the size it reports out from the type
+		size=ORACLE_INTERVAL_SIZE;
 	} else if (!isCharacterColumn(columntypestring,columntype)) {
 		// everything else goes out as text, and this size is the
 		// buffer the client reads that text into.  the backend's
@@ -8418,6 +8464,17 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				} else {
 					write(&reqpacket,(byte_t)0);
 				}
+			}
+		} else if (wiretype==ORACLE_TYPE_INTERVALYM ||
+				wiretype==ORACLE_TYPE_INTERVALDS) {
+			debugWrite("interval: %.*s",(int)fieldsize,field);
+			bool	daytosecond=
+				(wiretype==ORACLE_TYPE_INTERVALDS);
+			if (!putIntervalField(field,fieldsize,daytosecond)) {
+				// same as a date that won't parse - an
+				// interval the module can't take apart is no
+				// more use to the client than a null
+				write(&reqpacket,(byte_t)0);
 			}
 		} else {
 			debugWrite("\"%.*s\"",(int)fieldsize,field);
@@ -9003,6 +9060,204 @@ void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size) {
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,(byte_t)0);
+}
+
+bool sqlrprotocol_oracle::getIntervalNumber(const char **f,
+						const char *end,
+						char separator,
+						uint32_t *value) {
+
+	// reads the digits at *f, then the separator that has to end them -
+	// or, for a separator of 0, the end of the text.  a value in some
+	// other shape fails here rather than half way through
+	*value=0;
+
+	uint16_t	digits=0;
+	while (*f<end && character::isDigit(**f)) {
+		if (*value>MAX_INTERVAL_LEADING/10) {
+			return false;
+		}
+		*value=(*value)*10+(uint32_t)(**f-'0');
+		digits++;
+		(*f)++;
+	}
+	if (!digits) {
+		return false;
+	}
+
+	if (!separator) {
+		return (*f==end);
+	}
+	if (*f==end || **f!=separator) {
+		return false;
+	}
+	(*f)++;
+	return true;
+}
+
+void sqlrprotocol_oracle::putIntervalLeading(byte_t *out,
+						uint32_t value,
+						bool negative) {
+
+	// the years, the days and the nanoseconds each go out over 4 bytes,
+	// most significant first, biased by 2^31
+	uint32_t	biased=(negative)?
+				(ORACLE_INTERVAL_LEADING_BIAS-value):
+				(ORACLE_INTERVAL_LEADING_BIAS+value);
+	out[0]=(byte_t)((biased>>24)&0xff);
+	out[1]=(byte_t)((biased>>16)&0xff);
+	out[2]=(byte_t)((biased>>8)&0xff);
+	out[3]=(byte_t)(biased&0xff);
+}
+
+bool sqlrprotocol_oracle::putIntervalField(const char *field,
+						uint64_t fieldsize,
+						bool daytosecond) {
+
+	debugStart("interval field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
+	// the backend hands an interval over in the text form oracle prints
+	// it as - a sign, then the leading field, then the smaller ones -
+	// and the wire wants the fixed width binary form behind a length
+	// byte.  captured from a live 12.2 server, which puts the same
+	// bytes on the wire whether the value came out of a declared
+	// interval column or out of to_yminterval()/to_dsinterval():
+	//
+	//	"+01-02"		-> 05 80 00 00 01 3e
+	//	"-1234-11"		-> 05 7f ff fb 2e 31
+	//	"+03 04:05:06.777777"	-> 0b 80 00 00 03 40 41 42
+	//					ae 5b ef 68
+	//	"-1234 23:59:58.123456789"
+	//				-> 0b 7f ff fb 2e 25 01 02
+	//					78 a4 32 eb
+	//
+	// so a year to month is the years biased by 2^31 over 4 bytes and
+	// the months biased by 60 over 1, and a day to second is the days
+	// the same way, then the hours, the minutes and the seconds biased
+	// by 60 over a byte each, then the nanoseconds biased by 2^31 over
+	// 4.  a negative interval carries one sign in the text and every
+	// field of it goes out negative.
+	//
+	// the text pads the leading field out to the column's declared
+	// precision ("+01-02" for an interval year to month, "-1234-11" for
+	// an interval year(4) to month) and the fraction out to the
+	// seconds', so the fields are read as digits up to the separator
+	// rather than at fixed offsets
+	const char	*f=field;
+	const char	*end=field+fieldsize;
+
+	bool	negative=false;
+	if (f<end && (*f=='+' || *f=='-')) {
+		negative=(*f=='-');
+		f++;
+	}
+
+	byte_t		out[ORACLE_INTERVALDS_SIZE];
+	uint32_t	outsize=(daytosecond)?
+				ORACLE_INTERVALDS_SIZE:
+				ORACLE_INTERVALYM_SIZE;
+	bytestring::zero(out,sizeof(out));
+
+	uint32_t	leading=0;
+	if (!getIntervalNumber(&f,end,(daytosecond)?' ':'-',&leading)) {
+		debugWrite("bad leading field");
+		debugEnd();
+		return false;
+	}
+	putIntervalLeading(out,leading,negative);
+
+	if (!daytosecond) {
+
+		uint32_t	months=0;
+		if (!getIntervalNumber(&f,end,0,&months)) {
+			debugWrite("bad months");
+			debugEnd();
+			return false;
+		}
+		out[4]=(byte_t)((negative)?
+				(ORACLE_INTERVAL_FIELD_BIAS-months):
+				(ORACLE_INTERVAL_FIELD_BIAS+months));
+
+		debugWrite("years: %s%d",(negative)?"-":"",leading);
+		debugWrite("months: %s%d",(negative)?"-":"",months);
+
+	} else {
+
+		uint32_t	hours=0;
+		uint32_t	minutes=0;
+		uint32_t	seconds=0;
+		if (!getIntervalNumber(&f,end,':',&hours) ||
+			!getIntervalNumber(&f,end,':',&minutes)) {
+			debugWrite("bad time fields");
+			debugEnd();
+			return false;
+		}
+
+		// the seconds run either to a decimal point or to the end
+		uint16_t	digits=0;
+		while (f<end && character::isDigit(*f)) {
+			seconds=seconds*10+(uint32_t)(*f-'0');
+			digits++;
+			f++;
+		}
+		if (!digits) {
+			debugWrite("bad seconds");
+			debugEnd();
+			return false;
+		}
+
+		// the fraction is however many digits the column's seconds
+		// precision calls for, and the wire always wants
+		// nanoseconds, so it's scaled up to 9 digits
+		uint32_t	nanoseconds=0;
+		if (f<end && *f=='.') {
+			f++;
+			digits=0;
+			while (f<end && character::isDigit(*f)) {
+				if (digits<ORACLE_INTERVAL_FRACTION_DIGITS) {
+					nanoseconds=nanoseconds*10+
+						(uint32_t)(*f-'0');
+					digits++;
+				}
+				f++;
+			}
+			while (digits<ORACLE_INTERVAL_FRACTION_DIGITS) {
+				nanoseconds*=10;
+				digits++;
+			}
+		}
+		if (f!=end) {
+			debugWrite("trailing characters");
+			debugEnd();
+			return false;
+		}
+
+		out[4]=(byte_t)((negative)?
+				(ORACLE_INTERVAL_FIELD_BIAS-hours):
+				(ORACLE_INTERVAL_FIELD_BIAS+hours));
+		out[5]=(byte_t)((negative)?
+				(ORACLE_INTERVAL_FIELD_BIAS-minutes):
+				(ORACLE_INTERVAL_FIELD_BIAS+minutes));
+		out[6]=(byte_t)((negative)?
+				(ORACLE_INTERVAL_FIELD_BIAS-seconds):
+				(ORACLE_INTERVAL_FIELD_BIAS+seconds));
+		putIntervalLeading(out+7,nanoseconds,negative);
+
+		debugWrite("days: %s%d",(negative)?"-":"",leading);
+		debugWrite("hours: %s%d",(negative)?"-":"",hours);
+		debugWrite("minutes: %s%d",(negative)?"-":"",minutes);
+		debugWrite("seconds: %s%d",(negative)?"-":"",seconds);
+		debugWrite("nanoseconds: %s%d",
+				(negative)?"-":"",nanoseconds);
+	}
+
+	putLenBytes((const char *)out,outsize);
+
+	debugHexDump(out,outsize);
+	debugEnd();
+
+	return true;
 }
 
 bool sqlrprotocol_oracle::execute(const byte_t *rp) {
@@ -9726,6 +9981,7 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 		ct[i]=getColumnType(cont->getColumnTypeName(cursor,i),
 					cont->getColumnTypeNameSize(cursor,i),
 					cont->getColumnScale(cursor,i));
+		ct[i]=getUnknownColumnType(cursor,i,ct[i]);
 		debugWrite("%s: %d",cont->getColumnTypeName(cursor,i),ct[i]);
 	}
 
@@ -9915,7 +10171,58 @@ uint16_t sqlrprotocol_oracle::getColumnType(const char *columntypestring,
 	//return MYSQL_TYPE_NULL;
 	return ORACLE_TYPE_VARCHAR;
 }
-		
+
+uint16_t sqlrprotocol_oracle::getUnknownColumnType(sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype) {
+
+	// a type the backend has no datatype of its own for comes through
+	// named UNKNOWN, and getColumnType() takes that for a varchar2.
+	// both interval types arrive that way, and so do both timestamp
+	// types.  oci converts a timestamp out of the text the backend
+	// hands over, but it will not convert an interval - an interval
+	// column described as a varchar2 leaves the client's descriptor
+	// untouched and OCIIntervalGet...() answers ORA-01891 - so the two
+	// of them have to be picked back out here and encoded on the wire.
+	//
+	// the size and precision the backend does report tell them apart
+	// from everything else that arrives UNKNOWN.  an interval's size is
+	// its fixed internal width and its precision is the leading field's,
+	// 1 through 9; a timestamp is 11 bytes wide too but has no leading
+	// field, and oracle reports no precision for one:
+	//
+	//	interval year to month		size 5, precision 2
+	//	interval day to second		size 11, precision 2
+	//	timestamp			size 11, precision 0
+	//	timestamp with time zone	size 13, precision 0
+	//
+	// (the precisions are the defaults - a declared "interval day(4) to
+	// second(9)" reports 4)
+	if (columntype!=ORACLE_TYPE_VARCHAR) {
+		return columntype;
+	}
+
+	const char * const	*datatypestring=cont->dataTypeStrings();
+	if (charstring::compareIgnoringCase(
+				cont->getColumnTypeName(cursor,column),
+				datatypestring[0])) {
+		return columntype;
+	}
+
+	if (!cont->getColumnPrecision(cursor,column)) {
+		return columntype;
+	}
+
+	uint32_t	size=cont->getColumnSize(cursor,column);
+	if (size==ORACLE_INTERVALYM_SIZE) {
+		return ORACLE_TYPE_INTERVALYM;
+	}
+	if (size==ORACLE_INTERVALDS_SIZE) {
+		return ORACLE_TYPE_INTERVALDS;
+	}
+	return columntype;
+}
+
 uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,

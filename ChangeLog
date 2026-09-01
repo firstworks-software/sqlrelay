@@ -1295,6 +1295,16 @@
 		and a null long or long raw is now the six bytes a live server
 		sends for one instead of the single zero byte every other type's
 		null is
+	oracle protocol module: interval year to month and interval day to
+		second columns now describe as their real types and encode
+		correctly on the wire instead of falling back to varchar2 -
+		putRowData() parses the backend's interval text and writes the
+		fixed width binary form (5 bytes for a year to month, 11 for a
+		day to second, each field biased) a live server sends; the oracle
+		connection module reports both interval types as UNKNOWN like it
+		does a timestamp, so the protocol module now recovers them from
+		the backend's own size and precision instead of falling through
+		to text
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
