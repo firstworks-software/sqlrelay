@@ -438,6 +438,17 @@
 #define ORACLE_ROWID_SIZE		1
 #define ORACLE_ROWID_LENGTH_BYTE	0x0e
 
+// a raw's external form is two hexadecimal characters per byte
+#define ORACLE_RAW_HEX_PER_BYTE		2
+
+// what a raw column whose width the backend doesn't report is described as
+#define MAX_RAW_SIZE			2000
+
+// what a long or a long raw is described as.  neither has a declared width
+// and a live 12.2 server describes both of them 0 bytes wide, and sends 0
+// for the whole row's width too
+#define ORACLE_LONG_SIZE		0
+
 // what a column with no size of its own is described as
 #define MAX_VARCHAR_SIZE		4000
 
@@ -631,9 +642,9 @@ static uint16_t	oracletypemap[]={
 	// "RAW"
 	(uint16_t)ORACLE_TYPE_RAW,
 	// "LONG_RAW"
-	(uint16_t)ORACLE_TYPE_RAW,
+	(uint16_t)ORACLE_TYPE_LONG_RAW,
 	// "MLSLABEL"
-	(uint16_t)ORACLE_TYPE_RAW,
+	(uint16_t)ORACLE_TYPE_VARCHAR,
 	// "CLOB"
 	(uint16_t)ORACLE_TYPE_CLOB,
 	// "BFILE"
@@ -1201,6 +1212,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t *options,
 							uint32_t *cursorid,
 							uint32_t *prefetchrows,
+							uint32_t *maxlongsize,
 							const char **query,
 							uint32_t *querysize);
 		bool	getQuery3Binds(const byte_t *rp,
@@ -1230,7 +1242,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
 							uint32_t cursorid,
-							uint32_t prefetchrows);
+							uint32_t prefetchrows,
+							uint32_t maxlongsize);
+		bool	hasLongColumn(sqlrservercursor *cursor,
+							uint32_t colcount);
 		void	putDescribeInfo(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putColumnMetadata(sqlrservercursor *cursor,
@@ -1273,6 +1288,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	putRowidField(const char *field,
 							uint64_t fieldsize);
 		int16_t	getRowidDigit(char c);
+		bool	putRawField(const char *field,
+							uint64_t fieldsize,
+							bool longraw);
+		int16_t	getRawDigit(char c);
+		void	putLongBytes(const char *bytes, uint32_t size);
+		void	putNullLongField();
 
 		// execute...
 		bool	execute(const byte_t *rp);
@@ -6993,6 +7014,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	uint32_t	options=0;
 	uint32_t	cursorid=0;
 	uint32_t	prefetchrows=0;
+	uint32_t	maxlongsize=0;
 	uint32_t	querysize=0;
 	const char	*query=NULL;
 
@@ -7001,7 +7023,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 
 	if (!getQuery3Request(rp,resppacket+resppacketsize,
 					&options,&cursorid,&prefetchrows,
-					&query,&querysize)) {
+					&maxlongsize,&query,&querysize)) {
 		return false;
 	}
 
@@ -7132,7 +7154,8 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		}
 	}
 
-	return sendQuery3Response(cursor,options,cursorid,prefetchrows);
+	return sendQuery3Response(cursor,options,cursorid,
+					prefetchrows,maxlongsize);
 }
 
 bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
@@ -7140,6 +7163,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 						uint32_t *options,
 						uint32_t *cursorid,
 						uint32_t *prefetchrows,
+						uint32_t *maxlongsize,
 						const char **query,
 						uint32_t *querysize) {
 
@@ -7149,6 +7173,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	*options=0;
 	*cursorid=0;
 	*prefetchrows=0;
+	*maxlongsize=0;
 	*query=NULL;
 	*querysize=0;
 
@@ -7158,7 +7183,6 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	byte_t		pointer=0;
 	uint32_t	vectorsize=0;
 	uint32_t	prefetchbuffersize=0;
-	uint32_t	maxlongsize=0;
 	uint32_t	bindcount=0;
 	uint32_t	definecount=0;
 	uint32_t	unused=0;
@@ -7174,7 +7198,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		!getPointer(rp,end,&pointer,&rp) ||
 		!readLenPreInt(rp,end,&prefetchbuffersize,&rp) ||
 		!readLenPreInt(rp,end,prefetchrows,&rp) ||
-		!readLenPreInt(rp,end,&maxlongsize,&rp) ||
+		!readLenPreInt(rp,end,maxlongsize,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!readLenPreInt(rp,end,&bindcount,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
@@ -7816,7 +7840,8 @@ void sqlrprotocol_oracle::restoreQuery3Binds(sqlrservercursor *cursor) {
 bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 						uint32_t options,
 						uint32_t cursorid,
-						uint32_t prefetchrows) {
+						uint32_t prefetchrows,
+						uint32_t maxlongsize) {
 
 	// what a live 11.2 server answers a select with, in order: a describe,
 	// a row header, one row data message per row, a return parameters
@@ -7853,6 +7878,19 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 		// row sent in answer to one leaves the client a row ahead
 		// for the rest of the result set.
 		if (options&OPTION_DESCRIBE) {
+			rowstofetch=0;
+		}
+
+		// a long or a long raw has no bounded width, and the client
+		// says in its request how much of one it has room for.  a
+		// live 12.2 server sends no rows at all until it does -
+		// answering an execute that asks for a row but names no size
+		// with the describe and nothing else, and sending the row
+		// when the fetch that follows names one.  OCI defines its
+		// columns after that execute and crashes on a row that
+		// arrives before it does
+		if (!maxlongsize && hasLongColumn(cursor,colcount)) {
+			debugWrite("no long size, no rows");
 			rowstofetch=0;
 		}
 
@@ -8059,10 +8097,14 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	// the wire protocol's "0x80" flag and several fields below it are
 	// gated on the type rather than on being a character type.  a live
 	// 12.2 server sends the abbreviated encoding - a 0x00 flag byte, no
-	// character set and no second size - for a rowid as well as for a
-	// number, and the full encoding for everything else
+	// character set and no second size - for the types that have no
+	// character set of their own, and the full encoding for everything
+	// else.  a raw and a long raw are binary and get the abbreviated
+	// form, but a long is text and gets the full one
 	bool	fullencoding=(wiretype!=ORACLE_TYPE_NUMBER &&
-				wiretype!=ORACLE_TYPE_ROWID_DEPRECATED);
+				wiretype!=ORACLE_TYPE_ROWID_DEPRECATED &&
+				wiretype!=ORACLE_TYPE_RAW &&
+				wiretype!=ORACLE_TYPE_LONG_RAW);
 
 	const char	*name=cont->getColumnName(cursor,column);
 	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
@@ -8162,6 +8204,12 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 			// oci client and to a thin driver alike
 			wiretype=ORACLE_TYPE_ROWID_DEPRECATED;
 			break;
+		case ORACLE_TYPE_RAW:
+			wiretype=ORACLE_TYPE_RAW;
+			break;
+		case ORACLE_TYPE_LONG_RAW:
+			wiretype=ORACLE_TYPE_LONG_RAW;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
@@ -8198,6 +8246,20 @@ bool sqlrprotocol_oracle::isCharacterColumn(const char *columntypestring,
 						datatypestring[0])!=0;
 }
 
+bool sqlrprotocol_oracle::hasLongColumn(sqlrservercursor *cursor,
+						uint32_t colcount) {
+
+	uint16_t	*ct=columntypes[cont->getId(cursor)];
+	for (uint32_t i=0; i<colcount; i++) {
+		uint16_t	wiretype=getWireColumnType(ct[i]);
+		if (wiretype==ORACLE_TYPE_LONG ||
+			wiretype==ORACLE_TYPE_LONG_RAW) {
+			return true;
+		}
+	}
+	return false;
+}
+
 uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 						uint32_t column,
 						const char *columntypestring,
@@ -8216,6 +8278,16 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		// bytes it stores in - a live 12.2 server describes one as 1
 		// byte wide, and oci works the display size out from the type
 		size=ORACLE_ROWID_SIZE;
+	} else if (wiretype==ORACLE_TYPE_RAW) {
+		// the declared width in bytes, which is what the backend
+		// reports, not the two characters per byte it hands the
+		// value over as - putRawField() decodes those back to bytes
+		size=cont->getColumnSize(cursor,column);
+		if (!size) {
+			size=MAX_RAW_SIZE;
+		}
+	} else if (wiretype==ORACLE_TYPE_LONG_RAW) {
+		size=ORACLE_LONG_SIZE;
 	} else if (!isCharacterColumn(columntypestring,columntype)) {
 		// everything else goes out as text, and this size is the
 		// buffer the client reads that text into.  the backend's
@@ -8305,7 +8377,12 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 		// see "Oracle Wire Protocol - Row Data"
 		if (null || lob || !field) {
 			debugWrite("null");
-			write(&reqpacket,(byte_t)0);
+			if (wiretype==ORACLE_TYPE_LONG ||
+				wiretype==ORACLE_TYPE_LONG_RAW) {
+				putNullLongField();
+			} else {
+				write(&reqpacket,(byte_t)0);
+			}
 		} else if (wiretype==ORACLE_TYPE_NUMBER) {
 			debugWrite("number: %.*s",(int)fieldsize,field);
 			putNumberField(field,(uint32_t)fieldsize);
@@ -8327,6 +8404,20 @@ void sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				// the module can't take apart is no more use
 				// to the client than a null
 				write(&reqpacket,(byte_t)0);
+			}
+		} else if (wiretype==ORACLE_TYPE_RAW ||
+				wiretype==ORACLE_TYPE_LONG_RAW) {
+			debugWrite("raw: %.*s",(int)fieldsize,field);
+			bool	longraw=(wiretype==ORACLE_TYPE_LONG_RAW);
+			if (!putRawField(field,fieldsize,longraw)) {
+				// same as a date that won't parse - bytes
+				// the module can't decode are no more use to
+				// the client than a null
+				if (longraw) {
+					putNullLongField();
+				} else {
+					write(&reqpacket,(byte_t)0);
+				}
 			}
 		} else {
 			debugWrite("\"%.*s\"",(int)fieldsize,field);
@@ -8794,6 +8885,124 @@ bool sqlrprotocol_oracle::putRowidField(const char *field,
 	debugEnd();
 
 	return true;
+}
+
+int16_t sqlrprotocol_oracle::getRawDigit(char c) {
+	if (c>='0' && c<='9') {
+		return (int16_t)(c-'0');
+	}
+	if (c>='A' && c<='F') {
+		return (int16_t)(c-'A'+10);
+	}
+	if (c>='a' && c<='f') {
+		return (int16_t)(c-'a'+10);
+	}
+	return -1;
+}
+
+bool sqlrprotocol_oracle::putRawField(const char *field,
+						uint64_t fieldsize,
+						bool longraw) {
+
+	debugStart("raw field");
+	debugWrite("input: %.*s",(int)fieldsize,field);
+
+	// the backend hands a raw or a long raw over in the two characters
+	// per byte hexadecimal form oracle prints it as, and the wire wants
+	// the bytes themselves back.  a raw goes out as a plain length
+	// prefixed blob, the same as a string - a live 12.2 server answers
+	// a raw(20) holding 0102030405 with
+	//
+	//	05 01 02 03 04 05
+	//
+	// and a long raw goes out as the long form of one - see
+	// putLongBytes()
+	if (fieldsize%ORACLE_RAW_HEX_PER_BYTE) {
+		debugWrite("odd number of characters");
+		debugEnd();
+		return false;
+	}
+
+	uint32_t	bytecount=(uint32_t)
+				(fieldsize/ORACLE_RAW_HEX_PER_BYTE);
+	byte_t		*bytes=new byte_t[bytecount+1];
+
+	// decode, high order character of each byte first
+	for (uint32_t i=0; i<bytecount; i++) {
+		int16_t	high=getRawDigit(field[i*ORACLE_RAW_HEX_PER_BYTE]);
+		int16_t	low=getRawDigit(field[i*ORACLE_RAW_HEX_PER_BYTE+1]);
+		if (high<0 || low<0) {
+			debugWrite("bad character at %d",
+					i*ORACLE_RAW_HEX_PER_BYTE);
+			debugEnd();
+			delete[] bytes;
+			return false;
+		}
+		bytes[i]=(byte_t)((high<<4)+low);
+	}
+
+	if (longraw) {
+		putLongBytes((const char *)bytes,bytecount);
+	} else {
+		putLenBytes((const char *)bytes,bytecount);
+	}
+
+	debugWrite("bytes: %d",bytecount);
+	debugHexDump(bytes,bytecount);
+	debugEnd();
+
+	delete[] bytes;
+
+	return true;
+}
+
+void sqlrprotocol_oracle::putNullLongField() {
+
+	// a null long or long raw isn't the single zero byte every other
+	// type's null is - a live 12.2 server sends five more bytes behind
+	// it, the last three of them the count prefixed 1405 of ORA-01405,
+	// "fetched column value is NULL".  the same six bytes for a long as
+	// for a long raw, and whatever column follows in the row:
+	//
+	//	null long raw -> 00 81 01 02 05 7d
+	//
+	// a client given the plain zero byte instead reads the rest of the
+	// row one field short and answers with a marker packet
+	static const byte_t	nulllong[]={0x00,0x81,0x01,0x02,0x05,0x7d};
+	write(&reqpacket,(const char *)nulllong,sizeof(nulllong));
+}
+
+void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size) {
+
+	// putLenBytes()' long form, taken whatever the size, and with two
+	// more zero bytes past the empty chunk that closes it.  a live 12.2
+	// server sends a long or a long raw this way even when it is short
+	// enough for the plain form, and sends those two bytes for a long
+	// column and for nothing else.
+	//
+	// each chunk's length goes out as a raw byte, the way putLenBytes()
+	// writes one.  a live server's answer to a long raw holding
+	// 0a0b0c0d0e reads as though the length were count prefixed -
+	//
+	//	fe 01 05 0a 0b 0c 0d 0e 00 00 00
+	//
+	// - but sending that shape puts OCI a byte out: it takes the 01 for
+	// a one byte chunk and the 0a for the next chunk's length, reads 11
+	// bytes where there are 5, and answers with a marker packet
+	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+	uint32_t	offset=0;
+	while (offset<size) {
+		uint32_t	chunk=size-offset;
+		if (chunk>CLR_MAX_CHUNK_SIZE) {
+			chunk=CLR_MAX_CHUNK_SIZE;
+		}
+		write(&reqpacket,(byte_t)chunk);
+		write(&reqpacket,bytes+offset,(size_t)chunk);
+		offset+=chunk;
+	}
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
 }
 
 bool sqlrprotocol_oracle::execute(const byte_t *rp) {

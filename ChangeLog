@@ -1284,6 +1284,17 @@
 		a live server sends; the oracle connection module now also
 		recognizes oci's rowid type code 104 alongside the older 11,
 		so getColumnType() no longer reports such a column unknown
+	oracle protocol module: raw and long raw columns now describe as
+		their real types and encode correctly on the wire instead of
+		falling back to varchar2 text - putRowData() decodes the
+		backend's hexadecimal text back into bytes, a raw as a plain
+		length prefixed blob and a long raw in the long form; a long or
+		a long raw column now also holds a query3 response's row back
+		until the client names a long size, since a live server does the
+		same and a row sent before oci defines its columns crashes it;
+		and a null long or long raw is now the six bytes a live server
+		sends for one instead of the single zero byte every other type's
+		null is
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
