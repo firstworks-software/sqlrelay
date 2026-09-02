@@ -6061,9 +6061,10 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		bool	getLiveConnection();
 
 		/** Sets the regular expression pattern used to identify a
-		 *  create-temp-table clause to "createtemp".
+		 *  create-temp-table clause to "createtemp".  Compiled
+		 *  case-insensitively.
 		 *
-		 *  Defaults to "(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+((if|IF)[ 	\\r\\n]+(not|NOT)[ 	\\r\\n]+(exists|EXISTS)[ 	\\r\\n]+)?" */
+		 *  Defaults to "(create|declare)[ 	\\r\\n]+((global|local)?[ 	\\r\\n]+)?(temp|temporary)?[ 	\\r\\n]+(table)[ 	\\r\\n]+((if[ 	\\r\\n]+not[ 	\\r\\n]+exists[ 	\\r\\n]+)?)" */
 		void	setCreateTempTablePattern(const char *createtemp);
 
 		/** Skips past any leading whitespace and comments and then
@@ -6076,8 +6077,9 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 
 		/** Sets the regular expression pattern used to identify an
 		 *  "on commit preserve rows" clause to "preserverows".
+		 *  Compiled case-insensitively.
 		 *
-		 *  Defaults to "(on|ON)[ 	\\r\\n]+(commit|COMMIT)[ 	\\r\\n]+(preserve|PRESERVE)[ 	\\r\\n]+(rows|ROWS)" */
+		 *  Defaults to "(on)[ 	\\r\\n]+(commit)[ 	\\r\\n]+(preserve)[ 	\\r\\n]+(rows)" */
 		void	setOnCommitPreserveRowsPattern(const char *preserverows);
 
 		/** Returns true if "query" contains an "on commit preserve rows"

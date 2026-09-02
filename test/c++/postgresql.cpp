@@ -1459,6 +1459,44 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// (trac #9625) The create-temp-table pattern is compiled
+	// case-insensitively.  It used to spell out a lowercase and an
+	// uppercase alternative for each keyword, so a mixed-case create
+	// matched nothing, the table was never registered for automatic drop
+	// at end-of-session, and it outlived the session on the pooled
+	// backend connection.  This instance runs no case-normalizing
+	// translation, so the create reaches the server exactly as written.
+	stdoutput.printf("MIXED-CASE TEMPORARY TABLE: \n");
+	cur->sendQuery("drop table mixedcasetemptable\n");
+	assertTrue(cur->sendQuery(
+		"Create Temporary Table mixedcasetemptable (col1 int)"));
+	assertTrue(cur->sendQuery("insert into mixedcasetemptable values (1)"));
+	assertTrue(cur->sendQuery("select count(*) from mixedcasetemptable"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+
+	// The table only exists on the backend connection that created it,
+	// and this instance pools several and hands out a different one to
+	// each session.  Remember which one made the table and come back to
+	// it, or the select below fails just because it landed somewhere else
+	// and proves nothing.
+	assertTrue(cur->sendQuery("select pg_backend_pid()"));
+	char	*temptablepid=charstring::duplicate(
+					cur->getField(0,(uint32_t)0));
+	con->endSession();
+	for (uint16_t i=0; i<32; i++) {
+		if (cur->sendQuery("select pg_backend_pid()") &&
+			!charstring::compare(cur->getField(0,(uint32_t)0),
+							temptablepid)) {
+			break;
+		}
+		con->endSession();
+	}
+	assertEquals(cur->getField(0,(uint32_t)0),temptablepid);
+	assertFalse(cur->sendQuery("select count(*) from mixedcasetemptable"));
+	delete[] temptablepid;
+	stdoutput.printf("\n");
+
+
 	// encoded binary data
 	stdoutput.printf("ENCODED BINARY DATA: \n");
 	cur->sendQuery("drop table testtable");

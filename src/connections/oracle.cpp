@@ -4679,8 +4679,8 @@ void oraclecursor::checkForTempTable(const char *query, uint32_t size) {
 	// get the table name
 	stringbuffer	tablename;
 	const char	*endptr=query+size;
-	while (ptr && *ptr && *ptr!=' ' &&
-		*ptr!='\n' && *ptr!='	' && ptr<endptr) {
+	while (ptr && *ptr && ptr<endptr &&
+			!character::isWhitespace(*ptr) && *ptr!='(') {
 		tablename.append(*ptr);
 		ptr++;
 	}

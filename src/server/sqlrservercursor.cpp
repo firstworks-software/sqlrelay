@@ -168,9 +168,10 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
 	// create-temp-table statements (see buildCreateStatement() in
 	// src/triggers/globaltemptables.cpp), and users can write it
 	// themselves on db's that support it (eg. mysql, sqlite).  Without
-	// it, the word "if" gets captured as the table name.
-	setCreateTempTablePattern("(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+((if|IF)[ 	\\r\\n]+(not|NOT)[ 	\\r\\n]+(exists|EXISTS)[ 	\\r\\n]+)?");
-	setOnCommitPreserveRowsPattern("(on|ON)[ 	\\r\\n]+(commit|COMMIT)[ 	\\r\\n]+(preserve|PRESERVE)[ 	\\r\\n]+(rows|ROWS)");
+	// it, the word "if" gets captured as the table name.  Patterns are
+	// lowercase-only; they're compiled case-insensitively below.
+	setCreateTempTablePattern("(create|declare)[ 	\\r\\n]+((global|local)?[ 	\\r\\n]+)?(temp|temporary)?[ 	\\r\\n]+(table)[ 	\\r\\n]+((if[ 	\\r\\n]+not[ 	\\r\\n]+exists[ 	\\r\\n]+)?)");
+	setOnCommitPreserveRowsPattern("(on)[ 	\\r\\n]+(commit)[ 	\\r\\n]+(preserve)[ 	\\r\\n]+(rows)");
 
 	pvt->_querybuffer=
 		new char[conn->cont->getConfig()->getMaxQuerySize()+1];
@@ -979,7 +980,8 @@ void sqlrservercursor::checkForTempTable(const char *query, uint32_t size) {
 	// get the table name
 	stringbuffer	tablename;
 	const char	*endptr=query+size;
-	while (*ptr && !character::isWhitespace(*ptr) && ptr<endptr) {
+	while (ptr<endptr && *ptr &&
+			!character::isWhitespace(*ptr) && *ptr!='(') {
 		tablename.append(*ptr);
 		ptr++;
 	}
@@ -1825,7 +1827,8 @@ void sqlrservercursor::setLiveConnection(bool liveconnection) {
 }
 
 void sqlrservercursor::setCreateTempTablePattern(const char *createtemp) {
-	pvt->_createtemp.setPattern(createtemp);
+	pvt->_createtemp.setPattern(createtemp,
+					REGULAR_EXPRESSION_CASE_INSENSITIVE);
 	pvt->_createtemp.study();
 }
 
@@ -1839,7 +1842,8 @@ const char *sqlrservercursor::skipCreateTempTableClause(const char *query) {
 
 void sqlrservercursor::setOnCommitPreserveRowsPattern(
 						const char *preserverows) {
-	pvt->_preserverows.setPattern(preserverows);
+	pvt->_preserverows.setPattern(preserverows,
+					REGULAR_EXPRESSION_CASE_INSENSITIVE);
 	pvt->_preserverows.study();
 }
 

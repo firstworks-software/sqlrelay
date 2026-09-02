@@ -129,6 +129,89 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// gtttest13-16 aren't in the trigger's table list.  The client
+	// creates them directly, exercising sql relay's own create-temp-table
+	// tracking (checkForTempTable() in src/server/sqlrservercursor.cpp),
+	// which registers every table it sees created for automatic drop at
+	// end-of-session, whether a trigger manages it or not.  Nothing
+	// re-creates these, so if the table name was captured correctly then
+	// the table is gone after end-of-session and the select fails.
+	// (trac #9625)
+
+	// This instance runs the normalize translation, which lowercases the
+	// query outside of quoted strings before sql relay looks for a
+	// create-temp-table.  So the next two cases prove that a mixed-case or
+	// uppercase create still gets its table registered for drop when a
+	// case-normalizing translation is in the pipeline - they don't
+	// exercise the case-insensitive pattern itself, which never sees
+	// anything but lowercase here.  test/c++/postgresql.cpp's "MIXED-CASE
+	// TEMPORARY TABLE" case covers that, against an instance that runs no
+	// translations.
+	stdoutput.printf("MIXED-CASE CREATE TEMP TABLE IF NOT EXISTS "
+				"(NORMALIZED):\n");
+	assertTrue(cur->sendQuery("Create Temp Table If Not Exists gtttest13 ("
+					"id int primary key, "
+					"value varchar(20) "
+					")"));
+	assertTrue(cur->sendQuery("insert into gtttest13 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest13"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	assertSameBackend(cur);
+	assertFalse(cur->sendQuery("select count(*) from gtttest13"));
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("UPPERCASE CREATE TEMP TABLE IF NOT EXISTS "
+				"(NORMALIZED):\n");
+	assertTrue(cur->sendQuery("CREATE TEMP TABLE IF NOT EXISTS gtttest14 ("
+					"id int primary key, "
+					"value varchar(20) "
+					")"));
+	assertTrue(cur->sendQuery("insert into gtttest14 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest14"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	assertSameBackend(cur);
+	assertFalse(cur->sendQuery("select count(*) from gtttest14"));
+	stdoutput.printf("\n");
+
+
+	// The table name used to be collected up to the next whitespace
+	// character only, so with no space before the column list it came out
+	// "gtttest15(id" and the drop at end-of-session silently missed the
+	// real table - the create itself succeeded either way, so only the
+	// drop below catches this.
+	stdoutput.printf("NO SPACE BEFORE THE COLUMN LIST, "
+				"IF NOT EXISTS:\n");
+	assertTrue(cur->sendQuery("create temp table if not exists gtttest15("
+					"id int primary key, "
+					"value varchar(20) "
+					")"));
+	assertTrue(cur->sendQuery("insert into gtttest15 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest15"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	assertSameBackend(cur);
+	assertFalse(cur->sendQuery("select count(*) from gtttest15"));
+	stdoutput.printf("\n");
+
+
+	stdoutput.printf("NO SPACE BEFORE THE COLUMN LIST, "
+				"NO IF NOT EXISTS:\n");
+	assertTrue(cur->sendQuery("create temp table gtttest16("
+					"id int primary key, "
+					"value varchar(20) "
+					")"));
+	assertTrue(cur->sendQuery("insert into gtttest16 values (1,'one')"));
+	assertTrue(cur->sendQuery("select count(*) from gtttest16"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	con->endSession();
+	assertSameBackend(cur);
+	assertFalse(cur->sendQuery("select count(*) from gtttest16"));
+	stdoutput.printf("\n");
+
+
 	// Postgresql doesn't drop these tables, sql relay does.  It records
 	// every successful "create temp table" it sees and drops those
 	// tables itself at end-of-session, before running the triggers'
