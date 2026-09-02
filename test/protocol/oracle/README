@@ -67,8 +67,9 @@ sqlr-listener speaking the oracle protocol. Both need java, javac and
 
 jdbcauthkvtest drives oracle.java through oraproxy against the local
 oracleprotocol11g and oracleprotocol12c sqlrelay instances
-(test/sqlrelay.conf.d/oracleprotocol.conf, ports 1522 and 1523) and
-greps the decoded captures for the AUTH_VFR_DATA flags and AUTH_SESSKEY
+(test/sqlrelay.conf.d/oracleprotocol.conf; it reads each instance's
+port from that generated conf file at run time) and greps the decoded
+captures for the AUTH_VFR_DATA flags and AUTH_SESSKEY
 length each verifier type is expected to put on the wire. This is direct
 wire-level evidence for the same thing oracle.cpp's Authentication
 section proves indirectly (a correct-password login only succeeds if the

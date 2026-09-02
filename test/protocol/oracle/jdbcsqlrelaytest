@@ -4,9 +4,44 @@
 # oracle protocol, through oraproxy (jnettrace.jar is dead, see #9098),
 # then decode it
 
+# oracleprotocol's listener port varies from run to run when test.sh
+# was run with -randomports, so resolve it at run time instead of
+# hardcoding it: honor ORACLEPROTOCOLPORT1 if the environment already
+# has it (test.sh's export_ports() sets this in its own child process),
+# else read it straight out of the generated conf file, else fall back
+# to the historical default.
+getport() {
+	_id=$1
+	_envval=$2
+	_default=$3
+
+	if ( test -n "$_envval" )
+	then
+		echo $_envval
+		return 0
+	fi
+
+	_conf=../../sqlrelay.conf.d/oracleprotocol.conf
+
+	if ( test -f "$_conf" )
+	then
+		_port=`sed -n "/id=\"$_id\"/,/<\/instance>/{/port=\"/p;}" "$_conf" | sed -n 's/.*port="\([0-9]*\)".*/\1/p'`
+		if ( test -n "$_port" )
+		then
+			echo $_port
+			return 0
+		fi
+	fi
+
+	echo $_default
+	return 0
+}
+
+destport=`getport oracleprotocol "$ORACLEPROTOCOLPORT1" 1521`
+
 rm -f sqlrelay.cap
 
-./oraproxy 1522 localhost 1521 sqlrelay.cap &
+./oraproxy 1522 localhost $destport sqlrelay.cap &
 proxypid=$!
 
 sleep 1

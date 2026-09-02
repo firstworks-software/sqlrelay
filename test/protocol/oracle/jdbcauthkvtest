@@ -2,8 +2,10 @@
 
 # capture a JDBC login against the local oracleprotocol11g and
 # oracleprotocol12c sqlrelay instances (test/sqlrelay.conf.d/
-# oracleprotocol.conf, ports 1522 and 1523), through oraproxy, then
-# decode each capture and check that oradecode's auth key/value pair
+# oracleprotocol.conf; the port is read from that generated conf file
+# at run time - see getport() below, since test.sh -randomports gives
+# each run different ports), through oraproxy, then decode each
+# capture and check that oradecode's auth key/value pair
 # decoder (see #9000) reports the verifier type and session key length
 # that sendAuthenticationChallenge() in src/protocols/oracle.cpp
 # actually put on the wire:
@@ -28,6 +30,40 @@
 # jdbcoracletest/jdbcsqlrelaytest scripts).
 
 status=0
+
+# oracleprotocol11g's and oracleprotocol12c's listener ports vary from
+# run to run when test.sh was run with -randomports, so resolve them
+# at run time instead of hardcoding them: honor ORACLEPROTOCOLPORT2 /
+# ORACLEPROTOCOLPORT3 if the environment already has them (test.sh's
+# export_ports() sets these in its own child process), else read them
+# straight out of the generated conf file, else fall back to the
+# historical defaults.
+getport() {
+	_id=$1
+	_envval=$2
+	_default=$3
+
+	if ( test -n "$_envval" )
+	then
+		echo $_envval
+		return 0
+	fi
+
+	_conf=../../sqlrelay.conf.d/oracleprotocol.conf
+
+	if ( test -f "$_conf" )
+	then
+		_port=`sed -n "/id=\"$_id\"/,/<\/instance>/{/port=\"/p;}" "$_conf" | sed -n 's/.*port="\([0-9]*\)".*/\1/p'`
+		if ( test -n "$_port" )
+		then
+			echo $_port
+			return 0
+		fi
+	fi
+
+	echo $_default
+	return 0
+}
 
 checkcapture() {
 	_label=$1
@@ -68,7 +104,10 @@ checkcapture() {
 	fi
 }
 
-checkcapture 11g 25221 1522 oracle11gauth.cap 0x1b25 96
-checkcapture 12c 25222 1523 oracle12cauth.cap 0x4815 64
+destport11g=`getport oracleprotocol11g "$ORACLEPROTOCOLPORT2" 1522`
+destport12c=`getport oracleprotocol12c "$ORACLEPROTOCOLPORT3" 1523`
+
+checkcapture 11g 25221 $destport11g oracle11gauth.cap 0x1b25 96
+checkcapture 12c 25222 $destport12c oracle12cauth.cap 0x4815 64
 
 exit $status
