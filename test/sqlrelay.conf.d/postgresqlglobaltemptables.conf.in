@@ -30,6 +30,27 @@
 				<alreadyexists error="already exists"/>
 				<table name="gtttest8">create temp table gtttest8 (id int primary key, value varchar(20))</table>
 			</trigger>
+			<!-- this trigger's error= string is deliberately bogus and
+				can never match this host's (English-locale)
+				postgresql error text - it relies entirely on the
+				built-in postgresql sqlstate default (42P07) to
+				recognize already-exists, same as a mismatched
+				locale-specific error= string would on a real
+				German-locale postgresql -->
+			<trigger module="globaltemptables" when="beforeprepare">
+				<alreadyexists error="this string never matches"/>
+				<!-- "select ... into temp" has no "table" keyword, so
+					sql relay's create-temp-table pattern doesn't
+					match it either, and postgresql has no
+					"if not exists" equivalent for it - so unlike
+					gtttest9, this genuinely fails with a real
+					"already exists" error (sqlstate 42P07) on the
+					second create -->
+				<table name="gtttest11">select 1 as id, ''::varchar(20) as value into temp gtttest11 where false</table>
+				<!-- negative control: always fails, never already-exists
+					(sqlstate 42883, undefined function) -->
+				<table name="gtttest12">select nosuchfunction(1) as id into temp gtttest12 where false</table>
+			</trigger>
 		</triggers>
 		<connections>
 			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>

@@ -1503,6 +1503,11 @@
 		the connection, but exec()'s cursor was already gone by then,
 		so the driver now stashes them on the connection handle while
 		the cursor is still alive
+	the globaltemptables trigger's alreadyexists tag now also supports a
+		sqlstate attribute, checked in addition to the existing error
+		attribute, with a built-in default per database (postgresql
+		42P07, mysql/mariadb 42S01), so already-exists recognition no
+		longer depends on the database's error language
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

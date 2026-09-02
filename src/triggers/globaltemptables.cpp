@@ -111,6 +111,7 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_globaltemptables : public sqlrtrigger {
 
 		int64_t		alreadyexistsnum;
 		const char	*alreadyexistsstr;
+		const char	*alreadyexistssqlstate;
 };
 
 sqlrtrigger_globaltemptables::sqlrtrigger_globaltemptables(
@@ -121,17 +122,33 @@ sqlrtrigger_globaltemptables::sqlrtrigger_globaltemptables(
 	debugStart("globaltemptables config");
 
 
-	// parse <alreadyexists error="..."/> tag...
+	// parse <alreadyexists error="..." sqlstate="..."/> tag...
+	// error and sqlstate are independent attributes on the same tag,
+	// not alternatives, so parse them separately
 	alreadyexistsnum=0;
 	alreadyexistsstr=NULL;
-	const char	*ae=parameters->getFirstTagChild("alreadyexists")->
-						getAttributeValue("error");
+	alreadyexistssqlstate=NULL;
+	domnode	*aetag=parameters->getFirstTagChild("alreadyexists");
+	const char	*ae=aetag->getAttributeValue("error");
 	if (charstring::isInteger(ae)) {
 		alreadyexistsnum=charstring::convertToInteger(ae);
 		debugWrite("alreadyexists: %lld",(long long)alreadyexistsnum);
 	} else if (!charstring::isNullOrEmpty(ae)) {
 		alreadyexistsstr=ae;
 		debugWrite("alreadyexists: \"%s\"",alreadyexistsstr);
+	}
+
+	// sqlstate="" (present but empty) explicitly disables the built-in
+	// per-dbtype default down in isAlreadyExistsError(), so a site needs
+	// to be able to say "no sqlstate check" as opposed to "didn't say" -
+	// that means testing for NULL here, not isNullOrEmpty()
+	const char	*aesqlstate=aetag->getAttributeValue("sqlstate");
+	if (aesqlstate) {
+		alreadyexistssqlstate=aesqlstate;
+		if (*alreadyexistssqlstate) {
+			debugWrite("alreadyexists sqlstate: \"%s\"",
+						alreadyexistssqlstate);
+		}
 	}
 
 
@@ -269,6 +286,39 @@ void sqlrtrigger_globaltemptables::endSession() {
 bool sqlrtrigger_globaltemptables::isAlreadyExistsError(
 						sqlrservercursor *ccur) {
 
+	// match by sqlstate first, as a fast path - a SQLSTATE is a precise,
+	// dbtype-independent signal when the backend supplies one, so check
+	// it before falling through to the fuzzier substring/number checks
+	// below.  A miss here (or nothing to compare) just falls through to
+	// those - it never turns an existing match into a non-match.
+	//
+	// alreadyexistssqlstate distinguishes "not configured" (NULL) from
+	// "explicitly configured, even to empty" (non-NULL) - an explicit
+	// sqlstate="" means the site wants the built-in default below
+	// turned off, so only fall back to the built-in when it's NULL.
+	const char	*expectedsqlstate=alreadyexistssqlstate;
+	if (!expectedsqlstate) {
+		const char	*dbtype=cont->getNativeDbType();
+		if (!charstring::compareIgnoringCase(dbtype,"postgresql")) {
+			expectedsqlstate="42P07";
+		} else if (!charstring::compareIgnoringCase(dbtype,"mysql") ||
+				!charstring::compareIgnoringCase(
+							dbtype,"mariadb")) {
+			expectedsqlstate="42S01";
+		}
+	}
+	if (!charstring::isNullOrEmpty(expectedsqlstate)) {
+		// getSqlStateBuffer() is already NUL-terminated, unlike the
+		// error buffer below, so it can be used directly
+		const char	*sqlstate=cont->getSqlStateBuffer(ccur);
+		if (!charstring::isNullOrEmpty(sqlstate) &&
+				!charstring::compareIgnoringCase(
+						sqlstate,expectedsqlstate)) {
+			debugWrite("matched by sqlstate: \"%s\"",sqlstate);
+			return true;
+		}
+	}
+
 	// match by error substring, if one was configured
 	if (alreadyexistsstr) {
 
@@ -356,10 +406,11 @@ bool sqlrtrigger_globaltemptables::createTable(uint64_t i,
 
 	if (!success) {
 
-		debugWrite("create failed: %d - %.*s",
+		debugWrite("create failed: %d - %.*s (sqlstate %s)",
 				cont->getErrorNumber(ccur),
 				cont->getErrorSize(ccur),
-				cont->getErrorBuffer(ccur));
+				cont->getErrorBuffer(ccur),
+				cont->getSqlStateBuffer(ccur));
 
 		if (isAlreadyExistsError(ccur)) {
 

@@ -230,6 +230,40 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// gtttest11's trigger is configured with an error= string that can
+	// never match ("this string never matches"), so recognizing the
+	// already-exists error below relies entirely on the built-in
+	// postgresql sqlstate default (42P07) - this models the ticket's
+	// real scenario, a configured locale-specific error= string that's
+	// wrong for the host it's actually running on.  The create statement
+	// uses "select ... into temp" rather than "create temp table":
+	// it has no "table" keyword, so it isn't registered for sql relay's
+	// own automatic drop, and postgresql has no "if not exists"
+	// equivalent for it, so - unlike gtttest9's plain "create table" -
+	// the re-create below genuinely fails with a real already-exists
+	// error (at execute time) rather than succeeding outright.
+	stdoutput.printf("ALREADY-EXISTS HANDLING VIA SQLSTATE "
+				"(LOCALE-INDEPENDENT):\n");
+	assertTrue(cur->sendQuery("select count(*) from gtttest11"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	con->endSession();
+	assertSameBackend(cur);
+	assertTrue(cur->sendQuery("select count(*) from gtttest11"));
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
+	stdoutput.printf("\n");
+
+
+	// gtttest12's create always fails (undefined function, sqlstate
+	// 42883) and never succeeds, so it must never be mistaken for
+	// already-exists.  Unlike gtttest11 above, this fails at prepare
+	// time rather than execute time, exercising a different
+	// sqlstate-capture code path.
+	stdoutput.printf("ALREADY-EXISTS HANDLING DOES NOT MASK UNRELATED "
+				"ERRORS:\n");
+	assertFalse(cur->sendQuery("select count(*) from gtttest12"));
+	stdoutput.printf("\n");
+
+
 	delete cur;
 	delete con;
 	delete[] backendpid;

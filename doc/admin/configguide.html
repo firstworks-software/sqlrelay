@@ -9847,14 +9847,24 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Two tables are configured, <i>gtttest1</i> and <i>gtttest2</i>.  The first time either one is referenced in a given backend session - by an insert, a select, an update, a delete, or the table name turning up in a join or subquery - the corresponding <i>create temp table ...</i> statement is run on that session.  Subsequent references in the same session skip the create step.</p>
 
-<p>The first time the create is attempted, it may fail because the table already exists - another agent (e.g. another sqlr-connection process, or the application itself) may have created it already, or the modules own state may believe the table is gone when it isn't (see Considerations below).  The <b>alreadyexists</b> tag lets the module recognize that situation and treat it as success.  Its <b>error</b> attribute may be set to either:</p>
+<p>The first time the create is attempted, it may fail because the table already exists - another agent (e.g. another sqlr-connection process, or the application itself) may have created it already, or the modules own state may believe the table is gone when it isn't (see Considerations below).  The <b>alreadyexists</b> tag lets the module recognize that situation and treat it as success.  It supports two attributes, <b>error</b> and <b>sqlstate</b>, either or both of which may be set; if either one matches, the create is treated as success.</p>
+
+<p>The <b>error</b> attribute may be set to either:</p>
 
 <ul>
   <li>a numeric value - matched against the database error number</li>
   <li>a string - matched as a substring against the database error text</li>
 </ul>
 
-<p>If the create fails with any other error, that error is reported back to the client as if the user's query had failed.</p>
+<p>Error text is locale-dependent - a German-locale PostgreSQL reports <i>existiert bereits</i> for a duplicate table, not <i>already exists</i> - so a substring match tuned for one locale silently stops working under another.  Some databases also give the error number no useful meaning at all - PostgreSQL's connection module reports error number 1 for literally every error, so a numeric <b>error=</b> match against it would match every failure, not just an already-exists.</p>
+
+<p>The <b>sqlstate</b> attribute addresses both problems.  It's a 5-character SQLSTATE code, compared case-insensitively for an exact match against the SQLSTATE the database reported for the failed create.  SQLSTATE codes are standardized and locale-independent, so the same value works regardless of what language the backend is reporting errors in.  The <b>sqlstate</b> check runs first, as a fast path, and only falls through to the <b>error=</b> check above if it doesn't match, or if there's nothing to compare (no <b>sqlstate=</b> configured and no built-in default, or the database didn't report a SQLSTATE for this error) - <b>sqlstate</b> is checked <i>in addition to</i> <b>error=</b>, not instead of it.</p>
+
+<p>If <b>sqlstate=</b> isn't configured at all, a built-in default is used, based on the real database module in use: PostgreSQL defaults to <i>42P07</i>, the duplicate_table SQLSTATE; MySQL and MariaDB default to <i>42S01</i>, the base-table-or-view-already-exists SQLSTATE.  No other database gets a built-in default.  A site that wants no sqlstate check at all - relying purely on <b>error=</b> - can set <b>sqlstate=""</b> (present, but empty) to explicitly disable the built-in default.</p>
+
+<p>Not every database reports a SQLSTATE for a given error, and most connection modules besides PostgreSQL, MySQL/MariaDB, Firebird, DB2, Informix, ODBC, and SAP don't report one at all.  On those, the <b>sqlstate</b> check simply has nothing to compare against and is skipped, and <b>alreadyexists</b> behaves exactly as it did before this attribute existed, matching on <b>error=</b> alone.</p>
+
+<p>If the create fails and neither the <b>sqlstate</b> nor the <b>error</b> check matches, that error is reported back to the client as if the user's query had failed.</p>
 
 <p>On a database where transactions abort on any statement error (eg. PostgreSQL), a create that fails - even one the <b>alreadyexists</b> handling recognizes and reports as success back to the client - has already put the surrounding transaction into an aborted state, and nothing about that success at the trigger level undoes that.  Every subsequent statement in the same transaction is then refused until the transaction is rolled back, which the client sees as an unrelated later query failing for no apparent reason.  A create that never errors in the first place avoids the problem entirely, so when the target database is PostgreSQL, the module automatically inserts <i>if not exists</i> into the create statement, unless it's already there.  <i>IF NOT EXISTS</i> is not universally available - eg. Oracle's <i>CREATE GLOBAL TEMPORARY TABLE</i> does not support it - so this is deliberately specific to PostgreSQL, and the <b>alreadyexists</b> handling remains necessary, and is still used, for every other database.</p>
 
