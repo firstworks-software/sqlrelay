@@ -5963,6 +5963,17 @@ static const char *odbc3states[]={
 	"IM008","IM010","IM011","IM012",NULL
 };
 
+// what SQL_DIAG_SQLSTATE answers, falling back the same way
+// SQLR_SQLGetDiagRec does, so the two agree - backends that supply no
+// sqlstate leave it empty
+static const char *diagFieldSqlState(const char *sqlstate,
+					const char *error) {
+	if (!charstring::isNullOrEmpty(sqlstate)) {
+		return sqlstate;
+	}
+	return (charstring::isNullOrEmpty(error))?"00000":"HY000";
+}
+
 SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT handletype,
 					SQLHANDLE handle,
 					SQLSMALLINT recnumber,
@@ -5994,11 +6005,23 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT handletype,
 				debugPrintf("  NULL env handle\n");
 				return SQL_INVALID_HANDLE;
 			}
-			// nothing currently supported
-			debugPrintf("  diagidentifier: %d (unsupported)\n",
-								diagidentifier);
-			return SQL_NO_DATA;
+
+			// get the requested data
+			if (diagidentifier!=SQL_DIAG_SQLSTATE) {
+				// anything else is not supported
+				debugPrintf("  diagidentifier: %d "
+						"(unsupported)\n",
+						diagidentifier);
+				return SQL_NO_DATA;
 			}
+			val.strval=diagFieldSqlState(env->sqlstate,
+							env->error);
+			debugPrintf("  diagidentifier: "
+					"SQL_DIAG_SQLSTATE: %s\n",
+					val.strval);
+			type=0;
+			}
+			break;
 		case SQL_HANDLE_DBC:
 			{
 			debugPrintf("  handletype: SQL_HANDLE_DBC\n");
@@ -6052,6 +6075,15 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT handletype,
 					val.strval=conn->server;
 					type=0;
 					break;
+				case SQL_DIAG_SQLSTATE:
+					val.strval=diagFieldSqlState(
+							conn->sqlstate,
+							conn->error);
+					debugPrintf("  diagidentifier: "
+						"SQL_DIAG_SQLSTATE: %s\n",
+						val.strval);
+					type=0;
+					break;
 				default:
 					// anything else is not supported
 					debugPrintf("  diagidentifier: %d "
@@ -6078,18 +6110,9 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT handletype,
 					type=1;
 					break;
 				case SQL_DIAG_SQLSTATE:
-					val.strval=stmt->sqlstate;
-					// fall back the same way
-					// SQLR_SQLGetDiagRec does, so the
-					// two agree - backends that supply
-					// no sqlstate leave it empty
-					if (charstring::isNullOrEmpty(
-							val.strval)) {
-						val.strval=
-						(charstring::isNullOrEmpty(
-							stmt->error))?
-							"00000":"HY000";
-					}
+					val.strval=diagFieldSqlState(
+							stmt->sqlstate,
+							stmt->error);
 					debugPrintf("  diagidentifier: "
 						"SQL_DIAG_SQLSTATE: %s\n",
 						val.strval);

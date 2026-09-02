@@ -1230,6 +1230,8 @@ struct sqlrfirebirdbatcherror {
 	int32_t		sqlcode;
 	// NULL when the gds code says it all
 	char		*message;
+	// what the backend reported, empty when it reported none
+	char		sqlstate[6];
 };
 
 // what the module knows about a batch the client created on a statement
@@ -10455,6 +10457,7 @@ bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
 		err->gdscode=isc_bad_segstr_id;
 		err->sqlcode=-901;
 		err->message=NULL;
+		err->sqlstate[0]='\0';
 
 	} else if (!cont->executeQuery(cursor,true,true,true,true)) {
 
@@ -10477,6 +10480,10 @@ bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
 		err->gdscode=isc_random;
 		err->sqlcode=sqlcode;
 		err->message=charstring::duplicate(errorstring,errorsize);
+		charstring::copy(err->sqlstate,
+					cont->getSqlStateBuffer(cursor),
+					sizeof(err->sqlstate)-1);
+		err->sqlstate[sizeof(err->sqlstate)-1]='\0';
 
 		debugWrite("execute failed");
 		debugWrite("error: \"%.*s\"",(uint32_t)errorsize,errorstring);
@@ -10606,7 +10613,9 @@ bool sqlrprotocol_firebird::batchCompletionState(const char *title,
 			svstr[i++]=err->message;
 		}
 		sv[i++]=isc_arg_sql_state;
-		svstr[i++]=sqlStateForSqlCode(err->sqlcode);
+		svstr[i++]=(charstring::getLength(err->sqlstate)==5)?
+					err->sqlstate:
+					sqlStateForSqlCode(err->sqlcode);
 		sv[i++]=isc_arg_gds;
 		sv[i++]=isc_sqlerr;
 		sv[i++]=isc_arg_number;

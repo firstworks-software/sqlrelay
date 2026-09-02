@@ -1434,18 +1434,40 @@
 		walk all four lists with a full cross-dedup so each trigger
 		fires exactly once
 	added SQLSTATE support - the connection module interface gained
-		getSqlState() alongside getError(), the server captures and
-		carries it, and the c++ client api exposes it as
-		errorSqlState() on both the connection and the cursor; the
-		postgresql connection module supplies a real value, other
+		getSqlState() alongside getError(), and the server captures
+		it with the error and carries it through the session; the
+		postgresql, mysql, odbc, db2, informix, firebird, sap and
+		router connection modules supply a real value, other
 		backends report an empty string until their modules
 		implement it; bumped the sqlrclient protocol to version 5
 		for it - an older client still works against a newer
 		server, but a version 5 client is rejected at connect time
 		by a server that predates this
+	the client apis expose the sqlstate on both the connection and the
+		cursor as errorSqlState() - c, c++, cs, java, nodejs, perl,
+		php, python, ruby, tcl and erlang - and report an empty
+		string when the backend supplied none
+	the drivers report it through their own standard slots - the odbc
+		driver through SQLGetDiagRec and SQLGetDiagField, jdbc
+		through SQLException.getSQLState(), DBD::SQLRelay through
+		DBI's State, php pdo through errorCode(), errorInfo() and
+		the SQLSTATE[] prefix on its exception message, python db
+		through a sqlstate attribute on the exception, and ado.net
+		through a new SQLRelayException.SQLState
+	the native protocol modules now send the backend's sqlstate instead of
+		a hardcoded one - mysql, postgresql, tds and firebird - so a
+		client speaking one database's wire protocol to a different
+		backend gets that backend's sqlstate rather than a constant;
+		this is a user-visible behavior change for anything that
+		classified errors by the old fixed value, and each module
+		falls back to what it sent before when the backend supplies
+		nothing usable
 	note that a connection-level error, and now its sqlstate, remain set
-		for the rest of the session - nothing on the query path
-		clears connection-level error state, only cursor-level
+		server-side for the rest of the session - nothing on the
+		query path clears connection-level error state, only
+		cursor-level; the client apis behave differently, where
+		clearError() clears the connection's error and sqlstate
+		together
 	error translation modules can rewrite the sqlstate now -
 		sqlrerrortranslation::run() gained a sqlstate input and a
 		translatedsqlstate output alongside the error number and
@@ -1459,6 +1481,20 @@
 		it only when an optional sqlstate section of patterns is
 		configured, since its main patterns are written against
 		error prose
+	fixed DBD::SQLRelay binding DBI's State attribute to
+		$DBD::SQLRelay::state rather than $DBD::SQLRelay::sqlstate,
+		which is the name DBI actually writes, so State never got
+		populated at all
+	fixed the php pdo driver's exec() reading the error off the connection
+		when the query had run on a cursor, so it reported whatever
+		the connection last saw instead of the failure that just
+		happened
+	fixed the mysql protocol module writing a short sqlstate into the ERR
+		packet's fixed five-byte slot - two sites passed an empty
+		one, which shifted the error message and left the client
+		reading the rest of the packet at the wrong offset
+	fixed the db2 and informix connection modules reading an uninitialized
+		local back as a string when SQLGetDiagRec left it untouched
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

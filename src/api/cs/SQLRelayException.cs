@@ -26,7 +26,22 @@ namespace SQLRClient
             : base(info, context)
         {
             number = info.GetInt64("number");
-            sqlState = info.GetString("sqlState");
+
+            // An exception serialized by a build that predates the sqlState
+            // entry has no such entry, and GetString would throw for it.
+            sqlState = "";
+            SerializationInfoEnumerator e = info.GetEnumerator();
+            while (e.MoveNext())
+            {
+                if (e.Name == "sqlState")
+                {
+                    if (e.Value != null)
+                    {
+                        sqlState = (String)e.Value;
+                    }
+                    break;
+                }
+            }
         }
         #endregion
 

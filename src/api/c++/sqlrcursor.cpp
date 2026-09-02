@@ -6178,14 +6178,13 @@ void sqlrcursor::getErrorFromServer() {
 		uint16_t	sqlstatelength;
 		if (getShort(&sqlstatelength)==sizeof(uint16_t) &&
 				sqlstatelength &&
-				sqlstatelength<sizeof(pvt->_sqlstate)) {
-			if (pvt->_cs->read(pvt->_sqlstate,
+				sqlstatelength<sizeof(pvt->_sqlstate) &&
+				pvt->_cs->read(pvt->_sqlstate,
 						sqlstatelength)==
 						sqlstatelength) {
-				pvt->_sqlstate[sqlstatelength]='\0';
-			} else {
-				pvt->_sqlstate[0]='\0';
-			}
+			pvt->_sqlstate[sqlstatelength]='\0';
+		} else {
+			pvt->_sqlstate[0]='\0';
 		}
 	}
 
@@ -6205,6 +6204,12 @@ void sqlrcursor::setError(const char *err) {
 		pvt->_sqlrc->debugPreEnd();
 	}
 	pvt->_error=charstring::duplicate(err);
+
+	// The error is being replaced, and this error has no sqlstate.
+	// Leaving the old one behind would pair a fresh error with the
+	// sqlstate of a previous one.
+	pvt->_sqlstate[0]='\0';
+
 	handleError();
 }
 

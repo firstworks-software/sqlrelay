@@ -609,8 +609,14 @@ sub execute {
 		}
 		$sth->STORE('driver_FETCHED_ROWS',0);
 		$sth->STORE('driver_RowsInCache',0);
-		return $dbh->DBI::set_err(1,$cursor->errorMessage(),
-						$cursor->errorSqlState());
+
+		# DBI renders 00000 - successful completion - as an empty
+		# string, which reads as less of an error than no sqlstate at
+		# all, where DBI falls back to S1000
+		my $state=$cursor->errorSqlState();
+		$state=undef if (!defined($state) || $state eq '00000');
+
+		return $dbh->DBI::set_err(1,$cursor->errorMessage(),$state);
 	}
 
 	# get some result set info

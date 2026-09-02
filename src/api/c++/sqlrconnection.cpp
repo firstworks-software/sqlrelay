@@ -2680,6 +2680,11 @@ void sqlrconnection::setError(const char *err) {
 	delete[] pvt->_error;
 	pvt->_error=charstring::duplicate(err);
 
+	// The error is being replaced, and this error has no sqlstate.
+	// Leaving the old one behind would pair a fresh error with the
+	// sqlstate of a previous one.
+	pvt->_sqlstate[0]='\0';
+
 	if (pvt->_debug) {
 		debugPreStart();
 		debugPrint(pvt->_error);

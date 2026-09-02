@@ -14,6 +14,25 @@
 
 #include <libpq-fe.h>
 
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 	friend class postgresqlcursor;
 	public:
@@ -27,6 +46,7 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 					const char **warning,
 					const char *database);
 		const char	*logInError(const char *errmsg);
+		void		stashSqlState(PGresult *result);
 		sqlrservercursor	*newCursor(uint16_t id);
 		void		deleteCursor(sqlrservercursor *curs);
 		void		logOut();
@@ -35,6 +55,9 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char	*getDbHostName();
@@ -144,6 +167,8 @@ class SQLRSERVER_DLLSPEC postgresqlconnection : public sqlrserverconnection {
 
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
+
+		char		sqlstate[6];
 };
 
 class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
@@ -299,6 +324,7 @@ postgresqlconnection::postgresqlconnection(sqlrservercontroller *cont) :
 #endif
 	lastinsertidquery=NULL;
 	hostname=NULL;
+	sqlstate[0]='\0';
 
 	datatypes.setManageArrayValues(true);
 	tables.setManageArrayValues(true);
@@ -1059,6 +1085,29 @@ void postgresqlconnection::getError(char *errorbuffer,
 	// Oracle dblink -> ODBC -> SQL Relay -> PostgreSQL
 	*errorcode=1;
 	*liveconnection=(PQstatus(pgconn)==CONNECTION_OK);
+}
+
+// stash the sqlstate from a result that's about to be discarded
+void postgresqlconnection::stashSqlState(PGresult *result) {
+	const char	*state=NULL;
+#ifdef HAVE_POSTGRESQL_PQRESULTERRORFIELD
+	state=PQresultErrorField(result,PG_DIAG_SQLSTATE);
+#endif
+	uint32_t	statesize=0;
+	copySqlState(state,sqlstate,sizeof(sqlstate),&statesize);
+}
+
+void postgresqlconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+
+	// libpq has no connection-level accessor for this, so the value was
+	// stashed back when the result that carried it was discarded.  Drop
+	// it as it's read, so it can't outlive its error and get paired with
+	// a later one that has none.
+	sqlstate[0]='\0';
 }
 
 const char *postgresqlconnection::getDbType() {
@@ -2446,6 +2495,7 @@ bool postgresqlconnection::begin() {
 	// statement...
 
 	cont->clearError();
+	sqlstate[0]='\0';
 
 	PGresult	*r=PQexec(pgconn,"begin");
 	if (!r) {
@@ -2453,6 +2503,9 @@ bool postgresqlconnection::begin() {
 	}
 
 	bool	retval=PQresultStatus(r)==PGRES_COMMAND_OK;
+	if (!retval) {
+		stashSqlState(r);
+	}
 	PQclear(r);
 
 	if (retval) {
@@ -2474,6 +2527,7 @@ bool postgresqlconnection::setIsolationLevel(const char *isolevel) {
 	}
 
 	cont->clearError();
+	sqlstate[0]='\0';
 
 	stringbuffer	silquery;
 	if (cont->getInTransaction()) {
@@ -2490,6 +2544,9 @@ bool postgresqlconnection::setIsolationLevel(const char *isolevel) {
 	}
 
 	bool	retval=PQresultStatus(r)==PGRES_COMMAND_OK;
+	if (!retval) {
+		stashSqlState(r);
+	}
 	PQclear(r);
 	return retval;
 }
@@ -3215,30 +3272,40 @@ void postgresqlcursor::getSqlState(char *sqlstatebuffer,
 					uint32_t sqlstatebuffersize,
 					uint32_t *sqlstatesize) {
 
-	// prefer the stash, fall back to the result, which is NULL on some
-	// failure paths, as is the field itself when it isn't set
 	const char	*state="";
-	if (sqlstate[0]) {
-		state=sqlstate;
-#ifdef HAVE_POSTGRESQL_PQRESULTERRORFIELD
-	} else if (pgresult) {
-		const char	*field=PQresultErrorField(pgresult,
-							PG_DIAG_SQLSTATE);
-		if (field) {
-			state=field;
-		}
-#endif
-	}
 
-	*sqlstatesize=charstring::getLength(state);
-	if (*sqlstatesize>=sqlstatebuffersize) {
-		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+#if (defined(HAVE_POSTGRESQL_PQPREPARE) && \
+		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
+		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
+		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
+	// branch the way getError() does - a bind format error is ours
+	// rather than postgresql's, and postgresql's sqlstate describes
+	// some other failure
+	if (!bindformaterror) {
+#endif
+
+		// prefer the stash, fall back to the result, which is NULL on
+		// some failure paths, as is the field itself when it isn't set
+		if (sqlstate[0]) {
+			state=sqlstate;
+#ifdef HAVE_POSTGRESQL_PQRESULTERRORFIELD
+		} else if (pgresult) {
+			const char	*field=PQresultErrorField(pgresult,
+							PG_DIAG_SQLSTATE);
+			if (field) {
+				state=field;
+			}
+#endif
+		}
+
+#if (defined(HAVE_POSTGRESQL_PQPREPARE) && \
+		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
+		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
+		defined(HAVE_POSTGRESQL_PQSETSINGLEROWMODE))
 	}
-	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
-					state,*sqlstatesize);
-	if (sqlstatebuffersize) {
-		sqlstatebuffer[*sqlstatesize]='\0';
-	}
+#endif
+
+	copySqlState(state,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 bool postgresqlcursor::knowsRowCount() {
