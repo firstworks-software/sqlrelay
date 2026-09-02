@@ -147,9 +147,11 @@ extern "C" {
 #endif
 
 #define sqlrelayError(s) \
-	_sqlrelayError(s,NULL,__FILE__,__LINE__ TSRMLS_CC)
+	_sqlrelayError(s,NULL,NULL,__FILE__,__LINE__ TSRMLS_CC)
 #define sqlrelayErrorStmt(s) \
-	_sqlrelayError(s->dbh,s,__FILE__,__LINE__ TSRMLS_CC)
+	_sqlrelayError(s->dbh,s,NULL,__FILE__,__LINE__ TSRMLS_CC)
+#define sqlrelayErrorCursor(d,c) \
+	_sqlrelayError(d,NULL,c,__FILE__,__LINE__ TSRMLS_CC)
 
 struct sqlrstatement {
 	sqlrcursor			*sqlrcur;
@@ -191,30 +193,53 @@ enum {
 	PDO_SQLRELAY_ATTR_CLIENT_INFO,
 };
 
+// Copy a SQL Relay sqlstate into a PDO one.  PDO wants exactly 5 characters,
+// and uses HY000 for a driver-specific error with no sqlstate.  Backends that
+// have none hand us an empty string, and one that reports 00000 - success -
+// while we're building an error can't be taken at its word either.
+static void setSqlState(pdo_error_type *pdoerr, const char *sqlstate) {
+	if (charstring::getLength(sqlstate)==5 &&
+			charstring::compare(sqlstate,PDO_ERR_NONE)) {
+		charstring::copy(*pdoerr,sqlstate);
+	} else {
+		charstring::copy(*pdoerr,"HY000");
+	}
+}
+
 int _sqlrelayError(pdo_dbh_t *dbh,
 			pdo_stmt_t *stmt,
+			sqlrcursor *sqlrcur,
 			const char *file,
 			int line TSRMLS_DC) {
 
 	int64_t		errornumber=0;
 	const char	*errormessage=NULL;
+	const char	*sqlstate=NULL;
 	pdo_error_type	*pdoerr=NULL;
 
+	// pick the error slot to fill
 	if (stmt) {
-		sqlrstatement	*sqlrstmt=(sqlrstatement *)stmt->driver_data;
-		errornumber=sqlrstmt->sqlrcur->errorNumber();
-		errormessage=sqlrstmt->sqlrcur->errorMessage();
+		sqlrcur=((sqlrstatement *)stmt->driver_data)->sqlrcur;
 		pdoerr=&stmt->error_code;
+	} else {
+		pdoerr=&dbh->error_code;
+	}
+
+	// read the error from the cursor that ran the query, or, if there
+	// isn't one, from the connection
+	if (sqlrcur) {
+		errornumber=sqlrcur->errorNumber();
+		errormessage=sqlrcur->errorMessage();
+		sqlstate=sqlrcur->errorSqlState();
 	} else {
 		sqlrdbhandle	*sqlrdbh=(sqlrdbhandle *)dbh->driver_data;
 		errornumber=sqlrdbh->sqlrcon->errorNumber();
 		errormessage=sqlrdbh->sqlrcon->errorMessage();
-		pdoerr=&dbh->error_code;
+		sqlstate=sqlrdbh->sqlrcon->errorSqlState();
 	}
 
-	// FIXME: currently we're leaving this at HY000 but it really ought to
-	// be set to some value.  DB2 and ODBC support this, others might too.
-	charstring::copy(*pdoerr,"HY000",5);
+	// set the sqlstate
+	setSqlState(pdoerr,sqlstate);
 
 	if (!dbh->methods) {
 		TSRMLS_FETCH();
@@ -1310,7 +1335,7 @@ sqlrconnectionExecute(pdo_dbh_t *dbh,
 	if (sqlrcur.sendQuery(sql,sqllen)) {
 		return sqlrcur.affectedRows();
 	}
-	sqlrelayError(dbh);
+	sqlrelayErrorCursor(dbh,&sqlrcur);
 	return -1;
 }
 
@@ -1594,9 +1619,9 @@ void
 #endif
 sqlrconnectionError(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC) {
 
-	// FIXME: the first index in the info array should be the sqlstate
-	// currently we're leaving it at HY000 but it really ought to be
-	// set to some value.  DB2 and ODBC support this, others might too.
+	// PDO itself supplies the first index of the info array, copying it
+	// from the error code that _sqlrelayError() set.  This method only
+	// appends the error number and error message behind it.
 	if (stmt) {
 		sqlrstatement	*sqlrstmt=(sqlrstatement *)stmt->driver_data;
 		sqlrcursor	*sqlrcur=sqlrstmt->sqlrcur;
@@ -2125,11 +2150,15 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 					sqlrdbh->sqlrcon->errorMessage();
 			int64_t		errornumber=
 					sqlrdbh->sqlrcon->errorNumber();
+			setSqlState(&dbh->error_code,
+					sqlrdbh->sqlrcon->errorSqlState());
 			TSRMLS_FETCH();
 			zend_throw_exception_ex(php_pdo_get_exception(),
 						0 TSRMLS_CC,
+						"SQLSTATE[%s] "
 						"SQLRelay Connection Failed, "
 						"errorNumber %ld: %s",
+						dbh->error_code,
 						errornumber,errormessage);
 			delete sqlrdbh->sqlrcon;
 			sqlrdbh->sqlrcon=NULL;

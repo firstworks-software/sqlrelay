@@ -88,7 +88,7 @@ struct ENV {
 	singlylinkedlist<CONN *>	connlist;
 	char				*error;
 	int64_t				errn;
-	const char			*sqlstate;
+	char				sqlstate[6];
 	SQLSMALLINT			sqlerrorindex;
 };
 
@@ -100,7 +100,7 @@ struct CONN {
 	singlylinkedlist<STMT *>	stmtlist;
 	char				*error;
 	int64_t				errn;
-	const char			*sqlstate;
+	char				sqlstate[6];
 
 	char				dsn[1024];
 
@@ -223,7 +223,7 @@ struct STMT {
 	char					*name;
 	char					*error;
 	int64_t					errn;
-	const char				*sqlstate;
+	char					sqlstate[6];
 	dictionary<int32_t, FIELD *>		fieldlist;
 	rowdesc					*approwdesc;
 	paramdesc				*appparamdesc;
@@ -284,6 +284,22 @@ SQLRETURN SQL_API SQLAllocEnv(SQLHENV *environmenthandle) {
 				(SQLHANDLE *)environmenthandle);
 }
 
+static void SQLR_SetSqlState(char *dest, const char *sqlstate) {
+
+	// a sqlstate is 5 characters plus a NULL.  copy it rather than
+	// pointing at it - values from the client api point into the
+	// connection's or cursor's own error state, which the next query
+	// overwrites
+	size_t	len=charstring::getLength(sqlstate);
+	if (len>5) {
+		len=5;
+	}
+	if (len) {
+		charstring::copy(dest,sqlstate,len);
+	}
+	dest[len]='\0';
+}
+
 static void SQLR_ENVSetError(ENV *env, const char *error,
 				int64_t errn, const char *sqlstate) {
 	debugFunction();
@@ -293,7 +309,7 @@ static void SQLR_ENVSetError(ENV *env, const char *error,
 	delete[] env->error;
 	env->error=charstring::duplicate((error)?error:"");
 	env->errn=errn;
-	env->sqlstate=(sqlstate)?sqlstate:"";
+	SQLR_SetSqlState(env->sqlstate,sqlstate);
 	env->sqlerrorindex=1;
 	debugPrintf("  error: %s\n",env->error);
 	debugPrintf("  errn: %lld\n",env->errn);
@@ -315,7 +331,7 @@ static void SQLR_CONNSetError(CONN *conn, const char *error,
 	delete[] conn->error;
 	conn->error=charstring::duplicate((error)?error:"");
 	conn->errn=errn;
-	conn->sqlstate=(sqlstate)?sqlstate:"";
+	SQLR_SetSqlState(conn->sqlstate,sqlstate);
 	conn->sqlerrorindex=1;
 	debugPrintf("  error: %s\n",conn->error);
 	debugPrintf("  errn: %lld\n",conn->errn);
@@ -348,7 +364,7 @@ static void SQLR_STMTSetError(STMT *stmt, const char *error,
 	delete[] stmt->error;
 	stmt->error=charstring::duplicate((error)?error:"");
 	stmt->errn=errn;
-	stmt->sqlstate=(sqlstate)?sqlstate:"";
+	SQLR_SetSqlState(stmt->sqlstate,sqlstate);
 	stmt->sqlerrorindex=1;
 	debugPrintf("  error: %s\n",stmt->error);
 	debugPrintf("  errn: %lld\n",stmt->errn);
@@ -2369,7 +2385,8 @@ SQLRETURN SQL_API SQLColumns(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }
@@ -2967,7 +2984,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	} else {
 		SQLR_CONNSetError(conn,
 			conn->con->errorMessage(),
-			conn->con->errorNumber(),NULL);
+			conn->con->errorNumber(),
+			conn->con->errorSqlState());
 		debugPrintf("  Set Transaction Model Implicit: failed\n");
 		success=SQL_SUCCESS_WITH_INFO;
 	}
@@ -2983,7 +3001,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		} else {
 			SQLR_CONNSetError(conn,
 				conn->con->errorMessage(),
-				conn->con->errorNumber(),NULL);
+				conn->con->errorNumber(),
+				conn->con->errorSqlState());
 			debugPrintf("  Set Auto-Commit On: failed\n");
 			success=SQL_SUCCESS_WITH_INFO;
 		}
@@ -2995,7 +3014,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		} else {
 			SQLR_CONNSetError(conn,
 				conn->con->errorMessage(),
-				conn->con->errorNumber(),NULL);
+				conn->con->errorNumber(),
+				conn->con->errorSqlState());
 			debugPrintf("  Set Auto-Commit Off: failed\n");
 			success=SQL_SUCCESS_WITH_INFO;
 		}
@@ -3010,7 +3030,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		} else {
 			SQLR_CONNSetError(conn,
 				conn->con->errorMessage(),
-				conn->con->errorNumber(),NULL);
+				conn->con->errorNumber(),
+				conn->con->errorSqlState());
 			debugPrintf("  Set Isolation Level: failed\n");
 			success=SQL_SUCCESS_WITH_INFO;
 		}
@@ -3040,7 +3061,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		if (!conn->con->identify()) {
 			SQLR_CONNSetError(conn,
 				conn->con->errorMessage(),
-				conn->con->errorNumber(),NULL);
+				conn->con->errorNumber(),
+				conn->con->errorSqlState());
 			delete conn->con;
 			conn->con=NULL;
 		}
@@ -3056,7 +3078,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 		} else {
 			SQLR_CONNSetError(conn,
 				conn->con->errorMessage(),
-				conn->con->errorNumber(),NULL);
+				conn->con->errorNumber(),
+				conn->con->errorSqlState());
 			debugPrintf("  Select Database: failed\n");
 			success=SQL_SUCCESS_WITH_INFO;
 		}
@@ -4606,7 +4629,8 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 	// handle error
 	debugPrintf("  error\n");
 	SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-				stmt->cur->errorNumber(),NULL);
+				stmt->cur->errorNumber(),
+				stmt->cur->errorSqlState());
 	return SQL_ERROR;
 }
 
@@ -4679,7 +4703,8 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
 
 	// handle error
 	SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-				stmt->cur->errorNumber(),NULL);
+				stmt->cur->errorNumber(),
+				stmt->cur->errorSqlState());
 	return SQL_ERROR;
 }
 
@@ -4891,7 +4916,7 @@ SQLRETURN SQL_API SQLFetchScroll(SQLHSTMT statementhandle,
 	// for now we only support SQL_FETCH_NEXT
 	if (fetchorientation!=SQL_FETCH_NEXT) {
 		debugPrintf("  invalid fetchorientation\n");
-		stmt->sqlstate="HY106";
+		SQLR_SetSqlState(stmt->sqlstate,"HY106");
 		return SQL_ERROR;
 	}
 
@@ -5087,7 +5112,8 @@ static SQLRETURN SQLR_SQLGetConnectAttr(SQLHDBC connectionhandle,
 					connectionhandle,&(val.uintval))) {
 				SQLR_CONNSetError(conn,
 					conn->con->errorMessage(),
-					conn->con->errorNumber(),NULL);
+					conn->con->errorNumber(),
+					conn->con->errorSqlState());
 				debugPrintf("  failed\n");
 				return SQL_ERROR;
 			}
@@ -6052,10 +6078,21 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT handletype,
 					type=1;
 					break;
 				case SQL_DIAG_SQLSTATE:
+					val.strval=stmt->sqlstate;
+					// fall back the same way
+					// SQLR_SQLGetDiagRec does, so the
+					// two agree - backends that supply
+					// no sqlstate leave it empty
+					if (charstring::isNullOrEmpty(
+							val.strval)) {
+						val.strval=
+						(charstring::isNullOrEmpty(
+							stmt->error))?
+							"00000":"HY000";
+					}
 					debugPrintf("  diagidentifier: "
 						"SQL_DIAG_SQLSTATE: %s\n",
-						stmt->sqlstate);
-					val.strval=stmt->sqlstate;
+						val.strval);
 					type=0;
 					break;
 				case SQL_DIAG_CURSOR_ROW_COUNT:
@@ -11970,7 +12007,8 @@ SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }
@@ -12268,7 +12306,8 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 					}
 					SQLR_CONNSetError(conn,
 						conn->con->errorMessage(),
-						conn->con->errorNumber(),NULL);
+						conn->con->errorNumber(),
+						conn->con->errorSqlState());
 					debugPrintf("  failed\n");
 					return SQL_ERROR;
 				} else {
@@ -12284,7 +12323,8 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 					}
 					SQLR_CONNSetError(conn,
 						conn->con->errorMessage(),
-						conn->con->errorNumber(),NULL);
+						conn->con->errorNumber(),
+						conn->con->errorSqlState());
 					debugPrintf("  failed\n");
 					return SQL_ERROR;
 				} else {
@@ -12347,7 +12387,8 @@ static SQLRETURN SQLR_SQLSetConnectAttr(SQLHDBC connectionhandle,
 						connectionhandle,val.uintval)) {
 					SQLR_CONNSetError(conn,
 						conn->con->errorMessage(),
-						conn->con->errorNumber(),NULL);
+						conn->con->errorNumber(),
+						conn->con->errorSqlState());
 					debugPrintf("  failed\n");
 					return SQL_ERROR;
 				}
@@ -13127,7 +13168,8 @@ SQLRETURN SQL_API SQLStatistics(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }
@@ -13292,7 +13334,8 @@ SQLRETURN SQL_API SQLTables(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }
@@ -13752,7 +13795,8 @@ SQLRETURN SQL_API SQLPrimaryKeys(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }
@@ -13822,7 +13866,8 @@ SQLRETURN SQL_API SQLProcedureColumns(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }
@@ -13904,7 +13949,8 @@ SQLRETURN SQL_API SQLProcedures(SQLHSTMT statementhandle,
 	// handle errors
 	if (retval!=SQL_SUCCESS) {
 		SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
-					stmt->cur->errorNumber(),NULL);
+					stmt->cur->errorNumber(),
+					stmt->cur->errorSqlState());
 	}
 	return retval;
 }

@@ -222,7 +222,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 
 		drv.debugEnd();
@@ -316,7 +317,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 		
 		drv.debugEnd();
@@ -644,7 +646,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 
 		drv.debugEnd();
@@ -898,7 +901,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 
 		drv.debugEnd();
@@ -952,7 +956,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 
 		drv.debugEnd();
@@ -1000,7 +1005,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 		
 		drv.debugEnd();
@@ -1121,7 +1127,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 	
 		drv.debugEnd();
@@ -1293,7 +1300,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 		
 		drv.debugEnd();
@@ -1377,7 +1385,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 	
 		drv.debugEnd();
@@ -1419,7 +1428,8 @@ public class SQLRelayDatabaseMetaData implements DatabaseMetaData {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 	
 		drv.debugEnd();

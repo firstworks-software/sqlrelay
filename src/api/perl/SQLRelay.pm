@@ -609,7 +609,8 @@ sub execute {
 		}
 		$sth->STORE('driver_FETCHED_ROWS',0);
 		$sth->STORE('driver_RowsInCache',0);
-		return $dbh->DBI::set_err(1,$cursor->errorMessage());
+		return $dbh->DBI::set_err(1,$cursor->errorMessage(),
+						$cursor->errorSqlState());
 	}
 
 	# get some result set info

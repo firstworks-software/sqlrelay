@@ -185,7 +185,7 @@ class SQLRCursor:
         CSQLRelay.executeQuery(self.cursor)
         the_error=CSQLRelay.cursorErrorMessage(self.cursor)
         if the_error:
-            raise DatabaseError('<pre>%s</pre>' % the_error)
+            raise self.__databaseError(the_error)
         self.__set_description()
         self.rowcount=CSQLRelay.totalRows(self.cursor)
         if CSQLRelay.affectedRows(self.cursor)>0:
@@ -211,12 +211,12 @@ class SQLRCursor:
                         CSQLRelay.executeQuery(self.cursor)
                         the_error=CSQLRelay.cursorErrorMessage(self.cursor)
                         if the_error:
-                                raise DatabaseError('<pre>%s</pre>' % the_error)
+                                raise self.__databaseError(the_error)
                         self.__set_description()
                         self.rowcount=CSQLRelay.totalRows(self.cursor)
                         if CSQLRelay.affectedRows(self.cursor)>0:
                                 self.rowcount=CSQLRelay.affectedRows(self.cursor)
-        
+
     def callproc(self, procname, parameters=None):
         self.execute(procname,parameters)
         
@@ -260,6 +260,14 @@ class SQLRCursor:
         if self.cursor is not None:
                 CSQLRelay.sqlrcur_free(self.cursor)
                 del self.cursor
+
+    def __databaseError(self, the_error):
+        # PEP 249 has no sqlstate slot, so it's carried as an attribute
+        # on the exception instance, following psycopg2's precedent of
+        # exposing the backend's own diagnostic code that way
+        error=DatabaseError('<pre>%s</pre>' % the_error)
+        error.sqlstate=CSQLRelay.cursorErrorSqlState(self.cursor)
+        return error
 
     def __set_description(self):
         desc=[]

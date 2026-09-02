@@ -1102,7 +1102,7 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	void throwErrorMessageException() throws SQLException {
-		throwException(sqlrcon.errorMessage());
+		throwException(sqlrcon.errorMessage(),sqlrcon.errorSqlState());
 	}
 
 	protected
@@ -1213,9 +1213,28 @@ public class SQLRelayConnection implements Connection {
 	}
 
 	void throwException(String reason) throws SQLException {
+		throwException(reason,null);
+	}
+
+	void throwException(String reason, String sqlstate)
+						throws SQLException {
 		drv.debugPrintln("exception: "+reason);
 		drv.debugZeroIndent();
-		throw new SQLException(reason);
+		throw new SQLException(reason,sqlState(sqlstate));
+	}
+
+	// Turns a SQL Relay sqlstate into a JDBC one.  JDBC wants null when
+	// there is none, where the client api gives back an empty string, and
+	// a backend that claims 00000 - success - while we're building an
+	// exception can't be taken at its word either.
+	private
+	static String sqlState(String sqlstate) {
+		if (sqlstate==null ||
+			sqlstate.length()!=5 ||
+			sqlstate.equals("00000")) {
+			return null;
+		}
+		return sqlstate;
 	}
 
 	public

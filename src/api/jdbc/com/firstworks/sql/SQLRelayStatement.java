@@ -183,7 +183,8 @@ public class SQLRelayStatement implements Statement {
 				createResultSet();
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 
 		drv.debugEnd();
@@ -414,7 +415,8 @@ public class SQLRelayStatement implements Statement {
 				resultset.setSQLRCursor(sqlrcur);
 			}
 		} else {
-			conn.throwException(sqlrcur.errorMessage());
+			conn.throwException(sqlrcur.errorMessage(),
+					sqlrcur.errorSqlState());
 		}
 
 		drv.debugEnd();
@@ -711,10 +713,12 @@ public class SQLRelayStatement implements Statement {
 
 	void throwErrorMessageException() throws SQLException {
 		String	err=sqlrcur.errorMessage();
+		String	sqlstate=sqlrcur.errorSqlState();
 		if (err==null) {
 			err=sqlrcon.errorMessage();
+			sqlstate=sqlrcon.errorSqlState();
 		}
-		conn.throwException(err);
+		conn.throwException(err,sqlstate);
 	}
 
 	private

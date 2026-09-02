@@ -384,7 +384,7 @@ namespace SQLRClient
                 }
             }
 
-            throw new SQLRelayException(_sqlrcur.errorNumber(),_sqlrcur.errorMessage());
+            throw new SQLRelayException(_sqlrcur.errorNumber(),_sqlrcur.errorMessage(),_sqlrcur.errorSqlState());
         }
 
         private void bindParameters()
