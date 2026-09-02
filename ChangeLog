@@ -1581,6 +1581,14 @@
 		said an oci client could never read a query's answer at either
 		serverversion setting; that was fixed for serverversion=11.2
 		by an earlier fix to the module, and the doc never caught up
+	fixed the oracle protocol module dropping bind values when a client
+		executes at iterations 0; a thin-mode client can send a real
+		TTC_ROW_DATA block while still claiming 0 iterations, and the old
+		code's iterations-bounded read loop skipped it entirely, giving
+		ORA-01008 on a plain bind and a silent NULL bind on a re-executed
+		plsql block; the block count is now derived from what's left in
+		the packet whenever iterations is claimed as 0, and the normal
+		iterations-bounded path is unchanged
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

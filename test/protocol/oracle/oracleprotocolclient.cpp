@@ -99,6 +99,12 @@ static const unsigned char	ORA_CCAP_FIELD_VERSION_11_2=6;
 static const size_t		ORA_CCAP_SIZE=42;
 static const size_t		ORA_RCAP_SIZE=7;
 
+// CCAP_FIELD_VERSION_12_2 in src/protocols/oracle.cpp.  a bind descriptor
+// grows a thirteenth field at and above it - see getQuery3BindDescriptor()
+// there - so a client pinned below it, which this one is, leaves that
+// field out
+static const unsigned char	ORA_CCAP_FIELD_VERSION_12_2=8;
+
 // CCAP_TTC3 and CCAP_TTC3_BIG_CHUNK_CLR in src/protocols/oracle.cpp.  a
 // client that offers the bit, against a module that also offers it, gets a
 // long clr's chunk lengths as count prefixed ub4s rather than raw bytes -
@@ -112,6 +118,27 @@ static const unsigned char	ORA_CLR_NULL_MARKER=0xfd;
 static const unsigned char	ORA_CLR_LONG_FORM_MARKER=0xfe;
 static const size_t		ORA_CLR_MAX_CHUNK_SIZE=255;
 static const size_t		ORA_CLR_MAX_BIG_CHUNK_SIZE=32767;
+
+// bind and define descriptor flags - the BIND_FLAG_* defines in
+// src/protocols/oracle.cpp.  USE_INDICATORS is what a descriptor with a
+// real value behind it carries; UNBOUND says the placeholder was never
+// bound, and getQuery3Binds() there drops the row data for the whole
+// request as soon as any one descriptor sets it
+static const unsigned char	ORA_BIND_FLAG_USE_INDICATORS=0x01;
+static const unsigned char	ORA_BIND_FLAG_UNBOUND=0x80;
+
+// ORACLE_TYPE_VARCHAR in src/protocols/oracle.cpp - the only type a
+// character bind needs
+static const unsigned char	ORA_TYPE_VARCHAR=1;
+
+// SQLCS_IMPLICIT, a character bind's character set form.  nothing in the
+// listener reads it - getQuery3BindDescriptor() consumes the byte and
+// throws it away - it is here so a capture of this client's request reads
+// the way a real client's does
+static const unsigned char	ORA_CSFRM_IMPLICIT=1;
+
+// how many elements go in the al8i4 vector - see appendAl8i4Vector()
+static const uint32_t		ORA_AL8I4_SIZE=13;
 
 // o5logon sizes - the 11g half of src/auths/oracle_userlist.cpp
 static const size_t	ORA_SESSION_KEY_SIZE_11G=48;
@@ -127,6 +154,51 @@ static const int32_t	ORA_RESPONSE_TIMEOUT_SEC=30;
 // no packet this client sends or receives comes anywhere near this - the
 // listener caps its own at the negotiated sdu, 8192
 static const size_t	ORA_MAX_PACKET_SIZE=65536;
+
+// one bind or define descriptor.  these are the twelve fields
+// getQuery3BindDescriptor() in src/protocols/oracle.cpp reads, in its
+// order, plus the thirteenth that only exists from field version 12.2 up.
+// none of them says which placeholder the bind is for, or how many values
+// follow, or which way the value travels - a bind is tied to its
+// placeholder and to its value by position alone.
+//
+// varchar() fills the whole thing in for the common case, so a test that
+// binds a string only has to say how big its buffer is; a test that needs
+// some other shape starts from clear() and sets the fields itself
+struct oracleprotocolbind {
+
+	unsigned char		type;		// ORACLE_TYPE_*
+	unsigned char		flags;		// ORA_BIND_FLAG_*
+	unsigned char		precision;
+	unsigned char		scale;
+	uint32_t		buffersize;
+	uint32_t		maxelements;
+	uint32_t		contflags;
+	uint32_t		oidlength;
+	const unsigned char	*oid;		// oidlength bytes, or NULL
+	uint32_t		version;
+	uint32_t		charsetid;
+	unsigned char		csfrm;
+	uint32_t		maxdatasize;
+	uint32_t		oaccolid;	// field version 12.2 and up
+
+	void	clear();
+	void	varchar(uint32_t buffersize);
+};
+
+// one bind's value for one execution iteration.  a size of 0 is how a null
+// goes out: appendLenBytes() writes a lone zero length byte for it, which
+// is what getLenBytes() in src/protocols/oracle.cpp reads back as a null -
+// and what oracle itself makes of an empty string anyway
+struct oracleprotocolbindvalue {
+
+	const char	*value;
+	size_t		size;
+
+	void	set(const char *value);
+	void	set(const char *value, size_t size);
+	void	setNull();
+};
 
 class oracleprotocolclient {
 	public:
@@ -160,10 +232,52 @@ class oracleprotocolclient {
 
 		// TTI_QUERY3.  "query" may be NULL, which is what a call
 		// that only describes or only executes an already-parsed
-		// cursor sends
+		// cursor sends.  this form sends no binds and no defines
 		bool	query3(uint32_t options, uint32_t cursorid,
 					uint32_t prefetchrows,
 					const char *query);
+
+		// TTI_QUERY3 with binds.  "binds" carries one descriptor
+		// per placeholder and "defines" one per define - the
+		// listener reads a define's descriptor with the same code
+		// and throws the result away, so 0 defines is the normal
+		// case here.
+		//
+		// "values" is one flat array of blockcount*bindcount
+		// values, block by block: the first bindcount entries are
+		// the first execution iteration's, the next bindcount the
+		// second's, and so on.
+		//
+		// "iterations" is what goes in the al8i4 vector, and it is
+		// deliberately independent of blockcount - a real thin
+		// client can claim 0 iterations and still send row data,
+		// and telling the listener one thing while doing another
+		// is the whole point of some of the tests here
+		bool	query3(uint32_t options, uint32_t cursorid,
+					uint32_t prefetchrows,
+					const char *query,
+					const oracleprotocolbind *binds,
+					uint32_t bindcount,
+					uint32_t iterations,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount,
+					const oracleprotocolbind *defines=NULL,
+					uint32_t definecount=0);
+
+		// TTI_EXECUTE, the modern shape: the second and later
+		// executes of a statement one query3() with query text
+		// already parsed.  only fresh values go out - the listener
+		// remembers the descriptors - so this takes the bind count
+		// and the values but no descriptors of its own.
+		// "iterations" is independent of blockcount here too.
+		// legacyExecute() writes the pre-query3 shape instead, and
+		// which of the two the listener reads is decided by
+		// query3session there, not by the call
+		bool	reexecute(uint32_t cursorid, uint32_t iterations,
+					uint32_t options, uint32_t moreoptions,
+					uint32_t bindcount,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount);
 
 		// TTI_FETCH
 		bool	fetch(uint32_t cursorid, uint32_t rowstofetch);
@@ -212,6 +326,12 @@ class oracleprotocolclient {
 		void	appendLenPreInt(uint32_t value);
 		void	appendLenString(const char *value, size_t size);
 		void	appendLenBytes(const char *value, size_t size);
+		void	appendAl8i4Vector(uint32_t iterations);
+		void	appendBindDescriptor(const oracleprotocolbind *bind);
+		void	appendRowDataBlocks(
+					const oracleprotocolbindvalue *values,
+					uint32_t bindcount,
+					uint32_t blockcount);
 		bool	sendPacket();
 		bool	recvPacket();
 		unsigned char	getPacketType();
@@ -247,6 +367,11 @@ class oracleprotocolclient {
 		bool			connected;
 		bool			largeheader;
 		bool			bigchunkclr;
+
+		// what this client offers, and so - since the listener
+		// negotiates down to the lower of the two ends - what it
+		// gets.  a bind descriptor's shape depends on it
+		unsigned char		fieldversion;
 
 		bytebuffer	reqpacket;
 		unsigned char	reqpackettype;
@@ -305,6 +430,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	connected=false;
 	largeheader=false;
 	bigchunkclr=false;
+	fieldversion=ORA_CCAP_FIELD_VERSION_11_2;
 	reqpackettype=0;
 	resppacket=new unsigned char[ORA_MAX_PACKET_SIZE];
 	respsize=0;
@@ -781,7 +907,7 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	// stays out of the request either way
 	unsigned char	compilecaps[ORA_CCAP_SIZE];
 	bytestring::zero(compilecaps,sizeof(compilecaps));
-	compilecaps[ORA_CCAP_FIELD_VERSION]=ORA_CCAP_FIELD_VERSION_11_2;
+	compilecaps[ORA_CCAP_FIELD_VERSION]=fieldversion;
 	if (bigchunkclr) {
 		compilecaps[ORA_CCAP_TTC3]|=ORA_CCAP_TTC3_BIG_CHUNK_CLR;
 	}
@@ -1153,6 +1279,148 @@ void oracleprotocolclient::disconnect() {
 }
 
 
+// ---- binds ----
+
+// every field zero - a descriptor that claims nothing at all, and the
+// starting point for anything that isn't a plain character bind
+void oracleprotocolbind::clear() {
+	type=0;
+	flags=0;
+	precision=0;
+	scale=0;
+	buffersize=0;
+	maxelements=0;
+	contflags=0;
+	oidlength=0;
+	oid=NULL;
+	version=0;
+	charsetid=0;
+	csfrm=0;
+	maxdatasize=0;
+	oaccolid=0;
+}
+
+// a character bind of at most "buffersize" bytes.  only two of these
+// fields reach anything: getQuery3Binds() in src/protocols/oracle.cpp
+// keeps the type, the flags and the buffer size and reads past the rest,
+// and of those it acts on the flags - BIND_FLAG_USE_INDICATORS is what
+// says a real value follows, where BIND_FLAG_UNBOUND would say the
+// placeholder was never bound and cost the whole request its row data.
+// the character set fields carry what this client negotiated, so the
+// request reads the way a real one does
+void oracleprotocolbind::varchar(uint32_t buffersize) {
+	clear();
+	type=ORA_TYPE_VARCHAR;
+	flags=ORA_BIND_FLAG_USE_INDICATORS;
+	this->buffersize=buffersize;
+	charsetid=ORA_CHARSET_AL32UTF8;
+	csfrm=ORA_CSFRM_IMPLICIT;
+}
+
+// a value, sized by its own null terminator
+void oracleprotocolbindvalue::set(const char *value) {
+	this->value=value;
+	size=charstring::getLength(value);
+}
+
+// a value of a size the caller states, which is what a value with a zero
+// byte in it - or one built to be longer than a clr's short form - needs
+void oracleprotocolbindvalue::set(const char *value, size_t size) {
+	this->value=value;
+	this->size=size;
+}
+
+void oracleprotocolbindvalue::setNull() {
+	value=NULL;
+	size=0;
+}
+
+// the al8i4 vector: thirteen count prefixed ub4s, back to back, right
+// after the query text.  getQuery3Binds() in src/protocols/oracle.cpp
+// reads as many elements as the request's vector size field declared and
+// keeps exactly one of them - the second, which is the iteration count.
+// every other element is read and dropped, so the twelve constants below
+// are only what a real client's vector carries, not something the
+// listener acts on.  they are also the bytes this client sent as a canned
+// array before there was anything to vary, so a no-bind request's vector
+// is byte for byte what it always was
+void oracleprotocolclient::appendAl8i4Vector(uint32_t iterations) {
+	appendLenPreInt(1);		// element 0
+	appendLenPreInt(iterations);	// element 1 - the iteration count
+	appendLenPreInt(0);		// element 2
+	appendLenPreInt(0);		// element 3
+	appendLenPreInt(0);		// element 4
+	appendLenPreInt(0);		// element 5
+	appendLenPreInt(0);		// element 6
+	appendLenPreInt(6);		// element 7
+	appendLenPreInt(0);		// element 8
+	appendLenPreInt(32768);		// element 9
+	appendLenPreInt(0);		// element 10
+	appendLenPreInt(0);		// element 11
+	appendLenPreInt(0);		// element 12
+}
+
+// one bind or define descriptor: four raw bytes, then a run of count
+// prefixed ub4s with a lone raw byte sitting in the middle of it.  the
+// order and the widths are getQuery3BindDescriptor()'s read order in
+// src/protocols/oracle.cpp, and two of them are worth naming: csfrm,
+// which is a plain byte between two ub4s rather than a ub4 of its own,
+// and oaccolid, which only exists once the negotiated field version
+// reaches 12.2 - this client negotiates 11.2, so it stays out.
+//
+// the oid bytes only go out behind a nonzero oid length, since that
+// length is what the listener reads them by.  a define takes the
+// identical shape: the listener reads it with the same function and
+// throws the results away
+void oracleprotocolclient::appendBindDescriptor(
+				const oracleprotocolbind *bind) {
+
+	appendByte(bind->type);				// type
+	appendByte(bind->flags);			// flags
+	appendByte(bind->precision);			// precision
+	appendByte(bind->scale);			// scale
+	appendLenPreInt(bind->buffersize);		// buffer size
+	appendLenPreInt(bind->maxelements);		// max elements
+	appendLenPreInt(bind->contflags);		// cont flags
+	appendLenPreInt(bind->oidlength);		// oid length
+	if (bind->oidlength && bind->oid) {
+		appendBytes(bind->oid,bind->oidlength);	// oid
+	}
+	appendLenPreInt(bind->version);			// version
+	appendLenPreInt(bind->charsetid);		// charset id
+	appendByte(bind->csfrm);			// csfrm
+	appendLenPreInt(bind->maxdatasize);		// max data size
+	if (fieldversion>=ORA_CCAP_FIELD_VERSION_12_2) {
+		appendLenPreInt(bind->oaccolid);	// oaccolid
+	}
+}
+
+// the bind values: one TTC_ROW_DATA block per execution iteration, each a
+// marker byte and then one clr per bind, in descriptor order.  there is no
+// length in front of a block, nothing between two of them and nothing
+// after the last - getQuery3BindValues() in src/protocols/oracle.cpp
+// reads blocks until the packet runs out or it has as many as it was
+// expecting.  a value carries no type of its own either; the type comes
+// from the descriptor it lines up with.
+//
+// "values" is one flat array of blockcount*bindcount values, block by
+// block, which is the order they go out in
+void oracleprotocolclient::appendRowDataBlocks(
+				const oracleprotocolbindvalue *values,
+				uint32_t bindcount,
+				uint32_t blockcount) {
+
+	for (uint32_t block=0; block<blockcount; block++) {
+		appendByte(ORA_TTC_ROW_DATA);		// row data marker
+		for (uint32_t i=0; i<bindcount; i++) {
+			const oracleprotocolbindvalue	*v=
+					&(values[block*bindcount+i]);
+			appendLenBytes(v->value,v->size);	// value
+		}
+	}
+}
+
+
 // ---- calls ----
 
 // TTI_OPEN: a sequence number, a pointer flag for the cursor id the
@@ -1183,27 +1451,55 @@ bool oracleprotocolclient::open(uint32_t *cursorid) {
 	return true;
 }
 
+// TTI_QUERY3 without binds, which is what a call that only parses,
+// describes, executes or fetches sends
+bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
+					uint32_t prefetchrows,
+					const char *query) {
+	// 1 iteration, the count this call has always claimed - with no
+	// binds and no defines the listener never reads it anyway
+	return query3(options,cursorid,prefetchrows,query,NULL,0,1,NULL,0);
+}
+
 // TTI_QUERY3 - the modern combined open/parse/describe/execute call.  the
 // field order below is exactly what getQuery3Request() reads, and it was
 // checked against a real OCI request captured in
 // test/testdetails-oracleprotocol.log: every field is either a ub4 in the
 // count-then-bytes form or a single raw byte, so nothing sits at a fixed
-// offset and the sequence has to be written out in full
+// offset and the sequence has to be written out in full.
+//
+// four things follow the header, in this order, which is the order
+// getQuery3Request() and then getQuery3Binds() read them in: the query
+// text, the al8i4 vector, every bind descriptor and then every define
+// descriptor, and last one row data block per execution iteration
 bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 					uint32_t prefetchrows,
-					const char *query) {
+					const char *query,
+					const oracleprotocolbind *binds,
+					uint32_t bindcount,
+					uint32_t iterations,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount,
+					const oracleprotocolbind *defines,
+					uint32_t definecount) {
+
+	if ((bindcount && !binds) || (definecount && !defines)) {
+		setError("query3 needs a descriptor per bind and define");
+		return false;
+	}
+	if (blockcount && (!bindcount || !values)) {
+		setError("query3 needs binds and values for a row data block");
+		return false;
+	}
 
 	size_t	querysize=charstring::getLength(query);
 
-	// the al8i4 vector, which getQuery3Binds() only reads when there are
-	// binds or defines - there are none here, so it's written to match
-	// what a real client sends rather than because anything reads it
-	static const unsigned char	al8i4[]={
-		0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x01, 0x06, 0x00, 0x02, 0x80, 0x00, 0x00,
-		0x00, 0x00
-	};
-	uint32_t	vectorsize=(querysize)?13:0;
+	// getQuery3Binds() skips the al8i4 vector whole unless there is at
+	// least one bind or define, so with neither it is only there because
+	// a real client's request has one - which is why it also goes out
+	// with a query and no binds, exactly as it always did
+	bool		sendvector=(querysize || bindcount || definecount);
+	uint32_t	vectorsize=(sendvector)?ORA_AL8I4_SIZE:0;
 
 	beginTtiCall(ORA_TTI_QUERY3);
 	appendByte(1);				// sequence number
@@ -1219,14 +1515,14 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 	appendLenPreInt(prefetchrows);
 	appendLenPreInt(0);			// max long size
 	appendByte(0);				// pointer
-	appendLenPreInt(0);			// bind count
+	appendLenPreInt(bindcount);		// bind count
 	appendByte(0);				// pointer
 	appendByte(1);				// pointer
 	appendByte(0);				// pointer
 	appendByte(1);				// pointer
 	appendByte(1);				// pointer
 	appendByte(1);				// pointer
-	appendLenPreInt(0);			// define count
+	appendLenPreInt(definecount);		// define count
 	appendLenPreInt(0);
 	appendByte(1);				// pointer
 	appendByte(1);				// pointer
@@ -1243,8 +1539,64 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 	// reads on its own branch
 	if (querysize) {
 		appendLenBytes(query,querysize);
-		appendBytes(al8i4,sizeof(al8i4));
 	}
+
+	if (sendvector) {
+		appendAl8i4Vector(iterations);
+	}
+
+	// every bind descriptor, then every define descriptor - they are
+	// one run of identically shaped descriptors as far as the wire is
+	// concerned, and only the two counts in the header tell them apart
+	for (uint32_t i=0; i<bindcount; i++) {
+		appendBindDescriptor(&(binds[i]));
+	}
+	for (uint32_t i=0; i<definecount; i++) {
+		appendBindDescriptor(&(defines[i]));
+	}
+
+	// and the values.  the listener reads no row data at all for a
+	// request whose descriptors are all unbound, but that is its call to
+	// make from the flags - whatever the caller asked for goes out
+	appendRowDataBlocks(values,bindcount,blockcount);
+
+	return sendPacket() && recvPacket();
+}
+
+// TTI_EXECUTE, the modern shape.  once one query3() carrying query text
+// has gone out, query3session is true in src/protocols/oracle.cpp and the
+// same function code reaches reexecute() there rather than the legacy
+// execute() that legacyExecute() writes - so this only works on a
+// connection that has already parsed a statement, and legacyExecute() only
+// works on one that has not.
+//
+// five fields, a raw sequence byte and four ub4s, and then fresh values
+// for the binds the statement was parsed with.  no descriptors go out:
+// restoreQuery3Binds() there remembers how many binds the original query3()
+// declared and what types they were, so the caller only has to know the
+// count and supply the values
+bool oracleprotocolclient::reexecute(uint32_t cursorid,
+					uint32_t iterations,
+					uint32_t options,
+					uint32_t moreoptions,
+					uint32_t bindcount,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount) {
+
+	if (blockcount && (!bindcount || !values)) {
+		setError("reexecute needs binds and values "
+					"for a row data block");
+		return false;
+	}
+
+	beginTtiCall(ORA_TTI_EXECUTE);
+	appendByte(1);				// sequence number
+	appendLenPreInt(cursorid);
+	appendLenPreInt(iterations);
+	appendLenPreInt(options);
+	appendLenPreInt(moreoptions);
+
+	appendRowDataBlocks(values,bindcount,blockcount);
 
 	return sendPacket() && recvPacket();
 }

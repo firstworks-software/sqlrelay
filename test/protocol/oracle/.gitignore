@@ -3,6 +3,7 @@
 /oracledescribeonly
 /oraclelegacyfetch
 /oracleclrchunks
+/oracleiterations0
 *.o
 *.obj
 *.lo

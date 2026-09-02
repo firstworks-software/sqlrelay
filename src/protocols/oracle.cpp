@@ -7938,7 +7938,23 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 
 	query3blocks=0;
 
-	uint64_t	valuecount=(uint64_t)iterations*(uint64_t)bindcount;
+	// some clients claim 0 iterations but send row data anyway, so when
+	// there are binds to fill, the block count has to come from what's
+	// left in the packet rather than from the claim.  a block is at least
+	// a marker byte plus 1 byte per value, and no more blocks than the
+	// bind values will fit in
+	uint32_t	maxblocks=iterations;
+	if (!iterations && bindcount && rp<end) {
+		uint64_t	bypacket=(uint64_t)(end-rp)/
+						((uint64_t)bindcount+1);
+		uint64_t	byvalues=(uint64_t)MAX_QUERY3_BIND_VALUES/
+						(uint64_t)bindcount;
+		maxblocks=(uint32_t)((bypacket<byvalues)?bypacket:byvalues);
+		debugWrite("iterations 0 - row data blocks bounded "
+						"by the packet: %d",maxblocks);
+	}
+
+	uint64_t	valuecount=(uint64_t)maxblocks*(uint64_t)bindcount;
 	if (valuecount>MAX_QUERY3_BIND_VALUES) {
 		debugWrite("too many bind values: %lld",(long long)valuecount);
 		return false;
@@ -7950,7 +7966,7 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 		query3bindvalueavail=(uint32_t)valuecount;
 	}
 
-	while (rp<end && *rp==TTC_ROW_DATA && query3blocks<iterations) {
+	while (rp<end && *rp==TTC_ROW_DATA && query3blocks<maxblocks) {
 		rp++;
 		for (uint32_t i=0; i<bindcount; i++) {
 			oraclequery3bindvalue	*v=&(query3bindvalues[

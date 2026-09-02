@@ -28,11 +28,11 @@ ORACLEPROTOCOLPORT5 ?= 1525
 # oracle.class only builds if a jdk is configured - see
 # ORACLEPROTOCOLTESTTARGETS in config.mk.in
 #
-# oracledescribeonly, oraclelegacyfetch and oracleclrchunks only need
-# rudiments (raw sockets), so they build whether or not OCI is configured -
-# they speak the oracle wire protocol themselves rather than going through a
-# client library
-all: oracle ociselect oracledescribeonly oraclelegacyfetch oracleclrchunks $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+# oracledescribeonly, oraclelegacyfetch, oracleclrchunks and
+# oracleiterations0 only need rudiments (raw sockets), so they build whether
+# or not OCI is configured - they speak the oracle wire protocol themselves
+# rather than going through a client library
+all: oracle ociselect oracledescribeonly oraclelegacyfetch oracleclrchunks oracleiterations0 $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -86,6 +86,17 @@ oracleclrchunks.$(OBJ): oracleprotocolclient.cpp
 oracleclrchunks: oracleclrchunks.cpp oracleprotocolclient.cpp oracleclrchunks.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleclrchunks.$(OBJ) $(RUDIMENTSLIBS)
 
+# oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
+# the test's main, the same way asserts.cpp is.  the explicit dependency
+# below is needed because the .cpp.$(OBJ) suffix rule only depends on
+# oracleiterations0.cpp - without it, editing oracleprotocolclient.cpp
+# alone would relink but not recompile, leaving a stale object (see
+# AGENTS.md's note on this build tracking no header dependencies)
+oracleiterations0.$(OBJ): oracleprotocolclient.cpp
+
+oracleiterations0: oracleiterations0.cpp oracleprotocolclient.cpp oracleiterations0.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleiterations0.$(OBJ) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oracle$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oracle$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) tnsnames.ora
 	$(RMTREE) .libs
