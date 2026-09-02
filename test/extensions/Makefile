@@ -23,10 +23,11 @@ all: router \
 	postgresqlstringagg \
 	postgresqlsequencenextval \
 	postgresqlkeepdenserank \
-	postgresqlslashescape
+	postgresqlslashescape \
+	postgresqlreplay
 
 clean:
-	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) postgresqlkeepdenserank$(EXE) postgresqlslashescape$(EXE) *.csv *.xml cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) postgresqlkeepdenserank$(EXE) postgresqlslashescape$(EXE) postgresqlreplay$(EXE) *.csv *.xml cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 router: router.cpp router.$(OBJ)
@@ -70,3 +71,6 @@ postgresqlkeepdenserank: postgresqlkeepdenserank.cpp postgresqlkeepdenserank.$(O
 
 postgresqlslashescape: postgresqlslashescape.cpp postgresqlslashescape.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlslashescape.$(OBJ) $(CPPTESTLIBS)
+
+postgresqlreplay: postgresqlreplay.cpp postgresqlreplay.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlreplay.$(OBJ) $(CPPTESTLIBS)

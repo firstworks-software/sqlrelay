@@ -144,6 +144,14 @@ stop_instances() {
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id odbcmssqlmaxfieldsize
 		fi
 
+		# the postgresqlupsert test also has a second instance, whose
+		# trigger recognizes the duplicate-key error via sqlstate=
+		# instead of string= (#9620)
+		if ( test "$_instance" = "postgresqlupsert" )
+		then
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id postgresqlupsertsqlstate
+		fi
+
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, a connectstrings-default-auth
 		# instance, and a fetchatonce=1 instance
@@ -349,6 +357,15 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the postgresqlupsert test needs a second instance, whose trigger
+	# recognizes the duplicate-key error via sqlstate= instead of
+	# string= (#9620)
+	if ( test "$instance" = "postgresqlupsert" )
+	then
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlupsertsqlstate -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# start the instance
 	$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance} -backtrace $BACKTRACEDIR
 	sleep 2
@@ -393,6 +410,11 @@ stop_instance() {
 	then
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize
+	fi
+	if ( test "$instance" = "postgresqlupsert" )
+	then
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlupsertsqlstate
 	fi
 	sleep 2
 	$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance}

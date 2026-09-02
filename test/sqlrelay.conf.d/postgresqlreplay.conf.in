@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqlreplay" dbase="postgresql">
+		<listeners>
+			<listener port="9037" socket="/tmp/postgresqlreplay.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+		</translations>
+		<triggers>
+			<!-- when="after" only runs once a query has executed, not
+				merely prepared.  postgresql resolves table and
+				function references, and coerces literal casts,
+				during prepare (parse analysis) - so the more
+				obvious choices (an undefined table/function, or
+				casting a literal like 'notanumber' to an
+				integer) would all fail before this trigger ever
+				saw them.  division-by-zero and integer overflow
+				are only caught once the executor evaluates the
+				expression (postgresql constant-folds immutable
+				operators during planning, which happens on
+				execute, not prepare), so they're what reliably
+				exercises this trigger's sqlstate matching -->
+			<trigger module="replay" when="after" maxretries="2">
+				<!-- division_by_zero -->
+				<condition sqlstate="22012" scope="query">
+					<log file="/tmp/postgresqlreplay-sqlstate-divisionbyzero.log">
+						<query>select 1</query>
+					</log>
+				</condition>
+				<!-- numeric_value_out_of_range (integer overflow).
+					Its pattern never matches the
+					division_by_zero error above (or vice
+					versa), so each condition's log file
+					doubles as a negative control for the
+					other -->
+				<condition sqlstate="22003" scope="query">
+					<log file="/tmp/postgresqlreplay-sqlstate-outofrange.log">
+						<query>select 1</query>
+					</log>
+				</condition>
+			</trigger>
+		</triggers>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+</instances>

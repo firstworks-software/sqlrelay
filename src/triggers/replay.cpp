@@ -38,20 +38,34 @@ querydetails::~querydetails() {
 
 enum condition_t {
 	CONDITION_ERROR=0,
-	CONDITION_ERRORCODE
+	CONDITION_ERRORCODE,
+	CONDITION_SQLSTATE
 };
 
 class condition {
 	public:
+		condition();
+
 		condition_t	cond;
 		const char	*error;
 		uint32_t	errorcode;
+		const char	*sqlstate;
 		bool		replaytx;
 
 		// for now we only support logging the result of a query
 		const char	*query;
 		const char	*logfile;
 };
+
+condition::condition() {
+	cond=CONDITION_ERROR;
+	error=NULL;
+	errorcode=0;
+	sqlstate=NULL;
+	replaytx=false;
+	query=NULL;
+	logfile=NULL;
+}
 
 class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 	public:
@@ -136,14 +150,31 @@ sqlrtrigger_replay::sqlrtrigger_replay(sqlrservercontroller *cont,
 
 		condition	*c=new condition;
 
-		// for now we only support <condition error="..."/>
-		const char	*err=cond->getAttributeValue("error");
-		if (charstring::isNumber(err)) {
-			c->cond=CONDITION_ERRORCODE;
-			c->errorcode=charstring::convertToInteger(err);
+		// for now we only support <condition sqlstate="..."/>
+		// or <condition error="..."/>
+		//
+		// sqlstate and error are alternatives on a tag, not
+		// independent tests combined on one.  Each <condition> tag
+		// carries its own scope, log, and query, and a site can
+		// configure as many tags as it likes, so a site wanting
+		// "either this sqlstate or that error text" just configures
+		// two tags.  (The globaltemptables trigger checks both on one
+		// tag, but it only has a single <alreadyexists> tag to work
+		// with.)
+		const char	*sqlstate=cond->getAttributeValue("sqlstate");
+		if (!charstring::isNullOrEmpty(sqlstate)) {
+			c->cond=CONDITION_SQLSTATE;
+			c->sqlstate=sqlstate;
 		} else {
-			c->cond=CONDITION_ERROR;
-			c->error=err;
+			const char	*err=cond->getAttributeValue("error");
+			if (charstring::isNumber(err)) {
+				c->cond=CONDITION_ERRORCODE;
+				c->errorcode=
+					charstring::convertToInteger(err);
+			} else {
+				c->cond=CONDITION_ERROR;
+				c->error=err;
+			}
 		}
 
 		// get the scope (query or tx)
@@ -835,8 +866,21 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 
 condition *sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur) {
 
+	// odbc-family drivers can report a sqlstate for a diagnostic record
+	// whose native error number is 0 and whose message text is empty, so
+	// an empty error buffer and a 0 error number don't, on their own,
+	// imply that no error occurred - haserrorsizeornumber tracks that,
+	// so the sqlstate check below still gets a chance even when it's
+	// false, while the error text/code checks (which have nothing
+	// meaningful to go on in that case) stay gated on it, exactly as
+	// they were before sqlstate existed
+	bool	haserrorsizeornumber=(cont->getErrorSize(sqlrcur) ||
+					cont->getErrorNumber(sqlrcur));
+
 	// bail if we didn't get an error
-	if (!cont->getErrorSize(sqlrcur) && !cont->getErrorNumber(sqlrcur)) {
+	if (!haserrorsizeornumber &&
+			charstring::isNullOrEmpty(
+				cont->getSqlStateBuffer(sqlrcur))) {
 		return NULL;
 	}
 
@@ -852,12 +896,27 @@ condition *sqlrtrigger_replay::replayCondition(sqlrservercursor *sqlrcur) {
 		condition	*cond=node->getValue();
 
 		if (cond->cond==CONDITION_ERROR) {
-			if (charstring::contains(err.getString(),cond->error)) {
+			if (haserrorsizeornumber &&
+				charstring::contains(err.getString(),
+							cond->error)) {
 				writeReplayConditionToLogFile(cond,sqlrcur);
 				return cond;
 			}
 		} else if (cond->cond==CONDITION_ERRORCODE) {
-			if (cont->getErrorNumber(sqlrcur)==cond->errorcode) {
+			if (haserrorsizeornumber &&
+				cont->getErrorNumber(sqlrcur)==
+						cond->errorcode) {
+				writeReplayConditionToLogFile(cond,sqlrcur);
+				return cond;
+			}
+		} else if (cond->cond==CONDITION_SQLSTATE) {
+			// a backend that reported no sqlstate gives us
+			// nothing to compare, so it can't match
+			const char	*sqlstate=
+					cont->getSqlStateBuffer(sqlrcur);
+			if (!charstring::isNullOrEmpty(sqlstate) &&
+				!charstring::compareIgnoringCase(
+						sqlstate,cond->sqlstate)) {
 				writeReplayConditionToLogFile(cond,sqlrcur);
 				return cond;
 			}
@@ -902,6 +961,13 @@ void sqlrtrigger_replay::writeReplayConditionToLogFile(condition *cond,
 	} else if (cond->cond==CONDITION_ERRORCODE) {
 		logstr.append("error code: ");
 		logstr.append(cond->errorcode);
+		logstr.append("\n");
+	} else if (cond->cond==CONDITION_SQLSTATE) {
+		logstr.append("sqlstate: ");
+		logstr.append(cont->getSqlStateBuffer(sqlrcur));
+		logstr.append("\n");
+		logstr.append("matching sqlstate pattern: ");
+		logstr.append(cond->sqlstate);
 		logstr.append("\n");
 	}
 	logstr.append("requires full replay: ");

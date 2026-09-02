@@ -1508,6 +1508,15 @@
 		attribute, with a built-in default per database (postgresql
 		42P07, mysql/mariadb 42S01), so already-exists recognition no
 		longer depends on the database's error language
+	the upsert and replay triggers can now also match on sqlstate: an
+		<error> tag in the upsert trigger accepts a sqlstate attribute
+		independent of its existing string and number attributes, and a
+		<condition> tag in the replay trigger accepts a sqlstate attribute
+		as an alternative to its existing error attribute; the db2
+		connection module's liveconnection detection also now accepts a
+		sqlstate as an alternative to its error-size/text checks for its
+		SQL1224N and CLI0106E cases (SQL30081N has no documented sqlstate,
+		so it's unchanged)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -68,6 +68,12 @@ static void copySqlState(const char *state,
 	}
 }
 
+// true if sqlstate is set and matches state, false if sqlstate is empty
+static bool sqlStateIs(const char *sqlstate, const char *state) {
+	return !charstring::isNullOrEmpty(sqlstate) &&
+		!charstring::compareIgnoringCase(sqlstate,state);
+}
+
 class db2connection;
 
 class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
@@ -291,7 +297,8 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 					uint32_t *sqlstatesize);
 		bool	liveConnection(SQLINTEGER nativeerror,
 					const char *errorbuffer,
-					SQLSMALLINT errsize);
+					SQLSMALLINT errsize,
+					const char *sqlstate);
 		const char	*pingQuery();
 		const char	*getDbType();
 		const char	*getDbVersion();
@@ -1091,12 +1098,14 @@ void db2connection::getError(char *errorbuffer,
 		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
 	}
 	*errorcode=nativeerrnum;
-	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errsize);
 
 	// stash the sqlstate we already have rather than issuing a second
 	// SQLGetDiagRec later, by which time db2 may have discarded it
 	uint32_t	statesize;
 	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+
+	*liveconnection=liveConnection(nativeerrnum,errorbuffer,
+						errsize,sqlstate);
 }
 
 void db2connection::getSqlState(char *sqlstatebuffer,
@@ -1107,7 +1116,8 @@ void db2connection::getSqlState(char *sqlstatebuffer,
 
 bool db2connection::liveConnection(SQLINTEGER nativeerrnum,
 					const char *errorbuffer,
-					SQLSMALLINT errsize) {
+					SQLSMALLINT errsize,
+					const char *sqlstate) {
 
 	// When the DB goes down, DB2 first reports one error:
 	// 	[IBM][CLI Driver] SQL1224N  A database agent could not be
@@ -1133,10 +1143,17 @@ bool db2connection::liveConnection(SQLINTEGER nativeerrnum,
 	//	(in this case nativeerrnum==-30081 and the error size is
 	//	variable depending on the host name/ip address of the server
 	//	and other things, so we'll only test for the error number)
-	return !((nativeerrnum==-1224 && errsize==184) ||
-		(nativeerrnum==-99999 && errsize==64 &&
-		charstring::contains(errorbuffer,"Connection is closed")) ||
-		(nativeerrnum==-1224 && errsize==220) ||
+	// Where the message above documents a SQLSTATE, we accept it as an
+	// alternative to the error size and text, since those vary between
+	// db2 versions and drivers.  An empty sqlstate just doesn't match.
+	return !((nativeerrnum==-1224 &&
+			(errsize==184 || errsize==220 ||
+				sqlStateIs(sqlstate,"55032"))) ||
+		(nativeerrnum==-99999 &&
+			((errsize==64 &&
+			charstring::contains(errorbuffer,
+						"Connection is closed")) ||
+				sqlStateIs(sqlstate,"08003"))) ||
 		(nativeerrnum==-30081));
 }
 
@@ -3391,13 +3408,14 @@ void db2cursor::getError(char *errorbuffer,
 		*errorsize=(errorbuffersize)?errorbuffersize-1:0;
 	}
 	*errorcode=nativeerrnum;
-	*liveconnection=db2conn->liveConnection(nativeerrnum,
-						errorbuffer,errsize);
 
 	// stash the sqlstate we already have rather than issuing a second
 	// SQLGetDiagRec later, by which time db2 may have discarded it
 	uint32_t	statesize;
 	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+
+	*liveconnection=db2conn->liveConnection(nativeerrnum,errorbuffer,
+							errsize,sqlstate);
 }
 
 void db2cursor::getSqlState(char *sqlstatebuffer,

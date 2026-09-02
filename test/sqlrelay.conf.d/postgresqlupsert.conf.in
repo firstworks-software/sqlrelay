@@ -27,4 +27,35 @@
 		</connections>
 	</instance>
 
+	<instance id="postgresqlupsertsqlstate" dbase="postgresql">
+		<listeners>
+			<listener port="9036" socket="/tmp/postgresqlupsertsqlstate.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+		</translations>
+		<triggers>
+			<!-- string= is deliberately bogus and can never match
+				postgresql's real duplicate-key error text -
+				recognizing the duplicate below relies entirely
+				on the sqlstate= match (23505, unique_violation) -->
+			<trigger module="upsert" when="after">
+				<errors>
+					<error string="this string never matches"
+							sqlstate="23505"/>
+				</errors>
+				<tables>
+					<table name="student2">
+						<primarykey name="id"/>
+						<column name="firstname"/>
+						<column name="lastname"/>
+					</table>
+				</tables>
+			</trigger>
+		</triggers>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=testfunc();typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
 </instances>

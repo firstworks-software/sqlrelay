@@ -9158,6 +9158,16 @@ http://www.gnu.org/software/src-highlite -->
     <li>if string: the condition is true if the error string contains the string</li>
   </ul>
 
+  <li><b>sqlstate</b></li>
+  <ul>
+    <li>an alternative to <b>error</b>, not an addition to it - if set on a tag, the condition matches on the SQLSTATE alone, and that tag's <b>error</b> attribute (if also present) is ignored</li>
+    <li>"set" means non-empty - <b>sqlstate=""</b> (present but empty) is treated the same as leaving it off, and the tag falls back to <b>error</b>; this is different from the globaltemptables trigger's <b>alreadyexists</b> tag, where an empty <b>sqlstate</b> explicitly disables a built-in default - the replay trigger has no built-in default to disable</li>
+    <li>compared case-insensitively against the SQLSTATE the database reported for the error</li>
+    <li>SQLSTATE codes are standardized and locale-independent, unlike error text, and aren't backend-specific magic numbers, unlike error codes on some backends</li>
+    <li>if the backend didn't report a SQLSTATE for the error, there's nothing to compare, so the condition can't match on <b>sqlstate</b> - this is never treated as a mismatch, it's simply skipped</li>
+    <li><b>sqlstate</b> and <b>error</b> are alternatives on a single <b>condition</b> tag, not combined on one - a site that wants to react to either a particular SQLSTATE or a particular error should configure two separate <b>condition</b> tags, one using each attribute</li>
+  </ul>
+
   <li><b>scope</b></li>
   <ul>
     <li>transaction - replay the entire transaction if this condition occurs</li>
@@ -9667,6 +9677,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>You can also specify the error by SQLSTATE, using a <b>sqlstate</b> attribute on the <b>error</b> tag.  <b>sqlstate</b> is independent of <b>string</b> and <b>number</b>, the same way those two are independent of each other - if any one of the three matches, the insert is converted to an update.  Unlike error text, a SQLSTATE is locale-independent - a German-locale PostgreSQL reporting a unique constraint violation still reports the same SQLSTATE, <i>23505</i>, that an English-locale one does.  And unlike error numbers on some backends, SQLSTATE codes aren't backend-specific magic numbers - they're standardized.  <b>sqlstate</b> is matched case-insensitively against the SQLSTATE the database reported for the error.  There's no built-in default; if the backend doesn't report a SQLSTATE for a given error, the <b>sqlstate</b> check simply has nothing to compare against and is skipped - never treated as a mismatch - and matching falls back to whatever <b>string</b> and/or <b>number</b> attributes are also configured, exactly as before.</p>
+
 <p>If, for some reason, the trigger is unable to identify the primary key of the table, you can manually specify the primary key:</p>
 
 <blockquote>

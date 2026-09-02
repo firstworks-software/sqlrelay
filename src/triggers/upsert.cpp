@@ -266,6 +266,10 @@ bool sqlrtrigger_upsert::errorEncountered(sqlrservercursor *icur) {
 	stringbuffer	err;
 	err.append(cont->getErrorBuffer(icur),cont->getErrorSize(icur));
 
+	// unlike the error buffer, the sqlstate buffer is already terminated,
+	// and is empty if the database didn't supply a sqlstate
+	const char	*errsqlstate=cont->getSqlStateBuffer(icur);
+
 	// FIXME: this is somewhat inefficient, copy xml to a list of
 	// conditions like I'm doing in the replay module
 
@@ -276,9 +280,14 @@ bool sqlrtrigger_upsert::errorEncountered(sqlrservercursor *icur) {
 				node=node->getNextTagSibling("error")) {
 		const char	*string=node->getAttributeValue("string");
 		const char	*number=node->getAttributeValue("number");
+		const char	*sqlstate=node->getAttributeValue("sqlstate");
 		if ((string && charstring::contains(err.getString(),string)) ||
 			(number && cont->getErrorNumber(icur)==
-					charstring::convertToInteger(number))) {
+					charstring::convertToInteger(number)) ||
+			(!charstring::isNullOrEmpty(sqlstate) &&
+				!charstring::isNullOrEmpty(errsqlstate) &&
+				!charstring::compareIgnoringCase(
+						errsqlstate,sqlstate))) {
 			return true;
 		}
 	}
