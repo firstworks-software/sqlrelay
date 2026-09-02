@@ -8283,7 +8283,23 @@ void sqlrservercontroller::truncateTempTable(sqlrservercursor *cursor,
 	truncatequery.append(" ")->append(tablename);
 	if (prepareQuery(cursor,truncatequery.getString(),
 					truncatequery.getSize())) {
-		executeQuery(cursor);
+		if (!executeQuery(cursor)) {
+			// not necessarily a bug, the table may already be
+			// gone, but worth knowing about in debug mode
+			debugWrite("truncateTempTable: execute failed: "
+					"\"%.*s\": \"%.*s\"",
+					truncatequery.getSize(),
+					truncatequery.getString(),
+					cursor->getErrorSize(),
+					cursor->getErrorBuffer());
+		}
+	} else {
+		debugWrite("truncateTempTable: prepare failed: "
+					"\"%.*s\": \"%.*s\"",
+					truncatequery.getSize(),
+					truncatequery.getString(),
+					cursor->getErrorSize(),
+					cursor->getErrorBuffer());
 	}
 	cursor->closeResultSet();
 }

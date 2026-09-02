@@ -1552,6 +1552,13 @@
 		behind debug mode since a failed drop isn't always a bug
 		(the backend may have already dropped the table, a
 		rollback may have undone the create, etc.)
+	truncateTempTable() now logs a debugWrite() diagnostic when the
+		truncate query's prepare or execute fails, naming the
+		query and the error, instead of discarding the result
+		silently as before - the same gap already fixed in
+		dropTempTable(); gated behind debug mode since a failed
+		truncate isn't always a bug (the table may already be
+		gone, a rollback may have undone the create, etc.)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
