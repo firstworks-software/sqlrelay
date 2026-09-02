@@ -110,8 +110,10 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorsize,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror) {
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate) {
 
 	pvt->_error=NULL;
 
@@ -119,8 +121,11 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 	int64_t		temperrornumber2;
 	stringbuffer	temperrorstr1;
 	stringbuffer	temperrorstr2;
+	stringbuffer	tempsqlstate1;
+	stringbuffer	tempsqlstate2;
 	int64_t		*temperrornumber=&temperrornumber1;
 	stringbuffer	*temperrorstr=&temperrorstr1;
+	stringbuffer	*tempsqlstate=&tempsqlstate1;
 	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
 						node; node=node->getNext()) {
 
@@ -128,6 +133,7 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 						node->getValue()->module);
 
 		temperrorstr->clear();
+		tempsqlstate->clear();
 
 		sqlrerrortranslation	*etr=
 			(sqlrerrortranslation *)node->getValue()->m;
@@ -135,8 +141,10 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 					errornumber,
 					error,
 					errorsize,
+					sqlstate,
 					temperrornumber,
-					temperrorstr)) {
+					temperrorstr,
+					tempsqlstate)) {
 			pvt->_error=etr->getError();
 			return false;
 		}
@@ -144,15 +152,19 @@ bool sqlrerrortranslations::run(sqlrserverconnection *sqlrcon,
 		error=temperrorstr->getString();
 		errorsize=temperrorstr->getSize();
 		errornumber=*temperrornumber;
+		sqlstate=tempsqlstate->getString();
 
 		temperrorstr=(temperrorstr==&temperrorstr1)?
 					&temperrorstr2:&temperrorstr1;
 		temperrornumber=(temperrornumber==&temperrornumber1)?
 					&temperrornumber2:&temperrornumber1;
+		tempsqlstate=(tempsqlstate==&tempsqlstate1)?
+					&tempsqlstate2:&tempsqlstate1;
 	}
 
 	translatederror->append(error,errorsize);
 	*translatederrornumber=errornumber;
+	translatedsqlstate->append(sqlstate);
 
 	return true;
 }

@@ -8517,9 +8517,21 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation : public sqlrservermodule {
 		/** Deletes this instance of sqlrerrortranslation. */
 		virtual	~sqlrerrortranslation();
 
-		/** Translates "error" of "errorsize" bytes and "errornumber".
-		 *  Returns the translated error in "translatederror" and the
-		 *  translated error number in "translatederrornumber".
+		/** Translates "error" of "errorsize" bytes, "errornumber"
+		 *  and "sqlstate".  Returns the translated error in
+		 *  "translatederror", the translated error number in
+		 *  "translatederrornumber", and the translated sqlstate in
+		 *  "translatedsqlstate".
+		 *
+		 *  "sqlstate" is a NUL-terminated string: the 5-character
+		 *  SQLSTATE captured from the database, or an empty string
+		 *  if the database didn't supply one.
+		 *
+		 *  Each output is passed on verbatim, so an implementation
+		 *  that doesn't rewrite the sqlstate must still append
+		 *  "sqlstate" to "translatedsqlstate" unchanged.  Leaving
+		 *  "translatedsqlstate" empty reports "no sqlstate" to the
+		 *  client.
 		 *
 		 *  Returns true on success and false if an error occurred.
 		 *
@@ -8531,8 +8543,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation : public sqlrservermodule {
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorsize,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror);
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate);
 
 		/** Returns an error if the previous call to run() returned
 		 *  false, or NULL if the previous call to run() succeeded or

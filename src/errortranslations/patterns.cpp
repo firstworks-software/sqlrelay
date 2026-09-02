@@ -40,8 +40,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_patterns :
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorlength,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror);
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate);
 	private:
 		void	buildPatternsTree(domnode *root,
 						pattern_t **p,
@@ -63,6 +65,9 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_patterns :
 		pattern_t	*patterns;
 		uint32_t	patterncount;
 
+		pattern_t	*sqlstatepatterns;
+		uint32_t	sqlstatepatterncount;
+
 		stringbuffer	te;
 };
 
@@ -76,6 +81,15 @@ sqlrerrortranslation_patterns::sqlrerrortranslation_patterns(
 	patterncount=0;
 
 	buildPatternsTree(parameters,&patterns,&patterncount,true);
+
+	// build the sqlstate patterns, if any
+	sqlstatepatterns=NULL;
+	sqlstatepatterncount=0;
+	domnode	*sqlstatenode=parameters->getFirstTagChild("sqlstate");
+	if (!sqlstatenode->isNullNode()) {
+		buildPatternsTree(sqlstatenode,&sqlstatepatterns,
+						&sqlstatepatterncount,false);
+	}
 }
 
 void sqlrerrortranslation_patterns::buildPatternsTree(domnode *root,
@@ -172,6 +186,7 @@ void sqlrerrortranslation_patterns::freePatternsTree(pattern_t *p,
 
 sqlrerrortranslation_patterns::~sqlrerrortranslation_patterns() {
 	freePatternsTree(patterns,patterncount);
+	freePatternsTree(sqlstatepatterns,sqlstatepatterncount);
 }
 
 bool sqlrerrortranslation_patterns::run(sqlrserverconnection *sqlrcon,
@@ -179,8 +194,10 @@ bool sqlrerrortranslation_patterns::run(sqlrserverconnection *sqlrcon,
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorlength,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror) {
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate) {
 	debugFunction();
 
 	*translatederrornumber=errornumber;
@@ -195,6 +212,18 @@ bool sqlrerrortranslation_patterns::run(sqlrserverconnection *sqlrcon,
 	}
 
 	applyPatterns(error,patterns,patterncount,translatederror);
+
+	// The main patterns are written against error prose, so running them
+	// on a 5-character code would do more harm than good.  The sqlstate
+	// gets its own optional set instead.
+	if (sqlstatepatterncount && !charstring::isNullOrEmpty(sqlstate)) {
+		debugWrite("original sqlstate:");
+		debugWrite("\"%s\"",sqlstate);
+		applyPatterns(sqlstate,sqlstatepatterns,
+				sqlstatepatterncount,translatedsqlstate);
+	} else {
+		translatedsqlstate->append(sqlstate);
+	}
 
 	return true;
 }

@@ -15,8 +15,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslation_renumber :
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorlength,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror);
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate);
 	private:
 		dictionary<int64_t,int64_t>	map;
 };
@@ -44,12 +46,18 @@ bool sqlrerrortranslation_renumber::run(sqlrserverconnection *sqlrcon,
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorlength,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror) {
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate) {
 	debugFunction();
 
 	*translatederrornumber=errornumber;
 	translatederror->append(error,errorlength);
+
+	// this module maps error numbers, and a sqlstate isn't one,
+	// so it goes out the way it came in
+	translatedsqlstate->append(sqlstate);
 
 	debugWrite("original error number:");
 	debugWrite("\"%lld\"",(long long)errornumber);

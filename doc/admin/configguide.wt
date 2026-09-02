@@ -4957,6 +4957,8 @@ In this example:
 * Oracle error number 955 (ORA-00955: name is already used by an existing object) is replaced with !MySQL error number 1050 (Table already exists)
 * Oracle error number 942 (ORA-00942: table or view does not exist) is replaced with !MySQL error number 1051 (Unknown table)
 
+The renumber module never rewrites the SQLSTATE.  It maps error numbers, and a SQLSTATE isn't one.  To rewrite a SQLSTATE, use the [#error-patterns patterns] module.
+
 
 [[br]][=#error-patterns]
 === patterns ===
@@ -5046,6 +5048,19 @@ Though more than 2 levels is rarely necessary, any level of nesting is supported
 }}}
 }}}
 
+All of the pattern tags shown so far match against the error string.  They never touch the SQLSTATE, which is left alone unless the module is given a separate sqlstate section:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns-sqlstate.conf@
+}}}
+}}}
+
+In this example, a !PostgreSQL duplicate-table error is rephrased the way !MySQL phrases it, and !PostgreSQL's SQLSTATEs 42P07 (duplicate table) and 42P01 (undefined table) are replaced with !MySQL's 42S01 and 42S02.  A client that classifies errors by SQLSTATE then sees a !MySQL-shaped error too, not just !MySQL-shaped wording.
+
+Pattern tags inside the sqlstate section support the same type, match, from, to, global and backrefs attributes, and the same nesting, as the pattern tags outside of it.  The scope attribute isn't valid there, since a SQLSTATE has no quoted strings to match inside or outside of.
+
+If no sqlstate section is configured, or if the database supplied no SQLSTATE, then the SQLSTATE is passed through untouched.
 
 
 [[br]][=#moduledata]

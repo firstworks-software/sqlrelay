@@ -3476,18 +3476,23 @@ void sqlrservercontroller::getError(const char **errorbuffer,
 	if (pvt->_sqlret) {
 		int64_t		tec=*errorcode;
 		stringbuffer	translatederror;
+		stringbuffer	translatedsqlstate;
 		if (pvt->_sqlret->run(pvt->_conn,NULL,
 						*errorcode,
 						*errorbuffer,
 						*errorsize,
+						pvt->_conn->getSqlStateBuffer(),
 						&tec,
-						&translatederror)) {
+						&translatederror,
+						&translatedsqlstate)) {
 			*errorcode=tec;
 			charstring::safeCopy(pvt->_conn->getErrorBuffer(),
 					pvt->_conn->getErrorBufferSize(),
 					translatederror.getString(),
 					translatederror.getSize());
 			*errorsize=translatederror.getSize();
+			pvt->_conn->setSqlState(
+					translatedsqlstate.getString());
 		}
 		// FIXME: report error if this fails?
 	}
@@ -11724,18 +11729,23 @@ void sqlrservercontroller::getError(sqlrservercursor *cursor,
 	if (pvt->_sqlret) {
 		int64_t		tec=*errorcode;
 		stringbuffer	translatederror;
+		stringbuffer	translatedsqlstate;
 		if (pvt->_sqlret->run(pvt->_conn,cursor,
 						*errorcode,
 						*errorbuffer,
 						*errorsize,
+						cursor->getSqlStateBuffer(),
 						&tec,
-						&translatederror)) {
+						&translatederror,
+						&translatedsqlstate)) {
 			*errorcode=tec;
 			charstring::safeCopy(cursor->getErrorBuffer(),
 					cursor->getErrorBufferSize(),
 					translatederror.getString(),
 					translatederror.getSize());
 			*errorsize=translatederror.getSize();
+			cursor->setSqlState(
+					translatedsqlstate.getString());
 		}
 		// FIXME: report error if this fails?
 	}

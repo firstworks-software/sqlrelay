@@ -1446,6 +1446,19 @@
 	note that a connection-level error, and now its sqlstate, remain set
 		for the rest of the session - nothing on the query path
 		clears connection-level error state, only cursor-level
+	error translation modules can rewrite the sqlstate now -
+		sqlrerrortranslation::run() gained a sqlstate input and a
+		translatedsqlstate output alongside the error number and
+		error text it already translates, so a translation that
+		makes one database's errors look like another's can make
+		its sqlstate match too; this is a module abi change -
+		third-party error translation modules have to be updated
+		for the new signature and recompiled; the renumber module
+		passes the sqlstate through untouched, since a sqlstate
+		isn't an error number, and the patterns module rewrites
+		it only when an optional sqlstate section of patterns is
+		configured, since its main patterns are written against
+		error prose
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -374,8 +374,10 @@ class SQLRSERVER_DLLSPEC sqlrerrortranslations : public sqlrservermodules {
 					int64_t errornumber,
 					const char *error,
 					uint32_t errorsize,
+					const char *sqlstate,
 					int64_t *translatederrornumber,
-					stringbuffer *translatederror);
+					stringbuffer *translatederror,
+					stringbuffer *translatedsqlstate);
 
 		const char	*getError();
 
