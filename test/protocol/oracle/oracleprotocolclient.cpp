@@ -99,6 +99,20 @@ static const unsigned char	ORA_CCAP_FIELD_VERSION_11_2=6;
 static const size_t		ORA_CCAP_SIZE=42;
 static const size_t		ORA_RCAP_SIZE=7;
 
+// CCAP_TTC3 and CCAP_TTC3_BIG_CHUNK_CLR in src/protocols/oracle.cpp.  a
+// client that offers the bit, against a module that also offers it, gets a
+// long clr's chunk lengths as count prefixed ub4s rather than raw bytes -
+// see recvDataTypeRequest() there, which is where bigchunkclr is decided
+static const size_t		ORA_CCAP_TTC3=37;
+static const unsigned char	ORA_CCAP_TTC3_BIG_CHUNK_CLR=0x20;
+
+// the clr's two forms - the CLR_* defines in src/protocols/oracle.cpp
+static const size_t		ORA_CLR_MAX_SHORT_LENGTH=252;
+static const unsigned char	ORA_CLR_NULL_MARKER=0xfd;
+static const unsigned char	ORA_CLR_LONG_FORM_MARKER=0xfe;
+static const size_t		ORA_CLR_MAX_CHUNK_SIZE=255;
+static const size_t		ORA_CLR_MAX_BIG_CHUNK_SIZE=32767;
+
 // o5logon sizes - the 11g half of src/auths/oracle_userlist.cpp
 static const size_t	ORA_SESSION_KEY_SIZE_11G=48;
 static const size_t	ORA_SESSION_KEY_PAD_SIZE_11G=8;
@@ -118,6 +132,14 @@ class oracleprotocolclient {
 	public:
 			oracleprotocolclient();
 			~oracleprotocolclient();
+
+		// whether this client offers CCAP_TTC3_BIG_CHUNK_CLR in
+		// its compile capabilities.  off by default, so a test
+		// that says nothing keeps the raw-byte chunk framing every
+		// test here used before the bit existed.  it has to be set
+		// before connect() - the bit goes out in the data type
+		// negotiation, and both ends decide there and then
+		void	setBigChunkClr(bool bigchunkclr);
 
 		// the whole handshake through the accept: the connect
 		// packet (twice - the listener asks for a resend, the way a
@@ -189,6 +211,7 @@ class oracleprotocolclient {
 		void	appendLE16(uint16_t value);
 		void	appendLenPreInt(uint32_t value);
 		void	appendLenString(const char *value, size_t size);
+		void	appendLenBytes(const char *value, size_t size);
 		bool	sendPacket();
 		bool	recvPacket();
 		unsigned char	getPacketType();
@@ -201,6 +224,8 @@ class oracleprotocolclient {
 		bool	readBytes(unsigned char *value, size_t size);
 		bool	readLenPreInt(uint32_t *value);
 		bool	readLenString(char **value);
+		bool	readLenBytes(unsigned char *value, size_t maxsize,
+						size_t *size, bool *isnull);
 
 	private:
 		void	setError(const char *message);
@@ -221,6 +246,7 @@ class oracleprotocolclient {
 		inetsocketclient	sock;
 		bool			connected;
 		bool			largeheader;
+		bool			bigchunkclr;
 
 		bytebuffer	reqpacket;
 		unsigned char	reqpackettype;
@@ -278,6 +304,7 @@ static char *oracleHexEncodeUpper(const unsigned char *in, size_t insize) {
 oracleprotocolclient::oracleprotocolclient() {
 	connected=false;
 	largeheader=false;
+	bigchunkclr=false;
 	reqpackettype=0;
 	resppacket=new unsigned char[ORA_MAX_PACKET_SIZE];
 	respsize=0;
@@ -305,6 +332,10 @@ void oracleprotocolclient::setError(const char *message, const char *detail) {
 
 const char *oracleprotocolclient::getError() {
 	return errormessage;
+}
+
+void oracleprotocolclient::setBigChunkClr(bool bigchunkclr) {
+	this->bigchunkclr=bigchunkclr;
 }
 
 const unsigned char *oracleprotocolclient::getResponse() {
@@ -407,11 +438,51 @@ void oracleprotocolclient::appendLenPreInt(uint32_t value) {
 	}
 }
 
-// a text - one length byte, then that many bytes.  the long form is only
-// needed past 252 bytes and nothing here goes that far
+// a text - one length byte, then that many bytes.  there is no long form; a
+// value past 252 bytes takes a clr instead.  the mirror of putLenString() in
+// src/protocols/oracle.cpp
 void oracleprotocolclient::appendLenString(const char *value, size_t size) {
 	appendByte((unsigned char)size);
 	reqpacket.append(value,size);
+}
+
+// a clr - the text-shaped short form up to 252 bytes, the chunked long form
+// above that.  the mirror of putLenBytes() in src/protocols/oracle.cpp, and
+// the exact shape getLenBytes() and getQuery3Request() read back there:
+// a 0xfe marker, then a run of chunks, then an empty chunk to close it.
+//
+// a chunk's length goes out as a raw byte, capped at 255, unless this client
+// offered CCAP_TTC3_BIG_CHUNK_CLR - then it goes out as a count prefixed
+// ub4, capped at 32767.  the closing chunk is one zero byte either way,
+// since a ub4 zero is a count byte of 0 and nothing after it
+void oracleprotocolclient::appendLenBytes(const char *value, size_t size) {
+
+	if (size<=ORA_CLR_MAX_SHORT_LENGTH) {
+		appendByte((unsigned char)size);
+		if (size) {
+			reqpacket.append(value,size);
+		}
+		return;
+	}
+
+	appendByte(ORA_CLR_LONG_FORM_MARKER);
+	size_t	maxchunk=(bigchunkclr)?
+			ORA_CLR_MAX_BIG_CHUNK_SIZE:ORA_CLR_MAX_CHUNK_SIZE;
+	size_t	offset=0;
+	while (offset<size) {
+		size_t	chunk=size-offset;
+		if (chunk>maxchunk) {
+			chunk=maxchunk;
+		}
+		if (bigchunkclr) {
+			appendLenPreInt((uint32_t)chunk);
+		} else {
+			appendByte((unsigned char)chunk);
+		}
+		reqpacket.append(value+offset,chunk);
+		offset+=chunk;
+	}
+	appendByte(0);
 }
 
 bool oracleprotocolclient::sendPacket() {
@@ -529,6 +600,77 @@ bool oracleprotocolclient::readLenString(char **value) {
 	return true;
 }
 
+// a clr, the other way round - the mirror of getLenBytes() in
+// src/protocols/oracle.cpp, and the inverse of appendLenBytes() above.  a
+// zero length and the 0xfd marker are both nulls, a length up to 252 is the
+// short form, and 0xfe introduces the chunked long form, whose chunks are
+// concatenated into "value".  a chunk's length is a raw byte, or a count
+// prefixed ub4 if this client offered CCAP_TTC3_BIG_CHUNK_CLR
+bool oracleprotocolclient::readLenBytes(unsigned char *value,
+						size_t maxsize,
+						size_t *size,
+						bool *isnull) {
+
+	*size=0;
+	*isnull=false;
+
+	unsigned char	length=0;
+	if (!readByte(&length)) {
+		return false;
+	}
+
+	if (!length) {
+		*isnull=true;
+		return true;
+	}
+	if (length==ORA_CLR_NULL_MARKER) {
+		unsigned char	nullcount=0;
+		if (!readByte(&nullcount)) {
+			return false;
+		}
+		*isnull=true;
+		return true;
+	}
+
+	if (length<=ORA_CLR_MAX_SHORT_LENGTH) {
+		if ((size_t)length>maxsize ||
+				!readBytes(value,(size_t)length)) {
+			return false;
+		}
+		*size=length;
+		return true;
+	}
+
+	if (length!=ORA_CLR_LONG_FORM_MARKER) {
+		return false;
+	}
+
+	for (;;) {
+
+		uint32_t	chunksize=0;
+		if (bigchunkclr) {
+			if (!readLenPreInt(&chunksize)) {
+				return false;
+			}
+		} else {
+			unsigned char	rawchunksize=0;
+			if (!readByte(&rawchunksize)) {
+				return false;
+			}
+			chunksize=rawchunksize;
+		}
+		if (!chunksize) {
+			return true;
+		}
+
+		if ((size_t)chunksize>maxsize-(*size) ||
+				!readBytes(value+(*size),(size_t)chunksize)) {
+			return false;
+		}
+		*size+=chunksize;
+	}
+}
+
 
 // ---- handshake ----
 
@@ -624,13 +766,25 @@ bool oracleprotocolclient::sendDataTypeNegotiation() {
 	// 9i both send alone
 	appendByte(0x02);
 
-	// the compile capabilities.  everything but the field version is
-	// zero: recvDataTypeRequest() reads no other index out of a
-	// client's array, and a zero at CCAP_TTC3 leaves the time zone
-	// version out of the request, which keeps this simple
+	// the compile capabilities.  everything but the field version and
+	// CCAP_TTC3 is zero: recvDataTypeRequest() reads no other index out
+	// of a client's array, and a zero at CCAP_TTC3 leaves the time zone
+	// version out of the request, which keeps this simple.
+	//
+	// CCAP_TTC3_BIG_CHUNK_CLR is the one bit a test can turn on there.
+	// clear - the default, and what every test here sent before the bit
+	// existed - the listener frames a long clr's chunks as a raw length
+	// byte apiece; set, it frames them as count prefixed ub4s.  every
+	// real client sets it, so the raw-byte framing is only reachable
+	// from a client like this one that deliberately leaves it clear.
+	// CCAP_TTC3_TZ_VERSION is not in the bit, so the time zone version
+	// stays out of the request either way
 	unsigned char	compilecaps[ORA_CCAP_SIZE];
 	bytestring::zero(compilecaps,sizeof(compilecaps));
 	compilecaps[ORA_CCAP_FIELD_VERSION]=ORA_CCAP_FIELD_VERSION_11_2;
+	if (bigchunkclr) {
+		compilecaps[ORA_CCAP_TTC3]|=ORA_CCAP_TTC3_BIG_CHUNK_CLR;
+	}
 	appendByte((unsigned char)sizeof(compilecaps));
 	appendBytes(compilecaps,sizeof(compilecaps));
 
@@ -1082,11 +1236,13 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 	appendLenPreInt(0);
 	appendLenPreInt(0);
 
-	// the query text, behind a length byte that has to equal the
-	// declared size - which is what getQuery3Request() believes for
-	// every client but OCI, and this client isn't one
+	// the query text, as a clr: up to 252 bytes, a length byte that has
+	// to equal the declared size - which is what getQuery3Request()
+	// believes for every client but OCI, and this client isn't one -
+	// and past that the chunked long form, which getQuery3Request()
+	// reads on its own branch
 	if (querysize) {
-		appendLenString(query,querysize);
+		appendLenBytes(query,querysize);
 		appendBytes(al8i4,sizeof(al8i4));
 	}
 

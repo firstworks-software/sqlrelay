@@ -1914,6 +1914,152 @@ int main(int argc, char **argv) {
 
 
 
+	stdoutput.printf("\n======== Outbound long-form writers ========\n\n");
+
+	// #9595 - putLenBytes() (src/protocols/oracle.cpp:5409) is one of
+	// two writers that switch a value over CLR_MAX_SHORT_LENGTH (252
+	// bytes) to the chunked long form; putLongBytes()
+	// (src/protocols/oracle.cpp:10942) is the other, used only for LONG
+	// and LONG RAW columns and closing with two extra zero bytes that
+	// putLenBytes() doesn't write.  the "Long-form CLR" cases above
+	// exercise putLenBytes() through a plain select; these round-trip
+	// values well past 252 bytes through putLongBytes() (a LONG and a
+	// LONG RAW column) and through putOutBindValues()
+	// (src/protocols/oracle.cpp:8886), which reaches putLenBytes() for
+	// a PL/SQL out bind rather than a row value.
+
+	OCIStmt	*bigstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&bigstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+
+	stdoutput.printf("long - 300 bytes, putLongBytes' long form\n");
+	assertEquals(
+		execImmediate("delete from protocoltestlong"),OCI_SUCCESS);
+	char	longbig[301];
+	for (ub4 i=0; i<300; i++) {
+		longbig[i]=(char)('0'+(i%10));
+	}
+	longbig[300]='\0';
+	char	longbiginsert[350];
+	charstring::printf(longbiginsert,sizeof(longbiginsert),
+			"insert into protocoltestlong values ('%s')",
+			longbig);
+	assertEquals(execImmediate(longbiginsert),OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(bigstmt,err,(text *)longquery,
+				charstring::getLength(longquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bigstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	char	longbigvalue[4096];
+	sb2	longbigind=0;
+	ub2	longbiglen=0;
+	OCIDefine	*longbigdef=NULL;
+	bytestring::zero(longbigvalue,sizeof(longbigvalue));
+	assertEquals(
+		OCIDefineByPos(bigstmt,&longbigdef,err,1,
+				longbigvalue,sizeof(longbigvalue),SQLT_LNG,
+				&longbigind,&longbiglen,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(bigstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)longbigind,OCI_IND_NOTNULL);
+	assertEquals((int)longbiglen,300);
+	assertEquals((const char *)longbigvalue,(const char *)longbig);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("long raw - 300 bytes, putLongBytes' long form\n");
+	assertEquals(
+		execImmediate("delete from protocoltestlongraw"),
+		OCI_SUCCESS);
+	ub1	longrawbig[300];
+	for (ub4 i=0; i<300; i++) {
+		longrawbig[i]=(ub1)(i%256);
+	}
+	char	longrawbighex[sizeof(longrawbig)*2+1];
+	for (ub4 i=0; i<sizeof(longrawbig); i++) {
+		charstring::printf(longrawbighex+i*2,3,"%02X",
+					(int)longrawbig[i]);
+	}
+	char	longrawbiginsert[700];
+	charstring::printf(longrawbiginsert,sizeof(longrawbiginsert),
+			"insert into protocoltestlongraw values "
+			"(hextoraw('%s'))",longrawbighex);
+	assertEquals(execImmediate(longrawbiginsert),OCI_SUCCESS);
+	assertEquals(execImmediate("commit"),OCI_SUCCESS);
+	assertEquals(
+		OCIStmtPrepare(bigstmt,err,(text *)longrawquery,
+				charstring::getLength(longrawquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bigstmt,err,0,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	ub1	longrawbigvalue[4096];
+	sb2	longrawbigind=0;
+	ub2	longrawbiglen=0;
+	OCIDefine	*longrawbigdef=NULL;
+	bytestring::zero(longrawbigvalue,sizeof(longrawbigvalue));
+	assertEquals(
+		OCIDefineByPos(bigstmt,&longrawbigdef,err,1,
+				longrawbigvalue,sizeof(longrawbigvalue),
+				SQLT_LBI,&longrawbigind,&longrawbiglen,
+				NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtFetch2(bigstmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)longrawbigind,OCI_IND_NOTNULL);
+	assertEquals((int)longrawbiglen,300);
+	assertTrue(!bytestring::compare(longrawbigvalue,longrawbig,
+						sizeof(longrawbig)));
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("OCIBindByName - output bind, 300 bytes, "
+				"putOutBindValues via putLenBytes\n");
+	const char	*outbindbigblock="begin :v := rpad('Q',300,'Q'); "
+						"end;";
+	assertEquals(
+		OCIStmtPrepare(bigstmt,err,(text *)outbindbigblock,
+				charstring::getLength(outbindbigblock),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	char	outbindbigvalue[512];
+	sb2	outbindbigind=0;
+	OCIBind	*outbindbigbnd=NULL;
+	bytestring::zero(outbindbigvalue,sizeof(outbindbigvalue));
+	assertEquals(
+		OCIBindByName(bigstmt,&outbindbigbnd,err,(text *)":v",2,
+				outbindbigvalue,sizeof(outbindbigvalue),
+				SQLT_STR,&outbindbigind,NULL,NULL,0,NULL,
+				OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,bigstmt,err,1,0,NULL,NULL,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals((int)outbindbigind,OCI_IND_NOTNULL);
+	char	outbindbigexpected[301];
+	for (ub4 i=0; i<300; i++) {
+		outbindbigexpected[i]='Q';
+	}
+	outbindbigexpected[300]='\0';
+	assertEquals((const char *)outbindbigvalue,
+				(const char *)outbindbigexpected);
+	stdoutput.printf("\n\n");
+
+
+	assertEquals(OCIHandleFree(bigstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
+
 	stdoutput.printf("\n================ Lobs ================\n\n");
 
 	OCIStmt	*lobstmt=NULL;

@@ -1016,8 +1016,16 @@ run_protocol_test() {
 	# TTI_QUERY3 and never falls back to the legacy path.  it reads
 	# ORACLEPROTOCOLPORT5 straight from the environment, the same way
 	# oracledescribeonly reads ORACLEPROTOCOLPORT1, so it too needs
-	# neither $server nor TNS_ADMIN.  all seven runs have to succeed for
-	# the instance to pass
+	# neither $server nor TNS_ADMIN.  last it runs oracleclrchunks, a
+	# third raw-socket test, which covers the clr long form's two chunk
+	# framings - it sends the same over-252-byte query twice, once with
+	# CCAP_TTC3_BIG_CHUNK_CLR clear in its compile capabilities and once
+	# with it set, and asserts the exact bytes each framing produces in
+	# both directions.  no real client can cover the raw-byte framing any
+	# more: OCI, ojdbc, python-oracledb, node-oracledb and go-ora all
+	# offer the bit, so all of them take the big-chunk framing.  it reads
+	# ORACLEPROTOCOLPORT1, so it needs neither $server nor TNS_ADMIN
+	# either.  all eight runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1034,7 +1042,9 @@ run_protocol_test() {
 		resultdescribeonly="$?"
 		./oraclelegacyfetch
 		resultlegacyfetch="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" )
+		./oracleclrchunks
+		resultclrchunks="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1067,6 +1077,10 @@ run_protocol_test() {
 		if ( test "$resultlegacyfetch" != "0" )
 		then
 			printf "    % 8s: failed (legacy fetch)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultclrchunks" != "0" )
+		then
+			printf "    % 8s: failed (clr chunks)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1

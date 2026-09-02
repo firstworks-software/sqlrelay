@@ -2,6 +2,7 @@
 /ociselect
 /oracledescribeonly
 /oraclelegacyfetch
+/oracleclrchunks
 *.o
 *.obj
 *.lo

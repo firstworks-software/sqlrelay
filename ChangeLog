@@ -1568,6 +1568,15 @@
 		before the very first row was even attempted, which could
 		report a fetch as empty on a small negotiated sdu without
 		trying to fetch anything
+	the oracle protocol module now advertises big chunk clr framing
+		(CCAP_TTC3 bit 0x20) and negotiates it per session: a client
+		that advertises the bit too gets each long clr chunk's length
+		as a count prefixed ub4 rather than a single raw byte capped
+		at 255, which is what the python-oracledb and node-oracledb
+		thin drivers always assume and what a real 12.2 server sends;
+		a client that doesn't keeps the raw byte framing.  a thin
+		driver used to misframe every long value in both directions
+		and fail with DPY-5003
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

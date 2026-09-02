@@ -351,6 +351,7 @@
 #define CCAP_END_OF_RESPONSE		0x20
 #define CCAP_EXPLICIT_BOUNDARY		0x40
 #define CCAP_TTC3_TZ_VERSION		0x02
+#define CCAP_TTC3_BIG_CHUNK_CLR		0x20
 
 // server runtime capability array indices
 #define RCAP_COMPAT			0
@@ -392,6 +393,14 @@
 #define CLR_NULL_MARKER			0xfd
 #define CLR_LONG_FORM_MARKER		0xfe
 #define CLR_MAX_CHUNK_SIZE		255
+// the big-chunk long form's chunk size is the module's own choice rather
+// than anything the protocol requires.  python-oracledb and go-ora both use
+// 32767, and it keeps writeLenPreInt() to its 2-byte form for a full chunk,
+// so a full chunk's header is 3 bytes (a short trailing chunk takes 2).  a
+// reader can't assume any of that - node-oracledb chunks at 65536, whose
+// length takes the 4-byte form - but readLenPreInt() already takes any
+// count up to 4
+#define CLR_MAX_BIG_CHUNK_SIZE		32767
 
 // bind descriptor flags.  0x01 says a normal bound value follows, 0x80 says
 // the statement has the placeholder but the client never bound anything to
@@ -1750,6 +1759,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		clientwantstzversion;
 		uint32_t	clienttzversion;
 
+		// whether the clr long form frames each chunk's length as a
+		// count prefixed ub4 rather than as a raw byte
+		bool		bigchunkclr;
+
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
 		uint16_t	datatypecount;
@@ -2124,6 +2137,7 @@ void sqlrprotocol_oracle::init() {
 	clientwantsdbtimezone=false;
 	clientwantstzversion=false;
 	clienttzversion=0;
+	bigchunkclr=false;
 
 	datatypes=NULL;
 	datatypessize=0;
@@ -4140,7 +4154,7 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 }
 
 // server compile-time capabilities, captured from a live oracle 11.2 server,
-// which reports CCAP_FIELD_VERSION_11_2, with one change.
+// which reports CCAP_FIELD_VERSION_11_2, with two changes.
 //
 // CCAP_TTC1 bit 0x01 and CCAP_OCI1 bit 0x01 are that server's, 0x7f and 0xff,
 // and they have to stay that way.  go-ora reads them as end-of-call-status and
@@ -4165,12 +4179,29 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // describe-info column and five more fields in every execute, and it breaks
 // ojdbc 23.26, which logs in at 8 or 9 and then fails in the describe with
 // ORA-17401.
+//
+// CCAP_TTC3 has to keep bit 0x02.  go-ora reads the server's byte there and,
+// with that bit clear, zeroes its own byte 37 and byte 1 before sending them
+// - so a client bit the module gates on, CCAP_TTC3_BIG_CHUNK_CLR included,
+// could never come back set.  go-ora takes big chunks from the server's 0x20
+// bit alone, separately from any of that.
+//
+// CCAP_TTC3 bit 0x20, CCAP_TTC3_BIG_CHUNK_CLR, is the second change - the
+// 11.2 server has it clear, a real 12.2 server has that byte at 0x7f, and the
+// module goes with 12.2.  clear, every client frames a long clr's chunks as a
+// raw byte and a length up to 255, which is what the module's framing was
+// worked out against; set, a client that also offers the bit frames them as a
+// count prefixed ub4 instead.  it goes out unconditionally because it has to:
+// the capability arrays are sent in the protocol negotiation, before the
+// client's own arrive in the datatype negotiation, so there is nothing to
+// answer yet.  the per-session choice is made afterwards, in
+// recvDataTypeRequest().
 static const byte_t	ttiservercompilecaps[]={
 	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, CCAP_FIELD_VERSION_11_2,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x7f,
 	0xff, 0x03, 0x0a, 0x03, 0x03, 0x01, 0x00, 0x7f,
 	0x01, 0x7f, 0xff, 0x01, 0x05, 0x01, 0x01, 0x3f,
-	0x01, 0x03, 0x06, 0x00, 0x01, 0x03, 0x01, 0x00,
+	0x01, 0x03, 0x06, 0x00, 0x01, 0x23, 0x01, 0x00,
 	0x00, 0x00
 };
 
@@ -4614,6 +4645,33 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	clientwantstzversion=(compilecapssize>CCAP_TTC3 &&
 				(compilecaps[CCAP_TTC3]&
 					CCAP_TTC3_TZ_VERSION)!=0);
+
+	// the clr long form's chunk framing.  three things have to line up:
+	// the module has to advertise the bit, the client has to answer with
+	// it, and the version has to be 6.  the version matters because
+	// putTti5Response() sends no capability arrays at all, so a version 5
+	// client can never have learned the module's answer, and its bit -
+	// whatever it says - isn't a reply to anything.
+	//
+	// no client measured gates on its own advertised bit: go-ora goes by
+	// the server's, OCI and ojdbc behave the same way, and the thin
+	// drivers ignore both and always send big chunks.  requiring the
+	// client's bit as well is the conservative reading, and it agrees
+	// with OCI 23.26, ojdbc 23.26, python-oracledb, node-oracledb and
+	// go-ora v2/v3.
+	//
+	// it does not agree with go-ora v1, which advertises the bit - byte
+	// 37 is 0xb3 there - and then frames raw bytes anyway, having never
+	// implemented big chunks at all.  nothing on the wire separates it
+	// from v2, which advertises the same bit and does implement them, so
+	// there is no gate that could serve both.
+	bigchunkclr=(ttiversion>=6 &&
+			(ttiservercompilecaps[CCAP_TTC3]&
+					CCAP_TTC3_BIG_CHUNK_CLR)!=0 &&
+			compilecapssize>CCAP_TTC3 &&
+			(compilecaps[CCAP_TTC3]&
+					CCAP_TTC3_BIG_CHUNK_CLR)!=0);
+
 	if (clientwantsdbtimezone) {
 
 		size_t	groupsize=sizeof(dbtimezone)+sizeof(uint16_t)+
@@ -4668,6 +4726,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugHexDump(runtimecaps,runtimecapssize);
 		debugWrite("client field version: %d",clientfieldversion);
 		debugWrite("negotiated field version: %d",fieldversion);
+		debugWrite("big chunk clr: %s",(bigchunkclr)?"true":"false");
 		if (clientwantsdbtimezone) {
 			debugWrite("client wants the db time zone");
 			if (clientwantstzversion) {
@@ -5365,18 +5424,27 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		return;
 	}
 
-	// the long form: a 0xfe marker, then a single raw length byte and
-	// that many bytes per chunk, then a zero-length chunk
-	// (a row value needs it and an authentication field never did, which
-	// is why putLenString() doesn't have it)
+	// the long form: a 0xfe marker, then a run of chunks, then an empty
+	// chunk to close it.  a chunk's length goes out as a raw byte, or, if
+	// the client negotiated CCAP_TTC3_BIG_CHUNK_CLR, as a count prefixed
+	// ub4.  the closing chunk is one zero byte either way - a ub4 zero is
+	// a count byte of 0 and nothing after it.
+	// (a row value needs the long form and an authentication field never
+	// did, which is why putLenString() doesn't have it)
 	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+	uint32_t	maxchunk=(bigchunkclr)?
+				CLR_MAX_BIG_CHUNK_SIZE:CLR_MAX_CHUNK_SIZE;
 	uint32_t	offset=0;
 	while (offset<size) {
 		uint32_t	chunk=size-offset;
-		if (chunk>CLR_MAX_CHUNK_SIZE) {
-			chunk=CLR_MAX_CHUNK_SIZE;
+		if (chunk>maxchunk) {
+			chunk=maxchunk;
 		}
-		write(&reqpacket,(byte_t)chunk);
+		if (bigchunkclr) {
+			writeLenPreInt(&reqpacket,chunk);
+		} else {
+			write(&reqpacket,(byte_t)chunk);
+		}
 		write(&reqpacket,bytes+offset,(size_t)chunk);
 		offset+=chunk;
 	}
@@ -5444,10 +5512,13 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 		return false;
 	}
 
-	// the long form: a run of chunks, each a single raw length byte and
-	// that many bytes, ended by a zero-length chunk.  (end-rp) is a safe
-	// upper bound on the reassembled size, since the length bytes only
-	// take space away from it
+	// the long form: a run of chunks, each a length and that many bytes,
+	// ended by a zero length.  a chunk's length is a raw byte, or, if the
+	// client negotiated CCAP_TTC3_BIG_CHUNK_CLR, a count prefixed ub4 -
+	// and since a ub4 zero is a lone zero byte, the closing chunk reads
+	// the same either way.  (end-rp) is a safe upper bound on the
+	// reassembled size, since every chunk's length costs at least a byte
+	// of its own
 	if (end-rp<1) {
 		debugWrite("malformed clr: truncated chunk");
 		return false;
@@ -5460,8 +5531,18 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 			debugWrite("malformed clr: truncated chunk");
 			return false;
 		}
-		byte_t	chunksize;
-		read(rp,&chunksize,&rp);
+		uint32_t	chunksize;
+		if (bigchunkclr) {
+			if (!readLenPreInt(rp,end,&chunksize,&rp)) {
+				debugWrite("malformed clr: "
+						"bad chunk length");
+				return false;
+			}
+		} else {
+			byte_t	rawchunksize;
+			read(rp,&rawchunksize,&rp);
+			chunksize=rawchunksize;
+		}
 		if (!chunksize) {
 			break;
 		}
@@ -7627,18 +7708,22 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		if (rp<end && *rp==CLR_LONG_FORM_MARKER) {
 
 			// chunked (long form) query text: the marker, then a
-			// run of chunks - each a single raw length byte
-			// (0-255) followed by that many bytes - concatenated
-			// together and ended by a zero-length chunk.  A
-			// client's chunk length is one plain byte, confirmed
-			// against a capture: 0xfe, 0xff (255), 255 bytes of
-			// text, 0x1f (31), 31 more bytes, 0x00 to end - a
-			// 286-byte "create table" statement split at the
-			// 255-byte mark.  the chunks aren't contiguous (each
-			// is separated from the next by its length byte), so
+			// run of chunks concatenated together and ended by a
+			// zero-length chunk.  a chunk's length is a single
+			// raw byte, or, if the client negotiated
+			// CCAP_TTC3_BIG_CHUNK_CLR, a count prefixed ub4; a
+			// ub4 zero is a lone zero byte, so the closing chunk
+			// reads the same either way.  the raw byte shape is
+			// confirmed against a capture taken while the module
+			// advertised the big-chunk bit clear, which is all
+			// that capture is evidence about: 0xfe, 0xff (255),
+			// 255 bytes of text, 0x1f (31), 31 more bytes, 0x00
+			// to end - a 286-byte "create table" statement split
+			// at the 255-byte mark.  the chunks aren't contiguous
+			// (each is separated from the next by its length), so
 			// reassemble them into one buffer; (end-rp) is a safe
-			// upper bound on the reassembled size, since the
-			// length bytes only take space away from it
+			// upper bound on the reassembled size, since every
+			// chunk's length costs at least a byte of its own
 			rp++;
 			char	*querytext=(char *)resppacketpool->allocate(
 							(size_t)(end-rp));
@@ -7649,8 +7734,20 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 							"query text");
 					return false;
 				}
-				byte_t	chunksize=0;
-				read(rp,&chunksize,&rp);
+				uint32_t	chunksize=0;
+				if (bigchunkclr) {
+					if (!readLenPreInt(rp,end,
+							&chunksize,&rp)) {
+						debugWrite("bad chunked "
+							"query text "
+							"chunk length");
+						return false;
+					}
+				} else {
+					byte_t	rawchunksize=0;
+					read(rp,&rawchunksize,&rp);
+					chunksize=rawchunksize;
+				}
 				if (!chunksize) {
 					break;
 				}
@@ -10858,23 +10955,34 @@ void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size) {
 	// enough for the plain form, and sends those two bytes for a long
 	// column and for nothing else.
 	//
-	// each chunk's length goes out as a raw byte, the way putLenBytes()
-	// writes one.  a live server's answer to a long raw holding
-	// 0a0b0c0d0e reads as though the length were count prefixed -
+	// each chunk's length goes out the way putLenBytes() writes one: a
+	// raw byte, or a count prefixed ub4 if the client negotiated
+	// CCAP_TTC3_BIG_CHUNK_CLR.  that live server's answer to a long raw
+	// holding 0a0b0c0d0e is
 	//
 	//	fe 01 05 0a 0b 0c 0d 0e 00 00 00
 	//
-	// - but sending that shape puts OCI a byte out: it takes the 01 for
-	// a one byte chunk and the 0a for the next chunk's length, reads 11
-	// bytes where there are 5, and answers with a marker packet
+	// which is the big-chunk framing: the marker, a ub4 length (count 1,
+	// value 5), the 5 bytes, the ub4 zero that closes the run, and then
+	// the two extra zeros a long column gets.  a client that didn't
+	// negotiate the bit has to be sent the raw byte shape instead -
+	// given the count prefixed one, OCI takes the 01 for a one byte
+	// chunk and the 0a for the next chunk's length, reads 11 bytes where
+	// there are 5, and answers with a marker packet
 	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+	uint32_t	maxchunk=(bigchunkclr)?
+				CLR_MAX_BIG_CHUNK_SIZE:CLR_MAX_CHUNK_SIZE;
 	uint32_t	offset=0;
 	while (offset<size) {
 		uint32_t	chunk=size-offset;
-		if (chunk>CLR_MAX_CHUNK_SIZE) {
-			chunk=CLR_MAX_CHUNK_SIZE;
+		if (chunk>maxchunk) {
+			chunk=maxchunk;
 		}
-		write(&reqpacket,(byte_t)chunk);
+		if (bigchunkclr) {
+			writeLenPreInt(&reqpacket,chunk);
+		} else {
+			write(&reqpacket,(byte_t)chunk);
+		}
 		write(&reqpacket,bytes+offset,(size_t)chunk);
 		offset+=chunk;
 	}
