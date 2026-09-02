@@ -12906,9 +12906,16 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 	uint64_t	loblength;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		debugWrite("null");
-		// send NULL as 0xfb, recognized by readLenEncInt()'s
-		// isnull out-param (see src/server/sqlrprotocol.cpp)
-		reqpacket.append((char)0xfb);
+		// send NULL as a single zero byte - the clr convention this
+		// file uses everywhere else for a null field (putRow()'s
+		// null-marker byte, putRowData(), putLenBytes()/
+		// getLenBytes() above), not the MySQL-style 0xfb this
+		// function borrowed wholesale from mysql.cpp's (commented
+		// out) buildLobField() when it was written.  0xfb isn't a
+		// null marker in Oracle's clr encoding at all - it's the
+		// ordinary short-form length byte for a 251-byte value -
+		// see #9609.
+		write(&reqpacket,(byte_t)0);
 		cont->closeLobField(cursor,col);
 		debugEnd();
 		return;
@@ -12918,11 +12925,21 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 	// for lobs of 0 length
 	if (!loblength) {
-		writeLenEncInt(&reqpacket,0);
+		write(&reqpacket,(byte_t)0);
 		cont->closeLobField(cursor,col);
 		debugEnd();
 		return;
 	}
+
+	// clr framing - a length byte then that many bytes for a short
+	// (<=252-byte) lob, or a 0xfe marker and a chunked long form above
+	// that, exactly like putLenBytes() above.  unlike putLenBytes(),
+	// the lob's bytes aren't available in one contiguous buffer up
+	// front, so the marker/length is written incrementally below, once
+	// a segment actually arrives, so a lob that unexpectedly yields no
+	// data can still fall back to a null instead of sending a stray
+	// length with nothing behind it
+	bool		longform=(loblength>CLR_MAX_SHORT_LENGTH);
 
 	// initialize sizes and status
 	uint64_t	charstoread=sizeof(lobbuffer)/MAX_BYTES_PER_CHAR;
@@ -12938,13 +12955,15 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 					offset,charstoread,&charsread) ||
 					!charsread) {
 
-			// no data - send null if nothing sent yet, else end
+			// no data - send null if nothing sent yet, else
+			// close out the long form's chunk run with the
+			// zero-length chunk that ends it (the short form
+			// needs nothing further)
 			if (start) {
 				debugWrite("null");
-				// send NULL as 0xfb (see the comment
-				// above the other 0xfb send in this
-				// function)
-				reqpacket.append((char)0xfb);
+				write(&reqpacket,(byte_t)0);
+			} else if (longform) {
+				write(&reqpacket,(byte_t)0);
 			}
 			cont->closeLobField(cursor,col);
 			debugEnd();
@@ -12952,14 +12971,54 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 		} else {
 
-			// start sending
+			// start sending - the short-form length byte or the
+			// long-form marker, deferred until the first
+			// segment actually arrives (see the comment above)
 			if (start) {
-				writeLenEncInt(&reqpacket,loblength);
+				if (longform) {
+					write(&reqpacket,
+						(byte_t)
+						CLR_LONG_FORM_MARKER);
+				} else {
+					write(&reqpacket,(byte_t)loblength);
+				}
 				start=false;
 			}
 
-			// put the segment we just got
-			reqpacket.append(lobbuffer,charsread);
+			// put the segment we just got.  the short form is
+			// raw bytes with no further framing; the long form
+			// re-chunks the segment into wire-sized pieces (a
+			// count then the bytes), capped at maxchunk just
+			// like putLenBytes() above - a segment read from the
+			// lob (up to sizeof(lobbuffer)/MAX_BYTES_PER_CHAR
+			// bytes) is far larger than a single clr chunk can
+			// declare in a one-byte count
+			if (longform) {
+				uint32_t	maxchunk=(bigchunkclr)?
+						CLR_MAX_BIG_CHUNK_SIZE:
+						CLR_MAX_CHUNK_SIZE;
+				uint64_t	suboffset=0;
+				while (suboffset<charsread) {
+					uint64_t	subchunk=
+						charsread-suboffset;
+					if (subchunk>maxchunk) {
+						subchunk=maxchunk;
+					}
+					if (bigchunkclr) {
+						writeLenPreInt(&reqpacket,
+							(uint32_t)subchunk);
+					} else {
+						write(&reqpacket,
+							(byte_t)subchunk);
+					}
+					reqpacket.append(
+						lobbuffer+suboffset,
+						(size_t)subchunk);
+					suboffset+=subchunk;
+				}
+			} else {
+				reqpacket.append(lobbuffer,charsread);
+			}
 			debugWrite("chunk size: %lld",(long long)charsread);
 
 			offset=offset+charstoread;

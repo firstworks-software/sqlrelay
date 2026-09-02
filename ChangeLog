@@ -1589,6 +1589,14 @@
 		plsql block; the block count is now derived from what's left in
 		the packet whenever iterations is claimed as 0, and the normal
 		iterations-bounded path is unchanged
+	fixed the oracle protocol module's legacy (pre-query3) fetch path
+		sending a lob column using a mysql-style length-encoded
+		integer and a 0xfb null marker (borrowed wholesale from the
+		mysql protocol module) instead of oracle's own clr framing;
+		now uses the same length-byte/long-form-chunk/null-byte
+		convention already used everywhere else in the file, with
+		each chunk capped to the wire's per-chunk maximum the way
+		the file's other long-form clr writers already are
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
