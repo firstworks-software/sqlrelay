@@ -431,7 +431,8 @@
 		modules can bind it as the right type; bumped the sqlrclient
 		protocol to version 4 for it - an older client still works
 		against a newer server, but a version 4 client is rejected at
-		connect time by a server that predates this
+		connect time by a server that predates this; version 4 also
+		carries the sqlstate field described below
 	fixed the sqlite, db2, informix and oracle connection modules ignoring
 		the null indicator on a blob or clob bind, which bound an empty
 		lob instead of a null one
@@ -1439,10 +1440,9 @@
 		postgresql, mysql, odbc, db2, informix, firebird, sap and
 		router connection modules supply a real value, other
 		backends report an empty string until their modules
-		implement it; bumped the sqlrclient protocol to version 5
-		for it - an older client still works against a newer
-		server, but a version 5 client is rejected at connect time
-		by a server that predates this
+		implement it; the sqlrclient error response carries it as
+		a new trailing field, on protocol version 4, which the
+		null blob/clob bind change above already bumped to
 	the client apis expose the sqlstate on both the connection and the
 		cursor as errorSqlState() - c, c++, cs, java, nodejs, perl,
 		php, python, ruby, tcl and erlang - and report an empty

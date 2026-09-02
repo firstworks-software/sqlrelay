@@ -1455,10 +1455,10 @@ bool sqlrlistener::deniedIp(filedescriptor *clientsock) {
 
 void sqlrlistener::sendEmptySqlState(filedescriptor *clientsock) {
 
-	// A sqlrclient protocol version 5 client reads a sqlstate after every
+	// A sqlrclient protocol version 4 client reads a sqlstate after every
 	// error string, and blocks until it gets one.  The listener never
 	// reads the version the client announced - that goes straight to the
-	// connection daemon - so it can't tell a version 5 client from an
+	// connection daemon - so it can't tell a version 4 client from an
 	// older one and has to send this to every client.  An older client
 	// ignores it, since the listener tears the session down right after
 	// any error it sends.

@@ -1073,12 +1073,15 @@ void sqlrconnection::protocol() {
 
 	if (pvt->_debug) {
 		debugPreStart();
-		debugPrint("Protocol : sqlrclient version 5\n");
+		debugPrint("Protocol : sqlrclient version 4\n");
 		debugPreEnd();
 	}
 
+	// The literal version here is the one this client's own response
+	// parsing implements, not SQLRCLIENT_PROTOCOL_VERSION_MAX, which
+	// is only the highest version a server will accept.
 	pvt->_cs->write((uint16_t)SQLRCLIENT_PROTOCOL_VERSION);
-	pvt->_cs->write((uint16_t)5);
+	pvt->_cs->write((uint16_t)4);
 }
 
 void sqlrconnection::auth() {
@@ -2755,8 +2758,8 @@ uint16_t sqlrconnection::getError() {
 	// get the sqlstate
 	//
 	// A short read here isn't reported as an error.  A server that
-	// predates protocol version 5 sends no sqlstate at all, and the one
-	// response a version 5 client can get from one of those is the
+	// predates protocol version 4 sends no sqlstate at all, and the one
+	// response a version 4 client can get from one of those is the
 	// rejection for speaking an unsupported protocol.  That error has
 	// already been read, and it's the one worth reporting.
 	uint16_t	sqlstatesize;

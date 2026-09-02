@@ -4617,10 +4617,10 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 
 void sqlrprotocol_sqlrclient::sendSqlState(const char *sqlstate) {
 
-	// A version 5 client reads a sqlstate after every error string, so
+	// A version 4 client reads a sqlstate after every error string, so
 	// every site that writes an error has to append one, even when there
 	// is no sqlstate to report.  Older clients get nothing.
-	if (protocolversion<5) {
+	if (protocolversion<4) {
 		return;
 	}
 

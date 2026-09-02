@@ -1313,13 +1313,13 @@ Since this instance speaks the SQLRClient client-server protocol, any client tha
 [=#sqlrclientversions]
 === Protocol Versions ===
 
-The SQLRClient protocol is versioned.  A client announces the version it speaks when it connects, and a server accepts any version between a minimum and a maximum that it understands.  Version 5, which added SQLSTATE to error responses (see [#errortranslation Error Translation] and the [../programming/c++.html#errors programming guides] for what a SQLSTATE is), is the current version.
+The SQLRClient protocol is versioned.  A client announces the version it speaks when it connects, and a server accepts any version between a minimum and a maximum that it understands.  Version 4, which added SQLSTATE to error responses (see [#errortranslation Error Translation] and the [../programming/c++.html#errors programming guides] for what a SQLSTATE is), and which sends a null blob or clob bind as a null lob rather than as a plain null, is the current version.
 
-Backward compatibility only runs one direction.  An older client still works against a newer server, since the server accepts any version it understands.  But a version 5 client is rejected at connect time by a server that predates version 5, with an Unsupported protocol error, because that server was never told how to speak it.  The client cannot detect this in advance and downgrade automatically; there is no negotiation, only a version announcement and an accept-or-reject response.
+Backward compatibility only runs one direction.  An older client still works against a newer server, since the server accepts any version it understands.  But a version 4 client is rejected at connect time by a server that predates version 4, with an Unsupported protocol error, because that server was never told how to speak it.  The client cannot detect this in advance and downgrade automatically; there is no negotiation, only a version announcement and an accept-or-reject response.
 
 This means the server side of a link should always be upgraded first.  Upgrading a client ahead of the server it talks to breaks that client's connections outright, rather than falling back to the old behavior.
 
-This has a sharp edge for the //router// database module (see [#routing Query and Session Routing]): a router instance is itself a SQLRClient client of every instance it routes to.  If a router is upgraded ahead of the instances downstream of it, its connections to those instances fail the same way any other version 5 client's would.  Upgrade the downstream instances before the router that depends on them, not after.
+This has a sharp edge for the //router// database module (see [#routing Query and Session Routing]): a router instance is itself a SQLRClient client of every instance it routes to.  If a router is upgraded ahead of the instances downstream of it, its connections to those instances fail the same way any other version 4 client's would.  Upgrade the downstream instances before the router that depends on them, not after.
 
 [=#sqlrclientlistener]
 === Listener Options ===
