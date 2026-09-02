@@ -2862,11 +2862,11 @@ The setting moves everything a client picks a reader from, all at once: the TTC 
 || Oracle JDBC driver (ojdbc) 23.26 || logs in, runs queries, reads result sets || logs in, runs queries, reads result sets ||
 || python-oracledb 4.0.2, thin mode || logs in, runs queries, reads result sets || stops responding partway through the login ||
 || node-oracledb 7.0.1, thin mode || logs in, runs queries, reads result sets || stops responding partway through the login ||
-|| Oracle OCI 23.26 || login fails with ORA-03113 || logs in, but every query fails with ORA-03113 ||
+|| Oracle OCI 23.26 || login fails with ORA-03113 || logs in, runs queries, reads result sets ||
 
-The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting //serverversion// to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.
+The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting //serverversion// to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.  A client built on Oracle's OCI library goes the other way: it only gets through the login at 11.2, and reports ORA-03113 at the 12.1 default.
 
-Neither setting lets a client built on Oracle's OCI library read a query's answer, and no combination of the options on this page changes that.  See the limitations below.
+There is no setting that serves both an OCI client and a thin-mode client on the same instance.  If both kinds of client need to connect, run two instances, one at each //serverversion//.
 
 {{{#!blockquote
 {{{#!code
@@ -3006,7 +3006,6 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:
 
 * Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.
-* Clients built on Oracle's OCI library, which includes sqlplus, can't read a query's answer.  With //serverversion// set to 11.2, such a client logs in and its queries run, but it rejects the result set and reports ORA-03113.  With the default //serverversion// of 12.1, it doesn't get through the login, also with ORA-03113.  No setting serves it.  The drivers that don't use the OCI library - Oracle's JDBC driver, python-oracledb and node-oracledb - are unaffected.
 * The module always authenticates with O5LOGON, Oracle's challenge/response exchange.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - O5LOGON (or a newer verifier) is mandatory in every client tested against this module.  The //oracle_userlist// and //oracle_database// auth modules also accept an //oracle_clear_password// method, for a protocol module that might need password-based authentication without O5LOGON, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.
 
 [[br]][=#multipleprotocols]
