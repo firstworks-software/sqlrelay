@@ -2971,6 +2971,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		const char	*srvname;
 
+		// the sqlstate of the error appendQueryError() is appending,
+		// empty at any other time - see preTds7AppendEed()
+		char		querysqlstate[6];
+
 		byte_t		packetid;
 
 		memorypool	reqpacketpool;
@@ -3171,6 +3175,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	debugWrite("packetsize: %d",configpacketsize);
 	debugWrite("maxpacketsize: %d",configmaxpacketsize);
 	debugEnd();
+
+	querysqlstate[0]='\0';
 
 	const char	*dbtype=cont->getDbType();
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
@@ -15706,12 +15712,24 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 		*severityptr='\0';
 	}
 
+	// hand the backend's sqlstate down to preTds7AppendEed(), which is
+	// too far down the call chain to be given it as an argument.  A
+	// sqlstate is always 5 characters - anything else isn't one.
+	const char	*sqlstate=cont->getSqlStateBuffer(cursor);
+	if (charstring::getLength(sqlstate)==5) {
+		charstring::copy(querysqlstate,sqlstate,5);
+		querysqlstate[5]='\0';
+	} else {
+		querysqlstate[0]='\0';
+	}
+
 	debugWrite("errorcode: %lld",(long long)errorcode);
 	debugWrite("state: %d",state);
 	debugWrite("errclass: %d",errclass);
 	debugWrite("linenumber: %d",linenumber);
 	debugWrite("server: %s",(srvn)?srvn:srvname);
 	debugWrite("procedure: %s",(procn)?procn:"");
+	debugWrite("sqlstate: %s",querysqlstate);
 	debugWrite("message: %s",errptr);
 
 	// append the error to the send packet
@@ -15719,6 +15737,8 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 		state,errclass,
 		errptr,(srvn)?srvn:srvname,procn,
 		linenumber);
+
+	querysqlstate[0]='\0';
 
 	// reset nulls to spaces
 	if (severityptr) {
@@ -22116,14 +22136,13 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 // msgtext/servername/procname here are already in the client's charset.
 //
 // sqlstate, status and transtate have no equivalent in appendInfoOrError()'s
-// argument list, because nothing upstream has a real value for any of them
-// yet: no connection module forwards a backend sqlstate through
-// appendQueryError() (a separate concern from this ticket), this module
-// never sends the TDS5_TOKEN_PARAMFMT/PARAMS pair that a status of
-// TDS_EED_FOLLOWS would promise, and the transaction state a real ASE puts
-// here doesn't match transState()'s TDS5_TRAN_* values (see done()) - it's
-// a plain in-transaction/not flag instead.  So all three are fixed here
-// rather than threaded through as arguments.
+// argument list.  Only a backend query error has a real sqlstate, so
+// appendQueryError() leaves it in querysqlstate rather than every one of
+// appendError()'s callers having to pass one.  The other two are fixed here:
+// this module never sends the TDS5_TOKEN_PARAMFMT/PARAMS pair that a status
+// of TDS_EED_FOLLOWS would promise, and the transaction state a real ASE
+// puts here doesn't match transState()'s TDS5_TRAN_* values (see done()) -
+// it's a plain in-transaction/not flag instead.
 void sqlrprotocol_tds::preTds7AppendEed(byte_t token,
 					uint32_t number,
 					byte_t state,
@@ -22135,10 +22154,10 @@ void sqlrprotocol_tds::preTds7AppendEed(byte_t token,
 
 	byte_t		eedtoken=TOKEN_EED;
 
-	// no sqlstate is available yet (see the note above) - "ZZZZZ" is
-	// what a real ASE sends for its own informational messages, and
-	// what freetds treats as "no sqlstate" rather than looking one up
-	const char	*sqlstate="ZZZZZ";
+	// the backend's sqlstate when there is one (see the note above) -
+	// "ZZZZZ" is what a real ASE sends when it has none, and what freetds
+	// treats as "no sqlstate" rather than looking one up
+	const char	*sqlstate=(querysqlstate[0])?querysqlstate:"ZZZZZ";
 	size_t		sqlstatelen=charstring::getLength(sqlstate);
 
 	// no extended error data (a TDS5_TOKEN_PARAMFMT/PARAMS pair) ever

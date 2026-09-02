@@ -649,6 +649,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 					const char *errormessage,
 					uint64_t errorsize,
 					const char *sqlstate);
+
+		// returns "sqlstate" if the backend supplied a usable one,
+		// else the generic syntax error state
+		const char	*sqlStateOrDefault(const char *sqlstate);
+
 		bool	sendEofPacket(uint16_t warnings,
 					uint16_t statusflags);
 		bool	selectDatabase();
@@ -2345,6 +2350,13 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 					uint64_t errorsize,
 					const char *sqlstate) {
 	resetSendPacketBuffer();
+
+	// the sqlstate goes on the wire as a fixed 5 bytes with no length in
+	// front of it, so anything that isn't 5 characters would shift the
+	// error message - fall back to mysql's own general error state
+	if (charstring::getLength(sqlstate)!=5) {
+		sqlstate="HY000";
+	}
 
 	debugStart("err");
 	debugWrite("error code: %hd",errorcode);
@@ -5261,7 +5273,8 @@ bool sqlrprotocol_mysql::sendError() {
 			&errnum,
 			&liveconnection);
 
-	return sendErrPacket(errnum,errorstring,errorsize,"42000");
+	return sendErrPacket(errnum,errorstring,errorsize,
+				sqlStateOrDefault(cont->getSqlStateBuffer()));
 }
 
 bool sqlrprotocol_mysql::sendQueryError(sqlrservercursor *cursor) {
@@ -5276,7 +5289,12 @@ bool sqlrprotocol_mysql::sendQueryError(sqlrservercursor *cursor) {
 			&errnum,
 			&liveconnection);
 
-	return sendErrPacket(errnum,errorstring,errorsize,"42000");
+	return sendErrPacket(errnum,errorstring,errorsize,
+			sqlStateOrDefault(cont->getSqlStateBuffer(cursor)));
+}
+
+const char *sqlrprotocol_mysql::sqlStateOrDefault(const char *sqlstate) {
+	return (charstring::getLength(sqlstate)==5)?sqlstate:"42000";
 }
 
 bool sqlrprotocol_mysql::sendNotImplementedError() {

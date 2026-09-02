@@ -14,6 +14,25 @@
 
 #include <sqlrelay/sqlrclient.h>
 
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 struct outputbindvar {
 	const char	*variable;
 	union {
@@ -67,6 +86,9 @@ class SQLRSERVER_DLLSPEC routerconnection : public sqlrserverconnection {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		const char	*getDbType();
 		const char	*getDbVersion();
 		const char * const	*getDatabaseFeatures();
@@ -261,6 +283,9 @@ class SQLRSERVER_DLLSPEC routercursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		bool		knowsRowCount();
 		uint64_t	rowCount();
 		uint64_t	getAffectedRows();
@@ -1218,6 +1243,23 @@ void routerconnection::getError(char *errorbuffer,
 		}
 	}
 	*liveconnection=true;
+}
+
+void routerconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	// pick the connection exactly the way getError() does, on a non-empty
+	// error message, so the sqlstate can't come from a different
+	// connection than the error did
+	const char	*state="";
+	for (uint16_t index=0; index<concount; index++) {
+		if (charstring::getLength(cons[index]->errorMessage())) {
+			state=cons[index]->errorSqlState();
+			break;
+		}
+	}
+	copySqlState(state,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 const char *routerconnection::getDbType() {
@@ -2277,6 +2319,15 @@ void routercursor::getError(char *errorbuffer,
 	}
 	*errorcode=(currentcur)?currentcur->errorNumber():0;
 	*liveconnection=true;
+}
+
+void routercursor::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+
+	// forward what the downstream instance reported
+	copySqlState((currentcur)?currentcur->errorSqlState():"",
+				sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 bool routercursor::knowsRowCount() {

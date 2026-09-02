@@ -1241,9 +1241,10 @@ bool sqlrprotocol_postgresql::sendErrorResponse(const char *severity,
 	// 	...
 	// }
 
-	// if we didn't get a sqlstate then set it to "syntax error"
+	// a sqlstate is always 5 characters - if we didn't get one, or got
+	// something that isn't one, then set it to "syntax error"
 	// https://www.postgresql.org/docs/current/errcodes-appendix.html
-	if (charstring::isNullOrEmpty(sqlstate)) {
+	if (charstring::getLength(sqlstate)!=5) {
 		sqlstate="42601";
 	}
 
@@ -3406,16 +3407,20 @@ bool sqlrprotocol_postgresql::sendCursorError(sqlrservercursor *cursor) {
 			&errnum,
 			&liveconnection);
 
+	// get the sqlstate the backend supplied, if it supplied one
+	const char	*sqlstate=cont->getSqlStateBuffer(cursor);
+
 	// debug
 	debugStart("cursor error");
 	debugWrite("cursor id: %d",cursor->getId());
 	debugWrite("errnum: %lld",(long long)errnum);
 	debugWrite("errorsize: %d",errorsize);
 	debugWrite("liveconnection: %d",(int)liveconnection);
+	debugWrite("sqlstate: \"%s\"",sqlstate);
 	debugEnd();
 
 	// send an error response packet
-	return sendErrorResponse(errorstring,errorsize);
+	return sendErrorResponse("ERROR",sqlstate,errorstring,errorsize);
 }
 
 bool sqlrprotocol_postgresql::sendNotImplementedError() {

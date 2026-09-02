@@ -11339,8 +11339,10 @@ bool sqlrprotocol_firebird::errorResponse(const char *title,
 	} else {
 		errormessage.append("error");
 	}
+	// a sqlstate is always 5 characters - anything else can't go in the
+	// isc_arg_sql_state slot, so fall back to the generic syntax error
 	charstring::copy(errorsqlstate,
-			(charstring::isNullOrEmpty(sqlstate))?"42000":sqlstate,
+			(charstring::getLength(sqlstate)!=5)?"42000":sqlstate,
 			sizeof(errorsqlstate)-1);
 	errorsqlstate[sizeof(errorsqlstate)-1]='\0';
 
@@ -11419,6 +11421,17 @@ bool sqlrprotocol_firebird::sendCursorError(const char *title,
 		sqlcode=-901;
 	}
 
+	// prefer the sqlstate the backend supplied - the firebird backend
+	// gets it from fb_sqlstate(), and any other backend that has one is
+	// still a better answer than a state derived from a sql code that
+	// backend never reported
+	const char	*sqlstate=(cursor)?
+					cont->getSqlStateBuffer(cursor):
+					cont->getSqlStateBuffer();
+	if (charstring::getLength(sqlstate)!=5) {
+		sqlstate=sqlStateForSqlCode(sqlcode);
+	}
+
 	debugStart("send cursor error");
 	debugWrite("preparing: %s",(preparing)?"yes":"no");
 	debugWrite("error: \"%.*s\"",(uint32_t)errorsize,errorstring);
@@ -11426,7 +11439,7 @@ bool sqlrprotocol_firebird::sendCursorError(const char *title,
 	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("live connection: %s",(liveconnection)?"yes":"no");
 	debugWrite("sqlcode: %d",(int)sqlcode);
-	debugWrite("sqlstate: \"%s\"",sqlStateForSqlCode(sqlcode));
+	debugWrite("sqlstate: \"%s\"",sqlstate);
 	debugEnd();
 
 	// a real firebird leads a prepare error with isc_dsql_error, which
@@ -11436,7 +11449,7 @@ bool sqlrprotocol_firebird::sendCursorError(const char *title,
 	// case leads with isc_random and lets the backend's text stand)
 	return errorResponse(title,
 				(preparing)?isc_dsql_error:isc_random,
-				sqlStateForSqlCode(sqlcode),
+				sqlstate,
 				sqlcode,errorstring,errorsize);
 }
 
