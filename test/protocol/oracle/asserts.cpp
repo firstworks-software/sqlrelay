@@ -23,8 +23,13 @@ void printErrors() {
 	text	message[1024];
 	bytestring::zero(message,sizeof(message));
 	sb4	errcode;
-	OCIErrorGet(err,1,NULL,&errcode,
-			message,sizeof(message),OCI_HTYPE_ERROR);
+	// only print if the handle actually has a diagnostic in it - a
+	// failing assertion that never touched OCI (or ran after the last
+	// OCI error was cleared) has nothing relevant to show here
+	if (OCIErrorGet(err,1,NULL,&errcode,
+			message,sizeof(message),OCI_HTYPE_ERROR)!=OCI_SUCCESS) {
+		return;
+	}
 	message[1023]='\0';
 	stdoutput.printf("\n%s\n",message);
 }

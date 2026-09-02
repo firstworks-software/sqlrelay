@@ -41,8 +41,26 @@ static void setCredentials(OCISession *sess, const char *u, const char *p) {
 		OCI_SUCCESS);
 }
 
+// discard whatever diagnostic is currently sitting in the shared error
+// handle.  OCIErrorGet doesn't clear what it reads, and a successful OCI
+// call doesn't overwrite it either, so a tolerated failure (e.g. a
+// pre-emptive "drop table" that's expected to fail when the table is
+// already gone) can leave stale diagnostics behind for a later, unrelated
+// failure to get blamed on.  allocate the replacement before freeing the
+// old handle, so a failed alloc leaves err usable rather than dangling.
+static void clearErrors() {
+	OCIError	*newerr=NULL;
+	if (OCIHandleAlloc(env,(void **)&newerr,
+				OCI_HTYPE_ERROR,0,NULL)==OCI_SUCCESS) {
+		OCIHandleFree(err,OCI_HTYPE_ERROR);
+		err=newerr;
+	}
+}
+
 // run a statement, discarding whatever it returns
 static sword execImmediate(const char *query) {
+
+	clearErrors();
 
 	OCIStmt	*stmt=NULL;
 	if (OCIHandleAlloc(env,(void **)&stmt,
@@ -66,6 +84,8 @@ static sword execImmediate(const char *query) {
 // count the rows in a table, so a commit or rollback can be shown to have
 // taken
 static int countRows(const char *table) {
+
+	clearErrors();
 
 	char	query[256];
 	charstring::printf(query,sizeof(query),
