@@ -2866,7 +2866,7 @@ The setting moves everything a client picks a reader from, all at once: the TTC 
 
 The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting //serverversion// to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.  A client built on Oracle's OCI library goes the other way: it only gets through the login at 11.2, and reports ORA-03113 at the 12.1 default.
 
-There is no setting that serves both an OCI client and a thin-mode client on the same instance.  If both kinds of client need to connect, run two instances, one at each //serverversion//.
+//serverversion// is set per listener tag, not per instance, so there is no single listener that serves both an OCI client and a thin-mode client.  If both kinds of client need to connect, add a second listener tag to the instance, one at each //serverversion//.
 
 {{{#!blockquote
 {{{#!code
