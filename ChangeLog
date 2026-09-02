@@ -1597,6 +1597,11 @@
 		convention already used everywhere else in the file, with
 		each chunk capped to the wire's per-chunk maximum the way
 		the file's other long-form clr writers already are
+	documented that ojdbc uppercases an unquoted username before
+		sending it, and that the oracle_userlist auth module compares
+		usernames case-sensitively, so a username ojdbc clients will use
+		must be configured in the case ojdbc sends it, or configured
+		twice
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

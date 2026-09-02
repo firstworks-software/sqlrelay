@@ -2963,6 +2963,8 @@ To enable user list auth, you must provide a list of user/password combinations,
 
 When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
 
+Oracle JDBC (ojdbc) uppercases an unquoted username before it puts it on the wire.  The //oracle_userlist// module compares usernames case-sensitively, so a user list entry only matches a login sent in the exact same case.  A username that ojdbc clients will use must be configured in the case ojdbc sends it, or configured twice, once in each case, so that both an ojdbc client and a client that sends the username as typed can log in.
+
 There is also an //oracle_database// auth module, structurally similar to //mysql_database//, but it only supports the //oracle_clear_password// method, and no protocol module SQL Relay ships ever selects that method for Oracle-protocol clients - they always authenticate with O5LOGON instead (see [#oraclelimitations Limitations] below).  As a result, database auth isn't currently reachable through the Oracle protocol listener, unlike with the !MySQL and !PostgreSQL protocols.
 
 [=#oracleforeignbackend]
