@@ -60,6 +60,8 @@ static const unsigned char	ORA_TTC_DESCRIBE_INFO=0x10;
 // two task interface functions - the TTI_* defines in
 // src/protocols/oracle.cpp
 static const unsigned char	ORA_TTI_OPEN=0x02;
+static const unsigned char	ORA_TTI_QUERY=0x03;
+static const unsigned char	ORA_TTI_EXECUTE=0x04;
 static const unsigned char	ORA_TTI_FETCH=0x05;
 static const unsigned char	ORA_TTI_DISCONNECT=0x09;
 static const unsigned char	ORA_TTI_QUERY3=0x5e;
@@ -68,8 +70,11 @@ static const unsigned char	ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY=0x76;
 
 // query3 options - the OPTION_* defines in src/protocols/oracle.cpp
 static const uint32_t	ORA_OPTION_PARSE=(1<<0);
+static const uint32_t	ORA_OPTION_DEFINE=(1<<4);
 static const uint32_t	ORA_OPTION_EXECUTE=(1<<5);
 static const uint32_t	ORA_OPTION_FETCH=(1<<6);
+static const uint32_t	ORA_OPTION_EXACTFETCH=(1<<9);
+static const uint32_t	ORA_OPTION_SNDIOV=(1<<10);
 static const uint32_t	ORA_OPTION_NOPLSQL=(1<<15);
 static const uint32_t	ORA_OPTION_DESCRIBE=(1<<17);
 
@@ -141,6 +146,22 @@ class oracleprotocolclient {
 		// TTI_FETCH
 		bool	fetch(uint32_t cursorid, uint32_t rowstofetch);
 
+		// the pre-query3 calls: TTI_QUERY parses, TTI_EXECUTE
+		// executes what it parsed, and the legacy TTI_FETCH asks
+		// for the rows.  a session that only ever sends these
+		// leaves query3session false in src/protocols/oracle.cpp,
+		// which is what keeps fetch() on the legacy
+		// sendFetchResponse() rather than handing off to fetch3().
+		// "cursorid" is the wire id open() handed back, not the
+		// listener's own - the legacy fetch takes none at all and
+		// answers for whichever cursor open/query/execute touched
+		// last
+		bool	legacyQuery(uint16_t options, uint16_t moreoptions,
+					uint16_t cursorid, const char *query);
+		bool	legacyExecute(uint16_t options, uint16_t moreoptions,
+						uint16_t cursorid);
+		bool	legacyFetch(uint16_t options, uint16_t moreoptions);
+
 		// what the last call answered with.  the ttc code is the
 		// first thing in a response body, behind the two data flag
 		// bytes, so it identifies the response as a whole; the
@@ -165,11 +186,21 @@ class oracleprotocolclient {
 		void	appendBytes(const unsigned char *value, size_t size);
 		void	appendBE16(uint16_t value);
 		void	appendBE32(uint32_t value);
+		void	appendLE16(uint16_t value);
 		void	appendLenPreInt(uint32_t value);
 		void	appendLenString(const char *value, size_t size);
 		bool	sendPacket();
 		bool	recvPacket();
 		unsigned char	getPacketType();
+
+		// response walking, in the same spirit - a test that has to
+		// pick a response apart field by field, rather than just
+		// search it for a value, needs these
+		void	rewindResponse();
+		bool	readByte(unsigned char *value);
+		bool	readBytes(unsigned char *value, size_t size);
+		bool	readLenPreInt(uint32_t *value);
+		bool	readLenString(char **value);
 
 	private:
 		void	setError(const char *message);
@@ -186,12 +217,6 @@ class oracleprotocolclient {
 					const char *value,
 					uint32_t flags);
 		bool	findAuthField(const char *name, char **value);
-
-		// response walking
-		void	rewindResponse();
-		bool	readByte(unsigned char *value);
-		bool	readLenPreInt(uint32_t *value);
-		bool	readLenString(char **value);
 
 		inetsocketclient	sock;
 		bool			connected;
@@ -357,6 +382,13 @@ void oracleprotocolclient::appendBE32(uint32_t value) {
 	reqpacket.append((unsigned char)(value&0xff));
 }
 
+// the one field on the legacy query path that isn't big-endian: query()
+// in src/protocols/oracle.cpp reads its query size with readLE()
+void oracleprotocolclient::appendLE16(uint16_t value) {
+	reqpacket.append((unsigned char)(value&0xff));
+	reqpacket.append((unsigned char)((value>>8)&0xff));
+}
+
 // a count byte, then that many big-endian bytes - the mirror of
 // sqlrprotocol::writeLenPreInt()/readLenPreInt() in
 // src/server/sqlrprotocol.cpp
@@ -460,6 +492,15 @@ bool oracleprotocolclient::readByte(unsigned char *value) {
 	}
 	*value=resppacket[respposition];
 	respposition++;
+	return true;
+}
+
+bool oracleprotocolclient::readBytes(unsigned char *value, size_t size) {
+	if (size>respsize-respposition) {
+		return false;
+	}
+	bytestring::copy(value,resppacket+respposition,size);
+	respposition+=size;
 	return true;
 }
 
@@ -1060,6 +1101,71 @@ bool oracleprotocolclient::fetch(uint32_t cursorid, uint32_t rowstofetch) {
 	appendByte(1);				// sequence number
 	appendLenPreInt(cursorid);
 	appendLenPreInt(rowstofetch);
+
+	return sendPacket() && recvPacket();
+}
+
+
+// ---- the pre-query3 calls ----
+
+// TTI_QUERY: the legacy parse.  query() in src/protocols/oracle.cpp reads a
+// fixed 13-byte body and then querysize raw bytes of query text - no length
+// byte of its own in front of it.  everything in the body is big-endian
+// except the query size, which readLE() reads little-endian.  the five
+// unexplained bytes around it are read and logged but never acted on, so
+// they go out as zeros
+bool oracleprotocolclient::legacyQuery(uint16_t options,
+					uint16_t moreoptions,
+					uint16_t cursorid,
+					const char *query) {
+
+	size_t	querysize=charstring::getLength(query);
+
+	beginTtiCall(ORA_TTI_QUERY);
+	appendBE16(options);
+	appendBE16(moreoptions);
+	appendBE16(cursorid);
+	appendByte(0);			// unknown3
+	appendByte(0);			// unknown4
+	appendByte(0);			// unknown5
+	appendLE16((uint16_t)querysize);
+	appendByte(0);			// unknown6
+	appendByte(0);			// unknown7
+	if (querysize) {
+		appendBytes((const unsigned char *)query,querysize);
+	}
+
+	return sendPacket() && recvPacket();
+}
+
+// TTI_EXECUTE: options, more options and a cursor id, and nothing else.
+// execute() in src/protocols/oracle.cpp only takes this shape while
+// query3session is false - once it's true the same function code means the
+// modern re-execute instead
+bool oracleprotocolclient::legacyExecute(uint16_t options,
+					uint16_t moreoptions,
+					uint16_t cursorid) {
+
+	beginTtiCall(ORA_TTI_EXECUTE);
+	appendBE16(options);
+	appendBE16(moreoptions);
+	appendBE16(cursorid);
+
+	return sendPacket() && recvPacket();
+}
+
+// the legacy TTI_FETCH: options and more options, no cursor id.  the
+// options pick the response shape - OPTION_DEFINE prepends column
+// definitions, OPTION_SNDIOV swaps the two filler bytes for an iov, and
+// OPTION_EXACTFETCH swaps the trailer.  those three bits make eight
+// response shapes, and 0 asks for the plainest of them, which is the only
+// one worth decoding by hand
+bool oracleprotocolclient::legacyFetch(uint16_t options,
+					uint16_t moreoptions) {
+
+	beginTtiCall(ORA_TTI_FETCH);
+	appendBE16(options);
+	appendBE16(moreoptions);
 
 	return sendPacket() && recvPacket();
 }

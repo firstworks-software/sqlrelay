@@ -1,6 +1,7 @@
 /oracle
 /ociselect
 /oracledescribeonly
+/oraclelegacyfetch
 *.o
 *.obj
 *.lo

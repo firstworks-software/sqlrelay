@@ -1008,7 +1008,16 @@ run_protocol_test() {
 	# already-executed statement from its own client-side cache rather
 	# than putting a second describe on the wire.  it talks to the
 	# default instance's port directly, so it needs neither $server nor
-	# TNS_ADMIN.  all six runs have to succeed for the instance to pass
+	# TNS_ADMIN.  finally it runs oraclelegacyfetch, another raw-socket
+	# test, for #9585 - it drives the legacy pre-query3 TTI_QUERY,
+	# TTI_EXECUTE and TTI_FETCH path straight over the socket, reaching
+	# the fetchRow() error branch inside sendFetchResponse() that no OCI
+	# client can reach, since every OCI client from 10g onward sends
+	# TTI_QUERY3 and never falls back to the legacy path.  it reads
+	# ORACLEPROTOCOLPORT5 straight from the environment, the same way
+	# oracledescribeonly reads ORACLEPROTOCOLPORT1, so it too needs
+	# neither $server nor TNS_ADMIN.  all seven runs have to succeed for
+	# the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1023,7 +1032,9 @@ run_protocol_test() {
 		resultfetchatonce="$?"
 		./oracledescribeonly
 		resultdescribeonly="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" )
+		./oraclelegacyfetch
+		resultlegacyfetch="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1052,6 +1063,10 @@ run_protocol_test() {
 		if ( test "$resultdescribeonly" != "0" )
 		then
 			printf "    % 8s: failed (describe only)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultlegacyfetch" != "0" )
+		then
+			printf "    % 8s: failed (legacy fetch)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
