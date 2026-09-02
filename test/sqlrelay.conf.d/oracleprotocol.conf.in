@@ -19,6 +19,7 @@
 		<auths>
 			<auth module="oracle_userlist">
 				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
 			</auth>
 		</auths>
 		<connections>
@@ -37,6 +38,7 @@
 		<auths>
 			<auth module="oracle_userlist">
 				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
 			</auth>
 		</auths>
 		<connections>
@@ -55,6 +57,7 @@
 		<auths>
 			<auth module="oracle_userlist">
 				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
 			</auth>
 		</auths>
 		<connections>
