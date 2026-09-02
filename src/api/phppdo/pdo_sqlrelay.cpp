@@ -174,6 +174,11 @@ struct sqlrdbhandle {
 	bool		dontgetcolumninfo;
 	bool		nullsasnulls;
 	bool		fetchlobsasstrings;
+	// last error seen by _sqlrelayError(), stashed here so fetch_err()
+	// still has something to read after PDO::exec()'s local cursor
+	// (which _sqlrelayError() may have read it from) is gone
+	int64_t		lasterrornumber;
+	char		*lasterrormessage;
 };
 
 enum {
@@ -237,6 +242,17 @@ int _sqlrelayError(pdo_dbh_t *dbh,
 		errormessage=sqlrdbh->sqlrcon->errorMessage();
 		sqlstate=sqlrdbh->sqlrcon->errorSqlState();
 	}
+
+	// stash the error number/message on the connection handle.  PDO's
+	// fetch_err handler runs after this function returns, and for
+	// PDO::exec() that's after the cursor read above has already been
+	// destroyed, so this is the only place left for it to read them
+	// from.
+	sqlrdbhandle	*sqlrdbh=(sqlrdbhandle *)dbh->driver_data;
+	delete[] sqlrdbh->lasterrormessage;
+	sqlrdbh->lasterrormessage=(errormessage)?
+				charstring::duplicate(errormessage):NULL;
+	sqlrdbh->lasterrornumber=errornumber;
 
 	// set the sqlstate
 	setSqlState(pdoerr,sqlstate);
@@ -1081,6 +1097,7 @@ void
 sqlrconnectionClose(pdo_dbh_t *dbh TSRMLS_DC) {
 	sqlrdbhandle	*sqlrdbh=(sqlrdbhandle *)dbh->driver_data;
 	delete sqlrdbh->sqlrcon;
+	delete[] sqlrdbh->lasterrormessage;
 	dbh->is_closed=1;
 	#if PHP_MAJOR_VERSION < 8 || \
 		(PHP_MAJOR_VERSION == 8 && PHP_MINOR_VERSION < 1)
@@ -1634,15 +1651,16 @@ sqlrconnectionError(pdo_dbh_t *dbh, pdo_stmt_t *stmt, zval *info TSRMLS_DC) {
 			ADD_NEXT_INDEX_STRING_P(info,msg);
 		}
 	} else if (dbh) {
+		// there's no statement here, so this may be running after
+		// the cursor _sqlrelayError() read the error from (eg. the
+		// one PDO::exec() runs its query on) has already been
+		// destroyed.  Read the number/message _sqlrelayError()
+		// stashed on the connection handle instead of asking the
+		// connection directly.
 		sqlrdbhandle	*sqlrdbh=(sqlrdbhandle *)dbh->driver_data;
-		sqlrconnection	*sqlrcon=(sqlrconnection *)sqlrdbh->sqlrcon;
-		add_next_index_long(info,sqlrcon->errorNumber());
-		// NOTE: This is un-const'ed because add_next_index_string
-		// takes a char * rather than const char * and this works
-		// with both.
-		char	*msg=(char *)sqlrcon->errorMessage();
-		if (msg) {
-			ADD_NEXT_INDEX_STRING_P(info,msg);
+		add_next_index_long(info,sqlrdbh->lasterrornumber);
+		if (sqlrdbh->lasterrormessage) {
+			ADD_NEXT_INDEX_STRING_P(info,sqlrdbh->lasterrormessage);
 		}
 	}
 #if PHP_MAJOR_VERSION < 8 || (PHP_MAJOR_VERSION == 8 && PHP_MINOR_VERSION < 1)
@@ -2046,6 +2064,8 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 
 	// create a sqlrconnection and attach it to the dbh
 	sqlrdbhandle	*sqlrdbh=new sqlrdbhandle;
+	sqlrdbh->lasterrornumber=0;
+	sqlrdbh->lasterrormessage=NULL;
 	sqlrdbh->sqlrcon=new sqlrconnection(host,port,socket,
 							dbh->username,
 							dbh->password,

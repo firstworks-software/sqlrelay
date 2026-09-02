@@ -38,6 +38,10 @@
 	assertEqual($dbh->errorCode(),"42P07");
 	$info=$dbh->errorInfo();
 	assertEqual($info[0],"42P07");
+	# exec() runs its query on a local cursor that's gone by the time
+	# errorInfo() is read, so elements 1 and 2 need their own coverage
+	assertTrue($info[1]>0);
+	assertTrue($info[2]!="");
 	# and an undefined table as 42P01
 	assertEqual($dbh->query("select * from nonexistenttable"),0);
 	assertEqual($dbh->errorCode(),"42P01");
