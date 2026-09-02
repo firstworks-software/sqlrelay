@@ -1535,6 +1535,15 @@
 		the same gap) now compile case-insensitively, and the walk also
 		stops at '('; the same walk fix was applied to oracle, firebird
 		and db2's own separate copies of the same table-name walk
+	oracle's own create-temp-table pattern now accepts an optional "if
+		not exists" clause too, matching the same fix already applied
+		to the shared base pattern; Oracle Database 23ai added "if not
+		exists" to CREATE TABLE, including CREATE GLOBAL TEMPORARY
+		TABLE, so a hand-written "create global temporary table if not
+		exists ..." against a 23ai backend hit the identical misparse;
+		firebird's own pattern is unchanged - firebird 5.0 does not
+		have this clause, it's slated for firebird 6.0, which hasn't
+		shipped yet
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

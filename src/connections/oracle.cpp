@@ -3612,7 +3612,7 @@ oraclecursor::oraclecursor(sqlrserverconnection *conn, uint16_t id) :
 	resultfreed=true;
 
 	#ifdef HAVE_ORACLE_8i
-	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+");
+	setCreateTempTablePattern("(create|CREATE)[ 	\n\r]+(global|GLOBAL)[ 	\n\r]+(temporary|TEMPORARY)[ 	\n\r]+(table|TABLE)[ 	\n\r]+((if|IF)[ 	\n\r]+(not|NOT)[ 	\n\r]+(exists|EXISTS)[ 	\n\r]+)?");
 	#endif
 }
 
