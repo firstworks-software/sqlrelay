@@ -834,6 +834,13 @@ class SQLRCLIENT_DLLSPEC sqlrconnection : public object {
 		 *  returns 0. */
 		int64_t		errorNumber();
 
+		/** If an operation failed and generated an
+		 *  error, the SQLSTATE is available here.
+		 *  If there is no error, or if the database
+		 *  doesn't provide a SQLSTATE, then this
+		 *  method returns an empty string. */
+		const char	*errorSqlState();
+
 
 
 		/** Causes verbose debugging information to be 
@@ -1542,6 +1549,13 @@ class SQLRCLIENT_DLLSPEC sqlrcursor : public object {
 		 *  If there is no error then this method 
 		 *  returns 0. */
 		int64_t		errorNumber();
+
+		/** If a query failed and generated an
+		 *  error, the SQLSTATE is available here.
+		 *  If the query succeeded, or if the database
+		 *  doesn't provide a SQLSTATE, then this
+		 *  method returns an empty string. */
+		const char	*errorSqlState();
 
 
 

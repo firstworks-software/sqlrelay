@@ -205,6 +205,9 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 						int64_t *errorcode,
 						bool *liveconnection);
 #endif
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		bool		knowsRowCount();
 		uint64_t	rowCount();
 		uint64_t	getAffectedRows();
@@ -245,6 +248,7 @@ class SQLRSERVER_DLLSPEC postgresqlcursor : public sqlrservercursor {
 
 		PGresult	*pgresult;
 		ExecStatusType	pgstatus;
+		char		sqlstate[6];
 		int		ncols;
 		int		nrows;
 		uint64_t	affectedrows;
@@ -2621,6 +2625,7 @@ postgresqlcursor::postgresqlcursor(sqlrserverconnection *conn, uint16_t id) :
 						sqlrservercursor(conn,id) {
 	postgresqlconn=(postgresqlconnection *)conn;
 	pgresult=NULL;
+	sqlstate[0]='\0';
 #if (defined(HAVE_POSTGRESQL_PQPREPARE) && \
 		defined(HAVE_POSTGRESQL_PQEXECPREPARED)) || \
 		(defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \
@@ -2683,6 +2688,9 @@ bool postgresqlcursor::prepareQuery(const char *query, uint32_t size) {
 	// reset the bind format error flag
 	bindformaterror=false;
 
+	// reset the sqlstate
+	sqlstate[0]='\0';
+
 	// deallocate named statement
 	deallocateNamedStatement();
 
@@ -2709,6 +2717,17 @@ bool postgresqlcursor::prepareQuery(const char *query, uint32_t size) {
 	}
 
 #if defined(HAVE_POSTGRESQL_PQDESCRIBEPREPARED)
+
+	// Stash the sqlstate.  The result carrying it is cleared just below,
+	// but this function can still return failure afterward, leaving
+	// getSqlState() nothing to read it from.
+	const char	*state=PQresultErrorField(pgresult,PG_DIAG_SQLSTATE);
+	size_t		statelen=charstring::getLength(state);
+	if (statelen>sizeof(sqlstate)-1) {
+		statelen=sizeof(sqlstate)-1;
+	}
+	charstring::safeCopy(sqlstate,sizeof(sqlstate),state,statelen);
+	sqlstate[statelen]='\0';
 
 	// clean up
 	PQclear(pgresult);
@@ -3023,6 +3042,9 @@ bool postgresqlcursor::executeQuery(const char *query, uint32_t size) {
 		pgresult=NULL;
 	}
 
+	// reset the sqlstate
+	sqlstate[0]='\0';
+
 	// If we support PQsendQueryPrepared (in which case we'll also support
 	// PQsendQuery) and PQsetSingleRowMode, and fetchatonce>0 then use
 	// PQsendQueryPrepared/PQsendQuery and PQsetSingleRowMode.
@@ -3186,6 +3208,34 @@ void postgresqlcursor::getError(char *errorbuffer,
 	*liveconnection=(PQstatus(postgresqlconn->pgconn)==CONNECTION_OK);
 }
 #endif
+
+void postgresqlcursor::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	// prefer the stash, fall back to the result, which is NULL on some
+	// failure paths, as is the field itself when it isn't set
+	const char	*state="";
+	if (sqlstate[0]) {
+		state=sqlstate;
+	} else if (pgresult) {
+		const char	*field=PQresultErrorField(pgresult,
+							PG_DIAG_SQLSTATE);
+		if (field) {
+			state=field;
+		}
+	}
+
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
 
 bool postgresqlcursor::knowsRowCount() {
 #if defined(HAVE_POSTGRESQL_PQSENDQUERYPREPARED) && \

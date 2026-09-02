@@ -1433,6 +1433,19 @@
 		before/after-prepare), not across them; both methods now
 		walk all four lists with a full cross-dedup so each trigger
 		fires exactly once
+	added SQLSTATE support - the connection module interface gained
+		getSqlState() alongside getError(), the server captures and
+		carries it, and the c++ client api exposes it as
+		errorSqlState() on both the connection and the cursor; the
+		postgresql connection module supplies a real value, other
+		backends report an empty string until their modules
+		implement it; bumped the sqlrclient protocol to version 5
+		for it - an older client still works against a newer
+		server, but a version 5 client is rejected at connect time
+		by a server that predates this
+	note that a connection-level error, and now its sqlstate, remain set
+		for the rest of the session - nothing on the query path
+		clears connection-level error state, only cursor-level
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

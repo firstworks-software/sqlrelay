@@ -44,6 +44,7 @@
 					thread *thr);
 		void    errorClientSession(filedescriptor *clientsock,
 					int64_t errnum, const char *err);
+		void	sendEmptySqlState(filedescriptor *clientsock);
 		bool	acquireShmAccess(thread *thr, bool *timedout);
 		bool	releaseShmAccess();
 		bool	acceptAvailableConnection(thread *thr,

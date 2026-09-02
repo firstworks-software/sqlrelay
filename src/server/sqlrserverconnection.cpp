@@ -23,6 +23,7 @@ class sqlrserverconnectionprivate {
 		uint32_t	_errorbuffersize;
 		uint32_t	_errorsize;
 		int64_t		_errnum;
+		char		_sqlstate[6];
 		bool		_liveconnection;
 
 		char		*_dbhostname;
@@ -52,6 +53,7 @@ sqlrserverconnection::sqlrserverconnection(sqlrservercontroller *cont) :
 	pvt->_errorbuffer=new char[pvt->_errorbuffersize];
 	pvt->_errorsize=0;
 	pvt->_errnum=0;
+	pvt->_sqlstate[0]='\0';
 	pvt->_liveconnection=false;
 
 	pvt->_dbhostname=NULL;
@@ -351,6 +353,17 @@ bool sqlrserverconnection::rollback() {
 	}
 
 	return retval;
+}
+
+void sqlrserverconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	// databases that don't support sqlstate have none to report
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[0]='\0';
+	}
+	*sqlstatesize=0;
 }
 
 bool sqlrserverconnection::getDatabaseIsSchema() {
@@ -1300,6 +1313,27 @@ uint32_t sqlrserverconnection::getErrorNumber() {
 
 void sqlrserverconnection::setErrorNumber(uint32_t errnum) {
 	pvt->_errnum=errnum;
+}
+
+char *sqlrserverconnection::getSqlStateBuffer() {
+	return pvt->_sqlstate;
+}
+
+uint32_t sqlrserverconnection::getSqlStateBufferSize() {
+	return sizeof(pvt->_sqlstate);
+}
+
+void sqlrserverconnection::setSqlState(const char *sqlstate) {
+
+	// truncate to 5 characters and terminate it ourselves,
+	// the caller may have passed in anything
+	size_t	len=charstring::getLength(sqlstate);
+	if (len>sizeof(pvt->_sqlstate)-1) {
+		len=sizeof(pvt->_sqlstate)-1;
+	}
+	charstring::safeCopy(pvt->_sqlstate,sizeof(pvt->_sqlstate),
+							sqlstate,len);
+	pvt->_sqlstate[len]='\0';
 }
 
 bool sqlrserverconnection::getLiveConnection() {

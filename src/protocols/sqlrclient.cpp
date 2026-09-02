@@ -189,6 +189,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_sqlrclient : public sqlrprotocol {
 		void	returnError(bool forcedisconnect);
 		void	returnError(sqlrservercursor *cursor,
 						bool forcedisconnect);
+		void	sendSqlState(const char *sqlstate);
 		bool	fetchResultSetCommand(sqlrservercursor *cursor);
 		void	abortResultSetCommand(sqlrservercursor *cursor);
 		void	suspendResultSetCommand(sqlrservercursor *cursor);
@@ -976,6 +977,7 @@ void sqlrprotocol_sqlrclient::noAvailableCursors(uint16_t command) {
 			charstring::getLength(SQLR_ERROR_NOCURSORS_STRING);
 	clientsock->write(errsize);
 	clientsock->write(SQLR_ERROR_NOCURSORS_STRING,errsize);
+	sendSqlState(NULL);
 	clientsock->flushWriteBuffer(-1,-1);
 
 	debugEnd();
@@ -1055,6 +1057,7 @@ bool sqlrprotocol_sqlrclient::authCommand() {
 	clientsock->write((uint16_t)charstring::getLength(
 				SQLR_ERROR_AUTHENTICATIONERROR_STRING));
 	clientsock->write(SQLR_ERROR_AUTHENTICATIONERROR_STRING);
+	sendSqlState(NULL);
 	clientsock->flushWriteBuffer(-1,-1);
 
 	return false;
@@ -1072,6 +1075,7 @@ void sqlrprotocol_sqlrclient::sendNotAuthenticatedError() {
 	clientsock->write((uint16_t)charstring::getLength(
 				SQLR_ERROR_NOTAUTHENTICATED_STRING));
 	clientsock->write(SQLR_ERROR_NOTAUTHENTICATED_STRING);
+	sendSqlState(NULL);
 	clientsock->flushWriteBuffer(-1,-1);
 }
 
@@ -1087,6 +1091,11 @@ void sqlrprotocol_sqlrclient::sendUnsupportedProtocolError() {
 	clientsock->write((uint16_t)charstring::getLength(
 				SQLR_ERROR_UNSUPPORTED_PROTOCOL_STRING));
 	clientsock->write(SQLR_ERROR_UNSUPPORTED_PROTOCOL_STRING);
+
+	// No sqlstate here, deliberately.  The version the client announced
+	// is one this server doesn't speak, so there's no telling what shape
+	// of error response it expects.  The response without a sqlstate is
+	// the one every version understands.
 	clientsock->flushWriteBuffer(-1,-1);
 }
 
@@ -4342,8 +4351,12 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
+	// getError() is what captures the sqlstate, so get it afterward
+	const char	*sqlstate=cont->getSqlStateBuffer(cursor);
+
 	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("error string: %.*s",errorsize,errorstring);
+	debugWrite("sqlstate: %s",sqlstate);
 
 	// send the error status
 	if (!liveconnection) {
@@ -4358,6 +4371,9 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 	// send the error string
 	clientsock->write((uint16_t)errorsize);
 	clientsock->write(errorstring,errorsize);
+
+	// send the sqlstate
+	sendSqlState(sqlstate);
 
 	debugEnd();
 }
@@ -4515,8 +4531,12 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 	bool		liveconnection;
 	cont->getError(&errorstring,&errorsize,&errnum,&liveconnection);
 
+	// getError() is what captures the sqlstate, so get it afterward
+	const char	*sqlstate=cont->getSqlStateBuffer();
+
 	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("error string: %.*s",errorsize,errorstring);
+	debugWrite("sqlstate: %s",sqlstate);
 
 	// send the appropriate error status
 	if (forcedisconnect || !liveconnection) {
@@ -4531,6 +4551,10 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 	// send the error string
 	clientsock->write((uint16_t)errorsize);
 	clientsock->write(errorstring,errorsize);
+
+	// send the sqlstate
+	sendSqlState(sqlstate);
+
 	clientsock->flushWriteBuffer(-1,-1);
 
 	cont->raiseDbErrorEvent(NULL,errorstring);
@@ -4550,8 +4574,12 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	cont->getError(cursor,&errorstring,&errorsize,
 					&errnum,&liveconnection);
 
+	// getError() is what captures the sqlstate, so get it afterward
+	const char	*sqlstate=cont->getSqlStateBuffer(cursor);
+
 	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("error string: %.*s",errorsize,errorstring);
+	debugWrite("sqlstate: %s",sqlstate);
 
 	// send the appropriate error status
 	if (forcedisconnect || !liveconnection) {
@@ -4566,6 +4594,9 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	// send the error string
 	clientsock->write((uint16_t)errorsize);
 	clientsock->write(errorstring,errorsize);
+
+	// send the sqlstate
+	sendSqlState(sqlstate);
 
 	// client will be sending skip/fetch, better get
 	// it even though we're not going to use it
@@ -4582,6 +4613,22 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	cont->raiseDbErrorEvent(cursor,errorstring);
 
 	debugEnd();
+}
+
+void sqlrprotocol_sqlrclient::sendSqlState(const char *sqlstate) {
+
+	// A version 5 client reads a sqlstate after every error string, so
+	// every site that writes an error has to append one, even when there
+	// is no sqlstate to report.  Older clients get nothing.
+	if (protocolversion<5) {
+		return;
+	}
+
+	uint16_t	sqlstatesize=charstring::getLength(sqlstate);
+	clientsock->write(sqlstatesize);
+	if (sqlstatesize) {
+		clientsock->write(sqlstate,sqlstatesize);
+	}
 }
 
 bool sqlrprotocol_sqlrclient::fetchResultSetCommand(
@@ -4656,6 +4703,7 @@ bool sqlrprotocol_sqlrclient::resumeResultSetCommand(
 				SQLR_ERROR_RESULTSETNOTSUSPENDED_STRING);
 		clientsock->write(size);
 		clientsock->write(SQLR_ERROR_RESULTSETNOTSUSPENDED_STRING,size);
+		sendSqlState(NULL);
 
 		retval=false;
 	}

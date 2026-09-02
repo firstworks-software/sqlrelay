@@ -82,6 +82,7 @@ class sqlrconnectionprivate {
 		// error
 		int64_t		_errorno;
 		char		*_error;
+		char		_sqlstate[6];
 
 		// identify
 		char		*_id;
@@ -302,6 +303,7 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	// error
 	pvt->_errorno=0;
 	pvt->_error=NULL;
+	pvt->_sqlstate[0]='\0';
 
 	// cursor list
 	pvt->_firstcursor=NULL;
@@ -1071,12 +1073,12 @@ void sqlrconnection::protocol() {
 
 	if (pvt->_debug) {
 		debugPreStart();
-		debugPrint("Protocol : sqlrclient version 4\n");
+		debugPrint("Protocol : sqlrclient version 5\n");
 		debugPreEnd();
 	}
 
 	pvt->_cs->write((uint16_t)SQLRCLIENT_PROTOCOL_VERSION);
-	pvt->_cs->write((uint16_t)4);
+	pvt->_cs->write((uint16_t)5);
 }
 
 void sqlrconnection::auth() {
@@ -2656,10 +2658,15 @@ int64_t sqlrconnection::errorNumber() {
 	return pvt->_errorno;
 }
 
+const char *sqlrconnection::errorSqlState() {
+	return pvt->_sqlstate;
+}
+
 void sqlrconnection::clearError() {
 	delete[] pvt->_error;
 	pvt->_error=NULL;
 	pvt->_errorno=0;
+	pvt->_sqlstate[0]='\0';
 }
 
 void sqlrconnection::setError(const char *err) {
@@ -2740,12 +2747,36 @@ uint16_t sqlrconnection::getError() {
 	}
 	pvt->_error[size]='\0';
 
+	// get the sqlstate
+	//
+	// A short read here isn't reported as an error.  A server that
+	// predates protocol version 5 sends no sqlstate at all, and the one
+	// response a version 5 client can get from one of those is the
+	// rejection for speaking an unsupported protocol.  That error has
+	// already been read, and it's the one worth reporting.
+	uint16_t	sqlstatesize;
+	if (pvt->_cs->read(&sqlstatesize)!=sizeof(uint16_t) ||
+			sqlstatesize>=sizeof(pvt->_sqlstate)) {
+		return status;
+	}
+	if (sqlstatesize) {
+		if (pvt->_cs->read(pvt->_sqlstate,sqlstatesize)==
+							sqlstatesize) {
+			pvt->_sqlstate[sqlstatesize]='\0';
+		} else {
+			pvt->_sqlstate[0]='\0';
+		}
+	}
+
 	if (pvt->_debug) {
 		debugPreStart();
 		debugPrint("Got error:\n");
 		debugPrint(pvt->_errorno);
 		debugPrint(": ");
 		debugPrint(pvt->_error);
+		debugPrint("\n");
+		debugPrint("sqlstate: ");
+		debugPrint(pvt->_sqlstate);
 		debugPrint("\n");
 		debugPreEnd();
 	}

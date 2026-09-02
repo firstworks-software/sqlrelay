@@ -3406,6 +3406,18 @@ void sqlrservercontroller::saveError() {
 				&errorsize,
 				&errorcode,
 				&liveconnection);
+
+	// capture the sqlstate immediately after the error, as some
+	// database apis discard it on the next call
+	char		sqlstate[6];
+	uint32_t	sqlstatesize=0;
+	pvt->_conn->getSqlState(sqlstate,sizeof(sqlstate),&sqlstatesize);
+	if (sqlstatesize>=sizeof(sqlstate)) {
+		sqlstatesize=sizeof(sqlstate)-1;
+	}
+	sqlstate[sqlstatesize]='\0';
+	pvt->_conn->setSqlState(sqlstate);
+
 	pvt->_conn->setErrorSize(errorsize);
 	pvt->_conn->setErrorNumber(errorcode);
 	pvt->_conn->setLiveConnection(liveconnection);
@@ -3434,6 +3446,10 @@ void sqlrservercontroller::saveErrorFromCursor(sqlrservercursor *cursor) {
 				&errorsize,
 				&errorcode,
 				&liveconnection);
+
+	// the cursor's sqlstate was captured with its error, carry it over
+	pvt->_conn->setSqlState(cursor->getSqlStateBuffer());
+
 	pvt->_conn->setErrorSize(errorsize);
 	pvt->_conn->setErrorNumber(errorcode);
 	pvt->_conn->setLiveConnection(liveconnection);
@@ -3518,6 +3534,10 @@ void sqlrservercontroller::setError(const char *err,
 	pvt->_conn->setErrorSize(errsize);
 	pvt->_conn->setErrorNumber(errn);
 	pvt->_conn->setLiveConnection(liveconn);
+
+	// clear the sqlstate unconditionally, an error set here has none,
+	// and clearError() comes through here too
+	pvt->_conn->setSqlState(NULL);
 }
 
 void sqlrservercontroller::setError(const char *err,
@@ -3548,6 +3568,18 @@ uint32_t sqlrservercontroller::getErrorNumber() {
 
 void sqlrservercontroller::setErrorNumber(uint32_t errnum) {
 	pvt->_conn->setErrorNumber(errnum);
+}
+
+char *sqlrservercontroller::getSqlStateBuffer() {
+	return pvt->_conn->getSqlStateBuffer();
+}
+
+uint32_t sqlrservercontroller::getSqlStateBufferSize() {
+	return pvt->_conn->getSqlStateBufferSize();
+}
+
+void sqlrservercontroller::setSqlState(const char *sqlstate) {
+	pvt->_conn->setSqlState(sqlstate);
 }
 
 bool sqlrservercontroller::getLiveConnection() {
@@ -11652,6 +11684,18 @@ void sqlrservercontroller::saveError(sqlrservercursor *cursor) {
 				&errorsize,
 				&errorcode,
 				&liveconnection);
+
+	// capture the sqlstate immediately after the error, as some
+	// database apis discard it on the next call
+	char		sqlstate[6];
+	uint32_t	sqlstatesize=0;
+	cursor->getSqlState(sqlstate,sizeof(sqlstate),&sqlstatesize);
+	if (sqlstatesize>=sizeof(sqlstate)) {
+		sqlstatesize=sizeof(sqlstate)-1;
+	}
+	sqlstate[sqlstatesize]='\0';
+	cursor->setSqlState(sqlstate);
+
 	cursor->setErrorSize(errorsize);
 	cursor->setErrorNumber(errorcode);
 	cursor->setLiveConnection(liveconnection);
@@ -12822,6 +12866,10 @@ void sqlrservercontroller::setError(sqlrservercursor *cursor,
 	cursor->setErrorSize(errsize);
 	cursor->setErrorNumber(errn);
 	cursor->setLiveConnection(liveconn);
+
+	// clear the sqlstate unconditionally, an error set here has none,
+	// and clearError(cursor) comes through here too
+	cursor->setSqlState(NULL);
 }
 
 void sqlrservercontroller::setError(sqlrservercursor *cursor,
@@ -12837,6 +12885,9 @@ void sqlrservercontroller::copyConnectionErrorToCursor(
 			pvt->_conn->getErrorSize(),
 			pvt->_conn->getErrorNumber(),
 			pvt->_conn->getLiveConnection());
+
+	// setError() cleared the sqlstate, copy it over after
+	cursor->setSqlState(pvt->_conn->getSqlStateBuffer());
 }
 
 char *sqlrservercontroller::getErrorBuffer(sqlrservercursor *cursor) {
@@ -12863,6 +12914,20 @@ uint32_t sqlrservercontroller::getErrorNumber(sqlrservercursor *cursor) {
 void sqlrservercontroller::setErrorNumber(sqlrservercursor *cursor,
 						uint32_t errnum) {
 	cursor->setErrorNumber(errnum);
+}
+
+char *sqlrservercontroller::getSqlStateBuffer(sqlrservercursor *cursor) {
+	return cursor->getSqlStateBuffer();
+}
+
+uint32_t sqlrservercontroller::getSqlStateBufferSize(
+					sqlrservercursor *cursor) {
+	return cursor->getSqlStateBufferSize();
+}
+
+void sqlrservercontroller::setSqlState(sqlrservercursor *cursor,
+						const char *sqlstate) {
+	cursor->setSqlState(sqlstate);
 }
 
 bool sqlrservercontroller::getLiveConnection(sqlrservercursor *cursor) {

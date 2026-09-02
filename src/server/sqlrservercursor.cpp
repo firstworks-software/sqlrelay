@@ -66,6 +66,7 @@ class sqlrservercursorprivate {
 		uint32_t	_errorbuffersize;
 		uint32_t	_errorsize;
 		int64_t		_errnum;
+		char		_sqlstate[6];
 		bool		_liveconnection;
 
 		sqlrcursorstate_t	_state;
@@ -177,6 +178,7 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
 	pvt->_errorbuffer=new char[pvt->_errorbuffersize];
 	pvt->_errorsize=0;
 	pvt->_errnum=0;
+	pvt->_sqlstate[0]='\0';
 	pvt->_liveconnection=true;
 
 	setCommandStart(0,0);
@@ -1054,6 +1056,31 @@ void sqlrservercursor::getError(char *errorbuffer,
 				errorsize,errorcode,liveconnection);
 }
 
+void sqlrservercursor::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	// if the cursor happens to have an error, then return the sqlstate
+	// that was captured with it, rather than pairing the cursor's error
+	// with the connection's sqlstate
+	if (pvt->_errorsize) {
+		*sqlstatesize=charstring::getLength(pvt->_sqlstate);
+		if (*sqlstatesize>=sqlstatebuffersize) {
+			*sqlstatesize=(sqlstatebuffersize)?
+						sqlstatebuffersize-1:0;
+		}
+		charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					pvt->_sqlstate,*sqlstatesize);
+		if (sqlstatebuffersize) {
+			sqlstatebuffer[*sqlstatesize]='\0';
+		}
+		return;
+	}
+
+	// otherwise return the connection's sqlstate
+	conn->getSqlState(sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+}
+
 bool sqlrservercursor::knowsRowCount() {
 	return false;
 }
@@ -1760,6 +1787,27 @@ uint32_t sqlrservercursor::getErrorNumber() {
 
 void sqlrservercursor::setErrorNumber(uint32_t errnum) {
 	pvt->_errnum=errnum;
+}
+
+char *sqlrservercursor::getSqlStateBuffer() {
+	return pvt->_sqlstate;
+}
+
+uint32_t sqlrservercursor::getSqlStateBufferSize() {
+	return sizeof(pvt->_sqlstate);
+}
+
+void sqlrservercursor::setSqlState(const char *sqlstate) {
+
+	// truncate to 5 characters and terminate it ourselves,
+	// the caller may have passed in anything
+	size_t	len=charstring::getLength(sqlstate);
+	if (len>sizeof(pvt->_sqlstate)-1) {
+		len=sizeof(pvt->_sqlstate)-1;
+	}
+	charstring::safeCopy(pvt->_sqlstate,sizeof(pvt->_sqlstate),
+							sqlstate,len);
+	pvt->_sqlstate[len]='\0';
 }
 
 bool sqlrservercursor::getLiveConnection() {

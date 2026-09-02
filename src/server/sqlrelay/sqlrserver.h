@@ -962,6 +962,24 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  setErrorNumber(). */
 		uint32_t	getErrorNumber();
 
+		/** Returns a pointer to the connection-level sqlstate
+		 *  buffer.  The buffer always contains a NUL-terminated
+		 *  string: the 5-character SQLSTATE most recently captured
+		 *  from the database, or an empty string if the database
+		 *  didn't supply one. */
+		char	*getSqlStateBuffer();
+
+		/** Returns the size, in bytes, of the connection-level
+		 *  sqlstate buffer.  A SQLSTATE is always 5 characters, so
+		 *  this is always 6: 5 characters plus a NUL terminator. */
+		uint32_t	getSqlStateBufferSize();
+
+		/** Copies at most 5 characters of "sqlstate" into the
+		 *  connection-level sqlstate buffer and NUL-terminates it.
+		 *  Sets the buffer to an empty string if "sqlstate" is NULL
+		 *  or empty. */
+		void	setSqlState(const char *sqlstate);
+
 		/** Sets a flag indicating whether the connection to the
 		 *  database is up to "liveconnection". */
 		void	setLiveConnection(bool liveconnection);
@@ -3019,6 +3037,25 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  setErrorNumber(). */
 		uint32_t	getErrorNumber(sqlrservercursor *cursor);
 
+		/** Returns a pointer to the cursor-level sqlstate
+		 *  buffer.  The buffer always contains a NUL-terminated
+		 *  string: the 5-character SQLSTATE most recently captured
+		 *  from the database, or an empty string if the database
+		 *  didn't supply one. */
+		char	*getSqlStateBuffer(sqlrservercursor *cursor);
+
+		/** Returns the size, in bytes, of the cursor-level
+		 *  sqlstate buffer.  A SQLSTATE is always 5 characters, so
+		 *  this is always 6: 5 characters plus a NUL terminator. */
+		uint32_t	getSqlStateBufferSize(sqlrservercursor *cursor);
+
+		/** Copies at most 5 characters of "sqlstate" into the
+		 *  cursor-level sqlstate buffer and NUL-terminates it.
+		 *  Sets the buffer to an empty string if "sqlstate" is NULL
+		 *  or empty. */
+		void	setSqlState(sqlrservercursor *cursor,
+					const char *sqlstate);
+
 		/** Sets a flag indicating whether the connection to the
 		 *  database is up to "liveconnection". */
 		void	setLiveConnection(sqlrservercursor *cursor,
@@ -3732,6 +3769,25 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection)=0;
+
+		/** Returns the connection-level SQLSTATE by:
+		 *
+		 *  Copying at most "sqlstatebuffersize" bytes, including a
+		 *  NUL terminator, from the connection-level SQLSTATE into
+		 *  "sqlstatebuffer".  The copy is always NUL-terminated, and
+		 *  may be used as a C string.
+		 *  Populating "sqlstatesize" with the length of the SQLSTATE,
+		 *  not including the NUL terminator.
+		 *
+		 *  Should be called immediately after getError(), as some
+		 *  database APIs discard the SQLSTATE on the next call.
+		 *
+		 *  This implementation returns an empty string, which is what
+		 *  a database that doesn't support SQLSTATE has to report, but
+		 *  it may be overridden by a child class. */
+		virtual	void	getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 
 		/** Returns true if the backend database equates "database"
 		 *  with "schema", and false if the backend database equates
@@ -4549,6 +4605,24 @@ class SQLRSERVER_DLLSPEC sqlrserverconnection : public sqlrserverbase {
 		 *  setErrorNumber(). */
 		uint32_t	getErrorNumber();
 
+		/** Returns a pointer to the connection-level sqlstate
+		 *  buffer.  The buffer always contains a NUL-terminated
+		 *  string: the 5-character SQLSTATE most recently captured
+		 *  from the database, or an empty string if the database
+		 *  didn't supply one. */
+		char	*getSqlStateBuffer();
+
+		/** Returns the size, in bytes, of the connection-level
+		 *  sqlstate buffer.  A SQLSTATE is always 5 characters, so
+		 *  this is always 6: 5 characters plus a NUL terminator. */
+		uint32_t	getSqlStateBufferSize();
+
+		/** Copies at most 5 characters of "sqlstate" into the
+		 *  connection-level sqlstate buffer and NUL-terminates it.
+		 *  Sets the buffer to an empty string if "sqlstate" is NULL
+		 *  or empty. */
+		void	setSqlState(const char *sqlstate);
+
 		/** Sets a flag indicating whether the connection to the
 		 *  database is up to "liveconnection". */
 		void	setLiveConnection(bool liveconnection);
@@ -5231,6 +5305,26 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 						uint32_t *errorsize,
 						int64_t *errorcode,
 						bool *liveconnection);
+
+		/** Returns the cursor-level SQLSTATE by:
+		 *
+		 *  Copying at most "sqlstatebuffersize" bytes, including a
+		 *  NUL terminator, from the cursor-level SQLSTATE into
+		 *  "sqlstatebuffer".  The copy is always NUL-terminated, and
+		 *  may be used as a C string.
+		 *  Populating "sqlstatesize" with the length of the SQLSTATE,
+		 *  not including the NUL terminator.
+		 *
+		 *  Should be called immediately after getError(), as some
+		 *  database APIs discard the SQLSTATE on the next call.
+		 *
+		 *  This implementation returns the SQLSTATE that was captured
+		 *  with the cursor-level error, if the cursor has one, and
+		 *  the connection-level SQLSTATE otherwise.  It may be
+		 *  overridden by a child class. */
+		virtual	void	getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 
 		/** Some databases know the row count of a result set prior to
 		 *  fetching any results.  Other databases do not, or do not
@@ -5939,6 +6033,24 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		/** Returns the cursor-level numeric error code as set by
 		 *  setErrorNumber(). */
 		uint32_t	getErrorNumber();
+
+		/** Returns a pointer to the cursor-level sqlstate
+		 *  buffer.  The buffer always contains a NUL-terminated
+		 *  string: the 5-character SQLSTATE most recently captured
+		 *  from the database, or an empty string if the database
+		 *  didn't supply one. */
+		char	*getSqlStateBuffer();
+
+		/** Returns the size, in bytes, of the cursor-level
+		 *  sqlstate buffer.  A SQLSTATE is always 5 characters, so
+		 *  this is always 6: 5 characters plus a NUL terminator. */
+		uint32_t	getSqlStateBufferSize();
+
+		/** Copies at most 5 characters of "sqlstate" into the
+		 *  cursor-level sqlstate buffer and NUL-terminates it.
+		 *  Sets the buffer to an empty string if "sqlstate" is NULL
+		 *  or empty. */
+		void	setSqlState(const char *sqlstate);
 
 		/** Sets a flag indicating whether the connection to the
 		 *  database is up to "liveconnection". */

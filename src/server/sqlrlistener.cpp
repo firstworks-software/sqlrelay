@@ -1453,6 +1453,18 @@ bool sqlrlistener::deniedIp(filedescriptor *clientsock) {
 	return false;
 }
 
+void sqlrlistener::sendEmptySqlState(filedescriptor *clientsock) {
+
+	// A sqlrclient protocol version 5 client reads a sqlstate after every
+	// error string, and blocks until it gets one.  The listener never
+	// reads the version the client announced - that goes straight to the
+	// connection daemon - so it can't tell a version 5 client from an
+	// older one and has to send this to every client.  An older client
+	// ignores it, since the listener tears the session down right after
+	// any error it sends.
+	clientsock->write((uint16_t)0);
+}
+
 void sqlrlistener::errorClientSession(filedescriptor *clientsock,
 							int64_t errnum,
 							const char *err) {
@@ -1461,6 +1473,7 @@ void sqlrlistener::errorClientSession(filedescriptor *clientsock,
 	clientsock->write((uint64_t)errnum);
 	clientsock->write((uint16_t)charstring::getLength(err));
 	clientsock->write(err);
+	sendEmptySqlState(clientsock);
 	clientsock->flushWriteBuffer(-1,-1);
 	// FIXME: hmm, if the client is just spewing
 	// garbage then we should close the connection...
@@ -1881,6 +1894,7 @@ bool sqlrlistener::getAConnection(uint32_t *connectionpid,
 			sock->write((uint16_t)charstring::getLength(
 					SQLR_ERROR_HANDOFFFAILED_STRING));
 			sock->write(SQLR_ERROR_HANDOFFFAILED_STRING);
+			sendEmptySqlState(sock);
 			sock->flushWriteBuffer(-1,-1);
 			raiseDebugWriteEvent("failed to get "
 					"a connection: timeout");
@@ -1895,6 +1909,7 @@ bool sqlrlistener::getAConnection(uint32_t *connectionpid,
 			sock->write((uint16_t)charstring::getLength(
 						SQLR_ERROR_DBSDOWN_STRING));
 			sock->write(SQLR_ERROR_DBSDOWN_STRING);
+			sendEmptySqlState(sock);
 			sock->flushWriteBuffer(-1,-1);
 			raiseDebugWriteEvent("failed to get "
 					"a connection: all dbs were down");

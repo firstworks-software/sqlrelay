@@ -279,6 +279,7 @@ class sqlrcursorprivate {
 		// error
 		int64_t		_errorno;
 		char		*_error;
+		char		_sqlstate[6];
 
 		// copy references flag
 		bool		_copyrefs;
@@ -370,6 +371,7 @@ void sqlrcursor::init(sqlrconnection *sqlrc, bool copyreferences) {
 
 	pvt->_errorno=0;
 	pvt->_error=NULL;
+	pvt->_sqlstate[0]='\0';
 
 	pvt->_rows=NULL;
 	pvt->_extrarows=NULL;
@@ -6167,6 +6169,26 @@ void sqlrcursor::getErrorFromServer() {
 		}
 	}
 
+	// get the sqlstate
+	//
+	// A short read here isn't reported as an error.  A server that
+	// predates protocol version 5 sends no sqlstate at all, and the
+	// error that has already been read is the one worth reporting.
+	if (!networkerror) {
+		uint16_t	sqlstatelength;
+		if (getShort(&sqlstatelength)==sizeof(uint16_t) &&
+				sqlstatelength &&
+				sqlstatelength<sizeof(pvt->_sqlstate)) {
+			if (pvt->_cs->read(pvt->_sqlstate,
+						sqlstatelength)==
+						sqlstatelength) {
+				pvt->_sqlstate[sqlstatelength]='\0';
+			} else {
+				pvt->_sqlstate[0]='\0';
+			}
+		}
+	}
+
 	if (networkerror) {
 		setError("There was an error, but the connection"
 				" died trying to retrieve it.  Sorry.");
@@ -6193,6 +6215,9 @@ void sqlrcursor::handleError() {
 		pvt->_sqlrc->debugPrint((int64_t)pvt->_errorno);
 		pvt->_sqlrc->debugPrint(":\n");
 		pvt->_sqlrc->debugPrint(pvt->_error);
+		pvt->_sqlrc->debugPrint("\n");
+		pvt->_sqlrc->debugPrint("sqlstate: ");
+		pvt->_sqlrc->debugPrint(pvt->_sqlstate);
 		pvt->_sqlrc->debugPrint("\n");
 		pvt->_sqlrc->debugPreEnd();
 	}
@@ -6738,6 +6763,17 @@ const char *sqlrcursor::errorMessage() {
 		return pvt->_sqlrc->error();
 	}
 	return NULL;
+}
+
+const char *sqlrcursor::errorSqlState() {
+	// key off of the same thing that errorMessage() does, so a caller
+	// can't get the cursor's message paired with the connection's sqlstate
+	if (pvt->_error) {
+		return pvt->_sqlstate;
+	} else if (pvt->_sqlrc->error()) {
+		return pvt->_sqlrc->errorSqlState();
+	}
+	return "";
 }
 
 void sqlrcursor::getNullsAsEmptyStrings() {
@@ -7830,6 +7866,7 @@ void sqlrcursor::clearError() {
 	delete[] pvt->_error;
 	pvt->_error=NULL;
 	pvt->_errorno=0;
+	pvt->_sqlstate[0]='\0';
 	if (pvt->_sqlrc) {
 		pvt->_sqlrc->clearError();
 	}
