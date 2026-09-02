@@ -1495,6 +1495,9 @@
 		reading the rest of the packet at the wrong offset
 	fixed the db2 and informix connection modules reading an uninitialized
 		local back as a string when SQLGetDiagRec left it untouched
+	fixed the patterns error translation module erasing the error text
+		instead of passing it through unchanged when configured with no
+		patterns
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

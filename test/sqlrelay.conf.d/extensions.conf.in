@@ -172,6 +172,11 @@
 				<pattern type="regex" from="^(ORA-[0-9]+): (.*)"
 						to="\1: \2 (code \1)" backrefs="yes"/>
 			</errortranslation>
+			<!-- no <pattern> children: regression test for a bug where
+			     applyPatterns() left the output empty instead of
+			     passing the input through unchanged when configured
+			     with zero top-level <pattern> tags -->
+			<errortranslation module="patterns"/>
 		</errortranslations>
 		<queries>
 			<query module="sqlrcmdcstat"/>

@@ -233,6 +233,12 @@ void sqlrerrortranslation_patterns::applyPatterns(const char *str,
 							uint32_t pcount,
 							stringbuffer *outb) {
 
+	// nothing to do, pass the input through unchanged
+	if (!pcount) {
+		outb->append(str);
+		return;
+	}
+
 	// run through the patterns
 	stringbuffer	errorbuffer1;
 	stringbuffer	errorbuffer2;
