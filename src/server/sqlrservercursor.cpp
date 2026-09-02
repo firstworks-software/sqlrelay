@@ -163,7 +163,13 @@ sqlrservercursor::sqlrservercursor(sqlrserverconnection *conn, uint16_t id) :
 	
 	setState(SQLRCURSORSTATE_AVAILABLE);
 
-	setCreateTempTablePattern("(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+");
+	// The optional "if not exists" clause is needed because the
+	// globaltemptables trigger injects "if not exists" into postgresql
+	// create-temp-table statements (see buildCreateStatement() in
+	// src/triggers/globaltemptables.cpp), and users can write it
+	// themselves on db's that support it (eg. mysql, sqlite).  Without
+	// it, the word "if" gets captured as the table name.
+	setCreateTempTablePattern("(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+((if|IF)[ 	\\r\\n]+(not|NOT)[ 	\\r\\n]+(exists|EXISTS)[ 	\\r\\n]+)?");
 	setOnCommitPreserveRowsPattern("(on|ON)[ 	\\r\\n]+(commit|COMMIT)[ 	\\r\\n]+(preserve|PRESERVE)[ 	\\r\\n]+(rows|ROWS)");
 
 	pvt->_querybuffer=

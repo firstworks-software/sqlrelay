@@ -1517,6 +1517,12 @@
 		sqlstate as an alternative to its error-size/text checks for its
 		SQL1224N and CLI0106E cases (SQL30081N has no documented sqlstate,
 		so it's unchanged)
+	fixed checkForTempTable() misparsing the table name when a
+		create-temp-table statement carries an "if not exists" clause -
+		e.g. injected by the globaltemptables trigger on postgresql, or
+		written directly on mysql/sqlite/db2 - which captured the
+		literal word "if" as the table name and silently broke
+		temp-table auto-drop at end-of-session
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

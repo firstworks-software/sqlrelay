@@ -226,7 +226,7 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),"1");
 	assertTrue(con->rollback());
 	assertTrue(cur->sendQuery("select count(*) from gtttest10"));
-	assertEquals(cur->rowCount(),0);
+	assertEquals(cur->getField(0,(uint32_t)0),"0");
 	stdoutput.printf("\n");
 
 
