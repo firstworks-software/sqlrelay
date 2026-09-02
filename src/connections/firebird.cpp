@@ -132,6 +132,36 @@ static ISC_LONG fbInterpret(char *msg, unsigned int msgsize,
 #endif
 }
 
+// fb_sqlstate (firebird 2.5+) yields the SQLSTATE for a status vector.
+// older clients can't report one at all, so they report nothing.  writes
+// 5 characters plus a terminator, so sqlstate must be at least 6 bytes
+static void fbSqlState(char *sqlstate, const ISC_STATUS *vector) {
+#ifdef HAVE_FB_SQLSTATE
+	fb_sqlstate(sqlstate,vector);
+#else
+	sqlstate[0]='\0';
+#endif
+}
+
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 // int64's are weird.  To the left of the decimal point is the
 // value/10^scale, to the right is value%10^scale
 static ssize_t firebirdFormatScaledInt64(char *buffer, size_t buffersize,
@@ -1041,6 +1071,9 @@ class SQLRSERVER_DLLSPEC firebirdcursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		void		checkForTempTable(const char *query,
 							uint32_t size);
 		bool		queryIsNotSelect();
@@ -1164,6 +1197,9 @@ class SQLRSERVER_DLLSPEC firebirdconnection : public sqlrserverconnection {
 					uint32_t *errorsize,
 					int64_t	*errorcode,
 					bool *liveconnection);
+		void	getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize);
 		bool		selectCatalog(const char *catalog);
 		char		*getCurrentCatalog();
 		const char	*getDbType();
@@ -2095,6 +2131,27 @@ void firebirdconnection::getError(char *errorbuffer,
 			charstring::contains(
 				errormsg.getString(),
 				"Error writing data to the connection"));
+}
+
+void firebirdconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	// the status vector is a connection member and every cursor
+	// operation fills it, so this covers the cursor too
+	char	state[6];
+	state[0]='\0';
+	fbSqlState(state,error);
+	state[sizeof(state)-1]='\0';
+
+	// firebird reports "00000" - successful completion - when the vector
+	// carries no error, which would be misleading paired with an error,
+	// so report nothing in that case
+	if (!charstring::compare(state,"00000")) {
+		state[0]='\0';
+	}
+
+	copySqlState(state,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 bool firebirdconnection::ping() {
@@ -4862,6 +4919,25 @@ void firebirdcursor::getError(char *errorbuffer,
 					errorsize,
 					errorcode,
 					liveconnection);
+}
+
+void firebirdcursor::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+
+	// mirror getError() - both of the errors it makes up itself are ours
+	// rather than firebird's, so they have no sqlstate, and the status
+	// vector still holds whatever the last real error left there
+	if (bindformaterror || querytoolarge) {
+		copySqlState("",sqlstatebuffer,
+				sqlstatebuffersize,sqlstatesize);
+		return;
+	}
+
+	// otherwise fall back to default implementation
+	sqlrservercursor::getSqlState(sqlstatebuffer,
+					sqlstatebuffersize,
+					sqlstatesize);
 }
 
 void firebirdcursor::checkForTempTable(const char *query, uint32_t size) {

@@ -8,7 +8,7 @@
 -export([start/0, start/1, stop/0]).
 
 -export([alloc/7, connectionFree/0, cursorFree/0, setConnectTimeout/2, getConnectTimeoutSeconds/0, getConnectTimeoutMicroseconds/0, setResponseTimeout/2, getResponseTimeoutSeconds/0, getResponseTimeoutMicroseconds/0, setBindVariableDelimiters/1, getBindVariableDelimiterQuestionMarkSupported/0, getBindVariableDelimiterColonSupported/0, getBindVariableDelimiterAtSignSupported/0, getBindVariableDelimiterDollarSignSupported/0, enableKerberos/3, enableTls/7, disableEncryption/0, endSession/0, suspendSession/0, resumeSession/2]).
--export([ping/0, identify/0, dbVersion/0, dbHostName/0, dbIpAddress/0, serverVersion/0, clientVersion/0, bindFormat/0, nextvalFormat/0, connectionErrorMessage/0, connectionErrorNumber/0, errorMessage/0, errorNumber/0]).
+-export([ping/0, identify/0, dbVersion/0, dbHostName/0, dbIpAddress/0, serverVersion/0, clientVersion/0, bindFormat/0, nextvalFormat/0, connectionErrorMessage/0, connectionErrorNumber/0, connectionErrorSqlState/0, errorMessage/0, errorNumber/0, errorSqlState/0]).
 -export([selectDatabase/1, getCurrentDatabase/0, getDatabaseIsSchema/0, selectCatalog/1, getCurrentCatalog/0, selectSchema/1, getCurrentSchema/0, getCurrentUser/0, getLastInsertId/0]).
 -export([getConnectionPort/0, getConnectionSocket/0]).
 -export([autoCommitOn/0, autoCommitOff/0, getAutoCommit/0, beginTransaction/0, commit/0, rollback/0, getInTransaction/0]).
@@ -607,11 +607,17 @@ connectionErrorMessage() -> call_port({connectionErrorMessage}).
 %% @doc If an operation failed and generated an error, the error number is available here.  If there is no error then this method returns 0.
 connectionErrorNumber() -> call_port({connectionErrorNumber}).
 
+%% @doc If an operation failed and generated an error, the SQLSTATE is available here.  If there is no error, or if the database doesn't provide a SQLSTATE, then this method returns an empty string.
+connectionErrorSqlState() -> call_port({connectionErrorSqlState}).
+
 %% @doc If a query failed and generated an error, the error message is available here.  If the query succeeded then this method returns NULL.
 errorMessage() -> call_port({errorMessage}).
 
 %% @doc If a query failed and generated an error, the error number is available here.  If there is no error then this method returns 0.
 errorNumber() -> call_port({errorNumber}).
+
+%% @doc If a query failed and generated an error, the SQLSTATE is available here.  If the query succeeded, or if the database doesn't provide a SQLSTATE, then this method returns an empty string.
+errorSqlState() -> call_port({errorSqlState}).
 
 %% @doc Tells the connection to return NULL fields and output bind variables as empty strings.  This is the default.
 getNullsAsEmptyStrings() -> call_port({getNullsAsEmptyStrings}).

@@ -939,10 +939,20 @@ class sqlrconnection:
         """
         If an operation failed and generated an
         error, the error number is available here.
-        If there is no error then this method 
+        If there is no error then this method
         returns 0.
         """
         return CSQLRelay.connectionErrorNumber(self.connection)
+
+    def errorSqlState(self):
+        """
+        If an operation failed and generated an
+        error, the SQLSTATE is available here.
+        If there is no error, or if the database
+        doesn't provide a SQLSTATE, then this
+        method returns an empty string.
+        """
+        return CSQLRelay.connectionErrorSqlState(self.connection)
 
     def debugOn(self):
         """
@@ -1809,6 +1819,16 @@ class sqlrcursor:
         returns 0.
         """
         return CSQLRelay.cursorErrorNumber(self.cursor)
+
+    def errorSqlState(self):
+        """
+        If a query failed and generated an
+        error, the SQLSTATE is available here.
+        If the query succeeded, or if the database
+        doesn't provide a SQLSTATE, then this
+        method returns an empty string.
+        """
+        return CSQLRelay.cursorErrorSqlState(self.cursor)
 
     def getNullsAsEmptyStrings(self):
         """

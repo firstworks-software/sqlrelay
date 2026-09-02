@@ -32,7 +32,7 @@ sub driver {
 		'Version'	=>	0,
 		'Err'		=>	\$DBD::SQLRelay::err,
 		'Errstr'	=>	\$DBD::SQLRelay::errstr,
-		'State'		=>	\$DBD::SQLRelay::state,
+		'State'		=>	\$DBD::SQLRelay::sqlstate,
 		'Attribution'	=>	'DBD::SQLRelay by Dmitry Ovsyanko',
 	});
 	return $drh

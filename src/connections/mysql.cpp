@@ -35,6 +35,30 @@
 // it until I can figure out a workaround.
 #undef HAVE_MYSQL_CHANGE_USER
 
+// mysql_sqlstate()/mysql_stmt_sqlstate() arrived with the 4.1 client
+#if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID>=40100
+	#define HAVE_MYSQL_SQLSTATE
+#endif
+
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 class mysqlconnection;
 
 class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
@@ -100,6 +124,9 @@ class SQLRSERVER_DLLSPEC mysqlcursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		bool		knowsRowCount();
 		uint64_t	rowCount();
 		uint64_t	getAffectedRows();
@@ -280,6 +307,9 @@ class SQLRSERVER_DLLSPEC mysqlconnection : public sqlrserverconnection {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 #ifdef HAVE_MYSQL_STMT_PREPARE
 		int16_t		getNonNullBindValue();
 		int16_t		getNullBindValue();
@@ -2824,6 +2854,23 @@ void mysqlconnection::getError(char *errorbuffer,
 			"Lost connection to MySQL server during query",44));
 }
 
+void mysqlconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+#ifdef HAVE_MYSQL_SQLSTATE
+	// mysql reports "00000" - successful completion - when there is no
+	// error, which would be misleading paired with an error, so report
+	// nothing in that case
+	const char	*state=mysql_sqlstate(mysqlptr);
+	if (!charstring::compare(state,"00000")) {
+		state="";
+	}
+	copySqlState(state,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+#else
+	copySqlState("",sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+#endif
+}
+
 #ifdef HAVE_MYSQL_STMT_PREPARE
 int16_t mysqlconnection::getNonNullBindValue() {
 	return 0;
@@ -3543,6 +3590,39 @@ void mysqlcursor::getError(char *errorbuffer,
 		errorbuffer[*errorsize]='\0';
 	}
 	*errorcode=errn;
+}
+
+void mysqlcursor::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+#ifdef HAVE_MYSQL_SQLSTATE
+	// branch exactly the way getError() does - a bind format error is
+	// ours rather than mysql's, and there are two non-prepared paths
+	const char	*state="";
+	#ifdef HAVE_MYSQL_STMT_PREPARE
+	if (bindformaterror) {
+		state="";
+	} else {
+		if (usestmtprepare && stmt) {
+			state=mysql_stmt_sqlstate(stmt);
+		} else {
+	#endif
+			state=mysql_sqlstate(mysqlconn->mysqlptr);
+	#ifdef HAVE_MYSQL_STMT_PREPARE
+		}
+	}
+	#endif
+
+	// mysql reports "00000" - successful completion - when there is no
+	// error, which would be misleading paired with an error, so report
+	// nothing in that case
+	if (!charstring::compare(state,"00000")) {
+		state="";
+	}
+	copySqlState(state,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+#else
+	copySqlState("",sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+#endif
 }
 
 uint32_t mysqlcursor::colCount() {

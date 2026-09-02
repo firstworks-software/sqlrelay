@@ -980,12 +980,25 @@ int main() {
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
 			// encode result
-			if (ei_x_encode_atom(&result, "ok") || 
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcon_errorNumber(con) )) {
 				return ERR_ENCODING_ARGS;
 			}
 		}
-		
+
+		if (strcmp("connectionErrorSqlState", command) == TRUE) {
+			const char *estate;
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			estate = sqlrcon_errorSqlState(con);
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, estate ? estate : "")) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("debugOn", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
@@ -2462,12 +2475,25 @@ int main() {
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
 
 			// encode result
-			if (ei_x_encode_atom(&result, "ok") || 
+			if (ei_x_encode_atom(&result, "ok") ||
 				ei_x_encode_long(&result, sqlrcur_errorNumber(cur) )) {
 				return ERR_ENCODING_ARGS;
 			}
 		}
-		
+
+		if (strcmp("errorSqlState", command) == TRUE) {
+			const char *estate;
+			// check number of arguments
+		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;
+
+			// encode result
+			estate = sqlrcur_errorSqlState(cur);
+			if (ei_x_encode_atom(&result, "ok") ||
+				ei_x_encode_string(&result, estate ? estate : "")) {
+				return ERR_ENCODING_ARGS;
+			}
+		}
+
 		if (strcmp("getNullsAsEmptyStrings", command) == TRUE) {
 			// check number of arguments
 		    	if (arity != 0) return ERR_NUMBER_OF_ARGS;

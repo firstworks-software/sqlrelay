@@ -871,6 +871,9 @@ then
 		AC_MSG_CHECKING(if PostgreSQL has PQsetNoticeProcessor)
 		FW_TRY_LINK([#include <libpq-fe.h>
 #include <stdlib.h>],[PQsetNoticeProcessor(0,0,0);],[$POSTGRESQLINCLUDES],[$POSTGRESQLLIBS $SOCKETLIBS],[$LD_LIBRARY_PATH:$POSTGRESQLLIBSPATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_POSTGRESQL_PQSETNOTICEPROCESSOR,1,Some versions of postgresql have PQsetNoticeProcessor)],[AC_MSG_RESULT(no)])
+		AC_MSG_CHECKING(if PostgreSQL has PQresultErrorField)
+		FW_TRY_LINK([#include <libpq-fe.h>
+#include <stdlib.h>],[PQresultErrorField(0,0);],[$POSTGRESQLINCLUDES],[$POSTGRESQLLIBS $SOCKETLIBS],[$LD_LIBRARY_PATH:$POSTGRESQLLIBSPATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_POSTGRESQL_PQRESULTERRORFIELD,1,Some versions of postgresql have PQresultErrorField)],[AC_MSG_RESULT(no)])
 		if ( test -n "$ENABLE_POSTGRESQL8API" )
 		then
 			AC_MSG_CHECKING(if PostgreSQL has PQprepare)
@@ -1883,6 +1886,15 @@ then
 		AC_MSG_CHECKING(for fb_interpret)
 		FW_TRY_LINK([#include <ibase.h>
 #include <stdlib.h>],[const ISC_STATUS *p=NULL; fb_interpret(NULL,0,&p);],[$FIREBIRDSTATIC $FIREBIRDINCLUDES],[$FIREBIRDLIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_FB_INTERPRET,1,Firebird supports fb_interpret)],[AC_MSG_RESULT(no)])
+	fi
+
+	dnl fb_sqlstate (firebird 2.5+) yields the SQLSTATE for a status vector;
+	dnl older clients have no way to report one at all
+	if ( test -n "$FIREBIRDLIBS" )
+	then
+		AC_MSG_CHECKING(for fb_sqlstate)
+		FW_TRY_LINK([#include <ibase.h>
+#include <stdlib.h>],[char s@<:@6@:>@; const ISC_STATUS *p=NULL; fb_sqlstate(s,p);],[$FIREBIRDSTATIC $FIREBIRDINCLUDES],[$FIREBIRDLIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_FB_SQLSTATE,1,Firebird supports fb_sqlstate)],[AC_MSG_RESULT(no)])
 	fi
 
 	FW_INCLUDES(firebird,[$FIREBIRDINCLUDES])

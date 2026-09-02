@@ -285,6 +285,9 @@ sqlrconnection::errorMessage()
 int64_t
 sqlrconnection::errorNumber()
 
+const char *
+sqlrconnection::errorSqlState()
+
 void
 sqlrconnection::debugOn()
 

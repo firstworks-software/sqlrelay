@@ -279,6 +279,10 @@ int64_t sqlrcon_errorNumber(sqlrcon sqlrconref) {
 	return sqlrconref->errorNumber();
 }
 
+const char *sqlrcon_errorSqlState(sqlrcon sqlrconref) {
+	return sqlrconref->errorSqlState();
+}
+
 void sqlrcon_debugOn(sqlrcon sqlrconref) {
 	sqlrconref->debugOn();
 }
@@ -735,6 +739,10 @@ const char *sqlrcur_errorMessage(sqlrcur sqlrcurref) {
 
 int64_t sqlrcur_errorNumber(sqlrcur sqlrcurref) {
 	return sqlrcurref->errorNumber();
+}
+
+const char *sqlrcur_errorSqlState(sqlrcur sqlrcurref) {
+	return sqlrcurref->errorSqlState();
 }
 
 void sqlrcur_getNullsAsEmptyStrings(sqlrcur sqlrcurref) {

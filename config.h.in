@@ -27,6 +27,9 @@
 /* Firebird supports fb_interpret */
 #undef HAVE_FB_INTERPRET
 
+/* Firebird supports fb_sqlstate */
+#undef HAVE_FB_SQLSTATE
+
 /* Some versions of FreeTDS have function definitions */
 #undef HAVE_FREETDS_FUNCTION_DEFINITIONS
 
@@ -191,6 +194,9 @@
 
 /* Some versions of postgresql have PQprepare */
 #undef HAVE_POSTGRESQL_PQPREPARE
+
+/* Some versions of postgresql have PQresultErrorField */
+#undef HAVE_POSTGRESQL_PQRESULTERRORFIELD
 
 /* Some versions of postgresql have PQsendQueryPrepared */
 #undef HAVE_POSTGRESQL_PQSENDQUERYPREPARED

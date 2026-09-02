@@ -795,6 +795,13 @@ __END__
             # If there is no error then this method
             # returns 0.
 
+        errorSqlState();
+            # If an operation failed and generated an
+            # error, the SQLSTATE is available here.
+            # If there is no error, or if the database
+            # doesn't provide a SQLSTATE, then this
+            # method returns an empty string.
+
 
         debugOn();
             # Causes verbose debugging information to be

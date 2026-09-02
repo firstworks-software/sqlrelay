@@ -710,6 +710,16 @@ JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_errorNumber
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    errorSqlState
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_errorSqlState
+  (JNIEnv *env, jobject self) {
+	return conNewStringUTF(env,getSqlrConnection(env,self)->errorSqlState());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    debugOn
  * Signature: ()V
  */

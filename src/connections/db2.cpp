@@ -49,6 +49,25 @@ struct datebind {
 	SQL_TIMESTAMP_STRUCT	buffer;
 };
 
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 class db2connection;
 
 class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
@@ -157,6 +176,9 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
@@ -228,6 +250,11 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 
 		stringbuffer	errormsg;
 
+		// captured by getError(), which is the only place the
+		// diagnostic record is read - db2 clears it on the next
+		// call on the handle
+		char		sqlstate[6];
+
 		db2connection	*db2conn;
 };
 
@@ -259,6 +286,9 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 					uint32_t *errorsize,
 					int64_t	*errorcode,
 					bool *liveconnection);
+		void	getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize);
 		bool	liveConnection(SQLINTEGER nativeerror,
 					const char *errorbuffer,
 					SQLSMALLINT errsize);
@@ -351,11 +381,17 @@ class SQLRSERVER_DLLSPEC db2connection : public sqlrserverconnection {
 
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
+
+		// captured by getError(), which is the only place the
+		// diagnostic record is read - db2 clears it on the next
+		// call on the handle
+		char		sqlstate[6];
 };
 
 db2connection::db2connection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
+	sqlstate[0]='\0';
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
 	initDatabaseFeatures();
 }
@@ -1040,6 +1076,11 @@ void db2connection::getError(char *errorbuffer,
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
 
+	// don't let the previous error's sqlstate outlive it, and don't read
+	// state back as a string if SQLGetDiagRec leaves it untouched
+	sqlstate[0]='\0';
+	state[0]='\0';
+
 	SQLGetDiagRec(SQL_HANDLE_DBC,dbc,1,state,&nativeerrnum,
 				(SQLCHAR *)errorbuffer,errorbuffersize,
 				&errsize);
@@ -1051,6 +1092,17 @@ void db2connection::getError(char *errorbuffer,
 	}
 	*errorcode=nativeerrnum;
 	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errsize);
+
+	// stash the sqlstate we already have rather than issuing a second
+	// SQLGetDiagRec later, by which time db2 may have discarded it
+	uint32_t	statesize;
+	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+}
+
+void db2connection::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 bool db2connection::liveConnection(SQLINTEGER nativeerrnum,
@@ -2354,6 +2406,7 @@ db2cursor::db2cursor(sqlrserverconnection *conn, uint16_t id) :
 	db2conn=(db2connection *)conn;
 	stmt=0;
 	lobstmt=0;
+	sqlstate[0]='\0';
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	blobbindsize=new SQLINTEGER[maxbindcount];
 	indatebind=new SQL_DATE_STRUCT[maxbindcount];
@@ -3296,8 +3349,13 @@ void db2cursor::getError(char *errorbuffer,
 				uint32_t *errorsize,
 				int64_t *errorcode,
 				bool *liveconnection) {
+
+	// don't let the previous error's sqlstate outlive it
+	sqlstate[0]='\0';
+
 	if (bindformaterror) {
-		// handle bind format errors
+		// handle bind format errors, which are ours rather than
+		// the database's, and have no sqlstate
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
 		if (*errorsize>=errorbuffersize) {
@@ -3319,6 +3377,10 @@ void db2cursor::getError(char *errorbuffer,
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
 
+	// don't read state back as a string if SQLGetDiagRec leaves it
+	// untouched
+	state[0]='\0';
+
 	SQLGetDiagRec(SQL_HANDLE_STMT,stmt,1,state,&nativeerrnum,
 				(SQLCHAR *)errorbuffer,errorbuffersize,
 				&errsize);
@@ -3331,6 +3393,17 @@ void db2cursor::getError(char *errorbuffer,
 	*errorcode=nativeerrnum;
 	*liveconnection=db2conn->liveConnection(nativeerrnum,
 						errorbuffer,errsize);
+
+	// stash the sqlstate we already have rather than issuing a second
+	// SQLGetDiagRec later, by which time db2 may have discarded it
+	uint32_t	statesize;
+	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+}
+
+void db2cursor::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 uint64_t db2cursor::getAffectedRows() {

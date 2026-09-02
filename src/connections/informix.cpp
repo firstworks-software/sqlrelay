@@ -49,6 +49,25 @@ struct datebind {
 	SQL_TIMESTAMP_STRUCT	buffer;
 };
 
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 class informixconnection;
 
 class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
@@ -151,6 +170,9 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
@@ -217,6 +239,11 @@ class SQLRSERVER_DLLSPEC informixcursor : public sqlrservercursor {
 
 		stringbuffer	errormsg;
 
+		// captured by getError(), which is the only place the
+		// diagnostic record is read - the cli clears it on the next
+		// call on the handle
+		char		sqlstate[6];
+
 		informixconnection	*informixconn;
 };
 
@@ -246,6 +273,9 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 					uint32_t *errorsize,
 					int64_t	*errorcode,
 					bool *liveconnection);
+		void	getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize);
 		bool	liveConnection(SQLINTEGER nativeerror,
 					const char *errorbuffer,
 					SQLSMALLINT errsize);
@@ -337,11 +367,17 @@ class SQLRSERVER_DLLSPEC informixconnection : public sqlrserverconnection {
 
 		char		*maxconnections;
 		const char	*databasefeatures[FEATURE_COUNT];
+
+		// captured by getError(), which is the only place the
+		// diagnostic record is read - the cli clears it on the next
+		// call on the handle
+		char		sqlstate[6];
 };
 
 informixconnection::informixconnection(sqlrservercontroller *cont) :
 					sqlrserverconnection(cont) {
 
+	sqlstate[0]='\0';
 	maxoutbindlobsize=MAX_OUT_BIND_LOB_SIZE;
 	initDatabaseFeatures();
 }
@@ -1008,6 +1044,11 @@ void informixconnection::getError(char *errorbuffer,
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
 
+	// don't let the previous error's sqlstate outlive it, and don't read
+	// state back as a string if SQLGetDiagRec leaves it untouched
+	sqlstate[0]='\0';
+	state[0]='\0';
+
 	SQLGetDiagRec(SQL_HANDLE_DBC,dbc,1,state,&nativeerrnum,
 				(SQLCHAR *)errorbuffer,errorbuffersize,
 				&errsize);
@@ -1019,6 +1060,17 @@ void informixconnection::getError(char *errorbuffer,
 	}
 	*errorcode=nativeerrnum;
 	*liveconnection=liveConnection(nativeerrnum,errorbuffer,errsize);
+
+	// stash the sqlstate we already have rather than issuing a second
+	// SQLGetDiagRec later, by which time the cli may have discarded it
+	uint32_t	statesize;
+	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+}
+
+void informixconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 bool informixconnection::liveConnection(SQLINTEGER nativeerrnum,
@@ -2734,6 +2786,7 @@ informixcursor::informixcursor(sqlrserverconnection *conn, uint16_t id) :
 						sqlrservercursor(conn,id) {
 	informixconn=(informixconnection *)conn;
 	stmt=0;
+	sqlstate[0]='\0';
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	lobbindsize=new SQLLEN[maxbindcount];
 	indatebind=new SQL_DATE_STRUCT[maxbindcount];
@@ -3625,8 +3678,13 @@ void informixcursor::getError(char *errorbuffer,
 				uint32_t *errorsize,
 				int64_t *errorcode,
 				bool *liveconnection) {
+
+	// don't let the previous error's sqlstate outlive it
+	sqlstate[0]='\0';
+
 	if (bindformaterror) {
-		// handle bind format errors
+		// handle bind format errors, which are ours rather than
+		// the database's, and have no sqlstate
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
 		if (*errorsize>=errorbuffersize) {
@@ -3647,6 +3705,10 @@ void informixcursor::getError(char *errorbuffer,
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
 
+	// don't read state back as a string if SQLGetDiagRec leaves it
+	// untouched
+	state[0]='\0';
+
 	SQLGetDiagRec(SQL_HANDLE_STMT,stmt,1,state,&nativeerrnum,
 				(SQLCHAR *)errorbuffer,errorbuffersize,
 				&errsize);
@@ -3661,6 +3723,17 @@ void informixcursor::getError(char *errorbuffer,
 	*errorcode=-nativeerrnum;
 	*liveconnection=informixconn->liveConnection(nativeerrnum,
 							errorbuffer,errsize);
+
+	// stash the sqlstate we already have rather than issuing a second
+	// SQLGetDiagRec later, by which time the cli may have discarded it
+	uint32_t	statesize;
+	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+}
+
+void informixcursor::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 uint64_t informixcursor::getAffectedRows() {

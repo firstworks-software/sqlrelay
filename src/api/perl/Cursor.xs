@@ -564,6 +564,9 @@ sqlrcursor::errorMessage()
 int64_t
 sqlrcursor::errorNumber()
 
+const char *
+sqlrcursor::errorSqlState()
+
 void
 sqlrcursor::getNullsAsEmptyStrings()
 

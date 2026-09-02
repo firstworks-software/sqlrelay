@@ -778,13 +778,20 @@ class SQLRConnection {
 
 		/** If an operation failed and generated an
 		 *  error, the error number is available here.
-		 *  If there is no error then this method 
+		 *  If there is no error then this method
 		 *  returns 0. */
 		function errorNumber();
 
+		/** If an operation failed and generated an
+		 *  error, the SQLSTATE is available here.
+		 *  If there is no error, or if the database
+		 *  doesn't provide a SQLSTATE, then this
+		 *  method returns an empty string. */
+		function errorSqlState();
 
 
-		/** Causes verbose debugging information to be 
+
+		/** Causes verbose debugging information to be
 		 *  sent to standard output.  Another way to do
 		 *  this is to start a query with "-- debug\n".
 		 *  Yet another way is to set the environment
@@ -1464,9 +1471,16 @@ class SQLRCursor {
 
 		/** If a query failed and generated an
 		 *  error, the error number is available here.
-		 *  If there is no error then this method 
+		 *  If there is no error then this method
 		 *  returns 0. */
 		function errorNumber();
+
+		/** If a query failed and generated an
+		 *  error, the SQLSTATE is available here.
+		 *  If the query succeeded, or if the database
+		 *  doesn't provide a SQLSTATE, then this
+		 *  method returns an empty string. */
+		function errorSqlState();
 
 
 

@@ -583,9 +583,18 @@ proc errorMessage {}
 
 # If a query failed and generated an
 # error, the error number is available here.
-# If there is no error then this method 
+# If there is no error then this method
 # returns 0.
 proc errorNumber {}
+
+
+
+# If a query failed and generated an
+# error, the SQLSTATE is available here.
+# If the query succeeded, or if the database
+# doesn't provide a SQLSTATE, then this
+# method returns an empty string.
+proc errorSqlState {}
 
 
 

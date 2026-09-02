@@ -927,6 +927,15 @@ const char	*sqlrcon_errorMessage(sqlrcon sqlrconref);
 SQLRCLIENT_DLLSPEC
 int64_t		sqlrcon_errorNumber(sqlrcon sqlrconref);
 
+/** @ingroup sqlrclientwrapper
+ *  If an operation failed and generated an
+ *  error, the SQLSTATE is available here.
+ *  If there is no error, or if the database
+ *  doesn't provide a SQLSTATE, then this
+ *  method returns an empty string. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcon_errorSqlState(sqlrcon sqlrconref);
+
 
 /** @ingroup sqlrclientwrapper
  *  Causes verbose debugging information to be
@@ -1848,6 +1857,15 @@ const char	*sqlrcur_errorMessage(sqlrcur sqlrcurref);
  *  returns 0. */
 SQLRCLIENT_DLLSPEC
 int64_t		sqlrcur_errorNumber(sqlrcur sqlrcurref);
+
+/** @ingroup sqlrclientwrapper
+ *  If a query failed and generated an
+ *  error, the SQLSTATE is available here.
+ *  If the query succeeded, or if the database
+ *  doesn't provide a SQLSTATE, then this
+ *  method returns an empty string. */
+SQLRCLIENT_DLLSPEC
+const char	*sqlrcur_errorSqlState(sqlrcur sqlrcurref);
 
 
 /** @ingroup sqlrclientwrapper

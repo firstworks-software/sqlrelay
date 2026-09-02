@@ -206,6 +206,7 @@ class SQLRConnection : public ObjectWrap {
 		static RET	getDatabaseFeature(const ARGS &args);
 		static RET	errorMessage(const ARGS &args);
 		static RET	errorNumber(const ARGS &args);
+		static RET	errorSqlState(const ARGS &args);
 		static RET	debugOn(const ARGS &args);
 		static RET	debugOff(const ARGS &args);
 		static RET	getDebug(const ARGS &args);
@@ -305,6 +306,7 @@ class SQLRCursor : public ObjectWrap {
 		static RET	nextResultSet(const ARGS &args);
 		static RET	errorMessage(const ARGS &args);
 		static RET	errorNumber(const ARGS &args);
+		static RET	errorSqlState(const ARGS &args);
 		static RET	getNullsAsEmptyStrings(const ARGS &args);
 		static RET	getNullsAsNulls(const ARGS &args);
 		static RET	getField(const ARGS &args);
@@ -447,6 +449,7 @@ void SQLRConnection::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getDatabaseFeature",getDatabaseFeature);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorMessage",errorMessage);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorNumber",errorNumber);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"errorSqlState",errorSqlState);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"debugOn",debugOn);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"debugOff",debugOff);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getDebug",getDebug);
@@ -1089,6 +1092,17 @@ RET SQLRConnection::errorNumber(const ARGS &args) {
 	returnInteger(result);
 }
 
+RET SQLRConnection::errorSqlState(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	const char	*result=sqlrcon(args)->errorSqlState();
+
+	returnString(result);
+}
+
 RET SQLRConnection::debugOn(const ARGS &args) {
 
 	initLocalScope();
@@ -1275,6 +1289,7 @@ void SQLRCursor::Init(Handle<Object> exports) {
 	NODE_SET_PROTOTYPE_METHOD(tpl,"nextResultSet",nextResultSet);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorMessage",errorMessage);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"errorNumber",errorNumber);
+	NODE_SET_PROTOTYPE_METHOD(tpl,"errorSqlState",errorSqlState);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getNullsAsEmptyStrings",
 						getNullsAsEmptyStrings);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"getNullsAsNulls",getNullsAsNulls);
@@ -2516,6 +2531,17 @@ RET SQLRCursor::errorNumber(const ARGS &args) {
 	int64_t	result=sqlrcur(args)->errorNumber();
 
 	returnInteger(result);
+}
+
+RET SQLRCursor::errorSqlState(const ARGS &args) {
+
+	initLocalScope();
+
+	checkArgCount(args,0);
+
+	const char	*result=sqlrcur(args)->errorSqlState();
+
+	returnString(result);
 }
 
 RET SQLRCursor::getNullsAsEmptyStrings(const ARGS &args) {

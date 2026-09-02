@@ -952,8 +952,16 @@ public class SQLRConnection : IDisposable
     {
         return sqlrcon_errorNumber(sqlrconref);
     }
-    
-    
+
+    /** If an operation failed and generated an error, the SQLSTATE is
+     *  available here.  If there is no error, or if the database doesn't
+     *  provide a SQLSTATE, then this method returns an empty string. */
+    public String errorSqlState()
+    {
+        return Marshal.PtrToStringAnsi(sqlrcon_errorSqlState(sqlrconref));
+    }
+
+
     /** Causes verbose debugging information to be sent to standard output.
      *  Another way to do this is to start a query with "-- debug\n".
      *  Yet another way is to set the environment variable SQLR_CLIENT_DEBUG
@@ -1179,7 +1187,10 @@ public class SQLRConnection : IDisposable
     
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int64 sqlrcon_errorNumber(IntPtr sqlrconref);
-    
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcon_errorSqlState(IntPtr sqlrconref);
+
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern void sqlrcon_debugOn(IntPtr sqlrconref);
     

@@ -2475,6 +2475,39 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_errornumber) {
 
 /**
  *  call-seq:
+ *  sqlrcon_errorSqlState($sqlrconref)
+ *
+ *  If an operation failed and generated an error, the SQLSTATE is
+ *  available here.  If there is no error, or if the database doesn't
+ *  provide a SQLSTATE, then this method returns an empty string. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_errorsqlstate) {
+	ZVAL sqlrcon;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcon) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		r=connection->errorSqlState();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RET_STRING(const_cast<char *>(""),1);
+}
+
+/**
+ *  call-seq:
  *  sqlrcon_debugOn($sqlrconref)
  *
  *  Causes verbose debugging information to be sent to standard output.
@@ -5600,6 +5633,39 @@ DLEXPORT ZEND_FUNCTION(sqlrcur_errornumber) {
 
 /**
  *  call-seq:
+ *  sqlrcur_errorSqlState($sqlrcurref)
+ *
+ *  If a query failed and generated an error, the SQLSTATE is available
+ *  here.  If the query succeeded, or if the database doesn't provide a
+ *  SQLSTATE, then this method returns an empty string. */
+DLEXPORT ZEND_FUNCTION(sqlrcur_errorsqlstate) {
+	ZVAL sqlrcur;
+	const char *r;
+	if (ZEND_NUM_ARGS() != 1 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("z")
+				&sqlrcur) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	sqlrcursor *cursor=NULL;
+	ZEND_FETCH_RESOURCE(cursor,
+				sqlrcursor *,
+				sqlrcur,
+				-1,
+				"sqlrelay cursor",
+				sqlrelay_cursor);
+	if (cursor) {
+		r=cursor->errorSqlState();
+		if (r) {
+			RET_STRING(const_cast<char *>(r),1);
+		}
+	}
+	RET_STRING(const_cast<char *>(""),1);
+}
+
+/**
+ *  call-seq:
  *  sqlrcur_getNullsAsEmptyStrings($sqlrcurref)
  *
  *  Tells the connection to return NULL fields and output bind variables as
@@ -8439,6 +8505,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_errornumber,0,0,1)
 	ZEND_ARG_INFO(0, sqlrconref)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_errorsqlstate,0,0,1)
+	ZEND_ARG_INFO(0, sqlrconref)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_debugon,0,0,1)
 	ZEND_ARG_INFO(0, sqlrconref)
 ZEND_END_ARG_INFO()
@@ -8860,6 +8930,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_errormessage,0,0,1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_errornumber,0,0,1)
+	ZEND_ARG_INFO(0, sqlrcurref)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcur_errorsqlstate,0,0,1)
 	ZEND_ARG_INFO(0, sqlrcurref)
 ZEND_END_ARG_INFO()
 
@@ -9368,6 +9442,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_errormessage))
 	ZEND_FE(sqlrcon_errornumber,
 		ARGINFO(arginfo_sqlrcon_errornumber))
+	ZEND_FE(sqlrcon_errorsqlstate,
+		ARGINFO(arginfo_sqlrcon_errorsqlstate))
 	ZEND_FE(sqlrcon_debugon,
 		ARGINFO(arginfo_sqlrcon_debugon))
 	ZEND_FE(sqlrcon_debugoff,
@@ -9536,6 +9612,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcur_errormessage))
 	ZEND_FE(sqlrcur_errornumber,
 		ARGINFO(arginfo_sqlrcur_errornumber))
+	ZEND_FE(sqlrcur_errorsqlstate,
+		ARGINFO(arginfo_sqlrcur_errorsqlstate))
 	ZEND_FE(sqlrcur_getnullsasemptystrings,
 		ARGINFO(arginfo_sqlrcur_getnullsasemptystrings))
 	ZEND_FE(sqlrcur_getnullsasnulls,

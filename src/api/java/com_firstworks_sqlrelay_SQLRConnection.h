@@ -371,6 +371,14 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_errorMessa
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    errorSqlState
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRConnection_errorSqlState
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    debugOn
  * Signature: ()V
  */

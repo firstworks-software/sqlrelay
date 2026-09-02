@@ -1618,6 +1618,26 @@ static VALUE sqlrcon_errorNumber(VALUE self) {
 	return INT2NUM(result);
 }
 
+static void conErrorSqlState(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcon->errorSqlState();
+}
+/** If an operation failed and generated an
+ *  error, the SQLSTATE is available here.
+ *  If there is no error, or if the database
+ *  doesn't provide a SQLSTATE, then this
+ *  method returns an empty string. */
+static VALUE sqlrcon_errorSqlState(VALUE self) {
+	sqlrconnection *sqlrcon;
+	const char	*result;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	RCON(result,ccpr,sqlrcon,conErrorSqlState);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return rb_str_new2("");
+	}
+}
+
 static void debugOn(params *p) {
 	p->sqlrc.sqlrcon->debugOn();
 }
@@ -1825,6 +1845,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_errorMessage,0);
 	rb_define_method(csqlrconnection,"errorNumber",
 				(CAST)sqlrcon_errorNumber,0);
+	rb_define_method(csqlrconnection,"errorSqlState",
+				(CAST)sqlrcon_errorSqlState,0);
 	rb_define_method(csqlrconnection,"debugOn",
 				(CAST)sqlrcon_debugOn,0);
 	rb_define_method(csqlrconnection,"debugOff",
@@ -3529,6 +3551,26 @@ static VALUE sqlrcur_errorNumber(VALUE self) {
 	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
 	RCUR(result,u64r,sqlrcurdata->cur,curErrorNumber);
 	return INT2NUM(result);
+}
+
+static void curErrorSqlState(params *p) {
+	p->result.ccpr=p->sqlrc.sqlrcur->errorSqlState();
+}
+/** If a query failed and generated an
+ *  error, the SQLSTATE is available here.
+ *  If the query succeeded, or if the database
+ *  doesn't provide a SQLSTATE, then this
+ *  method returns an empty string. */
+static VALUE sqlrcur_errorSqlState(VALUE self) {
+	sqlrcursordata	*sqlrcurdata;
+	const char	*result;
+	Data_Get_Struct(self,sqlrcursordata,sqlrcurdata);
+	RCUR(result,ccpr,sqlrcurdata->cur,curErrorSqlState);
+	if (result) {
+		return rb_str_new2(result);
+	} else {
+		return rb_str_new2("");
+	}
 }
 
 static void getNullsAsEmptyStrings(params *p) {
@@ -5295,6 +5337,8 @@ void Init_SQLRCursor() {
 				(CAST)sqlrcur_errorMessage,0);
 	rb_define_method(csqlrcursor,"errorNumber",
 				(CAST)sqlrcur_errorNumber,0);
+	rb_define_method(csqlrcursor,"errorSqlState",
+				(CAST)sqlrcur_errorSqlState,0);
 	rb_define_method(csqlrcursor,"getNullsAsEmptyStrings",
 				(CAST)sqlrcur_getNullsAsEmptyStrings,0);
 	rb_define_method(csqlrcursor,"getNullsAsNils",

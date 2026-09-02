@@ -157,6 +157,7 @@ void sqlrcurDelete(ClientData data) {
  *   $cur nextResultSet
  *   $cur errorMessage
  *   $cur errorNumber
+ *   $cur errorSqlState
  *   $cur getFieldByIndex row col
  *   $cur getFieldByName row col
  *   $cur getFieldByNameIgnoringCase row col
@@ -339,6 +340,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     "nextResultSet",
     "errorMessage",
     "errorNumber",
+    "errorSqlState",
     "getFieldByIndex",
     "getFieldByName",
     "getFieldByNameIgnoringCase",
@@ -515,6 +517,7 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
     SQLRCUR_nextResultSet,
     SQLRCUR_errorMessage,
     SQLRCUR_errorNumber,
+    SQLRCUR_errorSqlState,
     SQLRCUR_getFieldByIndex,
     SQLRCUR_getFieldByName,
     SQLRCUR_getFieldByNameIgnoringCase,
@@ -1693,6 +1696,19 @@ int sqlrcurObjCmd(ClientData data, Tcl_Interp *interp,
 	  return TCL_ERROR;
 	}
 	Tcl_SetObjResult(interp, Tcl_NewLongObj(cur->errorNumber()));
+	break;
+      }
+    case SQLRCUR_errorSqlState:
+      {
+	const char *state;
+	if (objc > 2) {
+	  Tcl_WrongNumArgs(interp, 2, objv, NULL);
+	  return TCL_ERROR;
+	}
+	if ((state = cur->errorSqlState()) == NULL) {
+	  state = "";
+	}
+	Tcl_SetObjResult(interp, _Tcl_NewStringObj(state, -1));
 	break;
       }
       /*
@@ -3170,6 +3186,7 @@ void sqlrconDelete(ClientData data) {
  *  $con commit
  *  $con rollback
  *  $con errorMessage
+ *  $con errorSqlState
  *  $con debug ?bool?
  *  $con setDebugFile debugfilename
  *  $con setClientInfo clientinfo
@@ -3234,6 +3251,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "getDatabaseFeature",
     "errorMessage",
     "errorNumber",
+    "errorSqlState",
     "debug",
     "setDebugFile",
     "setClientInfo",
@@ -3293,6 +3311,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_GETDATABASEFEATURE,
     SQLR_ERRORMESSAGE,
     SQLR_ERRORNUMBER,
+    SQLR_ERRORSQLSTATE,
     SQLR_DEBUG,
     SQLR_SETDEBUGFILE,
     SQLR_SETCLIENTINFO,
@@ -3807,6 +3826,14 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
       return TCL_ERROR;
     }
     Tcl_SetObjResult(interp, Tcl_NewLongObj(con->errorNumber()));
+    break;
+  }
+  case SQLR_ERRORSQLSTATE: {
+    if (objc > 2) {
+      Tcl_WrongNumArgs(interp, 2, objv, NULL);
+      return TCL_ERROR;
+    }
+    Tcl_SetObjResult(interp,_Tcl_NewStringObj(con->errorSqlState(), -1));
     break;
   }
   case SQLR_DEBUG: {

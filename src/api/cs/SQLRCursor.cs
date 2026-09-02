@@ -922,6 +922,14 @@ public class SQLRCursor : IDisposable
         return sqlrcur_errorNumber(sqlrcurref);
     }
 
+    /** If a query failed and generated an error, the SQLSTATE is available
+     *  here.  If the query succeeded, or if the database doesn't provide a
+     *  SQLSTATE, then this method returns an empty string. */
+    public String errorSqlState()
+    {
+        return Marshal.PtrToStringAnsi(sqlrcur_errorSqlState(sqlrcurref));
+    }
+
 
     /** Tells the connection to return NULL fields and output bind variables as
      *  empty strings.  This is the default. */
@@ -1940,6 +1948,9 @@ public class SQLRCursor : IDisposable
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int64 sqlrcur_errorNumber(IntPtr sqlrcurref);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr sqlrcur_errorSqlState(IntPtr sqlrcurref);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern void sqlrcur_getNullsAsEmptyStrings(IntPtr sqlrcurref);

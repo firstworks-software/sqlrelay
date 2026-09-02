@@ -134,6 +134,25 @@ struct flagtoname {
 	const char	*name;
 };
 
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
 class odbcconnection;
 
 class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
@@ -251,6 +270,9 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		uint64_t	getAffectedRows();
 		uint32_t	colCount();
 		const char	*getColumnName(uint32_t i);
@@ -388,6 +410,11 @@ class SQLRSERVER_DLLSPEC odbccursor : public sqlrservercursor {
 		odbcconnection	*odbcconn;
 
 		char	columnnamescratch[4096];
+
+		// captured by getError(), which is the only place the
+		// diagnostic record is read - odbc clears it on the next
+		// call on the handle
+		char	sqlstate[6];
 };
 
 class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
@@ -425,6 +452,9 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 						int64_t	*errorcode,
 						bool *liveconnection);
 		#endif
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 		bool		isLiveConnection(SQLCHAR *state);
 		bool		ping();
 		const char	*getDbType();
@@ -552,6 +582,11 @@ class SQLRSERVER_DLLSPEC odbcconnection : public sqlrserverconnection {
 		#if (ODBCVER>=0x0300)
 		stringbuffer	errormsg;
 		#endif
+
+		// captured by getError(), which is the only place the
+		// diagnostic record is read - odbc clears it on the next
+		// call on the handle
+		char		sqlstate[6];
 };
 
 #ifdef HAVE_SQLCONNECTW
@@ -814,6 +849,7 @@ odbcconnection::odbcconnection(sqlrservercontroller *cont) :
 	binarylobbind=false;
 	columninfonotvalidyeterror=NULL;
 	databasefeatures=NULL;
+	sqlstate[0]='\0';
 }
 
 odbcconnection::~odbcconnection() {
@@ -4117,6 +4153,9 @@ void odbcconnection::getError(char *errorbuffer,
 	SQLINTEGER	nativeerrnum;
 	SQLSMALLINT	errsize;
 
+	// don't let the previous error's sqlstate outlive it
+	sqlstate[0]='\0';
+
 	bytestring::zero(state,sizeof(state));
 
 	SQLGetDiagRec(SQL_HANDLE_DBC,dbc,1,state,&nativeerrnum,
@@ -4130,8 +4169,19 @@ void odbcconnection::getError(char *errorbuffer,
 	}
 	*errorcode=nativeerrnum;
 	*liveconnection=isLiveConnection(state);
+
+	// stash the sqlstate we already have rather than issuing a second
+	// SQLGetDiagRec later, by which time odbc may have discarded it
+	uint32_t	statesize;
+	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
 }
 #endif
+
+void odbcconnection::getSqlState(char *sqlstatebuffer,
+					uint32_t sqlstatebuffersize,
+					uint32_t *sqlstatesize) {
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
+}
 
 bool odbcconnection::isLiveConnection(SQLCHAR *state) {
 	// TODO: Gain access to the dbc, and in ODBC 3.5 see if
@@ -4304,6 +4354,7 @@ odbccursor::odbccursor(sqlrserverconnection *conn, uint16_t id) :
 						sqlrservercursor(conn,id) {
 	odbcconn=(odbcconnection *)conn;
 	stmt=NULL;
+	sqlstate[0]='\0';
 	execdirect=getExecuteDirect();
 	maxbindcount=conn->cont->getConfig()->getMaxBindCount();
 	indatebind=new SQL_DATE_STRUCT[maxbindcount];
@@ -6576,8 +6627,13 @@ void odbccursor::getError(char *errorbuffer,
 				uint32_t *errorsize,
 				int64_t *errorcode,
 				bool *liveconnection) {
+
+	// don't let the previous error's sqlstate outlive it
+	sqlstate[0]='\0';
+
 	if (bindformaterror) {
-		// handle bind format errors
+		// handle bind format errors, which are ours rather than
+		// the database's, and have no sqlstate
 		*errorsize=charstring::getLength(
 				SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING);
 		if (*errorsize>=errorbuffersize) {
@@ -6612,6 +6668,17 @@ void odbccursor::getError(char *errorbuffer,
 	}
 	*errorcode=nativeerrnum;
 	*liveconnection=odbcconn->isLiveConnection(state);
+
+	// stash the sqlstate we already have rather than issuing a second
+	// SQLGetDiagRec later, by which time odbc may have discarded it
+	uint32_t	statesize;
+	copySqlState((const char *)state,sqlstate,sizeof(sqlstate),&statesize);
+}
+
+void odbccursor::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 uint64_t odbccursor::getAffectedRows() {

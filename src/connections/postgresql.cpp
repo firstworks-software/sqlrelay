@@ -2718,6 +2718,7 @@ bool postgresqlcursor::prepareQuery(const char *query, uint32_t size) {
 
 #if defined(HAVE_POSTGRESQL_PQDESCRIBEPREPARED)
 
+#ifdef HAVE_POSTGRESQL_PQRESULTERRORFIELD
 	// Stash the sqlstate.  The result carrying it is cleared just below,
 	// but this function can still return failure afterward, leaving
 	// getSqlState() nothing to read it from.
@@ -2728,6 +2729,7 @@ bool postgresqlcursor::prepareQuery(const char *query, uint32_t size) {
 	}
 	charstring::safeCopy(sqlstate,sizeof(sqlstate),state,statelen);
 	sqlstate[statelen]='\0';
+#endif
 
 	// clean up
 	PQclear(pgresult);
@@ -3218,12 +3220,14 @@ void postgresqlcursor::getSqlState(char *sqlstatebuffer,
 	const char	*state="";
 	if (sqlstate[0]) {
 		state=sqlstate;
+#ifdef HAVE_POSTGRESQL_PQRESULTERRORFIELD
 	} else if (pgresult) {
 		const char	*field=PQresultErrorField(pgresult,
 							PG_DIAG_SQLSTATE);
 		if (field) {
 			state=field;
 		}
+#endif
 	}
 
 	*sqlstatesize=charstring::getLength(state);

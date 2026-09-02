@@ -30,6 +30,42 @@
 	}
 #endif
 
+// copy a sqlstate into a caller-provided buffer, the way getError() does
+static void copySqlState(const char *state,
+				char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+	if (!state) {
+		state="";
+	}
+	*sqlstatesize=charstring::getLength(state);
+	if (*sqlstatesize>=sqlstatebuffersize) {
+		*sqlstatesize=(sqlstatebuffersize)?sqlstatebuffersize-1:0;
+	}
+	charstring::safeCopy(sqlstatebuffer,sqlstatebuffersize,
+					state,*sqlstatesize);
+	if (sqlstatebuffersize) {
+		sqlstatebuffer[*sqlstatesize]='\0';
+	}
+}
+
+// ct-lib hands the sqlstate back as a non-terminated CS_BYTE array with a
+// separate length, in both the client and server message structs.  older
+// servers leave the length at zero
+static void stashSqlState(char *sqlstate, uint32_t sqlstatesize,
+				const CS_BYTE *state, CS_INT statelen) {
+	if (statelen<0) {
+		statelen=0;
+	}
+	if ((uint32_t)statelen>sqlstatesize-1) {
+		statelen=sqlstatesize-1;
+	}
+	for (CS_INT i=0; i<statelen; i++) {
+		sqlstate[i]=(char)state[i];
+	}
+	sqlstate[statelen]='\0';
+}
+
 class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 	friend class sapcursor;
 	public:
@@ -110,6 +146,9 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 						uint32_t *errorsize,
 						int64_t	*errorcode,
 						bool *liveconnection);
+		void		getSqlState(char *sqlstatebuffer,
+						uint32_t sqlstatebuffersize,
+						uint32_t *sqlstatesize);
 
 		CS_CONTEXT	*context;
 		CS_LOCALE	*locale;
@@ -138,6 +177,10 @@ class SQLRSERVER_DLLSPEC sapconnection : public sqlrserverconnection {
 		static	stringbuffer	errorstring;
 		static	int64_t		errorcode;
 		static	bool		liveconnection;
+
+		// ct-lib's sqlstate is 5 characters, plus a terminator we
+		// add ourselves
+		static	char		sqlstate[6];
 
 		static	CS_RETCODE	csMessageCallback(CS_CONTEXT *ctxt,
 						CS_CLIENTMSG *msgp);
@@ -423,6 +466,7 @@ class SQLRSERVER_DLLSPEC sapcursor : public sqlrservercursor {
 stringbuffer	sapconnection::errorstring;
 int64_t		sapconnection::errorcode;
 bool		sapconnection::liveconnection;
+char		sapconnection::sqlstate[6]={'\0'};
 
 
 sapconnection::sapconnection(sqlrservercontroller *cont) :
@@ -3320,6 +3364,7 @@ bool sapcursor::prepareDynamic() {
 	// error rather than one left over from an earlier query
 	sapconn->errorcode=0;
 	sapconn->liveconnection=true;
+	sapconn->sqlstate[0]='\0';
 
 	// drop whatever statement this cursor prepared last
 	discardDynamic();
@@ -3436,6 +3481,7 @@ bool sapcursor::prepareQuery(const char *query, uint32_t size) {
 	// error rather than one left over from an earlier query
 	sapconn->errorcode=0;
 	sapconn->liveconnection=true;
+	sapconn->sqlstate[0]='\0';
 
 	// initialize column count
 	ncols=0;
@@ -4125,6 +4171,7 @@ bool sapcursor::executeQuery(const char *query, uint32_t size) {
 	// that if the re-prepare fails, its error survives to be reported.
 	sapconn->errorcode=0;
 	sapconn->liveconnection=true;
+	sapconn->sqlstate[0]='\0';
 
 	checkRePrepare();
 
@@ -5244,6 +5291,8 @@ CS_RETCODE sapconnection::csMessageCallback(CS_CONTEXT *ctxt,
 	errorcode=msgp->msgnumber;
 
 	errorstring.clear();
+	stashSqlState(sqlstate,sizeof(sqlstate),
+				msgp->sqlstate,msgp->sqlstatelen);
 	errorstring.append("Client Library error: ")->append(msgp->msgstring);
 	errorstring.append(" severity(")->
 		append((int32_t)CS_SEVERITY(msgp->msgnumber))->append(")");
@@ -5290,6 +5339,8 @@ CS_RETCODE sapconnection::clientMessageCallback(CS_CONTEXT *ctxt,
 	errorcode=msgp->msgnumber;
 
 	errorstring.clear();
+	stashSqlState(sqlstate,sizeof(sqlstate),
+				msgp->sqlstate,msgp->sqlstatelen);
 	errorstring.append("Client Library error: ")->append(msgp->msgstring);
 	errorstring.append(" severity(")->
 		append((int32_t)CS_SEVERITY(msgp->msgnumber))->append(")");
@@ -5345,6 +5396,8 @@ CS_RETCODE sapconnection::serverMessageCallback(CS_CONTEXT *ctxt,
 	errorcode=msgp->msgnumber;
 
 	errorstring.clear();
+	stashSqlState(sqlstate,sizeof(sqlstate),
+				msgp->sqlstate,msgp->sqlstatelen);
 	errorstring.append("Server message: ")->append(msgp->text);
 	errorstring.append(" severity(")->
 		append((int32_t)CS_SEVERITY(msgp->msgnumber))->append(")");
@@ -5394,6 +5447,15 @@ void sapconnection::getError(char *errorbuffer,
 	}
 	*liveconnection=this->liveconnection;
 	*errorcode=this->errorcode;
+}
+
+void sapconnection::getSqlState(char *sqlstatebuffer,
+				uint32_t sqlstatebuffersize,
+				uint32_t *sqlstatesize) {
+
+	// the message callbacks stash it, the same way they stash the error
+	// text - the cursor inherits it through the base class
+	copySqlState(sqlstate,sqlstatebuffer,sqlstatebuffersize,sqlstatesize);
 }
 
 extern "C" {

@@ -1252,6 +1252,16 @@ JNIEXPORT jlong JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_errorNumber
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    errorSqlState
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_errorSqlState
+  (JNIEnv *env, jobject self) {
+	return curNewStringUTF(env,getSqlrCursor(env,self)->errorSqlState());
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getNullsAsEmptyStrings
  * Signature: ()V
  */

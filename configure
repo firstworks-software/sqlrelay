@@ -28025,6 +28025,45 @@ LIBS="$SAVELIBS"
 LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH
 
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if PostgreSQL has PQresultErrorField" >&5
+printf %s "checking if PostgreSQL has PQresultErrorField... " >&6; }
+
+SAVECPPFLAGS="$CPPFLAGS"
+SAVELIBS="$LIBS"
+SAVE_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+CPPFLAGS="$POSTGRESQLINCLUDES"
+LIBS="$POSTGRESQLLIBS $SOCKETLIBS"
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$POSTGRESQLLIBSPATH"
+export LD_LIBRARY_PATH
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <libpq-fe.h>
+#include <stdlib.h>
+int
+main (void)
+{
+PQresultErrorField(0,0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; };
+printf "%s\n" "#define HAVE_POSTGRESQL_PQRESULTERRORFIELD 1" >>confdefs.h
+
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+CPPFLAGS="$SAVECPPFLAGS"
+LIBS="$SAVELIBS"
+LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
 		if ( test -n "$ENABLE_POSTGRESQL8API" )
 		then
 			{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if PostgreSQL has PQprepare" >&5
@@ -37890,6 +37929,49 @@ then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; };
 printf "%s\n" "#define HAVE_FB_INTERPRET 1" >>confdefs.h
+
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+CPPFLAGS="$SAVECPPFLAGS"
+LIBS="$SAVELIBS"
+LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
+	fi
+
+			if ( test -n "$FIREBIRDLIBS" )
+	then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for fb_sqlstate" >&5
+printf %s "checking for fb_sqlstate... " >&6; }
+
+SAVECPPFLAGS="$CPPFLAGS"
+SAVELIBS="$LIBS"
+SAVE_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+CPPFLAGS="$FIREBIRDSTATIC $FIREBIRDINCLUDES"
+LIBS="$FIREBIRDLIBS $SOCKETLIBS"
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ibase.h>
+#include <stdlib.h>
+int
+main (void)
+{
+char s[6]; const ISC_STATUS *p=NULL; fb_sqlstate(s,p);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; };
+printf "%s\n" "#define HAVE_FB_SQLSTATE 1" >>confdefs.h
 
 else $as_nop
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5

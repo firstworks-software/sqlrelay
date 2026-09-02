@@ -553,6 +553,14 @@ JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_errorMessage
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRCursor
+ * Method:    errorSqlState
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_firstworks_sqlrelay_SQLRCursor_errorSqlState
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRCursor
  * Method:    getNullsAsEmptyStrings
  * Signature: ()V
  */
