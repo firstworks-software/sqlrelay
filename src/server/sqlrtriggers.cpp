@@ -223,8 +223,28 @@ bool sqlrtriggers::runAfterExecuteTriggers(sqlrserverconnection *sqlrcon,
 
 void sqlrtriggers::endTransaction(bool commit) {
 
-	// before/after-execute lists...
-	sqlrservermodules::endTransaction(commit);
+	// before-execute list...
+	// skip plugins shared with any later list (eg. when="all" triggers)
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
+						node; node=node->getNext()) {
+		if (alist.find(node->getValue()) ||
+				bplist.find(node->getValue()) ||
+				aplist.find(node->getValue())) {
+			continue;
+		}
+		node->getValue()->m->endTransaction(commit);
+	}
+
+	// after-execute list...
+	// skip plugins shared with any later list (eg. when="all" triggers)
+	for (listnode< sqlrmoduleplugin * > *node=alist.getFirst();
+						node; node=node->getNext()) {
+		if (bplist.find(node->getValue()) ||
+				aplist.find(node->getValue())) {
+			continue;
+		}
+		node->getValue()->m->endTransaction(commit);
+	}
 
 	// before-prepare list...
 	// skip plugins shared with aplist (eg. when="bothprepare" triggers)
@@ -245,8 +265,28 @@ void sqlrtriggers::endTransaction(bool commit) {
 
 void sqlrtriggers::endSession() {
 
-	// before/after-execute lists...
-	sqlrservermodules::endSession();
+	// before-execute list...
+	// skip plugins shared with any later list (eg. when="all" triggers)
+	for (listnode< sqlrmoduleplugin * > *node=blist.getFirst();
+						node; node=node->getNext()) {
+		if (alist.find(node->getValue()) ||
+				bplist.find(node->getValue()) ||
+				aplist.find(node->getValue())) {
+			continue;
+		}
+		node->getValue()->m->endSession();
+	}
+
+	// after-execute list...
+	// skip plugins shared with any later list (eg. when="all" triggers)
+	for (listnode< sqlrmoduleplugin * > *node=alist.getFirst();
+						node; node=node->getNext()) {
+		if (bplist.find(node->getValue()) ||
+				aplist.find(node->getValue())) {
+			continue;
+		}
+		node->getValue()->m->endSession();
+	}
 
 	// before-prepare list...
 	// skip plugins shared with aplist (eg. when="bothprepare" triggers)

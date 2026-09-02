@@ -1426,6 +1426,13 @@
 		pool, for consistency with the columntypescached/rowssent fix
 		above; another latent asymmetry with no known live reproducer,
 		found by inspection
+	fixed sqlrtriggers' endSession()/endTransaction() calling a
+		trigger twice when it spanned both a prepare phase and an
+		execute phase (eg. when="all") - the plugin list only
+		deduped within each phase pair (before/after-execute,
+		before/after-prepare), not across them; both methods now
+		walk all four lists with a full cross-dedup so each trigger
+		fires exactly once
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
