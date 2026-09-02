@@ -6063,7 +6063,7 @@ class SQLRSERVER_DLLSPEC sqlrservercursor : public sqlrserverbase {
 		/** Sets the regular expression pattern used to identify a
 		 *  create-temp-table clause to "createtemp".
 		 *
-		 *  Defaults to "(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+" */
+		 *  Defaults to "(create|CREATE|declare|DECLARE)[ 	\\r\\n]+((global|GLOBAL|local|LOCAL)?[ 	\\r\\n]+)?(temp|TEMP|temporary|TEMPORARY)?[ 	\\r\\n]+(table|TABLE)[ 	\\r\\n]+((if|IF)[ 	\\r\\n]+(not|NOT)[ 	\\r\\n]+(exists|EXISTS)[ 	\\r\\n]+)?" */
 		void	setCreateTempTablePattern(const char *createtemp);
 
 		/** Skips past any leading whitespace and comments and then
