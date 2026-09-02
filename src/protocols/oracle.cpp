@@ -11802,6 +11802,21 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	uint32_t	colcount=cont->colCount(cursor);
 	cacheColumnDefinitions(cursor,colcount);
 
+	// the column count is written below as a single byte, and captures
+	// show no evidence it's wider than that on this path - widening it
+	// would be an unverifiable guess.  reject a cursor with too many
+	// columns to fit rather than let the count wrap and desync the
+	// client's parse of every row that follows.
+	if (colcount>0xff) {
+		if (getDebug()) {
+			debugStart("fetch response header");
+			debugWrite("column count %d exceeds 255, "
+					"can't fit in 1-byte field",colcount);
+			debugEnd();
+		}
+		return sendQueryError(cursor);
+	}
+
 	// the row count in the legacy fetch request still isn't decoded - where
 	// it sits in the request body is unidentified, and finding it would take
 	// a live capture or the legacy client source.  until then, send every
@@ -11815,8 +11830,19 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	do {
 
 		// stop if there's no room left in the packet for another row
-		// and the trailer
-		if (reqpacket.getSize()+trailerreserve>=sdu) {
+		// and the trailer.  this runs before the row is fetched and
+		// written, so the rowsfetched guard matters mainly for a small
+		// negotiated sdu, where the header plus the trailer reserve
+		// alone would leave no room to even attempt a first row, and
+		// the response would claim zero rows without having fetched
+		// one.
+		// note that this only gates whether to start a row - nothing
+		// rechecks after putRow(), so a single large lob/long row can
+		// still push the packet past the sdu.  the fetch loops above
+		// (query3 and the newer fetch path) handle that by truncating
+		// the oversized row back out and stashing it in pendingrow to
+		// send first on the next round trip
+		if (rowsfetched && reqpacket.getSize()+trailerreserve>=sdu) {
 			debugWrite("packet full");
 			break;
 		}
@@ -12058,7 +12084,11 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	} else {
 
-		// end of result set
+		// end of result set.  the bound check above is guarded by
+		// rowsfetched, so the loop can't break before attempting a
+		// fetch - getting here means fetchRow() really did come back
+		// empty, and no flag is needed to tell that apart from a
+		// packet that filled up first
 		debugWrite("no rows fetched");
 		putError("ORA-01403: no data found");
 	}
@@ -12120,19 +12150,23 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 void sqlrprotocol_oracle::putColumnDefinitions(sqlrservercursor *cursor,
 							uint32_t colcount) {
 
-	byte_t	sizetotal=0;
+	uint32_t	sizetotal=0;
 	for (uint32_t i=0; i<colcount; i++) {
 		sizetotal+=cont->getColumnSize(cursor,i);
 	}
 	// unexplained.  see "Oracle Wire Protocol - Column Definitions"
 	uint32_t	constant=COLUMN_DEFINITIONS_CONSTANT;
 
-	write(&reqpacket,sizetotal);
+	// the size total field is one byte on the wire (per capture); clamp
+	// here rather than let a wide row's total silently wrap
+	byte_t	sizetotalonwire=(sizetotal>0xff)?0xff:sizetotal;
+
+	write(&reqpacket,sizetotalonwire);
 	writeBE(&reqpacket,colcount);
 	writeBE(&reqpacket,constant);
 
 	debugStart("column definitions header");
-	debugWrite("size total: %d",sizetotal);
+	debugWrite("size total: %d (true sum %d)",sizetotalonwire,sizetotal);
 	debugWrite("column count: %d",colcount);
 	debugWrite("constant: %d",constant);
 	debugEnd();

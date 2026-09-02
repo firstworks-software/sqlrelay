@@ -1559,6 +1559,15 @@
 		dropTempTable(); gated behind debug mode since a failed
 		truncate isn't always a bug (the table may already be
 		gone, a rollback may have undone the create, etc.)
+	fixed the oracle protocol module's legacy (pre-query3) fetch response
+		path rejecting a cursor with more than 255 columns instead of
+		silently truncating the wire column count and desyncing the
+		client's parse of every row that follows; also fixed
+		putColumnDefinitions()'s column-size total wrapping instead of
+		clamping for a wide row, and the packet-full check running
+		before the very first row was even attempted, which could
+		report a fetch as empty on a small negotiated sdu without
+		trying to fetch anything
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
