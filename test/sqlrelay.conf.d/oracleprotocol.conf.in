@@ -1,10 +1,17 @@
 <?xml version="1.0"?>
 <instances>
 
-	<!-- serverversion="11.2" is required here.  OCI 23.26, in the
-	     portable encoding, reads the 11.2 summary-object shape and
-	     nothing else, so at the module's 12.1 default the OCI client
-	     the test uses drops the connection outright (ORA-03113). -->
+	<!-- These instances are pinned at serverversion="11.2".
+	     OCI 23.26, in the portable encoding, reads only the 11.2
+	     summary-object shape.  At the module's 12.1 default, the OCI
+	     client this test uses cannot even log in; it gets ORA-03113.
+	     That choice has a direct cost: no thin-mode Oracle driver
+	     - python-oracledb, node-oracledb - can connect to any of
+	     these instances.  A thin-mode client does not fail cleanly
+	     against serverversion="11.2".  It hangs forever at login
+	     instead, with no error.  See the Server Version section of
+	     doc/admin/configguide.wt for the full trade-off across every
+	     client tested against this module. -->
 	<instance id="oracleprotocol" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT1@" serverversion="11.2" sid="ora1"/>
