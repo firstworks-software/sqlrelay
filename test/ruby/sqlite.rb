@@ -1548,6 +1548,17 @@ assertFalse(cur.sendQuery("create table testtable"))
 assertFalse(cur.sendQuery("create table testtable"))
 print "\n"
 
+# error sqlstate
+print "ERROR SQLSTATE: \n"
+cur.sendQuery("drop table testtable")
+assertTrue(cur.sendQuery("create table testtable (col1 int)"))
+assertEqual(cur.errorSqlState(),"")
+assertFalse(cur.sendQuery("create table testtable (col1 int)"))
+assertEqual(cur.errorSqlState(),"")
+assertTrue(cur.sendQuery("drop table testtable"))
+assertEqual(cur.errorSqlState(),"")
+print "\n"
+
 reportTestStatus()
 
 exit($status)

@@ -1805,6 +1805,18 @@ def main():
 	output()
 
 
+	# error sqlstate
+	output("ERROR SQLSTATE: ")
+	cur.sendQuery("drop table testtable")
+	assertTrue(cur.sendQuery("create table testtable (col1 int)"))
+	assertEquals(cur.errorSqlState(),"")
+	assertFalse(cur.sendQuery("create table testtable (col1 int)"))
+	assertEquals(cur.errorSqlState(),"42P07")
+	assertTrue(cur.sendQuery("drop table testtable"))
+	assertEquals(cur.errorSqlState(),"")
+	output()
+
+
 	reportTestStatus()
 	sys.exit(asserts.status)
 

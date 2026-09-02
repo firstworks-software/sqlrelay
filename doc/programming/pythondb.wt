@@ -141,6 +141,16 @@ directly to the database.
 If your call to execute() raises an exception, the query failed.
 You can find out why by catching the exception.
 
+The exception also carries a sqlstate attribute with the query's
+SQLSTATE. Python's DB-API has no standard slot for this, so it's attached
+to the exception instance, the same way psycopg2 does it. A SQLSTATE is
+a five-character code that classifies an error the same way no matter
+what language the server runs in or which backend database is behind
+it, unlike the exception's text. !PostgreSQL, !MySQL/MariaDB, ODBC, DB2,
+Informix, Firebird, and SAP/Sybase can supply a SQLSTATE. Oracle,
+SQLite, and !FreeTDS/native TDS can't. When the backend has none to
+give, sqlstate is an empty string.
+
 {{{#!blockquote
 {{{#!code
 @parts/pythondb-errors.py@

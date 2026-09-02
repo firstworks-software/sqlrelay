@@ -8685,6 +8685,29 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// error sqlstate
+	stdoutput.printf("ERROR SQLSTATE: \n");
+	// the invalid queries above left postgresql's transaction aborted,
+	// and every statement in an aborted transaction fails with 25P02, so
+	// end that transaction before this section runs
+	SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"drop table if exists testtable",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable (col1 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	assertSqlStateStmt(stmt,"00000");
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"create table testtable (col1 int)",SQL_NTS);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
+	assertSqlStateStmt(stmt,"42P07");
+	// postgresql's ddl is transactional, so rolling the aborted
+	// transaction back undoes the create above too - nothing is left
+	SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);
+	stdoutput.printf("\n");
+
+
 	// cleanup and disconnect
 	stdoutput.printf("CLEANUP AND DISCONNECT: \n");
 	SQLEndTran(SQL_HANDLE_DBC,dbc,SQL_ROLLBACK);

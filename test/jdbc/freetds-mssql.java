@@ -3248,6 +3248,32 @@ class freetds_mssql extends sqlrtest {
 		}
 		System.out.println();
 
+		// error sqlstate
+		//
+		// an undefined table rather than a duplicate one, because
+		// this connection has autocommit off and the backends here
+		// each mishandle ddl inside a transaction in their own way -
+		// sap ase refuses create table outright, and others roll the
+		// create back when the duplicate-create error aborts the
+		// transaction.  any genuine backend error proves the point,
+		// and a failing select is safe on all of them
+		System.out.println("ERROR SQLSTATE:");
+		try {
+			stmt.executeQuery("select * from nonexistenttable");
+			assertTrue(false);
+		} catch (SQLException e) {
+			// this backend supplies no sqlstate, and the sql
+			// relay driver reports that as null, the way
+			// SQLException.getSQLState() is specified.  a native
+			// driver maps its own vendor codes instead
+			if (issqlrelay) {
+				assertEquals(e.getSQLState(),(String)null);
+			} else {
+				assertTrue(true);
+			}
+		}
+		System.out.println();
+
 		stmt.close();
 		con.close();
 

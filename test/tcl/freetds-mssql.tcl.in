@@ -1817,6 +1817,17 @@ assertTrue [catch {$cur sendQuery "create table testtable"}]
 assertTrue [catch {$cur sendQuery "create table testtable"}]
 puts ""
 
+# error sqlstate
+puts "ERROR SQLSTATE: "
+catch {$cur sendQuery "drop table testtable"}
+assertTrue [$cur sendQuery "create table testtable (col1 int)"]
+assertEqual [$cur errorSqlState] ""
+assertTrue [catch {$cur sendQuery "create table testtable (col1 int)"}]
+assertEqual [$cur errorSqlState] ""
+assertTrue [$cur sendQuery "drop table testtable"]
+assertEqual [$cur errorSqlState] ""
+puts ""
+
 reportTestStatus
 
 exit $status

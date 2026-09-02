@@ -1822,6 +1822,17 @@ main() ->
     assertFalse(sqlrelay:sendQuery("create table testtable")),
     io:format("~n"),
 
+    %% ERROR SQLSTATE
+    io:format("ERROR SQLSTATE: ~n"),
+    sqlrelay:sendQuery("drop table testtable"),
+    assertTrue(sqlrelay:sendQuery("create table testtable (col1 int)")),
+    assertEqualsString(sqlrelay:errorSqlState(), ""),
+    assertFalse(sqlrelay:sendQuery("create table testtable (col1 int)")),
+    assertEqualsString(sqlrelay:errorSqlState(), ""),
+    assertTrue(sqlrelay:sendQuery("drop table testtable")),
+    assertEqualsString(sqlrelay:errorSqlState(), ""),
+    io:format("~n"),
+
     reportTestStatus(),
 
     sqlrelay:cursorFree(),

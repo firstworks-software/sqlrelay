@@ -167,6 +167,16 @@ directly to the database.</p>
 <p>If your call to execute() raises an exception, the query failed.
 You can find out why by catching the exception.</p>
 
+<p>The exception also carries a sqlstate attribute with the query's
+SQLSTATE. Python's DB-API has no standard slot for this, so it's attached
+to the exception instance, the same way psycopg2 does it. A SQLSTATE is
+a five-character code that classifies an error the same way no matter
+what language the server runs in or which backend database is behind
+it, unlike the exception's text. PostgreSQL, MySQL/MariaDB, ODBC, DB2,
+Informix, Firebird, and SAP/Sybase can supply a SQLSTATE. Oracle,
+SQLite, and FreeTDS/native TDS can't. When the backend has none to
+give, sqlstate is an empty string.</p>
+
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
@@ -181,6 +191,7 @@ cur<font color="#990000">=</font>con<font color="#990000">.</font><b><font color
 	cur<font color="#990000">.</font><b><font color="#000000">execute</font></b><font color="#990000">(</font><font color="#FF0000">'select * from my_nonexistant_table'</font><font color="#990000">)</font>
 <font color="#008080">except</font> PySQLRDB<font color="#990000">.</font>DatabaseError<font color="#990000">,</font> e<font color="#990000">:</font>
 	print e
+	<font color="#008080">print</font> e<font color="#990000">.</font>sqlstate
 </tt></pre>
 
 </blockquote>

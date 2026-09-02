@@ -2,7 +2,7 @@ top_builddir = ../..
 
 include ../../config.mk
 
-all: local oracle.exe krb.exe tls.exe unicode.exe
+all: local oracle.exe postgresql.exe krb.exe tls.exe unicode.exe
 
 clean:
 	$(RM) *.exe *.dll *.dll.config *.pdb
@@ -13,6 +13,9 @@ local:
 
 oracle.exe: sqlrtest.cs oracle.cs
 	$(CSC) $(CSCFLAGS) /out:oracle.exe sqlrtest.cs oracle.cs /reference:SQLRClient.dll
+
+postgresql.exe: sqlrtest.cs postgresql.cs
+	$(CSC) $(CSCFLAGS) /out:postgresql.exe sqlrtest.cs postgresql.cs /reference:SQLRClient.dll
 
 krb.exe: sqlrtest.cs krb.cs
 	$(CSC) $(CSCFLAGS) /out:krb.exe sqlrtest.cs krb.cs /reference:SQLRClient.dll

@@ -304,6 +304,8 @@ directly to the database.</p>
 
 <p>If your calls to ExecuteNonQuery, ExecuteScalar or ExecuteReader fail, you can catch the error an exception.</p>
 
+<p>SQL Relay throws a SQLRelayException, which has a SQLState property alongside the usual Message. It's named to match System.Data.Odbc.OdbcException.SQLState. A SQLSTATE is a five-character code that classifies an error the same way no matter what language the server runs in or which backend database is behind it, unlike the error message or the error number. PostgreSQL, MySQL/MariaDB, ODBC, DB2, Informix, Firebird, and SAP/Sybase can supply a SQLSTATE. Oracle, SQLite, and FreeTDS/native TDS can't. When the backend has none to give, SQLState is an empty string, the same value it holds when the exception came from something other than a database error.</p>
+
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
@@ -329,9 +331,10 @@ http://www.gnu.org/software/src-highlite -->
 			<font color="#FF0000">{</font>
 				sqlrcom<font color="#990000">.</font><b><font color="#000000">ExecuteNonQuery</font></b><font color="#990000">();</font>
 			<font color="#FF0000">}</font>
-			<b><font color="#0000FF">catch</font></b> <font color="#990000">(</font><font color="#008080">Exception</font> ex<font color="#990000">)</font>
+			<b><font color="#0000FF">catch</font></b> <font color="#990000">(</font><font color="#008080">SQLRelayException</font> ex<font color="#990000">)</font>
 			<font color="#FF0000">{</font>
 				Console<font color="#990000">.</font><b><font color="#000000">WriteLine</font></b><font color="#990000">(</font>ex<font color="#990000">.</font>Message<font color="#990000">);</font>
+				Console<font color="#990000">.</font><b><font color="#000000">WriteLine</font></b><font color="#990000">(</font>ex<font color="#990000">.</font>SQLState<font color="#990000">);</font>
 			<font color="#FF0000">}</font>
 		<font color="#FF0000">}</font>
 	<font color="#FF0000">}</font>

@@ -15,6 +15,7 @@ public class myclass {
                         con.close();
                 } catch (SQLException ex) {
                         System.out.println("Error: "+ex.getMessage());
+                        System.out.println("SQLState: "+ex.getSQLState());
                 }
         }
 }

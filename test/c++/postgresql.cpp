@@ -1858,6 +1858,17 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("create table testtable"));
 	stdoutput.printf("\n");
 
+	// error sqlstate
+	stdoutput.printf("ERROR SQLSTATE: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery("create table testtable (col1 int)"));
+	assertEquals(cur->errorSqlState(),"");
+	assertFalse(cur->sendQuery("create table testtable (col1 int)"));
+	assertEquals(cur->errorSqlState(),"42P07");
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertEquals(cur->errorSqlState(),"");
+	stdoutput.printf("\n");
+
 	reportTestStatus();
 
 	return status;

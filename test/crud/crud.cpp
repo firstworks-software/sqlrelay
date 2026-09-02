@@ -371,6 +371,16 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// error sqlstate
+	stdoutput.printf("ERROR SQLSTATE: \n");
+	assertFalse(cur->sendQuery("create table testtable "
+					"(testtable_id int primary key)"));
+	assertEquals(cur->errorSqlState(),"");
+	assertTrue(cur->sendQuery("select count(*) from testtable"));
+	assertEquals(cur->errorSqlState(),"");
+	stdoutput.printf("\n");
+
+
 	// drop table and sequence
 	cur->sendQuery("drop table testtable");
 	cur->sendQuery("drop sequence testtable_ids");

@@ -1863,6 +1863,17 @@ assertFalse(cur.sendQuery("create table testtable"));
 assertFalse(cur.sendQuery("create table testtable"));
 console.log("");
 
+// error sqlstate
+console.log("ERROR SQLSTATE: ");
+cur.sendQuery("drop table testtable");
+assertTrue(cur.sendQuery("create table testtable (col1 int)"));
+assertEqStr(cur.errorSqlState(),"");
+assertFalse(cur.sendQuery("create table testtable (col1 int)"));
+assertEqStr(cur.errorSqlState(),"42P07");
+assertTrue(cur.sendQuery("drop table testtable"));
+assertEqStr(cur.errorSqlState(),"");
+console.log("");
+
 reportTestStatus();
 
 process.exit(getStatus());

@@ -18,9 +18,10 @@ namespace SQLRExamples
 			{
 				sqlrcom.ExecuteNonQuery();
 			}
-			catch (Exception ex)
+			catch (SQLRelayException ex)
 			{
 				Console.WriteLine(ex.Message);
+				Console.WriteLine(ex.SQLState);
 			}
 		}
 	}

@@ -6,4 +6,5 @@ $cur=SQLRelay::Cursor->new($con);
 
 if (!$cur->sendQuery("select * from my_nonexistant_table")) {
         printf("%s\n",$cur->errorMessage());
+        printf("%s\n",$cur->errorSqlState());
 }

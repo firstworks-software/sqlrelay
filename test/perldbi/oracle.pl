@@ -1010,6 +1010,20 @@ assertEqual($dbh->do("create table testtable"),0);
 print("\n");
 
 
+# error sqlstate
+print("ERROR SQLSTATE: \n");
+$dbh->do("drop table testtable");
+assertEqualString($dbh->do("create table testtable (col1 int)"),"0E0");
+assertEqualString($dbh->state,"");
+assertEqual($dbh->do("create table testtable (col1 int)"),0);
+# oracle supplies no sqlstate, so the driver hands DBI an empty one and
+# DBI's own state() falls back to S1000, its general-error state
+assertEqualString($dbh->state,"S1000");
+assertEqualString($dbh->do("drop table testtable"),"0E0");
+assertEqualString($dbh->state,"");
+print("\n");
+
+
 $dbh->disconnect();
 
 reportTestStatus();

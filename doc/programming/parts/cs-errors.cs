@@ -14,6 +14,7 @@ namespace SQLRExamples
         		if (cur.sendQuery("select * from my_nonexistant_table") != true)
 			{
                 		Console.WriteLine(cur.errorMessage());
+                		Console.WriteLine(cur.errorSqlState());
         		}
 		}
 	}

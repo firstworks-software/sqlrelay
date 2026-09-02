@@ -954,6 +954,24 @@ if (PHP_VERSION_ID < 70000) {
 
 	echo("\n");
 
+	# error sqlstate
+
+
+	echo("ERROR SQLSTATE: \n");
+	$dbh->exec("drop table testtable");
+	assertEqual($dbh->exec("create table testtable (col1 int)"),0);
+	assertEqual($dbh->errorCode(),"00000");
+	# oracle supplies no sqlstate, so the driver falls back to HY000,
+	# PDO's own literal for a driver error with no sqlstate
+	assertEqual($dbh->exec("create table testtable (col1 int)"),0);
+	assertEqual($dbh->errorCode(),"HY000");
+	$info=$dbh->errorInfo();
+	assertEqual($info[0],"HY000");
+	assertEqual($dbh->exec("drop table testtable"),0);
+	assertEqual($dbh->errorCode(),"00000");
+	echo("\n");
+
+
 	try {
 		$dbh->exec("drop table testtable");
 	} catch (Exception $e) {

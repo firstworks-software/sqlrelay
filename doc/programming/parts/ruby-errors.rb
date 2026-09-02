@@ -5,5 +5,6 @@ cur=SQLRCursor.new(con)
 
 if !cur.sendQuery("select * from my_nonexistant_table") then
         puts cur.errorMessage()
+        puts cur.errorSqlState()
         puts "\n"
 end

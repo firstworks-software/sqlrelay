@@ -989,6 +989,27 @@ namespace SQLRClientTest
 
             // invalid queries
 
+            // error sqlstate
+            Console.WriteLine("ERROR SQLSTATE:");
+            sqlrcom.CommandText = "create table testtable (col1 int)";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            sqlrcom.CommandText = "create table testtable (col1 int)";
+            try
+            {
+                sqlrcom.ExecuteNonQuery();
+                assertTrue(false);
+            }
+            catch (SQLRelayException ex)
+            {
+                // oracle supplies no sqlstate, and the driver reports
+                // that as an empty string rather than as null
+                assertEquals(ex.SQLState, "");
+            }
+            sqlrcom.CommandText = "drop table testtable";
+            assertEquals(ExecuteNonQuery(sqlrcom), 0);
+            Console.WriteLine("\n");
+
+
             sqlrcon.Close();
 
             Environment.Exit(status);

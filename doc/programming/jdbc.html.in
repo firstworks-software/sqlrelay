@@ -284,6 +284,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If a query fails, JDBC throws a SQLException.  You can catch it and call getMessage() to find out why the query failed.</p>
 
+<p>You can also call getSQLState() on the same exception to get a SQLSTATE. A SQLSTATE is a five-character code that classifies an error the same way no matter what language the server runs in or which backend database is behind it, unlike the error message or the error number. PostgreSQL, MySQL/MariaDB, ODBC, DB2, Informix, Firebird, and SAP/Sybase can supply a SQLSTATE. Oracle, SQLite, and FreeTDS/native TDS can't. This follows the standard JDBC idiom: getSQLState() returns null, not an empty string, when there is none to give.</p>
+
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
@@ -306,6 +308,7 @@ http://www.gnu.org/software/src-highlite -->
                         con<font color="#990000">.</font><b><font color="#000000">close</font></b><font color="#990000">();</font>
                 <font color="#FF0000">}</font> <b><font color="#0000FF">catch</font></b> <font color="#990000">(</font><font color="#008080">SQLException</font> ex<font color="#990000">)</font> <font color="#FF0000">{</font>
                         System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"Error: "</font><font color="#990000">+</font>ex<font color="#990000">.</font><b><font color="#000000">getMessage</font></b><font color="#990000">());</font>
+                        System<font color="#990000">.</font>out<font color="#990000">.</font><b><font color="#000000">println</font></b><font color="#990000">(</font><font color="#FF0000">"SQLState: "</font><font color="#990000">+</font>ex<font color="#990000">.</font><b><font color="#000000">getSQLState</font></b><font color="#990000">());</font>
                 <font color="#FF0000">}</font>
         <font color="#FF0000">}</font>
 <font color="#FF0000">}</font>

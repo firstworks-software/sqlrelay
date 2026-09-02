@@ -9,6 +9,7 @@ public class MyClass {
 
         	if (!cur.sendQuery("select * from my_nonexistant_table")) {
                 	System.out.println(cur.errorMessage());
+                	System.out.println(cur.errorSqlState());
         	}
 
 		cur.delete();

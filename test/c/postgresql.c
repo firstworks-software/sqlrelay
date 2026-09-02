@@ -1922,6 +1922,19 @@ int main(int argc, char **argv) {
 	assertFalse(sqlrcur_sendQuery(cur,"create table testtable"));
 	printf("\n");
 
+	// error sqlstate
+	printf("ERROR SQLSTATE: \n");
+	sqlrcur_sendQuery(cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery(cur,
+		"create table testtable (col1 int)"));
+	assertEqStr(sqlrcur_errorSqlState(cur),"");
+	assertFalse(sqlrcur_sendQuery(cur,
+		"create table testtable (col1 int)"));
+	assertEqStr(sqlrcur_errorSqlState(cur),"42P07");
+	assertTrue(sqlrcur_sendQuery(cur,"drop table testtable"));
+	assertEqStr(sqlrcur_errorSqlState(cur),"");
+	printf("\n");
+
 	reportTestStatus();
 
 	return status;

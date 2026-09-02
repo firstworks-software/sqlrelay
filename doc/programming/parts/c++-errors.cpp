@@ -8,6 +8,7 @@ main() {
 
         if (!cur->sendQuery("select * from my_nonexistant_table")) {
                 cout << cur->errorMessage() << endl;
+                cout << cur->errorSqlState() << endl;
         }
 
         delete cur;

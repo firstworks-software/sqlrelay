@@ -8,6 +8,7 @@ main() {
 
         if (!sqlrcur_sendQuery(cur,"select * from my_nonexistant_table")) {
                 printf("%s\n",sqlrcur_errorMessage(cur));
+                printf("%s\n",sqlrcur_errorSqlState(cur));
         }
 
         sqlrcur_free(cur);

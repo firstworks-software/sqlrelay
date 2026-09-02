@@ -2963,6 +2963,25 @@ class postgresql extends sqlrtest {
 		}
 		System.out.println();
 
+		// error sqlstate
+		System.out.println("ERROR SQLSTATE:");
+		// the invalid queries above left postgresql's transaction
+		// aborted, and every statement in an aborted transaction
+		// fails with 25P02, so end that transaction first
+		con.rollback();
+		stmt.executeUpdate("drop table if exists testtable");
+		stmt.executeUpdate("create table testtable (col1 int)");
+		try {
+			stmt.executeUpdate("create table testtable (col1 int)");
+			assertTrue(false);
+		} catch (SQLException e) {
+			assertEquals(e.getSQLState(),"42P07");
+		}
+		// postgresql's ddl is transactional, so rolling the aborted
+		// transaction back undoes the create above too
+		con.rollback();
+		System.out.println();
+
 		stmt.close();
 		con.close();
 

@@ -1574,6 +1574,17 @@ namespace SQLRClientTest
             assertFalse(cur.sendQuery("create table testtable"));
             Console.WriteLine("");
 
+            // error sqlstate
+            Console.WriteLine("ERROR SQLSTATE: ");
+            cur.sendQuery("drop table testtable");
+            assertTrue(cur.sendQuery("create table testtable (col1 int)"));
+            assertEquals(cur.errorSqlState(), "");
+            assertFalse(cur.sendQuery("create table testtable (col1 int)"));
+            assertEquals(cur.errorSqlState(), "");
+            assertTrue(cur.sendQuery("drop table testtable"));
+            assertEquals(cur.errorSqlState(), "");
+            Console.WriteLine("");
+
             reportTestStatus();
 
             return status;

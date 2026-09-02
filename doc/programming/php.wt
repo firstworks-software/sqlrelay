@@ -208,8 +208,17 @@ directly to the database.
 [=#errors]
 == Catching Errors ==
 
-If your call to sqlrcur_sendQuery() or sqlrcur_sendFileQuery() returns a 0, the 
+If your call to sqlrcur_sendQuery() or sqlrcur_sendFileQuery() returns a 0, the
 query failed.  You can find out why by calling sqlrcur_errorMessage().
+
+You can also call sqlrcur_errorSqlState() to get the query's SQLSTATE. A
+SQLSTATE is a five-character code that classifies an error the same way no
+matter what language the server runs in or which backend database is
+behind it, unlike the error message or the error number. !PostgreSQL,
+!MySQL/MariaDB, ODBC, DB2, Informix, Firebird, and SAP/Sybase can supply a
+SQLSTATE. Oracle, SQLite, and !FreeTDS/native TDS can't. When the backend
+has none to give, sqlrcur_errorSqlState() returns an empty string, the
+same value it returns when there was no error at all.
 
 {{{#!blockquote
 {{{#!code

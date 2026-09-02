@@ -52,6 +52,7 @@
     <li><a href="#sqlrclientprotocol">SQLRClient Protocol</a></li>
     <ul>
       <li><a href="#sqlrclientconfiguration">Basic Configuration</a></li>
+      <li><a href="#sqlrclientversions">Protocol Versions</a></li>
       <li><a href="#sqlrclientlistener">Listener Options</a></li>
       <li><a href="#sqlrclientauth">Authentication/Encryption Options</a></li>
       <ul>
@@ -1793,6 +1794,16 @@ http://www.gnu.org/software/src-highlite -->
 
 </blockquote>
 <p>Since this instance speaks the SQLRClient client-server protocol, any client that wishes to use it must also speak the SQLRClient client-server protocol.  This means that software written using the SQL Relay native API, or written using a database abstraction layer which loads a driver for SQL Relay can access this instance.  However, it also means that client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
+<a name="sqlrclientversions"/><h3>Protocol Versions</h3>
+
+<p>The SQLRClient protocol is versioned.  A client announces the version it speaks when it connects, and a server accepts any version between a minimum and a maximum that it understands.  Version 5, which added SQLSTATE to error responses (see <a href="#errortranslation">Error Translation</a> and the <a href="../programming/c++.html#errors">programming guides</a> for what a SQLSTATE is), is the current version.</p>
+
+<p>Backward compatibility only runs one direction.  An older client still works against a newer server, since the server accepts any version it understands.  But a version 5 client is rejected at connect time by a server that predates version 5, with an Unsupported protocol error, because that server was never told how to speak it.  The client cannot detect this in advance and downgrade automatically; there is no negotiation, only a version announcement and an accept-or-reject response.</p>
+
+<p>This means the server side of a link should always be upgraded first.  Upgrading a client ahead of the server it talks to breaks that client's connections outright, rather than falling back to the old behavior.</p>
+
+<p>This has a sharp edge for the <i>router</i> database module (see <a href="#routing">Query and Session Routing</a>): a router instance is itself a SQLRClient client of every instance it routes to.  If a router is upgraded ahead of the instances downstream of it, its connections to those instances fail the same way any other version 5 client's would.  Upgrade the downstream instances before the router that depends on them, not after.</p>
 
 <a name="sqlrclientlistener"/><h3>Listener Options</h3>
 
@@ -7432,7 +7443,9 @@ http://www.gnu.org/software/src-highlite -->
   <li>Oracle error number 942 (ORA-00942: table or view does not exist) is replaced with MySQL error number 1051 (Unknown table)</li>
 </ul>
 
-<br/><br/><a name="error-patterns"/><h3>patterns</h3>
+<p>The renumber module never rewrites the SQLSTATE.  It maps error numbers, and a SQLSTATE isn't one.  To rewrite a SQLSTATE, use the <a href="#error-patterns">patterns</a> module.</p>
+
+<br/><a name="error-patterns"/><h3>patterns</h3>
 
 <p>The <b>patterns</b> module enables you to match the entire error string, or parts of it, against a pattern, and then replace the matching part.</p>
 
@@ -7616,7 +7629,41 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><br/><a name="moduledata"/><h2>Module Data</h2>
+<p>All of the pattern tags shown so far match against the error string.  They never touch the SQLSTATE, which is left alone unless the module is given a separate sqlstate section:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;errortranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;errortranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"^relation \"(.*)\" already exists$"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Table '\1' already exists"</font> <font color="#009900">backrefs</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;sqlstate&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"42P07"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"42S01"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"42P01"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"42S02"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/sqlstate&gt;</font></b>
+			<b><font color="#0000FF">&lt;/errortranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/errortranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, a PostgreSQL duplicate-table error is rephrased the way MySQL phrases it, and PostgreSQL's SQLSTATEs 42P07 (duplicate table) and 42P01 (undefined table) are replaced with MySQL's 42S01 and 42S02.  A client that classifies errors by SQLSTATE then sees a MySQL-shaped error too, not just MySQL-shaped wording.</p>
+
+<p>Pattern tags inside the sqlstate section support the same type, match, from, to, global and backrefs attributes, and the same nesting, as the pattern tags outside of it.  The scope attribute isn't valid there, since a SQLSTATE has no quoted strings to match inside or outside of.</p>
+
+<p>If no sqlstate section is configured, or if the database supplied no SQLSTATE, then the SQLSTATE is passed through untouched.</p>
+
+<br/><a name="moduledata"/><h2>Module Data</h2>
 
 <p>Moduledata modules allow a developer to pass data between modules.  For example, a query translation module could set a value that a result set translation module could later read.</p>
 

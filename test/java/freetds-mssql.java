@@ -2442,6 +2442,17 @@ class freetds_mssql extends sqlrtest {
 		assertFalse(cur.sendQuery("create table testtable"));
 		System.out.println();
 
+		// error sqlstate
+		System.out.println("ERROR SQLSTATE: ");
+		cur.sendQuery("drop table testtable");
+		assertTrue(cur.sendQuery("create table testtable (col1 int)"));
+		assertEquals(cur.errorSqlState(),"");
+		assertFalse(cur.sendQuery("create table testtable (col1 int)"));
+		assertEquals(cur.errorSqlState(),"");
+		assertTrue(cur.sendQuery("drop table testtable"));
+		assertEquals(cur.errorSqlState(),"");
+		System.out.println();
+
 		reportTestStatus();
 
 		System.exit(status);

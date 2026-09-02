@@ -301,6 +301,38 @@ void assertFailureStmt(SQLHSTMT stmt, SQLRETURN erg) {
 	}
 }
 
+// the SQLSTATE from the statement's first diagnostic record.  the ODBC
+// contract is that every diagnostic record carries a five-character
+// SQLSTATE, so a backend that supplies none comes back as HY000 rather than
+// as an empty string, and a statement with no error at all comes back as
+// 00000.  reading it consumes the record, so nothing is printed on failure
+void assertSqlStateStmt(SQLHSTMT stmt, const char *expected) {
+
+	SQLCHAR		sqlstate[6];
+	SQLINTEGER	nativeerror;
+	SQLCHAR		msgtext[1024];
+	SQLSMALLINT	msgtextlen;
+
+	sqlstate[0]='\0';
+	#if (ODBCVER >= 0x0300)
+		SQLGetDiagRec(SQL_HANDLE_STMT,stmt,1,
+				sqlstate,&nativeerror,
+				msgtext,sizeof(msgtext),&msgtextlen);
+	#else
+		SQLError(SQL_NULL_HENV,SQL_NULL_HDBC,stmt,
+				sqlstate,&nativeerror,
+				msgtext,sizeof(msgtext),&msgtextlen);
+	#endif
+
+	if (!charstring::compare((const char *)sqlstate,expected)) {
+		stdoutput.printf("%s ",success);
+	} else {
+		stdoutput.printf("%s\n",failure);
+		stdoutput.printf("\"%s\"!=\"%s\"\n",sqlstate,expected);
+		status=1;
+	}
+}
+
 void reportTestStatus() {
 
 	if (status==0) {

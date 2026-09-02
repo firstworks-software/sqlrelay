@@ -186,6 +186,16 @@ directly to the database.</p>
 <p>If your call to sendQuery() or sendFileQuery() returns a 0, the query failed.
 You can find out why by catching the error and displaying it.</p>
 
+<p>You can also call sqlrelay:errorSqlState() (or
+sqlrelay:connectionErrorSqlState() for a connection-level error) to get
+the query's SQLSTATE. A SQLSTATE is a five-character code that classifies
+an error the same way no matter what language the server runs in or which
+backend database is behind it, unlike the error message or the error
+number. PostgreSQL, MySQL/MariaDB, ODBC, DB2, Informix, Firebird, and
+SAP/Sybase can supply a SQLSTATE. Oracle, SQLite, and FreeTDS/native TDS
+can't. When the backend has none to give, errorSqlState() returns an
+empty string, the same value it returns when there was no error at all.</p>
+
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
@@ -199,7 +209,8 @@ sqlrelay<font color="#990000">:</font><b><font color="#000000">alloc</font></b><
     <font color="#FF0000">{</font>ok<font color="#990000">,</font> _<font color="#FF0000">}</font> <font color="#990000">-&gt;</font>
         ok<font color="#990000">;</font>
     <font color="#FF0000">{</font>error<font color="#990000">,</font> _<font color="#FF0000">}</font> <font color="#990000">-&gt;</font>
-        io<font color="#990000">:</font><b><font color="#000000">format</font></b><font color="#990000">(</font><font color="#FF0000">"~s~n"</font><font color="#990000">,</font> <font color="#990000">[</font>sqlrelay<font color="#990000">:</font><b><font color="#000000">errorMessage</font></b><font color="#990000">()])</font>
+        io<font color="#990000">:</font><b><font color="#000000">format</font></b><font color="#990000">(</font><font color="#FF0000">"~s~n"</font><font color="#990000">,</font> <font color="#990000">[</font>sqlrelay<font color="#990000">:</font><b><font color="#000000">errorMessage</font></b><font color="#990000">()]),</font>
+        io<font color="#990000">:</font><b><font color="#000000">format</font></b><font color="#990000">(</font><font color="#FF0000">"~s~n"</font><font color="#990000">,</font> <font color="#990000">[</font>sqlrelay<font color="#990000">:</font><b><font color="#000000">errorSqlState</font></b><font color="#990000">()])</font>
 end<font color="#990000">.</font>
 </tt></pre>
 

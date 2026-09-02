@@ -187,6 +187,15 @@ directly to the database.</p>
 <p>If your call to sendQuery() or sendFileQuery() returns a 0, the query failed.
 You can find out why by calling errorMessage().</p>
 
+<p>You can also call errorSqlState() to get the query's SQLSTATE. A SQLSTATE
+is a five-character code that classifies an error the same way no matter
+what language the server runs in or which backend database is behind it,
+unlike the error message or the error number. PostgreSQL, MySQL/MariaDB,
+ODBC, DB2, Informix, Firebird, and SAP/Sybase can supply a SQLSTATE. Oracle,
+SQLite, and FreeTDS/native TDS can't. When the backend has none to give,
+errorSqlState() returns an empty string, the same value it returns when
+there was no error at all.</p>
+
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
 by Lorenzo Bettini
@@ -199,6 +208,7 @@ cur<font color="#990000">=</font>SQLRCursor<font color="#990000">.</font><b><fon
 
 <b><font color="#0000FF">if</font></b> <font color="#990000">!</font>cur<font color="#990000">.</font><b><font color="#000000">sendQuery</font></b><font color="#990000">(</font><font color="#FF0000">"select * from my_nonexistant_table"</font><font color="#990000">)</font> then
         <font color="#008080">puts</font> cur<font color="#990000">.</font><b><font color="#000000">errorMessage</font></b><font color="#990000">()</font>
+        <font color="#008080">puts</font> cur<font color="#990000">.</font><b><font color="#000000">errorSqlState</font></b><font color="#990000">()</font>
         puts <font color="#FF0000">"</font><font color="#CC33CC">\n</font><font color="#FF0000">"</font>
 end
 </tt></pre>

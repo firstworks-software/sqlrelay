@@ -5,3 +5,4 @@ cur=PySQLRClient.sqlrcursor(con)
 
 if (!cur.sendQuery('select * from my_nonexistant_table')):
         print cur.errorMessage()
+        print cur.errorSqlState()

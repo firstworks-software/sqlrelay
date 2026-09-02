@@ -107,6 +107,25 @@ def main():
 	print()
 	print()
 
+	# error sqlstate
+	print("ERROR SQLSTATE")
+	try:
+		cur.execute("drop table temptable")
+	except (PySQLRDB.DatabaseError):
+		pass
+	cur.execute("create table temptable (col1 number)")
+	try:
+		cur.execute("create table temptable (col1 number)")
+		raise Exception("the duplicate create table should have failed")
+	except (PySQLRDB.DatabaseError) as de:
+		# oracle supplies no sqlstate, so the driver reports an
+		# empty one
+		print(de.sqlstate)
+		assert de.sqlstate==""
+	cur.execute("drop table temptable")
+	print()
+	print()
+
 	cur.close()
 	con.close()
 	del cur

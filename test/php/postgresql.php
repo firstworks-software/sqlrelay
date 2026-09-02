@@ -1839,6 +1839,19 @@
 	assertFalse(sqlrcur_sendQuery($cur,"create table testtable"));
 	echo("\n");
 
+	# error sqlstate
+	echo("ERROR SQLSTATE: \n");
+	sqlrcur_sendQuery($cur,"drop table testtable");
+	assertTrue(sqlrcur_sendQuery($cur,
+		"create table testtable (col1 int)"));
+	assertEqStr(sqlrcur_errorSqlState($cur),"");
+	assertFalse(sqlrcur_sendQuery($cur,
+		"create table testtable (col1 int)"));
+	assertEqStr(sqlrcur_errorSqlState($cur),"42P07");
+	assertTrue(sqlrcur_sendQuery($cur,"drop table testtable"));
+	assertEqStr(sqlrcur_errorSqlState($cur),"");
+	echo("\n");
+
 	reportTestStatus();
 
 	exit($status);

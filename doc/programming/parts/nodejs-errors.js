@@ -5,4 +5,5 @@ var	cur=new sqlrelay.SQLRCursor(con);
 
 if (!cur.sendQuery("select * from my_nonexistant_table")) {
 	console.log(cur.errorMessage());
+	console.log(cur.errorSqlState());
 }

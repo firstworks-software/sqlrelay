@@ -6,5 +6,6 @@ case sqlrelay:sendQuery("select * from my_table") of
     {ok, _} ->
         ok;
     {error, _} ->
-        io:format("~s~n", [sqlrelay:errorMessage()])
+        io:format("~s~n", [sqlrelay:errorMessage()]),
+        io:format("~s~n", [sqlrelay:errorSqlState()])
 end.
