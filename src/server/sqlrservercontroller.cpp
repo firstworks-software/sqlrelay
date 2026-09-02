@@ -8203,7 +8203,23 @@ void sqlrservercontroller::dropTempTable(sqlrservercursor *cursor,
 	cursor->clearQueryTree();
 
 	if (prepareQuery(cursor,dropquery.getString(),dropquery.getSize())) {
-		executeQuery(cursor);
+		if (!executeQuery(cursor)) {
+			// not necessarily a bug, the table may already be
+			// gone, but worth knowing about in debug mode
+			debugWrite("dropTempTable: execute failed: "
+					"\"%.*s\": \"%.*s\"",
+					dropquery.getSize(),
+					dropquery.getString(),
+					cursor->getErrorSize(),
+					cursor->getErrorBuffer());
+		}
+	} else {
+		debugWrite("dropTempTable: prepare failed: "
+					"\"%.*s\": \"%.*s\"",
+					dropquery.getSize(),
+					dropquery.getString(),
+					cursor->getErrorSize(),
+					cursor->getErrorBuffer());
 	}
 	cursor->closeResultSet();
 }

@@ -1544,6 +1544,14 @@
 		firebird's own pattern is unchanged - firebird 5.0 does not
 		have this clause, it's slated for firebird 6.0, which hasn't
 		shipped yet
+	dropTempTable() now logs a debugWrite() diagnostic when the
+		drop query's prepare or execute fails, naming the table
+		and the error, instead of discarding the result silently
+		as before - the same silence that let a misparsed temp
+		table name go unnoticed for a full release cycle; gated
+		behind debug mode since a failed drop isn't always a bug
+		(the backend may have already dropped the table, a
+		rollback may have undone the create, etc.)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
