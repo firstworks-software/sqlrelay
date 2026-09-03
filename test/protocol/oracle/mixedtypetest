@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# For #9635: reproduce an OCI client and a python-oracledb thin client
+# both hanging on a mixed VARCHAR+NUMBER result set (either column
+# order), against both the known-working controls and the two queries
+# #9635 reported hanging, in one run.
+#
+# #9635 turned out not to reproduce against current master (both
+# sessions that ran this script - and a wider set of ad hoc mixed-type
+# queries beyond these six - got clean rows back, no hangs).  Kept as a
+# repro/coverage harness for any future report in this area, not as
+# evidence of a live bug.
+#
+# Starts its own sqlr instance (mixedtypetest.conf), runs all six
+# queries from the ticket against the OCI listener (serverversion=11.2)
+# with ociselect, and against the thin listener (serverversion left at
+# its 12.1 default) with mixedtypetest.py (python-oracledb, thin mode).
+# Every run is wrapped in `timeout` regardless - if a future report in
+# this area turns out to be real, a hang here should time out and
+# report rather than hang this whole script.  Tears the instance down
+# on exit either way.
+#
+# mixedtypetest.conf's backend connection points at the live oracle122
+# test server (see the README) rather than at "oracle", the hostname
+# test/sqlrelay.conf.d/oracleprotocol.conf.in uses - "oracle" isn't
+# resolvable on every host this repro needs to run on.
+#
+# The module's own debug="protocols" log for this run lands under the
+# debug directory named in doc/admin/configguide.wt's "debug" logger
+# module section (usually /usr/local/firstworks/var/log/sqlrelay/debug),
+# as sqlr-listener.PID and sqlr-connection.PID files - look for the ones
+# with a timestamp inside this run, since debug="protocols" is
+# instance-wide and the same two files see both the OCI and the thin
+# traffic.
+#
+# Needs: `make` to have built ociselect in this directory already (for
+# the OCI half), the oracledb python package (for the thin half - `pip
+# show oracledb` to check), and network access to
+# oracle122centos7x64.firstworks.com:1521.
+
+CONF=./mixedtypetest.conf
+ID=mixedtypetest
+OCIPORT=15340
+THINPORT=15341
+SID=ora1
+DBUSER=testuser
+DBPASSWORD=testpassword
+RUNTIMEOUT=10
+
+cleanup() {
+	sqlr-stop -config $CONF -id $ID >/dev/null 2>&1
+}
+trap cleanup EXIT
+
+echo "starting $ID..."
+sqlr-start -config $CONF -id $ID
+sleep 2
+
+runoci() {
+	_label=$1
+	_query=$2
+	echo
+	echo "--- OCI: $_label ---"
+	echo "query: $_query"
+	timeout $RUNTIMEOUT ./ociselect \
+		"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=$OCIPORT))(CONNECT_DATA=(SID=$SID)))" \
+		$DBUSER $DBPASSWORD "$_query"
+	_status=$?
+	if ( test $_status = 124 )
+	then
+		echo "TIMED OUT after ${RUNTIMEOUT}s"
+	fi
+}
+
+runthin() {
+	_label=$1
+	_query=$2
+	echo
+	echo "--- thin (python-oracledb): $_label ---"
+	echo "query: $_query"
+	timeout $RUNTIMEOUT ./mixedtypetest.py \
+		localhost $THINPORT $SID $DBUSER $DBPASSWORD "$_query"
+	_status=$?
+	if ( test $_status = 124 )
+	then
+		echo "TIMED OUT after ${RUNTIMEOUT}s"
+	fi
+}
+
+runboth() {
+	runoci "$1" "$2"
+	runthin "$1" "$2"
+}
+
+runboth "control: select 1 from dual" \
+	"select 1 from dual"
+runboth "control: one varchar column" \
+	"select 'abc' as c1 from dual"
+runboth "control: two number columns" \
+	"select 1 as c1, 2 as c2 from dual"
+runboth "control: two varchar columns" \
+	"select 'abc' as c1, 'def' as c2 from dual"
+runboth "repro: varchar then number" \
+	"select 'abc' as c1, 2 as c2 from dual"
+runboth "repro: number then varchar" \
+	"select 2 as c1, 'abc' as c2 from dual"
+
+echo
+echo "done.  debug logs for this run are under the debug directory"
+echo "named in doc/admin/configguide.wt's debug logger section"
+echo "(usually /usr/local/firstworks/var/log/sqlrelay/debug) - look"
+echo "for the sqlr-connection.PID files created since this script"
+echo "started."
