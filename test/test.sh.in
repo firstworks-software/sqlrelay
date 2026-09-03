@@ -1025,7 +1025,18 @@ run_protocol_test() {
 	# more: OCI, ojdbc, python-oracledb, node-oracledb and go-ora all
 	# offer the bit, so all of them take the big-chunk framing.  it reads
 	# ORACLEPROTOCOLPORT1, so it needs neither $server nor TNS_ADMIN
-	# either.  all eight runs have to succeed for the instance to pass
+	# either.  and then oracleiterations0, a fourth raw-socket test,
+	# for #9630 - it sends a TTI_QUERY3 and a TTI_EXECUTE whose al8i4
+	# iteration count is 0 while the request still carries real
+	# TTC_ROW_DATA blocks, which is what python-oracledb's thin driver
+	# does on both.  the old code bounded its bind loop by the claimed
+	# iteration count, so it silently dropped every bind value - the
+	# select came back ORA-01008 (not all variables bound) and the
+	# re-execute went out silently stale.  no OCI client can reach that
+	# path, since OCI always sends a real, non-zero iteration count.
+	# it reads ORACLEPROTOCOLPORT1 straight from the environment as
+	# well, so it needs neither $server nor TNS_ADMIN.  all nine runs
+	# have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1044,7 +1055,9 @@ run_protocol_test() {
 		resultlegacyfetch="$?"
 		./oracleclrchunks
 		resultclrchunks="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" )
+		./oracleiterations0
+		resultiterations0="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1081,6 +1094,10 @@ run_protocol_test() {
 		if ( test "$resultclrchunks" != "0" )
 		then
 			printf "    % 8s: failed (clr chunks)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultiterations0" != "0" )
+		then
+			printf "    % 8s: failed (iterations 0)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
