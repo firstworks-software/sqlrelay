@@ -68,11 +68,19 @@ static const unsigned char	ORA_TTI_QUERY3=0x5e;
 static const unsigned char	ORA_TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD=0x73;
 static const unsigned char	ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY=0x76;
 
+// the tti protocol versions the module implements - TTI_VERSION_MIN and
+// TTI_VERSION_MAX in src/protocols/oracle.cpp.  sendProtocolNegotiation()
+// offers version 6, the highest sendTtiResponse() implements, unless
+// setTtiVersion() says otherwise
+static const unsigned char	ORA_TTI_VERSION_5=5;
+static const unsigned char	ORA_TTI_VERSION_6=6;
+
 // query3 options - the OPTION_* defines in src/protocols/oracle.cpp
 static const uint32_t	ORA_OPTION_PARSE=(1<<0);
 static const uint32_t	ORA_OPTION_DEFINE=(1<<4);
 static const uint32_t	ORA_OPTION_EXECUTE=(1<<5);
 static const uint32_t	ORA_OPTION_FETCH=(1<<6);
+static const uint32_t	ORA_OPTION_COMMIT=(1<<8);
 static const uint32_t	ORA_OPTION_EXACTFETCH=(1<<9);
 static const uint32_t	ORA_OPTION_SNDIOV=(1<<10);
 static const uint32_t	ORA_OPTION_NOPLSQL=(1<<15);
@@ -213,6 +221,17 @@ class oracleprotocolclient {
 		// negotiation, and both ends decide there and then
 		void	setBigChunkClr(bool bigchunkclr);
 
+		// which tti protocol version this client offers in its
+		// protocol negotiation.  version 6 by default, the highest
+		// the module implements.  version 5 is the other one it
+		// implements, and it is the version, not the bit, that
+		// decides the chunk framing there: recvDataTypeRequest()
+		// only ever honors CCAP_TTC3_BIG_CHUNK_CLR at version 6 and
+		// above, so a version 5 client gets the raw byte framing
+		// whatever it offered.  like the bit, this has to be set
+		// before connect()
+		void	setTtiVersion(unsigned char ttiversion);
+
 		// the whole handshake through the accept: the connect
 		// packet (twice - the listener asks for a resend, the way a
 		// real database does), then the tti protocol and data type
@@ -351,6 +370,8 @@ class oracleprotocolclient {
 		void	setError(const char *message);
 		void	setError(const char *message, const char *detail);
 
+		bool	bigChunkClrFraming();
+
 		bool	sendConnect(const char *sid);
 		bool	sendProtocolNegotiation();
 		bool	sendDataTypeNegotiation();
@@ -367,6 +388,7 @@ class oracleprotocolclient {
 		bool			connected;
 		bool			largeheader;
 		bool			bigchunkclr;
+		unsigned char		ttiversion;
 
 		// what this client offers, and so - since the listener
 		// negotiates down to the lower of the two ends - what it
@@ -430,6 +452,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	connected=false;
 	largeheader=false;
 	bigchunkclr=false;
+	ttiversion=ORA_TTI_VERSION_6;
 	fieldversion=ORA_CCAP_FIELD_VERSION_11_2;
 	reqpackettype=0;
 	resppacket=new unsigned char[ORA_MAX_PACKET_SIZE];
@@ -462,6 +485,25 @@ const char *oracleprotocolclient::getError() {
 
 void oracleprotocolclient::setBigChunkClr(bool bigchunkclr) {
 	this->bigchunkclr=bigchunkclr;
+}
+
+void oracleprotocolclient::setTtiVersion(unsigned char ttiversion) {
+	this->ttiversion=ttiversion;
+}
+
+// which framing this client has to read and write - which is not the same
+// question as which bit it offers.  recvDataTypeRequest() in
+// src/protocols/oracle.cpp gates the big chunk framing on the tti version as
+// well as on both ends' bits:
+//
+//	bigchunkclr=(ttiversion>=6 && ...)
+//
+// so a client that offers the bit at version 5 is answered in raw bytes
+// anyway, and has to frame its own requests in raw bytes to be understood.
+// this mirrors that gate, and it is only the plumbing - what the test
+// asserts is the bytes the module actually wrote, which it builds itself
+bool oracleprotocolclient::bigChunkClrFraming() {
+	return (bigchunkclr && ttiversion>=ORA_TTI_VERSION_6);
 }
 
 const unsigned char *oracleprotocolclient::getResponse() {
@@ -578,9 +620,10 @@ void oracleprotocolclient::appendLenString(const char *value, size_t size) {
 // a 0xfe marker, then a run of chunks, then an empty chunk to close it.
 //
 // a chunk's length goes out as a raw byte, capped at 255, unless this client
-// offered CCAP_TTC3_BIG_CHUNK_CLR - then it goes out as a count prefixed
-// ub4, capped at 32767.  the closing chunk is one zero byte either way,
-// since a ub4 zero is a count byte of 0 and nothing after it
+// negotiated CCAP_TTC3_BIG_CHUNK_CLR - see bigChunkClrFraming() - then it
+// goes out as a count prefixed ub4, capped at 32767.  the closing chunk is
+// one zero byte either way, since a ub4 zero is a count byte of 0 and
+// nothing after it
 void oracleprotocolclient::appendLenBytes(const char *value, size_t size) {
 
 	if (size<=ORA_CLR_MAX_SHORT_LENGTH) {
@@ -592,7 +635,8 @@ void oracleprotocolclient::appendLenBytes(const char *value, size_t size) {
 	}
 
 	appendByte(ORA_CLR_LONG_FORM_MARKER);
-	size_t	maxchunk=(bigchunkclr)?
+	bool	bigchunk=bigChunkClrFraming();
+	size_t	maxchunk=(bigchunk)?
 			ORA_CLR_MAX_BIG_CHUNK_SIZE:ORA_CLR_MAX_CHUNK_SIZE;
 	size_t	offset=0;
 	while (offset<size) {
@@ -600,7 +644,7 @@ void oracleprotocolclient::appendLenBytes(const char *value, size_t size) {
 		if (chunk>maxchunk) {
 			chunk=maxchunk;
 		}
-		if (bigchunkclr) {
+		if (bigchunk) {
 			appendLenPreInt((uint32_t)chunk);
 		} else {
 			appendByte((unsigned char)chunk);
@@ -731,7 +775,13 @@ bool oracleprotocolclient::readLenString(char **value) {
 // zero length and the 0xfd marker are both nulls, a length up to 252 is the
 // short form, and 0xfe introduces the chunked long form, whose chunks are
 // concatenated into "value".  a chunk's length is a raw byte, or a count
-// prefixed ub4 if this client offered CCAP_TTC3_BIG_CHUNK_CLR
+// prefixed ub4 if this client negotiated CCAP_TTC3_BIG_CHUNK_CLR - see
+// bigChunkClrFraming().
+//
+// a long form written by putLongBytes() rather than putLenBytes() - which
+// is what a LONG or a LONG RAW column goes out through - has two more zero
+// bytes behind its closing empty chunk.  this stops at the empty chunk
+// either way and leaves whatever follows it alone
 bool oracleprotocolclient::readLenBytes(unsigned char *value,
 						size_t maxsize,
 						size_t *size,
@@ -774,7 +824,7 @@ bool oracleprotocolclient::readLenBytes(unsigned char *value,
 	for (;;) {
 
 		uint32_t	chunksize=0;
-		if (bigchunkclr) {
+		if (bigChunkClrFraming()) {
 			if (!readLenPreInt(&chunksize)) {
 				return false;
 			}
@@ -848,13 +898,14 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	return sendPacket();
 }
 
-// version 6, which is the highest sendTtiResponse() implements
+// one version, whichever setTtiVersion() named - 6 by default, which is the
+// highest sendTtiResponse() implements
 bool oracleprotocolclient::sendProtocolNegotiation() {
 
 	beginPacket(ORA_PACKET_DATA);
 	appendBE16(0);
 	appendByte(ORA_TTC_PROTOCOL_NEGOTIATION);
-	appendByte(6);
+	appendByte(ttiversion);
 	appendByte(0);				// end of the version array
 	reqpacket.append("x86_64/Linux 2.4.xx");
 	appendByte(0);
