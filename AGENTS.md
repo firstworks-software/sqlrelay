@@ -63,6 +63,13 @@ Most of `src/` is discoverable by listing it (one directory per module type: aut
 
 `make tests` runs everything enabled by configure. Tests live under `test/` and run against real databases via a live sqlr instance the harness starts and stops (no mocking).
 
+A single suite is run directly, e.g. from test/: ./test.sh -randomports oracleprotocol
+
+Two things about test.sh that are easy to get wrong, and that make a run prove nothing:
+
+- **Without -buildtree, test.sh runs the INSTALLED server**, not the build tree. So after editing anything under src/, a plain run exercises the old code at $prefix and passes or fails for the wrong reasons. Pass -buildtree, or make install first. When in doubt, check the installed module for a string your change introduced before trusting the result.
+- **-buildtree does not rebuild the programs under test/protocol.** Those are separate binaries with their own Makefiles - run make in the relevant directory, e.g. test/protocol/oracle, to pick up a change to the test program itself.
+
 ## Conventions worth knowing
 
 - **C++ standard is C++98.** Don't use C++11+ features in `.cpp` / `.h` files - no `auto` type deduction, no lambdas, no range-based `for`, no `nullptr`, no `std::move`, no `=delete`/`=default`, no strongly-typed enums, no brace-init-list constructors, no variadic templates. Use plain functions (or pass state via structs) instead of lambdas; `NULL` instead of `nullptr`.
