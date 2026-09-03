@@ -20,6 +20,9 @@
 
 #define MAX_BYTES_PER_CHAR	4
 
+// max size of a date, converted to text using date_to_text_format
+#define MAX_DATE_TEXT_SIZE	128
+
 #ifdef OCI_STMT_CACHE
 	// 9i calls OCI_STRLS_CACHE_DELETE something else
 	#ifndef OCI_STRLS_CACHE_DELETE
@@ -203,6 +206,8 @@ class SQLRSERVER_DLLSPEC oracleconnection : public sqlrserverconnection {
 		const char	*tnsadmin;
 		const char	*sid;
 		const char	*nlslang;
+		const char	*datetotextformat;
+		ub1		datetotextformatlen;
 		ucs2_t		*ucs2user;
 		ucs2_t		*ucs2password;
 
@@ -421,6 +426,8 @@ class SQLRSERVER_DLLSPEC oraclecursor : public sqlrservercursor {
 		sb2		**def_indp;
 		ub2		**def_col_retlen;
 		ub2		**def_col_retcode;
+		OCIDate		**def_date;
+		text		**def_datebuf;
 
 		uint16_t	maxbindcount;
 		OCIBind		**inbindpp;
@@ -496,6 +503,8 @@ oracleconnection::oracleconnection(sqlrservercontroller *cont) :
 	tnsadmin=NULL;
 	sid=NULL;
 	nlslang=NULL;
+	datetotextformat=NULL;
+	datetotextformatlen=0;
 	ucs2user=NULL;
 	ucs2password=NULL;
 
@@ -993,6 +1002,17 @@ void oracleconnection::handleConnectString() {
 
 	nlslang=cont->getConnectStringValue("nls_lang");
 
+	// handle date-to-text conversion format
+	datetotextformat=cont->getConnectStringValue("date_to_text_format");
+	if (charstring::isNullOrEmpty(datetotextformat)) {
+		datetotextformat=NULL;
+		datetotextformatlen=0;
+	} else {
+		// OCIDateToText takes the format length as a ub1
+		size_t	len=charstring::getLength(datetotextformat);
+		datetotextformatlen=(len>255)?255:(ub1)len;
+	}
+
 	// override max field size if it was set too small
 	if (cont->getMaxFieldSize()<MAX_BYTES_PER_CHAR) {
 		cont->setMaxFieldSize(MAX_BYTES_PER_CHAR);
@@ -1206,6 +1226,34 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		*error=logInError("OCIHandleAlloc(OCI_HTYPE_ERROR) failed");
 		OCIHandleFree(env,OCI_HTYPE_ENV);
 		return false;
+	}
+
+	// validate the date-to-text format
+	// A typo would otherwise surface as an error on every fetch of every
+	// date column, with no obvious cause.
+	if (datetotextformat) {
+		if (charstring::getLength(datetotextformat)>255) {
+			*error="date_to_text_format is longer than "
+					"255 characters.";
+			OCIHandleFree(err,OCI_HTYPE_ERROR);
+			OCIHandleFree(env,OCI_HTYPE_ENV);
+			return false;
+		}
+		OCIDate	testdate;
+		OCIDateSetDate(&testdate,2003,3,3);
+		OCIDateSetTime(&testdate,3,3,3);
+		text	testbuf[MAX_DATE_TEXT_SIZE];
+		ub4	testbufsize=sizeof(testbuf);
+		if (OCIDateToText(err,&testdate,
+					(const text *)datetotextformat,
+					datetotextformatlen,
+					(const text *)NULL,0,
+					&testbufsize,testbuf)!=OCI_SUCCESS) {
+			*error=logInError("Invalid date_to_text_format");
+			OCIHandleFree(err,OCI_HTYPE_ERROR);
+			OCIHandleFree(env,OCI_HTYPE_ENV);
+			return false;
+		}
 	}
 
 	// allocate a server handle
@@ -3671,6 +3719,8 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 		def_indp=NULL;
 		def_col_retlen=NULL;
 		def_col_retcode=NULL;
+		def_date=NULL;
+		def_datebuf=NULL;
 	} else {
 		this->columncount=columncount;
 		desc=new describe[columncount];
@@ -3680,6 +3730,12 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 		def_indp=new sb2 *[columncount];
 		def_col_retlen=new ub2 *[columncount];
 		def_col_retcode=new ub2 *[columncount];
+		def_date=NULL;
+		def_datebuf=NULL;
+		if (oracleconn->datetotextformat) {
+			def_date=new OCIDate *[columncount];
+			def_datebuf=new text *[columncount];
+		}
 		uint32_t	fetchatonce=getFetchAtOnce();
 		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
 		for (int32_t i=0; i<columncount; i++) {
@@ -3691,6 +3747,11 @@ void oraclecursor::allocateResultSetBuffers(int32_t columncount) {
 			def_indp[i]=new sb2[fetchatonce];
 			def_col_retlen[i]=new ub2[fetchatonce];
 			def_col_retcode[i]=new ub2[fetchatonce];
+			if (def_date) {
+				def_date[i]=new OCIDate[fetchatonce];
+				def_datebuf[i]=new text[fetchatonce*
+							MAX_DATE_TEXT_SIZE];
+			}
 			def[i]=NULL;
 			desc[i].paramd=NULL;
 		}
@@ -3705,7 +3766,15 @@ void oraclecursor::deallocateResultSetBuffers() {
 			delete[] def_indp[i];
 			delete[] def_lob[i];
 			delete[] def_buf[i];
+			if (def_date) {
+				delete[] def_date[i];
+				delete[] def_datebuf[i];
+			}
 		}
+		delete[] def_datebuf;
+		delete[] def_date;
+		def_datebuf=NULL;
+		def_date=NULL;
 		delete[] def_col_retcode;
 		delete[] def_col_retlen;
 		delete[] def_indp;
@@ -4926,14 +4995,26 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 					return false;
 				}
 
+				// define date columns as oracle dates,
+				// converted to text in getField()
+				dvoid	*defbuf=(dvoid *)def_buf[i];
+				sb4	defbufsize=
+					(sb4)conn->cont->getMaxFieldSize();
+				ub2	deftype=SQLT_STR;
+				if (def_date && desc[i].dbtype==DATE_TYPE) {
+					defbuf=(dvoid *)def_date[i];
+					defbufsize=(sb4)sizeof(OCIDate);
+					deftype=SQLT_ODT;
+				}
+
 				// if the column is not a LOB, define it,
 				// translated to a NULL terminated string
 				if (OCIDefineByPos(stmt,&def[i],
 					oracleconn->err,
 					i+1,
-					(dvoid *)def_buf[i],
-					(sb4)conn->cont->getMaxFieldSize(),
-					SQLT_STR,
+					defbuf,
+					defbufsize,
+					deftype,
 					(dvoid *)def_indp[i],
 					(ub2 *)def_col_retlen[i],
 					def_col_retcode[i],
@@ -5267,6 +5348,29 @@ void oraclecursor::getField(uint32_t col,
 		desc[col].dbtype==CLOB_TYPE ||
 		desc[col].dbtype==BFILE_TYPE) {
 		*lob=true;
+		return;
+	}
+
+	// handle dates, when a date-to-text format was configured
+	if (def_date && desc[col].dbtype==DATE_TYPE) {
+		text	*buf=&def_datebuf[col][row*MAX_DATE_TEXT_SIZE];
+		ub4	bufsize=MAX_DATE_TEXT_SIZE;
+		if (OCIDateToText(oracleconn->err,&def_date[col][row],
+				(const text *)oracleconn->datetotextformat,
+				oracleconn->datetotextformatlen,
+				(const text *)NULL,0,
+				&bufsize,buf)!=OCI_SUCCESS) {
+			if (oracleconn->cont->getDebug()) {
+				oracleconn->cont->raiseDebugWriteEvent(
+					"date-to-text conversion failed");
+			}
+			*null=true;
+			return;
+		}
+		def_col_retlen[col][row]=
+			(ub2)charstring::getLength((const char *)buf);
+		*field=(const char *)buf;
+		*fieldsize=def_col_retlen[col][row];
 		return;
 	}
 

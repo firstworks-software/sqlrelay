@@ -269,6 +269,14 @@ sword (*OCITransCommit)(OCISvcCtx *,
 sword (*OCITransRollback)(OCISvcCtx *,
 				OCIError *,
 				ub4);
+sword (*OCIDateToText)(OCIError *,
+				const OCIDate *,
+				const OraText *,
+				ub1,
+				const OraText *,
+				ub4,
+				ub4 *,
+				OraText *);
 
 
 // date/time macros...
@@ -846,6 +854,19 @@ static bool loadLibraries(stringbuffer *errormessage) {
 					ub4))
 				lib.getSymbol("OCITransRollback");
 	if (!OCITransRollback) {
+		goto error;
+	}
+
+	OCIDateToText=(sword (*)(OCIError *,
+					const OCIDate *,
+					const OraText *,
+					ub1,
+					const OraText *,
+					ub4,
+					ub4 *,
+					OraText *))
+				lib.getSymbol("OCIDateToText");
+	if (!OCIDateToText) {
 		goto error;
 	}
 

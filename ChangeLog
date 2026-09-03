@@ -1611,6 +1611,15 @@
 		nothing on the wire tells apart from go-ora v2, which did.  on
 		forces big chunks for any tti 6 session, whatever the client
 		advertises
+	added a date_to_text_format connect string parameter to the oracle
+		connection module.  when it's set, date columns are fetched
+		as oracle dates and converted to text with the given format,
+		client-side, so a date keeps its time of day.  when it's
+		unset, the default, date columns are fetched as text using
+		the session's nls_date_format, exactly as before.  the
+		parameter neither reads nor sets nls_date_format, so nothing
+		about the session moves and untyped date literals keep
+		parsing as they did
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

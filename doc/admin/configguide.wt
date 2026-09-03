@@ -89,6 +89,7 @@
   * [#oracleverifiertype Password Verifier Type]
   * [#oraclebigchunkclr Big Chunk CLR Framing]
   * [#oraclecharsets Character Set Options]
+  * [#oracledateformat Date Format]
   * [#oracleauth Authentication/Encryption Options]
    * [#oracleconnectstringsauth Connect Strings Auth]
    * [#oracleuserlistauth User List Auth]
@@ -2943,6 +2944,25 @@ where parameter in ('NLS_CHARACTERSET','NLS_NCHAR_CHARACTERSET');
 }}}
 
 Setting either option to 0, or to something that isn't a number, is the same as leaving it out, and the default is used.
+
+[=#oracledateformat]
+=== Date Format ===
+
+A native Oracle client expects a DATE column to carry a time of day, not just a date.  Without any special handling, that time of day is lost before the Oracle protocol module ever sees the value: DATE columns are fetched using the connection's session-level NLS_DATE_FORMAT, which is typically DD-MON-RR, and that format has no time component.
+
+The fix is the //date_to_text_format// connect string parameter on the '''connection''' tag, not a listener attribute - see [configreference.html#oracle SQL Relay Configuration Reference] for the full set of Oracle connect string options.  Setting it fetches DATE columns as Oracle's binary date type and converts them to text on the client side, in the given format, so the time of day survives.  It has no effect on the session, and it does not change how Oracle parses date literals going the other way, in inserts or where clauses.  It applies to DATE columns only; TIMESTAMP columns are unaffected.
+
+When an instance speaks the Oracle protocol, setting //date_to_text_format// on its connection is recommended, for example:
+
+{{{#!blockquote
+{{{#!code
+<connection string="user=exampleuser;password=examplepassword;oracle_sid=ora1;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+}}}
+}}}
+
+( '''WARNING:''' Whatever format is chosen, the result is text that other code then has to parse back apart.  The Oracle protocol module parses it to build the binary date it sends to the client, and so do the C++ client API, the ODBC driver, and the server itself when it needs the parts of a date.  All of them look for one of a fixed set of delimiters, and the sets differ - the ODBC driver, for example, accepts /, - and : but not a dot.  So an exotic date_to_text_format could format cleanly in Oracle and still parse incorrectly downstream.  Stick to /, - and :, and use a numeric, fixed-width format, such as the one above.)
+
+Also note that if the connection's //maxfieldsize// is set small, it truncates the formatted date text the same way it truncates any other field, since the server truncates any field longer than //maxfieldsize//.
 
 [=#oracleauth]
 === Authentication/Encryption Options ===
@@ -6919,11 +6939,11 @@ SQL Relay assumes that the //blat// program is installed, in the PATH of the use
 
 SQL Relay can be configured to run a set of queries at the beginning and end of each client session.
 
-By far the most common use for this feature is that some database parameter needs to be reconfigured but you don't have permission or bouncing the database is out of the question, or something like that.  For example, lets say you are using an Oracle database, but your app requires dates to be formatted like MM/DD/YYYY instead of DD-MON-YYYY.  Ideally you'd alter the nls_date_format in the instance but you can't, for some reason.
+By far the most common use for this feature is that some database parameter needs to be reconfigured but you don't have permission or bouncing the database is out of the question, or something like that.  For example, lets say you are using an Oracle database, but one particular app needs the optimizer tuned to return the first rows of a result set quickly, rather than the instance's default optimizer mode.  Ideally you'd alter the optimizer_mode in the instance but you can't, for some reason.
 
 You can use SQL Relay's session queries to work around the problem.
 
-In the following example, the date format is set to MM/DD/YYYY at the beginning of the session and then reset back to DD-MON-YYYY at the end.
+In the following example, the optimizer mode is set to first_rows_10 at the beginning of the session and then reset back to all_rows at the end.
 
 {{{#!blockquote
 {{{#!code
@@ -6931,7 +6951,7 @@ In the following example, the date format is set to MM/DD/YYYY at the beginning 
 }}}
 }}}
 
-Actually, in this example, there's no need to set the date format back to DD-MON-YYYY but it's done here for illustrative purposes.
+Actually, in this example, there's no need to set the optimizer mode back to all_rows but it's done here for illustrative purposes.
 
 ----
 

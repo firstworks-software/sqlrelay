@@ -860,9 +860,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("OCIStmtFetch2 - date, as a string\n");
-	const char	*datequery="select "
-				"to_char(testdate,'YYYY-MM-DD HH24:MI:SS') "
+	stdoutput.printf("OCIStmtFetch2 - date\n");
+	const char	*datequery="select testdate "
 				"from protocoltesttable "
 				"where testnumber=1";
 	assertEquals(
@@ -873,17 +872,26 @@ int main(int argc, char **argv) {
 	assertEquals(
 		OCIStmtExecute(svc,stmt,err,0,0,NULL,NULL,OCI_DEFAULT),
 		OCI_SUCCESS);
-	bytestring::zero(datefield,sizeof(datefield));
+	ub1	datebytes[7];
+	bytestring::zero(datebytes,sizeof(datebytes));
 	assertEquals(
 		OCIDefineByPos(stmt,&def[0],err,1,
-				datefield,sizeof(datefield),SQLT_STR,
-				&ind[0],&retlen[0],&retcode[0],OCI_DEFAULT),
+				datebytes,sizeof(datebytes),SQLT_DAT,
+				&ind[0],&retlen[0],NULL,OCI_DEFAULT),
 		OCI_SUCCESS);
 	assertEquals(
 		OCIStmtFetch2(stmt,err,1,OCI_FETCH_NEXT,0,OCI_DEFAULT),
 		OCI_SUCCESS);
-	assertEquals((const char *)datefield,"2001-01-01 01:01:01");
-	assertEquals((int)retlen[0],19);
+	// the 7 byte oracle date - excess-100 century and year, then month,
+	// day, and excess-1 hour, minute and second
+	assertEquals((int)retlen[0],7);
+	assertEquals((int)datebytes[0],120);
+	assertEquals((int)datebytes[1],101);
+	assertEquals((int)datebytes[2],1);
+	assertEquals((int)datebytes[3],1);
+	assertEquals((int)datebytes[4],2);
+	assertEquals((int)datebytes[5],2);
+	assertEquals((int)datebytes[6],2);
 	stdoutput.printf("\n\n");
 
 
