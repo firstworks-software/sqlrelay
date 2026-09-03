@@ -4,6 +4,7 @@
 /oraclelegacyfetch
 /oracleclrchunks
 /oracleiterations0
+/oraclebigchunkclroff
 *.o
 *.obj
 *.lo

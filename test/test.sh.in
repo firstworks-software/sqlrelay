@@ -1035,8 +1035,15 @@ run_protocol_test() {
 	# re-execute went out silently stale.  no OCI client can reach that
 	# path, since OCI always sends a real, non-zero iteration count.
 	# it reads ORACLEPROTOCOLPORT1 straight from the environment as
-	# well, so it needs neither $server nor TNS_ADMIN.  all nine runs
-	# have to succeed for the instance to pass
+	# well, so it needs neither $server nor TNS_ADMIN.  last it runs
+	# oraclebigchunkclroff, a fifth raw-socket test, for #9633 - it
+	# connects to the instance's second listener (ORACLEPROTOCOLPORT6),
+	# whose oracle protocol module carries bigchunkclr="off", so it
+	# never advertises the big-chunk clr capability bit and always
+	# frames clr values as raw bytes - coverage for the go-ora v1
+	# client, which offers the bit but never implemented big chunks and
+	# frames raw bytes anyway.  all ten runs have to succeed for the
+	# instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1057,7 +1064,9 @@ run_protocol_test() {
 		resultclrchunks="$?"
 		./oracleiterations0
 		resultiterations0="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" )
+		./oraclebigchunkclroff
+		resultbigchunkclroff="$?"
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1098,6 +1107,10 @@ run_protocol_test() {
 		if ( test "$resultiterations0" != "0" )
 		then
 			printf "    % 8s: failed (iterations 0)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultbigchunkclroff" != "0" )
+		then
+			printf "    % 8s: failed (big chunk clr off)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
@@ -1362,12 +1375,13 @@ STAGEDIR=$TESTDIR/stagedmodules
 # these are the same values configure substituted into the .conf files, so
 # with no -randomports both ends already agree and nothing has to be
 # regenerated.  -randomports replaces them with free ports picked at run time.
-PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
 ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
 ORACLEPROTOCOLPORT4=@ORACLEPROTOCOLPORT4@
 ORACLEPROTOCOLPORT5=@ORACLEPROTOCOLPORT5@
+ORACLEPROTOCOLPORT6=@ORACLEPROTOCOLPORT6@
 FIREBIRDPROTOCOLPORT1=@FIREBIRDPROTOCOLPORT1@
 FIREBIRDPROTOCOLPORT2=@FIREBIRDPROTOCOLPORT2@
 FIREBIRDPROTOCOLPORT3=@FIREBIRDPROTOCOLPORT3@

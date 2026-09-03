@@ -163,6 +163,11 @@ static const int32_t	ORA_RESPONSE_TIMEOUT_SEC=30;
 // listener caps its own at the negotiated sdu, 8192
 static const size_t	ORA_MAX_PACKET_SIZE=65536;
 
+// how big either capability array in a tti response can be.  each is
+// introduced by a single length byte - see putTtiResponse() in
+// src/protocols/oracle.cpp - so 255 is the ceiling the wire itself imposes
+static const size_t	ORA_MAX_CAPS_SIZE=255;
+
 // one bind or define descriptor.  these are the twelve fields
 // getQuery3BindDescriptor() in src/protocols/oracle.cpp reads, in its
 // order, plus the thirteenth that only exists from field version 12.2 up.
@@ -220,6 +225,26 @@ class oracleprotocolclient {
 		// before connect() - the bit goes out in the data type
 		// negotiation, and both ends decide there and then
 		void	setBigChunkClr(bool bigchunkclr);
+
+		// which chunk framing this client really reads and writes,
+		// said outright rather than worked out from the bit it
+		// offered.  without this the two move together: offering
+		// the bit at tti version 6 means framing big, which is what
+		// every client but one does.
+		//
+		// go-ora v1 is the one.  it offers the bit - byte 37 is
+		// 0xb3 there - and then frames raw bytes anyway, having
+		// never implemented big chunks at all.  that combination is
+		// what the "bigchunkclr" listener attribute exists for, and
+		// it can't be reached by moving setBigChunkClr() alone, so
+		// a test that has to imitate go-ora v1 says
+		// setBigChunkClr(true) and setBigChunkClrFraming(false).
+		//
+		// once set it wins over the bit and the tti version both;
+		// unset, the framing follows the module's own gate.  unlike
+		// the bit and the version it changes nothing on the wire by
+		// itself, so it may be set at any time
+		void	setBigChunkClrFraming(bool bigchunk);
 
 		// which tti protocol version this client offers in its
 		// protocol negotiation.  version 6 by default, the highest
@@ -328,6 +353,22 @@ class oracleprotocolclient {
 		unsigned char		getResponseTtcCode();
 		bool			responseContains(const char *text);
 
+		// the compile capability array the listener advertised in
+		// its tti protocol negotiation response, kept because that
+		// response is long gone by the time a test runs a query.
+		// it is the module's own compile-time array - see
+		// ttiservercompilecaps and putTti6Response() in
+		// src/protocols/oracle.cpp - and not an answer to anything
+		// this client offered: the arrays go out before the client's
+		// arrive, so there is nothing to answer yet.
+		//
+		// a test that wants a particular capability indexes it by
+		// the module's own CCAP_* index, and has to check the size
+		// first: a version 5 session gets no arrays at all, and the
+		// size is 0 there
+		const unsigned char	*getServerCompileCaps();
+		size_t			getServerCompileCapsSize();
+
 		// what went wrong, for a method that returned false
 		const char	*getError();
 
@@ -374,6 +415,7 @@ class oracleprotocolclient {
 
 		bool	sendConnect(const char *sid);
 		bool	sendProtocolNegotiation();
+		bool	parseTtiResponse();
 		bool	sendDataTypeNegotiation();
 		void	sendAuthRequest(unsigned char ttifunction,
 					const char *user,
@@ -388,7 +430,19 @@ class oracleprotocolclient {
 		bool			connected;
 		bool			largeheader;
 		bool			bigchunkclr;
+
+		// setBigChunkClrFraming()'s answer, and whether it was ever
+		// given.  two members rather than one tri-state so the
+		// unset case stays the default the other tests already get
+		bool			bigchunkclrframingset;
+		bool			bigchunkclrframing;
+
 		unsigned char		ttiversion;
+
+		// what connect() kept off the tti protocol negotiation
+		// response
+		unsigned char		servercompilecaps[ORA_MAX_CAPS_SIZE];
+		size_t			servercompilecapssize;
 
 		// what this client offers, and so - since the listener
 		// negotiates down to the lower of the two ends - what it
@@ -452,7 +506,11 @@ oracleprotocolclient::oracleprotocolclient() {
 	connected=false;
 	largeheader=false;
 	bigchunkclr=false;
+	bigchunkclrframingset=false;
+	bigchunkclrframing=false;
 	ttiversion=ORA_TTI_VERSION_6;
+	bytestring::zero(servercompilecaps,sizeof(servercompilecaps));
+	servercompilecapssize=0;
 	fieldversion=ORA_CCAP_FIELD_VERSION_11_2;
 	reqpackettype=0;
 	resppacket=new unsigned char[ORA_MAX_PACKET_SIZE];
@@ -487,6 +545,11 @@ void oracleprotocolclient::setBigChunkClr(bool bigchunkclr) {
 	this->bigchunkclr=bigchunkclr;
 }
 
+void oracleprotocolclient::setBigChunkClrFraming(bool bigchunk) {
+	bigchunkclrframingset=true;
+	bigchunkclrframing=bigchunk;
+}
+
 void oracleprotocolclient::setTtiVersion(unsigned char ttiversion) {
 	this->ttiversion=ttiversion;
 }
@@ -501,9 +564,25 @@ void oracleprotocolclient::setTtiVersion(unsigned char ttiversion) {
 // so a client that offers the bit at version 5 is answered in raw bytes
 // anyway, and has to frame its own requests in raw bytes to be understood.
 // this mirrors that gate, and it is only the plumbing - what the test
-// asserts is the bytes the module actually wrote, which it builds itself
+// asserts is the bytes the module actually wrote, which it builds itself.
+//
+// setBigChunkClrFraming() overrides the whole gate, because one real client
+// disagrees with it: go-ora v1 offers the bit and frames raw bytes anyway.
+// the "bigchunkclr" listener attribute is what answers that, and a test of
+// it has to be able to say the two things separately
 bool oracleprotocolclient::bigChunkClrFraming() {
+	if (bigchunkclrframingset) {
+		return bigchunkclrframing;
+	}
 	return (bigchunkclr && ttiversion>=ORA_TTI_VERSION_6);
+}
+
+const unsigned char *oracleprotocolclient::getServerCompileCaps() {
+	return servercompilecaps;
+}
+
+size_t oracleprotocolclient::getServerCompileCapsSize() {
+	return servercompilecapssize;
 }
 
 const unsigned char *oracleprotocolclient::getResponse() {
@@ -913,6 +992,111 @@ bool oracleprotocolclient::sendProtocolNegotiation() {
 	return sendPacket();
 }
 
+// pick the listener's tti protocol negotiation response apart, far enough to
+// keep the compile capability array off the end of it.  the layout is
+// putTtiResponse() in src/protocols/oracle.cpp, field for field:
+//
+//	- two data flag bytes and the ttc code, which connect() has already
+//	  checked
+//	- the tti version, and a zero byte
+//	- the server banner, NUL terminated
+//	- the database character set, little endian
+//	- a server flags byte
+//	- the character set graph element count, little endian
+//	- the fdo block: a big endian size, then exactly that many bytes
+//	- the compile capabilities: a length byte, then that many bytes
+//	- the runtime capabilities, the same way
+//
+// the two arrays are a version 6 field.  putTti5Response() passes no arrays
+// at all, and putTtiResponse() then writes neither a length byte nor a zero
+// one - the response simply ends at the fdo block - so a version 5 session
+// leaves the size at 0 rather than failing here
+bool oracleprotocolclient::parseTtiResponse() {
+
+	servercompilecapssize=0;
+
+	rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	unsigned char	version=0;
+	unsigned char	zero=0;
+	if (!readBytes(dataflags,sizeof(dataflags)) ||
+			!readByte(&ttccode) ||
+			!readByte(&version) ||
+			!readByte(&zero)) {
+		setError("truncated tti response");
+		return false;
+	}
+
+	// the banner, read a byte at a time because only its terminator says
+	// how long it is
+	unsigned char	bannerbyte=0;
+	do {
+		if (!readByte(&bannerbyte)) {
+			setError("truncated tti response banner");
+			return false;
+		}
+	} while (bannerbyte);
+
+	unsigned char	charsetlow=0;
+	unsigned char	charsethigh=0;
+	unsigned char	serverflags=0;
+	if (!readByte(&charsetlow) || !readByte(&charsethigh) ||
+						!readByte(&serverflags)) {
+		setError("truncated tti response charset");
+		return false;
+	}
+
+	// the character set graph elements have a shape this doesn't know how
+	// to skip.  a real 11.2 server sends none and neither does the
+	// module, so anything but zero here is the end of the road rather
+	// than a guess at how far to jump
+	unsigned char	graphlow=0;
+	unsigned char	graphhigh=0;
+	if (!readByte(&graphlow) || !readByte(&graphhigh)) {
+		setError("truncated tti response graph element count");
+		return false;
+	}
+	if (graphlow || graphhigh) {
+		setError("tti response carries charset graph elements");
+		return false;
+	}
+
+	// the fdo block, whose contents nothing here reads - only its size
+	// matters, since the capabilities are behind it
+	unsigned char	fdosizehigh=0;
+	unsigned char	fdosizelow=0;
+	if (!readByte(&fdosizehigh) || !readByte(&fdosizelow)) {
+		setError("truncated tti response fdo size");
+		return false;
+	}
+	size_t	fdosize=((size_t)fdosizehigh<<8)|(size_t)fdosizelow;
+	if (fdosize>respsize-respposition) {
+		setError("truncated tti response fdo block");
+		return false;
+	}
+	respposition+=fdosize;
+
+	// the arrays, or the end of a version 5 response
+	if (respposition>=respsize) {
+		return true;
+	}
+
+	unsigned char	capssize=0;
+	if (!readByte(&capssize) || (size_t)capssize>respsize-respposition) {
+		setError("truncated tti response compile capabilities");
+		return false;
+	}
+	if (!readBytes(servercompilecaps,(size_t)capssize)) {
+		setError("truncated tti response compile capabilities");
+		return false;
+	}
+	servercompilecapssize=capssize;
+
+	return true;
+}
+
 // the data type negotiation.  two things here are load-bearing:
 //
 //	- the compile capability array's CCAP_FIELD_VERSION byte, which
@@ -1040,6 +1224,13 @@ bool oracleprotocolclient::connect(const char *host, uint16_t port,
 	if (resppackettype!=ORA_PACKET_DATA ||
 			getResponseTtcCode()!=ORA_TTC_PROTOCOL_NEGOTIATION) {
 		setError("bad protocol negotiation response");
+		return false;
+	}
+
+	// keep the capability array the listener just advertised - the
+	// response itself is overwritten by the next one, and a test that
+	// asks what the module offered asks long after that
+	if (!parseTtiResponse()) {
 		return false;
 	}
 

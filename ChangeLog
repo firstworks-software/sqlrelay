@@ -1602,6 +1602,15 @@
 		usernames case-sensitively, so a username ojdbc clients will use
 		must be configured in the case ojdbc sends it, or configured
 		twice
+	added a bigchunkclr attribute to the oracle protocol module's listener,
+		which overrides the big chunk clr framing negotiation.  the
+		default, auto, negotiates as before.  off never advertises
+		CCAP_TTC3 bit 0x20 and always frames each long clr chunk's
+		length as a raw byte, for a client like go-ora v1 that
+		advertises the bit but never implemented big chunks, and which
+		nothing on the wire tells apart from go-ora v2, which did.  on
+		forces big chunks for any tti 6 session, whatever the client
+		advertises
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

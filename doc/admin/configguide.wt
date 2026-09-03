@@ -87,6 +87,7 @@
   * [#oracleloginattempts Login Attempts]
   * [#oracleserverversion Server Version]
   * [#oracleverifiertype Password Verifier Type]
+  * [#oraclebigchunkclr Big Chunk CLR Framing]
   * [#oraclecharsets Character Set Options]
   * [#oracleauth Authentication/Encryption Options]
    * [#oracleconnectstringsauth Connect Strings Auth]
@@ -2888,6 +2889,25 @@ Note that this is not a setting about the back-end database.  It describes only 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-oraclefeverifiertype.conf@
+}}}
+}}}
+
+[=#oraclebigchunkclr]
+=== Big Chunk CLR Framing ===
+
+Oracle's wire protocol encodes a value over 252 bytes as a "long form" clr, split into chunks.  Each chunk's length is framed one of two ways: as a single raw byte, which tops out at 255, or, for a "big chunk", as a count prefix followed by a ub4.  Which framing a session uses is negotiated: the module advertises a capability bit at login, and then frames chunks as big chunks only for a TTI 6 client that answers back with that same bit.  The TTI version matters because a TTI 5 session is never sent the capability arrays at all, so its client can never have seen the module's bit.
+
+The //bigchunkclr// option overrides that negotiation.  Leaving it out, or setting it to "auto", keeps the negotiation just described, and that is what every client measured wants except one.  Oracle's OCI 23.26, ojdbc 23.26, python-oracledb, node-oracledb, and go-ora v2 and v3 all negotiate the bit and get the framing they expect.
+
+go-ora v1 is the exception.  It advertises the same capability bit the others do, but never implemented big chunks, so it frames raw bytes regardless of what it just advertised.  Nothing on the wire distinguishes it from go-ora v2, which advertises the identical bit and does implement big chunks, so there's no gate the module can apply automatically that serves both.  //bigchunkclr// exists to say which one a given listener is talking to.
+
+//bigchunkclr// is set per listener tag, the same way //serverversion// and //verifiertype// are.  Setting it to "off" (or "no", "false", or "0") stops the module from advertising the capability bit at all, and always frames raw bytes, whatever the client answers - this is the setting a go-ora v1 deployment needs.  Setting it to "on" (or "yes", "true", or "1") frames big chunks for any TTI 6 session, regardless of what the client advertises, for a client that implements big chunks without advertising them.  A TTI 5 session still gets raw bytes, for the reason above.  Anything else, including leaving the option out, negotiates as described above.
+
+Note that "off" clears the capability bit itself, not just the module's per-session choice of framing.  ojdbc decides whether to expect big chunks from that bit alone, so a listener that kept the bit advertised while framing raw bytes would break ojdbc instead of fixing go-ora v1.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefebigchunkclr.conf@
 }}}
 }}}
 

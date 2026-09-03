@@ -15,6 +15,10 @@
 	<instance id="oracleprotocol" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT1@" serverversion="11.2" sid="ora1"/>
+			<!-- #9633 - a listener that never advertises the
+			     big-chunk clr capability bit and always frames
+			     raw bytes, for the go-ora v1 case. -->
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT6@" serverversion="11.2" sid="ora1" bigchunkclr="off"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">

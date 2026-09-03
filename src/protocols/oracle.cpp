@@ -1138,6 +1138,12 @@ enum oraclelisttype_t {
 	ORACLELISTTYPE_COLUMN_LIST
 };
 
+enum oraclebigchunkclr_t {
+	ORACLEBIGCHUNKCLR_AUTO=0,
+	ORACLEBIGCHUNKCLR_OFF,
+	ORACLEBIGCHUNKCLR_ON
+};
+
 // what a query3 request's bind section says about one placeholder.  the
 // descriptor carries no name and no position - binds are strictly positional,
 // in the order the placeholders appear in the query text
@@ -1308,6 +1314,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t runtimecapssize);
 		void	putTti6Response();
 		void	putTti5Response();
+		bool	advertiseBigChunkClr();
 
 		bool	dataTypeNegotiation();
 		bool	recvDataTypeRequest();
@@ -1731,6 +1738,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// dropped, from the "maxloginattempts" listener attribute
 		uint16_t	maxloginattempts;
 
+		// whether big chunk clr framing may be advertised and used at
+		// all, from the "bigchunkclr" listener attribute.  set once,
+		// in the constructor, and never changed - not the same thing
+		// as the per-session bigchunkclr flag below, which is the
+		// decision this one feeds into
+		oraclebigchunkclr_t	bigchunkclrsetting;
+
 		// the SID/SERVICE_NAME the client's CONNECT_DATA asked for, parsed
 		// out by recvConnectRequest(); NULL if it didn't name one
 		char		*requestedservice;
@@ -1760,7 +1774,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	clienttzversion;
 
 		// whether the clr long form frames each chunk's length as a
-		// count prefixed ub4 rather than as a raw byte
+		// count prefixed ub4 rather than as a raw byte.  decided per
+		// session in recvDataTypeRequest() and reset by init() - the
+		// constructor-scoped setting it answers to is
+		// bigchunkclrsetting above
 		bool		bigchunkclr;
 
 		const byte_t	*datatypes;
@@ -1988,6 +2005,25 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		}
 	}
 
+	// whether big chunk clr framing may be used at all.  "auto" (the
+	// default, and anything unrecognized) leaves the decision to the
+	// negotiation, "no" holds every session to raw byte chunks, "yes"
+	// takes big chunks for any TTI 6 session.
+	//
+	// it's an attribute because no gate could do the job.  go-ora v1
+	// advertises CCAP_TTC3 bit 0x20 and then frames raw bytes anyway,
+	// having never implemented big chunks, and nothing on the wire
+	// separates it from v2, which advertises the same bit and does
+	// implement them.  so the deployment has to say.
+	const char	*bcc=parameters->getAttributeValue("bigchunkclr");
+	if (charstring::isYes(bcc)) {
+		bigchunkclrsetting=ORACLEBIGCHUNKCLR_ON;
+	} else if (charstring::isNo(bcc)) {
+		bigchunkclrsetting=ORACLEBIGCHUNKCLR_OFF;
+	} else {
+		bigchunkclrsetting=ORACLEBIGCHUNKCLR_AUTO;
+	}
+
 	if (getDebug()) {
 		debugStart("parameters");
 		debugWrite("charset: %d",charset);
@@ -1997,6 +2033,10 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		debugWrite("server field version: %d",serverfieldversion);
 		debugWrite("sid: %s",(sids)?sids:"(any)");
 		debugWrite("max login attempts: %d",maxloginattempts);
+		debugWrite("big chunk clr setting: %s",
+			(bigchunkclrsetting==ORACLEBIGCHUNKCLR_ON)?"on":
+			((bigchunkclrsetting==ORACLEBIGCHUNKCLR_OFF)?
+							"off":"auto"));
 		debugEnd();
 	}
 
@@ -4191,11 +4231,12 @@ bool sqlrprotocol_oracle::sendTtiResponse() {
 // module goes with 12.2.  clear, every client frames a long clr's chunks as a
 // raw byte and a length up to 255, which is what the module's framing was
 // worked out against; set, a client that also offers the bit frames them as a
-// count prefixed ub4 instead.  it goes out unconditionally because it has to:
-// the capability arrays are sent in the protocol negotiation, before the
-// client's own arrive in the datatype negotiation, so there is nothing to
-// answer yet.  the per-session choice is made afterwards, in
-// recvDataTypeRequest().
+// count prefixed ub4 instead.  it's set here for every session, and only
+// "bigchunkclr off" takes it back out, in putTti6Response().  what it can't be
+// is an answer to the client: the capability arrays are sent in the protocol
+// negotiation, before the client's own arrive in the datatype negotiation, so
+// there is nothing to answer yet.  the per-session choice is made afterwards,
+// in recvDataTypeRequest().
 static const byte_t	ttiservercompilecaps[]={
 	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, CCAP_FIELD_VERSION_11_2,
 	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x7f,
@@ -4368,6 +4409,15 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 	}
 }
 
+bool sqlrprotocol_oracle::advertiseBigChunkClr() {
+
+	// "bigchunkclr off" offers big chunks to nobody; otherwise the
+	// capability array the module sends is the whole answer
+	return (bigchunkclrsetting!=ORACLEBIGCHUNKCLR_OFF &&
+			(ttiservercompilecaps[CCAP_TTC3]&
+					CCAP_TTC3_BIG_CHUNK_CLR)!=0);
+}
+
 void sqlrprotocol_oracle::putTti6Response() {
 
 	// oracle 8i+ supports TTI 6 (and lower)
@@ -4389,6 +4439,14 @@ void sqlrprotocol_oracle::putTti6Response() {
 		compilecaps[CCAP_LOGON_TYPES]|=CCAP_O7LOGON|CCAP_O5LOGON_NP;
 	}
 	compilecaps[CCAP_FIELD_VERSION]=serverfieldversion;
+
+	// "bigchunkclr off" has to clear the bit, not just skip the framing.
+	// ojdbc takes big chunks from the server's bit alone, without regard
+	// to its own, so framing raw bytes while still advertising the bit
+	// would break ojdbc instead of fixing go-ora v1.
+	if (!advertiseBigChunkClr()) {
+		compilecaps[CCAP_TTC3]&=(byte_t)~CCAP_TTC3_BIG_CHUNK_CLR;
+	}
 
 	if (getDebug()) {
 		debugStart("tti 6 response");
@@ -4646,12 +4704,14 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 				(compilecaps[CCAP_TTC3]&
 					CCAP_TTC3_TZ_VERSION)!=0);
 
-	// the clr long form's chunk framing.  three things have to line up:
-	// the module has to advertise the bit, the client has to answer with
-	// it, and the version has to be 6.  the version matters because
-	// putTti5Response() sends no capability arrays at all, so a version 5
-	// client can never have learned the module's answer, and its bit -
-	// whatever it says - isn't a reply to anything.
+	// the clr long form's chunk framing.  left at auto, three things have
+	// to line up: the module has to advertise the bit, the client has to
+	// answer with it, and the version has to be 6.  the version matters
+	// because putTti5Response() sends no capability arrays at all, so a
+	// version 5 client can never have learned the module's answer, and
+	// its bit - whatever it says - isn't a reply to anything.  that holds
+	// even when the attribute forces big chunks on, which is why the
+	// version term survives there too.
 	//
 	// no client measured gates on its own advertised bit: go-ora goes by
 	// the server's, OCI and ojdbc behave the same way, and the thin
@@ -4664,13 +4724,27 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// 37 is 0xb3 there - and then frames raw bytes anyway, having never
 	// implemented big chunks at all.  nothing on the wire separates it
 	// from v2, which advertises the same bit and does implement them, so
-	// there is no gate that could serve both.
-	bigchunkclr=(ttiversion>=6 &&
-			(ttiservercompilecaps[CCAP_TTC3]&
-					CCAP_TTC3_BIG_CHUNK_CLR)!=0 &&
-			compilecapssize>CCAP_TTC3 &&
-			(compilecaps[CCAP_TTC3]&
+	// there is no gate that could serve both.  the "bigchunkclr"
+	// attribute is the way out: "off" for a deployment whose clients are
+	// go-ora v1, "on" for one whose clients all take big chunks without
+	// advertising the bit.
+	//
+	// forced on, the gate doesn't consult advertiseBigChunkClr().  it
+	// doesn't have to today - the static array has the bit set, so the
+	// advertisement agrees - but if that byte ever loses the bit, "on"
+	// would frame big chunks against an advertisement that says raw.
+	// anything that clears it there has to revisit this branch.
+	if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_ON) {
+		bigchunkclr=(ttiversion>=6);
+	} else if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_OFF) {
+		bigchunkclr=false;
+	} else {
+		bigchunkclr=(ttiversion>=6 &&
+				advertiseBigChunkClr() &&
+				compilecapssize>CCAP_TTC3 &&
+				(compilecaps[CCAP_TTC3]&
 					CCAP_TTC3_BIG_CHUNK_CLR)!=0);
+	}
 
 	if (clientwantsdbtimezone) {
 
