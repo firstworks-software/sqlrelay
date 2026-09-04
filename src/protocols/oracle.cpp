@@ -7244,14 +7244,16 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		}
 	}
 
-	if (options&OPTION_COMMIT) {
-		// the execute above already returned on failure, so this
-		// only runs on success - which is what OCI_COMMIT_ON_SUCCESS
-		// asks for
-		if (!cont->commit()) {
-			return sendTransactionError(cont->getId(cursor)+1);
-		}
-	}
+	// OPTION_COMMIT (bit 8) is not read here.  #9656 proved bits 8 and up
+	// of this field are a per-call sequence counter, not independent
+	// flags - every real explicit commit seen in any capture arrives as
+	// its own separate TTI_COMMIT call, never through this bit, and
+	// commit-fetch-3 (#9656 comment 2) shows this bit set on a plain
+	// execute that has no commit due for another three calls yet, purely
+	// because the call count happened to be odd at that point.  trusting
+	// it would fire an unintended commit() (or skip a real one) depending
+	// on which call number a request happens to land on, so the bit is
+	// ignored rather than acted on
 
 	if (options&OPTION_FETCH) {
 
@@ -7259,7 +7261,9 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// a row header and row data directly, the same shape a
 		// separate legacy TTI_FETCH gets from sendFetchResponse() -
 		// confirmed byte-for-byte against real OCI7 legacy-exfet
-		// captures (#9637) for 1 through 5 columns.
+		// captures (#9637) for 1 through 5 columns, and again, at
+		// different call-sequence positions, against the shifted-exfet-3
+		// captures (#9656 comment 2).
 
 		// OPTION_DEFINE is set on every exact-fetch capture, but the
 		// response never carries a column-definition block - the
@@ -7270,16 +7274,16 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
 		// parse/sndiov/exactfetch are NOT read from the options
 		// bitfield here, unlike fetch()'s call below - bits 8 and up
-		// of this field alias a per-call sequence counter rather than
-		// independent flags (see #9656), so options&OPTION_EXACTFETCH
-		// is true or false depending on which call number a query2
-		// happens to land on, not on whether this call combines
-		// execute and fetch.  a query2 with OPTION_FETCH set is
-		// exactly the exact-fetch case in every capture on file, so
-		// exactfetch is hardcoded true; sndiov only matters on the
-		// branch taken when define is true, which this call never
-		// takes, so it's hardcoded false; parse is unused inside
-		// sendFetchResponse() regardless
+		// of this field are a per-call sequence counter, not
+		// independent flags (#9656: shifted-exfet-3's two identical
+		// exact-fetch calls land at different call-sequence positions
+		// and their options high bytes differ accordingly, even though
+		// nothing about the call itself changed).  a query2 with
+		// OPTION_FETCH set is exactly the exact-fetch case in every
+		// capture on file, so exactfetch is hardcoded true; sndiov
+		// only matters on the branch taken when define is true, which
+		// this call never takes, so it's hardcoded false; parse is
+		// unused inside sendFetchResponse() regardless
 		return sendFetchResponse(cursor,false,false,false,true);
 	}
 
@@ -11996,11 +12000,24 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	// sndiov and exactfetch are NOT read from the options bitfield -
+	// bits 8 and up of this field are a per-call sequence counter, not
+	// independent flags (#9656).  legacy-fetch-N (#9637/#9655) already
+	// showed this field's OPTION_EXACTFETCH bit set on a plain fetch
+	// whose real response has no exact-fetch marker; #9656's
+	// shifted-fetch-3 captures the same standalone TTI_FETCH call landing
+	// at two different call-sequence positions with two different options
+	// high bytes, confirming the bit tracks call count rather than a
+	// real client request for an exact fetch.  a standalone TTI_FETCH is
+	// the plain/non-exact case in every capture on file, so exactfetch is
+	// hardcoded false; sndiov only matters on the branch taken when
+	// define is true, which no capture exercises, so it's hardcoded
+	// false too
 	return sendFetchResponse(cursor,
 				(options&OPTION_PARSE),
 				(options&OPTION_DEFINE),
-				(options&OPTION_SNDIOV),
-				(options&OPTION_EXACTFETCH));
+				false,
+				false);
 }
 
 bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
@@ -12252,13 +12269,22 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			0x00, 0x00, 0x01, 0x00, 0x00
 		};
 
-		// callseq reads 0x0b for a plain fetch and 0x0a for an
-		// exact fetch in every capture.  it lines up with the
-		// call/round-trip count on the cursor - an exact fetch
-		// collapses describe and fetch into one round trip, a
-		// plain fetch is a second, separate one - rather than with
-		// exact-fetch as such, but no capture with a different
-		// call count exists to confirm that reading.
+		// callseq reads 0x0b for a plain fetch and 0x0a for an exact
+		// fetch in every capture on file.  #9656 confirmed that the
+		// request-side field this byte was suspected of echoing (the
+		// high byte of query2()'s/fetch()'s "options") really is a
+		// per-call sequence counter, not independent flags - so this
+		// really could be an echo of that same counter rather than
+		// something tied to exact-fetch as such.  that still isn't
+		// confirmed for this response-side byte specifically though:
+		// #9656's shifted-fetch-3/shifted-exfet-3/commit-fetch-3
+		// captures move the fetch call to new sequence positions, but
+		// were taken with too small a capture snaplen to keep this
+		// byte - it sits ~90 bytes into a row-fetch response, past
+		// where every capture in that batch was cut off.  left as a
+		// fixed value tied to exactfetch, since that's still all that's
+		// confirmed; a future capture with a full snaplen could confirm
+		// whether to track the real call sequence instead
 		const byte_t	callseq=exactfetch?(byte_t)0x0a:(byte_t)0x0b;
 
 		if (exactfetch) {

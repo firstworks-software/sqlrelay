@@ -1659,6 +1659,20 @@
 		confirmed against real Oracle9i OCI7 client captures for 1
 		through 5 columns that the combined call gets the same row
 		header, row data and trailer a separate legacy fetch call gets
+	fixed the oracle protocol module's legacy (pre-query3) query2 and
+		fetch paths reading bits 8 and up of the request's "options"
+		field as independent flags (commit-on-success, exact fetch,
+		send iov); real Oracle9i OCI7 client captures of the same call
+		repeated at different call-sequence positions show those bits
+		are actually a per-call sequence counter echoed back into the
+		field, not real flags - one capture even shows the counter's
+		value coincidentally setting the commit-on-success bit on a
+		plain execute with no commit due for several calls yet.
+		query2() no longer commits off that bit, since every real
+		commit in every capture arrives as its own separate call
+		instead, and fetch() no longer reads exact-fetch or send-iov
+		off it either, since a standalone legacy fetch is always the
+		plain, non-exact case in every capture on file
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
