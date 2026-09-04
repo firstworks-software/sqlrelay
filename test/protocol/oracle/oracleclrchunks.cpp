@@ -76,7 +76,7 @@ static const size_t	ORA_LONG_TRAILING_ZEROS=3;
 // the table the LONG case creates, fills, selects back and drops.  it is
 // this test's own: the oracleprotocol tests run against the same schema as
 // the rest of the test suite, and the LONG table already in there -
-// protocoltestlong - belongs to test/protocol/oracle/oracle.cpp, which
+// protocoltestlong - belongs to test/protocol/oracle/oci8.cpp, which
 // creates and drops it around its own assertions
 static const char	*ORA_LONG_TABLE="oracleclrchunkslong";
 

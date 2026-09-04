@@ -895,7 +895,7 @@ run_protocol_test() {
 			;;
 		oracleprotocol)
 			dir="protocol/oracle"
-			prog=`basename $dir`
+			prog="oci8"
 			;;
 		teradataprotocol)
 			# unlike the other protocol instances, this one's

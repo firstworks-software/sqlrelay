@@ -32,7 +32,7 @@ ORACLEPROTOCOLPORT5 ?= 1525
 # and oraclebigchunkclroff only need rudiments (raw sockets), so they build
 # whether or not OCI is configured - they speak the oracle wire protocol
 # themselves rather than going through a client library
-all: oracle ociselect oracledescribeonly oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+all: oci8 ociselect oracledescribeonly oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -47,8 +47,8 @@ tnsnames.ora: tnsnames.ora.in
 oracle.class: oracle.java
 	$(JAVAC) $<
 
-oracle: oracle.cpp oracle.$(OBJ)
-	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracle.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+oci8: oci8.cpp oci8.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci8.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
 ociselect: ociselect.cpp ociselect.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
@@ -109,5 +109,5 @@ oraclebigchunkclroff: oraclebigchunkclroff.cpp oracleprotocolclient.cpp oraclebi
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclebigchunkclroff.$(OBJ) $(RUDIMENTSLIBS)
 
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oracle$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
 	$(RMTREE) .libs

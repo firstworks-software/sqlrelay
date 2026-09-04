@@ -5,7 +5,7 @@
 //
 //   ./ociselect CONNECTSTRING [USER PASSWORD [QUERY]]
 //
-// oracle.cpp in this directory is the full OCI test; this is deliberately
+// oci8.cpp in this directory is the full OCI test; this is deliberately
 // as small as an OCI login-plus-query can be, so a wire capture of it has
 // nothing in it but the login and the one query.  Written for #9174, to
 // point an OCI client through oraproxy's banner-rewriting mode at a real
