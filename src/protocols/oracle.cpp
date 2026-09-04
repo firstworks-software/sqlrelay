@@ -1649,8 +1649,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						bool isautoincrement);
 		void	putIov();
 		bool	putRow(sqlrservercursor *cursor,
-						uint32_t colcount,
-						bool terminator);
+						uint32_t colcount);
 		bool	putField(const char *field,
 						uint64_t fieldsize,
 						uint16_t columntype);
@@ -12149,7 +12148,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		debugStart("fetch response row");
 		debugWrite("row marker: 0x07");
 
-		if (!putRow(cursor,colcount,exactfetch)) {
+		if (!putRow(cursor,colcount)) {
 			debugEnd();
 			return sendQueryError(cursor);
 		}
@@ -12165,119 +12164,71 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	if (rowsfetched) {
 
-		// unknown6 and unknown8 below were only captured for 1- and
-		// 2-column cursors, and how to compute them for wider ones
-		// isn't known, so fall back to the non-exact-fetch trailer
-		// rather than index past the end of them.
-		if (exactfetch && colcount && colcount<=2) {
-			// unknown5 through unknown11 are unexplained
-			// see "Oracle Wire Protocol - Fetch"
-			const byte_t	unknown5[]={
-				// ???
-				0x08, 0x04, 0x00
-			};
+		// the trailer after the last row: a fixed 47-byte block, a
+		// single byte that varies (callseq, below), then a fixed
+		// 5-byte close - and, for an exact fetch only, an 11-byte
+		// marker ahead of all of that.  confirmed byte-for-byte
+		// against real OCI7 legacy-fetch/legacy-exfet captures
+		// (#9637) for 1 through 5 columns: unlike the old
+		// unknown6/unknown8 lookup tables this replaces, none of it
+		// varies with column count, so there's no cap on colcount
+		// and nothing to index.
+		const byte_t	trailer[]={
+			0x04, 0x01, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+		const byte_t	trailerend[]={
+			0x00, 0x00, 0x01, 0x00, 0x00
+		};
 
-			const byte_t	unknown6[][1]={
-				// 1 columns
-				{0xA6},
-				// 2 columns
-				{0xA5}
-			};
+		// callseq reads 0x0b for a plain fetch and 0x0a for an
+		// exact fetch in every capture.  it lines up with the
+		// call/round-trip count on the cursor - an exact fetch
+		// collapses describe and fetch into one round trip, a
+		// plain fetch is a second, separate one - rather than with
+		// exact-fetch as such, but no capture with a different
+		// call count exists to confirm that reading.
+		const byte_t	callseq=exactfetch?(byte_t)0x0a:(byte_t)0x0b;
 
-			const byte_t	unknown7[]={
-				0x5C,
-	
-				// error code?
-				0x16, 0x00,
-	
-				// ???
-				0x00, 0x00, 0x00, 0x00,
-				0x01,
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x04,
-				0x01, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x01, 0x00
-			};
-	
-			const byte_t	unknown8[][4]={
-				// 1 column
-				{0x11, 0x00, 0x03, 0x00},
-				// 2 columns
-				{0x0E, 0x00, 0x03, 0x00}
-			};
-	
-			const byte_t	unknown9[]={
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00,
-				0x00,
-		
-				// ???
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00,
+		if (exactfetch) {
+			// the exact-fetch marker: a fixed 3-byte prefix, an
+			// opaque 4-byte value, then 4 more zero bytes.  the
+			// 4-byte value looks like a session/cursor pointer -
+			// it changes from capture to capture with no
+			// relation to column count or row content, and
+			// nothing in any capture echoes it back for
+			// comparison - so it's sent here as zero rather than
+			// as a guessed nonzero value.
+			const byte_t	exactfetchmarker[]={
+				0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00
 			};
-	
-			// this appears to increment with each response
-			const byte_t	unknown10[]={
-				0x27
-			};
-	
-			const byte_t	unknown11[]={
- 				0x00, 0x00, 0x01,
-				0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00,
-				0x00
-			};
-	
-			reqpacket.append(unknown5,sizeof(unknown5));
-			reqpacket.append(unknown6[colcount-1],
-						sizeof(unknown6[colcount-1]));
-			reqpacket.append(unknown7,sizeof(unknown7));
-			reqpacket.append(unknown8[colcount-1],
-						sizeof(unknown8[colcount-1]));
-			reqpacket.append(unknown9,sizeof(unknown9));
-			reqpacket.append(unknown10,sizeof(unknown10));
-			reqpacket.append(unknown11,sizeof(unknown11));
-
+			reqpacket.append(exactfetchmarker,
+						sizeof(exactfetchmarker));
 			if (getDebug()) {
 				debugStart("fetch response footer");
-				debugWrite("exact fetch");
-				debugHexDump(unknown5,sizeof(unknown5));
-				debugHexDump(unknown6[colcount-1],
-						sizeof(unknown6[colcount-1]));
-				debugHexDump(unknown7,sizeof(unknown7));
-				debugHexDump(unknown8[colcount-1],
-						sizeof(unknown8[colcount-1]));
-				debugHexDump(unknown9,sizeof(unknown9));
-				debugHexDump(unknown10,sizeof(unknown10));
-				debugHexDump(unknown11,sizeof(unknown11));
+				debugWrite("exact fetch marker");
+				debugHexDump(exactfetchmarker,
+						sizeof(exactfetchmarker));
 				debugEnd();
 			}
+		}
 
-		} else {
+		reqpacket.append(trailer,sizeof(trailer));
+		write(&reqpacket,callseq);
+		reqpacket.append(trailerend,sizeof(trailerend));
 
-			// unexplained.  see "Oracle Wire Protocol - Fetch"
-			const byte_t	unknown[]={
-				0x04, 0x01, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-				0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x09, 0x00,
-				0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-			};
-
-			reqpacket.append(unknown,sizeof(unknown));
-
-			if (getDebug()) {
-				debugStart("fetch response footer");
-				debugWrite("not exact fetch");
-				debugHexDump(unknown,sizeof(unknown));
-				debugEnd();
-			}
+		if (getDebug()) {
+			debugStart("fetch response footer");
+			debugWrite(exactfetch?"exact fetch":"not exact fetch");
+			debugHexDump(trailer,sizeof(trailer));
+			debugHexDump(&callseq,1);
+			debugHexDump(trailerend,sizeof(trailerend));
+			debugEnd();
 		}
 
 	} else {
@@ -12780,8 +12731,7 @@ void sqlrprotocol_oracle::putIov() {
 }
 
 bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
-						uint32_t colcount,
-						bool terminator) {
+						uint32_t colcount) {
 
 	// get the column types
 	uint16_t	*ct=columntypes[cont->getId(cursor)];
@@ -12834,17 +12784,15 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			write(&reqpacket,(byte_t)0);
 		}
 
-		// the terminator: a ub4 after every column but the last, a
-		// ub2 after the last.  it belongs to the row rather than to
-		// the value, but write it only if the value itself was
+		// the terminator: a fixed 4-byte zero word after every
+		// column, including the last.  confirmed against real OCI7
+		// legacy-fetch captures (#9637) for 1 through 5 columns,
+		// both with and without the exact-fetch flag set - the
+		// width never varied with column position, column count, or
+		// exact-fetch.  write it only if the value itself was
 		// written, otherwise it desyncs the rest of the row.
-		// see "Oracle Wire Protocol - Row Data"
-		if (terminator && wrote) {
-			if (i==colcount-1) {
-				writeBE(&reqpacket,(uint16_t)0);
-			} else {
-				writeBE(&reqpacket,(uint32_t)0);
-			}
+		if (wrote) {
+			writeBE(&reqpacket,(uint32_t)0);
 			debugWrite("terminator");
 		}
 

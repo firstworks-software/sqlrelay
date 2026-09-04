@@ -1620,6 +1620,14 @@
 		parameter neither reads nor sets nls_date_format, so nothing
 		about the session moves and untyped date literals keep
 		parsing as they did
+	fixed the oracle protocol module's legacy (pre-query3) fetch path:
+		the per-column row terminator is a fixed 4-byte zero word after
+		every column, not a 2-byte word gated to the last column and
+		tied to the exact-fetch flag; the exact-fetch and plain-fetch
+		trailers are a single, colcount-independent byte sequence
+		instead of a lookup table capped at 2 columns.  confirmed
+		against real Oracle9i OCI7 client captures for 1 through 5
+		columns
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
