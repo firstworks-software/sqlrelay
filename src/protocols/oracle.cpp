@@ -12057,11 +12057,12 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// send various headers and column definitions
 		if (!rowsfetched) {
 
-			// FIXME: the headers/col-defs appear to be very
-			// different when sent from 8i
-			// see "Oracle Wire Protocol - Column Definitions"
-
 			if (define) {
+
+				// FIXME: the headers/col-defs appear to be
+				// very different when sent from 8i
+				// see "Oracle Wire Protocol - Column
+				// Definitions"
 
 				// ttc type 0x10 reused bare as a response
 				// header - not a describe info message
@@ -12074,70 +12075,106 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 					debugTtcCode(ttccode);
 					debugEnd();
 				}
-			}
 
-			// send column definitions...
-			if (define) {
+				// send column definitions...
 				putColumnDefinitions(cursor,colcount);
-			}
 
-			// send "iov" (whatever that is)...
-			// see "Oracle Wire Protocol - Fetch"
-			if (sndiov) {
-				if (getDebug()) {
-					debugStart("fetch response header");
-					debugWrite("iov");
-					debugEnd();
+				// send "iov" (whatever that is)...
+				// see "Oracle Wire Protocol - Fetch"
+				if (sndiov) {
+					if (getDebug()) {
+						debugStart("fetch response header");
+						debugWrite("iov");
+						debugEnd();
+					}
+					putIov();
+				} else {
+					const byte_t	unknown[]={
+						0x00, 0x00,
+					};
+					reqpacket.append(unknown,sizeof(unknown));
+					if (getDebug()) {
+						debugStart("fetch response header");
+						debugWrite("no iov");
+						debugHexDump(unknown,sizeof(unknown));
+						debugEnd();
+					}
 				}
-				putIov();
-			} else {
-				const byte_t	unknown[]={
-					0x00, 0x00,
+
+				// unknown2 through unknown4 are unexplained
+				// see "Oracle Wire Protocol - Fetch"
+				// always appears to be the same...
+				const byte_t	unknown2[]={
+					0x06, 0x02,
 				};
-				reqpacket.append(unknown,sizeof(unknown));
+				reqpacket.append(unknown2,sizeof(unknown2));
+
+				// FIXME: this varies, but it's not clear
+				// with what
+				const byte_t	unknown3[]={
+					0x8C
+				};
+				reqpacket.append(unknown3,sizeof(unknown3));
+
 				if (getDebug()) {
 					debugStart("fetch response header");
-					debugWrite("no iov");
-					debugHexDump(unknown,sizeof(unknown));
+					debugHexDump(unknown2,sizeof(unknown2));
+					debugHexDump(unknown3,sizeof(unknown3));
 					debugEnd();
 				}
-			}
 
-			// unknown2 through unknown4 are unexplained
-			// see "Oracle Wire Protocol - Fetch"
-			// always appears to be the same...
-			const byte_t	unknown2[]={
-				0x06, 0x02,
-			};
-			reqpacket.append(unknown2,sizeof(unknown2));
+				write(&reqpacket,(byte_t)colcount);
 
-			// FIXME: this varies, but it's not clear with what
-			const byte_t	unknown3[]={
-				0x8C
-			};
-			reqpacket.append(unknown3,sizeof(unknown3));
+				// always appears to be the same...
+				const byte_t	unknown4[]={
+					0x00, 0x00, 0x00,
+					0x01, 0x00, 0x00, 0x00
+				};
+				reqpacket.append(unknown4,sizeof(unknown4));
 
-			if (getDebug()) {
-				debugStart("fetch response header");
-				debugHexDump(unknown2,sizeof(unknown2));
-				debugHexDump(unknown3,sizeof(unknown3));
-				debugEnd();
-			}
+				if (getDebug()) {
+					debugStart("fetch response header");
+					debugWrite("column count: %d",colcount);
+					debugHexDump(unknown4,sizeof(unknown4));
+					debugEnd();
+				}
 
-			write(&reqpacket,(byte_t)colcount);
+			} else {
 
-			// always appears to be the same...
-			const byte_t	unknown4[]={
-				0x00, 0x00, 0x00,
-				0x01, 0x00, 0x00, 0x00
-			};
-			reqpacket.append(unknown4,sizeof(unknown4));
+				// a bare re-fetch on an already-described
+				// cursor answers with an outer row-header
+				// ttc code, then a fixed block whose 4th
+				// byte is the column count - confirmed
+				// byte-for-byte against real OCI7 legacy
+				// captures for 1 through 5 columns.  the
+				// same ttc code and block precede a row sent
+				// through query2's exact-fetch path too, so
+				// this reads as a generic row-header preamble
+				// rather than something specific to a bare
+				// fetch.
+				byte_t		ttccode=TTC_ROW_HEADER;
 
-			if (getDebug()) {
-				debugStart("fetch response header");
-				debugWrite("column count: %d",colcount);
-				debugHexDump(unknown4,sizeof(unknown4));
-				debugEnd();
+				write(&reqpacket,ttccode);
+
+				const byte_t	rowheader[]={
+					0x01, 0x02, 0x01, (byte_t)colcount,
+					0x00, 0x00, 0x00, 0x01,
+					0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00,
+					0x01, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00,
+					0x00
+				};
+				reqpacket.append(rowheader,sizeof(rowheader));
+
+				if (getDebug()) {
+					debugStart("fetch response header");
+					debugTtcCode(ttccode);
+					debugWrite("column count: %d",colcount);
+					debugHexDump(rowheader,sizeof(rowheader));
+					debugEnd();
+				}
 			}
 		}
 

@@ -1638,6 +1638,12 @@
 		inline rather than a locator, settling the question the
 		putLobField() framing fix in the prior entry's ticket left
 		open
+	fixed the oracle protocol module's legacy (pre-query3) fetch path
+		to write a row header before the first row of a bare re-fetch
+		on an already-described cursor: an outer TTC_ROW_HEADER ttc
+		code followed by a fixed block whose 4th byte is the column
+		count, both previously missing.  confirmed against real
+		Oracle9i OCI7 client captures for 1 through 5 columns
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
