@@ -1644,6 +1644,15 @@
 		code followed by a fixed block whose 4th byte is the column
 		count, both previously missing.  confirmed against real
 		Oracle9i OCI7 client captures for 1 through 5 columns
+	added a configure check for oracle's oci7 legacy call interface:
+		looks for the ocidfn.h/ociapr.h/ocikpr.h headers under
+		$ORACLE_HOME/rdbms/demo or rdbms/public, which only ship
+		with a full oracle client install and never with instant
+		client, then confirms the olog/oopen/oparse/odefin/oexec/
+		ofen/ofetch/oexfet/oclose/ologof/odescr/obndrv symbols link;
+		sets HAVE_OCI7 in config.h and a HAVE_OCI7 build flag in
+		config.mk when present, as an optional capability separate
+		from the main oracle probe
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

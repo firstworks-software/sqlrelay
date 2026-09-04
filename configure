@@ -816,6 +816,8 @@ MYSQLSTATIC
 MYSQLLIBSPATH
 MYSQLLIBS
 MYSQLINCLUDES
+OCI7INCLUDES
+HAVE_OCI7
 ENABLE_ORACLE
 ORACLESTATIC
 ORACLELIBSPATH
@@ -21766,6 +21768,110 @@ printf "%s\n" "$as_me: Oracle libraries will be loaded at runtime." >&6;}
 printf "%s\n" "#define ORACLE_AT_RUNTIME 1" >>confdefs.h
 
 fi
+
+
+
+HAVE_OCI7=""
+OCI7INCLUDES=""
+if ( test -z "$ORACLEATRUNTIME" )
+then
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for oracle oci7 includes and libraries" >&5
+printf %s "checking for oracle oci7 includes and libraries... " >&6; }
+
+				if ( test "$cross_compiling" != "yes" -a -n "$ORACLE_HOME" -a -n "$ORACLELIBS" )
+	then
+
+				for i in \
+			"$ORACLE_HOME/rdbms/demo" \
+			"$ORACLE_HOME/rdbms/public"
+		do
+			if ( test -r "$i/ocidfn.h" -a -r "$i/ociapr.h" -a -r "$i/ocikpr.h" )
+			then
+				OCI7INCLUDES="-I$i"
+				break
+			fi
+		done
+
+														if ( test -n "$OCI7INCLUDES" )
+		then
+
+SAVECPPFLAGS="$CPPFLAGS"
+SAVELIBS="$LIBS"
+SAVE_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+CPPFLAGS="$ORACLESTATIC $ORACLEINCLUDES $OCI7INCLUDES"
+LIBS="$ORACLELIBS $SOCKETLIBS"
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __CYGWIN__
+	#define _int64 long long
+#endif
+#include <stdlib.h>
+extern "C" {
+	void olog();
+	void oopen();
+	void oparse();
+	void odefin();
+	void oexec();
+	void ofen();
+	void ofetch();
+	void oexfet();
+	void oclose();
+	void ologof();
+	void odescr();
+	void obndrv();
+}
+$GLIBC23HACKINCLUDE
+$GLIBC23HACKCODE
+int
+main (void)
+{
+olog(); oopen(); oparse(); odefin(); oexec(); ofen(); ofetch(); oexfet(); oclose(); ologof(); odescr(); obndrv();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  HAVE_OCI7="yes"
+else $as_nop
+  OCI7INCLUDES=""
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+CPPFLAGS="$SAVECPPFLAGS"
+LIBS="$SAVELIBS"
+LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
+		fi
+	fi
+
+	if ( test -n "$HAVE_OCI7" )
+	then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	fi
+
+	if ( test -n "$HAVE_OCI7" )
+	then
+
+printf "%s\n" "#define HAVE_OCI7 1" >>confdefs.h
+
+
+if ( test -n "$OCI7INCLUDES" )
+then
+	echo "oci7 includes... $OCI7INCLUDES"
+fi
+
+	fi
+fi
+
 
 
 echo "******************************"

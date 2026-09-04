@@ -714,6 +714,7 @@ dnl Checks for Oracle.
 echo
 echo "***** Oracle *****************"
 FW_CHECK_ORACLE
+FW_CHECK_OCI7
 echo "******************************"
 
 

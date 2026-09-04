@@ -400,6 +400,88 @@ AC_SUBST(ENABLE_ORACLE)
 
 
 
+dnl looks for the oci7 legacy oracle call interface.  ocidfn.h,
+dnl ociapr.h and ocikpr.h only ship with a full oracle client
+dnl install, under $ORACLE_HOME/rdbms - never with instantclient -
+dnl so their presence is the real discriminator; the symbol check
+dnl below is a belt-and-braces confirmation, not the deciding factor
+AC_DEFUN([FW_CHECK_OCI7],
+[
+HAVE_OCI7=""
+OCI7INCLUDES=""
+if ( test -z "$ORACLEATRUNTIME" )
+then
+
+	AC_MSG_CHECKING(for oracle oci7 includes and libraries)
+
+	dnl oci7 headers live under rdbms/demo in a full client install,
+	dnl so ORACLE_HOME must be set, and the oracle libraries must
+	dnl have been found already
+	if ( test "$cross_compiling" != "yes" -a -n "$ORACLE_HOME" -a -n "$ORACLELIBS" )
+	then
+
+		dnl look for ocidfn.h, ociapr.h and ocikpr.h
+		for i in \
+			"$ORACLE_HOME/rdbms/demo" \
+			"$ORACLE_HOME/rdbms/public"
+		do
+			if ( test -r "$i/ocidfn.h" -a -r "$i/ociapr.h" -a -r "$i/ocikpr.h" )
+			then
+				OCI7INCLUDES="-I$i"
+				break
+			fi
+		done
+
+		dnl The oci7 headers may not be safe to include from C++,
+		dnl so declare the functions that we're looking for
+		dnl ourselves, rather than including the headers.  Call
+		dnl each one (this is never actually run, just linked) so
+		dnl the calls can't be optimized away like a dead address-
+		dnl of would be.
+		if ( test -n "$OCI7INCLUDES" )
+		then
+			FW_TRY_LINK([#ifdef __CYGWIN__
+	#define _int64 long long
+#endif
+#include <stdlib.h>
+extern "C" {
+	void olog();
+	void oopen();
+	void oparse();
+	void odefin();
+	void oexec();
+	void ofen();
+	void ofetch();
+	void oexfet();
+	void oclose();
+	void ologof();
+	void odescr();
+	void obndrv();
+}
+$GLIBC23HACKINCLUDE
+$GLIBC23HACKCODE],[olog(); oopen(); oparse(); odefin(); oexec(); ofen(); ofetch(); oexfet(); oclose(); ologof(); odescr(); obndrv();],[$ORACLESTATIC $ORACLEINCLUDES $OCI7INCLUDES],[$ORACLELIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[HAVE_OCI7="yes"],[OCI7INCLUDES=""])
+		fi
+	fi
+
+	if ( test -n "$HAVE_OCI7" )
+	then
+		AC_MSG_RESULT(yes)
+	else
+		AC_MSG_RESULT(no)
+	fi
+
+	if ( test -n "$HAVE_OCI7" )
+	then
+		AC_DEFINE(HAVE_OCI7,1,OCI7 legacy Oracle call interface)
+		FW_INCLUDES(oci7,[$OCI7INCLUDES])
+	fi
+fi
+AC_SUBST(HAVE_OCI7)
+AC_SUBST(OCI7INCLUDES)
+])
+
+
+
 AC_DEFUN([FW_CHECK_MYSQL],
 [
 if ( test "$ENABLE_MYSQL" = "yes" )
