@@ -150,6 +150,9 @@
 /* MySQL supports mysql_stmt_prepare */
 #undef HAVE_MYSQL_STMT_PREPARE
 
+/* OCI7 legacy Oracle call interface */
+#undef HAVE_OCI7
+
 /* oci.h */
 #undef HAVE_OCI_H
 
