@@ -19,14 +19,21 @@ ORACLEPROTOCOLPORT3 ?= 1523
 ORACLEPROTOCOLPORT4 ?= 1524
 ORACLEPROTOCOLPORT5 ?= 1525
 
+# OCI7INCLUDES is for oci7.cpp specifically - it's blank unless the
+# legacy OCI7 call interface was detected at configure time, so this
+# is a no-op on everything else in this directory
 .cpp.lo:
-	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(ORACLEINCLUDES) $(COMPILE) $< $(OUT)$@
+	$(LTCOMPILE) $(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(ORACLEINCLUDES) $(OCI7INCLUDES) $(COMPILE) $< $(OUT)$@
 
 .cpp.obj:
-	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(ORACLEINCLUDES) $(COMPILE) $<
+	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(ORACLEINCLUDES) $(OCI7INCLUDES) $(COMPILE) $<
 
 # oracle.class only builds if a jdk is configured - see
 # ORACLEPROTOCOLTESTTARGETS in config.mk.in
+#
+# oci7 only builds if the legacy OCI7 call interface was detected at
+# configure time - also gated through ORACLEPROTOCOLTESTTARGETS in
+# config.mk.in, but via HAVE_OCI7 rather than HAVE_JAVA
 #
 # oracledescribeonly, oraclelegacyfetch, oracleclrchunks, oracleiterations0
 # and oraclebigchunkclroff only need rudiments (raw sockets), so they build
@@ -49,6 +56,9 @@ oracle.class: oracle.java
 
 oci8: oci8.cpp oci8.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci8.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
+oci7: oci7.cpp oci7.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
 ociselect: ociselect.cpp ociselect.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
@@ -109,5 +119,5 @@ oraclebigchunkclroff: oraclebigchunkclroff.cpp oracleprotocolclient.cpp oraclebi
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclebigchunkclroff.$(OBJ) $(RUDIMENTSLIBS)
 
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
 	$(RMTREE) .libs

@@ -94,6 +94,16 @@ OCIServerVersion right after the login and prints the banner that comes
 back, so the capture holds a TTI_VERSION (function code 0x3B) request and
 its response. It is off by default, so an ordinary capture is unchanged.
 
+oci7.cpp, also in this directory, is oci8.cpp's counterpart written
+against the legacy pre-8.0 OCI7 call interface (olog/oopen/oparse/
+odefin/oexec/ofen/oexfet/oclose/ologof/odescr/obndrv) instead of the
+modern OCI8 API, exercising the same set of operations for direct
+wire-level comparison against oci8.cpp's captures. It only builds when
+that legacy interface was detected at configure time - the headers
+(ocidfn.h, ociapr.h, ocikpr.h) found under $ORACLE_HOME/rdbms/demo or
+rdbms/public in a full Oracle Client install, a path Oracle Instant
+Client does not populate - so it may not be present in a given build.
+
 ocibannerrewritetest drives ociselect through oraproxy's banner-rewriting
 mode against the real oracle122 server, and decodes the result.
 
