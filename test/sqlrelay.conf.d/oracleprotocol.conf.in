@@ -106,4 +106,24 @@
 		</connections>
 	</instance>
 
+	<!-- same as oracleprotocol, but with its own backend, since a
+	     client old enough to speak OCI7 (#9651, #9653) is also too old to
+	     authenticate to the same modern backend the other instances above
+	     use - see #9654.  the tnsnames.ora alias sqlrelayoci7 points
+	     here. -->
+	<instance id="oracleprotocoloci7" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT7@" serverversion="11.2" sid="ora1"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle10g.firstworks.com)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS"/>
+		</connections>
+	</instance>
+
 </instances>

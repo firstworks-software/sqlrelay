@@ -18,6 +18,7 @@ ORACLEPROTOCOLPORT2 ?= 1522
 ORACLEPROTOCOLPORT3 ?= 1523
 ORACLEPROTOCOLPORT4 ?= 1524
 ORACLEPROTOCOLPORT5 ?= 1525
+ORACLEPROTOCOLPORT7 ?= 1527
 
 # OCI7INCLUDES is for oci7.cpp specifically - it's blank unless the
 # legacy OCI7 call interface was detected at configure time, so this
@@ -48,8 +49,9 @@ tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @ORACLEPROTOCOLPORT3@ "$(ORACLEPROTOCOLPORT3)" $@.out1 > $@.out2
 	$(REPLACE) @ORACLEPROTOCOLPORT4@ "$(ORACLEPROTOCOLPORT4)" $@.out2 > $@.out1
 	$(REPLACE) @ORACLEPROTOCOLPORT5@ "$(ORACLEPROTOCOLPORT5)" $@.out1 > $@.out2
-	$(MV) $@.out2 $@
-	$(RM) $@.out1
+	$(REPLACE) @ORACLEPROTOCOLPORT7@ "$(ORACLEPROTOCOLPORT7)" $@.out2 > $@.out1
+	$(MV) $@.out1 $@
+	$(RM) $@.out2
 
 oracle.class: oracle.java
 	$(JAVAC) $<

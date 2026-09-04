@@ -353,6 +353,12 @@ int main(int argc, char **argv) {
 		sid="sqlrelayfetchatonce";
 		badsid="sqlrelayfetchatoncebad";
 		isfetchatonce=true;
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayoci7")) {
+		// the oracleprotocoloci7 instance has its own backend (#9654) -
+		// an OCI7-capable client is too old to authenticate to the
+		// same modern backend the other sqlrelay* instances use
+		sid="sqlrelayoci7";
+		badsid="sqlrelayoci7bad";
 	} else {
 		sid=(issqlrelay)?"sqlrelay":"ora1";
 		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";

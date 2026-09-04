@@ -55,6 +55,17 @@ sqlrelayfetchatonce =
     (CONNECT_DATA = (SID = ora1))
   )
 
+# the oracleprotocoloci7 instance (see
+# test/sqlrelay.conf.d/oracleprotocol.conf.in) - its own backend, since an
+# OCI7-capable client is too old to authenticate to the same modern backend
+# the other instances above use (#9654)
+
+sqlrelayoci7 =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT7@))
+    (CONNECT_DATA = (SID = ora1))
+  )
+
 # the same, naming a service that is not there, for the authentication
 # section's attach failure case
 
@@ -91,5 +102,11 @@ sqlrelayconnectstringsbad =
 sqlrelayfetchatoncebad =
   (DESCRIPTION =
     (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT5@))
+    (CONNECT_DATA = (SID = nosuchsid))
+  )
+
+sqlrelayoci7bad =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL= TCP)(Host= localhost)(Port= @ORACLEPROTOCOLPORT7@))
     (CONNECT_DATA = (SID = nosuchsid))
   )
