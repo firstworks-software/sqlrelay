@@ -1628,6 +1628,16 @@
 		instead of a lookup table capped at 2 columns.  confirmed
 		against real Oracle9i OCI7 client captures for 1 through 5
 		columns
+	fixed the oracle protocol module's legacy (pre-query3) fetch path to
+		frame a lob column's inline bytes with the clr long-form
+		marker unconditionally, rather than only above a 252-byte
+		length threshold.  confirmed against real Oracle9i OCI7
+		client captures that a 10-byte and a 30-byte lob both use
+		the long form on the wire; also confirmed from the same
+		captures that the legacy path really does send lob bytes
+		inline rather than a locator, settling the question the
+		putLobField() framing fix in the prior entry's ticket left
+		open
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
