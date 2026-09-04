@@ -1659,6 +1659,15 @@
 		confirmed against real Oracle9i OCI7 client captures for 1
 		through 5 columns that the combined call gets the same row
 		header, row data and trailer a separate legacy fetch call gets
+	fixed the oracle protocol module's legacy (pre-query3) query2 path's
+		no-rows TTC_OK response, sent for a plain parse/bind/execute
+		with no combined fetch: it was a decades-old guessed byte array,
+		4 bytes short of and structurally different from the real
+		trailer. confirmed against real Oracle9i OCI7 client captures
+		for 1 through 5 columns that the real response reuses the same
+		trailer shape the legacy fetch path already builds; the one
+		opaque per-session field in it, with no correlation to anything
+		else on the wire, is sent as zero rather than guessed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
