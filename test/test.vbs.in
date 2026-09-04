@@ -466,7 +466,7 @@ function runprotocoltest(instance)
 			server="sqlrelaysapct"
 		case "oracleprotocol"
 			dir="protocol\oracle"
-			prog="oracle"
+			prog="oci8"
 		case "teradataprotocol"
 			dir="protocol\teradata"
 			prog="teradata"

@@ -71,7 +71,7 @@ oracleprotocol11g and oracleprotocol12c sqlrelay instances
 port from that generated conf file at run time) and greps the decoded
 captures for the AUTH_VFR_DATA flags and AUTH_SESSKEY
 length each verifier type is expected to put on the wire. This is direct
-wire-level evidence for the same thing oracle.cpp's Authentication
+wire-level evidence for the same thing oci8.cpp's Authentication
 section proves indirectly (a correct-password login only succeeds if the
 matching verifier crypto ran) - here the verifier type and session key
 length are read straight off the wire instead of inferred from login
@@ -82,7 +82,7 @@ ociselect and ocibannerrewritetest
 -----------------------------------
 
 ociselect (ociselect.cpp, built by `make` here) is a minimal OCI client:
-log in, run one select, print the rows. oracle.cpp in this directory is
+log in, run one select, print the rows. oci8.cpp in this directory is
 the full OCI test; ociselect is deliberately as small as an OCI
 login-plus-query can be, so a capture of it holds nothing but the login
 and the one query.
