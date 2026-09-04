@@ -7253,6 +7253,36 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		}
 	}
 
+	if (options&OPTION_FETCH) {
+
+		// a combined execute-and-fetch: the real server answers with
+		// a row header and row data directly, the same shape a
+		// separate legacy TTI_FETCH gets from sendFetchResponse() -
+		// confirmed byte-for-byte against real OCI7 legacy-exfet
+		// captures (#9637) for 1 through 5 columns.
+
+		// OPTION_DEFINE is set on every exact-fetch capture, but the
+		// response never carries a column-definition block - the
+		// client appears to supply its own output-variable defines
+		// inline elsewhere in this same request, rather than asking
+		// the server to describe them back.  so, unlike fetch(),
+		// define is always false here.
+
+		// parse/sndiov/exactfetch are NOT read from the options
+		// bitfield here, unlike fetch()'s call below - bits 8 and up
+		// of this field alias a per-call sequence counter rather than
+		// independent flags (see #9656), so options&OPTION_EXACTFETCH
+		// is true or false depending on which call number a query2
+		// happens to land on, not on whether this call combines
+		// execute and fetch.  a query2 with OPTION_FETCH set is
+		// exactly the exact-fetch case in every capture on file, so
+		// exactfetch is hardcoded true; sndiov only matters on the
+		// branch taken when define is true, which this call never
+		// takes, so it's hardcoded false; parse is unused inside
+		// sendFetchResponse() regardless
+		return sendFetchResponse(cursor,false,false,false,true);
+	}
+
 	return sendQuery2Response(cursor,false);
 }
 

@@ -1653,6 +1653,12 @@
 		sets HAVE_OCI7 in config.h and a HAVE_OCI7 build flag in
 		config.mk when present, as an optional capability separate
 		from the main oracle probe
+	fixed the oracle protocol module's legacy (pre-query3) query2 path to
+		return row data when a request combines execute and fetch into
+		one call, instead of always answering with a no-rows TTC_OK.
+		confirmed against real Oracle9i OCI7 client captures for 1
+		through 5 columns that the combined call gets the same row
+		header, row data and trailer a separate legacy fetch call gets
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
