@@ -1042,8 +1042,19 @@ run_protocol_test() {
 	# never advertises the big-chunk clr capability bit and always
 	# frames clr values as raw bytes - coverage for the go-ora v1
 	# client, which offers the bit but never implemented big chunks and
-	# frames raw bytes anyway.  all ten runs have to succeed for the
-	# instance to pass
+	# frames raw bytes anyway.  finally it runs oci7, the OCI7
+	# legacy-call-interface parity test for #9653 - it drives the same
+	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
+	# rather than the OCI8 ones, so the server's answers to the older
+	# call interface get compared against the OCI8 run's.  it is built
+	# only when #9651's HAVE_OCI7 configure probe found a full
+	# (non-Instant-Client) oracle client carrying the legacy OCI7 symbols
+	# and headers, which most hosts - including whatever host built this
+	# test.sh - do not have.  so when the binary is missing the run is
+	# treated as a pass rather than a failure, the same way the api tests
+	# above treat a missing $TESTFILE (an oracle.class that no configured
+	# jdk ever compiled, say) as "no test found" rather than an error.
+	# all eleven runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1066,7 +1077,15 @@ run_protocol_test() {
 		resultiterations0="$?"
 		./oraclebigchunkclroff
 		resultbigchunkclroff="$?"
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" )
+		if ( test -x ./oci7 )
+		then
+			./oci7
+			resultoci7="$?"
+		else
+			echo "no oci7 test found (built only with HAVE_OCI7)"
+			resultoci7="0"
+		fi
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1111,6 +1130,10 @@ run_protocol_test() {
 		if ( test "$resultbigchunkclroff" != "0" )
 		then
 			printf "    % 8s: failed (big chunk clr off)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultoci7" != "0" )
+		then
+			printf "    % 8s: failed (oci7)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
