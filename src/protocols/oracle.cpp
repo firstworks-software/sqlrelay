@@ -180,6 +180,27 @@
 #define SESSION_KEY_SIZE_11G	48
 #define SESSION_KEY_SIZE_12C	32
 
+// o3logon, the des verifier that predates o5logon, and the only one an OCI7
+// era client can answer.  it sends no AUTH_VFR_DATA, and the verifier type
+// only ever rides in that field's flags, so nothing carries a verifier type on
+// the wire for an o3logon login: this value isn't an oracle constant, it just
+// selects the code path, and it has to match the auth module's.
+// see the "Oracle Wire Protocol - Authentication" wiki page and #9658
+#define VERIFIER_TYPE_9I	0x0900
+#define SESSION_KEY_SIZE_9I	16
+
+// how many hex characters one des block takes, which is the unit an o3logon
+// AUTH_PASSWORD comes in, and the most strings an o3logon login can name (a
+// real one sends 5 in phase one and 6 in phase two)
+#define O3LOGON_BLOCK_HEX_SIZE	16
+#define O3LOGON_MAX_STRINGS	16
+
+// how far into an o3logon login the argument block can reach.  it is a fixed
+// size struct of 26 words - 104 bytes marshalled as 32 bit words, which is
+// what the capture holds, and 208 as 64 bit ones; marshalled portably its
+// counts and pointers are smaller still.  so this covers every form of it
+#define O3LOGON_MAX_BLOCK_SIZE	256
+
 // what real oracle sends for the 12c pbkdf2 parameters.  the auth module uses
 // whatever it's handed, but matching oracle is safer for a real client.
 #define PBKDF2_CSK_SALT_SIZE	16
@@ -1383,14 +1404,21 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						size_t portablesize,
 						bool secondphase);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
+		const byte_t	*findO3LogonStrings(const byte_t *rp,
+							const byte_t *end);
+		bool	recvO3LogonRequest(const byte_t *rp,
+						const byte_t *end,
+						bool secondphase);
 		bool	recvAuthenticationRequest(bool secondphase);
 		bool	sendAuthenticationChallenge();
 		bool	sendAuthenticationResponse();
+		bool	sendAuthenticationSuccess();
 		bool	sendErrorPacket(const char *what,
 						uint32_t oranum,
 						const char *message);
 		bool	sendAuthenticationError(uint32_t oranum,
 						const char *message);
+		bool	sendAuthenticationBreak();
 
 		void	debugTtcCode(byte_t ttccode);
 		void	debugTtiFunction(byte_t ttifunction);
@@ -1988,8 +2016,13 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	uint32_t	defaultverifiertype=
 			(serverfieldversion<CCAP_FIELD_VERSION_12_1)?
 					VERIFIER_TYPE_11G_2:VERIFIER_TYPE_12C;
+	// (9i isn't in the default's range at all - it's the pre-o5logon des
+	// verifier, and offering it to a modern client would break a login
+	// that works today, so it's opt-in only)
 	const char	*vt=parameters->getAttributeValue("verifiertype");
-	if (!charstring::compare(vt,"11g")) {
+	if (!charstring::compare(vt,"9i")) {
+		verifiertype=VERIFIER_TYPE_9I;
+	} else if (!charstring::compare(vt,"11g")) {
 		verifiertype=VERIFIER_TYPE_11G_2;
 	} else if (!charstring::compare(vt,"12c")) {
 		verifiertype=VERIFIER_TYPE_12C;
@@ -1999,7 +2032,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		verifiertype=(uint32_t)charstring::convertToUnsignedInteger(vt);
 		if (verifiertype!=VERIFIER_TYPE_11G_1 &&
 			verifiertype!=VERIFIER_TYPE_11G_2 &&
-			verifiertype!=VERIFIER_TYPE_12C) {
+			verifiertype!=VERIFIER_TYPE_12C &&
+			verifiertype!=VERIFIER_TYPE_9I) {
 			verifiertype=defaultverifiertype;
 		}
 	}
@@ -3138,9 +3172,12 @@ bool sqlrprotocol_oracle::sendMarker(byte_t markertype) {
 
 	// build packet - 1 (one data byte follows), 0 (reserved), then
 	// the marker type.  the header's reserved byte carries the marker
-	// flag, same as a real client's marker does
+	// flag, same as a real client's marker does - except on the 9i path,
+	// where it doesn't: in #9658's capture the 10.2 server and the OCI7
+	// client both send a marker with that byte clear, and that client
+	// aborts on bytes it doesn't expect
 	resetSendPacketBuffer(PACKET_MARKER);
-	reqpacketflags=PACKET_FLAG_MARKER;
+	reqpacketflags=(verifiertype==VERIFIER_TYPE_9I)?0:PACKET_FLAG_MARKER;
 	write(&reqpacket,(byte_t)1);
 	write(&reqpacket,(byte_t)0);
 	write(&reqpacket,markertype);
@@ -4431,6 +4468,16 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// time: 0x2d and 0x0f both give ORA-01017 for a password that is
 	// right, and 0x2f logs in.  a live 12.2 server sets both, and a live
 	// 11.2 server sets neither.
+	//
+	// a 9i verifier changes nothing here, which is not what #9658 expected
+	// going in.  the live 10.2 server the o3logon capture came from - a
+	// server that predates o5logon entirely - sends CCAP_LOGON_TYPES 0x0d,
+	// which is byte for byte the value below, and leaves CCAP_O7LOGON
+	// clear.  so the bit isn't what selects the des logon, and an OCI7
+	// client doesn't read it to pick a path: it has one login path, and it
+	// takes it whatever this byte says.  #9654's capture agrees - that
+	// client got through this negotiation against the module as it stands
+	// and went straight to the o3logon TTI functions.
 	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
 	bytestring::copy(compilecaps,ttiservercompilecaps,
 					sizeof(ttiservercompilecaps));
@@ -5765,13 +5812,27 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	// sqlroraclecredentials has 5 fields and o5logon needs 8.  the
 	// contract is documented at the top of src/auths/oracle_userlist.cpp.
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
+	bool	o3logon=(verifiertype==VERIFIER_TYPE_9I);
 
 	debugStart("auth extra (phase %d)",(secondphase)?2:1);
-	debugWrite("field count: %d",(secondphase)?
-			((pbkdf2)?7:5):((pbkdf2)?3:2));
+	debugWrite("field count: %d",(o3logon)?((secondphase)?2:1):
+			((secondphase)?((pbkdf2)?7:5):((pbkdf2)?3:2)));
 
 	extra->append("verifiertype=")->append(verifiertype);
 	debugWrite("verifiertype: %d",verifiertype);
+
+	// o3logon has no verifier salt and no client session key.  all it
+	// needs back at verify time is the challenge the module sent.
+	if (o3logon) {
+		if (secondphase) {
+			extra->append(";serverauthsesskey=")->
+						append(serverauthsesskey);
+			debugWrite("serverauthsesskey: %s",serverauthsesskey);
+		}
+		debugEnd();
+		return;
+	}
+
 	extra->append(";authvfrdata=")->append(authvfrdata);
 	debugWrite("authvfrdata: %s",authvfrdata);
 	if (pbkdf2) {
@@ -5801,6 +5862,143 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	}
 
 	debugEnd();
+}
+
+// The o3logon login packets are shaped nothing like the o5logon ones.  Their
+// argument block is positional - a marshalled OCI argument list, with no
+// AUTH_xxx names on the wire anywhere - and everything the module needs out of
+// it is a length-prefixed string at the end of the block: the user name, then
+// AUTH_PASSWORD in phase two, then the session attributes.
+//
+// How much room that block takes depends on the client's marshalling, and no
+// archived capture pins the portable form of it.  #9658's reference capture is
+// an OCI7 client against a real server whose platform banner matched its own,
+// so it marshalled natively - a raw dump of 26 32-bit words, which isn't even
+// the native form this module implements (that one is 64-bit).  #9654's
+// capture of the same client against sqlr-listener, which is the portable
+// form, was taken at the default snaplen and is truncated.
+//
+// So rather than walk a block whose layout isn't known, this finds the string
+// list directly: the run of non-empty printable length-prefixed strings that
+// ends exactly where the packet does.  A string is a length byte and its bytes
+// in both marshallings, so that reading doesn't depend on which one the client
+// used, and having to land exactly on the end of the packet is what makes a
+// wrong offset unlikely rather than merely unlucky.
+//
+// It is still a heuristic, so it is bounded on both sides: the search stays
+// inside the block rather than running the length of the packet, since the
+// block is a fixed size struct and no marshalling makes it bigger than
+// O3LOGON_MAX_BLOCK_SIZE, and a run is capped at O3LOGON_MAX_STRINGS.  Every
+// way it can pick a wrong offset fails closed - a user name that isn't one
+// matches no account, and the login is refused with the same ORA-01017 a wrong
+// password gets.
+// see "Oracle Wire Protocol - Authentication" and #9658
+const byte_t *sqlrprotocol_oracle::findO3LogonStrings(const byte_t *rp,
+							const byte_t *end) {
+
+	const byte_t	*last=rp+O3LOGON_MAX_BLOCK_SIZE;
+	if (last>end) {
+		last=end;
+	}
+
+	for (const byte_t *start=rp; start<last; start++) {
+
+		const byte_t	*p=start;
+		uint16_t	count=0;
+		bool		ok=true;
+
+		while (ok && p<end) {
+
+			byte_t	length=*p;
+			p++;
+
+			if (!length || (size_t)(end-p)<(size_t)length) {
+				ok=false;
+				break;
+			}
+
+			for (byte_t i=0; ok && i<length; i++) {
+				ok=(p[i]>=' ' && p[i]<='~');
+			}
+
+			p+=length;
+			count++;
+
+			ok=(ok && count<=O3LOGON_MAX_STRINGS);
+		}
+
+		if (ok && p==end && count) {
+			debugWrite("string list at offset %d, %d strings",
+					(int)(start-rp),(int)count);
+			return start;
+		}
+	}
+
+	debugWrite("no string list found");
+
+	return NULL;
+}
+
+bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
+						const byte_t *end,
+						bool secondphase) {
+
+	const byte_t	*sp=findO3LogonStrings(rp,end);
+	if (!sp) {
+		return false;
+	}
+
+	char		*user=NULL;
+	uint32_t	usersize=0;
+	if (!getLenString(sp,end,&user,&usersize,&sp)) {
+		return false;
+	}
+	debugWrite("user: %s",user);
+
+	if (!secondphase) {
+		delete[] username;
+		username=user;
+		return true;
+	}
+
+	// phase two names the user again - refuse one that answers a challenge
+	// built for somebody else
+	bool	sameuser=!charstring::compare(user,username);
+	delete[] user;
+	if (!sameuser) {
+		debugWrite("user changed between phases");
+		return false;
+	}
+
+	// AUTH_PASSWORD is the string right behind the user name, and it is a
+	// whole number of des blocks in hex.  anything else there is the first
+	// session attribute instead, which means the client sent no password
+	char		*field=NULL;
+	uint32_t	fieldsize=0;
+	if (sp>=end || !getLenString(sp,end,&field,&fieldsize,&sp)) {
+		debugWrite("no auth password");
+		return true;
+	}
+
+	bool	ishex=(fieldsize && !(fieldsize%O3LOGON_BLOCK_HEX_SIZE));
+	for (uint32_t i=0; ishex && i<fieldsize; i++) {
+		char	c=field[i];
+		ishex=((c>='0' && c<='9') ||
+			(c>='a' && c<='f') || (c>='A' && c<='F'));
+	}
+
+	if (!ishex) {
+		debugWrite("no auth password");
+		delete[] field;
+		return true;
+	}
+
+	gotauthpassword=true;
+	delete[] authpassword;
+	authpassword=field;
+	debugWrite("AUTH_PASSWORD: %s",authpassword);
+
+	return true;
 }
 
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
@@ -5851,6 +6049,24 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		}
 	}
 	read(rp,&seqnumber,&rp);
+
+	// a 9i login's argument block is positional, so it gets its own parse
+	if (verifiertype==VERIFIER_TYPE_9I) {
+
+		// a 9i answer is a summary object, and a summary echoes the
+		// sequence number of the call it answers.  nothing on the
+		// o5logon path writes one, so this stays inside the branch
+		callnumber=seqnumber;
+
+		debugStart("o3logon request (phase %d)",(secondphase)?2:1);
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugTtcCode(ttccode);
+		debugTtiFunction(ttifunction);
+		debugWrite("seq number: %d",seqnumber);
+		bool	retval=recvO3LogonRequest(rp,end,secondphase);
+		debugEnd();
+		return retval;
+	}
 
 	// which of the two wire encodings the client uses is decided by the
 	// platform banner the module answered the tti protocol negotiation
@@ -5995,11 +6211,16 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	bool	pbkdf2=(verifiertype==VERIFIER_TYPE_12C);
+	bool	o3logon=(verifiertype==VERIFIER_TYPE_9I);
 
 	// a real server's AUTH_VFR_DATA is the user's stored verifier salt.
 	// SQL Relay has none, so it generates a fresh one per login.
+	// o3logon has no verifier salt at all - its session key is encrypted
+	// under the account's des password hash, which is its own salt.
 	delete[] authvfrdata;
-	authvfrdata=generateHex((pbkdf2)?VFR_DATA_SIZE_12C:VFR_DATA_SIZE_11G);
+	authvfrdata=(o3logon)?NULL:
+			generateHex((pbkdf2)?VFR_DATA_SIZE_12C:
+						VFR_DATA_SIZE_11G);
 	delete[] authpbkdf2csksalt;
 	authpbkdf2csksalt=(pbkdf2)?generateHex(PBKDF2_CSK_SALT_SIZE):NULL;
 
@@ -6009,7 +6230,7 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	sqlroraclecredentials	cred;
 	cred.setUser(username);
-	cred.setMethod("O5LOGON");
+	cred.setMethod((o3logon)?"O3LOGON":"O5LOGON");
 	cred.setExtra(extra.getString());
 
 	// a false return means no auth module knows the user, or has its
@@ -6022,9 +6243,9 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	fabricatedchallenge=!cont->challenge(&cred,&challenge);
 	if (fabricatedchallenge) {
 		debugWrite("challenge failed, fabricating one");
-		char	*fake=generateHex((pbkdf2)?
-					SESSION_KEY_SIZE_12C:
-					SESSION_KEY_SIZE_11G);
+		char	*fake=generateHex((o3logon)?SESSION_KEY_SIZE_9I:
+					((pbkdf2)?SESSION_KEY_SIZE_12C:
+					SESSION_KEY_SIZE_11G));
 		challenge.append(fake);
 		delete[] fake;
 	}
@@ -6056,15 +6277,34 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugStart("authentication challenge");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
-	debugWrite("verifier type: %d (%s)",
-			verifiertype,(pbkdf2)?"12c":"11g");
-	debugWrite("authvfrdata: %s",authvfrdata);
+	debugWrite("verifier type: %d (%s)",verifiertype,
+			(o3logon)?"9i":((pbkdf2)?"12c":"11g"));
+	if (!o3logon) {
+		debugWrite("authvfrdata: %s",authvfrdata);
+	}
 	if (pbkdf2) {
 		debugWrite("authpbkdf2csksalt: %s",authpbkdf2csksalt);
 	}
 	debugWrite("serverauthsesskey: %s",serverauthsesskey);
 	debugWrite("fabricated challenge: %s",
 			(fabricatedchallenge)?"yes":"no");
+
+	// an o3logon challenge names nothing.  the client hands the server an
+	// out parameter - a two byte length slot and a 33 byte buffer - and
+	// the server fills it in: the key's length as a count, then the key as
+	// a length-prefixed string, then a summary object carrying error 0.
+	// no pair count, no AUTH_SESSKEY name, no flags, no verifier salt, and
+	// no pbkdf2 parameters.  a real 10.2 server's whole challenge is 140
+	// bytes against the 2356 an o5logon one takes
+	if (o3logon) {
+		uint32_t	sesskeysize=
+				charstring::getLength(serverauthsesskey);
+		putAuthCount(sesskeysize,2);
+		putLenString(serverauthsesskey,sesskeysize);
+		putSummary(0,0,0,NULL);
+		debugEnd();
+		return sendPacket(true);
+	}
 
 	// a request's pair count is 8 bytes in the native encoding, a
 	// response's is 2
@@ -6181,6 +6421,8 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 				"logon denied\n");
 	}
 
+	bool	o3logon=(verifiertype==VERIFIER_TYPE_9I);
+
 	stringbuffer	extra;
 	putAuthExtra(&extra,true);
 
@@ -6188,7 +6430,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	cred.setUser(username);
 	cred.setPassword(authpassword);
 	cred.setPasswordSize(charstring::getLength(authpassword));
-	cred.setMethod("O5LOGON");
+	cred.setMethod((o3logon)?"O3LOGON":"O5LOGON");
 	cred.setExtra(extra.getString());
 
 	if (!cont->auth(&cred)) {
@@ -6199,6 +6441,14 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 				"logon denied\n");
 	}
 	debugWrite("auth succeeded");
+
+	// o3logon has no server response.  a real 10.2 server answers a
+	// successful o3logon login with a bare success summary - a ttc 0x04
+	// carrying error 0 - and no session attributes at all, and the client
+	// asks for what it needs afterwards
+	if (o3logon) {
+		return sendAuthenticationSuccess();
+	}
 
 	// AUTH_SVR_RESPONSE proves to the client that the server knew the
 	// password too, and a real client refuses the login without it.  the
@@ -6271,10 +6521,72 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	return sendPacket(true);
 }
 
+// what a real 10.2 server answers a successful o3logon login with - a summary
+// object carrying error 0, and nothing else.  the o5logon path can't be reused
+// here: it sends a ttc 0x08 field list whose AUTH_SVR_RESPONSE o3logon has no
+// equivalent of, and an OCI7 client reading one would desync.
+// see "Oracle Wire Protocol - Authentication - Password" and #9658
+bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("authentication success");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("user: %s",username);
+	debugEnd();
+
+	putSummary(0,0,0,NULL);
+
+	return sendPacket(true);
+}
+
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 						const char *message) {
+
+	// a real 10.2 server doesn't just send the error for a failed o3logon
+	// login - it breaks the call first, with a marker exchange, and only
+	// then sends the error.  an OCI7 client aborts a connection whenever
+	// it doesn't get bytes shaped the way it expects (see #9654), so the
+	// break goes out even though the module has nothing to interrupt.
+	//
+	// a break that doesn't come back is not a refused login, it's an
+	// exchange that broke down partway through, so it leaves loginrefused
+	// clear and gets no retry - the client never saw the error, and what
+	// it sends next isn't another login
+	if (verifiertype==VERIFIER_TYPE_9I && !sendAuthenticationBreak()) {
+		return false;
+	}
+
 	loginrefused=true;
+
 	return sendErrorPacket("authentication error",oranum,message);
+}
+
+// the marker exchange a real 10.2 server runs in front of an o3logon
+// ORA-01017: a break marker, then a reset marker, then the client's reset
+// marker back.  a client that sends something else is out of step with the
+// module either way, so anything but a marker ends the exchange.
+bool sqlrprotocol_oracle::sendAuthenticationBreak() {
+
+	debugStart("authentication break");
+	debugEnd();
+
+	if (!sendMarker(MARKER_TYPE_BREAK) ||
+		!sendMarker(MARKER_TYPE_RESET) ||
+		!recvPacket()) {
+		return false;
+	}
+
+	if (resppackettype!=PACKET_MARKER) {
+		debugWrite("bad packet type %d, expected %d",
+					resppackettype,PACKET_MARKER);
+		return false;
+	}
+
+	return true;
 }
 
 bool sqlrprotocol_oracle::sendErrorPacket(const char *what,

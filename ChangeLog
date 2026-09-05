@@ -1682,6 +1682,15 @@
 		trailer shape the legacy fetch path already builds; the one
 		opaque per-session field in it, with no correlation to anything
 		else on the wire, is sent as zero rather than guessed
+	added an O3LOGON authentication verifier to the oracle protocol and
+		oracle userlist/connectstrings auth modules, selected with
+		verifiertype="9i", so a pre-10g OCI7 client can log in at all.
+		O5LOGON postdates OCI7 entirely, and such a client answers an
+		O5LOGON challenge by dropping the connection. the crypto - the
+		oracle DES password hash, the SHA-1 3DES key derivation, and
+		the obfuscated password buffer - is verified byte for byte
+		against real captures of an Oracle9i client logging into a real
+		10.2 server, both a successful login and a rejected one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

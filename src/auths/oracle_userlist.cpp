@@ -20,6 +20,8 @@
 #include <rudiments/md5.h>
 #include <rudiments/aes192.h>
 #include <rudiments/aes256.h>
+#include <rudiments/singledes.h>
+#include <rudiments/tripledes.h>
 #include <rudiments/pbkdf2.h>
 #include <rudiments/sensitivevalue.h>
 #include <rudiments/csprng.h>
@@ -40,6 +42,12 @@
 #define VERIFIER_TYPE_11G_1	0xb152
 #define VERIFIER_TYPE_11G_2	0x1b25
 #define VERIFIER_TYPE_12C	0x4815
+
+// O3LOGON's verifier type.  Not an oracle constant - O3LOGON sends no
+// AUTH_VFR_DATA, and the verifier type only rides in that field's flags, so
+// nothing carries a verifier type on the wire for an O3LOGON login.  This
+// value exists to select the code path and must match the protocol module's.
+#define VERIFIER_TYPE_9I	0x0900
 
 // session key lengths, which the client tells the two verifier types apart by
 #define SESSION_KEY_SIZE_11G	48
@@ -91,6 +99,25 @@
 // authenticated user name, and giving it an out parameter means widening
 // sqlrcredentials, which relinks libsqlrserver.  Call it after auth() has
 // succeeded.
+//
+// O3LOGON is the pre-O5LOGON verifier, the one an OCI7 era client speaks.  It
+// uses the same "extra" mechanism, with far fewer inputs, and has no server
+// response phase - a real server answers a successful O3LOGON login with a
+// bare success summary rather than an AUTH_SVR_RESPONSE.
+//
+//	challenge(), with method "O3LOGON":
+//		verifiertype		2304
+//	  out:	the AUTH_SESSKEY to send, uppercase hex, 32 characters
+//
+//	auth(), with method "O3LOGON":
+//		password		AUTH_PASSWORD from the client, hex
+//		verifiertype		as above
+//		serverauthsesskey	what challenge() returned
+//
+// The client sends no AUTH_SESSKEY of its own for O3LOGON, so there is no
+// clientauthsesskey.  serverauthsesskey is needed for the same reason it is
+// for O5LOGON: challenge() keeps no state, so decrypting the challenge it
+// produced is the only way to get the session key back at verify time.
 
 class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 	public:
@@ -103,6 +130,7 @@ class SQLRSERVER_DLLSPEC sqlrauth_oracle_userlist : public sqlrauth {
 		char		*getClearTextPassword(const char *user);
 		bool		compare(const char *suppliedresponse,
 					uint64_t suppliedresponsesize,
+					const char *user,
 					const char *validpassword,
 					const char *method,
 					const char *extra);
@@ -159,6 +187,7 @@ sqlrauth_oracle_userlist::sqlrauth_oracle_userlist(
 
 static const char *supportedauthmethods[]={
 	"O5LOGON",
+	"O3LOGON",
 	"oracle_clear_password",
 	NULL
 };
@@ -600,6 +629,322 @@ static bool o5logonServerResponse(const char *password,
 	return retval;
 }
 
+// The O3LOGON exchange below is the server side of the client side described
+// by john the ripper's src/o3logon_fmt_plug.c, Copyright (c) 2014 JimF, "hereby
+// released to the general public under the following terms: Redistribution and
+// use in source and binary forms, with or without modification, are permitted."
+// Every constant and every step is pinned against two real captures of an
+// oracle 9.2 OCI7 client logging into a real 10.2 server; see trac #9658.
+
+// The 3DES CBC initialization vector, the same for every 3DES operation here,
+// and the two entropy blobs the key derivation folds in.  All three are baked
+// into the oracle client library - fixed, public, and not per session.
+static const byte_t	o3logoniv[]={
+	0x80, 0x20, 0x40, 0x04, 0x08, 0x02, 0x10, 0x01
+};
+static const byte_t	o3logonsesskeyentropy[]={
+	0xa2, 0xfb, 0xe6, 0xad, 0x4c, 0x7d, 0x1e, 0x3d,
+	0x6e, 0xb0, 0xb7, 0x6c, 0x97, 0xef, 0xff, 0x84,
+	0x44, 0x71, 0x02, 0x84, 0xac, 0xf1, 0x3b, 0x29,
+	0x5c, 0x0f, 0x0c, 0xb1, 0x87, 0x75, 0xef
+};
+static const byte_t	o3logonpasswordentropy[]={
+	0xf2, 0xff, 0x97, 0x87, 0x15, 0x37, 0x07, 0x76,
+	0x07, 0x27, 0xe2, 0x7f, 0xa3, 0xb1, 0xd6, 0x73,
+	0x3f, 0x2f, 0xd1, 0x52, 0xab, 0xac, 0xc0
+};
+
+// the fixed key the oracle password hash's first pass runs under, and the
+// all-zero iv both of its passes run under
+static const byte_t	o3logonhashkey[]={
+	0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef
+};
+static const byte_t	o3logonhashiv[]={
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+#define O3LOGON_BLOCK_SIZE		8
+#define O3LOGON_HASH_SIZE		8
+#define O3LOGON_KEY_SIZE		24
+#define O3LOGON_SESSION_KEY_SIZE	16
+
+// how much of the obfuscated password buffer is not password: 4 bytes of salt
+// at the front, and 4 bytes at the back that the rotation duplicates
+#define O3LOGON_PASSWORD_OVERHEAD	4
+
+// A single or triple des cbc block transform, chosen by key size, with padding
+// off.  The password hash runs under a zero iv and every 3des operation under
+// o3logoniv, so the caller passes the one it wants.
+static bool desCbc(bool encrypt,
+			const byte_t *key, size_t keysize,
+			const byte_t *iv,
+			const byte_t *in, size_t insize,
+			byte_t *out) {
+
+	if (!insize || insize%O3LOGON_BLOCK_SIZE ||
+		(keysize!=O3LOGON_HASH_SIZE && keysize!=O3LOGON_KEY_SIZE)) {
+		return false;
+	}
+
+	encryption	*enc=(keysize==O3LOGON_HASH_SIZE)?
+				(encryption *)new singledes():
+				(encryption *)new tripledes();
+	enc->setUsePadding(false);
+
+	bool	retval=false;
+	if (enc->setKey(key,keysize) &&
+		enc->setIv(iv,O3LOGON_BLOCK_SIZE) &&
+		enc->append(in,(uint32_t)insize)) {
+		// getEncryptedDataSize() and getDecryptedDataSize() each re-run
+		// the cipher in their own direction, so they have to be paired
+		// with the matching getter or the buffer gets replaced by the
+		// opposite operation's result
+		const byte_t	*result=(encrypt)?
+				enc->getEncryptedData():enc->getDecryptedData();
+		uint64_t	resultsize=(encrypt)?
+				enc->getEncryptedDataSize():
+				enc->getDecryptedDataSize();
+		if (result && resultsize==insize) {
+			bytestring::copy(out,result,insize);
+			retval=true;
+		}
+	}
+
+	delete enc;
+
+	return retval;
+}
+
+// The oracle des password hash - the 8 bytes SYS.USER$.PASSWORD held before
+// 11g.  uppercase(user||password) as utf-16be, zero padded to a block
+// multiple, des-cbc encrypted under a fixed key, then des-cbc encrypted again
+// under the last block of that first pass.  The last block of the second pass
+// is the hash.
+//
+// Note that it folds the case of the password as well as of the user name, so
+// the hash alone can't tell "testpassword" from "TESTPASSWORD".  Case still
+// decides the login: the password auth() recovers is compared to the stored
+// one byte for byte.
+static bool o3logonPasswordHash(const char *user, const char *password,
+							byte_t *hash) {
+
+	stringbuffer	userpassword;
+	userpassword.append(user)->append(password);
+	char	*upper=userpassword.detachString();
+	charstring::upper(upper);
+
+	size_t	upperlen=charstring::getLength(upper);
+	size_t	insize=((upperlen*2)+O3LOGON_BLOCK_SIZE-1)/
+				O3LOGON_BLOCK_SIZE*O3LOGON_BLOCK_SIZE;
+	if (!insize) {
+		insize=O3LOGON_BLOCK_SIZE;
+	}
+
+	byte_t	*in=new byte_t[insize];
+	byte_t	*out=new byte_t[insize];
+	bytestring::zero(in,insize);
+	for (size_t i=0; i<upperlen; i++) {
+		in[i*2+1]=(byte_t)upper[i];
+	}
+
+	bool	retval=desCbc(true,o3logonhashkey,sizeof(o3logonhashkey),
+					o3logonhashiv,in,insize,out);
+	if (retval) {
+		byte_t	key[O3LOGON_HASH_SIZE];
+		bytestring::copy(key,out+insize-O3LOGON_HASH_SIZE,sizeof(key));
+		retval=desCbc(true,key,sizeof(key),
+					o3logonhashiv,in,insize,out);
+		if (retval) {
+			bytestring::copy(hash,out+insize-O3LOGON_HASH_SIZE,
+							O3LOGON_HASH_SIZE);
+		}
+		bytestring::zero(key,sizeof(key));
+	}
+
+	bytestring::zero(in,insize);
+	bytestring::zero(out,insize);
+	bytestring::zero(upper,upperlen);
+	delete[] in;
+	delete[] out;
+	delete[] upper;
+
+	return retval;
+}
+
+// The o3logon key derivation - a 24 byte 3des key from an input and one of the
+// two entropy blobs.  The first 20 bytes are sha1(input||entropy).  The last 4
+// are the front of a second sha1, over the input, a 0x02 byte, all but the
+// first byte of the first digest, and the entropy again.
+static bool o3logonCreateKey(const byte_t *in, size_t insize,
+				const byte_t *entropy, size_t entropysize,
+				byte_t *key) {
+
+	sha1	first;
+	if (!first.append(in,(uint32_t)insize) ||
+		!first.append(entropy,(uint32_t)entropysize)) {
+		return false;
+	}
+	const byte_t	*digest=first.getHash();
+	if (!digest) {
+		return false;
+	}
+	bytestring::copy(key,digest,20);
+
+	// getHash() finalizes the digest, so each sha1 gets its own object and
+	// exactly one call
+	sha1	second;
+	byte_t	two=0x02;
+	if (!second.append(in,(uint32_t)insize) ||
+		!second.append(&two,1) ||
+		!second.append(key+1,19) ||
+		!second.append(entropy,(uint32_t)entropysize)) {
+		return false;
+	}
+	digest=second.getHash();
+	if (!digest) {
+		return false;
+	}
+	bytestring::copy(key+20,digest,4);
+
+	return true;
+}
+
+static bool o3logonSupported() {
+	singledes	sd;
+	tripledes	td;
+	return (sd.isSupported() && td.isSupported());
+}
+
+static bool o3logonVerifierType(parameterstring *p) {
+	return ((uint32_t)charstring::convertToUnsignedInteger(
+				p->getValue("verifiertype"),(int32_t)0)==
+							VERIFIER_TYPE_9I);
+}
+
+static bool o3logonChallenge(const char *user,
+				const char *password,
+				const char *extra,
+				stringbuffer *challenge) {
+
+	parameterstring	p;
+	p.parse(extra);
+	if (!o3logonVerifierType(&p)) {
+		return false;
+	}
+
+	byte_t	hash[O3LOGON_HASH_SIZE];
+	if (!o3logonPasswordHash(user,password,hash)) {
+		return false;
+	}
+
+	// AUTH_SESSKEY = 3des-cbc(createkey(hash), 16 random bytes)
+	byte_t	key[O3LOGON_KEY_SIZE];
+	byte_t	sesskey[O3LOGON_SESSION_KEY_SIZE];
+	byte_t	encsesskey[O3LOGON_SESSION_KEY_SIZE];
+	csprng	csr;
+	bool	retval=(o3logonCreateKey(hash,sizeof(hash),
+					o3logonsesskeyentropy,
+					sizeof(o3logonsesskeyentropy),key) &&
+			csr.generateBytes(sesskey,sizeof(sesskey),
+						sizeof(sesskey)) &&
+			desCbc(true,key,sizeof(key),o3logoniv,
+					sesskey,sizeof(sesskey),encsesskey));
+	if (retval) {
+		char	*hex=hexEncodeUpper(encsesskey,sizeof(encsesskey));
+		challenge->append(hex);
+		delete[] hex;
+	}
+
+	bytestring::zero(hash,sizeof(hash));
+	bytestring::zero(key,sizeof(key));
+	bytestring::zero(sesskey,sizeof(sesskey));
+
+	return retval;
+}
+
+static bool o3logonVerify(const char *authpassword,
+				const char *user,
+				const char *password,
+				const char *extra,
+				stringbuffer *supplied) {
+
+	parameterstring	p;
+	p.parse(extra);
+	if (!o3logonVerifierType(&p)) {
+		return false;
+	}
+
+	byte_t	hash[O3LOGON_HASH_SIZE];
+	if (!o3logonPasswordHash(user,password,hash)) {
+		return false;
+	}
+
+	// recover the session key from the module's own challenge, then derive
+	// the key the client obfuscated the password under from it
+	byte_t	key[O3LOGON_KEY_SIZE];
+	byte_t	encsesskey[O3LOGON_SESSION_KEY_SIZE];
+	byte_t	sesskey[O3LOGON_SESSION_KEY_SIZE];
+	bool	ok=(o3logonCreateKey(hash,sizeof(hash),
+					o3logonsesskeyentropy,
+					sizeof(o3logonsesskeyentropy),key) &&
+		hexDecodeExactly(p.getValue("serverauthsesskey"),
+					sizeof(encsesskey),encsesskey) &&
+		desCbc(false,key,sizeof(key),o3logoniv,
+				encsesskey,sizeof(encsesskey),sesskey) &&
+		o3logonCreateKey(sesskey,sizeof(sesskey),
+					o3logonpasswordentropy,
+					sizeof(o3logonpasswordentropy),key));
+
+	bytestring::zero(hash,sizeof(hash));
+	bytestring::zero(sesskey,sizeof(sesskey));
+
+	if (!ok) {
+		bytestring::zero(key,sizeof(key));
+		return false;
+	}
+
+	// AUTH_PASSWORD = 3des-cbc(key, 4 bytes of salt || the password ||
+	// filler), with the password rotated so that its first 4 bytes sit at
+	// the end of the buffer.  there is no length field and no padding.
+	byte_t		*encpassword=NULL;
+	uint64_t	encpasswordsize=0;
+	charstring::hexDecode(authpassword,
+				charstring::getLength(authpassword),
+				&encpassword,&encpasswordsize);
+	byte_t	*obf=new byte_t[encpasswordsize+1];
+	uint64_t	passwordsize=charstring::getLength(password);
+	ok=(encpasswordsize>=(uint64_t)O3LOGON_BLOCK_SIZE &&
+		!(encpasswordsize%O3LOGON_BLOCK_SIZE) &&
+		passwordsize &&
+		passwordsize+O3LOGON_PASSWORD_OVERHEAD<=encpasswordsize &&
+		desCbc(false,key,sizeof(key),o3logoniv,
+				encpassword,encpasswordsize,obf));
+
+	bytestring::zero(key,sizeof(key));
+	delete[] encpassword;
+
+	if (ok) {
+
+		// undo the rotation.  what follows the password is filler, and
+		// the last 4 bytes are the rotation's leftovers, so only the
+		// first passwordsize bytes mean anything
+		bytestring::copy(obf,obf+encpasswordsize-
+					O3LOGON_PASSWORD_OVERHEAD,
+					O3LOGON_PASSWORD_OVERHEAD);
+
+		if (supplied) {
+			supplied->append((const char *)obf,passwordsize);
+		}
+
+		ok=!bytestring::compare(obf,password,passwordsize);
+	}
+
+	bytestring::zero(obf,encpasswordsize);
+	delete[] obf;
+
+	return ok;
+}
+
 const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 
 	// this module only supports oracle credentials
@@ -642,7 +987,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 
 		// no encryption: compare passwords directly
 		if (!charstring::getLength(passwordencryptions[i])) {
-			return (compare(password,passwordsize,passwords[i],
+			return (compare(password,passwordsize,user,passwords[i],
 						method,extra))?user:NULL;
 		}
 
@@ -655,7 +1000,8 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 
 		// one-way encryption: encrypt and compare
 		// Only oracle_clear_password passes the password itself in -
-		// O5LOGON needs the cleartext to derive its challenge.
+		// O5LOGON and O3LOGON need the cleartext to derive their
+		// challenges.
 		if (pe->oneWay()) {
 			if (charstring::compare(method,
 						"oracle_clear_password")) {
@@ -669,7 +1015,7 @@ const char *sqlrauth_oracle_userlist::auth(sqlrcredentials *cred) {
 
 		// two-way encryption: decrypt and compare
 		char	*pwd=pe->decrypt(passwords[i]);
-		bool	retval=compare(password,passwordsize,
+		bool	retval=compare(password,passwordsize,user,
 						pwd,method,extra);
 		delete[] pwd;
 		return (retval)?user:NULL;
@@ -705,6 +1051,7 @@ char *sqlrauth_oracle_userlist::getClearTextPassword(const char *user) {
 
 bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 						uint64_t suppliedresponsesize,
+						const char *user,
 						const char *validpassword,
 						const char *method,
 						const char *extra) {
@@ -726,38 +1073,43 @@ bool sqlrauth_oracle_userlist::compare(const char *suppliedresponse,
 		return !charstring::compare(suppliedresponse,validpassword);
 	}
 
-	if (tls::isSupported() && !charstring::compare(method,"O5LOGON")) {
-
-		if (!getDebug()) {
-			return o5logonVerify(suppliedresponse,
-						validpassword,extra,NULL);
-		}
-
-		stringbuffer	supplied;
-		bool		retval=o5logonVerify(suppliedresponse,
-						validpassword,extra,&supplied);
-		debugStart("auth compare");
-		stringbuffer	b;
-		b.append("expected response: ");
-		b.safePrint(validpassword);
-		debugWrite("%s",b.getString());
-		b.clear();
-		b.append("supplied response: ");
-		b.safePrint(supplied.getString(),supplied.getStringLength());
-		debugWrite("%s",b.getString());
-		debugEnd();
-		return retval;
+	bool	o5logon=(tls::isSupported() &&
+			!charstring::compare(method,"O5LOGON"));
+	bool	o3logon=(o3logonSupported() &&
+			!charstring::compare(method,"O3LOGON"));
+	if (!o5logon && !o3logon) {
+		return false;
 	}
 
-	return false;
+	if (!getDebug()) {
+		return (o5logon)?
+			o5logonVerify(suppliedresponse,
+					validpassword,extra,NULL):
+			o3logonVerify(suppliedresponse,user,
+					validpassword,extra,NULL);
+	}
+
+	stringbuffer	supplied;
+	bool		retval=(o5logon)?
+			o5logonVerify(suppliedresponse,
+					validpassword,extra,&supplied):
+			o3logonVerify(suppliedresponse,user,
+					validpassword,extra,&supplied);
+	debugStart("auth compare");
+	stringbuffer	b;
+	b.append("expected response: ");
+	b.safePrint(validpassword);
+	debugWrite("%s",b.getString());
+	b.clear();
+	b.append("supplied response: ");
+	b.safePrint(supplied.getString(),supplied.getStringLength());
+	debugWrite("%s",b.getString());
+	debugEnd();
+	return retval;
 }
 
 bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 						stringbuffer *challenge) {
-
-	if (!tls::isSupported()) {
-		return false;
-	}
 
 	// this module only supports oracle credentials
 	if (charstring::compare(cred->getType(),"oracle")) {
@@ -775,21 +1127,37 @@ bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 		debugEnd();
 	}
 
-	// the two O5LOGON phases are the only things this builds
+	// the two O5LOGON phases and the one O3LOGON phase are the only things
+	// this builds.  the crypto each needs is gated separately - O5LOGON's
+	// pbkdf2-hmac-sha512 has no non-openssl fallback in rudiments, and
+	// O3LOGON's des and 3des may or may not be there on their own.
 	bool	serverresponse=
 			!charstring::compare(method,"O5LOGON-SERVER-RESPONSE");
-	if (charstring::compare(method,"O5LOGON") && !serverresponse) {
+	bool	o5logon=(serverresponse ||
+			!charstring::compare(method,"O5LOGON"));
+	bool	o3logon=!charstring::compare(method,"O3LOGON");
+	if (o5logon) {
+		if (!tls::isSupported()) {
+			return false;
+		}
+	} else if (o3logon) {
+		if (!o3logonSupported()) {
+			return false;
+		}
+	} else {
 		return false;
 	}
 
-	// Both phases are derived from the password, so the cleartext
+	// Every phase is derived from the password, so the cleartext
 	// password is required.
 	char	*validpassword=getClearTextPassword(user);
 	bool	retval=false;
 	if (validpassword) {
-		retval=(serverresponse)?
+		retval=(o3logon)?
+			o3logonChallenge(user,validpassword,extra,challenge):
+			((serverresponse)?
 			o5logonServerResponse(validpassword,extra,challenge):
-			o5logonChallenge(validpassword,extra,challenge);
+			o5logonChallenge(validpassword,extra,challenge));
 	}
 	delete[] validpassword;
 
