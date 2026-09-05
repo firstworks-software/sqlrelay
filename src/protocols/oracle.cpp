@@ -2052,9 +2052,13 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	}
 
 	// a 9i verifier also means talking to a pre-10g client, which reads
-	// a different, smaller TTC 01/02 shape - see putTti6Response()
+	// a different, smaller TTC 01/02 shape - see putTti6Response().  it
+	// also means answering as charset 31, which a real 10.2 server sent
+	// this client - not otherwise a documented charset id, but confirmed
+	// against a real capture rather than assumed
 	if (verifiertype==VERIFIER_TYPE_9I) {
 		serverfieldversion=CCAP_FIELD_VERSION_10_2;
+		charset=31;
 	}
 
 	// whether big chunk clr framing may be used at all.  "auto" (the
@@ -4788,10 +4792,10 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 
 		// the last representation offered is the one to echo.  where
 		// a client offers several - the integer types 25-33 - it puts
-		// its platform's first and the universal one last, and the
-		// live 11.2 server in ttidatatypes below answers with the
-		// universal one.  where it offers one, that one is also what
-		// that server answers with.
+		// its platform's first and the universal one last, and a
+		// portable-mode server answers with the universal one - a
+		// native-mode reference isn't the right check for this, see
+		// #9664's ground-truth capture correction
 		if (clientdatatypecount<
 			sizeof(clientdatatypes)/sizeof(clientdatatypes[0])/3) {
 			byte_t	*cdt=clientdatatypes+clientdatatypecount*3;
