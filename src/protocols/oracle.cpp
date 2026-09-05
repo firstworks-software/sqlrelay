@@ -409,6 +409,12 @@
 #define ENCODING_MULTI_BYTE		0x01
 #define ENCODING_CONV_LENGTH		0x02
 
+// the two representations the module can write.  ttidatatypes answers every
+// row with one or the other, and they are the only two a 9i client's own
+// catalog can be answered with either - see countDataTypes9i().
+#define DATATYPE_REP_UNIVERSAL		0x01
+#define DATATYPE_REP_NATIVE		0x0a
+
 // a length byte over 252 isn't a length.  0xfd introduces a null, 0xfe the
 // chunked long form.
 #define CLR_MAX_SHORT_LENGTH		252
@@ -4820,6 +4826,7 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 		// a type that converts to something is followed by the
 		// zero-terminated list of representations the client will
 		// accept for it, which is usually one entry long
+		byte_t	firstrep=0;
 		byte_t	lastrep=0;
 		if (convdatatype) {
 			uint16_t	reps=0;
@@ -4832,6 +4839,9 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 				if (!rep) {
 					break;
 				}
+				if (!reps) {
+					firstrep=rep;
+				}
 				lastrep=rep;
 				reps++;
 			}
@@ -4840,18 +4850,43 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 			}
 		}
 
-		// the last representation offered is the one to echo.  where
-		// a client offers several - the integer types 25-33 - it puts
-		// its platform's first and the universal one last, and a
-		// portable-mode server answers with the universal one - a
-		// native-mode reference isn't the right check for this, see
-		// #9664's ground-truth capture correction
+		// the representation to echo.  a type offered in one
+		// representation gets that one back, and there is nothing to
+		// choose.  the integer types 25-33 are offered in three - the
+		// client's platform's first, then the type's own code, then
+		// the universal one - and a real server answers with the
+		// first of them it can write itself.
+		//
+		// the x86 10.2 server in
+		// test/protocol/oracle/samples/oracle102-oci7-portable-login-
+		// select.cap shows both halves of that against a SPARC
+		// client: it answers types 25, 26 and 28-31 with the
+		// universal representation, because that client's first
+		// choice for each is a big-endian one the server can't write,
+		// and answers 27, 32 and 33 with the client's own first
+		// choice of 0x0a, which is architecture-neutral.  both OCI7
+		// clients offer 0x0a first for those same three types, and a
+		// 12.2 server answers a modern client's first choice for all
+		// nine.
+		//
+		// so take the first representation when it is one of the two
+		// the module writes, and fall back to the universal one the
+		// client offers last otherwise.  echoing the last one
+		// unconditionally, which is what this did before, answers
+		// those three types with a representation no real server
+		// picks for them
+		byte_t	echorep=lastrep;
+		if (firstrep==DATATYPE_REP_UNIVERSAL ||
+				firstrep==DATATYPE_REP_NATIVE) {
+			echorep=firstrep;
+		}
+
 		if (clientdatatypecount<
 			sizeof(clientdatatypes)/sizeof(clientdatatypes[0])/3) {
 			byte_t	*cdt=clientdatatypes+clientdatatypecount*3;
 			cdt[0]=datatype;
 			cdt[1]=convdatatype;
-			cdt[2]=lastrep;
+			cdt[2]=echorep;
 			clientdatatypecount++;
 		}
 

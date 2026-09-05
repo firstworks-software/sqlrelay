@@ -1806,6 +1806,15 @@
 		a 9i client asking for 0x0137 or 0x0138 got 0x0136, the 8.1.7
 		version. it answers with the client's own version now, capped
 		at 12, the way a real server does
+	fixed the oracle protocol module answering a verifiertype="9i" client's
+		multi-representation data types with a representation no real
+		server picks. such a client offers the integer types 25 through
+		33 in three representations - its platform's, then the type's
+		own code, then the universal one - and the module echoed the
+		last of them, which is always the universal one. a real server
+		answers with the first it can write itself, so types 27, 32 and
+		33 come back in the architecture-neutral representation the
+		client asks for rather than the universal one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
