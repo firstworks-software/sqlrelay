@@ -1728,6 +1728,8 @@
 		moves the character set ids the client looks for behind it.
 		part 2, the block size, the character set ids and the trailer
 		were already right
+	untracked doc/admin/installingpkg.wt, a generated file, and fixed the
+		stale distclean path for it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

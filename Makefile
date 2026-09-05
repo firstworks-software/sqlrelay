@@ -116,7 +116,7 @@ distclean: clean
 		test/sqlrelay.conf.d/freetds/etc/freetds.conf \
 		msvc/setupx64/setupx64.vdproj \
 		msvc/setupx86/setupx86.vdproj \
-		doc/installingpkg.wt \
+		doc/admin/installingpkg.wt \
 		configure.lineno \
 		configure~ \
 		test/testresults-*.log \
