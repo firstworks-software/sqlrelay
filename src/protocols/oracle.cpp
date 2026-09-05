@@ -6760,11 +6760,12 @@ void sqlrprotocol_oracle::putO3LogonSummary() {
 // pins where they start and end: every field there is a fixed four bytes,
 // where a zero in the portable encoding is one byte whatever its width.
 //
-// only five fields are ever set in any capture: the end of call status of 1 at
-// the front, the cursor id, the command type, the sequence number of the call
-// being answered, and the success iteration count.  the error number, the row
-// fields and everything else a summary can carry are zero in all of them, and
-// what several of them are for is unexplained
+// five fields carry a value: the end of call status of 1 at the front, the
+// cursor id, the command type, the sequence number of the call being answered,
+// and the success iteration count.  the parse error offset is a sixth that a
+// real server sometimes leaves set - see below.  the error number, the row
+// fields and everything else a summary can carry are zero in every capture,
+// and what several of them are for is unexplained
 // see "Oracle Wire Protocol - Authentication - Password"
 void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
@@ -6778,6 +6779,16 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,cursorid);
+
+	// the parse error offset, which an oci7 client keeps in cda->peo.  a
+	// client only reads it when the parse returned an error, and this
+	// object only ever answers a parse that succeeded, so its value here
+	// is undefined and a real server writes whatever its own parser last
+	// held: 14 answering "select 1 from dual" and nothing at all
+	// answering "select banner from v$version where rownum=1", neither of
+	// which is a function of the statement.  0 is what the second of
+	// those got, and that session fetched, closed and disconnected
+	// normally, so don't try to reproduce the first
 	writeLenPreInt(&reqpacket,0);
 
 	// 3 answering the parse of a select, 0 answering the login.  callers
