@@ -109,11 +109,13 @@
 	<!-- same as oracleprotocol, but with its own backend, since a
 	     client old enough to speak OCI7 (#9651, #9653) is also too old to
 	     authenticate to the same modern backend the other instances above
-	     use - see #9654.  the tnsnames.ora alias sqlrelayoci7 points
-	     here. -->
+	     use - see #9654.  the listener also uses verifiertype="9i" (#9658)
+	     rather than the default, since an OCI7 client speaks O3LOGON, not
+	     O5LOGON, on the client-facing side too.  the tnsnames.ora alias
+	     sqlrelayoci7 points here. -->
 	<instance id="oracleprotocoloci7" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT7@" serverversion="11.2" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT7@" serverversion="11.2" verifiertype="9i" sid="ora1"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
