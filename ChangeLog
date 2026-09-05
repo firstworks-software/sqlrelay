@@ -1702,6 +1702,14 @@
 		their full catalogs - a pre-10g client writes each field of
 		that list as a ub1 rather than a ub2, and is now parsed and
 		echoed back in that format
+	fixed the oracle protocol module's O3LOGON challenge sending a 31 byte
+		summary object where a real 10.2 server sends 94, leaving a
+		pre-10g OCI7 client blocked in read() waiting for the rest and
+		never answering with its password. the summary a server appends
+		to that challenge is a fixed-width natively marshalled struct
+		rather than the length-prefixed field stream putSummary()
+		writes, so it is sent as a captured literal now, the way the
+		authentication trailer already is
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -6475,11 +6475,54 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	// no pbkdf2 parameters.  a real 10.2 server's whole challenge is 140
 	// bytes against the 2356 an o5logon one takes
 	if (o3logon) {
+
+		// the summary object a 10.2 server appends here is a
+		// marshalled struct - fixed width, native 32 bit little
+		// endian - not the length-prefixed field stream putSummary()
+		// writes, and its fields don't map onto putSummary()'s
+		// arguments either.  so it gets a captured literal, the way
+		// putAuthTrailer() handles the same situation.  decoded from
+		// #9658's success capture and confirmed byte-identical in
+		// #9637's, across all five TTC 04 blocks the two carry: two
+		// ub4 fields of 1, a ub2 error number at 10, three ub2
+		// per-call fields at 16, a call sequence byte at 47, another
+		// per-call byte at 50, and the constants 36 01 at 54 and
+		// 20 13 bd 0c at 62.  the rest is unexplained
+		static const byte_t	o3logontrailer[]={
+			0x04, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x01,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x13,
+			0xbd, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+
+		// the challenge is the exchange's second call, and its error
+		// number and per-call fields are all zero
+		byte_t	sequence=2;
+
 		uint32_t	sesskeysize=
 				charstring::getLength(serverauthsesskey);
 		putAuthCount(sesskeysize,2);
 		putLenString(serverauthsesskey,sesskeysize);
-		putSummary(0,0,0,NULL);
+
+		debugStart("o3logon summary trailer");
+		debugWrite("bytes: %d",(uint32_t)sizeof(o3logontrailer));
+		debugWrite("sequence byte: 0x%02x",sequence);
+		debugHexDump(o3logontrailer,sizeof(o3logontrailer));
+		debugEnd();
+
+		reqpacket.append(o3logontrailer,47);
+		write(&reqpacket,sequence);
+		reqpacket.append(o3logontrailer+48,
+					sizeof(o3logontrailer)-48);
+
 		debugEnd();
 		return sendPacket(true);
 	}
