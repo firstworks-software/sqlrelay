@@ -1721,6 +1721,13 @@
 		summary the module answers a successful O3LOGON login with is
 		that same object now too, instead of putSummary()'s field
 		stream
+	the oracle protocol module sends a pre-10g OCI7 client under
+		verifiertype="9i" the real 10.2 server's own fdo block in its
+		TTC 01 protocol negotiation response now. part 1 of that block
+		is 36 bytes there rather than the 31 the module sent, which
+		moves the character set ids the client looks for behind it.
+		part 2, the block size, the character set ids and the trailer
+		were already right
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

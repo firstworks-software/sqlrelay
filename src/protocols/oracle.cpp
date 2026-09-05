@@ -4329,6 +4329,34 @@ static const byte_t	ttiserverruntimecaps9i[5]={
 	0x02, 0x01, 0x00, 0x01, 0x18
 };
 
+// the two parts of the fdo block - see putTtiResponse()
+// (meaning unknown - only the sizes matter, since the client adds them up to
+// find the character set ids that follow)
+static const byte_t	ttifdopart1[]={
+	0x05, 0x0b, 0x0c, 0x03, 0x0c, 0x0c, 0x05, 0x04,
+	0x05, 0x0d, 0x06, 0x09, 0x07, 0x08, 0x05, 0x0e,
+	0x05, 0x06, 0x05, 0x0f, 0x02, 0xec, 0xeb, 0xed,
+	0x05, 0x0a, 0x05, 0x05, 0x05, 0x05, 0x05
+};
+static const byte_t	ttifdopart2[]={
+	0x08, 0x23, 0x43, 0x23, 0x23, 0x08, 0x11, 0x23,
+	0x08, 0x11, 0x41, 0xb0, 0x23, 0x00, 0x83
+};
+
+// fdo part 1 for verifiertype="9i", from the same live oracle 10.2 server
+// capture the 9i capability arrays above came from - the same capture's part
+// 2, fdo size, character set ids and trailer all match what the module
+// already sends, so only part 1 needs a 9i variant.  it is 36 bytes rather
+// than 31 and diverges at index 15, which moves the character set ids the
+// client looks for at 6+part1size+part2size bytes into the block.
+static const byte_t	ttifdo9ipart1[36]={
+	0x05, 0x0b, 0x0c, 0x03, 0x0c, 0x0c, 0x05, 0x04,
+	0x05, 0x0d, 0x06, 0x09, 0x07, 0x08, 0x05, 0x05,
+	0x05, 0x05, 0x05, 0x0f, 0x05, 0x05, 0x05, 0x05,
+	0x05, 0x0a, 0x05, 0x05, 0x05, 0x05, 0x05, 0x04,
+	0x05, 0x06, 0x07, 0x08
+};
+
 void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 					const byte_t *compilecaps,
 					byte_t compilecapssize,
@@ -4412,20 +4440,17 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 	// see "Oracle Wire Protocol - TTI Protocol Negotiation"
 	uint16_t	fdosize=100;
 	uint32_t	fdodatasize=fdosize-4;
-	// meaning unknown - only the sizes matter, since the client adds them
-	// up to find the charsets that follow
-	byte_t	part1[]={
-		0x05, 0x0b, 0x0c, 0x03, 0x0c, 0x0c, 0x05, 0x04,
-		0x05, 0x0d, 0x06, 0x09, 0x07, 0x08, 0x05, 0x0e,
-		0x05, 0x06, 0x05, 0x0f, 0x02, 0xec, 0xeb, 0xed,
-		0x05, 0x0a, 0x05, 0x05, 0x05, 0x05, 0x05
-	};
-	byte_t	part1size=sizeof(part1);
-	byte_t	part2[]={
-		0x08, 0x23, 0x43, 0x23, 0x23, 0x08, 0x11, 0x23,
-		0x08, 0x11, 0x41, 0xb0, 0x23, 0x00, 0x83
-	};
-	byte_t	part2size=sizeof(part2);
+
+	// a 9i client gets the real 10.2 server's own part 1, byte for byte,
+	// rather than the module's normal one - see ttifdo9ipart1
+	const byte_t	*part1=ttifdopart1;
+	byte_t		part1size=(byte_t)sizeof(ttifdopart1);
+	if (verifiertype==VERIFIER_TYPE_9I) {
+		part1=ttifdo9ipart1;
+		part1size=(byte_t)sizeof(ttifdo9ipart1);
+	}
+	const byte_t	*part2=ttifdopart2;
+	byte_t		part2size=(byte_t)sizeof(ttifdopart2);
 
 	// 4 bytes of fdodatasize, 3 more of the 1, part1size and part2size,
 	// the two parts themselves, then 2+2+1 of charsets and trailer
@@ -4475,6 +4500,7 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 		debugWrite("charset graph elements: %d",
 					charsetgraphelementcount);
 		debugWrite("fdo size: %d",fdosize);
+		debugWrite("fdo part 1 size: %d",(int)part1size);
 		debugWrite("compile caps size: %d",compilecapssize);
 		debugWrite("field version: %d",
 			(compilecapssize>CCAP_FIELD_VERSION)?
