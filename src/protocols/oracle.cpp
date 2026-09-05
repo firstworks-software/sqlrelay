@@ -6990,9 +6990,8 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 	uint16_t	cursorid=cont->getId(cursor);
-	// unexplained.  see "Oracle Wire Protocol - Open"
-	byte_t		unknown[]={0x00, 0x00};
-	byte_t		status=TTC_STATUS;
+	byte_t		statusttccode=TTC_STATUS;
+	uint32_t	callstatus=1;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
@@ -7001,15 +7000,24 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	// back, so a client that echoes this id back in a later close()
 	// finds the cursor again
 	writeLenPreInt(&reqpacket,(uint32_t)(cursorid+1));
-	reqpacket.append(unknown,sizeof(unknown));
-	write(&reqpacket,status);
+	// the cursor id is followed by the same status message a version
+	// response ends with, and nothing else.  a real 10.2 server
+	// answering an oci7 client sends the cursor id, TTC_STATUS and the
+	// call status, in both encodings - see test/protocol/oracle/samples/,
+	// packet [0018] of oracle102-oci7-portable-login-select.cap and of
+	// the native capture beside it.  a bare TTC_STATUS, with no call
+	// status behind it, costs the client the whole call: it sends a
+	// marker, cancels (ORA-01013), and the next call it makes fails
+	// ORA-03120
+	write(&reqpacket,statusttccode);
+	writeLenPreInt(&reqpacket,callstatus);
 
 	debugStart("open response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("cursor id: %d",cursorid);
-	debugWrite("unknown: %02x %02x",unknown[0],unknown[1]);
-	debugTtcCode(status);
+	debugTtcCode(statusttccode);
+	debugWrite("call status: %d",callstatus);
 	debugEnd();
 
 	return sendPacket(true);

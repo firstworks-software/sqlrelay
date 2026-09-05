@@ -1760,6 +1760,14 @@
 		whole call: it read the fields it knew, found one byte left
 		over, sent a marker, cancelled (ORA-01013), and failed its
 		next call with ORA-03120
+	fixed the oracle protocol module's tti open (0x02) response. it
+		wrote the cursor id, two 0x00 bytes and a bare TTC_STATUS
+		code with nothing behind it. a real 10.2 server answering a
+		real OCI7 client sends the cursor id, TTC_STATUS and the
+		call status - the same status message a version response
+		ends with - in both encodings, and a client that reads a
+		truncated one sends a marker, cancels (ORA-01013), and fails
+		its next call with ORA-03120
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
