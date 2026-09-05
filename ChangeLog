@@ -1789,6 +1789,16 @@
 		wrong field, so nothing would have executed even had the
 		cursor been found. the field boundaries come from the native
 		reference capture, where every field is a fixed four bytes
+	fixed the oracle protocol module's tti query2 (0x47) response. it sent
+		an 8.0/8i-era captured literal plus the generic footer in
+		every session, which is only ever right for a native-encoding
+		one. a portable session - the only kind this module actually
+		negotiates - gets a much shorter answer: a three-field
+		lead-in of a cursor id and two more counts, then the same
+		summary object the osql7 parse response carries, with a
+		success iteration count of 1 rather than 0. query2() also
+		never picked the call sequence number up out of its own
+		request, so the summary echoed whichever call ran before it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
