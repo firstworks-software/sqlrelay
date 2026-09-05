@@ -1833,6 +1833,12 @@
 		version the client sent rather than its own. it reports 10.2
 		throughout now, and the ano frame carries the module's own
 		version the way every real server capture on file does
+	the oracle protocol module answers a verifiertype="9i" client's data
+		type negotiation from a real 10.2 server's own catalog now,
+		rather than echoing the client's list back. it emits the
+		server's types in the server's own order, declines BINARY_FLOAT
+		and BINARY_DOUBLE the way a 10.2 server does, and lets the
+		client's offer pick only the representation
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
