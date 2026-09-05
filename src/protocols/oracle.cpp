@@ -415,6 +415,12 @@
 #define DATATYPE_REP_UNIVERSAL		0x01
 #define DATATYPE_REP_NATIVE		0x0a
 
+// the data type whose representation says how a client marshals a pointer
+// field, and the two widths that fall out of it.  see getPointer()
+#define DATATYPE_POINTER		0x20
+#define POINTER_SIZE_UNIVERSAL		1
+#define POINTER_SIZE_NATIVE		4
+
 // a length byte over 252 isn't a length.  0xfd introduces a null, 0xfe the
 // chunked long form.
 #define CLR_MAX_SHORT_LENGTH		252
@@ -1375,7 +1381,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						const byte_t **rpout);
 		bool	getPointer(const byte_t *rp,
 						const byte_t *end,
-						byte_t *value,
+						uint32_t *value,
 						const byte_t **rpout);
 		bool	getAuthPointer(const byte_t *rp,
 						const byte_t *end,
@@ -1803,6 +1809,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		// whether the client marshals in its own memory layout
 		bool		nativeencoding;
+
+		// whether the client's own byte order is little endian, from
+		// the connect packet's "value of 1 in hardware" field.  see
+		// recvConnectRequest() and getPointer()
+		bool		clientlittleendian;
+
+		// how many bytes a pointer field in a request takes, decided
+		// in the data type negotiation.  see getPointer()
+		byte_t		pointersize;
 
 		// the ttc code the last tti function came in under
 		byte_t		lastttccode;
@@ -2272,6 +2287,8 @@ void sqlrprotocol_oracle::init() {
 	loginrefused=false;
 
 	nativeencoding=false;
+	clientlittleendian=true;
+	pointersize=POINTER_SIZE_UNIVERSAL;
 	lastttccode=0;
 
 	rowhaslob=false;
@@ -2976,7 +2993,15 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	readBE(rp,&smalltdu,&rp);
 	readBE(rp,&protocolcharacteristics,&rp);
 	readBE(rp,&maxpacketsbeforeack,&rp);
-	readHost(rp,&one,&rp);
+	// the "value of 1 in hardware" field - a ub2 1 written in the client's
+	// own byte order, and the one place in the session that states that
+	// byte order outright.  read big-endian, a big-endian client's comes
+	// back as 1 and a little-endian client's as 0x0100, whichever byte
+	// order this host happens to be.  getPointer() is what needs it: a
+	// pointer field in the native representation is the client's own
+	// pointer, raw, in the client's own byte order
+	readBE(rp,&one,&rp);
+	clientlittleendian=(one!=1);
 	readBE(rp,&connectdatasize,&rp);
 	readBE(rp,&connectdataoffset,&rp);
 	readBE(rp,&maxconnectdatathatcanbereceived,&rp);
@@ -3024,7 +3049,7 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	debugWrite("tdu: %d",tdu);
 	debugWrite("protocol characteristics: 0x%04x",protocolcharacteristics);
 	debugWrite("max packets before ack: %d",maxpacketsbeforeack);
-	debugWrite("client is little endian: %d",(one==1));
+	debugWrite("client is little endian: %d",clientlittleendian);
 	debugWrite("connect data size: %d",connectdatasize);
 	debugWrite("connect data offset: %d",connectdataoffset);
 	debugWrite("max connect data that can be received: %d",
@@ -4881,6 +4906,23 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 			echorep=firstrep;
 		}
 
+		// the representation answered for the pointer type is also
+		// what says how wide a pointer field in a request will be.
+		// both oci7 clients offer 0x0a first for it and marshal a
+		// pointer as four raw bytes once answered 0x0a, on 32-bit
+		// sparc and on 32-bit x86 alike; the 64-bit oci client in
+		// samples/oracle122-oci-portable-login-select.cap offers 0x0c
+		// first instead and marshals eight, which is the 8-byte
+		// pointer test/protocol/oracle/README records.  0x0c is
+		// neither representation this module can write, so it is
+		// never echoed and that client falls back to the universal
+		// one, where a pointer is a single byte.  so a pointer here
+		// is four bytes exactly when the answer was 0x0a
+		if (datatype==DATATYPE_POINTER &&
+				echorep==DATATYPE_REP_NATIVE) {
+			pointersize=POINTER_SIZE_NATIVE;
+		}
+
 		if (clientdatatypecount<
 			sizeof(clientdatatypes)/sizeof(clientdatatypes[0])/3) {
 			byte_t	*cdt=clientdatatypes+clientdatatypecount*3;
@@ -4897,6 +4939,7 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 	debugWrite("data types offered in more than "
 			"one representation: %d",multireps);
 	debugWrite("data types stored to echo: %d",clientdatatypecount);
+	debugWrite("pointer size: %d",pointersize);
 
 	*multirepcount=multireps;
 	return count;
@@ -5766,26 +5809,46 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 	return true;
 }
 
+// a pointer field.  in the universal representation it is one byte, and only
+// whether it's null can be read out of it.  in the native representation it
+// is the client's own pointer, raw - four bytes, in the client's own byte
+// order, for the 32-bit oci7 clients this module ever answers that
+// representation to (see countDataTypes9i(), which is where the width is
+// decided, and recvConnectRequest(), which is where the byte order comes
+// from).  either way the value is a client-side address that means nothing
+// here; what the read is for is landing on the field behind it.
+//
+// packet [0017] of test/protocol/oracle/samples/
+// oracle102-oci7-portable-login-select.cap is the wide shape against a real
+// 10.2 server - a tti open whose whole body is "02 05 ff be fd b0 00", a
+// sparc client's big-endian 0xffbefdb0 between the sequence byte and an lpi
+// 0 - and #9658 comment 33 has the same call from an x86 oci7 client, whose
+// "02 05 40 f1 ff bf 00" carries the same field little-endian
 bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 					const byte_t *end,
-					byte_t *value,
+					uint32_t *value,
 					const byte_t **rpout) {
 
 	debugStart("pointer");
 
 	*value=0;
 
-	if (end-rp<1) {
+	if ((size_t)(end-rp)<(size_t)pointersize) {
 		debugWrite("malformed pointer: truncated");
 		debugEnd();
 		return false;
 	}
 
-	read(rp,value,&rp);
+	for (byte_t i=0; i<pointersize; i++) {
+		byte_t	b;
+		read(rp,&b,&rp);
+		*value|=((uint32_t)b)<<(8*((clientlittleendian)?
+						i:(pointersize-1-i)));
+	}
 
 	*rpout=rp;
 
-	debugWrite("pointer: 0x%02x",*value);
+	debugWrite("pointer: 0x%08x",*value);
 	debugEnd();
 
 	return true;
@@ -7055,7 +7118,7 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
-	byte_t		cursoridpointer=0;
+	uint32_t	cursoridpointer=0;
 	uint32_t	opesiz=0;
 
 	if (end-rp<1) {
@@ -7064,9 +7127,9 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	}
 	read(rp,&seqnumber,&rp);
 
-	// a pointer flag for the cursor id, always 1 in the capture - the
-	// server allocates the cursor and returns its id, so no cursor id
-	// follows it here - then the open size (opesiz), meaning unknown
+	// a pointer for the cursor id - the server allocates the cursor and
+	// returns its id, so no cursor id follows it here - then the open
+	// size (opesiz), meaning unknown
 	// see "Oracle Wire Protocol - Open"
 	if (!getPointer(rp,end,&cursoridpointer,&rp) ||
 		!readLenPreInt(rp,end,&opesiz,&rp)) {
@@ -7084,7 +7147,7 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 
 	debugStart("open request");
 	debugWrite("seq number: %d",seqnumber);
-	debugWrite("cursor id pointer: 0x%02x",cursoridpointer);
+	debugWrite("cursor id pointer: 0x%08x",cursoridpointer);
 	debugWrite("open size: %d",opesiz);
 	debugWrite("cursor id: %d",cursorid);
 	debugEnd();
@@ -7152,11 +7215,11 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	byte_t		seqnumber=0;
 	uint32_t	unknown1=0;
 	uint32_t	cursorid=0;
-	byte_t		querypointer=0;
+	uint32_t	querypointer=0;
 	uint32_t	querysize=0;
-	byte_t		unknown2=0;
+	uint32_t	unknown2=0;
 	uint32_t	unknown3=0;
-	byte_t		unknown4=0;
+	uint32_t	unknown4=0;
 	uint32_t	unknown5=0;
 
 	if (end-rp<1) {
@@ -7186,16 +7249,22 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 
 	// seven more fields sit between those and the sql text - four
 	// pointers and three counts, going by the native capture, where each
-	// one is four bytes.  every one of them is zero in both captures, and
-	// a null pointer and a zero count are both a single zero byte in the
-	// portable encoding, so which is which can't be read back out of it.
-	// they're skipped as seven bytes rather than parsed as fields whose
-	// order nothing on file settles
-	if (end-rp<7) {
+	// one is four bytes.  every one of them is zero in both captures, so
+	// nothing can be read back out of them, and they're skipped rather
+	// than parsed as fields whose order nothing on file settles.  a zero
+	// count is one byte and a pointer is however wide getPointer() reads
+	// one, which is what makes this run 19 bytes for a client marshalling
+	// its pointers four bytes wide and 7 for one sending them a byte
+	// wide.  packet [0019] of test/protocol/oracle/samples/
+	// oracle102-oci7-portable-login-select.cap is the wide case: 19 zero
+	// bytes between the last field read above and the clr the sql text
+	// starts with
+	uint16_t	skip=(uint16_t)(pointersize*4+3);
+	if ((size_t)(end-rp)<(size_t)skip) {
 		debugWrite("truncated osql7 request");
 		return false;
 	}
-	rp+=7;
+	rp+=skip;
 
 	// the sql text.  querysize above says how long it is too, but this is
 	// a clr, so it carries its own length and can run past what one
@@ -7211,19 +7280,18 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	debugWrite("seq number: %d",seqnumber);
 	debugWrite("unknown: %d",unknown1);
 	debugWrite("cursor id: %d",cursorid);
-	debugWrite("query pointer: 0x%02x",querypointer);
+	debugWrite("query pointer: 0x%08x",querypointer);
 	debugWrite("query size: %d",querysize);
-	debugWrite("unknown: 0x%02x %d 0x%02x %d",
+	debugWrite("unknown: 0x%08x %d 0x%08x %d",
 				unknown2,unknown3,unknown4,unknown5);
 	debugWrite("query: \"%.*s\"",(int)querybytes,(const char *)query);
 	debugEnd();
 
 	// both captures carry the length twice and both times it agrees.  a
 	// request whose two lengths disagree is one this parse landed on the
-	// wrong offsets in - a client marshalling its pointers four bytes
-	// wide, the way the capture's own client does, lands exactly there -
-	// and preparing whatever text that found would run a statement the
-	// client never sent
+	// wrong offsets in - reading a pointer field at the wrong width lands
+	// exactly there - and preparing whatever text that found would run a
+	// statement the client never sent
 	if (querysize!=querybytes) {
 		debugWrite("query size %d doesn't match the %d bytes of "
 				"query text behind it",querysize,querybytes);
@@ -8000,8 +8068,16 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	uint32_t	querysize=0;
 	const char	*query=NULL;
 
-	if (!getPointer(rp,end,&sequence,&rp) ||
-		!getAuthCount(rp,end,&options,4,&rp) ||
+	// the sequence number is a raw byte, not a pointer and not a count -
+	// it is one byte in every capture on file, including the ones whose
+	// client marshals its pointers four bytes wide
+	if (end-rp<1) {
+		debugWrite("truncated query2 sequence number");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+
+	if (!getAuthCount(rp,end,&options,4,&rp) ||
 		!getAuthCount(rp,end,&cursorid,4,&rp)) {
 		return false;
 	}
@@ -8736,15 +8812,21 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	byte_t		sequence=0;
 	// pointer and unused stand in for unexplained flags and counts
 	// see "Oracle Wire Protocol - Query3"
-	byte_t		pointer=0;
+	uint32_t	pointer=0;
 	uint32_t	vectorsize=0;
 	uint32_t	prefetchbuffersize=0;
 	uint32_t	bindcount=0;
 	uint32_t	definecount=0;
 	uint32_t	unused=0;
 
-	if (!getPointer(rp,end,&sequence,&rp) ||
-		!readLenPreInt(rp,end,options,&rp) ||
+	// the sequence number is a raw byte, not a pointer and not a count
+	if (end-rp<1) {
+		debugWrite("truncated query3 sequence number");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+
+	if (!readLenPreInt(rp,end,options,&rp) ||
 		!readLenPreInt(rp,end,cursorid,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!readLenPreInt(rp,end,querysize,&rp) ||
@@ -12601,8 +12683,14 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 	uint32_t	options=0;
 	uint32_t	moreoptions=0;
 
-	if (!getPointer(rp,end,&sequence,&rp) ||
-		!readLenPreInt(rp,end,&cursorid,&rp) ||
+	// the sequence number is a raw byte, not a pointer and not a count
+	if (end-rp<1) {
+		debugWrite("truncated re-execute sequence number");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+
+	if (!readLenPreInt(rp,end,&cursorid,&rp) ||
 		!readLenPreInt(rp,end,&iterations,&rp) ||
 		!readLenPreInt(rp,end,&options,&rp) ||
 		!readLenPreInt(rp,end,&moreoptions,&rp)) {
@@ -12748,8 +12836,18 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 	uint32_t	cursorid=0;
 	uint32_t	rowstofetch=0;
 
-	if (!getPointer(rp,end,&sequence,&rp) ||
-		!readLenPreInt(rp,end,&cursorid,&rp) ||
+	// the sequence number is a raw byte, not a pointer and not a count -
+	// the oci7 fetch in packet [0023] of test/protocol/oracle/samples/
+	// oracle102-oci7-portable-login-select.cap is "05 08 01 02 01 01" in
+	// its entirety, a one-byte sequence 8 in front of two lpis, from a
+	// client marshalling its pointers four bytes wide
+	if (end-rp<1) {
+		debugWrite("truncated fetch sequence number");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+
+	if (!readLenPreInt(rp,end,&cursorid,&rp) ||
 		!readLenPreInt(rp,end,&rowstofetch,&rp)) {
 		debugWrite("truncated fetch request");
 		return false;
@@ -14446,10 +14544,10 @@ bool sqlrprotocol_oracle::version(const byte_t *rp, bool istticall) {
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
-	byte_t		rdbmsversion=0;
+	uint32_t	rdbmsversion=0;
 	uint32_t	bufferlength=0;
-	byte_t		returnversionlength=0;
-	byte_t		returnversionnumber=0;
+	uint32_t	returnversionlength=0;
+	uint32_t	returnversionnumber=0;
 
 	if (end-rp<1) {
 		debugWrite("truncated version sequence number");
@@ -14457,28 +14555,31 @@ bool sqlrprotocol_oracle::version(const byte_t *rp, bool istticall) {
 	}
 	read(rp,&seqnumber,&rp);
 
-	debugStart("version request");
-	debugWrite("seq number: %d",seqnumber);
-
 	// this handler answers both TTI_VERSION and a bare (non-piggybacked)
 	// TTI_SWITCH_SESSION, and only the sequence number above is known to
 	// be common to both - so a short body here just means fewer fields
-	// to print, not a truncated request
-	if (end-rp>=1) {
-		read(rp,&rdbmsversion,&rp);
-		debugWrite("rdbms version: %d",rdbmsversion);
-	}
-	if (readLenPreInt(rp,end,&bufferlength,&rp)) {
-		debugWrite("buffer length: %d",bufferlength);
-	}
-	if (end-rp>=1) {
-		read(rp,&returnversionlength,&rp);
-		debugWrite("return version length: %d",returnversionlength);
-	}
-	if (end-rp>=1) {
-		read(rp,&returnversionnumber,&rp);
-		debugWrite("return version number: %d",returnversionnumber);
-	}
+	// to read, not a truncated request, and each read below is allowed
+	// to come up empty.
+	//
+	// the three fields around the buffer length are pointers, so they
+	// are one byte each in the universal representation and four in the
+	// native one - see getPointer().  reading them a byte wide either
+	// way costs the buffer length, and the banner is capped to it: the
+	// oci7 clients send 1 there, and packet [0016] of
+	// test/protocol/oracle/samples/oracle102-oci7-portable-login-
+	// select.cap is a real 10.2 server answering exactly that, with a
+	// one character banner
+	getPointer(rp,end,&rdbmsversion,&rp);
+	readLenPreInt(rp,end,&bufferlength,&rp);
+	getPointer(rp,end,&returnversionlength,&rp);
+	getPointer(rp,end,&returnversionnumber,&rp);
+
+	debugStart("version request");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("rdbms version: %d",rdbmsversion);
+	debugWrite("buffer length: %d",bufferlength);
+	debugWrite("return version length: %d",returnversionlength);
+	debugWrite("return version number: %d",returnversionnumber);
 	debugEnd();
 
 	// only a genuine tti version call states the size of the buffer the
@@ -14556,7 +14657,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
-	byte_t		pointer=0;
+	uint32_t	pointer=0;
 	uint32_t	cursorcount=0;
 
 	if (end-rp<1) {

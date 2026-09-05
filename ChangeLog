@@ -1815,6 +1815,16 @@
 		answers with the first it can write itself, so types 27, 32 and
 		33 come back in the architecture-neutral representation the
 		client asks for rather than the universal one
+	fixed the oracle protocol module reading a request's pointer fields one
+		byte wide no matter what the data type negotiation settled. a
+		client answered a native representation for the pointer type
+		writes its own pointer there instead - four raw bytes, in its
+		own byte order - so the module read one byte of it and
+		misparsed everything behind it. the width now comes from the
+		representation the module answered and the byte order from the
+		connect packet's "value of 1 in hardware" field, which is
+		also read host-independently now. the tti version, open and
+		osql7 requests are what this affects
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
