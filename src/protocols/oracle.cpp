@@ -1348,6 +1348,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	countDataTypes(const byte_t *rp,
 						const byte_t *end,
 						uint16_t *multirepcount);
+		uint16_t	countDataTypes9i(const byte_t *rp,
+						const byte_t *end,
+						uint16_t *multirepcount);
 		bool	sendDataTypeResponse();
 
 		bool	authenticate();
@@ -1812,6 +1815,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	datatypessize;
 		uint16_t	datatypecount;
 
+		// a 9i client's own list, parsed out of the request by
+		// countDataTypes9i() and echoed back by
+		// sendDataTypeResponse().  3 bytes per entry - the type, the
+		// type it converts to, and the last representation the client
+		// offered for it - and at most one entry per ub1 type value
+		byte_t		clientdatatypes[255*3];
+		uint16_t	clientdatatypecount;
+
 		filedescriptor	*clientsock;
 
 		bytebuffer	reqpacket;
@@ -2222,6 +2233,7 @@ void sqlrprotocol_oracle::init() {
 	datatypes=NULL;
 	datatypessize=0;
 	datatypecount=0;
+	clientdatatypecount=0;
 
 	query3session=false;
 	lastcursorid=65535;
@@ -4721,6 +4733,85 @@ uint16_t sqlrprotocol_oracle::countDataTypes(const byte_t *rp,
 	return count;
 }
 
+// the same list a pre-10g client sends, where every field is a ub1 rather
+// than a ub2 - same framing otherwise.  unlike countDataTypes(), this one
+// stores what it walks, because the response has to echo it back.
+uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
+						const byte_t *end,
+						uint16_t *multirepcount) {
+
+	uint16_t	count=0;
+	uint16_t	multireps=0;
+	clientdatatypecount=0;
+	for (;;) {
+
+		if (end-rp<1) {
+			break;
+		}
+
+		byte_t	datatype;
+		read(rp,&datatype,&rp);
+		if (!datatype) {
+			break;
+		}
+
+		if (end-rp<1) {
+			break;
+		}
+
+		byte_t	convdatatype;
+		read(rp,&convdatatype,&rp);
+
+		// a type that converts to something is followed by the
+		// zero-terminated list of representations the client will
+		// accept for it, which is usually one entry long
+		byte_t	lastrep=0;
+		if (convdatatype) {
+			uint16_t	reps=0;
+			for (;;) {
+				if (end-rp<1) {
+					break;
+				}
+				byte_t	rep;
+				read(rp,&rep,&rp);
+				if (!rep) {
+					break;
+				}
+				lastrep=rep;
+				reps++;
+			}
+			if (reps>1) {
+				multireps++;
+			}
+		}
+
+		// the last representation offered is the one to echo.  where
+		// a client offers several - the integer types 25-33 - it puts
+		// its platform's first and the universal one last, and the
+		// live 11.2 server in ttidatatypes below answers with the
+		// universal one.  where it offers one, that one is also what
+		// that server answers with.
+		if (clientdatatypecount<
+			sizeof(clientdatatypes)/sizeof(clientdatatypes[0])/3) {
+			byte_t	*cdt=clientdatatypes+clientdatatypecount*3;
+			cdt[0]=datatype;
+			cdt[1]=convdatatype;
+			cdt[2]=lastrep;
+			clientdatatypecount++;
+		}
+
+		count++;
+	}
+
+	debugWrite("total data type count: %d",count);
+	debugWrite("data types offered in more than "
+			"one representation: %d",multireps);
+	debugWrite("data types stored to echo: %d",clientdatatypecount);
+
+	*multirepcount=multireps;
+	return count;
+}
+
 bool sqlrprotocol_oracle::recvDataTypeRequest() {
 
 	if (!recvPacket()) {
@@ -4821,7 +4912,11 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// advertisement agrees - but if that byte ever loses the bit, "on"
 	// would frame big chunks against an advertisement that says raw.
 	// anything that clears it there has to revisit this branch.
-	if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_ON) {
+	if (verifiertype==VERIFIER_TYPE_9I) {
+		// the 9i array has no CCAP_TTC3 byte at all to have advertised
+		// the bit with, regardless of what this attribute says
+		bigchunkclr=false;
+	} else if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_ON) {
 		bigchunkclr=(ttiversion>=6);
 	} else if (bigchunkclrsetting==ORACLEBIGCHUNKCLR_OFF) {
 		bigchunkclr=false;
@@ -4855,16 +4950,21 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		}
 	}
 
-	// the client's data type list, which nothing in the response depends
-	// on - a real server answers every client with its own table, so a
-	// short or empty list is counted and reported rather than refused
+	// the client's data type list.  SERVER_BANNER never matches a client's
+	// own platform banner, so every session runs in portable mode, where
+	// both sides send their full type catalog and each waits for the
+	// other's.  a short or empty list is counted and reported rather than
+	// refused, since a real server answers whatever it gets.
 	//
-	// a pre-10g client gets a smaller TTC 01/02 shape under
-	// verifiertype="9i" - see putTti6Response() and sendDataTypeResponse()
+	// a pre-10g client writes every field of that list as a ub1 rather
+	// than a ub2, and gets its own list echoed back in that format under
+	// verifiertype="9i" - see countDataTypes9i() and sendDataTypeResponse()
 	datatypes=rp;
 	datatypessize=end-rp;
 	uint16_t	multirepcount=0;
-	datatypecount=countDataTypes(rp,end,&multirepcount);
+	datatypecount=(verifiertype==VERIFIER_TYPE_9I)?
+			countDataTypes9i(rp,end,&multirepcount):
+			countDataTypes(rp,end,&multirepcount);
 
 	// an oci client is the only client measured that offers more than one
 	// representation for a type - it offers its platform's and then the
@@ -4933,8 +5033,9 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 // server's answer rather than a canonical list.  it covers every column type
 // the module names.
 //
-// a verifiertype="9i" client never sees this table at all - see
-// sendDataTypeResponse().
+// a verifiertype="9i" client never sees this table - its list is ub1 and most
+// of these rows won't fit in one, so it gets its own list echoed back instead.
+// see sendDataTypeResponse().
 static const uint16_t	ttidatatypes[][3]={
 	// VARCHAR
 	{1,1,1},
@@ -5298,11 +5399,37 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 		}
 	}
 
-	// the data types, if the client sent a list of its own.  a 9i
-	// client's own list is never answered - the real 10.2 server it was
-	// captured against sends no type list to this client at all.
+	// the data types, if the client sent a list of its own.  every session
+	// runs in portable mode (see SERVER_BANNER), so a client that sent its
+	// catalog is waiting for one back and hangs without it.
+	//
+	// a 9i client gets its own list echoed back, in the ub1 format it
+	// sent - ttidatatypes is a ub2 table, and only 102 of its 321 rows
+	// have a type and a conversion type small enough to write as a ub1 at
+	// all, so echoing what the client declared answers more of what it
+	// asked about than any subset of the table could.
 	uint16_t	count=0;
-	if (datatypessize && verifiertype!=VERIFIER_TYPE_9I) {
+	if (verifiertype==VERIFIER_TYPE_9I) {
+		count=clientdatatypecount;
+		for (uint16_t i=0; i<count; i++) {
+			const byte_t	*cdt=clientdatatypes+i*3;
+			write(&reqpacket,cdt[0]);
+			write(&reqpacket,cdt[1]);
+			if (cdt[1]) {
+				// a conversion type the client offered no
+				// representation for gets an empty list
+				// rather than a 0 representation, which
+				// would read as the end of the whole list
+				if (cdt[2]) {
+					write(&reqpacket,cdt[2]);
+				}
+				write(&reqpacket,(byte_t)0);
+			}
+		}
+		if (count) {
+			write(&reqpacket,(byte_t)0);
+		}
+	} else if (datatypessize) {
 		count=sizeof(ttidatatypes)/sizeof(ttidatatypes[0]);
 		for (uint16_t i=0; i<count; i++) {
 			writeBE(&reqpacket,ttidatatypes[i][0]);
