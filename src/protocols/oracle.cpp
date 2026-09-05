@@ -1408,6 +1408,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						size_t portablesize,
 						bool secondphase);
 		void	putO3LogonSummary();
+		void	putOci7Summary(uint32_t cursorid,
+						byte_t commandtype);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		const byte_t	*findO3LogonStrings(const byte_t *rp,
 							const byte_t *end);
@@ -1442,6 +1444,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// open...
 		bool	open(const byte_t *rp);
 		bool	sendOpenResponse(sqlrservercursor *cursor);
+
+		// osql7...
+		bool	osql7(const byte_t *rp);
+		bool	sendOsql7Response(sqlrservercursor *cursor);
 
 		// query...
 		bool	query(const byte_t *rp);
@@ -2405,8 +2411,11 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=lobOperations(rp);
 					rp=NULL;
 					break;
-				case TTI_K2_TRANSACTIONS:
 				case TTI_OSQL7:
+					loop=osql7(rp);
+					rp=NULL;
+					break;
+				case TTI_K2_TRANSACTIONS:
 				case TTI_OKOD:
 				case TTI_ODNY:
 				case TTI_TRANSACTION_END:
@@ -6614,47 +6623,91 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 	debugEnd();
 }
 
-// the summary object a real 10.2 server writes an o3logon client, both as the
-// tail of the phase one challenge and on its own as the login's answer.  its
-// fields don't map onto putSummary()'s arguments - it is shorter by a field on
-// either side of the sequence number, and it carries no success iteration
-// count - so it gets a captured literal, the way putAuthTrailer() handles the
-// same situation.
-//
-// decoded byte for byte from a real SPARC Solaris OCI7 client's login into an
-// x86 linux 10.2 server.  the architectures genuinely differ there, so both
-// ends run the portable encoding - the encoding every o3logon session with this
-// module runs in, since the module answers a platform banner no client matches.
-// the same 29 bytes appear twice in that capture, as the challenge's tail
-// (sequence 2) and as the answer to the password the client sent back
-// (sequence 3).
-//
-// only three of the 29 bytes are set: the ttc 04 code, an end of call status of
-// 1 behind it, and the sequence number of the call being answered at 22.  the
-// error number, the row and cursor fields and everything else a summary can
-// carry are zero, and where they sit in the object is unexplained
-// see "Oracle Wire Protocol - Authentication - Password"
+// the login's own answer - no cursor and no statement, so the two fields that
+// vary are both zero.  a real 10.2 server writes the same object as the tail
+// of the phase one challenge
 void sqlrprotocol_oracle::putO3LogonSummary() {
+	putOci7Summary(0,0);
+}
 
-	static const byte_t	summary[]={
-		0x04, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00
-	};
+// the summary object a real 10.2 server answers an oci7 client with.  the same
+// object serves the whole session: the o3logon challenge's tail, the login's
+// answer, and the answer to the osql7 parse behind it.  its fields don't map
+// onto putSummary()'s arguments - it drops one of the zero fields in front of
+// the cursor id, and its success iteration count is 0 where putSummary() sends
+// 1 - so it gets its own writer.
+//
+// decoded byte for byte from a real SPARC Solaris OCI7 client's session with
+// an x86 linux 10.2 server, packets [0014] (the login) and [0020] (the parse)
+// of test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap.
+// the architectures genuinely differ there, so both ends run the portable
+// encoding - the encoding every o3logon session with this module runs in,
+// since the module answers a platform banner no client matches.  the native
+// capture beside it carries the same fields in the same order, and it is what
+// pins where they start and end: every field there is a fixed four bytes,
+// where a zero in the portable encoding is one byte whatever its width.
+//
+// only four fields are ever set in either capture: the end of call status of 1
+// at the front, the cursor id, the command type, and the sequence number of
+// the call being answered.  the error number, the row fields and everything
+// else a summary can carry are zero in both, and what several of them are for
+// is unexplained
+// see "Oracle Wire Protocol - Authentication - Password"
+void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
+						byte_t commandtype) {
 
-	// the sequence number of the call being answered, taken from the login
-	// request itself - a client matches the answer to the call it made
-	// with it
-	debugStart("o3logon summary");
-	debugWrite("bytes: %d",(uint32_t)sizeof(summary));
-	debugWrite("call number: %d",callnumber);
-	debugHexDump(summary,sizeof(summary));
-	debugEnd();
+	write(&reqpacket,(byte_t)TTC_ERROR);
 
-	reqpacket.append(summary,22);
+	writeLenPreInt(&reqpacket,1);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,cursorid);
+	writeLenPreInt(&reqpacket,0);
+
+	// 3 answering the parse of a select, 0 answering the login.  callers
+	// pass putSummary()'s own constant rather than classifying the
+	// statement, which this module doesn't do anywhere
+	write(&reqpacket,commandtype);
+
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+	write(&reqpacket,(byte_t)0);
+
+	// rowid: a ub4, a ub2, one raw byte, a ub4 and a ub2 - the same five
+	// fields putSummary() writes
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	write(&reqpacket,(byte_t)0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+
+	writeLenPreInt(&reqpacket,0);
+	write(&reqpacket,(byte_t)0);
+
+	// the sequence number of the call being answered - a client matches
+	// the answer to the call it made with it
 	write(&reqpacket,callnumber);
-	reqpacket.append(summary+23,sizeof(summary)-23);
+
+	writeLenPreInt(&reqpacket,0);
+
+	// success iterations, which putSummary() sends as 1.  a real server
+	// sends 0 here, in both captures
+	writeLenPreInt(&reqpacket,0);
+
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+	writeLenPreInt(&reqpacket,0);
+
+	debugStart("oci7 summary");
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("command type: %d",commandtype);
+	debugWrite("call number: %d",callnumber);
+	debugEnd();
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
@@ -7019,6 +7072,165 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	debugTtcCode(statusttccode);
 	debugWrite("call status: %d",callstatus);
 	debugEnd();
+
+	return sendPacket(true);
+}
+
+// what an oci7 client parses with - the pre-8.0 call an oparse() puts on the
+// wire, where an oci8 client sends query, query2 or query3.  it carries the
+// sql text and the id of a cursor a previous open handed out, and nothing
+// else this module needs: the client executes separately, with a query2 whose
+// OPTION_PARSE is clear, so this call prepares the statement and stops there.
+//
+// decoded field by field from a real oci7 client parsing "select banner from
+// v$version where rownum=1" against a 10.2 server, packet [0019] of both
+// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap and
+// the native capture beside it.  the native encoding is what pins the field
+// boundaries - every field there is a fixed four bytes, and the portable
+// capture reads as the same fields in the same order
+// see "Oracle Wire Protocol - Osql7"
+bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	uint32_t	unknown1=0;
+	uint32_t	cursorid=0;
+	byte_t		querypointer=0;
+	uint32_t	querysize=0;
+	byte_t		unknown2=0;
+	uint32_t	unknown3=0;
+	byte_t		unknown4=0;
+	uint32_t	unknown5=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated osql7 sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	// the summary object has to echo this back
+	callnumber=seqnumber;
+
+	// unknown1 is 1 in both captures, and querypointer, unknown2 and
+	// unknown4 are pointers into the client's own address space, so
+	// nothing but whether they're null can be read out of them.  the
+	// meanings of the rest are unknown; only the cursor id and the sql
+	// text are used below
+	if (!readLenPreInt(rp,end,&unknown1,&rp) ||
+		!readLenPreInt(rp,end,&cursorid,&rp) ||
+		!getPointer(rp,end,&querypointer,&rp) ||
+		!readLenPreInt(rp,end,&querysize,&rp) ||
+		!getPointer(rp,end,&unknown2,&rp) ||
+		!readLenPreInt(rp,end,&unknown3,&rp) ||
+		!getPointer(rp,end,&unknown4,&rp) ||
+		!readLenPreInt(rp,end,&unknown5,&rp)) {
+		return false;
+	}
+
+	// seven more fields sit between those and the sql text - four
+	// pointers and three counts, going by the native capture, where each
+	// one is four bytes.  every one of them is zero in both captures, and
+	// a null pointer and a zero count are both a single zero byte in the
+	// portable encoding, so which is which can't be read back out of it.
+	// they're skipped as seven bytes rather than parsed as fields whose
+	// order nothing on file settles
+	if (end-rp<7) {
+		debugWrite("truncated osql7 request");
+		return false;
+	}
+	rp+=7;
+
+	// the sql text.  querysize above says how long it is too, but this is
+	// a clr, so it carries its own length and can run past what one
+	// length byte holds
+	const byte_t	*query=NULL;
+	uint32_t	querybytes=0;
+	bool		querynull=false;
+	if (!getLenBytes(rp,end,&query,&querybytes,&querynull,&rp)) {
+		return false;
+	}
+
+	debugStart("osql7 request");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("unknown: %d",unknown1);
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("query pointer: 0x%02x",querypointer);
+	debugWrite("query size: %d",querysize);
+	debugWrite("unknown: 0x%02x %d 0x%02x %d",
+				unknown2,unknown3,unknown4,unknown5);
+	debugWrite("query: \"%.*s\"",(int)querybytes,(const char *)query);
+	debugEnd();
+
+	// both captures carry the length twice and both times it agrees.  a
+	// request whose two lengths disagree is one this parse landed on the
+	// wrong offsets in - a client marshalling its pointers four bytes
+	// wide, the way the capture's own client does, lands exactly there -
+	// and preparing whatever text that found would run a statement the
+	// client never sent
+	if (querysize!=querybytes) {
+		debugWrite("query size %d doesn't match the %d bytes of "
+				"query text behind it",querysize,querybytes);
+		return false;
+	}
+
+	// the id on the wire is the controller's plus 1
+	sqlrservercursor	*cursor=(cursorid)?
+			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	if (!cursor) {
+		debugWrite("cursor id %d not found",cursorid);
+		return sendCursorNotOpenError(cursorid);
+	}
+	lastcursorid=cont->getId(cursor);
+
+	// reset column type cache flag
+	columntypescached[cont->getId(cursor)]=false;
+
+	// and any row it was pinning for a lob read
+	clearLobPin(cont->getId(cursor));
+
+	// bounds checking
+	if (querybytes>maxquerysize) {
+		// FIXME: implement this
+		//return sendErrPacket(1105,"Unknown error","24000");
+		return false;
+	}
+
+	// copy the query into the cursor's query buffer
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	if (querybytes) {
+		bytestring::copy(querybuffer,query,querybytes);
+	}
+	querybuffer[querybytes]='\0';
+	cont->setQuerySize(cursor,querybytes);
+
+	// prepare the query
+	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
+					cont->getQuerySize(cursor),
+					true,true,true,true)) {
+		debugWrite("prepare query failed");
+		return sendQueryError(cursor);
+	}
+	return sendOsql7Response(cursor);
+}
+
+bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("osql7 response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	// a real 10.2 server answers the parse with a summary object and
+	// nothing else - no describe, no column definitions - and the client
+	// goes straight on to execute.  the id on the wire is this module's
+	// own cursor id plus 1, the same convention the open response uses,
+	// and the command type is putSummary()'s own constant
+	putOci7Summary((uint32_t)(cont->getId(cursor)+1),3);
 
 	return sendPacket(true);
 }

@@ -1768,6 +1768,11 @@
 		ends with - in both encodings, and a client that reads a
 		truncated one sends a marker, cancels (ORA-01013), and fails
 		its next call with ORA-03120
+	the oracle protocol module implements tti osql7 (0x4a) now - the
+		pre-8.0 parse call an OCI7 client's oparse puts on the wire,
+		where an OCI8 client sends query, query2 or query3. it used
+		to answer ORA-03001, unimplemented feature, so an OCI7 client
+		could log in and open a cursor but never run anything
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
