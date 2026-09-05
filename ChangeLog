@@ -1799,6 +1799,13 @@
 		success iteration count of 1 rather than 0. query2() also
 		never picked the call sequence number up out of its own
 		request, so the summary echoed whichever call ran before it
+	fixed the oracle protocol module answering the tns connect with a
+		protocol version older than the client asked for. the answer
+		was rounded down to a release boundary, and only 12, 11 and 8
+		were boundaries, so every client between 8 and 11 was told 8 -
+		a 9i client asking for 0x0137 or 0x0138 got 0x0136, the 8.1.7
+		version. it answers with the client's own version now, capped
+		at 12, the way a real server does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

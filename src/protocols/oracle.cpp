@@ -3085,27 +3085,41 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 
 	debugStart("connect response");
 
-	// answer with the highest protocol version we support that the client
-	// can speak
+	// answer with the highest protocol version both ends can speak: the
+	// client's own, unless it is higher than this module goes
 	// (python-oracledb and node-oracledb refuse anything under
 	// PROTOCOL_VERSION_12 outright, so 12 is what makes them connect)
-	if (connectlowestversion<=PROTOCOL_VERSION_12 &&
-			connectversion>=PROTOCOL_VERSION_12) {
+	//
+	// this used to round the answer down to a release boundary, and only
+	// 12, 11 and 8 were boundaries, so every client between 8 and 11 got
+	// told 8 - a 9i client that asked for 0x0137 or 0x0138 was answered
+	// 0x0136, the 8.1.7 version.  a real server does not do that.  the
+	// two 10.2 captures in test/protocol/oracle/samples/ answer each
+	// client with the version that client asked for, and their accepts
+	// are otherwise identical to this module's, byte for byte:
+	//
+	//	client asked	real 10.2 answered	this module answered
+	//	0x0137 (9.0.1)	0x0137			0x0136
+	//	0x0138 (9.2.0.4) 0x0138			0x0136
+	//
+	// the version the accept names is what the client believes the far
+	// end is.  it is also the only byte that differs between the two
+	// sessions in which an oci7 client marshals its pointer and address
+	// fields four bytes wide (both 10.2 captures) and the two in which
+	// the same two clients marshal them one byte wide (both live runs
+	// against this module) - so the width may follow it.  that much is
+	// correlation, not proof; the accept being wrong is not - see #9658
+	if (connectversion>PROTOCOL_VERSION_12) {
 		connectversion=PROTOCOL_VERSION_12;
-		debugWrite("negotiated version: 0x%04x (12)",connectversion);
-	} else if (connectlowestversion<=PROTOCOL_VERSION_11 &&
-			connectversion>=PROTOCOL_VERSION_11) {
-		connectversion=PROTOCOL_VERSION_11;
-		debugWrite("negotiated version: 0x%04x (11)",connectversion);
-	} else if (connectlowestversion<=PROTOCOL_VERSION_8) {
-		connectversion=PROTOCOL_VERSION_8;
-		debugWrite("negotiated version: 0x%04x (8)",connectversion);
-	} else {
+	}
+	if (connectversion<PROTOCOL_VERSION_7 ||
+			connectlowestversion>connectversion) {
 		debugWrite("no supported connect protocol version found");
 		debugEnd();
 		sendRefuse(TNS_CONNECTION_REFUSED);
 		return false;
 	}
+	debugWrite("negotiated version: 0x%04x",connectversion);
 
 	debugWrite("sending accept");
 	debugEnd();
