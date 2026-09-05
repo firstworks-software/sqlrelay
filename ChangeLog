@@ -1710,6 +1710,17 @@
 		rather than the length-prefixed field stream putSummary()
 		writes, so it is sent as a captured literal now, the way the
 		authentication trailer already is
+	corrected that O3LOGON challenge against a real 10.2 server's own
+		portable-mode challenge to a pre-10g OCI7 client, captured by
+		running the two through a banner-rewriting proxy so both ends
+		chose the portable encoding the module always runs in. the
+		session key's two byte length slot is a fixed width ub2 there,
+		not the length-prefixed int the portable encoding uses
+		elsewhere, and the summary object behind the key is 64 bytes
+		rather than the 94 a native encoding session carries. the
+		summary the module answers a successful O3LOGON login with is
+		that same object now too, instead of putSummary()'s field
+		stream
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1407,6 +1407,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putAuthTrailer(const byte_t *portable,
 						size_t portablesize,
 						bool secondphase);
+		void	putO3LogonSummary();
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		const byte_t	*findO3LogonStrings(const byte_t *rp,
 							const byte_t *end);
@@ -6469,59 +6470,26 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 
 	// an o3logon challenge names nothing.  the client hands the server an
 	// out parameter - a two byte length slot and a 33 byte buffer - and
-	// the server fills it in: the key's length as a count, then the key as
-	// a length-prefixed string, then a summary object carrying error 0.
+	// the server fills it in: the key's length as a ub2, then the key as a
+	// length-prefixed string, then a summary object carrying error 0.
 	// no pair count, no AUTH_SESSKEY name, no flags, no verifier salt, and
-	// no pbkdf2 parameters.  a real 10.2 server's whole challenge is 140
-	// bytes against the 2356 an o5logon one takes
+	// no pbkdf2 parameters.  a real 10.2 server's whole challenge packet is
+	// 110 bytes in the portable encoding, against the 2356 an o5logon one
+	// takes
 	if (o3logon) {
-
-		// the summary object a 10.2 server appends here is a
-		// marshalled struct - fixed width, native 32 bit little
-		// endian - not the length-prefixed field stream putSummary()
-		// writes, and its fields don't map onto putSummary()'s
-		// arguments either.  so it gets a captured literal, the way
-		// putAuthTrailer() handles the same situation.  decoded from
-		// #9658's success capture and confirmed byte-identical in
-		// #9637's, across all five TTC 04 blocks the two carry: two
-		// ub4 fields of 1, a ub2 error number at 10, three ub2
-		// per-call fields at 16, a call sequence byte at 47, another
-		// per-call byte at 50, and the constants 36 01 at 54 and
-		// 20 13 bd 0c at 62.  the rest is unexplained
-		static const byte_t	o3logontrailer[]={
-			0x04, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x01,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x13,
-			0xbd, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-		};
-
-		// the challenge is the exchange's second call, and its error
-		// number and per-call fields are all zero
-		byte_t	sequence=2;
 
 		uint32_t	sesskeysize=
 				charstring::getLength(serverauthsesskey);
-		putAuthCount(sesskeysize,2);
+
+		// the two byte length slot is a fixed width little endian ub2
+		// even in the portable encoding, where putAuthCount() would
+		// write a length-prefixed int (01 20) instead of the 20 00 a
+		// real server sends
+		debugWrite("session key size: %d",sesskeysize);
+		writeLE(&reqpacket,(uint16_t)sesskeysize);
 		putLenString(serverauthsesskey,sesskeysize);
 
-		debugStart("o3logon summary trailer");
-		debugWrite("bytes: %d",(uint32_t)sizeof(o3logontrailer));
-		debugWrite("sequence byte: 0x%02x",sequence);
-		debugHexDump(o3logontrailer,sizeof(o3logontrailer));
-		debugEnd();
-
-		reqpacket.append(o3logontrailer,47);
-		write(&reqpacket,sequence);
-		reqpacket.append(o3logontrailer+48,
-					sizeof(o3logontrailer)-48);
+		putO3LogonSummary();
 
 		debugEnd();
 		return sendPacket(true);
@@ -6615,6 +6583,51 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 	reqpacket.append(nativetrailer+50,sizeof(nativetrailer)-50);
 
 	debugEnd();
+}
+
+// the summary object a real 10.2 server writes an o3logon client, both as the
+// tail of the phase one challenge and on its own as the login's answer.  it is
+// a marshalled struct - fixed width, little endian - not the length-prefixed
+// field stream putSummary() writes, and its fields don't map onto
+// putSummary()'s arguments either, so it gets a captured literal, the way
+// putAuthTrailer() handles the same situation.
+//
+// decoded byte for byte from #9664's oraproxy capture: a real 10.2 server's own
+// challenge to the 9.2.0.4.0 OCI7 client this module's o3logon support targets,
+// with the platform banner rewritten in both directions so both ends run the
+// portable encoding - the encoding every session with this module runs in.  the
+// same 64 bytes appear twice there, as the challenge's tail (sequence 2) and as
+// the answer to the password the client sent back (sequence 3).
+//
+// only three of the 64 bytes are set: the ttc 04 code, an end of call status of
+// 1 behind it, and the sequence number of the call being answered at 43.  the
+// error number, the row and cursor fields and everything else a summary can
+// carry are zero, and where they sit in the struct is unexplained
+void sqlrprotocol_oracle::putO3LogonSummary() {
+
+	static const byte_t	summary[]={
+		0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+
+	// the sequence number of the call being answered, taken from the login
+	// request itself - a client matches the answer to the call it made
+	// with it
+	debugStart("o3logon summary");
+	debugWrite("bytes: %d",(uint32_t)sizeof(summary));
+	debugWrite("call number: %d",callnumber);
+	debugHexDump(summary,sizeof(summary));
+	debugEnd();
+
+	reqpacket.append(summary,43);
+	write(&reqpacket,callnumber);
+	reqpacket.append(summary+44,sizeof(summary)-44);
 }
 
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
@@ -6745,8 +6758,10 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 // what a real 10.2 server answers a successful o3logon login with - a summary
 // object carrying error 0, and nothing else.  the o5logon path can't be reused
 // here: it sends a ttc 0x08 field list whose AUTH_SVR_RESPONSE o3logon has no
-// equivalent of, and an OCI7 client reading one would desync.
-// see "Oracle Wire Protocol - Authentication - Password" and #9658
+// equivalent of, and an OCI7 client reading one would desync.  putSummary()
+// can't be reused either - #9664's capture shows this client is answered with
+// the same marshalled struct the challenge carries, not a field stream.
+// see "Oracle Wire Protocol - Authentication - Password", #9658 and #9664
 bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -6759,7 +6774,7 @@ bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
 	debugWrite("user: %s",username);
 	debugEnd();
 
-	putSummary(0,0,0,NULL);
+	putO3LogonSummary();
 
 	return sendPacket(true);
 }
