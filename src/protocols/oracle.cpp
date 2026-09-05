@@ -8257,8 +8257,19 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 		// server, 26 bytes apart on its heap.  the client never sends
 		// it back - the TTI_FETCH and TTI_CLOSE that follow carry the
 		// cursor id and nothing else - so it goes out as 0, the way
-		// the literal above already zeroes its native counterpart
-		writeLenPreInt(&reqpacket,0);
+		// the literal above already zeroes its native counterpart.
+		//
+		// the width has to be kept even though the value is zero.
+		// writeLenPreInt() picks the narrowest form that holds the
+		// value, so a zero comes out as a bare 00 - a length of zero
+		// and no value bytes - and the reply lands 4 bytes short of
+		// the 39 a real server sends.  a real server always has an
+		// address here, so every capture on file has the 4-byte form,
+		// and the client is parsing for a field that wide.  so write
+		// the length byte and the four value bytes rather than
+		// letting the value pick the form
+		write(&reqpacket,(byte_t)4);
+		writeBE(&reqpacket,(uint32_t)0);
 
 		writeLenPreInt(&reqpacket,0);
 
