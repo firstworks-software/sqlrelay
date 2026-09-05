@@ -410,8 +410,8 @@
 #define ENCODING_CONV_LENGTH		0x02
 
 // the two representations the module can write.  ttidatatypes answers every
-// row with one or the other, and they are the only two a 9i client's own
-// catalog can be answered with either - see countDataTypes9i().
+// row with one or the other, and a 9i client's own catalog is answered with
+// one or the other too - see countDataTypes9i().
 #define DATATYPE_REP_UNIVERSAL		0x01
 #define DATATYPE_REP_NATIVE		0x0a
 
