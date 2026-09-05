@@ -2360,7 +2360,7 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 
 	debugStart("err");
 	debugWrite("error code: %hd",errorcode);
-	debugWrite("error message: \"%.*s\"",(uint32_t)errorsize,errormessage);
+	debugWrite("error message: \"%.*s\"",(int)errorsize,errormessage);
 	debugWrite("error size: %lld",(long long)errorsize);
 	debugWrite("sql state: \"%s\"",sqlstate);
 	debugEnd();

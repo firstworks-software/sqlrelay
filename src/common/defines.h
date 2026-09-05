@@ -1,0 +1,544 @@
+// Copyright (c) David Muse
+// See the file COPYING for more information.
+
+#ifndef DEFINES_H
+#define DEFINES_H
+
+// listener-connection protocol...
+#define HANDOFF_PASS 0
+#define HANDOFF_RECONNECT 1
+#define HANDOFF_PROXY 2
+
+// client-server protocol...
+// version 21330 was 0x5352 => 0x53=S 0x52=R => SR => SQL Relay
+#define SQLRCLIENT_PROTOCOL_VERSION 21331
+#define NEW_QUERY 0
+#define FETCH_RESULT_SET 1
+#define ABORT_RESULT_SET 2
+#define SUSPEND_RESULT_SET 3
+#define RESUME_RESULT_SET 4
+#define SUSPEND_SESSION 5
+#define END_SESSION 6
+#define PING 7
+#define IDENTIFY 8
+#define COMMIT 9
+#define ROLLBACK 10
+#define AUTH 11
+#define SET_AUTO_COMMIT 12
+#define RE_EXECUTE_QUERY 13
+#define FETCH_FROM_BIND_CURSOR 14
+#define DB_VERSION 15
+#define BIND_FORMAT 16
+#define SERVER_VERSION 17
+#define GET_CATALOG_LIST 18
+#define GET_TABLE_LIST 19
+#define GET_COLUMN_LIST 20
+#define SELECT_DATABASE 21
+#define GET_CURRENT_DATABASE 22
+#define GET_LAST_INSERT_ID 23
+#define BEGIN 24
+#define GET_QUERY_TREE 25
+#define NO_COMMAND 26
+#define DB_HOST_NAME 27
+#define DB_IP_ADDRESS 28
+#define GET_TRANSLATED_QUERY 29
+#define GET_PROCEDURE_BIND_AND_COLUMN_LIST 30
+#define GET_TYPE_INFO_LIST 31
+#define GET_PROCEDURE_LIST 32
+#define GET_SCHEMA_LIST 33
+#define GET_TABLE_TYPE_LIST 34
+#define GET_PRIMARY_KEYS_LIST 35
+#define GET_KEY_AND_INDEX_LIST 36
+#define GET_CURRENT_SCHEMA 37
+#define NEXT_RESULT_SET 38
+#define GET_TABLE_LIST_2 39
+#define NEXT_VAL_FORMAT 40
+#define SELECT_SCHEMA 41
+#define SET_ISOLATION_LEVEL 42
+#define GET_ISOLATION_LEVEL 43
+#define GET_DATABASE_FEATURES 44
+#define GET_AUTO_COMMIT 45
+#define GET_LAST_INSERT_ID_LIST 46
+#define SELECT_CATALOG 47
+#define GET_CURRENT_CATALOG 48
+#define GET_DATABASE_IS_SCHEMA 49
+#define GET_DATABASE_LIST 50
+#define GET_DEFAULT_ISOLATION_LEVEL 51
+#define GET_CURRENT_USER 52
+#define SET_TRANSACTION_MODEL 53
+#define GET_TRANSACTION_MODEL 54
+#define GET_DEFAULT_TRANSACTION_MODEL 55
+#define GET_IN_TRANSACTION 56
+// sets the name of the cursor, for "where current of" updates/deletes
+#define SET_CURSOR_NAME 57
+#define MAX_COMMAND 57
+
+#define SQLRCLIENT_PROTOCOL_VERSION_MIN 1
+#define SQLRCLIENT_PROTOCOL_VERSION_MAX 4
+
+#define SUSPENDED_RESULT_SET 1
+#define NO_SUSPENDED_RESULT_SET 0
+
+#define DONT_SEND_COLUMN_INFO 0
+#define SEND_COLUMN_INFO 1
+
+#define ERROR_OCCURRED 0
+#define NO_ERROR_OCCURRED 1
+#define ERROR_OCCURRED_DISCONNECT 2
+#define TIMEOUT_GETTING_ERROR_STATUS 3
+
+#define DONT_RECONNECT 0
+#define RECONNECT 1
+
+#define NEED_NEW_CURSOR 0
+#define DONT_NEED_NEW_CURSOR 1
+
+#define END_COLUMN_INFO 0
+
+#define ACTUAL_ROWS 1
+#define NO_ACTUAL_ROWS 0
+#define AFFECTED_ROWS 1
+#define NO_AFFECTED_ROWS 0
+
+#define SKIP_ROWS 1
+#define SKIP_NO_ROWS 0
+#define FETCH_ROWS 1
+#define FETCH_NO_ROWS 0
+
+#define NULL_DATA 0
+#define STRING_DATA 1
+#define START_LONG_DATA 2
+#define END_LONG_DATA 3
+#define CURSOR_DATA 4
+#define INTEGER_DATA 5
+#define DOUBLE_DATA 6
+#define DATE_DATA 7
+#define END_RESULT_SET 8
+#define FETCH_ERROR 9
+
+#define END_BIND_VARS 8 
+
+#define DONT_RE_EXECUTE 0
+#define RE_EXECUTE 1
+
+#define DB_OBJECT_TABLE		1
+#define DB_OBJECT_VIEW		2
+#define DB_OBJECT_ALIAS		4
+#define DB_OBJECT_SYNONYM	8
+
+// database features
+#define FEATURE_AGGREGATE_FUNCTIONS 0
+#define FEATURE_ALL_PROCEDURES_ARE_CALLABLE 1
+#define FEATURE_ALL_TABLES_ARE_SELECTABLE 2
+#define FEATURE_ALTER_DOMAIN_CLAUSES 3
+#define FEATURE_ALTER_TABLE_OPERATIONS 4
+#define FEATURE_ANSI92_SQL_LEVELS 5
+#define FEATURE_AUTO_COMMIT_FAILURE_CLOSES_ALL_RESULT_SETS 6
+#define FEATURE_BATCH_OPERATIONS 7
+#define FEATURE_BATCH_ROW_COUNTS 8
+#define FEATURE_CATALOG_SEPARATOR 9
+#define FEATURE_CATALOG_TERM 10
+#define FEATURE_CATALOG_USAGE 11
+#define FEATURE_COLLATION_SEQ 12
+#define FEATURE_CREATE_ASSERTION_CLAUSES 13
+#define FEATURE_CREATE_CHARACTER_SET_CLAUSES 14
+#define FEATURE_CREATE_COLLATION_CLAUSES 15
+#define FEATURE_CREATE_DOMAIN_CLAUSES 16
+#define FEATURE_CREATE_SCHEMA_CLAUSES 17
+#define FEATURE_CREATE_TABLE_CLAUSES 18
+#define FEATURE_CREATE_TRANSLATION_CLAUSES 19
+#define FEATURE_CREATE_VIEW_CLAUSES 20
+#define FEATURE_DATA_DEFINITION_TRANSACTION_BEHAVIOR 21
+#define FEATURE_DDL_INDEX_OPERATIONS 22
+#define FEATURE_DEFAULT_RESULT_SET_HOLDABILITY 23
+#define FEATURE_DELETES_ARE_DETECTED 24
+#define FEATURE_DOES_MAX_ROW_SIZE_INCLUDE_BLOBS 25
+#define FEATURE_DROP_ASSERTION_CLAUSES 26
+#define FEATURE_DROP_CHARACTER_SET_CLAUSES 27
+#define FEATURE_DROP_COLLATION_CLAUSES 28
+#define FEATURE_DROP_DOMAIN_CLAUSES 29
+#define FEATURE_DROP_SCHEMA_CLAUSES 30
+#define FEATURE_DROP_TABLE_CLAUSES 31
+#define FEATURE_DROP_TRANSLATION_CLAUSES 32
+#define FEATURE_DROP_VIEW_CLAUSES 33
+#define FEATURE_EXTRA_NAME_CHARACTERS 34
+#define FEATURE_FOREIGN_KEY_DELETE_RULES 35
+#define FEATURE_FOREIGN_KEY_UPDATE_RULES 36
+#define FEATURE_FORWARD_ONLY_CURSOR_ATTRIBUTES 37
+#define FEATURE_GENERATED_KEY_ALWAYS_RETURNED 38
+#define FEATURE_GRANT_CLAUSES 39
+#define FEATURE_GROUP_BY_CLAUSES 40
+#define FEATURE_IDENTIFIER_CASE_STORAGE 41
+#define FEATURE_IDENTIFIER_QUOTE_STRING 42
+#define FEATURE_INDEX_KEYWORDS 43
+#define FEATURE_INFO_SCHEMA_VIEWS 44
+#define FEATURE_INSERTS_ARE_DETECTED 45
+#define FEATURE_INSERT_OPERATIONS 46
+#define FEATURE_ISOLATION_LEVELS 47
+#define FEATURE_IS_CATALOG_AT_START 48
+#define FEATURE_LOCAL_FILE_USAGE 49
+#define FEATURE_LOCATORS_UPDATE_COPY 50
+#define FEATURE_LOCK_TYPES 51
+#define FEATURE_MAX_BINARY_LITERAL_LENGTH 52
+#define FEATURE_MAX_CATALOG_NAME_LENGTH 53
+#define FEATURE_MAX_CHAR_LITERAL_LENGTH 54
+#define FEATURE_MAX_COLUMNS_IN_GROUP_BY 55
+#define FEATURE_MAX_COLUMNS_IN_INDEX 56
+#define FEATURE_MAX_COLUMNS_IN_ORDER_BY 57
+#define FEATURE_MAX_COLUMNS_IN_SELECT 58
+#define FEATURE_MAX_COLUMNS_IN_TABLE 59
+#define FEATURE_MAX_COLUMN_NAME_LENGTH 60
+#define FEATURE_MAX_CONNECTIONS 61
+#define FEATURE_MAX_CURSOR_NAME_LENGTH 62
+#define FEATURE_MAX_IDENTIFIER_LENGTH 63
+#define FEATURE_MAX_INDEX_LENGTH 64
+#define FEATURE_MAX_PROCEDURE_NAME_LENGTH 65
+#define FEATURE_MAX_ROW_SIZE 66
+#define FEATURE_MAX_SCHEMA_NAME_LENGTH 67
+#define FEATURE_MAX_STATEMENTS 68
+#define FEATURE_MAX_STATEMENT_LENGTH 69
+#define FEATURE_MAX_TABLES_IN_SELECT 70
+#define FEATURE_MAX_TABLE_NAME_LENGTH 71
+#define FEATURE_MAX_USER_NAME_LENGTH 72
+#define FEATURE_NEED_LONG_DATA_LENGTH 73
+#define FEATURE_NULL_PLUS_NON_NULL_IS_NULL 74
+#define FEATURE_NULL_SORT_ORDER 75
+#define FEATURE_NUMERIC_FUNCTIONS 76
+#define FEATURE_OPEN_CURSORS_ACROSS 77
+#define FEATURE_OPEN_STATEMENTS_ACROSS 78
+#define FEATURE_OTHERS_DELETES_ARE_VISIBLE 79
+#define FEATURE_OTHERS_INSERTS_ARE_VISIBLE 80
+#define FEATURE_OTHERS_UPDATES_ARE_VISIBLE 81
+#define FEATURE_OUTER_JOINS 82
+#define FEATURE_OWN_DELETES_ARE_VISIBLE 83
+#define FEATURE_OWN_INSERTS_ARE_VISIBLE 84
+#define FEATURE_OWN_UPDATES_ARE_VISIBLE 85
+#define FEATURE_PREDICATES 86
+#define FEATURE_PROCEDURE_TERM 87
+#define FEATURE_QUOTED_IDENTIFIER_CASE_STORAGE 88
+#define FEATURE_RELATIONAL_JOIN_OPERATORS 89
+#define FEATURE_RESULT_SET_CONCURRENCIES 90
+#define FEATURE_RESULT_SET_HOLDABILITIES 91
+#define FEATURE_RESULT_SET_TYPES 92
+#define FEATURE_REVOKE_CLAUSES 93
+#define FEATURE_ROW_ID_LIFETIME 94
+#define FEATURE_ROW_VALUE_CONSTRUCTOR_EXPRESSIONS 95
+#define FEATURE_SCHEMA_TERM 96
+#define FEATURE_SCHEMA_USAGE 97
+#define FEATURE_SCROLL_CONCURRENCIES 98
+#define FEATURE_SEARCH_STRING_ESCAPE 99
+#define FEATURE_SQL_GRAMMAR_LEVELS 100
+#define FEATURE_SQL_KEYWORDS 101
+#define FEATURE_SQL_STATE_TYPE 102
+#define FEATURE_STATIC_CURSOR_ATTRIBUTES 103
+#define FEATURE_STORED_PROGRAMS 104
+#define FEATURE_STRING_FUNCTIONS 105
+#define FEATURE_SUBQUERY_USAGE 106
+#define FEATURE_SUPPORTS_BATCH_UPDATES 107
+#define FEATURE_SUPPORTS_COLUMN_ALIASING 108
+#define FEATURE_SUPPORTS_CONVERT 109
+#define FEATURE_SUPPORTS_CORRELATED_SUBQUERIES 110
+#define FEATURE_SUPPORTS_DESCRIBE_PARAMETER 111
+#define FEATURE_SUPPORTS_EXPRESSIONS_IN_ORDER_BY 112
+#define FEATURE_SUPPORTS_GET_GENERATED_KEYS 113
+#define FEATURE_SUPPORTS_INTEGRITY_ENHANCEMENT_FACILITY 114
+#define FEATURE_SUPPORTS_LIKE_ESCAPE_CLAUSE 115
+#define FEATURE_SUPPORTS_MULTIPLE_RESULT_SETS 116
+#define FEATURE_SUPPORTS_MULTIPLE_TRANSACTIONS 117
+#define FEATURE_SUPPORTS_NAMED_PARAMETERS 118
+#define FEATURE_SUPPORTS_NON_NULLABLE_COLUMNS 119
+#define FEATURE_SUPPORTS_ORDER_BY_UNRELATED 120
+#define FEATURE_SUPPORTS_SAVEPOINTS 121
+#define FEATURE_SUPPORTS_SELECT_FOR_UPDATE 122
+#define FEATURE_SUPPORTS_TRANSACTIONS 123
+#define FEATURE_SYSTEM_FUNCTIONS 124
+#define FEATURE_TABLE_CORRELATION_NAMES 125
+#define FEATURE_TABLE_TERM 126
+#define FEATURE_TIME_DATE_ADD_INTERVALS 127
+#define FEATURE_TIME_DATE_DIFF_INTERVALS 128
+#define FEATURE_TIME_DATE_FUNCTIONS 129
+#define FEATURE_TIME_DATE_LITERALS 130
+#define FEATURE_TRANSACTION_DDL_DML 131
+#define FEATURE_UNION_CLAUSES 132
+#define FEATURE_UPDATES_ARE_DETECTED 133
+#define FEATURE_VALUE_EXPRESSIONS 134
+#define FEATURE_WHERE_CURRENT_OF_OPERATIONS 135
+// NOTE: new features must be appended at the end, out of alphabetical order.
+// These indices, and the dbfeaturenames[] array below, are positional wire
+// protocol state that already-deployed clients depend on.
+#define FEATURE_SUPPORTS_SET_CURSOR_NAME 136
+#define FEATURE_COUNT 137
+
+#ifdef NEED_DBFEATURENAMES
+static const char *dbfeaturenames[]={
+	"aggregate_functions",
+	"all_procedures_are_callable",
+	"all_tables_are_selectable",
+	"alter_domain_clauses",
+	"alter_table_operations",
+	"ansi92_sql_levels",
+	"auto_commit_failure_closes_all_result_sets",
+	"batch_operations",
+	"batch_row_counts",
+	"catalog_separator",
+	"catalog_term",
+	"catalog_usage",
+	"collation_seq",
+	"create_assertion_clauses",
+	"create_character_set_clauses",
+	"create_collation_clauses",
+	"create_domain_clauses",
+	"create_schema_clauses",
+	"create_table_clauses",
+	"create_translation_clauses",
+	"create_view_clauses",
+	"data_definition_transaction_behavior",
+	"ddl_index_operations",
+	"default_result_set_holdability",
+	"deletes_are_detected",
+	"does_max_row_size_include_blobs",
+	"drop_assertion_clauses",
+	"drop_character_set_clauses",
+	"drop_collation_clauses",
+	"drop_domain_clauses",
+	"drop_schema_clauses",
+	"drop_table_clauses",
+	"drop_translation_clauses",
+	"drop_view_clauses",
+	"extra_name_characters",
+	"foreign_key_delete_rules",
+	"foreign_key_update_rules",
+	"forward_only_cursor_attributes",
+	"generated_key_always_returned",
+	"grant_clauses",
+	"group_by_clauses",
+	"identifier_case_storage",
+	"identifier_quote_string",
+	"index_keywords",
+	"info_schema_views",
+	"inserts_are_detected",
+	"insert_operations",
+	"isolation_levels",
+	"is_catalog_at_start",
+	"local_file_usage",
+	"locators_update_copy",
+	"lock_types",
+	"max_binary_literal_length",
+	"max_catalog_name_length",
+	"max_char_literal_length",
+	"max_columns_in_group_by",
+	"max_columns_in_index",
+	"max_columns_in_order_by",
+	"max_columns_in_select",
+	"max_columns_in_table",
+	"max_column_name_length",
+	"max_connections",
+	"max_cursor_name_length",
+	"max_identifier_length",
+	"max_index_length",
+	"max_procedure_name_length",
+	"max_row_size",
+	"max_schema_name_length",
+	"max_statements",
+	"max_statement_length",
+	"max_tables_in_select",
+	"max_table_name_length",
+	"max_user_name_length",
+	"need_long_data_length",
+	"null_plus_non_null_is_null",
+	"null_sort_order",
+	"numeric_functions",
+	"open_cursors_across",
+	"open_statements_across",
+	"others_deletes_are_visible",
+	"others_inserts_are_visible",
+	"others_updates_are_visible",
+	"outer_joins",
+	"own_deletes_are_visible",
+	"own_inserts_are_visible",
+	"own_updates_are_visible",
+	"predicates",
+	"procedure_term",
+	"quoted_identifier_case_storage",
+	"relational_join_operators",
+	"result_set_concurrencies",
+	"result_set_holdabilities",
+	"result_set_types",
+	"revoke_clauses",
+	"row_id_lifetime",
+	"row_value_constructor_expressions",
+	"schema_term",
+	"schema_usage",
+	"scroll_concurrencies",
+	"search_string_escape",
+	"sql_grammar_levels",
+	"sql_keywords",
+	"sql_state_type",
+	"static_cursor_attributes",
+	"stored_programs",
+	"string_functions",
+	"subquery_usage",
+	"supports_batch_updates",
+	"supports_column_aliasing",
+	"supports_convert",
+	"supports_correlated_subqueries",
+	"supports_describe_parameter",
+	"supports_expressions_in_order_by",
+	"supports_get_generated_keys",
+	"supports_integrity_enhancement_facility",
+	"supports_like_escape_clause",
+	"supports_multiple_result_sets",
+	"supports_multiple_transactions",
+	"supports_named_parameters",
+	"supports_non_nullable_columns",
+	"supports_order_by_unrelated",
+	"supports_savepoints",
+	"supports_select_for_update",
+	"supports_transactions",
+	"system_functions",
+	"table_correlation_names",
+	"table_term",
+	"time_date_add_intervals",
+	"time_date_diff_intervals",
+	"time_date_functions",
+	"time_date_literals",
+	"transaction_ddl_dml",
+	"union_clauses",
+	"updates_are_detected",
+	"value_expressions",
+	"where_current_of_operations",
+	// NOTE: new feature names must be appended at the end, out of
+	// alphabetical order.  This array is positional wire protocol state
+	// that already-deployed clients depend on.
+	"supports_set_cursor_name"
+};
+#endif
+
+// sizes...
+// FIXME: these are duplicated here and in sqlrshmdata.h
+#define USERSIZE 128
+#define MAXCONNECTIONIDLEN 256
+#define MAXUNIXSOCKETLEN 1024
+#define MAXCONNECTIONS 4096
+
+// errors...
+// (hopefully the 900000+ range doesn't collide with anyone's native codes)
+#define SQLR_ERROR_NOCURSORS 900000
+#define SQLR_ERROR_NOCURSORS_STRING \
+	"No server-side cursors were available to process the query."
+#define SQLR_ERROR_MAXCLIENTINFOSIZE 900001
+#define SQLR_ERROR_MAXCLIENTINFOSIZE_STRING \
+	"Maximum client info size exceeded."
+#define SQLR_ERROR_MAXQUERYSIZE 900002
+#define SQLR_ERROR_MAXQUERYSIZE_STRING \
+	"Maximum query size exceeded."
+#define SQLR_ERROR_MAXBINDCOUNT 900003
+#define SQLR_ERROR_MAXBINDCOUNT_STRING \
+	"Maximum bind variable count exceeded."
+#define SQLR_ERROR_MAXBINDNAMESIZE 900004
+#define SQLR_ERROR_MAXBINDNAMESIZE_STRING \
+	"Maximum bind variable name size exceeded."
+#define SQLR_ERROR_MAXSTRINGBINDVALUESIZE 900005
+#define SQLR_ERROR_MAXSTRINGBINDVALUESIZE_STRING \
+	"Maximum string bind value size exceeded."
+#define SQLR_ERROR_MAXLOBBINDVALUESIZE 900006
+#define SQLR_ERROR_MAXLOBBINDVALUESIZE_STRING \
+	"Maximum lob bind value size exceeded."
+#define SQLR_ERROR_DUPLICATEBINDNAME 900007
+#define SQLR_ERROR_DUPLICATEBINDNAME_STRING \
+	"Duplicate bind variable name."
+#define SQLR_ERROR_MAXCOLUMNCOUNTEXCEEDED 900008
+#define SQLR_ERROR_MAXCOLUMNCOUNTEXCEEDED_STRING \
+	"Maximum column count exceeded."
+#define SQLR_ERROR_RESULTSETNOTSUSPENDED 900009
+#define SQLR_ERROR_RESULTSETNOTSUSPENDED_STRING \
+	"The requested result set was not suspended."
+#define SQLR_ERROR_TOOMANYLISTENERS 900010
+#define SQLR_ERROR_TOOMANYLISTENERS_STRING \
+	"Too many listeners."
+#define SQLR_ERROR_ERRORFORKINGLISTENER 900011
+#define SQLR_ERROR_ERRORFORKINGLISTENER_STRING \
+	"Error forking listener."
+#define SQLR_ERROR_AUTHENTICATIONERROR 900012
+#define SQLR_ERROR_AUTHENTICATIONERROR_STRING \
+	"Authentication Error."
+#define SQLR_ERROR_HANDOFFFAILED 900013
+#define SQLR_ERROR_HANDOFFFAILED_STRING \
+	"The listener failed to hand the client off to the database connection."
+#define SQLR_ERROR_DBSDOWN 900014
+#define SQLR_ERROR_DBSDOWN_STRING \
+	"All databases are currently down."
+#define SQLR_ERROR_LASTINSERTIDNOTSUPPORTED 900015
+#define SQLR_ERROR_LASTINSERTIDNOTSUPPORTED_STRING \
+	"Get last insert id not supported."
+#define SQLR_ERROR_INVALIDBINDVARIABLEFORMAT 900016
+#define SQLR_ERROR_INVALIDBINDVARIABLEFORMAT_STRING \
+	"Invalid bind variable format."
+#define SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL 900017
+#define SQLR_ERROR_MAXCOLUMNCOUNTTOOSMALL_STRING \
+	"maxcolumncount too small."
+#define SQLR_ERROR_DBNOTFOUND 900018
+#define SQLR_ERROR_DBNOTFOUND_STRING \
+	"Database not found."
+#define SQLR_ERROR_NOTIMPLEMENTED 900019
+#define SQLR_ERROR_NOTIMPLEMENTED_STRING \
+	"Not implemented."
+#define SQLR_ERROR_BULKLOADBEGIN_IPC_FILE 900020
+#define SQLR_ERROR_BULKLOADBEGIN_IPC_FILE_STRING \
+	"Bulk load begin failed - failed to create ipc file."
+#define SQLR_ERROR_BULKLOADBEGIN_IPC_KEY 900021
+#define SQLR_ERROR_BULKLOADBEGIN_IPC_KEY_STRING \
+	"Bulk load begin failed - failed to generate ipc key."
+#define SQLR_ERROR_BULKLOADBEGIN_SHM 900022
+#define SQLR_ERROR_BULKLOADBEGIN_SHM_STRING \
+	"Bulk load begin failed - failed to create shm segment."
+#define SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY 900023
+#define SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY_STRING \
+	"Bulk load prepare failed - invalid query."
+#define SQLR_ERROR_BULKLOADJOIN_SHM 900024
+#define SQLR_ERROR_BULKLOADJOIN_SHM_STRING \
+	"Bulk load join failed - failed to attach to shm segment."
+#define SQLR_ERROR_BULKLOADEXECUTE_OPEN_CURSOR 900025
+#define SQLR_ERROR_BULKLOADEXECUTE_OPEN_CURSOR_STRING \
+	"Bulk load execute failed - failed to open cursor."
+#define SQLR_ERROR_BULKLOADEXECUTE_TOO_MANY_ERRORS 900026
+#define SQLR_ERROR_BULKLOADEXECUTE_TOO_MANY_ERRORS_STRING \
+	"Bulk load execute failed - too many errors."
+#define SQLR_ERROR_QUERYTRANSLATION 900027
+#define SQLR_ERROR_BINDVARIABLETRANSLATION 900028
+#define SQLR_ERROR_RESULTSETHEADERTRANSLATION 900029
+#define SQLR_ERROR_RESULTSETTRANSLATION 900030
+#define SQLR_ERROR_RESULTSETROWTRANSLATION 900031
+#define SQLR_ERROR_RESULTSETROWBLOCKTRANSLATION 900032
+#define SQLR_ERROR_CHARACTER_CONVERSION_FAILED 900033
+#define SQLR_ERROR_TRIGGER 900034
+#define SQLR_ERROR_NOTAUTHENTICATED 900035
+#define SQLR_ERROR_NOTAUTHENTICATED_STRING \
+	"Not authenticated."
+// this one is out of order because it had previously been set to 900023, same
+// as SQLR_ERROR_BULKLOADPREPARE_INVALID_QUERY, and it needed to be reassigned
+#define SQLR_ERROR_BULKLOADJOIN_IPC_KEY 900036
+#define SQLR_ERROR_BULKLOADJOIN_IPC_KEY_STRING \
+	"Bulk load join failed - failed to generate ipc key."
+#define SQLR_ERROR_UNSUPPORTED_PROTOCOL 900037
+#define SQLR_ERROR_UNSUPPORTED_PROTOCOL_STRING \
+	"Unsupported protocol"
+
+
+#define SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK 999995
+#define SQLR_ERROR_AUTOCOMMIT_ON_IN_TX_BLOCK_STRING \
+	"autocommit on while in transaction block"
+#define SQLR_ERROR_AUTOCOMMIT_OFF_IN_TX_BLOCK 999996
+#define SQLR_ERROR_AUTOCOMMIT_OFF_IN_TX_BLOCK_STRING \
+	"autocommit off while in transaction block"
+#define SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK 999997
+#define SQLR_ERROR_ROLLBACK_NOT_IN_TX_BLOCK_STRING \
+	"rollback while not in transaction block"
+#define SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK 999998
+#define SQLR_ERROR_COMMIT_NOT_IN_TX_BLOCK_STRING \
+	"commit while not in transaction block"
+#define SQLR_ERROR_BEGIN_IN_TX_BLOCK 999999
+#define SQLR_ERROR_BEGIN_IN_TX_BLOCK_STRING \
+	"begin while in transaction block"
+
+#endif

@@ -1314,7 +1314,7 @@ bool sqlrprotocol_postgresql::query() {
 	if (getDebug()) {
 		debugWrite("cursor id: %d",cursor->getId());
 		debugWrite("query size: %d",querysize);
-		debugWrite("queries: %.*s",querysize,query);
+		debugWrite("queries: %.*s",(int)querysize,query);
 		debugEnd();
 	}
 
@@ -1351,7 +1351,7 @@ bool sqlrprotocol_postgresql::query() {
 		}
 
 		debugStart("individual query");
-		debugWrite("query: %.*s",querysize,query);
+		debugWrite("query: %.*s",(int)querysize,query);
 		debugEnd();
 
 		// prepare/execute the query...
@@ -2457,7 +2457,7 @@ bool sqlrprotocol_postgresql::parse() {
 
 	if (getDebug()) {
 		debugWrite("query size: %d",querysize);
-		debugWrite("query: %.*s",querysize,query);
+		debugWrite("query: %.*s",(int)querysize,query);
 	}
 
 	// get param types
@@ -3047,7 +3047,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			debugWrite("weight: %hd",weight);
 			debugWrite("sign: %hd",sign);
 			debugWrite("dscale: %hd",dscale);
-			debugWrite("value: %.*s",bv->valuesize,
+			debugWrite("value: %.*s",(int)bv->valuesize,
 						bv->value.stringval);
 			}
 			break;

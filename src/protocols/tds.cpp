@@ -21584,7 +21584,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 				debugWrite("valuesize: %d",bv->valuesize);
 				debugWrite("value: %.*s",
-						bv->valuesize,
+						(int)bv->valuesize,
 						bv->value.stringval);
 			}
 
@@ -21664,7 +21664,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 				debugWrite("valuesize: %d",bv->valuesize);
 				debugWrite("value: %.*s",
-						bv->valuesize,
+						(int)bv->valuesize,
 						bv->value.stringval);
 			}
 
@@ -21747,7 +21747,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 
 				debugWrite("valuesize: %d",bv->valuesize);
 				debugWrite("value: %.*s",
-						bv->valuesize,
+						(int)bv->valuesize,
 						bv->value.stringval);
 			}
 

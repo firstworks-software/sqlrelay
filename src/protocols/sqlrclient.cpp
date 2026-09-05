@@ -1459,7 +1459,7 @@ void sqlrprotocol_sqlrclient::selectDatabaseCommand() {
 	}
 	db[dbsize]='\0';
 
-	debugWrite("db: %.*s",dbsize,db);
+	debugWrite("db: %.*s",(int)dbsize,db);
 	
 	// select the db and send back the result.
 	if (cont->selectDatabase(db)) {
@@ -1564,7 +1564,7 @@ void sqlrprotocol_sqlrclient::selectCatalogCommand() {
 	}
 	cat[catsize]='\0';
 
-	debugWrite("catalog: %.*s",catsize,cat);
+	debugWrite("catalog: %.*s",(int)catsize,cat);
 
 	// select the catalog and send back the result.
 	if (cont->selectCatalog(cat)) {
@@ -1653,7 +1653,7 @@ void sqlrprotocol_sqlrclient::selectSchemaCommand() {
 	}
 	sch[schsize]='\0';
 
-	debugWrite("schema: %.*s",schsize,sch);
+	debugWrite("schema: %.*s",(int)schsize,sch);
 	
 	// select the schema and send back the result.
 	if (cont->selectSchema(sch)) {
@@ -4355,7 +4355,7 @@ void sqlrprotocol_sqlrclient::returnFetchError(sqlrservercursor *cursor) {
 	const char	*sqlstate=cont->getSqlStateBuffer(cursor);
 
 	debugWrite("error number: %lld",(long long)errnum);
-	debugWrite("error string: %.*s",errorsize,errorstring);
+	debugWrite("error string: %.*s",(int)errorsize,errorstring);
 	debugWrite("sqlstate: %s",sqlstate);
 
 	// send the error status
@@ -4535,7 +4535,7 @@ void sqlrprotocol_sqlrclient::returnError(bool forcedisconnect) {
 	const char	*sqlstate=cont->getSqlStateBuffer();
 
 	debugWrite("error number: %lld",(long long)errnum);
-	debugWrite("error string: %.*s",errorsize,errorstring);
+	debugWrite("error string: %.*s",(int)errorsize,errorstring);
 	debugWrite("sqlstate: %s",sqlstate);
 
 	// send the appropriate error status
@@ -4578,7 +4578,7 @@ void sqlrprotocol_sqlrclient::returnError(sqlrservercursor *cursor,
 	const char	*sqlstate=cont->getSqlStateBuffer(cursor);
 
 	debugWrite("error number: %lld",(long long)errnum);
-	debugWrite("error string: %.*s",errorsize,errorstring);
+	debugWrite("error string: %.*s",(int)errorsize,errorstring);
 	debugWrite("sqlstate: %s",sqlstate);
 
 	// send the appropriate error status
@@ -4889,7 +4889,7 @@ bool sqlrprotocol_sqlrclient::getObjectListCommand(sqlrservercursor *cursor,
 	// some apps aren't well behaved, trim spaces off of both sides
 	charstring::bothTrim(object);
 
-	debugWrite("object: %.*s",objectsize,object);
+	debugWrite("object: %.*s",(int)objectsize,object);
 
 	// read the object types
 	uint16_t	objecttypes=0;
@@ -5118,7 +5118,7 @@ bool sqlrprotocol_sqlrclient::getComponentListCommand(
 	// some apps aren't well behaved, trim spaces off of both sides
 	charstring::bothTrim(component);
 
-	debugWrite("component: %.*s",componentsize,component);
+	debugWrite("component: %.*s",(int)componentsize,component);
 
 	char	*object=NULL;
 

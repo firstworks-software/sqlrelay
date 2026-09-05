@@ -3118,7 +3118,7 @@ bool sqlrprotocol_teradata::parseAssignParcel(
 	uint32_t	usernamesize=parceldatasize;
 
 	// debug
-	debugWrite("username: %.*s",usernamesize,username);
+	debugWrite("username: %.*s",(int)usernamesize,username);
 	debugHexDump((const byte_t *)username,usernamesize);
 
 	// return next parcel
@@ -4097,17 +4097,17 @@ bool sqlrprotocol_teradata::parseLogonParcel(
 
 	// debug
 	if (tdpid) {
-		debugWrite("tdpid: %.*s",tdpidsize,tdpid);
+		debugWrite("tdpid: %.*s",(int)tdpidsize,tdpid);
 	}
-	debugWrite("username: %.*s",usernamesize,username);
+	debugWrite("username: %.*s",(int)usernamesize,username);
 	if (mech) {
-		debugWrite("mech: %.*s",mechsize,mech);
+		debugWrite("mech: %.*s",(int)mechsize,mech);
 	}
 	if (password) {
 		debugWrite("password: (hidden)");
 	}
 	if (account) {
-		debugWrite("account: %.*s",accountsize,account);
+		debugWrite("account: %.*s",(int)accountsize,account);
 	}
 
 	// return next parcel
@@ -4652,8 +4652,8 @@ bool sqlrprotocol_teradata::parseGenericReqParcel(
 
 	// debug
 	debugWrite("raw query size: %d",req->querylen);
-	debugWrite("raw query: (%d) %.*s",process::getProcessId(),
-						req->querylen,req->query);
+	debugWrite("raw query: (%d) %.*s",(int)process::getProcessId(),
+						(int)req->querylen,req->query);
 
 	// parse the "using" of the query (if there is one)
 	parseUsing();
@@ -4672,7 +4672,7 @@ if (req->querylen>11 && !charstring::compareIgnoringCase(
 
 	// debug
 	debugWrite("query size: %d",req->querylen);
-	debugWrite("query: %.*s",req->querylen,req->query);
+	debugWrite("query: %.*s",(int)req->querylen,req->query);
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -5235,7 +5235,7 @@ void sqlrprotocol_teradata::parseCharBind(const byte_t *ptr,
 	*outptr=ptr+inbind->valuesize;
 	inbind->type=SQLRSERVERBINDVARTYPE_STRING;
 	inbind->value.stringval=val;
-	debugWrite("%.*s",inbind->valuesize,val);
+	debugWrite("%.*s",(int)inbind->valuesize,val);
 }
 
 void sqlrprotocol_teradata::parseVarCharBind(const byte_t *ptr,

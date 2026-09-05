@@ -408,7 +408,7 @@ bool sqlrtrigger_globaltemptables::createTable(uint64_t i,
 
 		debugWrite("create failed: %d - %.*s (sqlstate %s)",
 				cont->getErrorNumber(ccur),
-				cont->getErrorSize(ccur),
+				(int)cont->getErrorSize(ccur),
 				cont->getErrorBuffer(ccur),
 				cont->getSqlStateBuffer(ccur));
 

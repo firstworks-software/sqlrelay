@@ -6478,7 +6478,7 @@ bool sqlrprotocol_firebird::prepareOrExecImmediate(bool execimmediate) {
 	debugWrite("statement handle: %u",stmthandle);
 	debugWrite("dialect: %u",dialect);
 	debugWrite("query length: %u",querylen);
-	debugWrite("query: \"%.*s\"",querylen,(query)?query:"");
+	debugWrite("query: \"%.*s\"",(int)querylen,(query)?query:"");
 	debugWrite("requested sql info items length: %u",itemslen);
 	debugWrite("response buffer length: %u",respbufferlen);
 
@@ -6512,7 +6512,7 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	debugWrite("in transaction: %s",(intransaction)?"yes":"no");
 	debugWrite("read only: %s",(trreadonly)?"yes":"no");
 	debugWrite("query length: %u",querylen);
-	debugWrite("query: \"%.*s\"",querylen,(query)?query:"");
+	debugWrite("query: \"%.*s\"",(int)querylen,(query)?query:"");
 	debugWrite("requested sql info items length: %u",itemslen);
 
 	// bounds check, before the query can size anything
@@ -7167,7 +7167,7 @@ bool sqlrprotocol_firebird::runOnCursor(sqlrservercursor *cursor,
 	debugStart("run on cursor");
 
 	debugWrite("cursor id: %u",cont->getId(cursor));
-	debugWrite("query: \"%.*s\"",querylen,query);
+	debugWrite("query: \"%.*s\"",(int)querylen,query);
 	debugWrite("query length: %u",querylen);
 	debugWrite("output field count: %u",outfieldcount);
 
@@ -10486,7 +10486,7 @@ bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
 		err->sqlstate[sizeof(err->sqlstate)-1]='\0';
 
 		debugWrite("execute failed");
-		debugWrite("error: \"%.*s\"",(uint32_t)errorsize,errorstring);
+		debugWrite("error: \"%.*s\"",(int)errorsize,errorstring);
 		debugWrite("error number: %lld",(long long)errnum);
 		debugWrite("sqlcode: %d",(int)sqlcode);
 		debugWrite("live connection: %s",(liveconnection)?"yes":"no");
@@ -11443,7 +11443,7 @@ bool sqlrprotocol_firebird::sendCursorError(const char *title,
 
 	debugStart("send cursor error");
 	debugWrite("preparing: %s",(preparing)?"yes":"no");
-	debugWrite("error: \"%.*s\"",(uint32_t)errorsize,errorstring);
+	debugWrite("error: \"%.*s\"",(int)errorsize,errorstring);
 	debugWrite("error size: %u",errorsize);
 	debugWrite("error number: %lld",(long long)errnum);
 	debugWrite("live connection: %s",(liveconnection)?"yes":"no");
@@ -11663,7 +11663,7 @@ bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 
 	*bindcount=cont->countBindVariables(query,querylen);
 
-	debugWrite("query: \"%.*s\"",querylen,query);
+	debugWrite("query: \"%.*s\"",(int)querylen,query);
 	debugWrite("bind count: %hd",*bindcount);
 
 	if (!*bindcount) {

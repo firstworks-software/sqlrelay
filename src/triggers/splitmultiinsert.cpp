@@ -58,7 +58,7 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 
 	debugStart("splitmultiinsert");
 	debugWrite("query:");
-	debugWrite("%.*s",querysize,query);
+	debugWrite("%.*s",(int)querysize,query);
 	debugWrite("query type: %d",querytype);
 
 	// bail if the query wasn't an insert

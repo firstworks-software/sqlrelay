@@ -73,7 +73,7 @@ bool sqlrtrigger_upsert::runAfterExecute(sqlrserverconnection *sqlrcon,
 	sqlrquerytype_t		querytype=icur->getQueryType();
 
 	debugStart("upsert");
-	debugWrite("triggering query:\n%.*s",querylen,query);
+	debugWrite("triggering query:\n%.*s",(int)querylen,query);
 	debugWrite("query type: %d",querytype);
 
 	// bail if the query wasn't an insert
@@ -87,7 +87,7 @@ bool sqlrtrigger_upsert::runAfterExecute(sqlrserverconnection *sqlrcon,
 	if (!errorEncountered(icur)) {
 		debugWrite("no matching error found for:");
 		debugWrite("%d: %.*s",cont->getErrorNumber(icur),
-					cont->getErrorSize(icur),
+					(int)cont->getErrorSize(icur),
 					cont->getErrorBuffer(icur));
 		debugEnd();
 		return true;

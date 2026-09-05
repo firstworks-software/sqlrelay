@@ -283,7 +283,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	// bail if the query was a select, and we're ignoring selects
 	if (!includeselects && querytype==SQLRQUERYTYPE_SELECT) {
 		debugWrite("ignoring query:");
-		debugWrite("%.*s",sqlrcur->getQuerySize(),
+		debugWrite("%.*s",(int)sqlrcur->getQuerySize(),
 					sqlrcur->getQueryBuffer());
 		delete columns;
 		return;
@@ -626,7 +626,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 
 	debugStart("replay");
 	debugWrite("triggering query:");
-	debugWrite("%.*s",sqlrcur->getQuerySize(),sqlrcur->getQueryBuffer());
+	debugWrite("%.*s",(int)sqlrcur->getQuerySize(),sqlrcur->getQueryBuffer());
 
 	// clear the triggering query's error
 	cont->clearError();
@@ -658,12 +658,12 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 		// prepare the query
 		debugStart("prepare query");
 		debugWrite("query:");
-		debugWrite("%.*s",qd->querysize,qd->query);
+		debugWrite("%.*s",(int)qd->querysize,qd->query);
 
 		if (!cont->prepareQuery(sqlrcur,qd->query,qd->querysize)) {
 
 			debugWrite("prepare error: %.*s",
-					sqlrcur->getErrorSize(),
+					(int)sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 
 			logstr.append("prepare error:\n");
@@ -765,7 +765,7 @@ bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
 			// query may have failed to execute in the
 			// original tx too...
 			debugWrite("execute error: %.*s",
-					sqlrcur->getErrorSize(),
+					(int)sqlrcur->getErrorSize(),
 					sqlrcur->getErrorBuffer());
 
 			logstr.append("execute error:\n");

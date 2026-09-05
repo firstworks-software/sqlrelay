@@ -1733,6 +1733,11 @@
 	renamed a local sockaddr_un variable in sqlrlistener.cpp from sun,
 		which is a predefined macro on solaris and expands to 1,
 		breaking the build there
+	cast the width argument of every "%.*s" (and one pid_t "%d") to int
+		at the call site - the * conversion takes an int, and passing
+		a uint32_t is undefined behavior that only worked because int
+		and uint32_t are passed identically on the hosts that build;
+		gcc 2.95 on solaris rejects it under -Werror
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
