@@ -173,6 +173,21 @@ the decoder can be exercised without live server access:
                                       well, so it also holds the
                                       TTI_VERSION request and the real
                                       server's version response
+    oracle102-oci7-native-login-select.cap
+                                     an OCI7 olog login + select against
+                                      the real 10.2 server, x86 linux
+                                      client 9.2.0.4.0 to x86 linux
+                                      server, native encoding (the
+                                      control)
+    oracle102-oci7-portable-login-select.cap
+                                     the same, from a SPARC Solaris
+                                      client 9.0.1.0.0 instead. the
+                                      architectures genuinely differ, so
+                                      the server answers in the portable
+                                      encoding with no banner rewriting -
+                                      the reference the o3logon challenge
+                                      and login-success summary are
+                                      written against (#9664)
 
 The two real Oracle test servers on this network
 --------------------------------------------------

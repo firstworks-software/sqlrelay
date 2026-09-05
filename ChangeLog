@@ -1745,6 +1745,13 @@
 		source of the 3x buffer length inflation seen in the
 		client's datatype negotiation request, misattributed before
 		to the ENCODING_CONV_LENGTH flag
+	fixed the oracle protocol module's o3logon phase-1 challenge and
+		login-success summary against a real portable-mode reference -
+		a SPARC Solaris OCI7 client's login into an x86 linux 10.2
+		server. the session key length slot follows the encoding
+		rather than always being a fixed-width ub2, and the summary
+		object is 29 bytes, not the 64 taken from a capture that
+		turned out not to be portable-mode at all
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
