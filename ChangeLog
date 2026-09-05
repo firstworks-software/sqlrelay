@@ -1825,6 +1825,14 @@
 		connect packet's "value of 1 in hardware" field, which is
 		also read host-independently now. the tti version, open and
 		osql7 requests are what this affects
+	fixed the oracle protocol module telling a client two different server
+		versions. a session with verifiertype="9i" already answers as a
+		10.2 server everywhere else, but reported whatever the
+		serverversion attribute said - 11.2 by default - in the tti
+		version response, and answered the ano negotiation with the
+		version the client sent rather than its own. it reports 10.2
+		throughout now, and the ano frame carries the module's own
+		version the way every real server capture on file does
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

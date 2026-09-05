@@ -392,8 +392,8 @@
 // platform on purpose - see putTtiResponse().
 #define SERVER_BANNER			"SQLRelay/PortableTTC"
 
-// the two oracle versions the module can imitate, as the listener's
-// serverversion attribute selects them.  AUTH_VERSION_NO's nibbles are the
+// the two oracle versions the listener's serverversion attribute selects
+// between.  AUTH_VERSION_NO's nibbles are the
 // version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
 // reports 0x0c200100, so 0x0c100200 is 12.1.0.2.0.  AUTH_VERSION_SQL is 22 on
 // that 11.2 server and 24 on that 12.2 one.  the banner and packed version
@@ -404,6 +404,16 @@
 #define SERVER_VERSION_SQL_11_2		"22"
 #define SERVER_VERSION_NO_12_1		"202375680"
 #define SERVER_VERSION_SQL_12_1		"23"
+
+// the third version, which the verifier type selects rather than the
+// serverversion attribute - a 9i verifier is a pre-o5logon one, and o5logon
+// came in 11.1, so the only real server that answers it is a 10.2 or older
+// one.  0x0a200100 is 10.2.0.1.0, what the reference server reports in packet
+// [0006] of both test/protocol/oracle/samples/oracle102-oci7-*-login-select.cap
+// and in the packed version its tti version response carries.  there's no
+// AUTH_VERSION_SQL beside it because the o3logon login answer sends no auth
+// fields at all - see sendAuthenticationSuccess().
+#define SERVER_VERSION_NO_10_2		"169869568"
 
 // datatype request encoding flags
 #define ENCODING_MULTI_BYTE		0x01
@@ -2034,23 +2044,6 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		serverversionsql=SERVER_VERSION_SQL_12_1;
 	}
 
-	// build the version response's banner from that version.  the nibbles
-	// of AUTH_VERSION_NO are the version: major in bits 31-24, minor in
-	// 23-20, the third component in 15-12, the patchset in 11-8, and the
-	// fifth component in 7-0.  the other bits are zero.
-	serverversionpacked=(uint32_t)
-			charstring::convertToUnsignedInteger(serverversionno);
-	int	major=(int)((serverversionpacked>>24)&0xff);
-	int	minor=(int)((serverversionpacked>>20)&0x0f);
-	int	third=(int)((serverversionpacked>>12)&0x0f);
-	int	patch=(int)((serverversionpacked>>8)&0x0f);
-	int	fifth=(int)(serverversionpacked&0xff);
-	charstring::printf(serverversionbanner,sizeof(serverversionbanner),
-			"Oracle Database %d%s Enterprise Edition "
-			"Release %d.%d.%d.%d.%d - 64bit Production",
-			major,(major>=12)?"c":"g",
-			major,minor,third,patch,fifth);
-
 	// which o5logon verifier type to offer
 	// (a 12c verifier can't exist on an 11.2 database, so the default
 	// follows the version the module reports; an explicit setting wins)
@@ -2083,11 +2076,34 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	// a different, smaller TTC 01/02 shape - see putTti6Response().  it
 	// also means answering as charset 31, which a real 10.2 server sent
 	// this client - not otherwise a documented charset id, but confirmed
-	// against a real capture rather than assumed
+	// against a real capture rather than assumed.  and it means reporting
+	// 10.2 rather than whatever serverversion says, since o5logon came in
+	// 11.1 and no server that offers a pre-o5logon verifier is newer than
+	// that.  serverversion has no 10.2 setting of its own for the same
+	// reason - a 10.2 server can't offer the o5logon verifier the other
+	// two settings go with.
 	if (verifiertype==VERIFIER_TYPE_9I) {
 		serverfieldversion=CCAP_FIELD_VERSION_10_2;
+		serverversionno=SERVER_VERSION_NO_10_2;
 		charset=31;
 	}
+
+	// build the version response's banner from that version.  the nibbles
+	// of AUTH_VERSION_NO are the version: major in bits 31-24, minor in
+	// 23-20, the third component in 15-12, the patchset in 11-8, and the
+	// fifth component in 7-0.  the other bits are zero.
+	serverversionpacked=(uint32_t)
+			charstring::convertToUnsignedInteger(serverversionno);
+	int	major=(int)((serverversionpacked>>24)&0xff);
+	int	minor=(int)((serverversionpacked>>20)&0x0f);
+	int	third=(int)((serverversionpacked>>12)&0x0f);
+	int	patch=(int)((serverversionpacked>>8)&0x0f);
+	int	fifth=(int)(serverversionpacked&0xff);
+	charstring::printf(serverversionbanner,sizeof(serverversionbanner),
+			"Oracle Database %d%s Enterprise Edition "
+			"Release %d.%d.%d.%d.%d - 64bit Production",
+			major,(major>=12)?"c":"g",
+			major,minor,third,patch,fifth);
 
 	// whether big chunk clr framing may be used at all.  "auto" (the
 	// default, and anything unrecognized) leaves the decision to the
@@ -3997,7 +4013,16 @@ bool sqlrprotocol_oracle::sendAnoResponse() {
 	uint16_t	dataflags=0;
 	uint16_t	overallsize=13;
 	uint64_t	overallsizepos=0;
-	uint32_t	version=anorequestversion;
+
+	// the header's version field is the server's own, not the client's.
+	// a real 10.2 server answers this client's 0x09001000 with 0x0a200100,
+	// and real 11.2 and 12.2 servers answer 0x17a00000 with 0 - packet
+	// [0006] of samples/oracle102-oci7-portable-login-select.cap,
+	// oracle102-oci7-native-login-select.cap, oracle112-login-expiredpwd.cap
+	// and oracle122-login-select.cap.  so a 10.2 server fills the field in
+	// and the ones after it stopped.
+	uint32_t	version=(serverfieldversion==CCAP_FIELD_VERSION_10_2)?
+						serverversionpacked:0;
 	uint16_t	servicecount=0;
 	uint64_t	servicecountpos=0;
 	byte_t		servicestobeused=0;
@@ -4041,6 +4066,11 @@ bool sqlrprotocol_oracle::sendAnoResponse() {
 	return sendPacket(true);
 }
 
+// each service carries a version field of its own, and every real server
+// capture on file writes its own version into all four of them - 0x0a200100
+// from the 10.2 server, 0x0b200100 from the 11.2 one and 0x0c200100 from the
+// 12.2 one, whatever the client offered.  the header field they sit under is
+// the one that goes empty on a server newer than 10.2 - see sendAnoResponse().
 uint16_t sqlrprotocol_oracle::putSupervisorService() {
 
 	debugStart("supervisor");
@@ -4051,7 +4081,7 @@ uint16_t sqlrprotocol_oracle::putSupervisorService() {
 	uint16_t drivers[]={0x0004,0x0001};
 
 	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_SUPERVISOR,3)+
-				putAnoVersionField(supervisorversion)+
+				putAnoVersionField(serverversionpacked)+
 				putAnoStatusField(ANO_STATUS_SUPERVISOR_OK)+
 				putAnoArrayField(drivers,2);
 
@@ -4067,7 +4097,7 @@ uint16_t sqlrprotocol_oracle::putAuthenticationService() {
 	// the status reports success.  its bit layout is unexplained
 	// see "Oracle Wire Protocol - ANO Negotiation"
 	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_AUTHENTICATION,2)+
-				putAnoVersionField(authenticationversion)+
+				putAnoVersionField(serverversionpacked)+
 				putAnoStatusField(
 					ANO_STATUS_AUTHENTICATION_OK);
 
@@ -4093,7 +4123,7 @@ uint16_t sqlrprotocol_oracle::putEncryptionService() {
 	// SQLNET.ENCRYPTION_CLIENT is REQUIRED, which raises ORA-12660 on the
 	// client; REJECTED, ACCEPTED and REQUESTED all connect unencrypted.
 	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_ENCRYPTION,2)+
-				putAnoVersionField(encryptionversion)+
+				putAnoVersionField(serverversionpacked)+
 				putAnoConstant((byte_t)ENC_NONE);
 
 	debugEnd();
@@ -4107,7 +4137,7 @@ uint16_t sqlrprotocol_oracle::putDataIntegrityService() {
 
 	// declined for the reasons in putEncryptionService()
 	uint16_t	size=putAnoServiceHeader(ANO_SERVICE_DATA_INTEGRITY,2)+
-				putAnoVersionField(dataintegrityversion)+
+				putAnoVersionField(serverversionpacked)+
 				putAnoConstant((byte_t)DI_NONE);
 
 	debugEnd();
