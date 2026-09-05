@@ -1738,6 +1738,13 @@
 		a uint32_t is undefined behavior that only worked because int
 		and uint32_t are passed identically on the hosts that build;
 		gcc 2.95 on solaris rejects it under -Werror
+	fixed the oracle protocol module answering a verifiertype="9i"
+		connection with its default AL32UTF8 charset instead of the
+		single-byte charset (31) a real 10.2 server sends this
+		client. AL32UTF8 is variable-width, which was the actual
+		source of the 3x buffer length inflation seen in the
+		client's datatype negotiation request, misattributed before
+		to the ENCODING_CONV_LENGTH flag
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
