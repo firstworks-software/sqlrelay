@@ -1752,6 +1752,14 @@
 		rather than always being a fixed-width ub2, and the summary
 		object is 29 bytes, not the 64 taken from a capture that
 		turned out not to be portable-mode at all
+	fixed the oracle protocol module appending an end-to-end sequence
+		number to a verifiertype="9i" connection's tti version
+		(0x3b) response. the field came after 9i - a real 10.2
+		server answering a real OCI7 client ends that response at
+		the call status - and the extra byte cost the client the
+		whole call: it read the fields it knew, found one byte left
+		over, sent a marker, cancelled (ORA-01013), and failed its
+		next call with ORA-03120
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

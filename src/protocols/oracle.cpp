@@ -14104,6 +14104,15 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	uint32_t	callstatus=1;
 	uint32_t	endtoendseqnumber=0;
 
+	// the end-to-end sequence number came after 9i.  a real 10.2 server
+	// answering an oci7 client ends this response at the call status, in
+	// both encodings - see test/protocol/oracle/samples/, packet [0016] of
+	// oracle102-oci7-portable-login-select.cap and of the native capture
+	// beside it.  the byte costs the client the whole call: it reads the
+	// fields it knows, finds one byte left over, sends a marker, cancels
+	// (ORA-01013), and the next call it makes fails ORA-03120
+	bool		sendendtoendseqnumber=(verifiertype!=VERIFIER_TYPE_9I);
+
 	// don't overrun the buffer the client passed in
 	uint32_t	bannerlength=
 			(uint32_t)charstring::getLength(serverversionbanner);
@@ -14123,7 +14132,9 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	writeLenPreInt(&reqpacket,serverversionpacked);
 	write(&reqpacket,statusttccode);
 	writeLenPreInt(&reqpacket,callstatus);
-	writeLenPreInt(&reqpacket,endtoendseqnumber);
+	if (sendendtoendseqnumber) {
+		writeLenPreInt(&reqpacket,endtoendseqnumber);
+	}
 
 	debugStart("version response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -14133,7 +14144,9 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	debugWrite("packed version: 0x%08x",serverversionpacked);
 	debugTtcCode(statusttccode);
 	debugWrite("call status: %d",callstatus);
-	debugWrite("end to end seq number: %d",endtoendseqnumber);
+	if (sendendtoendseqnumber) {
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
+	}
 	debugEnd();
 
 	return sendPacket(true);
