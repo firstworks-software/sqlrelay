@@ -958,7 +958,9 @@ void sqlrlistener::unixSocketListenFailed(const char *sockname) {
 	// nothing to do with permissions
 	if (error::getErrorNumber()==ENAMETOOLONG) {
 		#ifndef _WIN32
-			struct sockaddr_un	sun;
+			// not named sun - that is a predefined macro on
+			// solaris, and expands to 1
+			struct sockaddr_un	sunaddr;
 			stderror.printf(
 				"Could not listen on unix socket: %s\n"
 				"The socket file name is too long.  It is "
@@ -967,7 +969,7 @@ void sqlrlistener::unixSocketListenFailed(const char *sockname) {
 				"localstatedir.\n\n",
 				sockname,
 				(int)charstring::getLength(sockname),
-				(int)sizeof(sun.sun_path));
+				(int)sizeof(sunaddr.sun_path));
 		#else
 			stderror.printf(
 				"Could not listen on unix socket: %s\n"
