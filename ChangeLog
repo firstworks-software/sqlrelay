@@ -1691,6 +1691,11 @@
 		the obfuscated password buffer - is verified byte for byte
 		against real captures of an Oracle9i client logging into a real
 		10.2 server, both a successful login and a rejected one
+	fixed the oracle protocol module sending a pre-10g OCI7 client under
+		verifiertype="9i" a datatype negotiation response the client
+		can't parse, aborting the connection before login is ever
+		attempted; the module now answers such a client with the same
+		small TTC 01/02 shape a real 10.2 server does, byte for byte
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

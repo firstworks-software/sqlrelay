@@ -354,6 +354,7 @@
 
 // server compile-time capability values
 #define CCAP_SQL_VERSION_MAX		6
+#define CCAP_FIELD_VERSION_10_2		4
 #define CCAP_FIELD_VERSION_11_2		6
 #define CCAP_FIELD_VERSION_12_1		7
 #define CCAP_FIELD_VERSION_12_2		8
@@ -2036,6 +2037,12 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 			verifiertype!=VERIFIER_TYPE_9I) {
 			verifiertype=defaultverifiertype;
 		}
+	}
+
+	// a 9i verifier also means talking to a pre-10g client, which reads
+	// a different, smaller TTC 01/02 shape - see putTti6Response()
+	if (verifiertype==VERIFIER_TYPE_9I) {
+		serverfieldversion=CCAP_FIELD_VERSION_10_2;
 	}
 
 	// whether big chunk clr framing may be used at all.  "auto" (the
@@ -4290,6 +4297,21 @@ static const byte_t	ttiserverruntimecaps[]={
 	0x02, 0x01, 0x00, 0x01, 0x18, 0x00, 0x03
 };
 
+// server compile-time and runtime capabilities for verifiertype="9i",
+// captured byte for byte from a live oracle 10.2 server talking to the
+// same pre-10g OCI7 client this module's O3LOGON support targets - see
+// putTti6Response()
+static const byte_t	ttiservercompilecaps9i[33]={
+	0x06, 0x01, 0x01, 0x01, 0x0d, 0x01, 0x01, 0x04,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xff,
+	0xff, 0x03, 0x08, 0x03, 0x00, 0x01, 0x00, 0x3f,
+	0x01, 0x07, 0x3f, 0x01, 0x01, 0x01, 0x01, 0x03,
+	0x01
+};
+static const byte_t	ttiserverruntimecaps9i[5]={
+	0x02, 0x01, 0x00, 0x01, 0x18
+};
+
 void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 					const byte_t *compilecaps,
 					byte_t compilecapssize,
@@ -4447,6 +4469,11 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 bool sqlrprotocol_oracle::advertiseBigChunkClr() {
 
+	// a 9i client's compile-caps array has no CCAP_TTC3 byte at all
+	if (verifiertype==VERIFIER_TYPE_9I) {
+		return false;
+	}
+
 	// "bigchunkclr off" offers big chunks to nobody; otherwise the
 	// capability array the module sends is the whole answer
 	return (bigchunkclrsetting!=ORACLEBIGCHUNKCLR_OFF &&
@@ -4478,9 +4505,21 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// takes it whatever this byte says.  #9654's capture agrees - that
 	// client got through this negotiation against the module as it stands
 	// and went straight to the o3logon TTI functions.
+	// a 9i client gets the real 10.2 server's own arrays, byte for byte,
+	// rather than the module's normal ones - see ttiservercompilecaps9i
+	const byte_t	*servercompilecaps=ttiservercompilecaps;
+	byte_t		servercompilecapssize=(byte_t)sizeof(ttiservercompilecaps);
+	const byte_t	*serverruntimecaps=ttiserverruntimecaps;
+	byte_t		serverruntimecapssize=(byte_t)sizeof(ttiserverruntimecaps);
+	if (verifiertype==VERIFIER_TYPE_9I) {
+		servercompilecaps=ttiservercompilecaps9i;
+		servercompilecapssize=(byte_t)sizeof(ttiservercompilecaps9i);
+		serverruntimecaps=ttiserverruntimecaps9i;
+		serverruntimecapssize=(byte_t)sizeof(ttiserverruntimecaps9i);
+	}
+
 	byte_t	compilecaps[sizeof(ttiservercompilecaps)];
-	bytestring::copy(compilecaps,ttiservercompilecaps,
-					sizeof(ttiservercompilecaps));
+	bytestring::copy(compilecaps,servercompilecaps,servercompilecapssize);
 	if (verifiertype==VERIFIER_TYPE_12C) {
 		compilecaps[CCAP_LOGON_TYPES]|=CCAP_O7LOGON|CCAP_O5LOGON_NP;
 	}
@@ -4489,8 +4528,11 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// "bigchunkclr off" has to clear the bit, not just skip the framing.
 	// ojdbc takes big chunks from the server's bit alone, without regard
 	// to its own, so framing raw bytes while still advertising the bit
-	// would break ojdbc instead of fixing go-ora v1.
-	if (!advertiseBigChunkClr()) {
+	// would break ojdbc instead of fixing go-ora v1.  the 9i array is
+	// only 33 bytes and has no CCAP_TTC3 byte at all - advertiseBigChunkClr()
+	// already returns false for 9i, so this has to stay out of that array
+	// rather than index past its end.
+	if (verifiertype!=VERIFIER_TYPE_9I && !advertiseBigChunkClr()) {
 		compilecaps[CCAP_TTC3]&=(byte_t)~CCAP_TTC3_BIG_CHUNK_CLR;
 	}
 
@@ -4505,16 +4547,15 @@ void sqlrprotocol_oracle::putTti6Response() {
 		debugWrite("field version: 0x%02x",
 					compilecaps[CCAP_FIELD_VERSION]);
 		debugWrite("compile caps size: %d",
-					(int)sizeof(compilecaps));
+					(int)servercompilecapssize);
 		debugWrite("runtime caps size: %d",
-					(int)sizeof(ttiserverruntimecaps));
+					(int)serverruntimecapssize);
 		debugEnd();
 	}
 
 	putTtiResponse(ttiversion,
-			compilecaps,(byte_t)sizeof(compilecaps),
-			ttiserverruntimecaps,
-			(byte_t)sizeof(ttiserverruntimecaps));
+			compilecaps,servercompilecapssize,
+			serverruntimecaps,serverruntimecapssize);
 }
 
 void sqlrprotocol_oracle::putTti5Response() {
@@ -4794,7 +4835,11 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 
 	if (clientwantsdbtimezone) {
 
-		size_t	groupsize=sizeof(dbtimezone)+sizeof(uint16_t)+
+		// a 9i client's request ends with the db time zone bytes and
+		// nothing after - no tz version, no trailing national charset
+		size_t	groupsize=(verifiertype==VERIFIER_TYPE_9I)?
+			sizeof(dbtimezone):
+			sizeof(dbtimezone)+sizeof(uint16_t)+
 			((clientwantstzversion)?sizeof(uint32_t):0);
 		if ((size_t)(end-rp)<groupsize) {
 			debugWrite("truncated db time zone group");
@@ -4802,19 +4847,20 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		}
 
 		rp+=sizeof(dbtimezone);
-		if (clientwantstzversion) {
-			readBE(rp,&clienttzversion,&rp);
+		if (verifiertype!=VERIFIER_TYPE_9I) {
+			if (clientwantstzversion) {
+				readBE(rp,&clienttzversion,&rp);
+			}
+			readLE(rp,&clientnationalcharset,&rp);
 		}
-		readLE(rp,&clientnationalcharset,&rp);
 	}
 
 	// the client's data type list, which nothing in the response depends
 	// on - a real server answers every client with its own table, so a
 	// short or empty list is counted and reported rather than refused
 	//
-	// talking to the db directly, 8.0.5 sends/receives almost nothing, but
-	// talking to relay it sends/receives a ton of stuff - what triggers
-	// the difference isn't clear
+	// a pre-10g client gets a smaller TTC 01/02 shape under
+	// verifiertype="9i" - see putTti6Response() and sendDataTypeResponse()
 	datatypes=rp;
 	datatypessize=end-rp;
 	uint16_t	multirepcount=0;
@@ -4828,7 +4874,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// scale differently from the rest, so this is what those two
 	// decisions are made on.  see putDescribeInfo() and
 	// putColumnPrecisionScale().
-	ociclient=(multirepcount>0);
+	ociclient=(multirepcount>0 || verifiertype==VERIFIER_TYPE_9I);
 
 	if (getDebug()) {
 		debugStart("datatype request");
@@ -4886,6 +4932,9 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 // and python-oracledb's client-side table is different again, so this is one
 // server's answer rather than a canonical list.  it covers every column type
 // the module names.
+//
+// a verifiertype="9i" client never sees this table at all - see
+// sendDataTypeResponse().
 static const uint16_t	ttidatatypes[][3]={
 	// VARCHAR
 	{1,1,1},
@@ -5249,9 +5298,11 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 		}
 	}
 
-	// the data types, if the client sent a list of its own
+	// the data types, if the client sent a list of its own.  a 9i
+	// client's own list is never answered - the real 10.2 server it was
+	// captured against sends no type list to this client at all.
 	uint16_t	count=0;
-	if (datatypessize) {
+	if (datatypessize && verifiertype!=VERIFIER_TYPE_9I) {
 		count=sizeof(ttidatatypes)/sizeof(ttidatatypes[0]);
 		for (uint16_t i=0; i<count; i++) {
 			writeBE(&reqpacket,ttidatatypes[i][0]);
