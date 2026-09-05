@@ -1773,6 +1773,22 @@
 		where an OCI8 client sends query, query2 or query3. it used
 		to answer ORA-03001, unimplemented feature, so an OCI7 client
 		could log in and open a cursor but never run anything
+	fixed the oracle protocol module's tti query2 (0x47) request header.
+		it read three raw big-endian ub2s - "options", "moreoptions"
+		and a cursor id - which is the shape the wiki page's own
+		table records. the header is really a one-byte call sequence
+		number, then the options bitmask and the cursor id, each
+		written as a count: a length-prefixed int in the portable
+		encoding, a fixed four bytes little-endian in the native one,
+		the same shape query3's request header uses. the old read
+		landed on the right bytes only in the native encoding, and
+		even there only by coincidence, so a real OCI7 client - which
+		always talks to this module in the portable encoding - had
+		its cursor id read as 0x0100 plus the real one and got
+		ORA-01001, invalid cursor, and its options read out of the
+		wrong field, so nothing would have executed even had the
+		cursor been found. the field boundaries come from the native
+		reference capture, where every field is a fixed four bytes
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

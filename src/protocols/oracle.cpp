@@ -7902,19 +7902,61 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// legacy path (pre-10g): combined parse/bind/execute
 	// can apparently be used for fetch too
 
+	const byte_t	*end=resppacket+resppacketsize;
+
 	// parse the request...
 	// see "Oracle Wire Protocol - Query2"
-	uint16_t	options;
-	uint16_t	moreoptions;
-	uint16_t	cursorid;
+	//
+	// the header is the shape query3's request header uses too (see
+	// getQuery3Request()): a one-byte call sequence number, then the
+	// options bitmask and the cursor id, each written as a count - a
+	// length-prefixed int in the portable encoding, a fixed four bytes,
+	// little-endian, in the native one.
+	//
+	// it used to be read as three raw big-endian ub2s - "options",
+	// "moreoptions" and the cursor id - which is the shape the wiki
+	// page's own table records.  that read lands on the right bytes only
+	// in the native encoding, and even there only by coincidence: the
+	// sequence byte and the options' low byte fall into the first ub2
+	// (the aliasing #9656 tracked down), the options' upper bytes into
+	// the second, and the cursor id's low byte into the third.  in the
+	// portable encoding every field lands a byte short.  a real oci7
+	// client sends "07 | 02 80 30 | 01 01" there - sequence 7, an lpi
+	// options of 0x8030, an lpi cursor id of 1 - and reading that as raw
+	// ub2s gives options 0x0702, moreoptions 0x8030 and cursor id 257,
+	// so the cursor lookup fails with ORA-01001 and the client cancels
+	// (#9658).  reading the options out of the wrong field costs the call
+	// even when the cursor is found: the real 0x8030 is DEFINE, EXECUTE
+	// and NOPLSQL, and 0x0702 has none of those bits, so nothing would
+	// execute.
+	//
+	// packet [0021] of test/protocol/oracle/samples/
+	// oracle102-oci7-native-login-select.cap pins the field boundaries -
+	// every field there is a fixed four bytes - and the portable capture
+	// beside it reads as the same fields in the same order.  the portable
+	// encoding is the only one this module ever negotiates (see
+	// SERVER_BANNER), but the native shape is read here too, since that's
+	// the shape every capture behind this call's existing behavior is in
+	byte_t		sequence=0;
+	uint32_t	options=0;
+	uint32_t	cursorid=0;
 	uint32_t	querysize=0;
 	const char	*query=NULL;
 
-	readBE(rp,&options,&rp);
-	readBE(rp,&moreoptions,&rp);
-	readBE(rp,&cursorid,&rp);
+	if (!getPointer(rp,end,&sequence,&rp) ||
+		!getAuthCount(rp,end,&options,4,&rp) ||
+		!getAuthCount(rp,end,&cursorid,4,&rp)) {
+		return false;
+	}
 	if (options&OPTION_PARSE) {
-		// no idea...
+		// no idea...  no capture on file sets this bit - an oci7
+		// client parses with TTI_OSQL7 instead (see osql7()) - so
+		// these offsets are still the wiki table's, unverified
+		// against the header above
+		if ((size_t)(end-rp)<55) {
+			debugWrite("truncated query2 parse request");
+			return false;
+		}
 		for (uint16_t i=0; i<7; i++) {
 			byte_t	unknown;
 			read(rp,&unknown,&rp);
@@ -7925,6 +7967,10 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 			byte_t	unknown;
 			read(rp,&unknown,&rp);
 		}
+		if ((size_t)(end-rp)<(size_t)querysize) {
+			debugWrite("truncated query2 query text");
+			return false;
+		}
 		query=(char *)rp;
 		rp+=querysize;
 	}
@@ -7932,11 +7978,13 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
 	if (getDebug()) {
 		debugStart("query2 request");
-		debugOptions(options,moreoptions);
+		debugWrite("sequence: %d",sequence);
+		debugWrite("options: 0x%08x",options);
+		debugOptions(options);
 		debugWrite("cursor id: %d",cursorid);
 		if (options&OPTION_PARSE) {
 			debugWrite("query size: %d",querysize);
-			debugWrite("query: \"%*s\"",querysize,query);
+			debugWrite("query: \"%.*s\"",(int)querysize,query);
 		}
 		debugEnd();
 	}
