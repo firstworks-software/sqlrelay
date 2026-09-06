@@ -1449,6 +1449,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putO3LogonSummary();
 		void	putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
+						uint32_t rowsprocessed,
 						uint32_t successiterations);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		const byte_t	*findO3LogonStrings(const byte_t *rp,
@@ -1687,7 +1688,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							bool parse,
 							bool define,
 							bool sndiov,
-							bool exactfetch);
+							bool exactfetch,
+							uint32_t rowstofetch);
 		void	cacheColumnDefinitions(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putColumnDefinitions(sqlrservercursor *cursor,
@@ -7072,7 +7074,7 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 // vary are both zero.  a real 10.2 server writes the same object as the tail
 // of the phase one challenge
 void sqlrprotocol_oracle::putO3LogonSummary() {
-	putOci7Summary(0,0,0);
+	putOci7Summary(0,0,0,0);
 }
 
 // the summary object a real 10.2 server answers an oci7 client with.  the same
@@ -7101,12 +7103,19 @@ void sqlrprotocol_oracle::putO3LogonSummary() {
 // see "Oracle Wire Protocol - Authentication - Password"
 void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
+						uint32_t rowsprocessed,
 						uint32_t successiterations) {
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
 	writeLenPreInt(&reqpacket,1);
-	writeLenPreInt(&reqpacket,0);
+
+	// rows processed by the call being answered - the oci7 cursor data
+	// area's rpc.  a parse and an execute both send 0 and a fetch that
+	// returned one row sends 1: [0020] and [0022] of the portable capture
+	// send 0 and [0024] sends 1
+	writeLenPreInt(&reqpacket,rowsprocessed);
+
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
@@ -7710,7 +7719,7 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 	// goes straight on to execute.  the command type is putSummary()'s own
 	// constant.  nothing has executed yet, so the success iteration count
 	// is 0
-	putOci7Summary(wireCursorId(cursor),3,0);
+	putOci7Summary(wireCursorId(cursor),3,0,0);
 
 	return sendPacket(true);
 }
@@ -8608,18 +8617,23 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// define is always false here.
 
 		// parse/sndiov/exactfetch are NOT read from the options
-		// bitfield here, unlike fetch()'s call below - bits 8 and up
-		// of this field are a per-call sequence counter, not
-		// independent flags (#9656: shifted-exfet-3's two identical
-		// exact-fetch calls land at different call-sequence positions
-		// and their options high bytes differ accordingly, even though
-		// nothing about the call itself changed).  a query2 with
-		// OPTION_FETCH set is exactly the exact-fetch case in every
-		// capture on file, so exactfetch is hardcoded true; sndiov
-		// only matters on the branch taken when define is true, which
-		// this call never takes, so it's hardcoded false; parse is
-		// unused inside sendFetchResponse() regardless
-		return sendFetchResponse(cursor,false,false,false,true);
+		// bitfield here - bits 8 and up of this field are a per-call
+		// sequence counter, not independent flags (#9656:
+		// shifted-exfet-3's two identical exact-fetch calls land at
+		// different call-sequence positions and their options high
+		// bytes differ accordingly, even though nothing about the call
+		// itself changed).  a query2 with OPTION_FETCH set is exactly
+		// the exact-fetch case in every capture on file, so exactfetch
+		// is hardcoded true; sndiov only matters on the branch taken
+		// when define is true, which this call never takes, so it's
+		// hardcoded false; parse is unused inside sendFetchResponse()
+		// regardless.
+		//
+		// the row count goes as 0 - "no bound but the packet size" -
+		// because where oexfet()'s own nrows sits in this request is
+		// unidentified.  a standalone fetch reads its count off the
+		// wire and passes it
+		return sendFetchResponse(cursor,false,false,false,true,0);
 	}
 
 	return sendQuery2Response(cursor,false);
@@ -8753,7 +8767,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 		// parse this call follows had none.  no generic footer follows
 		// it - the summary object ends the packet, the same way it
 		// ends sendOsql7Response()'s
-		putOci7Summary(cursorid,3,1);
+		putOci7Summary(cursorid,3,0,1);
 	}
 
 	debugStart("query2 response");
@@ -13391,58 +13405,75 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 		return fetch3(rp);
 	}
 
-	// parse the request...
-	uint16_t	options;
-	uint16_t	moreoptions;
-	uint16_t	cursorid;
+	const byte_t	*end=resppacket+resppacketsize;
 
-	// FIXME: decode this... see "Oracle Wire Protocol - Fetch"
-	readBE(rp,&options,&rp);
-	readBE(rp,&moreoptions,&rp);
+	// the legacy request body carries the same three fields the modern one
+	// does, in the same order, and fetch3() above already reads them: a
+	// one-byte call sequence number, then the cursor id and the number of
+	// rows the client has room for, each written as a count.  [0023] of
+	// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap
+	// is "05 08 01 02 01 01" in its entirety - sequence 8, an lpi cursor id
+	// of 2 and an lpi row count of 1 - and [0023] of the native capture
+	// beside it is "05 08 02 00 00 00 01 00 00 00", the same three fields
+	// four bytes wide.  there is no options field on this call at all.
+	//
+	// it was read as two raw big-endian ub2s under a "FIXME: decode this",
+	// with the cursor id taken from lastcursorid rather than from the wire.
+	// against those six bytes that gives an options of 0x0801 and a
+	// moreoptions of 0x0201, neither of which is a field, and it leaves the
+	// last byte unread.  the stored cursor id is right whenever only one
+	// cursor is open - which is every session captured so far, and is why
+	// the live run still fetched the right row while its debug trace said
+	// "cursor id: 0" - and wrong the moment two are (#9658)
+	byte_t		sequence=0;
+	uint32_t	cursorid=0;
+	uint32_t	rowstofetch=0;
 
-	// no cursor id follows on the wire here - use whichever cursor
-	// open(), query(), query2() or execute() touched last
-	cursorid=lastcursorid;
+	if (end-rp<1) {
+		debugWrite("truncated fetch sequence number");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+
+	if (!getAuthCount(rp,end,&cursorid,4,&rp) ||
+		!getAuthCount(rp,end,&rowstofetch,4,&rp)) {
+		debugWrite("truncated fetch request");
+		return false;
+	}
+
+	// the summary object this call's answer carries has to echo the
+	// sequence number back, the same way osql7()'s and query2()'s do
+	callnumber=sequence;
 
 	if (getDebug()) {
 		debugStart("fetch request");
-		debugOptions(options,moreoptions);
+		debugWrite("sequence: %d",sequence);
 		debugWrite("cursor id: %d",cursorid);
+		debugWrite("rows to fetch: %d",rowstofetch);
 		debugEnd();
 	}
 
 	// get the requested cursor
-	sqlrservercursor	*cursor=cont->getCursor(cursorid);
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
 
-	// sndiov and exactfetch are NOT read from the options bitfield -
-	// bits 8 and up of this field are a per-call sequence counter, not
-	// independent flags (#9656).  legacy-fetch-N (#9637/#9655) already
-	// showed this field's OPTION_EXACTFETCH bit set on a plain fetch
-	// whose real response has no exact-fetch marker; #9656's
-	// shifted-fetch-3 captures the same standalone TTI_FETCH call landing
-	// at two different call-sequence positions with two different options
-	// high bytes, confirming the bit tracks call count rather than a
-	// real client request for an exact fetch.  a standalone TTI_FETCH is
-	// the plain/non-exact case in every capture on file, so exactfetch is
-	// hardcoded false; sndiov only matters on the branch taken when
-	// define is true, which no capture exercises, so it's hardcoded
-	// false too
-	return sendFetchResponse(cursor,
-				(options&OPTION_PARSE),
-				(options&OPTION_DEFINE),
-				false,
-				false);
+	// a standalone legacy fetch asks for rows and nothing else.  with no
+	// options field on the wire there is nothing to ask a parse, column
+	// definitions, an iov or an exact fetch with, so all four are false -
+	// which is what the old read of the field arrived at anyway, since the
+	// options it invented never had OPTION_DEFINE set
+	return sendFetchResponse(cursor,false,false,false,false,rowstofetch);
 }
 
 bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 							bool parse,
 							bool define,
 							bool sndiov,
-							bool exactfetch) {
+							bool exactfetch,
+							uint32_t rowstofetch) {
 
 	// the legacy path body
 	resetSendPacketBuffer(PACKET_DATA);
@@ -13479,17 +13510,24 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		return sendQueryError(cursor);
 	}
 
-	// the row count in the legacy fetch request still isn't decoded - where
-	// it sits in the request body is unidentified, and finding it would take
-	// a live capture or the legacy client source.  until then, send every
-	// row that's left in the result set, rather than hard-stopping at one
-	// row per round trip.  the only bound is the negotiated packet size,
-	// less enough room for the largest trailer sent after this loop.
+	// the row count the client sent is a hard bound, not a hint: ofen()'s
+	// nrows argument says how many rows the caller's define buffers have
+	// room for, so sending more overruns them.  a caller that has no count
+	// to pass - query2()'s combined execute-and-fetch, whose own row count
+	// isn't decoded - passes 0, which keeps the older behavior of sending
+	// every row that's left.  either way the negotiated packet size bounds
+	// it too, less enough room for the largest trailer sent after this loop.
 	const uint32_t	trailerreserve=128;
 
 	// for each row...
 	uint32_t rowsfetched=0;
 	do {
+
+		// stop at the number of rows the client asked for
+		if (rowstofetch && rowsfetched>=rowstofetch) {
+			debugWrite("fetched every row asked for");
+			break;
+		}
 
 		// stop if there's no room left in the packet for another row
 		// and the trailer.  this runs before the row is fetched and
@@ -13604,7 +13642,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 					debugEnd();
 				}
 
-			} else {
+			} else if (nativeencoding) {
 
 				// a bare re-fetch on an already-described
 				// cursor answers with an outer row-header
@@ -13617,6 +13655,16 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				// this reads as a generic row-header preamble
 				// rather than something specific to a bare
 				// fetch.
+				//
+				// every one of those captures is a native
+				// encoding session, and [0024] of
+				// test/protocol/oracle/samples/
+				// oracle102-oci7-native-login-select.cap
+				// carries this block byte for byte, so this
+				// is the native form of the row header the
+				// portable branch below builds field by
+				// field, not a form independent of the
+				// encoding
 				byte_t		ttccode=TTC_ROW_HEADER;
 
 				write(&reqpacket,ttccode);
@@ -13640,6 +13688,32 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 					debugHexDump(rowheader,sizeof(rowheader));
 					debugEnd();
 				}
+
+			} else {
+
+				// a portable session gets the ordinary row
+				// header putRowHeader() builds, not a
+				// re-encoding of the literal above: the same
+				// six fields, as counts rather than fixed
+				// four-byte words, behind the same flags byte.
+				// [0024] of test/protocol/oracle/samples/
+				// oracle102-oci7-portable-login-select.cap
+				// answers this client with nine bytes -
+				// "06 02 01 01 00 01 01 00 00 00" - which is
+				// exactly TTC_ROW_HEADER, the 0x02 flags a
+				// fetch carries, a column count of 1, an
+				// iteration number of 0, a row count of 1 and
+				// three zeros.  the reference capture of
+				// "select 1 from dual" on #9658 sends the same
+				// nine bytes for its own single number column.
+				//
+				// the row count is the count the client asked
+				// for, the way fetch3() writes it.  query2()'s
+				// combined execute-and-fetch has no decoded
+				// count to pass and fetches one row in every
+				// capture on file, so it writes 1
+				putRowHeader(0x02,colcount,
+						(rowstofetch)?rowstofetch:1);
 			}
 		}
 
@@ -13663,6 +13737,50 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		rowsfetched++;
 
 	} while (true);
+
+	if (rowsfetched && !nativeencoding) {
+
+		// an exact fetch leads its trailer with the same three fields
+		// sendQuery2Response() writes ahead of a plain execute's
+		// summary object - a ttc 0x08, the cursor id and a server
+		// address - which is all the native exactfetchmarker[] below
+		// is: "08 02 00 e7 ..." in #9637's legacy-exfet captures, a
+		// ub2 cursor id of 2 behind the ttc code and then the address.
+		// the address goes out as zero here for the same reason it
+		// does there: nothing echoes it back, and the width has to be
+		// written by hand since writeLenPreInt() would answer a zero
+		// with a bare 00
+		if (exactfetch) {
+			write(&reqpacket,(byte_t)TTC_OK);
+			writeLenPreInt(&reqpacket,wireCursorId(cursor));
+			write(&reqpacket,(byte_t)4);
+			writeBE(&reqpacket,(uint32_t)0);
+			writeLenPreInt(&reqpacket,0);
+		}
+
+		// a portable session gets the same summary object the parse
+		// and the execute before it got, one call further on - not a
+		// re-encoding of the native trailer below, and no generic
+		// footer behind it.  [0024] of test/protocol/oracle/samples/
+		// oracle102-oci7-portable-login-select.cap and the reference
+		// capture of "select 1 from dual" on #9658 both end their
+		// fetch reply at this object's last field.
+		//
+		// the native trailer below is this same object written four
+		// bytes to a field: its 47-byte block is putOci7Summary()'s
+		// fields down to the call number, with the cursor id hardcoded
+		// to 1 and rows processed to 1, and callseq is the call number
+		putOci7Summary(wireCursorId(cursor),3,rowsfetched,1);
+
+		if (getDebug()) {
+			debugStart("fetch response footer");
+			debugWrite(exactfetch?"exact fetch":"not exact fetch");
+			debugWrite("rows fetched: %d",rowsfetched);
+			debugEnd();
+		}
+
+		return sendPacket(true);
+	}
 
 	if (rowsfetched) {
 
@@ -14295,16 +14413,22 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			write(&reqpacket,(byte_t)0);
 		}
 
-		// the terminator: a fixed 4-byte zero word after every
-		// column, including the last.  confirmed against real OCI7
-		// legacy-fetch captures (#9637) for 1 through 5 columns,
-		// both with and without the exact-fetch flag set - the
-		// width never varied with column position, column count, or
-		// exact-fetch.  write it only if the value itself was
-		// written, otherwise it desyncs the rest of the row.
+		// two zero fields after every column, including the last:
+		// the indicator and the return code odefin() gave the client
+		// a pointer for.  confirmed against real OCI7 legacy-fetch
+		// captures (#9637) for 1 through 5 columns, both with and
+		// without the exact-fetch flag set - four bytes there, never
+		// varying with column position, column count, or exact-fetch,
+		// and two in [0024] of test/protocol/oracle/samples/
+		// oracle102-oci7-portable-login-select.cap.  four against two
+		// is what says it is a pair of ub2s and not one ub4: a single
+		// count would be one byte in the portable encoding, not two.
+		// write them only if the value itself was written, otherwise
+		// they desync the rest of the row.
 		if (wrote) {
-			writeBE(&reqpacket,(uint32_t)0);
-			debugWrite("terminator");
+			putAuthCount(0,2);
+			putAuthCount(0,2);
+			debugWrite("indicator and return code");
 		}
 
 		debugEnd();
@@ -14321,24 +14445,46 @@ bool sqlrprotocol_oracle::putField(const char *field,
 		case ORACLE_TYPE_CHAR:
 		case ORACLE_TYPE_VARCHAR:
 		case ORACLE_TYPE_FIXED_CHAR:
-			{
-			// The legacy form writes a one-byte size and that
-			// many bytes.  What a real server sends for a value
-			// longer than that hasn't been confirmed, so clamp
-			// rather than guess.  Writing the full value under a
-			// truncated size byte would desync the stream for the
-			// rest of the packet.
-			byte_t	size=(fieldsize>255)?255:(byte_t)fieldsize;
-			write(&reqpacket,size);
-			write(&reqpacket,field,(size_t)size);
-			debugWrite("field size: %d",size);
-			debugWrite("field: \"%.*s\"",(int)size,field);
-			}
-			return true;
 		case ORACLE_TYPE_NUMBER:
 		case ORACLE_TYPE_VARNUM:
-			// putNumberField wraps its own output in a CLR
-			putNumberField(field,(uint32_t)fieldsize);
+			// a number goes out here as the digits the backend
+			// handed back, not as putNumberField()'s base-100
+			// form, because a legacy client asks the server to
+			// convert.  odefin()'s external type travels in the
+			// tti query2 request, and every real-server capture on
+			// file defines with the type that lands on the wire as
+			// oracle's own varchar2: #9637's legacy-fetch and
+			// legacy-exfet captures run "select 1, 2, 3 from dual"
+			// against a real 10.2 server and its rows are
+			// "01 31", "01 32" and "01 33" - one-byte clrs holding
+			// the ascii digits - where putNumberField() would have
+			// written "02 c1 02".  the reference capture of
+			// "select 1 from dual" on #9658 is the same "01 31"
+			// in the portable encoding, and the module's own oci7
+			// test program defines every number column SQLT_STR
+			// too (test/protocol/oracle/oci7.cpp:811).
+			//
+			// FIXME: read the define rather than assuming it.  the
+			// per-column define descriptor is 33 bytes in the
+			// native encoding, repeated column-count times from
+			// payload offset 0x5a of the query2 request, carrying
+			// the wire type at +1, the buffer length at +5 and the
+			// character set id at +25 - 01/511/31 for a 512-byte
+			// SQLT_STR buffer, 23/256/0 for an SQLT_BIN one
+			// (#9638).  the portable layout of the same block
+			// isn't pinned by anything on file, and query2()
+			// discards all of it today
+			//
+			// the character types share this now rather than
+			// writing a raw length byte and clamping at 255.  a
+			// clr is what they were already writing for anything
+			// under 253 bytes - the 64 byte value in [0024] of
+			// the portable and native samples goes out as "40"
+			// and 64 bytes either way - and past that the clamp
+			// silently truncated where the long form does not
+			putLenBytes(field,(uint32_t)fieldsize);
+			debugWrite("field size: %lld",(long long)fieldsize);
+			debugWrite("field: \"%.*s\"",(int)fieldsize,field);
 			return true;
 		case ORACLE_TYPE_LONG:
 			// FIXME: implement this

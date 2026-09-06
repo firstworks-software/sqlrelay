@@ -1842,6 +1842,19 @@
 	the oracle protocol module hands a verifiertype="9i" client cursor ids
 		starting at 2 now, rather than 1 - which is where a real 10.2
 		server starts, in every capture on file
+	the oracle protocol module answers a legacy oci7 fetch in the encoding
+		the session negotiated now. it was sending a portable-mode
+		client the native-mode row header, per-column trailer and
+		summary object, and an 8i era footer that a real server never
+		sends at all
+	the oracle protocol module renders a number column's value as digits
+		rather than oracle's internal base-100 form when answering a
+		legacy oci7 fetch, which is what a real server sends a client
+		that defined the column as a string
+	the oracle protocol module reads a legacy oci7 fetch request's cursor
+		id and row count off the wire now, rather than taking the
+		cursor from stored state and ignoring the row count. it no
+		longer sends more rows than the client has room for
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
