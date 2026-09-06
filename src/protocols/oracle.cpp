@@ -298,6 +298,7 @@
 #define TTI_COMMIT		0x0E
 #define TTI_ROLLBACK		0x0F
 #define TTI_CANCEL		0x14
+#define TTI_PARSE_EXECUTE	0x27
 #define TTI_DESCRIBE		0x2B
 #define TTI_STARTUP		0x30
 #define TTI_SHUTDOWN		0x31
@@ -1491,6 +1492,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	osql7(const byte_t *rp);
 		bool	sendOsql7Response(sqlrservercursor *cursor);
 
+		// parse-execute...
+		bool	parseExecute(const byte_t *rp);
+		bool	sendParseExecuteResponse(sqlrservercursor *cursor);
+
 		// query...
 		bool	query(const byte_t *rp);
 		bool	sendQueryResponse(sqlrservercursor *cursor);
@@ -2447,6 +2452,10 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					break;
 				case TTI_ROLLBACK:
 					loop=rollback(rp);
+					rp=NULL;
+					break;
+				case TTI_PARSE_EXECUTE:
+					loop=parseExecute(rp);
 					rp=NULL;
 					break;
 				case TTI_CANCEL:
@@ -7851,6 +7860,163 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 	return sendPacket(true);
 }
 
+// the pre-8.0 parse-and-execute (oparsex), the one call an oci7 client makes
+// that both parses and runs a statement.  a real oci7 client sends one on
+// its own initiative as soon as it has logged in, to push its own nls
+// environment at the session: it opens a cursor, sends an "ALTER SESSION SET
+// NLS_LANGUAGE=... NLS_TERRITORY=..." naming every nls setting the client
+// has, closes the cursor, and only then goes on to the application's first
+// statement.  an ora-03001 back from this call costs the whole session - the
+// client sends a marker and aborts, the same way it aborts on any bytes it
+// doesn't expect (see sendAuthenticationError()) - so it gets run rather
+// than refused.
+//
+// decoded field by field from a real oci7 client's session with a 10.2
+// server, packet [0019] of test/protocol/oracle/samples/
+// oracle102-oci7-native-multicol-5col-exfet.cap.  the fields are osql7()'s
+// cursor id, query pointer and query size, in that order, with the sql text
+// behind them as a clr.  no capture on file carries this call in the
+// portable encoding, so the two counts are read the encoding-aware way
+// close() reads its cursor id rather than the way osql7() reads its own -
+// that lands on the native capture's field boundaries as well as the
+// portable ones.  the open ahead of it,
+// packets [0017] and [0018], is what identifies the first field as the
+// cursor id: its value is the id that open handed out, the answer echoes it
+// back, and the close behind it, packet [0021], closes the same one
+bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	uint32_t	cursorid=0;
+	uint32_t	querypointer=0;
+	uint32_t	querysize=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated parse-execute sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	// the summary object has to echo this back
+	callnumber=seqnumber;
+
+	// the cursor id and the query size are counts, so they are four bytes
+	// in the native encoding and one to five in the portable one - the
+	// same shape close() reads its cursor id in.  querypointer is a
+	// pointer into the client's own address space, so nothing but whether
+	// it's null can be read out of it
+	if (!getAuthCount(rp,end,&cursorid,4,&rp) ||
+		!getPointer(rp,end,&querypointer,&rp) ||
+		!getAuthCount(rp,end,&querysize,4,&rp)) {
+		debugWrite("truncated parse-execute request");
+		return false;
+	}
+
+	// the sql text.  querysize above says how long it is too, but this is
+	// a clr, so it carries its own length and can run past what one
+	// length byte holds
+	const byte_t	*query=NULL;
+	uint32_t	querybytes=0;
+	bool		querynull=false;
+	if (!getLenBytes(rp,end,&query,&querybytes,&querynull,&rp)) {
+		return false;
+	}
+
+	debugStart("parse-execute request");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("query pointer: 0x%08x",querypointer);
+	debugWrite("query size: %d",querysize);
+	debugWrite("query: \"%.*s\"",(int)querybytes,(const char *)query);
+	debugEnd();
+
+	// the capture carries the length twice and both times it agrees.  a
+	// request whose two lengths disagree is one this parse landed on the
+	// wrong offsets in - reading a pointer field at the wrong width lands
+	// exactly there - and running whatever text that found would run a
+	// statement the client never sent
+	if (querysize!=querybytes) {
+		debugWrite("query size %d doesn't match the %d bytes of "
+				"query text behind it",querysize,querybytes);
+		return false;
+	}
+
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
+	if (!cursor) {
+		debugWrite("cursor id %d not found",cursorid);
+		return sendCursorNotOpenError(cursorid);
+	}
+
+	// reset column type cache flag
+	columntypescached[cont->getId(cursor)]=false;
+
+	// a fresh execute means a new result set - drop any row held over
+	// from a previous one on this cursor
+	pendingrow[cont->getId(cursor)].clear();
+
+	// and any row it was pinning for a lob read
+	clearLobPin(cont->getId(cursor));
+
+	// bounds checking
+	if (querybytes>maxquerysize) {
+		debugWrite("query too long");
+		return false;
+	}
+
+	// copy the query into the cursor's query buffer
+	char	*querybuffer=cont->getQueryBuffer(cursor);
+	if (querybytes) {
+		bytestring::copy(querybuffer,query,querybytes);
+	}
+	querybuffer[querybytes]='\0';
+	cont->setQuerySize(cursor,querybytes);
+
+	// prepare the query
+	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
+					cont->getQuerySize(cursor),
+					true,true,true,true)) {
+		debugWrite("prepare query failed");
+		return sendQueryError(cursor);
+	}
+
+	// and run it
+	if (!cont->executeQuery(cursor,true,true,true,true)) {
+		debugWrite("execute query failed");
+		return sendQueryError(cursor);
+	}
+
+	return sendParseExecuteResponse(cursor);
+}
+
+bool sqlrprotocol_oracle::sendParseExecuteResponse(sqlrservercursor *cursor) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("parse-execute response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	// a real 10.2 server answers with the same summary object
+	// sendOsql7Response() sends and nothing else - no describe, no column
+	// definitions, no row data - and the client goes straight on to close
+	// the cursor.  the command type is 42, alter session, which is the
+	// only statement any capture on file sends this call with, and the
+	// module doesn't classify statements anywhere.  one execution has
+	// happened, so the success iteration count is 1, and a statement with
+	// no result set processed no rows
+	if (nativeencoding) {
+		putOci7SummaryNative(wireCursorId(cursor),42,0,1);
+	} else {
+		putOci7Summary(wireCursorId(cursor),42,0,1);
+	}
+
+	return sendPacket(true);
+}
+
 void sqlrprotocol_oracle::debugTtcCode(byte_t ttccode) {
 	if (!getDebug()) {
 		return;
@@ -7995,6 +8161,9 @@ void sqlrprotocol_oracle::debugTtiFunction(byte_t ttifunction) {
 			break;
 		case TTI_CANCEL:
 			func="TTI_CANCEL";
+			break;
+		case TTI_PARSE_EXECUTE:
+			func="TTI_PARSE_EXECUTE";
 			break;
 		case TTI_DESCRIBE:
 			func="TTI_DESCRIBE";

@@ -1922,6 +1922,11 @@
 		load a config module left the dynamiclib pointer dangling
 		instead of NULL, so it got deleted again by the caller; also
 		made "Couldn't find id" list which config url(s) were searched
+	fixed the oracle protocol module to handle the oci7 client's automatic
+		post-login nls-sync ALTER SESSION call (tti function 0x27,
+		parse-execute) instead of rejecting it with ORA-03001, which
+		made the client send a break and abort every login once its
+		post-login handshake completed
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
