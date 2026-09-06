@@ -560,6 +560,58 @@ int main(int argc, char **argv) {
 	environment::setValue("TWO_TASK",sid);
 
 
+	// flush now, before the fork, so buffered-but-unwritten text can never
+	// be printed twice, once from each process
+	stdoutput.flush();
+
+	// #9717: forking the Authentication section away from here (right after
+	// Connect's olog/oopen) made zero observable difference on a real OCI7
+	// client - byte-identical ORA-03114/ORA-01001 cascade from Server
+	// Version onward, before and after that fix (see #9717 comment 9).  The
+	// buildfarm's own structural read of that result: the fork still ran
+	// after lda/hda/cda were already live, so the child inherited a copy of
+	// that connection anyway, and a byte-level replay of the retest's
+	// server-debug log confirms it - the open/parse/execute this section
+	// sends for "select banner from v$version" lands, without the server's
+	// per-session call-sequence counter ever resetting, on the exact
+	// connection the Authentication section's last (correct-password) olog/
+	// ologof cycle just used, not on Connect's.  So whatever carries
+	// Authentication's connection state into Connect's, it survives having
+	// Authentication run in a forked child - meaning it isn't ordinary
+	// process memory (fork's copy-on-write already isolates that); it has to
+	// be something Authentication's cycling and Connect's connection can
+	// still reach in common.  The one thing fork() does NOT isolate is what
+	// was already open at fork time: the child inherits a live duplicate of
+	// whatever fd(s) Connect's olog/oopen had already established.  Forking
+	// here instead - before Connect ever calls olog() - means lda/hda/cda
+	// don't exist yet in either process when Authentication's child runs, so
+	// there is nothing of Connect's for that child to inherit, share, or
+	// disturb, regardless of the exact mechanism.  See #9717.  The child
+	// leaves through exitImmediately() rather than exit() so the oracle
+	// client's atexit handlers can't touch anything on the way out.
+	pid_t	authpid=process::fork();
+	if (authpid==0) {
+		runAuthenticationSection(issqlrelay);
+		process::exitImmediately(status);
+	} else if (authpid>0) {
+		// process::wait() only reports pid/wait success - it does not
+		// populate exitstatus unless a childstatechange out-param is
+		// also passed, so getChildStateChange() is used directly here
+		childstatechange	newstate=EXIT_CHILDSTATECHANGE;
+		int32_t			childstatus=0;
+		if (process::getChildStateChange(authpid,true,true,true,
+					&newstate,&childstatus,
+					NULL,NULL)!=authpid ||
+				newstate!=EXIT_CHILDSTATECHANGE ||
+				childstatus) {
+			status=1;
+		}
+	} else {
+		// no fork - run it here rather than lose the coverage
+		runAuthenticationSection(issqlrelay);
+	}
+
+
 	stdoutput.printf("\n=============== Connect ==============\n\n");
 
 	// OCI8's OCIEnvCreate/OCIInitialize+OCIEnvInit have no counterpart
@@ -605,44 +657,6 @@ int main(int argc, char **argv) {
 	// against the LDA rather than allocated out of an environment
 	assertEquals(check(&cda,openCursor(&cda,-1)),0);
 	stdoutput.printf("\n\n");
-
-
-
-	// flush now, before the fork, so buffered-but-unwritten text can never
-	// be printed twice, once from each process
-	stdoutput.flush();
-
-	// The Authentication section's olog/ologof cycling corrupts OCI7's
-	// process-global client state.  Left in this process it takes the main
-	// session down with it - every call from the Server Version section
-	// onward comes back ORA-03114 or ORA-01001 against a real client, as the
-	// redhat9x86 isolation test showed - so it runs in a child instead and
-	// only its pass/fail comes back.  See #9717.  The child leaves through
-	// exitImmediately() rather than exit() so the oracle client's atexit
-	// handlers can't log off the main session's inherited connection on the
-	// way out.
-	pid_t	authpid=process::fork();
-	if (authpid==0) {
-		runAuthenticationSection(issqlrelay);
-		process::exitImmediately(status);
-	} else if (authpid>0) {
-		// process::wait() only reports pid/wait success - it does not
-		// populate exitstatus unless a childstatechange out-param is
-		// also passed, so getChildStateChange() is used directly here
-		childstatechange	newstate=EXIT_CHILDSTATECHANGE;
-		int32_t			childstatus=0;
-		if (process::getChildStateChange(authpid,true,true,true,
-					&newstate,&childstatus,
-					NULL,NULL)!=authpid ||
-				newstate!=EXIT_CHILDSTATECHANGE ||
-				childstatus) {
-			status=1;
-		}
-	} else {
-		// no fork - run it here rather than lose the coverage
-		runAuthenticationSection(issqlrelay);
-	}
-
 
 
 	stdoutput.printf("\n============ Server Version ==========\n\n");
