@@ -1874,6 +1874,11 @@
 		the separate back-end an oci7 listener needs, in the
 		configuration guide and reference; added a matching example
 		config
+	fixed the oracle protocol module reading past a short tti negotiation
+		packet into the previous packet's leftover bytes, and logging a
+		client's own disconnect (a bare eof packet, or an explicit
+		olog-time disconnect) as a broken authentication exchange
+		instead of recognizing it as the client walking away
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

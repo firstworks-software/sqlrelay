@@ -1902,6 +1902,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// login may be attempted on the same connection
 		bool		loginrefused;
 
+		// whether the client walked away instead of sending a login -
+		// a flags-only eof packet or an explicit disconnect - so
+		// authenticate() can log that plainly instead of as a desync
+		bool		clientdisconnected;
+
 		uint16_t	maxcursorcount;
 		uint32_t	maxquerysize;
 		uint16_t	maxbindcount;
@@ -2310,6 +2315,7 @@ void sqlrprotocol_oracle::init() {
 	gotauthpassword=false;
 	fabricatedchallenge=false;
 	loginrefused=false;
+	clientdisconnected=false;
 
 	nativeencoding=false;
 	clientlittleendian=true;
@@ -4282,7 +4288,28 @@ bool sqlrprotocol_oracle::recvTtiRequest() {
 	byte_t		ttccode;
 	delete[] clientstring;
 
+	if (end-rp<2) {
+		debugWrite("bad tti request, truncated header");
+		return false;
+	}
 	readBE(rp,&dataflags,&rp);
+
+	// a client walking away closes here with just the flags - the same
+	// eof marker the main query loop already recognizes. reading on from
+	// here would run past the packet into whatever the reused buffer
+	// holds from the previous read. initialHandshake() short-circuits on
+	// a false return, so there's no authenticate() call left to tell
+	// this apart from any other handshake failure - the debug output
+	// here is the only record of it
+	if (rp==end) {
+		debugStart("tti request");
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugWrite("%s",(dataflags&DATA_FLAGS_EOF)?
+					"eof flag":"empty packet");
+		debugEnd();
+		return false;
+	}
+
 	if (!read(rp,&ttccode,"ttccode",TTC_PROTOCOL_NEGOTIATION,&rp) ||
 		!getNullTerminatedArray(rp,end,
 					&ttiversions,
@@ -5912,6 +5939,7 @@ bool sqlrprotocol_oracle::authenticate() {
 	for (uint16_t attempt=1;; attempt++) {
 
 		loginrefused=false;
+		clientdisconnected=false;
 
 		debugStart("authentication attempt %d",attempt);
 
@@ -5922,6 +5950,12 @@ bool sqlrprotocol_oracle::authenticate() {
 			debugWrite("outcome: authenticated");
 			debugEnd();
 			return true;
+		}
+
+		if (clientdisconnected) {
+			debugWrite("outcome: client disconnected");
+			debugEnd();
+			return false;
 		}
 
 		// a refused login gets another try, like a real server gives.
@@ -6664,6 +6698,17 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	byte_t		ttifunction;
 	byte_t		seqnumber;
 
+	// a client backing out of a login retry closes with just the flags -
+	// the same eof marker the main query loop already recognizes
+	if (end-rp==2) {
+		readBE(rp,&dataflags,&rp);
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugWrite("%s",(dataflags&DATA_FLAGS_EOF)?
+					"eof flag":"empty packet");
+		clientdisconnected=true;
+		return false;
+	}
+
 	// data flags, ttc code, tti function, sequence number.
 	// the two tti function reads share one byte - read() rewinds the
 	// read pointer when the value doesn't match.
@@ -6676,6 +6721,18 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	if (!read(rp,&ttccode,"ttccode",TTC_TTI_FUNCTION,&rp)) {
 		return false;
 	}
+
+	// a client can also back out by disconnecting outright instead of
+	// sending a login function - peek for it before the two-way encoding
+	// probe below, since TTI_DISCONNECT isn't a login-function candidate
+	// on either phase
+	if (*rp==TTI_DISCONNECT) {
+		read(rp,&ttifunction,&rp);
+		debugTtiFunction(ttifunction);
+		clientdisconnected=true;
+		return false;
+	}
+
 	if (!secondphase) {
 		if (!read(rp,&ttifunction,"ttifunction",
 				TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY,&rp) &&
