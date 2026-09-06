@@ -1879,6 +1879,10 @@
 		client's own disconnect (a bare eof packet, or an explicit
 		olog-time disconnect) as a broken authentication exchange
 		instead of recognizing it as the client walking away
+	fixed the oracle protocol module's answer to an osql7 parse request,
+		which sent the portable-encoded summary object to native oci7
+		clients too - added a native-mode encoding, verified byte-for-
+		byte against a real native oci7 client's captured session
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

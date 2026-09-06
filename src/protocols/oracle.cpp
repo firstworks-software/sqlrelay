@@ -1448,6 +1448,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						byte_t commandtype,
 						uint32_t rowsprocessed,
 						uint32_t successiterations);
+		void	putOci7SummaryNative(uint32_t cursorid,
+						byte_t commandtype,
+						uint32_t rowsprocessed,
+						uint32_t successiterations);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		const byte_t	*findO3LogonStrings(const byte_t *rp,
 							const byte_t *end);
@@ -7216,6 +7220,92 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	debugEnd();
 }
 
+// the native encoding of the same object, used only by sendOsql7Response().
+// decoded byte for byte against a real redhat9x86 x86 OCI7 client's
+// native-mode session with an x86 linux 10.2 server: packets [0014] (the
+// login answer), [0020] (the parse this call answers), [0022] (the
+// execute) and [0024] (the fetch) of test/protocol/oracle/samples/
+// oracle102-oci7-native-login-select.cap all carry this same 93-byte
+// object, and comparing all four against each other - not just against the
+// portable object above - is what pins which bytes are which: the four
+// captures agree on every byte except the ones written as fields below, so
+// those are the only ones with any evidence for what varies.
+//
+// end of call status is a fixed 4-byte little endian field, the same as
+// decode_o3logon_summary_native() in test/protocol/oracle/oradecode already
+// established for this object's use as the o3logon challenge's tail. the
+// byte behind it is 1 in all four captures - unexplained, but confirmed
+// constant rather than assumed. rows processed, cursor id and success
+// iterations are only ever confirmed as 0 or a small single digit in the
+// four captures on file, but sendErrorPacket()'s native branch (~line 7505)
+// places its own ora-number field 4 bytes wide at the equivalent distance
+// from that same "36 01" marker below, which only lines up if the fields
+// ahead of it here are 4 bytes too - so each goes out the same width as end
+// of call status, not truncated to whatever a capture happened to need.
+// call number is confirmed as one byte across all four, and command type
+// is a byte everywhere putOci7Summary() sends it too, so both stay bytes.
+// two more bytes go out non-zero in every capture here (a marker, "36 01",
+// 4 bytes ahead of a live value) - the same marker sendErrorPacket()'s
+// native branch and putAuthTrailer()'s native trailer both carry too (at
+// their own equivalent positions, not this one), so it reads as a real
+// constant, and the live value after it as the same class of
+// non-reproducible server-side data sendErrorPacket()'s native branch
+// zeroes rather than guesses
+void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
+						byte_t commandtype,
+						uint32_t rowsprocessed,
+						uint32_t successiterations) {
+
+	write(&reqpacket,(byte_t)TTC_ERROR);
+
+	writeLE(&reqpacket,(uint32_t)1);
+
+	// a second byte that is 1 in every capture on file (login, parse,
+	// execute and fetch alike) - unexplained, but confirmed constant
+	// rather than assumed
+	write(&reqpacket,(byte_t)1);
+
+	writeLE(&reqpacket,rowsprocessed);
+
+	static const byte_t	pad2[6]={0};
+	reqpacket.append(pad2,sizeof(pad2));
+	writeLE(&reqpacket,cursorid);
+
+	write(&reqpacket,commandtype);
+
+	static const byte_t	pad4[26]={0};
+	reqpacket.append(pad4,sizeof(pad4));
+	write(&reqpacket,callnumber);
+
+	static const byte_t	pad5[2]={0};
+	reqpacket.append(pad5,sizeof(pad5));
+	writeLE(&reqpacket,successiterations);
+
+	// "36 01" is the marker; the live pointer sits 4 bytes behind it
+	static const byte_t	pad6[8]={
+		0x36, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
+	reqpacket.append(pad6,sizeof(pad6));
+
+	// the live pointer itself - a real value in every capture on file,
+	// and zeroed here for the same reason sendErrorPacket()'s native
+	// branch zeroes its own: nothing reproduces it, and no client reads
+	// it back
+	static const byte_t	livepointer[4]={0};
+	reqpacket.append(livepointer,sizeof(livepointer));
+
+	static const byte_t	pad7[28]={0};
+	reqpacket.append(pad7,sizeof(pad7));
+
+	debugStart("oci7 summary (native)");
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("command type: %d",commandtype);
+	debugWrite("rows processed: %d",rowsprocessed);
+	debugWrite("call number: %d",callnumber);
+	debugWrite("success iterations: %d",successiterations);
+	debugEnd();
+}
+
 bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 	// the unknown-user answer comes first, ahead of the empty-password
@@ -7752,7 +7842,11 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 	// goes straight on to execute.  the command type is putSummary()'s own
 	// constant.  nothing has executed yet, so the success iteration count
 	// is 0
-	putOci7Summary(wireCursorId(cursor),3,0,0);
+	if (nativeencoding) {
+		putOci7SummaryNative(wireCursorId(cursor),3,0,0);
+	} else {
+		putOci7Summary(wireCursorId(cursor),3,0,0);
+	}
 
 	return sendPacket(true);
 }
