@@ -7,8 +7,14 @@
 # jnettrace.jar, which is dead on modern JDKs (see #9098).
 #
 # Usage:
-#   ./oraproxy LISTENPORT DESTHOST DESTPORT CAPTUREFILE \
+#   ./oraproxy [--skip=N] LISTENPORT DESTHOST DESTPORT CAPTUREFILE \
 #				[OLDBANNER NEWBANNER [DIRECTIONS]]
+#
+# With --skip=N, the first N connections are relayed through without
+# being captured, and the capture is of connection N+1.  Without it, the
+# capture is of the first connection, as always.  The skipped connections
+# are handled one at a time, to completion, so this only works when the
+# client opens them one after another rather than at the same time.
 #
 # With the optional OLDBANNER/NEWBANNER pair, every occurrence of
 # OLDBANNER is replaced with NEWBANNER before the bytes reach the far
@@ -103,11 +109,15 @@ def relay(src, dst, direction, capturefile, capturelock,
 			dst.sendall(chunk)
 		except OSError:
 			pass
-		with capturelock:
-			capturefile.write(direction)
-			capturefile.write(struct.pack(">I", len(chunk)))
-			capturefile.write(chunk)
-			capturefile.flush()
+		# no capture file means a skipped connection - relay it,
+		# but leave it out of the capture
+		if capturefile is not None:
+			with capturelock:
+				capturefile.write(direction)
+				capturefile.write(
+					struct.pack(">I", len(chunk)))
+				capturefile.write(chunk)
+				capturefile.flush()
 	# half-close so the other relay thread sees eof too
 	try:
 		dst.shutdown(socket.SHUT_WR)
@@ -141,31 +151,42 @@ def handle_connection(clientsock, desthost, destport, capturefile, capturelock,
 
 
 def main():
-	if len(sys.argv) not in (5, 7, 8):
+	# pull the flags out, leaving the positional arguments where the
+	# code below expects them
+	skip = 0
+	argv = []
+	for arg in sys.argv:
+		if arg.startswith("--skip="):
+			skip = int(arg[len("--skip="):])
+		else:
+			argv.append(arg)
+
+	if len(argv) not in (5, 7, 8):
 		sys.stderr.write(
-			"usage: %s LISTENPORT DESTHOST DESTPORT CAPTUREFILE "
-			"[OLDBANNER NEWBANNER [DIRECTIONS]]\n" % sys.argv[0])
+			"usage: %s [--skip=N] LISTENPORT DESTHOST DESTPORT "
+			"CAPTUREFILE "
+			"[OLDBANNER NEWBANNER [DIRECTIONS]]\n" % argv[0])
 		return 1
 
-	listenport = int(sys.argv[1])
-	desthost = sys.argv[2]
-	destport = int(sys.argv[3])
-	capturepath = sys.argv[4]
+	listenport = int(argv[1])
+	desthost = argv[2]
+	destport = int(argv[3])
+	capturepath = argv[4]
 
 	oldbanner = None
 	newbanner = None
 	clientoldbanner = None
 	clientnewbanner = None
-	if len(sys.argv) >= 7:
-		old = sys.argv[5].encode("utf-8")
-		new = sys.argv[6].encode("utf-8")
+	if len(argv) >= 7:
+		old = argv[5].encode("utf-8")
+		new = argv[6].encode("utf-8")
 		if len(old) != len(new):
 			sys.stderr.write(
 				"oraproxy: OLDBANNER and NEWBANNER must be "
 				"the same length (%d vs %d)\n" %
 				(len(old), len(new)))
 			return 1
-		directions = sys.argv[7] if len(sys.argv) == 8 else "s"
+		directions = argv[7] if len(argv) == 8 else "s"
 		if directions not in ("s", "c", "both"):
 			sys.stderr.write(
 				"oraproxy: DIRECTIONS must be s, c or both\n")
@@ -200,6 +221,20 @@ def main():
 				"oraproxy: rewriting %r -> %r in the "
 				"client->server direction\n" %
 				(clientoldbanner, clientnewbanner))
+
+		# relay the skipped connections through, one at a time,
+		# capturing nothing
+		for skipped in range(skip):
+			skipsock, skipaddr = listener.accept()
+			sys.stderr.write(
+				"oraproxy: skipping connection %d "
+				"from %s:%d\n" %
+				((skipped + 1,) + skipaddr))
+			handle_connection(skipsock, desthost, destport,
+						None, capturelock,
+						oldbanner, newbanner,
+						clientoldbanner,
+						clientnewbanner)
 
 		# one connection is all a capture run needs: accept it,
 		# relay it to completion, then exit

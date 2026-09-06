@@ -521,9 +521,33 @@ static void runAuthenticationSection(bool issqlrelay) {
 
 int main(int argc, char **argv) {
 
+	// the first non-flag argument names the instance to test.  the flags,
+	// which may appear in any order around it:
+	//   --only=connect  skip the Authentication section entirely
+	//   --only=auth     run Connect and Authentication, then stop
+	//   --one-cursor    run Server Version's query on the cursor Connect
+	//                   already opened, rather than on a second one
+	// --one-cursor combines with --only=connect, or with no --only at all.
+	// it does nothing under --only=auth, which never reaches Server Version.
+	const char	*target=NULL;
+	bool		skipauth=false;
+	bool		onlyauth=false;
+	bool		onecursor=false;
+	for (int i=1; i<argc; i++) {
+		if (!charstring::compare(argv[i],"--only=connect")) {
+			skipauth=true;
+		} else if (!charstring::compare(argv[i],"--only=auth")) {
+			onlyauth=true;
+		} else if (!charstring::compare(argv[i],"--one-cursor")) {
+			onecursor=true;
+		} else if (!target) {
+			target=argv[i];
+		}
+	}
+
 	// pass "native" to test a real oracle instance instead of
 	// sqlrelay's oracle protocol
-	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+	bool	issqlrelay=!(target && !charstring::compare(target,"native"));
 
 	// the oracleprotocolfetchatonce instance sets fetchatonce=1 on its
 	// connection string, so the module pulls one row per backend fetch
@@ -532,20 +556,20 @@ int main(int argc, char **argv) {
 	bool	isfetchatonce=false;
 
 	// select verifier-specific sqlrelay target, if given
-	if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
+	if (target && !charstring::compare(target,"sqlrelay11g")) {
 		sid="sqlrelay11g";
 		badsid="sqlrelay11gbad";
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelay12c")) {
+	} else if (target && !charstring::compare(target,"sqlrelay12c")) {
 		sid="sqlrelay12c";
 		badsid="sqlrelay12cbad";
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayconnectstrings")) {
+	} else if (target && !charstring::compare(target,"sqlrelayconnectstrings")) {
 		sid="sqlrelayconnectstrings";
 		badsid="sqlrelayconnectstringsbad";
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayfetchatonce")) {
+	} else if (target && !charstring::compare(target,"sqlrelayfetchatonce")) {
 		sid="sqlrelayfetchatonce";
 		badsid="sqlrelayfetchatoncebad";
 		isfetchatonce=true;
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayoci7")) {
+	} else if (target && !charstring::compare(target,"sqlrelayoci7")) {
 		// the oracleprotocoloci7 instance has its own backend (#9654) -
 		// an OCI7-capable client is too old to authenticate to the
 		// same modern backend the other sqlrelay* instances use
@@ -589,26 +613,31 @@ int main(int argc, char **argv) {
 	// disturb, regardless of the exact mechanism.  See #9717.  The child
 	// leaves through exitImmediately() rather than exit() so the oracle
 	// client's atexit handlers can't touch anything on the way out.
-	pid_t	authpid=process::fork();
-	if (authpid==0) {
-		runAuthenticationSection(issqlrelay);
-		process::exitImmediately(status);
-	} else if (authpid>0) {
-		// process::wait() only reports pid/wait success - it does not
-		// populate exitstatus unless a childstatechange out-param is
-		// also passed, so getChildStateChange() is used directly here
-		childstatechange	newstate=EXIT_CHILDSTATECHANGE;
-		int32_t			childstatus=0;
-		if (process::getChildStateChange(authpid,true,true,true,
-					&newstate,&childstatus,
-					NULL,NULL)!=authpid ||
-				newstate!=EXIT_CHILDSTATECHANGE ||
-				childstatus) {
-			status=1;
+	// --only=connect skips this section outright rather than forking it,
+	// so that no login of its own runs in this program at all
+	if (!skipauth) {
+		pid_t	authpid=process::fork();
+		if (authpid==0) {
+			runAuthenticationSection(issqlrelay);
+			process::exitImmediately(status);
+		} else if (authpid>0) {
+			// process::wait() only reports pid/wait success - it
+			// does not populate exitstatus unless a
+			// childstatechange out-param is also passed, so
+			// getChildStateChange() is used directly here
+			childstatechange	newstate=EXIT_CHILDSTATECHANGE;
+			int32_t			childstatus=0;
+			if (process::getChildStateChange(authpid,true,true,true,
+						&newstate,&childstatus,
+						NULL,NULL)!=authpid ||
+					newstate!=EXIT_CHILDSTATECHANGE ||
+					childstatus) {
+				status=1;
+			}
+		} else {
+			// no fork - run it here rather than lose the coverage
+			runAuthenticationSection(issqlrelay);
 		}
-	} else {
-		// no fork - run it here rather than lose the coverage
-		runAuthenticationSection(issqlrelay);
 	}
 
 
@@ -659,6 +688,26 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// --only=auth stops here.  the real Teardown drops the tables the
+	// sections between here and there create, so running it after skipping
+	// them would report failures for tables that were never created
+	if (onlyauth) {
+
+		stdoutput.printf("\n============== Teardown ==============\n\n");
+
+		stdoutput.printf("oclose - main cursor\n");
+		assertEquals(check(&cda,oclose(&cda)),0);
+		stdoutput.printf("\n\n");
+
+		stdoutput.printf("ologof\n");
+		assertEquals(check(&lda,ologof(&lda)),0);
+		stdoutput.printf("\n\n");
+
+		reportTestStatus();
+		return status;
+	}
+
+
 	stdoutput.printf("\n============ Server Version ==========\n\n");
 
 	stdoutput.printf("select - v$version\n");
@@ -671,26 +720,33 @@ int main(int argc, char **argv) {
 	// that turns out to be a problem in #9654, dropping this section
 	// outright is the fallback
 	{
-		Cda_Def	vercda;
-		assertEquals(check(&vercda,openCursor(&vercda,-1)),0);
+		// --one-cursor runs this on the cursor Connect already opened,
+		// so no second cursor is opened or closed here.  the sections
+		// below re-parse that cursor before using it, so leaving this
+		// query's parse and defines on it costs nothing
+		Cda_Def	owncda;
+		Cda_Def	*vercda=(onecursor)?&cda:&owncda;
+		if (!onecursor) {
+			assertEquals(check(vercda,openCursor(vercda,-1)),0);
+		}
 		const char	*versionquery=
 					"select banner from v$version "
 					"where banner like 'Oracle%'";
-		assertEquals(check(&vercda,
-				oparse(&vercda,(text *)versionquery,
+		assertEquals(check(vercda,
+				oparse(vercda,(text *)versionquery,
 						(sb4)-1,0,(ub4)2)),0);
 		char	versionbuf[512];
 		sb2	versionind=0;
 		ub2	versionlen=0;
 		ub2	versioncode=0;
 		bytestring::zero(versionbuf,sizeof(versionbuf));
-		assertEquals(check(&vercda,
-				odefin(&vercda,1,(ub1 *)versionbuf,
+		assertEquals(check(vercda,
+				odefin(vercda,1,(ub1 *)versionbuf,
 					(sword)sizeof(versionbuf),SQLT_STR,-1,
 					&versionind,(text *)0,-1,-1,
 					&versionlen,&versioncode)),0);
-		assertEquals(check(&vercda,oexec(&vercda)),0);
-		assertEquals(check(&vercda,ofen(&vercda,1)),0);
+		assertEquals(check(vercda,oexec(vercda)),0);
+		assertEquals(check(vercda,ofen(vercda,1)),0);
 		// the test configs all set serverversion="11.2", which the
 		// protocol module packs as 0x0b200100 and expands into this
 		// exact banner
@@ -698,7 +754,9 @@ int main(int argc, char **argv) {
 			"Oracle Database 11g Enterprise Edition "
 			"Release 11.2.0.1.0 - 64bit Production");
 		stdoutput.printf("\n%s\n",versionbuf);
-		assertEquals(check(&vercda,oclose(&vercda)),0);
+		if (!onecursor) {
+			assertEquals(check(vercda,oclose(vercda)),0);
+		}
 	}
 	stdoutput.printf("\n\n");
 
