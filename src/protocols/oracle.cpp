@@ -10864,6 +10864,26 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_TIMESTAMPTZ:
 			wiretype=ORACLE_TYPE_TIMESTAMPTZ;
 			break;
+		case ORACLE_TYPE_RESULT_SET:
+			wiretype=ORACLE_TYPE_RESULT_SET;
+			break;
+		case ORACLE_TYPE_NAMED_TYPE:
+			wiretype=ORACLE_TYPE_NAMED_TYPE;
+			break;
+		case ORACLE_TYPE_REF_TYPE:
+			wiretype=ORACLE_TYPE_REF_TYPE;
+			break;
+		case ORACLE_TYPE_TIMESTAMPLTZ:
+			// getWireColumnSize() and putColumnMetadata()'s
+			// fullencoding flag don't have a case of their own for
+			// this yet - what a live server actually reports for
+			// either one is still unverified, so describing one
+			// falls through to their generic, character-type
+			// defaults below.  safe regardless, now that putField()
+			// fails the fetch cleanly rather than mis-encoding the
+			// value as text
+			wiretype=ORACLE_TYPE_TIMESTAMPLTZ;
+			break;
 		case ORACLE_TYPE_LOB_CLOB:
 			wiretype=ORACLE_TYPE_CLOB;
 			break;
@@ -10876,9 +10896,18 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
-			// type and sending text desyncs the client - so a type
-			// only moves out of here once putRowData() can write
-			// its binary form
+			// type and sending text desyncs the client - unless
+			// putField() has its own clean-failure arm for it (a
+			// false return now fails the whole fetch rather than
+			// desyncing the row), a type otherwise only moves out
+			// of here once putRowData() can write its binary form.
+			// ORACLE_TYPE_PLSQL_INDEX_TABLE stays here regardless:
+			// it's an internal sentinel above the ub1 range the
+			// describe wire fields use (see the comment by its
+			// #define), not a real wire code, so it has no byte
+			// value of its own to describe the column as - nothing
+			// on the column-type mapping path produces it today, so
+			// this arm is never actually reached for it in practice
 			wiretype=ORACLE_TYPE_VARCHAR;
 			break;
 	}
