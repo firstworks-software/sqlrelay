@@ -500,11 +500,8 @@
 #define DCB_MIN_PREFETCH		2
 #define DCB_MAX_PREFETCH		2
 
-// the two unrelated 51 values the docs warn about: describe info carries
-// the byte 0x51, column definitions carries the ub4 51 decimal.  neither
-// meaning is sourced.
+// describe info carries the byte 0x51.  its meaning isn't sourced.
 #define DESCRIBE_INFO_CONSTANT		0x51
-#define COLUMN_DEFINITIONS_CONSTANT	51
 
 // what a ref cursor's out bind slot leads with.  it isn't a length - it's
 // 0x4c whatever the cursor describes - and no source explains it.  thin
@@ -1685,17 +1682,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t cursorid,
 							uint32_t rowstofetch);
 		bool	sendFetchResponse(sqlrservercursor *cursor,
-							bool parse,
-							bool define,
-							bool sndiov,
 							bool exactfetch,
 							uint32_t rowstofetch);
 		void	cacheColumnDefinitions(sqlrservercursor *cursor,
 							uint32_t colcount);
-		void	putColumnDefinitions(sqlrservercursor *cursor,
-							uint32_t colcount);
-		void	putColumnDefinition(sqlrservercursor *cursor,
-							uint32_t column);
 		uint16_t	getColumnType(const char *columntypestring,
 						uint16_t columntypesize,
 						uint32_t scale);
@@ -1728,7 +1718,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						bool iszerofilled,
 						bool isbinary,
 						bool isautoincrement);
-		void	putIov();
 		bool	putRow(sqlrservercursor *cursor,
 						uint32_t colcount);
 		bool	putField(const char *field,
@@ -1993,15 +1982,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// summary object has to report the total
 		uint32_t	query3affectedrows;
 		bool		query3knowsaffectedrows;
-
-		// the cursor id most recently touched by open(), query(),
-		// query2(), query3() or execute() - two calls fall back to
-		// this instead of the id on the wire: the legacy (non-query3)
-		// Fetch request carries no cursor id of its own, and execute()
-		// doesn't branch by session, so it misparses a query3
-		// session's LPI-encoded request as the legacy layout and its
-		// own parsed id isn't trustworthy there
-		uint16_t	lastcursorid;
 
 		// what this module's own cursor ids are shifted by to make
 		// the ids it puts on the wire, and back - see
@@ -2315,7 +2295,6 @@ void sqlrprotocol_oracle::init() {
 	bytestring::zero(clientdatatypereps,sizeof(clientdatatypereps));
 
 	query3session=false;
-	lastcursorid=65535;
 	callnumber=0;
 
 	resppacket=NULL;
@@ -3043,9 +3022,8 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	// own byte order, and the one place in the session that states that
 	// byte order outright.  read big-endian, a big-endian client's comes
 	// back as 1 and a little-endian client's as 0x0100, whichever byte
-	// order this host happens to be.  getPointer() is what needs it: a
-	// pointer field in the native representation is the client's own
-	// pointer, raw, in the client's own byte order
+	// order this host happens to be.  getPointer() is what needs it - see
+	// there
 	readBE(rp,&one,&rp);
 	clientlittleendian=(one!=1);
 	readBE(rp,&connectdatasize,&rp);
@@ -6156,8 +6134,8 @@ bool sqlrprotocol_oracle::getAuthField(const byte_t *rp,
 // oracle102-oci7-portable-login-select.cap is the wide shape against a real
 // 10.2 server - a tti open whose whole body is "02 05 ff be fd b0 00", a
 // sparc client's big-endian 0xffbefdb0 between the sequence byte and an lpi
-// 0 - and #9658 comment 33 has the same call from an x86 oci7 client, whose
-// "02 05 40 f1 ff bf 00" carries the same field little-endian
+// 0.  the same call from an x86 client is "02 05 40 f1 ff bf 00", carrying
+// the same field little-endian
 bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 					const byte_t *end,
 					uint32_t *value,
@@ -7514,7 +7492,6 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	}
 
 	uint16_t	cursorid=cont->getId(cursor);
-	lastcursorid=cursorid;
 
 	debugStart("open request");
 	debugWrite("seq number: %d",seqnumber);
@@ -7670,7 +7647,6 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
-	lastcursorid=cont->getId(cursor);
 
 	// reset column type cache flag
 	columntypescached[cont->getId(cursor)]=false;
@@ -8311,7 +8287,6 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
-	lastcursorid=cont->getId(cursor);
 
 	// reset column type cache flag
 	columntypescached[cont->getId(cursor)]=false;
@@ -8496,7 +8471,6 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
-	lastcursorid=cont->getId(cursor);
 
 	if (options&OPTION_PARSE) {
 
@@ -8613,27 +8587,23 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// response never carries a column-definition block - the
 		// client appears to supply its own output-variable defines
 		// inline elsewhere in this same request, rather than asking
-		// the server to describe them back.  so, unlike fetch(),
-		// define is always false here.
+		// the server to describe them back.
 
-		// parse/sndiov/exactfetch are NOT read from the options
-		// bitfield here - bits 8 and up of this field are a per-call
-		// sequence counter, not independent flags (#9656:
-		// shifted-exfet-3's two identical exact-fetch calls land at
-		// different call-sequence positions and their options high
-		// bytes differ accordingly, even though nothing about the call
-		// itself changed).  a query2 with OPTION_FETCH set is exactly
-		// the exact-fetch case in every capture on file, so exactfetch
-		// is hardcoded true; sndiov only matters on the branch taken
-		// when define is true, which this call never takes, so it's
-		// hardcoded false; parse is unused inside sendFetchResponse()
-		// regardless.
+		// exactfetch is NOT read from the options bitfield here -
+		// bits 8 and up of this field are a per-call sequence
+		// counter, not independent flags (#9656: shifted-exfet-3's
+		// two identical exact-fetch calls land at different
+		// call-sequence positions and their options high bytes differ
+		// accordingly, even though nothing about the call itself
+		// changed).  a query2 with OPTION_FETCH set is exactly the
+		// exact-fetch case in every capture on file, so exactfetch is
+		// hardcoded true.
 		//
 		// the row count goes as 0 - "no bound but the packet size" -
 		// because where oexfet()'s own nrows sits in this request is
 		// unidentified.  a standalone fetch reads its count off the
 		// wire and passes it
-		return sendFetchResponse(cursor,false,false,false,true,0);
+		return sendFetchResponse(cursor,true,0);
 	}
 
 	return sendQuery2Response(cursor,false);
@@ -9014,7 +8984,6 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			debugWrite("couldn't get cursor");
 			return sendCursorNotOpenError();
 		}
-		lastcursorid=cont->getId(cursor);
 		cursorid=wireCursorId(cursor);
 		debugStart("open request");
 		debugWrite("cursor id: %d",cursorid);
@@ -9025,7 +8994,6 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			debugWrite("cursor id %d not found",cursorid);
 			return sendCursorNotOpenError(cursorid);
 		}
-		lastcursorid=cont->getId(cursor);
 	}
 
 	// a re-execute of this statement will send values without
@@ -10133,9 +10101,6 @@ void sqlrprotocol_oracle::releaseRefCursors(uint16_t parentid) {
 		rowssent[childid]=0;
 		pendingrow[childid].clear();
 		clearLobPin(childid);
-		if (lastcursorid==childid) {
-			lastcursorid=65535;
-		}
 	}
 
 	refcursorcounts[parentid]=0;
@@ -13012,7 +12977,6 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
-	lastcursorid=cont->getId(cursor);
 
 	// a fresh execute means a new result set - drop any row held
 	// over from a previous one on this cursor
@@ -13077,7 +13041,6 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
 	}
-	lastcursorid=cont->getId(cursor);
 
 	query3affectedrows=0;
 	query3knowsaffectedrows=false;
@@ -13416,15 +13379,6 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 	// of 2 and an lpi row count of 1 - and [0023] of the native capture
 	// beside it is "05 08 02 00 00 00 01 00 00 00", the same three fields
 	// four bytes wide.  there is no options field on this call at all.
-	//
-	// it was read as two raw big-endian ub2s under a "FIXME: decode this",
-	// with the cursor id taken from lastcursorid rather than from the wire.
-	// against those six bytes that gives an options of 0x0801 and a
-	// moreoptions of 0x0201, neither of which is a field, and it leaves the
-	// last byte unread.  the stored cursor id is right whenever only one
-	// cursor is open - which is every session captured so far, and is why
-	// the live run still fetched the right row while its debug trace said
-	// "cursor id: 0" - and wrong the moment two are (#9658)
 	byte_t		sequence=0;
 	uint32_t	cursorid=0;
 	uint32_t	rowstofetch=0;
@@ -13461,17 +13415,12 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 	}
 
 	// a standalone legacy fetch asks for rows and nothing else.  with no
-	// options field on the wire there is nothing to ask a parse, column
-	// definitions, an iov or an exact fetch with, so all four are false -
-	// which is what the old read of the field arrived at anyway, since the
-	// options it invented never had OPTION_DEFINE set
-	return sendFetchResponse(cursor,false,false,false,false,rowstofetch);
+	// options field on the wire there is nothing to ask an exact fetch
+	// with, so it never is one
+	return sendFetchResponse(cursor,false,rowstofetch);
 }
 
 bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
-							bool parse,
-							bool define,
-							bool sndiov,
 							bool exactfetch,
 							uint32_t rowstofetch) {
 
@@ -13557,92 +13506,10 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		}
 
 		// ok, so there is at least one row...
-		// send various headers and column definitions
+		// send the row header
 		if (!rowsfetched) {
 
-			if (define) {
-
-				// FIXME: the headers/col-defs appear to be
-				// very different when sent from 8i
-				// see "Oracle Wire Protocol - Column
-				// Definitions"
-
-				// ttc type 0x10 reused bare as a response
-				// header - not a describe info message
-				byte_t		ttccode=TTC_DESCRIBE_INFO;
-
-				write(&reqpacket,ttccode);
-
-				if (getDebug()) {
-					debugStart("fetch response header");
-					debugTtcCode(ttccode);
-					debugEnd();
-				}
-
-				// send column definitions...
-				putColumnDefinitions(cursor,colcount);
-
-				// send "iov" (whatever that is)...
-				// see "Oracle Wire Protocol - Fetch"
-				if (sndiov) {
-					if (getDebug()) {
-						debugStart("fetch response header");
-						debugWrite("iov");
-						debugEnd();
-					}
-					putIov();
-				} else {
-					const byte_t	unknown[]={
-						0x00, 0x00,
-					};
-					reqpacket.append(unknown,sizeof(unknown));
-					if (getDebug()) {
-						debugStart("fetch response header");
-						debugWrite("no iov");
-						debugHexDump(unknown,sizeof(unknown));
-						debugEnd();
-					}
-				}
-
-				// unknown2 through unknown4 are unexplained
-				// see "Oracle Wire Protocol - Fetch"
-				// always appears to be the same...
-				const byte_t	unknown2[]={
-					0x06, 0x02,
-				};
-				reqpacket.append(unknown2,sizeof(unknown2));
-
-				// FIXME: this varies, but it's not clear
-				// with what
-				const byte_t	unknown3[]={
-					0x8C
-				};
-				reqpacket.append(unknown3,sizeof(unknown3));
-
-				if (getDebug()) {
-					debugStart("fetch response header");
-					debugHexDump(unknown2,sizeof(unknown2));
-					debugHexDump(unknown3,sizeof(unknown3));
-					debugEnd();
-				}
-
-				write(&reqpacket,(byte_t)colcount);
-
-				// always appears to be the same...
-				const byte_t	unknown4[]={
-					0x00, 0x00, 0x00,
-					0x01, 0x00, 0x00, 0x00
-				};
-				reqpacket.append(unknown4,sizeof(unknown4));
-
-				if (getDebug()) {
-					debugStart("fetch response header");
-					debugWrite("column count: %d",colcount);
-					debugHexDump(unknown4,sizeof(unknown4));
-					debugEnd();
-				}
-
-			} else if (nativeencoding) {
+			if (nativeencoding) {
 
 				// a bare re-fetch on an already-described
 				// cursor answers with an outer row-header
@@ -13922,121 +13789,6 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 		columntypescached[curid]=true;
 	}
 
-	debugEnd();
-}
-
-void sqlrprotocol_oracle::putColumnDefinitions(sqlrservercursor *cursor,
-							uint32_t colcount) {
-
-	uint32_t	sizetotal=0;
-	for (uint32_t i=0; i<colcount; i++) {
-		sizetotal+=cont->getColumnSize(cursor,i);
-	}
-	// unexplained.  see "Oracle Wire Protocol - Column Definitions"
-	uint32_t	constant=COLUMN_DEFINITIONS_CONSTANT;
-
-	// the size total field is one byte on the wire (per capture); clamp
-	// here rather than let a wide row's total silently wrap
-	byte_t	sizetotalonwire=(sizetotal>0xff)?0xff:sizetotal;
-
-	write(&reqpacket,sizetotalonwire);
-	writeBE(&reqpacket,colcount);
-	writeBE(&reqpacket,constant);
-
-	debugStart("column definitions header");
-	debugWrite("size total: %d (true sum %d)",sizetotalonwire,sizetotal);
-	debugWrite("column count: %d",colcount);
-	debugWrite("constant: %d",constant);
-	debugEnd();
-
-	debugStart("column definitions");
-
-	for (uint32_t i=0; i<colcount; i++) {
-		putColumnDefinition(cursor,i);
-	}
-
-	debugEnd();
-}
-
-void sqlrprotocol_oracle::putColumnDefinition(sqlrservercursor *cursor,
-							uint32_t column) {
-	uint16_t	curid=cont->getId(cursor);
-
-	//uint16_t	sqlrcolumntype=cont->getColumnType(cursor,column);
-	const char	*columntypestring=
-				cont->getColumnTypeName(cursor,column);
-	uint16_t	columntype=columntypes[curid][column];
-	bool	character=(getWireColumnType(columntype)!=ORACLE_TYPE_NUMBER);
-	/*uint16_t	columnflags=getColumnFlags(cursor,column,
-							sqlrcolumntype,
-							columntype,
-							columntypestring);*/
-
-	// see "Oracle Wire Protocol - Column Definitions"
-	// meaning unknown
-	byte_t	marker1=1;
-	// 128 for char/varchar, 0 for numeric
-	byte_t	marker2=(character)?128:0;
-	byte_t	precision=cont->getColumnPrecision(cursor,column);
-	byte_t	scale=cont->getColumnScale(cursor,column);
-	// 16 for non-integer decimal, otherwise actual size
-	byte_t	size=cont->getColumnSize(cursor,column);
-	// its 18 zero bytes are unexplained
-	byte_t	unknown1[]={
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00
-	};
-	// 1 for char/varchar, 0 for numeric
-	uint16_t	marker3=(character)?1:0;
-	uint16_t	nullable=(cont->getColumnIsNullable(cursor,column))?1:0;
-	// 1 for select from table
-	// 2 for select from table with alias
-	// 3 for select from dual
-	// 4 for select from dual with alias
-	byte_t		alias=1;
-	const char	*name=cont->getColumnName(cursor,column);
-	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
-	// see "Oracle Wire Protocol - Column Definitions"
-	// meaning unknown
-	uint32_t	marker4=0;
-	// meaning unknown
-	uint32_t	marker5=0;
-
-	write(&reqpacket,marker1);
-	write(&reqpacket,(byte_t)columntype);
-	write(&reqpacket,marker2);
-	write(&reqpacket,precision);
-	write(&reqpacket,scale);
-	write(&reqpacket,size);
-	reqpacket.append(unknown1,sizeof(unknown1));
-	// yes, twice
-	writeBE(&reqpacket,marker3);
-	writeBE(&reqpacket,marker3);
-	writeBE(&reqpacket,nullable);
-	// yes, twice
-	write(&reqpacket,alias);
-	write(&reqpacket,alias);
-	writeBE(&reqpacket,namesize);
-	write(&reqpacket,name,namesize);
-	writeBE(&reqpacket,marker4);
-	writeBE(&reqpacket,marker5);
-
-	debugStart("column %d",column);
-	debugWrite("marker1: %d",marker1);
-	debugColumnType(columntypestring,columntype);
-	debugWrite("marker2: %d",marker2);
-	debugWrite("precision: %d",precision);
-	debugWrite("scale: %d",scale);
-	debugWrite("size: %d",size);
-	debugWrite("marker3: %d",marker3);
-	debugWrite("nullable: %d",nullable);
-	debugWrite("name size: %u",namesize);
-	debugWrite("name: %s",name);
-	debugWrite("marker4: %d",marker4);
-	debugWrite("marker5: %d",marker5);
 	debugEnd();
 }
 
@@ -14326,37 +14078,6 @@ uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
 		flags|=NUM_FLAG;
 	}*/
 	return flags;
-}
-
-void sqlrprotocol_oracle::putIov() {
-
-	debugStart("iov");
-
-	// unexplained.  see "Oracle Wire Protocol - Fetch"
-	// always appears to be the same...
-	const byte_t	unknown[]={
-		0x07, 0x00, 0x00, 0x00,
-		// timestamp?  if so, it's
-		// 12/21/1973 10:13:14 EST
-		0x07, 0x78, 0x75, 0x0A
-	};
-	reqpacket.append(unknown,sizeof(unknown));
-	debugHexDump(unknown,sizeof(unknown));
-
-	// this appears to be a seconds-since timestamp
-	// what's the significance of this date?
-	// it's suspiciously close to my 8.0.5
-	// software/db install date,
-	// which was Oct 4, 2012.
-	datetime	dtsince;
-	dtsince.init("12/15/2012 11:15:00 EST");
-	datetime	dt;
-	dt.initFromSystemDateTime();
-	uint32_t	timestamp=dt.getEpoch()-dtsince.getEpoch();
-	writeBE(&reqpacket,timestamp);
-	debugWrite("timestamp: %u",timestamp);
-
-	debugEnd();
 }
 
 bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
@@ -14789,9 +14510,6 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	rowssent[closingid]=0;
 	pendingrow[closingid].clear();
 	clearLobPin(closingid);
-	if (lastcursorid==closingid) {
-		lastcursorid=65535;
-	}
 
 	return sendCloseResponse(cursor);
 }
@@ -15232,9 +14950,6 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		rowssent[closingid]=0;
 		pendingrow[closingid].clear();
 		clearLobPin(closingid);
-		if (lastcursorid==closingid) {
-			lastcursorid=65535;
-		}
 	}
 
 	debugEnd();

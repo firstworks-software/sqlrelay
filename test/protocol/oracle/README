@@ -210,16 +210,24 @@ the decoder can be exercised without live server access:
                                       sendErrorPacket()'s portable branch
                                       is written against
 
-The two real Oracle test servers on this network
+The three real Oracle test servers on this network
 --------------------------------------------------
 
 Not discoverable anywhere else in this tree:
 
     oracle122centos7x64.firstworks.com   10.0.2.1:1521   Oracle 12.2
     oracle112centos5x64.firstworks.com   10.0.2.2:1521   Oracle 11.2
+    oracle102centos4x86 (10.0.2.3)        10.0.2.3:1521   Oracle 10.2
 
-Both take user testuser / password testpassword against SID ora1 (see
-oracle.java). As of this writing, the 11.2 server's testuser account has
-an expired password (ORA-28001) - that needs a DBA to reset it before a
-full login can be captured there again; it is unrelated to oraproxy or
-oradecode, both of which handle the error path correctly regardless.
+The first two take user testuser / password testpassword against SID
+ora1 (see oracle.java). As of this writing, the 11.2 server's testuser
+account has an expired password (ORA-28001) - that needs a DBA to reset
+it before a full login can be captured there again; it is unrelated to
+oraproxy or oradecode, both of which handle the error path correctly
+regardless.
+
+The third, oracle102, is the only one of the three old enough to speak
+OCI7/O3LOGON - it's the backend the oracleprotocoloci7 test instance
+uses (see test/sqlrelay.conf.d/oracleprotocol.conf.in). Its hostname is
+not recorded anywhere in this tree beyond this line; only its IP,
+10.0.2.3, is confirmed (#9664 comment 21).

@@ -1866,6 +1866,14 @@
 		the native and portable branches, which had never been
 		exercised against a real login failure before and didn't match
 		either encoding a real 10.2 server sends
+	removed dead code from the oracle protocol module: the fetch
+		response's column-definition branch, which nothing ever took,
+		the helpers that only served it, and the stored cursor id that
+		nothing reads any more
+	documented the oracle protocol module's verifiertype="9i" option and
+		the separate back-end an oci7 listener needs, in the
+		configuration guide and reference; added a matching example
+		config
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

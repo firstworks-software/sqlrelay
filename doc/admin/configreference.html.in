@@ -50,10 +50,10 @@ http://www.gnu.org/software/src-highlite -->
 		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
 		<b><font color="#0000FF">&lt;session&gt;</font></b>
 			<b><font color="#0000FF">&lt;start&gt;</font></b>
-				<b><font color="#0000FF">&lt;runquery&gt;</font></b>alter session set nls_date_format='MM-DD-YYYY HH24:MI:SS'<b><font color="#0000FF">&lt;/runquery&gt;</font></b>
+				<b><font color="#0000FF">&lt;runquery&gt;</font></b>alter session set optimizer_mode=first_rows_10<b><font color="#0000FF">&lt;/runquery&gt;</font></b>
 			<b><font color="#0000FF">&lt;/start&gt;</font></b>
 			<b><font color="#0000FF">&lt;end&gt;</font></b>
-				<b><font color="#0000FF">&lt;runquery&gt;</font></b>alter session set nls_date_format='DD-MON-YYYY'<b><font color="#0000FF">&lt;/runquery&gt;</font></b>
+				<b><font color="#0000FF">&lt;runquery&gt;</font></b>alter session set optimizer_mode=all_rows<b><font color="#0000FF">&lt;/runquery&gt;</font></b>
 			<b><font color="#0000FF">&lt;/end&gt;</font></b>
 		<b><font color="#0000FF">&lt;/session&gt;</font></b>
 		<b><font color="#0000FF">&lt;connections&gt;</font></b>
@@ -188,6 +188,13 @@ http://www.gnu.org/software/src-highlite -->
       <li><b>wirecrypt</b> - Sets the server's wire encryption level for the firebird wire protocol.  Valid values are "disabled" (never encrypt), "enabled" (encrypt if the client is willing to), and "required" (refuse to proceed unless the connection is encrypted).  The client's own requested level is negotiated against this one; either side asking for "required" forces encryption, and either side asking for "disabled" forces it off, provided the other side doesn't require it.  When the negotiated level is "required", the connection is held to it: until encryption is actually running, only the handshake, authentication and session-teardown operations are answered, and anything else is refused with an error, so a client that agrees to "required" and then never turns encryption on can't carry on in the clear.  Defaults to "enabled".  Only the Arc4 cipher is currently implemented, not ChaCha or ChaCha64; this doesn't affect compatibility with a stock Firebird 4 or 5 client, which advertises ChaCha64, ChaCha and Arc4 in that order but falls back cleanly to whichever of those the server actually offers.  The generic <b>tls</b> listener option (see below) is not supported for protocol="firebird" - wire encryption is configured with <b>wirecrypt</b> instead.</li>
     </ul>
 
+    <li>oracle options - These options only apply when protocol="oracle".  See <a href="configguide.html#oracleprotocol">the Oracle Protocol section</a> of the Configuration Guide for a fuller description of each.</li>
+    <ul>
+      <li><b>serverversion</b> - The Oracle server version the module imitates on the wire.  Accepts 11.2 or 12.1.  Defaults to 12.1.  Also sets the default <b>verifiertype</b>.</li>
+      <li><b>verifiertype</b> - The password verifier type the module offers during login.  Accepts 9i, 11g or 12c.  Defaults to whatever <b>serverversion</b> implies: 12c for serverversion="12.1", 11g for serverversion="11.2".  9i is for clients too old to speak O5LOGON at all, and is never a default.</li>
+      <li><b>bigchunkclr</b> - Overrides how the module frames a long-form clr chunk over 255 bytes.  Accepts "on", "off", or "auto".  Defaults to "auto", which negotiates the framing with the client; "off" always frames raw bytes (needed for go-ora v1), and "on" always frames big chunks for a TTI 6 session.</li>
+    </ul>
+
     <li>Kerberos options - Use these options to configure Kerberos encryption and authentication.</li>
     <ul>
       <li><b>krb</b> - Set to "yes" to enable Kerberos encryption and authentication.  Set to "no" to disable Kerberos encryption and authentication.  Defaults to "no".</li>
@@ -226,7 +233,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="connectstring"/><h3>Connect String Options</h3>
 
-<a name="oracle"/><p>For <b>oracle</b> databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;tns_admin=TNS_ADMIN;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;lang=LANG;autocommit=yes/no/default;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;dbtype=ID"</p>
+<a name="oracle"/><p>For <b>oracle</b> databases, the connect string syntax is "user=USER;password=PASSWORD;oracle_sid=ORACLE_SID;tns_admin=TNS_ADMIN;oracle_home=ORACLE_HOME;nls_lang=NLS_LANG;date_to_text_format=DATE_TO_TEXT_FORMAT;lang=LANG;autocommit=yes/no/default;fetchatonce=FETCHATONCE;maxcolumncount=MAXCOLUMNCOUNT;maxfieldsize=MAXFIELDSIZE;droptemptables=yes/no;globaltemptables=TABLELIST;lastinsertidfunction=LASTINSERTIDFUNCTION;stmtcachesize=0;rejectduplicatebinds=yes/no;disablekeylookup=yes/no;dbtype=ID"</p>
 
 <ul>
   <li><b>user</b>: The username SQL Relay should use to log into the database.  Required.</li>
@@ -244,6 +251,7 @@ or a tnsnames-style expression such as:
   <li><b>tns_admin</b>: The directory to look for oracle configuration files in.  Optional if the TNS_ADMIN environment variable is set, if the ORACLE_HOME environment varialbe is set, or if the oracle_home parameter is set.  The SID will be looked up in $TNS_ADMIN/tnsnames.ora.</li>
   <li><b>oracle_home</b>: The base directory of the Oracle installation to use.  Optional if the ORACLE_HOME environment variable is set.  The SID will be looked up in $ORACLE_HOME/network/admin/tnsnames.ora.  If SQL Relay was built to load the Oracle client libraries at runtime, then the lib subdirectory of this directory will be searched for the client libraries.  As such it might be necessary to specify both oracle_home and tns_admin (or both environment variables).</li>
   <li><b>nls_lang</b>: The NLS_LANG to use.  Optional if the NLS_LANG environment variable is set.  Overrides the NLS_LANG environment variable.</li>
+  <li><b>date_to_text_format</b>: Optional.  If unset, or set to an empty value, DATE columns are fetched as text using the session's NLS_DATE_FORMAT, which is typically DD-MON-RR, so the time of day is lost.  If set, DATE columns are fetched as Oracle's binary date type and converted to text client-side using the given format, for example YYYY-MM-DD HH24:MI:SS.  This does not change NLS_DATE_FORMAT or the session in any way, so untyped date literals in inserts and where-clauses keep parsing exactly as they did before.  The format may be at most 255 characters long, and the formatted date at most 128 bytes.  The format is validated at login; an invalid or over-long format causes the login to fail.  It applies to DATE columns only; TIMESTAMP columns are unaffected.</li>
   <li><b>lang</b>: Sets/overrides the LANG environment variable and by extension, all locale-related variables.  Optional if the LANG environment variable is set.</li>
   <li><b>autocommit</b>: If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-off) is observed.  Optional, defaults to default.</li>
   <li><b>fetchatonce</b>: The number of rows that SQL Relay fetches from the database in each round trip.  Defaults to 10. (see <a href="tuning.html#memoryusage">here</a> for more info on this parameter)</li>

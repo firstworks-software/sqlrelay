@@ -154,13 +154,15 @@ stop_instances() {
 
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, a connectstrings-default-auth
-		# instance, and a fetchatonce=1 instance
+		# instance, a fetchatonce=1 instance, and an oci7
+		# (o3logon/9i-verifier) instance with its own older backend
 		if ( test "$_instance" = "oracleprotocol" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol12c
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolfetchatonce
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocoloci7
 		fi
 
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id ${_instance}
@@ -336,7 +338,9 @@ start_instance() {
 	# more with no <auths> block, to cover the default oracle_connectstrings
 	# auth path (#9309), plus one more with fetchatonce=1 on the
 	# connection string, to cover a backend error landing on a row past
-	# the first fetch (#9601)
+	# the first fetch (#9601), plus one more with verifiertype="9i" and
+	# its own older backend, to cover an OCI7 (O3LOGON) client (#9654,
+	# #9658)
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
@@ -346,6 +350,8 @@ start_instance() {
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings -backtrace $BACKTRACEDIR
 		sleep 2
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolfetchatonce -backtrace $BACKTRACEDIR
+		sleep 2
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoloci7 -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -405,6 +411,8 @@ stop_instance() {
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolfetchatonce
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoloci7
 	fi
 	if ( test "$instance" = "odbc-mssql" )
 	then
