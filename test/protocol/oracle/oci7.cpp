@@ -26,6 +26,7 @@
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/environment.h>
+#include <rudiments/process.h>
 #include <rudiments/stdio.h>
 #include <config.h>
 
@@ -327,95 +328,9 @@ static void assertColumnCount(Cda_Def *cursor, sword count) {
 }
 
 
-int main(int argc, char **argv) {
-
-	// pass "native" to test a real oracle instance instead of
-	// sqlrelay's oracle protocol
-	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
-
-	// the oracleprotocolfetchatonce instance sets fetchatonce=1 on its
-	// connection string, so the module pulls one row per backend fetch
-	// rather than the default 10 - which moves where a row that fails to
-	// evaluate shows up.  see the Errors section below
-	bool	isfetchatonce=false;
-
-	// select verifier-specific sqlrelay target, if given
-	if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
-		sid="sqlrelay11g";
-		badsid="sqlrelay11gbad";
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelay12c")) {
-		sid="sqlrelay12c";
-		badsid="sqlrelay12cbad";
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayconnectstrings")) {
-		sid="sqlrelayconnectstrings";
-		badsid="sqlrelayconnectstringsbad";
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayfetchatonce")) {
-		sid="sqlrelayfetchatonce";
-		badsid="sqlrelayfetchatoncebad";
-		isfetchatonce=true;
-	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayoci7")) {
-		// the oracleprotocoloci7 instance has its own backend (#9654) -
-		// an OCI7-capable client is too old to authenticate to the
-		// same modern backend the other sqlrelay* instances use
-		sid="sqlrelayoci7";
-		badsid="sqlrelayoci7bad";
-	} else {
-		sid=(issqlrelay)?"sqlrelay":"ora1";
-		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
-	}
-
-	environment::setValue("ORACLE_SID",sid);
-	environment::setValue("TWO_TASK",sid);
-
-
-	stdoutput.printf("\n=============== Connect ==============\n\n");
-
-	// OCI8's OCIEnvCreate/OCIInitialize+OCIEnvInit have no counterpart
-	// here - OCI7 has no environment handle, and opinit() is not among the
-	// symbols the configure probe link-tests.  olog is the first call.
-	// OCI8's four OCIHandleAllocs have no counterpart either: the LDA, the
-	// HDA and every CDA are plain structs, zeroed before use.
-
-	stdoutput.printf("olog\n");
-	bytestring::zero(&lda,sizeof(lda));
-	bytestring::zero(hda,sizeof(hda));
-	// OCI7 fuses OCI8's OCIServerAttach and OCISessionBegin into this one
-	// call.  -1 for each length means "null terminated, measure it".
-	// OCI_LM_DEF is the default (blocking) login mode.
-	//
-	// per #9637 comment 2, olog puts 0x52 0x51 0x3b 0x02 0x27 0x08 0x02 on
-	// the wire before anything else, and src/protocols/oracle.cpp has no
-	// case for TTI opcode 0x27, so this call may fail outright against
-	// sqlrelay.  that is expected, and fixing it is #9654's job - the bail
-	// out below keeps the failure to one line rather than a cascade
-	sword	loggedin=check(&lda,
-				olog(&lda,(ub1 *)hda,
-					(text *)user,(sword)-1,
-					(text *)password,(sword)-1,
-					(text *)sid,(sword)-1,
-					(ub4)OCI_LM_DEF));
-	assertEquals(loggedin,0);
-	stdoutput.printf("\n\n");
-
-	// nothing below here can work without a login.  running on anyway gets
-	// ORA-01012 from every call
-	if (loggedin) {
-		reportTestStatus();
-		return status;
-	}
-
-
-	// OCI8 sets a transaction handle on the service context here.  OCI7
-	// has no transaction handle, so there is nothing to set.
-
-	stdoutput.printf("oopen - main cursor\n");
-	// every section below needs a cursor, and in OCI7 a cursor is opened
-	// against the LDA rather than allocated out of an environment
-	assertEquals(check(&cda,openCursor(&cda,-1)),0);
-	stdoutput.printf("\n\n");
-
-
-
+// the Authentication section.  main() forks before calling this - see the
+// comment there
+static void runAuthenticationSection(bool issqlrelay) {
 	stdoutput.printf("\n=========== Authentication ===========\n\n");
 
 	// This section, run against the sqlrelay11g and sqlrelay12c targets
@@ -601,6 +516,132 @@ int main(int argc, char **argv) {
 	// to unwind a login; OCI7 needs this one call
 	assertEquals(check(&authlda,ologof(&authlda)),0);
 	stdoutput.printf("\n\n");
+}
+
+
+int main(int argc, char **argv) {
+
+	// pass "native" to test a real oracle instance instead of
+	// sqlrelay's oracle protocol
+	bool	issqlrelay=!(argc==2 && !charstring::compare(argv[1],"native"));
+
+	// the oracleprotocolfetchatonce instance sets fetchatonce=1 on its
+	// connection string, so the module pulls one row per backend fetch
+	// rather than the default 10 - which moves where a row that fails to
+	// evaluate shows up.  see the Errors section below
+	bool	isfetchatonce=false;
+
+	// select verifier-specific sqlrelay target, if given
+	if (argc==2 && !charstring::compare(argv[1],"sqlrelay11g")) {
+		sid="sqlrelay11g";
+		badsid="sqlrelay11gbad";
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelay12c")) {
+		sid="sqlrelay12c";
+		badsid="sqlrelay12cbad";
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayconnectstrings")) {
+		sid="sqlrelayconnectstrings";
+		badsid="sqlrelayconnectstringsbad";
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayfetchatonce")) {
+		sid="sqlrelayfetchatonce";
+		badsid="sqlrelayfetchatoncebad";
+		isfetchatonce=true;
+	} else if (argc==2 && !charstring::compare(argv[1],"sqlrelayoci7")) {
+		// the oracleprotocoloci7 instance has its own backend (#9654) -
+		// an OCI7-capable client is too old to authenticate to the
+		// same modern backend the other sqlrelay* instances use
+		sid="sqlrelayoci7";
+		badsid="sqlrelayoci7bad";
+	} else {
+		sid=(issqlrelay)?"sqlrelay":"ora1";
+		badsid=(issqlrelay)?"sqlrelaybad":"ora1bad";
+	}
+
+	environment::setValue("ORACLE_SID",sid);
+	environment::setValue("TWO_TASK",sid);
+
+
+	stdoutput.printf("\n=============== Connect ==============\n\n");
+
+	// OCI8's OCIEnvCreate/OCIInitialize+OCIEnvInit have no counterpart
+	// here - OCI7 has no environment handle, and opinit() is not among the
+	// symbols the configure probe link-tests.  olog is the first call.
+	// OCI8's four OCIHandleAllocs have no counterpart either: the LDA, the
+	// HDA and every CDA are plain structs, zeroed before use.
+
+	stdoutput.printf("olog\n");
+	bytestring::zero(&lda,sizeof(lda));
+	bytestring::zero(hda,sizeof(hda));
+	// OCI7 fuses OCI8's OCIServerAttach and OCISessionBegin into this one
+	// call.  -1 for each length means "null terminated, measure it".
+	// OCI_LM_DEF is the default (blocking) login mode.
+	//
+	// per #9637 comment 2, olog puts 0x52 0x51 0x3b 0x02 0x27 0x08 0x02 on
+	// the wire before anything else, and src/protocols/oracle.cpp has no
+	// case for TTI opcode 0x27, so this call may fail outright against
+	// sqlrelay.  that is expected, and fixing it is #9654's job - the bail
+	// out below keeps the failure to one line rather than a cascade
+	sword	loggedin=check(&lda,
+				olog(&lda,(ub1 *)hda,
+					(text *)user,(sword)-1,
+					(text *)password,(sword)-1,
+					(text *)sid,(sword)-1,
+					(ub4)OCI_LM_DEF));
+	assertEquals(loggedin,0);
+	stdoutput.printf("\n\n");
+
+	// nothing below here can work without a login.  running on anyway gets
+	// ORA-01012 from every call
+	if (loggedin) {
+		reportTestStatus();
+		return status;
+	}
+
+
+	// OCI8 sets a transaction handle on the service context here.  OCI7
+	// has no transaction handle, so there is nothing to set.
+
+	stdoutput.printf("oopen - main cursor\n");
+	// every section below needs a cursor, and in OCI7 a cursor is opened
+	// against the LDA rather than allocated out of an environment
+	assertEquals(check(&cda,openCursor(&cda,-1)),0);
+	stdoutput.printf("\n\n");
+
+
+
+	// flush now, before the fork, so buffered-but-unwritten text can never
+	// be printed twice, once from each process
+	stdoutput.flush();
+
+	// The Authentication section's olog/ologof cycling corrupts OCI7's
+	// process-global client state.  Left in this process it takes the main
+	// session down with it - every call from the Server Version section
+	// onward comes back ORA-03114 or ORA-01001 against a real client, as the
+	// redhat9x86 isolation test showed - so it runs in a child instead and
+	// only its pass/fail comes back.  See #9717.  The child leaves through
+	// exitImmediately() rather than exit() so the oracle client's atexit
+	// handlers can't log off the main session's inherited connection on the
+	// way out.
+	pid_t	authpid=process::fork();
+	if (authpid==0) {
+		runAuthenticationSection(issqlrelay);
+		process::exitImmediately(status);
+	} else if (authpid>0) {
+		// process::wait() only reports pid/wait success - it does not
+		// populate exitstatus unless a childstatechange out-param is
+		// also passed, so getChildStateChange() is used directly here
+		childstatechange	newstate=EXIT_CHILDSTATECHANGE;
+		int32_t			childstatus=0;
+		if (process::getChildStateChange(authpid,true,true,true,
+					&newstate,&childstatus,
+					NULL,NULL)!=authpid ||
+				newstate!=EXIT_CHILDSTATECHANGE ||
+				childstatus) {
+			status=1;
+		}
+	} else {
+		// no fork - run it here rather than lose the coverage
+		runAuthenticationSection(issqlrelay);
+	}
 
 
 
