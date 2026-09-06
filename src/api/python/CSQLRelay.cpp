@@ -20,6 +20,14 @@
         #define SUPPORTS_UNSIGNED 1
 #endif
 
+// python 2.3 added the bool type, Py_True, Py_False and PyBool_FromLong
+// (PEP 285). python 2.2 and older have none of them, so fall back to ints.
+#if PY_MAJOR_VERSION > 2 || (PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 3)
+        #define SUPPORTS_BOOL 1
+#else
+        #define PyBool_FromLong(v) PyInt_FromLong((v)?1:0)
+#endif
+
 #if PY_MAJOR_VERSION >= 3
         #define PyString_Check PyUnicode_Check
 #if PY_MAJOR_VERSION > 3 || (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION >= 3)
@@ -1250,10 +1258,12 @@ static PyObject *inputBind(PyObject *self, PyObject *args) {
     } else {
       ((sqlrcursor *)sqlrcur)->inputBind(variable, PyString_AsString(value));
     }
+#ifdef SUPPORTS_BOOL
   } else if (value == Py_True) {
     ((sqlrcursor *)sqlrcur)->inputBind(variable, "1");
   } else if (value == Py_False) {
     ((sqlrcursor *)sqlrcur)->inputBind(variable, "0");
+#endif
   } else if (PyInt_Check(value)) {
     ((sqlrcursor *)sqlrcur)->inputBind(variable, (int64_t)PyInt_AsLong(value));
   } else if (PyFloat_Check(value)) {
@@ -1287,7 +1297,8 @@ static PyObject *inputBindDate(PyObject *self, PyObject *args) {
                                       microsecond,tz,
                                       (bool)isnegative);
   Py_END_ALLOW_THREADS
-  Py_RETURN_NONE;
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 static PyObject *inputBindBlob(PyObject *self, PyObject *args) {
@@ -1362,10 +1373,12 @@ static PyObject *inputBinds(PyObject *self, PyObject *args) {
         ((sqlrcursor *)sqlrcur)->inputBind(variable, (char *)NULL);
       } else if (PyString_Check(value)) {
         ((sqlrcursor *)sqlrcur)->inputBind(variable, PyString_AsString(value));
+#ifdef SUPPORTS_BOOL
       } else if (value == Py_True) {
         ((sqlrcursor *)sqlrcur)->inputBind(variable, "1");
       } else if (value == Py_False) {
         ((sqlrcursor *)sqlrcur)->inputBind(variable, "0");
+#endif
       } else if (PyInt_Check(value)) {
         ((sqlrcursor *)sqlrcur)->inputBind(variable, (int64_t)PyInt_AsLong(value));
       } else if (PyFloat_Check(value)) {
@@ -1831,11 +1844,19 @@ static PyObject *getField(PyObject *self, PyObject *args) {
     return Py_BuildValue("l",bitStringToLong(rc));
   } else if (isBoolTypeChar(type)) {
     if (rc && character::lower(rc[0]) == 't') {
+#ifdef SUPPORTS_BOOL
       Py_INCREF(Py_True);
       return Py_True;
+#else
+      return PyInt_FromLong(1);
+#endif
     } else if (rc && character::lower(rc[0]) == 'f') {
+#ifdef SUPPORTS_BOOL
       Py_INCREF(Py_False);
       return Py_False;
+#else
+      return PyInt_FromLong(0);
+#endif
     } else {
       Py_INCREF(Py_None);
       return Py_None;
@@ -2805,11 +2826,19 @@ _get_row(sqlrcursor *sqlrcur, uint64_t row)
       PyList_SetItem(my_list, counter, Py_BuildValue("l", bitStringToLong(row_data[counter])));
     } else if (isBoolTypeChar(type)) {
       if (row_data[counter] && character::lower(row_data[counter][0]) == 't') {
+#ifdef SUPPORTS_BOOL
         Py_INCREF(Py_True);
         PyList_SetItem(my_list, counter, Py_True);
+#else
+        PyList_SetItem(my_list, counter, PyInt_FromLong(1));
+#endif
       } else if (row_data[counter] && character::lower(row_data[counter][0]) == 'f') {
+#ifdef SUPPORTS_BOOL
         Py_INCREF(Py_False);
         PyList_SetItem(my_list, counter, Py_False);
+#else
+        PyList_SetItem(my_list, counter, PyInt_FromLong(0));
+#endif
       } else {
         Py_INCREF(Py_None);
         PyList_SetItem(my_list, counter, Py_None);
@@ -2875,11 +2904,23 @@ static PyObject *getRowDictionary(PyObject *self, PyObject *args) {
       PyDict_SetItem(my_dictionary, Py_BuildValue("s", name), Py_BuildValue("l", bitStringToLong(field)));
     } else if (isBoolTypeChar(type)) {
       if (field && character::lower(field[0]) == 't') {
+#ifdef SUPPORTS_BOOL
         Py_INCREF(Py_True);
         PyDict_SetItem(my_dictionary, Py_BuildValue("s", name), Py_True);
+#else
+        PyObject *boolvalue=PyInt_FromLong(1);
+        PyDict_SetItem(my_dictionary, Py_BuildValue("s", name), boolvalue);
+        Py_DECREF(boolvalue);
+#endif
       } else if (field && character::lower(field[0]) == 'f') {
+#ifdef SUPPORTS_BOOL
         Py_INCREF(Py_False);
         PyDict_SetItem(my_dictionary, Py_BuildValue("s", name), Py_False);
+#else
+        PyObject *boolvalue=PyInt_FromLong(0);
+        PyDict_SetItem(my_dictionary, Py_BuildValue("s", name), boolvalue);
+        Py_DECREF(boolvalue);
+#endif
       } else {
         Py_INCREF(Py_None);
         PyDict_SetItem(my_dictionary, Py_BuildValue("s", name), Py_None);

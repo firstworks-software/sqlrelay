@@ -1914,6 +1914,10 @@
 		root and in bin/ and init/, which had none - config.mk,
 		config.h, libtool, the .pc files, autom4te.cache/ and the
 		generated sqlr*-config, rc.*, *.plist and *.service files
+	fixed the python api (CSQLRelay.cpp) to build against python 2.2,
+		which predates the bool type, Py_True, Py_False and
+		PyBool_FromLong (all added in python 2.3) and Py_RETURN_NONE
+		(added in python 2.4)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
