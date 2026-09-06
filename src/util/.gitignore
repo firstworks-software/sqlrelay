@@ -1,0 +1,8 @@
+# in a static build (SQLRELAY_ENABLE_SHARED=no) this directory's Makefile
+# generates sqlrconfigdeclarations.cpp, sqlrconfigassignments.cpp,
+# sqlrpwdencdeclarations.cpp and sqlrpwdencassignments.cpp from the
+# matching .cpp.in templates, by globbing ../configs and ../pwdencs object
+# files at make time - config.mk.in's STATICUTILPLUGINSRCS.  the .cpp.in
+# templates are hand maintained and stay tracked (#9678)
+/sqlr*declarations.cpp
+/sqlr*assignments.cpp

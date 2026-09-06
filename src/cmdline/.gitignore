@@ -1,0 +1,10 @@
+# the four command line clients this directory links.  their real names are
+# $(SQLR)sh$(EXE) and so on - see the clean target in Makefile - where SQLR
+# is the branding prefix from configure's --with-sqlr-name and defaults to
+# sqlr.  a .gitignore pattern cannot expand a make variable, so the default
+# names are spelled out; the .exe a windows build appends is covered by
+# *.exe in src/.gitignore (#9678)
+/sqlr-export
+/sqlr-import
+/sqlr-pwdenc
+/sqlrsh

@@ -1,0 +1,8 @@
+# sqlrelay.erl is generated from sqlrelay.erl.in by this directory's
+# Makefile, the .beam is what erlc compiles it to, and sqlrelay is the port
+# program linked from erl_comm.c and relay_driver.c.  none may be tracked
+# (#9678).  .out1 is the scratch file the sqlrelay.erl rule writes
+/sqlrelay
+/sqlrelay.erl
+/sqlrelay.erl.out1
+*.beam

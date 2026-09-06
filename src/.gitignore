@@ -1,0 +1,31 @@
+# compiler, libtool, and linker output.  every Makefile under src/ has a
+# clean target that removes this same set - see src/auths/Makefile and the
+# roughly thirty module directories that mirror it - so these are build
+# output everywhere below this directory and must never be tracked (#9678).
+# none of these patterns has a leading slash, so each applies at any depth
+# under src/, and one entry here covers all of the module, api, server,
+# util, and cmdline directories.  do not repeat them in per-directory
+# .gitignore files.
+#
+# .o/.lo/.la/.so and .libs/ are the unix libtool outputs.  .obj/.lib/.exp/
+# .idb/.pdb/.manifest/.dll/.exe are what the windows nmake build writes
+# instead - config_windows.mk sets OBJ=obj, LIBEXT=dll and EXE=.exe, so the
+# same clean lines produce different names there.  .ii is preprocessor
+# output some compilers leave behind.
+#
+# output only one directory produces is ignored by that directory's own
+# .gitignore instead
+*.o
+*.obj
+*.lo
+*.la
+*.so
+*.dll
+*.lib
+*.exp
+*.idb
+*.pdb
+*.manifest
+*.ii
+*.exe
+.libs/

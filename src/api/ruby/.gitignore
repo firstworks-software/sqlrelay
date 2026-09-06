@@ -1,0 +1,9 @@
+# rubyincludes.h is a copy of rubyincludes1.h, rubyincludes2.h or
+# rubyincludes3.h that this directory's .cpp.lo rule makes while it probes
+# which set of ruby headers compiles, and errors1 through errors3 are the
+# compiler output it captures from each try.  the numbered rubyincludes
+# headers are hand maintained and stay tracked (#9678)
+/errors1
+/errors2
+/errors3
+/rubyincludes.h

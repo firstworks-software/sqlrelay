@@ -1,0 +1,14 @@
+# Connection.cpp and Cursor.cpp are generated from Connection.xs and
+# Cursor.xs by xsubpp, driven by this directory's .xs.cpp rule, and must not
+# be tracked (#9678).  the .xs sources and the hand written .pm modules stay
+# tracked - this is why the ignore is by name and not *.cpp
+/Connection.cpp
+/Cursor.cpp
+
+# bootstrap and packlist files the installmod target writes, and the man
+# pages installman generates from the .pm files.  3pm is PERLMAN3EXT from
+# configure; a perl reporting a different man extension leaves those
+# untracked instead
+*.bs
+*.packlist
+*.3pm

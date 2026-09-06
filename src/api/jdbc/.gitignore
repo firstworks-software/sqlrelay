@@ -1,0 +1,4 @@
+# javac and jar output.  the .java sources under com/firstworks/sql and the
+# META-INF directory stay tracked (#9678)
+*.class
+/sqlrelayjdbc.jar

@@ -1,0 +1,24 @@
+# the seven server programs this directory links.  their real names are
+# $(SQLR)-start$(EXE) and so on - see the clean target in Makefile - where
+# SQLR is the branding prefix from configure's --with-sqlr-name and
+# defaults to sqlr.  a .gitignore pattern cannot expand a make variable, so
+# the default names are spelled out; the .exe a windows build appends is
+# covered by *.exe in src/.gitignore.  a tree branded with a different
+# --with-sqlr-name shows its binaries untracked, the same machine-specific
+# gap the rest of the tree accepts (#9678)
+/sqlr-cachemanager
+/sqlr-connection
+/sqlr-listener
+/sqlr-scaler
+/sqlr-start
+/sqlr-status
+/sqlr-stop
+
+# in a static build (SQLRELAY_ENABLE_SHARED=no) this directory's Makefile
+# generates one declarations and one assignments .cpp per module type from
+# the matching .cpp.in template, by globbing the module directory's object
+# files at make time - config.mk.in's STATICPLUGINSRCS lists all 42.  the
+# wildcards cover the pair a new module type will add too.  the .cpp.in
+# templates are hand maintained and stay tracked (#9678)
+/sqlr*declarations.cpp
+/sqlr*assignments.cpp

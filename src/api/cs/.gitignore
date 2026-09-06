@@ -1,0 +1,16 @@
+# AssemblyInfo.cs is generated from AssemblyInfo.cs.in by this directory's
+# Makefile and must not be tracked (#9678).  .out1 and .out2 are the scratch
+# files that rule writes on the way.  AssemblyInfo.cs.in and the hand
+# written .cs sources stay tracked
+/AssemblyInfo.cs
+/AssemblyInfo.cs.out1
+/AssemblyInfo.cs.out2
+
+# outputs of the signing path in Makefile (commented out for now) and the
+# mono debug symbols.  SQLRClient.dll itself is covered by *.dll in
+# src/.gitignore, and SQLRClient.dll.config is hand written and stays
+# tracked - *.dll does not match it
+*.snk
+*.il
+*.dll.in
+*.mdb

@@ -1903,6 +1903,9 @@
 		same aliasing risk #9658 fixed in query2 - a short request
 		could read past the packet end into whatever the reused
 		buffer held from the previous read
+	added .gitignore coverage for build output under src/, which had none -
+		a built tree showed around 1175 untracked files that a careless
+		"git add src/" could sweep into a commit
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

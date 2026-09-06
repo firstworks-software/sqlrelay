@@ -1,0 +1,11 @@
+# PySQLRDB.py is generated from PySQLRDB.py.in by this directory's Makefile
+# and must not be tracked (#9678).  .out1 and .out2 are the scratch files
+# that rule writes on the way.  PySQLRDB.py.in and the hand written
+# PySQLRClient.py stay tracked
+/PySQLRDB.py
+/PySQLRDB.py.out1
+/PySQLRDB.py.out2
+
+# byte code python writes when the modules are imported
+*.pyc
+/__pycache__/
