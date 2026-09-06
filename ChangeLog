@@ -1898,6 +1898,11 @@
 		value as text - it now describes each as its own type, so a
 		fetch of one fails cleanly instead of handing the client
 		whatever bytes the column held, misread as a string
+	fixed the oracle protocol module's legacy oci7 execute request header
+		read - it read its three fields with no bounds check, the
+		same aliasing risk #9658 fixed in query2 - a short request
+		could read past the packet end into whatever the reused
+		buffer held from the previous read
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

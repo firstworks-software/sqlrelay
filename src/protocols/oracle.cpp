@@ -8651,6 +8651,20 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		}
 	}
 
+	// what's real evidence here, and what still is not: packet [0027] of
+	// test/protocol/oracle/samples/oracle102-oci7-native-multicol-1col-fetch.cap
+	// is a real query2 request that decodes clean under the header read
+	// above - sequence 10, options 0x8030 (OPTION_DEFINE|OPTION_EXECUTE|
+	// OPTION_NOPLSQL), cursor id 1 - which confirms OPTION_BIND (bit 3)
+	// is a real, correctly-positioned bit in this header: it reads back
+	// as 0, and this request does run with no bind block anywhere in its
+	// 113 remaining payload bytes. that's the only thing this capture
+	// proves about binds - it has none. no capture on file ever has
+	// OPTION_BIND set, so nothing pins where a bind descriptor block
+	// would start, how it's shaped, or how it relates to the defines
+	// OPTION_DEFINE implies are also in this same request somewhere.
+	// bindParameters() below is still a guess from the pre-8i wiki page,
+	// not from any captured bytes
 	if (options&OPTION_BIND) {
 
 		if (!sendQuery2Response(cursor,true)) {
@@ -8912,6 +8926,17 @@ bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
 	bindpool->clear();
 	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
 
+	// this blocks for one Bind Value Request packet per bind, and never
+	// times out - a client that sets OPTION_BIND but then stalls (or
+	// sends something recvPacket() can't read as a well-formed packet)
+	// hangs this sqlr-connection process on this read forever. that's
+	// not particular to bind handling, though: clientsock->read()
+	// (recvPacket() above, ~line 2617) has no read timeout, and neither
+	// does any other blocking client read in this file, including the
+	// one at the top of the request loop that waits for the next TTI
+	// function. fixing that here would mean giving this one call site a
+	// bound nothing else in the module has, rather than reusing an
+	// existing pattern - so it's noted, not changed
 	for (uint16_t i=0; i<pcount; i++) {
 
 		if (!recvPacket()) {
@@ -13135,12 +13160,27 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return reexecute(rp);
 	}
 
+	const byte_t	*end=resppacket+resppacketsize;
+
 	// parse the request...
 	uint16_t	options;
 	uint16_t	moreoptions;
 	uint16_t	cursorid;
 
 	// FIXME: decode this... see "Oracle Wire Protocol - Execute"
+	//
+	// no capture on file has ever shown a TTI_EXECUTE request - real
+	// clients drive execution through query2() instead - so this header
+	// is still the wiki table's raw three-ub2 shape, unverified. what is
+	// fixable without a capture is the bounds check: nothing confirmed
+	// six bytes were actually left in the packet before reading them, so
+	// a short request read past the packet end into whatever the reused
+	// buffer held from the previous read, the same class of bug
+	// recvTtiRequest() was fixed against for #9710
+	if (end-rp<6) {
+		debugWrite("truncated execute request");
+		return false;
+	}
 	readBE(rp,&options,&rp);
 	readBE(rp,&moreoptions,&rp);
 	readBE(rp,&cursorid,&rp);
