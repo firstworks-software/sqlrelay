@@ -101,6 +101,18 @@ TTI_CODES = {
 
 PROTOCOL_VERSION_12 = 0x013B
 
+# oracle's out-of-band "break" byte, which oraproxy records inline in the
+# capture rather than out-of-band
+TNS_BREAK = 0x21
+
+# largest packet length accepted from a large (32-bit) TNS header - oracle's
+# documented maximum sdu is 2mb, and the real server enforces
+# resppacketsize<=sdu (src/protocols/oracle.cpp), so this cap is as loose as
+# a legitimate packet can be while still catching a misread break byte,
+# whose length reads as roughly 0x21000000 (~554mb). a small header's length
+# field self-bounds at 65535 and needs no cap.
+MAX_LARGE_PACKET = 2 * 1024 * 1024
+
 
 def read_chunks(path):
 	# yields (direction, payload) for each chunk oraproxy wrote
@@ -144,14 +156,41 @@ class Stream:
 		while True:
 			if len(self.buf) < 8:
 				return
+
+			# read the header
 			pkttype = self.buf[4]
 			flags = self.buf[5]
 			if self.largeheader:
 				(length,) = struct.unpack(">I", self.buf[0:4])
 			else:
 				(length,) = struct.unpack(">H", self.buf[0:2])
-			if length < 8 or len(self.buf) < length:
+
+			# sanity-check it
+			valid = (pkttype in PACKET_TYPES and
+					length >= 8 and
+					(not self.largeheader or
+						length <= MAX_LARGE_PACKET))
+
+			# a capture can carry the break byte inline, right where a
+			# packet header is expected. only drop it when header
+			# validation actually failed, though - a small header's
+			# length can legitimately begin with 0x21 (0x21xx is a
+			# plausible packet size), and dropping it unconditionally
+			# would misframe valid traffic.
+			if not valid:
+				if self.buf[0] == TNS_BREAK:
+					sys.stderr.write(
+						"oradecode: skipping inline "
+						"TNS break byte (0x21) and "
+						"resyncing on %s\n" % self.name)
+					self.buf = self.buf[1:]
+					continue
 				return
+
+			# wait for the rest of the packet
+			if len(self.buf) < length:
+				return
+
 			packet = self.buf[0:length]
 			self.buf = self.buf[length:]
 			yield pkttype, flags, packet[8:]

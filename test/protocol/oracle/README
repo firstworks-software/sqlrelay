@@ -188,6 +188,14 @@ the decoder can be exercised without live server access:
                                       the reference the o3logon challenge
                                       and login-success summary are
                                       written against (#9664)
+    oracle112-login-expiredpwd-break.cap
+                                     the same as
+                                      oracle112-login-expiredpwd.cap,
+                                      with one extra byte - Oracle's TNS
+                                      "break" byte (0x21) - spliced in at
+                                      a legitimate packet boundary, to
+                                      exercise oradecode's break-byte
+                                      resync logic (#9694)
 
 The two real Oracle test servers on this network
 --------------------------------------------------
