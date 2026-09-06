@@ -14757,7 +14757,12 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	}
 	read(rp,&seqnumber,&rp);
 
-	if (!readLenPreInt(rp,end,&cursorid,&rp)) {
+	// the cursor id is a count, so it is four bytes in the native encoding
+	// and one to five in the portable one - "08 09 01 02" against
+	// "08 09 02 00 00 00" for the same close of cursor 2, packet [0025] of
+	// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap
+	// and of the native capture beside it
+	if (!getAuthCount(rp,end,&cursorid,4,&rp)) {
 		debugWrite("truncated close cursor id");
 		return false;
 	}
@@ -14809,13 +14814,28 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
-
-	writeBE(&reqpacket,dataflags);
-	write(&reqpacket,ttccode);
+	uint32_t	callstatus=1;
 
 	debugStart("close response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
+	debugWrite("call status: %d",callstatus);
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+
+	// the call status behind the TTC_STATUS - the same status message an
+	// open response ends with, and the whole of a close answer.  a real
+	// 10.2 server answers an oci7 close with the data flags, TTC_STATUS
+	// and the call status and nothing else: packet [0026] of
+	// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap
+	// sends "00 00 09 01 01" and the native capture beside it sends
+	// "00 00 09 01 00 00 00".  a bare TTC_STATUS, with no call status
+	// behind it, hangs the client - it reads the status message as a
+	// whole, so it waits on two bytes that never come and never goes on to
+	// its logoff
+	putAuthCount(callstatus,4);
+
 	debugEnd();
 
 	return sendPacket(true);
@@ -14823,7 +14843,13 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::disconnect(const byte_t *rp) {
 
+	const byte_t	*end=resppacket+resppacketsize;
+
 	byte_t	seqnumber=0;
+	if (end-rp<1) {
+		debugWrite("truncated disconnect sequence number");
+		return false;
+	}
 	read(rp,&seqnumber,&rp);
 
 	debugStart("disconnect request");
@@ -14848,16 +14874,29 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	uint32_t	callstatus=1;
 	uint32_t	endtoendseqnumber=0;
 
-	writeBE(&reqpacket,dataflags);
-	write(&reqpacket,ttccode);
-	writeLenPreInt(&reqpacket,callstatus);
-	writeLenPreInt(&reqpacket,endtoendseqnumber);
+	// an oci7 client gets the call status and nothing behind it - the
+	// end-to-end sequence number is a later addition, and a 10.2 server
+	// answering one sends the same five bytes it answered the close with:
+	// packet [0028] of test/protocol/oracle/samples/
+	// oracle102-oci7-portable-login-select.cap sends "00 00 09 01 01" and
+	// the native capture beside it sends "00 00 09 01 00 00 00"
+	bool	oci7=(verifiertype==VERIFIER_TYPE_9I);
 
 	debugStart("disconnect response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("call status: %d",callstatus);
-	debugWrite("end to end seq number: %d",endtoendseqnumber);
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+	if (oci7) {
+		putAuthCount(callstatus,4);
+	} else {
+		writeLenPreInt(&reqpacket,callstatus);
+		writeLenPreInt(&reqpacket,endtoendseqnumber);
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
+	}
+
 	debugEnd();
 
 	return sendPacket(true);

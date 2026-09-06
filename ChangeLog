@@ -1855,6 +1855,13 @@
 		id and row count off the wire now, rather than taking the
 		cursor from stored state and ignoring the row count. it no
 		longer sends more rows than the client has room for
+	the oracle protocol module sends the call status behind a cursor close
+		response's status message now, the way a real server does. an
+		oci7 client hung forever on the two bytes that were missing,
+		and never went on to its logoff
+	the oracle protocol module leaves the end-to-end sequence number off a
+		verifiertype="9i" client's logoff response, and reads a close
+		request's cursor id in the encoding the session negotiated
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
