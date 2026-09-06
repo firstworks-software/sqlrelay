@@ -14264,10 +14264,6 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			return false;
 		}
 
-		// every column has to write something, otherwise the client,
-		// which knows the column count from the describe, desyncs
-		bool	wrote=true;
-
 		// put the field
 		if (lob) {
 			debugWrite("LOB");
@@ -14276,7 +14272,16 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			putLobField(cursor,i);
 		} else if (!null && field) {
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
-			wrote=putField(field,fieldsize,wiretype);
+			if (!putField(field,fieldsize,wiretype)) {
+				// an unimplemented type: putField() wrote
+				// nothing for this column, so the row is
+				// already out of sync.  bail out now, rather
+				// than write the indicator/return-code pair
+				// as if the value were there and hand the
+				// client a short row it has no way to detect
+				debugEnd();
+				return false;
+			}
 		} else {
 			// getField() can hand back a NULL field without
 			// setting null.  one zero byte stands for null and
@@ -14295,13 +14300,9 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// oracle102-oci7-portable-login-select.cap.  four against two
 		// is what says it is a pair of ub2s and not one ub4: a single
 		// count would be one byte in the portable encoding, not two.
-		// write them only if the value itself was written, otherwise
-		// they desync the rest of the row.
-		if (wrote) {
-			putAuthCount(0,2);
-			putAuthCount(0,2);
-			debugWrite("indicator and return code");
-		}
+		putAuthCount(0,2);
+		putAuthCount(0,2);
+		debugWrite("indicator and return code");
 
 		debugEnd();
 	}

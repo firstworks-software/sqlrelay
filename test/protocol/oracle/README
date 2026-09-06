@@ -209,6 +209,60 @@ the decoder can be exercised without live server access:
                                       encoding - the reference
                                       sendErrorPacket()'s portable branch
                                       is written against
+    oracle102-oci7-native-lob-clob-fetch.cap
+                                     OCI7 olog login + odefin/oexec/ofen
+                                      fetch of a CLOB column (dty=5)
+                                      against the real 10.2 server, x86
+                                      Linux client, native encoding - the
+                                      lob bytes come back inline in the
+                                      row via the 0xfe long-form clr
+                                      marker, not as a locator (the
+                                      control) (#9638)
+    oracle102-oci7-native-lob-clob-exfet.cap
+                                     the same, using oexfet (exact fetch)
+                                      instead of oexec+ofen - the
+                                      reference the exact-fetch trailer
+                                      variant is written against (#9638)
+    oracle102-oci7-native-lob-blob-fetch.cap
+                                     the same again, for a BLOB column
+                                      (dty=23) instead of CLOB (the
+                                      control) (#9638)
+    oracle102-oci7-native-lob-blob-exfet.cap
+                                     the same, using oexfet instead of
+                                      oexec+ofen (#9638)
+    oracle102-oci7-native-multicol-1col-fetch.cap
+                                     OCI7 olog login + TTI_QUERY2/
+                                      TTI_FETCH against "select 1 from
+                                      dual" (one NUMBER column, defined
+                                      SQLT_STR) against the real 10.2
+                                      server, x86 Linux client 9.2.0.4.0,
+                                      native encoding - the control for
+                                      the legacy fetch path's row/column
+                                      framing at colcount=1 (#9637)
+    oracle102-oci7-native-multicol-1col-exfet.cap
+                                     the same query, but the exact-fetch
+                                      path: the row comes back on
+                                      TTI_QUERY2 itself, with no separate
+                                      TTI_FETCH call - the reference the
+                                      colcount=1 exact-fetch trailer is
+                                      written against (#9637)
+    oracle102-oci7-native-multicol-5col-fetch.cap
+                                     the same again, against "select 1,
+                                      2, 3, 4, 5 from dual" (five NUMBER
+                                      columns, all defined SQLT_STR) -
+                                      the control for row/column framing
+                                      at colcount=5 (#9637)
+    oracle102-oci7-native-multicol-5col-exfet.cap
+                                     the same, exact-fetch path - the
+                                      reference the colcount=5
+                                      exact-fetch trailer is written
+                                      against (#9637)
+
+Every column in these four multicol-*.cap captures is a NUMBER column
+defined SQLT_STR (the legacy putField() character-array arm) - only the
+column count and fetch mode vary. They evidence the legacy fetch path's
+row/column framing across column counts, not any additional Oracle
+datatype; see #9704 for datatype coverage itself.
 
 The three real Oracle test servers on this network
 --------------------------------------------------

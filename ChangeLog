@@ -1883,6 +1883,15 @@
 		which sent the portable-encoded summary object to native oci7
 		clients too - added a native-mode encoding, verified byte-for-
 		byte against a real native oci7 client's captured session
+	fixed the oracle protocol module's legacy oci7 fetch response
+		writing zero bytes for a column whose value it failed to
+		encode - a still-unimplemented datatype (raw, long, long raw,
+		rowid, timestamp, timestamp with time zone, the interval
+		types, or a lob column the backend didn't flag as one), or a
+		value an implemented datatype's encoder couldn't parse - and
+		reporting the row as sent successfully anyway - it now reports
+		the fetch as failed for that row instead of handing the client
+		a row that is silently short one column
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

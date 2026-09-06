@@ -1229,6 +1229,19 @@ int main(int argc, char **argv) {
 	Cda_Def	typecda2;
 	assertEquals(check(&typecda2,openCursor(&typecda2,-1)),0);
 
+	// no named-type, REF, or result-set column appears in this table.
+	// Oracle's object-relational types - named types and REFs to them -
+	// arrived with Oracle 8 and OCI8 together, so OCI7 predates the whole
+	// feature: there is no odefin external type or odescr code for either
+	// one, unlike the unprobed-symbol gaps noted elsewhere in this file.
+	// a PL/SQL ref cursor result set is old enough to predate OCI8, and
+	// OCI7 could plausibly bind one as an OUT parameter through obndrv (in
+	// the probed symbol set) with dty SQLT_RSET, the way oci8.cpp binds
+	// :rc through OCIBindByName - but that is unconfirmed, and odefin/ofen
+	// have no way to describe or step through the nested cursor obndrv
+	// would hand back, the way OCIParamGet/OCIStmtFetch2 do for OCI8, so
+	// it stays untested here.
+
 	stdoutput.printf("create table - one column per type\n");
 	execImmediate("drop table protocoltesttypes");
 	execImmediate("drop table protocoltestlong");
@@ -1243,6 +1256,8 @@ int main(int argc, char **argv) {
 				"testrowid rowid,"
 				"testtimestamp timestamp,"
 				"testtimestamptz timestamp with time zone,"
+				"testtimestampltz "
+					"timestamp with local time zone,"
 				"testintervalym interval year to month,"
 				"testintervalds interval day to second)"),
 		0);
@@ -1272,6 +1287,8 @@ int main(int argc, char **argv) {
 				"'YYYY-MM-DD HH24:MI:SS.FF'),"
 			"to_timestamp_tz('2005-05-05 05:05:05.555555 -05:00',"
 				"'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'),"
+			"to_timestamp_tz('2006-06-06 06:06:06.666666 -06:00',"
+				"'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM'),"
 			"to_yminterval('01-02'),"
 			"to_dsinterval('3 04:05:06.777777'))"),
 		0);
@@ -1297,7 +1314,7 @@ int main(int argc, char **argv) {
 	assertEquals(check(&typecda2,
 			oparse(&typecda2,(text *)typequery,
 					(sb4)-1,0,(ub4)2)),0);
-	assertColumnCount(&typecda2,10);
+	assertColumnCount(&typecda2,11);
 	assertColumn(&typecda2,1,"TESTVARCHAR",SQLT_CHR,40,0,0);
 	assertColumn(&typecda2,2,"TESTNUMBER",SQLT_NUM,22,10,2);
 	assertColumn(&typecda2,3,"TESTDATE",SQLT_DAT,7,0,0);
@@ -1315,8 +1332,15 @@ int main(int argc, char **argv) {
 	// see #9654
 	assertColumn(&typecda2,7,"TESTTIMESTAMP",180,11,0,6);
 	assertColumn(&typecda2,8,"TESTTIMESTAMPTZ",181,13,0,6);
-	assertColumn(&typecda2,9,"TESTINTERVALYM",182,5,2,0);
-	assertColumn(&typecda2,10,"TESTINTERVALDS",183,11,2,6);
+	// ORACLE_TYPE_TIMESTAMPLTZ (src/protocols/oracle.cpp:777) is 231, with
+	// no separate OCI8-side remap the way 187-190 get one.  a local-time-
+	// zone value carries no stored offset of its own - it is normalized to
+	// the database time zone and converted back on the way out - so the
+	// wire size is expected to match plain TESTTIMESTAMP's 11 bytes rather
+	// than TESTTIMESTAMPTZ's 13.  unverified, see #9717
+	assertColumn(&typecda2,9,"TESTTIMESTAMPLTZ",231,11,0,6);
+	assertColumn(&typecda2,10,"TESTINTERVALYM",182,5,2,0);
+	assertColumn(&typecda2,11,"TESTINTERVALDS",183,11,2,6);
 	stdoutput.printf("\n\n");
 
 
@@ -1330,11 +1354,19 @@ int main(int argc, char **argv) {
 	// expected strings below don't move with the environment.  the date
 	// and raw columns keep their oracle-format defines, so oci8.cpp's byte
 	// level assertions survive intact
+	// testtimestampltz's to_char goes through "at time zone 'UTC'" rather
+	// than the session/db time zone testtimestamptz's does - a local-time-
+	// zone value has no offset of its own to render, so pinning it to a
+	// fixed zone is what keeps the expected string below from moving with
+	// the environment, the same job the plain to_char calls do for the
+	// other columns
 	const char	*typefetchquery=
 			"select testvarchar,testnumber,testdate,testraw,"
 			"testchar,testrowid,"
 			"to_char(testtimestamp,'YYYY-MM-DD HH24:MI:SS.FF6'),"
 			"to_char(testtimestamptz,"
+				"'YYYY-MM-DD HH24:MI:SS.FF6 TZH:TZM'),"
+			"to_char(testtimestampltz at time zone 'UTC',"
 				"'YYYY-MM-DD HH24:MI:SS.FF6 TZH:TZM'),"
 			"to_char(testintervalym),"
 			"to_char(testintervalds) "
@@ -1343,9 +1375,9 @@ int main(int argc, char **argv) {
 			oparse(&typecda2,(text *)typefetchquery,
 					(sb4)-1,0,(ub4)2)),0);
 
-	sb2	typeind[10];
-	ub2	typelen[10];
-	ub2	typecode[10];
+	sb2	typeind[11];
+	ub2	typelen[11];
+	ub2	typecode[11];
 	char	typevarchar[64];
 	char	typenumber[64];
 	ub1	typedate[7];
@@ -1354,6 +1386,7 @@ int main(int argc, char **argv) {
 	char	typerowid[64];
 	char	typetimestamp[64];
 	char	typetimestamptz[64];
+	char	typetimestampltz[64];
 	char	typeintervalym[64];
 	char	typeintervalds[64];
 	bytestring::zero(typeind,sizeof(typeind));
@@ -1367,6 +1400,7 @@ int main(int argc, char **argv) {
 	bytestring::zero(typerowid,sizeof(typerowid));
 	bytestring::zero(typetimestamp,sizeof(typetimestamp));
 	bytestring::zero(typetimestamptz,sizeof(typetimestamptz));
+	bytestring::zero(typetimestampltz,sizeof(typetimestampltz));
 	bytestring::zero(typeintervalym,sizeof(typeintervalym));
 	bytestring::zero(typeintervalds,sizeof(typeintervalds));
 
@@ -1418,22 +1452,27 @@ int main(int argc, char **argv) {
 				&typeind[7],(text *)0,-1,-1,
 				&typelen[7],&typecode[7])),0);
 	assertEquals(check(&typecda2,
-			odefin(&typecda2,9,(ub1 *)typeintervalym,
-				(sword)sizeof(typeintervalym),SQLT_STR,-1,
+			odefin(&typecda2,9,(ub1 *)typetimestampltz,
+				(sword)sizeof(typetimestampltz),SQLT_STR,-1,
 				&typeind[8],(text *)0,-1,-1,
 				&typelen[8],&typecode[8])),0);
 	assertEquals(check(&typecda2,
-			odefin(&typecda2,10,(ub1 *)typeintervalds,
-				(sword)sizeof(typeintervalds),SQLT_STR,-1,
+			odefin(&typecda2,10,(ub1 *)typeintervalym,
+				(sword)sizeof(typeintervalym),SQLT_STR,-1,
 				&typeind[9],(text *)0,-1,-1,
 				&typelen[9],&typecode[9])),0);
+	assertEquals(check(&typecda2,
+			odefin(&typecda2,11,(ub1 *)typeintervalds,
+				(sword)sizeof(typeintervalds),SQLT_STR,-1,
+				&typeind[10],(text *)0,-1,-1,
+				&typelen[10],&typecode[10])),0);
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("ofen - every type\n");
 	assertEquals(check(&typecda2,oexec(&typecda2)),0);
 	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
-	for (int i=0; i<10; i++) {
+	for (int i=0; i<11; i++) {
 		assertEquals((int)typeind[i],0);
 	}
 	stdoutput.printf("\n\n");
@@ -1475,6 +1514,38 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("rowid - fetched with dty SQLT_RID\n");
+	// the define above forces the value through oracle's own string
+	// conversion (an SQLT_STR define), which sidesteps rowid's real OCI7
+	// representation entirely.  dty 11 (SQLT_RID) is that representation -
+	// oci8.cpp's equivalent is the SQLT_RDD descriptor form, which OCI7 has
+	// no counterpart for.  what SQLT_RID actually puts in the buffer is not
+	// documented anywhere on file: ocidfn.h's own Cda_Def.rid field is the
+	// closest thing, and its header comment says plainly not to use that
+	// struct in OCI programs.  so only the call succeeding and a
+	// plausible non-zero length are asserted here, not a specific byte
+	// layout.  unverified, see #9717
+	assertEquals(check(&typecda2,
+			oparse(&typecda2,(text *)
+				"select testrowid from protocoltesttypes",
+				(sb4)-1,0,(ub4)2)),0);
+	ub1	rowidbin[32];
+	sb2	rowidbinind=0;
+	ub2	rowidbinlen=0;
+	ub2	rowidbincode=0;
+	bytestring::zero(rowidbin,sizeof(rowidbin));
+	assertEquals(check(&typecda2,
+			odefin(&typecda2,1,rowidbin,
+				(sword)sizeof(rowidbin),SQLT_RID,-1,
+				&rowidbinind,(text *)0,-1,-1,
+				&rowidbinlen,&rowidbincode)),0);
+	assertEquals(check(&typecda2,oexec(&typecda2)),0);
+	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
+	assertEquals((int)rowidbinind,0);
+	assertTrue(rowidbinlen>0 && rowidbinlen<=(ub2)sizeof(rowidbin));
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("timestamp\n");
 	assertEquals((const char *)typetimestamp,"2004-04-04 04:04:04.444444");
 	stdoutput.printf("\n\n");
@@ -1483,6 +1554,15 @@ int main(int argc, char **argv) {
 	stdoutput.printf("timestamp with time zone\n");
 	assertEquals((const char *)typetimestamptz,
 			"2005-05-05 05:05:05.555555 -05:00");
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("timestamp with local time zone\n");
+	// pinned to UTC by the "at time zone 'UTC'" in typefetchquery above,
+	// so this is the same 2006-06-06 06:06:06.666666 -06:00 instant the
+	// insert used, just re-expressed in UTC.  unverified, see #9717
+	assertEquals((const char *)typetimestampltz,
+			"2006-06-06 12:06:06.666666 +00:00");
 	stdoutput.printf("\n\n");
 
 
@@ -1524,6 +1604,30 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	stdoutput.printf("long - null value\n");
+	assertEquals(execImmediate("delete from protocoltestlong"),0);
+	assertEquals(
+		execImmediate("insert into protocoltestlong values (NULL)"),
+		0);
+	assertEquals(execImmediate("commit"),0);
+	assertEquals(check(&typecda2,
+			oparse(&typecda2,(text *)longquery,
+					(sb4)-1,0,(ub4)2)),0);
+	bytestring::zero(longvalue,sizeof(longvalue));
+	longind=0;
+	longlen=0;
+	longcode=0;
+	assertEquals(check(&typecda2,
+			odefin(&typecda2,1,(ub1 *)longvalue,
+				(sword)sizeof(longvalue),SQLT_LNG,-1,
+				&longind,(text *)0,-1,-1,
+				&longlen,&longcode)),0);
+	assertEquals(check(&typecda2,oexec(&typecda2)),0);
+	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
+	assertEquals((int)longind,-1);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("long raw\n");
 	const char	*longrawquery="select testlongraw "
 					"from protocoltestlongraw";
@@ -1550,6 +1654,30 @@ int main(int argc, char **argv) {
 	assertEquals((int)longrawvalue[2],12);
 	assertEquals((int)longrawvalue[3],13);
 	assertEquals((int)longrawvalue[4],14);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("long raw - null value\n");
+	assertEquals(execImmediate("delete from protocoltestlongraw"),0);
+	assertEquals(
+		execImmediate("insert into protocoltestlongraw values (NULL)"),
+		0);
+	assertEquals(execImmediate("commit"),0);
+	assertEquals(check(&typecda2,
+			oparse(&typecda2,(text *)longrawquery,
+					(sb4)-1,0,(ub4)2)),0);
+	bytestring::zero(longrawvalue,sizeof(longrawvalue));
+	longrawind=0;
+	longrawlen=0;
+	longrawcode=0;
+	assertEquals(check(&typecda2,
+			odefin(&typecda2,1,longrawvalue,
+				(sword)sizeof(longrawvalue),SQLT_LBI,-1,
+				&longrawind,(text *)0,-1,-1,
+				&longrawlen,&longrawcode)),0);
+	assertEquals(check(&typecda2,oexec(&typecda2)),0);
+	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
+	assertEquals((int)longrawind,-1);
 	stdoutput.printf("\n\n");
 
 
@@ -2039,6 +2167,106 @@ int main(int argc, char **argv) {
 	assertEquals((const char *)clobbuffer,(const char *)bigvalue);
 	assertTrue(!bytestring::compare(blobbuffer,blobvalue,
 						sizeof(blobvalue)));
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("insert - null and zero-length lobs\n");
+	assertEquals(
+		execImmediate("insert into protocoltestlob "
+				"(testclob,testblob,testbfile) values "
+				"(NULL,NULL,NULL)"),
+		0);
+	assertEquals(
+		execImmediate("insert into protocoltestlob "
+				"(testclob,testblob,testbfile) values "
+				"(empty_clob(),empty_blob(),NULL)"),
+		0);
+	assertEquals(execImmediate("commit"),0);
+	assertEquals(
+		countRows("protocoltestlob where testclob is null and "
+				"testblob is null"),1);
+	assertEquals(
+		countRows("protocoltestlob where "
+				"dbms_lob.getlength(testclob)=0 and "
+				"dbms_lob.getlength(testblob)=0"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("odefin, oexec, ofen - a null lob\n");
+	// #9638 comment 13 only measured a lob column carrying a value.  a
+	// null lob going through the same inline SQLT_STR/SQLT_BIN define is
+	// expected to behave like a null LONG or LONG RAW column above - a -1
+	// indicator and nothing else on the wire - but that is this program's
+	// own inference, not something #9638 measured.  unverified, see #9717
+	assertEquals(check(&lobcda,
+			oparse(&lobcda,(text *)
+				"select testclob,testblob from "
+				"protocoltestlob where testclob is null",
+				(sb4)-1,0,(ub4)2)),0);
+	char	clobnullbuffer[64];
+	ub1	blobnullbuffer[64];
+	sb2	lobnullind[2];
+	ub2	lobnulllen[2];
+	ub2	lobnullcode[2];
+	bytestring::zero(clobnullbuffer,sizeof(clobnullbuffer));
+	bytestring::zero(blobnullbuffer,sizeof(blobnullbuffer));
+	bytestring::zero(lobnullind,sizeof(lobnullind));
+	bytestring::zero(lobnulllen,sizeof(lobnulllen));
+	bytestring::zero(lobnullcode,sizeof(lobnullcode));
+	assertEquals(check(&lobcda,
+			odefin(&lobcda,1,(ub1 *)clobnullbuffer,
+				(sword)sizeof(clobnullbuffer),SQLT_STR,-1,
+				&lobnullind[0],(text *)0,-1,-1,
+				&lobnulllen[0],&lobnullcode[0])),0);
+	assertEquals(check(&lobcda,
+			odefin(&lobcda,2,blobnullbuffer,
+				(sword)sizeof(blobnullbuffer),SQLT_BIN,-1,
+				&lobnullind[1],(text *)0,-1,-1,
+				&lobnulllen[1],&lobnullcode[1])),0);
+	assertEquals(check(&lobcda,oexec(&lobcda)),0);
+	assertEquals(check(&lobcda,ofen(&lobcda,1)),0);
+	assertEquals((int)lobnullind[0],-1);
+	assertEquals((int)lobnullind[1],-1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("odefin, oexec, ofen - a zero-length lob\n");
+	// same caveat as the null case above - #9638 did not measure a
+	// zero-length lob either, so a 0 indicator with 0 length is expected
+	// by analogy with an empty string/raw value, not a confirmed one.
+	// unverified, see #9717
+	assertEquals(check(&lobcda,
+			oparse(&lobcda,(text *)
+				"select testclob,testblob from "
+				"protocoltestlob where "
+				"dbms_lob.getlength(testclob)=0",
+				(sb4)-1,0,(ub4)2)),0);
+	char	clobzerobuffer[64];
+	ub1	blobzerobuffer[64];
+	sb2	lobzeroind[2];
+	ub2	lobzerolen[2];
+	ub2	lobzerocode[2];
+	bytestring::zero(clobzerobuffer,sizeof(clobzerobuffer));
+	bytestring::zero(blobzerobuffer,sizeof(blobzerobuffer));
+	bytestring::zero(lobzeroind,sizeof(lobzeroind));
+	bytestring::zero(lobzerolen,sizeof(lobzerolen));
+	bytestring::zero(lobzerocode,sizeof(lobzerocode));
+	assertEquals(check(&lobcda,
+			odefin(&lobcda,1,(ub1 *)clobzerobuffer,
+				(sword)sizeof(clobzerobuffer),SQLT_STR,-1,
+				&lobzeroind[0],(text *)0,-1,-1,
+				&lobzerolen[0],&lobzerocode[0])),0);
+	assertEquals(check(&lobcda,
+			odefin(&lobcda,2,blobzerobuffer,
+				(sword)sizeof(blobzerobuffer),SQLT_BIN,-1,
+				&lobzeroind[1],(text *)0,-1,-1,
+				&lobzerolen[1],&lobzerocode[1])),0);
+	assertEquals(check(&lobcda,oexec(&lobcda)),0);
+	assertEquals(check(&lobcda,ofen(&lobcda,1)),0);
+	assertEquals((int)lobzeroind[0],0);
+	assertEquals((int)lobzeroind[1],0);
+	assertEquals((int)lobzerolen[0],0);
+	assertEquals((int)lobzerolen[1],0);
 	stdoutput.printf("\n\n");
 
 
