@@ -3658,7 +3658,7 @@ static void SQLR_FetchOutputBinds(SQLHSTMT statementhandle) {
 								"is NULL\n");
 					}
 					debugPrintf("  value: \"%.*s\" (%d)\n",
-								len,str,len);
+								(int)len,str,len);
 				}
 				}
 				break;
@@ -4024,7 +4024,7 @@ static void SQLR_FetchInputOutputBinds(SQLHSTMT statementhandle) {
 								"is NULL\n");
 					}
 					debugPrintf("  value: \"%.*s\" (%d)\n",
-								len,str,len);
+								(int)len,str,len);
 				}
 				}
 				break;
@@ -5520,7 +5520,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 	uint32_t	fieldlength=stmt->cur->getFieldLength(
 					stmt->currentgetdatarow,col);
 	debugPrintf("  field: %.*s%s",
-			(fieldlength<=80)?fieldlength:80,
+			(int)((fieldlength<=80)?fieldlength:80),
 			field,(fieldlength>80)?"...\n":"\n");
 	debugPrintf("  fieldlength: %d\n",fieldlength);
 
@@ -5638,7 +5638,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 				}
 
 				debugPrintf("  value: %.*s%s",
-					(bytestocopy<=80)?bytestocopy:80,
+					(int)((bytestocopy<=80)?bytestocopy:80),
 					(char *)targetvalue,
 					(bytestocopy>80)?"...\n":"\n");
 			}
@@ -12113,7 +12113,7 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 				stmt->putdatabuffer.getSize());
 		} else {
 			debugPrintf("  value: \"%.*s\"\n",
-					stmt->putdatabuffer.getSize(),
+					(int)stmt->putdatabuffer.getSize(),
 					stmt->putdatabuffer.getBuffer());
 			stmt->cur->inputBind(parametername,
 				(const char *)
@@ -12256,7 +12256,7 @@ SQLRETURN SQL_API SQLPutData(SQLHSTMT statementhandle,
 	// need to do some type-checking here and print out debug for
 	// different data types in different ways
 	debugPrintf("  strlen_or_ind   : %lld\n",strlen_or_ind);
-	debugPrintf("  copying out data: \"%.*s\"\n",strlen_or_ind,data);
+	debugPrintf("  copying out data: \"%.*s\"\n",(int)strlen_or_ind,data);
 
 	// copy data to putdata
 	stmt->putdatabuffer.append((byte_t *)data,strlen_or_ind);

@@ -1906,6 +1906,10 @@
 	added .gitignore coverage for build output under src/, which had none -
 		a built tree showed around 1175 untracked files that a careless
 		"git add src/" could sweep into a commit
+	cast the width argument of 6 "%.*s" debugPrintf() calls in the odbc
+		api to int - the same undefined behavior #9675 fixed in
+		sqlrclient.cpp, with widths passed as uint32_t, size_t or
+		SQLLEN instead of int
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
