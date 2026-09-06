@@ -1,8 +1,13 @@
 *.class
 
-# scratch files the odbc.ini rule writes.  odbc.ini itself stays checked in
-# so the default port works without running make first, even though a
-# plain make now regenerates it too (test/protocol/teradata is
-# unconditionally in TESTPROTOCOLSUBDIRS)
+# odbc.ini is generated from odbc.ini.in by this directory's Makefile and
+# must not be tracked (#9676).  its content is the teradataprotocol
+# listener port the checkout was built for, so a tracked copy is just one
+# machine's port.  a plain make writes it (it is in this directory's all:
+# target, and test/protocol/teradata is unconditionally in
+# TESTPROTOCOLSUBDIRS), and test.sh -randomports rewrites it again
+/odbc.ini
+
+# scratch files the odbc.ini rule writes
 *.out1
 *.out2

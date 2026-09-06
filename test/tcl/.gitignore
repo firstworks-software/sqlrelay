@@ -1,0 +1,27 @@
+# these are generated from their .tcl.in templates by this directory's
+# Makefile and must not be tracked (#9676).  odbc-mssql.tcl was the only
+# one that ever was - the other twelve have always been untracked.
+# test/tcl is unconditionally in TESTALLSUBDIRS, so a plain make writes
+# them all.  asserts.tcl is hand written, has no template, and is not
+# listed here
+/db2.tcl
+/firebird.tcl
+/freetds-mssql.tcl
+/freetds-sap.tcl
+/informix.tcl
+/krb.tcl
+/mysql.tcl
+/odbc-mssql.tcl
+/oracle.tcl
+/postgresql.tcl
+/sap.tcl
+/sqlite.tcl
+/tls.tcl
+
+# scratch files the .tcl rules write
+*.out1
+*.out2
+
+# written by running the tests
+/cachefile*
+/sqlnet.log

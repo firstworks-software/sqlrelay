@@ -12,10 +12,16 @@
 *.class
 /.libs/
 
-# scratch files the tnsnames.ora rule writes.  tnsnames.ora itself stays
-# checked in so the default ports work without running make first, even
-# though a plain make now regenerates it too (test/protocol/oracle is in
-# TESTPROTOCOLSUBDIRS whenever an oracle client is configured)
+# tnsnames.ora is generated from tnsnames.ora.in by this directory's
+# Makefile and must not be tracked (#9676).  its content is the
+# oracleprotocol listener ports the checkout was built for, so a tracked
+# copy is just one machine's ports.  a plain make writes it (it is in
+# this directory's all: target, and test/protocol/oracle is in
+# TESTPROTOCOLSUBDIRS whenever an oracle client is configured), and
+# test.sh -randomports rewrites it again
+/tnsnames.ora
+
+# scratch files the tnsnames.ora rule writes
 *.out1
 *.out2
 
