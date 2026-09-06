@@ -431,6 +431,23 @@
 #define POINTER_SIZE_UNIVERSAL		1
 #define POINTER_SIZE_NATIVE		4
 
+// what this module's own cursor ids are shifted by to make the ids it puts on
+// the wire.  a shift is needed at all because the controller's ids start at 0
+// and 0 on the wire means "no cursor" - close() and occa() both read it that
+// way, and an open response that sent it cost the client the whole call.
+//
+// a real server's first cursor is 2, not 1.  packet [0018] of
+// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap and of
+// the native capture beside it both say so, and so does the 8i era literal in
+// sendQuery2Response()'s native branch, whose first field is a hardcoded
+// cursor id of 2 - two releases, two clients and both encodings, and none of
+// them hands out 1.  so a 9i session shifts by 2 and matches them.
+//
+// everything else keeps the 1 it has always sent: no capture pins what a
+// modern server does here, and the clients on those paths work as it is
+#define CURSOR_ID_OFFSET		1
+#define CURSOR_ID_OFFSET_9I		2
+
 // a length byte over 252 isn't a length.  0xfd introduces a null, 0xfe the
 // chunked long form.
 #define CLR_MAX_SHORT_LENGTH		252
@@ -1983,6 +2000,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// session's LPI-encoded request as the legacy layout and its
 		// own parsed id isn't trustworthy there
 		uint16_t	lastcursorid;
+
+		// what this module's own cursor ids are shifted by to make
+		// the ids it puts on the wire, and back - see
+		// CURSOR_ID_OFFSET.  it follows the verifier type, so it is
+		// settled once in the constructor rather than per session
+		uint16_t	cursoridoffset;
+
+		uint32_t	wireCursorId(sqlrservercursor *cursor);
+		sqlrservercursor	*cursorFromWireId(uint32_t wirecursorid);
 };
 
 sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
@@ -2082,10 +2108,12 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	// that.  serverversion has no 10.2 setting of its own for the same
 	// reason - a 10.2 server can't offer the o5logon verifier the other
 	// two settings go with.
+	cursoridoffset=CURSOR_ID_OFFSET;
 	if (verifiertype==VERIFIER_TYPE_9I) {
 		serverfieldversion=CCAP_FIELD_VERSION_10_2;
 		serverversionno=SERVER_VERSION_NO_10_2;
 		charset=31;
+		cursoridoffset=CURSOR_ID_OFFSET_9I;
 	}
 
 	// build the version response's banner from that version.  the nibbles
@@ -7424,6 +7452,25 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	// the error is sent, but the exchange it interrupted has failed
 	return false;
 }
+
+// the cursor id this module puts on the wire for one of its own cursors, and
+// the way back.  every call that hands a cursor id out or reads one in goes
+// through these two, so the shift is stated once - see CURSOR_ID_OFFSET
+uint32_t sqlrprotocol_oracle::wireCursorId(sqlrservercursor *cursor) {
+	return (uint32_t)(cont->getId(cursor)+cursoridoffset);
+}
+
+sqlrservercursor *sqlrprotocol_oracle::cursorFromWireId(uint32_t wirecursorid) {
+
+	// an id below the shift never named a cursor this module handed out,
+	// and 0 is the client saying it has none, so neither is a cursor
+	// rather than an id that wraps around into one
+	if (wirecursorid<cursoridoffset) {
+		return NULL;
+	}
+	return cont->getCursor((uint16_t)(wirecursorid-cursoridoffset));
+}
+
 bool sqlrprotocol_oracle::open(const byte_t *rp) {
 
 	// sqlplus 8.0.5, 8i, 9i
@@ -7482,11 +7529,7 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
-	// the id on the wire is this module's own cursor id plus 1 - the
-	// same convention close() and occa() use when reading a cursor id
-	// back, so a client that echoes this id back in a later close()
-	// finds the cursor again
-	writeLenPreInt(&reqpacket,(uint32_t)(cursorid+1));
+	writeLenPreInt(&reqpacket,wireCursorId(cursor));
 	// the cursor id is followed by the same status message a version
 	// response ends with, and nothing else.  a real 10.2 server
 	// answering an oci7 client sends the cursor id, TTC_STATUS and the
@@ -7613,9 +7656,7 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 		return false;
 	}
 
-	// the id on the wire is the controller's plus 1
-	sqlrservercursor	*cursor=(cursorid)?
-			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -7666,11 +7707,10 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 
 	// a real 10.2 server answers the parse with a summary object and
 	// nothing else - no describe, no column definitions - and the client
-	// goes straight on to execute.  the id on the wire is this module's
-	// own cursor id plus 1, the same convention the open response uses,
-	// and the command type is putSummary()'s own constant.  nothing has
-	// executed yet, so the success iteration count is 0
-	putOci7Summary((uint32_t)(cont->getId(cursor)+1),3,0);
+	// goes straight on to execute.  the command type is putSummary()'s own
+	// constant.  nothing has executed yet, so the success iteration count
+	// is 0
+	putOci7Summary(wireCursorId(cursor),3,0);
 
 	return sendPacket(true);
 }
@@ -8257,9 +8297,7 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	debugWrite("query: \"%*s\"",querysize,query);
 	debugEnd();
 
-	// the id on the wire is the controller's plus 1
-	sqlrservercursor	*cursor=(cursorid)?
-			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -8444,9 +8482,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		debugEnd();
 	}
 
-	// the id on the wire is the controller's plus 1
-	sqlrservercursor	*cursor=(cursorid)?
-			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -8684,10 +8720,10 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 		//	portable 01 02 | 04 08 a0 cc 96 | 00 | 04 ...
 		//
 		// so a ub2 cursor id, a ub4, and a ub4 that is zero in both.
-		// the 8i-era literal above carries the same three fields with
-		// the cursor id hardcoded to 2
+		// the 8i-era literal above carries the same three fields, and
+		// its cursor id is the 2 CURSOR_ID_OFFSET_9I now sends
 
-		uint32_t	cursorid=(uint32_t)(cont->getId(cursor)+1);
+		uint32_t	cursorid=wireCursorId(cursor);
 
 		writeLenPreInt(&reqpacket,cursorid);
 
@@ -8956,8 +8992,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	query3session=true;
 
 	// get the requested cursor
-	// (cursor id 0 means "open one for me", and the ids on the wire are
-	// the controller's plus 1, since the controller's start at 0)
+	// (cursor id 0 means "open one for me")
 	sqlrservercursor	*cursor;
 	if (!cursorid) {
 		cursor=cont->getCursor();
@@ -8966,17 +9001,17 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 			return sendCursorNotOpenError();
 		}
 		lastcursorid=cont->getId(cursor);
-		cursorid=lastcursorid+1;
+		cursorid=wireCursorId(cursor);
 		debugStart("open request");
 		debugWrite("cursor id: %d",cursorid);
 		debugEnd();
 	} else {
-		cursor=cont->getCursor((uint16_t)(cursorid-1));
+		cursor=cursorFromWireId(cursorid);
 		if (!cursor) {
 			debugWrite("cursor id %d not found",cursorid);
 			return sendCursorNotOpenError(cursorid);
 		}
-		lastcursorid=cursorid-1;
+		lastcursorid=cont->getId(cursor);
 	}
 
 	// a re-execute of this statement will send values without
@@ -9097,7 +9132,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		// only runs on success - which is what OCI_COMMIT_ON_SUCCESS
 		// asks for
 		if (!cont->commit()) {
-			return sendTransactionError(cont->getId(cursor)+1);
+			return sendTransactionError(wireCursorId(cursor));
 		}
 	}
 
@@ -10472,8 +10507,7 @@ void sqlrprotocol_oracle::putRefCursorBindValue(sqlrservercursor *child) {
 	cacheColumnDefinitions(child,colcount);
 	putDescribeInfoBody(child,colcount);
 
-	// the ids on the wire are the controller's plus 1
-	writeLenPreInt(&reqpacket,(uint32_t)(cont->getId(child)+1));
+	writeLenPreInt(&reqpacket,wireCursorId(child));
 }
 
 void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
@@ -12959,9 +12993,7 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		debugEnd();
 	}
 
-	// the id on the wire is the controller's plus 1
-	sqlrservercursor	*cursor=(cursorid)?
-			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -13026,9 +13058,7 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 		debugEnd();
 	}
 
-	// the id on the wire is the controller's plus 1
-	sqlrservercursor	*cursor=(cursorid)?
-			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -13184,7 +13214,7 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 		return sendCursorNotOpenError();
 	}
 
-	sqlrservercursor	*cursor=cont->getCursor((uint16_t)(cursorid-1));
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -14591,9 +14621,7 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	debugWrite("cursor id: %d",cursorid);
 	debugEnd();
 
-	// the id on the wire is the controller's plus 1
-	sqlrservercursor	*cursor=(cursorid)?
-			cont->getCursor((uint16_t)(cursorid-1)):NULL;
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 	if (!cursor) {
 		debugWrite("cursor id %d not found",cursorid);
 		return sendCursorNotOpenError(cursorid);
@@ -14999,12 +15027,11 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		}
 		debugWrite("cursor id: %d",cursorid);
 
-		// the ids on the wire are the controller's plus 1
+		// a cursor id of 0 is the client naming no cursor
 		if (!cursorid) {
 			continue;
 		}
-		sqlrservercursor	*cursor=
-				cont->getCursor((uint16_t)(cursorid-1));
+		sqlrservercursor	*cursor=cursorFromWireId(cursorid);
 		if (!cursor) {
 			debugWrite("cursor id %d not found",cursorid);
 			continue;
@@ -15203,7 +15230,7 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 	// a query3 session gets a summary object, like a fetch does; an
 	// older session gets putError()'s capture, like a fetch does
 	if (query3session) {
-		putSummary(cont->getId(cursor)+1,oranum,
+		putSummary(wireCursorId(cursor),oranum,
 					rowssent[cont->getId(cursor)],
 					message,messagesize);
 	} else {

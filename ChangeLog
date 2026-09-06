@@ -1839,6 +1839,9 @@
 		server's types in the server's own order, declines BINARY_FLOAT
 		and BINARY_DOUBLE the way a 10.2 server does, and lets the
 		client's offer pick only the representation
+	the oracle protocol module hands a verifiertype="9i" client cursor ids
+		starting at 2 now, rather than 1 - which is where a real 10.2
+		server starts, in every capture on file
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
