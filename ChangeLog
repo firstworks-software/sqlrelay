@@ -1862,6 +1862,10 @@
 	the oracle protocol module leaves the end-to-end sequence number off a
 		verifiertype="9i" client's logoff response, and reads a close
 		request's cursor id in the encoding the session negotiated
+	fixed the oracle protocol module's login-failure error packet, in both
+		the native and portable branches, which had never been
+		exercised against a real login failure before and didn't match
+		either encoding a real 10.2 server sends
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

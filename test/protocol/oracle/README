@@ -196,6 +196,19 @@ the decoder can be exercised without live server access:
                                       a legitimate packet boundary, to
                                       exercise oradecode's break-byte
                                       resync logic (#9694)
+    oracle102-oci7-native-login-wrongpassword.cap
+                                     an OCI7 olog login with the wrong
+                                      password against the real 10.2
+                                      server, x86 Linux client 9.2.0.4.0,
+                                      native encoding (the control) - the
+                                      reference sendErrorPacket()'s native
+                                      branch is written against
+    oracle102-oci7-portable-login-wrongpassword.cap
+                                     the same, from a SPARC Solaris client
+                                      9.0.1.0.0 instead, portable
+                                      encoding - the reference
+                                      sendErrorPacket()'s portable branch
+                                      is written against
 
 The two real Oracle test servers on this network
 --------------------------------------------------
