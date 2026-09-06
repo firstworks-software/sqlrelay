@@ -297,7 +297,10 @@ def decode_auth_pairs(body):
 	# samples/oracle112-login-expiredpwd.cap (flags 0x1b25, 96 hex
 	# chars). Only that portable encoding is decoded here; a native
 	# encoded response would use fixed-width counts instead (see
-	# getAuthCount()) and isn't handled.
+	# getAuthCount()) and isn't handled. This is the 11g/12c reply to
+	# TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY (0x76); the older 9i/O3LOGON
+	# reply to plain TTI_LOGON_PRESENT_USER (0x52) names nothing and is
+	# decoded by decode_o3logon_challenge() instead.
 	out = []
 	pos = 0
 
@@ -331,6 +334,171 @@ def decode_auth_pairs(body):
 		elif name == "AUTH_SESSKEY":
 			out.append("          -> AUTH_SESSKEY length: "
 					"%d hex chars" % len(value))
+
+	consumed = pos
+	total = len(body)
+	if consumed < total:
+		out.append("      trailer/undecoded (%d bytes):" %
+				(total - consumed))
+		out.append(hexdump(body[consumed:total], "        "))
+		consumed = total
+
+	return "\n".join(out), consumed, total
+
+
+# putOci7Summary()'s field list, oracle.cpp ~7104-7182: the object a real
+# 10.2 server answers an O3LOGON login, and every later oci7 call, with, in
+# the portable encoding. every numbered field is a length-prefixed int, read
+# the way read_ub4() does; the few written with a single raw byte via
+# write() are marked "byte" below and stay one byte regardless of encoding
+# or value - that's how the sequence number field survives unchanged between
+# the portable and native captures below.
+O3LOGON_SUMMARY_FIELDS = (
+	("end of call status", "lpi"),
+	("rows processed", "lpi"),
+	("reserved", "lpi"),
+	("reserved", "lpi"),
+	("reserved", "lpi"),
+	("cursor id", "lpi"),
+	("parse error offset", "lpi"),
+	("command type", "byte"),
+	("reserved", "byte"),
+	("reserved", "byte"),
+	("reserved", "byte"),
+	("reserved", "byte"),
+	("reserved", "byte"),
+	("rowid ub4", "lpi"),
+	("rowid ub2", "lpi"),
+	("rowid byte", "byte"),
+	("rowid ub4", "lpi"),
+	("rowid ub2", "lpi"),
+	("reserved", "lpi"),
+	("reserved", "byte"),
+	("sequence number", "byte"),
+	("reserved", "lpi"),
+	("success iterations", "lpi"),
+	("reserved", "lpi"),
+	("reserved", "lpi"),
+	("reserved", "lpi"),
+	("reserved", "lpi"),
+)
+
+
+def decode_o3logon_summary_portable(body, pos):
+	# a nested ttc code (TTC_ERROR, 0x04 for a successful call) followed by
+	# O3LOGON_SUMMARY_FIELDS in order. decoded field by field rather than
+	# against fixed offsets, so it reads correctly whatever values a given
+	# call carries - confirmed against packet [0012] (the login challenge,
+	# sequence number 2) and [0014] (the login answer, sequence number 3)
+	# of samples/oracle102-oci7-portable-login-select.cap.
+	out = []
+	start = pos
+
+	ttccode = body[pos]
+	out.append("      %-28s 0x%02x (%s)" %
+			("summary ttc code:", ttccode,
+				TTC_CODES.get(ttccode, "unknown")))
+	pos += 1
+
+	for label, kind in O3LOGON_SUMMARY_FIELDS:
+		if kind == "byte":
+			value = body[pos]
+			pos += 1
+		else:
+			value, pos = read_ub4(body, pos)
+		out.append("      %-28s %d" % (label + ":", value))
+
+	out.append("      -- summary object: %d bytes --" % (pos - start))
+	return "\n".join(out), pos
+
+
+def decode_o3logon_summary_native(body, pos):
+	# the native encoding of the same object. no client of this module
+	# ever reaches it - recvAuthenticationRequest() never sets
+	# nativeencoding on the 9i path (oracle.cpp ~6719-6734) - so
+	# putOci7Summary() only ever writes the portable form above, and there
+	# is no writer in the source to check field boundaries against beyond
+	# the leading one. decoded here only as far as confirmed against
+	# samples/oracle102-oci7-native-login-select.cap: a nested ttc code,
+	# the end of call status as a fixed 4-byte little endian field (the
+	# same value the portable object's leading field carries), and two
+	# more fields at fixed offsets from the summary's start that hold live
+	# server data rather than constants. everything else, including where
+	# the field boundaries between them fall, is unidentified and left as
+	# a plain hex dump.
+	out = []
+	start = pos
+
+	ttccode = body[pos]
+	out.append("      %-28s 0x%02x (%s)" %
+			("summary ttc code:", ttccode,
+				TTC_CODES.get(ttccode, "unknown")))
+	pos += 1
+
+	endofcallstatus, = struct.unpack_from("<I", body, pos)
+	out.append("      %-28s %d" % ("end of call status:", endofcallstatus))
+	pos += 4
+
+	live1off = start + 54
+	live2off = start + 62
+
+	if pos < live1off:
+		out.append("      reserved, unidentified (%d bytes):" %
+				(live1off - pos))
+		out.append(hexdump(body[pos:live1off], "        "))
+	live1, = struct.unpack_from("<H", body, live1off)
+	out.append("      %-28s 0x%04x (offset %d, meaning unknown)" %
+			("live value:", live1, live1off - start))
+	pos = live1off + 2
+
+	if pos < live2off:
+		out.append("      reserved, unidentified (%d bytes):" %
+				(live2off - pos))
+		out.append(hexdump(body[pos:live2off], "        "))
+	live2, = struct.unpack_from("<I", body, live2off)
+	out.append("      %-28s 0x%08x (offset %d, meaning unknown)" %
+			("live value:", live2, live2off - start))
+	pos = live2off + 4
+
+	return "\n".join(out), pos
+
+
+def decode_o3logon_challenge(body):
+	# sendAuthenticationChallenge()'s o3logon branch, oracle.cpp ~6965-
+	# 6980: the phase-1 O3LOGON (9i) login reply. names nothing - no pair
+	# count, no AUTH_SESSKEY field name, no flags - just a session key
+	# length, the session key itself, and a trailing summary object
+	# (putOci7Summary()). the length slot's own shape says which encoding
+	# follows: a length-prefixed int (01 20) in the portable encoding
+	# putAuthCount() uses, a fixed width little endian ub2 (20 00) in the
+	# native one. decoded against chunk [0012] of both
+	# samples/oracle102-oci7-portable-login-select.cap and
+	# samples/oracle102-oci7-native-login-select.cap.
+	out = []
+	pos = 0
+	native = (body[0] != 0x01)
+
+	if native:
+		sesskeysize, = struct.unpack_from("<H", body, pos)
+		pos += 2
+		out.append("      %-28s %d (native, fixed width ub2)" %
+				("session key size:", sesskeysize))
+	else:
+		sesskeysize, pos = read_ub4(body, pos)
+		out.append("      %-28s %d (portable, length-prefixed int)" %
+				("session key size:", sesskeysize))
+
+	keylen = body[pos]
+	pos += 1
+	sesskey = body[pos:pos + keylen].decode("latin-1")
+	pos += keylen
+	out.append("      %-28s %r" % ("session key:", sesskey))
+
+	if native:
+		decoded, pos = decode_o3logon_summary_native(body, pos)
+	else:
+		decoded, pos = decode_o3logon_summary_portable(body, pos)
+	out.append(decoded)
 
 	consumed = pos
 	total = len(body)
@@ -385,27 +553,54 @@ def decode_data_payload(body, is_server_to_client, authstate):
 			# TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY /
 			# TTI_LOGON_PRESENT_USER: the client's phase-1 logon
 			# request. The server's answer (a TTC_OK carrying
-			# AUTH_SESSKEY/AUTH_VFR_DATA) follows as the next
-			# server -> client DATA packet.
-			authstate["awaiting_challenge"] = True
+			# either an AUTH_SESSKEY/AUTH_VFR_DATA pair stream or,
+			# for a plain 0x52 9i/O3LOGON request, a positional
+			# session key + summary object) follows as the next
+			# server -> client DATA packet. Remember which TTI
+			# code asked, since that's what picks the reply's
+			# shape.
+			authstate["awaiting_challenge"] = tticode
 	elif (ttccode == 0x08 and is_server_to_client and
 			authstate.get("awaiting_challenge")):
-		# TTC_OK answering the phase-1 logon request: the auth
-		# challenge's key/value pair stream (AUTH_SESSKEY,
-		# AUTH_VFR_DATA, and - for a 12c/pbkdf2 verifier - the
-		# AUTH_PBKDF2_* fields), per sendAuthenticationChallenge() /
-		# putAuthField() in src/protocols/oracle.cpp.
+		# TTC_OK answering the phase-1 logon request.
+		pending_tti = authstate["awaiting_challenge"]
 		authstate["awaiting_challenge"] = False
-		try:
-			decoded, consumed, total = decode_auth_pairs(rest)
-		except (struct.error, IndexError,
-				UnicodeDecodeError) as e:
-			lines.append("    ** auth pair decode failed (%s); "
-					"falling back to hex dump **" % e)
+		if pending_tti == 0x52:
+			# the 9i/O3LOGON phase-1 reply: positional, no pair
+			# count, no field names - see
+			# decode_o3logon_challenge().
+			try:
+				decoded, consumed, total = \
+						decode_o3logon_challenge(rest)
+			except (struct.error, IndexError,
+					UnicodeDecodeError) as e:
+				lines.append(
+					"    ** O3LOGON challenge decode "
+					"failed (%s); falling back to hex "
+					"dump **" % e)
+			else:
+				lines.append("    O3LOGON challenge "
+						"(phase 1):")
+				lines.append(decoded)
+				return lines
 		else:
-			lines.append("    auth challenge:")
-			lines.append(decoded)
-			return lines
+			# the 11g/12c reply: AUTH_SESSKEY, AUTH_VFR_DATA, and
+			# - for a 12c/pbkdf2 verifier - the AUTH_PBKDF2_*
+			# fields, per sendAuthenticationChallenge() /
+			# putAuthField() in src/protocols/oracle.cpp.
+			try:
+				decoded, consumed, total = \
+						decode_auth_pairs(rest)
+			except (struct.error, IndexError,
+					UnicodeDecodeError) as e:
+				lines.append(
+					"    ** auth pair decode failed "
+					"(%s); falling back to hex dump **" %
+					e)
+			else:
+				lines.append("    auth challenge:")
+				lines.append(decoded)
+				return lines
 	elif ttccode == 0x01 and rest and is_server_to_client:
 		# TTC_PROTOCOL_NEGOTIATION, server -> client: a TTIPRO
 		# response body, laid out the way putTtiResponse() writes
