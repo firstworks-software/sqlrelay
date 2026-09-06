@@ -1918,6 +1918,10 @@
 		which predates the bool type, Py_True, Py_False and
 		PyBool_FromLong (all added in python 2.3) and Py_RETURN_NONE
 		(added in python 2.4)
+	fixed a double free in sqlrconfigs::loadConfig() - a failed attempt to
+		load a config module left the dynamiclib pointer dangling
+		instead of NULL, so it got deleted again by the caller; also
+		made "Couldn't find id" list which config url(s) were searched
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

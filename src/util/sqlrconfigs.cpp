@@ -138,7 +138,7 @@ sqlrconfig *sqlrconfigs::load(const char *urls, const char *id) {
 
 	// warn the user if the specified instance wasn't found
 	if (!cfg) {
-		stderror.printf("Couldn't find id %s.\n",id);
+		stderror.printf("Couldn't find id %s in: %s\n",id,urls);
 	}
 
 	return cfg;
@@ -163,6 +163,7 @@ void sqlrconfigs::loadConfig(const char *module) {
 		debugPrintf("%s\n",error);
 		delete[] error;
 		delete dl;
+		dl=NULL;
 		return;
 	}
 
