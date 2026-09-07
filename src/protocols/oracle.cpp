@@ -7074,11 +7074,24 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 
-	if (!recvPacket()) {
-		return false;
-	}
-
-	if (resppackettype!=PACKET_DATA) {
+	// a classic login's client sends a bare break/reset marker right
+	// after the challenge, ahead of its real phase-two packet - not a
+	// framing error, and not a call to cancel (nothing is in flight
+	// yet during login), so answer it and keep waiting, the same way
+	// the main query loop already answers one mid-call (see #9794)
+	for (;;) {
+		if (!recvPacket()) {
+			return false;
+		}
+		if (resppackettype==PACKET_MARKER) {
+			if (!sendMarker(MARKER_TYPE_RESET)) {
+				return false;
+			}
+			continue;
+		}
+		if (resppackettype==PACKET_DATA) {
+			break;
+		}
 		debugWrite("bad packet type %d, expected %d",
 						resppackettype,PACKET_DATA);
 		return false;
@@ -7398,25 +7411,22 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	// O5LOGON - confirmed live against redhat9x86 and solaris8sparc
 	// (#9792) - while a real classic 0x52 (TTI_LOGON_PRESENT_USER)
 	// client, the only shape an ancient pre-8.0 OCI olog() call ever
-	// sends, wants this branch's older bare shape instead: a count,
-	// then the key as a raw buffer with no length byte of its own since
-	// the count already gives its size, then a bare summary object.  a
-	// real classic client's own session with a real 10.2 server,
-	// captured straight to the backend and bypassing this module
-	// entirely (#9794), answers exactly this way - confirmed live: a
-	// first attempt using putLenString() here added a second, redundant
-	// length byte on top of the count (a genuine duplicate, not a
-	// native-versus-portable difference - the client broke on it the
-	// same way it breaks on every other malformed challenge this
-	// investigation has found), so the raw buffer goes out unprefixed
-	// instead
+	// sends, wants this branch's older, untagged shape instead: a
+	// count, then the key as a putLenString() (its own single raw
+	// length byte ahead of the bytes - the same idiom putAuthField()
+	// already uses for its own name/value strings), then a bare
+	// summary object.  decoded straight off chunk [0012] of
+	// samples/oracle102-oci7-{native,portable}-login-wrongpassword.cap
+	// with oradecode: a real server's challenge carries the count AND
+	// the putLenString() byte both, one byte more than this branch was
+	// writing
 	if (o3logon) {
 
 		if (classiclogon) {
 			uint32_t sesskeysize=
 					charstring::getLength(serverauthsesskey);
 			putAuthCount(sesskeysize,2);
-			write(&reqpacket,serverauthsesskey,(size_t)sesskeysize);
+			putLenString(serverauthsesskey,sesskeysize);
 			putO3LogonSummary();
 		} else {
 			putAuthCount(1,2);
