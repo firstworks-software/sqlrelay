@@ -817,8 +817,14 @@ int main(int argc, char **argv) {
 					SQLT_STR,-1,&indB,(text *)0,-1,-1,
 					&lenB,&codeB)),0);
 
-		assertEquals(check(&curB,oexec(&curB)),0);
+		// #9699 diagnostic: executed in open/parse order (A,B) here,
+		// not the original out-of-order (B,A) - isolating whether a
+		// live ORA-03106 seen on both oexec() calls is specific to
+		// executing out of parse order, or happens regardless once two
+		// cursors are simultaneously parsed-but-not-yet-executed.  see
+		// the ticket before reordering this back if it comes out clean
 		assertEquals(check(&curA,oexec(&curA)),0);
+		assertEquals(check(&curB,oexec(&curB)),0);
 
 		stdoutput.printf("ofen - ping-pong A/B/A/B across both "
 					"cursors\n");
