@@ -1465,6 +1465,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	recvO3LogonRequest(const byte_t *rp,
 						const byte_t *end,
 						bool secondphase);
+		bool	recvClassicLogonRequest(const byte_t *rp,
+						const byte_t *end,
+						bool secondphase);
 		bool	recvAuthenticationRequest(bool secondphase);
 		bool	sendAuthenticationChallenge();
 		bool	sendAuthenticationResponse();
@@ -1912,6 +1915,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool		gotauthpassword;
 		bool		fabricatedchallenge;
 
+		// whether the current login is the classic, pre-session-key
+		// TTI_LOGON_PRESENT_USER/TTI_LOGON_PRESENT_PWD exchange (0x52/
+		// 0x51) rather than O3LOGON's newer, tagged-field
+		// TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY one (0x76) - set from
+		// phase one's ttifunction, since sendAuthenticationChallenge()
+		// answers the two differently (see #9794)
+		bool		classiclogon;
+
 		// whether the login was refused, as opposed to the exchange
 		// failing some other way, which decides whether another
 		// login may be attempted on the same connection
@@ -2329,6 +2340,7 @@ void sqlrprotocol_oracle::init() {
 	authpassword=NULL;
 	gotauthpassword=false;
 	fabricatedchallenge=false;
+	classiclogon=false;
 	loginrefused=false;
 	clientdisconnected=false;
 
@@ -6018,6 +6030,7 @@ void sqlrprotocol_oracle::resetLoginAttempt() {
 	authpassword=NULL;
 	gotauthpassword=false;
 	fabricatedchallenge=false;
+	classiclogon=false;
 }
 
 // reads a text
@@ -6911,6 +6924,154 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 	return true;
 }
 
+// the classic, pre-session-key login (TTI_LOGON_PRESENT_USER/
+// TTI_LOGON_PRESENT_PWD - 0x52/0x51) that an ancient pre-8.0 OCI client's
+// olog() call sends - the only shape that interface ever sends, since it
+// predates O3LOGON's tagged AUTH_SESSKEY exchange entirely (see #9794).
+//
+// unlike O3LOGON's self-delimiting shapes, this one is a fixed sequence of
+// positional fields mirroring olog()'s own C argument list: a pointer and a
+// length for the user name, a pointer and a length for the password, a
+// pointer and a length for the connect string (never populated - the
+// connect string is already resolved by the time a login is sent), a mode
+// value, then a run of further fields this module has no use for, then a
+// pointer and a length for each of the host name, os user name, process id
+// and program name a real client's CID block always carries, followed by
+// one contiguous run of those strings with no delimiters and no length
+// prefix of their own - a field's length comes only from its own count
+// above, never from the string data.  decoded byte for byte, field by
+// field, from a real client's own request to this module (#9794) - both
+// phases carry the same header layout, phase two's password count simply
+// being zero on phase one's own copy of it.
+//
+// every pointer field is the client's own raw address - four bytes, native
+// byte order, the same width and order getPointer() already reads for
+// TTI_OPEN - but every count field is an ordinary length-prefixed int, the
+// same as everywhere else this module answers no platform any client
+// matches; a login this old apparently never marshals its pointers any way
+// but natively, unlike everything else in it
+//
+// several of the positional fields are never anything but zero in every
+// capture on file and what they are for is unknown, the same way several of
+// putOci7Summary()'s fields are - they still have to be read in order, to
+// land on the fields this module needs.  what comes after the program
+// name's length is a real client's own request continues into, still
+// unconfirmed - rather than keep walking blind, the string blob is found
+// the same way findO3LogonStrings() finds O3LOGON's: since it has to end
+// exactly on the packet's own end, its start is "end" minus the combined
+// length of the strings already accounted for above, whatever comes
+// between here and there
+bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
+						const byte_t *end,
+						bool secondphase) {
+
+	uint32_t	usernamesize=0;
+	uint32_t	passwordsize=0;
+	uint32_t	hostsize=0;
+	uint32_t	usersize=0;
+	uint32_t	pidstringsize=0;
+	uint32_t	programsize=0;
+	uint32_t	unused=0;
+
+	// the header's pointer fields are the client's own raw addresses -
+	// four bytes, native byte order, the same width and order
+	// getPointer() already reads off "pointersize"/"clientlittleendian"
+	// for TTI_OPEN.  its count fields, unlike its pointers, are ordinary
+	// length-prefixed ints, the same as everywhere else this module
+	// answers no platform any client matches - "nativeencoding" never
+	// gets set for a 9i login (see getClassicCount() - since removed;
+	// a real client's own request confirmed the plain reading was right
+	// all along, every count here matching a getAuthCount() read exactly)
+	if (!getPointer(rp,end,&unused,&rp) ||			// uid ptr
+		!getAuthCount(rp,end,&usernamesize,4,&rp) ||	// uid length
+		!getPointer(rp,end,&unused,&rp) ||		// pswd ptr
+		!getAuthCount(rp,end,&passwordsize,4,&rp) ||	// pswd length
+		!getPointer(rp,end,&unused,&rp) ||		// conn ptr
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// conn length
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// mode
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained
+		!getPointer(rp,end,&unused,&rp) ||		// unexplained
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained
+		!getPointer(rp,end,&unused,&rp) ||		// host ptr
+		!getAuthCount(rp,end,&hostsize,4,&rp) ||	// host length
+		!getPointer(rp,end,&unused,&rp) ||		// os user ptr
+		!getAuthCount(rp,end,&usersize,4,&rp) ||	// os user length
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained
+		!getPointer(rp,end,&unused,&rp) ||		// pid string ptr
+		!getAuthCount(rp,end,&pidstringsize,4,&rp) ||	// pid string length
+		!getPointer(rp,end,&unused,&rp) ||		// program ptr
+		!getAuthCount(rp,end,&programsize,4,&rp)) {	// program length
+		debugWrite("malformed classic logon request: header");
+		return false;
+	}
+
+	debugWrite("user length: %d",usernamesize);
+	debugWrite("password length: %d",passwordsize);
+	debugWrite("host length: %d",hostsize);
+	debugWrite("os user length: %d",usersize);
+	debugWrite("pid string length: %d",pidstringsize);
+	debugWrite("program length: %d",programsize);
+
+	// the program length is the last field this module has any use for,
+	// but it isn't the last field in the header - a real client's own
+	// request carries more of them after it, of a shape not confirmed
+	// against a real capture (see #9794).  rather than keep walking
+	// blind, land on the string blob the same way findO3LogonStrings()
+	// does for O3LOGON: it has to end exactly on the packet's own end,
+	// so its start is "end" minus the combined length of every string
+	// already accounted for above, whatever comes between here and
+	// there
+	uint32_t	bloblen=usernamesize+passwordsize+hostsize+
+					usersize+pidstringsize+programsize;
+	if ((size_t)(end-rp)<(size_t)bloblen) {
+		debugWrite("malformed classic logon request: "
+					"string blob doesn't fit");
+		return false;
+	}
+	rp=end-bloblen;
+
+	if ((size_t)(end-rp)<(size_t)usernamesize) {
+		debugWrite("malformed classic logon request: "
+					"truncated user name");
+		return false;
+	}
+	char	*user=NULL;
+	getString(rp,&user,usernamesize,&rp);
+	debugWrite("user: %s",user);
+
+	if (!secondphase) {
+		delete[] username;
+		username=user;
+		return true;
+	}
+
+	// phase two names the user again - refuse one that answers a
+	// challenge built for somebody else
+	bool	sameuser=!charstring::compare(user,username);
+	delete[] user;
+	if (!sameuser) {
+		debugWrite("user changed between phases");
+		return false;
+	}
+
+	// a zero length password is what a client sends when it has no
+	// password to offer - getAuthField()'s AUTH_PASSWORD does the same
+	if (passwordsize) {
+		delete[] authpassword;
+		getString(rp,&authpassword,passwordsize,&rp);
+		gotauthpassword=true;
+		debugWrite("AUTH_PASSWORD: %s",authpassword);
+	} else {
+		debugWrite("no auth password");
+	}
+
+	// the host name, os user name, pid string and program name aren't
+	// needed for anything this module does - already accounted for in
+	// bloblen above, so there's nothing left to skip past them for
+
+	return true;
+}
+
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 
 	if (!recvPacket()) {
@@ -6973,6 +7134,11 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 				TTI_LOGON_PRESENT_USER,&rp)) {
 			return false;
 		}
+		// phase one's ttifunction is the only place the client's
+		// choice of login format shows up - phase two's matching
+		// TTI_LOGON_PRESENT_PWD carries no such marker of its own,
+		// so this has to be remembered from here (see #9794)
+		classiclogon=(ttifunction==TTI_LOGON_PRESENT_USER);
 	} else {
 		if (!read(rp,&ttifunction,"ttifunction",
 				TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD,&rp) &&
@@ -6996,7 +7162,9 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		debugTtcCode(ttccode);
 		debugTtiFunction(ttifunction);
 		debugWrite("seq number: %d",seqnumber);
-		bool	retval=recvO3LogonRequest(rp,end,secondphase);
+		bool	retval=(classiclogon)?
+				recvClassicLogonRequest(rp,end,secondphase):
+				recvO3LogonRequest(rp,end,secondphase);
 		debugEnd();
 		return retval;
 	}
@@ -7222,28 +7390,39 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("fabricated challenge: %s",
 			(fabricatedchallenge)?"yes":"no");
 
-	// EXPERIMENTAL (#9765/#9769 investigation): the bare-buffer shape this
-	// branch used to send - a length slot, the key as a length-prefixed
-	// string, then a bare summary, with no pair count, no AUTH_SESSKEY
-	// name, no flags - was never pinned against a real capture, and a
-	// real client (redhat9x86 and solaris8sparc both, same bytes either
-	// way) rejects it outright with a break instead of sending phase two.
-	// a real 10.2 server's whole native-encoding OSESSKEY response is 225
-	// bytes (jduck's tns_auth_sesskey.rb exploit, CVE-2009-1979 - it reads
-	// the RPA without decoding it, so only the size is confirmed from
-	// that source), which is far larger than a bare sesskey-plus-summary
-	// object can produce even accounting for native's wider fixed fields.
-	// that request format - a pointer, counts, more pointers, a
-	// length-prefixed user name, an explicit field count - is the exact
-	// same shape recvAuthenticationRequest() already parses, which is
-	// also the shape putAuthField()/putAuthTrailer() below already answer
-	// with for O5LOGON.  trying that same tagged-field shape here instead
-	// of the bare one, pending live confirmation
+	// o3logon answers the session key challenge in one of two shapes,
+	// depending on which login format the client used in phase one (see
+	// #9794): a real 0x76 (TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY)
+	// client wants the tagged AUTH_SESSKEY shape
+	// putAuthField()/putAuthTrailer() below also answer with for
+	// O5LOGON - confirmed live against redhat9x86 and solaris8sparc
+	// (#9792) - while a real classic 0x52 (TTI_LOGON_PRESENT_USER)
+	// client, the only shape an ancient pre-8.0 OCI olog() call ever
+	// sends, wants this branch's older bare shape instead: a count,
+	// then the key as a raw buffer with no length byte of its own since
+	// the count already gives its size, then a bare summary object.  a
+	// real classic client's own session with a real 10.2 server,
+	// captured straight to the backend and bypassing this module
+	// entirely (#9794), answers exactly this way - confirmed live: a
+	// first attempt using putLenString() here added a second, redundant
+	// length byte on top of the count (a genuine duplicate, not a
+	// native-versus-portable difference - the client broke on it the
+	// same way it breaks on every other malformed challenge this
+	// investigation has found), so the raw buffer goes out unprefixed
+	// instead
 	if (o3logon) {
 
-		putAuthCount(1,2);
-		putAuthField("AUTH_SESSKEY",serverauthsesskey);
-		putAuthTrailer(trailer,sizeof(trailer),false);
+		if (classiclogon) {
+			uint32_t sesskeysize=
+					charstring::getLength(serverauthsesskey);
+			putAuthCount(sesskeysize,2);
+			write(&reqpacket,serverauthsesskey,(size_t)sesskeysize);
+			putO3LogonSummary();
+		} else {
+			putAuthCount(1,2);
+			putAuthField("AUTH_SESSKEY",serverauthsesskey);
+			putAuthTrailer(trailer,sizeof(trailer),false);
+		}
 
 		debugEnd();
 		return sendPacket(true);

@@ -1942,6 +1942,18 @@
 		AUTH_ALTER_SESSION's oversized value uses is now parsed
 		correctly, including tolerating a trailing nul a real client
 		includes inside the last chunk's declared length
+	added support for the oracle protocol module's classic,
+		pre-session-key login (TTI_LOGON_PRESENT_USER/
+		TTI_LOGON_PRESENT_PWD) that an ancient pre-8.0 OCI client's
+		olog() call sends, the only shape that interface ever uses -
+		a fixed sequence of positional pointer/length fields
+		mirroring olog()'s own argument list, followed by one
+		contiguous, undelimited run of the strings those fields
+		describe; also fixed the session key challenge response's
+		bare-buffer shape (used only for this login format) to stop
+		writing a redundant length byte on top of the count that
+		already precedes it, which broke every such login right
+		after the challenge
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
