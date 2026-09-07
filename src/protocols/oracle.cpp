@@ -15073,14 +15073,31 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			return false;
 		case ORACLE_TYPE_DATE:
 			{
-			// a fixed 7 raw bytes, no length prefix
+			// every other type this function writes goes out as a
+			// clr - a length byte, then that many bytes, via
+			// putLenBytes() - and putRowData()'s own ORACLE_TYPE_DATE
+			// case, above, already wraps these same 7 raw bytes in
+			// putLenBytes() rather than writing them bare.  this case
+			// used to write the 7 bytes with no length byte ahead of
+			// them, on the unconfirmed assumption that a date needed
+			// none.  a live hang (odefin then oexec then a standalone
+			// ofen returning a NUMBER, CHAR, VARCHAR2 and DATE column,
+			// portable encoding) tracked the missing byte down: with
+			// no length byte, the client read the date's own century
+			// byte - 0x78, 120, for a year in the 2000s - as the clr
+			// length instead, and blocked waiting for a 120-byte field
+			// that was never coming.  see putField()'s ORACLE_TYPE_CHAR
+			// et al. case above for [0024] of test/protocol/oracle/
+			// samples/oracle102-oci7-portable-login-select.cap, the
+			// real-server capture confirming the clr shape every other
+			// field here follows
 			byte_t	date[ORACLE_DATE_SIZE];
 			if (!getOracleDate(field,fieldsize,date)) {
 				// better to send nothing at all than
 				// to send 7 bytes of garbage
 				return false;
 			}
-			write(&reqpacket,(const char *)date,sizeof(date));
+			putLenBytes((const char *)date,sizeof(date));
 			}
 			return true;
 		case ORACLE_TYPE_RAW:

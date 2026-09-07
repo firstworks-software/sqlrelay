@@ -1994,6 +1994,17 @@
 		iteration count and options fields, the same shape query2()'s
 		header already used; also made the call echo its own sequence
 		number in the summary object, which it never had before
+	fixed the oracle protocol module hanging on a client's first standalone
+		fetch after explicitly describing a cursor's columns: a date
+		column's value went out as 7 raw bytes with no length prefix,
+		while every other column type on the same row is length-
+		prefixed, so a real client read the date's own century byte as
+		the next field's length and blocked waiting for a field that
+		size that was never coming; a real server's own answer to a
+		standalone fetch, already on file but previously misread as a
+		different call, confirmed every field on this path is length-
+		prefixed, matching how a date is already written on the
+		newer row-data path
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
