@@ -1927,6 +1927,11 @@
 		parse-execute) instead of rejecting it with ORA-03001, which
 		made the client send a break and abort every login once its
 		post-login handshake completed
+	fixed the oracle protocol module's o3logon parsing to recognize a real
+		session-key login's tagged AUTH_TERMINAL/AUTH_PROGRAM_NM/
+		AUTH_MACHINE/AUTH_PID fields instead of assuming everything
+		past the user name is a flat string list, which made every
+		such login fail with ORA-03113
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

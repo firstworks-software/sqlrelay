@@ -1454,6 +1454,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint32_t rowsprocessed,
 						uint32_t successiterations);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
+		bool	peekPrintableString(const byte_t *rp,
+							const byte_t *end,
+							const byte_t **rpout);
+		bool	peekO3LogonField(const byte_t *rp,
+							const byte_t *end,
+							const byte_t **rpout);
 		const byte_t	*findO3LogonStrings(const byte_t *rp,
 							const byte_t *end);
 		bool	recvO3LogonRequest(const byte_t *rp,
@@ -6554,6 +6560,73 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	debugEnd();
 }
 
+// checks for one bare length-prefixed printable string: a length byte and
+// that many printable bytes.  factored out of findO3LogonStrings() so
+// peekO3LogonField() can require the same shape of a field's name and
+// value.  doesn't allocate or log anything, since findO3LogonStrings()
+// tries this at every candidate offset and only the one it settles on is
+// worth recording
+bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
+						const byte_t *end,
+						const byte_t **rpout) {
+
+	if (end-rp<1) {
+		return false;
+	}
+
+	byte_t	length=*rp;
+	rp++;
+
+	if (!length || (size_t)(end-rp)<(size_t)length) {
+		return false;
+	}
+
+	for (byte_t i=0; i<length; i++) {
+		if (rp[i]<' ' || rp[i]>'~') {
+			return false;
+		}
+	}
+
+	*rpout=rp+length;
+
+	return true;
+}
+
+// checks for one o3logon session attribute in its tagged, name/value
+// shape - a count, a printable length-prefixed name, another count, a
+// printable length-prefixed value when that count is nonzero, and a
+// trailing count for flags.  a real session-key login sends AUTH_TERMINAL,
+// AUTH_PROGRAM_NM, AUTH_MACHINE and AUTH_PID this way rather than as bare
+// strings, so findO3LogonStrings() tries this shape first.  same
+// no-allocation, no-logging contract as peekPrintableString()
+bool sqlrprotocol_oracle::peekO3LogonField(const byte_t *rp,
+						const byte_t *end,
+						const byte_t **rpout) {
+
+	uint32_t	namesize=0;
+	if (!getAuthCount(rp,end,&namesize,4,&rp) ||
+		!peekPrintableString(rp,end,&rp)) {
+		return false;
+	}
+
+	uint32_t	valuesize=0;
+	if (!getAuthCount(rp,end,&valuesize,4,&rp)) {
+		return false;
+	}
+	if (valuesize && !peekPrintableString(rp,end,&rp)) {
+		return false;
+	}
+
+	uint32_t	flags=0;
+	if (!getAuthCount(rp,end,&flags,4,&rp)) {
+		return false;
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
 // The o3logon login packets are shaped nothing like the o5logon ones.  Their
 // argument block is positional - a marshalled OCI argument list, with no
 // AUTH_xxx names on the wire anywhere - and everything the module needs out of
@@ -6568,12 +6641,12 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 // capture of the same client against sqlr-listener, which is the portable
 // form, was taken at the default snaplen and is truncated.
 //
-// So rather than walk a block whose layout isn't known, this finds the string
-// list directly: the run of non-empty printable length-prefixed strings that
-// ends exactly where the packet does.  A string is a length byte and its bytes
-// in both marshallings, so that reading doesn't depend on which one the client
-// used, and having to land exactly on the end of the packet is what makes a
-// wrong offset unlikely rather than merely unlucky.
+// So rather than walk a block whose layout isn't known, this finds the item
+// list directly: a run of items, each either a bare printable
+// length-prefixed string or a session-key login's tagged name/value field
+// (see peekO3LogonField()), that ends exactly where the packet does.
+// Having to land exactly on the end of the packet is what makes a wrong
+// offset unlikely rather than merely unlucky.
 //
 // It is still a heuristic, so it is bounded on both sides: the search stays
 // inside the block rather than running the length of the packet, since the
@@ -6599,22 +6672,23 @@ const byte_t *sqlrprotocol_oracle::findO3LogonStrings(const byte_t *rp,
 
 		while (ok && p<end) {
 
-			byte_t	length=*p;
-			p++;
+			// a tagged field first, a bare string otherwise
+			const byte_t	*next=NULL;
+			if (peekO3LogonField(p,end,&next)) {
+				p=next;
+				count++;
+				ok=(count<=O3LOGON_MAX_STRINGS);
+				continue;
+			}
 
-			if (!length || (size_t)(end-p)<(size_t)length) {
+			if (!peekPrintableString(p,end,&next)) {
 				ok=false;
 				break;
 			}
-
-			for (byte_t i=0; ok && i<length; i++) {
-				ok=(p[i]>=' ' && p[i]<='~');
-			}
-
-			p+=length;
+			p=next;
 			count++;
 
-			ok=(ok && count<=O3LOGON_MAX_STRINGS);
+			ok=(count<=O3LOGON_MAX_STRINGS);
 		}
 
 		if (ok && p==end && count) {
