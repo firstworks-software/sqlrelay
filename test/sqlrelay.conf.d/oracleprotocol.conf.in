@@ -12,6 +12,19 @@
 	     instead, with no error.  See the Server Version section of
 	     doc/admin/configguide.wt for the full trade-off across every
 	     client tested against this module. -->
+	<!-- HOST=oracle below (used by this instance and by 11g, 12c,
+	     connectstrings, and fetchatonce below) resolves to a real 12.2
+	     backend, which under its default SQLNET.ALLOWED_LOGON_VERSION_SERVER
+	     setting (11) requires the O5LOGON auth exchange, introduced in
+	     Oracle 11.1.  A pre-11g OCI client - eg. solaris8sparc's 9.0.1
+	     install - has no O5LOGON support, so its backend connection
+	     fails with ORA-28040 "No matching authentication protocol"
+	     (#9796).  Lowering ALLOWED_LOGON_VERSION_SERVER on this shared
+	     backend would let an old client in, but that's a farm-ops call
+	     on a resource other tests also depend on, not a sqlrelay fix -
+	     same reasoning as oracleprotocoloci7's separate backend below
+	     (#9654).  A host that old can only exercise the backend leg of
+	     this module through oracleprotocoloci7. -->
 	<instance id="oracleprotocol" dbase="oracle" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT1@" serverversion="11.2" sid="ora1"/>
