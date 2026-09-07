@@ -32,15 +32,15 @@ ORACLEPROTOCOLPORT7 ?= 1527
 # oracle.class only builds if a jdk is configured - see
 # ORACLEPROTOCOLTESTTARGETS in config.mk.in
 #
-# oci7 only builds if the legacy OCI7 call interface was detected at
-# configure time - also gated through ORACLEPROTOCOLTESTTARGETS in
-# config.mk.in, but via HAVE_OCI7 rather than HAVE_JAVA
+# oci7 and oci7describe only build if the legacy OCI7 call interface was
+# detected at configure time - also gated through ORACLEPROTOCOLTESTTARGETS
+# in config.mk.in, but via HAVE_OCI7 rather than HAVE_JAVA
 #
-# oracledescribeonly, oraclelegacyfetch, oracleclrchunks, oracleiterations0
-# and oraclebigchunkclroff only need rudiments (raw sockets), so they build
-# whether or not OCI is configured - they speak the oracle wire protocol
-# themselves rather than going through a client library
-all: oci8 ociselect oracledescribeonly oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+# oracledescribeonly, oracledescribe, oraclelegacyfetch, oracleclrchunks,
+# oracleiterations0 and oraclebigchunkclroff only need rudiments (raw
+# sockets), so they build whether or not OCI is configured - they speak the
+# oracle wire protocol themselves rather than going through a client library
+all: oci8 ociselect oracledescribeonly oracledescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -62,6 +62,9 @@ oci8: oci8.cpp oci8.$(OBJ)
 oci7: oci7.cpp oci7.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
+oci7describe: oci7describe.cpp oci7describe.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7describe.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
 ociselect: ociselect.cpp ociselect.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
@@ -75,6 +78,17 @@ oracledescribeonly.$(OBJ): oracleprotocolclient.cpp
 
 oracledescribeonly: oracledescribeonly.cpp oracleprotocolclient.cpp oracledescribeonly.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracledescribeonly.$(OBJ) $(RUDIMENTSLIBS)
+
+# oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
+# the test's main, the same way asserts.cpp is.  the explicit dependency
+# below is needed because the .cpp.$(OBJ) suffix rule only depends on
+# oracledescribe.cpp - without it, editing oracleprotocolclient.cpp
+# alone would relink but not recompile, leaving a stale object (see
+# AGENTS.md's note on this build tracking no header dependencies)
+oracledescribe.$(OBJ): oracleprotocolclient.cpp
+
+oracledescribe: oracledescribe.cpp oracleprotocolclient.cpp oracledescribe.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracledescribe.$(OBJ) $(RUDIMENTSLIBS)
 
 # oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
 # the test's main, the same way asserts.cpp is.  the explicit dependency
@@ -121,5 +135,5 @@ oraclebigchunkclroff: oraclebigchunkclroff.cpp oracleprotocolclient.cpp oraclebi
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclebigchunkclroff.$(OBJ) $(RUDIMENTSLIBS)
 
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
 	$(RMTREE) .libs

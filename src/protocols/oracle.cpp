@@ -230,6 +230,12 @@
 #define ORA_ILLEGAL_VARIABLE_NAME_MESSAGE \
 	"ORA-01036: illegal variable name/number\n"
 
+// what a describe naming a position past the end of the select list gets
+// back - see describe()
+#define ORA_VARIABLE_NOT_IN_SELECT_LIST	1007
+#define ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE \
+	"ORA-01007: variable not in select list\n"
+
 // what completes the call a client's marker interrupted (see the
 // "Oracle Wire Protocol - Cancel" wiki page and #9591) - a real server's
 // documented response to a break/reset
@@ -522,8 +528,11 @@
 #define MAX_NUMBER_TEXT_SIZE		512
 
 // an oracle date is a fixed 7 bytes, and a column of them is described that
-// wide
+// wide - except by an oci7 describe, where a real server sends 1 and the
+// client works the 7 back out from the type, the way it does for a rowid,
+// an interval and a timestamp with time zone.  see describe()
 #define ORACLE_DATE_SIZE		7
+#define ORACLE_OCI7_DATE_SIZE		1
 
 // an oracle rowid's external form is 18 base 64 characters: 6 for the data
 // object number, 3 for the relative file number, 6 for the block number and
@@ -1453,7 +1462,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putOci7SummaryNative(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
-						uint32_t successiterations);
+						uint32_t successiterations,
+						uint32_t oranum=0);
 		void	putAuthExtra(stringbuffer *extra, bool secondphase);
 		bool	peekPrintableString(const byte_t *rp,
 							const byte_t *end,
@@ -1501,6 +1511,20 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// osql7...
 		bool	osql7(const byte_t *rp);
 		bool	sendOsql7Response(sqlrservercursor *cursor);
+
+		// describe...
+		bool	describe(const byte_t *rp);
+		bool	sendDescribeResponse(sqlrservercursor *cursor,
+							uint32_t colcount);
+		void	putOci7DescribeColumn(sqlrservercursor *cursor,
+							uint32_t column);
+		// the internal oracle datatype code an oci7 describe reports
+		// for a column the modern describe path calls "wiretype"
+		uint16_t	getOci7DescribeColumnType(uint16_t wiretype);
+		// and the buffer width it reports for one
+		uint32_t	getOci7DescribeColumnSize(uint16_t wiretype,
+							uint32_t size);
+		bool	sendVariableNotInSelectListError(uint32_t cursorid);
 
 		// parse-execute...
 		bool	parseExecute(const byte_t *rp);
@@ -2488,8 +2512,11 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					loop=parseExecute(rp);
 					rp=NULL;
 					break;
-				case TTI_CANCEL:
 				case TTI_DESCRIBE:
+					loop=describe(rp);
+					rp=NULL;
+					break;
+				case TTI_CANCEL:
 				case TTI_DESCRIBE2:
 				case TTI_STARTUP:
 				case TTI_STARTUP2:
@@ -2497,7 +2524,11 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					// unimplemented - return an oracle error and
 					// keep the session alive instead of dropping
 					// it; rp is discarded, the call's body (and
-					// anything piggybacked behind it) go unread
+					// anything piggybacked behind it) go unread.
+					// no capture on file carries any of these -
+					// TTI_DESCRIBE, which describe() above now
+					// answers, is the only one of the group that
+					// a real oci7 client sends
 					loop=sendUnimplementedFunctionError();
 					rp=NULL;
 					break;
@@ -7716,7 +7747,8 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
-						uint32_t successiterations) {
+						uint32_t successiterations,
+						uint32_t oranum) {
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
@@ -7729,7 +7761,15 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 
 	writeLE(&reqpacket,rowsprocessed);
 
-	static const byte_t	pad2[6]={0};
+	// the error number, the same field putOci7Summary() carries in the
+	// same place in its own field order.  what used to be a 6 byte pad
+	// here is this 4 byte field and 2 zero bytes: an ORA-01007 answering
+	// a describe puts 1007 in exactly these four bytes - packet [0028] of
+	// test/protocol/oracle/samples/
+	// 9808-redhat9x86-native-realtable-outofrange.oraproxy
+	writeLE(&reqpacket,oranum);
+
+	static const byte_t	pad2[2]={0};
 	reqpacket.append(pad2,sizeof(pad2));
 	writeLE(&reqpacket,cursorid);
 
@@ -7765,6 +7805,7 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	debugWrite("rows processed: %d",rowsprocessed);
 	debugWrite("call number: %d",callnumber);
 	debugWrite("success iterations: %d",successiterations);
+	debugWrite("error: %d",oranum);
 	debugEnd();
 }
 
@@ -8315,6 +8356,320 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 		putOci7Summary(wireCursorId(cursor),3,0,0);
 	}
 
+	return sendPacket(true);
+}
+
+// what an oci7 client's odescr() puts on the wire.  a client sends one of
+// these per statement however many columns it goes on to ask about - the
+// answer carries the whole select list, and the client serves every later
+// odescr() on that statement out of its own cache of it.  the position the
+// request names changes nothing about the answer; it only matters when it
+// runs past the end of the select list, which is an ORA-01007.
+//
+// decoded byte for byte from a real oci7 client against a 10.2 server, in
+// both encodings: the 18 captures in test/protocol/oracle/samples/ named
+// 9808-redhat9x86-native-* and 9808-solaris8sparc-portable-*.  the native
+// ones, where every count is a fixed width, are what pin where each field
+// starts and ends.  the -parse, -exec and -fetch captures all carry the
+// same answer, so nothing about it depends on how far along the cursor is.
+//
+// the fields are the cursor id and the position, then five pointers into
+// the client's own address space and two counts (32 and 960 whatever the
+// statement) describing the buffers odescr() reads the answer into.  those
+// seven go unread - nothing behind this call needs them and nothing is
+// piggybacked behind it
+bool sqlrprotocol_oracle::describe(const byte_t *rp) {
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		seqnumber=0;
+	uint32_t	cursorid=0;
+	uint32_t	position=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated describe sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	// the summary object an ORA-01007 goes out in has to echo this back
+	callnumber=seqnumber;
+
+	// both are counts, read the same encoding-aware way close() reads its
+	// own cursor id
+	if (!getAuthCount(rp,end,&cursorid,4,&rp) ||
+		!getAuthCount(rp,end,&position,4,&rp)) {
+		debugWrite("truncated describe request");
+		return false;
+	}
+
+	debugStart("describe request");
+	debugWrite("seq number: %d",seqnumber);
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("position: %d",position);
+	debugEnd();
+
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
+	if (!cursor) {
+		debugWrite("cursor id %d not found",cursorid);
+		return sendCursorNotOpenError(cursorid);
+	}
+
+	// a describe answers out of an executed statement's column info, and
+	// an oci7 client describes straight off the parse, so the statement
+	// runs here.  the guards are query3()'s own describe-executes-too
+	// guards: only a select, so a describe never runs dml the client
+	// didn't ask for, and only a cursor that hasn't already been executed
+	// or fetched from, so a describe never rewinds a result set the
+	// client is in the middle of reading
+	uint16_t	curid=cont->getId(cursor);
+	if (!columntypescached[curid] && !rowssent[curid] &&
+			cursor->getQueryType()==SQLRQUERYTYPE_SELECT) {
+
+		pendingrow[curid].clear();
+		clearLobPin(curid);
+
+		if (!cont->executeQuery(cursor,true,true,true,true)) {
+			debugWrite("execute query failed");
+			return sendQueryError(cursor);
+		}
+	}
+
+	uint32_t	colcount=cont->colCount(cursor);
+	cacheColumnDefinitions(cursor,colcount);
+
+	// a position past the end of the select list - and a statement with
+	// no select list at all
+	if (!position || !colcount || position>colcount) {
+		debugWrite("position %d past %d columns",position,colcount);
+		return sendVariableNotInSelectListError(wireCursorId(cursor));
+	}
+
+	return sendDescribeResponse(cursor,colcount);
+}
+
+// the answer: the column count twice, one metadata block per column, every
+// column name in one blob behind them, and the status message an oci7 call's
+// answer ends with
+bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
+						uint32_t colcount) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_OK;
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+
+	debugStart("describe response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("column count: %d",colcount);
+	debugEnd();
+
+	// the column count, twice.  what the second copy is for is
+	// unexplained; the two agree in every capture
+	putAuthCount(colcount,2);
+	putAuthCount(colcount,2);
+
+	for (uint32_t i=0; i<colcount; i++) {
+		putOci7DescribeColumn(cursor,i);
+	}
+
+	// the names, in one blob behind the metadata blocks: every name in
+	// select list order with a double quote after it, sent as a total
+	// size and then the text.  the client splits the blob back up using
+	// the name length each metadata block carries, so the quotes are
+	// separators it never has to count.
+	//
+	// the size goes out twice, as a count and then as the text's own
+	// length byte, which is what putLenBytes() writes for anything up to
+	// 252 bytes.  no capture has a blob longer than that - a wider one
+	// takes putLenBytes()'s chunked long form, the same as any other clr
+	stringbuffer	names;
+	for (uint32_t i=0; i<colcount; i++) {
+		names.append(cont->getColumnName(cursor,i),
+				cont->getColumnNameSize(cursor,i));
+		names.append('"');
+	}
+	uint32_t	namessize=(uint32_t)names.getStringLength();
+
+	putAuthCount(namessize,2);
+	putLenBytes(names.getString(),namessize);
+
+	debugStart("column names");
+	debugWrite("size: %d",namessize);
+	debugWrite("names: %s",names.getString());
+	debugEnd();
+
+	// the same status message an open response ends with
+	write(&reqpacket,(byte_t)TTC_STATUS);
+	putAuthCount(1,4);
+
+	return sendPacket(true);
+}
+
+// one column's metadata - 47 bytes in the native encoding, 18 to 20 in the
+// portable one.  the fields are the same and in the same order either way,
+// and they are the fields putColumnMetadata() writes for the modern describe
+// path, minus the inline column name and one trailing count
+void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
+						uint32_t column) {
+
+	uint16_t	curid=cont->getId(cursor);
+	const char	*columntypestring=
+				cont->getColumnTypeName(cursor,column);
+	uint16_t	columntype=columntypes[curid][column];
+	uint16_t	wiretype=getWireColumnType(columntype);
+	uint16_t	dbtype=getOci7DescribeColumnType(wiretype);
+	uint32_t	dbsize=getOci7DescribeColumnSize(wiretype,
+					getWireColumnSize(cursor,column,
+							columntypestring,
+							columntype,wiretype));
+
+	// the 0x80 form byte, and the character set and character length
+	// behind it, go out for a text type and nothing else.  the number,
+	// char, varchar2 and date cases are the captured ones - a date is
+	// 0x00 here, where putColumnMetadata() sends 0x80 for one - and the
+	// rest go by the pattern those four set
+	bool	character=(dbtype==ORACLE_TYPE_VARCHAR ||
+				dbtype==ORACLE_TYPE_CHAR ||
+				dbtype==ORACLE_TYPE_LONG ||
+				dbtype==ORACLE_TYPE_CLOB);
+
+	uint32_t	precision=cont->getColumnPrecision(cursor,column);
+	uint32_t	scale=cont->getColumnScale(cursor,column);
+	int8_t		wirescale=(scale==NO_SCALE_UNSIGNED)?
+					NO_SCALE:(int8_t)scale;
+
+	// putColumnMetadata() sends a hardcoded 1 here.  a real server sends
+	// 0 for a not null column: 9808-redhat9x86-native-notnull-parse
+	// .oraproxy against 9808-redhat9x86-native-realtable-parse.oraproxy,
+	// two describes that differ in this byte and nothing else
+	byte_t	nullok=(cont->getColumnIsNullable(cursor,column))?1:0;
+
+	uint32_t	namesize=cont->getColumnNameSize(cursor,column);
+
+	// a flag byte the portable encoding carries no counterpart for, 1 in
+	// every native capture
+	if (nativeencoding) {
+		write(&reqpacket,(byte_t)1);
+	}
+
+	write(&reqpacket,(byte_t)dbtype);
+	write(&reqpacket,(byte_t)((character)?0x80:0x00));
+
+	// both are raw signed bytes in both encodings, unlike the modern
+	// describe path's scale - see putColumnPrecisionScale()
+	write(&reqpacket,(byte_t)precision);
+	write(&reqpacket,(byte_t)wirescale);
+
+	putAuthCount(dbsize,4);
+
+	// four counts that are zero in every capture, meaning unknown
+	putAuthCount(0,4);
+	putAuthCount(0,4);
+	putAuthCount(0,4);
+	putAuthCount(0,4);
+
+	putAuthCount((character)?charset:0,2);
+	write(&reqpacket,(byte_t)((character)?1:0));
+
+	// a byte the portable encoding has no counterpart for either, zero
+	// in every native capture
+	if (nativeencoding) {
+		write(&reqpacket,(byte_t)0);
+	}
+
+	putAuthCount((character)?dbsize:0,4);
+	write(&reqpacket,nullok);
+	write(&reqpacket,(byte_t)namesize);
+
+	// three more zero counts, meaning unknown
+	putAuthCount(0,4);
+	putAuthCount(0,4);
+	putAuthCount(0,4);
+
+	debugStart("column %d",column);
+	debugColumnType(columntypestring,dbtype);
+	debugWrite("size: %d",dbsize);
+	debugWrite("precision: %d",(int32_t)(int8_t)precision);
+	debugWrite("scale: %d",(int32_t)wirescale);
+	debugWrite("null ok: %d",nullok);
+	debugWrite("name size: %d",namesize);
+	debugEnd();
+}
+
+// an oci7 describe reports oracle's internal datatype code, which is the
+// code getWireColumnType() already hands back for everything but a rowid.
+// that one is folded to 11 there because a live 12.2 server describes a
+// rowid column as 11 to a modern client; an oci7 client expects 104, the
+// code its own SQLT_RDD names.  no capture on file describes a rowid to an
+// oci7 client, so 104 is what test/protocol/oracle/oci7.cpp expects rather
+// than something a real server was seen to send
+uint16_t sqlrprotocol_oracle::getOci7DescribeColumnType(uint16_t wiretype) {
+	if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
+		return ORACLE_TYPE_ROWID;
+	}
+	return wiretype;
+}
+
+// and the buffer width, which is getWireColumnSize()'s for every type but
+// the date.  a real server describes a date column 1 byte wide here and the
+// client works the 7 bytes a date really takes back out from the type -
+// the same way getWireColumnSize() already describes a rowid, an interval
+// and a timestamp with time zone 1 byte wide.  confirmed in both encodings
+// and against both a real date column and a sysdate: the -realtable-parse
+// and -parse captures
+uint32_t sqlrprotocol_oracle::getOci7DescribeColumnSize(uint16_t wiretype,
+							uint32_t size) {
+	if (wiretype==ORACLE_TYPE_DATE) {
+		return ORACLE_OCI7_DATE_SIZE;
+	}
+	return size;
+}
+
+// what a describe naming a position past the end of the select list gets
+// back.  a real server answers it with the summary object every other oci7
+// call is answered with, carrying the ora number, and the message behind it
+// - not sendErrorPacket()'s template, which is that same object frozen with
+// a login failure's field values in it.  the cursor id, command type and
+// call number all go out live here, which is the whole difference between
+// the two: the ORA-01007 in
+// 9808-redhat9x86-native-realtable-outofrange.oraproxy and its portable
+// counterpart match this byte for byte, and sendErrorPacket() would send
+// the login's 0, 0 and 3 for those three instead.
+//
+// the success iteration count is the one field the two captures disagree
+// about - the native one sends 1 and the portable one 0 - so it goes out as
+// the 0 sendOsql7Response() already sends for a statement that hasn't been
+// executed on the client's behalf
+bool sqlrprotocol_oracle::sendVariableNotInSelectListError(
+						uint32_t cursorid) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("variable not in select list error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	if (nativeencoding) {
+		putOci7SummaryNative(cursorid,3,0,0,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST);
+	} else {
+		putOci7Summary(cursorid,3,0,0,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST);
+	}
+	putLenString(ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE,
+			charstring::getLength(
+				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE));
+
+	// the error is the answer to the describe, and the session goes on
 	return sendPacket(true);
 }
 

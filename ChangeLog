@@ -2005,6 +2005,14 @@
 		different call, confirmed every field on this path is length-
 		prefixed, matching how a date is already written on the
 		newer row-data path
+	the oracle protocol module now implements the oci7 describe call
+		(TTI_DESCRIBE) instead of refusing it with ORA-03001, so an
+		oci7 client's odescr() works: it answers with every column in
+		the select list at once - type, size, precision, scale, null
+		flag, character set and name - in either encoding, and answers
+		a position past the end of the select list with ORA-01007;
+		decoded byte for byte from real oci7 sessions against a live
+		10.2 backend
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

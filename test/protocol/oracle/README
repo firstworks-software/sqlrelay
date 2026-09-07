@@ -104,6 +104,25 @@ that legacy interface was detected at configure time - the headers
 rdbms/public in a full Oracle Client install, a path Oracle Instant
 Client does not populate - so it may not be present in a given build.
 
+oci7describe.cpp, gated by the same configure-time check as oci7.cpp, is
+a minimal OCI7 client for capturing TTI_DESCRIBE (0x2B) traffic: olog,
+oopen, oparse, then - depending on --describe= - odefin/oexec/ofen,
+then odescr, then oclose, ologof. Nothing else, so a capture of it holds
+only the login, one statement, and the describe call, unlike oci7.cpp's
+full test suite, which forks a second connection for its Authentication
+section and makes a much noisier capture.
+
+    ./oci7describe SID [--describe=parse|exec|fetch|outofrange|concurrent] \
+                                      [USER PASSWORD [QUERY]]
+
+The five variants each put a different describe on the wire: parse (right
+after oparse, before any oexec), exec (after oexec, before the first
+ofen), fetch (after at least one ofen - the #9599 mid-fetch case), out of
+range (describing a column past the end of the select list, to see what a
+real server answers with), and concurrent (a second cursor described
+while a first cursor's fetch is still in progress, across two cursors
+open at once).
+
 ocibannerrewritetest drives ociselect through oraproxy's banner-rewriting
 mode against the real oracle122 server, and decodes the result.
 
@@ -257,6 +276,84 @@ the decoder can be exercised without live server access:
                                       reference the colcount=5
                                       exact-fetch trailer is written
                                       against (#9637)
+    9808-redhat9x86-native-parse.oraproxy
+                                     oci7describe --describe=parse: OCI7
+                                      olog login + oparse + odescr (no
+                                      oexec) against "select 1 as num,
+                                      'two' as txt, sysdate as dt from
+                                      dual", real 10.2 server, x86 Linux
+                                      client, native encoding (the
+                                      control) - TTI_DESCRIBE evidence
+                                      for #9808
+    9808-redhat9x86-native-exec.oraproxy
+                                     the same, but odescr after
+                                      odefin+oexec instead of right
+                                      after oparse (#9808)
+    9808-redhat9x86-native-fetch.oraproxy
+                                     the same, but odescr after one
+                                      ofen - the mid-fetch case #9599's
+                                      "odescr - mid-fetch" test relies
+                                      on (#9808)
+    9808-redhat9x86-native-outofrange.oraproxy
+                                     odescr on column 4 of the same
+                                      three-column query - the real
+                                      server's ORA-01007 "variable not
+                                      in select list" response
+                                      assertColumnCount() in oci7.cpp
+                                      expects (#9808, #9654)
+    9808-redhat9x86-native-concurrent.oraproxy
+                                     two cursors open at once: cursor A
+                                      parsed/executed/fetching one row
+                                      of a five-row query while cursor B
+                                      is parsed and described - the
+                                      #9699 "odescr on B while A is
+                                      mid-ping-pong" shape (#9808)
+    9808-solaris8sparc-portable-parse.oraproxy
+    9808-solaris8sparc-portable-exec.oraproxy
+    9808-solaris8sparc-portable-fetch.oraproxy
+    9808-solaris8sparc-portable-outofrange.oraproxy
+    9808-solaris8sparc-portable-concurrent.oraproxy
+                                     the same five captures again, from
+                                      a SPARC Solaris client instead -
+                                      portable encoding, no banner
+                                      rewriting (#9808)
+    9808-redhat9x86-native-realtable-parse.oraproxy
+    9808-redhat9x86-native-realtable-exec.oraproxy
+    9808-redhat9x86-native-realtable-outofrange.oraproxy
+    9808-solaris8sparc-portable-realtable-parse.oraproxy
+    9808-solaris8sparc-portable-realtable-exec.oraproxy
+    9808-solaris8sparc-portable-realtable-outofrange.oraproxy
+                                     the parse/exec/outofrange captures
+                                      above, repeated against "select
+                                      testnumber, testchar, testdate from
+                                      protocoltesttypes" - real table
+                                      columns rather than dual literals,
+                                      so precision/scale reflect genuine
+                                      column metadata (TESTNUMBER is
+                                      NUMBER(10,2)) instead of whatever
+                                      Oracle reports for a literal
+                                      expression; used to pin down the
+                                      TTI_DESCRIBE response's per-column
+                                      field offsets (#9808)
+    9808-redhat9x86-native-notnull-parse.oraproxy
+    9808-solaris8sparc-portable-notnull-parse.oraproxy
+                                     --describe=parse against "select
+                                      idcol, valcol from
+                                      protocoltest9808notnull", a
+                                      throwaway table with one NOT NULL
+                                      column (idcol) and one nullable
+                                      column (valcol) of otherwise
+                                      matching type - a nullable/not-null
+                                      contrast in a single response, to
+                                      try to locate a nullok field in the
+                                      TTI_DESCRIBE response (#9808)
+
+Each of the eighteen 9808-*.oraproxy captures above is oraproxy's own
+capture format (see "oraproxy" below), taken by interposing oraproxy
+locally on the client host and pointing the client's tnsnames.ora at it,
+rather than a raw tcpdump - a real NIC's MSS is too small for oradecode's
+one-frame-one-TNS-chunk assumption to hold. oradecode reads them with no
+conversion.
 
 Every column in these four multicol-*.cap captures is a NUMBER column
 defined SQLT_STR (the legacy putField() character-array arm) - only the

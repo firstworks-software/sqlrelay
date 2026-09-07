@@ -64,6 +64,7 @@ static const unsigned char	ORA_TTI_QUERY=0x03;
 static const unsigned char	ORA_TTI_EXECUTE=0x04;
 static const unsigned char	ORA_TTI_FETCH=0x05;
 static const unsigned char	ORA_TTI_DISCONNECT=0x09;
+static const unsigned char	ORA_TTI_DESCRIBE=0x2b;
 static const unsigned char	ORA_TTI_QUERY3=0x5e;
 static const unsigned char	ORA_TTI_LOGON_PRESENT_PWD_SEND_AUTH_PASSWORD=0x73;
 static const unsigned char	ORA_TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY=0x76;
@@ -147,6 +148,31 @@ static const unsigned char	ORA_CSFRM_IMPLICIT=1;
 
 // how many elements go in the al8i4 vector - see appendAl8i4Vector()
 static const uint32_t		ORA_AL8I4_SIZE=13;
+
+// what an oci7 client's odescr() sends behind the cursor id and the position:
+// five pointers into its own address space and two buffer sizes, 28 bytes in
+// the native encoding.  describe() in src/protocols/oracle.cpp reads none of
+// them, so the values are the ones packet [0027] of
+// samples/9808-redhat9x86-native-realtable-parse.oraproxy carried rather than
+// anything meaningful, and they go out only to prove they are discarded
+static const unsigned char	ORA_DESCRIBE_TRAILING_JUNK[28]={
+	0x10, 0x60, 0x05, 0x08,
+	0x70, 0x2b, 0x05, 0x08,
+	0x20, 0x00, 0x00, 0x00,
+	0x12, 0x60, 0x05, 0x08,
+	0x14, 0x60, 0x05, 0x08,
+	0xc0, 0x03, 0x00, 0x00,
+	0xd4, 0x63, 0x05, 0x08
+};
+
+// a pointer in the native encoding - 8 bytes, of which
+// recvAuthenticationRequest() in src/protocols/oracle.cpp reads only the
+// first: 0xfe is the sentinel that puts the whole session in the native
+// encoding, where 0x01 leaves it portable.  the other 7 are a client-side
+// address that means nothing here
+static const unsigned char	ORA_NATIVE_POINTER[8]={
+	0xfe, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 
 // o5logon sizes - the 11g half of src/auths/oracle_userlist.cpp
 static const size_t	ORA_SESSION_KEY_SIZE_11G=48;
@@ -257,6 +283,23 @@ class oracleprotocolclient {
 		// before connect()
 		void	setTtiVersion(unsigned char ttiversion);
 
+		// which of the two wire encodings this client speaks.
+		// portable by default, which is where every real client
+		// ends up - the module answers a platform banner none of
+		// them match.  the native one is picked by the first
+		// pointer field of the login request and nothing else (see
+		// recvAuthenticationRequest() in src/protocols/oracle.cpp),
+		// so it is reachable from a hand-built client that writes
+		// the 0xfe sentinel there, and only from one.  in it every
+		// pointer is 8 bytes and every count a fixed width little
+		// endian integer, where the portable encoding writes one
+		// byte and a count prefixed int.
+		//
+		// it has to be set before login() - the sentinel goes out in
+		// phase one and both ends decide there and then
+		void	setNativeEncoding(bool nativeencoding);
+		bool	getNativeEncoding();
+
 		// the whole handshake through the accept: the connect
 		// packet (twice - the listener asks for a resend, the way a
 		// real database does), then the tti protocol and data type
@@ -326,6 +369,13 @@ class oracleprotocolclient {
 		// TTI_FETCH
 		bool	fetch(uint32_t cursorid, uint32_t rowstofetch);
 
+		// TTI_DESCRIBE - an oci7 client's odescr().  "position" is
+		// the column the client is asking about, counted from 1;
+		// the answer carries the whole select list whatever it
+		// says, and the only value it changes anything for is one
+		// past the end of that list, which is an ORA-01007
+		bool	describe(uint32_t cursorid, uint32_t position);
+
 		// the pre-query3 calls: TTI_QUERY parses, TTI_EXECUTE
 		// executes what it parsed, and the legacy TTI_FETCH asks
 		// for the rows.  a session that only ever sends these
@@ -384,6 +434,18 @@ class oracleprotocolclient {
 		void	appendBE32(uint32_t value);
 		void	appendLE16(uint16_t value);
 		void	appendLenPreInt(uint32_t value);
+
+		// the two encoding-aware primitives - a count, and the
+		// pointer field a count often sits behind.  "nativesize" is
+		// how many bytes the count takes in the native encoding,
+		// which varies field by field; the portable encoding writes
+		// a count prefixed int whatever it says.  the mirrors of
+		// putAuthCount()/getAuthCount() and getAuthPointer() in
+		// src/protocols/oracle.cpp
+		void	appendAuthCount(uint32_t value, unsigned char nativesize);
+		void	appendAuthPointer();
+		bool	readAuthCount(uint32_t *value, unsigned char nativesize);
+
 		void	appendLenString(const char *value, size_t size);
 		void	appendLenBytes(const char *value, size_t size);
 		void	appendAl8i4Vector(uint32_t iterations);
@@ -430,6 +492,7 @@ class oracleprotocolclient {
 		bool			connected;
 		bool			largeheader;
 		bool			bigchunkclr;
+		bool			nativeencoding;
 
 		// setBigChunkClrFraming()'s answer, and whether it was ever
 		// given.  two members rather than one tri-state so the
@@ -506,6 +569,7 @@ oracleprotocolclient::oracleprotocolclient() {
 	connected=false;
 	largeheader=false;
 	bigchunkclr=false;
+	nativeencoding=false;
 	bigchunkclrframingset=false;
 	bigchunkclrframing=false;
 	ttiversion=ORA_TTI_VERSION_6;
@@ -552,6 +616,14 @@ void oracleprotocolclient::setBigChunkClrFraming(bool bigchunk) {
 
 void oracleprotocolclient::setTtiVersion(unsigned char ttiversion) {
 	this->ttiversion=ttiversion;
+}
+
+void oracleprotocolclient::setNativeEncoding(bool nativeencoding) {
+	this->nativeencoding=nativeencoding;
+}
+
+bool oracleprotocolclient::getNativeEncoding() {
+	return nativeencoding;
 }
 
 // which framing this client has to read and write - which is not the same
@@ -683,6 +755,59 @@ void oracleprotocolclient::appendLenPreInt(uint32_t value) {
 		appendByte(4);
 		appendBE32(value);
 	}
+}
+
+// a count, in whichever encoding this session settled on: a count prefixed
+// int in the portable one, and "nativesize" little-endian bytes in the
+// native one, of which only the low four carry the value.  the mirror of
+// putAuthCount() in src/protocols/oracle.cpp
+void oracleprotocolclient::appendAuthCount(uint32_t value,
+						unsigned char nativesize) {
+
+	if (!nativeencoding) {
+		appendLenPreInt(value);
+		return;
+	}
+
+	for (unsigned char i=0; i<nativesize; i++) {
+		appendByte((unsigned char)((i<sizeof(uint32_t))?
+					((value>>(8*i))&0xff):0));
+	}
+}
+
+// the pointer a count often sits behind.  the module reads past it without
+// looking at the value, save for the first one in a login request, whose
+// first byte is what picks the encoding for the whole session
+void oracleprotocolclient::appendAuthPointer() {
+
+	if (!nativeencoding) {
+		appendByte(1);
+		return;
+	}
+
+	appendBytes(ORA_NATIVE_POINTER,sizeof(ORA_NATIVE_POINTER));
+}
+
+bool oracleprotocolclient::readAuthCount(uint32_t *value,
+						unsigned char nativesize) {
+
+	if (!nativeencoding) {
+		return readLenPreInt(value);
+	}
+
+	if ((size_t)nativesize>respsize-respposition) {
+		return false;
+	}
+
+	*value=0;
+	for (unsigned char i=0; i<nativesize; i++) {
+		unsigned char	b=0;
+		readByte(&b);
+		if (i<sizeof(uint32_t)) {
+			*value|=((uint32_t)b)<<(8*i);
+		}
+	}
+	return true;
 }
 
 // a text - one length byte, then that many bytes.  there is no long form; a
@@ -1256,19 +1381,19 @@ void oracleprotocolclient::appendAuthField(const char *name,
 						uint32_t flags) {
 	size_t	namesize=charstring::getLength(name);
 	size_t	valuesize=charstring::getLength(value);
-	appendLenPreInt((uint32_t)namesize);
+	appendAuthCount((uint32_t)namesize,4);
 	appendLenString(name,namesize);
-	appendLenPreInt((uint32_t)valuesize);
+	appendAuthCount((uint32_t)valuesize,4);
 	if (valuesize) {
 		appendLenString(value,valuesize);
 	}
-	appendLenPreInt(flags);
+	appendAuthCount(flags,4);
 }
 
 // the fixed part of a login request, up to and including the user name.
-// the pointers are single bytes because this client speaks the portable
-// encoding - recvAuthenticationRequest() tells the two apart by whether
-// the first pointer is 0xfe, and 0x01 is not
+// the first pointer is what picks the encoding for the whole session - see
+// setNativeEncoding() and appendAuthPointer().  the field count is the one
+// count here that isn't 4 bytes wide in the native encoding
 void oracleprotocolclient::sendAuthRequest(unsigned char ttifunction,
 						const char *user,
 						uint32_t authmode,
@@ -1278,13 +1403,13 @@ void oracleprotocolclient::sendAuthRequest(unsigned char ttifunction,
 
 	beginTtiCall(ttifunction);
 	appendByte(2);				// sequence number
-	appendByte(1);				// pointer
-	appendLenPreInt((uint32_t)usersize);
-	appendLenPreInt(authmode);
-	appendByte(1);				// pointer
-	appendLenPreInt(fieldcount);
-	appendByte(1);				// pointer
-	appendByte(1);				// pointer
+	appendAuthPointer();
+	appendAuthCount((uint32_t)usersize,4);
+	appendAuthCount(authmode,4);
+	appendAuthPointer();
+	appendAuthCount(fieldcount,8);
+	appendAuthPointer();
+	appendAuthPointer();
 	appendLenString(user,usersize);
 }
 
@@ -1300,7 +1425,7 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 	unsigned char	ttccode=0;
 	uint32_t	paircount=0;
 	if (!readByte(&dataflagshigh) || !readByte(&dataflagslow) ||
-			!readByte(&ttccode) || !readLenPreInt(&paircount)) {
+			!readByte(&ttccode) || !readAuthCount(&paircount,2)) {
 		return false;
 	}
 
@@ -1312,10 +1437,10 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 		char		*fieldvalue=NULL;
 		uint32_t	flags=0;
 
-		if (!readLenPreInt(&namesize) || !readLenString(&fieldname)) {
+		if (!readAuthCount(&namesize,4) || !readLenString(&fieldname)) {
 			return false;
 		}
-		if (!readLenPreInt(&valuesize)) {
+		if (!readAuthCount(&valuesize,4)) {
 			delete[] fieldname;
 			return false;
 		}
@@ -1323,7 +1448,7 @@ bool oracleprotocolclient::findAuthField(const char *name, char **value) {
 			delete[] fieldname;
 			return false;
 		}
-		if (!readLenPreInt(&flags)) {
+		if (!readAuthCount(&flags,4)) {
 			delete[] fieldname;
 			delete[] fieldvalue;
 			return false;
@@ -1851,6 +1976,34 @@ bool oracleprotocolclient::fetch(uint32_t cursorid, uint32_t rowstofetch) {
 	appendByte(1);				// sequence number
 	appendLenPreInt(cursorid);
 	appendLenPreInt(rowstofetch);
+
+	return sendPacket() && recvPacket();
+}
+
+// TTI_DESCRIBE.  the field order is describe()'s read order in
+// src/protocols/oracle.cpp, and it was checked against packet [0027] of
+// samples/9808-redhat9x86-native-realtable-parse.oraproxy: a sequence byte,
+// the cursor id and the position, and then 28 bytes describe() never reads.
+//
+// the sequence number is 10 rather than the 1 the other calls here send,
+// because an ORA-01007 echoes it back and a value the rest of the session
+// never uses is one a comparison against the capture can't confuse for
+// anything else
+bool oracleprotocolclient::describe(uint32_t cursorid, uint32_t position) {
+
+	beginTtiCall(ORA_TTI_DESCRIBE);
+	appendByte(10);				// sequence number
+	appendAuthCount(cursorid,4);
+	appendAuthCount(position,4);
+
+	// the client's own buffer pointers and sizes, which only the native
+	// encoding has room for - the portable one packs the same seven
+	// fields into whatever the capture's client wrote, and either way
+	// nothing reads them
+	if (nativeencoding) {
+		appendBytes(ORA_DESCRIBE_TRAILING_JUNK,
+				sizeof(ORA_DESCRIBE_TRAILING_JUNK));
+	}
 
 	return sendPacket() && recvPacket();
 }

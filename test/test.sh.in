@@ -1016,7 +1016,17 @@ run_protocol_test() {
 	# already-executed statement from its own client-side cache rather
 	# than putting a second describe on the wire.  it talks to the
 	# default instance's port directly, so it needs neither $server nor
-	# TNS_ADMIN.  finally it runs oraclelegacyfetch, another raw-socket
+	# TNS_ADMIN.  then it runs oracledescribe twice, once per wire
+	# encoding, for #9808 - it puts a TTI_DESCRIBE (an oci7 odescr) on
+	# the wire by hand and checks the answer's bytes against the real
+	# 10.2 server's own, from the 9808-*-realtable-* captures in
+	# protocol/oracle/samples.  the second run passes -native, which is
+	# the only way that encoding gets exercised at all: it is picked by
+	# the login request's first pointer field, and no real client writes
+	# the sentinel that picks it.  the test needs an OCI7 client for
+	# neither, which matters because oci7describe only builds where a
+	# full oracle client install was found.  finally it runs
+	# oraclelegacyfetch, another raw-socket
 	# test, for #9585 - it drives the legacy pre-query3 TTI_QUERY,
 	# TTI_EXECUTE and TTI_FETCH path straight over the socket, reaching
 	# the fetchRow() error branch inside sendFetchResponse() that no OCI
@@ -1067,7 +1077,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all eleven runs have to succeed for the instance to pass
+	# all thirteen runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1082,6 +1092,10 @@ run_protocol_test() {
 		resultfetchatonce="$?"
 		./oracledescribeonly
 		resultdescribeonly="$?"
+		./oracledescribe
+		resultdescribe="$?"
+		./oracledescribe -native
+		resultdescribenative="$?"
 		./oraclelegacyfetch
 		resultlegacyfetch="$?"
 		./oracleclrchunks
@@ -1098,7 +1112,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1127,6 +1141,14 @@ run_protocol_test() {
 		if ( test "$resultdescribeonly" != "0" )
 		then
 			printf "    % 8s: failed (describe only)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultdescribe" != "0" )
+		then
+			printf "    % 8s: failed (describe)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultdescribenative" != "0" )
+		then
+			printf "    % 8s: failed (describe, native encoding)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultlegacyfetch" != "0" )
 		then
