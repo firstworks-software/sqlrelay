@@ -1932,6 +1932,16 @@
 		AUTH_MACHINE/AUTH_PID fields instead of assuming everything
 		past the user name is a flat string list, which made every
 		such login fail with ORA-03113
+	fixed the oracle protocol module's o3logon session-key login so it
+		actually completes: the session key challenge now answers in
+		the tagged AUTH_SESSKEY shape a real client expects instead of
+		a bare length-prefixed buffer no client accepts; phase two's
+		AUTH_PASSWORD is now read as a tagged field among AUTH_TERMINAL/
+		AUTH_PROGRAM_NM/AUTH_MACHINE/AUTH_PID/AUTH_ACL/AUTH_ALTER_SESSION
+		instead of a bare string; and the chunked long-form encoding
+		AUTH_ALTER_SESSION's oversized value uses is now parsed
+		correctly, including tolerating a trailing nul a real client
+		includes inside the last chunk's declared length
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

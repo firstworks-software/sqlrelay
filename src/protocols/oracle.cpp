@@ -6039,11 +6039,66 @@ bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 	byte_t	length;
 	read(rp,&length,&rp);
 
-	// 0xfe introduces a chunked long form that nothing in the
-	// authentication exchange uses, so bail rather than desync
+	// 0xfe introduces the chunked long form that AUTH_ALTER_SESSION uses
+	// for its ~700-byte NLS-sync ALTER SESSION text: a run of
+	// length-prefixed chunks ended by a zero-length chunk, reassembled
+	// the same way getLenBytes() reassembles a clr's long form.  the
+	// reassembled buffer is new[]-allocated, since callers delete[]
+	// what this function hands back, unlike getLenBytes()'s pool-owned
+	// bytes
 	if (length==CLR_LONG_FORM_MARKER) {
-		debugWrite("malformed string: chunked, not supported");
-		return false;
+
+		if (end-rp<1) {
+			debugWrite("malformed string: truncated chunk");
+			return false;
+		}
+
+		// (end-rp) is a safe upper bound on the reassembled size,
+		// since every chunk's length costs at least a byte of its own
+		char		*value=new char[(size_t)(end-rp)+1];
+		uint32_t	valuesize=0;
+		for (;;) {
+			if (rp>=end) {
+				debugWrite("malformed string: "
+						"truncated chunk");
+				delete[] value;
+				return false;
+			}
+			uint32_t	chunksize;
+			if (bigchunkclr) {
+				if (!readLenPreInt(rp,end,&chunksize,&rp)) {
+					debugWrite("malformed string: "
+							"bad chunk length");
+					delete[] value;
+					return false;
+				}
+			} else {
+				byte_t	rawchunksize;
+				read(rp,&rawchunksize,&rp);
+				chunksize=rawchunksize;
+			}
+			if (!chunksize) {
+				break;
+			}
+			if ((size_t)(end-rp)<(size_t)chunksize) {
+				debugWrite("malformed string: "
+						"truncated chunk");
+				delete[] value;
+				return false;
+			}
+			bytestring::copy(value+valuesize,rp,chunksize);
+			rp+=chunksize;
+			valuesize+=chunksize;
+		}
+		value[valuesize]='\0';
+
+		*string=value;
+		*size=valuesize;
+		*rpout=rp;
+
+		debugWrite("string: %s",*string);
+
+		return true;
 	}
 	if ((size_t)(end-rp)<(size_t)length) {
 		debugWrite("malformed string: truncated");
@@ -6560,12 +6615,15 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	debugEnd();
 }
 
-// checks for one bare length-prefixed printable string: a length byte and
-// that many printable bytes.  factored out of findO3LogonStrings() so
-// peekO3LogonField() can require the same shape of a field's name and
-// value.  doesn't allocate or log anything, since findO3LogonStrings()
-// tries this at every candidate offset and only the one it settles on is
-// worth recording
+// checks for one printable string: the bare length-prefixed short form (a
+// length byte and that many printable bytes), or, above the short form's
+// reach, the chunked long form a 0xfe marker introduces (see getLenString(),
+// which reads the same shape - a real client's AUTH_ALTER_SESSION value, the
+// ~700 bytes of NLS-sync ALTER SESSION text, is what turned out to need it).
+// factored out of findO3LogonStrings() so peekO3LogonField() can require the
+// same shape of a field's name and value.  doesn't allocate or log anything,
+// since findO3LogonStrings() tries this at every candidate offset and only
+// the one it settles on is worth recording
 bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 						const byte_t *end,
 						const byte_t **rpout) {
@@ -6577,17 +6635,75 @@ bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 	byte_t	length=*rp;
 	rp++;
 
-	if (!length || (size_t)(end-rp)<(size_t)length) {
+	if (length!=CLR_LONG_FORM_MARKER) {
+		if (!length || (size_t)(end-rp)<(size_t)length) {
+			return false;
+		}
+		for (byte_t i=0; i<length; i++) {
+			if (rp[i]<' ' || rp[i]>'~') {
+				return false;
+			}
+		}
+		*rpout=rp+length;
+		return true;
+	}
+
+	bool	sawdata=false;
+	bool	havedeferred=false;
+	byte_t	deferredbyte=0;
+	for (;;) {
+		if (rp>=end) {
+			return false;
+		}
+		uint32_t	chunksize;
+		if (bigchunkclr) {
+			if (!readLenPreInt(rp,end,&chunksize,&rp)) {
+				return false;
+			}
+		} else {
+			chunksize=*rp;
+			rp++;
+		}
+		if (!chunksize) {
+			break;
+		}
+		if ((size_t)(end-rp)<(size_t)chunksize) {
+			return false;
+		}
+		// a deferred byte from the previous chunk wasn't the value's
+		// last byte after all, so it has to be strictly printable
+		if (havedeferred) {
+			if (deferredbyte<' ' || deferredbyte>'~') {
+				return false;
+			}
+			havedeferred=false;
+		}
+		for (uint32_t i=0; i<chunksize-1; i++) {
+			if (rp[i]<' ' || rp[i]>'~') {
+				return false;
+			}
+		}
+		// defer judgment on the chunk's last byte until we know
+		// whether another chunk follows - a real client's chunked
+		// AUTH_ALTER_SESSION value has a trailing NUL inside the
+		// last chunk's own declared length, unlike the short form,
+		// where a trailing NUL sits outside the declared length
+		deferredbyte=rp[chunksize-1];
+		havedeferred=true;
+		rp+=chunksize;
+		sawdata=true;
+	}
+
+	if (!sawdata) {
 		return false;
 	}
 
-	for (byte_t i=0; i<length; i++) {
-		if (rp[i]<' ' || rp[i]>'~') {
-			return false;
-		}
+	if (havedeferred && deferredbyte &&
+			(deferredbyte<' ' || deferredbyte>'~')) {
+		return false;
 	}
 
-	*rpout=rp+length;
+	*rpout=rp;
 
 	return true;
 }
@@ -6734,33 +6850,63 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 		return false;
 	}
 
-	// AUTH_PASSWORD is the string right behind the user name, and it is a
-	// whole number of des blocks in hex.  anything else there is the first
-	// session attribute instead, which means the client sent no password
+	// AUTH_PASSWORD, if the client sent one, arrives as a tagged field in
+	// the same shape #9769 already parses for phase one's session
+	// attributes - see peekO3LogonField().  a non-empty value is a whole
+	// number of des blocks in hex; a zero length value is what a client
+	// sends when it refuses a password, the same as o5logon's
+	// AUTH_PASSWORD (see getAuthField()).  everything else here -
+	// AUTH_TERMINAL, AUTH_PROGRAM_NM, AUTH_MACHINE, AUTH_PID, AUTH_ACL,
+	// AUTH_ALTER_SESSION, ... - this module doesn't need, so the loop
+	// just consumes them
+	char		*fieldname=NULL;
 	char		*field=NULL;
-	uint32_t	fieldsize=0;
-	if (sp>=end || !getLenString(sp,end,&field,&fieldsize,&sp)) {
-		debugWrite("no auth password");
-		return true;
-	}
 
-	bool	ishex=(fieldsize && !(fieldsize%O3LOGON_BLOCK_HEX_SIZE));
-	for (uint32_t i=0; ishex && i<fieldsize; i++) {
-		char	c=field[i];
-		ishex=((c>='0' && c<='9') ||
-			(c>='a' && c<='f') || (c>='A' && c<='F'));
-	}
+	while (sp<end) {
 
-	if (!ishex) {
-		debugWrite("no auth password");
+		delete[] fieldname;
+		fieldname=NULL;
 		delete[] field;
-		return true;
+		field=NULL;
+
+		uint32_t	fieldsize=0;
+		uint32_t	flags=0;
+		if (!getAuthField(sp,end,&fieldname,&field,
+						&fieldsize,&flags,&sp)) {
+			break;
+		}
+
+		if (charstring::compare(fieldname,"AUTH_PASSWORD")) {
+			continue;
+		}
+
+		bool	ishex=true;
+		if (fieldsize) {
+			ishex=!(fieldsize%O3LOGON_BLOCK_HEX_SIZE);
+			for (uint32_t i=0; ishex && i<fieldsize; i++) {
+				char	c=field[i];
+				ishex=((c>='0' && c<='9') ||
+					(c>='a' && c<='f') ||
+					(c>='A' && c<='F'));
+			}
+		}
+		if (!ishex) {
+			debugWrite("malformed AUTH_PASSWORD");
+			continue;
+		}
+
+		gotauthpassword=true;
+		delete[] authpassword;
+		authpassword=charstring::duplicate(field);
+		debugWrite("AUTH_PASSWORD: %s",authpassword);
 	}
 
-	gotauthpassword=true;
-	delete[] authpassword;
-	authpassword=field;
-	debugWrite("AUTH_PASSWORD: %s",authpassword);
+	delete[] fieldname;
+	delete[] field;
+
+	if (!gotauthpassword) {
+		debugWrite("no auth password");
+	}
 
 	return true;
 }
@@ -7076,27 +7222,28 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	debugWrite("fabricated challenge: %s",
 			(fabricatedchallenge)?"yes":"no");
 
-	// an o3logon challenge names nothing.  the client hands the server an
-	// out parameter - a two byte length slot and a 33 byte buffer - and
-	// the server fills it in: the key's length as a ub2, then the key as a
-	// length-prefixed string, then a summary object carrying error 0.
-	// no pair count, no AUTH_SESSKEY name, no flags, no verifier salt, and
-	// no pbkdf2 parameters.  a real 10.2 server's whole challenge packet is
-	// 75 bytes in the portable encoding, against the 2356 an o5logon one
-	// takes
+	// EXPERIMENTAL (#9765/#9769 investigation): the bare-buffer shape this
+	// branch used to send - a length slot, the key as a length-prefixed
+	// string, then a bare summary, with no pair count, no AUTH_SESSKEY
+	// name, no flags - was never pinned against a real capture, and a
+	// real client (redhat9x86 and solaris8sparc both, same bytes either
+	// way) rejects it outright with a break instead of sending phase two.
+	// a real 10.2 server's whole native-encoding OSESSKEY response is 225
+	// bytes (jduck's tns_auth_sesskey.rb exploit, CVE-2009-1979 - it reads
+	// the RPA without decoding it, so only the size is confirmed from
+	// that source), which is far larger than a bare sesskey-plus-summary
+	// object can produce even accounting for native's wider fixed fields.
+	// that request format - a pointer, counts, more pointers, a
+	// length-prefixed user name, an explicit field count - is the exact
+	// same shape recvAuthenticationRequest() already parses, which is
+	// also the shape putAuthField()/putAuthTrailer() below already answer
+	// with for O5LOGON.  trying that same tagged-field shape here instead
+	// of the bare one, pending live confirmation
 	if (o3logon) {
 
-		uint32_t	sesskeysize=
-				charstring::getLength(serverauthsesskey);
-
-		// the length slot is a count, so it follows the encoding: a
-		// length-prefixed int (01 20) in the portable encoding and a
-		// fixed width little endian ub2 (20 00) in the native one
-		debugWrite("session key size: %d",sesskeysize);
-		putAuthCount(sesskeysize,2);
-		putLenString(serverauthsesskey,sesskeysize);
-
-		putO3LogonSummary();
+		putAuthCount(1,2);
+		putAuthField("AUTH_SESSKEY",serverauthsesskey);
+		putAuthTrailer(trailer,sizeof(trailer),false);
 
 		debugEnd();
 		return sendPacket(true);
