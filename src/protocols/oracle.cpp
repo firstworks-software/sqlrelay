@@ -1978,6 +1978,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// the sequence number the summary object has to echo back
 		byte_t		callnumber;
 
+		// the wire cursor id of the last incoming request that named one
+		// - not necessarily a cursor that still exists or ever resolved,
+		// just whatever id a client request most recently carried.
+		// sendMarkerCancelError() answers a client-initiated cancel with
+		// this, since a real server's answer has to name the cursor the
+		// client considers its outstanding call to be on, and this is
+		// the only evidence this module has for that with more than one
+		// cursor live - see cursorFromWireId() and #9699
+		uint32_t	lastwirecursorid;
+
 		bool		query3session;
 
 		// the bind section of the query3 request being handled: one
@@ -2328,6 +2338,7 @@ void sqlrprotocol_oracle::init() {
 
 	query3session=false;
 	callnumber=0;
+	lastwirecursorid=0;
 
 	resppacket=NULL;
 	resppacketsize=0;
@@ -8046,6 +8057,11 @@ uint32_t sqlrprotocol_oracle::wireCursorId(sqlrservercursor *cursor) {
 }
 
 sqlrservercursor *sqlrprotocol_oracle::cursorFromWireId(uint32_t wirecursorid) {
+
+	// record this regardless of whether it resolves below - a request
+	// naming a cursor id, valid or not, is still the client's most recent
+	// word on which cursor it considers current.  see lastwirecursorid
+	lastwirecursorid=wirecursorid;
 
 	// an id below the shift never named a cursor this module handed out,
 	// and 0 is the client saying it has none, so neither is a cursor
@@ -16053,8 +16069,16 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 		// number sitting in what was previously an unconfirmed zero
 		// field; commandtype 3 and success iterations 1 come from
 		// that same capture, and are also what this object's other
-		// error path (putSummary(), above) already sends unconditionally
-		putOci7Summary(0,3,0,1,ORA_USER_REQUESTED_CANCEL);
+		// error path (putSummary(), above) already sends unconditionally.
+		// the cursor id field used to be hardcoded 0 too - #9699 found
+		// live that with more than one cursor open, an id naming neither
+		// live cursor here causes ORA-03106 on the client side, so this
+		// answers with whichever cursor id the client's own last request
+		// carried instead (see lastwirecursorid) - still an unconfirmed
+		// guess for what a real server sends here (no capture on file
+		// has a marker cancel with a second cursor open), just no longer
+		// a value known to be wrong
+		putOci7Summary(lastwirecursorid,3,0,1,ORA_USER_REQUESTED_CANCEL);
 		putSummaryExtension(ORA_USER_REQUESTED_CANCEL,0);
 		putLenString(ORA_USER_REQUESTED_CANCEL_MESSAGE,
 				charstring::getLength(
