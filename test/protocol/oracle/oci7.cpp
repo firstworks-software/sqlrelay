@@ -762,6 +762,130 @@ int main(int argc, char **argv) {
 
 
 
+	stdoutput.printf("\n========= Concurrent Cursors ==========\n\n");
+
+	// #9699 - every real OCI7 capture so far (#9658, #9664) has driven
+	// exactly one cursor at a time, so the module's per-cursor state
+	// (ptypes, columntypes, rowssent, pendingrow, etc. in
+	// src/protocols/oracle.cpp - all indexed by cursor id) has never been
+	// exercised live with two cursors open and interleaved.  this section
+	// opens two, interleaves their parse/define/execute and fetches
+	// A/B/A/B against each other, and throws a describe into the middle
+	// of that ping-pong.  it queries dual only, never execImmediate() or
+	// a created table - #9807 is a separate, already-filed bug in the
+	// bare-oexec (no pending defines) TTI_EXECUTE path execImmediate()
+	// drives, distinct from the odefin-then-oexec path used here, which
+	// the "select - v$version" query above already exercises live
+	{
+		Cda_Def	curA;
+		Cda_Def	curB;
+		assertEquals(check(&curA,openCursor(&curA,-1)),0);
+		assertEquals(check(&curB,openCursor(&curB,-1)),0);
+
+		const char	*queryA="select level as num from dual "
+					"connect by level<=5 order by 1";
+		const char	*queryB="select 'row'||level as txt from dual "
+					"connect by level<=5 order by 1";
+
+		// parsed and defined in A,B order - executed further down in
+		// B,A order - so nothing here can be relying on requests
+		// always landing in the same relative order between cursors
+		assertEquals(check(&curA,
+				oparse(&curA,(text *)queryA,
+						(sb4)-1,0,(ub4)2)),0);
+		assertEquals(check(&curB,
+				oparse(&curB,(text *)queryB,
+						(sb4)-1,0,(ub4)2)),0);
+
+		char	numA[32];
+		sb2	indA=0;
+		ub2	lenA=0;
+		ub2	codeA=0;
+		bytestring::zero(numA,sizeof(numA));
+		assertEquals(check(&curA,
+				odefin(&curA,1,(ub1 *)numA,(sword)sizeof(numA),
+					SQLT_STR,-1,&indA,(text *)0,-1,-1,
+					&lenA,&codeA)),0);
+
+		char	txtB[32];
+		sb2	indB=0;
+		ub2	lenB=0;
+		ub2	codeB=0;
+		bytestring::zero(txtB,sizeof(txtB));
+		assertEquals(check(&curB,
+				odefin(&curB,1,(ub1 *)txtB,(sword)sizeof(txtB),
+					SQLT_STR,-1,&indB,(text *)0,-1,-1,
+					&lenB,&codeB)),0);
+
+		assertEquals(check(&curB,oexec(&curB)),0);
+		assertEquals(check(&curA,oexec(&curA)),0);
+
+		stdoutput.printf("ofen - ping-pong A/B/A/B across both "
+					"cursors\n");
+		for (int i=1; i<=5; i++) {
+			assertEquals(check(&curA,ofen(&curA,1)),0);
+			char	expectednum[8];
+			charstring::printf(expectednum,sizeof(expectednum),
+						"%d",i);
+			assertEquals((const char *)numA,expectednum);
+
+			assertEquals(check(&curB,ofen(&curB,1)),0);
+			char	expectedtxt[8];
+			charstring::printf(expectedtxt,sizeof(expectedtxt),
+						"row%d",i);
+			assertEquals((const char *)txtB,expectedtxt);
+		}
+		stdoutput.printf("\n\n");
+
+		stdoutput.printf("odescr - on B while A is mid-ping-pong\n");
+		// a describe on B must read B's own parsed statement, not A's
+		// - this is the concern #9699 was split off #9693 to check,
+		// live: is the module's per-cursor state really indexed by
+		// cursor id everywhere, or does some path assume only one
+		// cursor is ever active
+		{
+			sb4	dbsize=0;
+			sb2	dbtype=0;
+			sb1	cbuf[128];
+			sb4	cbufl=(sb4)sizeof(cbuf);
+			sb4	dsize=0;
+			sb2	colprecision=0;
+			sb2	colscale=0;
+			sb2	nullok=0;
+			bytestring::zero(cbuf,sizeof(cbuf));
+			assertEquals(check(&curB,
+					odescr(&curB,1,&dbsize,&dbtype,cbuf,
+						&cbufl,&dsize,&colprecision,
+						&colscale,&nullok)),0);
+			if (cbufl>=0 && cbufl<(sb4)sizeof(cbuf)) {
+				cbuf[cbufl]='\0';
+			} else {
+				cbuf[sizeof(cbuf)-1]='\0';
+			}
+			assertEquals((const char *)cbuf,"TXT");
+		}
+		stdoutput.printf("\n\n");
+
+		stdoutput.printf("ofen - past the last row, each cursor "
+					"independently\n");
+		assertTrue(ofen(&curA,1)!=0);
+		assertEquals(errorCode(&curA),OCI7_NO_DATA);
+		assertTrue(ofen(&curB,1)!=0);
+		assertEquals(errorCode(&curB),OCI7_NO_DATA);
+		stdoutput.printf("\n\n");
+
+		// close out of open order - B first, then A - so cursor id
+		// reuse/recycling on close can't be hiding behind always
+		// closing in the order the cursors were opened
+		stdoutput.printf("oclose - out of open order (B then A)\n");
+		assertEquals(check(&curB,oclose(&curB)),0);
+		assertEquals(check(&curA,oclose(&curA)),0);
+		stdoutput.printf("\n\n");
+	}
+	stdoutput.printf("\n\n");
+
+
+
 	stdoutput.printf("\n=============== Schema ===============\n\n");
 
 	// every commit and rollback in this program goes through
