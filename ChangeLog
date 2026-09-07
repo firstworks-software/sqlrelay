@@ -1963,6 +1963,26 @@
 		clean rejection; also made recvAuthenticationRequest() answer
 		a break/reset marker a client sends mid-exchange instead of
 		treating it as a framing error and dropping the connection
+	fixed the oracle protocol module's classic login misreading the user
+		name and password out of a real client's request: each
+		non-empty string in the request's trailing string blob carries
+		its own redundant one-byte length prefix that the parser
+		didn't skip, so it read from the wrong offset and got
+		fragments of neighboring fields instead - harmless for phase
+		one, since nothing checks its result, but it made phase two's
+		user name mismatch phase one's, which the module correctly
+		(if unhelpfully) rejected as someone answering the wrong
+		challenge
+	fixed the oracle protocol module answering a client's mid-call marker
+		(the same recovery signal a client sends to abandon a fetch it
+		stopped reading, or a genuine user cancel) with the wrong summary
+		shape for a classic-login or o3logon client: the older
+		putError()/putGenericFooter() object, meant only for genuinely
+		pre-9i clients, rather than the same putOci7Summary() object every
+		other response of this client family gets; a real server's own
+		answer to a genuine client-side cancel confirmed the shape and
+		found the error number's field, previously an unconfirmed always-
+		zero one
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1448,7 +1448,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
-						uint32_t successiterations);
+						uint32_t successiterations,
+						uint32_t oranum=0);
 		void	putOci7SummaryNative(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
@@ -7021,8 +7022,23 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// so its start is "end" minus the combined length of every string
 	// already accounted for above, whatever comes between here and
 	// there
+	//
+	// each non-empty string in the blob also carries its own redundant
+	// one-byte length prefix, on top of the header field that already
+	// gives its length - a real client's request, decoded against
+	// samples/oracle102-oci7-portable-login-select.cap packets [0011]
+	// and [0013], shows "03 dev" for a 3-byte user name, "0d
+	// solaris8sparc" for a 13-byte host name, and so on for every field
+	// here, with the byte simply absent for a zero-length one (a phase
+	// one request's empty password).  same duplicate-length-byte shape
+	// #9794 found on the challenge response, just the client doing it
+	// here instead of this module
+	uint32_t	blobprefixes=(usernamesize?1:0)+(passwordsize?1:0)+
+					(hostsize?1:0)+(usersize?1:0)+
+					(pidstringsize?1:0)+(programsize?1:0);
 	uint32_t	bloblen=usernamesize+passwordsize+hostsize+
-					usersize+pidstringsize+programsize;
+					usersize+pidstringsize+programsize+
+					blobprefixes;
 	if ((size_t)(end-rp)<(size_t)bloblen) {
 		debugWrite("malformed classic logon request: "
 					"string blob doesn't fit");
@@ -7030,6 +7046,10 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	}
 	rp=end-bloblen;
 
+	if (usernamesize) {
+		// skip the user name's own length-prefix byte
+		rp++;
+	}
 	if ((size_t)(end-rp)<(size_t)usernamesize) {
 		debugWrite("malformed classic logon request: "
 					"truncated user name");
@@ -7057,6 +7077,8 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// a zero length password is what a client sends when it has no
 	// password to offer - getAuthField()'s AUTH_PASSWORD does the same
 	if (passwordsize) {
+		// skip the password's own length-prefix byte
+		rp++;
 		delete[] authpassword;
 		getString(rp,&authpassword,passwordsize,&rp);
 		gotauthpassword=true;
@@ -7562,7 +7584,8 @@ void sqlrprotocol_oracle::putO3LogonSummary() {
 void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
-						uint32_t successiterations) {
+						uint32_t successiterations,
+						uint32_t oranum) {
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
@@ -7574,7 +7597,16 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	// send 0 and [0024] sends 1
 	writeLenPreInt(&reqpacket,rowsprocessed);
 
-	writeLenPreInt(&reqpacket,0);
+	// the first of the three zero fields this comment used to call
+	// unexplained is the error number - confirmed against a real
+	// server's marker-cancel response, which is this same object with
+	// ORA-01013 sitting here, and independently against
+	// sendErrorPacket()'s portable branch, whose "01 01 00" prefix plus
+	// an immediately-following oranum is this function's first three
+	// fields (end of call status, rows processed, this one) with every
+	// value at 0 or 1, its own login-failure capture's evidence for the
+	// same slot
+	writeLenPreInt(&reqpacket,oranum);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,cursorid);
@@ -16003,6 +16035,22 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 	if (query3session) {
 		putSummary(0,ORA_USER_REQUESTED_CANCEL,0,
 					ORA_USER_REQUESTED_CANCEL_MESSAGE);
+	} else if (verifiertype==VERIFIER_TYPE_9I) {
+
+		// this client family gets the same summary object every
+		// other call answers it with (putOci7Summary()), not the
+		// older putError()/putGenericFooter() shape below - a real
+		// server's own answer to a genuine client-side cancel is
+		// this exact object, decoded field for field, with the ora
+		// number sitting in what was previously an unconfirmed zero
+		// field; commandtype 3 and success iterations 1 come from
+		// that same capture, and are also what this object's other
+		// error path (putSummary(), above) already sends unconditionally
+		putOci7Summary(0,3,0,1,ORA_USER_REQUESTED_CANCEL);
+		putSummaryExtension(ORA_USER_REQUESTED_CANCEL,0);
+		putLenString(ORA_USER_REQUESTED_CANCEL_MESSAGE,
+				charstring::getLength(
+					ORA_USER_REQUESTED_CANCEL_MESSAGE));
 	} else {
 		putError(ORA_USER_REQUESTED_CANCEL_MESSAGE,
 					ORA_USER_REQUESTED_CANCEL);
