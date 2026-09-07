@@ -13774,32 +13774,40 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	const byte_t	*end=resppacket+resppacketsize;
 
 	// parse the request...
-	uint16_t	options;
-	uint16_t	moreoptions;
-	uint16_t	cursorid;
-
-	// FIXME: decode this... see "Oracle Wire Protocol - Execute"
+	// see "Oracle Wire Protocol - Execute"
 	//
-	// no capture on file has ever shown a TTI_EXECUTE request - real
-	// clients drive execution through query2() instead - so this header
-	// is still the wiki table's raw three-ub2 shape, unverified. what is
-	// fixable without a capture is the bounds check: nothing confirmed
-	// six bytes were actually left in the packet before reading them, so
-	// a short request read past the packet end into whatever the reused
-	// buffer held from the previous read, the same class of bug
-	// recvTtiRequest() was fixed against for #9710
-	if (end-rp<6) {
-		debugWrite("truncated execute request");
+	// the header is the re-execute header minus its trailing more-options
+	// field: a one-byte call sequence number, then the cursor id, the
+	// iteration count and the options bitmask, each written as a count.  a
+	// real oci7 client sends "25 | 01 03 | 01 01 | 00" there - sequence 37,
+	// cursor id 3, one iteration and no options
+	byte_t		sequence=0;
+	uint32_t	cursorid=0;
+	uint32_t	iterations=0;
+	uint32_t	options=0;
+
+	// the sequence number is a raw byte, not a pointer and not a count
+	if (end-rp<1) {
+		debugWrite("truncated execute sequence number");
 		return false;
 	}
-	readBE(rp,&options,&rp);
-	readBE(rp,&moreoptions,&rp);
-	readBE(rp,&cursorid,&rp);
+	read(rp,&sequence,&rp);
+
+	if (!getAuthCount(rp,end,&cursorid,4,&rp) ||
+		!getAuthCount(rp,end,&iterations,4,&rp) ||
+		!getAuthCount(rp,end,&options,4,&rp)) {
+		return false;
+	}
+
+	// the summary object has to echo this back
+	callnumber=sequence;
 
 	if (getDebug()) {
 		debugStart("execute request");
-		debugOptions(options,moreoptions);
+		debugWrite("sequence: %d",sequence);
 		debugWrite("cursor id: %d",cursorid);
+		debugWrite("iterations: %d",iterations);
+		debugWrite("options: 0x%08x",options);
 		debugEnd();
 	}
 

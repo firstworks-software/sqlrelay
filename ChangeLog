@@ -1983,6 +1983,17 @@
 		answer to a genuine client-side cancel confirmed the shape and
 		found the error number's field, previously an unconfirmed always-
 		zero one
+	fixed the oracle protocol module misreading TTI_EXECUTE's cursor id
+		on every call after a session's first: the request header was
+		still an unverified raw three-field big-endian guess, so a real
+		client's length-prefixed cursor id came out 256-ish instead of
+		the cursor actually in use, which failed as cursor id not found
+		and cascaded into ORA-03106/ORA-03120/ORA-03114 for the rest of
+		the session; a real client's request confirmed the header is a
+		one-byte sequence number followed by length-prefixed cursor id,
+		iteration count and options fields, the same shape query2()'s
+		header already used; also made the call echo its own sequence
+		number in the summary object, which it never had before
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
