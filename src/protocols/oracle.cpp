@@ -14927,6 +14927,15 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// oracle internal number 11.  before this, the values went unread and
 	// the second execute answered ORA-03120
 	uint16_t	curid=cont->getId(cursor);
+
+	// both halves of the guard below, so a request that does not take the
+	// branch says which half turned it away rather than going silent
+	debugWrite("re-execute: %d bytes behind the header, "
+			"%d binds remembered on cursor %d",
+			(int32_t)(end-rp),
+			(int32_t)query2cursorbindcounts[curid],
+			(int32_t)curid);
+
 	if (rp<end && query2cursorbindcounts[curid]) {
 
 		query2bindcount=query2cursorbindcounts[curid];
