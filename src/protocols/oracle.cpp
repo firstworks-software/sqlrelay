@@ -740,7 +740,7 @@
 // one odefin() rides in the query2 request as a descriptor: four raw bytes -
 // the wire datatype, a flag, a precision and a scale - and then this many
 // counts, of which the first is the client's buffer size and the sixth the
-// character set.  see getQuery2Defines()
+// character set.  see getQuery2Descriptors()
 #define OCI7_DEFINE_COUNTS	8
 
 // and this in the flag byte marks a position the client never defined at
@@ -750,8 +750,19 @@
 // something else: a real define's flag reads 0x07 in most captures and 0x00
 // in 9806-solaris8sparc-9i-o3logon-success, from the same host, whatever the
 // column type.  so this is read as a bit rather than compared whole, and
-// corroborated against the buffer size - see getQuery2Defines()
+// corroborated against the buffer size - see getQuery2Descriptors()
 #define OCI7_DEFINE_SKIPPED	0x80
+
+// where a length byte would go, this marks a bind the client passed a null
+// indicator for, and one more byte follows it.  in #9700's nullbind capture
+// - the three-bind insert with two of the three indicators set to -1 - each
+// of the two null binds is exactly "fd 01" where the non-null bind beside
+// them is a length and that many bytes.  the trailing byte's meaning is not
+// pinned by anything; what is pinned is that a null takes two bytes here and
+// not one or three, since the request ends exactly on its last byte either
+// way.  the landing check at the end of getQuery2Descriptors() is what keeps
+// a wrong reading here from ever reaching a statement
+#define OCI7_BIND_NULL		0xfd
 
 // ano field types.  no source names 0 or 4.
 #define ANO_FIELD_TYPE_STRING		0
@@ -1550,19 +1561,27 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	query(const byte_t *rp);
 		bool	sendQueryResponse(sqlrservercursor *cursor);
 		bool	query2(const byte_t *rp);
-		void	getQuery2Defines(const byte_t *rp,
+		void	getQuery2Descriptors(const byte_t *rp,
 							const byte_t *end,
+							uint32_t options,
 							sqlrservercursor *cursor);
+		bool	getQuery2Descriptor(const byte_t *rp,
+							const byte_t *end,
+							byte_t *datatype,
+							byte_t *flag,
+							uint32_t *buffersize,
+							const byte_t **rpout);
+		bool	getQuery2BindValues(const byte_t *rp,
+							const byte_t *end,
+							uint16_t bindcount,
+							const byte_t **rpout);
+		bool	installQuery2Binds(sqlrservercursor *cursor);
 		void	clearDefines(uint16_t curid);
 		bool	columnIsDefined(sqlrservercursor *cursor,
 							uint32_t column);
 		uint32_t	definedColumnCount(sqlrservercursor *cursor,
 							uint32_t colcount);
-		bool	sendQuery2Response(sqlrservercursor *cursor,
-							bool binds);
-		bool	bindParameters(sqlrservercursor *cursor,
-							uint16_t pcount,
-							uint16_t *ptypes);
+		bool	sendQuery2Response(sqlrservercursor *cursor);
 		bool	query3(const byte_t *rp);
 		bool	getQuery3Request(const byte_t *rp,
 							const byte_t *end,
@@ -2001,11 +2020,29 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	maxbindcount;
 		uint32_t	maxstringbindvaluesize;
 
-		char		**bindvarnames;
 
 		char		lobbuffer[32768];
 
-		uint16_t	**ptypes;
+		// the bind types the last query2 set up on each cursor, and
+		// how many.  a re-execute arrives as a bare TTI_EXECUTE
+		// carrying fresh values and no descriptors - obndrv binds by
+		// reference, so the client only re-sends what changed - and
+		// these are what say how to read them.  see execute()
+		uint16_t	**query2cursorbindtypes;
+		uint16_t	*query2cursorbindcounts;
+
+		// what a query2 request's inline bind block carried: one
+		// wire datatype and one value per bind.  the values point
+		// straight into the request buffer rather than being copied,
+		// so they are only good until the next recvPacket() - which
+		// is fine, since the whole of a query2 request is handled
+		// before another packet is read.  request scoped, not cursor
+		// scoped, for the same reason
+		uint16_t	query2bindcount;
+		uint16_t	*query2bindtypes;
+		const byte_t	**query2bindvalues;
+		uint32_t	*query2bindvaluesizes;
+
 		bool		*columntypescached;
 		uint16_t	**columntypes;
 
@@ -2016,7 +2053,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// which of each cursor's columns an oci7 client's odefin's
 		// asked for, and how many positions its define list named.
 		// a legacy fetch answers with those columns and no others -
-		// see getQuery2Defines().  a zero count means no define list
+		// see getQuery2Descriptors().  a zero count means no define list
 		// has been decoded for the cursor and every column goes out,
 		// which is what a session that never sets OPTION_DEFINE gets
 		uint32_t	*definecounts;
@@ -2283,12 +2320,13 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	maxstringbindvaluesize=
 			cont->getConfig()->getMaxStringBindValueSize();
 
-	bindvarnames=new char *[maxbindcount];
-	for (uint16_t i=0; i<maxbindcount; i++) {
-		charstring::printf(&bindvarnames[i],":%d",i+1);
-	}
+	query2bindcount=0;
+	query2bindtypes=new uint16_t[maxbindcount];
+	query2bindvalues=new const byte_t *[maxbindcount];
+	query2bindvaluesizes=new uint32_t[maxbindcount];
 
-	ptypes=new uint16_t *[maxcursorcount];
+	query2cursorbindtypes=new uint16_t *[maxcursorcount];
+	query2cursorbindcounts=new uint16_t[maxcursorcount];
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
 	rowssent=new uint32_t[maxcursorcount];
@@ -2303,7 +2341,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	refcursorids=new uint16_t *[maxcursorcount];
 	refcursorcounts=new uint16_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
-		ptypes[i]=new uint16_t[maxbindcount];
+		query2cursorbindtypes[i]=new uint16_t[maxbindcount];
+		query2cursorbindcounts[i]=0;
 		columntypescached[i]=false;
 		rowssent[i]=0;
 		lobpinned[i]=false;
@@ -2335,13 +2374,12 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] sids;
 	delete[] requestedservice;
 
-	for (uint16_t i=0; i<maxbindcount; i++) {
-		delete[] bindvarnames[i];
-	}
-	delete[] bindvarnames;
+	delete[] query2bindtypes;
+	delete[] query2bindvalues;
+	delete[] query2bindvaluesizes;
 
 	for (uint16_t i=0; i<maxcursorcount; i++) {
-		delete[] ptypes[i];
+		delete[] query2cursorbindtypes[i];
 		delete[] columntypes[i];
 		delete[] columndefined[i];
 		delete[] cursorbinds[i];
@@ -2351,7 +2389,8 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] cursorbindcounts;
 	delete[] refcursorids;
 	delete[] refcursorcounts;
-	delete[] ptypes;
+	delete[] query2cursorbindtypes;
+	delete[] query2cursorbindcounts;
 	delete[] columntypescached;
 	delete[] columntypes;
 	delete[] columndefined;
@@ -9782,11 +9821,15 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
-	// the define list, which the "no idea..." above used to walk straight
-	// past.  rp is left wherever the header parse stopped, which is the
-	// front of it - see getQuery2Defines()
-	if (options&OPTION_DEFINE) {
-		getQuery2Defines(rp,end,cursor);
+	// the descriptor block - defines, binds and the bind values - which
+	// the "no idea..." above used to walk straight past.  rp is left
+	// wherever the header parse stopped, which is the front of it.  an
+	// insert whose placeholders are all bound carries binds and no
+	// defines, so this runs for either bit rather than for OPTION_DEFINE
+	// alone - see getQuery2Descriptors()
+	query2bindcount=0;
+	if (options&(OPTION_DEFINE|OPTION_BIND)) {
+		getQuery2Descriptors(rp,end,options,cursor);
 	}
 
 	if (options&OPTION_PARSE) {
@@ -9817,63 +9860,46 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		}
 	}
 
-	// what's real evidence here, and what still is not: packet [0027] of
-	// test/protocol/oracle/samples/oracle102-oci7-native-multicol-1col-fetch.cap
-	// is a real query2 request that decodes clean under the header read
-	// above - sequence 10, options 0x8030 (OPTION_DEFINE|OPTION_EXECUTE|
-	// OPTION_NOPLSQL), cursor id 1 - which confirms OPTION_BIND (bit 3)
-	// is a real, correctly-positioned bit in this header: it reads back
-	// as 0, and this request does run with no bind block anywhere in its
-	// 113 remaining payload bytes. that's the only thing this capture
-	// proves about binds - it has none. no capture on file ever has
-	// OPTION_BIND set, so nothing pins where a bind descriptor block
-	// would start, how it's shaped, or how it relates to the defines
-	// OPTION_DEFINE implies are also in this same request somewhere.
-	// bindParameters() below is still a guess from the pre-8i wiki page,
-	// not from any captured bytes
+	// the binds a real oci7 client sends ride INLINE in this same
+	// request, behind the define descriptors, and getQuery2Descriptors()
+	// above has already read them.  there is no second round trip.
+	//
+	// this branch used to implement the opposite: it answered with a
+	// hardcoded 55-byte TTC_IO_VECTOR object and then blocked in
+	// bindParameters(), reading one follow-up packet per bind, off a
+	// pre-8i wiki page that no capture ever backed.  five real captures
+	// taken for #9700 - a 9.2.0.4.0 client against this module, at one,
+	// two and three binds, with and without defines, and with nulls -
+	// show the client sending everything in one packet and then waiting.
+	// so the old path did not merely fail to bind: it answered with bytes
+	// the client could not parse, the client aborted with a marker and
+	// closed, and every bind-carrying oci7 session died with ORA-03113 on
+	// the execute
 	if (options&OPTION_BIND) {
-
-		if (!sendQuery2Response(cursor,true)) {
-			return false;
-		}
 
 		// free binds from any previous bind exchange on this cursor
 		clearParams(cursor);
 
-		uint16_t	cursorid_idx=cont->getId(cursor);
-
-		// the query buffer reflects whatever was prepared most
-		// recently, whether by the parse phase above (this call or a
-		// prior one) or by the older query() call on this cursor, so
-		// recompute the count here rather than caching it - caching
-		// it against the cursor could go stale if a different query
-		// gets prepared into the same cursor between calls
-		uint16_t	pcount=cont->countBindVariables(
-						cont->getQueryBuffer(cursor),
-						cont->getQuerySize(cursor));
-
-		// clamp to the number of binds we can actually track
-		uint16_t	clampedpcount=
-				(pcount<=maxbindcount)?pcount:maxbindcount;
-		if (pcount>maxbindcount) {
-			debugWrite("query has %d binds, "
-					"truncating to maxbindcount %d",
-					pcount,maxbindcount);
+		// a bind block with no values behind it is a pl/sql block's -
+		// #9700's out and inout captures are byte-identical to each
+		// other and both stop on the last byte of their one bind
+		// descriptor, sending no value at all, not even the in half
+		// of an in-out.  both set OPTION_SNDIOV, so the client is
+		// waiting for an io vector back, and what a real server puts
+		// in one is not captured anywhere - running the statement
+		// would mean guessing at the answer as well as at the value.
+		// refuse it, which leaves such a client where it already was
+		// rather than somewhere new and wrong
+		if (!query2bindcount) {
+			debugWrite("no usable bind values");
+			return sendVariableNotInSelectListError(
+						wireCursorId(cursor));
 		}
 
-		// the Query2 Bind Value Request carries each value as
-		// length-prefixed text with no per-value type tag on the
-		// wire (see the Trac wiki: "Oracle Wire Protocol - Query2"),
-		// so there's no real type to source here - assume varchar
-		for (uint16_t i=0; i<clampedpcount; i++) {
-			ptypes[cursorid_idx][i]=ORACLE_TYPE_VARCHAR;
-		}
-
-		// pass the unclamped pcount - bindParameters() clamps
-		// internally, but needs the real count to know how many
-		// bind-value packets the client will actually send
-		if (!bindParameters(cursor,pcount,ptypes[cursorid_idx])) {
-			return false;
+		if (!installQuery2Binds(cursor)) {
+			debugWrite("installing binds failed");
+			return sendVariableNotInSelectListError(
+						wireCursorId(cursor));
 		}
 	}
 
@@ -9937,7 +9963,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		return sendFetchResponse(cursor,true,0);
 	}
 
-	return sendQuery2Response(cursor,false);
+	return sendQuery2Response(cursor);
 }
 
 // what the client's odefin's asked for.  they ride inside the query2 request,
@@ -9984,15 +10010,26 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 // note getPointer() consumes four bytes here even in the portable encoding,
 // because pointersize comes from the pointer datatype negotiation rather than
 // from nativeencoding.  the walk depends on that
-void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
+void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 						const byte_t *end,
+						uint32_t options,
 						sqlrservercursor *cursor) {
 
 	uint16_t	curid=cont->getId(cursor);
 
-	clearDefines(curid);
+	// only a request that carries a define block gets to change the
+	// cursor's define list.  a re-executed select sends its new bind
+	// values with OPTION_BIND alone and no defines - its old list still
+	// stands, and clearing it here would put that cursor back to sending
+	// every column, which is the shape that segfaulted a real client in
+	// #9810
+	bool	hasdefines=((options&OPTION_DEFINE)>0);
 
-	debugStart("query2 defines");
+	if (hasdefines) {
+		clearDefines(curid);
+	}
+
+	debugStart("query2 descriptors");
 
 	// the native descriptor is shaped differently - 33 bytes, an extra
 	// leading byte and a tail whose counts aren't all one width - so the
@@ -10011,10 +10048,19 @@ void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
 
 	uint32_t	unused=0;
 	uint32_t	definitions=0;
+	uint32_t	bindcount=0;
 
-	// ten fields ahead of the count, and nine behind it.  the pointer
-	// right in front of the count is the client's address of its own
-	// define array - opaque, and it moves from cursor to cursor
+	// ten fields ahead of the define count, and one pointer behind it -
+	// the client's address of its own define array, opaque, and it moves
+	// from cursor to cursor.  it reads 0 in a request that defines
+	// nothing, which the #9700 insert capture confirms.
+	//
+	// then eight counts, of which the FIRST is the bind count.  that one
+	// used to go into unused with the other seven; it is what makes the
+	// bind block readable at all.  the pointer immediately ahead of it is
+	// the client's address of its own bind array, and it is identical
+	// across all three #9700 captures where the define pointer is not,
+	// which is the corroboration that the two are a matched pair
 	if (!getPointer(rp,end,&unused,&rp) ||
 		!getPointer(rp,end,&unused,&rp) ||
 		!getAuthCount(rp,end,&unused,4,&rp) ||
@@ -10026,28 +10072,66 @@ void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
 		!getPointer(rp,end,&unused,&rp) ||
 		!getPointer(rp,end,&unused,&rp) ||
 		!getAuthCount(rp,end,&definitions,4,&rp) ||
-		!getPointer(rp,end,&unused,&rp)) {
-		debugWrite("truncated query2 define header");
+		!getPointer(rp,end,&unused,&rp) ||
+		!getAuthCount(rp,end,&bindcount,4,&rp)) {
+		debugWrite("truncated query2 descriptor header");
 		debugEnd();
 		return;
 	}
-	for (uint16_t i=0; i<8; i++) {
+	for (uint16_t i=0; i<7; i++) {
 		if (!getAuthCount(rp,end,&unused,4,&rp)) {
-			debugWrite("truncated query2 define header");
+			debugWrite("truncated query2 descriptor header");
 			debugEnd();
 			return;
 		}
 	}
 
 	debugWrite("define count: %d",definitions);
+	debugWrite("bind count: %d",bindcount);
+
+	// the bind count and OPTION_BIND have to agree.  where they don't,
+	// only the bind half is in doubt, so the count is dropped rather than
+	// the whole walk abandoned - the define block ahead of it is still
+	// whatever it was.  a dropped count leaves the bind bytes unread, the
+	// landing check below then fails, and the request ends up exactly
+	// where it was before #9700 rather than somewhere nothing pins
+	if ((bindcount>0)!=((options&OPTION_BIND)>0)) {
+		debugWrite("bind count and OPTION_BIND disagree");
+		bindcount=0;
+	}
 
 	// a descriptor is at least twelve bytes - four raw and eight one-byte
 	// counts - so a count that couldn't fit in what's left of the request
-	// is a bad read rather than a real define list.  this bounds the
-	// allocation below by the packet size too, so a wire value can't ask
-	// for an arbitrary one
-	if (!definitions || definitions>(uint32_t)(end-rp)/12) {
-		debugWrite("define count out of range");
+	// is a bad read rather than a real list.  this bounds the allocation
+	// below by the packet size too, so a wire value can't ask for an
+	// arbitrary one.
+	//
+	// the two are checked separately rather than as a sum: both come
+	// straight off the wire as full-width uint32_ts, and adding them
+	// first lets a count of 0xffffffff wrap past a check it should have
+	// failed
+	uint32_t	descriptorspace=(uint32_t)(end-rp)/12;
+	if (definitions>descriptorspace || bindcount>descriptorspace) {
+		debugWrite("descriptor counts out of range");
+		if (hasdefines) {
+			clearDefines(curid);
+		}
+		debugEnd();
+		return;
+	}
+
+	// nothing to read, and nothing to commit
+	if (!definitions && !bindcount) {
+		debugWrite("no descriptors");
+		debugEnd();
+		return;
+	}
+
+	if (bindcount>maxbindcount) {
+		debugWrite("bind count exceeds maxbindcount %d",maxbindcount);
+		if (hasdefines) {
+			clearDefines(curid);
+		}
 		debugEnd();
 		return;
 	}
@@ -10059,16 +10143,18 @@ void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
 	// cacheColumnDefinitions() does for columntypes[], and without it the
 	// whole of this call would quietly do nothing on those backends
 	uint32_t	maxcolumns=cont->getMaxColumnCount();
-	if (maxcolumns) {
-		if (definitions>maxcolumns) {
-			debugWrite("define count exceeds max column count %d",
-								maxcolumns);
-			debugEnd();
-			return;
+	if (definitions) {
+		if (maxcolumns) {
+			if (definitions>maxcolumns) {
+				debugWrite("define count exceeds max "
+						"column count %d",maxcolumns);
+				debugEnd();
+				return;
+			}
+		} else {
+			delete[] columndefined[curid];
+			columndefined[curid]=new bool[definitions];
 		}
-	} else {
-		delete[] columndefined[curid];
-		columndefined[curid]=new bool[definitions];
 	}
 
 	bool	*cd=columndefined[curid];
@@ -10077,38 +10163,20 @@ void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
 
 		byte_t		datatype=0;
 		byte_t		flag=0;
-		byte_t		precision=0;
-		byte_t		scale=0;
 		uint32_t	buffersize=0;
-
-		if ((size_t)(end-rp)<4) {
-			debugWrite("truncated define descriptor");
-			clearDefines(curid);
-			debugEnd();
-			return;
-		}
-		read(rp,&datatype,&rp);
-		read(rp,&flag,&rp);
-		read(rp,&precision,&rp);
-		read(rp,&scale,&rp);
 
 		// the buffer size comes first of the counts, then four zeros,
 		// the character set, and two more zeros.  only the size gets
 		// read, and only to corroborate the skip flag below - honoring
 		// the type and the width a define asks for is #9974
-		if (!getAuthCount(rp,end,&buffersize,4,&rp)) {
+		if (!getQuery2Descriptor(rp,end,&datatype,&flag,
+							&buffersize,&rp)) {
 			debugWrite("truncated define descriptor");
-			clearDefines(curid);
+			if (hasdefines) {
+				clearDefines(curid);
+			}
 			debugEnd();
 			return;
-		}
-		for (uint16_t j=1; j<OCI7_DEFINE_COUNTS; j++) {
-			if (!getAuthCount(rp,end,&unused,4,&rp)) {
-				debugWrite("truncated define descriptor");
-				clearDefines(curid);
-				debugEnd();
-				return;
-			}
 		}
 
 		// a placeholder carries the skip bit and a zero buffer size,
@@ -10125,29 +10193,389 @@ void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
 				i,(cd[i])?"defined":"skipped",datatype);
 	}
 
-	// the define block is the last thing in the request, so a walk that
-	// lands anywhere else read something wrong.  drop what it read and go
-	// back to sending every column rather than shape a row from a bad
-	// read.  that restores the pre-#9810 behavior for this one request,
-	// segfault included if the client really did define a subset - it is
-	// not a safe answer, it is the old answer, chosen because a row shaped
-	// from a misread define block would desync the client's parse of every
-	// row after it and break sessions that work today.  a request that
-	// lands here is one nothing on file covers, most likely a query2 that
-	// also carries binds: no capture has OPTION_BIND set, so nothing pins
-	// where a bind block sits relative to these defines (see the note in
-	// query2())
+	// the bind descriptors sit behind the defines, in the same shape.
+	// only the wire datatype is kept - the buffer size here is the
+	// client's own program variable width, not the width of the value
+	// that follows, which carries its own length
+	for (uint32_t i=0; i<bindcount; i++) {
+
+		byte_t		datatype=0;
+		byte_t		flag=0;
+		uint32_t	buffersize=0;
+
+		if (!getQuery2Descriptor(rp,end,&datatype,&flag,
+							&buffersize,&rp)) {
+			debugWrite("truncated bind descriptor");
+			if (hasdefines) {
+				clearDefines(curid);
+			}
+			debugEnd();
+			return;
+		}
+
+		query2bindtypes[i]=(uint16_t)datatype;
+		query2bindvalues[i]=NULL;
+		query2bindvaluesizes[i]=0;
+
+		debugWrite("bind %d: type %d, buffer size %d",
+					i+1,datatype,buffersize);
+	}
+
+	// and the values behind those, introduced by a single TTC_ROW_DATA
+	// byte - the same code the modern query3 path introduces a block of
+	// bind values with.  each value is a length-prefixed run of bytes,
+	// in bind order.
+	//
+	// a pl/sql block sends no values at all: #9700's out and inout
+	// captures are byte-identical to each other and both stop dead on
+	// the last byte of their one bind descriptor, even though the inout
+	// case has an initial value of 21 to pass in.  both set OPTION_SNDIOV
+	// and leave OPTION_NOPLSQL clear.  so an absent value block is a real
+	// shape rather than a truncated packet, and it is recognized here by
+	// there being nothing left to read.  the binds are not installed in
+	// that case - see installQuery2Binds() and the note in query2()
+	bool	values=(bindcount>0 && rp<end);
+
+	if (values) {
+
+		if (!getQuery2BindValues(rp,end,(uint16_t)bindcount,&rp)) {
+			if (hasdefines) {
+				clearDefines(curid);
+			}
+			debugEnd();
+			return;
+		}
+
+	} else if (bindcount) {
+		debugWrite("%d binds with no values - pl/sql out binds",
+								bindcount);
+	}
+
+	// the descriptor block is the last thing in the request, so a walk
+	// that lands anywhere else read something wrong.  drop what it read
+	// and go back to sending every column rather than shape a row from a
+	// bad read.  that restores the pre-#9810 behavior for this one
+	// request, segfault included if the client really did define a
+	// subset - it is not a safe answer, it is the old answer, chosen
+	// because a row shaped from a misread define block would desync the
+	// client's parse of every row after it and break sessions that work
+	// today.
+	//
+	// this check is what used to fire on every bind-carrying request,
+	// before #9700 pinned the bind block: the leftover bytes it counted
+	// were the bind descriptors and values this call now walks. the
+	// module was reporting the block's existence in its own debug log
+	// the whole time
 	if (rp!=end) {
-		debugWrite("define block left %d bytes unread",
+		debugWrite("descriptor block left %d bytes unread",
 						(int32_t)(end-rp));
-		clearDefines(curid);
+		if (hasdefines) {
+			clearDefines(curid);
+		}
 		debugEnd();
 		return;
 	}
 
-	definecounts[curid]=definitions;
+	// only a bind block that carried values is one this module can act
+	// on.  a pl/sql block's descriptors are read and then dropped here,
+	// which leaves query2() to refuse the request rather than run a
+	// statement with unbound placeholders
+	query2bindcount=(values)?(uint16_t)bindcount:0;
+
+	if (hasdefines) {
+		definecounts[curid]=definitions;
+	}
 
 	debugEnd();
+}
+
+// one descriptor out of a query2 request - four raw bytes, the wire
+// datatype, a flag, a precision and a scale, then eight counts of which the
+// first is the client's buffer size and the sixth the character set.  a
+// define and a bind descriptor are byte-identical in shape, which the #9700
+// captures confirm at three bind counts, so both walks share this
+bool sqlrprotocol_oracle::getQuery2Descriptor(const byte_t *rp,
+						const byte_t *end,
+						byte_t *datatype,
+						byte_t *flag,
+						uint32_t *buffersize,
+						const byte_t **rpout) {
+
+	*datatype=0;
+	*flag=0;
+	*buffersize=0;
+	*rpout=rp;
+
+	byte_t		precision=0;
+	byte_t		scale=0;
+	uint32_t	unused=0;
+
+	if ((size_t)(end-rp)<4) {
+		return false;
+	}
+	read(rp,datatype,&rp);
+	read(rp,flag,&rp);
+	read(rp,&precision,&rp);
+	read(rp,&scale,&rp);
+
+	if (!getAuthCount(rp,end,buffersize,4,&rp)) {
+		return false;
+	}
+	for (uint16_t i=1; i<OCI7_DEFINE_COUNTS; i++) {
+		if (!getAuthCount(rp,end,&unused,4,&rp)) {
+			return false;
+		}
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
+// the bind values themselves, wherever they turn up: behind the descriptors
+// in a query2 request, or on their own in the bare TTI_EXECUTE a re-execute
+// sends.  a single TTC_ROW_DATA byte, then one length-prefixed value per
+// bind, in bind order
+bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
+						const byte_t *end,
+						uint16_t bindcount,
+						const byte_t **rpout) {
+
+	*rpout=rp;
+
+	if ((size_t)(end-rp)<1) {
+		debugWrite("no bind values");
+		return false;
+	}
+
+	byte_t	rowdata=0;
+	read(rp,&rowdata,&rp);
+	if (rowdata!=TTC_ROW_DATA) {
+		debugWrite("bind values start with 0x%02x, "
+				"expected TTC_ROW_DATA",rowdata);
+		return false;
+	}
+
+	for (uint16_t i=0; i<bindcount; i++) {
+
+		byte_t	size=0;
+		if ((size_t)(end-rp)<1) {
+			debugWrite("truncated bind value");
+			return false;
+		}
+		read(rp,&size,&rp);
+
+		// a value longer than 252 bytes takes putLenBytes()'s chunked
+		// long form, introduced by CLR_LONG_FORM_MARKER (0xfe), the
+		// way every other wide clr in this protocol does.  no #9700
+		// capture has one - the widest bind captured is 11 bytes - so
+		// the chunk layout for a BIND value specifically is not pinned
+		// by anything, and reading it on the assumption that it
+		// matches a row value's would be the same kind of guess this
+		// whole fix exists to undo.  0xfe falls through to the length
+		// check below and refuses the request, which is wrong-but-safe
+		// rather than wrong-and-silent.  a bind over 252 bytes
+		// therefore does not work yet - see #9700
+		if (size==CLR_LONG_FORM_MARKER) {
+			debugWrite("bind %d: long form value, unsupported",
+									i+1);
+			return false;
+		}
+
+		// a null, and the byte behind it
+		if (size==OCI7_BIND_NULL) {
+			if ((size_t)(end-rp)<1) {
+				debugWrite("truncated null bind");
+				return false;
+			}
+			byte_t	nullbyte=0;
+			read(rp,&nullbyte,&rp);
+			query2bindvalues[i]=NULL;
+			query2bindvaluesizes[i]=0;
+			debugWrite("bind %d value: null (0x%02x)",
+						i+1,nullbyte);
+			continue;
+		}
+
+		if ((size_t)(end-rp)<(size_t)size) {
+			debugWrite("truncated bind value");
+			return false;
+		}
+
+		// pointing into the request buffer rather than copying -
+		// installQuery2Binds() runs before any other packet is read
+		query2bindvalues[i]=rp;
+		query2bindvaluesizes[i]=(uint32_t)size;
+		rp+=size;
+
+		debugWrite("bind %d value: %d bytes",i+1,(int32_t)size);
+	}
+
+	*rpout=rp;
+
+	return true;
+}
+
+// hands the values a query2 request carried inline to the cursor.  the names
+// come out of the statement the cursor last prepared, the same way the modern
+// query3 path gets them - oci7 binds by name through obndrv, but the names
+// themselves never reach the wire, so the nth value on the wire is the nth
+// placeholder in the text
+bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
+
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+
+	memorypool		*bindpool=cont->getBindPool(cursor);
+	bindpool->clear();
+	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
+
+	debugStart("installing query2 binds");
+
+	uint16_t	incount=0;
+
+	for (uint16_t i=0; i<query2bindcount && incount<maxbindcount; i++) {
+
+		const char	*name=NULL;
+		uint16_t	namesize=0;
+		if (!getBindVariableName(query,querysize,i,&name,&namesize)) {
+			debugWrite("no placeholder %d in the query",i+1);
+			debugEnd();
+			return false;
+		}
+
+		sqlrserverbindvar	*bv=&(inbinds[incount]);
+
+		bv->variablesize=(int16_t)(namesize+1);
+		bv->variable=(char *)bindpool->allocate((size_t)(namesize+2));
+		bv->variable[0]=cont->getBindFormat()[0];
+		bytestring::copy(bv->variable+1,name,(size_t)namesize);
+		bv->variable[namesize+1]='\0';
+
+		// the bind var array is allocated once per cursor and nothing
+		// else clears these, so a slot can still hold a pointer from
+		// whatever segmented a bind here last
+		bv->segmentlengths=NULL;
+		bv->segmentcount=0;
+
+		bv->valuesize=0;
+		bv->isnull=cont->getNonNullBindValue();
+
+		const byte_t	*value=query2bindvalues[i];
+		uint32_t	valuesize=query2bindvaluesizes[i];
+
+		char		numbertext[MAX_NUMBER_TEXT_SIZE];
+		uint32_t	numbertextlen=0;
+
+		// only the number and character types have been captured on
+		// this path.  a date, a lob or anything else would have to be
+		// decoded from bytes nothing on file has, and binding its raw
+		// wire form as text would put garbage in the statement -
+		// refuse instead, which leaves the client no worse off than
+		// the ORA-03113 every bind used to get.  see #9700.
+		//
+		// this is checked ahead of the null shortcut below rather
+		// than inside the switch, so that a null of an unsupported
+		// type is refused too.  a null date is as unimplemented as a
+		// non-null one, and letting the null case through would run a
+		// statement this code cannot claim to have understood
+		switch (query2bindtypes[i]) {
+			case ORACLE_TYPE_NUMBER:
+			case ORACLE_TYPE_VARNUM:
+			case ORACLE_TYPE_VARCHAR:
+			case ORACLE_TYPE_CHAR:
+			case ORACLE_TYPE_LONG:
+				break;
+			default:
+				debugWrite("bind %d: unsupported wire type %d",
+						i+1,query2bindtypes[i]);
+				debugEnd();
+				return false;
+		}
+
+		// the client passed a null indicator for this one
+		if (!value) {
+			bv->type=SQLRSERVERBINDVARTYPE_NULL;
+			// what sqlrservercontroller.cpp does for a null bind
+			// too, see its own inbind->isnull assignment
+			bv->isnull=cont->getNullBindValue();
+			debugWrite("bind %d: %s = null",i+1,bv->variable);
+			incount++;
+			continue;
+		}
+
+		switch (query2bindtypes[i]) {
+			case ORACLE_TYPE_NUMBER:
+			case ORACLE_TYPE_VARNUM:
+				// oracle's internal base-100 form, the same
+				// one the modern path decodes with this call.
+				// "select :num from dual" bound SQLT_INT=10
+				// puts c1 0b on the wire (#9700's selectint)
+				if (!getNumberField(value,valuesize,
+							numbertext,
+							sizeof(numbertext),
+							&numbertextlen)) {
+					debugWrite("undecodable number");
+					debugEnd();
+					return false;
+				}
+				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				bv->valuesize=numbertextlen;
+				bv->value.stringval=(char *)
+					bindpool->allocate(numbertextlen+1);
+				bytestring::copy(bv->value.stringval,
+						numbertext,
+						(size_t)numbertextlen);
+				bv->value.stringval[numbertextlen]='\0';
+				break;
+			case ORACLE_TYPE_VARCHAR:
+			case ORACLE_TYPE_CHAR:
+			case ORACLE_TYPE_LONG:
+				// raw text, exactly as sent - "bindchar" and
+				// "bindvarchar" appear verbatim in #9700's
+				// insert capture
+				bv->type=SQLRSERVERBINDVARTYPE_STRING;
+				bv->valuesize=valuesize;
+				bv->value.stringval=(char *)
+					bindpool->allocate(valuesize+1);
+				if (valuesize) {
+					bytestring::copy(bv->value.stringval,
+							value,
+							(size_t)valuesize);
+				}
+				bv->value.stringval[valuesize]='\0';
+				break;
+			default:
+				// unreachable - the switch above already
+				// refused everything this one doesn't handle
+				debugWrite("bind %d: unsupported wire type %d",
+						i+1,query2bindtypes[i]);
+				debugEnd();
+				return false;
+		}
+
+		debugWrite("bind %d: %s = %.*s",i+1,bv->variable,
+				(int)bv->valuesize,bv->value.stringval);
+
+		incount++;
+	}
+
+	cont->setInputBindCount(cursor,incount);
+	cont->setOutputBindCount(cursor,0);
+
+	// remember the shape for the re-executes that may follow.  a bare
+	// TTI_EXECUTE sends fresh values and no descriptors at all, so these
+	// are the only record of how to read them - see execute()
+	uint16_t	curid=cont->getId(cursor);
+	query2cursorbindcounts[curid]=query2bindcount;
+	for (uint16_t i=0; i<query2bindcount; i++) {
+		query2cursorbindtypes[curid][i]=query2bindtypes[i];
+	}
+
+	debugWrite("bind count: %d",incount);
+	debugEnd();
+
+	return true;
 }
 
 // zeroing the count is the whole of it - columnIsDefined() answers true
@@ -10187,33 +10615,34 @@ uint32_t sqlrprotocol_oracle::definedColumnCount(sqlrservercursor *cursor,
 	return count;
 }
 
-bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
-								bool binds) {
+// a bind-carrying request used to be answered here too, with a hardcoded
+// TTC_IO_VECTOR object off the wiki page.  #9700's captures show a real
+// client cannot parse that - it aborts the session on it - and that the
+// binds it carries need no answer of their own anyway, since they arrive
+// inline with the statement.  so a bind request now takes the ordinary
+// execute answer below, like any other, and the io-vector branch is gone
+bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags;
 	byte_t		ttccode;
 
-	if (binds) {
+	// what the client puts in its cursor data area's rpc.  every capture
+	// behind the 0 this used to always send is a select, where an
+	// execute really does process no rows - they arrive on the fetch,
+	// and that is where the count shows up.  a dml has no fetch to carry
+	// it, so an insert answered with 0 tells the client nothing was
+	// inserted even when a row went in, which is what #9700's insert and
+	// nullbind runs saw.  so a select keeps sending 0, byte for byte as
+	// before, and everything else sends what the backend actually did
+	uint32_t	rowsprocessed=0;
+	if (cursor->getQueryType()!=SQLRQUERYTYPE_SELECT &&
+					cont->knowsAffectedRows(cursor)) {
+		rowsprocessed=(uint32_t)cont->getAffectedRows(cursor);
+	}
 
-		dataflags=0;
-		ttccode=TTC_IO_VECTOR;
-
-		// FIXME: decode this... see "Oracle Wire Protocol - Query2"
-
-		byte_t unknown[]={
-			0x05, 0xFE, 0x01, 0x00, 0x00,
-			0x00, 0x01, 0x00, 0x00, 0x00, 0x20
-		};
-
-		writeBE(&reqpacket,dataflags);
-		write(&reqpacket,ttccode);
-		reqpacket.append(unknown,sizeof(unknown));
-
-		putGenericFooter();
-
-	} else if (nativeencoding) {
+	if (nativeencoding) {
 
 		dataflags=0;
 		ttccode=TTC_OK;
@@ -10315,7 +10744,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 		// parse this call follows had none.  no generic footer follows
 		// it - the summary object ends the packet, the same way it
 		// ends sendOsql7Response()'s
-		putOci7Summary(cursorid,3,0,1);
+		putOci7Summary(cursorid,3,rowsprocessed,1);
 	}
 
 	debugStart("query2 response");
@@ -10324,218 +10753,6 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
 	debugEnd();
 
 	return sendPacket(true);
-}
-
-bool sqlrprotocol_oracle::bindParameters(sqlrservercursor *cursor,
-							uint16_t pcount,
-							uint16_t *ptypes) {
-
-	cont->setInputBindCount(cursor,
-				(pcount<=maxbindcount)?pcount:maxbindcount);
-
-	// the pool owns every bind value, for the life of the statement -
-	// clear it once, in front of the whole set
-	memorypool	*bindpool=cont->getBindPool(cursor);
-	bindpool->clear();
-	sqlrserverbindvar	*inbinds=cont->getInputBinds(cursor);
-
-	// this blocks for one Bind Value Request packet per bind, and never
-	// times out - a client that sets OPTION_BIND but then stalls (or
-	// sends something recvPacket() can't read as a well-formed packet)
-	// hangs this sqlr-connection process on this read forever. that's
-	// not particular to bind handling, though: clientsock->read()
-	// (recvPacket() above, ~line 2617) has no read timeout, and neither
-	// does any other blocking client read in this file, including the
-	// one at the top of the request loop that waits for the next TTI
-	// function. fixing that here would mean giving this one call site a
-	// bound nothing else in the module has, rather than reusing an
-	// existing pattern - so it's noted, not changed
-	for (uint16_t i=0; i<pcount; i++) {
-
-		if (!recvPacket()) {
-			return false;
-		}
-
-		if (resppackettype!=PACKET_DATA) {
-			debugWrite("bad packet type %d, expected %d",
-						resppackettype,PACKET_DATA);
-			return false;
-		}
-
-		if (i>=maxbindcount) {
-			continue;
-		}
-
-		const byte_t	*rp=resppacket;
-		const byte_t	*end=resppacket+resppacketsize;
-
-		// bounds check before reading the fixed-size header below
-		if ((size_t)(end-rp)<sizeof(uint16_t)+sizeof(byte_t)+
-							sizeof(byte_t)) {
-			debugWrite("bind value packet too short");
-			return false;
-		}
-
-		uint16_t	dataflags;
-		// unexplained.  see "Oracle Wire Protocol - Query2"
-		byte_t		unknown;
-
-		readBE(rp,&dataflags,&rp);
-		read(rp,&unknown,&rp);
-
-
-		sqlrserverbindvar	*bv=&(inbinds[i]);
-
-		// the bind variable name should be something like :1, :2, etc.
-		bv->variable=bindvarnames[i];
-		bv->variablesize=charstring::getLength(bv->variable);
-
-		debugStart("bind %d",i);
-		debugWrite("data flags: 0x%04x",dataflags);
-		debugWrite("variable: %s",bv->variable);
-
-		// FIXME: handle nulls - the null wire form is unexplained
-		if (false) {
-			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			bv->isnull=cont->getNullBindValue();
-			debugWrite("type: NULL");
-			debugWrite("isnull: true");
-			debugEnd();
-			continue;
-		}
-
-		// every Bind Value Request value arrives on the wire as
-		// length-prefixed text - a UB1 size byte followed by that
-		// many raw bytes - with no per-value type tag, so the cases
-		// below only differ in which SQLRSERVERBINDVARTYPE the value
-		// gets bound as, not in how the bytes are read
-		switch (ptypes[i]) {
-			case ORACLE_TYPE_VARCHAR:
-			case ORACLE_TYPE_CHAR:
-			case ORACLE_TYPE_NUMBER:
-			case ORACLE_TYPE_VARNUM:
-			case ORACLE_TYPE_LONG:
-			case ORACLE_TYPE_DATE:
-			case ORACLE_TYPE_ROWID:
-			case ORACLE_TYPE_ROWID_DEPRECATED:
-			case ORACLE_TYPE_TIMESTAMP:
-			case ORACLE_TYPE_TIMESTAMPTZ:
-			case ORACLE_TYPE_TIMESTAMPLTZ:
-			case ORACLE_TYPE_INTERVALYM:
-			case ORACLE_TYPE_INTERVALDS:
-			// an unrecognized/non-bindable type code is taken as text
-			default:
-				{
-				byte_t	size;
-				read(rp,&size,&rp);
-
-				// bounds check before copying "size" bytes
-				if (rp>end || (size_t)(end-rp)<(size_t)size) {
-					debugWrite("bind value truncated, "
-						"needed %d bytes",
-						(uint32_t)size);
-					return false;
-				}
-
-				bv->type=SQLRSERVERBINDVARTYPE_STRING;
-				bv->valuesize=size;
-				bv->value.stringval=(char *)
-					bindpool->allocate(bv->valuesize+1);
-				bytestring::copy(bv->value.stringval,
-							rp,(size_t)size);
-				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=bv->valuesize;
-				break;
-				}
-			case ORACLE_TYPE_RAW:
-			case ORACLE_TYPE_LONG_RAW:
-			case ORACLE_TYPE_BLOB:
-			case ORACLE_TYPE_BFILE:
-				{
-				byte_t	size;
-				read(rp,&size,&rp);
-
-				// bounds check before copying "size" bytes
-				if (rp>end || (size_t)(end-rp)<(size_t)size) {
-					debugWrite("bind value truncated, "
-						"needed %d bytes",
-						(uint32_t)size);
-					return false;
-				}
-
-				bv->type=SQLRSERVERBINDVARTYPE_BLOB;
-				bv->valuesize=size;
-				bv->value.stringval=(char *)
-					bindpool->allocate(bv->valuesize+1);
-				bytestring::copy(bv->value.stringval,
-							rp,(size_t)size);
-				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=bv->valuesize;
-				break;
-				}
-			case ORACLE_TYPE_CLOB:
-				{
-				byte_t	size;
-				read(rp,&size,&rp);
-
-				// bounds check before copying "size" bytes
-				if (rp>end || (size_t)(end-rp)<(size_t)size) {
-					debugWrite("bind value truncated, "
-						"needed %d bytes",
-						(uint32_t)size);
-					return false;
-				}
-
-				bv->type=SQLRSERVERBINDVARTYPE_CLOB;
-				bv->valuesize=size;
-				bv->value.stringval=(char *)
-					bindpool->allocate(bv->valuesize+1);
-				bytestring::copy(bv->value.stringval,
-							rp,(size_t)size);
-				bv->value.stringval[bv->valuesize]='\0';
-				bv->isnull=cont->getNonNullBindValue();
-				rp+=bv->valuesize;
-				break;
-				}
-		}
-
-		if (getDebug()) {
-			if (bv->type==SQLRSERVERBINDVARTYPE_STRING) {
-				debugWrite("type: STRING");
-				debugWrite("value: %s",
-						bv->value.stringval);
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_INTEGER) {
-				debugWrite("type: INTEGER");
-				debugWrite("value: %lld",
-						(long long)bv->value.integerval);
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_DOUBLE) {
-				debugWrite("type: DOUBLE");
-				debugWrite("value: %f (%d,%d)",
-						bv->value.doubleval.value,
-						bv->value.doubleval.precision,
-						bv->value.doubleval.scale);
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
-				// FIXME: print date...
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_BLOB) {
-				debugWrite("type: BLOB");
-				stringbuffer	b;
-				b.safePrint(bv->value.stringval,
-							bv->valuesize);
-				debugWrite("value: %s",b.getString());
-			} else if (bv->type==SQLRSERVERBINDVARTYPE_CLOB) {
-				debugWrite("type: CLOB");
-				debugWrite("value: %s",
-						bv->value.stringval);
-			}
-			debugWrite("value size: %d",bv->valuesize);
-			debugWrite("isnull: false");
-			debugEnd();
-		}
-	}
-
-	return true;
 }
 
 bool sqlrprotocol_oracle::query3(const byte_t *rp) {
@@ -14682,6 +14899,48 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	// fresh bind values, and nothing else, may follow the header.  obndrv
+	// binds by reference, so a client that binds once and executes many
+	// times re-sends only the values - the descriptors it sent with the
+	// query2 still stand, and this request carries none of its own.  that
+	// is why the types have to be remembered per cursor from the query2
+	// that set them up (see installQuery2Binds()).
+	//
+	// #9700's "many" capture, the second of three executes:
+	//   04 | 13 | 01 02 | 01 01 | 00 | 07 | 02 c1 0c | 08 "bindchar"
+	//   | 0b "bindvarchar"
+	// which is this header and then the same TTC_ROW_DATA value block a
+	// query2 request carries behind its descriptors, c1 0c being the
+	// oracle internal number 11.  before this, the values went unread and
+	// the second execute answered ORA-03120
+	uint16_t	curid=cont->getId(cursor);
+	if (rp<end && query2cursorbindcounts[curid]) {
+
+		query2bindcount=query2cursorbindcounts[curid];
+		for (uint16_t i=0; i<query2bindcount; i++) {
+			query2bindtypes[i]=query2cursorbindtypes[curid][i];
+		}
+
+		if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
+			return sendVariableNotInSelectListError(cursorid);
+		}
+
+		// the same landing rule the descriptor walk uses: read every
+		// byte or trust none of them
+		if (rp!=end) {
+			debugWrite("execute left %d bytes unread",
+							(int32_t)(end-rp));
+			return sendVariableNotInSelectListError(cursorid);
+		}
+
+		clearParams(cursor);
+
+		if (!installQuery2Binds(cursor)) {
+			debugWrite("installing binds failed");
+			return sendVariableNotInSelectListError(cursorid);
+		}
+	}
+
 	// a fresh execute means a new result set - drop any row held
 	// over from a previous one on this cursor
 	pendingrow[cont->getId(cursor)].clear();
@@ -15154,7 +15413,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	// the row header carries this count rather than the select list's,
 	// and putRow() below skips the columns it leaves out.  a cursor whose
 	// define list wasn't decoded counts every column, which is what every
-	// session got before #9810.  see getQuery2Defines()
+	// session got before #9810.  see getQuery2Descriptors()
 	uint32_t	sendcolcount=definedColumnCount(cursor,colcount);
 
 	// the column count is written below as a single byte, and captures
@@ -15814,7 +16073,7 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// not even a null marker.  a real server leaves them out of
 		// the row entirely, which is why its answer to a one-of-four
 		// define is the same length as its answer to a genuine
-		// one-column select (#9810).  see getQuery2Defines()
+		// one-column select (#9810).  see getQuery2Descriptors()
 		if (!columnIsDefined(cursor,i)) {
 			debugWrite("col %d: not defined, skipped",i);
 			continue;

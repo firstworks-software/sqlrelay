@@ -32,9 +32,10 @@ ORACLEPROTOCOLPORT7 ?= 1527
 # oracle.class only builds if a jdk is configured - see
 # ORACLEPROTOCOLTESTTARGETS in config.mk.in
 #
-# oci7 and oci7describe only build if the legacy OCI7 call interface was
-# detected at configure time - also gated through ORACLEPROTOCOLTESTTARGETS
-# in config.mk.in, but via HAVE_OCI7 rather than HAVE_JAVA
+# oci7, oci7describe and oci7bind only build if the legacy OCI7 call
+# interface was detected at configure time - also gated through
+# ORACLEPROTOCOLTESTTARGETS in config.mk.in, but via HAVE_OCI7 rather
+# than HAVE_JAVA
 #
 # oracledescribeonly, oracledescribe, oraclemidfetchdescribe,
 # oraclelegacyfetch, oracleclrchunks, oracleiterations0 and
@@ -65,6 +66,9 @@ oci7: oci7.cpp oci7.$(OBJ)
 
 oci7describe: oci7describe.cpp oci7describe.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7describe.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
+oci7bind: oci7bind.cpp oci7bind.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7bind.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
 ociselect: ociselect.cpp ociselect.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
@@ -147,5 +151,5 @@ oraclebigchunkclroff: oraclebigchunkclroff.cpp oracleprotocolclient.cpp oraclebi
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclebigchunkclroff.$(OBJ) $(RUDIMENTSLIBS)
 
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) ociselect$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) tnsnames.ora
 	$(RMTREE) .libs

@@ -136,6 +136,51 @@ positions the client named or merely off how many it named. Running
 --defines=3 and --defines=1 against the same query answers that in one
 run each: --defines=3 comes back with column 3's value, in slot 3.
 
+oci7bind.cpp, gated by the same configure-time check as oci7.cpp, is a
+minimal OCI7 client for capturing bind-variable traffic: olog, oopen,
+oparse, obndrv, then - depending on --bind= - odefin/oexec/ofen or just
+oexec, then oclose, ologof. Nothing else.
+
+    ./oci7bind SID [--bind=VARIANT] [USER PASSWORD]
+
+It exists for #9700. oci7.cpp's own Binds section exercises the same calls,
+but it is the tail of a suite that logs in twice, creates tables and runs a
+hundred other statements first, so a capture of it is far too noisy to read
+a byte layout out of - the same reason oci7describe.cpp exists next to it
+for describes.
+
+The nine variants each have to be captured on their own, and each isolates
+one unknown:
+
+    selectint    one IN bind (SQLT_INT) plus one odefin, on a select - the
+                  smallest packet that has both a bind block and a define
+                  block in it, so it shows where one ends and the other
+                  begins
+    selectstr    the same with the bind SQLT_STR, so diffing the two
+                  isolates the datatype and length fields
+    selecttwo    two binds and two defines, which gives the stride from one
+                  bind descriptor to the next
+    insert       three binds and no defines at all (dml), isolating the
+                  bind block with nothing behind it
+    nullbind     the same insert with two of the three indicators -1
+    many         bind once, oexec three times - obndrv binds by reference,
+                  so this says whether the client re-marshals the binds on
+                  every execute or sends them only with the first
+    out          a pl/sql block with one OUT bind
+    inout        a pl/sql block whose bind is read and written
+    nullout      a pl/sql block that assigns NULL to its out bind
+
+insert, nullbind and many create the protocoltestbind table themselves
+(dropping any leftover first), so no other program has to have run against
+the backend.
+
+Nothing is captured with this yet. As of this writing no capture anywhere
+has OPTION_BIND set - not the fourteen checked in under samples/, and not
+any of the working captures from the #9637/#9638/#9680/#9808/#9810 passes -
+so the bind descriptor block's position and shape are still unattributable
+to real bytes, and query2()'s OPTION_BIND path in src/protocols/oracle.cpp
+remains a guess from a pre-8i wiki page. See #9700.
+
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
 early OCI8-era client installs export the symbol under a short
