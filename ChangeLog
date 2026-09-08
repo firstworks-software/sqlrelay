@@ -2083,6 +2083,11 @@
 		actually works
 	documented why no real client selects the oracle protocol module's
 		native encoding, and why a 9i login never can
+	the oracle protocol module honors an oci7 client's odefin's now - a
+		legacy fetch sends back the columns the client defined and no
+		others, the way a real server does, instead of every column of
+		the select list; sending the extra columns overran the buffers
+		the client had set up and segfaulted it mid-fetch
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
