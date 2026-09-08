@@ -2099,6 +2099,20 @@
 		the wrong statement text - confirmed against a real ojdbc
 		session's live capture as well as this module's own raw-socket
 		test client, both of which send that trailer
+	fixed an oracle protocol module bug that broke every oci7 query run on
+		a cursor whose wire id wasn't 2.  the first of the three fields
+		that lead a query2 response is a constant, not the cursor id,
+		but it had been decoded from captures that were all answering
+		cursor id 2 - where a constant and the cursor id are
+		indistinguishable - and was being sent as the cursor id ever
+		since.  a real 10.2 server sends 2 there whatever cursor it is
+		answering, verified at cursor ids 1, 2 and 3.  any other value
+		made a real oci7 client read the response, reject it, and
+		cancel the call with a marker, which surfaced to the client as
+		ORA-03106.  it went unnoticed because a session's first cursor
+		gets id 2 and no test had ever opened a second one.  an exact
+		fetch's trailer led with the same field and had the same bug,
+		though a client doesn't reject a fetch over it
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
