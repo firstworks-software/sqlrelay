@@ -399,6 +399,23 @@
 // platform on purpose - see putTtiResponse().
 #define SERVER_BANNER			"SQLRelay/PortableTTC"
 
+// the first of the three fields that lead a query2 response, ahead of its
+// summary object, and the first of the same three an exact fetch's trailer
+// leads with.  a real 10.2 server sends 2 here whatever cursor it is
+// answering - captured at cursor ids 1, 2 and 3, over 1 to 5 columns and 1 to
+// 4 defines.  what it means is unknown; only that it does not move.
+//
+// it was read as the cursor id once, because every capture available then was
+// answering cursor id 2, which makes a constant and the cursor id look
+// identical.  writing the cursor id here instead cost the call for any cursor
+// whose id was not 2: the client read the response, rejected it, and cancelled
+// with a marker (#9699).  the cursor id has its own field inside the summary
+// object, which does vary.
+//
+// not verified against any other server version - no oracle newer than 10.2
+// accepts an oci7 login, so there is no second server to compare against
+#define QUERY2_RESPONSE_LEAD_IN		2
+
 // the two oracle versions the listener's serverversion attribute selects
 // between.  AUTH_VERSION_NO's nibbles are the
 // version: a live 11.2 server reports 0x0b200100 and a live 12.2 server
@@ -10724,6 +10741,12 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		// sendFetchResponse() also hardcodes as 0x0a for exactfetch
 		// (see ~12261) - every capture on file happens to land on
 		// call 0x0a, so there's no evidence yet for computing it
+
+		// indices 0-1 are the native form of the lead-in the portable
+		// branch below writes - a constant rather than the cursor id,
+		// see QUERY2_RESPONSE_LEAD_IN.  the literal is right as it
+		// stands; it is only listed here so nobody "fixes" it into a
+		// cursor id later
 		byte_t unknown[]={
 			0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -10765,13 +10788,22 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		//	native	 02 00 | b0 cc a0 08 | 00 00 00 00 | 04 ...
 		//	portable 01 02 | 04 08 a0 cc 96 | 00 | 04 ...
 		//
-		// so a ub2 cursor id, a ub4, and a ub4 that is zero in both.
-		// the 8i-era literal above carries the same three fields, and
-		// its cursor id is the 2 CURSOR_ID_OFFSET_9I now sends
+		// so a ub2, a ub4, and a ub4 that is zero in both.
+		//
+		// The first of the three is not the cursor id, though it was
+		// read as one for a long time and written as one - every
+		// capture it was decoded from happened to be answering cursor
+		// id 2, so a constant and the cursor id were indistinguishable.
+		// A real 10.2 server sends 2 here whichever cursor it is
+		// answering: captured at cursor ids 1, 2 and 3, across 1 to 5
+		// columns and 1 to 4 defines.  The cursor id itself rides in
+		// putOci7Summary()'s own field further down, which does vary
+		// and is correct.  Sending the cursor id here instead cost the
+		// call for any cursor whose id was not 2 - the client read the
+		// response, rejected it, and cancelled with a marker.  See
+		// QUERY2_RESPONSE_LEAD_IN.
 
-		uint32_t	cursorid=wireCursorId(cursor);
-
-		writeLenPreInt(&reqpacket,cursorid);
+		writeLenPreInt(&reqpacket,QUERY2_RESPONSE_LEAD_IN);
 
 		// the middle field is a server-side address, not anything the
 		// session carries: 0x08a0cc96 here and 0x08a0ccb0 in the
@@ -10798,8 +10830,9 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		// one execution has now succeeded on this cursor, where the
 		// parse this call follows had none.  no generic footer follows
 		// it - the summary object ends the packet, the same way it
-		// ends sendOsql7Response()'s
-		putOci7Summary(cursorid,3,rowsprocessed,1);
+		// ends sendOsql7Response()'s.  this field is the real cursor
+		// id, unlike the lead-in above
+		putOci7Summary(wireCursorId(cursor),3,rowsprocessed,1);
 	}
 
 	debugStart("query2 response");
@@ -15679,17 +15712,23 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 		// an exact fetch leads its trailer with the same three fields
 		// sendQuery2Response() writes ahead of a plain execute's
-		// summary object - a ttc 0x08, the cursor id and a server
-		// address - which is all the native exactfetchmarker[] below
-		// is: "08 02 00 e7 ..." in #9637's legacy-exfet captures, a
-		// ub2 cursor id of 2 behind the ttc code and then the address.
+		// summary object - a ttc 0x08, the lead-in constant and a
+		// server address - which is all the native exactfetchmarker[]
+		// below is: "08 02 00 e7 ..." in #9637's legacy-exfet captures,
+		// the constant behind the ttc code and then the address.
 		// the address goes out as zero here for the same reason it
 		// does there: nothing echoes it back, and the width has to be
 		// written by hand since writeLenPreInt() would answer a zero
-		// with a bare 00
+		// with a bare 00.
+		//
+		// the middle field used to be sent as the cursor id here too,
+		// for the same reason it was in sendQuery2Response() - see
+		// QUERY2_RESPONSE_LEAD_IN.  a client does not reject a fetch
+		// over it the way it rejects an execute, so this one was never
+		// seen to break anything, but it was wrong on the same terms
 		if (exactfetch) {
 			write(&reqpacket,(byte_t)TTC_OK);
-			writeLenPreInt(&reqpacket,wireCursorId(cursor));
+			writeLenPreInt(&reqpacket,QUERY2_RESPONSE_LEAD_IN);
 			write(&reqpacket,(byte_t)4);
 			writeBE(&reqpacket,(uint32_t)0);
 			writeLenPreInt(&reqpacket,0);
