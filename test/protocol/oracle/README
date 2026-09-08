@@ -114,10 +114,10 @@ section and makes a much noisier capture.
 
     ./oci7describe SID \
       [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth| \
-                  unparsedcursor|midfetch] \
+                  unparsedcursor|secondexec|midfetch] \
                      [--defines=LIST] [USER PASSWORD [QUERY]]
 
-The eight variants each put a different describe on the wire: parse
+The nine variants each put a different describe on the wire: parse
 (right after oparse, before any oexec), exec (after oexec, before the
 first ofen), fetch (after at least one ofen - the #9599 mid-fetch case),
 out of range (describing a column past the end of the select list, to see
@@ -128,19 +128,22 @@ for call - both cursors odefin'd before either is oexec'd, both executed,
 fetches ping-ponged a row at a time, then closed in the reverse of the
 order they opened), unparsedcursor (oci7.cpp's Server Version section -
 a second cursor parsed, defined, executed and fetched while the cursor
-Connect opened sits open beside it, never oparse'd), and midfetch
-(oci7.cpp's own "odescr - mid-fetch"
+Connect opened sits open beside it, never oparse'd), secondexec
+(concurrent with only one thing changed - the cursor that is defined,
+executed and fetched is the second one opened rather than the first),
+and midfetch (oci7.cpp's own "odescr - mid-fetch"
 section call for call, against the four-column protocoltesttable,
 including the fetches that follow the describe - the state none of the
 others reach, and where a real OCI7 client segfaulted against sqlrelay,
 #9810).
 
-concurrent, concurrentboth and unparsedcursor are three cuts at the same
-question, and #9699 is why there are three. concurrent runs clean against
-both a real server and sqlrelay, even though it has two cursors open
-across parse, execute, fetch and describe - so two open cursors is not by
-itself what fails. It differs from the two oci7.cpp sections that do fail
-in exactly two ways, and the other two variants take one each:
+concurrent, concurrentboth, unparsedcursor and secondexec are four cuts
+at the same question, and #9699 is why there are four. concurrent runs
+clean against both a real server and sqlrelay, even though it has two
+cursors open across parse, execute, fetch and describe - so two open
+cursors is not by itself what fails. It differs from the two oci7.cpp
+sections that do fail in three ways, and the other three variants take
+one each:
 
     concurrentboth   both cursors odefin'd before either is oexec'd, and
                      both executed.  concurrent defines and executes the
@@ -152,6 +155,12 @@ in exactly two ways, and the other two variants take one each:
                      parses both.  an open, unparsed cursor sitting
                      beside an executing one is a state nothing else in
                      this tree covers
+    secondexec       the cursor that runs the query is the second one
+                     opened.  concurrent executes only the first cursor
+                     it opens, so no capture on file shows a query
+                     running on any cursor but the lowest id the server
+                     handed out - and both oci7.cpp sections that fail
+                     execute a cursor that is not the lowest
 
 --defines= applies to midfetch alone and names the column positions to
 odefin, as single digits: "1" (the default, and what oci7.cpp does), "3",

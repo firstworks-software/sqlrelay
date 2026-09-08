@@ -6,7 +6,7 @@
 // - odefin/oexec/ofen, then odescr, then oclose, ologof. Nothing else.
 //
 //   ./oci7describe SID \
-//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|midfetch]
+//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|secondexec|midfetch]
 //                    [--defines=LIST] [USER PASSWORD [QUERY]]
 //
 // oci7.cpp in this directory is the full OCI7 protocol test, including a
@@ -16,7 +16,7 @@
 // login, one oparse, and whichever describe variant was asked for - small
 // enough to read by hand or feed straight to oradecode.
 //
-// The eight --describe= variants exist because each one has to be captured on
+// The nine --describe= variants exist because each one has to be captured on
 // its own:
 //   parse        odescr right after oparse, before any oexec
 //   exec         odescr after oexec, before the first ofen
@@ -48,6 +48,15 @@
 //                on a second cursor with an open, unparsed one beside it.
 //                no other variant, and no capture on file, covers a cursor
 //                in that state
+//   secondexec   concurrent with one thing changed - the cursor that gets
+//                defined, executed and fetched is the second one opened
+//                rather than the first (#9699).  concurrent only ever
+//                executes the first cursor it opens, so nothing on file
+//                says whether a query runs correctly on any cursor but the
+//                lowest one the server handed out.  against concurrent this
+//                varies exactly one thing; against unparsedcursor it
+//                separates which cursor executes from whether the idle one
+//                was parsed
 //   midfetch     oci7.cpp's "odescr - mid-fetch" section, call for call
 //                (#9810) - four real columns with only column 1 defined,
 //                one ofen, then odescr over columns 1-4, one past the end,
@@ -59,9 +68,9 @@
 //
 // QUERY, when given, only applies to parse/exec/fetch/outofrange - it always
 // has to select three columns, since outofrange describes column 4. The
-// concurrent, concurrentboth, unparsedcursor and midfetch variants ignore
-// QUERY; they open their own fixed queries, the same way oci7.cpp's Concurrent
-// Cursors and Fetch sections do.
+// concurrent, concurrentboth, unparsedcursor, secondexec and midfetch variants
+// ignore QUERY; they open their own fixed queries, the same way oci7.cpp's
+// Concurrent Cursors and Fetch sections do.
 //
 // --defines= applies to midfetch alone, and takes the column positions to
 // odefin as single digits 1 through 4 - "1" (the default, and what oci7.cpp
@@ -204,7 +213,7 @@ int main(int argc, char **argv) {
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
 				"[--describe=parse|exec|fetch|outofrange|"
-				"concurrent|concurrentboth|unparsedcursor|midfetch] "
+				"concurrent|concurrentboth|unparsedcursor|secondexec|midfetch] "
 				"[--defines=LIST] "
 				"[USER PASSWORD [QUERY]]\n",
 				argv[0]);
@@ -410,6 +419,56 @@ int main(int argc, char **argv) {
 
 		run("oclose - working cursor",&workcda,oclose(&workcda));
 		run("oclose - idle cursor",&idlecda,oclose(&idlecda));
+
+	} else if (!charstring::compare(variant,"secondexec")) {
+
+		// concurrent, with one thing changed: the cursor that gets
+		// defined, executed and fetched is the second one opened
+		// rather than the first.  concurrent only ever executes the
+		// first cursor it opens, so nothing on file says whether a
+		// query runs correctly on any cursor but the lowest one the
+		// server handed out.  paired against concurrent this varies
+		// exactly one thing, and paired against unparsedcursor it
+		// separates which cursor executes from whether the idle one
+		// was parsed
+		Cda_Def	firstcda;
+		Cda_Def	secondcda;
+		if (!openCursor("oopen - first cursor",&firstcda) ||
+			!openCursor("oopen - second cursor",&secondcda)) {
+			ologof(&lda);
+			return 1;
+		}
+
+		// both parsed, the way concurrent parses both
+		const char	*firstquery="select level as num from dual "
+					"connect by level<=5 order by 1";
+		const char	*secondquery="select 1 as num from dual";
+		if (!parseQuery(&firstcda,firstquery) ||
+			!parseQuery(&secondcda,secondquery)) {
+			oclose(&firstcda);
+			oclose(&secondcda);
+			ologof(&lda);
+			return 1;
+		}
+
+		char	numbuf[64];
+		sb2	numind=0;
+		ub2	numlen=0;
+		ub2	numcode=0;
+		bytestring::zero(numbuf,sizeof(numbuf));
+
+		run("odefin - second cursor",&secondcda,
+			odefin(&secondcda,1,(ub1 *)numbuf,
+				(sword)sizeof(numbuf),SQLT_STR,-1,
+				&numind,(text *)0,-1,-1,
+				&numlen,&numcode));
+		run("oexec - second cursor",&secondcda,oexec(&secondcda));
+		if (run("ofen - second cursor",&secondcda,ofen(&secondcda,1))) {
+			stdoutput.printf("  num=%s\n",numbuf);
+		}
+
+		run("oclose - second cursor",&secondcda,oclose(&secondcda));
+		run("oclose - first cursor",&firstcda,oclose(&firstcda));
 
 	} else if (!charstring::compare(variant,"parse")) {
 
