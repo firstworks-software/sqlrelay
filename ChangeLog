@@ -2062,6 +2062,15 @@
 		module - including sqlplus's own third post-login bootstrap
 		statement - with a truncated read before ever reaching the
 		query text
+	fixed the oracle protocol module's o3logon login parser requiring
+		every byte of a short-form length-prefixed string to be
+		printable, when a real 9i client counts a value's trailing
+		NUL inside its own declared length; the parser then gave up
+		on the whole request, so a session-key login whose
+		AUTH_ALTER_SESSION text was short enough to avoid the
+		chunked long form died with ORA-03113.  the short form
+		allows a NUL as the last declared byte now, the way the
+		chunked long form already did
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
