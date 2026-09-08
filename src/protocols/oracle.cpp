@@ -1868,7 +1868,21 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	serverversionpacked;
 		char		serverversionbanner[128];
 
-		// whether the client marshals in its own memory layout
+		// whether the client marshals in its own memory layout.
+		//
+		// no real client ever turns this on.  it is picked by the
+		// sentinel in the login request's first pointer field, and an
+		// OCI client only writes that sentinel when the server's
+		// platform banner matches its own, which SERVER_BANNER never
+		// does, on purpose - see putTtiResponse().  a 9i login can't
+		// turn it on at all: recvAuthenticationRequest() returns
+		// ahead of the probe that sets it.
+		//
+		// the branches behind it are still exercised, though -
+		// test/protocol/oracle/oracledescribe.cpp writes the sentinel
+		// by hand, and test.sh runs it with -native on every pass,
+		// against a real server's own bytes from the captures in
+		// test/protocol/oracle/samples/
 		bool		nativeencoding;
 
 		// whether the client's own byte order is little endian, from
@@ -7051,9 +7065,16 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// for TTI_OPEN.  its count fields, unlike its pointers, are ordinary
 	// length-prefixed ints, the same as everywhere else this module
 	// answers no platform any client matches - "nativeencoding" never
-	// gets set for a 9i login (see getClassicCount() - since removed;
-	// a real client's own request confirmed the plain reading was right
-	// all along, every count here matching a getAuthCount() read exactly)
+	// gets set for a 9i login, because recvAuthenticationRequest() hands
+	// off to here and returns ahead of the probe that would set it.
+	// the plain reading is the right one for the traffic this module
+	// gets, and samples/oracle102-oci7-portable-login-select.cap
+	// confirms it, every count here matching a getAuthCount() read
+	// exactly.  a client whose own platform matched its server's banner
+	// writes these same counts fixed-width instead - four bytes, little
+	// endian, as in the native capture beside it - but this module's
+	// banner matches nobody, so that shape never arrives here, and the
+	// early return ahead of the probe is not a gap to fix
 	if (!getPointer(rp,end,&unused,&rp) ||			// uid ptr
 		!getAuthCount(rp,end,&usernamesize,4,&rp) ||	// uid length
 		!getPointer(rp,end,&unused,&rp) ||		// pswd ptr
