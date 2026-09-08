@@ -9391,38 +9391,113 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// legacy path (pre-10g): parse only - execution and row transfer
 	// happen on a later execute() or fetch()
 
-	// parse the request...
-	// moreoptions and unknown3-7 are unexplained
-	// see "Oracle Wire Protocol - Query"
-	uint16_t	options;
-	uint16_t	moreoptions;
-	uint16_t	cursorid;
-	byte_t		unknown3;
-	byte_t		unknown4;
-	byte_t		unknown5;
-	uint16_t	querysize;
-	byte_t		unknown6;
-	byte_t		unknown7;
-	const char	*query;
+	const byte_t	*end=resppacket+resppacketsize;
 
-	readBE(rp,&options,&rp);
-	readBE(rp,&moreoptions,&rp);
-	readBE(rp,&cursorid,&rp);
-	read(rp,&unknown3,&rp);
-	read(rp,&unknown4,&rp);
-	read(rp,&unknown5,&rp);
-	readLE(rp,&querysize,&rp);
-	read(rp,&unknown6,&rp);
-	read(rp,&unknown7,&rp);
-	query=(char *)rp;
+	// used to be read as three raw big-endian ub2s (options, moreoptions
+	// and the cursor id) - the same shape query2() carried before #9656,
+	// and wrong for the same reason: it lands on the right bytes only by
+	// coincidence, if at all, and never in the portable encoding this
+	// module always negotiates (see SERVER_BANNER).  decoded byte for
+	// byte instead against a real oci7 9i client's o3logon sqlplus
+	// session parsing its own post-login bootstrap query "select user
+	// from dual" - packet [0019] of the capture attached to #9793 - the
+	// cursor id is a count, a length-prefixed int in this module's
+	// portable encoding, sitting right behind the one-byte sequence
+	// number with no options field between them.  reading the old shape
+	// instead handed cursorFromWireId() garbage, which is this ticket's
+	// ORA-01001 and, on the classic-login path that reaches this same
+	// code, #9805's "cursor id 46604 not found"
+	byte_t		seqnumber=0;
+	uint32_t	cursorid=0;
+
+	// one pointer into the client's own address space, and one plain
+	// byte (0x01 in the capture - unconfirmed meaning, maybe a bind or
+	// iteration count) follow the cursor id - nothing behind this call
+	// needs either, and nothing on file says what they're for beyond
+	// landing on the query size ahead of the text.  getPointer() has no
+	// presence flag - it always consumes a fixed pointersize bytes - so
+	// calling it more than once here (an earlier version of this fix
+	// called it five times, guessing five one-byte pointers) silently
+	// eats into the query text instead of failing: see comment 5 on
+	// #9793, where that version's own consistency check caught it
+	// ("query size 82 doesn't match repeated size 79") against this same
+	// capture.  the only capture on file is a portable-encoding session
+	// where the pointer datatype itself happens to be 4 bytes wide (see
+	// getPointer()) - a client whose pointer datatype is the 1-byte
+	// universal one, or a fully native-encoded session, is unverified
+	uint32_t	unknown1=0;
+	byte_t		unknown2=0;
+
+	// the query size is carried twice, both times as a raw byte rather
+	// than a count - both come out 0x16 (22) ahead of the 21-byte
+	// "select user from dual" plus its own trailing nul in the capture.
+	// like the pointer above, this is only confirmed in the portable
+	// encoding
+	byte_t		querysizebyte1=0;
+	byte_t		querysizebyte2=0;
+
+	if (end-rp<1) {
+		debugWrite("truncated query sequence number");
+		return false;
+	}
+	read(rp,&seqnumber,&rp);
+
+	// the summary object this call's answer carries has to echo this
+	// back, the same way osql7()'s and query2()'s do
+	callnumber=seqnumber;
+
+	if (!getAuthCount(rp,end,&cursorid,4,&rp) ||
+		!getPointer(rp,end,&unknown1,&rp)) {
+		return false;
+	}
+
+	if (end-rp<3) {
+		debugWrite("truncated query size");
+		return false;
+	}
+	read(rp,&unknown2,&rp);
+	read(rp,&querysizebyte1,&rp);
+	read(rp,&querysizebyte2,&rp);
+
+	// a zero size, or one that doesn't agree with its own repeat, is one
+	// this parse landed on the wrong offsets in, the same as osql7()'s
+	// own length-agreement check
+	if (!querysizebyte1) {
+		debugWrite("query size is 0");
+		return false;
+	}
+	if (querysizebyte1!=querysizebyte2) {
+		debugWrite("query size %d doesn't match repeated size %d",
+				querysizebyte1,querysizebyte2);
+		return false;
+	}
+
+	// the query text, including its own trailing nul - see above
+	uint32_t	querysize=querysizebyte1;
+	if ((size_t)(end-rp)<(size_t)querysize) {
+		debugWrite("truncated query text");
+		return false;
+	}
+	const char	*query=(const char *)rp;
+	uint32_t	querybytes=querysize-1;
+
+	// a query whose declared size doesn't end on the nul it's supposed
+	// to include is one where the size counts something other than what
+	// was assumed above - the same wrong-offsets signal as the checks
+	// before this one, not a statement worth running
+	if (query[querybytes]!='\0') {
+		debugWrite("query size %d doesn't end on its own nul",
+				querysize);
+		return false;
+	}
+	rp+=querysize;
 
 	debugStart("query request");
-	debugOptions(options,moreoptions);
+	debugWrite("seq number: %d",seqnumber);
 	debugWrite("cursor id: %d",cursorid);
-	debugWrite("unknown: %02x %02x %02x",unknown3,unknown4,unknown5);
+	debugWrite("unknown: 0x%08x 0x%02x",unknown1,unknown2);
 	debugWrite("query size: %d",querysize);
-	debugWrite("unknown: %02x %02x",unknown6,unknown7);
-	debugWrite("query: \"%*s\"",querysize,query);
+	debugWrite("query: \"%.*s\"",(int)querybytes,query);
 	debugEnd();
 
 	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
@@ -9438,7 +9513,7 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	clearLobPin(cont->getId(cursor));
 
 	// bounds checking
-	if (querysize>maxquerysize) {
+	if (querybytes>maxquerysize) {
 		// FIXME: implement this
 		//return sendErrPacket(1105,"Unknown error","24000");
 		return false;
@@ -9446,9 +9521,11 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 
 	// copy the query into the cursor's query buffer
 	char	*querybuffer=cont->getQueryBuffer(cursor);
-	bytestring::copy(querybuffer,query,querysize);
-	querybuffer[querysize]='\0';
-	cont->setQuerySize(cursor,querysize);
+	if (querybytes) {
+		bytestring::copy(querybuffer,query,querybytes);
+	}
+	querybuffer[querybytes]='\0';
+	cont->setQuerySize(cursor,querybytes);
 
 	// prepare the query
 	if (!cont->prepareQuery(cursor,cont->getQueryBuffer(cursor),
@@ -9464,39 +9541,23 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
-	// FIXME: decode this... see "Oracle Wire Protocol - Query"
-
 	uint16_t	dataflags=0;
-	byte_t	ttccode=TTC_ERROR;
-	byte_t unknown1[]={
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00
-	};
-	byte_t unknown2[]={
-		// not cursor id
-		0x01, 0x00
-	};
-	byte_t unknown3[]={
-		0x11, 0x00, 0x03, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-
 	writeBE(&reqpacket,dataflags);
-	write(&reqpacket,ttccode);
-	reqpacket.append(unknown1,sizeof(unknown1));
-	reqpacket.append(unknown2,sizeof(unknown2));
-	reqpacket.append(unknown3,sizeof(unknown3));
 
-	putGenericFooter();
+	debugStart("query response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
 
-	if (getDebug()) {
-		debugStart("query response");
-		debugWrite("data flags: 0x%04x",dataflags);
-		debugTtcCode(ttccode);
-		debugEnd();
+	// a real 10.2 server answers the parse with a summary object and
+	// nothing else, the same way it answers osql7() - see
+	// sendOsql7Response().  the canned TTC_ERROR blob this used to send
+	// unconditionally, regardless of whether the parse actually
+	// succeeded, is what put "ORA-01001: invalid cursor" in front of
+	// every client that ever reached this call - see #9793
+	if (nativeencoding) {
+		putOci7SummaryNative(wireCursorId(cursor),3,0,0);
+	} else {
+		putOci7Summary(wireCursorId(cursor),3,0,0);
 	}
 
 	return sendPacket(true);

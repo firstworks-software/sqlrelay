@@ -2046,6 +2046,14 @@
 		it sends instead of letting a non-oracle backend's larger
 		value (eg. router fronting a wide varchar) wrap silently into
 		a small or negative-looking byte on the wire
+	fixed the oracle protocol module's old-style TTI_QUERY (0x03) request
+		parser reading the cursor id as a raw fixed-width field instead
+		of the length-prefixed count it's actually sent as, and its
+		response unconditionally sending a canned TTC_ERROR blob instead
+		of a real success summary; together these broke every old-style
+		parse call an oci7 client made through this module, including
+		sqlplus's own post-login bootstrap query, with ORA-01001
+		"invalid cursor"
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
