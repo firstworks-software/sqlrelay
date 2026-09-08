@@ -2088,6 +2088,17 @@
 		others, the way a real server does, instead of every column of
 		the select list; sending the extra columns overran the buffers
 		the client had set up and segfaulted it mid-fetch
+	fixed the oracle protocol module's TTI_QUERY3 (0x5e) request parser
+		misreading the query text for a universal-encoding
+		(thin/pointersize=1) client: the eight fields removed to fix
+		the over-read above are only absent for an oci7 native-encoding
+		client, and the zero-skip loop that used to find the query
+		text after them only worked by luck when their bytes happened
+		to be all zero; a universal-encoding client's own trailer isn't,
+		so the loop stopped seven bytes early and handed the backend
+		the wrong statement text - confirmed against a real ojdbc
+		session's live capture as well as this module's own raw-socket
+		test client, both of which send that trailer
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
