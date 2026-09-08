@@ -482,6 +482,47 @@ AC_SUBST(OCI7INCLUDES)
 
 
 
+dnl OCIRowidToChar is missing from some early OCI8-era oracle clients even
+dnl though the rest of the OCI8 interface is present, so its absence can't
+dnl be inferred from ORACLEVERSION or HAVE_ORACLE_8i.  on at least one such
+dnl client the underlying symbol is exported under a short platform-specific
+dnl alias (eg. ociri2c) rather than its own name, with no prototype for
+dnl either name anywhere in the client's headers - so a hand-declared
+dnl extern "C" prototype of our own, the way FW_CHECK_OCI7 declares its
+dnl symbols, would wrongly report success (it links against a name the
+dnl client doesn't actually export) or wrongly report failure (rejecting a
+dnl client that exports and declares the real name just fine).  compile and
+dnl link the exact call oci8.cpp makes, through oci.h alone exactly as
+dnl oci8.cpp includes it, so the probe only succeeds where that same call
+dnl in the real program would
+AC_DEFUN([FW_CHECK_OCIROWIDTOCHAR],
+[
+HAVE_OCIROWIDTOCHAR=""
+if ( test -n "$ORACLELIBS" )
+then
+	AC_MSG_CHECKING(for OCIRowidToChar)
+	FW_TRY_LINK([#ifdef __CYGWIN__
+	#define _int64 long long
+#endif
+extern "C" {
+	#define OCIVER_ORACLE 1
+	#include <oci.h>
+}
+$GLIBC23HACKINCLUDE
+$GLIBC23HACKCODE],[OCIRowidToChar((OCIRowid *)0,(text *)0,(ub2 *)0,(OCIError *)0);],[$ORACLESTATIC $ORACLEINCLUDES],[$ORACLELIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[HAVE_OCIROWIDTOCHAR="yes"],[HAVE_OCIROWIDTOCHAR=""])
+	if ( test -n "$HAVE_OCIROWIDTOCHAR" )
+	then
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_OCIROWIDTOCHAR,1,OCIRowidToChar)
+	else
+		AC_MSG_RESULT(no)
+	fi
+fi
+AC_SUBST(HAVE_OCIROWIDTOCHAR)
+])
+
+
+
 AC_DEFUN([FW_CHECK_MYSQL],
 [
 if ( test "$ENABLE_MYSQL" = "yes" )

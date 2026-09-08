@@ -2071,6 +2071,16 @@
 		chunked long form died with ORA-03113.  the short form
 		allows a NUL as the last declared byte now, the way the
 		chunked long form already did
+	added a configure check (FW_CHECK_OCIROWIDTOCHAR) for OCIRowidToChar,
+		which some early OCI8-era oracle clients (Oracle 9.0.1 on
+		solaris/sparc and 9.2.0.4 on redhat/x86 both surfaced this)
+		export under a short platform-specific alias with no
+		prototype for either name in any header, even though the
+		rest of the OCI8 interface is present and the symbol itself
+		is genuinely linkable; compiles and links the exact call the
+		real code makes, through oci.h alone, and sets
+		HAVE_OCIROWIDTOCHAR in config.h only where that call
+		actually works
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

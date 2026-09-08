@@ -715,6 +715,7 @@ echo
 echo "***** Oracle *****************"
 FW_CHECK_ORACLE
 FW_CHECK_OCI7
+FW_CHECK_OCIROWIDTOCHAR
 echo "******************************"
 
 

@@ -123,6 +123,16 @@ real server answers with), and concurrent (a second cursor described
 while a first cursor's fetch is still in progress, across two cursors
 open at once).
 
+oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
+FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
+early OCI8-era client installs export the symbol under a short
+platform-specific alias with no prototype for either name anywhere in
+their headers, even though the rest of the interface oci8.cpp uses is
+present, so an Oracle 9.0.1 client can otherwise fail to even compile
+this test program. Without it, the rowid section just confirms the
+descriptor came back non-null instead of checking its base-64 external
+form.
+
 ocibannerrewritetest drives ociselect through oraproxy's banner-rewriting
 mode against the real oracle122 server, and decodes the result.
 
