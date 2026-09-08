@@ -2099,6 +2099,24 @@
 		the wrong statement text - confirmed against a real ojdbc
 		session's live capture as well as this module's own raw-socket
 		test client, both of which send that trailer
+	fixed the oracle protocol module answering a legacy (pre-query3) client's
+		error with bytes no client can parse: a fetch past the last row,
+		a failed parse/execute/fetch, an invalid cursor, a cancelled
+		call, an unimplemented function and the commit/rollback and lob
+		acks all sent a fixed 48-byte block plus a 41-byte footer, the
+		same bytes in either wire encoding, and the client abandoned the
+		call and failed the next one ORA-03120 instead of reporting the
+		real error - a fetch past the last row reported ORA-03120 where
+		a real server reports ORA-01403.  they now send the ordinary
+		summary object with the error number in it and the message
+		behind it, reproduced byte for byte from real 10.2 server
+		captures in both encodings
+	the oracle protocol module's legacy fetch path now keeps a running row
+		count, so the rows-processed field a fetch answers with counts
+		up across successive fetches the way a real server's does
+		instead of repeating each call's own count; a parse or an
+		execute starts the count over, the way it starts a new result
+		set
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
