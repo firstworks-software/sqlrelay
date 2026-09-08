@@ -10746,11 +10746,20 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// own trailing fields (a registration id and three more pointer/length
 	// pairs) would take on a client using the one-byte "universal" pointer
 	// encoding instead of oci7's four-byte native one (see getPointer()) -
-	// unconfirmed either way, since no capture of a universal-encoding
-	// client reaching this function is on file.  if such a client turns
-	// out to need those fields back, they can't simply be restored
-	// unconditionally - that would reintroduce this ticket's bug for oci7
-	// native-encoding clients like the one confirmed here
+	// so they're read back below, but only for that encoding, so an oci7
+	// native-encoding client's request parses the same as it does here.
+	// confirmed against a live capture of a universal-encoding client:
+	// test/protocol/oracle/samples/oracle122-login-select.cap, packet
+	// [0015], a real ojdbc thin driver's TTI_QUERY3 for "select 1 from
+	// dual" against the real 12.2 server.  reading these eight fields
+	// (all zero there but the second pointer, which is 1) lands on ten
+	// more zero-padding bytes and then the 18-byte query text with no
+	// length byte in front of it - ojdbc's own shape.  the zero-skip
+	// loop below, run on its own against this same capture, stops two
+	// bytes early on the "1" inside this trailer and misreads the query
+	// text from there - the same over-read-by-a-different-name bug as
+	// #9817's, just triggered by a real client this time instead of the
+	// raw-socket test client
 	//
 	// the fixed-field count itself is confirmed only against a 10.2
 	// backend's negotiated field version - a newer one (see
@@ -10772,6 +10781,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	uint32_t	prefetchbuffersize=0;
 	uint32_t	bindcount=0;
 	uint32_t	definecount=0;
+	uint32_t	unused=0;
 
 	// the sequence number is a raw byte, not a pointer and not a count
 	if (end-rp<1) {
@@ -10804,13 +10814,34 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		return false;
 	}
 
+	// a universal-encoding (thin/pointersize=1) client's request carries
+	// a registration id and three more pointer/length pairs here that an
+	// oci7 native-encoding (pointersize=4) client's doesn't - see the
+	// capture cited above.  restore these reads for that encoding only:
+	// reading them unconditionally is what over-read into the query text
+	// for a real oci7 client and #9817 fixed.  the raw-socket test
+	// client in test/protocol/oracle/oracleprotocolclient.cpp writes
+	// this same shape (it negotiates no representation for the pointer
+	// datatype, which leaves pointersize at its universal default)
+	if (pointersize==POINTER_SIZE_UNIVERSAL &&
+		(!readLenPreInt(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!readLenPreInt(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!readLenPreInt(rp,end,&unused,&rp) ||
+		!readLenPreInt(rp,end,&unused,&rp))) {
+		debugWrite("truncated query3 request");
+		return false;
+	}
+
 	if (*querysize) {
 
-		// the tail between the registration id and the query text is
-		// not fixed - it grows with the negotiated field version, and
-		// all of it is zero for a query with no binds, so skip it as a
-		// run of zeros rather than count it (a query's text never
-		// starts with a zero byte)
+		// anything past the fields above - a newer field version's
+		// own growth, if any - is zero for a query with no binds, so
+		// skip it as a run of zeros rather than count it (a query's
+		// text never starts with a zero byte)
 		while (rp<end && !(*rp)) {
 			rp++;
 		}
