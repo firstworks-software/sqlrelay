@@ -737,6 +737,22 @@
 // a describe-only execute sets this instead of OPTION_EXECUTE
 #define OPTION_DESCRIBE		(1<<17)
 
+// one odefin() rides in the query2 request as a descriptor: four raw bytes -
+// the wire datatype, a flag, a precision and a scale - and then this many
+// counts, of which the first is the client's buffer size and the sixth the
+// character set.  see getQuery2Defines()
+#define OCI7_DEFINE_COUNTS	8
+
+// and this in the flag byte marks a position the client never defined at
+// all.  a client that odefin's position 3 and nothing else still sends three
+// descriptors - placeholders for 1 and 2, then the real one - so the count
+// alone doesn't say which columns it wants.  the flag's other bits carry
+// something else: a real define's flag reads 0x07 in most captures and 0x00
+// in 9806-solaris8sparc-9i-o3logon-success, from the same host, whatever the
+// column type.  so this is read as a bit rather than compared whole, and
+// corroborated against the buffer size - see getQuery2Defines()
+#define OCI7_DEFINE_SKIPPED	0x80
+
 // ano field types.  no source names 0 or 4.
 #define ANO_FIELD_TYPE_STRING		0
 #define ANO_FIELD_TYPE_RAW_BYTES	1
@@ -1534,6 +1550,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	query(const byte_t *rp);
 		bool	sendQueryResponse(sqlrservercursor *cursor);
 		bool	query2(const byte_t *rp);
+		void	getQuery2Defines(const byte_t *rp,
+							const byte_t *end,
+							sqlrservercursor *cursor);
+		void	clearDefines(uint16_t curid);
+		bool	columnIsDefined(sqlrservercursor *cursor,
+							uint32_t column);
+		uint32_t	definedColumnCount(sqlrservercursor *cursor,
+							uint32_t colcount);
 		bool	sendQuery2Response(sqlrservercursor *cursor,
 							bool binds);
 		bool	bindParameters(sqlrservercursor *cursor,
@@ -1989,6 +2013,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// since a fetch's summary has to carry the running total
 		uint32_t	*rowssent;
 
+		// which of each cursor's columns an oci7 client's odefin's
+		// asked for, and how many positions its define list named.
+		// a legacy fetch answers with those columns and no others -
+		// see getQuery2Defines().  a zero count means no define list
+		// has been decoded for the cursor and every column goes out,
+		// which is what a session that never sets OPTION_DEFINE gets
+		uint32_t	*definecounts;
+		bool		**columndefined;
+
 		// a row already fetched and formatted, but not sent because
 		// it didn't fit in the current packet.  the connection has
 		// already advanced past it - fetchRow()/nextRow() can't
@@ -2259,6 +2292,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
 	rowssent=new uint32_t[maxcursorcount];
+	definecounts=new uint32_t[maxcursorcount];
+	columndefined=new bool *[maxcursorcount];
 	pendingrow=new bytebuffer[maxcursorcount];
 	lobpinned=new bool[maxcursorcount];
 	lobpincolcount=new uint32_t[maxcursorcount];
@@ -2278,10 +2313,16 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		cursorbindcounts[i]=0;
 		refcursorids[i]=new uint16_t[maxbindcount];
 		refcursorcounts[i]=0;
+		definecounts[i]=0;
 		if (cont->getMaxColumnCount()) {
 			columntypes[i]=new uint16_t[cont->getMaxColumnCount()];
+			columndefined[i]=new bool[cont->getMaxColumnCount()];
+			for (uint32_t j=0; j<cont->getMaxColumnCount(); j++) {
+				columndefined[i][j]=false;
+			}
 		} else {
 			columntypes[i]=NULL;
+			columndefined[i]=NULL;
 		}
 	}
 
@@ -2302,6 +2343,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		delete[] ptypes[i];
 		delete[] columntypes[i];
+		delete[] columndefined[i];
 		delete[] cursorbinds[i];
 		delete[] refcursorids[i];
 	}
@@ -2312,7 +2354,9 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] ptypes;
 	delete[] columntypescached;
 	delete[] columntypes;
+	delete[] columndefined;
 	delete[] rowssent;
+	delete[] definecounts;
 	delete[] pendingrow;
 	delete[] lobpinned;
 	delete[] lobpincolcount;
@@ -2431,9 +2475,11 @@ void sqlrprotocol_oracle::reInit() {
 	init();
 
 	// the per-cursor arrays outlive a session, so anything a previous
-	// one pinned has to go
+	// one pinned has to go - and so does any define list it left behind,
+	// which a client that died mid-fetch is exactly what does that
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		clearLobPin(i);
+		clearDefines(i);
 	}
 }
 
@@ -8356,6 +8402,11 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	// reset column type cache flag
 	columntypescached[cont->getId(cursor)]=false;
 
+	// a re-parse drops the client's own defines - see the "odefin - after
+	// re-parse" note in test/protocol/oracle/oci7.cpp - so it drops what
+	// was decoded of them here too
+	clearDefines(cont->getId(cursor));
+
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
 
@@ -9559,6 +9610,11 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// reset column type cache flag
 	columntypescached[cont->getId(cursor)]=false;
 
+	// a re-parse drops the client's own defines - see the "odefin - after
+	// re-parse" note in test/protocol/oracle/oci7.cpp - so it drops what
+	// was decoded of them here too
+	clearDefines(cont->getId(cursor));
+
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
 
@@ -9726,6 +9782,13 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	// the define list, which the "no idea..." above used to walk straight
+	// past.  rp is left wherever the header parse stopped, which is the
+	// front of it - see getQuery2Defines()
+	if (options&OPTION_DEFINE) {
+		getQuery2Defines(rp,end,cursor);
+	}
+
 	if (options&OPTION_PARSE) {
 
 		// reset column type cache flag
@@ -9875,6 +9938,253 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	}
 
 	return sendQuery2Response(cursor,false);
+}
+
+// what the client's odefin's asked for.  they ride inside the query2 request,
+// behind the header, and this call is what the "no idea..." in query2() used
+// to walk straight past - so a legacy fetch sent back every column of the
+// select list however few of them the client had buffers for.
+//
+// a real server sends back the columns it was asked for and no others.  the
+// same client, same four column query, defining only column 1 gets a 130 byte
+// row from a real 10.2 server carrying just that column, and defining only
+// column 3 gets column 3's value, in slot 3 - test/protocol/oracle/samples/
+// 9810-redhat9x86-native-midfetch-defines1-realserver.oraproxy and
+// -defines3-realserver.oraproxy.  sending the rest overruns the buffers the
+// client set up for the ones it did ask for, which is what segfaults a real
+// oci7 client mid-fetch (#9810)
+//
+// the block runs to the end of the request: ten fields, the number of
+// positions the define list names, nine more fields, then one descriptor per
+// position from 1 up.  a descriptor is four raw bytes - the wire datatype, a
+// flag, a precision and a scale - then eight counts, of which the first is
+// the client's buffer size and the sixth its character set.  a position the
+// client never defined gets a descriptor too, carrying OCI7_DEFINE_SKIPPED in
+// its flag byte and zeros behind it, which is why the count alone doesn't say
+// which columns to send.
+//
+// the field kinds and offsets were decoded from real captures at four
+// different define counts and in both encodings - the 9810-redhat9x86-*
+// -midfetch-* captures above, 9808-redhat9x86-native-fetch.oraproxy (three
+// defines), and oracle102-oci7-native-multicol-1col-fetch.cap and -5col-
+// (one and five).  the native ones, where every count is a fixed four bytes,
+// are what pin the field sequence: the count sits 40 bytes past where the
+// header parse stops and the descriptors 36 past the count, which is ten and
+// nine fields.  five of those nineteen slots are zero in every capture, so
+// pointer-versus-count is undetermined for them - only the total width is
+// pinned, and that is all this walk needs.
+//
+// the walk itself is only ever exercised in the portable encoding, and it
+// lands exactly on the end of the payload in all six portable query2 requests
+// on file: the 9810 one above, oracle102-oci7-portable-login-select.cap,
+// 9806-solaris8sparc-9i-o3logon-success and three 9808-solaris8sparc-portable-
+// ones - two clients, both endiannesses, a real server and this one.  that
+// exact landing is the check this call makes before it believes what it read.
+//
+// note getPointer() consumes four bytes here even in the portable encoding,
+// because pointersize comes from the pointer datatype negotiation rather than
+// from nativeencoding.  the walk depends on that
+void sqlrprotocol_oracle::getQuery2Defines(const byte_t *rp,
+						const byte_t *end,
+						sqlrservercursor *cursor) {
+
+	uint16_t	curid=cont->getId(cursor);
+
+	clearDefines(curid);
+
+	debugStart("query2 defines");
+
+	// the native descriptor is shaped differently - 33 bytes, an extra
+	// leading byte and a tail whose counts aren't all one width - so the
+	// walk below, which is four raw bytes and eight counts, doesn't fit
+	// it.  that costs nothing, and the reason to skip it is that it is
+	// unreachable rather than unpinned: this module only ever negotiates
+	// the portable encoding (see SERVER_BANNER and #9812), so no real
+	// session gets here in the native one.  if one ever does, leave the
+	// define list empty and send every column, the way this call always
+	// did
+	if (nativeencoding) {
+		debugWrite("native encoding, defines not decoded");
+		debugEnd();
+		return;
+	}
+
+	uint32_t	unused=0;
+	uint32_t	definitions=0;
+
+	// ten fields ahead of the count, and nine behind it.  the pointer
+	// right in front of the count is the client's address of its own
+	// define array - opaque, and it moves from cursor to cursor
+	if (!getPointer(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&unused,&rp) ||
+		!getAuthCount(rp,end,&unused,4,&rp) ||
+		!getAuthCount(rp,end,&unused,4,&rp) ||
+		!getPointer(rp,end,&unused,&rp) ||
+		!getAuthCount(rp,end,&unused,4,&rp) ||
+		!getPointer(rp,end,&unused,&rp) ||
+		!getAuthCount(rp,end,&unused,4,&rp) ||
+		!getPointer(rp,end,&unused,&rp) ||
+		!getPointer(rp,end,&unused,&rp) ||
+		!getAuthCount(rp,end,&definitions,4,&rp) ||
+		!getPointer(rp,end,&unused,&rp)) {
+		debugWrite("truncated query2 define header");
+		debugEnd();
+		return;
+	}
+	for (uint16_t i=0; i<8; i++) {
+		if (!getAuthCount(rp,end,&unused,4,&rp)) {
+			debugWrite("truncated query2 define header");
+			debugEnd();
+			return;
+		}
+	}
+
+	debugWrite("define count: %d",definitions);
+
+	// a descriptor is at least twelve bytes - four raw and eight one-byte
+	// counts - so a count that couldn't fit in what's left of the request
+	// is a bad read rather than a real define list.  this bounds the
+	// allocation below by the packet size too, so a wire value can't ask
+	// for an arbitrary one
+	if (!definitions || definitions>(uint32_t)(end-rp)/12) {
+		debugWrite("define count out of range");
+		debugEnd();
+		return;
+	}
+
+	// columndefined[] is sized by maxcolumncount where the config gives
+	// one.  where it doesn't - maxcolumncount="-1", and the sqlite and
+	// router backends, which set 0 - there's no array to write into, so
+	// size one to the count instead.  this is the same lazy sizing
+	// cacheColumnDefinitions() does for columntypes[], and without it the
+	// whole of this call would quietly do nothing on those backends
+	uint32_t	maxcolumns=cont->getMaxColumnCount();
+	if (maxcolumns) {
+		if (definitions>maxcolumns) {
+			debugWrite("define count exceeds max column count %d",
+								maxcolumns);
+			debugEnd();
+			return;
+		}
+	} else {
+		delete[] columndefined[curid];
+		columndefined[curid]=new bool[definitions];
+	}
+
+	bool	*cd=columndefined[curid];
+
+	for (uint32_t i=0; i<definitions; i++) {
+
+		byte_t		datatype=0;
+		byte_t		flag=0;
+		byte_t		precision=0;
+		byte_t		scale=0;
+		uint32_t	buffersize=0;
+
+		if ((size_t)(end-rp)<4) {
+			debugWrite("truncated define descriptor");
+			clearDefines(curid);
+			debugEnd();
+			return;
+		}
+		read(rp,&datatype,&rp);
+		read(rp,&flag,&rp);
+		read(rp,&precision,&rp);
+		read(rp,&scale,&rp);
+
+		// the buffer size comes first of the counts, then four zeros,
+		// the character set, and two more zeros.  only the size gets
+		// read, and only to corroborate the skip flag below - honoring
+		// the type and the width a define asks for is #9974
+		if (!getAuthCount(rp,end,&buffersize,4,&rp)) {
+			debugWrite("truncated define descriptor");
+			clearDefines(curid);
+			debugEnd();
+			return;
+		}
+		for (uint16_t j=1; j<OCI7_DEFINE_COUNTS; j++) {
+			if (!getAuthCount(rp,end,&unused,4,&rp)) {
+				debugWrite("truncated define descriptor");
+				clearDefines(curid);
+				debugEnd();
+				return;
+			}
+		}
+
+		// a placeholder carries the skip bit and a zero buffer size,
+		// together, in every capture; a real define always has a real
+		// size behind it (63, 511 and 29 across the captures on file).
+		// both are required here rather than just the flag, so that a
+		// client setting a high flag bit for some other reason keeps
+		// its column instead of silently losing it - erring toward
+		// sending a column the client didn't ask for, which is the old
+		// behavior, rather than dropping one it did
+		cd[i]=!((flag&OCI7_DEFINE_SKIPPED) && !buffersize);
+
+		debugWrite("column %d: %s (type %d)",
+				i,(cd[i])?"defined":"skipped",datatype);
+	}
+
+	// the define block is the last thing in the request, so a walk that
+	// lands anywhere else read something wrong.  drop what it read and go
+	// back to sending every column rather than shape a row from a bad
+	// read.  that restores the pre-#9810 behavior for this one request,
+	// segfault included if the client really did define a subset - it is
+	// not a safe answer, it is the old answer, chosen because a row shaped
+	// from a misread define block would desync the client's parse of every
+	// row after it and break sessions that work today.  a request that
+	// lands here is one nothing on file covers, most likely a query2 that
+	// also carries binds: no capture has OPTION_BIND set, so nothing pins
+	// where a bind block sits relative to these defines (see the note in
+	// query2())
+	if (rp!=end) {
+		debugWrite("define block left %d bytes unread",
+						(int32_t)(end-rp));
+		clearDefines(curid);
+		debugEnd();
+		return;
+	}
+
+	definecounts[curid]=definitions;
+
+	debugEnd();
+}
+
+// zeroing the count is the whole of it - columnIsDefined() answers true
+// without touching columndefined[] when the count is 0, and every entry below
+// a nonzero count was written by the walk that set it
+void sqlrprotocol_oracle::clearDefines(uint16_t curid) {
+	definecounts[curid]=0;
+}
+
+// whether a legacy fetch sends this column back.  a cursor whose define list
+// wasn't decoded sends all of them, which is what a session that never sets
+// OPTION_DEFINE gets, and what every session got before #9810
+bool sqlrprotocol_oracle::columnIsDefined(sqlrservercursor *cursor,
+						uint32_t column) {
+	uint16_t	curid=cont->getId(cursor);
+	if (!definecounts[curid]) {
+		return true;
+	}
+	return (column<definecounts[curid] && columndefined[curid][column]);
+}
+
+// and how many of them there are, which is what the row header carries.  a
+// real server counts the positions it actually sends, not the ones the define
+// list names: the -defines3-realserver capture's request names three
+// descriptors, only the third of them real, and its row header says 1
+uint32_t sqlrprotocol_oracle::definedColumnCount(sqlrservercursor *cursor,
+						uint32_t colcount) {
+	if (!definecounts[cont->getId(cursor)]) {
+		return colcount;
+	}
+	uint32_t	count=0;
+	for (uint32_t i=0; i<colcount; i++) {
+		if (columnIsDefined(cursor,i)) {
+			count++;
+		}
+	}
+	return count;
 }
 
 bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor,
@@ -14807,16 +15117,26 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	uint32_t	colcount=cont->colCount(cursor);
 	cacheColumnDefinitions(cursor,colcount);
 
+	// a legacy client gets back the columns its odefin's asked for and no
+	// others - a real server sends only those, and sending the rest
+	// overruns the buffers it set up for the ones it did ask for (#9810).
+	// the row header carries this count rather than the select list's,
+	// and putRow() below skips the columns it leaves out.  a cursor whose
+	// define list wasn't decoded counts every column, which is what every
+	// session got before #9810.  see getQuery2Defines()
+	uint32_t	sendcolcount=definedColumnCount(cursor,colcount);
+
 	// the column count is written below as a single byte, and captures
 	// show no evidence it's wider than that on this path - widening it
 	// would be an unverifiable guess.  reject a cursor with too many
 	// columns to fit rather than let the count wrap and desync the
 	// client's parse of every row that follows.
-	if (colcount>0xff) {
+	if (sendcolcount>0xff) {
 		if (getDebug()) {
 			debugStart("fetch response header");
 			debugWrite("column count %d exceeds 255, "
-					"can't fit in 1-byte field",colcount);
+					"can't fit in 1-byte field",
+					sendcolcount);
 			debugEnd();
 		}
 		return sendQueryError(cursor);
@@ -14900,7 +15220,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				write(&reqpacket,ttccode);
 
 				const byte_t	rowheader[]={
-					0x01, 0x02, 0x01, (byte_t)colcount,
+					0x01, 0x02, 0x01, (byte_t)sendcolcount,
 					0x00, 0x00, 0x00, 0x01,
 					0x00, 0x00, 0x00, 0x00,
 					0x00, 0x00, 0x00, 0x00,
@@ -14914,7 +15234,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				if (getDebug()) {
 					debugStart("fetch response header");
 					debugTtcCode(ttccode);
-					debugWrite("column count: %d",colcount);
+					debugWrite("column count: %d",
+								sendcolcount);
 					debugHexDump(rowheader,sizeof(rowheader));
 					debugEnd();
 				}
@@ -14942,7 +15263,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				// combined execute-and-fetch has no decoded
 				// count to pass and fetches one row in every
 				// capture on file, so it writes 1
-				putRowHeader(0x02,colcount,
+				putRowHeader(0x02,sendcolcount,
 						(rowstofetch)?rowstofetch:1);
 			}
 		}
@@ -15458,6 +15779,16 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 	// put the fields
 	for (uint32_t i=0; i<colcount; i++) {
 
+		// a column the client never odefin'd gets nothing at all -
+		// not even a null marker.  a real server leaves them out of
+		// the row entirely, which is why its answer to a one-of-four
+		// define is the same length as its answer to a genuine
+		// one-column select (#9810).  see getQuery2Defines()
+		if (!columnIsDefined(cursor,i)) {
+			debugWrite("col %d: not defined, skipped",i);
+			continue;
+		}
+
 		debugStart("col %d",i);
 
 		// ct[i] can be an internal-only type code (LOB_CLOB rather
@@ -15889,6 +16220,7 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	cont->setInputOutputBindCount(cursor,0);
 	columntypescached[closingid]=false;
 	rowssent[closingid]=0;
+	clearDefines(closingid);
 	pendingrow[closingid].clear();
 	clearLobPin(closingid);
 
@@ -16329,6 +16661,7 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		cont->setInputOutputBindCount(cursor,0);
 		columntypescached[closingid]=false;
 		rowssent[closingid]=0;
+		clearDefines(closingid);
 		pendingrow[closingid].clear();
 		clearLobPin(closingid);
 	}

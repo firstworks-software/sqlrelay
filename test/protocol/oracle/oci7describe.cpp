@@ -5,8 +5,9 @@
 // real Oracle backend: olog, oopen, oparse, then - depending on --describe=
 // - odefin/oexec/ofen, then odescr, then oclose, ologof. Nothing else.
 //
-//   ./oci7describe SID [--describe=parse|exec|fetch|outofrange|concurrent] \
-//                                     [USER PASSWORD [QUERY]]
+//   ./oci7describe SID \
+//     [--describe=parse|exec|fetch|outofrange|concurrent|midfetch] \
+//                    [--defines=LIST] [USER PASSWORD [QUERY]]
 //
 // oci7.cpp in this directory is the full OCI7 protocol test, including a
 // "Concurrent Cursors" section that forks a second connection for its
@@ -15,7 +16,7 @@
 // login, one oparse, and whichever describe variant was asked for - small
 // enough to read by hand or feed straight to oradecode.
 //
-// The five --describe= variants exist because each one has to be captured on
+// The six --describe= variants exist because each one has to be captured on
 // its own:
 //   parse        odescr right after oparse, before any oexec
 //   exec         odescr after oexec, before the first ofen
@@ -27,11 +28,27 @@
 //   concurrent   a second cursor is odescr'd while the first cursor's fetch
 //                is still in progress, so the capture shows whether the
 //                server keeps each cursor's describe state separate
+//   midfetch     oci7.cpp's "odescr - mid-fetch" section, call for call
+//                (#9810) - four real columns with only column 1 defined,
+//                one ofen, then odescr over columns 1-4, one past the end,
+//                and 1-4 again, then the two ofen calls that follow. fetch
+//                above stops at the describe; this one is the only variant
+//                that captures what a real server sends for a fetch issued
+//                after a describe, which is where the real oci7 client
+//                segfaults against sqlrelay
 //
 // QUERY, when given, only applies to parse/exec/fetch/outofrange - it always
 // has to select three columns, since outofrange describes column 4. The
-// concurrent variant ignores QUERY; it opens its own two fixed queries, the
-// same way oci7.cpp's Concurrent Cursors section does.
+// concurrent and midfetch variants ignore QUERY; they open their own fixed
+// queries, the same way oci7.cpp's Concurrent Cursors and Fetch sections do.
+//
+// --defines= applies to midfetch alone, and takes the column positions to
+// odefin as single digits 1 through 4 - "1" (the default, and what oci7.cpp
+// does), "3", "12", "1234". It is there because a real server sends back only
+// the columns the client defined (#9810), and the captures on file all define
+// every column, so nothing on file says whether the server keys that off the
+// positions the client named or just off how many it named. "--defines=3" and
+// "--defines=1" against the same query answer that in one run each.
 
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
@@ -138,6 +155,7 @@ static bool defineColumns(Cda_Def *cursor, char buf[3][64],
 int main(int argc, char **argv) {
 
 	const char	*variant="parse";
+	const char	*defines="1";
 	const char	*query="select 1 as num, 'two' as txt, "
 					"sysdate as dt from dual";
 	int		positional=0;
@@ -145,6 +163,8 @@ int main(int argc, char **argv) {
 	for (int i=1; i<argc; i++) {
 		if (!charstring::compare(argv[i],"--describe=",11)) {
 			variant=argv[i]+11;
+		} else if (!charstring::compare(argv[i],"--defines=",10)) {
+			defines=argv[i]+10;
 		} else if (positional==0) {
 			sid=argv[i];
 			positional++;
@@ -163,7 +183,8 @@ int main(int argc, char **argv) {
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
 				"[--describe=parse|exec|fetch|outofrange|"
-				"concurrent] [USER PASSWORD [QUERY]]\n",
+				"concurrent|midfetch] [--defines=LIST] "
+				"[USER PASSWORD [QUERY]]\n",
 				argv[0]);
 		return 1;
 	}
@@ -305,6 +326,96 @@ int main(int argc, char **argv) {
 		describeColumn(&cda,1);
 		describeColumn(&cda,2);
 		describeColumn(&cda,3);
+		run("oclose",&cda,oclose(&cda));
+
+	} else if (!charstring::compare(variant,"midfetch")) {
+
+		// oci7.cpp's "odescr - mid-fetch" section, call for call.
+		// protocoltesttable is the table that section's own run
+		// creates - four columns, three rows, the third one all
+		// nulls but its number.  run oci7 once first if it isn't
+		// there
+		const char	*midfetchquery=
+					"select * from protocoltesttable "
+					"order by testnumber";
+
+		Cda_Def	cda;
+		char	buf[4][64];
+		sb2	ind[4];
+		ub2	retlen[4];
+		ub2	retcode[4];
+		bytestring::zero(buf,sizeof(buf));
+		bytestring::zero(ind,sizeof(ind));
+		bytestring::zero(retlen,sizeof(retlen));
+		bytestring::zero(retcode,sizeof(retcode));
+
+		if (!openCursor("oopen",&cda) ||
+			!parseQuery(&cda,midfetchquery)) {
+			ologof(&lda);
+			return 1;
+		}
+
+		// only the columns --defines= names get odefin'd - column 1
+		// alone by default, the way that section defines it.  the
+		// undefined ones get described but never fetched into
+		for (const char *d=defines; *d; d++) {
+
+			if (*d<'1' || *d>'4') {
+				continue;
+			}
+			sword	pos=(sword)(*d-'0');
+
+			char	what[32];
+			charstring::printf(what,sizeof(what),
+						"odefin - column %d",(int)pos);
+			if (!run(what,&cda,
+					odefin(&cda,pos,(ub1 *)buf[pos-1],64,
+						SQLT_STR,-1,&ind[pos-1],
+						(text *)0,-1,-1,
+						&retlen[pos-1],
+						&retcode[pos-1]))) {
+				oclose(&cda);
+				ologof(&lda);
+				return 1;
+			}
+		}
+
+		if (!run("oexec",&cda,oexec(&cda)) ||
+			!run("ofen - row 1",&cda,ofen(&cda,1))) {
+			oclose(&cda);
+			ologof(&lda);
+			return 1;
+		}
+		stdoutput.printf("  row 1: %s / %s / %s / %s\n",
+					buf[0],buf[1],buf[2],buf[3]);
+
+		// every column, then one past the end, then every column
+		// again - the ORA-01007 in the middle is what drops the
+		// client's cached select list, so the second pass has to go
+		// back to the wire
+		describeColumn(&cda,1);
+		describeColumn(&cda,2);
+		describeColumn(&cda,3);
+		describeColumn(&cda,4);
+		describeColumn(&cda,5);
+		describeColumn(&cda,1);
+		describeColumn(&cda,2);
+		describeColumn(&cda,3);
+		describeColumn(&cda,4);
+
+		// and the fetches that follow the describe - the state no
+		// other variant reaches, and where the real client segfaults
+		// against sqlrelay (#9810)
+		if (run("ofen - row 2",&cda,ofen(&cda,1))) {
+			stdoutput.printf("  row 2: %s / %s / %s / %s\n",
+					buf[0],buf[1],buf[2],buf[3]);
+		}
+		if (run("ofen - row 3",&cda,ofen(&cda,1))) {
+			stdoutput.printf("  row 3: %s / %s / %s / %s\n",
+					buf[0],buf[1],buf[2],buf[3]);
+		}
+		// past the last row - an ORA-01403 is the right answer here
+		run("ofen - past the end",&cda,ofen(&cda,1));
 		run("oclose",&cda,oclose(&cda));
 
 	} else {

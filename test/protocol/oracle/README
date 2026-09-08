@@ -112,16 +112,29 @@ only the login, one statement, and the describe call, unlike oci7.cpp's
 full test suite, which forks a second connection for its Authentication
 section and makes a much noisier capture.
 
-    ./oci7describe SID [--describe=parse|exec|fetch|outofrange|concurrent] \
-                                      [USER PASSWORD [QUERY]]
+    ./oci7describe SID \
+      [--describe=parse|exec|fetch|outofrange|concurrent|midfetch] \
+                     [--defines=LIST] [USER PASSWORD [QUERY]]
 
-The five variants each put a different describe on the wire: parse (right
+The six variants each put a different describe on the wire: parse (right
 after oparse, before any oexec), exec (after oexec, before the first
 ofen), fetch (after at least one ofen - the #9599 mid-fetch case), out of
 range (describing a column past the end of the select list, to see what a
-real server answers with), and concurrent (a second cursor described
-while a first cursor's fetch is still in progress, across two cursors
-open at once).
+real server answers with), concurrent (a second cursor described while a
+first cursor's fetch is still in progress, across two cursors open at
+once), and midfetch (oci7.cpp's own "odescr - mid-fetch" section call for
+call, against the four-column protocoltesttable, including the fetches
+that follow the describe - the state none of the others reach, and where
+a real OCI7 client segfaulted against sqlrelay, #9810).
+
+--defines= applies to midfetch alone and names the column positions to
+odefin, as single digits: "1" (the default, and what oci7.cpp does), "3",
+"12", "1234". It exists because a real server sends back only the columns
+the client defined, and every capture taken before #9810 defined every
+column, so nothing on file said whether the server keys that off the
+positions the client named or merely off how many it named. Running
+--defines=3 and --defines=1 against the same query answers that in one
+run each: --defines=3 comes back with column 3's value, in slot 3.
 
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
@@ -357,8 +370,52 @@ the decoder can be exercised without live server access:
                                       contrast in a single response, to
                                       try to locate a nullok field in the
                                       TTI_DESCRIBE response (#9808)
+    9810-redhat9x86-native-midfetch-defines1-realserver.oraproxy
+    9810-redhat9x86-native-midfetch-defines3-realserver.oraproxy
+    9810-redhat9x86-native-midfetch-defines1234-realserver.oraproxy
+                                     oci7describe --describe=midfetch
+                                      against a real 10.2 server, x86
+                                      Linux client, native encoding, over
+                                      "select * from protocoltesttable
+                                      order by testnumber" - four columns,
+                                      three rows - varying only which
+                                      positions the client odefin's, via
+                                      --defines=.  the set that answers
+                                      what a real server does with a
+                                      partial define list, which nothing
+                                      else on file covers: defining only
+                                      column 1 gets a 130 byte row
+                                      carrying just "1", defining only
+                                      column 3 gets "varchar1" in slot 3,
+                                      and the undefined columns
+                                      contribute no bytes at all.  the
+                                      row header's count is the number of
+                                      real defines, not the number of
+                                      descriptors the request names -
+                                      -defines3 names three and its row
+                                      header says 1 (#9810)
+    9810-redhat9x86-portable-midfetch-defines3-sqlrelay.oraproxy
+                                     the --defines=3 run again, against
+                                      sqlrelay's oracleprotocoloci7
+                                      instance instead of the real
+                                      server, so the same client's
+                                      request appears in the portable
+                                      encoding - the only one this module
+                                      ever negotiates (#9812), and so the
+                                      only one its define parse has to
+                                      read.  its row is the bug itself:
+                                      sqlrelay answering a one-column
+                                      define with all four columns, which
+                                      is what segfaulted the real client.
+                                      pair it with the native
+                                      -defines3-realserver capture above
+                                      for the A/B over an identical call
+                                      sequence.  note a run that defines
+                                      every column did not crash, which
+                                      is why this went unnoticed for so
+                                      long (#9810)
 
-Each of the eighteen 9808-*.oraproxy captures above is oraproxy's own
+Each of the 9808-* and 9810-*.oraproxy captures above is oraproxy's own
 capture format (see "oraproxy" below), taken by interposing oraproxy
 locally on the client host and pointing the client's tnsnames.ora at it,
 rather than a raw tcpdump - a real NIC's MSS is too small for oradecode's
