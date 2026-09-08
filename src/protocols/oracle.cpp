@@ -6672,10 +6672,11 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 }
 
 // checks for one printable string: the bare length-prefixed short form (a
-// length byte and that many printable bytes), or, above the short form's
-// reach, the chunked long form a 0xfe marker introduces (see getLenString(),
-// which reads the same shape - a real client's AUTH_ALTER_SESSION value, the
-// ~700 bytes of NLS-sync ALTER SESSION text, is what turned out to need it).
+// length byte and that many printable bytes, the last of which can be a
+// NUL terminator), or, above the short form's reach, the chunked long form
+// a 0xfe marker introduces (see getLenString(), which reads the same
+// shape - a real client's AUTH_ALTER_SESSION value, the ~700 bytes of
+// NLS-sync ALTER SESSION text, is what turned out to need it).
 // factored out of findO3LogonStrings() so peekO3LogonField() can require the
 // same shape of a field's name and value.  doesn't allocate or log anything,
 // since findO3LogonStrings() tries this at every candidate offset and only
@@ -6695,8 +6696,23 @@ bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 		if (!length || (size_t)(end-rp)<(size_t)length) {
 			return false;
 		}
-		for (byte_t i=0; i<length; i++) {
+		// a real 9i sqlplus client counts AUTH_ALTER_SESSION's NUL
+		// terminator inside the value's own declared length, the
+		// way the chunked form below does, so the last declared
+		// byte is allowed to be a NUL rather than a printable one
+		// (see the tagged login capture on #9806).  it still takes
+		// a printable byte ahead of it, so a bare 01 00 stays
+		// rejected.  this necessarily loosens a tagged field's name
+		// too, since peekO3LogonField() runs names and values
+		// through here alike, but no captured name is NUL-terminated
+		for (byte_t i=0; i<length-1; i++) {
 			if (rp[i]<' ' || rp[i]>'~') {
+				return false;
+			}
+		}
+		byte_t	lastbyte=rp[length-1];
+		if (lastbyte<' ' || lastbyte>'~') {
+			if (lastbyte || length<2) {
 				return false;
 			}
 		}
@@ -6742,8 +6758,8 @@ bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 		// defer judgment on the chunk's last byte until we know
 		// whether another chunk follows - a real client's chunked
 		// AUTH_ALTER_SESSION value has a trailing NUL inside the
-		// last chunk's own declared length, unlike the short form,
-		// where a trailing NUL sits outside the declared length
+		// last chunk's own declared length, the same way the short
+		// form above counts its terminator
 		deferredbyte=rp[chunksize-1];
 		havedeferred=true;
 		rp+=chunksize;
@@ -6805,13 +6821,26 @@ bool sqlrprotocol_oracle::peekO3LogonField(const byte_t *rp,
 // it is a length-prefixed string at the end of the block: the user name, then
 // AUTH_PASSWORD in phase two, then the session attributes.
 //
-// How much room that block takes depends on the client's marshalling, and no
-// archived capture pins the portable form of it.  #9658's reference capture is
-// an OCI7 client against a real server whose platform banner matched its own,
-// so it marshalled natively - a raw dump of 26 32-bit words, which isn't even
-// the native form this module implements (that one is 64-bit).  #9654's
-// capture of the same client against sqlr-listener, which is the portable
-// form, was taken at the default snaplen and is truncated.
+// How much room that block takes depends on the client's marshalling.
+// #9806's capture pins the portable form of it: a real sqlplus 9.0.1
+// client on solaris8sparc, negotiating the tagged 0x76 path against a
+// verifiertype="9i" listener (see
+// test/protocol/oracle/samples/9806-solaris8sparc-9i-o3logon-phase2.oraproxy).
+// Its phase-two item list starts at offset 23 - counted from where
+// recvAuthenticationRequest() hands off, just past the sequence number,
+// so 2 bytes further into the packet than what oradecode calls the
+// payload - and runs 8 items to the exact end.  That capture is of the
+// login failing, since
+// it is what found the bug; 9806-solaris8sparc-9i-o3logon-success.oraproxy
+// beside it is the same client's login once the bug was fixed, running on
+// through the summary response and a fetch, which no earlier sample
+// covered.  Neither earlier capture pinned this form:
+// #9658's reference capture is an OCI7 client against a real server
+// whose platform banner matched its own, so it marshalled natively - a
+// raw dump of 26 32-bit words, which isn't even the native form this
+// module implements (that one is 64-bit).  #9654's capture of the same
+// client against sqlr-listener, which is the portable form, was taken
+// at the default snaplen and is truncated.
 //
 // So rather than walk a block whose layout isn't known, this finds the item
 // list directly: a run of items, each either a bare printable
