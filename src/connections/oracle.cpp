@@ -1335,7 +1335,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				userptr,usersize,
 				(ub4)OCI_ATTR_USERNAME,err)!=OCI_SUCCESS) {
 		*error=logInError("Set username failed");
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1348,7 +1348,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				passwordptr,passwordsize,
 				(ub4)OCI_ATTR_PASSWORD,err)!=OCI_SUCCESS) {
 		*error=logInError("Set password failed");
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1379,7 +1379,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		*warning=logInError(NULL); 
 	} else if (result!=OCI_SUCCESS) {
 		*error=logInError("OCISessionBegin() failed");
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1394,7 +1394,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				(ub4)OCI_ATTR_SESSION,err)!=OCI_SUCCESS) {
 		*error=logInError("Attach session to service failed");
 		OCISessionEnd(svc,err,session,OCI_DEFAULT);
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1411,7 +1411,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				(OCIError *)err)!=OCI_SUCCESS) {
 		*error=logInError("Set statement cache size failed");
 		OCISessionEnd(svc,err,session,OCI_DEFAULT);
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1440,7 +1440,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				OCI_HTYPE_TRANS,0,0)!=OCI_SUCCESS) {
 		*error=logInError("OCIHandleAlloc(OCI_HTYPE_TRANS) failed");
 		OCISessionEnd(svc,err,session,OCI_DEFAULT);
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1456,7 +1456,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		*error=logInError("OCIAttrSet(OCI_ATTR_TRANS) failed");
 		OCIHandleFree(err,OCI_HTYPE_TRANS);
 		OCISessionEnd(svc,err,session,OCI_DEFAULT);
-		OCIHandleFree(err,OCI_HTYPE_SESSION);
+		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
 		OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 		OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1529,7 +1529,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 			*error=logInError("Prepare alter session failed.");
 			OCIHandleFree(err,OCI_HTYPE_TRANS);
 			OCISessionEnd(svc,err,session,OCI_DEFAULT);
-			OCIHandleFree(err,OCI_HTYPE_SESSION);
+			OCIHandleFree(session,OCI_HTYPE_SESSION);
 			OCIServerDetach(srv,err,OCI_DEFAULT);
 			OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 			OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1543,7 +1543,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 			*error=logInError("Execute alter session failed.");
 			OCIHandleFree(err,OCI_HTYPE_TRANS);
 			OCISessionEnd(svc,err,session,OCI_DEFAULT);
-			OCIHandleFree(err,OCI_HTYPE_SESSION);
+			OCIHandleFree(session,OCI_HTYPE_SESSION);
 			OCIServerDetach(srv,err,OCI_DEFAULT);
 			OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 			OCIHandleFree(srv,OCI_HTYPE_SERVER);
@@ -1557,7 +1557,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 			*error=logInError("Statement release failed.");
 			OCIHandleFree(err,OCI_HTYPE_TRANS);
 			OCISessionEnd(svc,err,session,OCI_DEFAULT);
-			OCIHandleFree(err,OCI_HTYPE_SESSION);
+			OCIHandleFree(session,OCI_HTYPE_SESSION);
 			OCIServerDetach(srv,err,OCI_DEFAULT);
 			OCIHandleFree(svc,OCI_HTYPE_SVCCTX);
 			OCIHandleFree(srv,OCI_HTYPE_SERVER);
