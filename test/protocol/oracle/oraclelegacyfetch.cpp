@@ -30,25 +30,12 @@
 // all, so with one row per fetch the divide-by-zero necessarily lands on the
 // second pass of sendFetchResponse()'s do-while loop.
 
-// the fixed parts of the legacy responses, from the builders in
-// src/protocols/oracle.cpp - putError()'s unknown1 block, putGenericFooter()
-// and sendFetchResponse()'s non-exact-fetch trailer
-static const size_t	ORA_ERROR_BLOCK_SIZE=48;
-static const size_t	ORA_GENERIC_FOOTER_SIZE=41;
-
-// putError() writes the ora number little-endian into the block above, at
-// its offsets 4 and 5
-static const size_t	ORA_ERROR_BLOCK_NUMBER_OFFSET=4;
-
-// the byte putError() writes behind the message
-static const unsigned char	ORA_ERROR_MESSAGE_TERMINATOR=0x0a;
-
 // sendQueryResponse()'s and sendExecuteResponse()'s bodies are both fixed
-// size - no message, no rows, nothing variable-length.  a legacy error body
-// is always ORA_ERROR_BLOCK_SIZE + ORA_GENERIC_FOOTER_SIZE + a message
-// bigger than either of these, so checking the exact size (rather than the
-// ttc code, which sendQueryResponse()/sendExecuteResponse() and the error
-// path all set to the same 0x04) is what actually tells a genuine parse or
+// size - no message, no rows, nothing variable-length - and neither is the
+// size a legacy error body comes out at, which is the summary object plus
+// the backend's message.  so checking the exact size (rather than the ttc
+// code, which sendQueryResponse()/sendExecuteResponse() and the error path
+// all set to the same 0x04) is what actually tells a genuine parse or
 // execute success apart from an error answering in its place
 static const size_t	ORA_QUERY_RESPONSE_SIZE=92;
 static const size_t	ORA_EXECUTE_RESPONSE_SIZE=56;
@@ -206,47 +193,70 @@ static bool readLegacyFetchRows(oracleprotocolclient *client,
 	}
 }
 
-// walk sendQueryError()'s legacy answer - the data flags, then putError()'s
-// ttc code, fixed block, message and terminator, then putGenericFooter()
+// walk sendQueryError()'s legacy answer - the data flags, then the ttc code
+// and the summary object putOci7Error() writes, field for field, then the
+// message.  the object's fields are length-prefixed ints in this encoding,
+// so it has no fixed size and has to be walked rather than skipped: see
+// putOci7Summary() in src/protocols/oracle.cpp, which this mirrors.
+//
+// "leftover" says whether anything at all follows the message.  nothing
+// should - #9976 found that what used to answer here ran 21 bytes past the
+// end of the object the client parses, which cost the client the call and
+// turned up on the next one as ORA-03120
 static bool readLegacyError(oracleprotocolclient *client,
 				uint32_t *oranum,
 				char *message,
 				size_t messagemax,
 				size_t *messagesize,
-				size_t *totalsize) {
+				bool *leftover) {
 
 	client->rewindResponse();
 
 	unsigned char	dataflags[2];
 	unsigned char	ttccode=0;
-	unsigned char	block[ORA_ERROR_BLOCK_SIZE];
-	unsigned char	size=0;
+	uint32_t	skipint=0;
+	unsigned char	skipbyte=0;
+	unsigned char	skipbytes[5];
 	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
 		!client->readByte(&ttccode) ||
 		ttccode!=ORA_TTC_ERROR ||
-		!client->readBytes(block,sizeof(block)) ||
-		!client->readByte(&size) ||
-		(size_t)size>=messagemax) {
+		!client->readLenPreInt(&skipint) ||	// end of call status
+		!client->readLenPreInt(&skipint) ||	// rows processed
+		!client->readLenPreInt(oranum) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||	// cursor id
+		!client->readLenPreInt(&skipint) ||	// parse error offset
+		!client->readByte(&skipbyte) ||		// command type
+		!client->readBytes(skipbytes,5) ||
+		// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readByte(&skipbyte) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readByte(&skipbyte) ||
+		!client->readByte(&skipbyte) ||		// call number
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||	// success iterations
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint)) {
 		return false;
 	}
 
-	*oranum=(uint32_t)block[ORA_ERROR_BLOCK_NUMBER_OFFSET]|
-		((uint32_t)block[ORA_ERROR_BLOCK_NUMBER_OFFSET+1]<<8);
-
-	if (!client->readBytes((unsigned char *)message,size)) {
+	unsigned char	size=0;
+	if (!client->readByte(&size) || (size_t)size>=messagemax ||
+		!client->readBytes((unsigned char *)message,size)) {
 		return false;
 	}
 	message[size]='\0';
 	*messagesize=size;
 
-	unsigned char	terminator=0;
-	if (!client->readByte(&terminator) ||
-		terminator!=ORA_ERROR_MESSAGE_TERMINATOR) {
-		return false;
-	}
-
-	*totalsize=sizeof(dataflags)+1+sizeof(block)+1+
-			(size_t)size+1+ORA_GENERIC_FOOTER_SIZE;
+	unsigned char	extra=0;
+	*leftover=client->readByte(&extra);
 	return true;
 }
 
@@ -392,10 +402,10 @@ int main(int argc, char **argv) {
 	uint32_t	oranum=0;
 	char		message[512];
 	size_t		messagesize=0;
-	size_t		expectedsize=0;
+	bool		leftover=false;
 	bool		iserror=readLegacyError(&client,&oranum,
 						message,sizeof(message),
-						&messagesize,&expectedsize);
+						&messagesize,&leftover);
 	report("fetch answers with an error",iserror);
 	if (!iserror) {
 		stdoutput.printf("response (%d bytes):\n",
@@ -438,15 +448,11 @@ int main(int argc, char **argv) {
 	report("no row one residue reached the wire",
 			!responseContainsBytes(&client,rowone,sizeof(rowone)));
 
-	// and nothing else did either - the response is exactly the error
-	// and its footer, to the byte
-	report("the response is exactly the error and its footer",
-			client.getResponseSize()==expectedsize);
-	if (client.getResponseSize()!=expectedsize) {
-		stdoutput.printf("  %d bytes, expected %d\n",
-					(int)client.getResponseSize(),
-					(int)expectedsize);
-	}
+	// and nothing else did either - the walk above consumed the whole
+	// response, ending on the last byte of the message.  #9817's rule:
+	// a client's parse has to account for every byte, and anything left
+	// over costs it the call
+	report("nothing follows the error object",!leftover);
 
 	client.disconnect();
 
