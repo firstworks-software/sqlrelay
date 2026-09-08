@@ -2031,6 +2031,21 @@
 		mismatch with the backend) could keep sqlr-connection from
 		ever coming up; sqlr-connection now exits immediately, without
 		running that cleanup, whenever it fails to initialize
+	fixed the oracle connection module reading a described column's
+		precision and scale one byte too narrow: oracle writes both
+		as 2 bytes even for an implicit describe, though they're
+		documented as 1-byte there, so oci was actually writing past
+		the end of each single-byte field and into the next one -
+		harmless on x86 only because the following field's own read
+		immediately overwrote the damage, and because the low byte
+		of the pair happens to be the one that lands in the field on
+		a little-endian host anyway; on a big-endian host
+		(solaris8sparc) the high byte landed there instead,
+		reporting 0 for any column with a real precision or scale
+	the oracle protocol module now clamps the one-byte precision field
+		it sends instead of letting a non-oracle backend's larger
+		value (eg. router fronting a wide varchar) wrap silently into
+		a small or negative-looking byte on the wire
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

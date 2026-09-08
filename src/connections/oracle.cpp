@@ -76,6 +76,10 @@ struct describe {
 	sb2		dbtype;
 	text		*buf;
 	sb4		buflen;
+	// precision and scale really are narrowed to a single byte here on
+	// purpose - see the comment above the OCIAttrGet calls that fill
+	// them in, further down, for why they can't just be read directly
+	// into fields this size.
 	ub1		precision;
 	ub1		scale;
 	ub1		nullok;
@@ -4920,22 +4924,44 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 			}
 
 			// get the column precision
+			//
+			// OCI_ATTR_PRECISION and OCI_ATTR_SCALE are
+			// documented as ub1/sb1 for an implicit describe
+			// (this is one), but oracle writes 2 bytes into them
+			// regardless - the same finding is already recorded
+			// for OCI_ATTR_DATA_SIZE in
+			// test/protocol/oracle/oci8.cpp.  Reading straight
+			// into desc[i].precision/.scale (both ub1) only
+			// gets the right value by accident, on hosts where
+			// the low-order byte - the one that matters for a
+			// value under 256 - happens to land at that address.
+			// On a big-endian host the high-order byte lands
+			// there instead, which is 0 for any single or
+			// double-digit precision or scale.  Read into a
+			// correctly sized local first, then narrow on
+			// purpose, so the value comes out right on hosts of
+			// either endianness.
+			sb2	precision=0;
 			if (OCIAttrGet((dvoid *)desc[i].paramd,
 				OCI_DTYPE_PARAM,
-				(dvoid *)&desc[i].precision,(ub4 *)NULL,
+				(dvoid *)&precision,(ub4 *)NULL,
 				(ub4)OCI_ATTR_PRECISION,
 				oracleconn->err)!=OCI_SUCCESS) {
 				return false;
 			}
+			desc[i].precision=(ub1)precision;
 
-			// get the column scale
+			// get the column scale, same caveat as precision,
+			// above
+			sb2	scale=0;
 			if (OCIAttrGet((dvoid *)desc[i].paramd,
 				OCI_DTYPE_PARAM,
-				(dvoid *)&desc[i].scale,(ub4 *)NULL,
+				(dvoid *)&scale,(ub4 *)NULL,
 				(ub4)OCI_ATTR_SCALE,
 				oracleconn->err)!=OCI_SUCCESS) {
 				return false;
 			}
+			desc[i].scale=(ub1)scale;
 
 			// get whether the column is nullable
 			if (OCIAttrGet((dvoid *)desc[i].paramd,

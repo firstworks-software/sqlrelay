@@ -8543,6 +8543,16 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	int8_t		wirescale=(scale==NO_SCALE_UNSIGNED)?
 					NO_SCALE:(int8_t)scale;
 
+	// precision goes out below as a raw signed byte, which a real
+	// oracle column never overflows (the widest NUMBER precision is
+	// 38), but this module can also front a non-oracle backend through
+	// router, whose getColumnPrecision() isn't bound by that - eg. a
+	// wide varchar's length.  clamp instead of letting it wrap silently
+	// into a small or negative-looking byte.
+	if (precision>127) {
+		precision=127;
+	}
+
 	// putColumnMetadata() sends a hardcoded 1 here.  a real server sends
 	// 0 for a not null column: 9808-redhat9x86-native-notnull-parse
 	// .oraproxy against 9808-redhat9x86-native-realtable-parse.oraproxy,
@@ -8594,7 +8604,7 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	debugStart("column %d",column);
 	debugColumnType(columntypestring,dbtype);
 	debugWrite("size: %d",dbsize);
-	debugWrite("precision: %d",(int32_t)(int8_t)precision);
+	debugWrite("precision: %d",(int32_t)precision);
 	debugWrite("scale: %d",(int32_t)wirescale);
 	debugWrite("null ok: %d",nullok);
 	debugWrite("name size: %d",namesize);
@@ -11760,6 +11770,13 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	uint32_t	scale=cont->getColumnScale(cursor,column);
 	int8_t		wirescale=(scale==NO_SCALE_UNSIGNED)?
 					NO_SCALE:(int8_t)scale;
+
+	// same clamp as putOci7DescribeColumn(), and for the same reason -
+	// precision goes out as a raw signed byte, and a non-oracle backend
+	// fronted through router isn't bound by a real NUMBER's limits
+	if (precision>127) {
+		precision=127;
+	}
 
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((fullencoding)?0x80:0x00));
