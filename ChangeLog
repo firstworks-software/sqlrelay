@@ -2013,22 +2013,24 @@
 		a position past the end of the select list with ORA-01007;
 		decoded byte for byte from real oci7 sessions against a live
 		10.2 backend
-	fixed the oracle connection module freeing its error handle under the
-		wrong handle type on every failed-login cleanup path, then
-		reusing and freeing it again correctly typed - a type-confused
-		free followed by a double free
+	fixed the oracle connection module freeing its session and
+		transaction handles under the wrong handle type on several
+		failed-login cleanup paths, then reusing and freeing the
+		wrongly-typed handle again correctly - a type-confused free
+		followed by a double free
 	fixed sqlr-connection potentially crashing during its own exit() when
-		a database login attempt fails: some vendor client libraries
-		leave process-global state corrupted after certain kinds of
-		failed login, and exit() running that corrupted state (eg.
-		glibc's atexit chain) rather than the login failure itself was
-		the actual crash; since sqlr-connection normally runs with its
-		crash backtrace handler active, the fault re-triggered inside
-		that handler forever instead of exiting, so a connection whose
-		login failed (e.g. due to an authentication protocol mismatch
-		with the backend) could keep sqlr-connection from ever coming
-		up; sqlr-connection now exits immediately, without running
-		that cleanup, whenever it failed to fully start up
+		it fails to start up (e.g. a database login attempt fails):
+		some vendor client libraries leave process-global state
+		corrupted after certain kinds of failed login, and exit()
+		running that corrupted state (e.g. glibc's atexit chain)
+		rather than the login failure itself was the actual crash;
+		since sqlr-connection installs a crash handler that only sets
+		a flag and returns, the faulting instruction re-executed
+		forever instead of the process exiting, so a connection that
+		failed to start up (e.g. due to an authentication protocol
+		mismatch with the backend) could keep sqlr-connection from
+		ever coming up; sqlr-connection now exits immediately, without
+		running that cleanup, whenever it fails to initialize
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -17,9 +17,15 @@
 	     backend, which under its default SQLNET.ALLOWED_LOGON_VERSION_SERVER
 	     setting (11) requires the O5LOGON auth exchange, introduced in
 	     Oracle 11.1.  A pre-11g OCI client - eg. solaris8sparc's 9.0.1
-	     install - has no O5LOGON support, so its backend connection
-	     fails with ORA-28040 "No matching authentication protocol"
-	     (#9796).  Lowering ALLOWED_LOGON_VERSION_SERVER on this shared
+	     install, or redhat9x86's 9.2.0.4 install - has no O5LOGON
+	     support, so its backend connection fails with ORA-28040 "No
+	     matching authentication protocol" (#9796).  On redhat9x86 this
+	     also used to crash sqlr-connection outright rather than fail
+	     cleanly (#9795) - fixed, but note that a host in this state
+	     still can't bring up a live connection to this instance: the
+	     listener won't bind its client port until enough connections
+	     are logged in, and nothing here ever will be.  Lowering
+	     ALLOWED_LOGON_VERSION_SERVER on this shared
 	     backend would let an old client in, but that's a farm-ops call
 	     on a resource other tests also depend on, not a sqlrelay fix -
 	     same reasoning as oracleprotocoloci7's separate backend below

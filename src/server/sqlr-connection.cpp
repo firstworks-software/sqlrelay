@@ -197,7 +197,8 @@ int main(int argc, const char **argv) {
 	signalmanager::ignoreSignals(&set);
 
 	// initialize and wait for client connections
-	bool	startedok=cont->init(argc,argv) && cont->listen();
+	bool	inited=cont->init(argc,argv);
+	bool	startedok=inited && cont->listen();
 	int32_t	exitstatus=startedok?0:1;
 	bool	gotshutdownflag=false;
 
@@ -255,7 +256,7 @@ int main(int argc, const char **argv) {
 
 	// clean up and exit
 	delete cont;
-	if (!startedok && !gotshutdownflag) {
+	if (!inited && !gotshutdownflag) {
 		// Some database client libraries leave process-global state
 		// (eg. glibc's atexit chain) corrupted after a failed login,
 		// which crashes later inside exit()'s own cleanup instead of

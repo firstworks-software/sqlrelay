@@ -1454,7 +1454,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				(dvoid *)trans,(ub4)0,
 				(ub4)OCI_ATTR_TRANS,err)!=OCI_SUCCESS) {
 		*error=logInError("OCIAttrSet(OCI_ATTR_TRANS) failed");
-		OCIHandleFree(err,OCI_HTYPE_TRANS);
+		OCIHandleFree(trans,OCI_HTYPE_TRANS);
 		OCISessionEnd(svc,err,session,OCI_DEFAULT);
 		OCIHandleFree(session,OCI_HTYPE_SESSION);
 		OCIServerDetach(srv,err,OCI_DEFAULT);
@@ -1527,7 +1527,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 				(ub4)OCI_NTV_SYNTAX,
 				(ub4)OCI_DEFAULT)!=OCI_SUCCESS) {
 			*error=logInError("Prepare alter session failed.");
-			OCIHandleFree(err,OCI_HTYPE_TRANS);
+			OCIHandleFree(trans,OCI_HTYPE_TRANS);
 			OCISessionEnd(svc,err,session,OCI_DEFAULT);
 			OCIHandleFree(session,OCI_HTYPE_SESSION);
 			OCIServerDetach(srv,err,OCI_DEFAULT);
@@ -1541,7 +1541,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		if (OCIStmtExecute(svc,stmt,err,1,(ub4)0,
 				NULL,NULL,stmtmode)!=OCI_SUCCESS) {
 			*error=logInError("Execute alter session failed.");
-			OCIHandleFree(err,OCI_HTYPE_TRANS);
+			OCIHandleFree(trans,OCI_HTYPE_TRANS);
 			OCISessionEnd(svc,err,session,OCI_DEFAULT);
 			OCIHandleFree(session,OCI_HTYPE_SESSION);
 			OCIServerDetach(srv,err,OCI_DEFAULT);
@@ -1555,7 +1555,7 @@ bool oracleconnection::logIn(const char **error, const char **warning) {
 		if (OCIStmtRelease(stmt,err,NULL,0,
 				OCI_STRLS_CACHE_DELETE)!=OCI_SUCCESS) {
 			*error=logInError("Statement release failed.");
-			OCIHandleFree(err,OCI_HTYPE_TRANS);
+			OCIHandleFree(trans,OCI_HTYPE_TRANS);
 			OCISessionEnd(svc,err,session,OCI_DEFAULT);
 			OCIHandleFree(session,OCI_HTYPE_SESSION);
 			OCIServerDetach(srv,err,OCI_DEFAULT);
