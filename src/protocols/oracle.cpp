@@ -10362,7 +10362,41 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 
 	// the layout is python-oracledb's _write_execute_message(), in
 	// src/oracledb/impl/thin/messages/execute.pyx - every field is either
-	// a ub4 or a single raw byte, so nothing sits at a fixed offset
+	// a ub4 or a single raw byte, so nothing sits at a fixed offset.
+	// decoded byte for byte against a real oci7 9i client's O3LOGON
+	// sqlplus session parsing its own third bootstrap statement, "SELECT
+	// NULL FROM DUAL FOR UPDATE NOWAIT" - the TTI_QUERY3 piggybacked
+	// behind packet [0024]'s TTI_SWITCH_SESSION in the capture attached
+	// to #9793.  an earlier version of this field list called
+	// getPointer() four more times and readLenPreInt() into "unused"
+	// four more times between definecount and the query text.  in that
+	// capture, the first of those eight extra calls (a readLenPreInt())
+	// landed on the query text's own length byte (0x28 = 40) and failed
+	// immediately, since 40 is too large for readLenPreInt()'s 4-byte
+	// value cap - this ticket's "truncated query3 request" and ORA-03114.
+	// a shorter query would have failed silently instead: getPointer()
+	// has no presence flag, so those eight calls only fail loudly when
+	// they happen to land on a byte too large to be mistaken for one of
+	// their own fields.  the six getPointer() calls between bindcount
+	// and definecount are real: two of the six land on live client-side
+	// addresses (0x0810011a, 0x0810d880) rather than nulls, ruling out
+	// a shorter "run of zeros" in their place.
+	//
+	// the eight removed calls consumed exactly the width python-oracledb's
+	// own trailing fields (a registration id and three more pointer/length
+	// pairs) would take on a client using the one-byte "universal" pointer
+	// encoding instead of oci7's four-byte native one (see getPointer()) -
+	// unconfirmed either way, since no capture of a universal-encoding
+	// client reaching this function is on file.  if such a client turns
+	// out to need those fields back, they can't simply be restored
+	// unconditionally - that would reintroduce this ticket's bug for oci7
+	// native-encoding clients like the one confirmed here
+	//
+	// the fixed-field count itself is confirmed only against a 10.2
+	// backend's negotiated field version - a newer one (see
+	// CCAP_FIELD_VERSION_11_2/12_1) could widen this section the same way
+	// it already does for bind/define descriptors, in which case this
+	// call list would need to grow again
 	*options=0;
 	*cursorid=0;
 	*prefetchrows=0;
@@ -10371,14 +10405,13 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	*querysize=0;
 
 	byte_t		sequence=0;
-	// pointer and unused stand in for unexplained flags and counts
+	// pointer stands in for unexplained flags
 	// see "Oracle Wire Protocol - Query3"
 	uint32_t	pointer=0;
 	uint32_t	vectorsize=0;
 	uint32_t	prefetchbuffersize=0;
 	uint32_t	bindcount=0;
 	uint32_t	definecount=0;
-	uint32_t	unused=0;
 
 	// the sequence number is a raw byte, not a pointer and not a count
 	if (end-rp<1) {
@@ -10406,15 +10439,7 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&definecount,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp)) {
+		!readLenPreInt(rp,end,&definecount,&rp)) {
 		debugWrite("truncated query3 request");
 		return false;
 	}

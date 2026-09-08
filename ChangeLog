@@ -2054,6 +2054,14 @@
 		parse call an oci7 client made through this module, including
 		sqlplus's own post-login bootstrap query, with ORA-01001
 		"invalid cursor"
+	fixed the oracle protocol module's modern-style TTI_QUERY3 (0x5e)
+		request parser reading eight fields that don't exist on an oci7
+		client's wire, running past the real end of the fixed-field
+		section and into the query text's own length byte, breaking
+		every query3 call any oci7 client ever made through this
+		module - including sqlplus's own third post-login bootstrap
+		statement - with a truncated read before ever reaching the
+		query text
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
