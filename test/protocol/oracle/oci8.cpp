@@ -1539,15 +1539,28 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("rowid\n");
-	char	rowidbuf[64];
-	ub2	rowidlen=sizeof(rowidbuf);
-	bytestring::zero(rowidbuf,sizeof(rowidbuf));
-	assertEquals(
-		OCIRowidToChar(typerowid,(text *)rowidbuf,&rowidlen,err),
-		OCI_SUCCESS);
-	// the base 64 external form of a rowid is always 18 characters
-	assertEquals((int)rowidlen,18);
-	assertEquals((int)charstring::getLength(rowidbuf),18);
+	#ifdef HAVE_OCIROWIDTOCHAR
+		char	rowidbuf[64];
+		ub2	rowidlen=sizeof(rowidbuf);
+		bytestring::zero(rowidbuf,sizeof(rowidbuf));
+		assertEquals(
+			OCIRowidToChar(typerowid,(text *)rowidbuf,
+						&rowidlen,err),
+			OCI_SUCCESS);
+		// the base 64 external form of a rowid is always 18
+		// characters
+		assertEquals((int)rowidlen,18);
+		assertEquals((int)charstring::getLength(rowidbuf),18);
+	#else
+		// some early OCI8-era clients (Oracle 9.0.1 on solaris/sparc
+		// is the one that surfaced this - see #9813) export
+		// OCIRowidToChar under a short platform-specific alias with
+		// no prototype for either name, even though the rest of the
+		// interface used above is present; there's no portable way
+		// to get the external form here, so just confirm the
+		// descriptor came back non-null
+		assertTrue(typerowid!=NULL);
+	#endif
 	stdoutput.printf("\n\n");
 
 

@@ -147,6 +147,9 @@
 /* OCI7 legacy Oracle call interface */
 /* #undef HAVE_OCI7 */
 
+/* OCIRowidToChar */
+#define HAVE_OCIROWIDTOCHAR 1
+
 /* oci.h */
 #define HAVE_OCI_H
 

@@ -817,6 +817,7 @@ MYSQLSTATIC
 MYSQLLIBSPATH
 MYSQLLIBS
 MYSQLINCLUDES
+HAVE_OCIROWIDTOCHAR
 OCI7INCLUDES
 HAVE_OCI7
 ENABLE_ORACLE
@@ -21873,6 +21874,66 @@ fi
 	fi
 fi
 
+
+
+
+HAVE_OCIROWIDTOCHAR=""
+if ( test -n "$ORACLELIBS" )
+then
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for OCIRowidToChar" >&5
+printf %s "checking for OCIRowidToChar... " >&6; }
+
+SAVECPPFLAGS="$CPPFLAGS"
+SAVELIBS="$LIBS"
+SAVE_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+CPPFLAGS="$ORACLESTATIC $ORACLEINCLUDES"
+LIBS="$ORACLELIBS $SOCKETLIBS"
+LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#ifdef __CYGWIN__
+	#define _int64 long long
+#endif
+extern "C" {
+	#define OCIVER_ORACLE 1
+	#include <oci.h>
+}
+$GLIBC23HACKINCLUDE
+$GLIBC23HACKCODE
+int
+main (void)
+{
+OCIRowidToChar((OCIRowid *)0,(text *)0,(ub2 *)0,(OCIError *)0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"
+then :
+  HAVE_OCIROWIDTOCHAR="yes"
+else $as_nop
+  HAVE_OCIROWIDTOCHAR=""
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+CPPFLAGS="$SAVECPPFLAGS"
+LIBS="$SAVELIBS"
+LD_LIBRARY_PATH="$SAVE_LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
+	if ( test -n "$HAVE_OCIROWIDTOCHAR" )
+	then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+printf "%s\n" "#define HAVE_OCIROWIDTOCHAR 1" >>confdefs.h
+
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	fi
+fi
 
 
 echo "******************************"
