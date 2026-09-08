@@ -6,7 +6,7 @@
 // - odefin/oexec/ofen, then odescr, then oclose, ologof. Nothing else.
 //
 //   ./oci7describe SID \
-//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|secondexec|midfetch]
+//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|secondexec|thirdcursor|midfetch]
 //                    [--defines=LIST] [USER PASSWORD [QUERY]]
 //
 // oci7.cpp in this directory is the full OCI7 protocol test, including a
@@ -16,7 +16,7 @@
 // login, one oparse, and whichever describe variant was asked for - small
 // enough to read by hand or feed straight to oradecode.
 //
-// The nine --describe= variants exist because each one has to be captured on
+// The ten --describe= variants exist because each one has to be captured on
 // its own:
 //   parse        odescr right after oparse, before any oexec
 //   exec         odescr after oexec, before the first ofen
@@ -57,6 +57,13 @@
 //                varies exactly one thing; against unparsedcursor it
 //                separates which cursor executes from whether the idle one
 //                was parsed
+//   thirdcursor  three cursors open at once, the third one running the
+//                query (#9699).  a real server allocates the lowest free
+//                cursor id, so two open cursors only ever produce ids 1
+//                and 2 - three are needed before it hands out a 3.  that
+//                is the id the query2 response's first lead-in field has
+//                to be read at, since every other sample on file was
+//                taken at id 2
 //   midfetch     oci7.cpp's "odescr - mid-fetch" section, call for call
 //                (#9810) - four real columns with only column 1 defined,
 //                one ofen, then odescr over columns 1-4, one past the end,
@@ -68,9 +75,9 @@
 //
 // QUERY, when given, only applies to parse/exec/fetch/outofrange - it always
 // has to select three columns, since outofrange describes column 4. The
-// concurrent, concurrentboth, unparsedcursor, secondexec and midfetch variants
-// ignore QUERY; they open their own fixed queries, the same way oci7.cpp's
-// Concurrent Cursors and Fetch sections do.
+// concurrent, concurrentboth, unparsedcursor, secondexec, thirdcursor and
+// midfetch variants ignore QUERY; they open their own fixed queries, the same
+// way oci7.cpp's Concurrent Cursors and Fetch sections do.
 //
 // --defines= applies to midfetch alone, and takes the column positions to
 // odefin as single digits 1 through 4 - "1" (the default, and what oci7.cpp
@@ -213,7 +220,7 @@ int main(int argc, char **argv) {
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
 				"[--describe=parse|exec|fetch|outofrange|"
-				"concurrent|concurrentboth|unparsedcursor|secondexec|midfetch] "
+				"concurrent|concurrentboth|unparsedcursor|secondexec|thirdcursor|midfetch] "
 				"[--defines=LIST] "
 				"[USER PASSWORD [QUERY]]\n",
 				argv[0]);
@@ -419,6 +426,60 @@ int main(int argc, char **argv) {
 
 		run("oclose - working cursor",&workcda,oclose(&workcda));
 		run("oclose - idle cursor",&idlecda,oclose(&idlecda));
+
+	} else if (!charstring::compare(variant,"thirdcursor")) {
+
+		// three cursors open at once, with the third one running the
+		// query.  a real server allocates the lowest free cursor id,
+		// so two open cursors only ever produce ids 1 and 2 - three
+		// are needed before it hands out a 3.  that is the id the
+		// query2 response's first lead-in field has to be read at:
+		// every sample on file was taken at id 2, and the one taken
+		// at id 1 is what showed that field does not carry the cursor
+		// id at all
+		Cda_Def	idle1;
+		Cda_Def	idle2;
+		Cda_Def	workcda;
+		if (!openCursor("oopen - idle cursor 1",&idle1) ||
+			!openCursor("oopen - idle cursor 2",&idle2) ||
+			!openCursor("oopen - working cursor",&workcda)) {
+			ologof(&lda);
+			return 1;
+		}
+
+		// the two idle cursors are parsed, so all three are in the
+		// same state apart from which one runs
+		const char	*idlequery="select 1 as num from dual";
+		const char	*workquery="select 2 as num from dual";
+		if (!parseQuery(&idle1,idlequery) ||
+			!parseQuery(&idle2,idlequery) ||
+			!parseQuery(&workcda,workquery)) {
+			oclose(&idle1);
+			oclose(&idle2);
+			oclose(&workcda);
+			ologof(&lda);
+			return 1;
+		}
+
+		char	numbuf[64];
+		sb2	numind=0;
+		ub2	numlen=0;
+		ub2	numcode=0;
+		bytestring::zero(numbuf,sizeof(numbuf));
+
+		run("odefin - working cursor",&workcda,
+			odefin(&workcda,1,(ub1 *)numbuf,
+				(sword)sizeof(numbuf),SQLT_STR,-1,
+				&numind,(text *)0,-1,-1,
+				&numlen,&numcode));
+		run("oexec - working cursor",&workcda,oexec(&workcda));
+		if (run("ofen - working cursor",&workcda,ofen(&workcda,1))) {
+			stdoutput.printf("  num=%s\n",numbuf);
+		}
+
+		run("oclose - working cursor",&workcda,oclose(&workcda));
+		run("oclose - idle cursor 2",&idle2,oclose(&idle2));
+		run("oclose - idle cursor 1",&idle1,oclose(&idle1));
 
 	} else if (!charstring::compare(variant,"secondexec")) {
 
