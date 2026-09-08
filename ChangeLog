@@ -2117,6 +2117,21 @@
 		instead of repeating each call's own count; a parse or an
 		execute starts the count over, the way it starts a new result
 		set
+	oracle protocol module: oci7 clients can use bind variables now - a
+		query2 request's binds ride inline in the request, behind the
+		define descriptors, rather than arriving as the separate
+		follow-up packets a pre-8i wiki page described; the old
+		two-phase handling answered with bytes no real client could
+		parse, so every bind-carrying oci7 session died with ORA-03113
+		on the execute, and a bind request's defines were discarded as
+		leftover bytes on top of that; in binds of number and character
+		types, including nulls, are decoded from real captures now,
+		while pl/sql out and in-out binds, and bind values wider than
+		252 bytes, are still refused; a dml executed this way reports
+		the rows it affected instead of always reporting 0, and a
+		client that binds once and executes many times now has its
+		later executes' values read too, though the answer such an
+		execute gets is still a hardcoded one it may not accept
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

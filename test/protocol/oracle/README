@@ -136,6 +136,52 @@ positions the client named or merely off how many it named. Running
 --defines=3 and --defines=1 against the same query answers that in one
 run each: --defines=3 comes back with column 3's value, in slot 3.
 
+oci7bind.cpp, gated by the same configure-time check as oci7.cpp, is a
+minimal OCI7 client for capturing bind-variable traffic: olog, oopen,
+oparse, obndrv, then - depending on --bind= - odefin/oexec/ofen or just
+oexec, then oclose, ologof. Nothing else.
+
+    ./oci7bind SID [--bind=VARIANT] [USER PASSWORD]
+
+It exists for #9700. oci7.cpp's own Binds section exercises the same calls,
+but it is the tail of a suite that logs in twice, creates tables and runs a
+hundred other statements first, so a capture of it is far too noisy to read
+a byte layout out of - the same reason oci7describe.cpp exists next to it
+for describes.
+
+The nine variants each have to be captured on their own, and each isolates
+one unknown:
+
+    selectint    one IN bind (SQLT_INT) plus one odefin, on a select - the
+                  smallest packet that has both a bind block and a define
+                  block in it, so it shows where one ends and the other
+                  begins
+    selectstr    the same with the bind SQLT_STR, so diffing the two
+                  isolates the datatype and length fields
+    selecttwo    two binds and two defines, which gives the stride from one
+                  bind descriptor to the next
+    insert       three binds and no defines at all (dml), isolating the
+                  bind block with nothing behind it
+    nullbind     the same insert with two of the three indicators -1
+    many         bind once, oexec three times - obndrv binds by reference,
+                  so this says whether the client re-marshals the binds on
+                  every execute or sends them only with the first
+    out          a pl/sql block with one OUT bind
+    inout        a pl/sql block whose bind is read and written
+    nullout      a pl/sql block that assigns NULL to its out bind
+
+insert, nullbind and many create the protocoltestbind table themselves
+(dropping any leftover first), so no other program has to have run against
+the backend.
+
+The nine 9700-* captures under samples/ were taken with it, and they are what
+#9700's fix is written against. Before them no capture anywhere had
+OPTION_BIND set - not the fourteen already checked in, and not any of the
+working captures from the #9637/#9638/#9680/#9808/#9810 passes - so the bind
+block's position and shape were unattributable to anything real, and
+query2()'s OPTION_BIND path was a guess from a pre-8i wiki page that turned
+out to be wrong.
+
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
 early OCI8-era client installs export the symbol under a short
@@ -414,9 +460,93 @@ the decoder can be exercised without live server access:
                                       every column did not crash, which
                                       is why this went unnoticed for so
                                       long (#9810)
+    9700-redhat9x86-portable-selectint-sqlrelay.oraproxy
+                                     oci7bind --bind=selectint: "select
+                                      :num from dual" with one SQLT_INT
+                                      bind and one odefin, against
+                                      sqlrelay's oracleprotocoloci7
+                                      instance, portable encoding.  the
+                                      smallest request that carries both
+                                      a bind block and a define block, so
+                                      it is what shows where one ends and
+                                      the other begins.  the bind goes out
+                                      as wire type 2 with buffer size 22
+                                      and its value as the oracle internal
+                                      number c1 0b (#9700)
+    9700-redhat9x86-portable-selectstr-sqlrelay.oraproxy
+                                     the same with the bind SQLT_STR
+                                      instead - wire type 1, buffer size
+                                      one less than the client's declared
+                                      width, charset 31, and the value
+                                      "bindstring" as raw text.  diffing
+                                      it against selectint is what
+                                      isolates the datatype and length
+                                      fields (#9700)
+    9700-redhat9x86-portable-selecttwo-sqlrelay.oraproxy
+                                     two binds and two defines, which is
+                                      what gives the stride from one bind
+                                      descriptor to the next - a one-bind
+                                      capture alone cannot (#9700)
+    9700-redhat9x86-portable-insert-sqlrelay.oraproxy
+                                     the three-bind insert, with no
+                                      defines at all, so the bind block
+                                      sits alone with nothing behind it.
+                                      options 0x8028 here against 0x8038
+                                      on the selects, the difference being
+                                      OPTION_DEFINE (#9700)
+    9700-redhat9x86-portable-nullbind-sqlrelay.oraproxy
+                                     the same insert with two of the three
+                                      indicators set to -1.  a null bind
+                                      is "fd 01" where a value's length
+                                      byte would be, and the request still
+                                      ends exactly on its last byte, which
+                                      is what pins a null at two bytes
+                                      rather than one or three (#9700)
+    9700-redhat9x86-portable-reverse-sqlrelay.oraproxy
+                                     the same insert with the obndrv calls
+                                      made backwards - :vchr, then :chr,
+                                      then :num.  the values still go out
+                                      in statement order (c1 33 = 50, then
+                                      "revchar", then "revvarchar"), which
+                                      is what settles that the nth value
+                                      on the wire is the nth placeholder
+                                      in the text rather than the nth
+                                      obndrv call.  oci7 binds by name and
+                                      the names never reach the wire, so
+                                      nothing else on file could tell
+                                      those two apart (#9700)
+    9700-redhat9x86-portable-many-sqlrelay.oraproxy
+                                     bind once, oexec three times.  the
+                                      second and third executes are not
+                                      query2 requests at all - the client
+                                      sends a bare TTI_EXECUTE (0x04)
+                                      carrying fresh values and no
+                                      descriptors, since obndrv binds by
+                                      reference and only the buffer
+                                      changed.  the only capture on file
+                                      of that shape (#9700)
+    9700-redhat9x86-portable-out-sqlrelay.oraproxy
+                                     "begin :v := 7; end;" - a pl/sql
+                                      block with one out bind.  options
+                                      0x0428, which is BIND, EXECUTE and
+                                      SNDIOV with NOPLSQL correctly clear,
+                                      and the request stops dead on the
+                                      last byte of its one bind
+                                      descriptor: no TTC_ROW_DATA, no
+                                      value (#9700, #9984)
+    9700-redhat9x86-portable-inout-sqlrelay.oraproxy
+                                     "begin :v := :v * 2; end;" - byte for
+                                      byte identical to the out capture
+                                      above, even though this one has an
+                                      initial value of 21 to pass in.  so
+                                      an in-out pl/sql bind sends no more
+                                      than an out-only one does, and the
+                                      whole of the exchange is in the
+                                      response, which no capture on file
+                                      has (#9700, #9984)
 
-Each of the 9808-* and 9810-*.oraproxy captures above is oraproxy's own
-capture format (see "oraproxy" below), taken by interposing oraproxy
+Each of the 9808-*, 9810-* and 9700-*.oraproxy captures above is oraproxy's
+own capture format (see "oraproxy" below), taken by interposing oraproxy
 locally on the client host and pointing the client's tnsnames.ora at it,
 rather than a raw tcpdump - a real NIC's MSS is too small for oradecode's
 one-frame-one-TNS-chunk assumption to hold. oradecode reads them with no
