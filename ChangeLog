@@ -2081,6 +2081,8 @@
 		real code makes, through oci.h alone, and sets
 		HAVE_OCIROWIDTOCHAR in config.h only where that call
 		actually works
+	documented why no real client selects the oracle protocol module's
+		native encoding, and why a 9i login never can
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
