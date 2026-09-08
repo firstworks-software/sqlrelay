@@ -16546,6 +16546,13 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	cont->abort(cursor);
 	cont->release(cursor);
 	cursorbindcounts[closingid]=0;
+	
+	// and the oci7 bind shape a query2 left on it.  cursor
+	// ids come back out of the pool for whatever opens next,
+	// and a stale count here would have a bare TTI_EXECUTE on
+	// the reused cursor read trailing bytes as bind values for
+	// a statement that never had any
+	query2cursorbindcounts[closingid]=0;
 	cont->setInputOutputBindCount(cursor,0);
 	columntypescached[closingid]=false;
 	rowssent[closingid]=0;
@@ -16987,6 +16994,13 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		cont->abort(cursor);
 		cont->release(cursor);
 		cursorbindcounts[closingid]=0;
+		
+		// and the oci7 bind shape a query2 left on it.  cursor
+		// ids come back out of the pool for whatever opens next,
+		// and a stale count here would have a bare TTI_EXECUTE on
+		// the reused cursor read trailing bytes as bind values for
+		// a statement that never had any
+		query2cursorbindcounts[closingid]=0;
 		cont->setInputOutputBindCount(cursor,0);
 		columntypescached[closingid]=false;
 		rowssent[closingid]=0;
