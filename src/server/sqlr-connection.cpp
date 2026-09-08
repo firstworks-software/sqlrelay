@@ -197,11 +197,14 @@ int main(int argc, const char **argv) {
 	signalmanager::ignoreSignals(&set);
 
 	// initialize and wait for client connections
-	int32_t exitstatus=(cont->init(argc,argv) && cont->listen())?0:1;
+	bool	startedok=cont->init(argc,argv) && cont->listen();
+	int32_t	exitstatus=startedok?0:1;
+	bool	gotshutdownflag=false;
 
 #ifdef SHUTDOWNFLAG
 	if (process::getShutDownFlag()) {
 
+		gotshutdownflag=true;
 		int32_t	signum=process::getShutDownSignal();
 
 		// generate a backtrace if necessary
@@ -252,5 +255,13 @@ int main(int argc, const char **argv) {
 
 	// clean up and exit
 	delete cont;
+	if (!startedok && !gotshutdownflag) {
+		// Some database client libraries leave process-global state
+		// (eg. glibc's atexit chain) corrupted after a failed login,
+		// which crashes later inside exit()'s own cleanup instead of
+		// at the point of corruption.  We never became a live
+		// connection, so skip that cleanup and exit immediately.
+		process::exitImmediately(exitstatus);
+	}
 	process::exit(exitstatus);
 }
