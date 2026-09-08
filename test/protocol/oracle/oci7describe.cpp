@@ -6,7 +6,7 @@
 // - odefin/oexec/ofen, then odescr, then oclose, ologof. Nothing else.
 //
 //   ./oci7describe SID \
-//     [--describe=parse|exec|fetch|outofrange|concurrent|midfetch] \
+//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|midfetch]
 //                    [--defines=LIST] [USER PASSWORD [QUERY]]
 //
 // oci7.cpp in this directory is the full OCI7 protocol test, including a
@@ -16,7 +16,7 @@
 // login, one oparse, and whichever describe variant was asked for - small
 // enough to read by hand or feed straight to oradecode.
 //
-// The six --describe= variants exist because each one has to be captured on
+// The seven --describe= variants exist because each one has to be captured on
 // its own:
 //   parse        odescr right after oparse, before any oexec
 //   exec         odescr after oexec, before the first ofen
@@ -28,6 +28,18 @@
 //   concurrent   a second cursor is odescr'd while the first cursor's fetch
 //                is still in progress, so the capture shows whether the
 //                server keeps each cursor's describe state separate
+//   concurrentboth
+//                oci7.cpp's Concurrent Cursors section call for call
+//                (#9699) - two cursors opened, parsed and odefin'd before
+//                either is oexec'd, then both executed, fetches ping-ponged
+//                a row at a time, a describe on the second cursor, and the
+//                two closed in the reverse of the order they opened.
+//                concurrent above odefin's the first cursor only, so its
+//                oexec goes out with one cursor's defines pending, and it
+//                runs clean against both a real server and sqlrelay.  this
+//                is the only variant that reaches the state that section
+//                reaches, and that section is the one a real client
+//                answers ORA-03106 on
 //   midfetch     oci7.cpp's "odescr - mid-fetch" section, call for call
 //                (#9810) - four real columns with only column 1 defined,
 //                one ofen, then odescr over columns 1-4, one past the end,
@@ -39,8 +51,9 @@
 //
 // QUERY, when given, only applies to parse/exec/fetch/outofrange - it always
 // has to select three columns, since outofrange describes column 4. The
-// concurrent and midfetch variants ignore QUERY; they open their own fixed
-// queries, the same way oci7.cpp's Concurrent Cursors and Fetch sections do.
+// concurrent, concurrentboth and midfetch variants ignore QUERY; they open
+// their own fixed queries, the same way oci7.cpp's Concurrent Cursors and
+// Fetch sections do.
 //
 // --defines= applies to midfetch alone, and takes the column positions to
 // odefin as single digits 1 through 4 - "1" (the default, and what oci7.cpp
@@ -183,7 +196,8 @@ int main(int argc, char **argv) {
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
 				"[--describe=parse|exec|fetch|outofrange|"
-				"concurrent|midfetch] [--defines=LIST] "
+				"concurrent|concurrentboth|midfetch] "
+				"[--defines=LIST] "
 				"[USER PASSWORD [QUERY]]\n",
 				argv[0]);
 		return 1;
@@ -257,6 +271,83 @@ int main(int argc, char **argv) {
 
 		run("oclose - cursor A",&curA,oclose(&curA));
 		run("oclose - cursor B",&curB,oclose(&curB));
+
+	} else if (!charstring::compare(variant,"concurrentboth")) {
+
+		// oci7.cpp's Concurrent Cursors section, call for call.  the
+		// concurrent arm above defines cursor A only, so its oexec
+		// goes out with one cursor's defines pending.  this one
+		// defines both before executing either, which is the state
+		// that section reaches and the only shape difference between
+		// the two arms
+		Cda_Def	curA;
+		Cda_Def	curB;
+		if (!openCursor("oopen - cursor A",&curA) ||
+			!openCursor("oopen - cursor B",&curB)) {
+			ologof(&lda);
+			return 1;
+		}
+
+		const char	*queryA="select level as num from dual "
+					"connect by level<=5 order by 1";
+		const char	*queryB="select 'row'||level as txt from dual "
+					"connect by level<=5 order by 1";
+		if (!parseQuery(&curA,queryA) || !parseQuery(&curB,queryB)) {
+			oclose(&curA);
+			oclose(&curB);
+			ologof(&lda);
+			return 1;
+		}
+
+		char	numA[32];
+		sb2	indA=0;
+		ub2	lenA=0;
+		ub2	codeA=0;
+		bytestring::zero(numA,sizeof(numA));
+
+		char	txtB[32];
+		sb2	indB=0;
+		ub2	lenB=0;
+		ub2	codeB=0;
+		bytestring::zero(txtB,sizeof(txtB));
+
+		// both defined, then both executed
+		if (!run("odefin - cursor A",&curA,
+				odefin(&curA,1,(ub1 *)numA,(sword)sizeof(numA),
+					SQLT_STR,-1,&indA,(text *)0,-1,-1,
+					&lenA,&codeA)) ||
+			!run("odefin - cursor B",&curB,
+				odefin(&curB,1,(ub1 *)txtB,(sword)sizeof(txtB),
+					SQLT_STR,-1,&indB,(text *)0,-1,-1,
+					&lenB,&codeB))) {
+			oclose(&curA);
+			oclose(&curB);
+			ologof(&lda);
+			return 1;
+		}
+
+		// not bailed out of - the failure this arm exists to capture
+		// lands on both of these, so both have to reach the wire
+		run("oexec - cursor A",&curA,oexec(&curA));
+		run("oexec - cursor B",&curB,oexec(&curB));
+
+		// ping-pong a row at a time, so both result sets stay live
+		for (int i=1; i<=5; i++) {
+			if (!run("ofen - cursor A",&curA,ofen(&curA,1))) {
+				break;
+			}
+			stdoutput.printf("  numA=%s\n",numA);
+			if (!run("ofen - cursor B",&curB,ofen(&curB,1))) {
+				break;
+			}
+			stdoutput.printf("  txtB=%s\n",txtB);
+		}
+
+		describeColumn(&curB,1);
+
+		// closed out of open order, the way that section closes
+		run("oclose - cursor B",&curB,oclose(&curB));
+		run("oclose - cursor A",&curA,oclose(&curA));
 
 	} else if (!charstring::compare(variant,"parse")) {
 
