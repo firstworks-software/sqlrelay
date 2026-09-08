@@ -6,7 +6,7 @@
 // - odefin/oexec/ofen, then odescr, then oclose, ologof. Nothing else.
 //
 //   ./oci7describe SID \
-//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|midfetch]
+//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|midfetch]
 //                    [--defines=LIST] [USER PASSWORD [QUERY]]
 //
 // oci7.cpp in this directory is the full OCI7 protocol test, including a
@@ -16,7 +16,7 @@
 // login, one oparse, and whichever describe variant was asked for - small
 // enough to read by hand or feed straight to oradecode.
 //
-// The seven --describe= variants exist because each one has to be captured on
+// The eight --describe= variants exist because each one has to be captured on
 // its own:
 //   parse        odescr right after oparse, before any oexec
 //   exec         odescr after oexec, before the first ofen
@@ -40,6 +40,14 @@
 //                is the only variant that reaches the state that section
 //                reaches, and that section is the one a real client
 //                answers ORA-03106 on
+//   unparsedcursor
+//                oci7.cpp's Server Version section, which is the earliest
+//                point in that suite where two cursors are live at once
+//                (#9699).  the cursor Connect opened is still open there
+//                and has not been oparse'd yet, so the whole section runs
+//                on a second cursor with an open, unparsed one beside it.
+//                no other variant, and no capture on file, covers a cursor
+//                in that state
 //   midfetch     oci7.cpp's "odescr - mid-fetch" section, call for call
 //                (#9810) - four real columns with only column 1 defined,
 //                one ofen, then odescr over columns 1-4, one past the end,
@@ -51,9 +59,9 @@
 //
 // QUERY, when given, only applies to parse/exec/fetch/outofrange - it always
 // has to select three columns, since outofrange describes column 4. The
-// concurrent, concurrentboth and midfetch variants ignore QUERY; they open
-// their own fixed queries, the same way oci7.cpp's Concurrent Cursors and
-// Fetch sections do.
+// concurrent, concurrentboth, unparsedcursor and midfetch variants ignore
+// QUERY; they open their own fixed queries, the same way oci7.cpp's Concurrent
+// Cursors and Fetch sections do.
 //
 // --defines= applies to midfetch alone, and takes the column positions to
 // odefin as single digits 1 through 4 - "1" (the default, and what oci7.cpp
@@ -196,7 +204,7 @@ int main(int argc, char **argv) {
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
 				"[--describe=parse|exec|fetch|outofrange|"
-				"concurrent|concurrentboth|midfetch] "
+				"concurrent|concurrentboth|unparsedcursor|midfetch] "
 				"[--defines=LIST] "
 				"[USER PASSWORD [QUERY]]\n",
 				argv[0]);
@@ -348,6 +356,60 @@ int main(int argc, char **argv) {
 		// closed out of open order, the way that section closes
 		run("oclose - cursor B",&curB,oclose(&curB));
 		run("oclose - cursor A",&curA,oclose(&curA));
+
+	} else if (!charstring::compare(variant,"unparsedcursor")) {
+
+		// oci7.cpp's Server Version section, which is the earliest
+		// point in that suite where two cursors are live at once.
+		// the cursor Connect opened is still open there and has not
+		// been oparse'd yet - it isn't, until well below that section
+		// - so the whole of Server Version runs on a second cursor
+		// while an open, unparsed one sits beside it.  nothing else
+		// in this program, and no capture on file, covers a cursor in
+		// that state
+		Cda_Def	idlecda;
+		Cda_Def	workcda;
+		if (!openCursor("oopen - idle cursor",&idlecda) ||
+			!openCursor("oopen - working cursor",&workcda)) {
+			ologof(&lda);
+			return 1;
+		}
+
+		// idlecda is deliberately never parsed
+
+		// dual rather than the v$version that section selects.  the
+		// module answers v$version out of its own configured version
+		// instead of the backend, so selecting it would put that
+		// special case in the capture alongside the cursor state this
+		// arm is here to isolate.  it also needs a grant the test user
+		// may not have on a real server, which would cost the
+		// real-server half of the comparison
+		const char	*workquery="select 1 as num from dual";
+		if (!parseQuery(&workcda,workquery)) {
+			oclose(&idlecda);
+			oclose(&workcda);
+			ologof(&lda);
+			return 1;
+		}
+
+		char	numbuf[64];
+		sb2	numind=0;
+		ub2	numlen=0;
+		ub2	numcode=0;
+		bytestring::zero(numbuf,sizeof(numbuf));
+
+		run("odefin - working cursor",&workcda,
+			odefin(&workcda,1,(ub1 *)numbuf,
+				(sword)sizeof(numbuf),SQLT_STR,-1,
+				&numind,(text *)0,-1,-1,
+				&numlen,&numcode));
+		run("oexec - working cursor",&workcda,oexec(&workcda));
+		if (run("ofen - working cursor",&workcda,ofen(&workcda,1))) {
+			stdoutput.printf("  num=%s\n",numbuf);
+		}
+
+		run("oclose - working cursor",&workcda,oclose(&workcda));
+		run("oclose - idle cursor",&idlecda,oclose(&idlecda));
 
 	} else if (!charstring::compare(variant,"parse")) {
 
