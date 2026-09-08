@@ -10493,11 +10493,24 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 				return false;
 		}
 
-		// the client passed a null indicator for this one
+		// the client passed a null indicator for this one.
+		//
+		// a null is bound as a STRING with the null indicator set,
+		// not as SQLRSERVERBINDVARTYPE_NULL, and its buffer has to be
+		// allocated and zeroed rather than left unset.  that is what
+		// the reference sqlrclient path does (see sqlrclient.cpp's
+		// own null arm and the comment on it: oracle gets angry if
+		// the buffer is not initialized), and it is what this used to
+		// get wrong - setting the NULL type and leaving the buffer
+		// pointer stale bound an empty string with a not-null
+		// indicator instead of a null, so a null bind inserted ''
+		// rather than NULL.  found by querying the inserted row back
+		// on redhat9x86, #9700
 		if (!value) {
-			bv->type=SQLRSERVERBINDVARTYPE_NULL;
-			// what sqlrservercontroller.cpp does for a null bind
-			// too, see its own inbind->isnull assignment
+			bv->type=SQLRSERVERBINDVARTYPE_STRING;
+			bv->valuesize=0;
+			bv->value.stringval=(char *)bindpool->allocate(1);
+			bv->value.stringval[0]='\0';
 			bv->isnull=cont->getNullBindValue();
 			debugWrite("bind %d: %s = null",i+1,bv->variable);
 			incount++;
