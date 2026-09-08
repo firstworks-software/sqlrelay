@@ -14976,6 +14976,23 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return sendQueryError(cursor);
 	}
 
+	// what the backend actually did with it.  sendExecuteResponse()
+	// below builds no summary object - it is a hardcoded literal - so
+	// without this the log jumps straight from the binds to the answer
+	// and says nothing about whether the statement ran or what it
+	// touched, which is exactly the gap that made a re-execute's missing
+	// row hard to pin down
+	if (getDebug()) {
+		debugStart("re-execute result");
+		if (cont->knowsAffectedRows(cursor)) {
+			debugWrite("affected rows: %d",
+				(int32_t)cont->getAffectedRows(cursor));
+		} else {
+			debugWrite("affected rows: unknown");
+		}
+		debugEnd();
+	}
+
 	return sendExecuteResponse(cursor);
 }
 
