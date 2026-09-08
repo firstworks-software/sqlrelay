@@ -460,6 +460,31 @@ the decoder can be exercised without live server access:
                                       every column did not crash, which
                                       is why this went unnoticed for so
                                       long (#9810)
+    9976-redhat9x86-portable-midfetch-defines1-sqlrelay.oraproxy
+                                     the --defines=1 run against
+                                      sqlrelay, taken after the #9976 fix
+                                      - the sqlrelay side of the
+                                      -defines1-realserver capture above,
+                                      which nothing on file had until
+                                      then.  it holds a legacy fetch run
+                                      to exhaustion, which is what #9702
+                                      spent four comments unable to get:
+                                      three fetch answers whose
+                                      rows-processed field counts 1, 2, 3
+                                      rather than repeating the per-call
+                                      count, and then a past-the-end
+                                      answer that is the ordinary summary
+                                      object carrying 1403 with
+                                      "ORA-01403: no data found" and its
+                                      newline behind it as a ub1-length
+                                      string - 59 payload bytes, ending
+                                      on the message with nothing after
+                                      it.  before the fix that same call
+                                      answered 115 bytes that parsed as
+                                      no object at all, which cost the
+                                      client the call and surfaced on the
+                                      next one as ORA-03120 (#9976,
+                                      #9702)
     9700-redhat9x86-portable-selectint-sqlrelay.oraproxy
                                      oci7bind --bind=selectint: "select
                                       :num from dual" with one SQLT_INT
@@ -545,12 +570,12 @@ the decoder can be exercised without live server access:
                                       response, which no capture on file
                                       has (#9700, #9984)
 
-Each of the 9808-*, 9810-* and 9700-*.oraproxy captures above is oraproxy's
-own capture format (see "oraproxy" below), taken by interposing oraproxy
-locally on the client host and pointing the client's tnsnames.ora at it,
-rather than a raw tcpdump - a real NIC's MSS is too small for oradecode's
-one-frame-one-TNS-chunk assumption to hold. oradecode reads them with no
-conversion.
+Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
+oraproxy's own capture format (see "oraproxy" below), taken by interposing
+oraproxy locally on the client host and pointing the client's tnsnames.ora
+at it, rather than a raw tcpdump - a real NIC's MSS is too small for
+oradecode's one-frame-one-TNS-chunk assumption to hold. oradecode reads them
+with no conversion.
 
 Every column in these four multicol-*.cap captures is a NUMBER column
 defined SQLT_STR (the legacy putField() character-array arm) - only the
