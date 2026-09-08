@@ -747,12 +747,30 @@ int main(int argc, char **argv) {
 					&versionlen,&versioncode)),0);
 		assertEquals(check(vercda,oexec(vercda)),0);
 		assertEquals(check(vercda,ofen(vercda,1)),0);
-		// the test configs all set serverversion="11.2", which the
-		// protocol module packs as 0x0b200100 and expands into this
-		// exact banner
-		assertEquals((const char *)versionbuf,
-			"Oracle Database 11g Enterprise Edition "
-			"Release 11.2.0.1.0 - 64bit Production");
+		// oci8.cpp asserts the exact 11.2 banner here and is right
+		// to: OCIServerVersion is the tti version call, which the
+		// module answers itself, out of the serverversion attribute -
+		// see sendVersionResponse(), src/protocols/oracle.cpp.  this
+		// is a plain select instead, which the module passes straight
+		// through, so what comes back is whatever backend the
+		// instance points at, not anything the module made up.  for
+		// sqlrelayoci7 that is the farm's only oci7-capable backend,
+		// a real 10.2 server - see test/sqlrelay.conf.d/
+		// oracleprotocol.conf.in - so an 11.2 banner was never coming
+		// back.  nor would the module report one on this instance
+		// even if it did answer: a verifiertype="9i" listener reports
+		// 10.2 whatever serverversion says, since no server old
+		// enough to offer a pre-o5logon verifier is newer than that.
+		// so the version itself is what goes unasserted here.  the
+		// rest of the banner's shape still is, and it has to be: this
+		// section runs against every target this program takes, whose
+		// backends are different versions, so pinning 10.2 would only
+		// move the problem to the other targets
+		assertTrue(!charstring::compare(versionbuf,
+						"Oracle Database ",16));
+		assertTrue(charstring::contains(versionbuf,
+					" Enterprise Edition Release "));
+		assertTrue(charstring::contains(versionbuf,"Production"));
 		stdoutput.printf("\n%s\n",versionbuf);
 		if (!onecursor) {
 			assertEquals(check(vercda,oclose(vercda)),0);
