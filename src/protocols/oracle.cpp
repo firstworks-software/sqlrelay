@@ -1568,7 +1568,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// and the buffer width it reports for one
 		uint32_t	getOci7DescribeColumnSize(uint16_t wiretype,
 							uint32_t size);
-		bool	sendVariableNotInSelectListError(uint32_t cursorid);
+		bool	sendOci7StatementError(uint32_t cursorid,
+							uint32_t oranum,
+							const char *message);
 
 		// parse-execute...
 		bool	parseExecute(const byte_t *rp);
@@ -8623,7 +8625,9 @@ bool sqlrprotocol_oracle::describe(const byte_t *rp) {
 	// no select list at all
 	if (!position || !colcount || position>colcount) {
 		debugWrite("position %d past %d columns",position,colcount);
-		return sendVariableNotInSelectListError(wireCursorId(cursor));
+		return sendOci7StatementError(wireCursorId(cursor),
+					ORA_VARIABLE_NOT_IN_SELECT_LIST,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 	}
 
 	return sendDescribeResponse(cursor,colcount);
@@ -8821,46 +8825,46 @@ uint32_t sqlrprotocol_oracle::getOci7DescribeColumnSize(uint16_t wiretype,
 	return size;
 }
 
-// what a describe naming a position past the end of the select list gets
-// back.  a real server answers it with the summary object every other oci7
-// call is answered with, carrying the ora number, and the message behind it
+// a general-purpose oci7 statement-level error, for any call whose failure
+// the caller can name with an ora number and message.  a real server answers
+// such a call with the summary object every other oci7 call is answered with
 // - not sendErrorPacket()'s template, which is that same object frozen with
 // a login failure's field values in it.  the cursor id, command type and
 // call number all go out live here, which is the whole difference between
-// the two: the ORA-01007 in
-// 9808-redhat9x86-native-realtable-outofrange.oraproxy and its portable
-// counterpart match this byte for byte, and sendErrorPacket() would send
-// the login's 0, 0 and 3 for those three instead.
+// the two: for the describe-out-of-range case that originally drove this
+// shape, the ORA-01007 in 9808-redhat9x86-native-realtable-outofrange.oraproxy
+// and its portable counterpart match this byte for byte, and
+// sendErrorPacket() would send the login's 0, 0 and 3 for those three
+// instead.
 //
-// the success iteration count is the one field the two captures disagree
+// the success iteration count is the one field those two captures disagree
 // about - the native one sends 1 and the portable one 0 - so it goes out as
 // the 0 sendOsql7Response() already sends for a statement that hasn't been
 // executed on the client's behalf
-bool sqlrprotocol_oracle::sendVariableNotInSelectListError(
-						uint32_t cursorid) {
+bool sqlrprotocol_oracle::sendOci7StatementError(
+						uint32_t cursorid,
+						uint32_t oranum,
+						const char *message) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
 	writeBE(&reqpacket,dataflags);
 
-	debugStart("variable not in select list error");
+	debugStart("oci7 statement error");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugWrite("cursor id: %d",cursorid);
+	debugWrite("ora number: %d",oranum);
 	debugEnd();
 
 	if (nativeencoding) {
-		putOci7SummaryNative(cursorid,3,0,0,
-					ORA_VARIABLE_NOT_IN_SELECT_LIST);
+		putOci7SummaryNative(cursorid,3,0,0,oranum);
 	} else {
-		putOci7Summary(cursorid,3,0,0,
-					ORA_VARIABLE_NOT_IN_SELECT_LIST);
+		putOci7Summary(cursorid,3,0,0,oranum);
 	}
-	putLenString(ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE,
-			charstring::getLength(
-				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE));
+	putLenString(message,charstring::getLength(message));
 
-	// the error is the answer to the describe, and the session goes on
+	// the error is the answer to the call, and the session goes on
 	return sendPacket(true);
 }
 
@@ -9947,14 +9951,16 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// rather than somewhere new and wrong
 		if (!query2bindcount) {
 			debugWrite("no usable bind values");
-			return sendVariableNotInSelectListError(
-						wireCursorId(cursor));
+			return sendOci7StatementError(wireCursorId(cursor),
+					ORA_VARIABLE_NOT_IN_SELECT_LIST,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 		}
 
 		if (!installQuery2Binds(cursor)) {
 			debugWrite("installing binds failed");
-			return sendVariableNotInSelectListError(
-						wireCursorId(cursor));
+			return sendOci7StatementError(wireCursorId(cursor),
+					ORA_VARIABLE_NOT_IN_SELECT_LIST,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 		}
 	}
 
@@ -15018,7 +15024,9 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		}
 
 		if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
-			return sendVariableNotInSelectListError(cursorid);
+			return sendOci7StatementError(cursorid,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 		}
 
 		// the same landing rule the descriptor walk uses: read every
@@ -15026,14 +15034,18 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		if (rp!=end) {
 			debugWrite("execute left %d bytes unread",
 							(int32_t)(end-rp));
-			return sendVariableNotInSelectListError(cursorid);
+			return sendOci7StatementError(cursorid,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 		}
 
 		clearParams(cursor);
 
 		if (!installQuery2Binds(cursor)) {
 			debugWrite("installing binds failed");
-			return sendVariableNotInSelectListError(cursorid);
+			return sendOci7StatementError(cursorid,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST,
+					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 		}
 	}
 

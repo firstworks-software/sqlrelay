@@ -2146,6 +2146,13 @@
 		gets id 2 and no test had ever opened a second one.  an exact
 		fetch's trailer led with the same field and had the same bug,
 		though a client doesn't reject a fetch over it
+	oracle protocol module: generalized the oci7 statement-level error
+		sender (formerly sendVariableNotInSelectListError(), hardcoded
+		to ORA-01007) into sendOci7StatementError(), which takes the
+		ORA number and message text as parameters, so upcoming tickets
+		can send other oci7 errors like ORA-01008 and ORA-03001
+		correctly; #9987 itself is a pure rename/generalization - every
+		call site still sends the exact same ORA-01007 it sent before
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
