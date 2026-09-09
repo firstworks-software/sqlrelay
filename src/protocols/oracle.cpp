@@ -15756,12 +15756,12 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		//
 		// the native trailer below is this same object written four
 		// bytes to a field: its 47-byte block is putOci7Summary()'s
-		// fields down to the call number, with the cursor id hardcoded
-		// to 1 and rows processed to 1, and callseq is the call number.
-		// that hardcoded 1 is why only this branch got the running
-		// count - the native one would need its literal rewritten as
-		// a putOci7SummaryNative() call to carry a real value, and no
-		// client that could check the rewrite exists (#9812)
+		// fields down to the call number, with rows processed
+		// hardcoded to 1, and callseq is the call number.  the cursor
+		// id field is written for real (see trailer1/trailer2 below);
+		// rows processed stays hardcoded, since a full
+		// putOci7SummaryNative() rewrite still has no client that
+		// could check it (#9812)
 		putOci7Summary(wireCursorId(cursor),3,rowcount,1);
 
 		if (getDebug()) {
@@ -15784,14 +15784,20 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// (#9637) for 1 through 5 columns: unlike the old
 		// unknown6/unknown8 lookup tables this replaces, none of it
 		// varies with column count, so there's no cap on colcount
-		// and nothing to index.
-		const byte_t	trailer[]={
+		// and nothing to index.  the 47-byte block is split in two
+		// here, trailer1 and trailer2, around the cursor id field
+		// (the same field putOci7SummaryNative() writes with
+		// writeLE(&reqpacket,cursorid)), so the real cursor id can
+		// go out between them instead of a literal
+		const byte_t	trailer1[]={
 			0x04, 0x01, 0x00, 0x00, 0x00, 0x01, 0x01, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+		const byte_t	trailer2[]={
+			0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+			0x00, 0x00, 0x00
 		};
 		const byte_t	trailerend[]={
 			0x00, 0x00, 0x01, 0x00, 0x00
@@ -15839,14 +15845,18 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			}
 		}
 
-		reqpacket.append(trailer,sizeof(trailer));
+		reqpacket.append(trailer1,sizeof(trailer1));
+		writeLE(&reqpacket,wireCursorId(cursor));
+		reqpacket.append(trailer2,sizeof(trailer2));
 		write(&reqpacket,callseq);
 		reqpacket.append(trailerend,sizeof(trailerend));
 
 		if (getDebug()) {
 			debugStart("fetch response footer");
 			debugWrite(exactfetch?"exact fetch":"not exact fetch");
-			debugHexDump(trailer,sizeof(trailer));
+			debugHexDump(trailer1,sizeof(trailer1));
+			debugWrite("cursor id: %d",wireCursorId(cursor));
+			debugHexDump(trailer2,sizeof(trailer2));
 			debugHexDump(&callseq,1);
 			debugHexDump(trailerend,sizeof(trailerend));
 			debugEnd();

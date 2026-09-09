@@ -2153,6 +2153,14 @@
 		can send other oci7 errors like ORA-01008 and ORA-03001
 		correctly; #9987 itself is a pure rename/generalization - every
 		call site still sends the exact same ORA-01007 it sent before
+	fixed the oracle protocol module's native-encoding fetch trailer
+		sending a hardcoded cursor id of 1 instead of the real cursor's
+		id, in sendFetchResponse()'s copy of putOci7SummaryNative()'s
+		object; with only one cursor open the hardcoded value happened
+		to be right, but a second cursor got the wrong one.  the
+		module only ever negotiates the portable encoding today, so
+		this path isn't reachable yet, but the value is written for
+		real now for whenever it is (#9978)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
