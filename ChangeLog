@@ -2146,6 +2146,10 @@
 		gets id 2 and no test had ever opened a second one.  an exact
 		fetch's trailer led with the same field and had the same bug,
 		though a client doesn't reject a fetch over it
+	fixed sqlrservercontroller::newCursor()'s no-argument overload
+		handing out an id that could later be reused by a pooled
+		cursor as the pool grew; it now cycles through ids that a
+		pooled cursor can never be assigned
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
