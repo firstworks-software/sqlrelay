@@ -2174,6 +2174,17 @@
 		hardcoded 0 for the parse error offset field; it now sends
 		the character offset of the FROM clause's object name in the
 		query text, which is what a real server sends (#9988)
+	fixed the oracle protocol module's reInit() resetting only lob pins
+		and define lists between sessions; the rest of its per-cursor
+		state (cached column types, sent-row counts, pending fetch
+		rows, saved binds, and ref-cursor counts) carried over from
+		whatever the previous session's cursor left in it, since only
+		close() reset the rest, and only for a cursor the client
+		actually closed - a client that disconnected with cursors
+		still open, or died mid-fetch, left it there for the next
+		session that reused the same sqlr-connection process;
+		reInit(), close() and occa() now share one per-cursor reset
+		routine (#9980)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

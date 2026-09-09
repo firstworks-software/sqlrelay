@@ -1291,6 +1291,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	init();
 		void	free();
 		void	reInit();
+		void	resetCursorState(uint16_t curid);
 
 		void	resetSendPacketBuffer(byte_t packettype);
 		bool	sendPacket();
@@ -2540,11 +2541,11 @@ void sqlrprotocol_oracle::reInit() {
 	init();
 
 	// the per-cursor arrays outlive a session, so anything a previous
-	// one pinned has to go - and so does any define list it left behind,
-	// which a client that died mid-fetch is exactly what does that
+	// one left behind has to go - a client that disconnected with
+	// cursors still open, or died mid-fetch, is exactly what leaves
+	// this behind for whichever session lands on this cursor next
 	for (uint16_t i=0; i<maxcursorcount; i++) {
-		clearLobPin(i);
-		clearDefines(i);
+		resetCursorState(i);
 	}
 }
 
@@ -16784,22 +16785,39 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	clearParams(cursor);
 	cont->abort(cursor);
 	cont->release(cursor);
-	cursorbindcounts[closingid]=0;
-	
+	cont->setInputOutputBindCount(cursor,0);
+	resetCursorState(closingid);
+
+	return sendCloseResponse(cursor);
+}
+
+// the array-only per-cursor resets, with no live cursor or controller
+// call among them.  shared by close(), occa(), and reInit() - reInit()
+// depends on that: the previous session's cursors are already gone by
+// the time it runs (endSession() aborted and released every one of
+// them), so calling anything here that touches a live cursor would be
+// working on one that no longer exists
+void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
+	cursorbindcounts[curid]=0;
+
 	// and the oci7 bind shape a query2 left on it.  cursor
 	// ids come back out of the pool for whatever opens next,
 	// and a stale count here would have a bare TTI_EXECUTE on
 	// the reused cursor read trailing bytes as bind values for
 	// a statement that never had any
-	query2cursorbindcounts[closingid]=0;
-	cont->setInputOutputBindCount(cursor,0);
-	columntypescached[closingid]=false;
-	rowssent[closingid]=0;
-	clearDefines(closingid);
-	pendingrow[closingid].clear();
-	clearLobPin(closingid);
+	query2cursorbindcounts[curid]=0;
 
-	return sendCloseResponse(cursor);
+	columntypescached[curid]=false;
+	rowssent[curid]=0;
+
+	// close()/occa() already zero this by way of clearParams() ->
+	// releaseRefCursors() before they ever get here - this line only
+	// matters for reInit(), which has no live cursor to release
+	refcursorcounts[curid]=0;
+
+	clearDefines(curid);
+	pendingrow[curid].clear();
+	clearLobPin(curid);
 }
 
 // forgets the cursor's binds.  the values themselves come out of the
@@ -17230,20 +17248,8 @@ bool sqlrprotocol_oracle::occa(const byte_t *rp, const byte_t **rpout) {
 		clearParams(cursor);
 		cont->abort(cursor);
 		cont->release(cursor);
-		cursorbindcounts[closingid]=0;
-		
-		// and the oci7 bind shape a query2 left on it.  cursor
-		// ids come back out of the pool for whatever opens next,
-		// and a stale count here would have a bare TTI_EXECUTE on
-		// the reused cursor read trailing bytes as bind values for
-		// a statement that never had any
-		query2cursorbindcounts[closingid]=0;
 		cont->setInputOutputBindCount(cursor,0);
-		columntypescached[closingid]=false;
-		rowssent[closingid]=0;
-		clearDefines(closingid);
-		pendingrow[closingid].clear();
-		clearLobPin(closingid);
+		resetCursorState(closingid);
 	}
 
 	debugEnd();
