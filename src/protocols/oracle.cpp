@@ -1476,6 +1476,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putAuthCount(uint32_t value, byte_t nativesize);
 		void	putLenString(const char *string, uint32_t size);
 		void	putLenBytes(const char *bytes, uint32_t size);
+		void	putLenBytesChunks(const char *bytes, uint32_t size);
 		bool	getLenBytes(const byte_t *rp,
 						const byte_t *end,
 						const byte_t **bytes,
@@ -1617,6 +1618,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	columnIsDefined(sqlrservercursor *cursor,
 							uint32_t column);
 		uint16_t	definedColumnType(sqlrservercursor *cursor,
+							uint32_t column);
+		uint32_t	definedColumnBufferSize(
+							sqlrservercursor *cursor,
 							uint32_t column);
 		uint32_t	definedColumnCount(sqlrservercursor *cursor,
 							uint32_t colcount);
@@ -1853,7 +1857,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	putField(const char *field,
 						uint64_t fieldsize,
 						uint16_t columntype,
-						uint16_t requestedtype);
+						uint16_t requestedtype,
+						uint32_t definebuffersize);
 		void	putLobField(sqlrservercursor *cursor, uint32_t col);
 		void	putOci7Error(uint32_t cursorid,
 					byte_t commandtype,
@@ -2121,6 +2126,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// and which wire type each of those odefin's asked the value
 		// to be converted to, indexed alongside columndefined[]
 		uint16_t	**definetypes;
+
+		// and how wide a buffer each of them gave for the value,
+		// indexed the same way.  a char column defined SQLT_AFC is
+		// blank padded out to it - see putField()
+		uint32_t	**definebuffersizes;
 
 		// a row already fetched and formatted, but not sent because
 		// it didn't fit in the current packet.  the connection has
@@ -2401,6 +2411,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	definecounts=new uint32_t[maxcursorcount];
 	columndefined=new bool *[maxcursorcount];
 	definetypes=new uint16_t *[maxcursorcount];
+	definebuffersizes=new uint32_t *[maxcursorcount];
 	pendingrow=new bytebuffer[maxcursorcount];
 	lobpinned=new bool[maxcursorcount];
 	lobpincolcount=new uint32_t[maxcursorcount];
@@ -2427,14 +2438,18 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 			columntypes[i]=new uint16_t[cont->getMaxColumnCount()];
 			columndefined[i]=new bool[cont->getMaxColumnCount()];
 			definetypes[i]=new uint16_t[cont->getMaxColumnCount()];
+			definebuffersizes[i]=
+				new uint32_t[cont->getMaxColumnCount()];
 			for (uint32_t j=0; j<cont->getMaxColumnCount(); j++) {
 				columndefined[i][j]=false;
 				definetypes[i][j]=0;
+				definebuffersizes[i][j]=0;
 			}
 		} else {
 			columntypes[i]=NULL;
 			columndefined[i]=NULL;
 			definetypes[i]=NULL;
+			definebuffersizes[i]=NULL;
 		}
 	}
 
@@ -2459,6 +2474,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 		delete[] columntypes[i];
 		delete[] columndefined[i];
 		delete[] definetypes[i];
+		delete[] definebuffersizes[i];
 		delete[] cursorbinds[i];
 		delete[] refcursorids[i];
 	}
@@ -2473,6 +2489,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] columntypes;
 	delete[] columndefined;
 	delete[] definetypes;
+	delete[] definebuffersizes;
 	delete[] rowssent;
 	delete[] definecounts;
 	delete[] pendingrow;
@@ -6646,6 +6663,14 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 	// (a row value needs the long form and an authentication field never
 	// did, which is why putLenString() doesn't have it)
 	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+	putLenBytesChunks(bytes,size);
+	write(&reqpacket,(byte_t)0);
+}
+
+// the run of chunks in the middle of a long form clr, without the marker
+// ahead of it or the empty chunk that closes it - so that a value made of
+// more than one run of bytes can be written as one clr
+void sqlrprotocol_oracle::putLenBytesChunks(const char *bytes, uint32_t size) {
 	uint32_t	maxchunk=(bigchunkclr)?
 				CLR_MAX_BIG_CHUNK_SIZE:CLR_MAX_CHUNK_SIZE;
 	uint32_t	offset=0;
@@ -6662,7 +6687,6 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 		write(&reqpacket,bytes+offset,(size_t)chunk);
 		offset+=chunk;
 	}
-	write(&reqpacket,(byte_t)0);
 }
 
 // reads a clr - a length byte, then that many bytes.  0xfd introduces a null
@@ -10490,10 +10514,11 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		return;
 	}
 
-	// columndefined[] and definetypes[] are sized by maxcolumncount where
-	// the config gives one.  where it doesn't - maxcolumncount="-1", and
-	// the sqlite and router backends, which set 0 - there's no array to
-	// write into, so size them to the count instead.  this is the same
+	// columndefined[], definetypes[] and definebuffersizes[] are sized by
+	// maxcolumncount where the config gives one.  where it doesn't -
+	// maxcolumncount="-1", and the sqlite and router backends, which set
+	// 0 - there's no array to write into, so size them to the count
+	// instead.  this is the same
 	// lazy sizing cacheColumnDefinitions() does for columntypes[], and
 	// without it the whole of this call would quietly do nothing on those
 	// backends
@@ -10511,11 +10536,14 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 			columndefined[curid]=new bool[definitions];
 			delete[] definetypes[curid];
 			definetypes[curid]=new uint16_t[definitions];
+			delete[] definebuffersizes[curid];
+			definebuffersizes[curid]=new uint32_t[definitions];
 		}
 	}
 
 	bool		*cd=columndefined[curid];
 	uint16_t	*dt=definetypes[curid];
+	uint32_t	*bs=definebuffersizes[curid];
 
 	for (uint32_t i=0; i<definitions; i++) {
 
@@ -10524,11 +10552,12 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		uint32_t	buffersize=0;
 
 		// the buffer size comes first of the counts, then four zeros,
-		// the character set, and two more zeros.  only the size gets
-		// read, and only to corroborate the skip flag below.  the type
-		// the define asks for is kept, per position, for a fetch to
-		// convert its values to; the width it asks for still isn't
-		// honored, so nothing truncates a value to it yet
+		// the character set, and two more zeros.  the type the define
+		// asks for is kept, per position, for a fetch to convert its
+		// values to, and the size is kept alongside it: a char column
+		// defined SQLT_AFC is blank padded out to it (see putField()),
+		// and the skip flag below is corroborated against it.  nothing
+		// truncates a value longer than it, though
 		if (!getQuery2Descriptor(rp,end,&datatype,&flag,
 							&buffersize,&rp)) {
 			debugWrite("truncated define descriptor");
@@ -10549,12 +10578,14 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		// behavior, rather than dropping one it did
 		cd[i]=!((flag&OCI7_DEFINE_SKIPPED) && !buffersize);
 
-		// kept for every position, skipped ones included, so this
-		// stays indexed the same way columndefined[] is
+		// kept for every position, skipped ones included, so these
+		// stay indexed the same way columndefined[] is
 		dt[i]=(uint16_t)datatype;
+		bs[i]=buffersize;
 
-		debugWrite("column %d: %s (type %d)",
-				i,(cd[i])?"defined":"skipped",datatype);
+		debugWrite("column %d: %s (type %d, buffer size %d)",
+				i,(cd[i])?"defined":"skipped",
+				datatype,buffersize);
 	}
 
 	// the bind descriptors sit behind the defines, in the same shape.
@@ -11435,6 +11466,20 @@ uint16_t sqlrprotocol_oracle::definedColumnType(sqlrservercursor *cursor,
 		return 0;
 	}
 	return (column<definecounts[curid])?definetypes[curid][column]:0;
+}
+
+// and how wide a buffer it gave for the column's values.  0 means the same
+// thing it does above, and also that the define named the position but gave
+// it no width, which is what a skipped position carries
+uint32_t sqlrprotocol_oracle::definedColumnBufferSize(
+						sqlrservercursor *cursor,
+						uint32_t column) {
+	uint16_t	curid=cont->getId(cursor);
+	if (!definecounts[curid]) {
+		return 0;
+	}
+	return (column<definecounts[curid])?
+			definebuffersizes[curid][column]:0;
 }
 
 // and how many of them there are, which is what the row header carries.  a
@@ -15251,22 +15296,7 @@ void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size,
 	// chunk and the 0a for the next chunk's length, reads 11 bytes where
 	// there are 5, and answers with a marker packet
 	write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
-	uint32_t	maxchunk=(bigchunkclr)?
-				CLR_MAX_BIG_CHUNK_SIZE:CLR_MAX_CHUNK_SIZE;
-	uint32_t	offset=0;
-	while (offset<size) {
-		uint32_t	chunk=size-offset;
-		if (chunk>maxchunk) {
-			chunk=maxchunk;
-		}
-		if (bigchunkclr) {
-			writeLenPreInt(&reqpacket,chunk);
-		} else {
-			write(&reqpacket,(byte_t)chunk);
-		}
-		write(&reqpacket,bytes+offset,(size_t)chunk);
-		offset+=chunk;
-	}
+	putLenBytesChunks(bytes,size);
 	write(&reqpacket,(byte_t)0);
 	if (extrazeros) {
 		write(&reqpacket,(byte_t)0);
@@ -17089,8 +17119,11 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		uint16_t	wiretype=getWireColumnType(ct[i]);
 
 		// and on the type the client's odefin() asked the value to
-		// be converted to, where the two don't send the same bytes
+		// be converted to, where the two don't send the same bytes,
+		// and on the width it gave for it
 		uint16_t	requestedtype=definedColumnType(cursor,i);
+		uint32_t	definebuffersize=
+					definedColumnBufferSize(cursor,i);
 
 		debugColumnType(wiretype);
 
@@ -17111,8 +17144,8 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			putLobField(cursor,i);
 		} else if (!null && field) {
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
-			if (!putField(field,fieldsize,
-						wiretype,requestedtype)) {
+			if (!putField(field,fieldsize,wiretype,
+					requestedtype,definebuffersize)) {
 				// an unimplemented type: putField() wrote
 				// nothing for this column, so the row is
 				// already out of sync.  bail out now, rather
@@ -17153,7 +17186,8 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 bool sqlrprotocol_oracle::putField(const char *field,
 					uint64_t fieldsize,
 					uint16_t columntype,
-					uint16_t requestedtype) {
+					uint16_t requestedtype,
+					uint32_t definebuffersize) {
 
 	switch (columntype) {
 		case ORACLE_TYPE_CHAR:
@@ -17179,13 +17213,14 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			// too (test/protocol/oracle/oci7.cpp:811).
 			//
 			// the define is read now - getQuery2Descriptors()
-			// keeps the type each position asked for, 29 bytes
-			// per descriptor after a 69 byte header in the
-			// native encoding - but only the rowid pair below
-			// acts on it, that being the one pair a capture
-			// pins down.  every other requested type still gets
-			// the column's natural form, and the buffer width
-			// still isn't honored, so nothing truncates to it
+			// keeps the type and the buffer width each position
+			// asked for, 29 bytes per descriptor after a 69
+			// byte header in the native encoding - but only the
+			// blank padding just below and the rowid pair
+			// further down act on it, those being the ones a
+			// capture pins down.  every other requested type
+			// still gets the column's natural form, and nothing
+			// truncates a value longer than the buffer width
 			//
 			// the character types share this now rather than
 			// writing a raw length byte and clamping at 255.  a
@@ -17194,7 +17229,47 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			// the portable and native samples goes out as "40"
 			// and 64 bytes either way - and past that the clamp
 			// silently truncated where the long form does not
-			putLenBytes(field,(uint32_t)fieldsize);
+			//
+			// a column the client defined SQLT_AFC (dty 96) is
+			// the one that doesn't go out as a plain clr.  a
+			// real 10.2 server blank pads it out to the client's
+			// buffer width and sends that in the long form, in
+			// two chunks: the value as the backend padded it to
+			// the column's own declared width, then the rest of
+			// the padding.  column 5 of packet [0451] of
+			// test/protocol/oracle/samples/9746-dev-oci23api7-
+			// native-datatypes-realserver.oraproxy is a char(20)
+			// read into a 64 byte buffer and answers "fe 14",
+			// "char value" and ten spaces, "2c", 44 more spaces,
+			// and the zero that closes the run.  that column is
+			// the only dty 96 define anywhere in the capture
+			// corpus - 61 samples and 139 real-server traces -
+			// so the split is matched, not corroborated: nothing
+			// on file says where the chunk boundary falls at a
+			// second width and buffer size combination, and it
+			// may not fall at the declared width at all.  column
+			// 5 of [0203]/[0206], earlier in the same session,
+			// reads the same column defined SQLT_STR instead and
+			// gets a plain, unpadded clr - which is what says
+			// the define's type, and not the column's, decides
+			// this
+			if (requestedtype==ORACLE_TYPE_CHAR && fieldsize &&
+					definebuffersize>fieldsize) {
+				write(&reqpacket,
+					(byte_t)CLR_LONG_FORM_MARKER);
+				putLenBytesChunks(field,(uint32_t)fieldsize);
+				uint32_t	padsize=definebuffersize-
+							(uint32_t)fieldsize;
+				char		*pad=new char[padsize];
+				bytestring::set(pad,' ',padsize);
+				putLenBytesChunks(pad,padsize);
+				delete[] pad;
+				write(&reqpacket,(byte_t)0);
+				debugWrite("padded to buffer size: %d",
+							definebuffersize);
+			} else {
+				putLenBytes(field,(uint32_t)fieldsize);
+			}
 			debugWrite("field size: %lld",(long long)fieldsize);
 			debugWrite("field: \"%.*s\"",(int)fieldsize,field);
 			return true;

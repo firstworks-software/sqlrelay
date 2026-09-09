@@ -1678,9 +1678,9 @@ int main(int argc, char **argv) {
 	bytestring::zero(typeintervalds,sizeof(typeintervalds));
 
 	// ftype 1 (SQLT_CHR) rather than 5 (SQLT_STR) for the varchar and 96
-	// (SQLT_AFC) for the char, so the returned length is the value's own
-	// length with no terminator counted - which is what oci8.cpp's length
-	// assertions below are written against
+	// (SQLT_AFC) for the char, so neither returned length counts a
+	// terminator - which is what oci8.cpp's length assertions below are
+	// written against
 	assertEquals(check(&typecda2,
 			odefin(&typecda2,1,(ub1 *)typevarchar,
 				(sword)sizeof(typevarchar),SQLT_CHR,-1,
@@ -1773,9 +1773,22 @@ int main(int argc, char **argv) {
 	assertEquals((int)typeraw[2],3);
 	assertEquals((int)typeraw[3],4);
 	assertEquals((int)typeraw[4],5);
-	// char comes back blank padded to the declared width
-	assertEquals((int)typelen[4],20);
-	assertEquals((const char *)typechar,"char value          ");
+	// a char defined SQLT_AFC comes back blank padded out to the define's
+	// whole buffer, not just to the column's declared width.  packet
+	// [0451] of samples/9746-dev-oci23api7-native-datatypes-realserver.
+	// oraproxy is a real 10.2 server answering this very define - the
+	// char(20) above, read into a 64 byte buffer - with "char value",
+	// ten spaces, and 44 more: 64 bytes, the buffer's full width.
+	// SQLT_AFC doesn't null terminate either, so the value leaves
+	// typechar with no room for one and has to be copied out to be
+	// compared as a string
+	assertEquals((int)typelen[4],64);
+	char	typecharstr[sizeof(typechar)+1];
+	bytestring::copy(typecharstr,typechar,sizeof(typechar));
+	typecharstr[sizeof(typechar)]='\0';
+	assertEquals((const char *)typecharstr,
+			"char value                              "
+			"                        ");
 	stdoutput.printf("\n\n");
 
 

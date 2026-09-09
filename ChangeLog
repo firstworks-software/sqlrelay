@@ -2287,6 +2287,14 @@
 		one of these and the client's first fetch could still find
 		the guard flag unset and re-run the statement, rewinding the
 		result set (#10001)
+	fixed the oracle protocol module's legacy (oci7) fetch path
+		under-framing a char column the client defined SQLT_AFC:
+		a real server blank-pads such a value out to the
+		client's whole define buffer and sends it in the clr
+		long form, not the short form the module always used to
+		write regardless of the define. a plain varchar define
+		of the same column is unaffected and still gets the
+		short form up to 252 bytes, same as before (#10014)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
