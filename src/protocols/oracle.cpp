@@ -1673,9 +1673,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint16_t index,
 							const char **name,
 							uint16_t *namesize);
-		bool	isIdentifierChar(char c);
-		uint32_t	fromObjectOffset(const char *query,
-							uint32_t querysize);
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
@@ -7984,59 +7981,6 @@ void sqlrprotocol_oracle::putO3LogonSummary() {
 	putOci7Summary(0,0,0,0);
 }
 
-// true if "c" can appear in an oracle identifier - see fromObjectOffset()
-bool sqlrprotocol_oracle::isIdentifierChar(char c) {
-	return character::isAlphanumeric(c) || c=='_' || c=='$' || c=='#';
-}
-
-// the character offset of the first character of the FROM-clause's object
-// name in "query" - see putOci7Summary()'s parse error offset field, below.
-// 0 if "query" has no FROM keyword outside a quoted literal.  walks the
-// same IN_QUERY/IN_QUOTES states getBindVariableName() does, so a "from"
-// inside a string literal isn't mistaken for the keyword
-uint32_t sqlrprotocol_oracle::fromObjectOffset(const char *query,
-						uint32_t querysize) {
-
-	if (!query || !querysize) {
-		return 0;
-	}
-
-	queryparsestate_t	parsestate=IN_QUERY;
-
-	for (uint32_t i=0; i<querysize; i++) {
-
-		if (parsestate==IN_QUOTES) {
-			if (query[i]=='\'') {
-				parsestate=IN_QUERY;
-			}
-			continue;
-		}
-
-		if (query[i]=='\'') {
-			parsestate=IN_QUOTES;
-			continue;
-		}
-
-		// "from", bounded by non-identifier characters on both
-		// sides, so this doesn't match inside "fromage" or
-		// "customerfrom"
-		if (i+4<=querysize &&
-			!charstring::compareIgnoringCase(query+i,"from",4) &&
-			(i==0 || !isIdentifierChar(query[i-1])) &&
-			(i+4==querysize || !isIdentifierChar(query[i+4]))) {
-
-			uint32_t	objstart=i+4;
-			while (objstart<querysize &&
-				character::isWhitespace(query[objstart])) {
-				objstart++;
-			}
-			return objstart;
-		}
-	}
-
-	return 0;
-}
-
 // the summary object a real 10.2 server answers an oci7 client with.  the same
 // object serves the whole session: the o3logon challenge's tail, the login's
 // answer, and the answer to the osql7 parse behind it.  its fields don't map
@@ -8057,9 +8001,10 @@ uint32_t sqlrprotocol_oracle::fromObjectOffset(const char *query,
 // five fields carry a value: the end of call status of 1 at the front, the
 // cursor id, the command type, the sequence number of the call being answered,
 // and the success iteration count.  the parse error offset is a sixth that a
-// real server sometimes leaves set - see below.  the error number, the row
-// fields and everything else a summary can carry are zero in every capture,
-// and what several of them are for is unexplained
+// real server sometimes leaves set, but that this module always sends 0 for -
+// see below.  the error number, the row fields and everything else a summary
+// can carry are zero in every capture, and what several of them are for is
+// unexplained
 // see "Oracle Wire Protocol - Authentication - Password"
 void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
@@ -8092,23 +8037,30 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	writeLenPreInt(&reqpacket,cursorid);
 
 	// the parse error offset, which an oci7 client keeps in cda->peo and
-	// only reads back once a parse has failed.  the comment that used to
-	// sit here called this undefined and no function of the statement -
-	// wrong on both counts: it is the character offset of the FROM
-	// clause's object name in the query text.  two real 10.2 server
-	// captures taken for #9699 answer "select level as num from dual
-	// connect by level<=5 order by 1" with 25 and "select 'row'||level as
-	// txt from dual connect by level<=5 order by 1" with 32 - both
-	// exactly where "dual" starts - and a real server's answer to
-	// "select 1 from dual", 14, fits the same rule.  a call with no
-	// cursor (the login path) or no query prepared on it yet has nothing
-	// to offer, so it gets 0
-	sqlrservercursor	*fromobjcursor=wireIdToCursor(cursorid);
-	uint32_t	parseerroroffset=(fromobjcursor)?
-				fromObjectOffset(
-					cont->getQueryBuffer(fromobjcursor),
-					cont->getQuerySize(fromobjcursor)):0;
-	writeLenPreInt(&reqpacket,parseerroroffset);
+	// only reads back once a parse has failed.  a real 10.2 server does
+	// leave it set sometimes, at the character offset where the FROM
+	// clause's object name starts: packet [0022] of test/protocol/oracle/
+	// samples/9808-solaris8sparc-portable-concurrent.oraproxy answers
+	// "select level as num from dual connect by level<=5 order by 1"
+	// with 25, and packet [0020] of 9808-solaris8sparc-portable-notnull-
+	// parse.oraproxy answers "select idcol, valcol from
+	// protocoltest9808notnull" with 26.  but nothing this module can see
+	// decides when it is set.  not the query text: packet [0020] of
+	// 9808-solaris8sparc-portable-realtable-parse.oraproxy answers
+	// "select testnumber, testchar, testdate from protocoltesttypes",
+	// whose object name starts at 43, with 0.  not the command type or
+	// the kind of response either - all three of those are the same kind
+	// of response, a direct parse acknowledgement - and the concurrent
+	// capture above has that same server, same session, answering a
+	// second parse acknowledgement to a different FROM-bearing query
+	// (packet [0024], "select 1 as num, 'two' as txt, sysdate as dt from
+	// dual") with 0, right after the first one answered 25.  so this
+	// sends 0 for every caller.  0 is the only value no capture
+	// contradicts, and it is what a real server sends in every error and
+	// describe-failure summary captured so far, including the ORA-01007
+	// out-of-range describe this module has to answer, which is 0 in both
+	// the portable and the native realtable-outofrange captures
+	writeLenPreInt(&reqpacket,0);
 
 	// 3 answering the parse of a select, 0 answering the login.  callers
 	// pass putSummary()'s own constant rather than classifying the
@@ -8156,7 +8108,7 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	debugWrite("command type: %d",commandtype);
 	debugWrite("call number: %d",callnumber);
 	debugWrite("success iterations: %d",successiterations);
-	debugWrite("parse error offset: %d",parseerroroffset);
+	debugWrite("parse error offset: %d",0);
 	debugEnd();
 }
 
@@ -8561,9 +8513,8 @@ uint32_t sqlrprotocol_oracle::wireCursorId(sqlrservercursor *cursor) {
 }
 
 // the lookup cursorFromWireId() does, without its lastwirecursorid side
-// effect - for callers like putOci7Summary() that need to peek at a cursor
-// the wire named without overwriting what sendMarkerCancelError() later
-// reads there
+// effect - for callers that need to peek at a cursor the wire named without
+// overwriting what sendMarkerCancelError() later reads there
 sqlrservercursor *sqlrprotocol_oracle::wireIdToCursor(uint32_t wirecursorid) {
 
 	// an id below the shift never named a cursor this module handed out,

@@ -2170,10 +2170,6 @@
 		(solaris8sparc); it printed a false "staged" line for
 		every module while copying none of them, so a -buildtree
 		test run there was testing an empty stagedmodules/ (#9972)
-	fixed the oracle protocol module's oci7 parse response sending a
-		hardcoded 0 for the parse error offset field; it now sends
-		the character offset of the FROM clause's object name in the
-		query text, which is what a real server sends (#9988)
 	fixed sqlr-scaler waiting forever for a new connection to start up on
 		platforms without timed semaphore operations, which left it
 		unable to ever spawn another connection
