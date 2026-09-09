@@ -30,15 +30,20 @@
 // all, so with one row per fetch the divide-by-zero necessarily lands on the
 // second pass of sendFetchResponse()'s do-while loop.
 
-// sendQueryResponse()'s and sendExecuteResponse()'s bodies are both fixed
-// size - no message, no rows, nothing variable-length - and neither is the
-// size a legacy error body comes out at, which is the summary object plus
-// the backend's message.  so checking the exact size (rather than the ttc
-// code, which sendQueryResponse()/sendExecuteResponse() and the error path
-// all set to the same 0x04) is what actually tells a genuine parse or
-// execute success apart from an error answering in its place
-static const size_t	ORA_QUERY_RESPONSE_SIZE=33;
-static const size_t	ORA_EXECUTE_RESPONSE_SIZE=34;
+// sendQueryResponse() and sendExecuteResponse() (src/protocols/oracle.cpp)
+// each answer with nothing but a two-byte data flags header and a
+// putOci7Summary() object - no message, no rows, nothing else - and a
+// genuine error answers with that same object, behind the same leading
+// TTC_ERROR (0x04) byte, plus a message.  so the ttc code can't tell a
+// success from an error here, and neither can a fixed total size: the
+// summary object's own fields (cursor id, rows processed, parse error
+// offset) are themselves length-prefixed and vary in width from one
+// answer to the next.  what does tell them apart is walking the object
+// field by field, the way readLegacyError() below walks the matching
+// fields in the error object, and checking nothing is left over once the
+// walk ends - a genuine success is a summary object and nothing else,
+// where a genuine error is a summary object plus a message.
+// readLegacySummary() below does that walk for both call sites
 
 // the marker sendFetchResponse() writes in front of every row
 static const unsigned char	ORA_ROW_MARKER=0x07;
@@ -288,6 +293,89 @@ static bool readLegacyError(oracleprotocolclient *client,
 	return true;
 }
 
+// walk sendQueryResponse()'s and sendExecuteResponse()'s answer - the data
+// flags, then the ttc code and the same putOci7Summary() fields
+// readLegacyError() above walks for the error object, but nothing after
+// them.  see the note on this function's call sites in main() below: a
+// genuine parse or execute success is this object and nothing else; a
+// genuine error is this object plus a message, which is what "leftover"
+// catches
+static bool readLegacySummary(oracleprotocolclient *client,
+				uint32_t *cursorid,
+				unsigned char *commandtype,
+				uint32_t *rowsprocessed,
+				uint32_t *successiterations,
+				bool *leftover) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	uint32_t	skipint=0;
+	unsigned char	skipbyte=0;
+	unsigned char	skipbytes[5];
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) ||
+		ttccode!=ORA_TTC_ERROR ||
+		!client->readLenPreInt(&skipint) ||	// end of call status
+		!client->readLenPreInt(rowsprocessed) ||
+		!client->readLenPreInt(&skipint) ||	// error number
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(cursorid) ||
+		!client->readLenPreInt(&skipint) ||	// parse error offset
+		!client->readByte(commandtype) ||
+		!client->readBytes(skipbytes,5) ||
+		// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readByte(&skipbyte) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readByte(&skipbyte) ||
+		!client->readByte(&skipbyte) ||		// call number
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(successiterations) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint)) {
+		return false;
+	}
+
+	unsigned char	extra=0;
+	*leftover=client->readByte(&extra);
+	return true;
+}
+
+// a parse or execute response decodes as a summary answering the given
+// cursor, with the given rows-processed and success-iteration counts
+// (both known ahead of time here - every query in this file is a select,
+// so a parse always sends 0/0 and an execute always sends 0/1, per
+// sendQueryResponse()/sendExecuteResponse() in src/protocols/oracle.cpp),
+// a command type of 3 (parse or execute of a select), and nothing left
+// over
+static bool checkLegacySummaryResponse(oracleprotocolclient *client,
+					uint32_t expectedcursorid,
+					uint32_t expectedrowsprocessed,
+					uint32_t expectedsuccessiterations) {
+
+	uint32_t	curid=0;
+	unsigned char	commandtype=0;
+	uint32_t	rowsprocessed=0;
+	uint32_t	successiterations=0;
+	bool		leftover=false;
+	return readLegacySummary(client,&curid,&commandtype,
+					&rowsprocessed,&successiterations,
+					&leftover) &&
+			curid==expectedcursorid &&
+			commandtype==3 &&
+			rowsprocessed==expectedrowsprocessed &&
+			successiterations==expectedsuccessiterations &&
+			!leftover;
+}
+
 int main(int argc, char **argv) {
 
 	stdoutput.printf("\n====== #9585 legacy fetch error path ======\n\n");
@@ -344,14 +432,14 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%s\n",client.getError());
 		return status;
 	}
-	report("parse",client.getResponseSize()==ORA_QUERY_RESPONSE_SIZE);
+	report("parse",checkLegacySummaryResponse(&client,cursorid,0,0));
 
 	if (!client.legacyExecute(cursorid,1,0)) {
 		report("execute",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
 	}
-	report("execute",client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
+	report("execute",checkLegacySummaryResponse(&client,cursorid,0,1));
 
 	// no options at all: no column definitions, no iov, and the
 	// non-exact-fetch trailer.  #9609 left the exact-fetch trailer and
@@ -405,7 +493,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("parse failing query",
-			client.getResponseSize()==ORA_QUERY_RESPONSE_SIZE);
+			checkLegacySummaryResponse(&client,badcursorid,0,0));
 
 	// the execute has to succeed - legacy execute() never fetches a row,
 	// so nothing has divided by zero yet.  an error here would mean the
@@ -416,7 +504,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute failing query",
-			client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
+			checkLegacySummaryResponse(&client,badcursorid,0,1));
 
 	if (!client.legacyFetch(badcursorid,0)) {
 		report("fetch failing query",false);
@@ -516,10 +604,10 @@ int main(int argc, char **argv) {
 	// dropped and recreated rather than reset, so the first nextval the
 	// arm below asks for is the start value whatever a previous run left
 	// behind.  a legacy execute's response carries no ttc code of its
-	// own to check - see the note on ORA_QUERY_RESPONSE_SIZE and
-	// ORA_EXECUTE_RESPONSE_SIZE above - so only the wire call itself is
-	// checked here; a create that silently failed still shows up below,
-	// once the sequence it was supposed to create can't be parsed
+	// own to check - see readLegacySummary() above - so only the wire
+	// call itself is checked here; a create that silently failed still
+	// shows up below, once the sequence it was supposed to create can't
+	// be parsed
 	if (!client.legacyQuery(seqcursorid,createsequence)) {
 		report("create sequence",false);
 		stdoutput.printf("%s\n",client.getError());
@@ -545,7 +633,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute sequence query",
-			client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
+			checkLegacySummaryResponse(&client,seqcursorid,0,1));
 
 	if (!client.describe(seqcursorid,1)) {
 		report("describe sequence query",false);
@@ -604,7 +692,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute sequence query (control)",
-			client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
+			checkLegacySummaryResponse(&client,seqcursorid,0,1));
 
 	if (!client.legacyFetch(seqcursorid,0)) {
 		report("fetch sequence query (control)",false);
