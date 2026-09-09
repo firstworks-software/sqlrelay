@@ -10058,6 +10058,15 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 			debugWrite("execute query failed");
 			return sendQueryError(cursor);
 		}
+
+		// this is the only legacy execute path that never cached
+		// column definitions afterward - sendQuery3Response() already
+		// does this for every modern-path execute, but without it here
+		// a TTI_DESCRIBE landing between this execute and the client's
+		// first fetch found both of describe()'s guard flags still
+		// false and re-ran the statement, rewinding the result set
+		// (#9973)
+		cacheColumnDefinitions(cursor,cont->colCount(cursor));
 	}
 
 	// OPTION_COMMIT (bit 8) is not read here.  #9656 proved bits 8 and up

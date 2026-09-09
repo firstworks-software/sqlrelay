@@ -31,6 +31,11 @@
 // are there because the answer has to be the same whichever column an odescr
 // names.
 //
+// It also covers ticket #9973: the same describe one call earlier, between the
+// TTI_QUERY2 that executes and the first TTI_FETCH, where the client has
+// fetched nothing yet.  Two more arms cover that, and they run against a
+// sequence rather than the table - see the predescribe arms below.
+//
 // It runs three arms against the same table and compares them:
 //
 //	- parse: a cursor that is parsed and nothing else, described once.
@@ -108,6 +113,22 @@ static const char	*insertrow3=
 	"insert into protocoltest9810midfetch values (3,NULL,NULL,NULL)";
 static const char	*selectquery=
 	"select * from protocoltest9810midfetch order by testnumber";
+
+// a sequence of this test's own, for the predescribe arm.  a describe that
+// re-runs the statement rewinds the result set, and on the table above that
+// is invisible - the fetch behind it answers row 1 whether the statement ran
+// once or twice.  a nextval answers a different value every time it runs, so
+// the arm's own fetch says how many executes it took to get there.  the start
+// value is far enough from anything else on the wire that a response carrying
+// it can't be carrying it by accident
+static const char	*createsequence=
+	"create sequence protocolseq9973 start with 7654321 increment by 1";
+static const char	*dropsequence=
+	"drop sequence protocolseq9973";
+static const char	*sequencequery=
+	"select protocolseq9973.nextval from dual";
+static const char	*firstnextval="7654321";
+static const char	*secondnextval="7654322";
 
 // what describe() sends as the sequence number, which an ORA-01007 echoes
 // back in the call number field
@@ -962,6 +983,101 @@ static bool runControlArm(oracleprotocolclient *client,
 }
 
 
+// ---- the predescribe arms ----
+
+// #9973 - the describe one call earlier than the midfetch arm's: after the
+// TTI_QUERY2 that executes and before the first TTI_FETCH.  an oci7 client
+// that calls odescr() there has fetched nothing yet, so a describe that
+// re-runs the statement leaves the client reading a result set that silently
+// started over.  the arm asks a sequence for its first value, which pins how
+// many times the statement ran: one execute answers the value the sequence
+// was created with, a second answers the one behind it
+static bool runPreDescribeArm(oracleprotocolclient *client,
+						uint32_t cursorid) {
+
+	stdoutput.printf("  -> TTI_OSQL7 seq 1 cursor %d\n",(int)cursorid);
+	if (!osql7(client,1,cursorid,sequencequery)) {
+		report("predescribe arm: parse the select",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+
+	stdoutput.printf("  -> TTI_QUERY2 seq 2 options 0x%08x cursor %d\n",
+					ORA_QUERY2_EXEC_OPTIONS,(int)cursorid);
+	if (!query2(client,2,ORA_QUERY2_EXEC_OPTIONS,cursorid)) {
+		report("predescribe arm: execute",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	dumpResponse("execute response",client);
+	report("predescribe arm: execute answers TTC_OK",
+			client->getResponseTtcCode()==ORA_TTC_OK);
+
+	stdoutput.printf("  -> TTI_DESCRIBE seq %d cursor %d position 1\n",
+					(int)DESCRIBE_SEQUENCE_NUMBER,
+					(int)cursorid);
+	if (!client->describe(cursorid,1)) {
+		report("predescribe arm: describe",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	dumpResponse("pre-fetch describe response",client);
+	report("predescribe arm: describe answers TTC_OK",
+			client->getResponseTtcCode()==ORA_TTC_OK);
+
+	stdoutput.printf("  -> TTI_FETCH seq 3 cursor %d rows 1\n",
+							(int)cursorid);
+	if (!legacyRowFetch(client,3,cursorid,1)) {
+		report("predescribe arm: fetch",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	dumpResponse("fetch response",client);
+	report("predescribe arm: the fetch carries the sequence's first value",
+					client->responseContains(firstnextval));
+	report("predescribe arm: the describe didn't re-execute the statement",
+					!client->responseContains(secondnextval));
+
+	return true;
+}
+
+// the same parse, execute and fetch with no describe between them.  it says
+// the sequence advances by exactly one value per execute, which is what makes
+// the arm above's answer a count of executes rather than just a value
+static bool runPreDescribeControlArm(oracleprotocolclient *client,
+							uint32_t cursorid) {
+
+	stdoutput.printf("  -> TTI_OSQL7 seq 1 cursor %d\n",(int)cursorid);
+	if (!osql7(client,1,cursorid,sequencequery)) {
+		report("predescribe control arm: parse the select",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+
+	stdoutput.printf("  -> TTI_QUERY2 seq 2 options 0x%08x cursor %d\n",
+					ORA_QUERY2_EXEC_OPTIONS,(int)cursorid);
+	if (!query2(client,2,ORA_QUERY2_EXEC_OPTIONS,cursorid)) {
+		report("predescribe control arm: execute",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+
+	stdoutput.printf("  -> TTI_FETCH seq 3 cursor %d rows 1\n",
+							(int)cursorid);
+	if (!legacyRowFetch(client,3,cursorid,1)) {
+		report("predescribe control arm: fetch",false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	dumpResponse("fetch response",client);
+	report("predescribe control arm: the fetch carries the value behind "
+			"the arm above's",
+			client->responseContains(secondnextval));
+
+	return true;
+}
+
+
 // ---- the define arms ----
 
 static const size_t	MAX_FETCH_COLUMNS=16;
@@ -1227,7 +1343,10 @@ static bool runDefineArm(oracleprotocolclient *client,
 }
 
 
-static bool setUpTable(oracleprotocolclient *client) {
+// the setup cursor comes back so the predescribe arms can re-parse on it
+// rather than open one of their own - the instance hands out five cursors at
+// a time, and the arms below it have the other four
+static bool setUpTable(oracleprotocolclient *client, uint32_t *cursoridout) {
 
 	uint32_t	cursorid=0;
 	if (!client->open(&cursorid)) {
@@ -1235,16 +1354,28 @@ static bool setUpTable(oracleprotocolclient *client) {
 		stdoutput.printf("%s\n",client->getError());
 		return false;
 	}
+	*cursoridout=cursorid;
 
-	// a drop of a table that isn't there answers with an error and leaves
-	// the session running, so its result is deliberately not checked
+	// a drop of a table or sequence that isn't there answers with an error
+	// and leaves the session running, so their results are deliberately
+	// not checked
 	execImmediate(client,cursorid,droptable,false);
+	execImmediate(client,cursorid,dropsequence,false);
 
 	if (!execImmediate(client,cursorid,createtable,true)) {
 		report("create table",false);
 		return false;
 	}
 	report("create table",true);
+
+	// dropped and recreated rather than reset, so the first nextval the
+	// predescribe arm asks for is the start value whatever a previous run
+	// left behind
+	if (!execImmediate(client,cursorid,createsequence,true)) {
+		report("create sequence",false);
+		return false;
+	}
+	report("create sequence",true);
 
 	if (!execImmediate(client,cursorid,insertrow1,true) ||
 		!execImmediate(client,cursorid,insertrow2,true) ||
@@ -1311,7 +1442,23 @@ int main(int argc, char **argv) {
 	report("login",true);
 
 	stdoutput.printf("\n--- setup ---\n\n");
-	if (!setUpTable(&client)) {
+	uint32_t	setupcursorid=0;
+	if (!setUpTable(&client,&setupcursorid)) {
+		client.disconnect();
+		return status;
+	}
+
+	// both run on the setup cursor, and the control one runs second so the
+	// value it expects is the one behind the value the arm above it asked
+	// for
+	stdoutput.printf("\n--- predescribe arm ---\n\n");
+	if (!runPreDescribeArm(&client,setupcursorid)) {
+		client.disconnect();
+		return status;
+	}
+
+	stdoutput.printf("\n--- predescribe control arm ---\n\n");
+	if (!runPreDescribeControlArm(&client,setupcursorid)) {
 		client.disconnect();
 		return status;
 	}

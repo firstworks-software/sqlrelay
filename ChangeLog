@@ -2201,6 +2201,11 @@
 		session that reused the same sqlr-connection process;
 		reInit(), close() and occa() now share one per-cursor reset
 		routine (#9980)
+	fixed the oracle protocol module's query2() legacy execute never
+		caching column definitions, so an odescr arriving between an
+		oexec and the client's first ofen re-ran the statement,
+		silently rewinding the result set the client was about to
+		read (#9973)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

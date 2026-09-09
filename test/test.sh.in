@@ -1034,6 +1034,10 @@ run_protocol_test() {
 	# between them, and against a model of a real 10.2 server's describe.
 	# a real OCI7 client segfaults in a fetch after that describe group,
 	# and putting the same calls on the wire needs no OCI7 client at all.
+	# it also covers #9973 there - the same describe one call earlier,
+	# between the execute and the first fetch - by selecting a sequence's
+	# nextval, where a describe that re-runs the statement shows up as the
+	# fetch answering the wrong value.
 	# finally it runs
 	# oraclelegacyfetch, another raw-socket
 	# test, for #9585 - it drives the legacy pre-query3 TTI_QUERY,
