@@ -2230,6 +2230,16 @@
 		date, along with every wire type outside number and character;
 		a date bind now decodes the same seven-byte layout the module's
 		modern oall8 bind path already handled (#9986)
+	fixed the oracle protocol module refusing an oci7 pl/sql block's out
+		and in-out bind variables with ora-01007; the module now sends
+		the io vector such a bind block asks for, always reporting
+		in-out (the wire can't distinguish out-only from in-out, and a
+		real server's out-only single-packet answer isn't reachable
+		here since the value has to come from the client first), reads
+		the client's follow-up value packet, then executes and answers
+		with the resulting out value; confirmed against a live capture
+		of a real oci7 client's out, in-out and null-out pl/sql binds
+		against a real oracle 10.2 server (#9984)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

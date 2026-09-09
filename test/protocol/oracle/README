@@ -676,6 +676,49 @@ the decoder can be exercised without live server access:
                                       encoding, both of which read the same
                                       regardless of native vs portable, are
                                       relied on (#9986)
+    9984-dev-oci23api7-native-out-realserver.oraproxy
+                                     oci7bind's out variant - one OUT-only
+                                      pl/sql bind, "begin :v := 7; end;"
+                                      with an SQLT_INT buffer - against the
+                                      real 10.2 server at 10.0.2.3 through
+                                      oraproxy. settles what a real server
+                                      sends back for the out bind that
+                                      #9700's request-side captures proved
+                                      carries nothing on the way in. the
+                                      whole answer is one packet: a
+                                      TTC_IO_VECTOR (0x0b) object, then a
+                                      TTC_ROW_DATA (0x07) block holding the
+                                      value and its indicator, then the
+                                      ordinary TTC_OK execute trailer - the
+                                      same order, and the same two object
+                                      codes, sendQuery3Response() already
+                                      writes with putIoVector() and
+                                      putOutBindValues() (#9984)
+    9984-dev-oci23api7-native-inout-realserver.oraproxy
+                                     the same, for "begin :v := :v * 2; end;"
+                                      with an initial value of 21. the io
+                                      vector's direction byte is 0x30 rather
+                                      than 0x10, and the server stops there:
+                                      the client answers with a TTC_ROW_DATA
+                                      packet carrying the in value (02 c1 16,
+                                      the number 21, no indicator), and only
+                                      then does the server send the out value
+                                      (02 c1 2b, 42) and the trailer. so an
+                                      in-out bind is a second round trip the
+                                      io vector asks for, which is why the
+                                      request carries no value (#9984)
+    9984-dev-oci23api7-native-nullout-realserver.oraproxy
+                                     the same, for "begin :v := NULL; end;".
+                                      structurally identical to the out
+                                      capture - one packet, same object
+                                      order, direction byte 0x10 - with the
+                                      value's length byte 0 and the indicator
+                                      ff ff (-1, native sb2) where the
+                                      non-null capture has 02 c1 08 and
+                                      00 00. a null out bind is the same
+                                      shape with an empty value and a
+                                      negative indicator, not a different
+                                      one (#9984)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing

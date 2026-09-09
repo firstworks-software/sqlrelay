@@ -1599,7 +1599,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const byte_t *end,
 							uint16_t bindcount,
 							const byte_t **rpout);
+		bool	classifyQuery2Binds(uint32_t options,
+							sqlrservercursor *cursor);
+		bool	runQuery2PlSqlBlock(sqlrservercursor *cursor);
+		bool	sendQuery2IoVector();
 		bool	installQuery2Binds(sqlrservercursor *cursor);
+		void	installQuery2OutBind(sqlrservercursor *cursor,
+							uint16_t index,
+							sqlrserverbindvar *bv,
+							memorypool *bindpool,
+							uint16_t *outcount);
+		bool	hasQuery2OutBinds();
+		void	putQuery2OutBindValues(sqlrservercursor *cursor);
 		void	clearDefines(uint16_t curid);
 		bool	columnIsDefined(sqlrservercursor *cursor,
 							uint32_t column);
@@ -2053,25 +2064,36 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		char		lobbuffer[32768];
 
-		// the bind types the last query2 set up on each cursor, and
-		// how many.  a re-execute arrives as a bare TTI_EXECUTE
-		// carrying fresh values and no descriptors - obndrv binds by
-		// reference, so the client only re-sends what changed - and
-		// these are what say how to read them.  see execute()
+		// the bind types and directions the last query2 set up on each
+		// cursor, and how many.  a re-execute arrives as a bare
+		// TTI_EXECUTE carrying fresh values and no descriptors -
+		// obndrv binds by reference, so the client only re-sends what
+		// changed - and these are what say how to read them and which
+		// of them owe the client an out value.  see execute()
 		uint16_t	**query2cursorbindtypes;
+		byte_t		**query2cursorbinddirections;
 		uint16_t	*query2cursorbindcounts;
 
 		// what a query2 request's inline bind block carried: one
-		// wire datatype and one value per bind.  the values point
-		// straight into the request buffer rather than being copied,
-		// so they are only good until the next recvPacket() - which
-		// is fine, since the whole of a query2 request is handled
-		// before another packet is read.  request scoped, not cursor
-		// scoped, for the same reason
+		// wire datatype, one direction, one value and one out bind
+		// slot per bind.  the values point straight into the request
+		// buffer rather than being copied, so they are only good until
+		// the next recvPacket() - which is fine, since they are
+		// installed on the cursor before another packet is read, even
+		// on the pl/sql path where the values arrive in a packet of
+		// their own.  request scoped, not cursor scoped, for the same
+		// reason
 		uint16_t	query2bindcount;
 		uint16_t	*query2bindtypes;
+		byte_t		*query2binddirections;
+		int16_t		*query2bindoutindexes;
 		const byte_t	**query2bindvalues;
 		uint32_t	*query2bindvaluesizes;
+
+		// how many descriptors a bind block that carried no values
+		// named.  that shape is a pl/sql block's, and its values come
+		// in a second round trip rather than inline - see query2()
+		uint16_t	query2plsqlbindcount;
 
 		bool		*columntypescached;
 		uint16_t	**columntypes;
@@ -2352,11 +2374,15 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 			cont->getConfig()->getMaxStringBindValueSize();
 
 	query2bindcount=0;
+	query2plsqlbindcount=0;
 	query2bindtypes=new uint16_t[maxbindcount];
+	query2binddirections=new byte_t[maxbindcount];
+	query2bindoutindexes=new int16_t[maxbindcount];
 	query2bindvalues=new const byte_t *[maxbindcount];
 	query2bindvaluesizes=new uint32_t[maxbindcount];
 
 	query2cursorbindtypes=new uint16_t *[maxcursorcount];
+	query2cursorbinddirections=new byte_t *[maxcursorcount];
 	query2cursorbindcounts=new uint16_t[maxcursorcount];
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
@@ -2373,6 +2399,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	refcursorcounts=new uint16_t[maxcursorcount];
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		query2cursorbindtypes[i]=new uint16_t[maxbindcount];
+		query2cursorbinddirections[i]=new byte_t[maxbindcount];
 		query2cursorbindcounts[i]=0;
 		columntypescached[i]=false;
 		rowssent[i]=0;
@@ -2406,11 +2433,14 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] requestedservice;
 
 	delete[] query2bindtypes;
+	delete[] query2binddirections;
+	delete[] query2bindoutindexes;
 	delete[] query2bindvalues;
 	delete[] query2bindvaluesizes;
 
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		delete[] query2cursorbindtypes[i];
+		delete[] query2cursorbinddirections[i];
 		delete[] columntypes[i];
 		delete[] columndefined[i];
 		delete[] cursorbinds[i];
@@ -2421,6 +2451,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] refcursorids;
 	delete[] refcursorcounts;
 	delete[] query2cursorbindtypes;
+	delete[] query2cursorbinddirections;
 	delete[] query2cursorbindcounts;
 	delete[] columntypescached;
 	delete[] columntypes;
@@ -10103,6 +10134,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// defines, so this runs for either bit rather than for OPTION_DEFINE
 	// alone - see getQuery2Descriptors()
 	query2bindcount=0;
+	query2plsqlbindcount=0;
 	if (options&(OPTION_DEFINE|OPTION_BIND)) {
 		getQuery2Descriptors(rp,end,options,cursor);
 	}
@@ -10139,21 +10171,18 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		}
 	}
 
-	// the binds a real oci7 client sends ride INLINE in this same
-	// request, behind the define descriptors, and getQuery2Descriptors()
-	// above has already read them.  there is no second round trip.
+	// the binds a real oci7 client sends ride INLINE in this same request,
+	// behind the define descriptors, and getQuery2Descriptors() above has
+	// already read them.  five real captures taken for #9700 - a 9.2.0.4.0
+	// client against this module, at one, two and three binds, with and
+	// without defines, and with nulls - show the client sending everything
+	// in one packet and then waiting.
 	//
-	// this branch used to implement the opposite: it answered with a
-	// hardcoded 55-byte TTC_IO_VECTOR object and then blocked in
-	// bindParameters(), reading one follow-up packet per bind, off a
-	// pre-8i wiki page that no capture ever backed.  five real captures
-	// taken for #9700 - a 9.2.0.4.0 client against this module, at one,
-	// two and three binds, with and without defines, and with nulls -
-	// show the client sending everything in one packet and then waiting.
-	// so the old path did not merely fail to bind: it answered with bytes
-	// the client could not parse, the client aborted with a marker and
-	// closed, and every bind-carrying oci7 session died with ORA-03113 on
-	// the execute
+	// a pl/sql block is the one exception: its bind block names its
+	// placeholders and stops, and its values take a second round trip that
+	// the io vector this call answers with is what asks for.  that is the
+	// only shape a follow-up packet is ever read for - see
+	// runQuery2PlSqlBlock()
 	if (options&OPTION_BIND) {
 
 		// free binds from any previous bind exchange on this cursor
@@ -10164,12 +10193,22 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// other and both stop on the last byte of their one bind
 		// descriptor, sending no value at all, not even the in half
 		// of an in-out.  both set OPTION_SNDIOV, so the client is
-		// waiting for an io vector back, and what a real server puts
-		// in one is not captured anywhere - running the statement
-		// would mean guessing at the answer as well as at the value.
-		// refuse it, which leaves such a client where it already was
-		// rather than somewhere new and wrong
+		// waiting for an io vector back, and the values follow in a
+		// round trip of their own - see runQuery2PlSqlBlock().
+		//
+		// anything else that leaves the bind block valueless - a
+		// dml with a returning-into clause, whose io vector needs a
+		// row count nothing here writes, or a walk that read the
+		// block wrong - is still refused, which leaves such a client
+		// where it already was rather than somewhere new and wrong.
+		// so is a bind that isn't executing: every capture of this
+		// shape binds and executes in the one call, and what the
+		// round trip below is for is getting a value to execute with
 		if (!query2bindcount) {
+			if (query2plsqlbindcount && (options&OPTION_EXECUTE) &&
+					classifyQuery2Binds(options,cursor)) {
+				return runQuery2PlSqlBlock(cursor);
+			}
 			debugWrite("no usable bind values");
 			return sendOci7StatementError(wireCursorId(cursor),
 					ORA_VARIABLE_NOT_IN_SELECT_LIST,
@@ -10511,6 +10550,10 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		query2bindvalues[i]=NULL;
 		query2bindvaluesizes[i]=0;
 
+		// in until the statement says otherwise, which only a pl/sql
+		// block ever does - see classifyQuery2Binds()
+		query2binddirections[i]=BIND_DIRECTION_IN;
+
 		debugWrite("bind %d: type %d, buffer size %d",
 					i+1,datatype,buffersize);
 	}
@@ -10526,8 +10569,8 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// case has an initial value of 21 to pass in.  both set OPTION_SNDIOV
 	// and leave OPTION_NOPLSQL clear.  so an absent value block is a real
 	// shape rather than a truncated packet, and it is recognized here by
-	// there being nothing left to read.  the binds are not installed in
-	// that case - see installQuery2Binds() and the note in query2()
+	// there being nothing left to read.  the values arrive in a round trip
+	// of their own instead - see runQuery2PlSqlBlock()
 	bool	values=(bindcount>0 && rp<end);
 
 	if (values) {
@@ -10570,11 +10613,12 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		return;
 	}
 
-	// only a bind block that carried values is one this module can act
-	// on.  a pl/sql block's descriptors are read and then dropped here,
-	// which leaves query2() to refuse the request rather than run a
-	// statement with unbound placeholders
+	// only a bind block that carried values is one this module can install
+	// binds from right now.  a valueless one's count is kept separately,
+	// where query2() reads it to tell a pl/sql block, whose values are
+	// still to come, from a shape nothing here understands
 	query2bindcount=(values)?(uint16_t)bindcount:0;
+	query2plsqlbindcount=(values)?0:(uint16_t)bindcount;
 
 	if (hasdefines) {
 		definecounts[curid]=definitions;
@@ -10756,11 +10800,241 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 	return true;
 }
 
-// hands the values a query2 request carried inline to the cursor.  the names
-// come out of the statement the cursor last prepared, the same way the modern
-// query3 path gets them - oci7 binds by name through obndrv, but the names
-// themselves never reach the wire, so the nth value on the wire is the nth
-// placeholder in the text
+// whether a bind block that carried no values is a pl/sql block's, and which
+// way each of its placeholders goes.  the same unknowable classifyQuery3Binds()
+// answers, answered the same way and for the same reason: an out-only and an
+// in-out descriptor are byte-identical, so the direction has to come off the
+// statement, and a placeholder in a pl/sql block is declared in-out.
+//
+// the legacy path has a second reason to answer in-out, and it is not
+// optional.  a real 10.2 server parses the block, so it knows an out-only
+// placeholder is out-only, reports 0x10 for it, and answers the whole call in
+// one packet - the io vector, the out value and the trailer together, which is
+// what the 9984-* out and nullout captures show.  this module can't: it never
+// sees the block's text as pl/sql, and it has no value to run the block with
+// until the client sends one.  reporting 0x10 is what tells an oci7 client not
+// to send one, so a module that reported 0x10 and then had nothing to put in
+// that same packet would desync the client.  reporting 0x30 always asks for
+// the value round trip the deferred execute needs, and costs a truly out-only
+// block one extra round trip whose value the block ignores
+//
+// the flag byte in a query2 bind descriptor carries no equivalent of query3's
+// use-indicators bit - a real define's flag reads 0x07 in most captures and
+// 0x00 in others from the same host, whatever the type - so the type is all
+// there is to go on here
+bool sqlrprotocol_oracle::classifyQuery2Binds(uint32_t options,
+						sqlrservercursor *cursor) {
+
+	// a client that didn't ask for an io vector isn't expecting out binds
+	if (!(options&OPTION_SNDIOV) || (options&OPTION_NOPLSQL)) {
+		return false;
+	}
+
+	// only oracle's own wire types round trip through the encoders below
+	if (charstring::compare(cont->getNativeDbType(),"oracle")) {
+		return false;
+	}
+
+	// a block, rather than the dml-with-returning-into that also asks for
+	// an io vector - that one needs a row count in front of its values,
+	// which nothing here writes.  the text is the cursor's rather than the
+	// request's: an oci7 client parses with TTI_OSQL7, so the request that
+	// binds the block usually carries no text of its own
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+	if (!query || !querysize) {
+		return false;
+	}
+	const char	*ptr=query;
+	const char	*endptr=query+querysize;
+	while (ptr<endptr && character::isWhitespace(*ptr)) {
+		ptr++;
+	}
+	size_t	left=(size_t)(endptr-ptr);
+	if (!(left>=5 && !charstring::compareIgnoringCase(ptr,"begin",5)) &&
+		!(left>=7 && !charstring::compareIgnoringCase(ptr,
+							"declare",7))) {
+		return false;
+	}
+
+	// every placeholder in the block, or none of them.  the types below are
+	// the ones putQuery2OutBindValues() can put back on the wire in the
+	// form the client is waiting for - a date's out value would go back as
+	// the text the backend wrote, where the client wants oracle's seven
+	// byte form - and a vector that mixed a direction this module can
+	// answer with one it can't is a shape no capture has.  a block with
+	// any other type in it is left to the refusal it already got
+	for (uint16_t i=0; i<query2plsqlbindcount; i++) {
+		switch (query2bindtypes[i]) {
+			case ORACLE_TYPE_NUMBER:
+			case ORACLE_TYPE_VARNUM:
+			case ORACLE_TYPE_VARCHAR:
+			case ORACLE_TYPE_CHAR:
+				break;
+			default:
+				debugWrite("bind %d: wire type %d "
+						"cannot go in an io vector",
+						i+1,query2bindtypes[i]);
+				return false;
+		}
+	}
+
+	debugStart("query2 bind directions");
+
+	for (uint16_t i=0; i<query2plsqlbindcount; i++) {
+		query2binddirections[i]=BIND_DIRECTION_INOUT;
+		debugWrite("bind %d: 0x%02x",i+1,query2binddirections[i]);
+	}
+
+	debugEnd();
+
+	return true;
+}
+
+// the two round trips a pl/sql bind block takes.  the first is the io vector
+// this sends: the directions alone, and nothing else in the packet - no row
+// data, no trailer - which is byte for byte what the 9984-* inout capture's
+// real server sends for the same shape.  the client answers it with the values
+// for every bind the vector marked in-out, and only then is there anything to
+// execute.
+//
+// the client's answer is a bare TTC_ROW_DATA packet with no tti function code
+// in front of it, so the session loop's getTtiFunction() would refuse it as a
+// bad ttc code.  it is read here instead, which keeps the whole exchange
+// inside the one TTI_QUERY2 call it belongs to
+bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
+
+	// the descriptors are installable now that they have directions
+	query2bindcount=query2plsqlbindcount;
+
+	if (!sendQuery2IoVector()) {
+		return false;
+	}
+
+	// a modern client cancels an abandoned call with a marker rather than
+	// a tti call - see the identical loop in getTtiFunction().  the io
+	// vector leaves the client waiting on exactly this call, so the same
+	// handling belongs here: answer the marker and keep waiting for the
+	// value packet rather than tearing the session down on what is a
+	// normal client-initiated cancel, not a framing error
+	for (;;) {
+
+		if (!recvPacket()) {
+			return false;
+		}
+
+		if (resppackettype==PACKET_DATA) {
+			break;
+		}
+
+		if (resppackettype==PACKET_MARKER) {
+			if (!sendMarker(MARKER_TYPE_RESET)) {
+				return false;
+			}
+			if (!sendMarkerCancelError()) {
+				return false;
+			}
+			continue;
+		}
+
+		debugWrite("bad packet type %d, expected %d",
+					resppackettype,PACKET_DATA);
+		return false;
+	}
+
+	const byte_t	*rp=resppacket;
+	const byte_t	*end=resppacket+resppacketsize;
+
+	uint16_t	dataflags=0;
+	if (end-rp<2) {
+		debugWrite("truncated data flags");
+		return false;
+	}
+	readBE(rp,&dataflags,&rp);
+
+	debugStart("query2 bind values");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
+		return sendOci7StatementError(wireCursorId(cursor),
+				ORA_VARIABLE_NOT_IN_SELECT_LIST,
+				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
+	}
+
+	// the same landing rule the descriptor walk uses: read every byte or
+	// trust none of them
+	if (rp!=end) {
+		debugWrite("bind values left %d bytes unread",
+						(int32_t)(end-rp));
+		return sendOci7StatementError(wireCursorId(cursor),
+				ORA_VARIABLE_NOT_IN_SELECT_LIST,
+				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
+	}
+
+	if (!installQuery2Binds(cursor)) {
+		debugWrite("installing binds failed");
+		return sendOci7StatementError(wireCursorId(cursor),
+				ORA_VARIABLE_NOT_IN_SELECT_LIST,
+				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
+	}
+
+	// a fresh execute means a new result set - drop any row held over
+	// from a previous one on this cursor, and any row it was pinning for
+	// a lob read, and start the running row count over
+	pendingrow[cont->getId(cursor)].clear();
+	clearLobPin(cont->getId(cursor));
+	rowssent[cont->getId(cursor)]=0;
+
+	if (!cont->executeQuery(cursor,true,true,true,true)) {
+		debugWrite("execute query failed");
+		return sendQueryError(cursor);
+	}
+
+	cacheColumnDefinitions(cursor,cont->colCount(cursor));
+
+	return sendQuery2Response(cursor);
+}
+
+// which way each of a pl/sql block's binds goes, and nothing else - the answer
+// to the bind block, one round trip ahead of the values.  the six header fields
+// are putIoVector()'s, in the same order and with the same constant third
+// field: the 9984-* captures' io vector reads as the same object the modern
+// path's does, and the direction bytes ride behind it the same way
+bool sqlrprotocol_oracle::sendQuery2IoVector() {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	write(&reqpacket,(byte_t)TTC_IO_VECTOR);
+	write(&reqpacket,(byte_t)IO_VECTOR_CONSTANT);
+	writeLenPreInt(&reqpacket,(uint32_t)query2bindcount);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+	writeLenPreInt(&reqpacket,(uint32_t)1);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+	writeLenPreInt(&reqpacket,(uint32_t)0);
+
+	debugStart("query2 io vector");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("bind count: %d",query2bindcount);
+	for (uint16_t i=0; i<query2bindcount; i++) {
+		write(&reqpacket,query2binddirections[i]);
+		debugWrite("bind %d: 0x%02x",i+1,query2binddirections[i]);
+	}
+	debugEnd();
+
+	return sendPacket(true);
+}
+
+// hands the values a query2 request carried to the cursor - inline behind the
+// descriptors for an ordinary statement, in a round trip of their own for a
+// pl/sql block.  the names come out of the statement the cursor last prepared,
+// the same way the modern query3 path gets them - oci7 binds by name through
+// obndrv, but the names themselves never reach the wire, so the nth value on
+// the wire is the nth placeholder in the text
 bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 
 	const char	*query=cont->getQueryBuffer(cursor);
@@ -10773,6 +11047,13 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 	debugStart("installing query2 binds");
 
 	uint16_t	incount=0;
+	uint16_t	outcount=0;
+
+	// a bind the loop below never reaches owes the client no out value,
+	// and putQuery2OutBindValues() reads every slot
+	for (uint16_t i=0; i<query2bindcount; i++) {
+		query2bindoutindexes[i]=-1;
+	}
 
 	for (uint16_t i=0; i<query2bindcount && incount<maxbindcount; i++) {
 
@@ -10859,6 +11140,7 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 			bv->isnull=cont->getNullBindValue();
 			debugWrite("bind %d: %s = null",i+1,bv->variable);
 			incount++;
+			installQuery2OutBind(cursor,i,bv,bindpool,&outcount);
 			continue;
 		}
 
@@ -10940,24 +11222,157 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 		}
 
 		incount++;
+
+		installQuery2OutBind(cursor,i,bv,bindpool,&outcount);
 	}
 
 	cont->setInputBindCount(cursor,incount);
-	cont->setOutputBindCount(cursor,0);
+	cont->setOutputBindCount(cursor,outcount);
 
 	// remember the shape for the re-executes that may follow.  a bare
 	// TTI_EXECUTE sends fresh values and no descriptors at all, so these
-	// are the only record of how to read them - see execute()
+	// are the only record of how to read them, and of which of them owe
+	// the client an out value - see execute()
 	uint16_t	curid=cont->getId(cursor);
 	query2cursorbindcounts[curid]=query2bindcount;
 	for (uint16_t i=0; i<query2bindcount; i++) {
 		query2cursorbindtypes[curid][i]=query2bindtypes[i];
+		query2cursorbinddirections[curid][i]=query2binddirections[i];
 	}
 
 	debugWrite("bind count: %d",incount);
+	debugWrite("out bind count: %d",outcount);
 	debugEnd();
 
 	return true;
+}
+
+// an in-out bind gets a second, writable slot.  the backend has no in-out bind
+// of its own - the base class's is a no-op - so the value goes out through the
+// output bind, whose buffer is a plain bidirectional bind over a buffer this
+// side owns.  pre-filling that buffer with the value the wire sent is what
+// makes it behave as in-out: what's in the buffer at execute time is what the
+// statement reads, and what the statement writes is what's in it after.
+//
+// installQuery3Binds() sizes the same buffer off the descriptor's own buffer
+// size where that is wider.  a query2 descriptor's is the client's program
+// variable width rather than anything the statement writes, and it is not
+// remembered across the re-executes that reuse these binds, so the value's own
+// size and the floor below are what size it here
+void sqlrprotocol_oracle::installQuery2OutBind(sqlrservercursor *cursor,
+						uint16_t index,
+						sqlrserverbindvar *bv,
+						memorypool *bindpool,
+						uint16_t *outcount) {
+
+	if (query2binddirections[index]!=BIND_DIRECTION_INOUT ||
+					*outcount>=maxbindcount) {
+		return;
+	}
+
+	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
+	sqlrserverbindvar	*obv=&(outbinds[*outcount]);
+
+	obv->variable=bv->variable;
+	obv->variablesize=bv->variablesize;
+	obv->type=SQLRSERVERBINDVARTYPE_STRING;
+	obv->segmentlengths=NULL;
+	obv->segmentcount=0;
+
+	// room for whatever the statement writes back, which can be wider
+	// than what came in
+	uint32_t	outsize=bv->valuesize;
+	if (outsize<MIN_OUT_BIND_SIZE) {
+		outsize=MIN_OUT_BIND_SIZE;
+	}
+	if (maxstringbindvaluesize && outsize>maxstringbindvaluesize) {
+		outsize=maxstringbindvaluesize;
+	}
+
+	obv->valuesize=outsize;
+	obv->value.stringval=(char *)bindpool->allocate(outsize+1);
+	bytestring::zero(obv->value.stringval,(size_t)outsize+1);
+
+	// the value going in.  a null one is still bound not-null with an
+	// empty buffer, since the statement may well be about to write
+	// something into it
+	if (bv->type==SQLRSERVERBINDVARTYPE_STRING && bv->valuesize<=outsize) {
+		bytestring::copy(obv->value.stringval,
+					bv->value.stringval,
+					(size_t)bv->valuesize);
+	}
+	obv->isnull=cont->getNonNullBindValue();
+
+	query2bindoutindexes[index]=(int16_t)*outcount;
+	(*outcount)++;
+
+	debugWrite("out bind: %s (%d bytes)",obv->variable,outsize);
+}
+
+bool sqlrprotocol_oracle::hasQuery2OutBinds() {
+	for (uint16_t i=0; i<query2bindcount; i++) {
+		if (query2binddirections[i]&BIND_DIRECTION_OUT) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// what the statement left in each out bind, in descriptor order - the same
+// object, in the same encoding, that putOutBindValues() writes for the modern
+// path, minus its ref cursor arm, which no oci7 bind descriptor can ask for.
+// the indicator behind each value is a count prefixed int here too rather than
+// the raw sb2 the 9984-* captures' native session carries: this module only
+// ever negotiates the portable encoding, where the two differ
+void sqlrprotocol_oracle::putQuery2OutBindValues(sqlrservercursor *cursor) {
+
+	write(&reqpacket,(byte_t)TTC_ROW_DATA);
+
+	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
+	uint16_t		outbindcount=cont->getOutputBindCount(cursor);
+
+	debugStart("query2 out bind values");
+
+	for (uint16_t i=0; i<query2bindcount; i++) {
+
+		if (!(query2binddirections[i]&BIND_DIRECTION_OUT)) {
+			continue;
+		}
+
+		// a descriptor the install didn't get to still owes the client
+		// a slot, and null is the honest answer for one
+		int16_t			outindex=query2bindoutindexes[i];
+		sqlrserverbindvar	*bv=(outindex>=0 &&
+					outindex<(int16_t)outbindcount)?
+					&(outbinds[outindex]):NULL;
+
+		if (!bv || cont->getBindValueIsNull(bv->isnull)) {
+			debugWrite("bind %d: NULL",i+1);
+			write(&reqpacket,(byte_t)0);
+			write(&reqpacket,
+				(byte_t)OUT_BIND_NULL_INDICATOR_COUNT);
+			write(&reqpacket,
+				(byte_t)OUT_BIND_NULL_INDICATOR_VALUE);
+			continue;
+		}
+
+		// the buffer is bound the width of the whole allocation, so
+		// what came back out of it is however much of it is text
+		const char	*value=bv->value.stringval;
+		uint32_t	size=(uint32_t)charstring::getLength(value);
+
+		debugWrite("bind %d: \"%.*s\"",i+1,(int)size,value);
+
+		if (query2bindtypes[i]==ORACLE_TYPE_NUMBER ||
+				query2bindtypes[i]==ORACLE_TYPE_VARNUM) {
+			putNumberField(value,size);
+		} else {
+			putLenBytes(value,size);
+		}
+		write(&reqpacket,(byte_t)0);
+	}
+
+	debugEnd();
 }
 
 // zeroing the count is the whole of it - columnIsDefined() answers true
@@ -10997,12 +11412,11 @@ uint32_t sqlrprotocol_oracle::definedColumnCount(sqlrservercursor *cursor,
 	return count;
 }
 
-// a bind-carrying request used to be answered here too, with a hardcoded
-// TTC_IO_VECTOR object off the wiki page.  #9700's captures show a real
-// client cannot parse that - it aborts the session on it - and that the
-// binds it carries need no answer of their own anyway, since they arrive
-// inline with the statement.  so a bind request now takes the ordinary
-// execute answer below, like any other, and the io-vector branch is gone
+// the ordinary answer to a query2: what the statement left in its out binds,
+// if it had any, and the execute trailer.  no io vector rides in front of them
+// - a statement with out binds is a pl/sql block, and its client was told the
+// directions in the answer to the bind block, one round trip back.  that is
+// the same split sendReexecuteResponse() makes on the modern path
 bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -11069,6 +11483,9 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		};
 
 		writeBE(&reqpacket,dataflags);
+		if (hasQuery2OutBinds()) {
+			putQuery2OutBindValues(cursor);
+		}
 		write(&reqpacket,ttccode);
 		reqpacket.append(unknown,sizeof(unknown));
 
@@ -11084,6 +11501,9 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		ttccode=TTC_OK;
 
 		writeBE(&reqpacket,dataflags);
+		if (hasQuery2OutBinds()) {
+			putQuery2OutBindValues(cursor);
+		}
 		write(&reqpacket,ttccode);
 
 		// a portable session gets a different answer entirely, not a
@@ -15295,6 +15715,10 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// the second execute answered ORA-03120
 	uint16_t	curid=cont->getId(cursor);
 
+	// a request that installs no binds has no out binds to answer with
+	// either, whatever the request before it left behind
+	query2bindcount=0;
+
 	// both halves of the guard below, so a request that does not take the
 	// branch says which half turned it away rather than going silent
 	debugWrite("re-execute: %d bytes behind the header, "
@@ -15308,6 +15732,8 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		query2bindcount=query2cursorbindcounts[curid];
 		for (uint16_t i=0; i<query2bindcount; i++) {
 			query2bindtypes[i]=query2cursorbindtypes[curid][i];
+			query2binddirections[i]=
+					query2cursorbinddirections[curid][i];
 		}
 
 		if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
@@ -15499,6 +15925,13 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 
 	uint16_t	dataflags=0;
 	writeBE(&reqpacket,dataflags);
+
+	// the out bind values, but no io vector - a pl/sql block's client
+	// learned the directions from the query2 that bound it, and re-sends
+	// the in half of each one with every execute after that
+	if (hasQuery2OutBinds()) {
+		putQuery2OutBindValues(cursor);
+	}
 
 	debugStart("execute response");
 	debugWrite("data flags: 0x%04x",dataflags);
