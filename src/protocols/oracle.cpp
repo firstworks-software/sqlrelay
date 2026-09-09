@@ -487,6 +487,14 @@
 // count up to 4
 #define CLR_MAX_BIG_CHUNK_SIZE		32767
 
+// no real char column's define buffer is anywhere near this wide (oracle's
+// own char/varchar2 limits top out at a few thousand bytes).  putField()
+// blank-pads a value out to a define's buffer size, and that size comes
+// straight off the wire with nothing upstream bounding it, so without a
+// ceiling here a forged define could make a single row's padding arbitrarily
+// large
+#define OCI7_MAX_DEFINE_BUFFER_SIZE	65536
+
 // bind descriptor flags.  0x01 says a normal bound value follows, 0x80 says
 // the statement has the placeholder but the client never bound anything to
 // it - and that no row data follows at all
@@ -10579,9 +10587,11 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		cd[i]=!((flag&OCI7_DEFINE_SKIPPED) && !buffersize);
 
 		// kept for every position, skipped ones included, so these
-		// stay indexed the same way columndefined[] is
+		// stay indexed the same way columndefined[] is.  clamped
+		// against OCI7_MAX_DEFINE_BUFFER_SIZE, see its comment
 		dt[i]=(uint16_t)datatype;
-		bs[i]=buffersize;
+		bs[i]=(buffersize>OCI7_MAX_DEFINE_BUFFER_SIZE)?
+				OCI7_MAX_DEFINE_BUFFER_SIZE:buffersize;
 
 		debugWrite("column %d: %s (type %d, buffer size %d)",
 				i,(cd[i])?"defined":"skipped",
@@ -17248,11 +17258,24 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			// on file says where the chunk boundary falls at a
 			// second width and buffer size combination, and it
 			// may not fall at the declared width at all.  column
-			// 5 of [0203]/[0206], earlier in the same session,
-			// reads the same column defined SQLT_STR instead and
-			// gets a plain, unpadded clr - which is what says
-			// the define's type, and not the column's, decides
-			// this
+			// 2 of [0203]/[0206], earlier in the same session,
+			// is a same-shaped char(20) TESTCHAR too, but of a
+			// different table (protocoltest, not this row's
+			// protocoltesttypes) - not the same column, just the
+			// same name and width.  defined SQLT_STR there, it
+			// gets a plain, unpadded clr, which is still what
+			// says the define's type, and not the column's,
+			// decides this - just from two columns shaped alike
+			// rather than one column seen twice
+			//
+			// the check below is on requestedtype alone, so a
+			// number or varchar column the client defines
+			// SQLT_AFC gets padded the same way a char column
+			// does - no capture exercises that combination, but
+			// a define's type is a conversion request, not a
+			// description of the column, and every other define
+			// dispatch in this file (see putRowidField() and its
+			// pair of dty's) already goes by requestedtype alone
 			if (requestedtype==ORACLE_TYPE_CHAR && fieldsize &&
 					definebuffersize>fieldsize) {
 				write(&reqpacket,

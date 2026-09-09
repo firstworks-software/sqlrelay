@@ -2293,8 +2293,10 @@
 		client's whole define buffer and sends it in the clr
 		long form, not the short form the module always used to
 		write regardless of the define. a plain varchar define
-		of the same column is unaffected and still gets the
-		short form up to 252 bytes, same as before (#10014)
+		is unaffected and still gets the short form up to 252
+		bytes, same as before; also capped a define's buffer
+		size, which the fix reads off the wire, so a forged one
+		can't blow up the padding written for it (#10014)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
