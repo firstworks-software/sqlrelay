@@ -41,6 +41,10 @@
 //   selecttwo     two binds of different types and two defines, which gives
 //                 the stride between one bind descriptor and the next - a
 //                 one-bind capture alone cannot
+//   datebind      one IN bind of a DATE (SQLT_DAT), against a select, so the
+//                 bind descriptor's wire type/buffer size/byte layout for a
+//                 date can be read directly, and cross-checked against the
+//                 already-proven fetch-side date bytes in oci7.cpp - #9986
 //   insert        three binds and NO defines at all (dml), isolating the
 //                 bind block with nothing behind it
 //   nullbind      the same insert with two of the three indicators set to
@@ -341,6 +345,60 @@ static int selectLongStrVariant(sword len) {
 	return (match)?0:1;
 }
 
+// an IN bind of a DATE (SQLT_DAT), fetched back through a define of its own
+// so the round trip can be checked rather than just printed.  binds and
+// defines end up in the same request packet here, the same as
+// selectVariant - this is the first OCI7 capture with a SQLT_DAT bind in it.
+//
+// the bound value is 01-JAN-2001 01:01:01, encoded the way OCI7 puts a date
+// on the wire - excess-100 century and year, then month, day, and excess-1
+// hour, minute and second.  oci7.cpp's "ofen - date" fetch of
+// protocoltesttable's testdate for testnumber=1 already proved this exact
+// byte layout on the define side, so this capture is directly comparable to
+// that one
+static int selectDateVariant() {
+
+	Cda_Def	cda;
+	if (!openCursor("oopen",&cda) ||
+			!parse("oparse",&cda,"select :d from dual")) {
+		return 1;
+	}
+
+	ub1	datevalue[7]={120,101,1,1,2,2,2};
+	sb2	bindind=0;
+	if (!bind(&cda,":d",datevalue,(sword)sizeof(datevalue),
+					SQLT_DAT,&bindind)) {
+		oclose(&cda);
+		return 1;
+	}
+
+	ub1	buf[7];
+	sb2	ind=0;
+	ub2	retlen=0;
+	ub2	retcode=0;
+	bytestring::zero(buf,sizeof(buf));
+	if (!run("odefin",&cda,
+			odefin(&cda,1,buf,(sword)sizeof(buf),SQLT_DAT,-1,
+				&ind,(text *)0,-1,-1,&retlen,&retcode))) {
+		oclose(&cda);
+		return 1;
+	}
+
+	if (!run("oexec",&cda,oexec(&cda)) ||
+			!run("ofen",&cda,ofen(&cda,1))) {
+		oclose(&cda);
+		return 1;
+	}
+
+	bool	match=!bytestring::compare(buf,datevalue,sizeof(buf));
+	stdoutput.printf("  row length=%d %s\n",
+				(int)retlen,
+				match?"(matches)":"(MISMATCH)");
+
+	run("oclose",&cda,oclose(&cda));
+	return (match)?0:1;
+}
+
 // the same three-bind insert, but with the obndrv calls made in the REVERSE
 // of the order the placeholders appear in the statement.
 //
@@ -612,7 +670,7 @@ int main(int argc, char **argv) {
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
 				"[--bind=selectint|selectstr|selectstrlong|"
-				"selecttwo|"
+				"selecttwo|datebind|"
 				"insert|nullbind|many|reverse|out|inout|nullout] "
 				"[USER PASSWORD]\n",argv[0]);
 		return 1;
@@ -639,6 +697,8 @@ int main(int argc, char **argv) {
 		result=selectLongStrVariant(300);
 	} else if (!charstring::compare(variant,"selecttwo")) {
 		result=selectVariant("select :num, :b from dual",true,false);
+	} else if (!charstring::compare(variant,"datebind")) {
+		result=selectDateVariant();
 	} else if (!charstring::compare(variant,"insert")) {
 		result=insertVariant(false,1,false);
 	} else if (!charstring::compare(variant,"nullbind")) {

@@ -1492,6 +1492,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						int16_t hour,
 						int16_t minute,
 						int16_t second);
+		bool	getOracleDateBindValue(const byte_t *value,
+						uint32_t valuesize,
+						sqlrserverbindvar *bv);
 		void	putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags);
@@ -6822,6 +6825,36 @@ void sqlrprotocol_oracle::putOracleDate(byte_t *out,
 			year,month,day,hour,minute,second);
 }
 
+// the inverse of putOracleDate() above - a bind value coming off the wire
+// rather than one going out.  shared by installQuery2Binds() and
+// installQuery3Binds(), which otherwise decoded this seven-byte layout
+// (excess-100 century and year, then month, day, and excess-1 hour, minute,
+// second) twice.  false on a value too short to hold a full date; the two
+// callers differ in what a truncated value means to them, so this leaves
+// that to them rather than picking one
+bool sqlrprotocol_oracle::getOracleDateBindValue(const byte_t *value,
+						uint32_t valuesize,
+						sqlrserverbindvar *bv) {
+
+	if (valuesize<ORACLE_DATE_SIZE) {
+		return false;
+	}
+
+	bv->type=SQLRSERVERBINDVARTYPE_DATE;
+	bv->value.dateval.year=(int16_t)
+			((value[0]-100)*100+value[1]-100);
+	bv->value.dateval.month=(int16_t)value[2];
+	bv->value.dateval.day=(int16_t)value[3];
+	bv->value.dateval.hour=(int16_t)(value[4]-1);
+	bv->value.dateval.minute=(int16_t)(value[5]-1);
+	bv->value.dateval.second=(int16_t)(value[6]-1);
+	bv->value.dateval.microsecond=0;
+	bv->value.dateval.tz=NULL;
+	bv->value.dateval.isnegative=false;
+
+	return true;
+}
+
 void sqlrprotocol_oracle::putAuthField(const char *fieldname,
 						const char *field,
 						uint32_t flags) {
@@ -10774,16 +10807,20 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 		char		numbertext[MAX_NUMBER_TEXT_SIZE];
 		uint32_t	numbertextlen=0;
 
-		// only the number and character types have been captured on
-		// this path.  a date, a lob or anything else would have to be
-		// decoded from bytes nothing on file has, and binding its raw
-		// wire form as text would put garbage in the statement -
-		// refuse instead, which leaves the client no worse off than
-		// the ORA-03113 every bind used to get.  see #9700.
+		// number, character and date are captured on this path now
+		// (see #9986 - a real OCI7 client's DATE bind puts the same
+		// seven-byte layout on the wire that installQuery3Binds()
+		// already decodes, confirmed against a live capture of
+		// oci7bind's datebind variant).  anything else - a lob, a
+		// rowid - would still have to be decoded from bytes nothing
+		// on file has, and binding its raw wire form as text would
+		// put garbage in the statement - refuse instead, which
+		// leaves the client no worse off than the ORA-03113 every
+		// bind used to get.  see #9700.
 		//
 		// this is checked ahead of the null shortcut below rather
 		// than inside the switch, so that a null of an unsupported
-		// type is refused too.  a null date is as unimplemented as a
+		// type is refused too.  a null lob is as unimplemented as a
 		// non-null one, and letting the null case through would run a
 		// statement this code cannot claim to have understood
 		switch (query2bindtypes[i]) {
@@ -10792,6 +10829,7 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 			case ORACLE_TYPE_VARCHAR:
 			case ORACLE_TYPE_CHAR:
 			case ORACLE_TYPE_LONG:
+			case ORACLE_TYPE_DATE:
 				break;
 			default:
 				debugWrite("bind %d: unsupported wire type %d",
@@ -10865,6 +10903,19 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 				}
 				bv->value.stringval[valuesize]='\0';
 				break;
+			case ORACLE_TYPE_DATE:
+				// the same seven-byte layout
+				// installQuery3Binds() decodes - excess-100
+				// century and year, then month, day, and
+				// excess-1 hour, minute, second
+				if (!getOracleDateBindValue(value,valuesize,
+									bv)) {
+					debugWrite("bind %d: truncated date",
+									i+1);
+					debugEnd();
+					return false;
+				}
+				break;
 			default:
 				// unreachable - the switch above already
 				// refused everything this one doesn't handle
@@ -10874,8 +10925,19 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 				return false;
 		}
 
-		debugWrite("bind %d: %s = %.*s",i+1,bv->variable,
-				(int)bv->valuesize,bv->value.stringval);
+		if (bv->type==SQLRSERVERBINDVARTYPE_DATE) {
+			debugWrite("bind %d: %s = %d-%d-%d %d:%d:%d",
+					i+1,bv->variable,
+					bv->value.dateval.year,
+					bv->value.dateval.month,
+					bv->value.dateval.day,
+					bv->value.dateval.hour,
+					bv->value.dateval.minute,
+					bv->value.dateval.second);
+		} else {
+			debugWrite("bind %d: %s = %.*s",i+1,bv->variable,
+					(int)bv->valuesize,bv->value.stringval);
+		}
 
 		incount++;
 	}
@@ -12090,29 +12152,12 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 				case ORACLE_TYPE_TIMESTAMP:
 				case ORACLE_TYPE_TIMESTAMPTZ:
 				case ORACLE_TYPE_TIMESTAMPLTZ:
-					if (v->size<ORACLE_DATE_SIZE) {
+					if (!getOracleDateBindValue(
+							v->value,v->size,bv)) {
 						debugWrite("truncated date");
 						bv->type=
 						SQLRSERVERBINDVARTYPE_NULL;
-						break;
 					}
-					bv->type=SQLRSERVERBINDVARTYPE_DATE;
-					bv->value.dateval.year=(int16_t)
-						((v->value[0]-100)*100+
-							v->value[1]-100);
-					bv->value.dateval.month=
-						(int16_t)v->value[2];
-					bv->value.dateval.day=
-						(int16_t)v->value[3];
-					bv->value.dateval.hour=
-						(int16_t)(v->value[4]-1);
-					bv->value.dateval.minute=
-						(int16_t)(v->value[5]-1);
-					bv->value.dateval.second=
-						(int16_t)(v->value[6]-1);
-					bv->value.dateval.microsecond=0;
-					bv->value.dateval.tz=NULL;
-					bv->value.dateval.isnegative=false;
 					break;
 				case ORACLE_TYPE_RAW:
 				case ORACLE_TYPE_LONG_RAW:

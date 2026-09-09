@@ -2226,6 +2226,10 @@
 		ordinary packets bounded by the sdu; also fixed the connect
 		handshake echoing the client's requested sdu back verbatim
 		instead of negotiating it (#9989)
+	fixed the oracle protocol module refusing an oci7 client's bind of a
+		date, along with every wire type outside number and character;
+		a date bind now decodes the same seven-byte layout the module's
+		modern oall8 bind path already handled (#9986)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

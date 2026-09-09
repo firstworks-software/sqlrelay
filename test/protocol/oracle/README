@@ -641,6 +641,41 @@ the decoder can be exercised without live server access:
                                       chunk boundary and a packet boundary
                                       can and do land at different offsets
                                       in different packets (#9989)
+    9986-dev-oci23api7-native-datebind-realserver.oraproxy
+                                     oci7bind's datebind variant - one IN
+                                      bind of a DATE (SQLT_DAT, the oracle
+                                      internal date 01-JAN-2001 01:01:01,
+                                      bytes 78 65 01 01 02 02 02) against
+                                      "select :d from dual" - against the
+                                      real 10.2 server at 10.0.2.3 through
+                                      oraproxy, settling what an OCI7 client
+                                      actually puts on the wire for a date
+                                      bind, which no capture on file had
+                                      before this. the bind descriptor's
+                                      datatype byte is 12 (ORACLE_TYPE_DATE),
+                                      at the same structural position a
+                                      NUMBER bind's datatype byte 2 occupies
+                                      in the selectint capture taken for
+                                      comparison in the same session (not
+                                      itself checked in - the two packets
+                                      are otherwise byte-identical up to
+                                      that divergence). the value is the
+                                      plain short form getQuery2BindValues()
+                                      already handles - length byte 7,
+                                      then the seven raw date bytes, echoed
+                                      back unchanged in the row that comes
+                                      back. this session negotiated the
+                                      NATIVE encoding with the real server
+                                      (unlike sqlrelay, which only ever
+                                      negotiates portable - see
+                                      getQuery2Descriptors()), so the full
+                                      descriptor block's byte OFFSETS here
+                                      are not directly comparable to a
+                                      capture against sqlrelay itself; only
+                                      the datatype byte and the value's
+                                      encoding, both of which read the same
+                                      regardless of native vs portable, are
+                                      relied on (#9986)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
