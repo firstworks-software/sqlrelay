@@ -2206,6 +2206,11 @@
 		oexec and the client's first ofen re-ran the statement,
 		silently rewinding the result set the client was about to
 		read (#9973)
+	fixed the oracle protocol module's sendExecuteResponse() answering a
+		bare execute (no pending column defines) with a hardcoded,
+		undecoded canned blob carrying no cursor id or call number,
+		instead of a real summary object, which a real oci7 client
+		rejects with a marker-cancel and ora-01013 (#9981)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

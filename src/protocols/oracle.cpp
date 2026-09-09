@@ -7937,7 +7937,8 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	debugEnd();
 }
 
-// the native encoding of the same object, used only by sendOsql7Response().
+// the native encoding of the same object, shared by every summary-writing
+// caller in this module (sendOsql7Response() and the rest).
 // decoded byte for byte against a real redhat9x86 x86 OCI7 client's
 // native-mode session with an x86 linux 10.2 server: packets [0014] (the
 // login answer), [0020] (the parse this call answers), [0022] (the
@@ -15151,12 +15152,9 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return sendQueryError(cursor);
 	}
 
-	// what the backend actually did with it.  sendExecuteResponse()
-	// below builds no summary object - it is a hardcoded literal - so
-	// without this the log jumps straight from the binds to the answer
-	// and says nothing about whether the statement ran or what it
-	// touched, which is exactly the gap that made a re-execute's missing
-	// row hard to pin down
+	// what the backend actually did with it - putOci7Summary()'s own
+	// debug output below doesn't print rows processed, so this is the
+	// only place it's logged
 	if (getDebug()) {
 		debugStart("re-execute result");
 		if (cont->knowsAffectedRows(cursor)) {
@@ -15298,29 +15296,39 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
-	// FIXME: decode this... see "Oracle Wire Protocol - Execute"
-
 	uint16_t	dataflags=0;
-	byte_t	ttccode=TTC_ERROR;
-	byte_t	unknown[]={
-		0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-		0x00, 0x2C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x1F, 0x00, 0x00, 0x01,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
-
 	writeBE(&reqpacket,dataflags);
-	write(&reqpacket,ttccode);
-	reqpacket.append(unknown,sizeof(unknown));
 
 	debugStart("execute response");
 	debugWrite("data flags: 0x%04x",dataflags);
-	debugTtcCode(ttccode);
-	debugHexDump(unknown,sizeof(unknown));
 	debugEnd();
+
+	// the same policy sendQuery2Response()'s portable branch uses: a
+	// select's rows arrive on the fetch and are counted there, so it
+	// sends 0, and everything else sends what the backend actually did
+	uint32_t	rowsprocessed=0;
+	if (cursor->getQueryType()!=SQLRQUERYTYPE_SELECT &&
+					cont->knowsAffectedRows(cursor)) {
+		rowsprocessed=(uint32_t)cont->getAffectedRows(cursor);
+	}
+
+	// a bare oexec, with no defines pending, is answered with the summary
+	// object alone, the way sendOsql7Response() answers a parse.  the
+	// TTC_OK lead-in sendQuery2Response() writes ahead of its own summary
+	// only ever accompanies a query2-shaped call - an execute combined
+	// with a parse/describe/bind (query2) or with a fetch (the exactfetch
+	// branch of sendFetchResponse() below): a plain, standalone fetch
+	// (exactfetch false) gets no lead-in even though it follows an
+	// execute too, so the lead-in tracks the combined call shape, not
+	// whether an execution happened.  a bare TTI_EXECUTE is the
+	// single-purpose case, so it gets none.  the command type is
+	// putSummary()'s own constant, and one execution has just completed,
+	// so the success iteration count is 1
+	if (nativeencoding) {
+		putOci7SummaryNative(wireCursorId(cursor),3,rowsprocessed,1);
+	} else {
+		putOci7Summary(wireCursorId(cursor),3,rowsprocessed,1);
+	}
 
 	return sendPacket(true);
 }
