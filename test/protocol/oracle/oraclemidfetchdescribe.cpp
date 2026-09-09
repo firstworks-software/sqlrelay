@@ -1034,9 +1034,9 @@ static bool runPreDescribeArm(oracleprotocolclient *client,
 	}
 	dumpResponse("fetch response",client);
 	report("predescribe arm: the fetch carries the sequence's first value",
-					client->responseContains(firstnextval));
+				client->responseContains(firstnextval));
 	report("predescribe arm: the describe didn't re-execute the statement",
-					!client->responseContains(secondnextval));
+				!client->responseContains(secondnextval));
 
 	return true;
 }
