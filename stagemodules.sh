@@ -67,9 +67,16 @@ do
 	fi
 	# a copy rather than a symlink, so the staged directory keeps working
 	# if the build tree is cleaned, and so it can also be bind-mounted over
-	# the real libexecdir, where a symlink would point at itself
-	if ( ! cp -f "$SO" "$STAGEDIR/$NAME.$MODULESUFFIX" )
+	# the real libexecdir, where a symlink would point at itself.
+	#
+	# checked with a plain if/else rather than "if ( ! cp ... )" - solaris
+	# 8's /bin/sh predates the "!" reserved word entirely, so it ran cp as
+	# an argument to a nonexistent command named "!", silently skipped the
+	# copy, and fell through to the success message below (#9972)
+	if ( cp -f "$SO" "$STAGEDIR/$NAME.$MODULESUFFIX" )
 	then
+		:
+	else
 		die "could not copy $DIR/$SO to $STAGEDIR/$NAME.$MODULESUFFIX"
 	fi
 	echo "staged $NAME.$MODULESUFFIX"
