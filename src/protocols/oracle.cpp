@@ -1296,6 +1296,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	resetSendPacketBuffer(byte_t packettype);
 		bool	sendPacket();
 		bool	sendPacket(bool flush);
+		bool	sendSplitPacket(bool flush);
 		bool	recvPacket();
 		void	readHost(const byte_t *rp,
 					uint16_t *value,
@@ -2759,6 +2760,19 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 	uint16_t	packetchecksum=0;
 	uint16_t	headerchecksum=0;
 
+	// a packet may not exceed the negotiated sdu, so an oversized data
+	// response goes out as several ordinary data packets.  nothing else
+	// is split - a lob data descriptor has raw lob bytes riding past its
+	// declared end, and the packet that establishes the sdu can't be
+	// bounded by it.  see the Oracle Wire Protocol - Packet Structure
+	// wiki page
+	if (reqpacketsize>sdu) {
+		if (reqpackettype==PACKET_DATA) {
+			return sendSplitPacket(flush);
+		}
+		debugWrite("packet exceeds sdu: %d > %d",reqpacketsize,sdu);
+	}
+
 	// overwrite the first 8 bytes of the reqpacket with the packet header
 	// (8 bytes either way - a 32-bit length at PROTOCOL_VERSION_12 and
 	// above, a 16-bit length and a packet checksum below it; see
@@ -2799,6 +2813,88 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 		return false;
 	}
 	debugWrite("wrote %d bytes",(uint32_t)reqpacket.getSize());
+
+	if (flush) {
+		clientsock->flushWriteBuffer(-1,-1);
+		debugWrite("send packet flush...");
+	} else {
+		debugWrite("no flush...");
+	}
+
+	return true;
+}
+
+// sends an oversized data packet as several ordinary data packets, each
+// bounded by the negotiated sdu.  every fragment is a complete packet with the
+// same type and flags, and repeats the 2 data flag bytes a data packet's body
+// starts with.  nothing marks a fragment as a continuation or marks the last
+// one - the client keeps reading packets until the ttc layer above it has the
+// bytes it expects - so a fragment may end at any byte offset
+bool sqlrprotocol_oracle::sendSplitPacket(bool flush) {
+
+	// the 8 byte header and the 2 data flag bytes ride on every fragment
+	const byte_t	*dataflags=reqpacket.getBuffer()+8;
+	const byte_t	*body=reqpacket.getBuffer()+10;
+	uint64_t	remaining=(uint64_t)reqpacket.getSize()-10;
+	uint32_t	maxbodysize=(sdu>10)?sdu-10:1;
+
+	bytebuffer	fragment;
+
+	do {
+
+		uint32_t	bodysize=(remaining>(uint64_t)maxbodysize)?
+						maxbodysize:(uint32_t)remaining;
+		remaining=remaining-bodysize;
+
+		uint32_t	packetsize=bodysize+10;
+		uint16_t	packetchecksum=0;
+		uint16_t	headerchecksum=0;
+
+		// build the header, then the data flags, then this
+		// fragment's slice of the body
+		fragment.clear();
+		if (largeheader) {
+			writeBE(&fragment,packetsize);
+		} else {
+			writeBE(&fragment,(uint16_t)packetsize);
+			writeBE(&fragment,packetchecksum);
+		}
+		write(&fragment,reqpackettype);
+		write(&fragment,reqpacketflags);
+		writeBE(&fragment,headerchecksum);
+		fragment.append(dataflags,2);
+		fragment.append(body,(size_t)bodysize);
+
+		if (getDebug()) {
+			debugStart("send fragment");
+			debugWrite("large header: %s",largeheader?"yes":"no");
+			debugWrite("packet size: %d",packetsize);
+			if (!largeheader) {
+				debugWrite("packet checksum: %d",
+							packetchecksum);
+			}
+			debugWrite("packet type: %d",reqpackettype);
+			debugWrite("packet flags: 0x%04x",reqpacketflags);
+			debugWrite("header checksum: %d",headerchecksum);
+			debugWrite("body size: %d",packetsize-8);
+			debugHexDump(fragment.getBuffer()+8,packetsize-8);
+			debugEnd();
+		}
+
+		// send the fragment
+		if (clientsock->write(fragment.getBuffer(),
+					(size_t)packetsize)!=
+					(ssize_t)packetsize) {
+			debugWrite("write packet data failed");
+			debugSystemError();
+			return false;
+		}
+		debugWrite("wrote %d bytes",packetsize);
+
+		// advance past the body bytes we just sent
+		body=body+bodysize;
+
+	} while (remaining);
 
 	if (flush) {
 		clientsock->flushWriteBuffer(-1,-1);
@@ -3249,6 +3345,20 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	if (connectversion>=PROTOCOL_VERSION_12 && resppacketsize>=58) {
 		readBE(rp,&sdu,&rp);
 		readBE(rp,&tdu,&rp);
+	}
+
+	// negotiate the sdu instead of just echoing back whatever the client
+	// asked for (#9989): take the smaller of the client's request and the
+	// 4086 this module defaults to in init(), then floor the result at
+	// 512 - the documented TNS/SQL*Net minimum - so a tiny or bogus
+	// client-requested sdu can't make recvPacket() reject ordinary
+	// inbound packets or sendSplitPacket() degrade to near-zero-byte
+	// fragments
+	if (sdu>4086) {
+		sdu=4086;
+	}
+	if (sdu<512) {
+		sdu=512;
 	}
 
 	// connect data
@@ -15550,7 +15660,11 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			// the check comes after - stash it and stop if it
 			// doesn't fit, unless it's the first row, which
 			// goes out regardless of its size since the packet
-			// can't say "zero rows" when more remain
+			// can't say "zero rows" when more remain.  this is
+			// packing, not framing: it keeps the common case to
+			// one packet and one round trip, and a row too big
+			// for a single packet is split across several by
+			// sendPacket()
 			if (rowsfetched &&
 				reqpacket.getSize()+trailerreserve>=sdu) {
 				debugWrite("packet full");
@@ -15728,10 +15842,13 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// one.
 		// note that this only gates whether to start a row - nothing
 		// rechecks after putRow(), so a single large lob/long row can
-		// still push the packet past the sdu.  the fetch loops above
-		// (query3 and the newer fetch path) handle that by truncating
-		// the oversized row back out and stashing it in pendingrow to
-		// send first on the next round trip
+		// still leave the buffer bigger than the sdu.  that costs an
+		// extra packet rather than breaking the session: sendPacket()
+		// splits an oversized data packet into several, none of them
+		// bigger than the sdu.  the fetch loops above (query3 and the
+		// newer fetch path) pack better, truncating the oversized row
+		// back out and stashing it in pendingrow to send first on the
+		// next round trip
 		if (rowsfetched && reqpacket.getSize()+trailerreserve>=sdu) {
 			debugWrite("packet full");
 			break;

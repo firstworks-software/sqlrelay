@@ -612,6 +612,35 @@ the decoder can be exercised without live server access:
                                       whole of the exchange is in the
                                       response, which no capture on file
                                       has (#9700, #9984)
+    9989-dev-oci23-native-biglob-realserver.oraproxy
+                                     ociselect with OCISELECT_LOB=1 (login,
+                                      a small clob/blob/bfile row, then a
+                                      32000 byte clob - "a lob too big for
+                                      one tns packet", ociselect.cpp's own
+                                      words for it) against the real 10.2
+                                      server at 10.0.2.3 through oraproxy,
+                                      forced to reveal how a real server
+                                      splits a response across TNS packets
+                                      once it exceeds the negotiated sdu.
+                                      the accept packet negotiates sdu 2048;
+                                      the 32000 byte clob comes back as
+                                      sixteen consecutive ordinary DATA
+                                      packets (type 6, flags 0x00) of 2003
+                                      body bytes each, then one 303 byte
+                                      packet carrying the tail of the value
+                                      plus the next TTC element with no gap.
+                                      every continuation packet's 2 byte
+                                      "data flags" field is 0x0000, same as
+                                      an ordinary packet - nothing marks a
+                                      packet as a continuation.  the split
+                                      point falls wherever the byte count
+                                      lands: the clob's own long form clr
+                                      chunk markers (0xff length bytes every
+                                      256 bytes) drift across TNS packet
+                                      boundaries with no realignment, so a
+                                      chunk boundary and a packet boundary
+                                      can and do land at different offsets
+                                      in different packets (#9989)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing

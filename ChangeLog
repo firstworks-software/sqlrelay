@@ -2218,6 +2218,14 @@
 		252 that isn't a null or long form marker is refused
 		outright instead of being read as a 255 byte value
 		(#9985)
+	fixed the oracle protocol module writing an outgoing data response as
+		one tns packet with no cap, so a row too wide for the
+		negotiated sdu (eg. a large inline lob) went out oversized and
+		a real client dropped the connection with ora-12592;
+		sendPacket() now splits an oversized data packet into several
+		ordinary packets bounded by the sdu; also fixed the connect
+		handshake echoing the client's requested sdu back verbatim
+		instead of negotiating it (#9989)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
