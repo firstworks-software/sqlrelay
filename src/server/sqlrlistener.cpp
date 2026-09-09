@@ -366,7 +366,6 @@ bool sqlrlistener::init(int argc, const char **argv) {
 	uint64_t	mintimeout=DEFAULT_CONNECTION_START_ATTEMPTS*
 					(DEFAULT_CONNECTION_START_TIMEOUT+2);
 	if (pvt->_dynamicscaling &&
-			pvt->_listenertimeout &&
 			pvt->_listenertimeout<mintimeout) {
 		pvt->_listenertimeout=mintimeout;
 	}
@@ -713,17 +712,6 @@ bool sqlrlistener::createSharedMemoryAndSemaphores(const char *id) {
 				"calls\n");
 	}
 
-	// issue warning about listener timeout if necessary
-	if (pvt->_cfg->getListenerTimeout()>0 &&
-		!charstring::compare(pvt->_cfg->getSessionHandler(),"thread") &&
-		thread::isSupported() && thread::isReliable() &&
-		!pvt->_semset->supportsTimedSemaphoreOperations()) {
-		stderror.printf("Warning: listenertimeout disabled...\n"
-				"         sessionhandler=\"thread\" requested "
-				"(or defaulted) but system doesn't\n"
-				"         support timed semaphore "
-				"operations\n");
-	}
 	raiseDebugWriteEvent("success");
 	raiseDebugEndEvent();
 

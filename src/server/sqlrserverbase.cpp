@@ -5,6 +5,8 @@
 #include <rudiments/process.h>
 #include <rudiments/sys.h>
 #include <rudiments/signalclasses.h>
+#include <rudiments/datetime.h>
+#include <rudiments/snooze.h>
 #include <rudiments/error.h>
 
 class sqlrserverbaseprivate {
@@ -85,6 +87,42 @@ bool sqlrserverbase::semWait(semaphoreset *semset,
 		}
 		signalmanager::alarm(0);
 		semset->setRetryInterruptedOperations(true);
+	} else if (timeout>0) {
+		// Neither a native timed wait nor a signal-interruptible wait
+		// is available here, so poll the semaphore's value against a
+		// deadline instead.
+		// There's a small race.  Another waiter could take the
+		// semaphore between the getValue() below and the wait() that
+		// follows it, in which case that wait blocks past the
+		// deadline.  That requires two waiters to be woken at nearly
+		// the same instant, so it's an accepted risk rather than
+		// something worth an interprocess lock to close.
+		datetime	deadline;
+		deadline.initFromSystemDateTime();
+		deadline.addSeconds(timeout);
+		result=false;
+		for (;;) {
+			if (semset->getValue(index)>0) {
+				if (withundo) {
+					result=semset->waitWithUndo(index);
+				} else {
+					result=semset->wait(index);
+				}
+				break;
+			}
+			if (process::getShutDownFlag()) {
+				break;
+			}
+			datetime	now;
+			now.initFromSystemDateTime();
+			if (now.getEpoch()>=deadline.getEpoch()) {
+				if (timedout) {
+					*timedout=true;
+				}
+				break;
+			}
+			snooze::microsnooze(0,100000);
+		}
 	} else {
 		if (withundo) {
 			result=semset->waitWithUndo(index);
