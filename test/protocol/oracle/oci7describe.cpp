@@ -6,7 +6,7 @@
 // - odefin/oexec/ofen, then odescr, then oclose, ologof. Nothing else.
 //
 //   ./oci7describe SID \
-//     [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|secondexec|thirdcursor|midfetch]
+//     [--describe=parse|exec|parseexec|fetch|outofrange|concurrent|concurrentboth|unparsedcursor|secondexec|thirdcursor|midfetch]
 //                    [--defines=LIST] [USER PASSWORD [QUERY]]
 //
 // oci7.cpp in this directory is the full OCI7 protocol test, including a
@@ -16,10 +16,17 @@
 // login, one oparse, and whichever describe variant was asked for - small
 // enough to read by hand or feed straight to oradecode.
 //
-// The ten --describe= variants exist because each one has to be captured on
-// its own:
+// The eleven --describe= variants exist because each one has to be captured
+// on its own:
 //   parse        odescr right after oparse, before any oexec
 //   exec         odescr after oexec, before the first ofen
+//   parseexec    oparse, oexec, then odescr, with nothing bailing out in
+//                between - unlike exec, which bails on a failed oparse or
+//                oexec and assumes a working select via its odefin on
+//                columns 1-3.  a real server still raises a syntax error at
+//                oparse time (defflg is not deferred), but this is the
+//                variant that reaches a genuine execute-time error, such as
+//                a too-wide insert (ORA-12899), which is what #9983 is about
 //   fetch        odescr after at least one ofen (#9599 - a describe must not
 //                rewind a cursor that is mid-fetch)
 //   outofrange   odescr past the end of the select list, to see what a real
@@ -73,8 +80,10 @@
 //                after a describe, which is where the real oci7 client
 //                segfaults against sqlrelay
 //
-// QUERY, when given, only applies to parse/exec/fetch/outofrange - it always
-// has to select three columns, since outofrange describes column 4. The
+// QUERY, when given, only applies to parse/exec/parseexec/fetch/outofrange -
+// for parse/exec/fetch/outofrange it always has to select three columns,
+// since outofrange describes column 4. parseexec is the exception: it has no
+// odefin to satisfy, so QUERY can be any statement, including DML. The
 // concurrent, concurrentboth, unparsedcursor, secondexec, thirdcursor and
 // midfetch variants ignore QUERY; they open their own fixed queries, the same
 // way oci7.cpp's Concurrent Cursors and Fetch sections do.
@@ -219,7 +228,7 @@ int main(int argc, char **argv) {
 
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
-				"[--describe=parse|exec|fetch|outofrange|"
+				"[--describe=parse|exec|parseexec|fetch|outofrange|"
 				"concurrent|concurrentboth|unparsedcursor|secondexec|thirdcursor|midfetch] "
 				"[--defines=LIST] "
 				"[USER PASSWORD [QUERY]]\n",
@@ -571,6 +580,26 @@ int main(int argc, char **argv) {
 			ologof(&lda);
 			return 1;
 		}
+		describeColumn(&cda,1);
+		describeColumn(&cda,2);
+		describeColumn(&cda,3);
+		run("oclose",&cda,oclose(&cda));
+
+	} else if (!charstring::compare(variant,"parseexec")) {
+
+		// the only variant that takes an arbitrary caller-supplied
+		// QUERY and never bails out between oparse and oexec - an
+		// execute-time error needs somewhere to land, and exec (the
+		// other variant a QUERY can drive) bails out of a failed
+		// oparse or oexec before reaching odescr (#9983).  no odefin
+		// either, so QUERY need not be a select
+		Cda_Def	cda;
+		if (!openCursor("oopen",&cda)) {
+			ologof(&lda);
+			return 1;
+		}
+		parseQuery(&cda,query);
+		run("oexec",&cda,oexec(&cda));
 		describeColumn(&cda,1);
 		describeColumn(&cda,2);
 		describeColumn(&cda,3);
