@@ -1641,6 +1641,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint16_t index,
 							const char **name,
 							uint16_t *namesize);
+		bool	isIdentifierChar(char c);
+		uint32_t	fromObjectOffset(const char *query,
+							uint32_t querysize);
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
@@ -2162,6 +2165,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	cursoridoffset;
 
 		uint32_t	wireCursorId(sqlrservercursor *cursor);
+		sqlrservercursor	*wireIdToCursor(uint32_t wirecursorid);
 		sqlrservercursor	*cursorFromWireId(uint32_t wirecursorid);
 };
 
@@ -7756,6 +7760,59 @@ void sqlrprotocol_oracle::putO3LogonSummary() {
 	putOci7Summary(0,0,0,0);
 }
 
+// true if "c" can appear in an oracle identifier - see fromObjectOffset()
+bool sqlrprotocol_oracle::isIdentifierChar(char c) {
+	return character::isAlphanumeric(c) || c=='_' || c=='$' || c=='#';
+}
+
+// the character offset of the first character of the FROM-clause's object
+// name in "query" - see putOci7Summary()'s parse error offset field, below.
+// 0 if "query" has no FROM keyword outside a quoted literal.  walks the
+// same IN_QUERY/IN_QUOTES states getBindVariableName() does, so a "from"
+// inside a string literal isn't mistaken for the keyword
+uint32_t sqlrprotocol_oracle::fromObjectOffset(const char *query,
+						uint32_t querysize) {
+
+	if (!query || !querysize) {
+		return 0;
+	}
+
+	queryparsestate_t	parsestate=IN_QUERY;
+
+	for (uint32_t i=0; i<querysize; i++) {
+
+		if (parsestate==IN_QUOTES) {
+			if (query[i]=='\'') {
+				parsestate=IN_QUERY;
+			}
+			continue;
+		}
+
+		if (query[i]=='\'') {
+			parsestate=IN_QUOTES;
+			continue;
+		}
+
+		// "from", bounded by non-identifier characters on both
+		// sides, so this doesn't match inside "fromage" or
+		// "customerfrom"
+		if (i+4<=querysize &&
+			!charstring::compareIgnoringCase(query+i,"from",4) &&
+			(i==0 || !isIdentifierChar(query[i-1])) &&
+			(i+4==querysize || !isIdentifierChar(query[i+4]))) {
+
+			uint32_t	objstart=i+4;
+			while (objstart<querysize &&
+				character::isWhitespace(query[objstart])) {
+				objstart++;
+			}
+			return objstart;
+		}
+	}
+
+	return 0;
+}
+
 // the summary object a real 10.2 server answers an oci7 client with.  the same
 // object serves the whole session: the o3logon challenge's tail, the login's
 // answer, and the answer to the osql7 parse behind it.  its fields don't map
@@ -7810,16 +7867,24 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,cursorid);
 
-	// the parse error offset, which an oci7 client keeps in cda->peo.  a
-	// client only reads it when the parse returned an error, and this
-	// object only ever answers a parse that succeeded, so its value here
-	// is undefined and a real server writes whatever its own parser last
-	// held: 14 answering "select 1 from dual" and nothing at all
-	// answering "select banner from v$version where rownum=1", neither of
-	// which is a function of the statement.  0 is what the second of
-	// those got, and that session fetched, closed and disconnected
-	// normally, so don't try to reproduce the first
-	writeLenPreInt(&reqpacket,0);
+	// the parse error offset, which an oci7 client keeps in cda->peo and
+	// only reads back once a parse has failed.  the comment that used to
+	// sit here called this undefined and no function of the statement -
+	// wrong on both counts: it is the character offset of the FROM
+	// clause's object name in the query text.  two real 10.2 server
+	// captures taken for #9699 answer "select level as num from dual
+	// connect by level<=5 order by 1" with 25 and "select 'row'||level as
+	// txt from dual connect by level<=5 order by 1" with 32 - both
+	// exactly where "dual" starts - and a real server's answer to
+	// "select 1 from dual", 14, fits the same rule.  a call with no
+	// cursor (the login path) or no query prepared on it yet has nothing
+	// to offer, so it gets 0
+	sqlrservercursor	*fromobjcursor=wireIdToCursor(cursorid);
+	uint32_t	parseerroroffset=(fromobjcursor)?
+				fromObjectOffset(
+					cont->getQueryBuffer(fromobjcursor),
+					cont->getQuerySize(fromobjcursor)):0;
+	writeLenPreInt(&reqpacket,parseerroroffset);
 
 	// 3 answering the parse of a select, 0 answering the login.  callers
 	// pass putSummary()'s own constant rather than classifying the
@@ -7867,6 +7932,7 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	debugWrite("command type: %d",commandtype);
 	debugWrite("call number: %d",callnumber);
 	debugWrite("success iterations: %d",successiterations);
+	debugWrite("parse error offset: %d",parseerroroffset);
 	debugEnd();
 }
 
@@ -8269,12 +8335,11 @@ uint32_t sqlrprotocol_oracle::wireCursorId(sqlrservercursor *cursor) {
 	return (uint32_t)(cont->getId(cursor)+cursoridoffset);
 }
 
-sqlrservercursor *sqlrprotocol_oracle::cursorFromWireId(uint32_t wirecursorid) {
-
-	// record this regardless of whether it resolves below - a request
-	// naming a cursor id, valid or not, is still the client's most recent
-	// word on which cursor it considers current.  see lastwirecursorid
-	lastwirecursorid=wirecursorid;
+// the lookup cursorFromWireId() does, without its lastwirecursorid side
+// effect - for callers like putOci7Summary() that need to peek at a cursor
+// the wire named without overwriting what sendMarkerCancelError() later
+// reads there
+sqlrservercursor *sqlrprotocol_oracle::wireIdToCursor(uint32_t wirecursorid) {
 
 	// an id below the shift never named a cursor this module handed out,
 	// and 0 is the client saying it has none, so neither is a cursor
@@ -8283,6 +8348,16 @@ sqlrservercursor *sqlrprotocol_oracle::cursorFromWireId(uint32_t wirecursorid) {
 		return NULL;
 	}
 	return cont->getCursor((uint16_t)(wirecursorid-cursoridoffset));
+}
+
+sqlrservercursor *sqlrprotocol_oracle::cursorFromWireId(uint32_t wirecursorid) {
+
+	// record this regardless of whether it resolves below - a request
+	// naming a cursor id, valid or not, is still the client's most recent
+	// word on which cursor it considers current.  see lastwirecursorid
+	lastwirecursorid=wirecursorid;
+
+	return wireIdToCursor(wirecursorid);
 }
 
 bool sqlrprotocol_oracle::open(const byte_t *rp) {
