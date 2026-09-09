@@ -1730,7 +1730,14 @@ int main(int argc, char **argv) {
 	// closest thing, and its header comment says plainly not to use that
 	// struct in OCI programs.  so only the call succeeding and a
 	// plausible non-zero length are asserted here, not a specific byte
-	// layout.  unverified, see #9717
+	// layout.
+	//
+	// what the wire carries for this define is known, though - packet
+	// [0457] of samples/9746-dev-oci23api7-native-datatypes-realserver.
+	// oraproxy, a real 10.2 server answering this very fetch: a constant
+	// 0e byte, then the rowid's object number, file number, a zero byte,
+	// block number and row number.  what OCI then hands back in rowidbin
+	// is a separate question, and still an open one (#9717)
 	assertEquals(check(&typecda2,
 			oparse(&typecda2,(text *)
 				"select testrowid from protocoltesttypes",

@@ -719,6 +719,62 @@ the decoder can be exercised without live server access:
                                       shape with an empty value and a
                                       negative indicator, not a different
                                       one (#9984)
+    9746-dev-oci23api7-native-datatypes-realserver.oraproxy
+                                     oci7's whole Datatypes section - a real
+                                      OCI7 client talking straight to the real
+                                      10.2 server at 10.0.2.3 through oraproxy,
+                                      not through sqlrelay.  it settles what a
+                                      real server puts on the legacy tti fetch
+                                      wire for the types putField() had FIXMEs
+                                      for.  every value in it is an ordinary
+                                      clr: packet [0451], the eleven column
+                                      row, answers a raw(20) holding
+                                      0102030405 with "05 01 02 03 04 05", a
+                                      rowid column defined SQLT_STR with "12"
+                                      and the 18 character base 64 text, and
+                                      the timestamp and interval columns with
+                                      their to_char text behind a plain length
+                                      byte.  packet [0457] reads the same
+                                      rowid with dty 11 (SQLT_RID) instead and
+                                      gets the packed form - "0e", the object
+                                      number, the file number, a zero byte,
+                                      the block number and the row number,
+                                      which is putRowidField()'s layout and
+                                      which nothing on file documented before.
+                                      [0465], [0503], [0699] and [0729] are
+                                      the long and long raw columns, small and
+                                      300 bytes: the 0xfe long form with
+                                      chunks capped at 255 bytes, then one
+                                      zero to close the run - and then the
+                                      column's four indicator and return code
+                                      bytes, not the two extra zeros
+                                      putLongBytes() writes on the query3
+                                      path.  [0495] and [0533] are the null
+                                      long and long raw: a zero byte, then
+                                      ff ff and 7d 05, the -1 indicator and
+                                      ORA-01405.  [0210] and [0563] show every
+                                      other type's null carrying that same
+                                      pair, so it is the legacy path's null
+                                      encoding rather than anything a long
+                                      does specially.  [0806]'s ORA-00932 is
+                                      only a bfile select naming the wrong
+                                      type ("expected NUMBER got FILE") - the
+                                      server answers clob/blob selects for
+                                      real (row headers at [0868] and [0877],
+                                      each indicator/return-code pair
+                                      ff ff 7d 05 with no value byte ahead of
+                                      it, unlike every other null in this
+                                      capture), it's the client at [0871]/
+                                      [0880] that gives up with ORA-01013
+                                      afterward.  the session negotiated the
+                                      NATIVE encoding, so
+                                      counts are fixed width here and the
+                                      descriptor block's byte offsets are not
+                                      comparable to a capture against sqlrelay
+                                      itself, which only ever negotiates
+                                      portable; only the values' own encoding,
+                                      which reads the same either way, is
+                                      relied on (#9746)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing

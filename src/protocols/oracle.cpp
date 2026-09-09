@@ -1771,9 +1771,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		int16_t	getRowidDigit(char c);
 		bool	putRawField(const char *field,
 							uint64_t fieldsize,
-							bool longraw);
+							bool longraw,
+							bool extrazeros);
 		int16_t	getRawDigit(char c);
-		void	putLongBytes(const char *bytes, uint32_t size);
+		void	putLongBytes(const char *bytes, uint32_t size,
+							bool extrazeros);
 		void	putNullLongField();
 		bool	putIntervalField(const char *field,
 							uint64_t fieldsize,
@@ -13677,7 +13679,7 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 				wiretype==ORACLE_TYPE_LONG_RAW) {
 			debugWrite("raw: %.*s",(int)fieldsize,field);
 			bool	longraw=(wiretype==ORACLE_TYPE_LONG_RAW);
-			if (!putRawField(field,fieldsize,longraw)) {
+			if (!putRawField(field,fieldsize,longraw,true)) {
 				// same as a date that won't parse - bytes
 				// the module can't decode are no more use to
 				// the client than a null
@@ -13693,7 +13695,7 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 			// way a long raw does - but it goes out in the same
 			// long form, since a long can be far bigger than
 			// the short form's 252 bytes
-			putLongBytes(field,(uint32_t)fieldsize);
+			putLongBytes(field,(uint32_t)fieldsize,true);
 		} else if (wiretype==ORACLE_TYPE_INTERVALYM ||
 				wiretype==ORACLE_TYPE_INTERVALDS) {
 			debugWrite("interval: %.*s",(int)fieldsize,field);
@@ -15083,7 +15085,8 @@ int16_t sqlrprotocol_oracle::getRawDigit(char c) {
 
 bool sqlrprotocol_oracle::putRawField(const char *field,
 						uint64_t fieldsize,
-						bool longraw) {
+						bool longraw,
+						bool extrazeros) {
 
 	debugStart("raw field");
 	debugWrite("input: %.*s",(int)fieldsize,field);
@@ -15123,7 +15126,7 @@ bool sqlrprotocol_oracle::putRawField(const char *field,
 	}
 
 	if (longraw) {
-		putLongBytes((const char *)bytes,bytecount);
+		putLongBytes((const char *)bytes,bytecount,extrazeros);
 	} else {
 		putLenBytes((const char *)bytes,bytecount);
 	}
@@ -15153,13 +15156,28 @@ void sqlrprotocol_oracle::putNullLongField() {
 	write(&reqpacket,(const char *)nulllong,sizeof(nulllong));
 }
 
-void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size) {
+void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size,
+						bool extrazeros) {
 
-	// putLenBytes()' long form, taken whatever the size, and with two
-	// more zero bytes past the empty chunk that closes it.  a live 12.2
-	// server sends a long or a long raw this way even when it is short
-	// enough for the plain form, and sends those two bytes for a long
-	// column and for nothing else.
+	// putLenBytes()' long form, taken whatever the size, and - on the
+	// query3 fetch path - with two more zero bytes past the empty chunk
+	// that closes it.  a live 12.2 server sends a long or a long raw this
+	// way even when it is short enough for the plain form, and sends
+	// those two bytes for a long column and for nothing else.
+	//
+	// the legacy fetch path passes extrazeros false: there the column's
+	// indicator and return code follow the value, and the two extra
+	// bytes aren't there.  a real 10.2 server answers an ofen of a long
+	// holding "long value" with
+	//
+	//	fe 0a 6c 6f 6e 67 20 76 61 6c 75 65 00 00 00 00 00
+	//
+	// in packet [0465] of test/protocol/oracle/samples/
+	// 9746-dev-oci23api7-native-datatypes-realserver.oraproxy - the
+	// marker, the chunk, the bytes, the zero that closes the run, and
+	// then four more zeros, not six.  the four are the indicator and
+	// return code pair, which that capture's null long ([0495]) writes
+	// as ff ff / 7d 05 in the same position
 	//
 	// each chunk's length goes out the way putLenBytes() writes one: a
 	// raw byte, or a count prefixed ub4 if the client negotiated
@@ -15193,8 +15211,10 @@ void sqlrprotocol_oracle::putLongBytes(const char *bytes, uint32_t size) {
 		offset+=chunk;
 	}
 	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
-	write(&reqpacket,(byte_t)0);
+	if (extrazeros) {
+		write(&reqpacket,(byte_t)0);
+		write(&reqpacket,(byte_t)0);
+	}
 }
 
 bool sqlrprotocol_oracle::getIntervalNumber(const char **f,
@@ -17099,13 +17119,49 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			debugWrite("field: \"%.*s\"",(int)fieldsize,field);
 			return true;
 		case ORACLE_TYPE_LONG:
-			// FIXME: implement this
-			debugWrite("long (not implemented)");
-			return false;
+			// a long is text, so nothing has to be decoded the
+			// way a long raw does, but it goes out in the long
+			// form whatever its size - the same shape
+			// putRowData() writes, minus the two extra zeros.
+			// packet [0465] of test/protocol/oracle/samples/
+			// 9746-dev-oci23api7-native-datatypes-realserver.
+			// oraproxy is a real 10.2 server's answer to an ofen
+			// of a long holding "long value": "fe 0a" then the
+			// ten bytes then a single zero, ahead of the
+			// indicator and return code.  [0699] in the same
+			// capture is a 300 byte long, "fe ff" then 255
+			// bytes, "2d" then 45 more, then the zero - so the
+			// chunking is putLenBytes()' own
+			putLongBytes(field,(uint32_t)fieldsize,false);
+			debugWrite("long: \"%.*s\"",(int)fieldsize,field);
+			return true;
 		case ORACLE_TYPE_ROWID_DEPRECATED:
-			// FIXME: implement this
-			debugWrite("rowid (deprecated) (not implemented)");
-			return false;
+			// the rowid goes out as the 18 character base 64 form
+			// the backend hands over, not putRowidField()'s
+			// packed binary form, for the same reason a number
+			// goes out as digits above: a legacy client asks the
+			// server to convert.  column 6 of packet [0451] of
+			// test/protocol/oracle/samples/
+			// 9746-dev-oci23api7-native-datatypes-realserver.
+			// oraproxy - a real 10.2 server answering an ofen of
+			// a rowid column defined SQLT_STR - is "12" and then
+			// "AAA6KOAAGAAAAFdAAC", an ordinary clr.
+			//
+			// the packed form is what a dty 11 (SQLT_RID) define
+			// gets instead: [0457] of the same capture, the same
+			// row read that way, is "0e" then the object number,
+			// the file number, a zero byte, the block number and
+			// the row number - putRowidField()'s layout exactly.
+			// this module can't tell the two defines apart yet
+			// (see the FIXME above about reading the define), and
+			// SQLT_RID's buffer layout is undocumented, so the
+			// text form is what goes out: an SQLT_STR define
+			// reads it correctly, and an SQLT_RID one gets a
+			// plausible non-zero length rather than a wrong
+			// structure
+			putLenBytes(field,(uint32_t)fieldsize);
+			debugWrite("rowid: \"%.*s\"",(int)fieldsize,field);
+			return true;
 		case ORACLE_TYPE_DATE:
 			{
 			// every other type this function writes goes out as a
@@ -17136,13 +17192,30 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			}
 			return true;
 		case ORACLE_TYPE_RAW:
-			// FIXME: implement this
-			debugWrite("raw (not implemented)");
-			return false;
+			// the backend hands the bytes over as hexadecimal
+			// text and the wire wants the bytes, in the same clr
+			// every other short value takes.  column 4 of packet
+			// [0451] of test/protocol/oracle/samples/
+			// 9746-dev-oci23api7-native-datatypes-realserver.
+			// oraproxy is a real 10.2 server answering an ofen of
+			// a raw(20) holding 0102030405: "05 01 02 03 04 05"
+			if (!putRawField(field,fieldsize,false,false)) {
+				// better to send nothing at all than to send
+				// bytes the module couldn't decode
+				return false;
+			}
+			return true;
 		case ORACLE_TYPE_LONG_RAW:
-			// FIXME: implement this
-			debugWrite("long raw (not implemented)");
-			return false;
+			// the same decode, in the long form a long column
+			// takes - see the ORACLE_TYPE_LONG case above.
+			// packet [0503] of the capture named there answers
+			// an ofen of a long raw holding 0a0b0c0d0e with
+			// "fe 05 0a 0b 0c 0d 0e 00", and [0729] a 300 byte
+			// one in two chunks
+			if (!putRawField(field,fieldsize,true,false)) {
+				return false;
+			}
+			return true;
 		case ORACLE_TYPE_RESULT_SET:
 			// FIXME: implement this
 			debugWrite("result set (not implemented)");
@@ -17161,39 +17234,45 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			return false;
 		// putRow handles lobs itself, before it ever gets here,
 		// so these three only come up if a column is declared a
-		// lob but the driver didn't flag it as one
+		// lob but the driver didn't flag it as one - a postgresql
+		// bytea, json or array column reaches here as a blob, since
+		// that connection module's getField() never sets the lob
+		// flag
 		case ORACLE_TYPE_CLOB:
-			// FIXME: implement this
-			debugWrite("clob (not implemented)");
-			return false;
 		case ORACLE_TYPE_BLOB:
-			// FIXME: implement this
-			debugWrite("blob (not implemented)");
-			return false;
 		case ORACLE_TYPE_BFILE:
-			// FIXME: implement this
-			debugWrite("bfile (not implemented)");
-			return false;
+			// the value is already in hand, so it goes out the
+			// way putLobField() below sends a real lob's bytes on
+			// this path: the long form, whatever its size, since
+			// a lob column's framing is decided by its type and
+			// not its length.  a locator is no use here - the
+			// legacy fetch path never sends one, and an OCI7
+			// client has no call that could read one back
+			putLongBytes(field,(uint32_t)fieldsize,false);
+			debugWrite("lob field size: %lld",
+						(long long)fieldsize);
+			return true;
+		// oci7 predates the datetime and interval descriptors
+		// (OCIDateTime, OCIInterval) and every call that reads one
+		// back, so a legacy client can only define these as text and
+		// let the server convert, the same way it does for a number.
+		// columns 7 through 11 of packet [0451] of
+		// test/protocol/oracle/samples/
+		// 9746-dev-oci23api7-native-datatypes-realserver.oraproxy are
+		// a real 10.2 server's answer to exactly that - ordinary
+		// clrs, "1a" and "2004-04-04 04:04:04.444444" for the
+		// timestamp, "06" and "+01-02" for the year-month interval.
+		// putTimestampField() and putIntervalField() answer a
+		// different question, the binary form a modern client's
+		// descriptor define asks for
 		case ORACLE_TYPE_TIMESTAMP:
-			// FIXME: implement this
-			debugWrite("timestamp (not implemented)");
-			return false;
 		case ORACLE_TYPE_TIMESTAMPTZ:
-			// FIXME: implement this
-			debugWrite("timestamp tz (not implemented)");
-			return false;
-		case ORACLE_TYPE_INTERVALYM:
-			// FIXME: implement this
-			debugWrite("interval year-month (not implemented)");
-			return false;
-		case ORACLE_TYPE_INTERVALDS:
-			// FIXME: implement this
-			debugWrite("interval day-second (not implemented)");
-			return false;
 		case ORACLE_TYPE_TIMESTAMPLTZ:
-			// FIXME: implement this
-			debugWrite("timestamp ltz (not implemented)");
-			return false;
+		case ORACLE_TYPE_INTERVALYM:
+		case ORACLE_TYPE_INTERVALDS:
+			putLenBytes(field,(uint32_t)fieldsize);
+			debugWrite("field: \"%.*s\"",(int)fieldsize,field);
+			return true;
 		case ORACLE_TYPE_PLSQL_INDEX_TABLE:
 			// FIXME: implement this
 			debugWrite("plsql index table (not implemented)");
