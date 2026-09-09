@@ -17107,6 +17107,7 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 	uint64_t	fieldsize;
 	bool		lob;
 	bool		null;
+	bool		wrotenullmarker;
 
 	// put the fields
 	for (uint32_t i=0; i<colcount; i++) {
@@ -17147,6 +17148,7 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		}
 
 		// put the field
+		wrotenullmarker=false;
 		if (lob) {
 			debugWrite("LOB");
 			// putLobField() has no way to report failure, but it
@@ -17171,9 +17173,10 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			// unreadable alike - see putRowData().
 			debugWrite("null");
 			write(&reqpacket,(byte_t)0);
+			wrotenullmarker=true;
 		}
 
-		// two zero fields after every column, including the last:
+		// two fields after every column, including the last:
 		// the indicator and the return code odefin() gave the client
 		// a pointer for.  confirmed against real OCI7 legacy-fetch
 		// captures (#9637) for 1 through 5 columns, both with and
@@ -17183,8 +17186,25 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// oracle102-oci7-portable-login-select.cap.  four against two
 		// is what says it is a pair of ub2s and not one ub4: a single
 		// count would be one byte in the portable encoding, not two.
-		putAuthCount(0,2);
-		putAuthCount(0,2);
+		//
+		// a null column gets indicator -1 and return code 1405
+		// (ORA-01405, "fetched column value is NULL") instead of the
+		// zero pair, or an OCI7 client reads the column as not null.
+		// packets [0210], [0495], [0533] and [0563] of
+		// test/protocol/oracle/samples/9746-dev-oci23api7-native-
+		// datatypes-realserver.oraproxy show that same 00/ff ff/7d 05
+		// across nine null columns spanning number, char, varchar2,
+		// date, timestamp, long and long raw.  the lob branch keeps
+		// the zero pair: the only null-lob rows in that capture leave
+		// the value marker byte out entirely and were broken off by
+		// the client mid-fetch, so what they show isn't settled yet.
+		if (wrotenullmarker) {
+			putAuthCount(0xffff,2);
+			putAuthCount(1405,2);
+		} else {
+			putAuthCount(0,2);
+			putAuthCount(0,2);
+		}
 		debugWrite("indicator and return code");
 
 		debugEnd();

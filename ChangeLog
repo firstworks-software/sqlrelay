@@ -2297,6 +2297,16 @@
 		bytes, same as before; also capped a define's buffer
 		size, which the fix reads off the wire, so a forged one
 		can't blow up the padding written for it (#10014)
+	fixed the oracle protocol module's legacy (oci7) fetch path sending
+		indicator 0 and return code 0 for a null column, for every
+		type, rather than the indicator -1 and return code 1405
+		(ORA-01405, "fetched column value is NULL") a real server
+		sends; a client reading indicator 0 sees the column as not
+		null. the module already got this right for one case, a
+		null long or long raw fetched through the modern (query3)
+		path, but never for the legacy path any type went through.
+		lob columns are unaffected; what a real server sends for a
+		null lob on this path is still unsettled (#10013)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

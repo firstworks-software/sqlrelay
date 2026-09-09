@@ -1183,7 +1183,9 @@ int main(int argc, char **argv) {
 	assertEquals(check(&cda,ofen(&cda,1)),0);
 	assertEquals((const char *)number,"3");
 	// -1 in an indicator is a null, the same value OCI8 spells
-	// OCI_IND_NULL
+	// OCI_IND_NULL, and the return code beside it is 1405 - the
+	// ORA-01405 "fetched column value is NULL" a real server sends
+	// for a null column and only for a null column
 	assertEquals((int)ind[0],0);
 	assertEquals((int)ind[1],-1);
 	assertEquals((int)ind[2],-1);
@@ -1191,6 +1193,10 @@ int main(int argc, char **argv) {
 	assertEquals((int)retlen[1],0);
 	assertEquals((int)retlen[2],0);
 	assertEquals((int)retlen[3],0);
+	assertEquals((int)retcode[0],0);
+	assertEquals((int)retcode[1],1405);
+	assertEquals((int)retcode[2],1405);
+	assertEquals((int)retcode[3],1405);
 	stdoutput.printf("\n\n");
 
 
@@ -1948,6 +1954,8 @@ int main(int argc, char **argv) {
 	assertEquals(check(&typecda2,oexec(&typecda2)),0);
 	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
 	assertEquals((int)longind,-1);
+	assertEquals((int)longlen,0);
+	assertEquals((int)longcode,1405);
 	stdoutput.printf("\n\n");
 
 
@@ -2001,6 +2009,8 @@ int main(int argc, char **argv) {
 	assertEquals(check(&typecda2,oexec(&typecda2)),0);
 	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
 	assertEquals((int)longrawind,-1);
+	assertEquals((int)longrawlen,0);
+	assertEquals((int)longrawcode,1405);
 	stdoutput.printf("\n\n");
 
 
@@ -2016,6 +2026,7 @@ int main(int argc, char **argv) {
 					(sb4)-1,0,(ub4)2)),0);
 	bytestring::zero(typeind,sizeof(typeind));
 	bytestring::zero(typelen,sizeof(typelen));
+	bytestring::zero(typecode,sizeof(typecode));
 	assertEquals(check(&typecda2,
 			odefin(&typecda2,1,(ub1 *)typevarchar,
 				(sword)sizeof(typevarchar),SQLT_CHR,-1,
@@ -2045,6 +2056,13 @@ int main(int argc, char **argv) {
 	assertEquals((int)typeind[2],-1);
 	assertEquals((int)typeind[6],-1);
 	assertEquals((int)typelen[0],0);
+	assertEquals((int)typelen[1],0);
+	assertEquals((int)typelen[2],0);
+	assertEquals((int)typelen[6],0);
+	assertEquals((int)typecode[0],1405);
+	assertEquals((int)typecode[1],1405);
+	assertEquals((int)typecode[2],1405);
+	assertEquals((int)typecode[6],1405);
 	stdoutput.printf("\n\n");
 
 
