@@ -37,8 +37,8 @@
 // code, which sendQueryResponse()/sendExecuteResponse() and the error path
 // all set to the same 0x04) is what actually tells a genuine parse or
 // execute success apart from an error answering in its place
-static const size_t	ORA_QUERY_RESPONSE_SIZE=92;
-static const size_t	ORA_EXECUTE_RESPONSE_SIZE=56;
+static const size_t	ORA_QUERY_RESPONSE_SIZE=33;
+static const size_t	ORA_EXECUTE_RESPONSE_SIZE=34;
 
 // the marker sendFetchResponse() writes in front of every row
 static const unsigned char	ORA_ROW_MARKER=0x07;
@@ -69,11 +69,14 @@ static void report(const char *label, bool ok) {
 	}
 }
 
-// oracle's number format back to an integer - the inverse of
-// putNumberField() in src/protocols/oracle.cpp, for the integer cases this
-// test's two queries produce.  a positive number's exponent byte is 193+e
-// and its base 100 digits are each digit+1; a negative number's is 62-e,
-// its digits are each 101-digit, and a 0x66 terminator follows them
+// a legacy fetch's NUMBER column, back to an integer.  putField() in
+// src/protocols/oracle.cpp writes a NUMBER as the ascii digits the backend
+// handed back, not as putNumberField()'s base-100 form - "a legacy client
+// asks the server to convert" - so this is a plain decimal parse, not
+// putNumberField()'s inverse.  #9637's legacy-fetch captures against a real
+// 10.2 server confirm it: "select 1, 2, 3 from dual" comes back as the clrs
+// "01 31", "01 32" and "01 33" - one-byte clrs holding the ascii digits -
+// where putNumberField() would have written "02 c1 02" for the first of them
 static bool oracleNumberToInteger(const unsigned char *bytes,
 					size_t size,
 					int64_t *value) {
@@ -82,37 +85,19 @@ static bool oracleNumberToInteger(const unsigned char *bytes,
 		return false;
 	}
 
-	if (size==1 && bytes[0]==0x80) {
-		*value=0;
-		return true;
-	}
+	bool	negative=(bytes[0]=='-');
+	size_t	i=(negative)?1:0;
 
-	bool	negative=(bytes[0]<0x80);
-	int32_t	exponent=(negative)?(62-(int32_t)bytes[0]):
-					((int32_t)bytes[0]-193);
-
-	size_t	digitcount=size-1;
-	if (negative && digitcount && bytes[size-1]==0x66) {
-		digitcount--;
-	}
-
-	// a fraction would need the exponent to run past the digits sent;
-	// this test's queries produce whole numbers only.  the exponent has
-	// to be checked before the cast - a negative one would wrap to a
-	// huge size_t, sail past the comparison and spin the padding loop
-	// below
-	if (exponent<0 || (size_t)(exponent+1)<digitcount) {
+	if (i>=size) {
 		return false;
 	}
 
 	int64_t	result=0;
-	for (size_t i=0; i<digitcount; i++) {
-		unsigned char	d=(negative)?(unsigned char)(101-bytes[i+1]):
-					(unsigned char)(bytes[i+1]-1);
-		result=result*100+(int64_t)d;
-	}
-	for (size_t i=digitcount; i<(size_t)(exponent+1); i++) {
-		result=result*100;
+	for (; i<size; i++) {
+		if (bytes[i]<'0' || bytes[i]>'9') {
+			return false;
+		}
+		result=result*10+(int64_t)(bytes[i]-'0');
 	}
 
 	*value=(negative)?-result:result;
@@ -139,10 +124,28 @@ static bool responseContainsBytes(oracleprotocolclient *client,
 
 // walk the plainest legacy fetch response - the one a fetch with no options
 // asks for - and collect the value of the single column of each row it
-// carries.  see sendFetchResponse() in src/protocols/oracle.cpp: the data
-// flags, two filler bytes standing in for the iov, three more fixed bytes,
-// the column count, seven more fixed bytes, then a marker and a row for
-// each row, then a trailer that starts with something other than the marker
+// carries.  see sendFetchResponse()/putRowHeader() in src/protocols/oracle.cpp:
+// the data flags, then TTC_ROW_HEADER and its flags byte, then six
+// length-prefixed counts (column count, iteration number, row count, uac
+// buffer length, bit vector size and one more of unknown meaning) - it has
+// no fixed size, so it has to be walked field by field the way
+// readLegacyError() below walks the error object, not skipped as a fixed
+// number of bytes.  a marker and a row follow for each row, then a trailer
+// that starts with something other than the marker.
+//
+// putRow() writes two more length-prefixed fields behind every column's
+// value - the indicator and the return code odefin() gave the client a
+// pointer for - both always 0 here, since this test never odefin's
+// anything.  skipping only the value and landing on these as though they
+// were the next row's marker is what made the three-row query decode a
+// single, wrong row: 0x00 isn't ORA_ROW_MARKER, so the walk below stopped
+// after row one every time.
+//
+// the row loop below reads exactly one value/indicator/returncode triple
+// per marker, so it only walks a genuine one-column result - the shape
+// *colcount is checked against in main() below.  a legacy fetch with more
+// than one defined column would need an inner loop over *colcount here;
+// nothing in this file exercises that
 static bool readLegacyFetchRows(oracleprotocolclient *client,
 					int64_t *values,
 					size_t maxvalues,
@@ -151,16 +154,22 @@ static bool readLegacyFetchRows(oracleprotocolclient *client,
 
 	client->rewindResponse();
 
-	unsigned char	skip[7];
-	unsigned char	columns=0;
-	if (!client->readBytes(skip,2) ||	// data flags
-		!client->readBytes(skip,2) ||	// no iov
-		!client->readBytes(skip,3) ||	// unknown2, unknown3
-		!client->readByte(&columns) ||
-		!client->readBytes(skip,7)) {	// unknown4
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	unsigned char	flags=0;
+	uint32_t	skipint=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) ||
+		ttccode!=ORA_TTC_ROW_HEADER ||
+		!client->readByte(&flags) ||
+		!client->readLenPreInt(colcount) ||	// column count
+		!client->readLenPreInt(&skipint) ||	// iteration number
+		!client->readLenPreInt(&skipint) ||	// row count
+		!client->readLenPreInt(&skipint) ||	// uac buffer length
+		!client->readLenPreInt(&skipint) ||	// bit vector size
+		!client->readLenPreInt(&skipint)) {
 		return false;
 	}
-	*colcount=columns;
 
 	*valuecount=0;
 	for (;;) {
@@ -176,9 +185,13 @@ static bool readLegacyFetchRows(oracleprotocolclient *client,
 
 		unsigned char	numbersize=0;
 		unsigned char	number[32];
+		uint32_t	indicator=0;
+		uint32_t	returncode=0;
 		if (!client->readByte(&numbersize) ||
 			numbersize>sizeof(number) ||
-			!client->readBytes(number,numbersize)) {
+			!client->readBytes(number,numbersize) ||
+			!client->readLenPreInt(&indicator) ||
+			!client->readLenPreInt(&returncode)) {
 			return false;
 		}
 
@@ -311,15 +324,14 @@ int main(int argc, char **argv) {
 	// is reading rows.  without this, an error answer to the failing
 	// query proves nothing - a request the listener couldn't parse
 	// would produce one too
-	if (!client.legacyQuery(ORA_OPTION_PARSE,0,
-					(uint16_t)cursorid,goodquery)) {
+	if (!client.legacyQuery(cursorid,goodquery)) {
 		report("parse",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
 	}
 	report("parse",client.getResponseSize()==ORA_QUERY_RESPONSE_SIZE);
 
-	if (!client.legacyExecute(ORA_OPTION_EXECUTE,0,(uint16_t)cursorid)) {
+	if (!client.legacyExecute(cursorid,1,0)) {
 		report("execute",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
@@ -329,7 +341,7 @@ int main(int argc, char **argv) {
 	// no options at all: no column definitions, no iov, and the
 	// non-exact-fetch trailer.  #9609 left the exact-fetch trailer and
 	// putLobField() unverified, so this stays clear of both
-	if (!client.legacyFetch(0,0)) {
+	if (!client.legacyFetch(cursorid,0)) {
 		report("fetch",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
@@ -372,8 +384,7 @@ int main(int argc, char **argv) {
 	}
 	report("open second cursor",true);
 
-	if (!client.legacyQuery(ORA_OPTION_PARSE,0,
-					(uint16_t)badcursorid,badquery)) {
+	if (!client.legacyQuery(badcursorid,badquery)) {
 		report("parse failing query",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
@@ -384,8 +395,7 @@ int main(int argc, char **argv) {
 	// the execute has to succeed - legacy execute() never fetches a row,
 	// so nothing has divided by zero yet.  an error here would mean the
 	// failure moved off the path this test covers
-	if (!client.legacyExecute(ORA_OPTION_EXECUTE,0,
-						(uint16_t)badcursorid)) {
+	if (!client.legacyExecute(badcursorid,1,0)) {
 		report("execute failing query",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
@@ -393,7 +403,7 @@ int main(int argc, char **argv) {
 	report("execute failing query",
 			client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
 
-	if (!client.legacyFetch(0,0)) {
+	if (!client.legacyFetch(badcursorid,0)) {
 		report("fetch failing query",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
@@ -440,10 +450,13 @@ int main(int argc, char **argv) {
 			!responseContainsBytes(&client,fetchheader,
 						sizeof(fetchheader)));
 
-	// row one is -1, which putNumberField() writes as 3e 64 66 behind a
-	// length byte, behind the row marker
+	// row one is -1, which putField() writes as the ascii text "-1" -
+	// see oracleNumberToInteger() above - behind a length byte, behind
+	// the row marker.  putNumberField()'s binary "3e 64 66" never goes
+	// out on this path at all, so checking for it here would pass
+	// whether or not the real bytes leaked
 	static const unsigned char	rowone[]={
-		ORA_ROW_MARKER, 0x03, 0x3e, 0x64, 0x66
+		ORA_ROW_MARKER, 0x02, 0x2d, 0x31
 	};
 	report("no row one residue reached the wire",
 			!responseContainsBytes(&client,rowone,sizeof(rowone)));

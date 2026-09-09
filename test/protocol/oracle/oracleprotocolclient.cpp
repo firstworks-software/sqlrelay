@@ -383,14 +383,13 @@ class oracleprotocolclient {
 		// which is what keeps fetch() on the legacy
 		// sendFetchResponse() rather than handing off to fetch3().
 		// "cursorid" is the wire id open() handed back, not the
-		// listener's own - the legacy fetch takes none at all and
-		// answers for whichever cursor open/query/execute touched
-		// last
-		bool	legacyQuery(uint16_t options, uint16_t moreoptions,
-					uint16_t cursorid, const char *query);
-		bool	legacyExecute(uint16_t options, uint16_t moreoptions,
-						uint16_t cursorid);
-		bool	legacyFetch(uint16_t options, uint16_t moreoptions);
+		// listener's own.  none of the three carries an options
+		// field the way query3()/reexecute() do - see each
+		// function's own comment below for the byte layout
+		bool	legacyQuery(uint32_t cursorid, const char *query);
+		bool	legacyExecute(uint32_t cursorid, uint32_t iterations,
+						uint32_t options);
+		bool	legacyFetch(uint32_t cursorid, uint32_t rowstofetch);
 
 		// what the last call answered with.  the ttc code is the
 		// first thing in a response body, behind the two data flag
@@ -2012,63 +2011,66 @@ bool oracleprotocolclient::describe(uint32_t cursorid, uint32_t position) {
 // ---- the pre-query3 calls ----
 
 // TTI_QUERY: the legacy parse.  query() in src/protocols/oracle.cpp reads a
-// fixed 13-byte body and then querysize raw bytes of query text - no length
-// byte of its own in front of it.  everything in the body is big-endian
-// except the query size, which readLE() reads little-endian.  the five
-// unexplained bytes around it are read and logged but never acted on, so
-// they go out as zeros
-bool oracleprotocolclient::legacyQuery(uint16_t options,
-					uint16_t moreoptions,
-					uint16_t cursorid,
+// one-byte sequence number, the cursor id as a count, a pointer field, one
+// unexplained byte (0x01 in the capture #9793's rewrite of query() was
+// derived from), the query size as two raw bytes - both carrying the same
+// value, which includes the query's own trailing nul - and then the query
+// text itself.  there is no options field on this call at all: see
+// legacyExecute() and legacyFetch() below for where a real oci7 client
+// puts options instead
+bool oracleprotocolclient::legacyQuery(uint32_t cursorid,
 					const char *query) {
 
-	size_t	querysize=charstring::getLength(query);
+	uint32_t	querysize=(uint32_t)charstring::getLength(query)+1;
 
 	beginTtiCall(ORA_TTI_QUERY);
-	appendBE16(options);
-	appendBE16(moreoptions);
-	appendBE16(cursorid);
-	appendByte(0);			// unknown3
-	appendByte(0);			// unknown4
-	appendByte(0);			// unknown5
-	appendLE16((uint16_t)querysize);
-	appendByte(0);			// unknown6
-	appendByte(0);			// unknown7
-	if (querysize) {
-		appendBytes((const unsigned char *)query,querysize);
-	}
+	appendByte(1);			// sequence number
+	appendAuthCount(cursorid,4);
+	appendByte(1);			// pointer
+	appendByte(1);			// unknown byte (0x01 in the capture)
+	appendByte((unsigned char)querysize);
+	appendByte((unsigned char)querysize);
+	appendBytes((const unsigned char *)query,querysize-1);
+	appendByte(0);			// the query text's own trailing nul
 
 	return sendPacket() && recvPacket();
 }
 
-// TTI_EXECUTE: options, more options and a cursor id, and nothing else.
+// TTI_EXECUTE: executes what a preceding query()/legacyQuery() parsed.
 // execute() in src/protocols/oracle.cpp only takes this shape while
 // query3session is false - once it's true the same function code means the
-// modern re-execute instead
-bool oracleprotocolclient::legacyExecute(uint16_t options,
-					uint16_t moreoptions,
-					uint16_t cursorid) {
+// modern re-execute instead.  #9807's rewrite of execute() reads a one-byte
+// sequence number, then the cursor id, the iteration count and an options
+// bitmask, each as a count: a real oci7 client's capture is
+// "25 | 01 03 | 01 01 | 00" - sequence 0x25, cursor id 3, one iteration and
+// no options
+bool oracleprotocolclient::legacyExecute(uint32_t cursorid,
+					uint32_t iterations,
+					uint32_t options) {
 
 	beginTtiCall(ORA_TTI_EXECUTE);
-	appendBE16(options);
-	appendBE16(moreoptions);
-	appendBE16(cursorid);
+	appendByte(1);			// sequence number
+	appendAuthCount(cursorid,4);
+	appendAuthCount(iterations,4);
+	appendAuthCount(options,4);
 
 	return sendPacket() && recvPacket();
 }
 
-// the legacy TTI_FETCH: options and more options, no cursor id.  the
-// options pick the response shape - OPTION_DEFINE prepends column
-// definitions, OPTION_SNDIOV swaps the two filler bytes for an iov, and
-// OPTION_EXACTFETCH swaps the trailer.  those three bits make eight
-// response shapes, and 0 asks for the plainest of them, which is the only
-// one worth decoding by hand
-bool oracleprotocolclient::legacyFetch(uint16_t options,
-					uint16_t moreoptions) {
+// the legacy TTI_FETCH: a one-byte sequence number, then the cursor id and
+// the number of rows the client has room for, each as a count - #9698's
+// rewrite of fetch().  packet [0023] of test/protocol/oracle/samples/
+// oracle102-oci7-portable-login-select.cap is "05 08 01 02 01 01": TTI_FETCH,
+// sequence 8, cursor id 2 and a row count of 1.  there is no options field
+// on this call at all.  a rowstofetch of 0 asks for every row left, the
+// same as query2()'s combined execute-and-fetch
+bool oracleprotocolclient::legacyFetch(uint32_t cursorid,
+					uint32_t rowstofetch) {
 
 	beginTtiCall(ORA_TTI_FETCH);
-	appendBE16(options);
-	appendBE16(moreoptions);
+	appendByte(1);			// sequence number
+	appendAuthCount(cursorid,4);
+	appendAuthCount(rowstofetch,4);
 
 	return sendPacket() && recvPacket();
 }
