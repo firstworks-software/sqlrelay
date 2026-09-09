@@ -113,25 +113,33 @@ full test suite, which forks a second connection for its Authentication
 section and makes a much noisier capture.
 
     ./oci7describe SID \
-      [--describe=parse|exec|fetch|outofrange|concurrent|concurrentboth| \
-                  unparsedcursor|secondexec|midfetch] \
+      [--describe=parse|exec|parseexec|fetch|outofrange|concurrent| \
+                  concurrentboth|unparsedcursor|secondexec|thirdcursor| \
+                  midfetch] \
                      [--defines=LIST] [USER PASSWORD [QUERY]]
 
-The nine variants each put a different describe on the wire: parse
+The eleven variants each put a different describe on the wire: parse
 (right after oparse, before any oexec), exec (after oexec, before the
-first ofen), fetch (after at least one ofen - the #9599 mid-fetch case),
-out of range (describing a column past the end of the select list, to see
-what a real server answers with), concurrent (a second cursor described
-while a first cursor's fetch is still in progress, across two cursors
-open at once), concurrentboth (oci7.cpp's Concurrent Cursors section call
-for call - both cursors odefin'd before either is oexec'd, both executed,
+first ofen), parseexec (oparse, oexec, then odescr, none of the three
+bailing out if an earlier one fails - unlike exec, which bails on a
+failed oparse or oexec and assumes a working select via its odefin on
+columns 1-3, parseexec is the one that can reach a genuine execute-time
+error, such as a too-wide insert answering ORA-12899, #9983), fetch
+(after at least one ofen - the #9599 mid-fetch case), out of range
+(describing a column past the end of the select list, to see what a real
+server answers with), concurrent (a second cursor described while a
+first cursor's fetch is still in progress, across two cursors open at
+once), concurrentboth (oci7.cpp's Concurrent Cursors section call for
+call - both cursors odefin'd before either is oexec'd, both executed,
 fetches ping-ponged a row at a time, then closed in the reverse of the
 order they opened), unparsedcursor (oci7.cpp's Server Version section -
 a second cursor parsed, defined, executed and fetched while the cursor
 Connect opened sits open beside it, never oparse'd), secondexec
 (concurrent with only one thing changed - the cursor that is defined,
 executed and fetched is the second one opened rather than the first),
-and midfetch (oci7.cpp's own "odescr - mid-fetch"
+thirdcursor (three cursors open at once, with the third one running the
+query - the id a real server only hands out once two others are already
+open), and midfetch (oci7.cpp's own "odescr - mid-fetch"
 section call for call, against the four-column protocoltesttable,
 including the fetches that follow the describe - the state none of the
 others reach, and where a real OCI7 client segfaulted against sqlrelay,
