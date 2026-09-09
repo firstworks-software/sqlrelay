@@ -2165,6 +2165,11 @@
 		module only ever negotiates the portable encoding today, so
 		this path isn't reachable yet, but the value is written for
 		real now for whenever it is (#9978)
+	fixed stagemodules.sh silently staging nothing on hosts whose
+		/bin/sh doesn't support "!" as a reserved word
+		(solaris8sparc); it printed a false "staged" line for
+		every module while copying none of them, so a -buildtree
+		test run there was testing an empty stagedmodules/ (#9972)
 	fixed the oracle protocol module's oci7 parse response sending a
 		hardcoded 0 for the parse error offset field; it now sends
 		the character offset of the FROM clause's object name in the
