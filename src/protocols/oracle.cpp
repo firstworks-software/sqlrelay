@@ -10516,21 +10516,61 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 		}
 		read(rp,&size,&rp);
 
-		// a value longer than 252 bytes takes putLenBytes()'s chunked
-		// long form, introduced by CLR_LONG_FORM_MARKER (0xfe), the
-		// way every other wide clr in this protocol does.  no #9700
-		// capture has one - the widest bind captured is 11 bytes - so
-		// the chunk layout for a BIND value specifically is not pinned
-		// by anything, and reading it on the assumption that it
-		// matches a row value's would be the same kind of guess this
-		// whole fix exists to undo.  0xfe falls through to the length
-		// check below and refuses the request, which is wrong-but-safe
-		// rather than wrong-and-silent.  a bind over 252 bytes
-		// therefore does not work yet - see #9700
+		// a value longer than 252 bytes takes the chunked long form,
+		// the same way getLenBytes() reassembles a clr's long form -
+		// a run of chunks, each a length and that many bytes, ended
+		// by a zero length.  the chunks aren't contiguous, so the
+		// value is reassembled into the response packet pool, which
+		// lives as long as the packet it came out of
 		if (size==CLR_LONG_FORM_MARKER) {
-			debugWrite("bind %d: long form value, unsupported",
-									i+1);
-			return false;
+
+			if ((size_t)(end-rp)<1) {
+				debugWrite("bind %d: truncated long "
+							"form value",i+1);
+				return false;
+			}
+
+			byte_t	*value=(byte_t *)resppacketpool->allocate(
+							(size_t)(end-rp));
+			uint32_t	valuesize=0;
+			for (;;) {
+				if (rp>=end) {
+					debugWrite("bind %d: truncated "
+							"long form value",i+1);
+					return false;
+				}
+				uint32_t	chunksize;
+				if (bigchunkclr) {
+					if (!readLenPreInt(rp,end,
+							&chunksize,&rp)) {
+						debugWrite("bind %d: bad "
+							"chunk length",i+1);
+						return false;
+					}
+				} else {
+					byte_t	rawchunksize;
+					read(rp,&rawchunksize,&rp);
+					chunksize=rawchunksize;
+				}
+				if (!chunksize) {
+					break;
+				}
+				if ((size_t)(end-rp)<(size_t)chunksize) {
+					debugWrite("bind %d: truncated "
+							"long form value",i+1);
+					return false;
+				}
+				bytestring::copy(value+valuesize,rp,chunksize);
+				rp+=chunksize;
+				valuesize+=chunksize;
+			}
+
+			query2bindvalues[i]=value;
+			query2bindvaluesizes[i]=valuesize;
+
+			debugWrite("bind %d value: %d bytes (long form)",
+						i+1,(int32_t)valuesize);
+			continue;
 		}
 
 		// a null, and the byte behind it
@@ -10546,6 +10586,12 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 			debugWrite("bind %d value: null (0x%02x)",
 						i+1,nullbyte);
 			continue;
+		}
+
+		// nothing else above 252 is a length, whatever it looks like
+		if (size>CLR_MAX_SHORT_LENGTH) {
+			debugWrite("bind %d: bad length 0x%02x",i+1,size);
+			return false;
 		}
 
 		if ((size_t)(end-rp)<(size_t)size) {

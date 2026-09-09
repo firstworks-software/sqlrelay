@@ -26,41 +26,45 @@
 //
 // The variants each have to be captured on their own, and each one isolates
 // a different unknown:
-//   selectint    one IN bind (SQLT_INT) plus one odefin, on a select. the
-//                smallest packet that has both a bind block and a define
-//                block in it, so it shows where one ends and the other
-//                begins - the offset the whole already-verified plain
-//                select + odefin path depends on
-//   selectstr    the same, with the bind SQLT_STR instead of SQLT_INT, so
-//                the datatype and length fields can be told apart from
-//                everything around them by diffing the two captures
-//   selecttwo    two binds of different types and two defines, which gives
-//                the stride between one bind descriptor and the next - a
-//                one-bind capture alone cannot
-//   insert       three binds and NO defines at all (dml), isolating the
-//                bind block with nothing behind it
-//   nullbind     the same insert with two of the three indicators set to
-//                -1, so a null bind's wire form can be diffed against
-//                nullbind's non-null counterpart
-//   many         bind once, oexec three times, inserting testnumber 10, 11
-//                and 12. obndrv binds by reference, so this says whether the
-//                client re-marshals the binds on every execute or sends them
-//                only with the first. it re-reads the table afterward and
-//                prints every testnumber in it, so which of the three
-//                executes actually landed a row is in this program's own
-//                output rather than something another program has to go
-//                look up
-//   reverse      the same insert with the obndrv calls made backwards, to
-//                settle whether the wire order of the bind values is the
-//                order of the placeholders in the statement or the order
-//                the client happened to call obndrv in. every other
-//                variant binds in text order, so none of them can tell
-//                those two apart, and the module assumes the former
-//   out          a pl/sql block with one OUT bind (:cnt), the shape the
-//                module has zero bytes for on the response side
-//   inout        a pl/sql block whose bind is read and written (:v := :v*2)
-//   nullout      a pl/sql block that assigns NULL to its out bind, so the
-//                null indicator's return form is captured too
+//   selectint     one IN bind (SQLT_INT) plus one odefin, on a select. the
+//                 smallest packet that has both a bind block and a define
+//                 block in it, so it shows where one ends and the other
+//                 begins - the offset the whole already-verified plain
+//                 select + odefin path depends on
+//   selectstr     the same, with the bind SQLT_STR instead of SQLT_INT, so
+//                 the datatype and length fields can be told apart from
+//                 everything around them by diffing the two captures
+//   selectstrlong the same, with a bind value 300 characters long - past the
+//                 point (252 bytes) where the wire format's one-byte length
+//                 can no longer hold it and has to switch to
+//                 CLR_LONG_FORM_MARKER; see #9985
+//   selecttwo     two binds of different types and two defines, which gives
+//                 the stride between one bind descriptor and the next - a
+//                 one-bind capture alone cannot
+//   insert        three binds and NO defines at all (dml), isolating the
+//                 bind block with nothing behind it
+//   nullbind      the same insert with two of the three indicators set to
+//                 -1, so a null bind's wire form can be diffed against
+//                 nullbind's non-null counterpart
+//   many          bind once, oexec three times, inserting testnumber 10, 11
+//                 and 12. obndrv binds by reference, so this says whether the
+//                 client re-marshals the binds on every execute or sends them
+//                 only with the first. it re-reads the table afterward and
+//                 prints every testnumber in it, so which of the three
+//                 executes actually landed a row is in this program's own
+//                 output rather than something another program has to go
+//                 look up
+//   reverse       the same insert with the obndrv calls made backwards, to
+//                 settle whether the wire order of the bind values is the
+//                 order of the placeholders in the statement or the order
+//                 the client happened to call obndrv in. every other
+//                 variant binds in text order, so none of them can tell
+//                 those two apart, and the module assumes the former
+//   out           a pl/sql block with one OUT bind (:cnt), the shape the
+//                 module has zero bytes for on the response side
+//   inout         a pl/sql block whose bind is read and written (:v := :v*2)
+//   nullout       a pl/sql block that assigns NULL to its out bind, so the
+//                 null indicator's return form is captured too
 //
 // insert, nullbind and many need the protocoltestbind table. They create it
 // themselves (dropping any leftover first), so no other program has to have
@@ -93,6 +97,10 @@ const int	nodatafound=1403;
 
 // the most rows verifyBindTable will fetch before it gives up
 const int	maxverifyrows=1000;
+
+// the buffer size selectLongStrVariant sizes its arrays to, regardless of
+// which length it is actually asked to bind
+const sword	maxlongbindlen=512;
 
 // print the ORA number a call left in the cursor, and the rest of the
 // cursor's error fields
@@ -273,6 +281,64 @@ static int selectVariant(const char *query, bool twobinds, bool stringbind) {
 
 	run("oclose",&cda,oclose(&cda));
 	return 0;
+}
+
+// like selectVariant's stringbind case, but for a value long enough to
+// cross the wire format's one-byte length limit - above 252 bytes it has
+// to switch to CLR_LONG_FORM_MARKER instead - see #9985. len is how long a
+// value to bind; the caller picks it, so a later step can add more sizes
+// without a new function. the row is fetched back and compared against
+// what was bound, not just printed, so a truncation shows up as a
+// mismatch rather than passing silently
+static int selectLongStrVariant(sword len) {
+
+	if (len>maxlongbindlen) {
+		stdoutput.printf("  requested length %d exceeds "
+					"maxlongbindlen %d\n",
+					(int)len,(int)maxlongbindlen);
+		return 1;
+	}
+
+	Cda_Def	cda;
+	if (!openCursor("oopen",&cda) ||
+			!parse("oparse",&cda,"select :s from dual")) {
+		return 1;
+	}
+
+	char	strvalue[maxlongbindlen+1];
+	bytestring::set(strvalue,'x',(size_t)len);
+	strvalue[len]='\0';
+
+	sb2	bindind=0;
+	if (!bind(&cda,":s",(ub1 *)strvalue,(sword)(len+1),
+					SQLT_STR,&bindind)) {
+		oclose(&cda);
+		return 1;
+	}
+
+	char	buf[maxlongbindlen+1];
+	sb2	ind=0;
+	ub2	retlen=0;
+	ub2	retcode=0;
+	if (!define("odefin",&cda,1,buf,(sword)(len+1),
+					&ind,&retlen,&retcode)) {
+		oclose(&cda);
+		return 1;
+	}
+
+	if (!run("oexec",&cda,oexec(&cda)) ||
+			!run("ofen",&cda,ofen(&cda,1))) {
+		oclose(&cda);
+		return 1;
+	}
+
+	bool	match=!charstring::compare(buf,strvalue);
+	stdoutput.printf("  row length=%d (bound %d) %s\n",
+				(int)retlen,(int)len,
+				match?"(matches)":"(MISMATCH)");
+
+	run("oclose",&cda,oclose(&cda));
+	return (match)?0:1;
 }
 
 // the same three-bind insert, but with the obndrv calls made in the REVERSE
@@ -545,7 +611,8 @@ int main(int argc, char **argv) {
 
 	if (!sid) {
 		stdoutput.printf("usage: %s SID "
-				"[--bind=selectint|selectstr|selecttwo|"
+				"[--bind=selectint|selectstr|selectstrlong|"
+				"selecttwo|"
 				"insert|nullbind|many|reverse|out|inout|nullout] "
 				"[USER PASSWORD]\n",argv[0]);
 		return 1;
@@ -568,6 +635,8 @@ int main(int argc, char **argv) {
 		result=selectVariant("select :num from dual",false,false);
 	} else if (!charstring::compare(variant,"selectstr")) {
 		result=selectVariant("select :s from dual",false,true);
+	} else if (!charstring::compare(variant,"selectstrlong")) {
+		result=selectLongStrVariant(300);
 	} else if (!charstring::compare(variant,"selecttwo")) {
 		result=selectVariant("select :num, :b from dual",true,false);
 	} else if (!charstring::compare(variant,"insert")) {

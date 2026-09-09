@@ -2211,6 +2211,13 @@
 		undecoded canned blob carrying no cursor id or call number,
 		instead of a real summary object, which a real oci7 client
 		rejects with a marker-cancel and ora-01013 (#9981)
+	fixed the oracle protocol module refusing an oci7 bind value wider
+		than 252 bytes, which arrives in the chunked long form
+		rather than behind a single length byte; the value is
+		reassembled from its chunks now, and a length byte above
+		252 that isn't a null or long form marker is refused
+		outright instead of being read as a 255 byte value
+		(#9985)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
