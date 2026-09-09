@@ -15064,17 +15064,20 @@ bool sqlrprotocol_oracle::putRowidField(const char *field,
 	debugWrite("input: %.*s",(int)fieldsize,field);
 
 	// the backend hands a rowid over in the 18 character base 64 form
-	// oracle prints it as, and the wire wants the four numbers packed
-	// into it back: a constant length byte, then the data object number
+	// oracle prints it as, and the wire wants the four numbers decoded
+	// out of it: a constant length byte, then the data object number
 	// and the relative file number, a zero byte, and the block number
-	// and the row number, each a count prefixed integer.  captured from
-	// a live 12.2 server, which sends the same bytes whether the client
-	// defined the column a rowid or a string:
+	// and the row number, each written with writeLenPreInt() - a count
+	// byte of 0, 1, 2 or 4, then that many bytes big-endian.  the rowid
+	// documented at putField()'s ORACLE_TYPE_ROWID_DEPRECATED case -
+	// packet [0451]/[0457] of test/protocol/oracle/samples/9746-dev-
+	// oci23api7-native-datatypes-realserver.oraproxy, AAA6KOAAGAAAAFdAAC,
+	// object 238222 file 6 block 349 row 2 - comes out of this function
+	// as:
 	//
-	//	AAScpAAAFAAAAQvAAh ->
-	//		0e 03 49 ca 40 01 05 00 02 04 2f 01 21
+	//	0e 04 00 03 a2 8e 01 06 00 02 01 5d 01 02
 	//
-	// the length byte is 0x0e in every capture, whatever the numbers
+	// the length byte is 0x0e in that capture, whatever the numbers
 	// after it come to, so it is a constant rather than a count of them.
 	// the zero byte is one the thin drivers skip without reading
 	if (fieldsize!=ORACLE_ROWID_TEXT_SIZE) {
@@ -17213,6 +17216,7 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			debugWrite("long: \"%.*s\"",(int)fieldsize,field);
 			return true;
 		case ORACLE_TYPE_ROWID_DEPRECATED:
+		case ORACLE_TYPE_ROWID:
 			// a rowid is the one column whose define decides
 			// which of two shapes it goes out in, and the two
 			// reads of the same row in test/protocol/oracle/
@@ -17220,17 +17224,36 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			// realserver.oraproxy pin both down against a real
 			// 10.2 server.  defined SQLT_RID (dty 11, buffer
 			// size 1) in [0454], the fetch [0457] answers with
-			// "0e 8e a2 03 00 06 00 00 5d 01 00 00 02 00 00 00"
-			// - putRowidField()'s layout exactly.  defined
-			// SQLT_STR (dty 1, buffer size 63) in [0448],
-			// [0451] answers with "12" and then the 18
+			// "0e" then 13 bytes - object number, file number, a
+			// zero byte, block number, row number, all fixed-
+			// width little-endian: "8e a2 03 00 06 00 00 5d 01
+			// 00 00 02 00".  that's the same four fields in the
+			// same order putRowidField() writes, but not the same
+			// bytes - this session's capture is native encoding,
+			// while the module always answers in portable
+			// encoding (see putRowidField()), so what it sends
+			// for this rowid is 0e then a writeLenPreInt() per
+			// number instead: "04 00 03 a2 8e 01 06 00 02 01 5d
+			// 01 02".  defined SQLT_STR (dty 1, buffer size 63)
+			// in [0448], [0451] answers with "12" and then the 18
 			// character base 64 text "AAA6KOAAGAAAAFdAAC", an
 			// ordinary clr.
 			//
 			// so the text form is right only for an SQLT_STR
 			// define, and for a session that sent no define
 			// block at all, where definedColumnType() gives 0
-			// and the column keeps its natural form
+			// and the column keeps its natural form.
+			//
+			// ORACLE_TYPE_ROWID (dty 104, SQLT_RDD) shares this
+			// case rather than getting its own arm.
+			// getWireColumnType() folds dty 104 into
+			// ORACLE_TYPE_ROWID_DEPRECATED before putRow() ever
+			// calls this function, so this case can't actually be
+			// reached with wiretype==ORACLE_TYPE_ROWID as things
+			// stand - no capture shows a dty 104 define, and none
+			// could reach here to show one.  sharing the one real,
+			// capture-backed encoding keeps this from going back
+			// to being unimplemented if that fold ever changes
 			if (requestedtype==ORACLE_TYPE_ROWID_DEPRECATED) {
 				if (!putRowidField(field,fieldsize)) {
 					// better to send nothing at all than
@@ -17299,10 +17322,6 @@ bool sqlrprotocol_oracle::putField(const char *field,
 		case ORACLE_TYPE_RESULT_SET:
 			// FIXME: implement this
 			debugWrite("result set (not implemented)");
-			return false;
-		case ORACLE_TYPE_ROWID:
-			// FIXME: implement this
-			debugWrite("rowid (not implemented)");
 			return false;
 		case ORACLE_TYPE_NAMED_TYPE:
 			// FIXME: implement this

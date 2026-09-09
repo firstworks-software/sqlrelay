@@ -1824,8 +1824,17 @@ int main(int argc, char **argv) {
 	assertEquals((int)rowidbinind,0);
 	assertTrue(rowidbinlen>0 && rowidbinlen<=(ub2)sizeof(rowidbin));
 
+	// the length byte is a protocol constant, true for any rowid, so
+	// this much can be pinned regardless of what this run's actual
+	// live testrowid comes out to
+	assertEquals((int)rowidbin[0],0x0e);
+
 	// decode the same row's rowid out of the SQLT_STR text form fetched
-	// above, and rebuild putRowidField()'s packed form from it
+	// above, and rebuild putRowidField()'s packed form from it.  can't
+	// pin literal bytes from the 9746 capture here instead - the table
+	// above is created and inserted into fresh by this test run, so
+	// this run's live testrowid is whatever this instance's real
+	// database assigns it, not the capture's object/file/block/row
 	ub4	rowidobject=0;
 	ub4	rowidfile=0;
 	ub4	rowidblock=0;
