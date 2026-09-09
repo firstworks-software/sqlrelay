@@ -58,6 +58,21 @@ static const char	*goodquery=
 static const char	*badquery=
 	"select 1/(level-2) from dual connect by level<=3";
 
+// a sequence of this test's own, for the describe-before-fetch arm below.
+// a describe that re-executes the statement rewinds the result set, which
+// is invisible on a plain table - the fetch behind it answers the same row
+// whether the statement ran once or twice.  a nextval answers a different
+// value every execute, so the arm's own fetch says how many executes it
+// took to get there
+static const char	*sequencequery=
+	"select protocolseq10003.nextval from dual";
+static const char	*dropsequence=
+	"drop sequence protocolseq10003";
+static const char	*createsequence=
+	"create sequence protocolseq10003 start with 7654321 increment by 1";
+static const int64_t	firstnextval=7654321;
+static const int64_t	secondnextval=7654322;
+
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
 const char	*failure="\033[31mfailure\033[0m";
@@ -466,6 +481,157 @@ int main(int argc, char **argv) {
 	// a client's parse has to account for every byte, and anything left
 	// over costs it the call
 	report("nothing follows the error object",!leftover);
+
+
+	// Regression coverage for the same describe-before-fetch hazard #9973
+	// fixed in query2(), but on the bare legacy TTI_EXECUTE path instead:
+	// execute() in src/protocols/oracle.cpp never called
+	// cacheColumnDefinitions() after a successful execute, so a
+	// TTI_DESCRIBE landing between that TTI_EXECUTE and the client's
+	// first TTI_FETCH found columntypescached[curid] still false and
+	// re-ran the statement - a rewind invisible on most result sets, but
+	// not on one drawn from a sequence.  #10001 added the missing call;
+	// this drives the scenario it had no test for.
+	//
+	// the setup and the arm both stay on the legacy TTI_QUERY/TTI_EXECUTE
+	// pair on purpose.  a query3()/reexecute() call anywhere in the
+	// session would flip query3session in src/protocols/oracle.cpp and
+	// hand every TTI_EXECUTE after it - including the one this arm means
+	// to exercise - to reexecute() instead, which already caches its
+	// column definitions and so can't reproduce the gap
+	uint32_t	seqcursorid=0;
+	if (!client.open(&seqcursorid)) {
+		report("open third cursor",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("open third cursor",true);
+
+	// a drop of a sequence that isn't there answers with an error and
+	// leaves the session running, so its result is deliberately not
+	// checked
+	client.legacyQuery(seqcursorid,dropsequence);
+	client.legacyExecute(seqcursorid,1,0);
+
+	// dropped and recreated rather than reset, so the first nextval the
+	// arm below asks for is the start value whatever a previous run left
+	// behind.  a legacy execute's response carries no ttc code of its
+	// own to check - see the note on ORA_QUERY_RESPONSE_SIZE and
+	// ORA_EXECUTE_RESPONSE_SIZE above - so only the wire call itself is
+	// checked here; a create that silently failed still shows up below,
+	// once the sequence it was supposed to create can't be parsed
+	if (!client.legacyQuery(seqcursorid,createsequence)) {
+		report("create sequence",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	if (!client.legacyExecute(seqcursorid,1,0)) {
+		report("create sequence",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("create sequence",true);
+
+	// parse, execute, describe, then fetch - the describe lands exactly
+	// where the gap used to be
+	if (!client.legacyQuery(seqcursorid,sequencequery)) {
+		report("parse sequence query",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	if (!client.legacyExecute(seqcursorid,1,0)) {
+		report("execute sequence query",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("execute sequence query",
+			client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
+
+	if (!client.describe(seqcursorid,1)) {
+		report("describe sequence query",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("describe sequence query answers ok",
+			client.getResponseTtcCode()==ORA_TTC_OK);
+
+	if (!client.legacyFetch(seqcursorid,0)) {
+		report("fetch sequence query",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+
+	int64_t	seqvalues[8];
+	size_t	seqvaluecount=0;
+	uint32_t	seqcolcount=0;
+	bool	seqdecoded=readLegacyFetchRows(&client,seqvalues,
+					sizeof(seqvalues)/sizeof(seqvalues[0]),
+					&seqvaluecount,&seqcolcount);
+	report("sequence query fetch response decodes",seqdecoded);
+	if (!seqdecoded) {
+		stdoutput.printf("response (%d bytes):\n",
+					(int)client.getResponseSize());
+		stdoutput.safePrint(client.getResponse(),
+					client.getResponseSize());
+		stdoutput.printf("\n");
+		client.disconnect();
+		return status;
+	}
+	report("sequence query fetch response has one column",
+			seqcolcount==1);
+	report("sequence query fetch response has one row",
+			seqvaluecount==1);
+	stdoutput.printf("  value: %lld\n",
+			(seqvaluecount)?(long long)seqvalues[0]:0LL);
+	report("the describe didn't re-execute the sequence query",
+			seqvaluecount==1 && seqvalues[0]==firstnextval);
+
+
+	// the same parse, execute and fetch with no describe in between.
+	// without this, the arm above's first-sequence-value answer would
+	// only show the sequence started where it was created - this shows
+	// the sequence really advances by one value per execute, which is
+	// what makes "still the first value" after a describe mean the
+	// describe cost the statement nothing
+	if (!client.legacyQuery(seqcursorid,sequencequery)) {
+		report("parse sequence query (control)",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	if (!client.legacyExecute(seqcursorid,1,0)) {
+		report("execute sequence query (control)",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("execute sequence query (control)",
+			client.getResponseSize()==ORA_EXECUTE_RESPONSE_SIZE);
+
+	if (!client.legacyFetch(seqcursorid,0)) {
+		report("fetch sequence query (control)",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+
+	bool	controldecoded=readLegacyFetchRows(&client,seqvalues,
+					sizeof(seqvalues)/sizeof(seqvalues[0]),
+					&seqvaluecount,&seqcolcount);
+	report("sequence query (control) fetch response decodes",
+			controldecoded);
+	if (!controldecoded) {
+		stdoutput.printf("response (%d bytes):\n",
+					(int)client.getResponseSize());
+		stdoutput.safePrint(client.getResponse(),
+					client.getResponseSize());
+		stdoutput.printf("\n");
+		client.disconnect();
+		return status;
+	}
+	stdoutput.printf("  value: %lld\n",
+			(seqvaluecount)?(long long)seqvalues[0]:0LL);
+	report("sequence query (control) carries the value behind "
+			"the arm above's",
+			seqvaluecount==1 && seqvalues[0]==secondnextval);
+
 
 	client.disconnect();
 
