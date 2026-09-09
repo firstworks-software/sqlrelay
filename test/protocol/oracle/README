@@ -775,6 +775,77 @@ the decoder can be exercised without live server access:
                                       portable; only the values' own encoding,
                                       which reads the same either way, is
                                       relied on (#9746)
+    9974-dev-oci23api7-native-datestrfetch-realserver.oraproxy
+                                     oci7datestr - one DATE column
+                                      selected as text: "select testdate
+                                      from protocoltesttable where
+                                      testnumber=1" with the column
+                                      odefined SQLT_STR into a 64 byte
+                                      character buffer instead of
+                                      SQLT_DAT - against the real 10.2
+                                      server at 10.0.2.3 through
+                                      oraproxy.  every other DATE
+                                      capture on file defines the column
+                                      SQLT_DAT, so what a real server
+                                      answers when the client asks it to
+                                      convert the date to text was
+                                      unknown, and putField()'s
+                                      ORACLE_TYPE_DATE arm answers every
+                                      define with the seven byte binary
+                                      form regardless of what was asked
+                                      for.  the define descriptor in
+                                      [0029] (TTI_QUERY2) has datatype
+                                      byte 01 (ORACLE_TYPE_VARCHAR) at
+                                      payload offset 0x45, where the
+                                      same column defined SQLT_DAT in
+                                      the same session has 0c
+                                      (ORACLE_TYPE_DATE); the size byte
+                                      at 0x49 is 3f - the client's 64
+                                      byte buffer less one for the null
+                                      terminator, and 1f when the same
+                                      program is asked for a 32 byte
+                                      buffer - and the charset byte at
+                                      0x5b is 1f (31) where the SQLT_DAT
+                                      define has 00.  the row that comes
+                                      back in [0032] is TEXT, not the
+                                      seven byte binary date: after the
+                                      TTC_ROW_DATA marker 07 come
+                                      length byte 09 and then 30 31 2d
+                                      4a 41 4e 2d 30 31 - "01-JAN-01" -
+                                      where the SQLT_DAT run has length
+                                      byte 07 and 78 65 01 01 02 02 02
+                                      for the same row (01-JAN-2001
+                                      01:01:01).  so the SERVER does the
+                                      conversion, and it does it in the
+                                      session's own date format rather
+                                      than a fixed one: the same program
+                                      run against "select sysdate from
+                                      dual" gets 9 bytes "09-SEP-26",
+                                      19 bytes "2026-09-09 07:43:52"
+                                      after an alter session set
+                                      NLS_DATE_FORMAT='YYYY-MM-DD
+                                      HH24:MI:SS', and 8 bytes
+                                      "09.09.26" with NLS_LANG set to
+                                      GERMAN_GERMANY.WE8ISO8859P1.  the
+                                      SQLT_DAT comparison run and the
+                                      two NLS runs are not themselves
+                                      checked in.  oci7datestr.cpp is in
+                                      this directory but not in its
+                                      Makefile - configure's OCI7 probe
+                                      does not detect an Instant Client,
+                                      so its header comment carries the
+                                      hand compile command instead.
+                                      this session negotiated the NATIVE
+                                      encoding with the real server
+                                      (unlike sqlrelay, which only ever
+                                      negotiates portable), so the
+                                      descriptor block's byte offsets
+                                      here are not directly comparable
+                                      to a capture against sqlrelay
+                                      itself; only the datatype byte and
+                                      the value's length-then-bytes
+                                      encoding, which read the same
+                                      either way, are relied on (#9974)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing

@@ -2262,6 +2262,15 @@
 		shared datatype list without a matching mysqltypemap[] entry,
 		now guarded the same way the oracle protocol module's own
 		getColumnType() already was (#9704)
+	fixed the oracle protocol module's legacy oci7 fetch path sending a
+		rowid column's text form regardless of what the client's
+		odefin() actually requested; the requested wire type is now
+		kept per define position and honored for the one pair with
+		real evidence - a column defined SQLT_RID now gets the packed
+		binary form putRowidField() already builds for the modern
+		fetch path, instead of the SQLT_STR text form every requested
+		type used to get; the requested buffer size, and every other
+		(natural type, requested type) pair, remain unhonored (#9974)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

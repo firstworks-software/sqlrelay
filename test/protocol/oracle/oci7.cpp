@@ -327,6 +327,67 @@ static void assertColumnCount(Cda_Def *cursor, sword count) {
 	assertEquals(errorCode(cursor),1007);
 }
 
+// decode a rowid's 18 character base 64 external form into the four numbers
+// packed into it - object number, file number, block number, row number -
+// six bits per character, most significant first.  mirrors
+// sqlrprotocol_oracle::getRowidDigit()/putRowidField()
+// (src/protocols/oracle.cpp), so this and putRowidField() should always
+// agree on what a given rowid string decodes to
+static bool decodeRowid(const char *rowid, ub4 *object, ub4 *file,
+					ub4 *block, ub4 *row) {
+
+	static const sword	partdigits[4]={6,3,6,3};
+	ub4			*parts[4]={object,file,block,row};
+
+	sword	pos=0;
+	for (sword i=0; i<4; i++) {
+		*(parts[i])=0;
+		for (sword j=0; j<partdigits[i]; j++) {
+			char	c=rowid[pos];
+			sword	digit=-1;
+			if (c>='A' && c<='Z') {
+				digit=c-'A';
+			} else if (c>='a' && c<='z') {
+				digit=c-'a'+26;
+			} else if (c>='0' && c<='9') {
+				digit=c-'0'+52;
+			} else if (c=='+') {
+				digit=62;
+			} else if (c=='/') {
+				digit=63;
+			}
+			if (digit<0) {
+				return false;
+			}
+			*(parts[i])=(*(parts[i])<<6)+(ub4)digit;
+			pos++;
+		}
+	}
+	return true;
+}
+
+// append one of putRowidField()'s length-prefixed integers - a length byte
+// (0, 1, 2 or 4) then that many big endian bytes - mirroring
+// sqlrprotocol::writeLenPreInt() (src/server/sqlrprotocol.cpp)
+static void appendLenPreInt(ub1 *buf, ub2 *len, ub4 value) {
+	if (!value) {
+		buf[(*len)++]=0;
+	} else if (value<=0xff) {
+		buf[(*len)++]=1;
+		buf[(*len)++]=(ub1)value;
+	} else if (value<=0xffff) {
+		buf[(*len)++]=2;
+		buf[(*len)++]=(ub1)((value>>8)&0xff);
+		buf[(*len)++]=(ub1)(value&0xff);
+	} else {
+		buf[(*len)++]=4;
+		buf[(*len)++]=(ub1)((value>>24)&0xff);
+		buf[(*len)++]=(ub1)((value>>16)&0xff);
+		buf[(*len)++]=(ub1)((value>>8)&0xff);
+		buf[(*len)++]=(ub1)(value&0xff);
+	}
+}
+
 
 // the Authentication section.  main() forks before calling this - see the
 // comment there
@@ -1731,19 +1792,19 @@ int main(int argc, char **argv) {
 	// conversion (an SQLT_STR define), which sidesteps rowid's real OCI7
 	// representation entirely.  dty 11 (SQLT_RID) is that representation -
 	// oci8.cpp's equivalent is the SQLT_RDD descriptor form, which OCI7 has
-	// no counterpart for.  what SQLT_RID actually puts in the buffer is not
-	// documented anywhere on file: ocidfn.h's own Cda_Def.rid field is the
-	// closest thing, and its header comment says plainly not to use that
-	// struct in OCI programs.  so only the call succeeding and a
-	// plausible non-zero length are asserted here, not a specific byte
-	// layout.
+	// no counterpart for.
 	//
-	// what the wire carries for this define is known, though - packet
-	// [0457] of samples/9746-dev-oci23api7-native-datatypes-realserver.
-	// oraproxy, a real 10.2 server answering this very fetch: a constant
-	// 0e byte, then the rowid's object number, file number, a zero byte,
-	// block number and row number.  what OCI then hands back in rowidbin
-	// is a separate question, and still an open one (#9717)
+	// what the wire carries for this define is known - packet [0457] of
+	// samples/9746-dev-oci23api7-native-datatypes-realserver.oraproxy, a
+	// real 10.2 server answering this very fetch: a constant 0e byte, then
+	// the rowid's object number, file number, a zero byte, block number
+	// and row number, each length-prefixed.  putRowidField()
+	// (src/protocols/oracle.cpp) builds exactly that from the same 18
+	// character text form typerowid above was fetched as, so decoding
+	// typerowid the same way and re-encoding it below should land on
+	// whatever oracle actually put in rowidbin, byte for byte - proving
+	// this define reached putRowidField() rather than the SQLT_STR path
+	// typerowid took
 	assertEquals(check(&typecda2,
 			oparse(&typecda2,(text *)
 				"select testrowid from protocoltesttypes",
@@ -1762,6 +1823,27 @@ int main(int argc, char **argv) {
 	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
 	assertEquals((int)rowidbinind,0);
 	assertTrue(rowidbinlen>0 && rowidbinlen<=(ub2)sizeof(rowidbin));
+
+	// decode the same row's rowid out of the SQLT_STR text form fetched
+	// above, and rebuild putRowidField()'s packed form from it
+	ub4	rowidobject=0;
+	ub4	rowidfile=0;
+	ub4	rowidblock=0;
+	ub4	rowidrow=0;
+	assertTrue(decodeRowid(typerowid,&rowidobject,&rowidfile,
+					&rowidblock,&rowidrow));
+	ub1	expectedrowidbin[32];
+	ub2	expectedrowidbinlen=0;
+	bytestring::zero(expectedrowidbin,sizeof(expectedrowidbin));
+	expectedrowidbin[expectedrowidbinlen++]=0x0e;
+	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidobject);
+	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidfile);
+	expectedrowidbin[expectedrowidbinlen++]=0;
+	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidblock);
+	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidrow);
+	assertEquals((int)rowidbinlen,(int)expectedrowidbinlen);
+	assertEquals((int)bytestring::compare(rowidbin,expectedrowidbin,
+					expectedrowidbinlen),0);
 	stdoutput.printf("\n\n");
 
 
