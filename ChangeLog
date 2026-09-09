@@ -2249,6 +2249,19 @@
 		client fetching every type from that server; the real
 		sqlt_rid binary rowid form stays unimplemented, since its
 		wire layout has no documentation anywhere accessible (#9746)
+	fixed the oracle connection module folding a timestamp with local
+		time zone into the same generic datatype as a plain timestamp,
+		which lost the distinction before the oracle protocol module
+		ever saw the column; a live oci7 describe showed this made the
+		module report it as an ordinary timestamp (wire type 180)
+		instead of 231; added a TIMESTAMPLTZ_DATATYPE (datatypes.h) so
+		it carries through with its own identity and describes/wire
+		encodes correctly (#9704)
+	fixed the mysql protocol module's getColumnType() reading past the
+		end of mysqltypemap[] for any column type name added to the
+		shared datatype list without a matching mysqltypemap[] entry,
+		now guarded the same way the oracle protocol module's own
+		getColumnType() already was (#9704)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

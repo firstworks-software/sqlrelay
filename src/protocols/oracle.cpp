@@ -1241,7 +1241,9 @@ static uint16_t	oracletypemap[]={
 	// "DATETIMEOFFSET"
 	(uint16_t)ORACLE_TYPE_TIMESTAMP,
 	// "LVARCHAR"
-	(uint16_t)ORACLE_TYPE_VARCHAR
+	(uint16_t)ORACLE_TYPE_VARCHAR,
+	// "TIMESTAMPLTZ"
+	(uint16_t)ORACLE_TYPE_TIMESTAMPLTZ
 };
 
 enum oraclelisttype_t {
@@ -13245,9 +13247,9 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 	// 12.2 server sends the abbreviated encoding - a 0x00 flag byte, no
 	// character set and no second size - for the types that have no
 	// character set of their own, and the full encoding for everything
-	// else.  a raw, a long raw, both interval types and both timestamp
-	// types are binary and get the abbreviated form, but a long is text
-	// and gets the full one
+	// else.  a raw, a long raw, both interval types and all three
+	// timestamp types are binary and get the abbreviated form, but a
+	// long is text and gets the full one
 	bool	fullencoding=(wiretype!=ORACLE_TYPE_NUMBER &&
 				wiretype!=ORACLE_TYPE_ROWID_DEPRECATED &&
 				wiretype!=ORACLE_TYPE_RAW &&
@@ -13256,6 +13258,7 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 				wiretype!=ORACLE_TYPE_INTERVALDS &&
 				wiretype!=ORACLE_TYPE_TIMESTAMP &&
 				wiretype!=ORACLE_TYPE_TIMESTAMPTZ &&
+				wiretype!=ORACLE_TYPE_TIMESTAMPLTZ &&
 				wiretype!=ORACLE_TYPE_BLOB &&
 				wiretype!=ORACLE_TYPE_BFILE);
 
@@ -13395,14 +13398,17 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 			wiretype=ORACLE_TYPE_REF_TYPE;
 			break;
 		case ORACLE_TYPE_TIMESTAMPLTZ:
-			// getWireColumnSize() and putColumnMetadata()'s
-			// fullencoding flag don't have a case of their own for
-			// this yet - what a live server actually reports for
-			// either one is still unverified, so describing one
-			// falls through to their generic, character-type
-			// defaults below.  safe regardless, now that putField()
-			// fails the fetch cleanly rather than mis-encoding the
-			// value as text
+			// until #9704, this type could never actually reach
+			// here - src/connections/oracle.cpp folded a timestamp
+			// with local time zone into the same generic datatype
+			// as a plain timestamp, so a real column always arrived
+			// as ORACLE_TYPE_TIMESTAMP instead.  now that it has its
+			// own datatype, getWireColumnSize() and
+			// putColumnMetadata()'s fullencoding flag both have a
+			// case of their own for it too, matching plain
+			// TIMESTAMP's 11-byte binary wire size - a local-time-
+			// zone value carries no stored offset of its own, so it
+			// takes the same width
 			wiretype=ORACLE_TYPE_TIMESTAMPLTZ;
 			break;
 		case ORACLE_TYPE_LOB_CLOB:
@@ -13539,6 +13545,15 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		// the way it does an interval, and oci works the 13 it
 		// reports back out from the type
 		size=ORACLE_TIMESTAMPTZ_WIRE_SIZE;
+	} else if (wiretype==ORACLE_TYPE_TIMESTAMPLTZ) {
+		// the same 11 bytes as a plain timestamp, not the 1-byte form
+		// timestamp with time zone and the intervals get - a local-
+		// time-zone value carries no stored offset of its own to
+		// widen it.  live #9704 evidence: before this type had its
+		// own datatype it was always described as a plain
+		// ORACLE_TYPE_TIMESTAMP and the size a real client saw was
+		// never wrong, only the type code was
+		size=ORACLE_TIMESTAMP_SIZE;
 	} else if (wiretype==ORACLE_TYPE_CLOB ||
 			wiretype==ORACLE_TYPE_BLOB) {
 		// not the width of the lob, which has no bound - the width of

@@ -3518,6 +3518,22 @@ byte_t sqlrprotocol_mysql::getColumnType(const char *columntypestring,
 					columntypesize) &&
 				datatypestring[index][columntypesize]=='\0') {
 
+			// bail on a type that the map doesn't cover.
+			// dataTypeStrings() and mysqltypemap[] are
+			// maintained separately, so a type added to one
+			// and not the other would index past the end (see
+			// #9704, which added one to dataTypeStrings() alone -
+			// this guard is what stops that from becoming an
+			// out-of-bounds read here, the way it's already
+			// guarded in the oracle protocol module's own
+			// getColumnType())
+			if (index>=sizeof(mysqltypemap)/
+					sizeof(mysqltypemap[0])) {
+				debugWrite("invalid column type: %s",
+							columntypestring);
+				return MYSQL_TYPE_NULL;
+			}
+
 			byte_t	retval=mysqltypemap[index];
 
 			// Some DB's, like oracle, don't distinguish between

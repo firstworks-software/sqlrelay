@@ -1543,7 +1543,13 @@ int main(int argc, char **argv) {
 	// zone value carries no stored offset of its own - it is normalized to
 	// the database time zone and converted back on the way out - so the
 	// wire size is expected to match plain TESTTIMESTAMP's 11 bytes rather
-	// than TESTTIMESTAMPTZ's 13.  unverified, see #9717
+	// than TESTTIMESTAMPTZ's 13.  a live run before #9704's fix confirmed
+	// this assertion used to fail: src/connections/oracle.cpp folded a
+	// local-time-zone column into the same generic datatype as a plain
+	// timestamp, so the module described it as 180, not 231.  #9704 gave
+	// it its own datatype (TIMESTAMPLTZ_DATATYPE) to fix that.  the type
+	// and size here are backed by that live evidence; precision/scale are
+	// still unverified, see #9717
 	assertColumn(&typecda2,9,"TESTTIMESTAMPLTZ",231,11,0,6);
 	assertColumn(&typecda2,10,"TESTINTERVALYM",182,5,2,0);
 	assertColumn(&typecda2,11,"TESTINTERVALDS",183,11,2,6);

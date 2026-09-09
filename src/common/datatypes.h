@@ -219,6 +219,11 @@ typedef	enum {
 	DATETIMEOFFSET_DATATYPE,
 	// also added by informix
 	LVARCHAR_DATATYPE,
+	// also added by oracle (a timestamp column that carries no offset of
+	// its own - normalized to the database time zone on the way in and
+	// converted back on the way out - distinct from a plain TIMESTAMP
+	// and from TIMESTAMPTZ, which does carry one)
+	TIMESTAMPLTZ_DATATYPE,
 	END_DATATYPE
 } datatype;
 
@@ -432,6 +437,8 @@ static const char	*datatypestring[] = {
 	"DATETIMEOFFSET",
 	// also added by informix
 	"LVARCHAR",
+	// also added by oracle
+	"TIMESTAMPLTZ",
 	NULL
 };
 #endif
@@ -720,16 +727,18 @@ static bool isUnsignedTypeChar(const char *type) {
 	return (!charstring::compareIgnoringCase(type,"USHORT") ||
 		!charstring::compareIgnoringCase(type,"UINT")||
 		!charstring::compareIgnoringCase(type,"YEAR") ||
-		!charstring::compareIgnoringCase(type,"TIMESTAMP"));
+		!charstring::compareIgnoringCase(type,"TIMESTAMP") ||
+		!charstring::compareIgnoringCase(type,"TIMESTAMPLTZ"));
 }
 #endif
 
 #ifdef NEED_IS_UNSIGNED_TYPE_INT
-static bool isUnsignedTypeInt(int16_t type) { 
+static bool isUnsignedTypeInt(int16_t type) {
 	return (type==USHORT_DATATYPE ||
 		type==UINT_DATATYPE ||
 		type==YEAR_DATATYPE ||
-		type==TIMESTAMP_DATATYPE);
+		type==TIMESTAMP_DATATYPE ||
+		type==TIMESTAMPLTZ_DATATYPE);
 }
 #endif
 
@@ -754,6 +763,7 @@ static bool isBinaryTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"_BYTEA") ||
 		!charstring::compareIgnoringCase(type,"BYTEA_ARRAY") ||
 		!charstring::compareIgnoringCase(type,"TIMESTAMP") ||
+		!charstring::compareIgnoringCase(type,"TIMESTAMPLTZ") ||
 		!charstring::compareIgnoringCase(type,"DATE") ||
 		!charstring::compareIgnoringCase(type,"TIME") ||
 		!charstring::compareIgnoringCase(type,"DATETIME") ||
@@ -762,7 +772,7 @@ static bool isBinaryTypeChar(const char *type) {
 #endif
 
 #ifdef NEED_IS_BINARY_TYPE_INT
-static bool isBinaryTypeInt(int16_t type) { 
+static bool isBinaryTypeInt(int16_t type) {
 	return (type==IMAGE_DATATYPE ||
 		type==BINARY_DATATYPE ||
 		type==VARBINARY_DATATYPE ||
@@ -780,6 +790,7 @@ static bool isBinaryTypeInt(int16_t type) {
 		type==BYTEA_DATATYPE ||
 		type==_BYTEA_DATATYPE ||
 		type==TIMESTAMP_DATATYPE ||
+		type==TIMESTAMPLTZ_DATATYPE ||
 		type==DATE_DATATYPE ||
 		type==TIME_DATATYPE ||
 		type==DATETIME_DATATYPE ||
@@ -794,6 +805,7 @@ static bool isDateTimeTypeChar(const char *type) {
 		!charstring::compareIgnoringCase(type,"DATE") ||
 		!charstring::compareIgnoringCase(type,"TIME") ||
 		!charstring::compareIgnoringCase(type,"TIMESTAMP") ||
+		!charstring::compareIgnoringCase(type,"TIMESTAMPLTZ") ||
 		!charstring::compareIgnoringCase(type,"NEWDATE") ||
 		!charstring::compareIgnoringCase(type,"DATETIMEOFFSET"));
 }
@@ -806,6 +818,7 @@ static bool isDateTimeTypeInt(int16_t type) {
 		type==DATE_DATATYPE ||
 		type==TIME_DATATYPE ||
 		type==TIMESTAMP_DATATYPE ||
+		type==TIMESTAMPLTZ_DATATYPE ||
 		type==NEWDATE_DATATYPE ||
 		type==DATETIMEOFFSET_DATATYPE);
 }
