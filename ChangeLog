@@ -2153,6 +2153,10 @@
 		can send other oci7 errors like ORA-01008 and ORA-03001
 		correctly; #9987 itself is a pure rename/generalization - every
 		call site still sends the exact same ORA-01007 it sent before
+	fixed sqlrservercontroller::newCursor()'s no-argument overload
+		handing out an id that could later be reused by a pooled
+		cursor as the pool grew; it now cycles through ids that a
+		pooled cursor can never be assigned
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
