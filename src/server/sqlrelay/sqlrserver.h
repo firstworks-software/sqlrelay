@@ -1620,6 +1620,11 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  cursor will have an id >= the value of the maxcursors
 		 *  attribute, of the instance tag, in the config file.
 		 *
+		 *  Such a cursor's id is reused as cursors of this kind are
+		 *  allocated and deleted.  It must not be given to a protocol
+		 *  module, sent to a client, or used to index anything sized
+		 *  by maxcursors.
+		 *
 		 *  This cursor must be opened by calling open(cursor) before
 		 *  it can be used and should be closed by calling close(cursor)
 		 *  and deleted by calling deleteCursor(cursor) when you are

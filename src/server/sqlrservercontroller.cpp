@@ -303,6 +303,7 @@ class sqlrservercontrollerprivate {
 	uint16_t	_cursorcount;
 	uint16_t	_mincursorcount;
 	uint16_t	_maxcursorcount;
+	uint16_t	_tempcursorid;
 	sqlrservercursor	**_cur;
 
 	char		*_decrypteddbpassword;
@@ -605,6 +606,10 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_debugsqlrresultsetheadertranslation=false;
 	pvt->_debugsqlrmoduledata=false;
 
+	pvt->_cursorcount=0;
+	pvt->_mincursorcount=0;
+	pvt->_maxcursorcount=0;
+	pvt->_tempcursorid=0;
 	pvt->_cur=NULL;
 
 	pvt->_pidfile=NULL;
@@ -1461,8 +1466,19 @@ sqlrservercursor *sqlrservercontroller::newCursor(uint16_t id) {
 }
 
 sqlrservercursor *sqlrservercontroller::newCursor() {
-	// return a cursor with an ID that can't already exist
-	return newCursor(pvt->_cursorcount+1);
+
+	// Pooled cursor ids are always less than maxcursorcount, so an id
+	// at or above it can never collide with a pooled cursor's id.
+	// Cycle through those ids, rather than reusing one, because several
+	// of these cursors can be open at once and some backends build
+	// per-cursor database object names from the id.
+	if (pvt->_tempcursorid<pvt->_maxcursorcount ||
+				pvt->_tempcursorid==65535) {
+		pvt->_tempcursorid=pvt->_maxcursorcount;
+	} else {
+		pvt->_tempcursorid++;
+	}
+	return newCursor(pvt->_tempcursorid);
 }
 
 void sqlrservercontroller::incrementConnectionCount() {
