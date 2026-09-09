@@ -42,9 +42,14 @@
 //   nullbind     the same insert with two of the three indicators set to
 //                -1, so a null bind's wire form can be diffed against
 //                nullbind's non-null counterpart
-//   many         bind once, oexec three times. obndrv binds by reference,
-//                so this says whether the client re-marshals the binds on
-//                every execute or sends them only with the first
+//   many         bind once, oexec three times, inserting testnumber 10, 11
+//                and 12. obndrv binds by reference, so this says whether the
+//                client re-marshals the binds on every execute or sends them
+//                only with the first. it re-reads the table afterward and
+//                prints every testnumber in it, so which of the three
+//                executes actually landed a row is in this program's own
+//                output rather than something another program has to go
+//                look up
 //   reverse      the same insert with the obndrv calls made backwards, to
 //                settle whether the wire order of the bind values is the
 //                order of the placeholders in the statement or the order
@@ -83,9 +88,30 @@ const char	*sid=NULL;
 Lda_Def		lda;
 ub4		hda[256];
 
-// print the ORA number a call left in the cursor, if any
+// ORA-01403, no data found - what a fetch past the last row leaves in cda.rc
+const int	nodatafound=1403;
+
+// the most rows verifyBindTable will fetch before it gives up
+const int	maxverifyrows=1000;
+
+// print the ORA number a call left in the cursor, and the rest of the
+// cursor's error fields
 static void printError(const char *what, Cda_Def *cursor) {
-	stdoutput.printf("%s failed: ORA-%05d\n",what,(int)cursor->rc);
+
+	// fc is the OCI function code, so it names the call the error came out
+	// of even when the caller's label is vague, and peo is the offset a
+	// parse error is at.  v2_rc and ose catch the case where a call fails
+	// with nothing in rc at all - v2_rc is an sb2, so a number past 32767
+	// wraps there.
+	//
+	// oerhms would turn the number into message text, but it is outside
+	// the 12 symbols acsite.m4's FW_CHECK_OCI7 link-tests, so it is left
+	// out here the same way oci7.cpp leaves it out, and the number is
+	// printed on its own.
+	stdoutput.printf("%s failed: ORA-%05d "
+			"(v2_rc=%d fc=%d peo=%d ose=%d)\n",
+			what,(int)cursor->rc,(int)cursor->v2_rc,
+			(int)cursor->fc,(int)cursor->peo,(int)cursor->ose);
 }
 
 // run one OCI7 call, print what happened, and report whether it succeeded
@@ -104,36 +130,49 @@ static bool openCursor(const char *what, Cda_Def *cursor) {
 	return run(what,cursor,oopen(cursor,&lda,(text *)0,-1,-1,(text *)0,-1));
 }
 
-static bool parse(Cda_Def *cursor, const char *query) {
-	stdoutput.printf("oparse: %s\n",query);
-	return run("oparse",cursor,
+// oparse one query, labeled what so the statement it belongs to is never in
+// doubt
+static bool parse(const char *what, Cda_Def *cursor, const char *query) {
+	stdoutput.printf("%s: %s\n",what,query);
+	return run(what,cursor,
 			oparse(cursor,(text *)query,(sb4)-1,0,(ub4)2));
 }
 
 // oparse plus oexec on a cursor of its own, for the table setup the dml
-// variants need.  failure is reported but not fatal - the drop fails the
-// first time through, when there is no leftover table to drop
-static void execImmediate(const char *query, bool checked) {
+// variants need.  what labels every line the statement puts out, so the
+// drop's are never mistaken for the create's.  failure is reported but not
+// fatal - the drop fails the first time through, when there is no leftover
+// table to drop
+static void execImmediate(const char *what, const char *query, bool checked) {
+
+	char	label[64];
+	charstring::printf(label,sizeof(label),"oopen - %s",what);
+
 	Cda_Def	cda;
-	if (!openCursor("oopen - setup",&cda)) {
+	if (!openCursor(label,&cda)) {
 		return;
 	}
-	stdoutput.printf("setup: %s\n",query);
-	if (oparse(&cda,(text *)query,(sb4)-1,0,(ub4)2) ||
-					oexec(&cda)) {
-		if (checked) {
-			printError("setup",&cda);
-		} else {
-			stdoutput.printf("setup ignored: ORA-%05d\n",
-						(int)cda.rc);
-		}
+
+	// parse and execute are run and reported apart, so which of the two an
+	// error came out of is never in doubt either
+	charstring::printf(label,sizeof(label),"oparse - %s",what);
+	bool	failed=!parse(label,&cda,query);
+	if (!failed) {
+		charstring::printf(label,sizeof(label),"oexec - %s",what);
+		failed=!run(label,&cda,oexec(&cda));
 	}
+
+	if (failed && !checked) {
+		stdoutput.printf("  (%s is best effort - "
+					"an error here is not fatal)\n",what);
+	}
+
 	oclose(&cda);
 }
 
 static void createBindTable() {
-	execImmediate("drop table protocoltestbind",false);
-	execImmediate("create table protocoltestbind ("
+	execImmediate("drop","drop table protocoltestbind",false);
+	execImmediate("create","create table protocoltestbind ("
 			"testnumber number(10),"
 			"testchar char(20),"
 			"testvarchar varchar2(40))",true);
@@ -151,10 +190,9 @@ static bool bind(Cda_Def *cursor, const char *name,
 }
 
 // odefin one column as a string, the way every define in oci7.cpp does
-static bool define(Cda_Def *cursor, sword pos, char *buf, sword bufsize,
+static bool define(const char *what, Cda_Def *cursor, sword pos,
+				char *buf, sword bufsize,
 				sb2 *ind, ub2 *retlen, ub2 *retcode) {
-	char	what[64];
-	charstring::printf(what,sizeof(what),"odefin - column %d",(int)pos);
 	bytestring::zero(buf,(size_t)bufsize);
 	return run(what,cursor,
 			odefin(cursor,pos,(ub1 *)buf,bufsize,SQLT_STR,-1,
@@ -173,7 +211,7 @@ static const char	*bindinsert=
 static int selectVariant(const char *query, bool twobinds, bool stringbind) {
 
 	Cda_Def	cda;
-	if (!openCursor("oopen",&cda) || !parse(&cda,query)) {
+	if (!openCursor("oopen",&cda) || !parse("oparse",&cda,query)) {
 		return 1;
 	}
 
@@ -212,7 +250,10 @@ static int selectVariant(const char *query, bool twobinds, bool stringbind) {
 
 	sword	cols=(twobinds)?2:1;
 	for (sword pos=1; pos<=cols; pos++) {
-		if (!define(&cda,pos,buf[pos-1],(sword)sizeof(buf[pos-1]),
+		char	what[64];
+		charstring::printf(what,sizeof(what),
+					"odefin - column %d",(int)pos);
+		if (!define(what,&cda,pos,buf[pos-1],(sword)sizeof(buf[pos-1]),
 				&ind[pos-1],&retlen[pos-1],&retcode[pos-1])) {
 			oclose(&cda);
 			return 1;
@@ -256,7 +297,7 @@ static int reverseVariant() {
 	createBindTable();
 
 	Cda_Def	cda;
-	if (!openCursor("oopen",&cda) || !parse(&cda,bindinsert)) {
+	if (!openCursor("oopen",&cda) || !parse("oparse",&cda,bindinsert)) {
 		return 1;
 	}
 
@@ -294,14 +335,107 @@ static int reverseVariant() {
 	return 0;
 }
 
+// read the table back through a cursor of its own and print every testnumber
+// in it.
+//
+// A bind-once/execute-many run is only interesting for which of its executes
+// landed a row, and neither thing the executes themselves report answers
+// that: a rows-processed count is what the module said, not what the table
+// holds, and the setup drop is not reliable enough to guarantee the table
+// started out empty, so a row found afterward with sqlplus cannot be pinned
+// to the run that was being watched. This select settles both, in the same
+// process and the same capture.
+//
+// It runs in the session that did the inserts, which sees them whether or not
+// they are committed, so no ocom is needed for it to see what landed.
+//
+// The count line is printed on every path out, failures included, so a run
+// that never got as far as the select and a run that found nothing can be
+// told apart in the output.
+static void verifyBindTable() {
+
+	int		rows=0;
+	const char	*aborted=NULL;
+
+	Cda_Def	cda;
+	if (!openCursor("oopen - verify",&cda)) {
+		stdoutput.printf("verify: 0 row(s) in protocoltestbind "
+					"(aborted: oopen)\n");
+		return;
+	}
+
+	const char	*query="select testnumber from protocoltestbind "
+				"order by testnumber";
+
+	char	buf[64];
+	sb2	ind=0;
+	ub2	retlen=0;
+	ub2	retcode=0;
+
+	if (!parse("oparse - verify",&cda,query)) {
+		aborted="oparse";
+	} else if (!define("odefin - verify",&cda,1,buf,(sword)sizeof(buf),
+						&ind,&retlen,&retcode)) {
+		aborted="odefin";
+	} else if (!run("oexec - verify",&cda,oexec(&cda))) {
+		aborted="oexec";
+	} else {
+
+		int	lastrpc=(int)cda.rpc;
+		for (;;) {
+
+			// the row cap keeps a module that never signals the
+			// end of the fetch from spinning here forever
+			if (rows>=maxverifyrows) {
+				stdoutput.printf("verify: row cap (%d) "
+						"reached, stopping\n",
+						maxverifyrows);
+				break;
+			}
+
+			bytestring::zero(buf,sizeof(buf));
+			sword	fetched=ofen(&cda,1);
+
+			// a client that hands back the last row and the
+			// end-of-fetch signal in the same call leaves the row
+			// in the buffer, so rpc, not the return code, is what
+			// says whether there is a row to print
+			if ((int)cda.rpc>lastrpc) {
+				lastrpc=(int)cda.rpc;
+				rows++;
+				stdoutput.printf("verify: row testnumber=%s\n",
+							(ind==-1)?"NULL":buf);
+			}
+
+			if (fetched) {
+				if ((int)cda.rc!=nodatafound) {
+					printError("ofen - verify",&cda);
+					aborted="ofen";
+				}
+				break;
+			}
+		}
+	}
+
+	run("oclose - verify",&cda,oclose(&cda));
+
+	if (aborted) {
+		stdoutput.printf("verify: %d row(s) in protocoltestbind "
+					"(aborted: %s)\n",rows,aborted);
+	} else {
+		stdoutput.printf("verify: %d row(s) in protocoltestbind\n",rows);
+	}
+}
+
 // the three-bind insert, with or without null indicators, executed once or
-// three times
-static int insertVariant(bool nulls, int iterations) {
+// three times.  verify reads the table back afterward, whether the executes
+// all ran or one of them gave up part way through
+static int insertVariant(bool nulls, int iterations, bool verify) {
 
 	createBindTable();
 
 	Cda_Def	cda;
-	if (!openCursor("oopen",&cda) || !parse(&cda,bindinsert)) {
+	if (!openCursor("oopen",&cda) || !parse("oparse",&cda,bindinsert)) {
 		return 1;
 	}
 
@@ -345,12 +479,20 @@ static int insertVariant(bool nulls, int iterations) {
 		bindnumber=firstnumber+i;
 		if (!run("oexec",&cda,oexec(&cda))) {
 			oclose(&cda);
+			if (verify) {
+				verifyBindTable();
+			}
 			return 1;
 		}
 		stdoutput.printf("  rows processed: %d\n",(int)cda.rpc);
 	}
 
 	run("oclose",&cda,oclose(&cda));
+
+	if (verify) {
+		verifyBindTable();
+	}
+
 	return 0;
 }
 
@@ -358,7 +500,7 @@ static int insertVariant(bool nulls, int iterations) {
 static int plsqlVariant(const char *block, sb4 invalue) {
 
 	Cda_Def	cda;
-	if (!openCursor("oopen",&cda) || !parse(&cda,block)) {
+	if (!openCursor("oopen",&cda) || !parse("oparse",&cda,block)) {
 		return 1;
 	}
 	stdoutput.printf("  statement type: %d\n",(int)cda.ft);
@@ -429,11 +571,11 @@ int main(int argc, char **argv) {
 	} else if (!charstring::compare(variant,"selecttwo")) {
 		result=selectVariant("select :num, :b from dual",true,false);
 	} else if (!charstring::compare(variant,"insert")) {
-		result=insertVariant(false,1);
+		result=insertVariant(false,1,false);
 	} else if (!charstring::compare(variant,"nullbind")) {
-		result=insertVariant(true,1);
+		result=insertVariant(true,1,false);
 	} else if (!charstring::compare(variant,"many")) {
-		result=insertVariant(false,3);
+		result=insertVariant(false,3,true);
 	} else if (!charstring::compare(variant,"reverse")) {
 		result=reverseVariant();
 	} else if (!charstring::compare(variant,"out")) {
