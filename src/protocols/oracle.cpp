@@ -9266,6 +9266,10 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 		return sendQueryError(cursor);
 	}
 
+	// keep describe()'s guard current, the same as every other execute
+	// path in this file
+	cacheColumnDefinitions(cursor,cont->colCount(cursor));
+
 	return sendParseExecuteResponse(cursor);
 }
 
@@ -15849,6 +15853,12 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return sendQueryError(cursor);
 	}
 
+	// keep describe()'s guard current - without this, a describe landing
+	// between this execute and the client's first fetch would find
+	// columntypescached still false and re-run the statement, rewinding
+	// the result set
+	cacheColumnDefinitions(cursor,cont->colCount(cursor));
+
 	// what the backend actually did with it - putOci7Summary()'s own
 	// debug output below doesn't print rows processed, so this is the
 	// only place it's logged
@@ -15957,6 +15967,11 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 					cont->getAffectedRows(cursor);
 		}
 	}
+
+	// keep describe()'s guard current - the same reasoning as
+	// sendQuery3Response(), which does this once after every block in
+	// query3()'s own execute loop finishes, not per block
+	cacheColumnDefinitions(cursor,cont->colCount(cursor));
 
 	return sendReexecuteResponse(cursor,cursorid);
 }
