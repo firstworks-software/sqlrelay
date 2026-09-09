@@ -2174,6 +2174,22 @@
 		hardcoded 0 for the parse error offset field; it now sends
 		the character offset of the FROM clause's object name in the
 		query text, which is what a real server sends (#9988)
+	fixed sqlr-scaler waiting forever for a new connection to start up on
+		platforms without timed semaphore operations, which left it
+		unable to ever spawn another connection
+	sqlr-scaler now restores the pool to the configured number of
+		connections when connections die, rather than only growing the
+		pool in response to client queue pressure
+	the listener's dynamic-scaling minimum for listenertimeout now applies
+		at the default listenertimeout of 0 too, rather than only when
+		a nonzero timeout was already configured, so a client on such an
+		instance now gets a clear error after around 110 seconds instead
+		of queueing forever, whether the pool is merely busy or empty
+	the listener can now time out waiting for an available connection
+		even on a platform with no timed semaphore operations, as long
+		as the wait is happening in a thread, by polling instead - this
+		used to hang indefinitely, so a client pinging an instance whose
+		connection pool was empty would block forever with no error
 	fixed the oracle protocol module's reInit() resetting only lob pins
 		and define lists between sessions; the rest of its per-cursor
 		state (cached column types, sent-row counts, pending fetch

@@ -26,7 +26,7 @@
 // for pid_t
 #include <sys/types.h>
 
-class SQLRSERVER_DLLSPEC scaler {
+class SQLRSERVER_DLLSPEC scaler : public sqlrserverbase {
 
 	public:
 		scaler();
@@ -60,6 +60,7 @@ class SQLRSERVER_DLLSPEC scaler {
 		sqlrconfigs	*sqlrcfgs;
 		sqlrconfig	*cfg;
 
+		uint32_t	minconnections;
 		uint32_t	maxconnections;
 		uint32_t	maxqueuelength;
 		uint32_t	growby;
@@ -76,7 +77,7 @@ class SQLRSERVER_DLLSPEC scaler {
 
 		uint32_t	currentseed;
 
-		bool		init;
+		bool		initialized;
 
 		sqlrpaths	*sqlrpth;
 		sqlrcmdline	*cmdl;
@@ -89,7 +90,9 @@ class SQLRSERVER_DLLSPEC scaler {
 
 scaler::scaler() {
 
-	init=false;
+	initialized=false;
+
+	minconnections=0;
 
 	cmdl=NULL;
 
@@ -112,7 +115,7 @@ scaler::scaler() {
 }
 
 scaler::~scaler() {
-	if (init) {
+	if (initialized) {
 		reapChildren(-1);
 		cleanUp();
 	}
@@ -132,7 +135,9 @@ bool scaler::initScaler(int argc, const char **argv) {
 		process::setShutDownFlagOnCrash();
 	}
 
-	init=true;
+	initialized=true;
+
+	sqlrserverbase::init();
 
 	// get the id
 	id=cmdl->getId();
@@ -310,6 +315,7 @@ bool scaler::initScaler(int argc, const char **argv) {
 		}
 
 		// get the dynamic connection scaling parameters
+		minconnections=cfg->getConnections();
 		maxconnections=cfg->getMaxConnections();
 		maxqueuelength=cfg->getMaxQueueLength();
 		growby=cfg->getGrowBy();
@@ -552,19 +558,29 @@ bool scaler::openMoreConnections() {
 	uint32_t	connectedclients=getConnectedClientCount();
 	uint32_t	currentconnections=getConnectionCount();
 
-	// do we need to open more connections?
-	if (connectedclients<currentconnections ||
-		(connectedclients-currentconnections)<=maxqueuelength) {
+	// do we need to open more connections?  either the pool has fallen
+	// below its configured minimum, or the queue is too long
+	bool	belowmin=(currentconnections<minconnections);
+	if (!belowmin &&
+		(connectedclients<currentconnections ||
+		(connectedclients-currentconnections)<=maxqueuelength)) {
 		return true;
 	}
 
 	// can more be opened, or will we exceed the max?
-	if ((currentconnections+growby)>maxconnections) {
-		return true;
+	uint32_t	opencount=growby;
+	if ((currentconnections+opencount)>maxconnections) {
+		if (!belowmin) {
+			return true;
+		}
+		// The minimum is never above the max, but growing by "growby"
+		// from below the minimum could overshoot it, so in that case,
+		// just grow up to the max.
+		opencount=maxconnections-currentconnections;
 	}
 
-	// open "growby" connections
-	for (uint32_t i=0; i<growby; i++) {
+	// open "opencount" connections
+	for (uint32_t i=0; i<opencount; i++) {
 
 		// initialize attempts to start a connection...
 		// We'll try to start it some number of times.  If it fails,
@@ -596,6 +612,17 @@ bool scaler::openMoreConnections() {
 			// test to see if the database is up or down
 			if (currentconnections && !availableDatabase()) {
 				snooze::macrosnooze(1);
+				// Count this the same as a failed start
+				// attempt.  Without this, restoring the pool
+				// to its minimum against a database that
+				// stays down would spin here forever and
+				// never return to the caller to reap children
+				// or re-check the pool size.
+				attempts++;
+				if (attempts==DEFAULT_CONNECTION_START_ATTEMPTS) {
+					i=opencount;
+					break;
+				}
 				continue;
 			}
 
@@ -636,7 +663,7 @@ bool scaler::openMoreConnections() {
 			// stop waiting in a few seconds and send errors to the
 			// clients.
 			if (attempts==DEFAULT_CONNECTION_START_ATTEMPTS) {
-				i=growby;
+				i=opencount;
 				break;
 			}
 		}
@@ -647,15 +674,13 @@ bool scaler::openMoreConnections() {
 
 bool scaler::connectionStarted() {
 
-	// wait for the connection count to increase
-	// with a timeout, if supported
+	// wait for the connection count to increase, with a timeout
 	// (the timeout should be at least 20 seconds because, if logging is
 	// enabled, but someone forgot to put the database host name in DNS,
 	// it might take up to 15 seconds for the hostname/ipaddress lookup to
 	// time out)
-	return semset->supportsTimedSemaphoreOperations()?
-			semset->wait(8,DEFAULT_CONNECTION_START_TIMEOUT,0):
-			semset->wait(8);
+	return semWait(semset,8,NULL,false,
+			DEFAULT_CONNECTION_START_TIMEOUT,NULL);
 }
 
 void scaler::killConnection(pid_t connpid) {
