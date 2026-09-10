@@ -1558,24 +1558,61 @@ regenerate_file() {
 	echo "regenerated $_out"
 }
 
+# whether $1 is one of the instances this run was asked to test - ie. a word
+# in $TESTINSTANCES.  regenerate_files() uses this so that a run only rewrites
+# the conf files its own instances need
+#
+# padding both sides with spaces turns "is a word in the list" into a plain
+# substring check, without a false match against another instance name that
+# merely starts with $1 (mysqlprotocol vs mysqlprotocoltls)
+instance_wanted() {
+
+	case " $TESTINSTANCES " in
+		*" $1 "*)
+			return 0
+			;;
+	esac
+	return 1
+}
+
 # regenerate everything that carries a listener port - both ends: the configs
 # the listeners read, and the client-side config the test programs read
+#
+# only the instances this run actually starts are regenerated.  every one of
+# these files is shared with every other run on the host - including
+# concurrent ones testing other instances - so rewriting a file this run has
+# no use for would only give a concurrent run's already-bound listener a
+# stale port out from under it (#10045)
 regenerate_files() {
 
 	for _conf in $PROTOCOLCONFS
 	do
-		regenerate_file "$CONFDIR/${_conf}.conf.in" "$CONFDIR/${_conf}.conf"
+		if instance_wanted "$_conf"
+		then
+			regenerate_file "$CONFDIR/${_conf}.conf.in" "$CONFDIR/${_conf}.conf"
+		fi
 	done
 
 	# freetds and tsql read the listener's port only from here - there is
-	# no command line option and no environment variable for it
-	regenerate_file "$CONFDIR/freetds/etc/freetds.conf.in" "$CONFDIR/freetds/etc/freetds.conf"
+	# no command line option and no environment variable for it.  every
+	# tds protocol instance that goes through a freetds-based client
+	# shares this one file
+	if instance_wanted tdsfreetdsmssqlprotocol || instance_wanted tdsfreetdssapprotocol || instance_wanted tdsprotocoltls || instance_wanted tdsprotocoltlsserverauth
+	then
+		regenerate_file "$CONFDIR/freetds/etc/freetds.conf.in" "$CONFDIR/freetds/etc/freetds.conf"
+	fi
 
-	# oracle client config, read through TNS_ADMIN
-	regenerate_file "$TESTDIR/protocol/oracle/tnsnames.ora.in" "$TESTDIR/protocol/oracle/tnsnames.ora"
+	# oracle client config, read through TNS_ADMIN - oracleprotocol only
+	if instance_wanted oracleprotocol
+	then
+		regenerate_file "$TESTDIR/protocol/oracle/tnsnames.ora.in" "$TESTDIR/protocol/oracle/tnsnames.ora"
+	fi
 
-	# teradata client config, read through ODBCINI
-	regenerate_file "$TESTDIR/protocol/teradata/odbc.ini.in" "$TESTDIR/protocol/teradata/odbc.ini"
+	# teradata client config, read through ODBCINI - teradataprotocol only
+	if instance_wanted teradataprotocol
+	then
+		regenerate_file "$TESTDIR/protocol/teradata/odbc.ini.in" "$TESTDIR/protocol/teradata/odbc.ini"
+	fi
 }
 
 # copy every module this build produced into one flat directory, so that
