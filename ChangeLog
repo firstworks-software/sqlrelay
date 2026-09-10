@@ -2339,8 +2339,10 @@
 		zero byte ahead of the indicator; a live portable-encoding
 		session broke when that same byte was omitted there too, so
 		portable keeps the byte, matching every other type, while
-		native does not, per each encoding's own capture evidence.
-		putLobField() now reports back whether it wrote a genuine
+		native does not - a real capture backs the native behavior,
+		portable rests on live verification against the shape every
+		other null column already used there, not a capture of its
+		own. putLobField() now reports back whether it wrote a genuine
 		null, so putRow() can send the right indicator/return-code
 		pair; a real, non-null zero-length lob is unaffected (#10006)
 
