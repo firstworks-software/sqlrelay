@@ -163,6 +163,29 @@ static const columnvalue	row1[]={
 	{ row1testdate, sizeof(row1testdate) }
 };
 
+// the date column the way "define arm: all four positions" below gets it
+// back.  that arm defines every position SQLT_STR (dty 1, ORA_DEFINE_DATATYPE
+// below) with a 63 byte buffer, and #9974 taught putField()'s
+// ORACLE_TYPE_DATE case (src/protocols/oracle.cpp) to honor that: a date
+// defined SQLT_STR goes out as the backend's own text instead of the seven
+// byte binary form above.  date_to_text_format=YYYY-MM-DD HH24:MI:SS in
+// test/sqlrelay.conf.d/oracleprotocol.conf shapes that text, and insertrow1's
+// to_date() call put the same string in, so the round trip lands on it
+// exactly.  the other three columns are unaffected by the same define - see
+// putField()'s ORACLE_TYPE_CHAR/VARCHAR/FIXED_CHAR/NUMBER/VARNUM case, which
+// already answers every one of those in its natural form whatever type the
+// define asked for - so row1alldefined only overrides the date entry
+static const unsigned char	row1testdatevarchar2[]={
+	'2', '0', '0', '1', '-', '0', '1', '-', '0', '1', ' ',
+	'0', '1', ':', '0', '1', ':', '0', '1'
+};
+static const columnvalue	row1alldefined[]={
+	{ row1testnumber, sizeof(row1testnumber) },
+	{ row1testchar, sizeof(row1testchar) },
+	{ row1testvarchar, sizeof(row1testvarchar) },
+	{ row1testdatevarchar2, sizeof(row1testdatevarchar2) }
+};
+
 // packet [0022] of
 // samples/9808-solaris8sparc-portable-realtable-outofrange.oraproxy - a real
 // 10.2 server's answer to odescr() on a position past the last column
@@ -405,9 +428,12 @@ static const unsigned char	ORA_DEFINE_FLAG_SKIPPED=0x80;
 
 // the datatype, buffer size and character set the real define in packet
 // [0027] of samples/9810-redhat9x86-portable-midfetch-defines3-sqlrelay.
-// oraproxy asks for.  the module reads all three and throws them away, so
-// their values change nothing - they are the capture's so that what this
-// builds is what a real client sent
+// oraproxy asks for.  they are the capture's so that what this builds is
+// what a real client sent.  #9974 (closed) taught the module to honor the
+// datatype rather than ignore it - see definedColumnType() in
+// src/protocols/oracle.cpp - so a define arm that includes the date column
+// (only "define arm: all four positions" below does) gets it back
+// converted to this type; row1alldefined is that arm's expected row
 static const unsigned char	ORA_DEFINE_DATATYPE=1;
 static const uint32_t		ORA_DEFINE_BUFFER_SIZE=63;
 static const uint32_t		ORA_DEFINE_CHARSET=31;
@@ -1199,10 +1225,13 @@ static void printPositions(const bool *set, size_t colcount) {
 }
 
 // the values in the row against the ones the columns in "expected" hold in
-// row 1 of the table, in order and with nothing else between them
+// "values" - row 1 of the table for every arm except "all four positions",
+// which gets the date column back in a different shape (see row1alldefined
+// above) - in order and with nothing else between them
 static bool checkFetchedColumns(const fetchedrow *row,
 					const bool *expected,
-					size_t colcount) {
+					size_t colcount,
+					const columnvalue *values) {
 
 	size_t	next=0;
 	for (size_t i=0; i<colcount; i++) {
@@ -1219,10 +1248,10 @@ static bool checkFetchedColumns(const fetchedrow *row,
 		}
 
 		if (row->isnull[next] ||
-			row->valuesize[next]!=row1[i].size ||
+			row->valuesize[next]!=values[i].size ||
 			bytestring::compare(row->value[next],
-						row1[i].value,
-						row1[i].size)) {
+						values[i].value,
+						values[i].size)) {
 			stdoutput.printf("value %d is ",(int)next+1);
 			if (row->isnull[next]) {
 				stdoutput.printf("null");
@@ -1231,7 +1260,7 @@ static bool checkFetchedColumns(const fetchedrow *row,
 							row->valuesize[next]);
 			}
 			stdoutput.printf(", expected column %d's ",(int)i+1);
-			printColumnValue(row1[i].value,row1[i].size);
+			printColumnValue(values[i].value,values[i].size);
 			stdoutput.printf("\n");
 			return false;
 		}
@@ -1249,16 +1278,20 @@ static bool checkFetchedColumns(const fetchedrow *row,
 }
 
 // one define arm: parse the select, execute it with a define block naming
-// "defined", fetch one row, and check it against "expected".  the two sets
-// are the same for a block the module can walk; they part company for the one
-// it has to reject, which falls back to every column
+// "defined", fetch one row, and check it against "expected", whose columns
+// should hold "values".  "defined" and "expected" are the same set for a
+// block the module can walk; they part company for the one it has to
+// reject, which falls back to every column.  "values" is row1 for every
+// arm except "all four positions", which asks every column converted to
+// a type that changes the date column's shape - see row1alldefined
 static bool runDefineArm(oracleprotocolclient *client,
 					uint32_t cursorid,
 					const char *label,
 					const bool *defined,
 					const bool *expected,
 					size_t colcount,
-					size_t junk) {
+					size_t junk,
+					const columnvalue *values) {
 
 	stdoutput.printf("\n--- %s ---\n\n",label);
 
@@ -1332,7 +1365,7 @@ static bool runDefineArm(oracleprotocolclient *client,
 	charstring::printf(message,sizeof(message),
 			"%s: the row carries the defined columns and no others",
 			label);
-	report(message,checkFetchedColumns(&row,expected,colcount));
+	report(message,checkFetchedColumns(&row,expected,colcount,values));
 
 	charstring::printf(message,sizeof(message),
 			"%s: the columns left out add nothing to the row",
@@ -1608,14 +1641,18 @@ int main(int argc, char **argv) {
 
 		// defining every position asks for what the fallback sends
 		// anyway, so this is the arm that says the walk didn't break
-		// the case every session before it got
+		// the case every session before it got.  it also defines the
+		// date column, so its expected row is row1alldefined, not
+		// row1 - see the comment there
 		runDefineArm(&client,definecursorid,
 				"define arm: all four positions",
-				allfour,allfour,tablecolumncount,0);
+				allfour,allfour,tablecolumncount,0,
+				row1alldefined);
 
 		runDefineArm(&client,definecursorid,
 				"define arm: position 1 only",
-				firstonly,firstonly,tablecolumncount,0);
+				firstonly,firstonly,tablecolumncount,0,
+				row1);
 
 		// a define count of 3 - two placeholders and then the real
 		// one, which is what packet [0027] of samples/
@@ -1623,20 +1660,25 @@ int main(int argc, char **argv) {
 		// sends, and what a real 10.2 server answers with one column
 		runDefineArm(&client,definecursorid,
 				"define arm: position 3 only",
-				thirdonly,thirdonly,tablecolumncount,0);
+				thirdonly,thirdonly,tablecolumncount,0,
+				row1);
 
 		runDefineArm(&client,definecursorid,
 				"define arm: positions 1 and 2",
-				firsttwo,firsttwo,tablecolumncount,0);
+				firsttwo,firsttwo,tablecolumncount,0,
+				row1);
 
 		// a block whose descriptors don't land on the end of the
 		// request.  the walk has to throw away what it read and send
 		// every column - shaping a row from a bad read would desync
 		// the client's parse of every row after it, which is a worse
-		// failure than the overrun being fixed
+		// failure than the overrun being fixed.  the defines it threw
+		// away are what would have converted the date column, so the
+		// fallback answers it in its natural, row1 form
 		runDefineArm(&client,definecursorid,
 				"define arm: a block the walk has to reject",
-				firstonly,allfour,tablecolumncount,3);
+				firstonly,allfour,tablecolumncount,3,
+				row1);
 	}
 
 	client.disconnect();
