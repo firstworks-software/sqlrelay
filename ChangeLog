@@ -2463,6 +2463,15 @@
 		drifts apart for multibyte data; it now tracks its own
 		character-position cursor for a sequential read, falling back
 		to the old byte-as-position behavior otherwise (#10040)
+	fixed the oracle connection module reading a described column's scale
+		two bytes wide when oracle only writes one.  precision really
+		is 2 bytes and scale really is 1 - the widths OCIAttrGet's own
+		size out-parameter reports - so the 2-byte read left scale in
+		the high byte on a big-endian host (solaris8sparc) and
+		reported 0 for every column that had one, eg. a NUMBER(10,2)
+		described as scale 0 to an oci7 client.  no change on
+		little-endian, where the byte lands in the low half either
+		way (#10033)
 	fixed the oracle protocol module deadlocking a modern client that
 		wire-speaks the legacy oci7 call interface under a
 		verifiertype="9i" listener.  the module answered its

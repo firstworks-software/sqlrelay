@@ -1490,10 +1490,13 @@ pick_ports() {
 		exit 1
 	fi
 
+	# sed drops the port just used rather than tail -n +2.  solaris 8's tail
+	# has no -n option at all and fails outright, leaving $_ports empty, so
+	# every token past the first would come out with no port
 	for _token in $PORTTOKENS
 	do
 		_port=`echo "$_ports" | head -1`
-		_ports=`echo "$_ports" | tail -n +2`
+		_ports=`echo "$_ports" | sed 1d`
 		eval "$_token=$_port"
 	done
 
