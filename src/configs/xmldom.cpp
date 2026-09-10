@@ -1948,6 +1948,10 @@ void sqlrconfig_xmldom::normalizeTree() {
 			domnode	*logger=loggers->appendTag("logger");
 			logger->setAttributeValue("module","debug");
 			logger->setAttributeValue("stdout","yes");
+			// also log to a file, since sqlr-connection
+			// daemonizes without redirecting stdout anywhere
+			// an admin could find it
+			logger->setAttributeValue("file","yes");
 		}
 	}
 

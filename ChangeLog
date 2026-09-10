@@ -2311,6 +2311,13 @@
 		real server does, instead of raw binary in a text
 		buffer. every other define, including no define at
 		all, still gets the binary form as before (#10018)
+	fixed debug="protocols" (and any other debug="yes") on an instance
+		producing no debug output; the implicitly-added debug logger
+		set stdout="yes" but never file="yes", and sqlr-connection,
+		where protocol-level debug actually fires, daemonizes without
+		redirecting stdout anywhere, so the output went nowhere. the
+		implicit debug logger now enables file="yes" too, so debug
+		output lands in the debug directory regardless (#10019)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
