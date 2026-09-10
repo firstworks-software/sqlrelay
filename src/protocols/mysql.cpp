@@ -4155,10 +4155,18 @@ void sqlrprotocol_mysql::buildLobField(sqlrservercursor *cursor,
 
 		} else {
 
+			// the backend may return fewer bytes than requested,
+			// so clamp against the buffer size and advance the
+			// offset by the actual count read, not the count
+			// requested
+			if (charsread>sizeof(lobbuffer)) {
+				charsread=sizeof(lobbuffer);
+			}
+
 			// append the segment we just got
 			temp.append(lobbuffer,charsread);
 
-			offset=offset+charstoread;
+			offset=offset+charsread;
 		}
 	}
 }

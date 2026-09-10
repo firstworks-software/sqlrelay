@@ -2264,8 +2264,13 @@ void sqlrprotocol_postgresql::buildLobField(sqlrservercursor *cursor,
 						&charsread) || !charsread) {
 				break;
 			}
+			// a backend may return fewer chars than requested,
+			// so advance by what was actually read
+			if (charsread>sizeof(lobbuffer)) {
+				charsread=sizeof(lobbuffer);
+			}
 			temp.append(lobbuffer,charsread);
-			offset=offset+charstoread;
+			offset=offset+charsread;
 		}
 	}
 	cont->closeLobField(cursor,col);

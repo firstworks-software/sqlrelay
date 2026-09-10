@@ -3993,11 +3993,16 @@ void sqlrprotocol_sqlrclient::sendLobOutputBind(sqlrservercursor *cursor,
 				start=false;
 			}
 
+			// a backend may return fewer chars than requested,
+			// so advance by what was actually read
+			if (charsread>sizeof(lobbuffer)) {
+				charsread=sizeof(lobbuffer);
+			}
+
 			// send the segment we just got
 			sendLongSegment(lobbuffer,charsread);
 
-			// FIXME: or should this be charsread?
-			offset=offset+charstoread;
+			offset=offset+charsread;
 		}
 	}
 }
@@ -4487,11 +4492,16 @@ void sqlrprotocol_sqlrclient::sendLobField(sqlrservercursor *cursor,
 				start=false;
 			}
 
+			// a backend may return fewer chars than requested,
+			// so advance by what was actually read
+			if (charsread>sizeof(lobbuffer)) {
+				charsread=sizeof(lobbuffer);
+			}
+
 			// send the segment we just got
 			sendLongSegment(lobbuffer,charsread);
 
-			// FIXME: or should this be charsread?
-			offset=offset+charstoread;
+			offset=offset+charsread;
 		}
 	}
 }
