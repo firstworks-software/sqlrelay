@@ -2127,10 +2127,18 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// whether sendAuthenticationError() has already sent a
 		// refusal on this connection - unlike loginrefused, this
 		// isn't cleared between retries.  recvAuthenticationRequest()
-		// needs it: after reading the error, the client's own UPI
-		// layer does a second, separate reset of its own on the same
-		// connection, ahead of whatever it sends next, and that one
-		// needs answering too (see #10035)
+		// needs it: oci7.cpp's Instant-Client-23-backed legacy build
+		// (see #10035) does a second, separate marker of its own on
+		// the same connection after reading the error, on top of the
+		// break/reset sendAuthenticationError() already sent for the
+		// attempt that just failed, and that one needs answering too
+		// or both sides block in read() forever (#10035).  a genuine
+		// modern OCI client doesn't send it - packets [0017] and
+		// [0018] of test/protocol/oracle/samples/10039-dev-oci23-
+		// native-loginretry-realserver.oraproxy show it going
+		// straight from the error to its next login - so this stays
+		// a safety net for the client that does, not a case this
+		// server ever has to invite (#10039)
 		bool		priorloginattemptrefused;
 
 		// whether the client walked away instead of sending a login -
@@ -7935,15 +7943,22 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	// challenge, ahead of a classic login's real phase-two packet, it's
 	// a bare break/reset with nothing in flight yet - a reset marker
 	// back is the whole answer, same as the main query loop answers one
-	// mid-call (see #9794).  on a retry, it's a second, separate reset
-	// the client's UPI layer does on its own initiative, right after
-	// reading the error sendAuthenticationError() (and its own break/
-	// reset, ahead of the error) already sent for the attempt that just
-	// failed - the client is waiting to read a call result, not another
-	// marker, same as getTtiFunction() and runQuery2PlSqlBlock() - so
-	// once a login's been refused on this connection, the reset marker
-	// needs their sendMarkerCancelError() follow-up too, or both sides
-	// block in read() forever (see #10035)
+	// mid-call (see #9794).  a genuine modern OCI client that has just
+	// read a refusal doesn't send one at all: it goes straight on to its
+	// next login as a data packet, the same as it does against a real
+	// server - packets [0017] and [0018] of test/protocol/oracle/
+	// samples/10039-dev-oci23-native-loginretry-realserver.oraproxy show
+	// it (#10039).  but oci7.cpp's Instant-Client-23-backed legacy build
+	// (see #10035) does send a second, separate marker of its own here,
+	// on a retry - the client is waiting to read a call result, not
+	// another marker, same as getTtiFunction() and runQuery2PlSqlBlock()
+	// - so once a login's been refused on this connection, the reset
+	// marker needs their sendMarkerCancelError() follow-up too, or both
+	// sides block in read() forever (#10035).  it doesn't reopen #10039:
+	// that bug was sendErrorPacket() sending the wrong client's summary
+	// shape for every login failure, retried or not, and is fixed there
+	// now - this follow-up answers a stray marker after the real error
+	// already went out correctly, not the error itself
 	for (;;) {
 		if (!recvPacket()) {
 			return false;
@@ -8031,13 +8046,14 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	}
 	read(rp,&seqnumber,&rp);
 
+	// a summary object echoes the sequence number of the call it answers,
+	// and both verifier types answer a refused login with one - a real
+	// 11.2 server sends the o5logon client's own 2 back in the error
+	// (see sendErrorPacket()), not the 3 an oci7 login carries
+	callnumber=seqnumber;
+
 	// a 9i login's argument block is positional, so it gets its own parse
 	if (verifiertype==VERIFIER_TYPE_9I) {
-
-		// a 9i answer is a summary object, and a summary echoes the
-		// sequence number of the call it answers.  nothing on the
-		// o5logon path writes one, so this stays inside the branch
-		callnumber=seqnumber;
 
 		debugStart("o3logon request (phase %d)",(secondphase)?2:1);
 		debugWrite("data flags: 0x%04x",dataflags);
@@ -8794,18 +8810,14 @@ bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 						const char *message) {
 
-	// a real 10.2 server doesn't just send the error for a failed login -
-	// it breaks the call first, with a marker exchange, and only then
-	// sends the error.  originally this ran only for o3logon, on the
-	// assumption a modern client sends nothing before its next real
-	// packet either way - but a modern client that retries a failed
-	// login on the same connection sends its own break/reset marker in
-	// front of that packet if we don't break first, and answering that
-	// unsolicited marker with just a reset (see recvAuthenticationRequest())
-	// leaves both sides waiting on each other forever (#10035).  running
-	// the break for every verifier type is what a real 10.2 server does
-	// (see the wrong-password captures in test/protocol/oracle/samples)
-	// and it means the client never has a reason to send that marker.
+	// a real server doesn't just send the error for a failed login - it
+	// breaks the call first, with a marker exchange, and only then sends
+	// the error.  it does that for every verifier type, and for a modern
+	// client as much as an o3logon one: the wrong-password captures in
+	// test/protocol/oracle/samples show it for 10.2 and 11.2, and
+	// 10039-dev-oci23-native-loginretry-realserver.oraproxy shows a live
+	// 12.2 server running it in front of each failure of a retry
+	// sequence, packets [0014] through [0017].
 	//
 	// an OCI7 client aborts a connection whenever it doesn't get bytes
 	// shaped the way it expects (see #9654), so the break goes out even
@@ -8858,13 +8870,19 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	// as a data packet and desyncs.  returning false without writing this
 	// reads as a dropped socket, ORA-03113 or ORA-12537, not a refusal.
 	//
-	// what goes out instead is the same object putOci7Error() writes,
-	// with a login's field values - and #9976, which settled that
-	// function against real captures, settled this one too: the two
-	// literals below are that object in each encoding, field for field,
-	// with a call number of 3 and every other value 0.  they stay
-	// literals because this call runs before the login is far enough
-	// along for the fields to come from anywhere else
+	// what goes out instead is a summary object with a login's field
+	// values in it, and which summary object depends on the verifier
+	// type: an oci7 client gets putOci7Summary()'s, everybody else gets
+	// putSummary()'s.  the two differ by one field - putSummary() has a
+	// zero between the end of call status and the rows processed count,
+	// so the ora number lands one field later - and a client told the
+	// wrong one reads the ora number's length prefix as a field of its
+	// own and reports whatever the shift decodes to.  a modern OCI
+	// client told the oci7 shape reports ORA-03120 (integer overflow)
+	// for a wrong password and ORA-24327 for the OCISessionBegin after
+	// it, never the ORA-01017 actually on the wire (#10039).  the field
+	// values stay literals because this call runs before the login is
+	// far enough along for them to come from anywhere else
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -8924,10 +8942,47 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		reqpacket.append(nativeprefix,sizeof(nativeprefix));
 		putAuthCount(oranum,4);
 		reqpacket.append(nativesuffix,sizeof(nativesuffix));
-	} else {
+	} else if (verifiertype==VERIFIER_TYPE_9I) {
 		reqpacket.append(prefix,sizeof(prefix));
 		writeLenPreInt(&reqpacket,oranum);
 		reqpacket.append(suffix,sizeof(suffix));
+		putSummaryExtension(oranum,0);
+	} else {
+
+		// the end of call status, a reserved field and the rows
+		// processed count, all ahead of the ora number.  reproduced
+		// byte for byte from a real 11.2 server refusing an
+		// ojdbc 23.26 login with ORA-28001, packet [0017] of
+		// test/protocol/oracle/samples/
+		// oracle112-login-expiredpwd-break.cap
+		static const byte_t	modernprefix[]={
+			0x01, 0x01, 0x00, 0x00
+		};
+
+		// two reserved fields, the cursor id, the parse error
+		// offset, the command type, five reserved bytes, the five
+		// rowid fields and two more reserved - all zero for a login
+		static const byte_t	modernmiddle[]={
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00
+		};
+
+		// a reserved field, the success iteration count and four
+		// more reserved fields
+		static const byte_t	moderntail[]={
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+		};
+
+		reqpacket.append(modernprefix,sizeof(modernprefix));
+		writeLenPreInt(&reqpacket,oranum);
+		reqpacket.append(modernmiddle,sizeof(modernmiddle));
+
+		// the sequence number of the login being refused - the same
+		// field putSummary() sends callnumber for
+		write(&reqpacket,callnumber);
+
+		reqpacket.append(moderntail,sizeof(moderntail));
 		putSummaryExtension(oranum,0);
 	}
 	putLenString(message,charstring::getLength(message));

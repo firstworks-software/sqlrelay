@@ -2428,6 +2428,15 @@
 		unknown-user cases in that same retry sequence report the
 		wrong specific ORA error number, without hanging or otherwise
 		affecting the connection, is filed separately (#10039)
+	fixed the oracle protocol module reporting the wrong specific ORA
+		error number (ORA-03120/ORA-24327 instead of ORA-01017) for
+		a wrong password or unknown user in a login-retry sequence on
+		one connection; sendErrorPacket() was sending every non-o3logon
+		client the login-failure summary object shaped for an old OCI7
+		client, one field short in front of the ORA number, so a modern
+		client misread the shift.  now sends the shape a real 11.2+
+		server does, confirmed against a live capture of a real Oracle
+		12.2 server and against the module's own output (#10039)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

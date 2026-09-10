@@ -8,6 +8,7 @@
 /oraclebigchunkclroff
 /oraclerefcursorreuse
 /oci7datestr
+/ociloginretry
 *.o
 *.obj
 *.lo

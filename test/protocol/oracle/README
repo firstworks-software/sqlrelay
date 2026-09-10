@@ -94,6 +94,53 @@ OCIServerVersion right after the login and prints the banner that comes
 back, so the capture holds a TTI_VERSION (function code 0x3B) request and
 its response. It is off by default, so an ordinary capture is unchanged.
 
+ociloginretry.cpp, built by `make` here as well, is a minimal OCI client
+that retries a failed login on one connection: one OCIServerAttach, then a
+selectable sequence of OCISessionBegin attempts on that same attach, with
+different credentials each time and no detach or reattach in between.
+
+    ./ociloginretry CONNECTSTRING \
+      [--attempts=wrongpassword,unknownuser,emptypassword,correctpassword] \
+                     [USER PASSWORD]
+
+It is oci8.cpp's Authentication section - the #9311 sequence - call for
+call, with nothing else in the program, so a capture of it holds only the
+attach, the login attempts and the logoff. oci8.cpp logs in twice, creates
+tables and runs a hundred other statements around that section, which makes
+a capture of it far too noisy to read the retry's byte layout out of - the
+same reason oci7describe.cpp and oci7bind.cpp exist next to oci7.cpp.
+CONNECTSTRING is whatever OCIServerAttach takes, an alias or a full
+(DESCRIPTION=...), so the same binary points at oraproxy in front of a real
+oracle server or at a local sqlr-listener speaking the oracle protocol, and
+the two captures can be diffed.
+
+The four attempts run in the order --attempts= names them, and the default
+is all four, as in oci8.cpp: wrongpassword (the real user with a bad
+password, ORA-01017), unknownuser (a user that does not exist - ORA-01017
+too, since a real server answers the same way for both on purpose),
+emptypassword (ORA-01005, which OCI raises client side before sending
+anything, so this attempt puts nothing at all on the wire) and
+correctpassword, which has to succeed on the same attach the failures ran
+on. After each failed attempt the program reads OCI_ATTR_SERVER back off
+the service context and reports whether it is still the handle the attach
+returned - a client-side read that puts nothing on the wire, and what says
+the retries ran on one connection rather than on a fresh one.
+
+A run against a REAL server should usually ask for fewer attempts than the
+default. Every wrong-password attempt counts against the account's
+FAILED_LOGIN_ATTEMPTS profile limit and can lock testuser out, which would
+break every other oracle test on this host; an unknown user never reaches
+password verification and so cannot lock anything, which makes
+--attempts=unknownuser,correctpassword the retry sequence with no lockout
+risk at all. A run that does spend a wrong-password attempt should end on
+correctpassword, which resets the failed count.
+
+It exists for #10039: against sqlrelay the wrong-password and unknown-user
+attempts come back ORA-03120 and ORA-24327 instead of ORA-01017, even
+though the server sends ORA-01017, and no capture on file covers a modern
+client retrying a login on one connection - the ones there are all
+single-attempt failures.
+
 oci7.cpp, also in this directory, is oci8.cpp's counterpart written
 against the legacy pre-8.0 OCI7 call interface (olog/oopen/oparse/
 odefin/oexec/ofen/oexfet/oclose/ologof/odescr/obndrv) instead of the
@@ -937,6 +984,96 @@ the decoder can be exercised without live server access:
                                       small sdu, not only the large one
                                       #9589 originally captured - #10005
                                       closes with no code change needed
+
+    10039-dev-oci23-native-loginretry-realserver.oraproxy
+                                     ociloginretry --attempts=wrongpassword,
+                                      unknownuser,correctpassword through
+                                      oraproxy against the real 12.2 server
+                                      (oracle122centos7x64, service ora1),
+                                      one OCIServerAttach, no detach or
+                                      reattach between attempts - the #9311
+                                      sequence. Native encoding: both ends
+                                      are x86_64 Linux, so the real server's
+                                      TTIPRO banner matches the client's own
+                                      platform. This is the reference a
+                                      modern (non-9i) client's login-retry
+                                      byte shape is written against for
+                                      #10039. [0013] is the first login
+                                      attempt (wrong password); [0014]
+                                      [0015] [0016] are the server's BREAK
+                                      marker, its RESET marker, and the
+                                      client's one RESET marker back -
+                                      sendAuthenticationBreak()'s exchange;
+                                      [0017] is the ORA-01017 error itself,
+                                      an ordinary DATA packet; [0018] is the
+                                      client's NEXT login attempt
+                                      (unknownuser), also ordinary DATA -
+                                      not a marker. The same five-packet
+                                      shape repeats at [0020]-[0025] for the
+                                      unknownuser failure, then
+                                      correctpassword succeeds, completing
+                                      at [0028], and the capture ends with a
+                                      clean logoff at [0031]. The decisive
+                                      finding: after reading the error, a
+                                      real client never sends a second,
+                                      post-error marker - it goes straight
+                                      to its next login as ordinary DATA
+                                      (#10039)
+    10039-dev-oci23-portable-loginretry-sqlrelay-wrongerror.oraproxy
+                                     the same ociloginretry sequence and
+                                      the same real 12.2 backend, but
+                                      through a local sqlr-listener
+                                      (oracleprotocol, "SQLRelay/PortableTTC"
+                                      banner - sqlrelay only ever negotiates
+                                      portable) taken before the #10039 fix.
+                                      Shows the bug this ticket is for:
+                                      wrongpassword reports ORA-03120
+                                      (two-task conversion routine: integer
+                                      overflow), unknownuser reports
+                                      ORA-24327 (explicitly attach before
+                                      authenticating a user), and
+                                      correctpassword afterward fails too
+                                      with ORA-24327, even though the
+                                      server's own debug=protocols trace
+                                      confirms it sent ORA-01017 every time.
+                                      Root cause, from the byte diff against
+                                      samples/oracle112-login-expiredpwd-
+                                      break.cap's portable ORA-28001 packet:
+                                      sendErrorPacket()'s portable branch
+                                      sent putOci7Summary()'s field layout
+                                      (one field shorter, with the sequence
+                                      number frozen at 3) to every client,
+                                      but a modern client reads putSummary()
+                                      's layout, so every field past the
+                                      third is shifted and misread. The
+                                      capture also shows the resulting
+                                      symptom on the wire: the client sends
+                                      an extra post-error marker at [0018],
+                                      unanswered in the real-server capture,
+                                      which sendMarkerCancelError() answers
+                                      at [0019]-[0020] - a marker/response
+                                      pair that exists only because of the
+                                      misparse (#10039)
+    10039-dev-oci23-portable-loginretry-sqlrelay-fixed.oraproxy
+                                     the same sequence again, same instance,
+                                      captured after sendErrorPacket() was
+                                      changed to send putSummary()'s field
+                                      layout - with the login's own sequence
+                                      number instead of a frozen 3 - to any
+                                      client that isn't a 9i one. All four
+                                      attempts now report correctly:
+                                      wrongpassword and unknownuser
+                                      ORA-01017, emptypassword ORA-01005,
+                                      correctpassword succeeds. The packet
+                                      sequence now matches
+                                      10039-dev-oci23-native-loginretry-
+                                      realserver.oraproxy one for one - 31
+                                      packets on both sides, break/reset/
+                                      client-reset in front of each failure,
+                                      the error as ordinary DATA, the
+                                      client's next login as ordinary DATA
+                                      with no extra marker, and a successful
+                                      login completing at [0028] (#10039)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
