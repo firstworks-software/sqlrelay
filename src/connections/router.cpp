@@ -2204,11 +2204,14 @@ bool routercursor::getLobOutputBindSegment(uint16_t index,
 	if (!var) {
 		var=currentcur->getOutputBindBlob(varname);
 	}
-	uint32_t	size=currentcur->getOutputBindLength(varname);
+	uint64_t	size=currentcur->getOutputBindLength(varname);
+	if (offset>size) {
+		return false;
+	}
 	if (offset+charstoread>size) {
 		charstoread=size-offset;
 	}
-	bytestring::copy(buffer,var,charstoread);
+	bytestring::copy(buffer,var+offset,charstoread);
 	*charsread=charstoread;
 	return true;
 }

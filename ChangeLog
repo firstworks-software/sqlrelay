@@ -2409,6 +2409,12 @@
 		odbc/informix truncate the read early).  fixed the same way as
 		#10025, advancing by the actual count read and clamping
 		against the buffer size (#10029)
+	fixed the router pseudo-backend's getLobOutputBindSegment(): it
+		compared the offset against the lob's length as a 32-bit
+		value, which could underflow, and it always copied from the
+		start of the lob instead of from the requested offset, so a
+		second or later chunk of a multi-chunk read just repeated the
+		first chunk (#10037)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
