@@ -43,14 +43,17 @@ extern "C" {
 }
 
 
-// cda.ft carries oracle's sql command code after oparse.  these are the
-// standard command-type numbers (the same set v$sql.command_type uses)
-// rather than OCI8's OCI_STMT_* codes.  unverified, see #9654
-#define OCI7_FT_INSERT	2
-#define OCI7_FT_SELECT	3
-#define OCI7_FT_UPDATE	6
-#define OCI7_FT_DELETE	7
-#define OCI7_FT_PLSQL	47
+// cda.ft carries the statement type after oparse.  these are the client's own
+// OTYSEL/OTYINS/OTYUPD/OTYDEL/OTYPLS codes, not the standard command-type
+// numbers v$sql.command_type uses and not OCI8's OCI_STMT_* codes either: the
+// server sends the standard number (3 for a select) and the client maps it
+// onto one of these (4) before it lands in cda.ft.  measured against a real
+// 10.2 server for all five
+#define OCI7_FT_INSERT	3
+#define OCI7_FT_SELECT	4
+#define OCI7_FT_UPDATE	5
+#define OCI7_FT_DELETE	9
+#define OCI7_FT_PLSQL	34
 
 // ORA-01403, no data found - what a fetch past the last row leaves in cda.rc.
 // this is OCI7's answer to OCI8's OCI_NO_DATA return.  unverified, see #9654
@@ -367,28 +370,6 @@ static bool decodeRowid(const char *rowid, ub4 *object, ub4 *file,
 	return true;
 }
 
-// append one of putRowidField()'s length-prefixed integers - a length byte
-// (0, 1, 2 or 4) then that many big endian bytes - mirroring
-// sqlrprotocol::writeLenPreInt() (src/server/sqlrprotocol.cpp)
-static void appendLenPreInt(ub1 *buf, ub2 *len, ub4 value) {
-	if (!value) {
-		buf[(*len)++]=0;
-	} else if (value<=0xff) {
-		buf[(*len)++]=1;
-		buf[(*len)++]=(ub1)value;
-	} else if (value<=0xffff) {
-		buf[(*len)++]=2;
-		buf[(*len)++]=(ub1)((value>>8)&0xff);
-		buf[(*len)++]=(ub1)(value&0xff);
-	} else {
-		buf[(*len)++]=4;
-		buf[(*len)++]=(ub1)((value>>24)&0xff);
-		buf[(*len)++]=(ub1)((value>>16)&0xff);
-		buf[(*len)++]=(ub1)((value>>8)&0xff);
-		buf[(*len)++]=(ub1)(value&0xff);
-	}
-}
-
 
 // the Authentication section.  main() forks before calling this - see the
 // comment there
@@ -512,12 +493,13 @@ static void runAuthenticationSection(bool issqlrelay) {
 				(text *)"",(sword)-1,
 				(text *)sid,(sword)-1,
 				(ub4)OCI_LM_DEF)!=0);
-	// ORA-01005, login denied due to invalid password - a different error
-	// from ORA-01017.  with OCI8 the client raises it before anything is
-	// sent, so it doesn't count against the connection's login-attempt
-	// bound; whether OCI7's olog raises it client side too is unverified,
-	// see #9654
-	assertEquals(errorCode(&authlda),1005);
+	// ORA-01017, not the ORA-01005 oci8.cpp gets here.  OCI8's client
+	// raises 1005 itself, before anything is sent, so its empty-password
+	// attempt never reaches the server.  OCI7's has no such check: it
+	// negotiates ANO and sends the empty password like any other, and the
+	// server answers the ordinary invalid username/password.  measured
+	// against a real 10.2 server
+	assertEquals(errorCode(&authlda),1017);
 	stdoutput.printf("\n\n");
 
 
@@ -832,7 +814,15 @@ int main(int argc, char **argv) {
 						"Oracle Database ",16));
 		assertTrue(charstring::contains(versionbuf,
 					" Enterprise Edition Release "));
-		assertTrue(charstring::contains(versionbuf,"Production"));
+		// only "Prod", not the "Production" oci8.cpp asserts.
+		// v$version.banner is a varchar2(64) on the 10.2 backend
+		// behind sqlrelayoci7, and this banner is exactly 64 bytes
+		// at "Oracle Database 10g Enterprise Edition Release
+		// 10.2.0.1.0 - Prod" - so the backend truncates it there
+		// itself, before anything sqlrelay touches it.  a newer
+		// backend has room for the whole word and still contains
+		// this much
+		assertTrue(charstring::contains(versionbuf,"Prod"));
 		stdoutput.printf("\n%s\n",versionbuf);
 		if (!onecursor) {
 			assertEquals(check(vercda,oclose(vercda)),0);
@@ -1853,12 +1843,22 @@ int main(int argc, char **argv) {
 	// real 10.2 server answering this very fetch: a constant 0e byte, then
 	// the rowid's object number, file number, a zero byte, block number
 	// and row number, each length-prefixed.  putRowidField()
-	// (src/protocols/oracle.cpp) builds exactly that from the same 18
-	// character text form typerowid above was fetched as, so decoding
-	// typerowid the same way and re-encoding it below should land on
-	// whatever oracle actually put in rowidbin, byte for byte - proving
-	// this define reached putRowidField() rather than the SQLT_STR path
-	// typerowid took
+	// (src/protocols/oracle.cpp) builds exactly that.
+	//
+	// none of those bytes reach the buffer though.  the client decodes
+	// them and hands back its own internal rowid structure instead - the
+	// same one a cda carries in its rid member, four fields and their
+	// padding in host byte order (ocidfn.h), 16 bytes wide on this
+	// platform.  so what this checks is the four numbers, against the
+	// same row's rowid decoded out of the 18 character text form
+	// typerowid was fetched as above.  they agree only if this define
+	// reached putRowidField() rather than the SQLT_STR path typerowid
+	// took.
+	//
+	// the numbers can't be pinned as literals from the 9746 capture - the
+	// table above is created and inserted into fresh by this test run, so
+	// this run's live testrowid is whatever this instance's real database
+	// assigns it, not the capture's object/file/block/row
 	assertEquals(check(&typecda2,
 			oparse(&typecda2,(text *)
 				"select testrowid from protocoltesttypes",
@@ -1876,37 +1876,24 @@ int main(int argc, char **argv) {
 	assertEquals(check(&typecda2,oexec(&typecda2)),0);
 	assertEquals(check(&typecda2,ofen(&typecda2,1)),0);
 	assertEquals((int)rowidbinind,0);
-	assertTrue(rowidbinlen>0 && rowidbinlen<=(ub2)sizeof(rowidbin));
 
-	// the length byte is a protocol constant, true for any rowid, so
-	// this much can be pinned regardless of what this run's actual
-	// live testrowid comes out to
-	assertEquals((int)rowidbin[0],0x0e);
+	// read the structure back out of the buffer through the client's own
+	// declaration of it, rather than a second copy of its field offsets
+	// and padding here
+	Cda_Def	ridcda;
+	assertEquals((int)rowidbinlen,(int)sizeof(ridcda.rid));
+	bytestring::copy(&ridcda.rid,rowidbin,sizeof(ridcda.rid));
 
-	// decode the same row's rowid out of the SQLT_STR text form fetched
-	// above, and rebuild putRowidField()'s packed form from it.  can't
-	// pin literal bytes from the 9746 capture here instead - the table
-	// above is created and inserted into fresh by this test run, so
-	// this run's live testrowid is whatever this instance's real
-	// database assigns it, not the capture's object/file/block/row
 	ub4	rowidobject=0;
 	ub4	rowidfile=0;
 	ub4	rowidblock=0;
 	ub4	rowidrow=0;
 	assertTrue(decodeRowid(typerowid,&rowidobject,&rowidfile,
 					&rowidblock,&rowidrow));
-	ub1	expectedrowidbin[32];
-	ub2	expectedrowidbinlen=0;
-	bytestring::zero(expectedrowidbin,sizeof(expectedrowidbin));
-	expectedrowidbin[expectedrowidbinlen++]=0x0e;
-	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidobject);
-	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidfile);
-	expectedrowidbin[expectedrowidbinlen++]=0;
-	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidblock);
-	appendLenPreInt(expectedrowidbin,&expectedrowidbinlen,rowidrow);
-	assertEquals((int)rowidbinlen,(int)expectedrowidbinlen);
-	assertEquals((int)bytestring::compare(rowidbin,expectedrowidbin,
-					expectedrowidbinlen),0);
+	assertEquals((int)ridcda.rid.rd.rcs4,(int)rowidobject);
+	assertEquals((int)ridcda.rid.rd.rcs5,(int)rowidfile);
+	assertEquals((int)ridcda.rid.rcs7,(int)rowidblock);
+	assertEquals((int)ridcda.rid.rcs8,(int)rowidrow);
 	stdoutput.printf("\n\n");
 
 

@@ -221,6 +221,18 @@
 #define PBKDF2_VGEN_COUNT	"4096"
 #define PBKDF2_SDER_COUNT	"3"
 
+// the statement types a summary object's command type field carries - oracle's
+// own command numbers, the same set v$sql.command_type uses.  an oci7 client
+// doesn't keep the wire number: it maps each one onto its own internal OTY*
+// code before it lands in cda->ft, so a select goes out as 3 here and reads
+// back as OTYSEL, 4 - and likewise 2 as OTYINS, 6 as OTYUPD, 7 as OTYDEL and
+// 47 as OTYPLS.  see oci7CommandType()
+#define OCI7_COMMAND_INSERT	2
+#define OCI7_COMMAND_SELECT	3
+#define OCI7_COMMAND_UPDATE	6
+#define OCI7_COMMAND_DELETE	7
+#define OCI7_COMMAND_PLSQL	47
+
 // oracle errors the authentication exchange can end in
 #define ORA_INVALID_USERNAME_PASSWORD	1017
 #define ORA_NULL_PASSWORD		1005
@@ -1547,6 +1559,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						size_t portablesize,
 						bool secondphase);
 		void	putO3LogonSummary();
+
+		// the command type a summary object about this cursor's
+		// statement carries - one of the OCI7_COMMAND_* codes
+		byte_t	oci7CommandType(sqlrservercursor *cursor);
+
 		void	putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
 						uint32_t rowsprocessed,
@@ -2187,6 +2204,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// named.  that shape is a pl/sql block's, and its values come
 		// in a second round trip rather than inline - see query2()
 		uint16_t	query2plsqlbindcount;
+
+		// how many rows a query2 request asked for, read off the wire
+		// in getQuery2Descriptors().  request scoped, like the bind
+		// fields above - see query2()
+		uint32_t	query2rowcount;
 
 		bool		*columntypescached;
 		uint16_t	**columntypes;
@@ -8404,6 +8426,59 @@ void sqlrprotocol_oracle::putO3LogonSummary() {
 	putOci7Summary(0,0,0,0);
 }
 
+// what goes in a summary object's command type field.  an oci7 client keeps it
+// in cda->ft, after mapping it onto its own OTY* code - see the OCI7_COMMAND_*
+// constants.
+//
+// sqlrquerytype_t covers four of the five, but has nothing for a pl/sql block:
+// SQLRQUERYTYPE_BEGIN is a transaction begin, and a block lands in
+// SQLRQUERYTYPE_ETC with everything else.  so a block is picked off the
+// statement text first, the same begin/declare test classifyQuery2Binds()
+// makes.
+//
+// anything else - ddl, a commit, a set - falls back to select, which is what
+// every summary carried before any of this was classified.  no capture on file
+// pins what a real server answers there
+byte_t sqlrprotocol_oracle::oci7CommandType(sqlrservercursor *cursor) {
+
+	if (!cursor) {
+		return OCI7_COMMAND_SELECT;
+	}
+
+	// pl/sql block?
+	const char	*query=cont->getQueryBuffer(cursor);
+	uint32_t	querysize=cont->getQuerySize(cursor);
+	if (query && querysize) {
+		const char	*ptr=query;
+		const char	*endptr=query+querysize;
+		while (ptr<endptr && character::isWhitespace(*ptr)) {
+			ptr++;
+		}
+		size_t	left=(size_t)(endptr-ptr);
+		if ((left>=5 &&
+			!charstring::compareIgnoringCase(ptr,"begin",5)) ||
+			(left>=7 &&
+			!charstring::compareIgnoringCase(ptr,"declare",7))) {
+			return OCI7_COMMAND_PLSQL;
+		}
+	}
+
+	switch (cursor->getQueryType()) {
+		case SQLRQUERYTYPE_SELECT:
+			return OCI7_COMMAND_SELECT;
+		case SQLRQUERYTYPE_INSERT:
+		case SQLRQUERYTYPE_INSERTSELECT:
+		case SQLRQUERYTYPE_MULTIINSERT:
+			return OCI7_COMMAND_INSERT;
+		case SQLRQUERYTYPE_UPDATE:
+			return OCI7_COMMAND_UPDATE;
+		case SQLRQUERYTYPE_DELETE:
+			return OCI7_COMMAND_DELETE;
+		default:
+			return OCI7_COMMAND_SELECT;
+	}
+}
+
 // the summary object a real 10.2 server answers an oci7 client with.  the same
 // object serves the whole session: the o3logon challenge's tail, the login's
 // answer, and the answer to the osql7 parse behind it.  its fields don't map
@@ -8485,9 +8560,9 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	// the portable and the native realtable-outofrange captures
 	writeLenPreInt(&reqpacket,0);
 
-	// 3 answering the parse of a select, 0 answering the login.  callers
-	// pass putSummary()'s own constant rather than classifying the
-	// statement, which this module doesn't do anywhere
+	// 3 answering the parse of a select, 0 answering the login.  a caller
+	// with a statement passes oci7CommandType()'s classification of it;
+	// one with no statement at all passes 0
 	write(&reqpacket,commandtype);
 
 	write(&reqpacket,(byte_t)0);
@@ -9219,13 +9294,15 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 
 	// a real 10.2 server answers the parse with a summary object and
 	// nothing else - no describe, no column definitions - and the client
-	// goes straight on to execute.  the command type is putSummary()'s own
-	// constant.  nothing has executed yet, so the success iteration count
-	// is 0
+	// goes straight on to execute.  this is where the client reads the
+	// command type it keeps in cda->ft, so it's classified rather than
+	// sent as a constant - see oci7CommandType().  nothing has executed
+	// yet, so the success iteration count is 0
+	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
-		putOci7SummaryNative(wireCursorId(cursor),3,0,0);
+		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,0);
 	} else {
-		putOci7Summary(wireCursorId(cursor),3,0,0);
+		putOci7Summary(wireCursorId(cursor),commandtype,0,0);
 	}
 
 	return sendPacket(true);
@@ -9540,10 +9617,11 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 	debugWrite("ora number: %d",oranum);
 	debugEnd();
 
+	byte_t	commandtype=oci7CommandType(cursorFromWireId(cursorid));
 	if (nativeencoding) {
-		putOci7SummaryNative(cursorid,3,0,0,oranum);
+		putOci7SummaryNative(cursorid,commandtype,0,0,oranum);
 	} else {
-		putOci7Summary(cursorid,3,0,0,oranum);
+		putOci7Summary(cursorid,commandtype,0,0,oranum);
 	}
 	putLenString(message,charstring::getLength(message));
 
@@ -9706,8 +9784,10 @@ bool sqlrprotocol_oracle::sendParseExecuteResponse(sqlrservercursor *cursor) {
 	// sendOsql7Response() sends and nothing else - no describe, no column
 	// definitions, no row data - and the client goes straight on to close
 	// the cursor.  the command type is 42, alter session, which is the
-	// only statement any capture on file sends this call with, and the
-	// module doesn't classify statements anywhere.  one execution has
+	// only statement any capture on file sends this call with - left as
+	// the literal rather than run through oci7CommandType() below, since
+	// that function's fallback is select (3), which would be worse than
+	// the one command type actually pinned here.  one execution has
 	// happened, so the success iteration count is 1, and a statement with
 	// no result set processed no rows
 	if (nativeencoding) {
@@ -10447,10 +10527,11 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 	// unconditionally, regardless of whether the parse actually
 	// succeeded, is what put "ORA-01001: invalid cursor" in front of
 	// every client that ever reached this call - see #9793
+	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
-		putOci7SummaryNative(wireCursorId(cursor),3,0,0);
+		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,0);
 	} else {
-		putOci7Summary(wireCursorId(cursor),3,0,0);
+		putOci7Summary(wireCursorId(cursor),commandtype,0,0);
 	}
 
 	return sendPacket(true);
@@ -10581,6 +10662,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// alone - see getQuery2Descriptors()
 	query2bindcount=0;
 	query2plsqlbindcount=0;
+	query2rowcount=0;
 	query2unbound=false;
 	if (options&(OPTION_DEFINE|OPTION_BIND)) {
 		getQuery2Descriptors(rp,end,options,cursor);
@@ -10742,11 +10824,12 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// exact-fetch case in every capture on file, so exactfetch is
 		// hardcoded true.
 		//
-		// the row count goes as 0 - "no bound but the packet size" -
-		// because where oexfet()'s own nrows sits in this request is
-		// unidentified.  a standalone fetch reads its count off the
-		// wire and passes it
-		return sendFetchResponse(cursor,true,0);
+		// the row count is oexfet()'s own nrows, which rides in the
+		// descriptor block behind the header rather than in the
+		// header - see getQuery2Descriptors().  it stays 0 where that
+		// walk didn't run or didn't finish, which leaves the older
+		// behavior of sending every row that's left
+		return sendFetchResponse(cursor,true,query2rowcount);
 	}
 
 	return sendQuery2Response(cursor);
@@ -10849,6 +10932,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	uint32_t	unused=0;
 	uint32_t	definitions=0;
 	uint32_t	bindcount=0;
+	uint32_t	rowcount=0;
 
 	// ten fields ahead of the define count, and one pointer behind it -
 	// the client's address of its own define array, opaque, and it moves
@@ -10878,8 +10962,33 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		debugEnd();
 		return;
 	}
+
+	// then seven more counts, of which the SECOND is the number of rows
+	// the call asks for - oexfet()'s own nrows.  it reads 1 for a plain
+	// execute, whatever the result set holds, and nrows for an exact
+	// fetch.  the seven query2 requests of
+	// test/protocol/oracle/samples/
+	// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy read 1,
+	// 1, 4, 7, 1, 1 and 6 there: the four that only execute, ahead of an
+	// ofen(), carry 1, and the three oexfet()s carry the 4, 7 and 6 they
+	// were called with.  the portable capture beside it,
+	// 10030-redhat9x86-portable-multirowfetch-sqlrelay.oraproxy, is the
+	// same seven calls in the encoding this module actually reads, and
+	// the field lands in the same place in the field sequence.
+	//
+	// without this an exact fetch had no count to bound itself with and
+	// answered every request with every row left in the result set,
+	// overrunning the buffers a client that asked for fewer set up.
+	// kept local rather than written straight to query2rowcount, the
+	// same as bindcount is kept local rather than written straight to
+	// query2bindcount below: a walk that goes on to fail the landing
+	// check at the end of this function is a misread, not a real
+	// count, and committing it here would let a misaligned walk hand
+	// query2()'s fetch an unbounded row count with nothing left to cap
+	// it - the exact overrun this field exists to prevent
 	for (uint16_t i=0; i<7; i++) {
-		if (!getAuthCount(rp,end,&unused,4,&rp)) {
+		if (!getAuthCount(rp,end,(i==1)?&rowcount:&unused,
+								4,&rp)) {
 			debugWrite("truncated query2 descriptor header");
 			debugEnd();
 			return;
@@ -10888,6 +10997,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 
 	debugWrite("define count: %d",definitions);
 	debugWrite("bind count: %d",bindcount);
+	debugWrite("row count: %d",rowcount);
 
 	// the bind count and OPTION_BIND have to agree.  where they don't,
 	// only the bind half is in doubt, so the count is dropped rather than
@@ -11120,6 +11230,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// still to come, from a shape nothing here understands
 	query2bindcount=(values)?(uint16_t)bindcount:0;
 	query2plsqlbindcount=(values)?0:(uint16_t)bindcount;
+	query2rowcount=rowcount;
 
 	if (hasdefines) {
 		definecounts[curid]=definitions;
@@ -12084,7 +12195,8 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		// it - the summary object ends the packet, the same way it
 		// ends sendOsql7Response()'s.  this field is the real cursor
 		// id, unlike the lead-in above
-		putOci7Summary(wireCursorId(cursor),3,rowsprocessed,1);
+		putOci7Summary(wireCursorId(cursor),oci7CommandType(cursor),
+							rowsprocessed,1);
 	}
 
 	debugStart("query2 response");
@@ -16550,13 +16662,15 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 	// (exactfetch false) gets no lead-in even though it follows an
 	// execute too, so the lead-in tracks the combined call shape, not
 	// whether an execution happened.  a bare TTI_EXECUTE is the
-	// single-purpose case, so it gets none.  the command type is
-	// putSummary()'s own constant, and one execution has just completed,
-	// so the success iteration count is 1
+	// single-purpose case, so it gets none.  one execution has just
+	// completed, so the success iteration count is 1
+	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
-		putOci7SummaryNative(wireCursorId(cursor),3,rowsprocessed,1);
+		putOci7SummaryNative(wireCursorId(cursor),commandtype,
+							rowsprocessed,1);
 	} else {
-		putOci7Summary(wireCursorId(cursor),3,rowsprocessed,1);
+		putOci7Summary(wireCursorId(cursor),commandtype,
+							rowsprocessed,1);
 	}
 
 	return sendPacket(true);
@@ -16889,15 +17003,16 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	// the row count the client sent is a hard bound, not a hint: ofen()'s
 	// nrows argument says how many rows the caller's define buffers have
-	// room for, so sending more overruns them.  a caller that has no count
-	// to pass - query2()'s combined execute-and-fetch, whose own row count
-	// isn't decoded - passes 0, which keeps the older behavior of sending
-	// every row that's left.  either way the negotiated packet size bounds
-	// it too, less enough room for the largest trailer sent after this loop.
+	// room for, so sending more overruns them.  a caller whose count
+	// couldn't be read passes 0, which keeps the older behavior of
+	// sending every row that's left, and there the negotiated packet size
+	// bounds the batch instead - less enough room for the largest trailer
+	// sent after this loop.
 	const uint32_t	trailerreserve=128;
 
 	// for each row...
 	uint32_t rowsfetched=0;
+	bool	 endofrows=false;
 	do {
 
 		// stop at the number of rows the client asked for
@@ -16906,23 +17021,32 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			break;
 		}
 
-		// stop if there's no room left in the packet for another row
-		// and the trailer.  this runs before the row is fetched and
-		// written, so the rowsfetched guard matters mainly for a small
-		// negotiated sdu, where the header plus the trailer reserve
-		// alone would leave no room to even attempt a first row, and
-		// the response would claim zero rows without having fetched
-		// one.
-		// note that this only gates whether to start a row - nothing
-		// rechecks after putRow(), so a single large lob/long row can
-		// still leave the buffer bigger than the sdu.  that costs an
-		// extra packet rather than breaking the session: sendPacket()
-		// splits an oversized data packet into several, none of them
-		// bigger than the sdu.  the fetch loops above (query3 and the
-		// newer fetch path) pack better, truncating the oversized row
-		// back out and stashing it in pendingrow to send first on the
-		// next round trip
-		if (rowsfetched && reqpacket.getSize()+trailerreserve>=sdu) {
+		// a batch the client put a count on runs to that count however
+		// many packets it takes.  a legacy fetch is one call and one
+		// answer - the client has no way to ask for the rest of a
+		// batch, so stopping at the packet boundary loses the rows
+		// past it outright, rather than deferring them the way the
+		// query3 path's pendingrow does.  a real server sends the
+		// whole batch as one ttc byte stream and lets the tns layer
+		// under it split at the sdu: packets [0076] through [0082] of
+		// test/protocol/oracle/samples/
+		// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy
+		// are a six row batch of 2000 byte rows going out as seven
+		// data packets, one row header at the front, one trailer at
+		// the back, and nothing marking a fragment as a continuation.
+		// sendPacket() splits the same way, so the batch just has to
+		// be built whole.
+		//
+		// where the count is 0 the batch has no bound but this one,
+		// and stopping at the packet boundary is what keeps a whole
+		// result set out of the buffer.  it runs before the row is
+		// fetched and written, so the rowsfetched guard matters mainly
+		// for a small negotiated sdu, where the header plus the
+		// trailer reserve alone would leave no room to even attempt a
+		// first row, and the response would claim zero rows without
+		// having fetched one
+		if (!rowstofetch && rowsfetched &&
+			reqpacket.getSize()+trailerreserve>=sdu) {
 			debugWrite("packet full");
 			break;
 		}
@@ -16933,6 +17057,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			if (error) {
 				return sendQueryError(cursor);
 			}
+			endofrows=true;
 			break;
 		}
 
@@ -16963,13 +17088,35 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				// portable branch below builds field by
 				// field, not a form independent of the
 				// encoding
+				//
+				// the block's 8th byte is the row count, and
+				// the count it carries is the one the client
+				// asked for rather than the one that follows:
+				// [0065] of test/protocol/oracle/samples/
+				// 10030-redhat9x86-native-multirowfetch-
+				// realserver.oraproxy asks a three row result
+				// set for five, and [0066] answers with a
+				// header saying five, three rows and
+				// ORA-01403.  the captures behind the literal
+				// are all single row fetches, where 1 was
+				// right by coincidence.  only the byte is
+				// pinned - every capture on file asks for
+				// fewer than 256 rows, so the three zeros
+				// ahead of it may be the rest of a big endian
+				// word or three fields of their own
 				byte_t		ttccode=TTC_ROW_HEADER;
 
 				write(&reqpacket,ttccode);
 
+				uint32_t	headerrows=
+						(rowstofetch)?rowstofetch:1;
+
 				const byte_t	rowheader[]={
 					0x01, 0x02, 0x01, (byte_t)sendcolcount,
-					0x00, 0x00, 0x00, 0x01,
+					(byte_t)((headerrows>>24)&0xff),
+					(byte_t)((headerrows>>16)&0xff),
+					(byte_t)((headerrows>>8)&0xff),
+					(byte_t)(headerrows&0xff),
 					0x00, 0x00, 0x00, 0x00,
 					0x00, 0x00, 0x00, 0x00,
 					0x00, 0x00, 0x00, 0x00,
@@ -16984,6 +17131,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 					debugTtcCode(ttccode);
 					debugWrite("column count: %d",
 								sendcolcount);
+					debugWrite("row count: %d",
+								headerrows);
 					debugHexDump(rowheader,sizeof(rowheader));
 					debugEnd();
 				}
@@ -17007,10 +17156,14 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 				// nine bytes for its own single number column.
 				//
 				// the row count is the count the client asked
-				// for, the way fetch3() writes it.  query2()'s
-				// combined execute-and-fetch has no decoded
-				// count to pass and fetches one row in every
-				// capture on file, so it writes 1
+				// for and not the count that follows, which
+				// is what a real server sends: [0065] of
+				// test/protocol/oracle/samples/
+				// 10030-redhat9x86-native-multirowfetch-
+				// realserver.oraproxy asks a three row result
+				// set for five and [0066] answers with a
+				// header saying five.  a caller whose count
+				// couldn't be read writes 1
 				putRowHeader(0x02,sendcolcount,
 						(rowstofetch)?rowstofetch:1);
 			}
@@ -17048,6 +17201,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	// same way; the legacy path was leaving it at zero
 	rowssent[cont->getId(cursor)]+=rowsfetched;
 	uint32_t	rowcount=rowssent[cont->getId(cursor)];
+
+	byte_t		commandtype=oci7CommandType(cursor);
 
 	if (rowsfetched && !nativeencoding) {
 
@@ -17090,8 +17245,27 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// written for real (see trailer1a/trailer1b/trailer2 below);
 		// the rest of the block stays literal, since a full
 		// putOci7SummaryNative() rewrite still has no client that
-		// could check it (#9812)
-		putOci7Summary(wireCursorId(cursor),3,rowcount,1);
+		// could check it (#9812).
+		//
+		// a batch that asked for more rows than the result set had
+		// left ends in ORA-01403 even though rows did go out - the
+		// client reads it as "that was the last of them", the same
+		// way it reads the one answering a fetch that found nothing
+		// below.  a real server answers a five row ask on a three row
+		// result set with three rows and ORA-01403 in one reply -
+		// packet [0066] of test/protocol/oracle/samples/
+		// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy
+		if (endofrows) {
+			putOci7Error(wireCursorId(cursor),commandtype,
+				rowcount,1,
+				ORA_NO_DATA_FOUND,
+				ORA_NO_DATA_FOUND_MESSAGE,
+				charstring::getLength(
+					ORA_NO_DATA_FOUND_MESSAGE));
+		} else {
+			putOci7Summary(wireCursorId(cursor),commandtype,
+								rowcount,1);
+		}
 
 		if (getDebug()) {
 			debugStart("fetch response footer");
@@ -17113,21 +17287,24 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// (#9637) for 1 through 5 columns: unlike the old
 		// unknown6/unknown8 lookup tables this replaces, none of it
 		// varies with column count, so there's no cap on colcount
-		// and nothing to index.  the 47-byte block is split in three
-		// here, trailer1a, trailer1b and trailer2, around the rows
-		// processed and cursor id fields (the same fields
+		// and nothing to index.  the 47-byte block is split up here,
+		// around the four fields that carry a value - the same four
 		// putOci7SummaryNative() writes with
-		// writeLE(&reqpacket,rowsprocessed) and
-		// writeLE(&reqpacket,cursorid)), so the real row count and
-		// cursor id can go out between them instead of literals
+		// writeLE(&reqpacket,rowsprocessed),
+		// writeLE(&reqpacket,oranum),
+		// writeLE(&reqpacket,cursorid) and write(commandtype) - so the
+		// real row count, error number, cursor id and command type go
+		// out between them instead of literals.  the literal halves
+		// are the pads either side of those fields, and every one of
+		// them is zero in every capture
 		const byte_t	trailer1a[]={
 			0x04, 0x01, 0x00, 0x00, 0x00, 0x01
 		};
 		const byte_t	trailer1b[]={
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+			0x00, 0x00
 		};
 		const byte_t	trailer2[]={
-			0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00
@@ -17178,10 +17355,16 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			}
 		}
 
+		// a batch shorter than the one asked for ends in ORA-01403,
+		// the same way the portable trailer above does
+		uint32_t	oranum=(endofrows)?ORA_NO_DATA_FOUND:0;
+
 		reqpacket.append(trailer1a,sizeof(trailer1a));
 		writeLE(&reqpacket,rowcount);
+		writeLE(&reqpacket,oranum);
 		reqpacket.append(trailer1b,sizeof(trailer1b));
 		writeLE(&reqpacket,wireCursorId(cursor));
+		write(&reqpacket,commandtype);
 		reqpacket.append(trailer2,sizeof(trailer2));
 		write(&reqpacket,callseq);
 		reqpacket.append(trailerend,sizeof(trailerend));
@@ -17191,8 +17374,10 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			debugWrite(exactfetch?"exact fetch":"not exact fetch");
 			debugHexDump(trailer1a,sizeof(trailer1a));
 			debugWrite("rows processed: %d",rowcount);
+			debugWrite("error: %u",oranum);
 			debugHexDump(trailer1b,sizeof(trailer1b));
 			debugWrite("cursor id: %d",wireCursorId(cursor));
+			debugWrite("command type: %d",commandtype);
 			debugHexDump(trailer2,sizeof(trailer2));
 			debugHexDump(&callseq,1);
 			debugHexDump(trailerend,sizeof(trailerend));
@@ -17203,11 +17388,11 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	} else {
 
-		// end of result set.  the bound check above is guarded by
-		// rowsfetched, so the loop can't break before attempting a
-		// fetch - getting here means fetchRow() really did come back
-		// empty, and no flag is needed to tell that apart from a
-		// packet that filled up first.
+		// end of result set, with not even one row to send.  the
+		// bound check above is guarded by rowsfetched, so the loop
+		// can't break before attempting a fetch - getting here means
+		// fetchRow() really did come back empty, and endofrows is
+		// necessarily set.
 		//
 		// a real 10.2 server answers this with the ordinary summary
 		// object carrying ORA-01403 and the message behind it, and
@@ -17216,7 +17401,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// the whole call and turned up on the next one as ORA-03120
 		// (#9976)
 		debugWrite("no rows fetched");
-		putOci7Error(wireCursorId(cursor),3,rowcount,1,
+		putOci7Error(wireCursorId(cursor),commandtype,rowcount,1,
 				ORA_NO_DATA_FOUND,
 				ORA_NO_DATA_FOUND_MESSAGE,
 				charstring::getLength(
@@ -18957,7 +19142,7 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 					rowssent[cont->getId(cursor)],
 					message,messagesize);
 	} else {
-		putOci7Error(wireCursorId(cursor),3,
+		putOci7Error(wireCursorId(cursor),oci7CommandType(cursor),
 					rowssent[cont->getId(cursor)],1,
 					oranum,message,messagesize);
 	}
