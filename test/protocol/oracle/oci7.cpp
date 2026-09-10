@@ -2541,11 +2541,15 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("odefin, oexec, ofen - a null lob\n");
-	// confirmed against a real oracle server: samples/10006-dev-oci7-
-	// native-nulllob-realserver.oraproxy, packet [0866], shows indicator
-	// -1 for both columns, with no value byte on the wire ahead of
-	// either one - unlike a null column of any other type, which gets a
-	// single zero byte first.  #10006
+	// confirmed against a real oracle server (native encoding):
+	// samples/10006-dev-oci7-native-nulllob-realserver.oraproxy, packet
+	// [0866], shows indicator -1 for both columns.  live-confirmed
+	// clean against sqlrelay itself under portable encoding too -
+	// #10006 comment 10 - though the wire framing differs by encoding
+	// (see putLobField()'s comments): native sends no value byte ahead
+	// of a null lob's indicator, portable keeps the single zero byte
+	// every other null column type gets.  the indicator this program
+	// reads back is -1 either way.  #10006
 	assertEquals(check(&lobcda,
 			oparse(&lobcda,(text *)
 				"select testclob,testblob from "
