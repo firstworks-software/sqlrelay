@@ -1198,6 +1198,75 @@ the decoder can be exercised without live server access:
                                       closes rather than sending a second
                                       marker, the same as the genuine 9i
                                       captures on file (#10042)
+    10048-dev-oci23api7-native-login-realserver.oraproxy
+                                     oci7bind --bind=none, so olog and ologof
+                                      and nothing else, through oraproxy
+                                      against the real 10.2 server at
+                                      10.0.2.3. A login-only baseline: the
+                                      two 10042-*-datatypenegotiation-*
+                                      captures above carry a whole
+                                      parse/bind/define/execute/fetch behind
+                                      the login, which makes them noisy to
+                                      diff. The login succeeds here. [0009]
+                                      and [0010] are the data type
+                                      negotiation request, split by the small
+                                      sdu, [0011] and [0012] the answer,
+                                      [0013] TTI_LOGON_PRESENT_USER at 150
+                                      body bytes native, [0014] the O3LOGON
+                                      challenge at 136 body bytes - a 64
+                                      character session key at native fixed
+                                      width, then a 66 byte summary - [0015]
+                                      TTI_LOGON_PRESENT_PWD at 215 body
+                                      bytes, and [0016] onward the rest of
+                                      the session (#10048)
+    10048-dev-oci23api7-portable-login-sqlrelay.oraproxy
+                                     the same oci7bind --bind=none run, taken
+                                      in the same sitting, against the
+                                      oracleprotocoloci7 instance. The
+                                      matching half of the pair above, and
+                                      the shortest capture of the hang on
+                                      file: twelve packets, ending at [0012],
+                                      the module's O3LOGON challenge at 67
+                                      body bytes - a 32 character session key
+                                      length prefixed, then a 29 byte
+                                      summary. The client reads that packet
+                                      whole and then blocks in read() waiting
+                                      for another one; there is no thirteenth
+                                      packet in either direction. Worth
+                                      noting what is NOT different here:
+                                      [0012] is the same shape, field for
+                                      field, as the challenge a real 10.2
+                                      server sends a genuine old OCI7 client
+                                      in oracle102-oci7-portable-login-
+                                      select.cap, which that client accepts
+                                      and answers. The packet is not
+                                      malformed portable framing; this client
+                                      wants something else (#10048)
+    10048-dev-oci23api7-portable-login-sqlrelay-key64-unblocked.oraproxy
+                                     SYNTHETIC - not what the module sends.
+                                      The same run as the capture above with
+                                      a python proxy interposed, rewriting
+                                      only the challenge at [0012]: the
+                                      session key grown from 32 to 64
+                                      characters (the module's own 32
+                                      characters written twice, so the key is
+                                      not a real one and the password can
+                                      never verify), still length prefixed,
+                                      still portable, plus one zero byte on
+                                      the end of the summary. That is the
+                                      whole change, and it is enough - the
+                                      client stops hanging and sends
+                                      TTI_LOGON_PRESENT_PWD at [0013],
+                                      portable, carrying a 64 character
+                                      password field. The module answers
+                                      ORA-01017 at [0017], as it must, since
+                                      it still holds the 16 byte key it
+                                      generated. Kept because it is the only
+                                      capture on file of this client getting
+                                      past the challenge against sqlrelay,
+                                      and because it settles two things:
+                                      native framing is not required, and the
+                                      key size is (#10048)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
