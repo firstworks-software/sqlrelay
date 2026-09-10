@@ -2064,6 +2064,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// bigchunkclrsetting above
 		bool		bigchunkclr;
 
+		// whether the client writes the data type list's fields as
+		// ub2s rather than ub1s, and ends its request with the
+		// national charset.  taken from the client's own CCAP_UB2_DTY
+		// byte, not from verifiertype - see recvDataTypeRequest().
+		// decided per session there and reset by init()
+		bool		ub2datatypes;
+
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
 		uint16_t	datatypecount;
@@ -2695,6 +2702,7 @@ void sqlrprotocol_oracle::init() {
 	clientwantstzversion=false;
 	clienttzversion=0;
 	bigchunkclr=false;
+	ub2datatypes=false;
 
 	datatypes=NULL;
 	datatypessize=0;
@@ -5827,13 +5835,24 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		fieldversion=clientfieldversion;
 	}
 
+	// the data type list's field width, and whether the request ends with
+	// a national charset: a client carrying a nonzero CCAP_UB2_DTY byte
+	// writes ub2s and sends the charset; one whose array is too short to
+	// reach that byte, or carries it zero, writes ub1s and sends neither.
+	//
+	// read off the client rather than off verifiertype, because the two
+	// disagree.  a modern client driving the legacy OCI7 call interface
+	// authenticates with O3LOGON, so it needs verifiertype="9i", and
+	// still writes the ub2 list every other modern client writes - a real
+	// 10.2 server answers that client ub2 as well.  answered ub1, it
+	// breaks the call and then blocks reading a result that never comes.
+	ub2datatypes=(compilecapssize>CCAP_UB2_DTY &&
+				compilecaps[CCAP_UB2_DTY]!=0);
+
 	// the db time zone group, there only if the client asked for it
 	clientwantsdbtimezone=(runtimecapssize>RCAP_DB_TIMEZONE &&
 				(runtimecaps[RCAP_DB_TIMEZONE]&
 					RCAP_DB_TIMEZONE_REQUESTED)!=0);
-	clientwantstzversion=(compilecapssize>CCAP_TTC3 &&
-				(compilecaps[CCAP_TTC3]&
-					CCAP_TTC3_TZ_VERSION)!=0);
 
 	// the clr long form's chunk framing.  left at auto, three things have
 	// to line up: the module has to advertise the bit, the client has to
@@ -5883,20 +5902,38 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 
 	if (clientwantsdbtimezone) {
 
-		// a 9i client's request ends with the db time zone bytes and
+		// a ub1 client's request ends with the db time zone bytes and
 		// nothing after - no tz version, no trailing national charset
-		size_t	groupsize=(verifiertype==VERIFIER_TYPE_9I)?
-			sizeof(dbtimezone):
-			sizeof(dbtimezone)+sizeof(uint16_t)+
-			((clientwantstzversion)?sizeof(uint32_t):0);
+		size_t	groupsize=(ub2datatypes)?
+			sizeof(dbtimezone)+sizeof(uint16_t):
+			sizeof(dbtimezone);
 		if ((size_t)(end-rp)<groupsize) {
 			debugWrite("truncated db time zone group");
 			return false;
 		}
 
 		rp+=sizeof(dbtimezone);
-		if (verifiertype!=VERIFIER_TYPE_9I) {
+		if (ub2datatypes) {
+
+			// whether a tz version rides ahead of the national
+			// charset is read off the request rather than off a
+			// capability byte.  OCI's modern and legacy call
+			// interfaces send byte-identical compile caps and
+			// disagree about this field, so no capability bit can
+			// tell them apart.  the bytes can: a big-endian ub4
+			// version opens with two zeros, and a national charset
+			// never reads as zero.  the response answers with the
+			// same field the request carried, which is what the
+			// real 10.2 and 12.2 servers both do.
+			clientwantstzversion=(!rp[0] && !rp[1]);
 			if (clientwantstzversion) {
+				if ((size_t)(end-rp)<sizeof(uint32_t)+
+							sizeof(uint16_t)) {
+					debugWrite("truncated db time "
+							"zone group "
+							"(tz version)");
+					return false;
+				}
 				readBE(rp,&clienttzversion,&rp);
 			}
 			readLE(rp,&clientnationalcharset,&rp);
@@ -5910,14 +5947,14 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// refused, since a real server answers whatever it gets.
 	//
 	// a pre-10g client writes every field of that list as a ub1 rather
-	// than a ub2, and is answered in that format from ttidatatypes9i under
-	// verifiertype="9i" - see countDataTypes9i() and sendDataTypeResponse()
+	// than a ub2, and is answered in that format from ttidatatypes9i -
+	// see countDataTypes9i() and sendDataTypeResponse()
 	datatypes=rp;
 	datatypessize=end-rp;
 	uint16_t	multirepcount=0;
-	datatypecount=(verifiertype==VERIFIER_TYPE_9I)?
-			countDataTypes9i(rp,end,&multirepcount):
-			countDataTypes(rp,end,&multirepcount);
+	datatypecount=(ub2datatypes)?
+			countDataTypes(rp,end,&multirepcount):
+			countDataTypes9i(rp,end,&multirepcount);
 
 	// an oci client is the only client measured that offers more than one
 	// representation for a type - it offers its platform's and then the
@@ -5946,6 +5983,8 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		debugWrite("client field version: %d",clientfieldversion);
 		debugWrite("negotiated field version: %d",fieldversion);
 		debugWrite("big chunk clr: %s",(bigchunkclr)?"true":"false");
+		debugWrite("ub2 data types: %s",
+					(ub2datatypes)?"true":"false");
 		if (clientwantsdbtimezone) {
 			debugWrite("client wants the db time zone");
 			if (clientwantstzversion) {
@@ -6634,13 +6673,13 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 	// runs in portable mode (see SERVER_BANNER), so a client that sent its
 	// catalog is waiting for one back and hangs without it.
 	//
-	// a 9i client gets ttidatatypes9i, the 10.2 server's own ub1 catalog,
+	// a ub1 client gets ttidatatypes9i, the 10.2 server's own ub1 catalog,
 	// in that server's own order.  the client's offer only picks the
 	// representation for each type countDataTypes9i() saw it offer one
 	// for; a type it didn't gets the table's own.  ttidatatypes is a ub2
 	// table, and answers everything else.
 	uint16_t	count=0;
-	if (verifiertype==VERIFIER_TYPE_9I && datatypessize) {
+	if (!ub2datatypes && datatypessize) {
 		count=sizeof(ttidatatypes9i)/sizeof(ttidatatypes9i[0]);
 		for (uint16_t i=0; i<count; i++) {
 			byte_t	datatype=ttidatatypes9i[i][0];
@@ -6662,7 +6701,7 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 			}
 		}
 		write(&reqpacket,(byte_t)0);
-	} else if (verifiertype!=VERIFIER_TYPE_9I && datatypessize) {
+	} else if (ub2datatypes && datatypessize) {
 		count=sizeof(ttidatatypes)/sizeof(ttidatatypes[0]);
 		for (uint16_t i=0; i<count; i++) {
 			writeBE(&reqpacket,ttidatatypes[i][0]);

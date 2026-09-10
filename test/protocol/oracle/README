@@ -1074,6 +1074,130 @@ the decoder can be exercised without live server access:
                                       client's next login as ordinary DATA
                                       with no extra marker, and a successful
                                       login completing at [0028] (#10039)
+    10042-dev-oci23api7-native-datatypenegotiation-realserver.oraproxy
+                                     oci7bind --bind=selectint through
+                                      oraproxy against the real 10.2 server
+                                      at 10.0.2.3, and the reference for what
+                                      a real server answers this client's
+                                      data type negotiation with. The
+                                      server's TTIPRO banner at [0010],
+                                      'Linuxi386/Linux-2.0.34-8.1.0', does
+                                      not match the client's own, so both
+                                      sides send their whole type catalog:
+                                      [0011] and [0012] are the client's
+                                      request, 1959 and 1291 body bytes,
+                                      split across two packets by the small
+                                      sdu the accept negotiates, and [0013]
+                                      and [0014] are the server's answer,
+                                      2003 and 103. Every field of both is a
+                                      ub2. The answer opens with the eleven
+                                      db time zone bytes and then 00 01 00 01
+                                      00 01 00 00 - type 1, converts to 1,
+                                      representation 1, end of the
+                                      representation list - and carries no tz
+                                      version, because this client sends none
+                                      in its own request. The client takes it
+                                      and goes straight on to its login at
+                                      [0015]. The decisive finding: a client
+                                      old enough to drive the legacy OCI7 call
+                                      interface is not therefore old enough to
+                                      write an OCI7-era type list, and a real
+                                      server answers the list it was actually
+                                      sent (#10042)
+    10042-dev-oci23api7-portable-datatypenegotiation-sqlrelay-narrow.oraproxy
+                                     the same oci7bind run against the
+                                      oracleprotocoloci7 instance
+                                      (verifiertype="9i",
+                                      "SQLRelay/PortableTTC" banner) taken
+                                      before the #10042 fix. Shows the bug
+                                      this ticket is for: [0009] is the same
+                                      ub2 request the client sent the real
+                                      server, 3248 body bytes in one packet
+                                      rather than two, but the module chose
+                                      the answer's field width off
+                                      verifiertype rather than off the
+                                      client, so [0010] is ttidatatypes9i's
+                                      ub1 catalog, 947 body bytes - the same
+                                      eleven db time zone bytes, then a tz
+                                      version 00 00 00 0b the client never
+                                      asked for, then 01 01 01 00 where the
+                                      client wrote 00 01 00 01 00 01 00 00.
+                                      One byte per field where the client
+                                      writes two, so countDataTypes9i() reads
+                                      that 3248 byte request as 4 types
+                                      rather than 393. The client answers the
+                                      mis-shaped catalog by breaking the
+                                      call: it sends the break as one urgent
+                                      byte, which oraproxy does not relay,
+                                      then the in-band reset marker at
+                                      [0011]. recvAuthenticationRequest()
+                                      answers with a reset marker at [0012]
+                                      and goes back to recvPacket(), and both
+                                      sides then block in read() forever -
+                                      the client is waiting for the result of
+                                      the call it broke. The marker exchange
+                                      the ticket was filed against is the
+                                      symptom; the ub1 answer one packet
+                                      earlier is the cause (#10042)
+    10042-dev-oci23api7-portable-datatypenegotiation-sqlrelay-fixed.oraproxy
+                                     the same run again, same instance,
+                                      captured after recvDataTypeRequest()
+                                      and sendDataTypeResponse() were changed
+                                      to take the field width, and the
+                                      request's trailing national charset,
+                                      from the client's own CCAP_UB2_DTY byte
+                                      instead of from verifiertype. [0010] is
+                                      now 2348 body bytes of ub2 catalog
+                                      opening with the eleven db time zone
+                                      bytes and then 00 01 00 01 00 01 00 00,
+                                      no tz version - byte for byte the shape
+                                      the real 10.2 server sends in
+                                      10042-dev-oci23api7-native-
+                                      datatypenegotiation-realserver.oraproxy
+                                      above. No marker appears anywhere in
+                                      the capture. The client takes the
+                                      answer and sends its O3LOGON phase 1 at
+                                      [0011], which the module answers at
+                                      [0012]. The capture stops there because
+                                      a second, unrelated defect follows in
+                                      the same client's login: the module's
+                                      challenge carries a 32 character
+                                      session key, length prefixed, where the
+                                      real server sends 64 at native fixed
+                                      width, so the client sits waiting for
+                                      the rest of a response it reads as
+                                      longer than it is. That one is outside
+                                      this ticket (#10042)
+    10042-dev-oci23api7-native-loginwrongpassword-realserver-oracle122.oraproxy
+                                     oci7's wrong-password olog through
+                                      oraproxy against the real 12.2 server
+                                      (oracle122centos7x64), taken while
+                                      #10039 was open. This is the one real
+                                      server whose TTIPRO banner at [0010],
+                                      'x86_64/Linux 2.4.xx', matches this
+                                      client's own platform exactly, so the
+                                      session runs native and the data type
+                                      negotiation at [0011] and [0012] is 94
+                                      body bytes out and 18 back with no type
+                                      catalog in either direction - which is
+                                      why the ub1/ub2 width the other three
+                                      captures here turn on cannot show up in
+                                      this one. What it does settle is the
+                                      refused-login shape for this client:
+                                      [0013] is TTI_LOGON_PRESENT_USER,
+                                      [0014] the O3LOGON challenge with a 64
+                                      character session key at native fixed
+                                      width, [0015] TTI_LOGON_PRESENT_PWD
+                                      carrying the wrong password, [0016] and
+                                      [0017] the server's BREAK and RESET
+                                      markers, [0018] the client's one RESET
+                                      back, [0019] the ORA-01017 itself as an
+                                      ordinary DATA packet, and [0020] a bare
+                                      two byte packet with the eof flag set.
+                                      After reading the error this client
+                                      closes rather than sending a second
+                                      marker, the same as the genuine 9i
+                                      captures on file (#10042)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
