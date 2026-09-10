@@ -28,6 +28,7 @@
 #include <rudiments/environment.h>
 #include <rudiments/process.h>
 #include <rudiments/stdio.h>
+#include <rudiments/sys.h>
 #include <config.h>
 
 // the oci7 headers carry no __cplusplus guards of their own, so without this
@@ -1490,19 +1491,26 @@ int main(int argc, char **argv) {
 	obndrv(&bindcda,(text *)":nosuchbind",-1,
 			(ub1 *)&bindnumber,(sword)sizeof(bindnumber),
 			SQLT_INT,-1,&bindind[0],(text *)0,-1,-1);
-	// with nothing bound, oexec() here ought to fail with ORA-01008,
-	// not all variables bound - but on solaris8sparc, this exact
-	// sequence (obndrv to a nonexistent placeholder, then oexec)
-	// segfaults inside Oracle's own 9.0.1 OCI7 client library
-	// (libclntsh.so.9.0), confirmed to crash identically whether run
-	// through sqlrelay's oracleprotocoloci7 module or against a real
-	// server with sqlrelay out of the picture entirely.  that rules out
-	// sqlrelay as the cause - it's a pre-existing fragility in that
-	// specific client build - but oexec() still can't safely be called
-	// here, so the call and the ORA-01008 check are skipped rather than
-	// asserted.  see #10009
-	stdoutput.printf("skipping oexec/errorCode check, "
-				"see #10009\n");
+	// with nothing bound, oexec() ought to fail with ORA-01008, not
+	// all variables bound - sqlrelay's OCI7 classic path used to send
+	// the wrong ORA-01007 here instead, fixed in #10026.  but on
+	// solaris8sparc specifically, this same obndrv-to-a-nonexistent-
+	// placeholder-then-oexec sequence segfaults inside Oracle's own
+	// 9.0.1 OCI7 client library (libclntsh.so.9.0), confirmed to crash
+	// identically against a real server with sqlrelay out of the
+	// picture entirely - a pre-existing fragility in that specific
+	// client build, unrelated to sqlrelay, see #10009.  so skip the
+	// call there; everywhere else, run the real assertion
+	char	*hostname=sys::getHostName();
+	if (charstring::compare(hostname,"solaris8sparc")) {
+		assertTrue(oexec(&bindcda)!=0);
+		// ORA-01008, not all variables bound
+		assertEquals(errorCode(&bindcda),1008);
+	} else {
+		stdoutput.printf("skipping oexec/errorCode check on "
+					"solaris8sparc, see #10009\n");
+	}
+	delete[] hostname;
 	stdoutput.printf("\n\n");
 
 

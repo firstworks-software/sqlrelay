@@ -2213,6 +2213,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// execute
 		bool		query3unbound;
 
+		// the same thing on the classic path, where nothing names the
+		// binds: the client's value block ran out with binds still
+		// unfilled, which is the only signature that case leaves on
+		// the wire (see getQuery2BindValues())
+		bool		query2unbound;
+
 		// the rows the last query3 execute affected, summed over its
 		// iterations, and whether the backend knew the count.  an
 		// array bind runs the statement once per iteration, and the
@@ -2410,6 +2416,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 
 	query2bindcount=0;
 	query2plsqlbindcount=0;
+	query2unbound=false;
 	query2bindtypes=new uint16_t[maxbindcount];
 	query2binddirections=new byte_t[maxbindcount];
 	query2bindoutindexes=new int16_t[maxbindcount];
@@ -10148,6 +10155,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// alone - see getQuery2Descriptors()
 	query2bindcount=0;
 	query2plsqlbindcount=0;
+	query2unbound=false;
 	if (options&(OPTION_DEFINE|OPTION_BIND)) {
 		getQuery2Descriptors(rp,end,options,cursor);
 	}
@@ -10223,6 +10231,12 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 				return runQuery2PlSqlBlock(cursor);
 			}
 			debugWrite("no usable bind values");
+			if (query2unbound) {
+				return sendOci7StatementError(
+					wireCursorId(cursor),
+					ORA_NOT_ALL_VARIABLES_BOUND,
+					ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
+			}
 			return sendOci7StatementError(wireCursorId(cursor),
 					ORA_VARIABLE_NOT_IN_SELECT_LIST,
 					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
@@ -10719,6 +10733,7 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 						const byte_t **rpout) {
 
 	*rpout=rp;
+	query2unbound=false;
 
 	if ((size_t)(end-rp)<1) {
 		debugWrite("no bind values");
@@ -10735,9 +10750,18 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 
 	for (uint16_t i=0; i<bindcount; i++) {
 
+		// the block ended on a value boundary with binds still to
+		// fill, so the client sent fewer values than the statement
+		// has placeholders.  a client that bound a name the statement
+		// never declared lands here, since oci7 puts no bind names on
+		// the wire for the module to reject by name - see
+		// installQuery2Binds().  a real server answers that
+		// ORA-01008, so the callers of this read the flag rather than
+		// treating it as any other bad read
 		byte_t	size=0;
 		if ((size_t)(end-rp)<1) {
 			debugWrite("truncated bind value");
+			query2unbound=true;
 			return false;
 		}
 		read(rp,&size,&rp);
@@ -10996,6 +11020,11 @@ bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 	debugEnd();
 
 	if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
+		if (query2unbound) {
+			return sendOci7StatementError(wireCursorId(cursor),
+					ORA_NOT_ALL_VARIABLES_BOUND,
+					ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
+		}
 		return sendOci7StatementError(wireCursorId(cursor),
 				ORA_VARIABLE_NOT_IN_SELECT_LIST,
 				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
@@ -15822,6 +15851,7 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// a request that installs no binds has no out binds to answer with
 	// either, whatever the request before it left behind
 	query2bindcount=0;
+	query2unbound=false;
 
 	// both halves of the guard below, so a request that does not take the
 	// branch says which half turned it away rather than going silent
@@ -15843,6 +15873,11 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		}
 
 		if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
+			if (query2unbound) {
+				return sendOci7StatementError(cursorid,
+					ORA_NOT_ALL_VARIABLES_BOUND,
+					ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
+			}
 			return sendOci7StatementError(cursorid,
 					ORA_VARIABLE_NOT_IN_SELECT_LIST,
 					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);

@@ -2376,6 +2376,12 @@
 		not reachable given this backend's current buffer sizing,
 		but fixed defensively for correctness and to guard against
 		future changes (#10025)
+	fixed the oracle protocol module's legacy (oci7) execute sending
+		ORA-01007 where a real oracle server sends ORA-01008 when the
+		client's bind values run out with placeholders still unfilled,
+		which is what an oci7 client binding a name the statement never
+		declared looks like on the wire; other bad reads of the value
+		block still get ORA-01007 (#10026)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
