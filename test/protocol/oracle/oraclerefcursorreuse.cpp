@@ -7,8 +7,10 @@
 
 #include "oracleprotocolclient.cpp"
 
-// Regression coverage for ticket #10000: the per-cursor state a ref cursor
-// child carries back into the pool.
+// Regression coverage for tickets #10000 and #10028: the per-cursor state a
+// ref cursor child carries back into the pool, and the release that has to
+// walk down through a child's own children, and sideways across a statement's
+// several children, to hand all of it back.
 //
 // A ref cursor bind takes a cursor out of the pool for the statement to open
 // its result set on, and releaseRefCursors() in src/protocols/oracle.cpp hands
@@ -38,6 +40,19 @@
 // which cursor id the child landed on, and the query2 exact fetches are the
 // ones that see the defines.
 //
+// The second scenario, ticket #10028, is the other half of the same reset:
+// the release walking down more than one level.  A ref cursor opened from
+// within another ref cursor's own result set leaves the middle cursor a child
+// of one statement and the parent of another, and re-executing the top
+// statement has to hand back both ids.  What a client sees there is which id
+// the next open() lands on, so that is what the assertions read.
+//
+// The third scenario is that same ticket's other half: two ref cursor binds in
+// one statement, so the release runs its loop sideways over two children
+// rather than down through one.  What a client sees there is which ids the
+// next opens land on, and that neither of the two came back out of the pool
+// carrying the other's leftovers.
+//
 // Cursor id reuse is deterministic rather than hoped for.  getCursor() in
 // src/server/sqlrservercontroller.cpp walks the pool from the front and takes
 // the first cursor in SQLRCURSORSTATE_AVAILABLE, so with only the parent busy
@@ -45,6 +60,10 @@
 // is always the one the next execute takes back.
 
 static const unsigned char	ORA_TTI_QUERY2=0x47;
+
+// TTI_CLOSE, an explicit close of one cursor - see close() in
+// src/protocols/oracle.cpp
+static const unsigned char	ORA_TTI_CLOSE=0x08;
 
 // ORACLE_TYPE_RESULT_SET in src/protocols/oracle.cpp - the wire type a ref
 // cursor bind carries, and the only thing that marks it as one.  it has no
@@ -91,6 +110,41 @@ static const char	*refcursorthree=
 static const char	*refcursortwo=
 	"begin open :rc for "
 	"select 'XCOLVALUE' c1,'YCOLVALUE' c2 from dual; end;";
+
+// the block the grandchild scenario runs on the child's own cursor id: one
+// column where the parent's block has three, so a fetch from it says outright
+// whether it landed on an id of its own or back on the child's
+static const char	*refcursorone=
+	"begin open :rc for select 'GGGVALUE' g1 from dual; end;";
+
+// the unrelated cursor's rows.  three of them, so each of the three points the
+// grandchild scenario fetches it at has one left to bring back, and every
+// value distinct so a response says which
+static const char	*unrelatedrows=
+	"select decode(level,1,'UUUROW1',2,'UUUROW2','UUUROW3') u1 "
+	"from dual connect by level<=3 order by 1";
+
+// and the plain two column select the released grandchild's id gets reopened
+// with, a shape nothing in the chain above it ever ran
+static const char	*twocolumns=
+	"select 'PCOLVALUE' p1,'QCOLVALUE' p2 from dual";
+
+// the block that opens two ref cursors at once, one per placeholder - the
+// shape the release loop has to run more than one iteration for.  three
+// columns and two rows each, the same shape the define list further down is
+// built for, and every value distinct so a response says which of the two
+// children it came from
+static const char	*refcursorpair=
+	"begin open :rc1 for "
+	"select decode(level,1,'FFFONE','FFFTWO') f1,"
+	"decode(level,1,'HHHONE','HHHTWO') f2,"
+	"decode(level,1,'IIIONE','IIITWO') f3 "
+	"from dual connect by level<=2 order by 1; "
+	"open :rc2 for "
+	"select decode(level,1,'JJJONE','JJJTWO') j1,"
+	"decode(level,1,'KKKONE','KKKTWO') j2,"
+	"decode(level,1,'LLLONE','LLLTWO') j3 "
+	"from dual connect by level<=2 order by 1; end;";
 
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
@@ -192,6 +246,20 @@ static bool query2WithDefines(oracleprotocolclient *client,
 	return client->sendPacket() && client->recvPacket();
 }
 
+// TTI_CLOSE, which carries the sequence number and the cursor id and nothing
+// else.  close() in src/protocols/oracle.cpp answers it by releasing the
+// cursor and everything the ref cursor arrays still name as its child, so it
+// is where an over-release shows
+static bool closeCursor(oracleprotocolclient *client, unsigned char sequence,
+							uint32_t cursorid) {
+
+	client->beginTtiCall(ORA_TTI_CLOSE);
+	client->appendByte(sequence);
+	client->appendAuthCount(cursorid,4);
+
+	return client->sendPacket() && client->recvPacket();
+}
+
 // parse and execute one pl/sql block whose only placeholder is a ref cursor.
 // OPTION_SNDIOV with OPTION_NOPLSQL clear is what puts classifyQuery3Binds()
 // on the branch that reads the bind directions out of the block, and a ref
@@ -216,9 +284,35 @@ static bool openRefCursor(oracleprotocolclient *client,
 				cursorid,0,block,&bind,1,1,&value,1);
 }
 
+// the same request with a ref cursor bind per placeholder rather than one.
+// nothing about a ref cursor bind is special-cased to a single one:
+// installQuery3Binds() in src/protocols/oracle.cpp walks the descriptors in
+// order, matches each to the placeholder at its own position, and takes a
+// cursor out of the pool for every descriptor of this type - so a block with
+// two placeholders comes back holding two children of its own, named in
+// descriptor order.  the arrays below are sized for the widest block this
+// test sends rather than genuinely parameterized - count is only ever 2
+static bool openRefCursors(oracleprotocolclient *client, uint32_t cursorid,
+					const char *block, uint32_t count) {
+
+	oracleprotocolbind	binds[2];
+	oracleprotocolbindvalue	values[2];
+	for (uint32_t i=0; i<count; i++) {
+		binds[i].clear();
+		binds[i].type=ORA_TYPE_RESULT_SET;
+		values[i].setNull();
+	}
+
+	return client->query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_SNDIOV,
+				cursorid,0,block,binds,count,1,values,1);
+}
+
 int main(int argc, char **argv) {
 
-	stdoutput.printf("\n====== #10000 ref cursor id reuse ======\n\n");
+	stdoutput.printf("\n====== #10000/#10028 "
+				"ref cursor id reuse ======\n\n");
 
 	// the oracleprotocol test instance - see
 	// test/sqlrelay.conf.d/oracleprotocol.conf
@@ -366,7 +460,504 @@ int main(int argc, char **argv) {
 	report("the fresh child sends its second column",
 			client.responseContains("YCOLVALUE"));
 
+
+	// ---- the grandchild two levels down ----
+
+	// ticket #10028: a ref cursor opened from within another ref cursor's
+	// own result set, so the middle cursor is a child of one statement and
+	// the parent of another at the same time.  releasing the top statement
+	// has to walk down both levels - releaseRefCursors() releases a child's
+	// own children before it resets the child.  before it recursed, the
+	// grandchild's id was held by nothing and out of the pool for the rest
+	// of the session.
+	//
+	// this runs in a session of its own, because the assertions name ids
+	// counted up from the first cursor the session opens and the scenario
+	// above has already moved the pool along
 	client.disconnect();
+
+	oracleprotocolclient	fresh;
+
+	if (!fresh.connect(host,port,sid)) {
+		report("connect a fresh session",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("connect a fresh session",true);
+
+	if (!fresh.login(user,password)) {
+		report("log the fresh session in",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("log the fresh session in",true);
+
+	// the unrelated cursor the release must leave alone.  it is the first
+	// cursor the session opens, so it sits at the front of the pool with a
+	// live result set on it while the whole chain below runs
+	uint32_t	unrelatedid=0;
+	if (!fresh.open(&unrelatedid)) {
+		report("open the unrelated cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("open the unrelated cursor",true);
+
+	if (!fresh.query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				unrelatedid,0,unrelatedrows)) {
+		report("run the unrelated select",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("run the unrelated select",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!fresh.fetch(unrelatedid,1)) {
+		report("fetch row one from the unrelated cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("the unrelated cursor has a live result set",
+			fresh.responseContains("UUUROW1"));
+
+	// the top of the chain, and the two ids behind it the chain takes: the
+	// child the parent's block opens, and the grandchild the child's own
+	// block opens
+	uint32_t	topid=0;
+	if (!fresh.open(&topid)) {
+		report("open the parent cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("open the parent cursor",true);
+
+	uint32_t	midid=topid+1;
+	uint32_t	grandid=midid+1;
+
+	if (!openRefCursor(&fresh,topid,refcursorthree)) {
+		report("open the parent's ref cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("open the parent's ref cursor",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!fresh.fetch(midid,1)) {
+		report("fetch row one from the parent's ref cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("the parent's ref cursor child is the next cursor id",
+			fresh.responseContains("AAAONE"));
+
+	// the grandchild: the same ref cursor bind, aimed at the child's own
+	// cursor id rather than the parent's.  query3()'s cursorFromWireId()
+	// resolves it, installQuery3Binds() runs against the child, and the
+	// child ends up with a ref cursor count of its own - a cursor that is
+	// somebody's child and somebody's parent at once, which is the state
+	// the recursion below exists for.
+	//
+	// the backend is allowed to refuse this.  the child is holding the
+	// parent's result set, and live oci does not have to accept a new
+	// pl/sql block on it.  a refusal at execute time still leaves the
+	// bookkeeping the release walks written, since installQuery3Binds()
+	// takes the grandchild's cursor before the execute runs, but a refusal
+	// at parse time returns out of query3() ahead of installQuery3Binds()
+	// and takes nothing at all.  only a wire level failure is fatal here,
+	// the ttc code is deliberately not checked, and the open() below is
+	// what says which of the two happened
+	if (!openRefCursor(&fresh,midid,refcursorone)) {
+		report("open a ref cursor from the child's own cursor id",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("open a ref cursor from the child's own cursor id",true);
+
+	// best effort for the same reason, so it prints rather than reports:
+	// if the block did run, the grandchild's one column says it landed on
+	// an id of its own rather than back on the child's.  it is a
+	// diagnostic detail, not a check - whether the id was taken at all is
+	// what the open() below asserts
+	stdoutput.printf("the grandchild's own rows: %s\n",
+			(fresh.fetch(grandid,1) &&
+				fresh.responseContains("GGGVALUE"))?
+						"fetched":"not available");
+
+	// and the check the release assertion rests on.  the bind takes the
+	// grandchild's id out of the pool, so an open() now has to land past
+	// it.  a block refused at parse time takes nothing, and this open()
+	// comes back with the grandchild's own id - which would leave the
+	// assertion further down with nothing released to see and passing on
+	// an empty chain
+	uint32_t	besideid=0;
+	if (!fresh.open(&besideid)) {
+		report("open a cursor beside the grandchild",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("open a cursor beside the grandchild",true);
+	report("the grandchild's bind took its id out of the pool",
+			besideid!=grandid);
+
+	// a define list on the grandchild itself, the way the child one level
+	// up carries one, so the release two levels down has something to
+	// clear and the exact fetch at the end has something to catch
+	if (!query2WithDefines(&fresh,4,ORA_OPTION_DEFINE,
+					grandid,defined,definedcount)) {
+		report("define the grandchild's columns",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("define the grandchild's columns",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	// and hand the id beside it back, so the pool below is exactly what it
+	// would have been without the check above
+	if (!closeCursor(&fresh,5,besideid)) {
+		report("close the cursor beside the grandchild",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("close the cursor beside the grandchild",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	// re-executing the parent is what makes the release walk down both
+	// levels: installQuery3Binds() calls releaseRefCursors() on the parent
+	// before it takes any cursor of its own, and that goes parent to child
+	// to grandchild
+	if (!openRefCursor(&fresh,topid,refcursorthree)) {
+		report("re-open the parent's ref cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("re-open the parent's ref cursor",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	// the assertion this scenario is built around.  the release hands back
+	// the child and the grandchild both, and the child goes straight back
+	// out as the re-executed parent's own child - so the grandchild's id is
+	// the lowest one free and the next open() has to land on it.  before
+	// the release recursed it stopped at the child, the grandchild's id was
+	// never handed back, and this open() landed one past it
+	uint32_t	reopenedid=0;
+	if (!fresh.open(&reopenedid)) {
+		report("open a cursor after the parent re-executed",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("open a cursor after the parent re-executed",true);
+	report("the released grandchild's id is the next one out of the pool",
+			reopenedid==grandid);
+
+	// and it comes out of the pool clean, the way the child one level up
+	// does.  an exact fetch is the one fetch that reads the define list,
+	// and the list planted on the grandchild above names position 2 as one
+	// the client never defined - so a release that handed the id back
+	// without clearing it drops the second column here
+	if (!fresh.query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				reopenedid,0,twocolumns)) {
+		report("run a two column select on the reopened id",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("run a two column select on the reopened id",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!query2(&fresh,6,ORA_OPTION_FETCH,reopenedid)) {
+		report("exact fetch from the reopened id",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("the reopened id sends its first column",
+			fresh.responseContains("PCOLVALUE"));
+	report("the reopened id sends its second column",
+			fresh.responseContains("QCOLVALUE"));
+
+	// and nothing walked off the chain onto the cursor beside it: the
+	// unrelated cursor still has its result set after the release, and
+	// still has it after the child is closed outright - close() releases
+	// everything the ref cursor arrays still name as the closing cursor's
+	// child, so a row left naming an id the chain no longer owns would
+	// show up here.  neither of these fails against a release that stops
+	// one level short; they guard against a later one that goes too far
+	if (!fresh.fetch(unrelatedid,1)) {
+		report("fetch row two from the unrelated cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("the unrelated cursor survives the release",
+			fresh.responseContains("UUUROW2"));
+
+	if (!closeCursor(&fresh,7,midid)) {
+		report("close the child cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("close the child cursor",
+			fresh.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!fresh.fetch(unrelatedid,1)) {
+		report("fetch row three from the unrelated cursor",false);
+		stdoutput.printf("%s\n",fresh.getError());
+		return status;
+	}
+	report("the unrelated cursor survives the child's close",
+			fresh.responseContains("UUUROW3"));
+
+	fresh.disconnect();
+
+
+	// ---- two direct children of one parent ----
+
+	// the other half of ticket #10028: one statement whose block opens a ref
+	// cursor into each of two bind slots, so releaseRefCursors() runs its
+	// loop over two children in a single call rather than one.  what that
+	// shows is the loop itself: that it walks every child and not just the
+	// one it reaches first, with the count saved into a local and the
+	// parent's row zeroed under it before it starts.  the re-entry that
+	// saved count guards against is not something a client can drive from
+	// the wire, so it stays verified by inspection - this only shows the
+	// loop staying correct with more than one child in play.
+	//
+	// its own session again, since the ids below are counted up from the
+	// first cursor the session opens
+	oracleprotocolclient	pair;
+
+	if (!pair.connect(host,port,sid)) {
+		report("connect a second fresh session",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("connect a second fresh session",true);
+
+	if (!pair.login(user,password)) {
+		report("log the second fresh session in",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("log the second fresh session in",true);
+
+	// the cursor beside the pair that the release must leave alone, holding a
+	// live result set at the front of the pool for the whole scenario
+	uint32_t	sideid=0;
+	if (!pair.open(&sideid)) {
+		report("open the cursor beside the pair",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("open the cursor beside the pair",true);
+
+	if (!pair.query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				sideid,0,unrelatedrows)) {
+		report("run the select beside the pair",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("run the select beside the pair",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!pair.fetch(sideid,1)) {
+		report("fetch row one from the cursor beside the pair",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the cursor beside the pair has a live result set",
+			pair.responseContains("UUUROW1"));
+
+	// the statement that holds both, and the two ids behind it its two binds
+	// take - one per placeholder, in the order the descriptors go out
+	uint32_t	pairid=0;
+	if (!pair.open(&pairid)) {
+		report("open the cursor the pair hangs off",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("open the cursor the pair hangs off",true);
+
+	uint32_t	firstid=pairid+1;
+	uint32_t	secondid=pairid+2;
+
+	if (!openRefCursors(&pair,pairid,refcursorpair,2)) {
+		report("open two ref cursors from one block",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("open two ref cursors from one block",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	// both are genuinely their own cursor with their own result set, not one
+	// cursor answering to two ids: each carries only its own block's values
+	if (!pair.fetch(firstid,1)) {
+		report("fetch row one from the first child",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the first child is the next cursor id",
+			pair.responseContains("FFFONE") &&
+			!pair.responseContains("JJJONE"));
+
+	if (!pair.fetch(secondid,1)) {
+		report("fetch row one from the second child",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the second child is the id behind it",
+			pair.responseContains("JJJONE") &&
+			!pair.responseContains("FFFONE"));
+
+	// a define list on each, so the release has something to clear on both
+	// ends of the loop rather than just the one it reaches first
+	if (!query2WithDefines(&pair,1,ORA_OPTION_DEFINE,
+					firstid,defined,definedcount)) {
+		report("define the first child's columns",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("define the first child's columns",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!query2WithDefines(&pair,2,ORA_OPTION_DEFINE,
+					secondid,defined,definedcount)) {
+		report("define the second child's columns",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("define the second child's columns",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!query2(&pair,3,ORA_OPTION_FETCH,firstid)) {
+		report("exact fetch from the defined first child",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the defined first child sends only what it was asked for",
+			pair.responseContains("FFFTWO") &&
+			!pair.responseContains("HHHTWO") &&
+			pair.responseContains("IIITWO"));
+
+	if (!query2(&pair,4,ORA_OPTION_FETCH,secondid)) {
+		report("exact fetch from the defined second child",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the defined second child sends only what it was asked for",
+			pair.responseContains("JJJTWO") &&
+			!pair.responseContains("KKKTWO") &&
+			pair.responseContains("LLLTWO"));
+
+	// re-executing the statement is what runs the loop.  it goes back with a
+	// block that opens one ref cursor rather than two, so only the first of
+	// the two ids it just handed back comes straight out again and the second
+	// is left sitting at the front of the pool for the open() below to find
+	if (!openRefCursor(&pair,pairid,refcursortwo)) {
+		report("re-open the pair's statement with one ref cursor",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("re-open the pair's statement with one ref cursor",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!pair.fetch(firstid,1)) {
+		report("fetch from the child of the re-executed statement",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the loop's first iteration handed its child back",
+			pair.responseContains("XCOLVALUE"));
+
+	// and the assertion this scenario is built around: the second iteration
+	// ran too.  a loop that stopped after one child, or that lost its place
+	// when the parent's row was zeroed, would leave this id out of the pool
+	// and the open() would land past it
+	uint32_t	secondbackid=0;
+	if (!pair.open(&secondbackid)) {
+		report("open a cursor after the pair was released",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("open a cursor after the pair was released",true);
+	report("the loop's second iteration handed its child back",
+			secondbackid==secondid);
+
+	// both came back clean, not just the one the loop reached first.  an
+	// exact fetch is the one fetch that reads the define list, so either
+	// child's leftover three column list would drop a column of the two
+	// column statement it lands under
+	if (!pair.query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				secondbackid,0,twocolumns)) {
+		report("run a two column select on the second child's id",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("run a two column select on the second child's id",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!query2(&pair,5,ORA_OPTION_FETCH,secondbackid)) {
+		report("exact fetch from the second child's id",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the second child's id sends its first column",
+			pair.responseContains("PCOLVALUE"));
+	report("the second child's id sends its second column",
+			pair.responseContains("QCOLVALUE"));
+
+	// the first child's id gets the same reading, and it takes another
+	// re-execute to get there: the row the fetch above consumed is the only
+	// one that statement has
+	if (!openRefCursor(&pair,pairid,refcursortwo)) {
+		report("re-open the pair's statement again",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("re-open the pair's statement again",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!query2(&pair,6,ORA_OPTION_FETCH,firstid)) {
+		report("exact fetch from the first child's id",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the first child's id sends its first column",
+			pair.responseContains("XCOLVALUE"));
+	report("the first child's id sends its second column",
+			pair.responseContains("YCOLVALUE"));
+
+	// and neither release walked off the pair onto the cursor beside it,
+	// either as the statement re-executed or as it closed outright
+	if (!pair.fetch(sideid,1)) {
+		report("fetch row two from the cursor beside the pair",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the cursor beside the pair survives the release",
+			pair.responseContains("UUUROW2"));
+
+	if (!closeCursor(&pair,7,pairid)) {
+		report("close the cursor the pair hangs off",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("close the cursor the pair hangs off",
+			pair.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	if (!pair.fetch(sideid,1)) {
+		report("fetch row three from the cursor beside the pair",false);
+		stdoutput.printf("%s\n",pair.getError());
+		return status;
+	}
+	report("the cursor beside the pair survives the close",
+			pair.responseContains("UUUROW3"));
+
+	pair.disconnect();
 
 	if (status==0) {
 		stdoutput.printf("\n\033[34mAll tests succeeded\033[0m\n");
