@@ -1610,17 +1610,29 @@ int main(int argc, char **argv) {
 	assertColumn(&typecda2,4,"TESTRAW",SQLT_BIN,20,0,0);
 	assertColumn(&typecda2,5,"TESTCHAR",SQLT_AFC,20,0,0);
 	// oci8.cpp asserts SQLT_RDD (104) here, which is the descriptor form
-	// OCI8 remaps a rowid column to.  an OCI7 describe may report 11
-	// (SQLT_RID) instead.  unverified, see #9654
-	assertColumn(&typecda2,6,"TESTROWID",SQLT_RDD,8,0,0);
+	// OCI8 remaps a rowid column to.  a real oracle server sends an OCI7
+	// client the internal rowid type 11 (SQLT_RID), 16 bytes wide, and the
+	// client reports exactly that back.  describing the column as 104
+	// instead makes the client report 208 and 1 for it.  confirmed live on
+	// real OCI7 clients on redhat9x86 and solaris8sparc, against both a
+	// real server and sqlrelay - see
+	// samples/10016-*-oci7describe-rowid-*.oraproxy
+	assertColumn(&typecda2,6,"TESTROWID",SQLT_RID,16,0,0);
 	// oci8.cpp asserts 187 through 190 (SQLT_TIMESTAMP and friends), which
 	// is OCI's own remapping of what the module actually puts on the wire.
 	// the module calls these 180 through 183, at
 	// src/protocols/oracle.cpp:145-148, and an OCI7 describe has no reason
 	// to remap them, so 180-183 is what is expected here.  unverified,
 	// see #9654
-	assertColumn(&typecda2,7,"TESTTIMESTAMP",180,11,0,6);
-	assertColumn(&typecda2,8,"TESTTIMESTAMPTZ",181,13,0,6);
+	// classic OCI7's describe never surfaces precision or scale for the
+	// timestamp and interval family, the local-time-zone column below
+	// included.  a real oracle server reports 0/0 for every one of them,
+	// despite their declared timestamp(6) and interval(2)/(6) precision,
+	// and sqlrelay reports the same.  confirmed live against both, on real
+	// OCI7 clients on redhat9x86 and solaris8sparc - see
+	// samples/10016-*-oci7describe-*.oraproxy
+	assertColumn(&typecda2,7,"TESTTIMESTAMP",180,11,0,0);
+	assertColumn(&typecda2,8,"TESTTIMESTAMPTZ",181,13,0,0);
 	// ORACLE_TYPE_TIMESTAMPLTZ (src/protocols/oracle.cpp:777) is 231, with
 	// no separate OCI8-side remap the way 187-190 get one.  a local-time-
 	// zone value carries no stored offset of its own - it is normalized to
@@ -1631,11 +1643,11 @@ int main(int argc, char **argv) {
 	// local-time-zone column into the same generic datatype as a plain
 	// timestamp, so the module described it as 180, not 231.  #9704 gave
 	// it its own datatype (TIMESTAMPLTZ_DATATYPE) to fix that.  the type
-	// and size here are backed by that live evidence; precision/scale are
-	// still unverified, see #9717
-	assertColumn(&typecda2,9,"TESTTIMESTAMPLTZ",231,11,0,6);
-	assertColumn(&typecda2,10,"TESTINTERVALYM",182,5,2,0);
-	assertColumn(&typecda2,11,"TESTINTERVALDS",183,11,2,6);
+	// and size here are backed by that live evidence; the precision and
+	// scale are the family-wide 0/0 noted above
+	assertColumn(&typecda2,9,"TESTTIMESTAMPLTZ",231,11,0,0);
+	assertColumn(&typecda2,10,"TESTINTERVALYM",182,5,0,0);
+	assertColumn(&typecda2,11,"TESTINTERVALDS",183,11,0,0);
 	stdoutput.printf("\n\n");
 
 

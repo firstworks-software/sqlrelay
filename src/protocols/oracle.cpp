@@ -563,7 +563,9 @@
 // object number, 3 for the relative file number, 6 for the block number and
 // 3 for the row number.  a live 12.2 server describes such a column 1 byte
 // wide and puts a constant 0x0e in front of the value, whatever the four
-// numbers in it come to - see putRowidField()
+// numbers in it come to - see putRowidField().  an oci7 describe is the
+// exception: a real server sends 16 there, the width the internal form
+// takes.  see describe()
 #define ORACLE_ROWID_TEXT_SIZE		18
 #define ORACLE_ROWID_OBJECT_DIGITS	6
 #define ORACLE_ROWID_FILE_DIGITS	3
@@ -571,6 +573,7 @@
 #define ORACLE_ROWID_ROW_DIGITS		3
 #define ORACLE_ROWID_PARTS		4
 #define ORACLE_ROWID_SIZE		1
+#define ORACLE_OCI7_ROWID_SIZE		16
 #define ORACLE_ROWID_LENGTH_BYTE	0x0e
 
 // a raw's external form is two hexadecimal characters per byte
@@ -1578,10 +1581,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint32_t colcount);
 		void	putOci7DescribeColumn(sqlrservercursor *cursor,
 							uint32_t column);
-		// the internal oracle datatype code an oci7 describe reports
-		// for a column the modern describe path calls "wiretype"
-		uint16_t	getOci7DescribeColumnType(uint16_t wiretype);
-		// and the buffer width it reports for one
+		// the buffer width an oci7 describe reports for a column the
+		// modern describe path calls "wiretype"
 		uint32_t	getOci7DescribeColumnSize(uint16_t wiretype,
 							uint32_t size);
 		bool	sendOci7StatementError(uint32_t cursorid,
@@ -8958,7 +8959,6 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 				cont->getColumnTypeName(cursor,column);
 	uint16_t	columntype=columntypes[curid][column];
 	uint16_t	wiretype=getWireColumnType(columntype);
-	uint16_t	dbtype=getOci7DescribeColumnType(wiretype);
 	uint32_t	dbsize=getOci7DescribeColumnSize(wiretype,
 					getWireColumnSize(cursor,column,
 							columntypestring,
@@ -8969,10 +8969,10 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	// char, varchar2 and date cases are the captured ones - a date is
 	// 0x00 here, where putColumnMetadata() sends 0x80 for one - and the
 	// rest go by the pattern those four set
-	bool	character=(dbtype==ORACLE_TYPE_VARCHAR ||
-				dbtype==ORACLE_TYPE_CHAR ||
-				dbtype==ORACLE_TYPE_LONG ||
-				dbtype==ORACLE_TYPE_CLOB);
+	bool	character=(wiretype==ORACLE_TYPE_VARCHAR ||
+				wiretype==ORACLE_TYPE_CHAR ||
+				wiretype==ORACLE_TYPE_LONG ||
+				wiretype==ORACLE_TYPE_CLOB);
 
 	uint32_t	precision=cont->getColumnPrecision(cursor,column);
 	uint32_t	scale=cont->getColumnScale(cursor,column);
@@ -9003,7 +9003,7 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 		write(&reqpacket,(byte_t)1);
 	}
 
-	write(&reqpacket,(byte_t)dbtype);
+	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((character)?0x80:0x00));
 
 	// both are raw signed bytes in both encodings, unlike the modern
@@ -9038,7 +9038,7 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	putAuthCount(0,4);
 
 	debugStart("column %d",column);
-	debugColumnType(columntypestring,dbtype);
+	debugColumnType(columntypestring,wiretype);
 	debugWrite("size: %d",dbsize);
 	debugWrite("precision: %d",(int32_t)precision);
 	debugWrite("scale: %d",(int32_t)wirescale);
@@ -9047,31 +9047,26 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	debugEnd();
 }
 
-// an oci7 describe reports oracle's internal datatype code, which is the
-// code getWireColumnType() already hands back for everything but a rowid.
-// that one is folded to 11 there because a live 12.2 server describes a
-// rowid column as 11 to a modern client; an oci7 client expects 104, the
-// code its own SQLT_RDD names.  no capture on file describes a rowid to an
-// oci7 client, so 104 is what test/protocol/oracle/oci7.cpp expects rather
-// than something a real server was seen to send
-uint16_t sqlrprotocol_oracle::getOci7DescribeColumnType(uint16_t wiretype) {
-	if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
-		return ORACLE_TYPE_ROWID;
-	}
-	return wiretype;
-}
-
-// and the buffer width, which is getWireColumnSize()'s for every type but
-// the date.  a real server describes a date column 1 byte wide here and the
-// client works the 7 bytes a date really takes back out from the type -
-// the same way getWireColumnSize() already describes a rowid, an interval
-// and a timestamp with time zone 1 byte wide.  confirmed in both encodings
-// and against both a real date column and a sysdate: the -realtable-parse
-// and -parse captures
+// the buffer width an oci7 describe reports, which is getWireColumnSize()'s
+// for every type but the date and the rowid.  a real server describes a date
+// column 1 byte wide here and the client works the 7 bytes a date really
+// takes back out from the type - the same way getWireColumnSize() already
+// describes a rowid, an interval and a timestamp with time zone 1 byte wide.
+// confirmed in both encodings and against both a real date column and a
+// sysdate: the -realtable-parse and -parse captures.  a rowid goes the other
+// way: a real server describes one 16 bytes wide to an oci7 client, and sends
+// the internal type 11 for it rather than the 104 the client's own SQLT_RDD
+// names.  a live oci7 client reports 11 and 16 back for such a column, and
+// 208 and 1 when it is described as 104 instead: the
+// samples/10016-*-oci7describe-rowid-* captures, on redhat9x86 and
+// solaris8sparc alike
 uint32_t sqlrprotocol_oracle::getOci7DescribeColumnSize(uint16_t wiretype,
 							uint32_t size) {
 	if (wiretype==ORACLE_TYPE_DATE) {
 		return ORACLE_OCI7_DATE_SIZE;
+	}
+	if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
+		return ORACLE_OCI7_ROWID_SIZE;
 	}
 	return size;
 }
