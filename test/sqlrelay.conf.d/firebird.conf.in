@@ -42,4 +42,52 @@
 		</connections>
 	</instance>
 
+	<!-- pairs the mysql wire protocol frontend with the firebird
+	     connection module, to give buildLobField (src/protocols/mysql.cpp,
+	     currently zero coverage under any backend, #10041) a live backend
+	     that reliably takes its chunked lob path.  firebird BLOBs have no
+	     small size ceiling the way DB2's LONG VARCHAR does
+	     (src/connections/firebird.cpp ~5433-5436 sets *lob=true for
+	     SQL_BLOB columns unconditionally), so an ordinary BLOB SUB_TYPE 1
+	     column reliably forces buildLobField's loop to run more than
+	     once: it requests sizeof(lobbuffer)/MAX_BYTES_PER_CHAR chars
+	     (32768/4=8192) per getLobFieldSegment call, so a value bigger
+	     than 8192 bytes takes at least two segments.
+
+	     ignoreselectdatabase="yes" is required: firebird can't switch
+	     databases at runtime, but the mysql protocol handshake carries a
+	     database name as part of login, and without this the connection
+	     fails with "Database not found."
+
+	     firebird's implicit transaction model means DDL isn't
+	     auto-committed by the mysql protocol layer, so
+	     test/protocol/mysql/lob.cpp sends an explicit "commit" after its
+	     CREATE TABLE, before the later PREPARE in the same session can
+	     see the new table.
+
+	     the insert has to go through a bound parameter
+	     (mysql_stmt_prepare + MYSQL_BIND, MYSQL_TYPE_LONG_BLOB), not a
+	     literal embedded in the query text - firebird's own
+	     MAX_STATEMENT_SIZE (src/connections/firebird.cpp, =65535, an
+	     unsigned short arg to isc_dsql_prepare) rejects any literal
+	     INSERT text over that size, and bound/prepared is the safer,
+	     more standard approach here regardless.
+
+	     debug="protocols" plus the <loggers> block below make
+	     buildLobField's getLobFieldSegment calls visible in the
+	     sqlr-connection debug log (a bare debug="..." attribute alone
+	     produces no log output - the loggers dispatcher only wires up
+	     when a <loggers> block is present). -->
+	<instance id="firebirdmysqlprotocol" dbase="firebird" debug="protocols" ignoreselectdatabase="yes">
+		<listeners>
+			<listener protocol="mysql" port="9042"/>
+		</listeners>
+		<connections>
+			<connection string="user=testuser;password=testpassword;db=firebird:/u02/@HOSTNAME@.gdb;dialect=3"/>
+		</connections>
+		<loggers>
+			<logger module="debug"/>
+		</loggers>
+	</instance>
+
 </instances>

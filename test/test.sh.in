@@ -124,10 +124,14 @@ stop_instances() {
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id routerslave
 		fi
 
-		# the firebird test also has a small-maxerrorsize instance
+		# the firebird test also has a small-maxerrorsize instance,
+		# and a mysql-protocol-listener instance to give buildLobField
+		# (src/protocols/mysql.cpp, #10041) a live backend whose lob
+		# values can span multiple segments
 		if ( test "$_instance" = "firebird" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id firebirdmaxerrorsize
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id firebirdmysqlprotocol
 		fi
 
 		# the firebirdprotocol test also has a fakeinputbindvariables
@@ -150,6 +154,14 @@ stop_instances() {
 		if ( test "$_instance" = "odbc-db2" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id odbcdb2maxfieldsize
+		fi
+
+		# the mysqlprotocol test also has a postgresql-listener instance,
+		# to give buildLobField (src/protocols/postgresql.cpp, #10041) a
+		# live backend whose lob values can exceed its 32768-byte buffer
+		if ( test "$_instance" = "mysqlprotocol" )
+		then
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id mysqlpostgresqlprotocol
 		fi
 
 		# the postgresqlupsert test also has a second instance, whose
@@ -339,6 +351,16 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the firebird test also needs a third instance, pairing a
+	# mysql-protocol listener with the firebird connection module, to
+	# give buildLobField (src/protocols/mysql.cpp, #10041) a live backend
+	# whose lob values can span multiple segments
+	if ( test "$instance" = "firebird" )
+	then
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdmysqlprotocol -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# the firebirdprotocol test needs a second instance, with
 	# fakeinputbindvariables="yes", to exercise the faked-bind describe
 	# probe
@@ -390,6 +412,18 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the mysqlprotocol test needs a second instance, pairing a
+	# postgresql-protocol listener with the mysql connection module, to
+	# give buildLobField (src/protocols/postgresql.cpp, #10041) a live
+	# backend whose lob values can exceed its 32768-byte buffer -
+	# odbc/DB2's literal-string and column-size limits sit under that,
+	# so they can never force a second segment read
+	if ( test "$instance" = "mysqlprotocol" )
+	then
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id mysqlpostgresqlprotocol -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# the postgresqlupsert test needs a second instance, whose trigger
 	# recognizes the duplicate-key error via sqlstate= instead of
 	# string= (#9620)
@@ -420,6 +454,8 @@ stop_instance() {
 	then
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdmaxerrorsize
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id firebirdmysqlprotocol
 	fi
 	if ( test "$instance" = "firebirdprotocol" )
 	then
@@ -450,6 +486,11 @@ stop_instance() {
 	then
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcdb2maxfieldsize
+	fi
+	if ( test "$instance" = "mysqlprotocol" )
+	then
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id mysqlpostgresqlprotocol
 	fi
 	if ( test "$instance" = "postgresqlupsert" )
 	then
@@ -970,6 +1011,38 @@ run_protocol_test() {
 		export ODBCINI
 	fi
 
+	# mysqlprotocol also runs lob, from the neighboring protocol/postgresql
+	# directory, against the mysqlpostgresqlprotocol instance - a
+	# postgresql-protocol listener paired with the mysql connection
+	# module, to give buildLobField (src/protocols/postgresql.cpp, #10041)
+	# a live backend whose lob values can exceed its 32768-byte buffer.
+	# both runs have to succeed for the instance to pass
+	if ( test "$instance" = "mysqlprotocol" )
+	then
+		./$prog
+		resultmysql="$?"
+		cd ../postgresql
+		./lob
+		resultlob="$?"
+		cd ../mysql
+		if ( test "$resultmysql" = "0" ) && ( test "$resultlob" = "0" )
+		then
+			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
+			cd ../..
+			return 0
+		fi
+		if ( test "$resultmysql" != "0" )
+		then
+			printf "    % 8s: failed (mysql)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultlob" != "0" )
+		then
+			printf "    % 8s: failed (postgresql lob)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		cd ../..
+		return 1
+	fi
+
 	# tdsfreetdsmssqlprotocol runs tds-freetds twice against the same
 	# instance - once requesting tds 7.0 ([sqlrelay]) and once requesting
 	# tds 7.4 ([sqlrelay74]) - #9199 - so both wire-shape variants get
@@ -1327,6 +1400,26 @@ run_crud_test() {
 	return 1
 }
 
+# the firebird test also runs lob, from the neighboring protocol/mysql
+# directory, against the firebirdmysqlprotocol instance - a mysql-protocol
+# listener paired with the firebird connection module, to give
+# buildLobField (src/protocols/mysql.cpp, #10041) a live backend whose lob
+# values can span multiple segments
+run_firebird_mysqlprotocol_lob_test() {
+
+	cd protocol/mysql
+	./lob
+	if ( test "$?" = "0" )
+	then
+		printf "    % 8s: success\n" "lob" >> "$RESULTSLOG"
+		cd ../..
+		return 0
+	fi
+	printf "    % 8s: failed\n" "lob" >> "$RESULTSLOG"
+	cd ../..
+	return 1
+}
+
 # run the appropriate tests for an instance that is up
 run_instance_tests() {
 
@@ -1357,6 +1450,14 @@ run_instance_tests() {
 			if ( test "$instance" = "oracle" )
 			then
 				run_crud_test
+				failures=`expr $failures + $?`
+			fi
+
+			# the firebird test also runs a mysql-protocol lob
+			# test against the firebirdmysqlprotocol instance
+			if ( test "$instance" = "firebird" )
+			then
+				run_firebird_mysqlprotocol_lob_test
 				failures=`expr $failures + $?`
 			fi
 			;;

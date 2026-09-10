@@ -10,4 +10,60 @@
 		</connections>
 	</instance>
 
+	<!-- pairs the postgresql wire protocol frontend with the mysql
+	     connection module, to give buildLobField
+	     (src/protocols/postgresql.cpp, currently zero coverage under
+	     any backend, #10041) a live backend that reliably takes its
+	     chunked lob path.  odbc/DB2 (#10041's other candidate) would
+	     also work here - DB2's ~32700-byte LONG VARCHAR ceiling is
+	     well past the 8192-byte segment size buildLobField requests
+	     per getLobFieldSegment call (sizeof(lobbuffer)/MAX_BYTES_PER_CHAR,
+	     src/protocols/postgresql.cpp) - but src/connections/db2.cpp is
+	     under active work on a separate ticket (#10040) as this is
+	     written, so mysql sidesteps that entirely.
+	     mysqlcursor::getField (src/connections/mysql.cpp) sets
+	     *lob=true for any TINY/MEDIUM/LONG/plain BLOB column
+	     unconditionally, with no size floor, whenever usestmtprepare
+	     is in effect (the default - true unless api=classic is on the
+	     connection string, which it isn't here), so an ordinary BLOB
+	     column reliably takes the chunked lob path this instance
+	     exists to exercise.
+
+	     maxquerysize is raised well past its 65536-byte default for
+	     headroom: the postgresql protocol module caps every incoming
+	     packet at maxquerysize (src/protocols/postgresql.cpp
+	     recvPacket()), and lob.cpp's insert carries its whole test
+	     value as a SQL literal, so the query text has to fit under
+	     the cap before it can even reach the connection module, let
+	     alone buildLobField's own loop.
+
+	     lob.cpp's test value stays under 65536 bytes on purpose - past
+	     that, buildLobField's own reply path breaks: writeByteaField
+	     (src/protocols/postgresql.cpp) hex-encodes the value through
+	     rudiments' charstring::hexEncode, whose byte-counting loop uses
+	     a uint16_t index against a uint64_t input size, so it never
+	     reaches an input bigger than 65535 bytes and the encode runs
+	     past the end of its output buffer forever.  that's a rudiments
+	     bug (~/src/dev/rudiments/src/charstring.cpp), not a sqlrelay
+	     one, and it is why this instance's own test value is smaller
+	     than the 32768-byte lobbuffer might suggest is necessary.
+
+	     debug="protocols" plus the <loggers> block below make
+	     buildLobField's getLobFieldSegment calls visible in the
+	     sqlr-connection debug log (a debug="..." attribute alone
+	     produces no log output - sqlrservercontroller only wires up
+	     the loggers dispatcher when a <loggers> block is present,
+	     src/server/sqlrservercontroller.cpp ~line 793). -->
+	<instance id="mysqlpostgresqlprotocol" dbase="mysql" debug="protocols" maxquerysize="1048576">
+		<listeners>
+			<listener protocol="postgresql" port="9041"/>
+		</listeners>
+		<connections>
+			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;charset=latin1;foundrows=yes"/>
+		</connections>
+		<loggers>
+			<logger module="debug"/>
+		</loggers>
+	</instance>
+
 </instances>

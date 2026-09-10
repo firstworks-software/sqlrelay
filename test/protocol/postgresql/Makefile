@@ -10,11 +10,14 @@ include ../../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(POSTGRESQLINCLUDES) $(COMPILE) $<
 
-all: postgresql
+all: postgresql lob
 
 postgresql: postgresql.cpp postgresql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresql.$(OBJ) $(POSTGRESQLLIBS) $(RUDIMENTSLIBS)
 
+lob: lob.cpp lob.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) lob.$(OBJ) $(POSTGRESQLLIBS) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class postgresql$(EXE)
+	$(RM) *.lo *.o *.obj *.class postgresql$(EXE) lob$(EXE)
 	$(RMTREE) .libs

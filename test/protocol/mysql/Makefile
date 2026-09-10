@@ -10,7 +10,7 @@ include ../../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(MYSQLINCLUDES) $(COMPILE) $<
 
-all: mysql bind mysqldatetodatetime
+all: mysql bind mysqldatetodatetime lob
 
 mysql: mysql.cpp mysql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysql.$(OBJ) $(MYSQLLIBS) $(RUDIMENTSLIBS)
@@ -21,6 +21,9 @@ bind: bind.cpp bind.$(OBJ)
 mysqldatetodatetime: mysqldatetodatetime.cpp mysqldatetodatetime.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqldatetodatetime.$(OBJ) $(MYSQLLIBS) $(RUDIMENTSLIBS)
 
+lob: lob.cpp lob.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) lob.$(OBJ) $(MYSQLLIBS) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class mysql$(EXE) mysqldatetodatetime$(EXE) bind$(EXE)
+	$(RM) *.lo *.o *.obj *.class mysql$(EXE) mysqldatetodatetime$(EXE) bind$(EXE) lob$(EXE)
 	$(RMTREE) .libs
