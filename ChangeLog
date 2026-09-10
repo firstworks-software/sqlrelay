@@ -2457,6 +2457,12 @@
 		3, so an insert, update, delete or pl/sql block all came back
 		in the client's cda.ft as OTYSEL.  the statement is classified
 		now (#10030)
+	fixed the db2 connection module corrupting multibyte clob data on a
+		multi-segment fetch.  getLobFieldSegment mistook the caller's
+		byte offset for db2's character-based read position, which
+		drifts apart for multibyte data; it now tracks its own
+		character-position cursor for a sequential read, falling back
+		to the old byte-as-position behavior otherwise (#10040)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

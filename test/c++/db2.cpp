@@ -58,6 +58,9 @@ int main(int argc, char **argv) {
 	#define	LARGE_BUFFER_LENGTH	(20*1024)
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
+	#define	MULTIBYTE_BUFFER_LENGTH	20000
+	char		multibytebuffer[MULTIBYTE_BUFFER_LENGTH+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9008,"/tmp/db2.socket",
@@ -1331,6 +1334,39 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getFieldLength(0,"TESTBLOB"),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,"TESTBLOB"),largebuffer,
 						LARGE_BUFFER_LENGTH);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	assertTrue(con->commit());
+	stdoutput.printf("\n");
+
+
+	// multibyte lobs (#10040)
+	stdoutput.printf("MULTIBYTE LOBS: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob clob(100k))"));
+	assertTrue(con->commit());
+	cur->prepareQuery("insert into testtable values (?)");
+	// this connection's app codepage (lang=c) can't represent every
+	// unicode character losslessly, so cycle through only the single
+	// bytes (0xa1-0xff) that round-trip through it cleanly; db2 still
+	// stores them as two-byte utf-8, spanning several of
+	// getLobFieldSegment's 8192-character fetch chunks
+	for (int i=0; i<MULTIBYTE_BUFFER_LENGTH; i++) {
+		multibytebuffer[i]=(char)(0xa1+(i%95));
+	}
+	multibytebuffer[MULTIBYTE_BUFFER_LENGTH]='\0';
+	cur->inputBindClob("1",multibytebuffer,MULTIBYTE_BUFFER_LENGTH);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable"));
+	// the reported length (in db2's internal utf-8 octets) and the
+	// fetched content (transcoded back to this connection's single-byte
+	// app codepage) are in different units here - a known, separate
+	// issue with how db2 reports lob length, not a bug in this test
+	assertEquals(cur->getFieldLength(0,"TESTCLOB"),
+					MULTIBYTE_BUFFER_LENGTH*2);
+	assertEquals(cur->getField(0,"TESTCLOB"),multibytebuffer,
+					MULTIBYTE_BUFFER_LENGTH);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	assertTrue(con->commit());
 	stdoutput.printf("\n");

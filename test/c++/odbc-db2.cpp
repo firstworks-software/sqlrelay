@@ -21,6 +21,13 @@ int main(int argc, char **argv) {
 	#define	LARGE_BUFFER_LENGTH	(20*1024)
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
+	// character count; the utf-8 encoded bind buffer is twice this
+	// many bytes.  db2's long varchar type tops out at 32700 bytes, so
+	// this has to stay under half that, while still spanning multiple
+	// of getLobFieldSegment's 8192-character fetch chunks
+	#define	MULTIBYTE_BUFFER_LENGTH	16000
+	char		multibytebuffer[MULTIBYTE_BUFFER_LENGTH*2+1];
+
 
 	// instantiation
 	con=new sqlrconnection("sqlrelay",9013,"/tmp/odbc-db2.socket",
@@ -101,6 +108,39 @@ int main(int argc, char **argv) {
 	assertEquals(cur->getField(0,(uint32_t)0),largebuffer);
 	assertEquals(cur->getFieldLength(0,1),LARGE_BUFFER_LENGTH);
 	assertEquals(cur->getField(0,1),largebuffer,LARGE_BUFFER_LENGTH);
+	assertTrue(cur->sendQuery("drop table testtable"));
+	stdoutput.printf("\n");
+
+
+	// multibyte lobs (#10040) - long varchar, not clob, for the same
+	// reason as LONG LOBS above.  odbc.cpp's getLobFieldSegment only
+	// uses offset for bounds checking, not as a position argument to a
+	// db2 api call the way db2.cpp's does, so this isn't proving that
+	// fix itself - it gives the odbc connection module the same
+	// multi-chunk utf-8 coverage #10038 already gave it for
+	// single-byte data
+	stdoutput.printf("MULTIBYTE LOBS: \n");
+	cur->sendQuery("drop table testtable");
+	assertTrue(cur->sendQuery(
+		"create table testtable ("
+		"	testclob long varchar)"));
+	cur->prepareQuery("insert into testtable values (?)");
+	// cycle through 95 distinct two-byte utf-8 characters
+	// (u+00a1-u+00ff), byte-position-dependent so an overlapping or
+	// duplicated segment read would also mismatch
+	for (int i=0; i<MULTIBYTE_BUFFER_LENGTH; i++) {
+		uint16_t	codepoint=0xa1+(i%95);
+		multibytebuffer[i*2]=(char)(0xc0|(codepoint>>6));
+		multibytebuffer[i*2+1]=(char)(0x80|(codepoint&0x3f));
+	}
+	multibytebuffer[MULTIBYTE_BUFFER_LENGTH*2]='\0';
+	cur->inputBindClob("1",multibytebuffer,MULTIBYTE_BUFFER_LENGTH*2);
+	assertTrue(cur->executeQuery());
+	assertTrue(cur->sendQuery("select * from testtable"));
+	assertEquals(cur->getFieldLength(0,(uint32_t)0),
+					MULTIBYTE_BUFFER_LENGTH*2);
+	assertEquals(cur->getField(0,(uint32_t)0),multibytebuffer,
+					MULTIBYTE_BUFFER_LENGTH*2);
 	assertTrue(cur->sendQuery("drop table testtable"));
 	stdoutput.printf("\n");
 

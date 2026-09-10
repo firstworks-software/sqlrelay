@@ -229,6 +229,8 @@ class SQLRSERVER_DLLSPEC db2cursor : public sqlrservercursor {
 		char		**field;
 		SQLINTEGER	**loblocator;
 		SQLINTEGER	**loblength;
+		uint64_t	**lobcharposition;
+		uint64_t	**lobnextoffset;
 		SQLINTEGER	**indicator;
 		#if (DB2VERSION>7)
 		SQLUSMALLINT	*rowstat;
@@ -2466,6 +2468,8 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 		field=NULL;
 		loblocator=NULL;
 		loblength=NULL;
+		lobcharposition=NULL;
+		lobnextoffset=NULL;
 		indicator=NULL;
 		#if (DB2VERSION>7)
 		rowstat=NULL;
@@ -2476,6 +2480,8 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 		field=new char *[columncount];
 		loblocator=new SQLINTEGER *[columncount];
 		loblength=new SQLINTEGER *[columncount];
+		lobcharposition=new uint64_t *[columncount];
+		lobnextoffset=new uint64_t *[columncount];
 		indicator=new SQLINTEGER *[columncount];
 		uint32_t	fetchatonce=getFetchAtOnce();
 		uint32_t	maxfieldsize=conn->cont->getMaxFieldSize();
@@ -2488,6 +2494,12 @@ void db2cursor::allocateResultSetBuffers(int32_t columncount) {
 			field[i]=new char[fetchatonce*maxfieldsize];
 			loblocator[i]=new SQLINTEGER[fetchatonce];
 			loblength[i]=new SQLINTEGER[fetchatonce];
+			lobcharposition[i]=new uint64_t[fetchatonce];
+			lobnextoffset[i]=new uint64_t[fetchatonce];
+			for (uint32_t j=0; j<fetchatonce; j++) {
+				lobcharposition[i][j]=0;
+				lobnextoffset[i][j]=0;
+			}
 			indicator[i]=new SQLINTEGER[fetchatonce];
 		}
 	}
@@ -2500,12 +2512,16 @@ void db2cursor::deallocateResultSetBuffers() {
 			delete[] field[i];
 			delete[] loblocator[i];
 			delete[] loblength[i];
+			delete[] lobcharposition[i];
+			delete[] lobnextoffset[i];
 			delete[] indicator[i];
 		}
 		delete[] column;
 		delete[] field;
 		delete[] loblocator;
 		delete[] loblength;
+		delete[] lobcharposition;
+		delete[] lobnextoffset;
 		delete[] indicator;
 		#if (DB2VERSION>7)
 		delete[] rowstat;
@@ -3674,15 +3690,32 @@ bool db2cursor::getLobFieldSegment(uint32_t col,
 	// doesn't indicate that anything odd has happened.  So we have to
 	// detect attempts to read past the end ourselves.
 
+	// SQLGetSubString's position parameter is a DB2 character position,
+	// but the caller tracks "offset" as a running count of bytes already
+	// placed in its own output buffer, which isn't the same number as a
+	// character position for multibyte (eg. UTF-8) CLOB data.  As long as
+	// each call continues exactly where the previous one left off, we can
+	// track our own character-position cursor instead and stay aligned.
+	// But not every caller is guaranteed to continue sequentially - eg.
+	// the oracle protocol takes its lob read offset from the client, so
+	// it may jump to an offset our cursor didn't produce.  Only trust the
+	// cursor when "offset" matches what a continuing call would pass;
+	// otherwise fall back to using it directly as a character position,
+	// same as before this method tracked anything.
+	if (offset!=lobnextoffset[col][rowgroupindex]) {
+		lobcharposition[col][rowgroupindex]=offset;
+	}
+	uint64_t	charposition=lobcharposition[col][rowgroupindex];
+
 	// bail if we're attempting to start reading past the end
-	if (offset>(uint64_t)loblength[col][rowgroupindex]) {
+	if (charposition>(uint64_t)loblength[col][rowgroupindex]) {
 		return false;
 	}
 
 	// prevent attempts to read past the end
-	if (offset+charstoread>(uint64_t)loblength[col][rowgroupindex]) {
+	if (charposition+charstoread>(uint64_t)loblength[col][rowgroupindex]) {
 		charstoread=charstoread-
-			((offset+charstoread)-loblength[col][rowgroupindex]);
+			((charposition+charstoread)-loblength[col][rowgroupindex]);
 	}
 
 	// read a lob segment, at most MAX_LOB_CHUNK_SIZE bytes at a time
@@ -3711,7 +3744,7 @@ bool db2cursor::getLobFieldSegment(uint32_t col,
 							SQL_C_BINARY;
 		erg=SQLGetSubString(lobstmt,locatortype,
 					loblocator[col][rowgroupindex],
-					offset+1,bytestoread,
+					charposition+1,bytestoread,
 					targettype,buffer+totalbytesread,
 					buffersize-totalbytesread,
 					&bytesread,&ind);
@@ -3729,7 +3762,16 @@ bool db2cursor::getLobFieldSegment(uint32_t col,
 		}
 	}
 
-	// return number of bytes/chars read
+	// SQLGetSubString's position/length parameters are DB2 character
+	// positions, so - independent of how many bytes actually landed in
+	// the caller's buffer - the read above consumed "charstoread"
+	// character positions.  Advance our own cursor by that amount, and
+	// note the byte offset a continuing call would pass next, so the
+	// next call can tell whether it's really continuing this sequence.
+	lobcharposition[col][rowgroupindex]=charposition+charstoread;
+	lobnextoffset[col][rowgroupindex]=offset+totalbytesread;
+
+	// return number of bytes read
 	*charsread=totalbytesread;
 
 	return true;
