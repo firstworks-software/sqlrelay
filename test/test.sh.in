@@ -1080,7 +1080,17 @@ run_protocol_test() {
 	# the fresh, unrelated ref cursor that gets the same cursor id doesn't
 	# inherit the define list and lose a column from its rows.  it reads
 	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
-	# neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
+	# neither $server nor TNS_ADMIN.  then oraclesplitrequest, a seventh
+	# raw-socket test, for #10004 - it negotiates the 512 byte tns
+	# minimum sdu and sends a TTI_QUERY2 whose two chunked long-form bind
+	# values put the request past that sdu twice, so it goes out as three
+	# packets and both packet boundaries land in the middle of a bind
+	# value.  recvPacket() used to read one packet and stop there, so the
+	# parse ran out mid-value and the call failed; it now pulls the rest
+	# of the request in on demand.  no real client reaches this either -
+	# every client here negotiates an sdu its own requests fit under.  it
+	# reads ORACLEPROTOCOLPORT1 straight from the environment, so it
+	# needs neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
@@ -1097,7 +1107,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all sixteen runs have to succeed for the instance to pass
+	# all seventeen runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1130,6 +1140,8 @@ run_protocol_test() {
 		resultbigchunkclroff="$?"
 		./oraclerefcursorreuse
 		resultrefcursorreuse="$?"
+		./oraclesplitrequest
+		resultsplitrequest="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1138,7 +1150,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1203,6 +1215,10 @@ run_protocol_test() {
 		if ( test "$resultrefcursorreuse" != "0" )
 		then
 			printf "    % 8s: failed (ref cursor reuse)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultsplitrequest" != "0" )
+		then
+			printf "    % 8s: failed (split request)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then

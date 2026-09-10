@@ -78,6 +78,7 @@ static const unsigned char	ORA_TTI_VERSION_6=6;
 
 // query3 options - the OPTION_* defines in src/protocols/oracle.cpp
 static const uint32_t	ORA_OPTION_PARSE=(1<<0);
+static const uint32_t	ORA_OPTION_BIND=(1<<3);
 static const uint32_t	ORA_OPTION_DEFINE=(1<<4);
 static const uint32_t	ORA_OPTION_EXECUTE=(1<<5);
 static const uint32_t	ORA_OPTION_FETCH=(1<<6);
@@ -185,9 +186,32 @@ static const size_t	ORA_COMBO_KEY_SIZE_11G=24;
 // hanging it
 static const int32_t	ORA_RESPONSE_TIMEOUT_SEC=30;
 
-// no packet this client sends or receives comes anywhere near this - the
-// listener caps its own at the negotiated sdu, 8192
+// how long recvPacket() waits for the fragment that may follow a data packet
+// that filled the sdu.  nothing on the wire says whether one is coming, so the
+// read is speculative and a timeout means the message was simply that long -
+// which is why this is short rather than ORA_RESPONSE_TIMEOUT_SEC
+static const int32_t	ORA_CONTINUATION_TIMEOUT_SEC=2;
+
+// what a connect packet asks for unless setSdu() says otherwise, and the
+// window recvConnectRequest() in src/protocols/oracle.cpp negotiates it into -
+// the smaller of the request and the module's own 4086, floored at the
+// documented tns minimum of 512.  so 8192 always lands on 4086
+static const uint16_t	ORA_DEFAULT_SDU=8192;
+static const uint16_t	ORA_MIN_SDU=512;
+static const uint16_t	ORA_MAX_SDU=4086;
+
+// how big a message this client will reassemble out of packets.  a single
+// packet can't exceed the negotiated sdu, but a message split across packets
+// can be far longer, and this is what bounds it
 static const size_t	ORA_MAX_PACKET_SIZE=65536;
+
+// the two data flag bytes every data packet's body starts with, repeated on
+// every fragment of a message split across packets
+static const size_t	ORA_DATA_FLAGS_SIZE=2;
+
+// the 8 byte header plus those data flags - what rides on every fragment and
+// so what a fragment's own body has to fit under the sdu alongside
+static const size_t	ORA_FRAGMENT_OVERHEAD=8+ORA_DATA_FLAGS_SIZE;
 
 // how big either capability array in a tti response can be.  each is
 // introduced by a single length byte - see putTtiResponse() in
@@ -299,6 +323,22 @@ class oracleprotocolclient {
 		// phase one and both ends decide there and then
 		void	setNativeEncoding(bool nativeencoding);
 		bool	getNativeEncoding();
+
+		// what this client's connect packet asks the session's
+		// packets to be bounded by.  8192 by default, which
+		// recvConnectRequest() in src/protocols/oracle.cpp negotiates
+		// down to the 4086 the module offers; asking for less lands
+		// on that instead, floored at the tns minimum of 512.  it has
+		// to be set before connect() - the sdu goes out in the connect
+		// packet and comes back settled in the accept.
+		//
+		// a session on a small sdu is how a request too big for one
+		// packet is reached without a megabyte of bind values - see
+		// sendSplitPacket() below
+		void		setSdu(uint16_t sdu);
+
+		// what both ends settled on, read off the accept packet
+		uint16_t	getSdu();
 
 		// the whole handshake through the accept: the connect
 		// packet (twice - the listener asks for a resend, the way a
@@ -454,6 +494,26 @@ class oracleprotocolclient {
 					uint32_t bindcount,
 					uint32_t blockcount);
 		bool	sendPacket();
+
+		// the same request, written out as several ordinary data
+		// packets none of which exceeds the negotiated sdu - the
+		// mirror of sqlrprotocol_oracle::sendSplitPacket() in
+		// src/protocols/oracle.cpp, in the other direction.  every
+		// fragment is a complete packet with the same type and flags
+		// and repeats the two data flag bytes; nothing marks one as a
+		// continuation and nothing marks the last, so a fragment may
+		// end at any byte offset.
+		//
+		// this is what a real client's tns layer does for a request
+		// its ttc layer built too big for one packet, and a test that
+		// needs the listener to reassemble one calls it in place of
+		// sendPacket()
+		bool	sendSplitPacket();
+
+		// how big the request built so far is, header and data flags
+		// included - what sendSplitPacket() is about to divide up
+		size_t	getRequestSize();
+
 		bool	recvPacket();
 		unsigned char	getPacketType();
 
@@ -474,6 +534,17 @@ class oracleprotocolclient {
 
 		bool	bigChunkClrFraming();
 
+		// reads one packet and appends its body to the response.
+		// "continuation" says the packet carries the rest of a message
+		// already partly read, so the data flags it repeats are read
+		// off and dropped rather than kept, and a header that never
+		// arrives means the message ended rather than that the read
+		// failed - "gotone" is how that comes back.  "packetsize" is
+		// the whole packet's declared size, which is what recvPacket()
+		// reads the "another fragment may follow" signal off
+		bool	recvFragment(bool continuation, int32_t timeoutsec,
+					bool *gotone, size_t *packetsize);
+
 		bool	sendConnect(const char *sid);
 		bool	sendProtocolNegotiation();
 		bool	parseTtiResponse();
@@ -492,6 +563,11 @@ class oracleprotocolclient {
 		bool			largeheader;
 		bool			bigchunkclr;
 		bool			nativeencoding;
+
+		// what the connect packet asks for, and what the accept
+		// answered with
+		uint16_t		offeredsdu;
+		uint16_t		negotiatedsdu;
 
 		// setBigChunkClrFraming()'s answer, and whether it was ever
 		// given.  two members rather than one tri-state so the
@@ -571,6 +647,8 @@ oracleprotocolclient::oracleprotocolclient() {
 	nativeencoding=false;
 	bigchunkclrframingset=false;
 	bigchunkclrframing=false;
+	offeredsdu=ORA_DEFAULT_SDU;
+	negotiatedsdu=0;
 	ttiversion=ORA_TTI_VERSION_6;
 	bytestring::zero(servercompilecaps,sizeof(servercompilecaps));
 	servercompilecapssize=0;
@@ -623,6 +701,14 @@ void oracleprotocolclient::setNativeEncoding(bool nativeencoding) {
 
 bool oracleprotocolclient::getNativeEncoding() {
 	return nativeencoding;
+}
+
+void oracleprotocolclient::setSdu(uint16_t sdu) {
+	offeredsdu=sdu;
+}
+
+uint16_t oracleprotocolclient::getSdu() {
+	return negotiatedsdu;
 }
 
 // which framing this client has to read and write - which is not the same
@@ -890,36 +976,167 @@ bool oracleprotocolclient::sendPacket() {
 	return true;
 }
 
-bool oracleprotocolclient::recvPacket() {
+size_t oracleprotocolclient::getRequestSize() {
+	return reqpacket.getSize();
+}
+
+// the mirror of sqlrprotocol_oracle::sendSplitPacket() - see the declaration
+// above.  the header and the data flags are written from locals rather than
+// from the request buffer, so the buffer itself is left alone and the caller
+// can still read the bytes it built
+bool oracleprotocolclient::sendSplitPacket() {
+
+	size_t	maxpacketsize=(negotiatedsdu)?
+				(size_t)negotiatedsdu:(size_t)ORA_MAX_SDU;
+
+	if (reqpacket.getSize()<=ORA_FRAGMENT_OVERHEAD ||
+				maxpacketsize<=ORA_FRAGMENT_OVERHEAD) {
+		setError("nothing to split");
+		return false;
+	}
+
+	unsigned char	*buffer=(unsigned char *)reqpacket.getBuffer();
+	unsigned char	*dataflags=buffer+8;
+	unsigned char	*body=buffer+ORA_FRAGMENT_OVERHEAD;
+	size_t		remaining=reqpacket.getSize()-ORA_FRAGMENT_OVERHEAD;
+	size_t		maxbodysize=maxpacketsize-ORA_FRAGMENT_OVERHEAD;
+
+	do {
+
+		size_t	bodysize=(remaining>maxbodysize)?maxbodysize:remaining;
+		remaining=remaining-bodysize;
+
+		size_t		packetsize=bodysize+ORA_FRAGMENT_OVERHEAD;
+		unsigned char	header[8];
+		if (largeheader) {
+			header[0]=(unsigned char)((packetsize>>24)&0xff);
+			header[1]=(unsigned char)((packetsize>>16)&0xff);
+			header[2]=(unsigned char)((packetsize>>8)&0xff);
+			header[3]=(unsigned char)(packetsize&0xff);
+		} else {
+			header[0]=(unsigned char)((packetsize>>8)&0xff);
+			header[1]=(unsigned char)(packetsize&0xff);
+			header[2]=0;		// packet checksum
+			header[3]=0;
+		}
+		header[4]=reqpackettype;
+		header[5]=0;			// packet flags
+		header[6]=0;			// header checksum
+		header[7]=0;
+
+		if (sock.write(header,sizeof(header))!=
+					(ssize_t)sizeof(header) ||
+			sock.write(dataflags,ORA_DATA_FLAGS_SIZE)!=
+					(ssize_t)ORA_DATA_FLAGS_SIZE ||
+			sock.write(body,bodysize)!=(ssize_t)bodysize) {
+			setError("failed to write packet fragment");
+			return false;
+		}
+		body+=bodysize;
+
+	} while (remaining);
+
+	sock.flushWriteBuffer(-1,-1);
+	return true;
+}
+
+bool oracleprotocolclient::recvFragment(bool continuation,
+					int32_t timeoutsec,
+					bool *gotone,
+					size_t *packetsize) {
+
+	*gotone=false;
+	*packetsize=0;
 
 	unsigned char	header[8];
 	if (sock.read(header,sizeof(header),
-			ORA_RESPONSE_TIMEOUT_SEC,0)!=(ssize_t)sizeof(header)) {
+			timeoutsec,0)!=(ssize_t)sizeof(header)) {
+		if (continuation) {
+			return true;
+		}
 		setError("failed to read packet header");
 		return false;
 	}
 
-	size_t	packetsize=0;
+	size_t	size=0;
 	if (largeheader) {
-		packetsize=((size_t)header[0]<<24)|((size_t)header[1]<<16)|
+		size=((size_t)header[0]<<24)|((size_t)header[1]<<16)|
 				((size_t)header[2]<<8)|(size_t)header[3];
 	} else {
-		packetsize=((size_t)header[0]<<8)|(size_t)header[1];
+		size=((size_t)header[0]<<8)|(size_t)header[1];
+	}
+
+	// a fragment carries the same type as the packet it continues, and
+	// nothing else can turn up mid-message
+	if (continuation && header[4]!=resppackettype) {
+		setError("bad continuation packet type");
+		return false;
 	}
 	resppackettype=header[4];
 
-	if (packetsize<sizeof(header) || packetsize>ORA_MAX_PACKET_SIZE) {
+	size_t	overhead=(continuation)?ORA_FRAGMENT_OVERHEAD:sizeof(header);
+	if (size<overhead || size>ORA_MAX_PACKET_SIZE) {
 		setError("bad packet size");
 		return false;
 	}
 
-	respsize=packetsize-sizeof(header);
-	respposition=0;
-	if (respsize && sock.read(resppacket,respsize,
-			ORA_RESPONSE_TIMEOUT_SEC,0)!=(ssize_t)respsize) {
+	// every fragment repeats the data flags, which describe the packet
+	// rather than the message being reassembled, so they are read off and
+	// dropped here rather than kept as message bytes
+	if (continuation) {
+		unsigned char	dataflags[ORA_DATA_FLAGS_SIZE];
+		if (sock.read(dataflags,sizeof(dataflags),
+				timeoutsec,0)!=(ssize_t)sizeof(dataflags)) {
+			setError("failed to read continuation data flags");
+			return false;
+		}
+	}
+
+	size_t	bodysize=size-overhead;
+	if (respsize+bodysize>ORA_MAX_PACKET_SIZE) {
+		setError("response too large to reassemble");
+		return false;
+	}
+
+	if (bodysize && sock.read(resppacket+respsize,bodysize,
+				timeoutsec,0)!=(ssize_t)bodysize) {
 		setError("failed to read packet body");
 		return false;
 	}
+	respsize+=bodysize;
+
+	*gotone=true;
+	*packetsize=size;
+
+	return true;
+}
+
+// one whole message, however many packets it arrived in.  nothing on the wire
+// marks a fragment as one - there is no continuation bit, no total length and
+// no end marker, and a fragment is byte for byte an ordinary packet - so the
+// only sign another may follow is a data packet that filled the sdu.  one is
+// read for speculatively on that sign, and a read that finds nothing means the
+// message was simply that long
+bool oracleprotocolclient::recvPacket() {
+
+	respsize=0;
+	respposition=0;
+
+	bool	gotone=false;
+	size_t	packetsize=0;
+	if (!recvFragment(false,ORA_RESPONSE_TIMEOUT_SEC,
+						&gotone,&packetsize)) {
+		return false;
+	}
+
+	while (gotone && resppackettype==ORA_PACKET_DATA &&
+			negotiatedsdu && packetsize==(size_t)negotiatedsdu) {
+		if (!recvFragment(true,ORA_CONTINUATION_TIMEOUT_SEC,
+						&gotone,&packetsize)) {
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -1070,7 +1287,7 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	appendBE16(ORA_PROTOCOL_VERSION_12+5);	// version offered
 	appendBE16(0x012c);			// lowest version supported
 	appendBE16(0x0c41);			// global service options
-	appendBE16(8192);			// sdu
+	appendBE16(offeredsdu);			// sdu
 	appendBE16(0xffff);			// tdu
 	appendBE16(0x7f08);			// protocol characteristics
 	appendBE16(0);				// max packets before ack
@@ -1090,7 +1307,7 @@ bool oracleprotocolclient::sendConnect(const char *sid) {
 	appendBE32(0);
 	appendBE32(0);				// trace unique connection id 2
 	appendBE32(0);
-	appendBE32(8192);			// sdu, 32 bit
+	appendBE32(offeredsdu);			// sdu, 32 bit
 	appendBE32(2097152);			// tdu, 32 bit
 	unsigned char	filler[8]={0,0,0,0,0,0,0,1};
 	appendBytes(filler,sizeof(filler));
@@ -1330,7 +1547,7 @@ bool oracleprotocolclient::connect(const char *host, uint16_t port,
 		setError("the listener refused the connection");
 		return false;
 	}
-	if (resppackettype!=ORA_PACKET_ACCEPT || respsize<2) {
+	if (resppackettype!=ORA_PACKET_ACCEPT || respsize<6) {
 		setError("expected an accept packet");
 		return false;
 	}
@@ -1341,6 +1558,13 @@ bool oracleprotocolclient::connect(const char *host, uint16_t port,
 	uint16_t	acceptversion=
 			(uint16_t)(((uint16_t)resppacket[0]<<8)|resppacket[1]);
 	largeheader=(acceptversion>=ORA_PROTOCOL_VERSION_12);
+
+	// and the sdu both ends settled on, behind the version and the global
+	// service options.  sendAccept() repeats it as a 32-bit field behind
+	// the padding for a large-header client, but it never exceeds 4086, so
+	// the 16-bit one carries it exactly either way.  every packet from
+	// here on is bounded by it, in both directions
+	negotiatedsdu=(uint16_t)(((uint16_t)resppacket[4]<<8)|resppacket[5]);
 
 	if (!sendProtocolNegotiation() || !recvPacket()) {
 		return false;

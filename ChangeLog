@@ -2382,6 +2382,21 @@
 		which is what an oci7 client binding a name the statement never
 		declared looks like on the wire; other bad reads of the value
 		block still get ORA-01007 (#10026)
+	fixed the oracle protocol module's recvPacket() never reassembling an
+		inbound request that spans more than one tns packet, the
+		inbound mirror of #9989's outbound fix; a query or bind
+		request too large for the negotiated sdu (eg. a chunked long
+		form bind value) now has its packets reassembled on demand, at
+		the point a parse actually runs out of bytes, since tns has no
+		continuation marker to reassemble on otherwise.  scoped to the
+		query/bind request path; query3's own request parse isn't
+		covered and is tracked separately (#10036).  a few narrow
+		points inside the covered path deliberately don't refill - a
+		bind value boundary, a row data block boundary, and a
+		descriptor header with no descriptor block behind it - since
+		running out of bytes there is ordinary client behavior rather
+		than truncation, and waiting for a packet the client already
+		finished sending would hang the session (#10004)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

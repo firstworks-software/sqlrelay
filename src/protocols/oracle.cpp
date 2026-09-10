@@ -57,6 +57,20 @@
 #define	PACKET_CONTROL_INFO	14
 #define	PACKET_DATA_DESCRIPTOR	15
 
+// the bounds on a request reassembled out of more than one packet, and so on
+// the buffer one is reassembled into.  a single packet is bounded by the
+// negotiated sdu; a request that spans packets carries a statement and its
+// bind values, so the floor has to clear both, and the ceiling is what keeps
+// a client from naming an arbitrary buffer size through maxquerysize
+#define	MIN_MAX_REQUEST_SIZE	(64*1024)
+#define	MAX_MAX_REQUEST_SIZE	(16*1024*1024)
+
+// how long to wait for the rest of a request that arrived in more than one
+// packet, where idleclienttimeout doesn't say.  a client that has begun
+// sending a request isn't idle, so this wait has to be bounded even where an
+// idle one is left alone forever
+#define	DEFAULT_CONTINUATION_TIMEOUT	30
+
 // marker types - a marker packet's 3-byte body is always
 // { 1, 0, marker type }; see python-oracledb's
 // src/oracledb/impl/thin/protocol.pyx BaseProtocol._send_marker() and
@@ -1308,6 +1322,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendPacket(bool flush);
 		bool	sendSplitPacket(bool flush);
 		bool	recvPacket();
+		bool	refillPacket();
+		bool	have(const byte_t *rp,
+					size_t bytes,
+					const byte_t **end);
+		bool	getLenPreInt(const byte_t *rp,
+					const byte_t **end,
+					uint32_t *value,
+					const byte_t **rpout);
 		void	readHost(const byte_t *rp,
 					uint16_t *value,
 					const byte_t **rpout);
@@ -1490,6 +1512,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						const byte_t **bytes,
 						uint32_t *size,
 						bool *isnull,
+						const byte_t **rpout);
+		bool	getLongFormBytes(const byte_t *rp,
+						const byte_t *end,
+						const byte_t **bytes,
+						uint32_t *size,
+						const byte_t **rpout);
+		bool	readLongFormChunks(const byte_t *rp,
+						const byte_t *end,
+						byte_t *value,
+						uint32_t valueavail,
+						uint32_t *size,
 						const byte_t **rpout);
 		void	putDalc(const char *bytes, uint32_t size);
 		bool	getOracleDate(const char *field,
@@ -2037,6 +2070,31 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint32_t	resppacketsize;
 		byte_t		resppackettype;
 
+		// the buffer a request is read into.  it is allocated once,
+		// at its full size, and never moved or grown: a parse hands
+		// out pointers into it - a query's text, a bind's value, the
+		// connect data - that have to stay good while the rest of the
+		// same request is appended behind them.  see refillPacket()
+		byte_t		*resppacketbuffer;
+		uint32_t	maxrequestsize;
+
+		// the room left in the request buffer for the values a parse
+		// has to reassemble out of it.  every one of them is copied
+		// out of that one buffer, and no two of them share a byte of
+		// it, so what one value can take is what the values already
+		// reassembled out of this request left behind.  reset whenever
+		// the pool they are reassembled into is cleared
+		uint32_t	requestvalueavail;
+
+		// how long refillPacket() waits for the packet behind the one
+		// it is continuing
+		int32_t		continuationtimeout;
+
+		// whether the request being parsed is one that may arrive in
+		// more than one packet, which is what lets a truncation check
+		// pull another packet in instead of failing.  see have()
+		bool		reassemble;
+
 		prng	r;
 		//uint32_t	seed;
 
@@ -2414,6 +2472,29 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	maxstringbindvaluesize=
 			cont->getConfig()->getMaxStringBindValueSize();
 
+	// a request carries more than its query text - descriptors, bind
+	// values, locators - so maxquerysize alone doesn't bound one
+	uint64_t	mrs=(uint64_t)maxquerysize*16;
+	if (mrs<MIN_MAX_REQUEST_SIZE) {
+		mrs=MIN_MAX_REQUEST_SIZE;
+	}
+	if (mrs>MAX_MAX_REQUEST_SIZE) {
+		mrs=MAX_MAX_REQUEST_SIZE;
+	}
+	maxrequestsize=(uint32_t)mrs;
+	requestvalueavail=maxrequestsize;
+	resppacketbuffer=NULL;
+
+	// The wait for the rest of a request that arrived in more than one
+	// packet.  A client that has begun sending a request isn't idle, so
+	// idleclienttimeout is only borrowed here when it is set to a real
+	// wait; where it says to leave an idle client alone forever, a
+	// half-sent request still has to fail rather than hang the session.
+	continuationtimeout=cont->getConfig()->getIdleClientTimeout();
+	if (continuationtimeout<=0) {
+		continuationtimeout=DEFAULT_CONTINUATION_TIMEOUT;
+	}
+
 	query2bindcount=0;
 	query2plsqlbindcount=0;
 	query2unbound=false;
@@ -2528,6 +2609,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] query3bindvalues;
 
 	delete resppacketpool;
+	delete[] resppacketbuffer;
 }
 
 void sqlrprotocol_oracle::init() {
@@ -2586,6 +2668,8 @@ void sqlrprotocol_oracle::init() {
 
 	resppacket=NULL;
 	resppacketsize=0;
+	requestvalueavail=maxrequestsize;
+	reassemble=false;
 	username=NULL;
 	response=NULL;
 
@@ -2820,6 +2904,13 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					break;
 			}
 
+			// the calls that may take a request spanning more
+			// than one packet turn this on for themselves - see
+			// have() - and it goes off again here, so that the
+			// next call reads a truncated request as truncated
+			// rather than waiting for a packet behind it
+			reassemble=false;
+
 			// release the cursor
 			// FIXME: kludgy
 			//cont->release(cursor);
@@ -3039,7 +3130,8 @@ bool sqlrprotocol_oracle::recvPacket() {
 	}
 
 	// sanity check
-	if (resppacketsize<8 || resppacketsize>sdu) {
+	if (resppacketsize<8 || resppacketsize>sdu ||
+				resppacketsize>maxrequestsize) {
 		debugWrite("invalid packet size: %d",resppacketsize);
 		debugSystemError();
 		return false;
@@ -3075,9 +3167,18 @@ bool sqlrprotocol_oracle::recvPacket() {
 	// we've already received 8 bytes...
 	resppacketsize-=8;
 
-	// reallocate recv buffer
+	// the request buffer, allocated once and reused for the life of the
+	// session.  a request that spans packets is appended into it in place,
+	// so it can't be sized to the packet at hand - see refillPacket()
+	if (!resppacketbuffer) {
+		resppacketbuffer=new byte_t[maxrequestsize];
+	}
+	resppacket=resppacketbuffer;
+
+	// drop whatever the previous request's parse reassembled into the pool,
+	// which hands this request the whole buffer to reassemble out of again
 	resppacketpool->clear();
-	resppacket=resppacketpool->allocate(resppacketsize);
+	requestvalueavail=maxrequestsize;
 
 	// packet
 	if (clientsock->read(resppacket,resppacketsize)!=
@@ -3103,6 +3204,221 @@ bool sqlrprotocol_oracle::recvPacket() {
 	}
 
 	return true;
+}
+
+// pulls in the next packet of a request that arrived in more than one, and
+// appends its body to the request buffer in place - same address, more valid
+// bytes behind it - so that pointers a parse already handed out stay good.
+//
+// nothing on the wire says a packet continues the one before it: there is no
+// continuation bit, no total length and no end marker, and a fragment is
+// byte for byte an ordinary packet.  so this is only ever called from have(),
+// at the point a parse discovers it needs a byte the request buffer doesn't
+// have yet - reading one on any other cue would block on a packet the client
+// never sends.  see the "Splitting a Message Across Packets" section of the
+// Oracle Wire Protocol - Packet Structure wiki page.
+//
+// every read here is bounded, unlike the ones that start a request: a packet
+// that declares more data than the client goes on to send would otherwise
+// leave the session waiting on it for good
+bool sqlrprotocol_oracle::refillPacket() {
+
+	uint32_t	packetsize=0;
+	uint16_t	packetchecksum=0;
+
+	if (largeheader) {
+
+		// size
+		// 4 bytes (big endian)
+		if (clientsock->read(&packetsize,
+					continuationtimeout,0)!=sizeof(uint32_t)) {
+			debugWrite("read continuation packet size failed");
+			debugSystemError();
+			return false;
+		}
+		packetsize=beToHost(packetsize);
+
+	} else {
+
+		// size
+		// 2 bytes (big endian)
+		uint16_t	smallsize;
+		if (clientsock->read(&smallsize,
+					continuationtimeout,0)!=sizeof(uint16_t)) {
+			debugWrite("read continuation packet size failed");
+			debugSystemError();
+			return false;
+		}
+		packetsize=beToHost(smallsize);
+
+		// packet checksum
+		// 2 bytes (big endian) (always 0)
+		if (clientsock->read(&packetchecksum,
+					continuationtimeout,0)!=sizeof(uint16_t)) {
+			debugWrite("read continuation packet checksum failed");
+			debugSystemError();
+			return false;
+		}
+		packetchecksum=beToHost(packetchecksum);
+	}
+
+	// sanity check
+	if (packetsize<8 || packetsize>sdu) {
+		debugWrite("invalid continuation packet size: %d",packetsize);
+		debugSystemError();
+		return false;
+	}
+
+	// packet type
+	// 1 byte
+	byte_t	packettype;
+	if (clientsock->read(&packettype,continuationtimeout,0)!=sizeof(byte_t)) {
+		debugWrite("read continuation packet type failed");
+		debugSystemError();
+		return false;
+	}
+
+	// packet flags
+	// 1 byte
+	byte_t	packetflags;
+	if (clientsock->read(&packetflags,continuationtimeout,0)!=sizeof(byte_t)) {
+		debugWrite("read continuation packet flags failed");
+		debugSystemError();
+		return false;
+	}
+
+	// header checksum
+	// 2 bytes (big endian) (always 0)
+	uint16_t	headerchecksum;
+	if (clientsock->read(&headerchecksum,
+					continuationtimeout,0)!=sizeof(uint16_t)) {
+		debugWrite("read continuation header checksum failed");
+		debugSystemError();
+		return false;
+	}
+	headerchecksum=beToHost(headerchecksum);
+
+	// only a data packet carries the rest of a request.  a marker means the
+	// client abandoned the call rather than finished sending it, and
+	// answering one here would leave a half-parsed request behind
+	if (packettype!=PACKET_DATA) {
+		debugWrite("bad continuation packet type %d, expected %d",
+						packettype,PACKET_DATA);
+		debugSystemError();
+		return false;
+	}
+
+	// we've already received 8 bytes...
+	packetsize-=8;
+
+	// A fragment with nothing behind its data flags would leave the parse
+	// exactly where it was, so a client could spin this on empty packets.
+	if (packetsize<=sizeof(uint16_t)) {
+		debugWrite("empty continuation packet");
+		debugSystemError();
+		return false;
+	}
+
+	// every fragment repeats the data flags, which describe the packet
+	// rather than the request being reassembled, so they are read off and
+	// dropped here rather than appended as request bytes
+	uint16_t	dataflags;
+	if (clientsock->read(&dataflags,continuationtimeout,0)!=sizeof(uint16_t)) {
+		debugWrite("read continuation data flags failed");
+		debugSystemError();
+		return false;
+	}
+	dataflags=beToHost(dataflags);
+	packetsize-=sizeof(uint16_t);
+
+	// The request buffer is one fixed region, so this is what keeps a
+	// client from growing a request past it.  Nothing on the wire ends a
+	// request, so without this a client could keep sending fragments.
+	if ((uint64_t)resppacketsize+(uint64_t)packetsize>
+					(uint64_t)maxrequestsize) {
+		debugWrite("request too large: %lld",
+				(long long)((uint64_t)resppacketsize+
+							packetsize));
+		debugSystemError();
+		return false;
+	}
+
+	// append the body to what's already been read
+	byte_t	*body=resppacket+resppacketsize;
+	if (clientsock->read(body,packetsize,continuationtimeout,0)!=
+						(ssize_t)packetsize) {
+		debugWrite("read continuation packet failed");
+		debugSystemError();
+		return false;
+	}
+	resppacketsize+=packetsize;
+
+	if (getDebug()) {
+		debugStart("recv continuation");
+		debugWrite("large header: %s",largeheader?"yes":"no");
+		debugWrite("packet size: %d",packetsize+10);
+		if (!largeheader) {
+			debugWrite("packet checksum: %d",packetchecksum);
+		}
+		debugWrite("packet type: %d",packettype);
+		debugWrite("packet flags: %d",packetflags);
+		debugWrite("header checksum: %d",headerchecksum);
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugWrite("body size: %d",packetsize);
+		debugWrite("request size: %d",resppacketsize);
+		debugHexDump(body,packetsize);
+		debugEnd();
+	}
+
+	return true;
+}
+
+// makes sure a parse has the bytes it is about to read, and moves the
+// caller's end out to whatever the request now holds.  where the request may
+// span packets, running out of bytes mid-structure is the only signal tns
+// gives that the rest of it is still on the wire, so a shortfall pulls another
+// packet in and re-checks rather than failing.
+//
+// the end is refreshed even when nothing is short, since a refill further down
+// the parse leaves every caller's copy of it behind
+bool sqlrprotocol_oracle::have(const byte_t *rp,
+					size_t bytes,
+					const byte_t **end) {
+
+	if (*end<resppacket+resppacketsize) {
+		*end=resppacket+resppacketsize;
+	}
+
+	if (*end<rp) {
+		return false;
+	}
+
+	while ((size_t)(*end-rp)<bytes) {
+		if (!reassemble || !refillPacket()) {
+			return false;
+		}
+		*end=resppacket+resppacketsize;
+	}
+
+	return true;
+}
+
+// a count prefixed integer, out of a request that may span packets.  the base
+// class read is bounded by the end it's handed, so the bytes it needs have to
+// be in hand before it runs
+bool sqlrprotocol_oracle::getLenPreInt(const byte_t *rp,
+					const byte_t **end,
+					uint32_t *value,
+					const byte_t **rpout) {
+
+	// the count byte says how many bytes follow it, so it is what says how
+	// much to pull in.  a count too large to be one is left to the read
+	// below to reject rather than read packets for
+	if (have(rp,1,end) && *rp<=sizeof(uint32_t)) {
+		have(rp,(size_t)(*rp)+1,end);
+	}
+
+	return readLenPreInt(rp,*end,value,rpout);
 }
 
 void sqlrprotocol_oracle::readHost(const byte_t *rp,
@@ -6509,12 +6825,12 @@ bool sqlrprotocol_oracle::getAuthCount(const byte_t *rp,
 					const byte_t **rpout) {
 
 	if (!nativeencoding) {
-		return readLenPreInt(rp,end,value,rpout);
+		return getLenPreInt(rp,&end,value,rpout);
 	}
 
 	*value=0;
 
-	if ((size_t)(end-rp)<(size_t)nativesize) {
+	if (!have(rp,(size_t)nativesize,&end)) {
 		debugWrite("malformed count: truncated");
 		return false;
 	}
@@ -6640,7 +6956,7 @@ bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 
 	*value=0;
 
-	if ((size_t)(end-rp)<(size_t)pointersize) {
+	if (!have(rp,(size_t)pointersize,&end)) {
 		debugWrite("malformed pointer: truncated");
 		debugEnd();
 		return false;
@@ -6733,7 +7049,7 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 	*isnull=false;
 	*rpout=rp;
 
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("malformed clr: truncated length");
 		return false;
 	}
@@ -6749,7 +7065,7 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 		return true;
 	}
 	if (length==CLR_NULL_MARKER) {
-		if (end-rp<1) {
+		if (!have(rp,1,&end)) {
 			debugWrite("malformed clr: truncated null");
 			return false;
 		}
@@ -6762,7 +7078,7 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 
 	// the short form
 	if (length<=CLR_MAX_SHORT_LENGTH) {
-		if ((size_t)(end-rp)<(size_t)length) {
+		if (!have(rp,(size_t)length,&end)) {
 			debugWrite("malformed clr: truncated");
 			return false;
 		}
@@ -6777,30 +7093,85 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 		return false;
 	}
 
-	// the long form: a run of chunks, each a length and that many bytes,
-	// ended by a zero length.  a chunk's length is a raw byte, or, if the
-	// client negotiated CCAP_TTC3_BIG_CHUNK_CLR, a count prefixed ub4 -
-	// and since a ub4 zero is a lone zero byte, the closing chunk reads
-	// the same either way.  (end-rp) is a safe upper bound on the
-	// reassembled size, since every chunk's length costs at least a byte
-	// of its own
-	if (end-rp<1) {
-		debugWrite("malformed clr: truncated chunk");
+	// the long form
+	if (!getLongFormBytes(rp,end,bytes,size,rpout)) {
+		debugWrite("malformed clr: bad long form value");
 		return false;
 	}
-	byte_t		*value=(byte_t *)resppacketpool->allocate(
-							(size_t)(end-rp));
+
+	return true;
+}
+
+// reads the chunked long form of a value - a run of chunks, each a length and
+// that many bytes, ended by a zero length.  a chunk's length is a raw byte,
+// or, if the client negotiated CCAP_TTC3_BIG_CHUNK_CLR, a count prefixed ub4 -
+// and since a ub4 zero is a lone zero byte, the closing chunk reads the same
+// either way.  the chunks aren't contiguous, so the value is reassembled into
+// the response packet pool, which lives as long as the request the value came
+// out of
+// see "Oracle Wire Protocol - Data Types"
+bool sqlrprotocol_oracle::getLongFormBytes(const byte_t *rp,
+					const byte_t *end,
+					const byte_t **bytes,
+					uint32_t *size,
+					const byte_t **rpout) {
+
+	*bytes=NULL;
+	*size=0;
+	*rpout=rp;
+
+	// walk the chunks once for the size, then again to copy them in.  the
+	// pool releases nothing until the request ends, so every value a
+	// request reassembles stays resident for the whole request - sizing
+	// one against the room left in the request buffer, rather than against
+	// what it turns out to hold, would charge that whole room to each
+	// value in turn, and a value costs only its two marker bytes to
+	// declare
+	uint32_t	valuesize=0;
+	if (!readLongFormChunks(rp,end,NULL,0,&valuesize,rpout)) {
+		return false;
+	}
+
+	// a zero-length value still gets a byte, so that it has an address of
+	// its own like every other value
+	uint32_t	allocsize=valuesize+1;
+	if (allocsize>requestvalueavail) {
+		debugWrite("long form value past the request");
+		return false;
+	}
+	byte_t	*value=(byte_t *)resppacketpool->allocate((size_t)allocsize);
+
+	if (!readLongFormChunks(rp,end,value,valuesize,&valuesize,rpout)) {
+		return false;
+	}
+	requestvalueavail-=allocsize;
+
+	*bytes=value;
+	*size=valuesize;
+
+	return true;
+}
+
+// walks a long form value's chunks, copying them into value, or only sizing
+// them up if it is NULL, and leaves rp behind the zero-length chunk that ends
+// them
+bool sqlrprotocol_oracle::readLongFormChunks(const byte_t *rp,
+					const byte_t *end,
+					byte_t *value,
+					uint32_t valueavail,
+					uint32_t *size,
+					const byte_t **rpout) {
+
 	uint32_t	valuesize=0;
 	for (;;) {
-		if (rp>=end) {
-			debugWrite("malformed clr: truncated chunk");
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated long form value");
 			return false;
 		}
 		uint32_t	chunksize;
 		if (bigchunkclr) {
-			if (!readLenPreInt(rp,end,&chunksize,&rp)) {
-				debugWrite("malformed clr: "
-						"bad chunk length");
+			if (!getLenPreInt(rp,&end,&chunksize,&rp)) {
+				debugWrite("bad long form chunk length");
 				return false;
 			}
 		} else {
@@ -6811,16 +7182,24 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 		if (!chunksize) {
 			break;
 		}
-		if ((size_t)(end-rp)<(size_t)chunksize) {
-			debugWrite("malformed clr: truncated chunk");
+		if (!have(rp,(size_t)chunksize,&end)) {
+			debugWrite("truncated long form value");
 			return false;
 		}
-		bytestring::copy(value+valuesize,rp,chunksize);
+		// the sizing pass is what the copy is bounded by, so the copy
+		// is only safe if the two passes agree
+		if (value) {
+			if ((size_t)valuesize+(size_t)chunksize>
+							(size_t)valueavail) {
+				debugWrite("long form chunks past the value");
+				return false;
+			}
+			bytestring::copy(value+valuesize,rp,chunksize);
+		}
 		rp+=chunksize;
 		valuesize+=chunksize;
 	}
 
-	*bytes=value;
 	*size=valuesize;
 	*rpout=rp;
 
@@ -8654,6 +9033,9 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 // see "Oracle Wire Protocol - Osql7"
 bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 
+	// the sql text can run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
@@ -8666,7 +9048,7 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	uint32_t	unknown4=0;
 	uint32_t	unknown5=0;
 
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated osql7 sequence number");
 		return false;
 	}
@@ -8680,14 +9062,14 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	// nothing but whether they're null can be read out of them.  the
 	// meanings of the rest are unknown; only the cursor id and the sql
 	// text are used below
-	if (!readLenPreInt(rp,end,&unknown1,&rp) ||
-		!readLenPreInt(rp,end,&cursorid,&rp) ||
+	if (!getLenPreInt(rp,&end,&unknown1,&rp) ||
+		!getLenPreInt(rp,&end,&cursorid,&rp) ||
 		!getPointer(rp,end,&querypointer,&rp) ||
-		!readLenPreInt(rp,end,&querysize,&rp) ||
+		!getLenPreInt(rp,&end,&querysize,&rp) ||
 		!getPointer(rp,end,&unknown2,&rp) ||
-		!readLenPreInt(rp,end,&unknown3,&rp) ||
+		!getLenPreInt(rp,&end,&unknown3,&rp) ||
 		!getPointer(rp,end,&unknown4,&rp) ||
-		!readLenPreInt(rp,end,&unknown5,&rp)) {
+		!getLenPreInt(rp,&end,&unknown5,&rp)) {
 		return false;
 	}
 
@@ -8704,7 +9086,7 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	// bytes between the last field read above and the clr the sql text
 	// starts with
 	uint16_t	skip=(uint16_t)(pointersize*4+3);
-	if ((size_t)(end-rp)<(size_t)skip) {
+	if (!have(rp,(size_t)skip,&end)) {
 		debugWrite("truncated osql7 request");
 		return false;
 	}
@@ -9160,6 +9542,9 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 // back, and the close behind it, packet [0021], closes the same one
 bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 
+	// the sql text can run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		seqnumber=0;
@@ -9167,7 +9552,7 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 	uint32_t	querypointer=0;
 	uint32_t	querysize=0;
 
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated parse-execute sequence number");
 		return false;
 	}
@@ -9851,6 +10236,9 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// legacy path (pre-10g): parse only - execution and row transfer
 	// happen on a later execute() or fetch()
 
+	// the sql text can run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	// used to be read as three raw big-endian ub2s (options, moreoptions
@@ -9896,7 +10284,7 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	byte_t		querysizebyte1=0;
 	byte_t		querysizebyte2=0;
 
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated query sequence number");
 		return false;
 	}
@@ -9911,7 +10299,7 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 		return false;
 	}
 
-	if (end-rp<3) {
+	if (!have(rp,3,&end)) {
 		debugWrite("truncated query size");
 		return false;
 	}
@@ -9934,7 +10322,7 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 
 	// the query text, including its own trailing nul - see above
 	uint32_t	querysize=querysizebyte1;
-	if ((size_t)(end-rp)<(size_t)querysize) {
+	if (!have(rp,(size_t)querysize,&end)) {
 		debugWrite("truncated query text");
 		return false;
 	}
@@ -10039,6 +10427,10 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// legacy path (pre-10g): combined parse/bind/execute
 	// can apparently be used for fetch too
 
+	// the sql text, the descriptor block and the bind values behind it can
+	// all run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	// parse the request...
@@ -10083,7 +10475,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// the sequence number is a raw byte, not a pointer and not a count -
 	// it is one byte in every capture on file, including the ones whose
 	// client marshals its pointers four bytes wide
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated query2 sequence number");
 		return false;
 	}
@@ -10105,7 +10497,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// client parses with TTI_OSQL7 instead (see osql7()) - so
 		// these offsets are still the wiki table's, unverified
 		// against the header above
-		if ((size_t)(end-rp)<55) {
+		if (!have(rp,55,&end)) {
 			debugWrite("truncated query2 parse request");
 			return false;
 		}
@@ -10119,7 +10511,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 			byte_t	unknown;
 			read(rp,&unknown,&rp);
 		}
-		if ((size_t)(end-rp)<(size_t)querysize) {
+		if (!have(rp,(size_t)querysize,&end)) {
 			debugWrite("truncated query2 query text");
 			return false;
 		}
@@ -10406,6 +10798,20 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		return;
 	}
 
+	// The front of the block is the one place in this walk that must not
+	// pull another packet in.  An oci7 client's oexec() sends a query2
+	// carrying OPTION_DEFINE and nothing behind the header at all, so a
+	// request that stops here is a complete one and reading for more would
+	// take the client's next, unrelated request as a continuation of it.
+	// Past this point the block has begun, and running out part way
+	// through one does mean the rest of it is still on the wire.
+	end=resppacket+resppacketsize;
+	if (rp>=end) {
+		debugWrite("no descriptor block");
+		debugEnd();
+		return;
+	}
+
 	uint32_t	unused=0;
 	uint32_t	definitions=0;
 	uint32_t	bindcount=0;
@@ -10461,16 +10867,19 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	}
 
 	// a descriptor is at least twelve bytes - four raw and eight one-byte
-	// counts - so a count that couldn't fit in what's left of the request
-	// is a bad read rather than a real list.  this bounds the allocation
-	// below by the packet size too, so a wire value can't ask for an
-	// arbitrary one.
+	// counts - so a count that couldn't fit in the room left for the
+	// request is a bad read rather than a real list.  this bounds the
+	// allocation below too, so a wire value can't ask for an arbitrary
+	// one.  the room left is measured against the buffer the request is
+	// being reassembled in rather than against what has arrived so far,
+	// since the descriptors may still be on the wire.
 	//
 	// the two are checked separately rather than as a sum: both come
 	// straight off the wire as full-width uint32_ts, and adding them
 	// first lets a count of 0xffffffff wrap past a check it should have
 	// failed
-	uint32_t	descriptorspace=(uint32_t)(end-rp)/12;
+	uint32_t	descriptorspace=(uint32_t)
+			((resppacket+maxrequestsize-rp)/12);
 	if (definitions>descriptorspace || bindcount>descriptorspace) {
 		debugWrite("descriptor counts out of range");
 		if (hasdefines) {
@@ -10624,6 +11033,10 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// shape rather than a truncated packet, and it is recognized here by
 	// there being nothing left to read.  the values arrive in a round trip
 	// of their own instead - see runQuery2PlSqlBlock()
+	//
+	// a descriptor that pulled in another packet left this frame's end
+	// behind, so it is taken fresh here rather than trusted
+	end=resppacket+resppacketsize;
 	bool	values=(bindcount>0 && rp<end);
 
 	if (values) {
@@ -10656,6 +11069,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// were the bind descriptors and values this call now walks. the
 	// module was reporting the block's existence in its own debug log
 	// the whole time
+	end=resppacket+resppacketsize;
 	if (rp!=end) {
 		debugWrite("descriptor block left %d bytes unread",
 						(int32_t)(end-rp));
@@ -10701,7 +11115,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptor(const byte_t *rp,
 	byte_t		scale=0;
 	uint32_t	unused=0;
 
-	if ((size_t)(end-rp)<4) {
+	if (!have(rp,4,&end)) {
 		return false;
 	}
 	read(rp,datatype,&rp);
@@ -10735,7 +11149,7 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 	*rpout=rp;
 	query2unbound=false;
 
-	if ((size_t)(end-rp)<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("no bind values");
 		return false;
 	}
@@ -10750,7 +11164,13 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 
 	for (uint16_t i=0; i<bindcount; i++) {
 
+		// A value boundary is the one place in this block that must not
+		// pull another packet in.  Running out here is a shape a real
+		// client sends and a real server answers ORA-01008, so reading
+		// for more would hang the session on an ordinary client error
+		// rather than fail it.
 		byte_t	size=0;
+		end=resppacket+resppacketsize;
 		if ((size_t)(end-rp)<1) {
 
 			// the block ended on a value boundary with binds
@@ -10769,52 +11189,14 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 		read(rp,&size,&rp);
 
 		// a value longer than 252 bytes takes the chunked long form,
-		// the same way getLenBytes() reassembles a clr's long form -
-		// a run of chunks, each a length and that many bytes, ended
-		// by a zero length.  the chunks aren't contiguous, so the
-		// value is reassembled into the response packet pool, which
-		// lives as long as the packet it came out of
+		// the same one getLenBytes() reads for a clr
 		if (size==CLR_LONG_FORM_MARKER) {
 
-			if ((size_t)(end-rp)<1) {
-				debugWrite("bind %d: truncated long "
-							"form value",i+1);
+			const byte_t	*value;
+			uint32_t	valuesize;
+			if (!getLongFormBytes(rp,end,&value,&valuesize,&rp)) {
+				debugWrite("bind %d: bad long form value",i+1);
 				return false;
-			}
-
-			byte_t	*value=(byte_t *)resppacketpool->allocate(
-							(size_t)(end-rp));
-			uint32_t	valuesize=0;
-			for (;;) {
-				if (rp>=end) {
-					debugWrite("bind %d: truncated "
-							"long form value",i+1);
-					return false;
-				}
-				uint32_t	chunksize;
-				if (bigchunkclr) {
-					if (!readLenPreInt(rp,end,
-							&chunksize,&rp)) {
-						debugWrite("bind %d: bad "
-							"chunk length",i+1);
-						return false;
-					}
-				} else {
-					byte_t	rawchunksize;
-					read(rp,&rawchunksize,&rp);
-					chunksize=rawchunksize;
-				}
-				if (!chunksize) {
-					break;
-				}
-				if ((size_t)(end-rp)<(size_t)chunksize) {
-					debugWrite("bind %d: truncated "
-							"long form value",i+1);
-					return false;
-				}
-				bytestring::copy(value+valuesize,rp,chunksize);
-				rp+=chunksize;
-				valuesize+=chunksize;
 			}
 
 			query2bindvalues[i]=value;
@@ -10827,7 +11209,7 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 
 		// a null, and the byte behind it
 		if (size==OCI7_BIND_NULL) {
-			if ((size_t)(end-rp)<1) {
+			if (!have(rp,1,&end)) {
 				debugWrite("truncated null bind");
 				return false;
 			}
@@ -10846,7 +11228,7 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 			return false;
 		}
 
-		if ((size_t)(end-rp)<(size_t)size) {
+		if (!have(rp,(size_t)size,&end)) {
 			debugWrite("truncated bind value");
 			return false;
 		}
@@ -11007,11 +11389,14 @@ bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 		return false;
 	}
 
+	// the values can run past one packet
+	reassemble=true;
+
 	const byte_t	*rp=resppacket;
 	const byte_t	*end=resppacket+resppacketsize;
 
 	uint16_t	dataflags=0;
-	if (end-rp<2) {
+	if (!have(rp,2,&end)) {
 		debugWrite("truncated data flags");
 		return false;
 	}
@@ -11034,6 +11419,7 @@ bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 
 	// the same landing rule the descriptor walk uses: read every byte or
 	// trust none of them
+	end=resppacket+resppacketsize;
 	if (rp!=end) {
 		debugWrite("bind values left %d bytes unread",
 						(int32_t)(end-rp));
@@ -12244,7 +12630,14 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 		query3bindvalueavail=(uint32_t)valuecount;
 	}
 
-	while (rp<end && *rp==TTC_ROW_DATA && query3blocks<maxblocks) {
+	// A block boundary is one place a value that pulled another packet in
+	// can leave this frame's end behind, so it is taken fresh each time
+	// around.  Running out at a boundary still ends the walk rather than
+	// reading for more: nothing says another block follows, so reading for
+	// one would hang the session on a client that sent fewer than it
+	// claimed.
+	while (rp<(end=resppacket+resppacketsize) &&
+			*rp==TTC_ROW_DATA && query3blocks<maxblocks) {
 		rp++;
 		for (uint32_t i=0; i<bindcount; i++) {
 			oraclequery3bindvalue	*v=&(query3bindvalues[
@@ -14092,7 +14485,7 @@ bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
 
 	*value=0;
 
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		*rpout=rp;
 		return false;
 	}
@@ -14101,7 +14494,7 @@ bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
 	byte_t		count;
 	read(rp,&count,&rp);
 
-	if (count>sizeof(uint64_t) || (size_t)(end-rp)<(size_t)count) {
+	if (count>sizeof(uint64_t) || !have(rp,(size_t)count,&end)) {
 		*rpout=start;
 		return false;
 	}
@@ -14533,6 +14926,9 @@ bool sqlrprotocol_oracle::sendLobOperationError(uint32_t oranum,
 // see "Oracle Wire Protocol - Lob Operations"
 bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 
+	// the locators the request echoes back can run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		sequence=0;
@@ -14553,56 +14949,56 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 	// the request's fixed part: the sequence number, a length for each
 	// locator that follows, four flag bytes - the last of which is set
 	// for a file exists - and then the operation itself
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated lob operation request");
 		return false;
 	}
 	read(rp,&sequence,&rp);
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated lob operation request");
 		return false;
 	}
 	read(rp,&sourcepresent,&rp);
-	if (!readLenPreInt(rp,end,&sourcesize,&rp)) {
+	if (!getLenPreInt(rp,&end,&sourcesize,&rp)) {
 		debugWrite("truncated source locator size");
 		return false;
 	}
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated lob operation request");
 		return false;
 	}
 	read(rp,&destpresent,&rp);
-	if (!readLenPreInt(rp,end,&destsize,&rp) ||
-		!readLenPreInt(rp,end,&shortamount,&rp)) {
+	if (!getLenPreInt(rp,&end,&destsize,&rp) ||
+		!getLenPreInt(rp,&end,&shortamount,&rp)) {
 		debugWrite("truncated destination locator size");
 		return false;
 	}
-	if (end-rp<(ssize_t)sizeof(opflags)) {
+	if (!have(rp,sizeof(opflags),&end)) {
 		debugWrite("truncated lob operation flags");
 		return false;
 	}
 	for (uint16_t i=0; i<sizeof(opflags); i++) {
 		read(rp,&(opflags[i]),&rp);
 	}
-	if (!readLenPreInt(rp,end,&operation,&rp)) {
+	if (!getLenPreInt(rp,&end,&operation,&rp)) {
 		debugWrite("truncated lob operation code");
 		return false;
 	}
 
 	// the scn, the offset to work from, what the amount counts, and
 	// whether an amount follows the locators at all
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated lob operation request");
 		return false;
 	}
 	read(rp,&scnpresent,&rp);
-	if (!readLenPreInt(rp,end,&scn,&rp) ||
+	if (!getLenPreInt(rp,&end,&scn,&rp) ||
 		!readLenPreUB8(rp,end,&sourceoffset,&rp) ||
-		!readLenPreInt(rp,end,&amountkind,&rp)) {
+		!getLenPreInt(rp,&end,&amountkind,&rp)) {
 		debugWrite("truncated lob operation offset");
 		return false;
 	}
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated lob operation request");
 		return false;
 	}
@@ -14610,7 +15006,7 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 
 	// three zero ub2s that a real client always sends and a real server
 	// appears to ignore
-	if (end-rp<6) {
+	if (!have(rp,6,&end)) {
 		debugWrite("truncated lob operation request");
 		return false;
 	}
@@ -14620,7 +15016,7 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 	// them
 	const byte_t	*sourcelocator=NULL;
 	if (sourcepresent && sourcesize) {
-		if ((uint32_t)(end-rp)<sourcesize) {
+		if (!have(rp,(size_t)sourcesize,&end)) {
 			debugWrite("truncated source locator");
 			return false;
 		}
@@ -14628,7 +15024,7 @@ bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 		rp=rp+sourcesize;
 	}
 	if (destpresent && destsize) {
-		if ((uint32_t)(end-rp)<destsize) {
+		if (!have(rp,(size_t)destsize,&end)) {
 			debugWrite("truncated destination locator");
 			return false;
 		}
@@ -15788,6 +16184,9 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return reexecute(rp);
 	}
 
+	// the bind values behind the header can run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	// parse the request...
@@ -15804,7 +16203,7 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	uint32_t	options=0;
 
 	// the sequence number is a raw byte, not a pointer and not a count
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated execute sequence number");
 		return false;
 	}
@@ -15855,6 +16254,10 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	query2bindcount=0;
 	query2unbound=false;
 
+	// the header may have pulled another packet in, so the end the guard
+	// below reads is taken fresh
+	end=resppacket+resppacketsize;
+
 	// both halves of the guard below, so a request that does not take the
 	// branch says which half turned it away rather than going silent
 	debugWrite("re-execute: %d bytes behind the header, "
@@ -15887,6 +16290,7 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 
 		// the same landing rule the descriptor walk uses: read every
 		// byte or trust none of them
+		end=resppacket+resppacketsize;
 		if (rp!=end) {
 			debugWrite("execute left %d bytes unread",
 							(int32_t)(end-rp));
@@ -15951,6 +16355,9 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 // see "Oracle Wire Protocol - Execute"
 bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 
+	// the bind values behind the header can run past one packet
+	reassemble=true;
+
 	const byte_t	*end=resppacket+resppacketsize;
 
 	byte_t		sequence=0;
@@ -15960,16 +16367,16 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 	uint32_t	moreoptions=0;
 
 	// the sequence number is a raw byte, not a pointer and not a count
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated re-execute sequence number");
 		return false;
 	}
 	read(rp,&sequence,&rp);
 
-	if (!readLenPreInt(rp,end,&cursorid,&rp) ||
-		!readLenPreInt(rp,end,&iterations,&rp) ||
-		!readLenPreInt(rp,end,&options,&rp) ||
-		!readLenPreInt(rp,end,&moreoptions,&rp)) {
+	if (!getLenPreInt(rp,&end,&cursorid,&rp) ||
+		!getLenPreInt(rp,&end,&iterations,&rp) ||
+		!getLenPreInt(rp,&end,&options,&rp) ||
+		!getLenPreInt(rp,&end,&moreoptions,&rp)) {
 		debugWrite("truncated re-execute request");
 		return false;
 	}
