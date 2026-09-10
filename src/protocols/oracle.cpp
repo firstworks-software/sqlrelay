@@ -10750,16 +10750,18 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 
 	for (uint16_t i=0; i<bindcount; i++) {
 
-		// the block ended on a value boundary with binds still to
-		// fill, so the client sent fewer values than the statement
-		// has placeholders.  a client that bound a name the statement
-		// never declared lands here, since oci7 puts no bind names on
-		// the wire for the module to reject by name - see
-		// installQuery2Binds().  a real server answers that
-		// ORA-01008, so the callers of this read the flag rather than
-		// treating it as any other bad read
 		byte_t	size=0;
 		if ((size_t)(end-rp)<1) {
+
+			// the block ended on a value boundary with binds
+			// still to fill, so the client sent fewer values than
+			// the statement has placeholders.  a client that bound
+			// a name the statement never declared lands here,
+			// since oci7 puts no bind names on the wire for the
+			// module to reject by name - see installQuery2Binds().
+			// a real server answers that ORA-01008, so the callers
+			// of this read the flag rather than treating it as any
+			// other bad read
 			debugWrite("truncated bind value");
 			query2unbound=true;
 			return false;
