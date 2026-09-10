@@ -4925,22 +4925,19 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 
 			// get the column precision
 			//
-			// OCI_ATTR_PRECISION and OCI_ATTR_SCALE are
-			// documented as ub1/sb1 for an implicit describe
-			// (this is one), but oracle writes 2 bytes into them
-			// regardless - the same finding is already recorded
-			// for OCI_ATTR_DATA_SIZE in
-			// test/protocol/oracle/oci8.cpp.  Reading straight
-			// into desc[i].precision/.scale (both ub1) only
-			// gets the right value by accident, on hosts where
-			// the low-order byte - the one that matters for a
-			// value under 256 - happens to land at that address.
-			// On a big-endian host the high-order byte lands
-			// there instead, which is 0 for any single or
-			// double-digit precision or scale.  Read into a
-			// correctly sized local first, then narrow on
-			// purpose, so the value comes out right on hosts of
-			// either endianness.
+			// OCI_ATTR_PRECISION and OCI_ATTR_SCALE are both
+			// documented as one byte for an implicit describe
+			// (this is one), but oracle writes 2 bytes into
+			// precision and 1 into scale - the widths
+			// OCIAttrGet's own size out-parameter reports.
+			// Each has to be read into a local of exactly its
+			// width.  A value oracle writes narrower than its
+			// local lands in the low-order byte on a
+			// little-endian host, which is harmless, and in the
+			// high-order byte on a big-endian one, where it
+			// reads back as 0 for any single or double-digit
+			// value.  Narrow into the ub1 fields afterwards, on
+			// purpose.
 			sb2	precision=0;
 			if (OCIAttrGet((dvoid *)desc[i].paramd,
 				OCI_DTYPE_PARAM,
@@ -4951,9 +4948,9 @@ bool oraclecursor::executeQueryOrFetchFromBindCursor(const char *query,
 			}
 			desc[i].precision=(ub1)precision;
 
-			// get the column scale, same caveat as precision,
-			// above
-			sb2	scale=0;
+			// get the column scale, one byte wide, per the
+			// caveat above
+			sb1	scale=0;
 			if (OCIAttrGet((dvoid *)desc[i].paramd,
 				OCI_DTYPE_PARAM,
 				(dvoid *)&scale,(ub4 *)NULL,
