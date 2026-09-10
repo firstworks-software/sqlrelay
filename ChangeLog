@@ -2437,6 +2437,26 @@
 		client misread the shift.  now sends the shape a real 11.2+
 		server does, confirmed against a live capture of a real Oracle
 		12.2 server and against the module's own output (#10039)
+	fixed the oracle protocol module answering an oci7 oexfet() with every
+		row left in the result set rather than the nrows it asked
+		for, overrunning the client's define buffers.  the count
+		rides in the query2 request's descriptor block rather than
+		its header, and nothing had read it (#10030)
+	fixed the oracle protocol module's legacy oci7 fetch path dropping
+		every row of a batch past the first packet.  a legacy fetch
+		is one call and one answer, so a client has no way to ask for
+		the rest - a real server sends the whole batch as one ttc
+		byte stream and lets the tns layer split it at the sdu, which
+		is what the module does now (#10030)
+	fixed the oracle protocol module ending a short oci7 fetch batch
+		cleanly.  a batch that asks for more rows than the result set
+		has left gets the rows it could fill and ORA-01403 together,
+		which is how the client learns it has reached the end (#10030)
+	fixed the oracle protocol module reporting every oci7 statement as a
+		select.  the command type in the summary object was a literal
+		3, so an insert, update, delete or pl/sql block all came back
+		in the client's cda.ft as OTYSEL.  the statement is classified
+		now (#10030)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
