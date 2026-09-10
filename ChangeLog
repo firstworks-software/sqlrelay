@@ -2334,12 +2334,15 @@
 		column, the one case #10013 left unsettled; a live capture
 		against a real oracle server now shows a null lob gets
 		indicator -1 and return code 1405, same as every other null
-		column, but with no leading value byte at all - unlike every
-		other type, which writes a single zero byte ahead of the
-		indicator. putLobField() now reports back whether it wrote a
-		genuine null, so putRow() can send the right indicator/
-		return-code pair without the extra byte; a real, non-null
-		zero-length lob is unaffected (#10006)
+		column. under native encoding it also gets no leading value
+		byte at all, unlike every other type, which writes a single
+		zero byte ahead of the indicator; a live portable-encoding
+		session broke when that same byte was omitted there too, so
+		portable keeps the byte, matching every other type, while
+		native does not, per each encoding's own capture evidence.
+		putLobField() now reports back whether it wrote a genuine
+		null, so putRow() can send the right indicator/return-code
+		pair; a real, non-null zero-length lob is unaffected (#10006)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

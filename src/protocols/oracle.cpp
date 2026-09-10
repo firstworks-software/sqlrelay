@@ -17153,16 +17153,22 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// across nine null columns spanning number, char, varchar2,
 		// date, timestamp, long and long raw - every one of them
 		// preceded by its own null-marker byte, written above.  a
-		// null lob is different: packets [0865]/[0866] of
-		// test/protocol/oracle/samples/10006-dev-oci7-native-
-		// nulllob-realserver.oraproxy show the row marker (0x07,
-		// putRow()'s caller writes one ahead of every row) followed
-		// immediately by ff ff/7d 05 for each of two null lob
-		// columns - no marker byte at all ahead of either indicator,
-		// unlike every other type.  putLobField() matches this: it
-		// writes nothing at all for a genuine null, only for a real
-		// zero-length lob or the terminator after real chunks (see
-		// its own comments).  #10006.
+		// null lob is different under native encoding: packets
+		// [0865]/[0866] of test/protocol/oracle/samples/10006-dev-
+		// oci7-native-nulllob-realserver.oraproxy show the row
+		// marker (0x07, putRow()'s caller writes one ahead of every
+		// row) followed immediately by ff ff/7d 05 for each of two
+		// null lob columns - no marker byte at all ahead of either
+		// indicator, unlike every other type.  under portable
+		// encoding this shape doesn't apply: putAuthCount() writes
+		// the indicator/return-code pair a completely different way
+		// there (see its own comments), and a live portable session
+		// broke (ORA-03106) when putLobField() omitted the marker
+		// byte the same way for that encoding too, with no capture
+		// to back it - #10006 comment 10.  putLobField() only omits
+		// the byte for a genuine null under native encoding now,
+		// still writing it under portable, matching every other
+		// type there (see its own comments).  #10006.
 		if (wrotenullmarker) {
 			putAuthCount(0xffff,2);
 			putAuthCount(1405,2);
@@ -17513,17 +17519,26 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 	uint64_t	loblength;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		debugWrite("null");
-		// a genuine null lob writes no value byte at all - not
-		// even the single zero byte an ordinary null column's
-		// marker uses (see putRow()).  packets [0865]/[0866] of
-		// test/protocol/oracle/samples/10006-dev-oci7-native-
-		// nulllob-realserver.oraproxy show the row marker
-		// followed immediately by both null lob columns'
-		// indicator/return-code pairs, with nothing in between.
-		// this function used to write a single zero byte here
-		// too, on the assumption a lob followed the same
-		// null-marker convention as every other type - #10006
-		// found that assumption wrong.
+		// a genuine null lob writes no value byte at all under
+		// native encoding - not even the single zero byte an
+		// ordinary null column's marker uses (see putRow()).
+		// packets [0865]/[0866] of test/protocol/oracle/samples/
+		// 10006-dev-oci7-native-nulllob-realserver.oraproxy show
+		// the row marker followed immediately by both null lob
+		// columns' indicator/return-code pairs, with nothing in
+		// between - but that capture is a native-encoding session,
+		// and putAuthCount() writes the indicator/return-code pair
+		// completely differently under portable encoding (see its
+		// own comments).  a live portable-encoding session broke
+		// (ORA-03106) when this function omitted the byte there
+		// too, on the unproven assumption that native's shape
+		// carried over - #10006 comment 10.  no portable capture of
+		// a null lob exists yet, so this keeps the original,
+		// already-proven-safe zero byte for portable and only omits
+		// it where the capture actually supports doing so.
+		if (!nativeencoding) {
+			write(&reqpacket,(byte_t)0);
+		}
 		cont->closeLobField(cursor,col);
 		debugEnd();
 		return true;
@@ -17569,13 +17584,18 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 			// no data.  if nothing was sent yet, this is a genuine
 			// null - a nonzero length that never actually produced
-			// a segment - and writes no value byte, same as the
-			// length-lookup-failure case above and for the same
-			// reason (#10006).  if a chunk run is already under
-			// way, this just closes it out, and the zero byte here
-			// is real chunk framing, not a null marker, so it stays
+			// a segment - and, under native encoding only, writes no
+			// value byte, same as the length-lookup-failure case
+			// above and for the same reason (see its comment,
+			// #10006).  if a chunk run is already under way, this
+			// just closes it out, and the zero byte here is real
+			// chunk framing, not a null marker, so it stays
+			// regardless of encoding
 			if (start) {
 				debugWrite("null");
+				if (!nativeencoding) {
+					write(&reqpacket,(byte_t)0);
+				}
 				cont->closeLobField(cursor,col);
 				debugEnd();
 				return true;
