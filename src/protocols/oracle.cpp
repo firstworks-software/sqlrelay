@@ -563,9 +563,7 @@
 // object number, 3 for the relative file number, 6 for the block number and
 // 3 for the row number.  a live 12.2 server describes such a column 1 byte
 // wide and puts a constant 0x0e in front of the value, whatever the four
-// numbers in it come to - see putRowidField().  an oci7 describe is the
-// exception: a real server sends 16 there, the width the internal form
-// takes.  see describe()
+// numbers in it come to - see putRowidField()
 #define ORACLE_ROWID_TEXT_SIZE		18
 #define ORACLE_ROWID_OBJECT_DIGITS	6
 #define ORACLE_ROWID_FILE_DIGITS	3
@@ -573,7 +571,6 @@
 #define ORACLE_ROWID_ROW_DIGITS		3
 #define ORACLE_ROWID_PARTS		4
 #define ORACLE_ROWID_SIZE		1
-#define ORACLE_OCI7_ROWID_SIZE		16
 #define ORACLE_ROWID_LENGTH_BYTE	0x0e
 
 // a raw's external form is two hexadecimal characters per byte
@@ -9048,25 +9045,23 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 }
 
 // the buffer width an oci7 describe reports, which is getWireColumnSize()'s
-// for every type but the date and the rowid.  a real server describes a date
-// column 1 byte wide here and the client works the 7 bytes a date really
-// takes back out from the type - the same way getWireColumnSize() already
-// describes a rowid, an interval and a timestamp with time zone 1 byte wide.
-// confirmed in both encodings and against both a real date column and a
-// sysdate: the -realtable-parse and -parse captures.  a rowid goes the other
-// way: a real server describes one 16 bytes wide to an oci7 client, and sends
-// the internal type 11 for it rather than the 104 the client's own SQLT_RDD
-// names.  a live oci7 client reports 11 and 16 back for such a column, and
-// 208 and 1 when it is described as 104 instead: the
-// samples/10016-*-oci7describe-rowid-* captures, on redhat9x86 and
+// for every type but the date.  a real server describes a date column 1
+// byte wide here and the client works the 7 bytes a date really takes back
+// out from the type - the same way getWireColumnSize() already describes a
+// rowid, an interval and a timestamp with time zone 1 byte wide.  confirmed
+// in both encodings and against both a real date column and a sysdate: the
+// -realtable-parse and -parse captures.  a rowid's wire size of 1 is the
+// same story: sending it unchanged, alongside the internal type 11 (rather
+// than the 104 the client's own SQLT_RDD names), is what makes a live oci7
+// client report the size back as 16, matching a real server exactly -
+// sending 104/1 instead reports as 208/1, and sending 11/16 (the client's
+// own reported size, put directly on the wire) reports back as 256, not 16 -
+// the samples/10016-*-oci7describe-rowid-* captures, on redhat9x86 and
 // solaris8sparc alike
 uint32_t sqlrprotocol_oracle::getOci7DescribeColumnSize(uint16_t wiretype,
 							uint32_t size) {
 	if (wiretype==ORACLE_TYPE_DATE) {
 		return ORACLE_OCI7_DATE_SIZE;
-	}
-	if (wiretype==ORACLE_TYPE_ROWID_DEPRECATED) {
-		return ORACLE_OCI7_ROWID_SIZE;
 	}
 	return size;
 }
