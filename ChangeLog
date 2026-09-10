@@ -2415,6 +2415,19 @@
 		start of the lob instead of from the requested offset, so a
 		second or later chunk of a multi-chunk read just repeated the
 		first chunk (#10037)
+	fixed a deadlock in the oracle protocol module's auth path: a
+		modern client retrying a failed login on the same connection
+		sends its own TNS marker after reading the error, and the
+		module answered it with just a reset before waiting for more,
+		which left both sides blocked in read() forever.  the module
+		now runs the pre-error break/reset marker exchange for every
+		verifier type, not just o3logon, and answers the client's
+		later marker with sendMarkerCancelError(), matching the
+		pattern the query loop already uses for an abandoned call
+		(#10035); a residual issue where the wrong-password and
+		unknown-user cases in that same retry sequence report the
+		wrong specific ORA error number, without hanging or otherwise
+		affecting the connection, is filed separately (#10039)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

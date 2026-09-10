@@ -2124,6 +2124,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// login may be attempted on the same connection
 		bool		loginrefused;
 
+		// whether sendAuthenticationError() has already sent a
+		// refusal on this connection - unlike loginrefused, this
+		// isn't cleared between retries.  recvAuthenticationRequest()
+		// needs it: after reading the error, the client's own UPI
+		// layer does a second, separate reset of its own on the same
+		// connection, ahead of whatever it sends next, and that one
+		// needs answering too (see #10035)
+		bool		priorloginattemptrefused;
+
 		// whether the client walked away instead of sending a login -
 		// a flags-only eof packet or an explicit disconnect - so
 		// authenticate() can log that plainly instead of as a desync
@@ -2682,6 +2691,7 @@ void sqlrprotocol_oracle::init() {
 	fabricatedchallenge=false;
 	classiclogon=false;
 	loginrefused=false;
+	priorloginattemptrefused=false;
 	clientdisconnected=false;
 
 	nativeencoding=false;
@@ -7921,17 +7931,29 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 
-	// a classic login's client sends a bare break/reset marker right
-	// after the challenge, ahead of its real phase-two packet - not a
-	// framing error, and not a call to cancel (nothing is in flight
-	// yet during login), so answer it and keep waiting, the same way
-	// the main query loop already answers one mid-call (see #9794)
+	// a marker here means two different things.  right after the
+	// challenge, ahead of a classic login's real phase-two packet, it's
+	// a bare break/reset with nothing in flight yet - a reset marker
+	// back is the whole answer, same as the main query loop answers one
+	// mid-call (see #9794).  on a retry, it's a second, separate reset
+	// the client's UPI layer does on its own initiative, right after
+	// reading the error sendAuthenticationError() (and its own break/
+	// reset, ahead of the error) already sent for the attempt that just
+	// failed - the client is waiting to read a call result, not another
+	// marker, same as getTtiFunction() and runQuery2PlSqlBlock() - so
+	// once a login's been refused on this connection, the reset marker
+	// needs their sendMarkerCancelError() follow-up too, or both sides
+	// block in read() forever (see #10035)
 	for (;;) {
 		if (!recvPacket()) {
 			return false;
 		}
 		if (resppackettype==PACKET_MARKER) {
 			if (!sendMarker(MARKER_TYPE_RESET)) {
+				return false;
+			}
+			if (priorloginattemptrefused &&
+					!sendMarkerCancelError()) {
 				return false;
 			}
 			continue;
@@ -8772,27 +8794,39 @@ bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
 bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 						const char *message) {
 
-	// a real 10.2 server doesn't just send the error for a failed o3logon
-	// login - it breaks the call first, with a marker exchange, and only
-	// then sends the error.  an OCI7 client aborts a connection whenever
-	// it doesn't get bytes shaped the way it expects (see #9654), so the
-	// break goes out even though the module has nothing to interrupt.
+	// a real 10.2 server doesn't just send the error for a failed login -
+	// it breaks the call first, with a marker exchange, and only then
+	// sends the error.  originally this ran only for o3logon, on the
+	// assumption a modern client sends nothing before its next real
+	// packet either way - but a modern client that retries a failed
+	// login on the same connection sends its own break/reset marker in
+	// front of that packet if we don't break first, and answering that
+	// unsolicited marker with just a reset (see recvAuthenticationRequest())
+	// leaves both sides waiting on each other forever (#10035).  running
+	// the break for every verifier type is what a real 10.2 server does
+	// (see the wrong-password captures in test/protocol/oracle/samples)
+	// and it means the client never has a reason to send that marker.
+	//
+	// an OCI7 client aborts a connection whenever it doesn't get bytes
+	// shaped the way it expects (see #9654), so the break goes out even
+	// though the module has nothing to interrupt.
 	//
 	// a break that doesn't come back is not a refused login, it's an
 	// exchange that broke down partway through, so it leaves loginrefused
 	// clear and gets no retry - the client never saw the error, and what
 	// it sends next isn't another login
-	if (verifiertype==VERIFIER_TYPE_9I && !sendAuthenticationBreak()) {
+	if (!sendAuthenticationBreak()) {
 		return false;
 	}
 
 	loginrefused=true;
+	priorloginattemptrefused=true;
 
 	return sendErrorPacket("authentication error",oranum,message);
 }
 
-// the marker exchange a real 10.2 server runs in front of an o3logon
-// ORA-01017: a break marker, then a reset marker, then the client's reset
+// the marker exchange a real 10.2 server runs in front of any login
+// failure: a break marker, then a reset marker, then the client's reset
 // marker back.  a client that sends something else is out of step with the
 // module either way, so anything but a marker ends the exchange.
 bool sqlrprotocol_oracle::sendAuthenticationBreak() {
