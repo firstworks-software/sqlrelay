@@ -1073,7 +1073,14 @@ run_protocol_test() {
 	# never advertises the big-chunk clr capability bit and always
 	# frames clr values as raw bytes - coverage for the go-ora v1
 	# client, which offers the bit but never implemented big chunks and
-	# frames raw bytes anyway.  finally it runs oci7, the OCI7
+	# frames raw bytes anyway.  then oraclerefcursorreuse, a sixth
+	# raw-socket test, for #10000 - it opens a ref cursor, plants an oci7
+	# define list on the child cursor the statement took out of the pool,
+	# hands that cursor back by re-executing the parent, and checks that
+	# the fresh, unrelated ref cursor that gets the same cursor id doesn't
+	# inherit the define list and lose a column from its rows.  it reads
+	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
+	# neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
@@ -1090,7 +1097,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all fifteen runs have to succeed for the instance to pass
+	# all sixteen runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1121,6 +1128,8 @@ run_protocol_test() {
 		resultiterations0="$?"
 		./oraclebigchunkclroff
 		resultbigchunkclroff="$?"
+		./oraclerefcursorreuse
+		resultrefcursorreuse="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1129,7 +1138,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1190,6 +1199,10 @@ run_protocol_test() {
 		if ( test "$resultbigchunkclroff" != "0" )
 		then
 			printf "    % 8s: failed (big chunk clr off)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultrefcursorreuse" != "0" )
+		then
+			printf "    % 8s: failed (ref cursor reuse)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then

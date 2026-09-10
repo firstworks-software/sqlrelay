@@ -6,6 +6,7 @@
 /oracleclrchunks
 /oracleiterations0
 /oraclebigchunkclroff
+/oraclerefcursorreuse
 /oci7datestr
 *.o
 *.obj

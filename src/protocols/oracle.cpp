@@ -12519,16 +12519,20 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 			}
 			uint16_t	childid=cont->getId(child);
 
-			// the cursor comes out of the pool with whatever its
-			// last user left on it, and nothing else clears it
+			// releaseRefCursors(), close(), occa() and reInit()
+			// each reset a cursor before it can come back out of
+			// the pool, so this one is clean already.  doing it
+			// again is insurance, and forgetRefCursor() is the
+			// safe form of it: if some path did leave a stale row
+			// naming this id as its child, this drops that
+			// reference rather than acting on it - acting on it
+			// would abort a cursor whose real owner is still
+			// using it
 			cont->setInputBindCount(child,0);
 			cont->setOutputBindCount(child,0);
 			cont->setInputOutputBindCount(child,0);
-			cursorbindcounts[childid]=0;
-			columntypescached[childid]=false;
-			rowssent[childid]=0;
-			pendingrow[childid].clear();
-			clearLobPin(childid);
+			forgetRefCursor(childid);
+			resetCursorState(childid);
 
 			sqlrserverbindvar	*cbv=&(outbinds[outcount]);
 
@@ -12786,9 +12790,24 @@ bool sqlrprotocol_oracle::fetchFromRefCursors(sqlrservercursor *cursor,
 // client that opens ref cursors in a loop runs the pool dry without this
 void sqlrprotocol_oracle::releaseRefCursors(uint16_t parentid) {
 
-	for (uint16_t i=0; i<refcursorcounts[parentid]; i++) {
+	// a child can be a parent itself, so this recurses.  the count gets
+	// zeroed up front rather than at the end to guard against a cycle:
+	// a stale row - exactly what this releases - can name a cursor whose
+	// own row names this one back
+	uint16_t	count=refcursorcounts[parentid];
+	refcursorcounts[parentid]=0;
+
+	for (uint16_t i=0; i<count; i++) {
 
 		uint16_t	childid=refcursorids[parentid][i];
+
+		// the child's own children first
+		releaseRefCursors(childid);
+
+		// arrays only, so it has to run even for an id the pool
+		// has no cursor for - otherwise the counts this exists to
+		// clear stay stale for whatever opens on that id next
+		resetCursorState(childid);
 
 		sqlrservercursor	*child=cont->getCursor(childid);
 		if (!child) {
@@ -12799,15 +12818,10 @@ void sqlrprotocol_oracle::releaseRefCursors(uint16_t parentid) {
 
 		cont->abort(child);
 		cont->release(child);
-		cursorbindcounts[childid]=0;
+		cont->setInputBindCount(child,0);
+		cont->setOutputBindCount(child,0);
 		cont->setInputOutputBindCount(child,0);
-		columntypescached[childid]=false;
-		rowssent[childid]=0;
-		pendingrow[childid].clear();
-		clearLobPin(childid);
 	}
-
-	refcursorcounts[parentid]=0;
 }
 
 // drops a cursor the client closed itself from whatever statement was
@@ -17775,11 +17789,11 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 }
 
 // the array-only per-cursor resets, with no live cursor or controller
-// call among them.  shared by close(), occa(), and reInit() - reInit()
-// depends on that: the previous session's cursors are already gone by
-// the time it runs (endSession() aborted and released every one of
-// them), so calling anything here that touches a live cursor would be
-// working on one that no longer exists
+// call among them.  shared by close(), occa(), reInit(), and
+// releaseRefCursors() - reInit() depends on that: the previous session's
+// cursors are already gone by the time it runs (endSession() aborted and
+// released every one of them), so calling anything here that touches a
+// live cursor would be working on one that no longer exists
 void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
 	cursorbindcounts[curid]=0;
 
@@ -17794,8 +17808,11 @@ void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
 	rowssent[curid]=0;
 
 	// close()/occa() already zero this by way of clearParams() ->
-	// releaseRefCursors() before they ever get here - this line only
-	// matters for reInit(), which has no live cursor to release
+	// releaseRefCursors() before they ever get here, and
+	// releaseRefCursors() releases a child's own children before it
+	// calls in here, so this orphans nothing.  it is load bearing for
+	// reInit() though - free() and init() leave the per-cursor arrays
+	// alone, and reInit() has no live cursor left to release
 	refcursorcounts[curid]=0;
 
 	clearDefines(curid);

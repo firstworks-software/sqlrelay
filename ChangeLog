@@ -2351,6 +2351,14 @@
 		oci7 clients on redhat9x86 and solaris8sparc both report a
 		rowid column back as type 11, size 16 once the wire carries
 		11 unmodified, matching a real server exactly (#10016)
+	fixed the oracle protocol module handing a ref cursor back to the pool
+		only partly reset, so the next statement to get that cursor id
+		could drop columns or send a stale bind count - the stale
+		defines and stale query2 bind counts are cleared now.  ref
+		cursors opened by a ref cursor are also released now, rather
+		than leaving a stale list behind that a later close could
+		follow and steal live cursors from unrelated statements
+		(#10000)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
