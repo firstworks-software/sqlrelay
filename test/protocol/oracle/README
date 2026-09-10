@@ -879,17 +879,65 @@ the decoder can be exercised without live server access:
                                       bytes) confirms every packet parses
                                       as ordinary framing with no leftover
                                       bytes and no type-15 header anywhere.
-                                      sqlrelay's sendLobDataChunk()/
-                                      PACKET_DATA_DESCRIPTOR mechanism is
-                                      therefore not what a real server
-                                      does for a piecewise OCILobRead
-                                      either - #10005 closes with no code
-                                      change needed. four client
+                                      this 10.2 server therefore never uses
+                                      PACKET_DATA_DESCRIPTOR for a piecewise
+                                      OCILobRead at all - not proof no real
+                                      server ever needs to split a raw lob
+                                      chunk against a small sdu, since the
+                                      12.2 server used elsewhere in this
+                                      README's own captures (#9589) is a
+                                      different, newer protocol version;
+                                      see the -oracle122 capture below for
+                                      that version's answer. four client
                                       TTI_LOB_OPERATIONS calls appear for
                                       row 3, not three - the first is
                                       OCILobGetLength(), the remaining
                                       three are the pieces; no evidence
                                       OCI itself split any piece (#10005)
+
+    10005-dev-oci23-native-piecewiselobread-smallsdu-realserver-oracle122.oraproxy
+                                     the same OCISELECT_BIGPIECE=1 run as
+                                      the -redhat9x86- capture above, but
+                                      against the real 12.2 server
+                                      (oracle122centos7x64, the same host
+                                      #9589's own PACKET_DATA_DESCRIPTOR
+                                      captures used) with SDU=512 forced on
+                                      the proxied connect string. Decisive:
+                                      this server answers every lob read in
+                                      the whole run - the small one-shot
+                                      clob, the 4x500 byte blob pieces, the
+                                      32000 char big clob, and all three of
+                                      row 3's oversized pieces - via
+                                      PACKET_DATA_DESCRIPTOR (16 of them,
+                                      one per lob operation), each one's own
+                                      64 byte body carrying an exact byte
+                                      count for the raw run that follows
+                                      (decoded straight from that field, not
+                                      guessed): 800, 500x4, 8060x7 + 7580 for
+                                      the big clob, then 8000/10000/6000 for
+                                      row 3's three pieces. every one of
+                                      those runs - including the 10000 byte
+                                      piece, bigger than LOB_CHUNK_SIZE
+                                      itself - goes out as a single
+                                      contiguous run with no TNS header
+                                      anywhere inside it (confirmed by
+                                      walking the entire 101621 byte
+                                      server-to-client stream to the last
+                                      byte with no framing error). the
+                                      largest ordinary type 6 DATA packet
+                                      anywhere in the same capture is 431
+                                      bytes - so every one of those raw runs
+                                      is 20-25x the size the server itself
+                                      uses as its ordinary packet ceiling,
+                                      and it still never splits one. this
+                                      is sqlrelay's own sendLobDataChunk()
+                                      layout byte for byte (more/last flag
+                                      values 2/3 match #9589 comment 4
+                                      exactly), now confirmed against a
+                                      small sdu, not only the large one
+                                      #9589 originally captured - #10005
+                                      closes with no code change needed
+
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
 oraproxy locally on the client host and pointing the client's tnsnames.ora
