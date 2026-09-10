@@ -69,6 +69,11 @@
 //   inout         a pl/sql block whose bind is read and written (:v := :v*2)
 //   nullout       a pl/sql block that assigns NULL to its out bind, so the
 //                 null indicator's return form is captured too
+//   biginout      an in-out bind of a short value (SQLT_STR, "hi") declared
+//                 with an obndrv buffer size of 512 bytes, against a block
+//                 that writes back 300 bytes - isolates whether the module
+//                 sizes the out-bind buffer from the client's declared
+//                 buffer size rather than a fixed floor. #10012
 //
 // insert, nullbind and many need the protocoltestbind table. They create it
 // themselves (dropping any leftover first), so no other program has to have
@@ -647,6 +652,49 @@ static int plsqlVariant(const char *block, sb4 invalue) {
 	return 0;
 }
 
+// an in-out bind whose obndrv buffer size (512, maxlongbindlen) is far
+// larger than its input value ("hi"), against a block that writes back 300
+// bytes - the module has to read that buffer size off the wire and size the
+// out-bind buffer to it, rather than to the input value's length or a fixed
+// floor. the row is compared against what the block should have written
+// back, not just printed, so a truncation shows up as a mismatch
+static int bigInOutVariant() {
+
+	Cda_Def	cda;
+	if (!openCursor("oopen",&cda) ||
+			!parse("oparse",&cda,
+				"begin :v := rpad('X',300,'X'); end;")) {
+		return 1;
+	}
+
+	char	buf[maxlongbindlen+1];
+	bytestring::zero(buf,sizeof(buf));
+	charstring::copy(buf,"hi");
+
+	sb2	ind=0;
+	if (!bind(&cda,":v",(ub1 *)buf,(sword)maxlongbindlen,SQLT_STR,&ind)) {
+		oclose(&cda);
+		return 1;
+	}
+
+	if (!run("oexec",&cda,oexec(&cda))) {
+		oclose(&cda);
+		return 1;
+	}
+
+	char	expected[301];
+	bytestring::set(expected,'X',300);
+	expected[300]='\0';
+
+	bool	match=!charstring::compare(buf,expected);
+	stdoutput.printf("  value length=%d ind=%d %s\n",
+				(int)charstring::getLength(buf),(int)ind,
+				match?"(matches)":"(MISMATCH)");
+
+	run("oclose",&cda,oclose(&cda));
+	return (match)?0:1;
+}
+
 int main(int argc, char **argv) {
 
 	const char	*variant="selectint";
@@ -671,7 +719,8 @@ int main(int argc, char **argv) {
 		stdoutput.printf("usage: %s SID "
 				"[--bind=selectint|selectstr|selectstrlong|"
 				"selecttwo|datebind|"
-				"insert|nullbind|many|reverse|out|inout|nullout] "
+				"insert|nullbind|many|reverse|out|inout|nullout|"
+				"biginout] "
 				"[USER PASSWORD]\n",argv[0]);
 		return 1;
 	}
@@ -714,6 +763,8 @@ int main(int argc, char **argv) {
 		result=plsqlVariant("begin :v := :v * 2; end;",21);
 	} else if (!charstring::compare(variant,"nullout")) {
 		result=plsqlVariant("begin :v := NULL; end;",99);
+	} else if (!charstring::compare(variant,"biginout")) {
+		result=bigInOutVariant();
 	} else {
 		stdoutput.printf("unknown --bind= variant: %s\n",variant);
 		ologof(&lda);

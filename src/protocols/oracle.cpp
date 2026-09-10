@@ -2089,6 +2089,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		byte_t		**query2cursorbinddirections;
 		uint16_t	*query2cursorbindcounts;
 
+		// the client's declared buffer size for each of a cursor's
+		// binds, persisted the same way and for the same reason as
+		// query2cursorbindtypes/query2cursorbinddirections above -
+		// see installQuery2OutBind()
+		uint32_t	**query2cursorbindbuffersizes;
+
 		// what a query2 request's inline bind block carried: one
 		// wire datatype, one direction, one value and one out bind
 		// slot per bind.  the values point straight into the request
@@ -2104,6 +2110,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		int16_t		*query2bindoutindexes;
 		const byte_t	**query2bindvalues;
 		uint32_t	*query2bindvaluesizes;
+
+		// the client's declared buffer size for each bind, read off
+		// the wire in getQuery2Descriptors() - see
+		// query2cursorbindbuffersizes above and installQuery2OutBind()
+		uint32_t	*query2bindbuffersizes;
 
 		// how many descriptors a bind block that carried no values
 		// named.  that shape is a pl/sql block's, and its values come
@@ -2404,9 +2415,11 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query2bindoutindexes=new int16_t[maxbindcount];
 	query2bindvalues=new const byte_t *[maxbindcount];
 	query2bindvaluesizes=new uint32_t[maxbindcount];
+	query2bindbuffersizes=new uint32_t[maxbindcount];
 
 	query2cursorbindtypes=new uint16_t *[maxcursorcount];
 	query2cursorbinddirections=new byte_t *[maxcursorcount];
+	query2cursorbindbuffersizes=new uint32_t *[maxcursorcount];
 	query2cursorbindcounts=new uint16_t[maxcursorcount];
 	columntypescached=new bool[maxcursorcount];
 	columntypes=new uint16_t *[maxcursorcount];
@@ -2426,6 +2439,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		query2cursorbindtypes[i]=new uint16_t[maxbindcount];
 		query2cursorbinddirections[i]=new byte_t[maxbindcount];
+		query2cursorbindbuffersizes[i]=new uint32_t[maxbindcount];
 		query2cursorbindcounts[i]=0;
 		columntypescached[i]=false;
 		rowssent[i]=0;
@@ -2470,10 +2484,12 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] query2bindoutindexes;
 	delete[] query2bindvalues;
 	delete[] query2bindvaluesizes;
+	delete[] query2bindbuffersizes;
 
 	for (uint16_t i=0; i<maxcursorcount; i++) {
 		delete[] query2cursorbindtypes[i];
 		delete[] query2cursorbinddirections[i];
+		delete[] query2cursorbindbuffersizes[i];
 		delete[] columntypes[i];
 		delete[] columndefined[i];
 		delete[] definetypes[i];
@@ -2487,6 +2503,7 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] refcursorcounts;
 	delete[] query2cursorbindtypes;
 	delete[] query2cursorbinddirections;
+	delete[] query2cursorbindbuffersizes;
 	delete[] query2cursorbindcounts;
 	delete[] columntypescached;
 	delete[] columntypes;
@@ -10542,9 +10559,9 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	}
 
 	// the bind descriptors sit behind the defines, in the same shape.
-	// only the wire datatype is kept - the buffer size here is the
-	// client's own program variable width, not the width of the value
-	// that follows, which carries its own length
+	// the buffer size here is the client's own program variable width,
+	// not the width of the value that follows, which carries its own
+	// length
 	for (uint32_t i=0; i<bindcount; i++) {
 
 		byte_t		datatype=0;
@@ -10564,6 +10581,13 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		query2bindtypes[i]=(uint16_t)datatype;
 		query2bindvalues[i]=NULL;
 		query2bindvaluesizes[i]=0;
+
+		// the client's own program variable width, kept for
+		// installQuery2OutBind() - stored as read, with no clamp,
+		// the same way installQuery3Binds()'s own bind buffersize
+		// is; it is only ever a floor on an output buffer, clamped
+		// against maxstringbindvaluesize where it is used
+		query2bindbuffersizes[i]=buffersize;
 
 		// in until the statement says otherwise, which only a pl/sql
 		// block ever does - see classifyQuery2Binds()
@@ -11253,6 +11277,7 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 	for (uint16_t i=0; i<query2bindcount; i++) {
 		query2cursorbindtypes[curid][i]=query2bindtypes[i];
 		query2cursorbinddirections[curid][i]=query2binddirections[i];
+		query2cursorbindbuffersizes[curid][i]=query2bindbuffersizes[i];
 	}
 
 	debugWrite("bind count: %d",incount);
@@ -11269,11 +11294,12 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 // makes it behave as in-out: what's in the buffer at execute time is what the
 // statement reads, and what the statement writes is what's in it after.
 //
-// installQuery3Binds() sizes the same buffer off the descriptor's own buffer
-// size where that is wider.  a query2 descriptor's is the client's program
-// variable width rather than anything the statement writes, and it is not
-// remembered across the re-executes that reuse these binds, so the value's own
-// size and the floor below are what size it here
+// sized the same way installQuery3Binds() sizes its own: off the descriptor's
+// declared buffer size where that is wider than the value going in, with
+// MIN_OUT_BIND_SIZE as a floor under both.  a query2 descriptor's buffer size
+// is the client's program variable width rather than anything the statement
+// writes, and query2cursorbindbuffersizes[] is what keeps it around across
+// the re-executes that reuse these binds - see getQuery2Descriptors()
 void sqlrprotocol_oracle::installQuery2OutBind(sqlrservercursor *cursor,
 						uint16_t index,
 						sqlrserverbindvar *bv,
@@ -11295,8 +11321,12 @@ void sqlrprotocol_oracle::installQuery2OutBind(sqlrservercursor *cursor,
 	obv->segmentcount=0;
 
 	// room for whatever the statement writes back, which can be wider
-	// than what came in
+	// than what came in - and wider than MIN_OUT_BIND_SIZE too, where
+	// the client declared a bigger buffer than that for it
 	uint32_t	outsize=bv->valuesize;
+	if (query2bindbuffersizes[index]>outsize) {
+		outsize=query2bindbuffersizes[index];
+	}
 	if (outsize<MIN_OUT_BIND_SIZE) {
 		outsize=MIN_OUT_BIND_SIZE;
 	}
@@ -15808,6 +15838,8 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 			query2bindtypes[i]=query2cursorbindtypes[curid][i];
 			query2binddirections[i]=
 					query2cursorbinddirections[curid][i];
+			query2bindbuffersizes[i]=
+					query2cursorbindbuffersizes[curid][i];
 		}
 
 		if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {

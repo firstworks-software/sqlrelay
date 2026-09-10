@@ -2359,6 +2359,16 @@
 		than leaving a stale list behind that a later close could
 		follow and steal live cursors from unrelated statements
 		(#10000)
+	fixed the oracle protocol module's query2 (oci7) pl/sql in-out
+		bind path sizing its output buffer off a fixed 128-byte
+		floor instead of the client's own declared buffer size,
+		which getQuery2Descriptors() reads off the wire but never
+		kept - a block writing back more than that into a bind
+		given a short input value got ORA-06502 where a real oracle
+		server would not.  the buffer size is now persisted per
+		cursor the same way the query3 path already keeps its own,
+		and installQuery2OutBind() uses it the same way
+		installQuery3Binds() does (#10012)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
