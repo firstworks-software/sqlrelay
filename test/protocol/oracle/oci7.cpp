@@ -1162,6 +1162,13 @@ int main(int argc, char **argv) {
 	// char columns come back blank padded to their declared width
 	assertEquals((const char *)charfield,"char1               ");
 	assertEquals((const char *)varcharfield,"varchar1");
+	// #10018 - a date column defined SQLT_STR comes back as text, not
+	// as the 7 byte binary form the "ofen - date" case below checks.
+	// the text is the backend's own, in the connection's
+	// date_to_text_format rather than in any session nls date format -
+	// see oracleprotocoloci7's connect string in
+	// test/sqlrelay.conf.d/oracleprotocol.conf
+	assertEquals((const char *)datefield,"2001-01-01 01:01:01");
 	assertEquals((int)ind[0],0);
 	assertEquals((int)ind[1],0);
 	assertEquals((int)ind[2],0);

@@ -17336,6 +17336,44 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			return true;
 		case ORACLE_TYPE_DATE:
 			{
+			// a date the client defined SQLT_STR (dty 1) goes
+			// out as text, not as the 7 byte binary form below.
+			// packet [0029] of test/protocol/oracle/samples/
+			// 9974-dev-oci23api7-native-datestrfetch-realserver.
+			// oraproxy defines the column dty 01 with a 63 byte
+			// buffer and [0032] answers with an unpadded 9 byte
+			// clr - "09" then "01-JAN-01" - with no blank
+			// padding out to the buffer width, unlike the
+			// SQLT_AFC case above
+			//
+			// the text is the backend's own, passed through
+			// unchanged, the way the number types above are.
+			// getField() hands this function whatever the
+			// connection module's oci define already converted
+			// the date to, and a legacy client's first statement
+			// after login is its own "alter session set
+			// NLS_DATE_FORMAT=...", which parseExecute() runs
+			// against the backend session - so the backend is
+			// already formatting dates the way this client
+			// asked.  getOracleDate() below parses that same
+			// text back out to build the binary form, so
+			// nothing is lost by skipping it
+			//
+			// an oracle backend configured with
+			// date_to_text_format formats dates that way
+			// instead of by session nls, and a non-oracle
+			// backend sends its own native date text.  both are
+			// what "convert this date to text" already does
+			// everywhere else in the server, not something this
+			// arm introduces
+			if (requestedtype==ORACLE_TYPE_VARCHAR) {
+				putLenBytes(field,(uint32_t)fieldsize);
+				debugWrite("field size: %lld",
+						(long long)fieldsize);
+				debugWrite("date: \"%.*s\"",
+						(int)fieldsize,field);
+				return true;
+			}
 			// every other type this function writes goes out as a
 			// clr - a length byte, then that many bytes, via
 			// putLenBytes() - and putRowData()'s own ORACLE_TYPE_DATE
