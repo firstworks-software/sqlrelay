@@ -1864,7 +1864,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint16_t columntype,
 						uint16_t requestedtype,
 						uint32_t definebuffersize);
-		void	putLobField(sqlrservercursor *cursor, uint32_t col);
+		bool	putLobField(sqlrservercursor *cursor, uint32_t col);
 		void	putOci7Error(uint32_t cursorid,
 					byte_t commandtype,
 					uint32_t rowsprocessed,
@@ -17106,9 +17106,11 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		wrotenullmarker=false;
 		if (lob) {
 			debugWrite("LOB");
-			// putLobField() has no way to report failure, but it
-			// writes something either way, a null marker at worst
-			putLobField(cursor,i);
+			// putLobField() writes real data, a zero-length
+			// marker, or nothing at all for a genuine null,
+			// and reports which case it hit via its return
+			// value.  see its own comments, and #10006
+			wrotenullmarker=putLobField(cursor,i);
 		} else if (!null && field) {
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
 			if (!putField(field,fieldsize,wiretype,
@@ -17149,10 +17151,18 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// test/protocol/oracle/samples/9746-dev-oci23api7-native-
 		// datatypes-realserver.oraproxy show that same 00/ff ff/7d 05
 		// across nine null columns spanning number, char, varchar2,
-		// date, timestamp, long and long raw.  the lob branch keeps
-		// the zero pair: the only null-lob rows in that capture leave
-		// the value marker byte out entirely and were broken off by
-		// the client mid-fetch, so what they show isn't settled yet.
+		// date, timestamp, long and long raw - every one of them
+		// preceded by its own null-marker byte, written above.  a
+		// null lob is different: packets [0865]/[0866] of
+		// test/protocol/oracle/samples/10006-dev-oci7-native-
+		// nulllob-realserver.oraproxy show the row marker (0x07,
+		// putRow()'s caller writes one ahead of every row) followed
+		// immediately by ff ff/7d 05 for each of two null lob
+		// columns - no marker byte at all ahead of either indicator,
+		// unlike every other type.  putLobField() matches this: it
+		// writes nothing at all for a genuine null, only for a real
+		// zero-length lob or the terminator after real chunks (see
+		// its own comments).  #10006.
 		if (wrotenullmarker) {
 			putAuthCount(0xffff,2);
 			putAuthCount(1405,2);
@@ -17495,7 +17505,7 @@ bool sqlrprotocol_oracle::putField(const char *field,
 
 #define MAX_BYTES_PER_CHAR	4
 
-void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
+bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 	debugStart("lob field");
 
@@ -17503,29 +17513,33 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 	uint64_t	loblength;
 	if (!cont->getLobFieldLength(cursor,col,&loblength)) {
 		debugWrite("null");
-		// send NULL as a single zero byte - the clr convention this
-		// file uses everywhere else for a null field (putRow()'s
-		// null-marker byte, putRowData(), putLenBytes()/
-		// getLenBytes() above), not the MySQL-style 0xfb this
-		// function borrowed wholesale from mysql.cpp's (commented
-		// out) buildLobField() when it was written.  0xfb isn't a
-		// null marker in Oracle's clr encoding at all - it's the
-		// ordinary short-form length byte for a 251-byte value -
-		// see #9609.
-		write(&reqpacket,(byte_t)0);
+		// a genuine null lob writes no value byte at all - not
+		// even the single zero byte an ordinary null column's
+		// marker uses (see putRow()).  packets [0865]/[0866] of
+		// test/protocol/oracle/samples/10006-dev-oci7-native-
+		// nulllob-realserver.oraproxy show the row marker
+		// followed immediately by both null lob columns'
+		// indicator/return-code pairs, with nothing in between.
+		// this function used to write a single zero byte here
+		// too, on the assumption a lob followed the same
+		// null-marker convention as every other type - #10006
+		// found that assumption wrong.
 		cont->closeLobField(cursor,col);
 		debugEnd();
-		return;
+		return true;
 	}
 
 	debugWrite("lob length: %lld",(long long)loblength);
 
-	// for lobs of 0 length
+	// for lobs of 0 length - a real, non-null empty lob, not a null
+	// one, so this keeps the zero-byte marker and reports "not
+	// null" - unlike the null case above, #10006's capture doesn't
+	// cover this shape, so it's left exactly as it was
 	if (!loblength) {
 		write(&reqpacket,(byte_t)0);
 		cont->closeLobField(cursor,col);
 		debugEnd();
-		return;
+		return false;
 	}
 
 	// clr framing - always the 0xfe long form, chunked, never the plain
@@ -17553,14 +17567,24 @@ void sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 					offset,charstoread,&charsread) ||
 					!charsread) {
 
-			// no data - a single zero byte either stands for
-			// null, if nothing was sent yet, or closes out the
-			// chunk run started below
-			debugWrite(start?"null":"end of chunks");
+			// no data.  if nothing was sent yet, this is a genuine
+			// null - a nonzero length that never actually produced
+			// a segment - and writes no value byte, same as the
+			// length-lookup-failure case above and for the same
+			// reason (#10006).  if a chunk run is already under
+			// way, this just closes it out, and the zero byte here
+			// is real chunk framing, not a null marker, so it stays
+			if (start) {
+				debugWrite("null");
+				cont->closeLobField(cursor,col);
+				debugEnd();
+				return true;
+			}
+			debugWrite("end of chunks");
 			write(&reqpacket,(byte_t)0);
 			cont->closeLobField(cursor,col);
 			debugEnd();
-			return;
+			return false;
 
 		} else {
 

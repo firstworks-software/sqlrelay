@@ -2541,11 +2541,11 @@ int main(int argc, char **argv) {
 
 
 	stdoutput.printf("odefin, oexec, ofen - a null lob\n");
-	// #9638 comment 13 only measured a lob column carrying a value.  a
-	// null lob going through the same inline SQLT_STR/SQLT_BIN define is
-	// expected to behave like a null LONG or LONG RAW column above - a -1
-	// indicator and nothing else on the wire - but that is this program's
-	// own inference, not something #9638 measured.  unverified, see #9717
+	// confirmed against a real oracle server: samples/10006-dev-oci7-
+	// native-nulllob-realserver.oraproxy, packet [0866], shows indicator
+	// -1 for both columns, with no value byte on the wire ahead of
+	// either one - unlike a null column of any other type, which gets a
+	// single zero byte first.  #10006
 	assertEquals(check(&lobcda,
 			oparse(&lobcda,(text *)
 				"select testclob,testblob from "

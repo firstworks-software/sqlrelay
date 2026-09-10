@@ -2329,6 +2329,17 @@
 		va_list reuse bug in rudiments' charstring::printf() (see
 		rudiments' own ChangeLog) - these are defensive hardening
 		for the same code path (#10021)
+	fixed the oracle protocol module's legacy (oci7) fetch path
+		sending indicator 0 and return code 0 for a null lob
+		column, the one case #10013 left unsettled; a live capture
+		against a real oracle server now shows a null lob gets
+		indicator -1 and return code 1405, same as every other null
+		column, but with no leading value byte at all - unlike every
+		other type, which writes a single zero byte ahead of the
+		indicator. putLobField() now reports back whether it wrote a
+		genuine null, so putRow() can send the right indicator/
+		return-code pair without the extra byte; a real, non-null
+		zero-length lob is unaffected (#10006)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
