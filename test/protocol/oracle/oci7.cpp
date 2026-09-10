@@ -2728,24 +2728,21 @@ int main(int argc, char **argv) {
 					"order by testnumber";
 
 	stdoutput.printf("ofen - multi-row fetch\n");
-	// oci8.cpp fetches 4 rows at a time into 4-slot client-side arrays.
-	// OCI7 cannot: striding a define across array slots needs odefinps's
-	// pv_skip/ind_skip/alen_skip/rc_skip arguments, and odefinps is not
-	// among the symbols acsite.m4's FW_CHECK_OCI7 link-tests; plain odefin
-	// has no stride argument at all.  what is worth testing here is the
-	// server side anyway - the module packing several rows into one fetch
-	// response - and ofen(&curcda,4) still asks for 4 rows in one
-	// TTI_FETCH.  the client just keeps the last one, so the per-row
-	// assertions oci8.cpp makes across the array become last-row
-	// assertions here
+	// oci8.cpp fetches 4 rows at a time into 4-slot client-side arrays, and
+	// OCI7 does the same.  plain odefin takes no stride arguments, but the
+	// client still advances the value, indicator, length and return code by
+	// one element per row, exactly as odefinps does for a contiguous
+	// layout - odefinps's pv_skip/ind_skip/alen_skip/rc_skip only add the
+	// non-contiguous case.  so bufl is one row's width and the buffers hold
+	// the whole batch; buffers sized for a single row are overrun
 	assertEquals(check(&curcda,
 			oparse(&curcda,(text *)arrayquery,
 					(sb4)-1,0,(ub4)2)),0);
-	char	arrnumber[32];
-	char	arrvarchar[64];
-	sb2	arrind[2];
-	ub2	arrlen[2];
-	ub2	arrcode[2];
+	char	arrnumber[4][32];
+	char	arrvarchar[4][64];
+	sb2	arrind[2][4];
+	ub2	arrlen[2][4];
+	ub2	arrcode[2][4];
 	bytestring::zero(arrnumber,sizeof(arrnumber));
 	bytestring::zero(arrvarchar,sizeof(arrvarchar));
 	bytestring::zero(arrind,sizeof(arrind));
@@ -2753,29 +2750,45 @@ int main(int argc, char **argv) {
 	bytestring::zero(arrcode,sizeof(arrcode));
 	assertEquals(check(&curcda,
 			odefin(&curcda,1,(ub1 *)arrnumber,
-				(sword)sizeof(arrnumber),SQLT_STR,-1,
-				&arrind[0],(text *)0,-1,-1,
-				&arrlen[0],&arrcode[0])),0);
+				(sword)sizeof(arrnumber[0]),SQLT_STR,-1,
+				&arrind[0][0],(text *)0,-1,-1,
+				&arrlen[0][0],&arrcode[0][0])),0);
 	assertEquals(check(&curcda,
 			odefin(&curcda,2,(ub1 *)arrvarchar,
-				(sword)sizeof(arrvarchar),SQLT_STR,-1,
-				&arrind[1],(text *)0,-1,-1,
-				&arrlen[1],&arrcode[1])),0);
+				(sword)sizeof(arrvarchar[0]),SQLT_STR,-1,
+				&arrind[1][0],(text *)0,-1,-1,
+				&arrlen[1][0],&arrcode[1][0])),0);
 	assertEquals(check(&curcda,oexec(&curcda)),0);
 
 	// 10 rows, 4 at a time - two full batches, then a short one
 	assertEquals(check(&curcda,ofen(&curcda,4)),0);
-	assertEquals((const char *)arrnumber,"4");
-	assertEquals((const char *)arrvarchar,"row4");
+	assertEquals((const char *)arrnumber[0],"1");
+	assertEquals((const char *)arrnumber[1],"2");
+	assertEquals((const char *)arrnumber[2],"3");
+	assertEquals((const char *)arrnumber[3],"4");
+	assertEquals((const char *)arrvarchar[0],"row1");
+	assertEquals((const char *)arrvarchar[1],"row2");
+	assertEquals((const char *)arrvarchar[2],"row3");
+	assertEquals((const char *)arrvarchar[3],"row4");
 	assertEquals((int)curcda.rpc,4);
 
 	assertEquals(check(&curcda,ofen(&curcda,4)),0);
-	assertEquals((const char *)arrnumber,"8");
-	assertEquals((const char *)arrvarchar,"row8");
+	assertEquals((const char *)arrnumber[0],"5");
+	assertEquals((const char *)arrnumber[1],"6");
+	assertEquals((const char *)arrnumber[2],"7");
+	assertEquals((const char *)arrnumber[3],"8");
+	assertEquals((const char *)arrvarchar[0],"row5");
+	assertEquals((const char *)arrvarchar[1],"row6");
+	assertEquals((const char *)arrvarchar[2],"row7");
+	assertEquals((const char *)arrvarchar[3],"row8");
 	assertEquals((int)curcda.rpc,8);
 
 	// only 2 rows left, so this batch comes up short and says so
 	assertTrue(ofen(&curcda,4)!=0);
+	assertEquals((const char *)arrnumber[0],"9");
+	assertEquals((const char *)arrnumber[1],"10");
+	assertEquals((const char *)arrvarchar[0],"row9");
+	assertEquals((const char *)arrvarchar[1],"row10");
 	assertEquals(errorCode(&curcda),OCI7_NO_DATA);
 	assertEquals((int)curcda.rpc,10);
 	stdoutput.printf("\n\n");
@@ -2808,11 +2821,11 @@ int main(int argc, char **argv) {
 	assertEquals(check(&widecda,
 			oparse(&widecda,(text *)widequery,
 					(sb4)-1,0,(ub4)2)),0);
-	char	widenumber[32];
-	char	widevarchar[2001];
-	sb2	wideind[2];
-	ub2	widelen[2];
-	ub2	widecode[2];
+	char	widenumber[6][32];
+	char	widevarchar[6][2001];
+	sb2	wideind[2][6];
+	ub2	widelen[2][6];
+	ub2	widecode[2][6];
 	bytestring::zero(widenumber,sizeof(widenumber));
 	bytestring::zero(widevarchar,sizeof(widevarchar));
 	bytestring::zero(wideind,sizeof(wideind));
@@ -2820,28 +2833,36 @@ int main(int argc, char **argv) {
 	bytestring::zero(widecode,sizeof(widecode));
 	assertEquals(check(&widecda,
 			odefin(&widecda,1,(ub1 *)widenumber,
-				(sword)sizeof(widenumber),SQLT_STR,-1,
-				&wideind[0],(text *)0,-1,-1,
-				&widelen[0],&widecode[0])),0);
+				(sword)sizeof(widenumber[0]),SQLT_STR,-1,
+				&wideind[0][0],(text *)0,-1,-1,
+				&widelen[0][0],&widecode[0][0])),0);
 	assertEquals(check(&widecda,
 			odefin(&widecda,2,(ub1 *)widevarchar,
-				(sword)sizeof(widevarchar),SQLT_STR,-1,
-				&wideind[1],(text *)0,-1,-1,
-				&widelen[1],&widecode[1])),0);
+				(sword)sizeof(widevarchar[0]),SQLT_STR,-1,
+				&wideind[1][0],(text *)0,-1,-1,
+				&widelen[1][0],&widecode[1][0])),0);
 	assertEquals(check(&widecda,oexec(&widecda)),0);
 
 	// all 6 rows in one fetch call - the module can only pack a few of
 	// these into any single on-the-wire packet, so it has to send more
 	// than one to satisfy the batch
 	assertEquals(check(&widecda,ofen(&widecda,6)),0);
-	assertEquals((const char *)widenumber,"6");
-	char	wideexpected[2001];
-	charstring::printf(wideexpected,sizeof(wideexpected),"row6");
-	for (size_t wj=charstring::getLength(wideexpected); wj<2000; wj++) {
-		wideexpected[wj]='x';
+	for (int wi=0; wi<6; wi++) {
+		char	wideexpectednumber[32];
+		charstring::printf(wideexpectednumber,
+					sizeof(wideexpectednumber),
+					"%d",wi+1);
+		assertEquals((const char *)widenumber[wi],wideexpectednumber);
+		char	wideexpected[2001];
+		charstring::printf(wideexpected,sizeof(wideexpected),
+					"row%d",wi+1);
+		for (size_t wj=charstring::getLength(wideexpected);
+						wj<2000; wj++) {
+			wideexpected[wj]='x';
+		}
+		wideexpected[2000]='\0';
+		assertEquals((const char *)widevarchar[wi],wideexpected);
 	}
-	wideexpected[2000]='\0';
-	assertEquals((const char *)widevarchar,wideexpected);
 	assertEquals((int)widecda.rpc,6);
 	assertTrue(ofen(&widecda,1)!=0);
 	assertEquals(errorCode(&widecda),OCI7_NO_DATA);
@@ -2862,11 +2883,12 @@ int main(int argc, char **argv) {
 	assertEquals(check(&exfetcda,
 			oparse(&exfetcda,(text *)arrayquery,
 					(sb4)-1,0,(ub4)2)),0);
-	char	exfetnumber[32];
-	char	exfetvarchar[64];
-	sb2	exfetind[2];
-	ub2	exfetlen[2];
-	ub2	exfetcode[2];
+	// wide enough for the ten row exact fetch below, which reuses these
+	char	exfetnumber[10][32];
+	char	exfetvarchar[10][64];
+	sb2	exfetind[2][10];
+	ub2	exfetlen[2][10];
+	ub2	exfetcode[2][10];
 	bytestring::zero(exfetnumber,sizeof(exfetnumber));
 	bytestring::zero(exfetvarchar,sizeof(exfetvarchar));
 	bytestring::zero(exfetind,sizeof(exfetind));
@@ -2874,17 +2896,17 @@ int main(int argc, char **argv) {
 	bytestring::zero(exfetcode,sizeof(exfetcode));
 	assertEquals(check(&exfetcda,
 			odefin(&exfetcda,1,(ub1 *)exfetnumber,
-				(sword)sizeof(exfetnumber),SQLT_STR,-1,
-				&exfetind[0],(text *)0,-1,-1,
-				&exfetlen[0],&exfetcode[0])),0);
+				(sword)sizeof(exfetnumber[0]),SQLT_STR,-1,
+				&exfetind[0][0],(text *)0,-1,-1,
+				&exfetlen[0][0],&exfetcode[0][0])),0);
 	assertEquals(check(&exfetcda,
 			odefin(&exfetcda,2,(ub1 *)exfetvarchar,
-				(sword)sizeof(exfetvarchar),SQLT_STR,-1,
-				&exfetind[1],(text *)0,-1,-1,
-				&exfetlen[1],&exfetcode[1])),0);
+				(sword)sizeof(exfetvarchar[0]),SQLT_STR,-1,
+				&exfetind[1][0],(text *)0,-1,-1,
+				&exfetlen[1][0],&exfetcode[1][0])),0);
 	assertEquals(check(&exfetcda,oexfet(&exfetcda,(ub4)1,0,1)),0);
-	assertEquals((const char *)exfetnumber,"1");
-	assertEquals((const char *)exfetvarchar,"row1");
+	assertEquals((const char *)exfetnumber[0],"1");
+	assertEquals((const char *)exfetvarchar[0],"row1");
 	assertEquals((int)exfetcda.rpc,1);
 	assertEquals(check(&exfetcda,oclose(&exfetcda)),0);
 	stdoutput.printf("\n\n");
@@ -2903,20 +2925,27 @@ int main(int argc, char **argv) {
 	bytestring::zero(exfetcode,sizeof(exfetcode));
 	assertEquals(check(&exfetcda2,
 			odefin(&exfetcda2,1,(ub1 *)exfetnumber,
-				(sword)sizeof(exfetnumber),SQLT_STR,-1,
-				&exfetind[0],(text *)0,-1,-1,
-				&exfetlen[0],&exfetcode[0])),0);
+				(sword)sizeof(exfetnumber[0]),SQLT_STR,-1,
+				&exfetind[0][0],(text *)0,-1,-1,
+				&exfetlen[0][0],&exfetcode[0][0])),0);
 	assertEquals(check(&exfetcda2,
 			odefin(&exfetcda2,2,(ub1 *)exfetvarchar,
-				(sword)sizeof(exfetvarchar),SQLT_STR,-1,
-				&exfetind[1],(text *)0,-1,-1,
-				&exfetlen[1],&exfetcode[1])),0);
+				(sword)sizeof(exfetvarchar[0]),SQLT_STR,-1,
+				&exfetind[1][0],(text *)0,-1,-1,
+				&exfetlen[1][0],&exfetcode[1][0])),0);
 	// exactly as many rows as the table has.  an exact fetch that consumes
 	// the whole result set may still report ORA-01403 at end of data -
 	// success is what is asserted here, and #9654 pins it either way
 	assertEquals(check(&exfetcda2,oexfet(&exfetcda2,(ub4)10,0,1)),0);
-	assertEquals((const char *)exfetnumber,"10");
-	assertEquals((const char *)exfetvarchar,"row10");
+	for (int ei=0; ei<10; ei++) {
+		char	exfetexpected[64];
+		charstring::printf(exfetexpected,sizeof(exfetexpected),
+					"%d",ei+1);
+		assertEquals((const char *)exfetnumber[ei],exfetexpected);
+		charstring::printf(exfetexpected,sizeof(exfetexpected),
+					"row%d",ei+1);
+		assertEquals((const char *)exfetvarchar[ei],exfetexpected);
+	}
 	assertEquals((int)exfetcda2.rpc,10);
 	assertEquals(check(&exfetcda2,oclose(&exfetcda2)),0);
 	stdoutput.printf("\n\n");
