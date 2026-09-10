@@ -1391,6 +1391,54 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
+	// #10031 - the assertions above only exercise default precision, so
+	// they'd pass even if the module reported the type's default rather
+	// than the column's own declaration.  these columns are declared with
+	// non-default precision and scale, which src/connections/oracle.cpp
+	// reads with OCIAttrGet (OCI_ATTR_PRECISION/OCI_ATTR_SCALE) and passes
+	// through unmodified.  the sizes match the default-precision case
+	// because the wire sizes in src/protocols/oracle.cpp are fixed per
+	// type and don't vary with precision.  they get a table of their own,
+	// rather than more columns on protocoltesttypes, to leave the fetches
+	// and value checks below alone
+	stdoutput.printf("OCIStmtExecute - describe declared "
+				"precision and scale\n");
+	OCIStmt	*precstmt=NULL;
+	assertEquals(
+		OCIHandleAlloc(env,(void **)&precstmt,OCI_HTYPE_STMT,0,NULL),
+		OCI_SUCCESS);
+	execImmediate("drop table protocoltest10031precision");
+	assertEquals(
+		execImmediate("create table protocoltest10031precision ("
+				"testtimestamp3 timestamp(3),"
+				"testtimestamptz3 timestamp(3) with time zone,"
+				"testintervalym4 interval year(4) to month,"
+				"testintervalds34 interval day(3) to second(4))"),
+		OCI_SUCCESS);
+	const char	*precquery="select * from protocoltest10031precision";
+	assertEquals(
+		OCIStmtPrepare(precstmt,err,(text *)precquery,
+				charstring::getLength(precquery),
+				OCI_NTV_SYNTAX,OCI_DEFAULT),
+		OCI_SUCCESS);
+	assertEquals(
+		OCIStmtExecute(svc,precstmt,err,0,0,NULL,NULL,
+				OCI_DESCRIBE_ONLY),
+		OCI_SUCCESS);
+	ub4	preccols=0;
+	assertEquals(
+		OCIAttrGet(precstmt,OCI_HTYPE_STMT,
+				&preccols,NULL,OCI_ATTR_PARAM_COUNT,err),
+		OCI_SUCCESS);
+	assertEquals((int)preccols,4);
+	assertColumn(precstmt,1,"TESTTIMESTAMP3",SQLT_TIMESTAMP,11,0,3);
+	assertColumn(precstmt,2,"TESTTIMESTAMPTZ3",SQLT_TIMESTAMP_TZ,13,0,3);
+	assertColumn(precstmt,3,"TESTINTERVALYM4",SQLT_INTERVAL_YM,5,4,0);
+	assertColumn(precstmt,4,"TESTINTERVALDS34",SQLT_INTERVAL_DS,11,3,4);
+	assertEquals(OCIHandleFree(precstmt,OCI_HTYPE_STMT),OCI_SUCCESS);
+	stdoutput.printf("\n\n");
+
+
 	stdoutput.printf("OCIDefineByPos - every type, matching SQLT code\n");
 	assertEquals(
 		OCIStmtExecute(svc,typestmt2,err,0,0,NULL,NULL,OCI_DEFAULT),
@@ -2950,6 +2998,9 @@ int main(int argc, char **argv) {
 	assertEquals(execImmediate("drop table protocoltestlong"),OCI_SUCCESS);
 	assertEquals(
 		execImmediate("drop table protocoltestlongraw"),OCI_SUCCESS);
+	assertEquals(
+		execImmediate("drop table protocoltest10031precision"),
+		OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestlob"),OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestarray"),OCI_SUCCESS);
 	assertEquals(execImmediate("drop table protocoltestclr"),OCI_SUCCESS);
