@@ -2369,6 +2369,13 @@
 		cursor the same way the query3 path already keeps its own,
 		and installQuery2OutBind() uses it the same way
 		installQuery3Binds() does (#10012)
+	fixed the oracle protocol module's legacy (oci7) lob chunked-read
+		loop (putLobField()) advancing its offset by the count
+		requested instead of the count actually read, which could
+		skip lob bytes on a short non-final read from the backend;
+		not reachable given this backend's current buffer sizing,
+		but fixed defensively for correctness and to guard against
+		future changes (#10025)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

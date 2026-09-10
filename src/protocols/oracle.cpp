@@ -17682,7 +17682,7 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 			}
 			debugWrite("chunk size: %lld",(long long)charsread);
 
-			offset=offset+charstoread;
+			offset=offset+charsread;
 		}
 	}
 }

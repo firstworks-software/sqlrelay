@@ -2376,20 +2376,25 @@ int main(int argc, char **argv) {
 
 	// oci8.cpp seeds 100000 characters, because OCILobRead can pull a lob
 	// back in pieces.  an OCI7 inline fetch has one define buffer and no
-	// way to ask for a second piece, and #9638 comment 13's measurement
-	// only covers a value short enough to fit that buffer, so this is
-	// seeded at 4000 characters instead
-	const ub4	biglength=4000;
-	char		bigvalue[4001];
+	// way to ask for a second piece, so that reason doesn't apply here -
+	// but putLobField() (src/protocols/oracle.cpp) re-reads the lob into
+	// the wire's long-form clr in 8192-character segments regardless of
+	// how the client fetches it, and #9638 comment 13's measurement never
+	// exercised a value past one segment.  20000 characters forces three
+	// segment reads while still fitting in the one define buffer an OCI7
+	// inline fetch has - unlike oci8.cpp, the blob is sized the same way
+	// below, since putLobField()'s segment loop doesn't distinguish clob
+	// from blob
+	const ub4	biglength=20000;
+	char		bigvalue[biglength+1];
 	for (ub4 i=0; i<biglength; i++) {
 		bigvalue[i]=(char)('a'+(i%25));
 	}
 	bigvalue[biglength]='\0';
-	ub1	blobvalue[512];
-	char	blobhex[sizeof(blobvalue)*2+1];
-	for (int i=0; i<(int)sizeof(blobvalue); i++) {
-		blobvalue[i]=(ub1)(i%256);
-		charstring::printf(blobhex+i*2,3,"%02X",(int)blobvalue[i]);
+	const ub4	bloblength=20000;
+	ub1	blobvalue[bloblength];
+	for (ub4 i=0; i<bloblength; i++) {
+		blobvalue[i]=(ub1)(i%25);
 	}
 
 	stdoutput.printf("create table\n");
@@ -2403,26 +2408,25 @@ int main(int argc, char **argv) {
 	// DMP_DIR is the one directory object testuser can see on the native
 	// instance.  Creating another needs CREATE ANY DIRECTORY, which it
 	// does not have.
-	// the blob goes in as a raw literal - 512 bytes is well inside what
-	// one hextoraw() holds
-	char	lobinsert[sizeof(blobhex)+256];
-	charstring::printf(lobinsert,sizeof(lobinsert),
-			"insert into protocoltestlob values "
-			"(empty_clob(),hextoraw('%s'),"
-			"bfilename('DMP_DIR','protocoltest.txt'))",
-			blobhex);
-	assertEquals(execImmediate(lobinsert),0);
+	// both lobs start empty and get seeded below through
+	// dbms_lob.writeappend, the same way as each other - 20000 bytes is
+	// past what one hextoraw() literal should carry
+	assertEquals(
+		execImmediate("insert into protocoltestlob values "
+				"(empty_clob(),empty_blob(),"
+				"bfilename('DMP_DIR','protocoltest.txt'))"),
+		0);
 	stdoutput.printf("\n\n");
 
 
 	stdoutput.printf("seed the clob\n");
-	// 160 rounds of the same 25 characters, which is what bigvalue holds
+	// 800 rounds of the same 25 characters, which is what bigvalue holds
 	assertEquals(
 		execImmediate("declare "
 				"c clob; "
 			"begin "
 				"dbms_lob.createtemporary(c,true); "
-				"for i in 1..160 loop "
+				"for i in 1..800 loop "
 					"dbms_lob.writeappend(c,25,"
 					"'abcdefghijklmnopqrstuvwxy'); "
 				"end loop; "
@@ -2433,10 +2437,31 @@ int main(int argc, char **argv) {
 	assertEquals(execImmediate("commit"),0);
 	assertEquals(
 		countRows("protocoltestlob where "
-				"dbms_lob.getlength(testclob)=4000"),1);
+				"dbms_lob.getlength(testclob)=20000"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("seed the blob\n");
+	// same shape as the clob above - 800 rounds of the same 25 bytes
+	// (0x00 through 0x18), which is what blobvalue holds
+	assertEquals(
+		execImmediate("declare "
+				"b blob; "
+			"begin "
+				"dbms_lob.createtemporary(b,true); "
+				"for i in 1..800 loop "
+					"dbms_lob.writeappend(b,25,"
+					"hextoraw('000102030405060708090A0B"
+					"0C0D0E0F101112131415161718')); "
+				"end loop; "
+				"update protocoltestlob set testblob=b; "
+				"dbms_lob.freetemporary(b); "
+			"end;"),
+		0);
+	assertEquals(execImmediate("commit"),0);
 	assertEquals(
 		countRows("protocoltestlob where "
-				"dbms_lob.getlength(testblob)=512"),1);
+				"dbms_lob.getlength(testblob)=20000"),1);
 	stdoutput.printf("\n\n");
 
 
@@ -2455,8 +2480,8 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	char	clobbuffer[4352];
-	ub1	blobbuffer[1024];
+	char	clobbuffer[biglength+352];
+	ub1	blobbuffer[bloblength+512];
 	char	bfilebuffer[1024];
 	sb2	lobind[3];
 	ub2	loblen[3];
@@ -2646,10 +2671,10 @@ int main(int argc, char **argv) {
 	assertEquals(execImmediate("commit"),0);
 	assertEquals(
 		countRows("protocoltestlob where "
-				"dbms_lob.getlength(testclob)=4000"),1);
+				"dbms_lob.getlength(testclob)=20000"),1);
 	assertEquals(
 		countRows("protocoltestlob where "
-				"dbms_lob.getlength(testblob)=512"),1);
+				"dbms_lob.getlength(testblob)=20000"),1);
 	assertEquals(check(&lobcda,oclose(&lobcda)),0);
 	stdoutput.printf("\n\n");
 
