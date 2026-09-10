@@ -9053,11 +9053,13 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 // -realtable-parse and -parse captures.  a rowid's wire size of 1 is the
 // same story: sending it unchanged, alongside the internal type 11 (rather
 // than the 104 the client's own SQLT_RDD names), is what makes a live oci7
-// client report the size back as 16, matching a real server exactly -
-// sending 104/1 instead reports as 208/1, and sending 11/16 (the client's
-// own reported size, put directly on the wire) reports back as 256, not 16 -
-// the samples/10016-*-oci7describe-rowid-* captures, on redhat9x86 and
-// solaris8sparc alike
+// client report the size back as 16, matching a real server exactly - a
+// server/sqlrelay comparison confirmed live on redhat9x86 and solaris8sparc,
+// the samples/10016-*-oci7describe-rowid-* captures.  sending 104 instead of
+// 11 is what makes a live client report 208 there, also in those captures;
+// putting the client's own reported size, 16, directly on the wire instead
+// of 1 was tried and made a live client report 256 - not committed anywhere,
+// don't repeat it
 uint32_t sqlrprotocol_oracle::getOci7DescribeColumnSize(uint16_t wiretype,
 							uint32_t size) {
 	if (wiretype==ORACLE_TYPE_DATE) {

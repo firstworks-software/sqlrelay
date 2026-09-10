@@ -2346,11 +2346,11 @@
 		null, so putRow() can send the right indicator/return-code
 		pair; a real, non-null zero-length lob is unaffected (#10006)
 	fixed the oracle protocol module's legacy (oci7) describe path
-		remapping a rowid column's type to 104 (SQLT_RDD) and
-		describing it 1 byte wide; a real oracle server sends an oci7
-		client the internal rowid type 11 with a size of 16, which
-		real oci7 clients on redhat9x86 and solaris8sparc both report
-		back verbatim (#10016)
+		remapping a rowid column's type to 104 (SQLT_RDD) instead of
+		sending the internal type 11 a real oracle server uses; real
+		oci7 clients on redhat9x86 and solaris8sparc both report a
+		rowid column back as type 11, size 16 once the wire carries
+		11 unmodified, matching a real server exactly (#10016)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

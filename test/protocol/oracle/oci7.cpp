@@ -1622,14 +1622,13 @@ int main(int argc, char **argv) {
 	// is OCI's own remapping of what the module actually puts on the wire.
 	// the module calls these 180 through 183, at
 	// src/protocols/oracle.cpp:145-148, and an OCI7 describe has no reason
-	// to remap them, so 180-183 is what is expected here.  unverified,
-	// see #9654
-	// classic OCI7's describe never surfaces precision or scale for the
-	// timestamp and interval family, the local-time-zone column below
-	// included.  a real oracle server reports 0/0 for every one of them,
-	// despite their declared timestamp(6) and interval(2)/(6) precision,
-	// and sqlrelay reports the same.  confirmed live against both, on real
-	// OCI7 clients on redhat9x86 and solaris8sparc - see
+	// to remap them, so 180-183 is what is expected here - confirmed live,
+	// see below.  classic OCI7's describe also never surfaces precision or
+	// scale for the timestamp and interval family, the local-time-zone
+	// column below included.  a real oracle server reports 0/0 for every
+	// one of them, despite their declared timestamp(6) and interval(2)/(6)
+	// precision, and sqlrelay reports the same.  confirmed live against
+	// both, on real OCI7 clients on redhat9x86 and solaris8sparc - see
 	// samples/10016-*-oci7describe-*.oraproxy
 	assertColumn(&typecda2,7,"TESTTIMESTAMP",180,11,0,0);
 	assertColumn(&typecda2,8,"TESTTIMESTAMPTZ",181,13,0,0);
