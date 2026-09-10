@@ -2965,28 +2965,40 @@ int main(int argc, char **argv) {
 	Cda_Def	errcda;
 	assertEquals(check(&errcda,openCursor(&errcda,-1)),0);
 
-	// the first three of these surface on oparse rather than on the
-	// execute, because in OCI7 the parse is the server round trip
+	// all four of these land on the execute rather than the parse.
+	// osql7() (src/protocols/oracle.cpp) hands the statement to the
+	// connection module, whose prepare is a client-side-only
+	// OCIStmtPrepare (src/connections/oracle.cpp) with no backend round
+	// trip, so no table, column, or syntax error can surface at oparse -
+	// only a local failure, like a filter violation or an unopened
+	// cursor, can.  run natively against a real oracle server, the first
+	// three would fail at oparse instead
 
-	stdoutput.printf("oparse - no such table\n");
+	stdoutput.printf("oexec - no such table\n");
 	const char	*badtable="select * from nosuchtable";
-	assertTrue(oparse(&errcda,(text *)badtable,(sb4)-1,0,(ub4)2)!=0);
+	assertEquals(check(&errcda,
+			oparse(&errcda,(text *)badtable,(sb4)-1,0,(ub4)2)),0);
+	assertTrue(oexec(&errcda)!=0);
 	// ORA-00942, table or view does not exist
 	assertEquals(errorCode(&errcda),942);
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("oparse - no such column\n");
+	stdoutput.printf("oexec - no such column\n");
 	const char	*badcolumn="select nosuchcolumn from protocoltesttable";
-	assertTrue(oparse(&errcda,(text *)badcolumn,(sb4)-1,0,(ub4)2)!=0);
+	assertEquals(check(&errcda,
+			oparse(&errcda,(text *)badcolumn,(sb4)-1,0,(ub4)2)),0);
+	assertTrue(oexec(&errcda)!=0);
 	// ORA-00904, invalid identifier
 	assertEquals(errorCode(&errcda),904);
 	stdoutput.printf("\n\n");
 
 
-	stdoutput.printf("oparse - bad syntax\n");
+	stdoutput.printf("oexec - bad syntax\n");
 	const char	*badsyntax="selectt 1 from dual";
-	assertTrue(oparse(&errcda,(text *)badsyntax,(sb4)-1,0,(ub4)2)!=0);
+	assertEquals(check(&errcda,
+			oparse(&errcda,(text *)badsyntax,(sb4)-1,0,(ub4)2)),0);
+	assertTrue(oexec(&errcda)!=0);
 	// ORA-00900, invalid SQL statement
 	assertEquals(errorCode(&errcda),900);
 	stdoutput.printf("\n\n");
