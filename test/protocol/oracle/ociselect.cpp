@@ -25,6 +25,13 @@
 // OCIDescriptorFree on all three.  Two switches, so the table can be
 // set up in one run and only the lob traffic captured in the next.
 // For #9589.
+//
+// Set OCISELECT_BIGPIECE=1 along with OCISELECT_LOB=1 to also read row
+// 3's 24000 byte blob a piece at a time with each piece far bigger than
+// the negotiated tns sdu, to see how a real server frames the raw lob
+// bytes it sends after a lob data packet's declared end.  Needs a
+// connect string that forces a small sdu, e.g.
+// (DESCRIPTION=(SDU=512)(ADDRESS=...)(CONNECT_DATA=...)).  For #10005.
 
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
@@ -150,6 +157,17 @@ int main(int argc, const char **argv) {
 			"to_clob(rpad('D',4000,'D'))||"
 			"to_clob(rpad('D',4000,'D'))||"
 			"to_clob(rpad('D',4000,'D')))",false) ||
+			!runStatement(svc,env,
+			"declare bl blob; "
+			"begin "
+			"insert into ociselectlob (id,b) values "
+			"(3,empty_blob()) returning b into bl; "
+			"for i in 0..11 loop "
+			"dbms_lob.writeappend(bl,2000,"
+			"utl_raw.cast_to_raw("
+			"rpad(chr(65+i),2000,chr(65+i)))); "
+			"end loop; "
+			"end;",false) ||
 			!runStatement(svc,env,"commit",false)) {
 			return 1;
 		}
@@ -526,6 +544,103 @@ int main(int argc, const char **argv) {
 
 		OCIDescriptorFree(bigclob,OCI_DTYPE_LOB);
 		OCIHandleFree(bigstmt,OCI_HTYPE_STMT);
+
+		// the same piecewise read as the blob above, but with
+		// each piece far bigger than the negotiated sdu, to see
+		// whether a real server splits the raw bytes it sends
+		// past a lob data packet's declared end across sdu sized
+		// tns packets or sends them as one run.  Off by default -
+		// it needs row 3 and a small sdu.  For #10005.
+		if (charstring::isYes(
+			environment::getValue("OCISELECT_BIGPIECE"))) {
+			OCILobLocator	*bigblob=NULL;
+			if (OCIDescriptorAlloc(env,(void **)&bigblob,
+					OCI_DTYPE_LOB,0,NULL)!=OCI_SUCCESS) {
+				stdoutput.printf("OCIDescriptorAlloc(bigblob) "
+							"failed\n");
+				return 1;
+			}
+			OCIStmt	*bigblobstmt=NULL;
+			if (OCIHandleAlloc(env,(void **)&bigblobstmt,
+					OCI_HTYPE_STMT,0,NULL)!=OCI_SUCCESS) {
+				stdoutput.printf("OCIHandleAlloc(bigblobstmt) "
+							"failed\n");
+				return 1;
+			}
+			const char	*bigblobquery=
+				"select b from ociselectlob where id=3";
+			stdoutput.printf("running: %s\n",bigblobquery);
+			status=OCIStmtPrepare(bigblobstmt,err,
+					(text *)bigblobquery,
+					charstring::getLength(bigblobquery),
+					OCI_NTV_SYNTAX,OCI_DEFAULT);
+			if (status!=OCI_SUCCESS) {
+				printError("OCIStmtPrepare(bigblob)",status);
+				return 1;
+			}
+			OCIDefine	*bigblobdef=NULL;
+			sb2	bigblobind=0;
+			if (OCIDefineByPos(bigblobstmt,&bigblobdef,err,1,
+					&bigblob,
+					(sb4)sizeof(OCILobLocator *),SQLT_BLOB,
+					&bigblobind,NULL,NULL,
+					OCI_DEFAULT)!=OCI_SUCCESS) {
+				printError("OCIDefineByPos(bigblob)",OCI_ERROR);
+				return 1;
+			}
+			status=OCIStmtExecute(svc,bigblobstmt,err,1,0,
+					NULL,NULL,OCI_DEFAULT);
+			if (status!=OCI_SUCCESS &&
+				status!=OCI_SUCCESS_WITH_INFO) {
+				printError("OCIStmtExecute(bigblob)",status);
+				return 1;
+			}
+			ub4	bigbloblen=0;
+			status=OCILobGetLength(svc,err,bigblob,&bigbloblen);
+			if (status!=OCI_SUCCESS) {
+				printError("OCILobGetLength(bigblob)",status);
+			} else {
+				stdoutput.printf("big blob length: %d\n",
+							(int)bigbloblen);
+			}
+			// three pieces: one under the 8060 byte chunk size
+			// the module hands out, one over it, and the tail.
+			// every one of them is bigger than a 512 or 2048
+			// byte sdu.
+			const ub4	pieceoffset[3]={1,8001,18001};
+			const ub4	pieceamount[3]={8000,10000,6000};
+			char	pbuffer[16384];
+			ub4	ptotal=0;
+			for (int piece=0; piece<3; piece++) {
+				bytestring::zero(pbuffer,sizeof(pbuffer));
+				ub4	pamt=pieceamount[piece];
+				status=OCILobRead(svc,err,bigblob,&pamt,
+						pieceoffset[piece],
+						pbuffer,sizeof(pbuffer),
+						NULL,NULL,0,SQLCS_IMPLICIT);
+				ptotal=ptotal+pamt;
+				stdoutput.printf("big blob read piece %d "
+						"(offset %d, amount %d): "
+						"status %d, %d bytes, "
+						"first %c, last %c\n",
+						piece+1,
+						(int)pieceoffset[piece],
+						(int)pieceamount[piece],
+						(int)status,(int)pamt,
+						(pamt)?pbuffer[0]:'-',
+						(pamt)?pbuffer[pamt-1]:'-');
+				if (status!=OCI_SUCCESS &&
+					status!=OCI_NEED_DATA) {
+					printError("OCILobRead(bigblob)",
+							status);
+					break;
+				}
+			}
+			stdoutput.printf("big blob read %d bytes "
+						"in 3 pieces\n",(int)ptotal);
+			OCIDescriptorFree(bigblob,OCI_DTYPE_LOB);
+			OCIHandleFree(bigblobstmt,OCI_HTYPE_STMT);
+		}
 
 		// free the locators - a capture shows whether this puts
 		// anything at all on the wire

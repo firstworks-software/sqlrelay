@@ -847,6 +847,49 @@ the decoder can be exercised without live server access:
                                       encoding, which read the same
                                       either way, are relied on (#9974)
 
+    10005-redhat9x86-oci8-native-piecewiselobread-smallsdu-realserver.oraproxy
+                                     ociselect with OCISELECT_LOB=1
+                                      OCISELECT_BIGPIECE=1 against the real
+                                      10.2 server at 10.0.2.3 through
+                                      oraproxy, with a forced
+                                      (DESCRIPTION=(SDU=512)(...)) connect
+                                      string on the proxied connection, to
+                                      see whether a real server frames the
+                                      raw lob bytes sendLobDataChunk()
+                                      writes past a PACKET_DATA_DESCRIPTOR
+                                      packet's declared end the same way
+                                      sqlrelay does (#10005). the accept
+                                      packet negotiates sdu 512 - the
+                                      requested value, taken as-is, not
+                                      clamped up. row 3 is a 24000 byte
+                                      blob, read in three explicit-offset
+                                      OCILobRead pieces (8000/10000/6000
+                                      bytes at offsets 1/8001/18001), each
+                                      far bigger than the sdu. the capture
+                                      contains zero PACKET_DATA_DESCRIPTOR
+                                      (type 15) packets anywhere - the
+                                      server answers even this explicit
+                                      piecewise lob read entirely inline,
+                                      as ordinary DATA packets (type 6,
+                                      flags 0x00), the same mechanism
+                                      #9989's big-clob capture already
+                                      showed for the ordinary fetch path.
+                                      a byte-level walk of the whole
+                                      server-to-client stream (67053
+                                      bytes) confirms every packet parses
+                                      as ordinary framing with no leftover
+                                      bytes and no type-15 header anywhere.
+                                      sqlrelay's sendLobDataChunk()/
+                                      PACKET_DATA_DESCRIPTOR mechanism is
+                                      therefore not what a real server
+                                      does for a piecewise OCILobRead
+                                      either - #10005 closes with no code
+                                      change needed. four client
+                                      TTI_LOB_OPERATIONS calls appear for
+                                      row 3, not three - the first is
+                                      OCILobGetLength(), the remaining
+                                      three are the pieces; no evidence
+                                      OCI itself split any piece (#10005)
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
 oraproxy locally on the client host and pointing the client's tnsnames.ora
