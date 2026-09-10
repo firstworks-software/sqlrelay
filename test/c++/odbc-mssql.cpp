@@ -49,7 +49,16 @@ int main(int argc, char **argv) {
 	uint16_t	id;
 	char		*filename;
 
-	#define	LARGE_BUFFER_LENGTH	8192
+	// 20*1024 spans 3 of the top-level protocol's 8192-char lob
+	// chunks, matching the convention in test/c++/db2.cpp.  Note that
+	// this does NOT exercise odbccursor::getLobFieldSegment()'s
+	// multi-segment loop: odbc.cpp hardcodes fetchlobsasstrings=true
+	// for "Microsoft SQL Server" (a workaround for SQL Server not
+	// allowing SQLBindCol and SQLGetData to mix on the same
+	// statement), which makes isLob() always false here, so lob
+	// columns are fetched as ordinary maxfieldsize-bound strings
+	// instead of through the segment-read path.
+	#define	LARGE_BUFFER_LENGTH	(20*1024)
 	char		largebuffer[LARGE_BUFFER_LENGTH+1];
 
 	// SQL Server caps a varchar output parameter at 8000 characters

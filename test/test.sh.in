@@ -100,6 +100,7 @@ usage() {
 	echo "    odbc-mssql, freetds-mssql, tdsfreetdsmssqlprotocol,"
 	echo "    tdsprotocoltls and tdsprotocoltlsserverauth all hit the mssql"
 	echo "    server, so that group runs alongside the sap group"
+	echo "    db2 and odbc-db2 both hit the db2 server"
 }
 
 # stop any instances left running from a previous run.  only the instances
@@ -142,6 +143,13 @@ stop_instances() {
 		if ( test "$_instance" = "odbc-mssql" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id odbcmssqlmaxfieldsize
+		fi
+
+		# the odbc-db2 test also has a small-maxfieldsize instance, to
+		# force the chunked lob path in getLobFieldSegment (#10038)
+		if ( test "$_instance" = "odbc-db2" )
+		then
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id odbcdb2maxfieldsize
 		fi
 
 		# the postgresqlupsert test also has a second instance, whose
@@ -237,6 +245,16 @@ instance_applicable() {
 	if ( test "$instance" = "odbc-mssql" -o "$instance" = "freetds-mssql" -o "$instance" = "tdsfreetdsmssqlprotocol" -o "$instance" = "tdsprotocoltls" -o "$instance" = "tdsprotocoltlsserverauth" )
 	then
 		if ( test -z "`grep mssqlodbc /etc/odbc.ini 2> /dev/null`" )
+		then
+			return 1
+		fi
+	fi
+
+	# odbc-db2 connects through the DEV dsn directly, so it needs that
+	# dsn configured too
+	if ( test "$instance" = "odbc-db2" )
+	then
+		if ( test -z "`grep '\[DEV\]' /etc/odbc.ini 2> /dev/null`" )
 		then
 			return 1
 		fi
@@ -363,6 +381,15 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the odbc-db2 test needs a second instance, with a small
+	# maxfieldsize, to force the chunked lob path in
+	# getLobFieldSegment (#10038)
+	if ( test "$instance" = "odbc-db2" )
+	then
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcdb2maxfieldsize -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# the postgresqlupsert test needs a second instance, whose trigger
 	# recognizes the duplicate-key error via sqlstate= instead of
 	# string= (#9620)
@@ -418,6 +445,11 @@ stop_instance() {
 	then
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcmssqlmaxfieldsize
+	fi
+	if ( test "$instance" = "odbc-db2" )
+	then
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id odbcdb2maxfieldsize
 	fi
 	if ( test "$instance" = "postgresqlupsert" )
 	then
@@ -1565,7 +1597,7 @@ done
 
 # determine the set of instances to test, and a tag naming that set, so that
 # runs against different backends don't write each other's output files
-TESTINSTANCES="@TESTINSTANCES@"
+TESTINSTANCES="@TESTINSTANCES@ odbc-db2"
 TAG="all"
 if ( test -n "$1" )
 then

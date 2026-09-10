@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- pairs the odbc connection module with the DEV db2 dsn, to give
+	     odbc.cpp's getLobFieldSegment (identical to informix.cpp's) a
+	     live backend, since informix itself isn't reachable on every
+	     dev host.  the dsn already encodes the database, so there's no
+	     db= to fill in here. -->
+	<instance id="odbc-db2" dbase="odbc">
+		<listeners>
+			<listener port="9013" socket="/tmp/odbc-db2.socket"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=DEV;user=db2inst1;password=testpassword"/>
+		</connections>
+	</instance>
+
+	<!-- maxfieldsize is the per-field buffer size odbc.cpp's
+	     getLobFieldSegment is handed, and the default of 32768 is
+	     bigger than the 20K test value in odbc-db2.cpp's LONG LOBS
+	     test, so an ordinary bound fetch round-trips it without ever
+	     forcing the chunked lob path - proving nothing about
+	     getLobFieldSegment specifically (#10038).  a maxfieldsize well
+	     under 20K forces the lob path to run to get the value back
+	     intact.  it is on its own port because the odbc-db2 instance
+	     above already owns 9013. -->
+	<instance id="odbcdb2maxfieldsize" dbase="odbc">
+		<listeners>
+			<listener port="9038" socket="/tmp/odbcdb2maxfieldsize.socket"/>
+		</listeners>
+		<connections>
+			<connection string="dsn=DEV;user=db2inst1;password=testpassword;maxfieldsize=1024"/>
+		</connections>
+	</instance>
+
+</instances>
