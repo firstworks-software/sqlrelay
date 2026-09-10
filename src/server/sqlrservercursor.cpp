@@ -1126,7 +1126,15 @@ uint16_t sqlrservercursor::getColumnType(uint32_t col) {
 }
 
 const char *sqlrservercursor::getColumnTypeName(uint32_t col) {
-	return datatypestring[getColumnType(col)];
+	uint16_t	type=getColumnType(col);
+	// datatypestring[] is a hand-maintained parallel array to the
+	// datatype enum in datatypes.h - guard against a type code past its
+	// end (a connection module bug, or the two drifting out of sync)
+	// rather than indexing off the end of the array
+	if (type>=END_DATATYPE) {
+		return NULL;
+	}
+	return datatypestring[type];
 }
 
 uint16_t sqlrservercursor::getColumnTypeNameSize(uint32_t col) {

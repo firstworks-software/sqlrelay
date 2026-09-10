@@ -2318,6 +2318,17 @@
 		redirecting stdout anywhere, so the output went nowhere. the
 		implicit debug logger now enables file="yes" too, so debug
 		output lands in the debug directory regardless (#10019)
+	hardened getColumnTypeName() and the oracle protocol module's debug
+		logging around a sqlr-connection process on solaris8sparc
+		found spinning indefinitely at 98-99% cpu during debug
+		logging: sqlrservercursor::getColumnTypeName() now bounds
+		its type code against the datatype list instead of indexing
+		off the end of it, and cacheColumnDefinitions()'s debug
+		logging no longer hands a possibly-NULL column type name to
+		a %s conversion. the actual root cause turned out to be a
+		va_list reuse bug in rudiments' charstring::printf() (see
+		rudiments' own ChangeLog) - these are defensive hardening
+		for the same code path (#10021)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

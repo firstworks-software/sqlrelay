@@ -16745,7 +16745,11 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 		ct[i]=getUnknownColumnType(cursor,i,ct[i]);
 		ct[i]=getLongColumnType(cursor,i,ct[i]);
 		ct[i]=getLobColumnType(cursor,i,ct[i]);
-		debugWrite("%s: %d",cont->getColumnTypeName(cursor,i),ct[i]);
+		// getColumnTypeName() can return NULL (invalid column info,
+		// or an unrecognized type code) - don't hand that to %s
+		const char	*coltypename=cont->getColumnTypeName(cursor,i);
+		debugWrite("%s: %d",(coltypename)?coltypename:"(unknown)",
+					ct[i]);
 	}
 
 	// A cursor with no columns has nothing to cache.  Marking it cached
