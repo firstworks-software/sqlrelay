@@ -1267,6 +1267,93 @@ the decoder can be exercised without live server access:
                                       and because it settles two things:
                                       native framing is not required, and the
                                       key size is (#10048)
+    10048-dev-oci23api7-bannerrewrite-both-realserver.oraproxy
+                                     the same oci7bind --bind=none run against
+                                      the real 10.2 server, with both ends'
+                                      platform banners rewritten on the way
+                                      past to a neutral string matching
+                                      neither end - the server's
+                                      "Linuxi386/Linux-2.0.34-8.1.0" to
+                                      "Testbed64/TestOS-1.2.3-4.5.6" and the
+                                      client's "x86_64/Linux 2.4.xx" to
+                                      "Testbed64/TestOS1.2". The login still
+                                      succeeds and the O3LOGON exchange is
+                                      byte-for-byte the same shape as the
+                                      unrewritten capture above: a 64
+                                      character session key at native fixed
+                                      width, then the same 66 byte summary.
+                                      So the banner drives nothing in this
+                                      exchange. The two banners are different
+                                      lengths, which one oraproxy cannot
+                                      rewrite in both directions, so this was
+                                      taken through two chained oraproxies -
+                                      the client-facing one rewriting the
+                                      client's banner in the "c" direction,
+                                      the server-facing one rewriting the
+                                      server's in the "s" direction, the
+                                      capture taken at the client-facing one.
+                                      Rewriting only the server side, which
+                                      gets ORA-28547 against the 12.2 server,
+                                      logs in fine here: this client's banner
+                                      never matched the 10.2 server's to begin
+                                      with, so neither end was in the native
+                                      encoding for a banner rewrite to take it
+                                      out of (#10048)
+    10048-dev-oci23api7-bannerrewrite-universalreps-realserver.oraproxy
+                                     the same again with
+                                      ORAPROXY_UNIVERSAL_REPS=1, so the real
+                                      server answers in the count prefixed
+                                      integer representation the module uses.
+                                      This is the reference capture: what a
+                                      real 10.2 server sends THIS client in
+                                      the module's own encoding, and it is not
+                                      what the module sends. [0014] is
+                                      "08 | 01 40 | 40 | 64 hex chars" then a
+                                      31 byte summary, where the module sends
+                                      "08 | 01 20 | 20 | 32 hex chars" then a
+                                      29 byte summary. The summary difference
+                                      is exactly two bytes, "01 02" - a length
+                                      prefixed field carrying 2 - inserted
+                                      right after the end of call status;
+                                      every field after it is identical,
+                                      including the call number. [0015] is the
+                                      client's TTI_LOGON_PRESENT_PWD, portable
+                                      framing, with a 64 character password
+                                      field, and the session runs to a clean
+                                      logoff (#10048)
+    10048-dev-oci23api7-universalreps-realserver.oraproxy
+                                     the control for the pair above:
+                                      ORAPROXY_UNIVERSAL_REPS=1 with no banner
+                                      rewrite at all. Identical in every field
+                                      to the capture above - same framing,
+                                      same 64 character key, same 31 byte
+                                      summary - which is what pins the banner
+                                      as contributing nothing and the data
+                                      type negotiation's integer
+                                      representation as the thing that picks
+                                      the challenge's framing (#10048)
+    10048-dev-oci23api7-ccap05-realserver.oraproxy
+                                     the same run with one byte of the
+                                      client's data type negotiation rewritten
+                                      on the way past: compile capability
+                                      index 4, CCAP_LOGON_TYPES, from this
+                                      client's 0xef to the 0x05 a genuine
+                                      OCI7 client advertises. Exactly one byte
+                                      of packet [0009]'s 1967 differs from the
+                                      unrewritten capture, at offset 21, and
+                                      the real server's answer at [0014] drops
+                                      from a 64 character session key to a 32
+                                      character one. Same server, same
+                                      account, same everything else. The
+                                      summary stays the 66 byte one, so the
+                                      key size and the summary shape are two
+                                      separate client-driven selectors. The
+                                      client then fails locally with ORA-12642
+                                      rather than hanging - it advertised 0x05
+                                      but is still Instant Client 23
+                                      underneath. Taken with a scratch proxy
+                                      rather than oraproxy, whose rewrite
+                                      takes strings, not raw bytes (#10048)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
