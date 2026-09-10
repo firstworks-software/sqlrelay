@@ -12307,6 +12307,10 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 	// the first one puts the session on the modern path for good
 	// can apparently be used for fetch too
 
+	// the query text, the descriptors behind it and the bind values
+	// behind those can each run past one packet
+	reassemble=true;
+
 	// parse the request...
 	uint32_t	options=0;
 	uint32_t	cursorid=0;
@@ -12547,32 +12551,32 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	uint32_t	unused=0;
 
 	// the sequence number is a raw byte, not a pointer and not a count
-	if (end-rp<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated query3 sequence number");
 		return false;
 	}
 	read(rp,&sequence,&rp);
 
-	if (!readLenPreInt(rp,end,options,&rp) ||
-		!readLenPreInt(rp,end,cursorid,&rp) ||
+	if (!getLenPreInt(rp,&end,options,&rp) ||
+		!getLenPreInt(rp,&end,cursorid,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,querysize,&rp) ||
+		!getLenPreInt(rp,&end,querysize,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&vectorsize,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&prefetchbuffersize,&rp) ||
-		!readLenPreInt(rp,end,prefetchrows,&rp) ||
-		!readLenPreInt(rp,end,maxlongsize,&rp) ||
-		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&bindcount,&rp) ||
+		!getLenPreInt(rp,&end,&vectorsize,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
+		!getLenPreInt(rp,&end,&prefetchbuffersize,&rp) ||
+		!getLenPreInt(rp,&end,prefetchrows,&rp) ||
+		!getLenPreInt(rp,&end,maxlongsize,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getLenPreInt(rp,&end,&bindcount,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&definecount,&rp)) {
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getPointer(rp,end,&pointer,&rp) ||
+		!getLenPreInt(rp,&end,&definecount,&rp)) {
 		debugWrite("truncated query3 request");
 		return false;
 	}
@@ -12587,14 +12591,14 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// this same shape (it negotiates no representation for the pointer
 	// datatype, which leaves pointersize at its universal default)
 	if (pointersize==POINTER_SIZE_UNIVERSAL &&
-		(!readLenPreInt(rp,end,&unused,&rp) ||
+		(!getLenPreInt(rp,&end,&unused,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp) ||
+		!getLenPreInt(rp,&end,&unused,&rp) ||
 		!getPointer(rp,end,&pointer,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp) ||
-		!readLenPreInt(rp,end,&unused,&rp))) {
+		!getLenPreInt(rp,&end,&unused,&rp) ||
+		!getLenPreInt(rp,&end,&unused,&rp))) {
 		debugWrite("truncated query3 request");
 		return false;
 	}
@@ -12604,68 +12608,46 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 		// anything past the fields above - a newer field version's
 		// own growth, if any - is zero for a query with no binds, so
 		// skip it as a run of zeros rather than count it (a query's
-		// text never starts with a zero byte)
-		while (rp<end && !(*rp)) {
+		// text never starts with a zero byte).
+		//
+		// Running out of zeros here is not a legitimate end of the
+		// message, unlike the boundaries the reads below stop at: a
+		// nonzero declared size is the wire's own promise that text
+		// follows, so a non-zero byte has to be behind the padding
+		// and running out means the rest is still on the wire.
+		while (have(rp,1,&end) && !(*rp)) {
 			rp++;
 		}
 
-		if (rp<end && *rp==CLR_LONG_FORM_MARKER) {
+		// the long form marker, the length byte, or the first byte
+		// of the text - whichever shape this is, one of them is there
+		if (!have(rp,1,&end)) {
+			debugWrite("truncated query text");
+			return false;
+		}
 
-			// chunked (long form) query text: the marker, then a
-			// run of chunks concatenated together and ended by a
-			// zero-length chunk.  a chunk's length is a single
-			// raw byte, or, if the client negotiated
-			// CCAP_TTC3_BIG_CHUNK_CLR, a count prefixed ub4; a
-			// ub4 zero is a lone zero byte, so the closing chunk
-			// reads the same either way.  the raw byte shape is
+		if (*rp==CLR_LONG_FORM_MARKER) {
+
+			// chunked (long form) query text - the same shape a
+			// value over 252 bytes takes, so the marker is
+			// consumed here and the chunks behind it are read the
+			// way getLenBytes() reads them, into the response
+			// packet pool.  the raw byte chunk length shape is
 			// confirmed against a capture taken while the module
 			// advertised the big-chunk bit clear, which is all
 			// that capture is evidence about: 0xfe, 0xff (255),
 			// 255 bytes of text, 0x1f (31), 31 more bytes, 0x00
 			// to end - a 286-byte "create table" statement split
-			// at the 255-byte mark.  the chunks aren't contiguous
-			// (each is separated from the next by its length), so
-			// reassemble them into one buffer; (end-rp) is a safe
-			// upper bound on the reassembled size, since every
-			// chunk's length costs at least a byte of its own
+			// at the 255-byte mark
 			rp++;
-			char	*querytext=(char *)resppacketpool->allocate(
-							(size_t)(end-rp));
+			const byte_t	*querytext=NULL;
 			uint32_t	querytextsize=0;
-			for (;;) {
-				if (rp>=end) {
-					debugWrite("truncated chunked "
-							"query text");
-					return false;
-				}
-				uint32_t	chunksize=0;
-				if (bigchunkclr) {
-					if (!readLenPreInt(rp,end,
-							&chunksize,&rp)) {
-						debugWrite("bad chunked "
-							"query text "
-							"chunk length");
-						return false;
-					}
-				} else {
-					byte_t	rawchunksize=0;
-					read(rp,&rawchunksize,&rp);
-					chunksize=rawchunksize;
-				}
-				if (!chunksize) {
-					break;
-				}
-				if ((size_t)(end-rp)<(size_t)chunksize) {
-					debugWrite("truncated chunked "
-							"query text");
-					return false;
-				}
-				bytestring::copy(querytext+querytextsize,
-							rp,chunksize);
-				rp+=chunksize;
-				querytextsize+=chunksize;
+			if (!getLongFormBytes(rp,end,&querytext,
+							&querytextsize,&rp)) {
+				debugWrite("bad long form query text");
+				return false;
 			}
-			*query=querytext;
+			*query=(const char *)querytext;
 			*querysize=querytextsize;
 
 		} else {
@@ -12679,25 +12661,44 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 			// and ojdbc declares the byte count and writes no length byte
 			// at all.  so the declared size is only wrong for OCI, and
 			// only OCI's length byte can be believed over it - believing
-			// ojdbc's first character as a length would eat it.  telling
-			// OCI's case from ojdbc's by whether the declared size
-			// overflows the packet works for a long statement, but not
-			// for one short enough that both fit - "commit" on a 4 byte
-			// per character charset declares 24 with 24 bytes still in
-			// the packet, and the 18 bytes past the text went to the
-			// backend as part of the query, which is the ORA-00911 this
-			// fixes - so fall back on the module's own oci discriminator
-			if (rp<end && *rp && (uint32_t)(*rp)<*querysize &&
-				(ociclient ||
-					(size_t)(end-rp)<(size_t)*querysize)) {
+			// ojdbc's first character as a length would eat it
+			//
+			// How many bytes have arrived says nothing about which of
+			// them sent this, so the module's own oci flag decides it
+			// alone.  A declared size that overflows what has arrived
+			// doesn't mean an inflated one: the rest of the text may
+			// simply still be on the wire, and taking that for OCI's
+			// case reads an ojdbc statement's first character as a
+			// length and hands the backend the rest.  Nor is it enough
+			// even when a request does fit one packet - "commit" on a
+			// 4 byte per character charset declares 24 with 24 bytes
+			// still on hand, and the 18 bytes past the text going to
+			// the backend as part of the query is an ORA-00911.  And
+			// waiting for the declared size and deciding after is not
+			// the fix either: for OCI those bytes never come, so the
+			// session would wait out the continuation timeout on an
+			// ordinary request.
+			if (*rp && (uint32_t)(*rp)<*querysize && ociclient) {
 				*querysize=*rp;
 				rp++;
-			} else if (rp<end && *querysize<=CLR_MAX_SHORT_LENGTH &&
+			} else if (*querysize<=CLR_MAX_SHORT_LENGTH &&
 						(uint32_t)(*rp)==*querysize) {
 				rp++;
 			}
 
-			if ((size_t)(end-rp)<(size_t)*querysize) {
+			// the declared size is only checked against
+			// maxquerysize once the whole request is parsed, so a
+			// bogus one would otherwise read packets toward a size
+			// no number of them can satisfy
+			if ((size_t)*querysize>
+				(size_t)(resppacket+maxrequestsize-rp)) {
+				debugWrite("query text past the request");
+				return false;
+			}
+
+			// only now is the size the real one, so this is the
+			// first point it is safe to wait on
+			if (!have(rp,(size_t)*querysize,&end)) {
 				debugWrite("truncated query text");
 				return false;
 			}
@@ -12757,11 +12758,22 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 
 	debugStart("query3 binds");
 
+	// every element costs at least the count byte in front of it, so a
+	// vector longer than the room left for the request is a bad read
+	// rather than a real one.  the walk below refills for each element
+	// it comes up short of, so without this a bogus size reads packets
+	// toward a vector no number of them can satisfy
+	if (vectorsize>(uint32_t)(resppacket+maxrequestsize-rp)) {
+		debugWrite("al8i4 vector past the request");
+		debugEnd();
+		return false;
+	}
+
 	// the al8i4 vector, whose second element is the iteration count
 	uint32_t	iterations=0;
 	for (uint32_t i=0; i<vectorsize; i++) {
 		uint32_t	value=0;
-		if (!readLenPreInt(rp,end,&value,&rp)) {
+		if (!getLenPreInt(rp,&end,&value,&rp)) {
 			debugWrite("truncated al8i4 vector");
 			debugEnd();
 			return false;
@@ -12771,6 +12783,26 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		}
 	}
 	debugWrite("iterations: %d",iterations);
+
+	// a descriptor is at least twelve bytes - four raw and eight one-byte
+	// counts - so a count that couldn't fit in the room left for the
+	// request is a bad read rather than a real list.  this bounds the
+	// allocation below too, so a wire value can't ask for an arbitrary
+	// one.  the room left is measured against the buffer the request is
+	// being reassembled in rather than against what has arrived so far,
+	// since the descriptors may still be on the wire.
+	//
+	// the two are checked separately rather than as a sum: both come
+	// straight off the wire as full-width uint32_ts, and adding them
+	// first lets a count of 0xffffffff wrap past a check it should have
+	// failed
+	uint32_t	descriptorspace=(uint32_t)
+			((resppacket+maxrequestsize-rp)/12);
+	if (bindcount>descriptorspace || definecount>descriptorspace) {
+		debugWrite("descriptor counts out of range");
+		debugEnd();
+		return false;
+	}
 
 	// the bind descriptors
 	if (bindcount>query3bindavail) {
@@ -12842,20 +12874,31 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 
 	query3blocks=0;
 
+	// The descriptor walk ahead of this one takes its end by value, so a
+	// refill in there never reached the copy this was called with, and rp
+	// can already be past it.  have() takes end fresh on its own, but the
+	// test below is plain arithmetic, so it's taken fresh here instead -
+	// otherwise a stale end reads as "no row data" and every block in the
+	// request is dropped without a word.
+	end=resppacket+resppacketsize;
+
 	// some clients claim 0 iterations but send row data anyway, so when
-	// there are binds to fill, the block count has to come from what's
-	// left in the packet rather than from the claim.  a block is at least
-	// a marker byte plus 1 byte per value, and no more blocks than the
-	// bind values will fit in
+	// there are binds to fill, the block count has to come from the room
+	// left for the request rather than from the claim.  a block is at
+	// least a marker byte plus 1 byte per value, and no more blocks than
+	// the bind values will fit in.  the room is measured against the
+	// buffer the request is being reassembled in rather than against what
+	// has arrived so far, since the blocks may still be on the wire
 	uint32_t	maxblocks=iterations;
 	if (!iterations && bindcount && rp<end) {
-		uint64_t	bypacket=(uint64_t)(end-rp)/
+		uint64_t	byrequest=(uint64_t)
+					(resppacket+maxrequestsize-rp)/
 						((uint64_t)bindcount+1);
 		uint64_t	byvalues=(uint64_t)MAX_QUERY3_BIND_VALUES/
 						(uint64_t)bindcount;
-		maxblocks=(uint32_t)((bypacket<byvalues)?bypacket:byvalues);
+		maxblocks=(uint32_t)((byrequest<byvalues)?byrequest:byvalues);
 		debugWrite("iterations 0 - row data blocks bounded "
-						"by the packet: %d",maxblocks);
+					"by the request: %d",maxblocks);
 	}
 
 	uint64_t	valuecount=(uint64_t)maxblocks*(uint64_t)bindcount;
@@ -12921,7 +12964,7 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	uint32_t	maxdatasize=0;
 	uint32_t	oaccolid=0;
 
-	if ((size_t)(end-rp)<4) {
+	if (!have(rp,4,&end)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}
@@ -12930,44 +12973,51 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 	read(rp,&precision,&rp);
 	read(rp,&scale,&rp);
 
-	if (!readLenPreInt(rp,end,buffersize,&rp) ||
-		!readLenPreInt(rp,end,&maxelements,&rp) ||
-		!readLenPreInt(rp,end,&contflags,&rp) ||
-		!readLenPreInt(rp,end,&oidlength,&rp)) {
+	if (!getLenPreInt(rp,&end,buffersize,&rp) ||
+		!getLenPreInt(rp,&end,&maxelements,&rp) ||
+		!getLenPreInt(rp,&end,&contflags,&rp) ||
+		!getLenPreInt(rp,&end,&oidlength,&rp)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}
 
 	// no capture has a non-zero oid length, but a declared length that
-	// isn't followed by its bytes would be the odd one out
+	// isn't followed by its bytes would be the odd one out, and one past
+	// the room left for the request can't be satisfied by any number of
+	// packets, so it is rejected rather than read toward
 	if (oidlength) {
-		if ((size_t)(end-rp)<(size_t)oidlength) {
+		if ((size_t)oidlength>
+			(size_t)(resppacket+maxrequestsize-rp)) {
+			debugWrite("bind descriptor oid past the request");
+			return false;
+		}
+		if (!have(rp,(size_t)oidlength,&end)) {
 			debugWrite("truncated bind descriptor oid");
 			return false;
 		}
 		rp+=oidlength;
 	}
 
-	if (!readLenPreInt(rp,end,&version,&rp) ||
-		!readLenPreInt(rp,end,&charsetid,&rp)) {
+	if (!getLenPreInt(rp,&end,&version,&rp) ||
+		!getLenPreInt(rp,&end,&charsetid,&rp)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}
 
-	if ((size_t)(end-rp)<1) {
+	if (!have(rp,1,&end)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}
 	read(rp,&csfrm,&rp);
 
-	if (!readLenPreInt(rp,end,&maxdatasize,&rp)) {
+	if (!getLenPreInt(rp,&end,&maxdatasize,&rp)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}
 
 	// 12.2 and later append an oaccolid
 	if (fieldversion>=CCAP_FIELD_VERSION_12_2 &&
-			!readLenPreInt(rp,end,&oaccolid,&rp)) {
+			!getLenPreInt(rp,&end,&oaccolid,&rp)) {
 		debugWrite("truncated bind descriptor");
 		return false;
 	}

@@ -39,11 +39,11 @@ ORACLEPROTOCOLPORT7 ?= 1527
 #
 # oracledescribeonly, oracledescribe, oraclemidfetchdescribe,
 # oraclelegacyfetch, oracleclrchunks, oracleiterations0,
-# oraclebigchunkclroff, oraclerefcursorreuse and oraclesplitrequest only
-# need rudiments (raw sockets), so they build whether or not OCI is
-# configured - they speak the oracle wire protocol themselves rather than
-# going through a client library
-all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+# oraclebigchunkclroff, oraclerefcursorreuse, oraclesplitrequest and
+# oraclesplitquery3 only need rudiments (raw sockets), so they build
+# whether or not OCI is configured - they speak the oracle wire protocol
+# themselves rather than going through a client library
+all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -176,6 +176,17 @@ oraclesplitrequest.$(OBJ): oracleprotocolclient.cpp
 oraclesplitrequest: oraclesplitrequest.cpp oracleprotocolclient.cpp oraclesplitrequest.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclesplitrequest.$(OBJ) $(RUDIMENTSLIBS)
 
+# oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
+# the test's main, the same way asserts.cpp is.  the explicit dependency
+# below is needed because the .cpp.$(OBJ) suffix rule only depends on
+# oraclesplitquery3.cpp - without it, editing oracleprotocolclient.cpp
+# alone would relink but not recompile, leaving a stale object (see
+# AGENTS.md's note on this build tracking no header dependencies)
+oraclesplitquery3.$(OBJ): oracleprotocolclient.cpp
+
+oraclesplitquery3: oraclesplitquery3.cpp oracleprotocolclient.cpp oraclesplitquery3.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclesplitquery3.$(OBJ) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) ociselect$(EXE) ociloginretry$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) oraclerefcursorreuse$(EXE) oraclesplitrequest$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) ociselect$(EXE) ociloginretry$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) oraclerefcursorreuse$(EXE) oraclesplitrequest$(EXE) oraclesplitquery3$(EXE) tnsnames.ora
 	$(RMTREE) .libs

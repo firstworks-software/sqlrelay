@@ -1195,6 +1195,22 @@ run_protocol_test() {
 	# of the request in on demand.  no real client reaches this either -
 	# every client here negotiates an sdu its own requests fit under.  it
 	# reads ORACLEPROTOCOLPORT1 straight from the environment, so it
+	# needs neither $server nor TNS_ADMIN.  then oraclesplitquery3, an
+	# eighth raw-socket test, for #10036 - the same split request against
+	# TTI_QUERY3, the modern OCI8+ call, whose own request parse
+	# (getQuery3Request(), getQuery3Binds() and
+	# getQuery3BindDescriptor()) was outside the subtree #10004 scoped
+	# itself to and still failed "truncated" when a request spanned
+	# packets.  it runs four cases on the same 512 byte sdu, each on its
+	# own session: three split requests whose packet boundary is aimed at
+	# a different structure - the bind descriptor walk, the chunked query
+	# text and a bind value's own bytes - and one pair of ordinary
+	# single-packet requests written back to back before either answer is
+	# read, which is what says the first request's parse stops where the
+	# request does.  each case asserts where its boundaries really landed
+	# rather than assuming it, fetches its row and compares the whole
+	# answer byte for byte, and opens a second cursor afterwards.  it
+	# reads ORACLEPROTOCOLPORT1 straight from the environment, so it
 	# needs neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
@@ -1212,7 +1228,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all seventeen runs have to succeed for the instance to pass
+	# all eighteen runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1247,6 +1263,8 @@ run_protocol_test() {
 		resultrefcursorreuse="$?"
 		./oraclesplitrequest
 		resultsplitrequest="$?"
+		./oraclesplitquery3
+		resultsplitquery3="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1255,7 +1273,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1324,6 +1342,10 @@ run_protocol_test() {
 		if ( test "$resultsplitrequest" != "0" )
 		then
 			printf "    % 8s: failed (split request)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultsplitquery3" != "0" )
+		then
+			printf "    % 8s: failed (split query3 request)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then

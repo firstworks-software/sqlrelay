@@ -2388,9 +2388,11 @@
 		request too large for the negotiated sdu (eg. a chunked long
 		form bind value) now has its packets reassembled on demand, at
 		the point a parse actually runs out of bytes, since tns has no
-		continuation marker to reassemble on otherwise.  scoped to the
-		query/bind request path; query3's own request parse isn't
-		covered and is tracked separately (#10036).  a few narrow
+		continuation marker to reassemble on otherwise.  originally
+		scoped to the query/bind request path with query3's own
+		request parse tracked separately; query3 (its request header,
+		bind descriptor walk, and query text, including its chunked
+		long form) is now covered too (#10036).  a few narrow
 		points inside the covered path deliberately don't refill - a
 		bind value boundary, a row data block boundary, and a
 		descriptor header with no descriptor block behind it - since

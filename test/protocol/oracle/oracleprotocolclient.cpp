@@ -263,6 +263,28 @@ struct oracleprotocolbindvalue {
 	void	setNull();
 };
 
+// where each part of a query3 request starts, counted from the front of
+// the packet - the header byte the tns length goes in is byte 0.  a test
+// that sends one request as several packets needs these to say which
+// structure a packet boundary fell inside; the sizes on their own only
+// imply it, and getting that wrong means a test that reports coverage it
+// doesn't have.
+//
+// a part that isn't in the request starts where the next one does, so an
+// empty part is an empty range rather than a gap - a request with no
+// defines has definedescriptors equal to rowdata
+struct oracleprotocolquery3offsets {
+
+	size_t	querytext;
+	size_t	al8i4vector;
+	size_t	binddescriptors;
+	size_t	definedescriptors;
+	size_t	rowdata;
+	size_t	end;
+
+	void	clear();
+};
+
 class oracleprotocolclient {
 	public:
 			oracleprotocolclient();
@@ -390,6 +412,38 @@ class oracleprotocolclient {
 					uint32_t blockcount,
 					const oracleprotocolbind *defines=NULL,
 					uint32_t definecount=0);
+
+		// the same request query3() sends, built into the
+		// request buffer and left there.  query3() is this plus
+		// sendPacket() and recvPacket(), so the bytes are the
+		// same either way and only what happens to them differs.
+		//
+		// two things need that split apart, and neither can be
+		// reached through query3():
+		//
+		//	- a request too big for the negotiated sdu, which
+		//	  goes out through sendSplitPacket() rather than
+		//	  sendPacket()
+		//	- two requests written back to back before either
+		//	  answer is read, which is what asks whether the
+		//	  listener stops reading the first one where it
+		//	  ends
+		//
+		// "offsets" comes back filled in - whether the request
+		// is sent or not - so a test can say where a packet
+		// boundary landed rather than work it out from the sizes
+		bool	buildQuery3(uint32_t options, uint32_t cursorid,
+					uint32_t prefetchrows,
+					const char *query,
+					const oracleprotocolbind *binds,
+					uint32_t bindcount,
+					uint32_t iterations,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount,
+					const oracleprotocolbind *defines=NULL,
+					uint32_t definecount=0,
+					oracleprotocolquery3offsets
+							*offsets=NULL);
 
 		// TTI_EXECUTE, the modern shape: the second and later
 		// executes of a statement one query3() with query text
@@ -1907,6 +1961,15 @@ void oracleprotocolbind::varchar(uint32_t buffersize) {
 	csfrm=ORA_CSFRM_IMPLICIT;
 }
 
+void oracleprotocolquery3offsets::clear() {
+	querytext=0;
+	al8i4vector=0;
+	binddescriptors=0;
+	definedescriptors=0;
+	rowdata=0;
+	end=0;
+}
+
 // a value, sized by its own null terminator
 void oracleprotocolbindvalue::set(const char *value) {
 	this->value=value;
@@ -2062,7 +2125,7 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 // getQuery3Request() and then getQuery3Binds() read them in: the query
 // text, the al8i4 vector, every bind descriptor and then every define
 // descriptor, and last one row data block per execution iteration
-bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
+bool oracleprotocolclient::buildQuery3(uint32_t options, uint32_t cursorid,
 					uint32_t prefetchrows,
 					const char *query,
 					const oracleprotocolbind *binds,
@@ -2071,7 +2134,14 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 					const oracleprotocolbindvalue *values,
 					uint32_t blockcount,
 					const oracleprotocolbind *defines,
-					uint32_t definecount) {
+					uint32_t definecount,
+					oracleprotocolquery3offsets *offsets) {
+
+	oracleprotocolquery3offsets	ignored;
+	if (!offsets) {
+		offsets=&ignored;
+	}
+	offsets->clear();
 
 	if ((bindcount && !binds) || (definecount && !defines)) {
 		setError("query3 needs a descriptor per bind and define");
@@ -2127,10 +2197,12 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 	// believes for every client but OCI, and this client isn't one -
 	// and past that the chunked long form, which getQuery3Request()
 	// reads on its own branch
+	offsets->querytext=reqpacket.getSize();
 	if (querysize) {
 		appendLenBytes(query,querysize);
 	}
 
+	offsets->al8i4vector=reqpacket.getSize();
 	if (sendvector) {
 		appendAl8i4Vector(iterations);
 	}
@@ -2138,9 +2210,11 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 	// every bind descriptor, then every define descriptor - they are
 	// one run of identically shaped descriptors as far as the wire is
 	// concerned, and only the two counts in the header tell them apart
+	offsets->binddescriptors=reqpacket.getSize();
 	for (uint32_t i=0; i<bindcount; i++) {
 		appendBindDescriptor(&(binds[i]));
 	}
+	offsets->definedescriptors=reqpacket.getSize();
 	for (uint32_t i=0; i<definecount; i++) {
 		appendBindDescriptor(&(defines[i]));
 	}
@@ -2148,9 +2222,28 @@ bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
 	// and the values.  the listener reads no row data at all for a
 	// request whose descriptors are all unbound, but that is its call to
 	// make from the flags - whatever the caller asked for goes out
+	offsets->rowdata=reqpacket.getSize();
 	appendRowDataBlocks(values,bindcount,blockcount);
 
-	return sendPacket() && recvPacket();
+	offsets->end=reqpacket.getSize();
+	return true;
+}
+
+bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
+					uint32_t prefetchrows,
+					const char *query,
+					const oracleprotocolbind *binds,
+					uint32_t bindcount,
+					uint32_t iterations,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount,
+					const oracleprotocolbind *defines,
+					uint32_t definecount) {
+
+	return buildQuery3(options,cursorid,prefetchrows,query,
+				binds,bindcount,iterations,
+				values,blockcount,defines,definecount) &&
+		sendPacket() && recvPacket();
 }
 
 // TTI_EXECUTE, the modern shape.  once one query3() carrying query text
