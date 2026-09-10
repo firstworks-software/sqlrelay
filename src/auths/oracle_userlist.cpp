@@ -18,6 +18,7 @@
 #include <rudiments/sha1.h>
 #include <rudiments/sha512.h>
 #include <rudiments/md5.h>
+#include <rudiments/aes128.h>
 #include <rudiments/aes192.h>
 #include <rudiments/aes256.h>
 #include <rudiments/singledes.h>
@@ -48,6 +49,12 @@
 // nothing carries a verifier type on the wire for an O3LOGON login.  This
 // value exists to select the code path and must match the protocol module's.
 #define VERIFIER_TYPE_9I	0x0900
+
+// The 10g/DES verifier type, which is what an O3LOGON login runs under for a
+// client that advertises O5LOGON.  Same des password hash as the 9i type,
+// but the session key and the password ride under aes-128-cbc rather than
+// 3des.  Unlike VERIFIER_TYPE_9I this one is a real oracle constant.
+#define VERIFIER_TYPE_10G	0x0939
 
 // session key lengths, which the client tells the two verifier types apart by
 #define SESSION_KEY_SIZE_11G	48
@@ -103,11 +110,15 @@
 // O3LOGON is the pre-O5LOGON verifier, the one an OCI7 era client speaks.  It
 // uses the same "extra" mechanism, with far fewer inputs, and has no server
 // response phase - a real server answers a successful O3LOGON login with a
-// bare success summary rather than an AUTH_SVR_RESPONSE.
+// bare success summary rather than an AUTH_SVR_RESPONSE.  It runs under two
+// verifier types: 2304, which is 3des throughout, and 2361, which a client
+// advertising O5LOGON gets instead - the same des password hash, but aes-128
+// on the wire.
 //
 //	challenge(), with method "O3LOGON":
-//		verifiertype		2304
+//		verifiertype		2304 or 2361
 //	  out:	the AUTH_SESSKEY to send, uppercase hex, 32 characters
+//		for 2304 and 64 for 2361
 //
 //	auth(), with method "O3LOGON":
 //		password		AUTH_PASSWORD from the client, hex
@@ -197,16 +208,18 @@ static bool aesCbc(bool encrypt,
 			const byte_t *in, size_t insize,
 			byte_t *out) {
 
-	if (insize%16 || (keysize!=24 && keysize!=32)) {
+	if (insize%16 || (keysize!=16 && keysize!=24 && keysize!=32)) {
 		return false;
 	}
 
 	byte_t	iv[16];
 	bytestring::zero(iv,sizeof(iv));
 
-	encryption	*enc=(keysize==24)?
-				(encryption *)new aes192():
-				(encryption *)new aes256();
+	encryption	*enc=(keysize==16)?
+				(encryption *)new aes128():
+				((keysize==24)?
+					(encryption *)new aes192():
+					(encryption *)new aes256());
 	enc->setUsePadding(false);
 
 	bool	retval=false;
@@ -815,10 +828,158 @@ static bool o3logonSupported() {
 	return (sd.isSupported() && td.isSupported());
 }
 
-static bool o3logonVerifierType(parameterstring *p) {
-	return ((uint32_t)charstring::convertToUnsignedInteger(
-				p->getValue("verifiertype"),(int32_t)0)==
-							VERIFIER_TYPE_9I);
+// The verifier type the login is running under, or 0 for one this module has
+// no O3LOGON crypto for.
+static uint32_t o3logonVerifierType(parameterstring *p) {
+	uint32_t	verifiertype=
+			(uint32_t)charstring::convertToUnsignedInteger(
+				p->getValue("verifiertype"),(int32_t)0);
+	return (verifiertype==VERIFIER_TYPE_9I ||
+			verifiertype==VERIFIER_TYPE_10G)?verifiertype:0;
+}
+
+// The 10g/DES half of the O3LOGON login, for a client that advertises
+// O5LOGON.  It runs the same des password hash as the 9i half, and then the
+// o5logon key schedule rather than the o3logon one:
+//
+//	kek		aes-128 key: the des password hash, right padded
+//			with 8 zero bytes
+//	AUTH_SESSKEY	aes-128-cbc(kek, 32 random bytes), iv 0, sent as
+//			64 hex characters
+//	combo key	aes-128 key: the second 16 bytes of the decrypted
+//			session key, used raw
+//	AUTH_PASSWORD	aes-128-cbc(combo key, 16 salt bytes || the
+//			password || pkcs#5 padding), iv 0
+//
+// The combo key is used raw - it isn't md5'd, and no client session key folds
+// into it.  That is where this differs from the tagged O5LOGON exchange
+// go-ora implements: the classic positional login carries no client
+// AUTH_SESSKEY, so there is no client half to fold in.  The 16 salt bytes
+// inside AUTH_PASSWORD are all the client contributes, and the server
+// discards them.
+//
+// Derived from python-oracledb's thin crypto (UPL) and go-ora v2's
+// auth_object.go (MIT) - see COPYING - and pinned against real 10.2 server
+// captures under test/protocol/oracle/samples.
+#define O3LOGON_AES_KEY_SIZE		16
+#define O3LOGON_AES_BLOCK_SIZE		16
+#define O3LOGON_AES_SESSION_KEY_SIZE	32
+#define O3LOGON_AES_SALT_SIZE		16
+
+static void o3logonAesKek(const byte_t *hash, byte_t *kek) {
+	bytestring::copy(kek,hash,O3LOGON_HASH_SIZE);
+	bytestring::zero(kek+O3LOGON_HASH_SIZE,
+				O3LOGON_AES_KEY_SIZE-O3LOGON_HASH_SIZE);
+}
+
+static bool o3logonAesChallenge(const char *user,
+				const char *password,
+				stringbuffer *challenge) {
+
+	byte_t	hash[O3LOGON_HASH_SIZE];
+	if (!o3logonPasswordHash(user,password,hash)) {
+		return false;
+	}
+
+	// AUTH_SESSKEY = aes-128-cbc(kek(hash), 32 random bytes)
+	byte_t	kek[O3LOGON_AES_KEY_SIZE];
+	byte_t	sesskey[O3LOGON_AES_SESSION_KEY_SIZE];
+	byte_t	encsesskey[O3LOGON_AES_SESSION_KEY_SIZE];
+	o3logonAesKek(hash,kek);
+	csprng	csr;
+	bool	retval=(csr.generateBytes(sesskey,sizeof(sesskey),
+						sizeof(sesskey)) &&
+			aesCbc(true,kek,sizeof(kek),
+					sesskey,sizeof(sesskey),encsesskey));
+	if (retval) {
+		char	*hex=hexEncodeUpper(encsesskey,sizeof(encsesskey));
+		challenge->append(hex);
+		delete[] hex;
+	}
+
+	bytestring::zero(hash,sizeof(hash));
+	bytestring::zero(kek,sizeof(kek));
+	bytestring::zero(sesskey,sizeof(sesskey));
+
+	return retval;
+}
+
+static bool o3logonAesVerify(const char *authpassword,
+				const char *user,
+				const char *password,
+				parameterstring *p,
+				stringbuffer *supplied) {
+
+	byte_t	hash[O3LOGON_HASH_SIZE];
+	if (!o3logonPasswordHash(user,password,hash)) {
+		return false;
+	}
+
+	// recover the session key from the module's own challenge.  its second
+	// half is the key the client obfuscated the password under
+	byte_t	kek[O3LOGON_AES_KEY_SIZE];
+	byte_t	encsesskey[O3LOGON_AES_SESSION_KEY_SIZE];
+	byte_t	sesskey[O3LOGON_AES_SESSION_KEY_SIZE];
+	o3logonAesKek(hash,kek);
+	bool	ok=(hexDecodeExactly(p->getValue("serverauthsesskey"),
+					sizeof(encsesskey),encsesskey) &&
+		aesCbc(false,kek,sizeof(kek),
+				encsesskey,sizeof(encsesskey),sesskey));
+
+	bytestring::zero(hash,sizeof(hash));
+	bytestring::zero(kek,sizeof(kek));
+
+	if (!ok) {
+		bytestring::zero(sesskey,sizeof(sesskey));
+		return false;
+	}
+
+	byte_t	combokey[O3LOGON_AES_KEY_SIZE];
+	bytestring::copy(combokey,sesskey+O3LOGON_AES_KEY_SIZE,
+						sizeof(combokey));
+	bytestring::zero(sesskey,sizeof(sesskey));
+
+	// AUTH_PASSWORD = aes-128-cbc(combo key, 16 bytes of salt || the
+	// password || pkcs#5 padding)
+	byte_t		*encpassword=NULL;
+	uint64_t	encpasswordsize=0;
+	charstring::hexDecode(authpassword,
+				charstring::getLength(authpassword),
+				&encpassword,&encpasswordsize);
+	byte_t		*plaintext=new byte_t[encpasswordsize+1];
+	ok=(encpasswordsize>(uint64_t)O3LOGON_AES_SALT_SIZE &&
+		!(encpasswordsize%O3LOGON_AES_BLOCK_SIZE) &&
+		aesCbc(false,combokey,sizeof(combokey),
+			encpassword,encpasswordsize,plaintext));
+
+	bytestring::zero(combokey,sizeof(combokey));
+	delete[] encpassword;
+
+	if (ok) {
+
+		// strip the padding, then the salt in front of the password
+		byte_t	pad=plaintext[encpasswordsize-1];
+		ok=(pad && (uint64_t)pad<=(uint64_t)O3LOGON_AES_BLOCK_SIZE &&
+			(uint64_t)(O3LOGON_AES_SALT_SIZE+pad)<=encpasswordsize);
+		if (ok) {
+			uint64_t	suppliedsize=encpasswordsize-
+						O3LOGON_AES_SALT_SIZE-pad;
+			const byte_t	*pwd=plaintext+O3LOGON_AES_SALT_SIZE;
+			if (supplied) {
+				supplied->append((const char *)pwd,
+							suppliedsize);
+			}
+			ok=(suppliedsize==(uint64_t)charstring::getLength(
+								password) &&
+				!bytestring::compare(pwd,password,
+							suppliedsize));
+		}
+	}
+
+	bytestring::zero(plaintext,encpasswordsize);
+	delete[] plaintext;
+
+	return ok;
 }
 
 static bool o3logonChallenge(const char *user,
@@ -828,8 +989,14 @@ static bool o3logonChallenge(const char *user,
 
 	parameterstring	p;
 	p.parse(extra);
-	if (!o3logonVerifierType(&p)) {
+	uint32_t	verifiertype=o3logonVerifierType(&p);
+	if (!verifiertype) {
 		return false;
+	}
+
+	// the two verifier types share the password hash and nothing else
+	if (verifiertype==VERIFIER_TYPE_10G) {
+		return o3logonAesChallenge(user,password,challenge);
 	}
 
 	byte_t	hash[O3LOGON_HASH_SIZE];
@@ -870,8 +1037,15 @@ static bool o3logonVerify(const char *authpassword,
 
 	parameterstring	p;
 	p.parse(extra);
-	if (!o3logonVerifierType(&p)) {
+	uint32_t	verifiertype=o3logonVerifierType(&p);
+	if (!verifiertype) {
 		return false;
+	}
+
+	// the two verifier types share the password hash and nothing else
+	if (verifiertype==VERIFIER_TYPE_10G) {
+		return o3logonAesVerify(authpassword,user,password,
+							&p,supplied);
 	}
 
 	byte_t	hash[O3LOGON_HASH_SIZE];

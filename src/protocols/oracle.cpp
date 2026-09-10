@@ -203,6 +203,14 @@
 #define VERIFIER_TYPE_9I	0x0900
 #define SESSION_KEY_SIZE_9I	16
 
+// the 10g/DES verifier, which is what an o3logon login turns into for a
+// client whose CCAP_LOGON_TYPES byte advertises o5logon: a 32 byte session
+// key, and aes-128 in place of 3des.  unlike VERIFIER_TYPE_9I this one is a
+// real oracle constant, and it is what tells the auth module which of the two
+// to run
+#define VERIFIER_TYPE_10G	0x0939
+#define SESSION_KEY_SIZE_10G	32
+
 // how many hex characters one des block takes, which is the unit an o3logon
 // AUTH_PASSWORD comes in, and the most strings an o3logon login can name (a
 // real one sends 5 in phase one and 6 in phase two)
@@ -2071,6 +2079,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// decided per session there and reset by init()
 		bool		ub2datatypes;
 
+		// whether an o3logon login runs the 10g/DES half of itself,
+		// and whether the oci7 status and summary objects carry the
+		// end to end sequence number.  both decided per session in
+		// recvDataTypeRequest() and reset by init()
+		bool		o5logonclient;
+		bool		oci7endtoendseqnumber;
+
 		const byte_t	*datatypes;
 		uint16_t	datatypessize;
 		uint16_t	datatypecount;
@@ -2703,6 +2718,8 @@ void sqlrprotocol_oracle::init() {
 	clienttzversion=0;
 	bigchunkclr=false;
 	ub2datatypes=false;
+	o5logonclient=false;
+	oci7endtoendseqnumber=false;
 
 	datatypes=NULL;
 	datatypessize=0;
@@ -5849,6 +5866,35 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	ub2datatypes=(compilecapssize>CCAP_UB2_DTY &&
 				compilecaps[CCAP_UB2_DTY]!=0);
 
+	// which half of the o3logon login the client wants.  a genuine OCI7
+	// era client sends CCAP_LOGON_TYPES 0x05 - legacy bits only - and gets
+	// the 3des exchange.  a modern client driving the legacy OCI7 call
+	// interface sends 0xef, with the o5logon bit set, and wants the
+	// 10g/DES verifier instead: a 32 byte session key under aes-128.
+	// rewriting that one byte 0xef -> 0x05 mid connection makes a real
+	// 10.2 server drop from a 64 hex challenge to a 32 hex one, so the
+	// byte selects the key size rather than just correlating with it.
+	//
+	// the verifiertype term keeps every gate this flag drives a no-op for
+	// an 11g or 12c listener, where every modern client advertises the
+	// o5logon bit too and none of this applies
+	o5logonclient=(verifiertype==VERIFIER_TYPE_9I &&
+				compilecapssize>CCAP_LOGON_TYPES &&
+				(compilecaps[CCAP_LOGON_TYPES]&
+						CCAP_O5LOGON)!=0);
+
+	// whether the oci7 status and summary objects carry the end to end
+	// sequence number.  this is a second, separate client-driven selector:
+	// a real 10.2 server sends the field to the client it sends the 64 hex
+	// challenge to and leaves it out for the one it sends 32, but it goes
+	// on sending the field when CCAP_LOGON_TYPES alone is rewritten down
+	// to 0x05, so it tracks something else that nothing here has pinned
+	// down.  the two move together on every client measured, so they are
+	// gated together: leaving the field out starves an o5logon-capable
+	// client's error block parser and hangs its login, and sending it to a
+	// genuine OCI7 client would break the shape that one reads
+	oci7endtoendseqnumber=o5logonclient;
+
 	// the db time zone group, there only if the client asked for it
 	clientwantsdbtimezone=(runtimecapssize>RCAP_DB_TIMEZONE &&
 				(runtimecaps[RCAP_DB_TIMEZONE]&
@@ -7451,8 +7497,14 @@ void sqlrprotocol_oracle::putAuthExtra(stringbuffer *extra, bool secondphase) {
 	debugWrite("field count: %d",(o3logon)?((secondphase)?2:1):
 			((secondphase)?((pbkdf2)?7:5):((pbkdf2)?3:2)));
 
-	extra->append("verifiertype=")->append(verifiertype);
-	debugWrite("verifiertype: %d",verifiertype);
+	// an o5logon-capable client gets the 10g/DES verifier rather than the
+	// 9i one.  the verifier type is how the auth module is told which of
+	// the two to run
+	uint32_t	authverifiertype=(o3logon && o5logonclient)?
+					VERIFIER_TYPE_10G:verifiertype;
+
+	extra->append("verifiertype=")->append(authverifiertype);
+	debugWrite("verifiertype: %d",authverifiertype);
 
 	// o3logon has no verifier salt and no client session key.  all it
 	// needs back at verify time is the challenge the module sent.
@@ -7832,15 +7884,18 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // length for the user name, a pointer and a length for the password, a
 // pointer and a length for the connect string (never populated - the
 // connect string is already resolved by the time a login is sent), a mode
-// value, then a run of further fields this module has no use for, then a
-// pointer and a length for each of the host name, os user name, process id
-// and program name a real client's CID block always carries, followed by
-// one contiguous run of those strings with no delimiters and no length
-// prefix of their own - a field's length comes only from its own count
-// above, never from the string data.  decoded byte for byte, field by
-// field, from a real client's own request to this module (#9794) - both
-// phases carry the same header layout, phase two's password count simply
-// being zero on phase one's own copy of it.
+// value, an unnamed count, a pointer and a length for the terminal name
+// (the V$SESSION TERMINAL column - empty in every capture taken from a
+// client with no controlling terminal), a pointer and a length for each of
+// the host/machine name and os user name a real client's CID block always
+// carries, a second unnamed count, then a pointer and a length for each of
+// the process id string and program name, followed by one contiguous run
+// of those strings with no delimiters and no length prefix of their own -
+// a field's length comes only from its own count above, never from the
+// string data.  decoded byte for byte, field by field, from a real
+// client's own request to this module (#9794, #10048) - both phases carry
+// the same header layout, phase two's password count simply being zero on
+// phase one's own copy of it.
 //
 // every pointer field is the client's own raw address - four bytes, native
 // byte order, the same width and order getPointer() already reads for
@@ -7849,10 +7904,18 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // matches; a login this old apparently never marshals its pointers any way
 // but natively, unlike everything else in it
 //
-// several of the positional fields are never anything but zero in every
-// capture on file and what they are for is unknown, the same way several of
-// putOci7Summary()'s fields are - they still have to be read in order, to
-// land on the fields this module needs.  what comes after the program
+// the mode value and the first unnamed count are always zero in every
+// capture on file and what they are for is unknown, the same way several
+// of putOci7Summary()'s fields are.  the second unnamed count is not zero
+// - it is 0x1130 on every 32-bit client on file and 0x2260 on every
+// 64-bit one, x86 and SPARC alike, and reads the same for a genuine old
+// OCI7 client and for a client wire-speaking the legacy OCI7 API on top of
+// a modern Instant Client.  it is only the client's own pointer width
+// doubled, already known from the negotiated datatype representation, and
+// does not distinguish one client generation from another - what does is
+// not in this header at all, see the CCAP_LOGON_TYPES read in
+// recvDataTypeRequest().  every field here still has to be read in order,
+// to land on the fields this module needs.  what comes after the program
 // name's length is a real client's own request continues into, still
 // unconfirmed - rather than keep walking blind, the string blob is found
 // the same way findO3LogonStrings() finds O3LOGON's: since it has to end
@@ -7872,21 +7935,26 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	uint32_t	unused=0;
 
 	// the header's pointer fields are the client's own raw addresses -
-	// four bytes, native byte order, the same width and order
-	// getPointer() already reads off "pointersize"/"clientlittleendian"
-	// for TTI_OPEN.  its count fields, unlike its pointers, are ordinary
-	// length-prefixed ints, the same as everywhere else this module
-	// answers no platform any client matches - "nativeencoding" never
-	// gets set for a 9i login, because recvAuthenticationRequest() hands
-	// off to here and returns ahead of the probe that would set it.
-	// the plain reading is the right one for the traffic this module
-	// gets, and samples/oracle102-oci7-portable-login-select.cap
-	// confirms it, every count here matching a getAuthCount() read
-	// exactly.  a client whose own platform matched its server's banner
-	// writes these same counts fixed-width instead - four bytes, little
-	// endian, as in the native capture beside it - but this module's
-	// banner matches nobody, so that shape never arrives here, and the
-	// early return ahead of the probe is not a gap to fix
+	// four bytes native byte order, or one presence byte, depending on
+	// the negotiated pointer representation, the same width getPointer()
+	// already reads off "pointersize" for TTI_OPEN.  its count fields,
+	// unlike its pointers, are ordinary length-prefixed ints, the same as
+	// everywhere else this module answers no platform any client matches
+	// - "nativeencoding" never gets set for a 9i login, because
+	// recvAuthenticationRequest() hands off to here and returns ahead of
+	// the probe that would set it, and that is confirmed correct rather
+	// than a gap: this module's banner matches no real platform, so no
+	// client ever thinks it is talking native-to-native here, and every
+	// count field on file reads clean under the plain length-prefixed
+	// reading - from a genuine OCI7 client
+	// (samples/oracle102-oci7-portable-login-select.cap) and from a
+	// client wire-speaking the legacy OCI7 API on top of a modern
+	// Instant Client
+	// (samples/10048-dev-oci23api7-portable-login-sqlrelay-o5logon-
+	// success.oraproxy) alike (#10048).  a client's pointer presence
+	// byte differing between its requests to a real server and to this
+	// module is the negotiated pointer width changing with the peer, not
+	// a native-encoding signal, and has no bearing on these count fields
 	if (!getPointer(rp,end,&unused,&rp) ||			// uid ptr
 		!getAuthCount(rp,end,&usernamesize,4,&rp) ||	// uid length
 		!getPointer(rp,end,&unused,&rp) ||		// pswd ptr
@@ -7894,14 +7962,14 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 		!getPointer(rp,end,&unused,&rp) ||		// conn ptr
 		!getAuthCount(rp,end,&unused,4,&rp) ||		// conn length
 		!getAuthCount(rp,end,&unused,4,&rp) ||		// mode
-		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained
-		!getPointer(rp,end,&unused,&rp) ||		// unexplained
-		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained, always 0
+		!getPointer(rp,end,&unused,&rp) ||		// terminal name ptr
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// terminal name length
 		!getPointer(rp,end,&unused,&rp) ||		// host ptr
 		!getAuthCount(rp,end,&hostsize,4,&rp) ||	// host length
 		!getPointer(rp,end,&unused,&rp) ||		// os user ptr
 		!getAuthCount(rp,end,&usersize,4,&rp) ||	// os user length
-		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained
+		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained, client pointer width artifact
 		!getPointer(rp,end,&unused,&rp) ||		// pid string ptr
 		!getAuthCount(rp,end,&pidstringsize,4,&rp) ||	// pid string length
 		!getPointer(rp,end,&unused,&rp) ||		// program ptr
@@ -8303,7 +8371,11 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	fabricatedchallenge=!cont->challenge(&cred,&challenge);
 	if (fabricatedchallenge) {
 		debugWrite("challenge failed, fabricating one");
-		char	*fake=generateHex((o3logon)?SESSION_KEY_SIZE_9I:
+		// the size the real one would have been, or an unknown user
+		// looks different from a wrong password
+		char	*fake=generateHex((o3logon)?
+					((o5logonclient)?SESSION_KEY_SIZE_10G:
+							SESSION_KEY_SIZE_9I):
 					((pbkdf2)?SESSION_KEY_SIZE_12C:
 					SESSION_KEY_SIZE_11G));
 		challenge.append(fake);
@@ -8568,6 +8640,20 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
 	writeLenPreInt(&reqpacket,1);
+
+	// the end to end sequence number, the second of the two fields
+	// putSummary() writes at the front, and the one this object was
+	// decoded without.  a real 10.2 server does send it to a client that
+	// asked for the 10g/DES login - its portable summary there is 31 bytes
+	// where a genuine OCI7 client's is 29 - and leaving it out starves
+	// that client's error block parser and hangs the login.
+	//
+	// the value tracks the call being answered.  a real server sends 2
+	// with the challenge and 3 with the login answer, which is what
+	// callnumber holds at each of those points
+	if (oci7endtoendseqnumber) {
+		writeLenPreInt(&reqpacket,callnumber);
+	}
 
 	// rows processed by the call being answered - the oci7 cursor data
 	// area's rpc.  a parse and an execute both send 0 and a fetch that
@@ -9056,7 +9142,14 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 		reqpacket.append(nativeprefix,sizeof(nativeprefix));
 		putAuthCount(oranum,4);
 		reqpacket.append(nativesuffix,sizeof(nativesuffix));
-	} else if (verifiertype==VERIFIER_TYPE_9I) {
+	} else if (verifiertype==VERIFIER_TYPE_9I && !oci7endtoendseqnumber) {
+
+		// the modern branch below is this one plus the end to end
+		// sequence number, ahead of the rows processed count, so a
+		// client that expects that field takes that branch instead.
+		// sent this narrower shape, such a client reads the ora
+		// number's length prefix as a field of its own and reports
+		// ORA-03120 for what is really ORA-01017
 		reqpacket.append(prefix,sizeof(prefix));
 		writeLenPreInt(&reqpacket,oranum);
 		reqpacket.append(suffix,sizeof(suffix));
@@ -9194,6 +9287,7 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	uint16_t	cursorid=cont->getId(cursor);
 	byte_t		statusttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
+	uint32_t	endtoendseqnumber=0;
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
@@ -9209,6 +9303,9 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	// ORA-03120
 	write(&reqpacket,statusttccode);
 	writeLenPreInt(&reqpacket,callstatus);
+	if (oci7endtoendseqnumber) {
+		writeLenPreInt(&reqpacket,endtoendseqnumber);
+	}
 
 	debugStart("open response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -9216,6 +9313,9 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	debugWrite("cursor id: %d",cursorid);
 	debugTtcCode(statusttccode);
 	debugWrite("call status: %d",callstatus);
+	if (oci7endtoendseqnumber) {
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
+	}
 	debugEnd();
 
 	return sendPacket(true);
@@ -9551,6 +9651,9 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	// the same status message an open response ends with
 	write(&reqpacket,(byte_t)TTC_STATUS);
 	putAuthCount(1,4);
+	if (oci7endtoendseqnumber) {
+		putAuthCount(0,4);
+	}
 
 	return sendPacket(true);
 }
@@ -18678,6 +18781,7 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
+	uint32_t	endtoendseqnumber=0;
 
 	debugStart("close response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -18698,6 +18802,10 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 	// whole, so it waits on two bytes that never come and never goes on to
 	// its logoff
 	putAuthCount(callstatus,4);
+	if (oci7endtoendseqnumber) {
+		putAuthCount(endtoendseqnumber,4);
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
+	}
 
 	debugEnd();
 
@@ -18743,7 +18851,9 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	// packet [0028] of test/protocol/oracle/samples/
 	// oracle102-oci7-portable-login-select.cap sends "00 00 09 01 01" and
 	// the native capture beside it sends "00 00 09 01 00 00 00"
-	bool	oci7=(verifiertype==VERIFIER_TYPE_9I);
+	// a client that expects the field takes the branch that sends it
+	bool	oci7=(verifiertype==VERIFIER_TYPE_9I &&
+					!oci7endtoendseqnumber);
 
 	debugStart("disconnect response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -18995,7 +19105,10 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	// beside it.  the byte costs the client the whole call: it reads the
 	// fields it knows, finds one byte left over, sends a marker, cancels
 	// (ORA-01013), and the next call it makes fails ORA-03120
-	bool		sendendtoendseqnumber=(verifiertype!=VERIFIER_TYPE_9I);
+	// a client that expects the field gets it even on a 9i login - the
+	// same starved parse the summary object's missing copy of it causes
+	bool		sendendtoendseqnumber=(verifiertype!=VERIFIER_TYPE_9I ||
+							oci7endtoendseqnumber);
 
 	// don't overrun the buffer the client passed in
 	uint32_t	bannerlength=

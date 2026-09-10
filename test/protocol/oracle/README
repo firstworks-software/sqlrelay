@@ -1354,6 +1354,53 @@ the decoder can be exercised without live server access:
                                       underneath. Taken with a scratch proxy
                                       rather than oraproxy, whose rewrite
                                       takes strings, not raw bytes (#10048)
+    10048-dev-oci23api7-portable-login-sqlrelay-o5logon-success.oraproxy
+                                     the confirmation experiment's real
+                                      session against the throwaway o5logon
+                                      build, oci7bind --bind=selectint as
+                                      testuser, logging into oracleprotocoloci7
+                                      for real rather than through a rewriting
+                                      proxy: login, open, parse, bind, define,
+                                      execute, fetch, close and logoff, 35
+                                      packets end to end. The first capture on
+                                      file of this client actually logging into
+                                      sqlrelay, as against the synthetic
+                                      key64-unblocked capture above. The
+                                      O3LOGON challenge and login answer are
+                                      byte-shape-identical to the
+                                      bannerrewrite-universalreps-
+                                      realserver.oraproxy reference: a 64
+                                      character session key at portable length-
+                                      prefixed width, then the 31 byte summary,
+                                      then a login answer of the same shape
+                                      (#10048)
+    10048-dev-oci23api7-portable-describe-realserver.oraproxy
+                                     the same client's odescr() describe
+                                      exchange against the real 10.2 server,
+                                      taken with ORAPROXY_UNIVERSAL_REPS=1 so
+                                      the server answers in the module's own
+                                      count-prefixed representation. The
+                                      describe response is 95 bytes, ending 09
+                                      01 01 01 09 - three length-prefixed
+                                      fields more than the module sends: one
+                                      before the 60 80 pair, one ahead of the
+                                      command type, and one ahead of the column
+                                      name blob. Reference capture for the
+                                      describe-response gap filed as #10051
+                                      (#10048)
+    10048-dev-oci23api7-portable-describe-sqlrelay.oraproxy
+                                     the matching half against
+                                      oracleprotocoloci7 with the confirmation
+                                      experiment's login fix in place: the same
+                                      client's describe response is 89 bytes,
+                                      ending 09 01 01 00, three fields short of
+                                      the real server's shape above. The
+                                      module's describe response was decoded
+                                      from a genuine OCI7 client and is correct
+                                      for that client; this client wants the
+                                      wider shape - a separate defect from the
+                                      login fix, newly reachable now that login
+                                      succeeds, filed as #10051 (#10048)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing

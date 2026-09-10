@@ -2485,6 +2485,18 @@
 		the width, and a client's request for the db time zone
 		version field, are read off the client's own request now
 		instead of off verifiertype (#10042)
+	fixed the oracle protocol module hanging a modern client that
+		wire-speaks the legacy oci7 call interface - instant client 23
+		among them - logging in under a verifiertype="9i" listener. the
+		module never read the client's CCAP_LOGON_TYPES capability
+		byte, so it always answered with the old 16 byte des session
+		key and summary object a genuine 1990s oci7 client expects; a
+		client advertising the newer o5logon capability wants a 32 byte
+		aes-128 session key and a wider summary object instead, and
+		blocked waiting for bytes that never came. the module now reads
+		that capability byte and answers with whichever o3logon variant
+		the client asked for, while a genuine old client still gets
+		exactly what it got before (#10048)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
