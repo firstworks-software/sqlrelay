@@ -6,6 +6,8 @@
 #include <rudiments/environment.h>
 #include <rudiments/stdio.h>
 
+#include <time.h>
+
 #include "oracleprotocolclient.cpp"
 
 // Regression coverage for #10036: a TTI_QUERY3 whose own request runs past the
@@ -32,7 +34,7 @@
 //	  checks to convert, so a boundary landing in one says nothing about
 //	  the other two
 //
-// So there are four cases, each on its own session:
+// So there are five cases, each on its own session:
 //
 //	- a boundary inside the al8i4 vector and bind descriptor walk, which
 //	  is a long run of small count-prefixed fields.  twelve binds behind a
@@ -44,6 +46,15 @@
 //	- a boundary inside a bind value's own bytes.  a 260 byte statement
 //	  and three binds put the row data block early enough that the first
 //	  boundary falls inside the first 600 byte value
+//	- a boundary that lands exactly on the row data block's own marker
+//	  byte, rather than inside a value - #10050.  getQuery3BindValues()'s
+//	  block walk tested "rp<end" and the marker byte in the same while
+//	  condition, so a boundary there left rp==end before either was
+//	  checked and the walk exited having read zero blocks, even with
+//	  al8i4[1] promising iterations more were still on the wire.  13 binds
+//	  behind a 238 byte statement puts the row data block at request byte
+//	  512, which is where the first boundary falls at this test's 512
+//	  byte sdu
 //	- two ordinary single-packet query3 requests written back to back
 //	  before either answer is read.  that is the query3 analogue of the
 //	  regression #10004 hit at its comment 9: a parse that refills where
@@ -409,6 +420,24 @@ static bool boundaryLandsIn(size_t requestsize, uint16_t sdu,
 	return false;
 }
 
+// whether some boundary lands exactly on the row data block's own marker
+// byte, rather than inside a value - the case #10050 exists for.
+// boundaryLandsIn() deliberately excludes this: it only counts a boundary
+// that lands on a bind value's own bytes, since the marker byte is read by
+// getQuery3BindValues()'s loop condition rather than by the getLenBytes()
+// reads boundaryLandsIn() is built to exercise
+static bool boundaryLandsAtRowDataStart(size_t requestsize, uint16_t sdu,
+				const oracleprotocolquery3offsets *offsets) {
+
+	size_t	fragments=fragmentCount(requestsize,sdu);
+	for (size_t i=1; i<fragments; i++) {
+		if (boundaryAt(i,sdu)==offsets->rowdata) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // walk a fetch response - the data flags, a row header, one row data message
 // carrying the single column, and then the summary object, which this stops
 // short of.  see sendFetch3Response(), putRowHeader() and putRowData() in
@@ -657,6 +686,284 @@ static void runSplitCase(const char *mode,
 	client.disconnect();
 }
 
+// Regression coverage for #10050: a packet boundary landing exactly on the
+// row data block's own marker byte (TTC_ROW_DATA, the first byte of the
+// section offsets->rowdata points to) rather than inside a value.
+//
+// getQuery3BindValues()'s block walk used to test "rp<end" and the marker
+// byte in the same while condition, so a boundary landing there left
+// rp==end before either was checked and the walk exited having read zero
+// blocks - even though al8i4[1] had already promised, on the wire, that
+// "iterations" blocks would follow.  Every bind value was dropped and the
+// remaining packets of the request were left unread on the socket, which
+// desynced the session: the next recv() picked up a fragment of this
+// request as though it were the start of the next one.
+//
+// 13 binds behind a 238 byte statement puts the row data block at request
+// byte 512 - the exact byte the first packet boundary falls on at this
+// test's 512 byte sdu - which is the reproduction #10050 was filed with.
+static void runRowDataBoundaryCase(const char *mode,
+				const char *host, uint16_t port,
+				const char *sid,
+				const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	const uint32_t	bindcount=13;
+	const size_t	querysize=238;
+
+	char	query[ORA_MAX_QUERY_SIZE+1];
+	if (!buildQuery(query,querysize,bindcount)) {
+		charstring::printf(label,sizeof(label),
+					"%s: build the statement",mode);
+		report(label,false);
+		return;
+	}
+	stdoutput.printf("  statement: %d bytes, %d binds\n",
+				(int)charstring::getLength(query),
+				(int)bindcount);
+
+	char				storage[ORA_RESULT_BUFFER_SIZE];
+	char				expected[ORA_RESULT_BUFFER_SIZE];
+	size_t				expectedsize=0;
+	oracleprotocolbindvalue		values[ORA_MAX_BINDS];
+	buildValues(storage,sizeof(storage),values,bindcount,
+					expected,&expectedsize);
+
+	oracleprotocolbind	binds[ORA_MAX_BINDS];
+	for (uint32_t i=0; i<bindcount; i++) {
+		binds[i].varchar(ORA_BIND_BUFFER_SIZE);
+	}
+
+	oracleprotocolclient	client;
+	client.setSdu(ORA_SPLIT_SDU);
+
+	charstring::printf(label,sizeof(label),"%s: connect",mode);
+	if (!client.connect(host,port,sid)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		return;
+	}
+	report(label,true);
+
+	charstring::printf(label,sizeof(label),"%s: login",mode);
+	if (!client.login(user,password)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		return;
+	}
+	report(label,true);
+
+	uint32_t	cursorid=0;
+	charstring::printf(label,sizeof(label),"%s: open cursor",mode);
+	if (!client.open(&cursorid)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		return;
+	}
+	report(label,true);
+
+	oracleprotocolquery3offsets	offsets;
+	charstring::printf(label,sizeof(label),"%s: build the request",mode);
+	if (!client.buildQuery3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				cursorid,0,query,binds,bindcount,1,
+				values,1,NULL,0,&offsets)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+
+	reportFragments(client.getRequestSize(),client.getSdu(),
+					&offsets,values,bindcount);
+
+	charstring::printf(label,sizeof(label),
+			"%s: the request spans more than one packet",mode);
+	report(label,fragmentCount(client.getRequestSize(),
+					client.getSdu())>1);
+
+	charstring::printf(label,sizeof(label),
+			"%s: a packet boundary lands exactly at the start "
+			"of the row data block",mode);
+	report(label,boundaryLandsAtRowDataStart(client.getRequestSize(),
+					client.getSdu(),&offsets));
+
+	charstring::printf(label,sizeof(label),"%s: parse and execute",mode);
+	if (!client.sendSplitPacket() || !client.recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+
+	// a request whose block walk dropped every value answers with
+	// ORA-01008 rather than with the describe a real parse and execute
+	// sends
+	bool	executed=(client.getResponseTtcCode()==ORA_TTC_DESCRIBE_INFO);
+	report(label,executed);
+	if (!executed) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),"%s: fetch",mode);
+	if (!client.fetch(cursorid,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	uint32_t	colcount=0;
+	unsigned char	actual[ORA_RESULT_BUFFER_SIZE];
+	size_t		actualsize=0;
+	bool		isnull=false;
+	bool		decoded=readFetch3Row(&client,&colcount,
+						actual,sizeof(actual),
+						&actualsize,&isnull);
+	charstring::printf(label,sizeof(label),
+				"%s: fetch response decodes",mode);
+	report(label,decoded);
+	if (!decoded) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+				"%s: one column, not null",mode);
+	report(label,colcount==1 && !isnull);
+
+	// the substantive assertion: every bind value arrived, which is only
+	// possible if the block walk refilled past the boundary instead of
+	// exiting with zero blocks read
+	charstring::printf(label,sizeof(label),
+			"%s: every bind value arrived whole and in order",
+			mode);
+	int64_t	difference=firstDifference(actual,actualsize,
+						expected,expectedsize);
+	report(label,difference<0);
+	if (difference>=0) {
+		reportDifference(actual,actualsize,
+					expected,expectedsize,difference);
+	}
+
+	// the direct test for the desync #10050 reported: a walk that exited
+	// early left the remaining packets of the request unread, so the
+	// next recv() on the session would pick up a fragment of this
+	// request as though it were a new one
+	uint32_t	secondcursorid=0;
+	charstring::printf(label,sizeof(label),
+			"%s: the session survived the split request",mode);
+	report(label,client.open(&secondcursorid));
+
+	client.disconnect();
+}
+
+// Regression coverage for a bug the #10050 fix itself introduced, caught by
+// adversarial review rather than by a capture: a re-execute of a statement
+// that has no binds at all.
+//
+// getQuery3BindValues() is shared by query3() and reexecute() (see the case
+// above).  query3() never reaches the block walk with bindcount 0 - it
+// returns early, in getQuery3Binds(), before ever calling in.  reexecute()
+// carries no such guard on its own call, and an ordinary re-execute of a
+// bindless statement still declares iterations 1, exactly like any single
+// execute.  Read literally, the #10050 fix's "iterations nonzero is a wire
+// promise, so refill for it" rule would have this walk refill for a row
+// data block that a bindless statement's wire never carries at all -
+// stalling the session for a whole continuationtimeout on every ordinary
+// re-execute of a parameterless statement.  getQuery3BindValues() now
+// returns immediately when bindcount is 0, before that rule is ever
+// reached, which is what this checks by timing the round trip rather than
+// just checking it eventually succeeds
+static void runReexecuteNoBindsCase(const char *mode,
+				const char *host, uint16_t port,
+				const char *sid,
+				const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	// no placeholders, so no bind descriptors and no row data block on
+	// either the query3 or the reexecute
+	const char	*query="select 1 from dual";
+
+	oracleprotocolclient	client;
+	client.setSdu(ORA_SPLIT_SDU);
+
+	charstring::printf(label,sizeof(label),"%s: connect",mode);
+	if (!client.connect(host,port,sid)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		return;
+	}
+	report(label,true);
+
+	charstring::printf(label,sizeof(label),"%s: login",mode);
+	if (!client.login(user,password)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		return;
+	}
+	report(label,true);
+
+	uint32_t	cursorid=0;
+	charstring::printf(label,sizeof(label),"%s: open cursor",mode);
+	if (!client.open(&cursorid)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		return;
+	}
+	report(label,true);
+
+	// the query3 that parses the bindless statement and sets
+	// query3session, so the re-execute below reaches reexecute() in
+	// src/protocols/oracle.cpp rather than the legacy execute path
+	charstring::printf(label,sizeof(label),"%s: parse and execute",mode);
+	if (!client.query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				cursorid,0,query,NULL,0,1,NULL,0,NULL,0)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	bool	executed=(client.getResponseTtcCode()==ORA_TTC_DESCRIBE_INFO);
+	report(label,executed);
+	if (!executed) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	// iterations 1, no binds, no row data block - what an ordinary
+	// re-execute of a bindless statement puts on the wire
+	charstring::printf(label,sizeof(label),
+			"%s: re-execute with no binds returns promptly",mode);
+	time_t	before=time(NULL);
+	bool	reexecuted=client.reexecute(cursorid,1,
+				ORA_OPTION_EXECUTE,0,0,NULL,0);
+	time_t	elapsed=time(NULL)-before;
+	stdoutput.printf("  re-execute took %d second(s)\n",(int)elapsed);
+	report(label,reexecuted && elapsed<5);
+	if (!reexecuted) {
+		stdoutput.printf("%s\n",client.getError());
+	} else if (client.getResponseTtcCode()==ORA_TTC_ERROR) {
+		reportResponse(&client);
+	}
+
+	client.disconnect();
+}
+
 // two ordinary query3 requests, each inside one packet, written back to back
 // before either answer is read.
 //
@@ -899,6 +1206,16 @@ int main(int argc, char **argv) {
 	runSplitCase("split in a bind value",
 			host,port,sid,user,password,
 			3,260,ORA_PART_ROW_DATA);
+
+	// #10050: the boundary lands exactly on the row data block's own
+	// marker byte instead of inside a value
+	runRowDataBoundaryCase("split exactly at the row data block",
+			host,port,sid,user,password);
+
+	// #10050: a re-execute of a bindless statement must not refill for a
+	// row data block that never comes
+	runReexecuteNoBindsCase("re-execute a bindless statement",
+			host,port,sid,user,password);
 
 	// and the other direction - two whole requests, back to back
 	runBackToBackCase("back to back requests",

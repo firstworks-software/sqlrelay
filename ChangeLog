@@ -2512,6 +2512,20 @@
 		username and everything after it misparsed from the wrong
 		offset, dropping the connection (ORA-03113) instead of logging
 		in or answering with the right auth failure (#10049)
+	fixed the oracle protocol module dropping every bind value and
+		desyncing the session on a query3 request whose row data
+		block started exactly on a tns packet boundary.
+		getQuery3BindValues()'s block walk tested for a byte in hand
+		and the block's own marker byte together, so a boundary
+		landing there exited the walk having read zero blocks even
+		though the wire's own iteration count already said more were
+		coming; it now refills for that case, and leaves alone the
+		case where a client claims 0 iterations but sends row data
+		anyway. the same walk is shared by reexecute(), where
+		refilling unconditionally would have made an ordinary
+		re-execute of a bindless statement wait out a
+		continuationtimeout instead of returning at once; it now
+		returns immediately when there are no binds to read (#10050)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

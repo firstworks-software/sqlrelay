@@ -12995,6 +12995,18 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 
 	query3blocks=0;
 
+	// no binds means no row data section on the wire at all, whatever
+	// iterations claims - query3() already returns before ever calling
+	// this far when bindcount is 0 (see its own check just above its
+	// call), but reexecute() carries no such guard on its call, and an
+	// ordinary reexecute of a bindless statement still declares
+	// iterations 1 like any single execute.  without this, the refill
+	// below would wait out continuationtimeout every time for a row
+	// data block no client ever sends
+	if (!bindcount) {
+		return true;
+	}
+
 	// The descriptor walk ahead of this one takes its end by value, so a
 	// refill in there never reached the copy this was called with, and rp
 	// can already be past it.  have() takes end fresh on its own, but the
@@ -13036,12 +13048,23 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 
 	// A block boundary is one place a value that pulled another packet in
 	// can leave this frame's end behind, so it is taken fresh each time
-	// around.  Running out at a boundary still ends the walk rather than
-	// reading for more: nothing says another block follows, so reading for
-	// one would hang the session on a client that sent fewer than it
-	// claimed.
-	while (rp<(end=resppacket+resppacketsize) &&
-			*rp==TTC_ROW_DATA && query3blocks<maxblocks) {
+	// around.  When iterations is nonzero, al8i4[1] is the wire's own
+	// promise of how many row data blocks follow ("Oracle Wire Protocol -
+	// Query3"), so running short of maxblocks there is refilled for
+	// rather than treated as the end of the request - a boundary can land
+	// on the block marker itself as easily as anywhere else in it.  When
+	// iterations is 0, maxblocks is this function's own capacity guess
+	// rather than a wire promise, so running out still ends the walk
+	// without refilling: nothing says another block follows, and
+	// refilling would hang the session on a client that never sends one.
+	while (query3blocks<maxblocks) {
+		end=resppacket+resppacketsize;
+		if (rp>=end && (!iterations || !have(rp,1,&end))) {
+			break;
+		}
+		if (*rp!=TTC_ROW_DATA) {
+			break;
+		}
 		rp++;
 		for (uint32_t i=0; i<bindcount; i++) {
 			oraclequery3bindvalue	*v=&(query3bindvalues[
