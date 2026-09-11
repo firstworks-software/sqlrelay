@@ -9285,6 +9285,15 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 		return sendCursorNotOpenError();
 	}
 
+	// a cursor out of the pool is reset before it gets here, so this is
+	// insurance: should some path into query()/execute() ever leave
+	// binds on one, they aren't this session's to run with. unlike
+	// installQuery3Binds()'s ref-cursor insurance (~13492), this calls
+	// releaseRefCursors() rather than the safer forgetRefCursor() -
+	// fine here only because refcursorcounts is already 0 for any
+	// cursor reaching open()
+	clearParams(cursor);
+
 	uint16_t	cursorid=cont->getId(cursor);
 
 	debugStart("open request");
@@ -10732,6 +10741,12 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
+
+	// and its binds, the way query2()/query3() already do - a real
+	// oparse() invalidates them, so binds an earlier session left on this
+	// pooled cursor would otherwise be re-applied, silently, to whatever
+	// a later bindless execute runs, which fails ORA-01036
+	clearParams(cursor);
 
 	// bounds checking
 	if (querybytes>maxquerysize) {

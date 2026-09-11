@@ -34,29 +34,27 @@
 // sdu: 122 bytes a row on the wire, five packets of answer, and two rows
 // before the old cap fired.
 //
-// Two cases, each on its own session:
+// Three cases, each on its own session:
 //
 //	- the fetch3 batch - a TTI_FETCH for 20 rows on a cursor a query3
 //	  already parsed and executed.  sendFetch3Response()
 //	- the query3 prefetch batch - the same 20 rows, asked for through an
 //	  execute-only query3's prefetch count rather than through a fetch of
 //	  their own.  sendQuery3Response()
+//	- the legacy fetch batch - the same 20 rows again, through the
+//	  pre-query3 calls: a TTI_QUERY parse, a bindless TTI_EXECUTE and a
+//	  TTI_FETCH.  sendFetchResponse()
 //
-// There is deliberately no third case on the pre-query3 path.  A legacy
-// TTI_QUERY, TTI_EXECUTE and TTI_FETCH batch passes against a freshly
-// started instance and fails under the full suite with ORA-01036,
-// "unrecognized bind variable :b1", and that is a server bug rather than a
-// test one: open() in src/protocols/oracle.cpp hands out a pooled cursor
-// without clearing it, the legacy query() never calls clearParams() the way
-// query2() and query3() do, and execute() only clears when the request
-// carried binds of its own - so a bindless legacy execute re-applies input
-// binds an earlier client session left on that cursor.  It is filed as
-// #10063.  Leaving the case out until then costs no coverage: #10030 fixed
-// sendFetchResponse() a release earlier and the #10056 work never touched
-// it, so a legacy case cannot tell a pre-#10056 server from a post-#10056
-// one - it was only ever a guard for #10030 and a control for the two cases
-// above, never evidence for #10056.  It can come back once #10063 is fixed,
-// where it will guard that leak as well.
+// The legacy case also guards #10030 and #10063. A bindless legacy execute
+// used to fail with ORA-01036, "unrecognized bind variable :b1", once run
+// after a bind-heavy session on the same pool: open() in
+// src/protocols/oracle.cpp hands out a pooled cursor without clearing it,
+// the legacy query() never called clearParams() the way query2() and
+// query3() do, and execute() only cleared when the request carried binds
+// of its own - so a bindless legacy execute re-applied input binds an
+// earlier client session had left on that cursor. Running the case last,
+// behind whatever the rest of the suite has already done to this pool by
+// the time it gets here, is what originally caught this.
 //
 // Each case decodes the whole batch out of the one logical response, checks
 // every row against the value the statement built for it, and prints how
@@ -361,6 +359,92 @@ static bool readBatchRows(oracleprotocolclient *client,
 	}
 }
 
+// the same walk, behind the legacy TTI_FETCH's row body instead of
+// TTI_FETCH3's.  the row header is the one putRowHeader() builds either
+// way, byte for byte, but putRow() marks a row the same 0x07 as
+// putRowData() does and then, behind the value, writes two more
+// length-prefixed fields putRowData() never does: the indicator and the
+// return code odefin() gave the client a pointer for.  see putRow() in
+// src/protocols/oracle.cpp and readLegacyFetchRows() in
+// oraclelegacyfetch.cpp, which walks the same fields for a single row
+static bool readLegacyBatchRows(oracleprotocolclient *client,
+				unsigned char *flags,
+				uint32_t *colcount,
+				uint32_t *headerrowcount,
+				oraclebatchrow *rows,
+				size_t maxrows,
+				size_t *rowcount) {
+
+	client->rewindResponse();
+
+	*flags=0;
+	*colcount=0;
+	*headerrowcount=0;
+	*rowcount=0;
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode)) {
+		return false;
+	}
+
+	if (ttccode!=ORA_TTC_ROW_HEADER) {
+		return true;
+	}
+
+	uint32_t	skip=0;
+	if (!client->readByte(flags) ||
+		(*flags!=ORA_ROW_HEADER_FLAGS_FETCH &&
+			*flags!=ORA_ROW_HEADER_FLAGS_EXECUTE) ||
+		!client->readLenPreInt(colcount) ||	// column count
+		!client->readLenPreInt(&skip) ||	// iteration number
+		!client->readLenPreInt(headerrowcount) ||
+		!client->readLenPreInt(&skip) ||	// uac buffer length
+		!client->readLenPreInt(&skip) ||	// bit vector size
+		!client->readLenPreInt(&skip)) {	// meaning unknown
+		return false;
+	}
+
+	for (;;) {
+
+		unsigned char	marker=0;
+		if (!client->readByte(&marker)) {
+			return false;
+		}
+		if (marker!=ORA_TTC_ROW_DATA) {
+			// the trailer, so the rows are done
+			return true;
+		}
+
+		if (*rowcount>=maxrows) {
+			return false;
+		}
+
+		oraclebatchrow	*row=&(rows[*rowcount]);
+		uint32_t	indicator=0;
+		uint32_t	returncode=0;
+		if (!client->readLenBytes(row->value,sizeof(row->value),
+						&(row->size),&(row->isnull)) ||
+			!client->readLenPreInt(&indicator) ||
+			!client->readLenPreInt(&returncode)) {
+			return false;
+		}
+
+		(*rowcount)++;
+	}
+}
+
+// a readBatchRows()/readLegacyBatchRows() decode, picked at the call site
+// to match whichever call built the response
+typedef bool (*batchrowreader)(oracleprotocolclient *client,
+				unsigned char *flags,
+				uint32_t *colcount,
+				uint32_t *headerrowcount,
+				oraclebatchrow *rows,
+				size_t maxrows,
+				size_t *rowcount);
+
 // everything asked of a batch response, whichever call went out to get it:
 // the rows themselves, the size and the packet count that say it was too big
 // to have gone out as one packet, that nothing was held back for a
@@ -368,7 +452,8 @@ static bool readBatchRows(oracleprotocolclient *client,
 static void checkBatch(oracleprotocolclient *client,
 				const char *mode,
 				unsigned char expectedflags,
-				uint32_t cursorid) {
+				uint32_t cursorid,
+				batchrowreader readrows) {
 
 	char	label[192];
 
@@ -379,7 +464,7 @@ static void checkBatch(oracleprotocolclient *client,
 	uint32_t	colcount=0;
 	uint32_t	headerrowcount=0;
 	size_t		rowcount=0;
-	bool		decoded=readBatchRows(client,&flags,&colcount,
+	bool		decoded=readrows(client,&flags,&colcount,
 						&headerrowcount,
 						rows,ORA_MAX_DECODED_ROWS,
 						&rowcount);
@@ -469,7 +554,7 @@ static void checkBatch(oracleprotocolclient *client,
 	uint32_t	morecolcount=0;
 	uint32_t	moreheaderrowcount=0;
 	size_t		morerowcount=0;
-	bool		moredecoded=readBatchRows(client,&moreflags,
+	bool		moredecoded=readrows(client,&moreflags,
 						&morecolcount,
 						&moreheaderrowcount,rows,
 						ORA_MAX_DECODED_ROWS,
@@ -498,6 +583,31 @@ static void checkBatch(oracleprotocolclient *client,
 	charstring::printf(label,sizeof(label),
 			"%s: the session survived the split response",mode);
 	report(label,client->open(&secondcursorid));
+}
+
+// whether a legacy parse or execute summary came back clean.
+// readLegacySummary() in oraclelegacyfetch.cpp walks the whole object;
+// this stops after the error number, the one field #10063 turns nonzero -
+// a bindless execute on a cursor still holding another session's input
+// binds answers ORA-01036 here rather than with anything a decode failure
+// would catch
+static bool legacySummarySucceeded(oracleprotocolclient *client) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	uint32_t	skip=0;
+	uint32_t	errornumber=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) ||
+		ttccode!=ORA_TTC_ERROR ||
+		!client->readLenPreInt(&skip) ||	// end of call status
+		!client->readLenPreInt(&skip) ||	// rows processed
+		!client->readLenPreInt(&errornumber)) {
+		return false;
+	}
+	return errornumber==0;
 }
 
 // the login and the cursor every case starts with, on a session small
@@ -595,7 +705,8 @@ static void runFetch3Case(const char *mode,
 	}
 	report(label,true);
 
-	checkBatch(&client,mode,ORA_ROW_HEADER_FLAGS_FETCH,cursorid);
+	checkBatch(&client,mode,ORA_ROW_HEADER_FLAGS_FETCH,cursorid,
+					readBatchRows);
 
 	client.disconnect();
 }
@@ -668,7 +779,80 @@ static void runQuery3Case(const char *mode,
 				"%s: the answer leads with the rows",mode);
 	report(label,client.getResponseTtcCode()==ORA_TTC_ROW_HEADER);
 
-	checkBatch(&client,mode,ORA_ROW_HEADER_FLAGS_EXECUTE,cursorid);
+	checkBatch(&client,mode,ORA_ROW_HEADER_FLAGS_EXECUTE,cursorid,
+					readBatchRows);
+
+	client.disconnect();
+}
+
+// the same batch again, this time through the pre-query3 calls: a legacy
+// TTI_QUERY parse, a bindless TTI_EXECUTE and a TTI_FETCH for the whole 20
+// rows.  sendFetchResponse() answers the fetch - the same row header
+// putRowHeader() builds for the other two cases, behind a row body of its
+// own that readLegacyBatchRows() decodes instead of readBatchRows().
+//
+// this is also the regression case for #10063: open() hands out a pooled
+// cursor without clearing it, and a bindless legacy execute() never clears
+// one either, so it silently re-applies whatever input binds an earlier
+// client session left behind on that cursor.  the two cases above bind
+// nothing themselves, but running third puts this one behind whatever the
+// rest of the suite has already done to this connection pool by the time
+// it gets here - which is what originally caught the bug and is worth
+// keeping this case last for
+static void runLegacyCase(const char *mode,
+				const char *host, uint16_t port,
+				const char *sid,
+				const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+								&cursorid)) {
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),"%s: parse",mode);
+	if (!client.legacyQuery(cursorid,ORA_BATCH_QUERY)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,legacySummarySucceeded(&client));
+
+	// no binds of its own - the shape #10063 needs, since a bindless
+	// execute is the one that never clears the cursor's params
+	charstring::printf(label,sizeof(label),"%s: execute",mode);
+	if (!client.legacyExecute(cursorid,1,0)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	bool	executed=legacySummarySucceeded(&client);
+	report(label,executed);
+	if (!executed) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),"%s: fetch the batch",mode);
+	if (!client.legacyFetch(cursorid,ORA_BATCH_ROWS)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	checkBatch(&client,mode,ORA_ROW_HEADER_FLAGS_FETCH,cursorid,
+					readLegacyBatchRows);
 
 	client.disconnect();
 }
@@ -705,6 +889,10 @@ int main(int argc, char **argv) {
 
 	// the batch an execute's prefetch count asks for
 	runQuery3Case("query3 prefetch batch",host,port,sid,user,password);
+
+	// the same batch through the legacy pre-query3 calls, run last so the
+	// pool is already whatever the rest of the suite has left it as
+	runLegacyCase("legacy fetch batch",host,port,sid,user,password);
 
 	if (status==0) {
 		stdoutput.printf("\n\033[34mAll tests succeeded\033[0m\n");

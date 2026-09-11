@@ -1223,16 +1223,20 @@ run_protocol_test() {
 	# client only ever performs once.  it forces the same 512 byte sdu
 	# and fetches 20 rows of 120 bytes, which no single packet can hold -
 	# a single big row would not catch it, since the old cap exempted a
-	# batch's first row however wide it was.  it runs two cases, each on
-	# its own session: the fetch3 batch and the query3 prefetch batch.
-	# there is deliberately no legacy case - one fails under this suite
-	# on #10063, and since #10030 fixed sendFetchResponse() a release
-	# before #10056 touched anything, it could only ever have guarded
-	# #10030 rather than #10056 anyway.  it reads ORACLEPROTOCOLPORT1
-	# straight from the environment, so it needs neither $server nor
-	# TNS_ADMIN either.  then oraclemaxdescriptors, a tenth raw-socket
-	# test, for #10059 - a TTI_QUERY2 whose descriptor block names more
-	# define positions than the connection's maxcolumncount allows, or
+	# batch's first row however wide it was.  it runs three cases, each on
+	# its own session: the fetch3 batch, the query3 prefetch batch and the
+	# legacy fetch batch - a TTI_QUERY parse, a bindless TTI_EXECUTE and a
+	# TTI_FETCH through the pre-query3 calls instead, run last so the pool
+	# is already whatever the rest of the suite has left it as.  that case
+	# also guards #10030 and #10063: open() hands out a pooled cursor
+	# without clearing it, and a bindless legacy execute() never cleared
+	# one either, so it silently re-applied whatever input binds an
+	# earlier client session had left on that cursor.  it reads
+	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
+	# neither $server nor TNS_ADMIN either.  then oraclemaxdescriptors, a
+	# tenth raw-socket test, for #10059 - a TTI_QUERY2 whose descriptor
+	# block names more define positions than the connection's
+	# maxcolumncount allows, or
 	# more binds than its maxbindcount does.  getQuery2Descriptors()
 	# bailed on either limit with a quiet return, and on the define one
 	# that left the cursor's define list cleared and the request's row
