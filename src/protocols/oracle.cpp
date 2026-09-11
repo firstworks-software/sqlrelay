@@ -8063,9 +8063,10 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 		debugWrite("no auth password");
 	}
 
-	// the host name, os user name, pid string and program name aren't
-	// needed for anything this module does - already accounted for in
-	// bloblen above, so there's nothing left to skip past them for
+	// the terminal name, host name, os user name, pid string and program
+	// name aren't needed for anything this module does - already
+	// accounted for in bloblen above, so there's nothing left to skip
+	// past them for
 
 	return true;
 }
