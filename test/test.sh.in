@@ -1726,10 +1726,12 @@ MODULEDIR=$PREFIX/lib*/sqlrelay
 PATHOPTS=""
 STAGEDIR=$TESTDIR/stagedmodules
 
-# the listener ports the protocol suites' instances were configured with.
-# these are the same values configure substituted into the .conf files, so
-# with no -randomports both ends already agree and nothing has to be
-# regenerated.  -randomports replaces them with free ports picked at run time.
+# the listener ports the protocol suites' instances default to - the same
+# values configure substituted into the .conf files at build time.
+# -randomports replaces them with free ports picked at run time.  either way,
+# the .conf files get regenerated from these values on every run, since a
+# prior -randomports run may have left one holding a port that no longer
+# matches what this run expects (see regenerate_files() below).
 PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
@@ -1854,15 +1856,18 @@ then
 	stage_modules
 fi
 
-# move the protocol listeners off the well known ports, and rewrite both ends
-# to match.  same ordering requirement - the configs have to be right before
-# any instance is stopped or started
+# -randomports moves the protocol listeners off the well known ports;
+# otherwise PORTTOKENS keeps the compiled-in defaults.  either way the
+# configs need rewriting: a prior -randomports run may have left them holding
+# ports this run isn't using, and nothing else ever puts the defaults back.
+# same ordering requirement - the configs have to be right before any
+# instance is stopped or started
 if ( test "$randomports" = "yes" )
 then
 	pick_ports
-	regenerate_files
-	echo
 fi
+regenerate_files
+echo
 
 # export the ports unconditionally, not just under -randomports - a
 # raw-socket test like oracledescribeonly reads its port straight from the
