@@ -9748,6 +9748,19 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	putAuthCount(0,4);
 	putAuthCount(0,4);
 
+	// an oci7endtoendseqnumber client also expects the column's own
+	// 0-based index trailing everything else - absent from every genuine
+	// client capture (eg. 9808-solaris8sparc-portable-realtable-parse
+	// .oraproxy), but present after every column against a real 10.2
+	// server for this client class, values 0, 1, 2 for columns 0, 1, 2:
+	// samples/10048-dev-oci23api7-portable-describe-realserver.oraproxy.
+	// the native width is 2, not 4 - confirmed against the same field in
+	// samples/9746-dev-oci23api7-native-datatypes-realserver.oraproxy
+	// (raw "00 00", "01 00", "02 00" for columns 0, 1, 2)
+	if (oci7endtoendseqnumber) {
+		putAuthCount(column,2);
+	}
+
 	debugStart("column %d",column);
 	debugColumnType(columntypestring,wiretype);
 	debugWrite("size: %d",dbsize);

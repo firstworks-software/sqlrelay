@@ -2497,6 +2497,12 @@
 		that capability byte and answers with whichever o3logon variant
 		the client asked for, while a genuine old client still gets
 		exactly what it got before (#10048)
+	fixed the oracle protocol module hanging the same o5logon-capable
+		legacy oci7 clients (#10048) on their first describe call once
+		login was fixed. their describe response needs an extra count
+		field, the column's own 0-based index, after each column's
+		metadata; a genuine old oci7 client's describe is unaffected
+		(#10051)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
