@@ -8,6 +8,7 @@
 /oraclebigchunkclroff
 /oraclerefcursorreuse
 /oraclesplitresponse
+/oraclemaxdescriptors
 /oci7datestr
 /ociloginretry
 *.o

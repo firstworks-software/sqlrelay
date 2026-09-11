@@ -1230,6 +1230,23 @@ run_protocol_test() {
 	# before #10056 touched anything, it could only ever have guarded
 	# #10030 rather than #10056 anyway.  it reads ORACLEPROTOCOLPORT1
 	# straight from the environment, so it needs neither $server nor
+	# TNS_ADMIN either.  then oraclemaxdescriptors, a tenth raw-socket
+	# test, for #10059 - a TTI_QUERY2 whose descriptor block names more
+	# define positions than the connection's maxcolumncount allows, or
+	# more binds than its maxbindcount does.  getQuery2Descriptors()
+	# bailed on either limit with a quiet return, and on the define one
+	# that left the cursor's define list cleared and the request's row
+	# count lost, so the exact fetch behind it sent one packet of every
+	# column, unconverted, and reported success - a short batch with no
+	# error and no way for a legacy client to ask for the rest.  both
+	# limits default to 256 - maxcolumncount off the connect string,
+	# maxbindcount off the instance attributes - and this instance sets
+	# neither, so 257 of either trips it.  it runs three cases, each on
+	# its own session: a define list within the limit whose exact fetch
+	# spans several packets at a 512 byte sdu, which is the control, and
+	# then 257 defines and 257 binds, which have to come back ORA-20002
+	# and ORA-20003 with no rows at all.  it reads ORACLEPROTOCOLPORT1
+	# straight from the environment, so it needs neither $server nor
 	# TNS_ADMIN either.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
@@ -1247,7 +1264,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all nineteen runs have to succeed for the instance to pass
+	# all twenty runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1286,6 +1303,8 @@ run_protocol_test() {
 		resultsplitquery3="$?"
 		./oraclesplitresponse
 		resultsplitresponse="$?"
+		./oraclemaxdescriptors
+		resultmaxdescriptors="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1294,7 +1313,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1371,6 +1390,10 @@ run_protocol_test() {
 		if ( test "$resultsplitresponse" != "0" )
 		then
 			printf "    % 8s: failed (split response)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultmaxdescriptors" != "0" )
+		then
+			printf "    % 8s: failed (max descriptors)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then

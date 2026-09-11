@@ -2553,6 +2553,14 @@
 		nine now-inert clear() calls, dead since the query3 and
 		fetch response builders stopped deferring rows (#10030)
 		(#10056) (#10058)
+	fixed the oracle protocol module silently dropping rows when a
+		query2 descriptor block named more define positions than
+		maxcolumncount, where it sent one packet of rows and
+		reported success; it now comes back ORA-20002 before the
+		statement is prepared or executed.  a block naming more
+		binds than maxbindcount was already refused, but with a
+		misleading ORA-01007, and now comes back ORA-20003
+		(#10059)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

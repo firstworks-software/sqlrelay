@@ -304,6 +304,20 @@
 #define ORA_TRANSACTION_FAILED		20001
 #define ORA_TRANSACTION_FAILED_MESSAGE	"ORA-20001: transaction failed\n"
 
+// what a query2 request gets back when its descriptor block names more define
+// positions than the connection's maxcolumncount allows, or more binds than
+// maxbindcount does - deployment limits rather than oracle ones, so they get
+// numbers from the same user-defined range, and for the same reason, as
+// ORA_QUERY_FAILED above.  the wording is the server's own for these two
+// limits - see SQLR_ERROR_MAXCOLUMNCOUNTEXCEEDED_STRING and
+// SQLR_ERROR_MAXBINDCOUNT_STRING in src/common/defines.h
+#define ORA_MAX_COLUMN_COUNT_EXCEEDED	20002
+#define ORA_MAX_COLUMN_COUNT_EXCEEDED_MESSAGE \
+	"ORA-20002: Maximum column count exceeded.\n"
+#define ORA_MAX_BIND_COUNT_EXCEEDED	20003
+#define ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE \
+	"ORA-20003: Maximum bind variable count exceeded.\n"
+
 // the two ways the handshake can say no.  a refuse packet carries a tns error
 // number, which is what a listener reports; an error packet after the accept
 // carries an oracle error number, which is what a server reports.
@@ -2330,6 +2344,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// the wire (see getQuery2BindValues())
 		bool		query2unbound;
 
+		// whether the request's descriptor block named more define
+		// positions than the connection's maxcolumncount allows, or
+		// more binds than maxbindcount does.  either one ends the
+		// call in an error instead of a statement - see query2() and
+		// getQuery2Descriptors()
+		bool		query2toomanydefines;
+		bool		query2toomanybinds;
+
 		// the rows the last query3 execute affected, summed over its
 		// iterations, and whether the backend knew the count.  an
 		// array bind runs the statement once per iteration, and the
@@ -2551,6 +2573,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query2bindcount=0;
 	query2plsqlbindcount=0;
 	query2unbound=false;
+	query2toomanydefines=false;
+	query2toomanybinds=false;
 	query2bindtypes=new uint16_t[maxbindcount];
 	query2binddirections=new byte_t[maxbindcount];
 	query2bindoutindexes=new int16_t[maxbindcount];
@@ -10888,8 +10912,40 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	query2plsqlbindcount=0;
 	query2rowcount=0;
 	query2unbound=false;
+	query2toomanydefines=false;
+	query2toomanybinds=false;
 	if (options&(OPTION_DEFINE|OPTION_BIND)) {
 		getQuery2Descriptors(rp,end,options,cursor);
+	}
+
+	// a block that named more defines or binds than the deployment allows
+	// is refused here, ahead of the parse and execute below, so the
+	// statement never runs.  over-wide defines are the damaging half:
+	// the walk bails with the cursor's define list already cleared and
+	// the request's row count never committed, so falling through would
+	// make the fetch below a short batch reported as success - an answer
+	// the client can't tell from the whole one.  over-wide binds fall
+	// through to the bind block below, which does refuse them, but with
+	// an ORA-01007 that says nothing about a bind count limit
+	if (query2toomanydefines || query2toomanybinds) {
+
+		// the bind block below is what used to answer these, and its
+		// first act is to forget the cursor's binds.  do the same
+		// here, or a refused request leaves the previous exchange's
+		// binds installed for the next bare execute to run with, and
+		// holds that exchange's ref cursors until the cursor closes
+		if (options&OPTION_BIND) {
+			clearParams(cursor);
+		}
+
+		if (query2toomanydefines) {
+			return sendOci7StatementError(wireCursorId(cursor),
+					ORA_MAX_COLUMN_COUNT_EXCEEDED,
+					ORA_MAX_COLUMN_COUNT_EXCEEDED_MESSAGE);
+		}
+		return sendOci7StatementError(wireCursorId(cursor),
+				ORA_MAX_BIND_COUNT_EXCEEDED,
+				ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE);
 	}
 
 	if (options&OPTION_PARSE) {
@@ -11261,8 +11317,15 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		return;
 	}
 
+	// a bind list wider than the deployment's limit ends the call in an
+	// error rather than a quiet return - query2() sends it as soon as
+	// this call comes back.  a quiet return does keep the client from
+	// executing anything, since query2()'s bind block refuses a request
+	// whose bind count came back 0, but it refuses it with ORA-01007,
+	// which says nothing about a bind count limit
 	if (bindcount>maxbindcount) {
 		debugWrite("bind count exceeds maxbindcount %d",maxbindcount);
+		query2toomanybinds=true;
 		if (hasdefines) {
 			clearDefines(curid);
 		}
@@ -11281,9 +11344,18 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	uint32_t	maxcolumns=cont->getMaxColumnCount();
 	if (definitions) {
 		if (maxcolumns) {
+
+			// a define list wider than that limit can't be
+			// walked - columndefined[] and the arrays beside it
+			// are sized to maxcolumncount - and returning
+			// quietly would leave definecounts[curid] unset and
+			// the request's row count lost, which query2()'s
+			// fetch turns into a silent short batch.  query2()
+			// answers this with an error instead
 			if (definitions>maxcolumns) {
 				debugWrite("define count exceeds max "
 						"column count %d",maxcolumns);
+				query2toomanydefines=true;
 				debugEnd();
 				return;
 			}
