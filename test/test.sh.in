@@ -1211,7 +1211,26 @@ run_protocol_test() {
 	# rather than assuming it, fetches its row and compares the whole
 	# answer byte for byte, and opens a second cursor afterwards.  it
 	# reads ORACLEPROTOCOLPORT1 straight from the environment, so it
-	# needs neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
+	# needs neither $server nor TNS_ADMIN.  then oraclesplitresponse, a
+	# ninth raw-socket test, for #10060 - where oraclesplitrequest and
+	# oraclesplitquery3 cover the receive side, a client request that
+	# arrives as more than one packet, this covers the send side: #10030
+	# and #10056 made sendFetchResponse(), sendQuery3Response() and
+	# sendFetch3Response() pack the whole requested row batch and let
+	# sendPacket()/sendSplitPacket() split it across physical packets,
+	# instead of capping the answer at one packet's worth of rows and
+	# leaving the rest of the batch for a continuation fetch that a real
+	# client only ever performs once.  it forces the same 512 byte sdu
+	# and fetches 20 rows of 120 bytes, which no single packet can hold -
+	# a single big row would not catch it, since the old cap exempted a
+	# batch's first row however wide it was.  it runs two cases, each on
+	# its own session: the fetch3 batch and the query3 prefetch batch.
+	# there is deliberately no legacy case - one fails under this suite
+	# on #10063, and since #10030 fixed sendFetchResponse() a release
+	# before #10056 touched anything, it could only ever have guarded
+	# #10030 rather than #10056 anyway.  it reads ORACLEPROTOCOLPORT1
+	# straight from the environment, so it needs neither $server nor
+	# TNS_ADMIN either.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
@@ -1228,7 +1247,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all eighteen runs have to succeed for the instance to pass
+	# all nineteen runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1265,6 +1284,8 @@ run_protocol_test() {
 		resultsplitrequest="$?"
 		./oraclesplitquery3
 		resultsplitquery3="$?"
+		./oraclesplitresponse
+		resultsplitresponse="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1273,7 +1294,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1346,6 +1367,10 @@ run_protocol_test() {
 		if ( test "$resultsplitquery3" != "0" )
 		then
 			printf "    % 8s: failed (split query3 request)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultsplitresponse" != "0" )
+		then
+			printf "    % 8s: failed (split response)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then
