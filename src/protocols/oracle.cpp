@@ -2265,14 +2265,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// blank padded out to it - see putField()
 		uint32_t	**definebuffersizes;
 
-		// a row already fetched and formatted, but not sent because
-		// it didn't fit in the current packet.  the connection has
-		// already advanced past it - fetchRow()/nextRow() can't
-		// un-fetch a row on every backend - so it's held here and
-		// sent first on the next fetch/prefetch instead of being
-		// re-fetched
-		bytebuffer	*pendingrow;
-
 		// the row a lob locator was sent for.  the controller's lob
 		// calls only ever address a cursor's current row, so the row a
 		// locator points at has to stay current until the client is
@@ -2577,7 +2569,6 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	columndefined=new bool *[maxcursorcount];
 	definetypes=new uint16_t *[maxcursorcount];
 	definebuffersizes=new uint32_t *[maxcursorcount];
-	pendingrow=new bytebuffer[maxcursorcount];
 	lobpinned=new bool[maxcursorcount];
 	lobpincolcount=new uint32_t[maxcursorcount];
 	lobpingeneration=new uint16_t[maxcursorcount];
@@ -2661,7 +2652,6 @@ sqlrprotocol_oracle::~sqlrprotocol_oracle() {
 	delete[] definebuffersizes;
 	delete[] rowssent;
 	delete[] definecounts;
-	delete[] pendingrow;
 	delete[] lobpinned;
 	delete[] lobpincolcount;
 	delete[] lobpingeneration;
@@ -9574,7 +9564,6 @@ bool sqlrprotocol_oracle::describe(const byte_t *rp) {
 	if (!columntypescached[curid] && !rowssent[curid] &&
 			cursor->getQueryType()==SQLRQUERYTYPE_SELECT) {
 
-		pendingrow[curid].clear();
 		clearLobPin(curid);
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
@@ -9965,10 +9954,6 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 	// and the running row count - a fresh execute rewinds the result
 	// set, so the count starts over with it
 	rowssent[cont->getId(cursor)]=0;
-
-	// a fresh execute means a new result set - drop any row held over
-	// from a previous one on this cursor
-	pendingrow[cont->getId(cursor)].clear();
 
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
@@ -11000,10 +10985,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	if (options&OPTION_EXECUTE) {
 
 		// a fresh execute means a new result set - drop any row
-		// held over from a previous one on this cursor
-		pendingrow[cont->getId(cursor)].clear();
-
-		// and any row it was pinning for a lob read
+		// it was pinning for a lob read
 		clearLobPin(cont->getId(cursor));
 
 		// and start the running row count over, the same way the
@@ -11819,10 +11801,8 @@ bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 				ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 	}
 
-	// a fresh execute means a new result set - drop any row held over
-	// from a previous one on this cursor, and any row it was pinning for
-	// a lob read, and start the running row count over
-	pendingrow[cont->getId(cursor)].clear();
+	// a fresh execute means a new result set - drop any row it was
+	// pinning for a lob read, and start the running row count over
 	clearLobPin(cont->getId(cursor));
 	rowssent[cont->getId(cursor)]=0;
 
@@ -12511,11 +12491,8 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		// re-start the running row count
 		rowssent[cont->getId(cursor)]=0;
 
-		// a re-parse means a new result set - drop any row held
-		// over from the previous one
-		pendingrow[cont->getId(cursor)].clear();
-
-		// and any row it was pinning for a lob read
+		// a re-parse means a new result set - drop any row it was
+		// pinning for a lob read
 		clearLobPin(cont->getId(cursor));
 
 		// bounds checking
@@ -12564,10 +12541,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		}
 
 		// a fresh execute means a new result set - drop any row
-		// held over from a previous one on this cursor
-		pendingrow[cont->getId(cursor)].clear();
-
-		// and any row it was pinning for a lob read
+		// it was pinning for a lob read
 		clearLobPin(cont->getId(cursor));
 
 		// an array bind sends one row data block per element, and a
@@ -16733,11 +16707,8 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		}
 	}
 
-	// a fresh execute means a new result set - drop any row held
-	// over from a previous one on this cursor
-	pendingrow[cont->getId(cursor)].clear();
-
-	// and any row it was pinning for a lob read
+	// a fresh execute means a new result set - drop any row it
+	// was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
 
 	// and start the running row count over, the way reexecute() below
@@ -16833,10 +16804,9 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 		return false;
 	}
 
-	// a fresh execute means a new result set - re-start the running row
-	// count and drop any row held over from the previous one
+	// a fresh execute means a new result set - re-start the running
+	// row count
 	rowssent[cont->getId(cursor)]=0;
-	pendingrow[cont->getId(cursor)].clear();
 
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
@@ -17243,10 +17213,9 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// many packets it takes.  a legacy fetch is one call and one
 		// answer - the client has no way to ask for the rest of a
 		// batch, so stopping at the packet boundary loses the rows
-		// past it outright, rather than deferring them the way the
-		// query3 path's pendingrow does.  a real server sends the
-		// whole batch as one ttc byte stream and lets the tns layer
-		// under it split at the sdu: packets [0076] through [0082] of
+		// past it outright.  a real server sends the whole batch as
+		// one ttc byte stream and lets the tns layer under it split
+		// at the sdu: packets [0076] through [0082] of
 		// test/protocol/oracle/samples/
 		// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy
 		// are a six row batch of 2000 byte rows going out as seven
@@ -18729,7 +18698,6 @@ void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
 	refcursorcounts[curid]=0;
 
 	clearDefines(curid);
-	pendingrow[curid].clear();
 	clearLobPin(curid);
 }
 

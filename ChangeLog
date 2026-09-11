@@ -2549,6 +2549,10 @@
 		column with a non-zero scale, by writing the scale raw
 		instead of the count-prefixed form that client expects in
 		the portable encoding (#10054)
+	removed the oracle protocol module's pendingrow member and its
+		nine now-inert clear() calls, dead since the query3 and
+		fetch response builders stopped deferring rows (#10030)
+		(#10056) (#10058)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
