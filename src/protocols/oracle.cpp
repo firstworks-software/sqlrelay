@@ -7928,6 +7928,7 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 
 	uint32_t	usernamesize=0;
 	uint32_t	passwordsize=0;
+	uint32_t	terminalsize=0;
 	uint32_t	hostsize=0;
 	uint32_t	usersize=0;
 	uint32_t	pidstringsize=0;
@@ -7964,7 +7965,7 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 		!getAuthCount(rp,end,&unused,4,&rp) ||		// mode
 		!getAuthCount(rp,end,&unused,4,&rp) ||		// unexplained, always 0
 		!getPointer(rp,end,&unused,&rp) ||		// terminal name ptr
-		!getAuthCount(rp,end,&unused,4,&rp) ||		// terminal name length
+		!getAuthCount(rp,end,&terminalsize,4,&rp) ||	// terminal name length
 		!getPointer(rp,end,&unused,&rp) ||		// host ptr
 		!getAuthCount(rp,end,&hostsize,4,&rp) ||	// host length
 		!getPointer(rp,end,&unused,&rp) ||		// os user ptr
@@ -7980,6 +7981,7 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 
 	debugWrite("user length: %d",usernamesize);
 	debugWrite("password length: %d",passwordsize);
+	debugWrite("terminal name length: %d",terminalsize);
 	debugWrite("host length: %d",hostsize);
 	debugWrite("os user length: %d",usersize);
 	debugWrite("pid string length: %d",pidstringsize);
@@ -8006,9 +8008,11 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// #9794 found on the challenge response, just the client doing it
 	// here instead of this module
 	uint32_t	blobprefixes=(usernamesize?1:0)+(passwordsize?1:0)+
+					(terminalsize?1:0)+
 					(hostsize?1:0)+(usersize?1:0)+
 					(pidstringsize?1:0)+(programsize?1:0);
-	uint32_t	bloblen=usernamesize+passwordsize+hostsize+
+	uint32_t	bloblen=usernamesize+passwordsize+terminalsize+
+					hostsize+
 					usersize+pidstringsize+programsize+
 					blobprefixes;
 	if ((size_t)(end-rp)<(size_t)bloblen) {

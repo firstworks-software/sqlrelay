@@ -2503,6 +2503,15 @@
 		field, the column's own 0-based index, after each column's
 		metadata; a genuine old oci7 client's describe is unaffected
 		(#10051)
+	fixed the oracle protocol module miscomputing the trailing
+		string-blob length for a classic pre-o5logon oci7 login
+		(verifiertype="9i" only). it read the terminal name's length
+		off the wire but discarded it instead of adding it into the
+		blob length, so a client with a real controlling terminal -
+		ttyname() populates it, not an olog() argument - got its
+		username and everything after it misparsed from the wrong
+		offset, dropping the connection (ORA-03113) instead of logging
+		in or answering with the right auth failure (#10049)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
