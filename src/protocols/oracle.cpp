@@ -9478,6 +9478,12 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
 
+	// and its binds - an oci7 client's oparse() invalidates them the same
+	// as query()'s does, so binds an earlier session left on this pooled
+	// cursor would otherwise be re-applied, silently, to whatever a later
+	// bindless execute runs, which fails ORA-01036
+	clearParams(cursor);
+
 	// bounds checking
 	if (querybytes>maxquerysize) {
 		// FIXME: implement this
@@ -9988,8 +9994,17 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 	// set, so the count starts over with it
 	rowssent[cont->getId(cursor)]=0;
 
+	// parseExecute() has no separate bind step of its own - it prepares
+	// and executes in one call - so a define an earlier session left on
+	// this pooled cursor would otherwise carry straight into this
+	// parse+execute
+	clearDefines(cont->getId(cursor));
+
 	// and any row it was pinning for a lob read
 	clearLobPin(cont->getId(cursor));
+
+	// and, for the same reason, any bind it left as well
+	clearParams(cursor);
 
 	// bounds checking
 	if (querybytes>maxquerysize) {

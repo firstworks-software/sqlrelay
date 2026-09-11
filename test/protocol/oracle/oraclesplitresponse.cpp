@@ -56,8 +56,18 @@
 // behind whatever the rest of the suite has already done to this pool by
 // the time it gets here, is what originally caught this.
 //
-// Each case decodes the whole batch out of the one logical response, checks
-// every row against the value the statement built for it, and prints how
+// Two more cases, unrelated to the row-batch split above, cover #10080: the
+// same #10063 gap in osql7() and parseExecute(), the TTI_OSQL7 and
+// TTI_PARSE_EXECUTE entry points, which were missing the same
+// clearParams()/clearDefines() calls. Each dirties its own cursor with a
+// bind-heavy parse and execute first, rather than relying on the pool state
+// the legacy case above depends on, then reparses a bindless statement over
+// it and confirms the reparse's own execute - separate for osql7(), combined
+// for parseExecute() - no longer comes back ORA-01036.
+//
+// Each of the three row-batch cases decodes the whole batch out of the one
+// logical response, checks every row against the value the statement built
+// for it, and prints how
 // many packets the answer needed - a run that stops covering what it
 // claims to cover fails rather than passing quietly.  Each then asks for
 // another 20 rows and requires none: nothing may be held back for a
@@ -610,6 +620,249 @@ static bool legacySummarySucceeded(oracleprotocolclient *client) {
 	return errornumber==0;
 }
 
+// ---- #10080: osql7() and parseExecute() clearing stale binds ----
+//
+// TTI_OSQL7 (an oci7 client's oparse()) and TTI_PARSE_EXECUTE (0x27, its
+// pre-8.0 oparsex()) had the same gap #10063 fixed in open() and the legacy
+// query(): neither called clearParams(), so a bind an earlier statement left
+// on the cursor rode into whatever they reparsed next, and a later bindless
+// execute failed ORA-01036 re-applying it.  #10080 added the missing calls
+// to both.
+//
+// unlike runLegacyCase() above, which leans on the rest of the suite having
+// already left binds on the pool's one connection, the two cases below dirty
+// their own cursor first - a parse and a bound execute of their own - so
+// each is a complete repro on its own and doesn't depend on run order.
+
+static const unsigned char	ORA_TTI_OSQL7=0x4a;
+static const unsigned char	ORA_TTI_QUERY2=0x47;
+static const unsigned char	ORA_TTI_PARSE_EXECUTE=0x27;
+
+// the width of a "pointer" field in this session's negotiated encoding -
+// this module only ever negotiates the portable one, where a pointer is one
+// byte wide.  a real value is opaque to whatever reads it back, so a nonzero
+// byte stands in for one
+static const size_t	ORA_POINTER_SIZE=1;
+
+// one bind's wire datatype, buffer size and character set - VARCHAR2, wide
+// enough for the values below, and the AL32UTF8 charset the module actually
+// runs on.  none of the three affect whether the bind is accepted, only how
+// it's decoded, so nothing here needs to match a real client's capture the
+// way the query3 offsets elsewhere in this file do
+static const unsigned char	ORA_BIND_DATATYPE=1;		// SQLT_CHR
+static const unsigned char	ORA_BIND_FLAG=0x07;
+static const uint32_t		ORA_BIND_BUFFER_SIZE=40;
+static const uint32_t		ORA_BIND_CHARSET=31;
+static const size_t		ORA_BIND_DESCRIPTOR_COUNTS=8;
+
+// a statement with one placeholder, and the value bound into it - what
+// dirties a cursor before each of the two cases below reparses over it.
+// "dirty" is 5 bytes so it fits the short clr form with room to spare
+static const char	*ORA_BIND_DIRTY_QUERY="select :b1 as v from dual";
+static const char	*ORA_BIND_DIRTY_VALUE="dirty";
+
+// the statement reparsed afterward, on the same cursor - bindless, so any
+// bind still installed on the cursor has nothing to attach to and a
+// bindless execute of it is what would come back ORA-01036
+static const char	*ORA_BIND_CLEAN_QUERY="select 1 as v from dual";
+
+// TTI_OSQL7 - an oci7 client's oparse().  the field order is osql7()'s read
+// order in src/protocols/oracle.cpp: a sequence byte, two counts, then
+// alternating pointers and counts, then a fixed run of bytes it skips
+// without reading, and last the sql text as a clr
+static bool osql7(oracleprotocolclient *client, unsigned char sequence,
+					uint32_t cursorid, const char *query) {
+
+	size_t	querysize=charstring::getLength(query);
+
+	client->beginTtiCall(ORA_TTI_OSQL7);
+	client->appendByte(sequence);
+	client->appendLenPreInt(1);
+	client->appendLenPreInt(cursorid);
+	client->appendByte((unsigned char)ORA_POINTER_SIZE);
+	client->appendLenPreInt((uint32_t)querysize);
+	client->appendByte((unsigned char)ORA_POINTER_SIZE);
+	client->appendLenPreInt(0);
+	client->appendByte((unsigned char)ORA_POINTER_SIZE);
+	client->appendLenPreInt(0);
+
+	// four pointers and three counts that are zero in every capture, and
+	// that osql7() skips as a run rather than parsing
+	for (size_t i=0; i<ORA_POINTER_SIZE*4+3; i++) {
+		client->appendByte(0);
+	}
+
+	client->appendLenBytes(query,querysize);
+
+	return client->sendPacket() && client->recvPacket();
+}
+
+// TTI_QUERY2 - an oci7 client's oexec(), bindless and with no descriptor
+// block behind the header at all.  query2() in src/protocols/oracle.cpp
+// reads three fields and skips the rest of the request, so three fields are
+// all this writes
+static bool query2(oracleprotocolclient *client, unsigned char sequence,
+					uint32_t options, uint32_t cursorid) {
+
+	client->beginTtiCall(ORA_TTI_QUERY2);
+	client->appendByte(sequence);
+	client->appendAuthCount(options,4);
+	client->appendAuthCount(cursorid,4);
+
+	return client->sendPacket() && client->recvPacket();
+}
+
+// a null pointer field inside a query2 descriptor block - getQuery2Descriptors()
+// in src/protocols/oracle.cpp never looks at what one of these holds, only
+// where it sits, so zero does as well as any other value
+static void appendQuery2Pointer(oracleprotocolclient *client) {
+	for (size_t i=0; i<ORA_POINTER_SIZE; i++) {
+		client->appendByte(0);
+	}
+}
+
+// TTI_QUERY2 with one bind descriptor and its value, and no define block -
+// what an oci7 client's obndrv()+oexec() send to bind a single value into
+// the statement osql7() already parsed and run it.  the header is query2()'s
+// above; behind it comes getQuery2Descriptors()'s own shape: ten fields, a
+// zero define count, one more pointer, the bind count, seven more counts -
+// of which only the bind count is read back into anything used here - one
+// bind descriptor, and its value behind the TTC_ROW_DATA marker every bind
+// value block starts with
+static bool query2Bind(oracleprotocolclient *client, unsigned char sequence,
+					uint32_t options, uint32_t cursorid,
+					const char *value) {
+
+	size_t	valuesize=charstring::getLength(value);
+
+	client->beginTtiCall(ORA_TTI_QUERY2);
+	client->appendByte(sequence);
+	client->appendAuthCount(options,4);
+	client->appendAuthCount(cursorid,4);
+
+	// the ten fields ahead of the define count
+	appendQuery2Pointer(client);
+	appendQuery2Pointer(client);
+	client->appendAuthCount(0,4);
+	client->appendAuthCount(0,4);
+	appendQuery2Pointer(client);
+	client->appendAuthCount(0,4);
+	appendQuery2Pointer(client);
+	client->appendAuthCount(0,4);
+	appendQuery2Pointer(client);
+	appendQuery2Pointer(client);
+
+	client->appendAuthCount(0,4);			// define count: none
+
+	// the pointer and seven counts behind it, of which the first is the
+	// bind count and the rest - including the row count, unused since
+	// this call doesn't fetch - stay zero
+	appendQuery2Pointer(client);
+	client->appendAuthCount(1,4);
+	for (size_t i=0; i<7; i++) {
+		client->appendAuthCount(0,4);
+	}
+
+	// the one bind descriptor
+	client->appendByte(ORA_BIND_DATATYPE);
+	client->appendByte(ORA_BIND_FLAG);
+	client->appendByte(0);
+	client->appendByte(0);
+	for (size_t i=0; i<ORA_BIND_DESCRIPTOR_COUNTS; i++) {
+		uint32_t	count=0;
+		if (i==0) {
+			count=ORA_BIND_BUFFER_SIZE;
+		} else if (i==5) {
+			count=ORA_BIND_CHARSET;
+		}
+		client->appendAuthCount(count,4);
+	}
+
+	// and its value
+	client->appendByte(ORA_TTC_ROW_DATA);
+	client->appendLenBytes(value,valuesize);
+
+	return client->sendPacket() && client->recvPacket();
+}
+
+// TTI_PARSE_EXECUTE (0x27) - the pre-8.0 combined parse-and-execute
+// (oparsex()).  the field order is parseExecute()'s read order in
+// src/protocols/oracle.cpp: a sequence byte, the cursor id and a query
+// pointer as counts, then the sql text as a clr.  there is no bind step of
+// its own - it prepares and executes in the one call - which is exactly why
+// a bind an earlier statement left on the cursor has nowhere else to be
+// cleared from
+static bool parseExecute(oracleprotocolclient *client, unsigned char sequence,
+					uint32_t cursorid, const char *query) {
+
+	size_t	querysize=charstring::getLength(query);
+
+	client->beginTtiCall(ORA_TTI_PARSE_EXECUTE);
+	client->appendByte(sequence);
+	client->appendAuthCount(cursorid,4);
+	client->appendByte((unsigned char)ORA_POINTER_SIZE);
+	client->appendAuthCount((uint32_t)querysize,4);
+	client->appendLenBytes(query,querysize);
+
+	return client->sendPacket() && client->recvPacket();
+}
+
+// whether a bindless TTI_QUERY2 execute-only call came back clean.
+// sendQuery2Response() answers success with a TTC_OK wrapper and a lead-in
+// ahead of the same summary object legacySummarySucceeded() reads, so that
+// decode doesn't apply here; sendQueryError() (query3session is never set in
+// any of these cases, so this is always the oci7 branch) answers a failure
+// with the summary object directly, the same as osql7()'s and
+// parseExecute()'s own responses.  so the two shapes are told apart by
+// whether the code right behind the data flags is the error object at all
+static bool query2ExecuteSucceeded(oracleprotocolclient *client) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode)) {
+		return false;
+	}
+
+	if (ttccode==ORA_TTC_ERROR) {
+		uint32_t	skip=0;
+		uint32_t	errornumber=0;
+		return client->readLenPreInt(&skip) &&		// end of call status
+			client->readLenPreInt(&skip) &&	// rows processed
+			client->readLenPreInt(&errornumber) &&
+			errornumber==0;
+	}
+
+	return ttccode==ORA_TTC_OK;
+}
+
+// a parse and a bound execute of a statement of their own, on the cursor a
+// case is about to reparse over - what an earlier client session leaving
+// binds behind looks like, built to order rather than relied on from
+// whatever the rest of the suite has already done to the pool
+static bool dirtyCursorWithBind(oracleprotocolclient *client,
+					const char *mode, uint32_t cursorid) {
+
+	char	label[192];
+
+	charstring::printf(label,sizeof(label),
+				"%s: dirty the cursor with a bound execute",mode);
+
+	bool	dirtied=osql7(client,1,cursorid,ORA_BIND_DIRTY_QUERY) &&
+			query2Bind(client,2,
+					ORA_OPTION_BIND|ORA_OPTION_EXECUTE|
+					ORA_OPTION_NOPLSQL,
+					cursorid,ORA_BIND_DIRTY_VALUE) &&
+			query2ExecuteSucceeded(client);
+	report(label,dirtied);
+	if (!dirtied) {
+		reportResponse(client);
+	}
+	return dirtied;
+}
+
 // the login and the cursor every case starts with, on a session small
 // enough that an ordinary batch of rows can't fit one packet
 static bool startSession(oracleprotocolclient *client,
@@ -857,6 +1110,108 @@ static void runLegacyCase(const char *mode,
 	client.disconnect();
 }
 
+// #10080: a TTI_OSQL7 reparse of a bindless statement, on a cursor this
+// case has just bound and executed a different one on, followed by a
+// bindless TTI_QUERY2 execute of what was reparsed.  before #10080, osql7()
+// left the cursor's binds in place across the reparse, so the execute here
+// re-applied ":b1" to a statement with no placeholder of its own and failed
+// ORA-01036
+static void runOsql7ClearsBindsCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+								&cursorid)) {
+		return;
+	}
+
+	if (!dirtyCursorWithBind(&client,mode,cursorid)) {
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+				"%s: reparse a bindless statement",mode);
+	if (!osql7(&client,3,cursorid,ORA_BIND_CLEAN_QUERY)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,legacySummarySucceeded(&client));
+
+	charstring::printf(label,sizeof(label),
+				"%s: the bindless execute doesn't see the "
+				"earlier bind",mode);
+	if (!query2(&client,4,ORA_OPTION_EXECUTE|ORA_OPTION_NOPLSQL,
+								cursorid)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	bool	succeeded=query2ExecuteSucceeded(&client);
+	report(label,succeeded);
+	if (!succeeded) {
+		reportResponse(&client);
+	}
+
+	client.disconnect();
+}
+
+// #10080: a TTI_PARSE_EXECUTE of a bindless statement, on a cursor this case
+// has just bound and executed a different one on.  parseExecute() has no
+// bind step of its own - it prepares and executes together - so before
+// #10080 a bind left on the cursor rode straight into it and failed
+// ORA-01036 the same way the osql7 case above's follow-on execute did
+static void runParseExecuteClearsBindsCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+								&cursorid)) {
+		return;
+	}
+
+	if (!dirtyCursorWithBind(&client,mode,cursorid)) {
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+				"%s: parse-execute a bindless statement "
+				"doesn't see the earlier bind",mode);
+	if (!parseExecute(&client,3,cursorid,ORA_BIND_CLEAN_QUERY)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	bool	succeeded=legacySummarySucceeded(&client);
+	report(label,succeeded);
+	if (!succeeded) {
+		reportResponse(&client);
+	}
+
+	client.disconnect();
+}
+
 // the port a listener ended up on.  the default is what
 // test/sqlrelay.conf.d/oracleprotocol.conf.in's @ORACLEPROTOCOLPORT1@ token
 // defaults to; test/test.sh exports the real one, the same way
@@ -871,7 +1226,8 @@ static uint16_t portFromEnvironment(const char *name, uint16_t fallback) {
 
 int main(int argc, char **argv) {
 
-	stdoutput.printf("\n====== #10056 multi-packet row batch ======\n\n");
+	stdoutput.printf("\n====== #10056 multi-packet row batch, "
+						"#10080 stale binds ======\n\n");
 
 	// the oracleprotocol test instance - see
 	// test/sqlrelay.conf.d/oracleprotocol.conf.  it isn't a real oracle
@@ -893,6 +1249,14 @@ int main(int argc, char **argv) {
 	// the same batch through the legacy pre-query3 calls, run last so the
 	// pool is already whatever the rest of the suite has left it as
 	runLegacyCase("legacy fetch batch",host,port,sid,user,password);
+
+	// #10080: osql7() and parseExecute() clearing binds an earlier
+	// statement on the same cursor left behind, each dirtying its own
+	// cursor rather than relying on the case above's pool state
+	runOsql7ClearsBindsCase("osql7 clears binds",host,port,sid,
+							user,password);
+	runParseExecuteClearsBindsCase("parse-execute clears binds",host,port,
+							sid,user,password);
 
 	if (status==0) {
 		stdoutput.printf("\n\033[34mAll tests succeeded\033[0m\n");

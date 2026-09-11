@@ -1231,7 +1231,11 @@ run_protocol_test() {
 	# also guards #10030 and #10063: open() hands out a pooled cursor
 	# without clearing it, and a bindless legacy execute() never cleared
 	# one either, so it silently re-applied whatever input binds an
-	# earlier client session had left on that cursor.  it reads
+	# earlier client session had left on that cursor.  two more cases in
+	# the same program guard #10080, the same gap in osql7() and
+	# parseExecute() (TTI_OSQL7 and TTI_PARSE_EXECUTE), each dirtying its
+	# own cursor with a bound execute first rather than relying on the
+	# pool state the case above depends on.  it reads
 	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
 	# neither $server nor TNS_ADMIN either.  then oraclemaxdescriptors, a
 	# tenth raw-socket test, for #10059 - a TTI_QUERY2 whose descriptor

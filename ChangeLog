@@ -2567,6 +2567,12 @@
 		clearing the cursor's binds on the legacy parse and open
 		paths, the way the query2 and query3 paths already did
 		(#10063)
+	fixed the oracle protocol module in osql7() and
+		parseExecute() answering ORA-01036 when their pooled
+		cursor retained stale defines or binds from an earlier
+		client session, because their cursor-reset blocks were
+		missing clearDefines() and/or clearParams() calls
+		(#10080)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
