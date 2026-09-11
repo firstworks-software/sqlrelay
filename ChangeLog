@@ -2539,6 +2539,16 @@
 		into one logical response and let it do the splitting,
 		matching what the legacy fetch response builder already did
 		(#10030) (#10056)
+	fixed the oracle protocol module answering every re-execute of a
+		bound statement ORA-01007 instead of executing it, when the
+		client sends an optional trailing more-options field behind
+		a bare execute's header (instant client 23's api7
+		emulation) that the module never consumed (#10054)
+	fixed the oracle protocol module's oci7 describe response
+		breaking a modern client's connection (ORA-03146) on any
+		column with a non-zero scale, by writing the scale raw
+		instead of the count-prefixed form that client expects in
+		the portable encoding (#10054)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

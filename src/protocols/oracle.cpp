@@ -9663,8 +9663,10 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	return sendPacket(true);
 }
 
-// one column's metadata - 47 bytes in the native encoding, 18 to 20 in the
-// portable one.  the fields are the same and in the same order either way,
+// one column's metadata - 47 bytes in the native encoding, 19 to 25 in the
+// portable one (the count-prefixed fields, including the scale for an
+// oci7endtoendseqnumber client, vary in width).  the fields are the same
+// and in the same order either way,
 // and they are the fields putColumnMetadata() writes for the modern describe
 // path, minus the inline column name and one trailing count
 void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
@@ -9722,10 +9724,32 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((character)?0x80:0x00));
 
-	// both are raw signed bytes in both encodings, unlike the modern
-	// describe path's scale - see putColumnPrecisionScale()
+	// the precision is a raw signed byte to every client in both
+	// encodings.  the scale is one to all but the same client class the
+	// column index below goes to, and only in the portable encoding:
+	//
+	//	a real 10.2 server sends a number(10,2)'s scale to a genuine
+	//	oci7 client as a raw 02, portable - packet [0022] of
+	//	samples/9808-solaris8sparc-portable-realtable-parse.oraproxy
+	//
+	//	and to a modern client driving the legacy oci7 calls as a raw
+	//	06 for a timestamp(6), native - samples/9746-dev-oci23api7-
+	//	native-datatypes-realserver.oraproxy
+	//
+	//	but that client, portable, reads it as a count, the way it
+	//	reads every other integer in this block.  a raw scale of 0 is
+	//	one byte of 00 either way, so the whole select list has to
+	//	reach a column with a scale before the difference shows: the
+	//	client reads a number(10,2)'s 2 as a two byte count, swallows
+	//	the two bytes behind it and hangs waiting for a packet that
+	//	never comes, and a timestamp's 6 as a six byte one and answers
+	//	ORA-03120
 	write(&reqpacket,(byte_t)precision);
-	write(&reqpacket,(byte_t)wirescale);
+	if (nativeencoding || !oci7endtoendseqnumber) {
+		write(&reqpacket,(byte_t)wirescale);
+	} else {
+		writeLenPreInt(&reqpacket,(int32_t)wirescale);
+	}
 
 	putAuthCount(dbsize,4);
 
@@ -16571,15 +16595,16 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// parse the request...
 	// see "Oracle Wire Protocol - Execute"
 	//
-	// the header is the re-execute header minus its trailing more-options
-	// field: a one-byte call sequence number, then the cursor id, the
-	// iteration count and the options bitmask, each written as a count.  a
-	// real oci7 client sends "25 | 01 03 | 01 01 | 00" there - sequence 37,
-	// cursor id 3, one iteration and no options
+	// the header is the re-execute header, with its trailing more-options
+	// field optional: a one-byte call sequence number, then the cursor id,
+	// the iteration count and the options bitmask, each written as a
+	// count.  a 9.0.1 oci7 client sends "25 | 01 03 | 01 01 | 00" there -
+	// sequence 37, cursor id 3, one iteration and no options
 	byte_t		sequence=0;
 	uint32_t	cursorid=0;
 	uint32_t	iterations=0;
 	uint32_t	options=0;
+	uint32_t	moreoptions=0;
 
 	// the sequence number is a raw byte, not a pointer and not a count
 	if (!have(rp,1,&end)) {
@@ -16594,6 +16619,25 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		return false;
 	}
 
+	// the optional more-options field.  instant client 23's api7 sends one
+	// on a bare execute, in both encodings, a 9.0.1 client stops after the
+	// options, and a real server takes either.  nothing negotiated says
+	// which this is directly, but oci7endtoendseqnumber already tracks the
+	// same api7-vs-9.0.1 split for the describe path below - see
+	// putOci7DescribeColumn() - so it decides this too, rather than
+	// sniffing the byte behind the header: a moreoptions value can itself
+	// be 0x07 (TTC_ROW_DATA) in native encoding, where getAuthCount() reads
+	// raw little-endian bytes and the low byte of 7, 263, ... is 0x07, and
+	// sniffing would misread that as the bind value block starting early
+	//
+	// the end is taken fresh, since the counts above may have pulled
+	// another packet in
+	end=resppacket+resppacketsize;
+	if (oci7endtoendseqnumber &&
+			!getAuthCount(rp,end,&moreoptions,4,&rp)) {
+		return false;
+	}
+
 	// the summary object has to echo this back
 	callnumber=sequence;
 
@@ -16603,6 +16647,7 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 		debugWrite("cursor id: %d",cursorid);
 		debugWrite("iterations: %d",iterations);
 		debugWrite("options: 0x%08x",options);
+		debugWrite("more options: 0x%08x",moreoptions);
 		debugEnd();
 	}
 

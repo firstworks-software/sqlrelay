@@ -1427,6 +1427,50 @@ the decoder can be exercised without live server access:
                                       the bug this capture settled was in
                                       oci7.cpp's own test expectation, fixed
                                       under #10053
+    10054-dev-oci23api7-portable-binds-datatypes-sqlrelay.oraproxy
+                                     the whole oci7 suite, run as
+                                      "./oci7 sqlrelayoci7 --only=connect"
+                                      against the oracleprotocoloci7
+                                      instance with #10051's describe fix in
+                                      place - the #10054 baseline. 1361
+                                      packets, noisy on purpose: this is the
+                                      only capture on file of the full suite
+                                      against sqlrelay, and it holds both of
+                                      the failure clusters #10054 is about.
+                                      --only=connect keeps the run to one
+                                      TCP connection, so oraproxy captures
+                                      all of it without --skip.
+                                      Binds, "oexec - bind once, execute
+                                      many": the first execute rides
+                                      TTI_QUERY2 ([0293], answered ok by
+                                      [0294]), and the second and third ride
+                                      a bare TTI_EXECUTE that re-marshals
+                                      the bind values ([0295] and [0297],
+                                      the three values "c1 2a"/"manychar"/
+                                      "manyvarchar" visible in the
+                                      payload). The module answers both with
+                                      ORA-01007, "variable not in select
+                                      list" ([0296] and [0298]), so only one
+                                      of the three rows lands.
+                                      Datatypes, "odescr - every type": the
+                                      module's TTI_DESCRIBE response for
+                                      "select * from protocoltesttypes"
+                                      ([0443] asks, [0444] answers, 375 body
+                                      bytes, 11 columns) is not accepted by
+                                      this client. It sends a break
+                                      (PACKET_MARKER, [0445]) instead of
+                                      reading on, the module answers
+                                      ORA-01013 "user requested cancel of
+                                      current operation" ([0447]), and the
+                                      client reports ORA-03146 "invalid
+                                      buffer length passed to a system call"
+                                      to the caller. ORA-03146 appears
+                                      nowhere in the capture - it is raised
+                                      client side, not sent. The same
+                                      describe/break/ORA-01013 cycle repeats
+                                      12 times, once per assertion in that
+                                      test, and the section recovers at
+                                      "odefin - every type" (#10054)
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
