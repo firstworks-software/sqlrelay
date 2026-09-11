@@ -2526,6 +2526,19 @@
 		re-execute of a bindless statement wait out a
 		continuationtimeout instead of returning at once; it now
 		returns immediately when there are no binds to read (#10050)
+	fixed the oracle protocol module's query3 and fetch response
+		builders silently dropping rows on a wide array fetch. each
+		one capped a response to one physical tns packet's worth of
+		rows and stashed the rest to send first on a continuation
+		fetch, but a real oracle client only performs one automatic
+		continuation fetch per array-fetch call - so a batch needing
+		more than one continuation lost rows outright instead of
+		erroring. sendPacket() has been able to split an oversized
+		logical response across several physical packets since
+		#9989; the two builders now pack the whole requested batch
+		into one logical response and let it do the splitting,
+		matching what the legacy fetch response builder already did
+		(#10030) (#10056)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

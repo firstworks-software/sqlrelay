@@ -13843,36 +13843,12 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 			putRowHeader(0x22,colcount,rowstofetch);
 
-			// the only bound on how many rows to send back in
-			// this packet is the negotiated packet size, less
-			// enough room for the return parameters and the
-			// trailing summary
-			const uint32_t	trailerreserve=128;
-			uint32_t	curid=cont->getId(cursor);
-
+			// a batch the client put a count on runs to that
+			// count however many packets it takes - sendPacket()
+			// splits an oversized response across several
+			// physical packets, so the loop just has to pack the
+			// whole batch
 			while (rowsfetched<rowstofetch) {
-
-				// a row held over from a previous
-				// packet-full response goes out first,
-				// ahead of anything freshly fetched
-				if (pendingrow[curid].getSize()) {
-					if (rowsfetched &&
-						reqpacket.getSize()+
-						pendingrow[curid].getSize()+
-						trailerreserve>=sdu) {
-						debugWrite("packet full");
-						break;
-					}
-					reqpacket.append(
-						pendingrow[curid].getBuffer(),
-						pendingrow[curid].getSize());
-					pendingrow[curid].clear();
-					rowsfetched++;
-					continue;
-				}
-
-				uint32_t	sizebeforerow=
-						(uint32_t)reqpacket.getSize();
 
 				bool	error=false;
 				if (!cont->fetchRow(cursor,&error)) {
@@ -13894,46 +13870,15 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 				// a row that handed out a locator pins the
 				// connection to itself, so the cursor doesn't
-				// advance past it and the row never goes into
-				// pendingrow - which assumes the connection has
-				// already moved on
+				// advance past it
 				if (rowhaslob) {
 					pinLobRow(cursor,colcount);
 					rowsfetched++;
 					break;
 				}
 
-				// the row is consumed from the result set as
-				// soon as it's fetched - fetchRow()/nextRow()
-				// can't un-fetch it on every backend, so a row
-				// that doesn't fit here is stashed in
-				// pendingrow and sent first next time, rather
-				// than left for a re-fetch that some backends
-				// can't do
 				// FIXME: kludgy
 				cont->nextRow(cursor);
-
-				// a row's size isn't known until it's
-				// written, so the check comes after - stash
-				// it and stop if it doesn't fit, unless it's
-				// the first row, which goes out regardless of
-				// its size since the packet can't say "zero
-				// rows" when more remain
-				if (rowsfetched &&
-					reqpacket.getSize()+trailerreserve
-									>=sdu) {
-					debugWrite("packet full");
-					uint32_t	rowsize=(uint32_t)
-						reqpacket.getSize()-
-						sizebeforerow;
-					pendingrow[curid].append(
-						reqpacket.getBuffer()+
-							sizebeforerow,
-						(size_t)rowsize);
-					reqpacket.truncate(
-							(size_t)sizebeforerow);
-					break;
-				}
 
 				rowsfetched++;
 			}
@@ -17050,42 +16995,11 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			rowstofetch=1;
 		}
 
-		// the only bound on how many rows to send back in this
-		// packet is the negotiated packet size, less enough room
-		// for the trailing summary
-		const uint32_t	trailerreserve=128;
-		uint32_t	curid=cont->getId(cursor);
-
+		// a batch the client put a count on runs to that count
+		// however many packets it takes - sendPacket() splits an
+		// oversized response across several physical packets, so
+		// the loop just has to pack the whole batch
 		while (rowsfetched<rowstofetch) {
-
-			// a row held over from a previous packet-full
-			// response goes out first, ahead of anything
-			// freshly fetched
-			if (pendingrow[curid].getSize()) {
-				if (rowsfetched &&
-					reqpacket.getSize()+
-					pendingrow[curid].getSize()+
-					trailerreserve>=sdu) {
-					debugWrite("packet full");
-					break;
-				}
-				// a fetch with no rows left is answered
-				// with the summary object alone, so the row
-				// header is only written once the first row
-				// is in hand
-				if (!rowsfetched) {
-					putRowHeader(0x02,colcount,
-								rowstofetch);
-				}
-				reqpacket.append(
-					pendingrow[curid].getBuffer(),
-					pendingrow[curid].getSize());
-				pendingrow[curid].clear();
-				rowsfetched++;
-				continue;
-			}
-
-			uint32_t	sizebeforerow=(uint32_t)reqpacket.getSize();
 
 			bool	error=false;
 			if (!cont->fetchRow(cursor,&error)) {
@@ -17113,44 +17027,15 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			debugEnd();
 
 			// a row that handed out a locator pins the connection
-			// to itself, so the cursor doesn't advance past it and
-			// the row never goes into pendingrow - which assumes
-			// the connection has already moved on
+			// to itself, so the cursor doesn't advance past it
 			if (rowhaslob) {
 				pinLobRow(cursor,colcount);
 				rowsfetched++;
 				break;
 			}
 
-			// the row is consumed from the result set as soon
-			// as it's fetched - fetchRow()/nextRow() can't
-			// un-fetch it on every backend, so a row that
-			// doesn't fit here is stashed in pendingrow and sent
-			// first next time, rather than left for a re-fetch
-			// that some backends can't do
 			// FIXME: kludgy
 			cont->nextRow(cursor);
-
-			// a row's size isn't known until it's written, so
-			// the check comes after - stash it and stop if it
-			// doesn't fit, unless it's the first row, which
-			// goes out regardless of its size since the packet
-			// can't say "zero rows" when more remain.  this is
-			// packing, not framing: it keeps the common case to
-			// one packet and one round trip, and a row too big
-			// for a single packet is split across several by
-			// sendPacket()
-			if (rowsfetched &&
-				reqpacket.getSize()+trailerreserve>=sdu) {
-				debugWrite("packet full");
-				uint32_t	rowsize=(uint32_t)
-					reqpacket.getSize()-sizebeforerow;
-				pendingrow[curid].append(
-					reqpacket.getBuffer()+sizebeforerow,
-					(size_t)rowsize);
-				reqpacket.truncate((size_t)sizebeforerow);
-				break;
-			}
 
 			rowsfetched++;
 		}
