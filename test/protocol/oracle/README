@@ -1401,6 +1401,32 @@ the decoder can be exercised without live server access:
                                       wider shape - a separate defect from the
                                       login fix, newly reachable now that login
                                       succeeds, filed as #10051 (#10048)
+    10053-dev-oci23api7-portable-oexecmidfetch-realserver.oraproxy
+                                     this client's oparse/oexec of "select
+                                      1/(level-2) from dual connect by
+                                      level<=3" (row 2 divides by zero)
+                                      against the real 10.2 server, taken
+                                      with oci7describe --describe=parseexec
+                                      rather than the noisy full oci7
+                                      suite. Portable encoding: the client's
+                                      banner ("x86_64/Linux 2.4.xx", packet
+                                      [0007]) doesn't match the server's
+                                      ("Linuxi386/Linux-2.0.34-8.1.0",
+                                      packet [0008]). oci7describe itself -
+                                      genuine Oracle-vendor OCI decoding the
+                                      wire response, not a hand parse -
+                                      reports "oexec ok" for the
+                                      TTI_EXECUTE request in packet [0029],
+                                      answered by packet [0030]: the server
+                                      never evaluates row 2 until a fetch
+                                      actually asks for it, since
+                                      TTI_EXECUTE carries no inline prefetch
+                                      the way TTI_QUERY3 does. Confirms the
+                                      module's existing oexec() behavior for
+                                      this client class was already correct;
+                                      the bug this capture settled was in
+                                      oci7.cpp's own test expectation, fixed
+                                      under #10053
 
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing

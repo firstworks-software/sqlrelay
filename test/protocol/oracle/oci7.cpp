@@ -3115,21 +3115,44 @@ int main(int argc, char **argv) {
 
 	if (!isfetchatonce) {
 
-		stdoutput.printf("oexec - error mid-fetch\n");
-		// this result set only has 3 rows, well under the connection's
-		// fetchatonce (10 by default here - see FETCH_AT_ONCE in
-		// sqlrserverconnection.cpp), so the query3 protocol's inline
-		// prefetch on execute pulls the whole result set in one
-		// backend fetch - including the row 2 divide by zero, which
-		// oracle only evaluates once it actually produces that row.
-		// the error surfaces on the execute response here rather than
-		// on a later, separate fetch, so this is sendQuery3Response()'s
-		// fetchRow() error branch (#9585).  the sqlrelayfetchatonce
-		// instance takes the other branch below
+		stdoutput.printf("oexec/ofen - error mid-fetch\n");
+		// this used to assert oexec() itself failing here, on the
+		// theory that fetchatonce (10 by default - see FETCH_AT_ONCE
+		// in sqlrserverconnection.cpp) makes the query3 protocol's
+		// inline prefetch on execute pull the whole 3-row result set
+		// in one backend fetch, hitting the row 2 divide by zero
+		// there (sendQuery3Response()'s fetchRow() error branch,
+		// #9585) - which is genuinely how oci8.cpp's counterpart
+		// case behaves.  but an OCI7 client's oexec() puts a bare
+		// TTI_EXECUTE on the wire, not TTI_QUERY3, and TTI_EXECUTE
+		// has no inline prefetch of its own: a real 10.2 server
+		// answers it with success, confirmed by capturing this exact
+		// oparse/oexec pair directly against the farm's OCI7 backend
+		// with oci7describe --describe=parseexec (#10053).  the error
+		// still lands on the first ofen() rather than the second,
+		// though: fetchatonce governs the connection module's own
+		// backend-side array fetch, independent of what the wire
+		// protocol asked for, and pulls all 3 rows - including row
+		// 2's divide by zero - into that one backend round trip,
+		// which fails as a whole and leaves row 1 unreturned too.
+		// the fetchatonce=1 instance below fetches one row per
+		// backend round trip instead, so its row 1 comes back clean
 		assertEquals(check(&errcda,
 				oparse(&errcda,(text *)divzero,
 						(sb4)-1,0,(ub4)2)),0);
-		assertTrue(oexec(&errcda)!=0);
+		char	errvalue[64];
+		sb2	errind=0;
+		ub2	errlen=0;
+		ub2	errcode=0;
+		bytestring::zero(errvalue,sizeof(errvalue));
+		assertEquals(check(&errcda,
+				odefin(&errcda,1,(ub1 *)errvalue,
+					(sword)sizeof(errvalue),
+					SQLT_STR,-1,&errind,
+					(text *)0,-1,-1,
+					&errlen,&errcode)),0);
+		assertEquals(check(&errcda,oexec(&errcda)),0);
+		assertTrue(ofen(&errcda,1)!=0);
 		// ORA-01476, divisor is equal to zero
 		assertEquals(errorCode(&errcda),1476);
 		stdoutput.printf("\n\n");
