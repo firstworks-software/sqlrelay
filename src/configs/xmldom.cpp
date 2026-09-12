@@ -174,7 +174,10 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		routecontainer	*routeAlreadyExists(routecontainer *cur);
 		void		moveRegexList(routecontainer *cur,
 						routecontainer *existing);
-		uint32_t	atouint32_t(const char *value,
+		// clamps to the largest uint32_t value, with a warning,
+		// rather than silently truncating
+		uint32_t	atouint32_t(const char *attribute,
+						const char *value,
 						const char *defaultvalue,
 						uint32_t minvalue);
 		// clamps to the largest uint16_t value, with a warning,
@@ -183,7 +186,10 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 						const char *value,
 						const char *defaultvalue,
 						uint32_t minvalue);
-		int32_t		atoint32_t(const char *value,
+		// clamps to the largest/smallest int32_t value, with a
+		// warning, rather than silently truncating
+		int32_t		atoint32_t(const char *attribute,
+						const char *value,
 						const char *defaultvalue,
 						int32_t minvalue);
 		void	parseDir(const char *dir);
@@ -2011,7 +2017,7 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("connections");
 	if (!attr->isNullNode()) {
-		connections=atouint32_t(attr->getValue(),
+		connections=atouint32_t("connections",attr->getValue(),
 						DEFAULT_CONNECTIONS,0);
 		if (connections>MAXCONNECTIONS) {
 			connections=MAXCONNECTIONS;
@@ -2022,7 +2028,7 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxconnections");
 	if (!attr->isNullNode()) {
-		maxconnections=atouint32_t(attr->getValue(),
+		maxconnections=atouint32_t("maxconnections",attr->getValue(),
 						DEFAULT_CONNECTIONS,1);
 		if (maxconnections>MAXCONNECTIONS) {
 			maxconnections=MAXCONNECTIONS;
@@ -2037,24 +2043,26 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxqueuelength");
 	if (!attr->isNullNode()) {
-		maxqueuelength=atouint32_t(attr->getValue(),
+		maxqueuelength=atouint32_t("maxqueuelength",attr->getValue(),
 						DEFAULT_MAXQUEUELENGTH,0);
 	}
 	attr=instance->getAttribute("growby");
 	if (!attr->isNullNode()) {
-		growby=atouint32_t(attr->getValue(),DEFAULT_GROWBY,1);
+		growby=atouint32_t("growby",attr->getValue(),
+						DEFAULT_GROWBY,1);
 	}
 	attr=instance->getAttribute("ttl");
 	if (!attr->isNullNode()) {
-		ttl=atoint32_t(attr->getValue(),DEFAULT_TTL,0);
+		ttl=atoint32_t("ttl",attr->getValue(),DEFAULT_TTL,0);
 	}
 	attr=instance->getAttribute("softttl");
 	if (!attr->isNullNode()) {
-		softttl=atoint32_t(attr->getValue(),DEFAULT_SOFTTTL,0);
+		softttl=atoint32_t("softttl",attr->getValue(),
+						DEFAULT_SOFTTTL,0);
 	}
 	attr=instance->getAttribute("maxsessioncount");
 	if (!attr->isNullNode()) {
-		maxsessioncount=atouint32_t(attr->getValue(),
+		maxsessioncount=atouint16_t("maxsessioncount",attr->getValue(),
 						DEFAULT_MAXSESSIONCOUNT,0);
 	}
 	attr=instance->getAttribute("endofsession");
@@ -2064,7 +2072,7 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("sessiontimeout");
 	if (!attr->isNullNode()) {
-		sessiontimeout=atouint32_t(attr->getValue(),
+		sessiontimeout=atouint32_t("sessiontimeout",attr->getValue(),
 						DEFAULT_SESSIONTIMEOUT,1);
 	}
 	attr=instance->getAttribute("transactionmodel");
@@ -2090,14 +2098,14 @@ void sqlrconfig_xmldom::getTreeValues() {
 	attr=instance->getAttribute("maxcursors");
 	if (!attr->isNullNode()) {
 		maxcursors=atouint16_t("maxcursors",attr->getValue(),
-						DEFAULT_CURSORS,0);
+						DEFAULT_MAXCURSORS,0);
 		if (maxcursors<cursors) {
 			maxcursors=cursors;
 		}
 	}
 	attr=instance->getAttribute("cursors_growby");
 	if (!attr->isNullNode()) {
-		cursorsgrowby=atouint32_t(attr->getValue(),
+		cursorsgrowby=atouint16_t("cursors_growby",attr->getValue(),
 						DEFAULT_CURSORS_GROWBY,1);
 	}
 	attr=instance->getAttribute("authtier");
@@ -2131,11 +2139,13 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxbindcount");
 	if (!attr->isNullNode()) {
-		maxbindcount=charstring::convertToInteger(attr->getValue());
+		maxbindcount=atouint16_t("maxbindcount",attr->getValue(),
+						DEFAULT_MAXBINDCOUNT,0);
 	}
-	attr=instance->getAttribute("maxbindnamelsize");
+	attr=instance->getAttribute("maxbindnamesize");
 	if (!attr->isNullNode()) {
-		maxbindnamesize=charstring::convertToInteger(attr->getValue());
+		maxbindnamesize=atouint16_t("maxbindnamesize",attr->getValue(),
+						DEFAULT_MAXBINDNAMESIZE,0);
 	}
 	attr=instance->getAttribute("maxstringbindvaluesize");
 	if (!attr->isNullNode()) {
@@ -2484,7 +2494,7 @@ void sqlrconfig_xmldom::getTreeValues() {
 		c->setConnectionId(connectionid);
 		c->setString((str)?str:DEFAULT_CONNECTSTRING);
 		c->parseConnectString();
-		c->setMetric(atouint32_t(metric,DEFAULT_METRIC,1));
+		c->setMetric(atouint32_t("metric",metric,DEFAULT_METRIC,1));
 		c->setBehindLoadBalancer(charstring::isYes(blb));
 		c->setPasswordEncryption(pwdencid);
 		connectstringlist.append(c);
@@ -2503,7 +2513,7 @@ void sqlrconfig_xmldom::getTreeValues() {
 		routecontainer	*r=new routecontainer();
 		r->setIsFilter(false);
 		r->setHost(route->getAttributeValue("host"));
-		r->setPort(atouint32_t(
+		r->setPort(atouint16_t("port",
 				route->getAttributeValue("port"),"0",0));
 		r->setSocket(route->getAttributeValue("socket"));
 		r->setUser(route->getAttributeValue("user"));
@@ -2604,14 +2614,24 @@ void sqlrconfig_xmldom::moveRegexList(routecontainer *cur,
 	cur->getRegexList()->clear();
 }
 
-uint32_t sqlrconfig_xmldom::atouint32_t(const char *value,
+uint32_t sqlrconfig_xmldom::atouint32_t(const char *attribute,
+				const char *value,
 				const char *defaultvalue, uint32_t minvalue) {
-	uint32_t	retval=charstring::convertToUnsignedInteger(
+	// use a literal rather than UINT32_MAX - some platforms need
+	// __STDC_LIMIT_MACROS defined before the first inclusion of
+	// stdint.h to get it in a c++ file, which isn't guaranteed here
+	uint64_t	retval=charstring::convertToUnsignedInteger(
 						(value)?value:defaultvalue);
 	if (retval<minvalue) {
 		retval=charstring::convertToUnsignedInteger(defaultvalue);
 	}
-	return retval;
+	if (retval>4294967295U) {
+		stderror.printf("Warning: %s value %llu is too large, "
+				"using 4294967295 instead\n",
+				attribute,(unsigned long long)retval);
+		retval=4294967295U;
+	}
+	return (uint32_t)retval;
 }
 
 uint16_t sqlrconfig_xmldom::atouint16_t(const char *attribute,
@@ -2620,7 +2640,8 @@ uint16_t sqlrconfig_xmldom::atouint16_t(const char *attribute,
 	// use a literal rather than UINT16_MAX - some platforms need
 	// __STDC_LIMIT_MACROS defined before the first inclusion of
 	// stdint.h to get it in a c++ file, which isn't guaranteed here
-	uint32_t	retval=atouint32_t(value,defaultvalue,minvalue);
+	uint32_t	retval=atouint32_t(attribute,value,
+						defaultvalue,minvalue);
 	if (retval>65535) {
 		stderror.printf("Warning: %s value %u is too large, "
 				"using 65535 instead\n",
@@ -2630,13 +2651,28 @@ uint16_t sqlrconfig_xmldom::atouint16_t(const char *attribute,
 	return (uint16_t)retval;
 }
 
-int32_t sqlrconfig_xmldom::atoint32_t(const char *value,
+int32_t sqlrconfig_xmldom::atoint32_t(const char *attribute,
+				const char *value,
 				const char *defaultvalue, int32_t minvalue) {
-	int32_t	retval=charstring::convertToInteger((value)?value:defaultvalue);
+	// use literals rather than INT32_MAX/INT32_MIN - some platforms need
+	// __STDC_LIMIT_MACROS defined before the first inclusion of
+	// stdint.h to get them in a c++ file, which isn't guaranteed here
+	int64_t	retval=charstring::convertToInteger((value)?value:defaultvalue);
 	if (retval<minvalue) {
 		retval=charstring::convertToInteger(defaultvalue);
 	}
-	return retval;
+	if (retval>2147483647) {
+		stderror.printf("Warning: %s value %lld is too large, "
+				"using 2147483647 instead\n",
+				attribute,(long long)retval);
+		retval=2147483647;
+	} else if (retval<-2147483647-1) {
+		stderror.printf("Warning: %s value %lld is too small, "
+				"using -2147483648 instead\n",
+				attribute,(long long)retval);
+		retval=-2147483647-1;
+	}
+	return (int32_t)retval;
 }
 
 void sqlrconfig_xmldom::parseUrl(const char *urlname) {

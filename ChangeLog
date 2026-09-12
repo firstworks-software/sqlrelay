@@ -2635,6 +2635,25 @@
 		so backup copies and temp files silently became duplicate
 		definitions; the directory parser now only parses files whose
 		name ends in ".conf" (#10010)
+	fixed the cursors_growby, maxsessioncount, maxbindcount and
+		maxbindnamesize config attributes accepting an unbounded
+		value with no warning, silently wrapping into their
+		uint16_t members instead; maxbindcount and maxbindnamesize
+		had no bounds checking at all, via a bare
+		charstring::convertToInteger() call; all four now go
+		through atouint16_t(), same as cursors/maxcursors were
+		fixed by #9991; also fixed maxbindnamesize never being
+		settable, since the parser checked for the misspelled
+		attribute key "maxbindnamelsize" instead; and fixed
+		maxcursors using the wrong fallback default
+		(DEFAULT_CURSORS instead of DEFAULT_MAXCURSORS) (#10094)
+	fixed atouint32_t()/atoint32_t() silently narrowing a 64-bit
+		parsed value into their 32-bit return type with no range
+		check; both now clamp to the 32-bit range with a warning
+		before narrowing, the same way atouint16_t() already did;
+		also fixed a route's port attribute silently truncating
+		the same way, since it was assigned from atouint32_t()
+		into a uint16_t member (#10094)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
