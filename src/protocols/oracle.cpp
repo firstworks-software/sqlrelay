@@ -6022,11 +6022,13 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 		}
 	}
 
-	// the client's data type list.  SERVER_BANNER never matches a client's
-	// own platform banner, so every session runs in portable mode, where
-	// both sides send their full type catalog and each waits for the
-	// other's.  a short or empty list is counted and reported rather than
-	// refused, since a real server answers whatever it gets.
+	// the client's data type list.  whether this session ends up in
+	// native or portable TTC encoding follows from the pointer
+	// representation the client offers here, not from SERVER_BANNER,
+	// which plays no part in it.  both sides send their full type
+	// catalog and each waits for the other's.  a short or empty list is
+	// counted and reported rather than refused, since a real server
+	// answers whatever it gets.
 	//
 	// a pre-10g client writes every field of that list as a ub1 rather
 	// than a ub2, and is answered in that format from ttidatatypes9i -
@@ -6751,9 +6753,11 @@ bool sqlrprotocol_oracle::sendDataTypeResponse() {
 		}
 	}
 
-	// the data types, if the client sent a list of its own.  every session
-	// runs in portable mode (see SERVER_BANNER), so a client that sent its
-	// catalog is waiting for one back and hangs without it.
+	// the data types, if the client sent a list of its own.  native or
+	// portable TTC encoding follows from the pointer representation the
+	// client offered in recvDataTypeRequest(), not from SERVER_BANNER -
+	// but every client on file sends its own full catalog either way, so
+	// one that did is waiting for one back and hangs without it.
 	//
 	// a ub1 client gets ttidatatypes9i, the 10.2 server's own ub1 catalog,
 	// in that server's own order.  the client's offer only picks the
@@ -10650,8 +10654,10 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// used to be read as three raw big-endian ub2s (options, moreoptions
 	// and the cursor id) - the same shape query2() carried before #9656,
 	// and wrong for the same reason: it lands on the right bytes only by
-	// coincidence, if at all, and never in the portable encoding this
-	// module always negotiates (see SERVER_BANNER).  decoded byte for
+	// coincidence, if at all, and never in the portable encoding every
+	// capture of this call on file is in.  which encoding a session ends
+	// up in follows from the client's pointer representation, negotiated
+	// in recvDataTypeRequest(), not from SERVER_BANNER.  decoded byte for
 	// byte instead against a real oci7 9i client's o3logon sqlplus
 	// session parsing its own post-login bootstrap query "select user
 	// from dual" - packet [0019] of the capture attached to #9793 - the
@@ -10873,12 +10879,16 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// execute.
 	//
 	// packet [0021] of test/protocol/oracle/samples/
-	// oracle102-oci7-native-login-select.cap pins the field boundaries -
-	// every field there is a fixed four bytes - and the portable capture
-	// beside it reads as the same fields in the same order.  the portable
-	// encoding is the only one this module ever negotiates (see
-	// SERVER_BANNER), but the native shape is read here too, since that's
-	// the shape every capture behind this call's existing behavior is in
+	// oracle102-oci7-native-login-select.cap - a real server's own
+	// native encoding, not a session with this module - pins the field
+	// boundaries, every field there a fixed four bytes, and the real
+	// server's portable capture beside it reads as the same fields in
+	// the same order.  every capture of a session with this module on
+	// file negotiates the portable encoding - the client's pointer
+	// representation decides that in recvDataTypeRequest(), not
+	// SERVER_BANNER - so a native-encoding client reaching this call is
+	// unconfirmed, not ruled out.  the native shape is read here too,
+	// since that real server's capture is what pins its field boundaries
 	byte_t		sequence=0;
 	uint32_t	options=0;
 	uint32_t	cursorid=0;
