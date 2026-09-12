@@ -2626,6 +2626,10 @@
 		clamps any value over 65535 down to 65535 and prints a
 		warning naming the attribute and the requested and clamped
 		values (#9991)
+	fixed changeUser() reopening the connection's cursor pool with 0
+		cursors instead of its prior count, since closeCursors()
+		had already zeroed the pool's cursor count by the time
+		initCursors() read it (#9994)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

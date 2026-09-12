@@ -2507,11 +2507,12 @@ bool sqlrservercontroller::challenge(sqlrcredentials *cred,
 bool sqlrservercontroller::changeUser(const char *newuser,
 					const char *newpassword) {
 	debugStart("change user");
+	int32_t	oldcursorcount=pvt->_cursorcount;
 	closeCursors(false);
 	logOut();
 	setLoginUser(newuser);
 	setLoginPassword(newpassword);
-	bool	retval=(logIn(false) && initCursors(pvt->_cursorcount));
+	bool	retval=(logIn(false) && initCursors(oldcursorcount));
 	debugEnd();
 	return retval;
 }
