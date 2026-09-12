@@ -1604,7 +1604,10 @@ bool sqlrprotocol_postgresql::sendRowDescription(sqlrservercursor *cursor,
 		debugWrite("table name: %s",tablename);
 		debugWrite("table oid: %d",tableoid);
 		debugWrite("attribute number: 0");
-		debugWrite("column type name: %s",coltypename);
+		// getColumnTypeName() can return NULL (invalid column info) -
+		// don't hand that to %s
+		debugWrite("column type name: %s",
+				(coltypename)?coltypename:"(unknown)");
 		debugTypeOid("data type oid",coltypeoid);
 		debugWrite("data type size: %d",datatypesize);
 		debugWrite("type modifier: %d",datatypemodifier);

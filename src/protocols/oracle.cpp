@@ -10447,7 +10447,10 @@ void sqlrprotocol_oracle::debugColumnType(const char *name,
 	if (!getDebug()) {
 		return;
 	}
-	debugWrite("type: %s (0x%02x)",name,(uint32_t)(0x000000ff&columntype));
+	// name can be NULL (invalid column info, or an unrecognized type
+	// code) - don't hand that to %s
+	debugWrite("type: %s (0x%02x)",(name)?name:"(unknown)",
+				(uint32_t)(0x000000ff&columntype));
 	debugColumnType(columntype);
 }
 
@@ -14715,12 +14718,13 @@ bool sqlrprotocol_oracle::isCharacterColumn(const char *columntypestring,
 	}
 
 	// a type the backend didn't recognize comes through named UNKNOWN,
-	// and getColumnType() maps that to a varchar2 like it does a real
-	// one.  nothing the backend says about such a column is dependable,
-	// its size least of all
+	// or NULL if no name could be had at all, and getColumnType() maps
+	// either to a varchar2 like it does a real one.  nothing the backend
+	// says about such a column is dependable, its size least of all
 	const char * const	*datatypestring=cont->dataTypeStrings();
-	return charstring::compareIgnoringCase(columntypestring,
-						datatypestring[0])!=0;
+	return (columntypestring &&
+		charstring::compareIgnoringCase(columntypestring,
+						datatypestring[0])!=0);
 }
 
 bool sqlrprotocol_oracle::hasLongColumn(sqlrservercursor *cursor,

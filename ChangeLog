@@ -2677,6 +2677,16 @@
 		"maxbindvars" config attribute to "maxbindcount", its real,
 		long-existing name, since maxbindvars was never actually
 		read by any config parser (#10096)
+	fixed the postgresql and oracle protocol modules' debug output
+		passing a NULL column type name straight into a %s
+		conversion when getColumnTypeName() (postgresql) or the
+		describe path (oracle, via debugColumnType()) returned
+		NULL; both now fall back to "(unknown)" (#10024)
+	fixed the oracle protocol module's isCharacterColumn() treating
+		a NULL columntypestring as a character column instead of
+		not one, the same way an unrecognized "UNKNOWN" type name
+		already was; affects the column size reported to the
+		client on describe (#10024)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
