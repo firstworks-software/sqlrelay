@@ -1266,9 +1266,10 @@
 	fixed the oracle protocol module's sendFetch3Response() and
 		sendQuery3Response() packing an array fetch or a prefetch into
 		one packet with no bound on its size, so a wide enough batch
-		grew past the negotiated packet size and desynced the client;
-		both now stop and let the client come back for the rest once
-		a packet fills up
+		grew past the negotiated packet size and desynced the client
+		(later superseded by the fix further down this section, where
+		both builders were changed again to split the response across
+		packets instead of capping it)
 	oracle protocol module: input bind variables work on the modern (10g
 		and later) path now - the bind section of a query3 request is
 		read rather than skipped, covering bind by name, bind by
