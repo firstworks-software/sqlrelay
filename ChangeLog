@@ -2611,6 +2611,14 @@
 		subsequent request's smaller arrays; such a request now
 		leaves both the array sizes and their contents alone
 		(#10085)
+	fixed unbounded memory growth in the oracle protocol module, where
+		a client could name any row count it liked in a query3
+		prefetch, a fetch or a query2 request, and the whole batch
+		was built in memory before any of it went out, pinning the
+		connection process's memory at whatever the batch came to;
+		a request over the row count limit, or a batch that runs
+		past the response size limit while it's being built, is now
+		refused rather than sent (#10092)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

@@ -1277,7 +1277,37 @@ run_protocol_test() {
 	# survive it - a bare re-execute of them still runs.  it reads
 	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
 	# neither $server nor
-	# TNS_ADMIN either.  finally it runs oci7, the OCI7
+	# TNS_ADMIN either.  then oraclemaxfetchrowcount, an eleventh
+	# raw-socket test, for #10092 - the row count a request names for
+	# the batch it wants.  query3's prefetch count, fetch3's and the
+	# legacy fetch's rows to fetch, and query2's own row count were all
+	# taken off the wire unclamped, and each response builder packs the
+	# whole batch into one in-memory buffer before any of it goes out,
+	# so one request naming a huge count against a large result set made
+	# the connection process build a response of whatever size the
+	# backend could fill - 305 MB at a million rows against this backend
+	# - and the send buffer grows by halves and never gives the memory
+	# back, so the process held that footprint for the rest of its life.
+	# a count past MAX_FETCH_ROW_COUNT is now refused ORA-20004 before
+	# any row is fetched, and a batch that runs past MAX_RESPONSE_SIZE
+	# while it is being built - which a count inside the row limit can
+	# still do, row width being unbounded - is refused ORA-20005 instead
+	# of being sent.  it runs six cases, each on its own session and all
+	# on a 512 byte sdu: a query3 prefetch of 200 rows inside the limit,
+	# which is the control and has to come back whole and in order, then
+	# the same prefetch one past the limit, a fetch3 and a legacy fetch
+	# one past it, and a query2 exact fetch whose descriptor block names
+	# one past it - all four ORA-20004 with no rows at all, and the last
+	# three fetching the whole batch afterwards on the same cursor,
+	# since the refusals are supposed to cost the cursor nothing.  the
+	# sixth asks for 9000 rows of 4000 bytes, a count well inside the
+	# row limit whose ~36 MB of rows trip the 32 MB response ceiling
+	# instead, and has to come back ORA-20005.  every refusal case ends
+	# by opening a second cursor and running a statement on it, since a
+	# refusal that cost the session its place in the byte stream would
+	# show up there rather than in the answer itself.  it reads
+	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
+	# neither $server nor TNS_ADMIN either.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
@@ -1294,7 +1324,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all twenty runs have to succeed for the instance to pass
+	# all twenty-one runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1335,6 +1365,8 @@ run_protocol_test() {
 		resultsplitresponse="$?"
 		./oraclemaxdescriptors
 		resultmaxdescriptors="$?"
+		./oraclemaxfetchrowcount
+		resultmaxfetchrowcount="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1343,7 +1375,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1424,6 +1456,10 @@ run_protocol_test() {
 		if ( test "$resultmaxdescriptors" != "0" )
 		then
 			printf "    % 8s: failed (max descriptors)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultmaxfetchrowcount" != "0" )
+		then
+			printf "    % 8s: failed (max fetch row count)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then

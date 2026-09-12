@@ -320,6 +320,18 @@
 #define ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE \
 	"ORA-20003: Maximum bind variable count exceeded.\n"
 
+// what a request gets back when the row batch it asks for is over
+// MAX_FETCH_ROW_COUNT, or when the batch it was already being sent ran past
+// MAX_RESPONSE_SIZE - limits this module sets rather than oracle ones, so
+// they get numbers from the same user-defined range, and for the same
+// reason, as ORA_QUERY_FAILED above
+#define ORA_MAX_FETCH_ROW_COUNT_EXCEEDED	20004
+#define ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE \
+	"ORA-20004: Maximum fetch row count exceeded.\n"
+#define ORA_MAX_RESPONSE_SIZE_EXCEEDED		20005
+#define ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE \
+	"ORA-20005: Maximum response size exceeded.\n"
+
 // what a request this module could only read part of gets back, just ahead of
 // the session being dropped - a real server's answer to a ttc request it
 // can't parse, and terminal there too.  nothing on the wire says where a
@@ -583,6 +595,24 @@
 // how many bind values one query3 request may carry, across all of its
 // execution iterations
 #define MAX_QUERY3_BIND_VALUES		65536
+
+// how many rows one request may ask for.  a whole batch is built in memory
+// before any of it goes out, so the count the client sends is what decides
+// how much this process allocates.  real clients ask for single digits by
+// default, low double or triple digits when tuned, and a bulk export that
+// has been tuned hard might reasonably ask for tens of thousands - 100000
+// leaves room above every legitimate use and still refuses a count whose
+// only purpose is to make the server allocate
+#define MAX_FETCH_ROW_COUNT		100000
+
+// how large a response may grow while its batch is being built.  a count
+// inside MAX_FETCH_ROW_COUNT can still name rows wide enough to build a
+// response of any size, so the bytes are bounded too.  what it really
+// bounds is the process's permanent footprint rather than the response:
+// the send buffer grows by halves and clear() doesn't give the memory back,
+// so whatever one request makes it allocate, it holds for the life of the
+// connection
+#define MAX_RESPONSE_SIZE		(32*1024*1024)
 
 // describe info constants.  the last three are advisory - a client is free to
 // ignore them - and these are what a live 11.2 server sends.
@@ -1757,6 +1787,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint16_t *namesize);
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
 		bool	sendMaxBindCountExceededError(uint32_t cursorid);
+		bool	sendMaxResponseError(uint32_t cursorid,
+							uint32_t oranum,
+							const char *message);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
 							uint32_t cursorid,
@@ -10996,7 +11029,13 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// the client can't tell from the whole one.  over-wide binds fall
 	// through to the bind block below, which does refuse them, but with
 	// an ORA-01007 that says nothing about a bind count limit
-	if (query2toomanydefines || query2toomanybinds) {
+	//
+	// the row count the block carries is refused here too, and for the
+	// same reason the other two are: it decides how large a batch the
+	// fetch below builds in memory, and refusing it after the execute
+	// would mean the statement ran for nothing
+	if (query2toomanydefines || query2toomanybinds ||
+			query2rowcount>MAX_FETCH_ROW_COUNT) {
 
 		// the bind block below is what used to answer these, and its
 		// first act is to forget the cursor's binds.  do the same
@@ -11012,9 +11051,22 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 					ORA_MAX_COLUMN_COUNT_EXCEEDED,
 					ORA_MAX_COLUMN_COUNT_EXCEEDED_MESSAGE);
 		}
+		if (query2toomanybinds) {
+			return sendOci7StatementError(wireCursorId(cursor),
+					ORA_MAX_BIND_COUNT_EXCEEDED,
+					ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE);
+		}
+		// query2 is always this session's oci7 shape, unlike query3()/
+		// fetch3()/fetch(), where sendMaxResponseError()'s branch on
+		// query3session picks the right one - query3session is sticky
+		// once a query3 request has been seen on this session, so
+		// that branch would answer a query2 sent afterward in the
+		// wrong shape
+		debugWrite("row count %d exceeds %d",
+					query2rowcount,MAX_FETCH_ROW_COUNT);
 		return sendOci7StatementError(wireCursorId(cursor),
-				ORA_MAX_BIND_COUNT_EXCEEDED,
-				ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE);
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
 	}
 
 	if (options&OPTION_PARSE) {
@@ -12757,6 +12809,17 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		return sendMaxBindCountExceededError(cursorid);
 	}
 
+	// the prefetch count is refused here for the same reason and in the
+	// same place as the bind count above, and nothing needs undoing here
+	// either - the count is just a field off the wire at this point
+	if (prefetchrows>MAX_FETCH_ROW_COUNT) {
+		debugWrite("prefetch rows %d exceeds %d",
+					prefetchrows,MAX_FETCH_ROW_COUNT);
+		return sendMaxResponseError(cursorid,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
+	}
+
 	// a re-execute of this statement will send values without
 	// descriptors, so keep the ones that came with it
 	if (query3binddescs || (options&OPTION_PARSE)) {
@@ -14149,6 +14212,17 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 			// physical packets, so the loop just has to pack the
 			// whole batch
 			while (rowsfetched<rowstofetch) {
+
+				// a batch inside the row count limit can
+				// still be built out of rows wide enough to
+				// run away with the buffer
+				if (reqpacket.getSize()>MAX_RESPONSE_SIZE) {
+					debugWrite("response exceeds %d bytes",
+							MAX_RESPONSE_SIZE);
+					return sendMaxResponseError(cursorid,
+					ORA_MAX_RESPONSE_SIZE_EXCEEDED,
+					ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE);
+				}
 
 				bool	error=false;
 				if (!cont->fetchRow(cursor,&error)) {
@@ -17275,6 +17349,17 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	// an over-large batch is refused before the cursor is touched at all,
+	// so the request costs no fetching and the cursor is left where the
+	// client's last request left it
+	if (rowstofetch>MAX_FETCH_ROW_COUNT) {
+		debugWrite("rows to fetch %d exceeds %d",
+					rowstofetch,MAX_FETCH_ROW_COUNT);
+		return sendMaxResponseError(cursorid,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
+	}
+
 	// whatever row the cursor was holding for a lob read, the client has
 	// moved on from it - it's asking for the next one
 	releaseLobPin(cursor);
@@ -17317,6 +17402,17 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 		// oversized response across several physical packets, so
 		// the loop just has to pack the whole batch
 		while (rowsfetched<rowstofetch) {
+
+			// a batch inside the row count limit can still be
+			// built out of rows wide enough to run away with the
+			// buffer
+			if (reqpacket.getSize()>MAX_RESPONSE_SIZE) {
+				debugWrite("response exceeds %d bytes",
+							MAX_RESPONSE_SIZE);
+				return sendMaxResponseError(cursorid,
+					ORA_MAX_RESPONSE_SIZE_EXCEEDED,
+					ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE);
+			}
 
 			bool	error=false;
 			if (!cont->fetchRow(cursor,&error)) {
@@ -17436,6 +17532,17 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
+	// an over-large batch is refused before the cursor is touched at all,
+	// so the request costs no fetching and the cursor is left where the
+	// client's last request left it
+	if (rowstofetch>MAX_FETCH_ROW_COUNT) {
+		debugWrite("rows to fetch %d exceeds %d",
+					rowstofetch,MAX_FETCH_ROW_COUNT);
+		return sendMaxResponseError(cursorid,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
+	}
+
 	// a standalone legacy fetch asks for rows and nothing else.  with no
 	// options field on the wire there is nothing to ask an exact fetch
 	// with, so it never is one
@@ -17533,6 +17640,16 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		if (rowstofetch && rowsfetched>=rowstofetch) {
 			debugWrite("fetched every row asked for");
 			break;
+		}
+
+		// a batch inside the row count limit can still be built out
+		// of rows wide enough to run away with the buffer
+		if (reqpacket.getSize()>MAX_RESPONSE_SIZE) {
+			debugWrite("response exceeds %d bytes",
+						MAX_RESPONSE_SIZE);
+			return sendMaxResponseError(wireCursorId(cursor),
+					ORA_MAX_RESPONSE_SIZE_EXCEEDED,
+					ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE);
 		}
 
 		// a batch the client put a count on runs to that count however
@@ -19716,6 +19833,34 @@ bool sqlrprotocol_oracle::sendMaxBindCountExceededError(uint32_t cursorid) {
 
 	putSummary(cursorid,ORA_MAX_BIND_COUNT_EXCEEDED,0,
 				ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE);
+
+	return sendPacket(true);
+}
+
+// answers a request that asked for more rows than MAX_FETCH_ROW_COUNT, or
+// whose batch ran past MAX_RESPONSE_SIZE while it was being built.  both
+// paths can see either one, so the answer takes the shape the session is in,
+// the way sendQueryError() does
+bool sqlrprotocol_oracle::sendMaxResponseError(uint32_t cursorid,
+						uint32_t oranum,
+						const char *message) {
+
+	if (!query3session) {
+		return sendOci7StatementError(cursorid,oranum,message);
+	}
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("max response error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugWrite("ora number: %d",oranum);
+	debugEnd();
+
+	putSummary(cursorid,oranum,0,message);
 
 	return sendPacket(true);
 }

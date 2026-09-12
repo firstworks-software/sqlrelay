@@ -40,11 +40,12 @@ ORACLEPROTOCOLPORT7 ?= 1527
 # oracledescribeonly, oracledescribe, oraclemidfetchdescribe,
 # oraclelegacyfetch, oracleclrchunks, oracleiterations0,
 # oraclebigchunkclroff, oraclerefcursorreuse, oraclesplitrequest,
-# oraclesplitquery3, oraclesplitresponse and oraclemaxdescriptors only
+# oraclesplitquery3, oraclesplitresponse, oraclemaxdescriptors and
+# oraclemaxfetchrowcount only
 # need rudiments (raw sockets), so they build whether or not OCI is
 # configured - they speak the oracle wire protocol themselves rather than
 # going through a client library
-all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -210,6 +211,17 @@ oraclemaxdescriptors.$(OBJ): oracleprotocolclient.cpp
 oraclemaxdescriptors: oraclemaxdescriptors.cpp oracleprotocolclient.cpp oraclemaxdescriptors.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclemaxdescriptors.$(OBJ) $(RUDIMENTSLIBS)
 
+# oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
+# the test's main, the same way asserts.cpp is.  the explicit dependency
+# below is needed because the .cpp.$(OBJ) suffix rule only depends on
+# oraclemaxfetchrowcount.cpp - without it, editing oracleprotocolclient.cpp
+# alone would relink but not recompile, leaving a stale object (see
+# AGENTS.md's note on this build tracking no header dependencies)
+oraclemaxfetchrowcount.$(OBJ): oracleprotocolclient.cpp
+
+oraclemaxfetchrowcount: oraclemaxfetchrowcount.cpp oracleprotocolclient.cpp oraclemaxfetchrowcount.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oraclemaxfetchrowcount.$(OBJ) $(RUDIMENTSLIBS)
+
 clean:
-	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) ociselect$(EXE) ociloginretry$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) oraclerefcursorreuse$(EXE) oraclesplitrequest$(EXE) oraclesplitquery3$(EXE) oraclesplitresponse$(EXE) oraclemaxdescriptors$(EXE) tnsnames.ora
+	$(RM) *.lo *.o *.obj *.class *.out1 *.out2 oci8$(EXE) oci7$(EXE) oci7describe$(EXE) oci7bind$(EXE) ociselect$(EXE) ociloginretry$(EXE) oracledescribeonly$(EXE) oracledescribe$(EXE) oraclemidfetchdescribe$(EXE) oraclelegacyfetch$(EXE) oracleclrchunks$(EXE) oracleiterations0$(EXE) oraclebigchunkclroff$(EXE) oraclerefcursorreuse$(EXE) oraclesplitrequest$(EXE) oraclesplitquery3$(EXE) oraclesplitresponse$(EXE) oraclemaxdescriptors$(EXE) oraclemaxfetchrowcount$(EXE) tnsnames.ora
 	$(RMTREE) .libs
