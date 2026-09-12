@@ -11469,9 +11469,17 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// backends.
 	//
 	// a walk that is already discarding what it reads needs neither the
-	// check nor the arrays
+	// check nor the arrays.  neither does a request that carries no define
+	// block: only a request that does gets its count committed to
+	// definecounts[] at the end of this call, and that count is what bounds
+	// every later read of these arrays, so sizing them here to a count that
+	// never lands there leaves the standing, wider count reading off the
+	// end of the new, narrower arrays (#10085).  the width check goes with
+	// the sizing for the same reason - a count that is never kept has no
+	// width to refuse, and refusing it would fail a re-executed select over
+	// a define list it isn't replacing
 	uint32_t	maxcolumns=cont->getMaxColumnCount();
-	if (definitions && !discard) {
+	if (hasdefines && definitions && !discard) {
 		if (maxcolumns) {
 
 			// a define list wider than that limit can't be
@@ -11528,8 +11536,12 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 
 		// the arrays below are sized to a limit a discarded walk ran
 		// past, and on a backend with no limit they don't exist at
-		// all, so it reads the descriptors only to get past them
-		if (discard) {
+		// all, so it reads the descriptors only to get past them.
+		// a request with no define block reads them for the same
+		// reason: nothing above resized the arrays for it, so writing
+		// them would overwrite - or run off the end of - a define list
+		// that still stands (#10085)
+		if (discard || !hasdefines) {
 			continue;
 		}
 

@@ -2600,6 +2600,16 @@
 		socket either, so a split request could still leave a
 		fragment behind for the next request's parse to misread;
 		that block is now walked and discarded the same way (#10084)
+	fixed a heap out-of-bounds read in the oracle protocol module's
+		query2 define handling on backends with no configured
+		column limit (sqlite, router, or maxcolumncount="-1"),
+		where a request that carried no define block still
+		resized the cursor's define arrays to its own wire define
+		count, without updating the count that bounds every later
+		read of them, leaving that count pointing past a
+		subsequent request's smaller arrays; such a request now
+		leaves both the array sizes and their contents alone
+		(#10085)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
