@@ -62,6 +62,33 @@
 // Every case ends by opening a second cursor and running a statement on it,
 // since a refusal that cost the session its place in the byte stream would
 // show up there rather than in the answer itself.
+//
+// #10067 is the same silent truncation on the modern path.  installQuery3Binds()
+// and saveQuery3Binds() write into arrays sized to maxbindcount and used to
+// stop at the end of them, so a TTI_QUERY3 naming more binds than that ran its
+// statement on the first maxbindcount values and answered with an ordinary
+// describe.  getQuery3Binds() now flags the over-wide list and query3() refuses
+// the whole request with the same ORA-20003, ahead of the save, the parse and
+// the execute.
+//
+// Three more cases, each on its own session:
+//
+//	- 257 binds on a query3 parse and execute, which must come back
+//	  ORA-20003 and no describe at all.  pre-fix the statement ran
+//	- 256 binds, one descriptor short of the limit, which must still parse,
+//	  execute and answer with the values it bound.  a harness that can't
+//	  tell that from a refusal says nothing about the case above
+//	- a refusal landing on a cursor that already carries a statement.  it
+//	  happens ahead of saveQuery3Binds(), and getQuery3Binds() touches no
+//	  cursor state at all, so the statement and the binds saved with it have
+//	  to come through untouched - a bare re-execute of them still runs, with
+//	  fresh values of its own
+//
+// Their requests are nothing like the query2 ones': 257 bind descriptors
+// behind a statement with 257 placeholders is around 3000 bytes past the sdu
+// the session negotiates, so each one goes out through sendSplitPacket().  That
+// is safe here and isn't above because the bind walk consumes the whole request
+// whatever it finds, so a refusal leaves no fragment of it on the socket.
 
 // what the control case's session asks for, and so - since it is the floor
 // recvConnectRequest() clamps to - what it gets
@@ -77,9 +104,13 @@ static const unsigned char	ORA_TTI_QUERY2=0x47;
 // and oracleprotocolclient offers the universal one
 static const size_t	POINTER_SIZE=1;
 
-// one past each limit, which is what the two refusal cases name
+// one past each limit, which is what the refusal cases name
 static const uint32_t	ORA_TOO_MANY_DEFINES=257;
 static const uint32_t	ORA_TOO_MANY_BINDS=257;
+
+// and the limit itself, which is the widest bind list the query3 path still
+// has to honor
+static const uint32_t	ORA_IN_LIMIT_BINDS=256;
 
 // what the two refusals come back as - ORA_MAX_COLUMN_COUNT_EXCEEDED and
 // ORA_MAX_BIND_COUNT_EXCEEDED in src/protocols/oracle.cpp, whose wording is
@@ -178,6 +209,36 @@ static const char	*ORA_WIDE_QUERY=
 // unlike anything else on the wire here
 static const char	*ORA_ALIVE_QUERY="select 'STILLALIVE' from dual";
 static const char	*ORA_ALIVE_VALUE="STILLALIVE";
+
+// how wide every query3 bind is declared.  installQuery3Binds() in
+// src/protocols/oracle.cpp sizes the bind buffer from this, so it has to be
+// past the longest value any of them carries
+static const uint32_t	ORA_QUERY3_BIND_BUFFER_SIZE=32;
+
+// room for the longest statement a query3 case builds - 257 placeholders and
+// the concatenation between them, which is around 2300 bytes
+static const size_t	ORA_MAX_QUERY3_QUERY_SIZE=4096;
+
+// what a wide bind list carries: a value in the first descriptor, a value in
+// the last, and a null in every one between.  oracle concatenates a null as
+// nothing, so the answer is those two whatever the list's width - and the half
+// of it the last descriptor put there is the half a clamped list drops
+static const char	*ORA_FIRST_BIND_VALUE="FIRSTBIND";
+static const char	*ORA_LAST_BIND_VALUE="LASTBIND";
+static const char	*ORA_IN_LIMIT_VALUE="FIRSTBINDLASTBIND";
+
+// the statement the last case's cursor is already carrying when the refused
+// request lands on it, and the values of its two executions - the first
+// through query3(), the second through a bare re-execute of the binds saved
+// with it
+static const uint32_t	ORA_PAIR_BINDS=2;
+static const char	*ORA_PAIR_QUERY="select :b1 || :b2 from dual";
+static const char	*ORA_PRIOR_BIND_VALUE1="PRIORONE";
+static const char	*ORA_PRIOR_BIND_VALUE2="PRIORTWO";
+static const char	*ORA_PRIOR_VALUE="PRIORONEPRIORTWO";
+static const char	*ORA_FRESH_BIND_VALUE1="FRESHONE";
+static const char	*ORA_FRESH_BIND_VALUE2="FRESHTWO";
+static const char	*ORA_FRESH_VALUE="FRESHONEFRESHTWO";
 
 // putRowHeader()'s flags byte in the answer to a fetch
 static const unsigned char	ORA_ROW_HEADER_FLAGS_FETCH=0x02;
@@ -531,6 +592,31 @@ static bool readSummaryOraNumber(oracleprotocolclient *client,
 		client->readLenPreInt(oranum));
 }
 
+// the same number out of the summary object a query3 request is answered with,
+// which is a different object: putSummary() in src/protocols/oracle.cpp writes
+// the end to end sequence number putOci7Summary() only writes for an
+// o5logonclient, so the number sits one field further in
+static bool readQuery3SummaryOraNumber(oracleprotocolclient *client,
+							uint32_t *oranum) {
+
+	client->rewindResponse();
+
+	*oranum=0;
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) || ttccode!=ORA_TTC_ERROR) {
+		return false;
+	}
+
+	uint32_t	skip=0;
+	return (client->readLenPreInt(&skip) &&		// end of call status
+		client->readLenPreInt(&skip) &&		// sequence number
+		client->readLenPreInt(&skip) &&		// rows processed
+		client->readLenPreInt(oranum));
+}
+
 // how many packets a message that size had to be split into - the mirror of
 // sendSplitPacket() in src/protocols/oracle.cpp: every fragment repeats the
 // eight byte header and the two data flag bytes, so a fragment carries
@@ -719,6 +805,132 @@ static void checkRefusal(oracleprotocolclient *client,
 
 	uint32_t	oranum=0;
 	bool		readnumber=readSummaryOraNumber(client,&oranum);
+	charstring::printf(label,sizeof(label),
+				"%s: the answer says ORA-%05d",
+				mode,(int)expectedoranum);
+	report(label,readnumber && oranum==expectedoranum);
+	if (!readnumber) {
+		stdoutput.printf("  the summary object didn't decode\n");
+		reportResponse(client);
+	} else if (oranum!=expectedoranum) {
+		stdoutput.printf("  it says ORA-%05d\n",(int)oranum);
+		reportResponse(client);
+	}
+
+	charstring::printf(label,sizeof(label),
+			"%s: the message names the limit",mode);
+	report(label,client->responseContains(expectedtext));
+}
+
+
+// ---- the pieces the query3 cases are built from ----
+
+// "select :b1 || :b2 || ... || :bN from dual", the statement a case with N
+// binds parses.  the spaces around the concatenation are load bearing:
+// afterBindVariable() in src/common/bindvariables.h ends a placeholder's name
+// on whitespace and a short set of punctuation that doesn't include the pipe,
+// so ":b1||:b2" reads as one placeholder named "b1||:b2" and the bind never
+// matches
+static bool buildBindQuery(char *query, size_t querysize, uint32_t bindcount) {
+
+	// "select ", at most ":b256 || " per bind, and " from dual"
+	if (querysize<(size_t)(7+bindcount*9+11)) {
+		return false;
+	}
+
+	query[0]='\0';
+	charstring::append(query,"select ");
+	for (uint32_t i=0; i<bindcount; i++) {
+		if (i) {
+			charstring::append(query," || ");
+		}
+		charstring::append(query,":b");
+		charstring::append(query,(uint64_t)(i+1));
+	}
+	charstring::append(query," from dual");
+	return true;
+}
+
+// the descriptors and values that go with it - a varchar apiece, and a value
+// in the first and last of them with nulls in between
+static void buildBindValues(oracleprotocolbind *binds,
+				oracleprotocolbindvalue *values,
+				uint32_t bindcount) {
+
+	for (uint32_t i=0; i<bindcount; i++) {
+		binds[i].varchar(ORA_QUERY3_BIND_BUFFER_SIZE);
+		values[i].setNull();
+	}
+	values[0].set(ORA_FIRST_BIND_VALUE);
+	values[bindcount-1].set(ORA_LAST_BIND_VALUE);
+}
+
+// one query3 parse and execute carrying a whole bind list, written out as
+// several packets - a list this wide is thousands of bytes past any sdu the
+// session can negotiate, so sendPacket() is not an option and sendSplitPacket()
+// is what a real client's tns layer would do with it anyway
+static bool sendBindQuery3(oracleprotocolclient *client,
+				const char *mode, const char *what,
+				uint32_t cursorid,
+				const char *query,
+				const oracleprotocolbind *binds,
+				const oracleprotocolbindvalue *values,
+				uint32_t bindcount) {
+
+	char	label[192];
+
+	charstring::printf(label,sizeof(label),"%s: send %s",mode,what);
+	if (!client->buildQuery3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				cursorid,0,query,binds,bindcount,1,values,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+
+	stdoutput.printf("  request: %d bytes, %d binds, "
+				"%d packets of at most %d\n",
+				(int)client->getRequestSize(),(int)bindcount,
+				(int)fragmentCount(client->getRequestSize(),
+							client->getSdu()),
+				(int)client->getSdu());
+
+	if (!client->sendSplitPacket() || !client->recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	report(label,true);
+	return true;
+}
+
+// everything a refused query3 request's answer has to be: the summary object
+// rather than the describe a parse and execute is answered with, and the ora
+// number and message that name the limit.  checkRefusal() above can't do duty
+// here - the two paths answer with different summary objects, and this one
+// carries no row header to walk either way
+static void checkQuery3Refusal(oracleprotocolclient *client,
+					const char *mode,
+					uint32_t expectedoranum,
+					const char *expectedtext) {
+
+	char	label[192];
+
+	stdoutput.printf("  answer: %d bytes, ttc code 0x%02x\n",
+				(int)client->getResponseSize(),
+				(int)client->getResponseTtcCode());
+
+	// the substantive assertion.  pre-fix the answer was a describe - the
+	// bind list was clamped to maxbindcount and the statement ran on what
+	// was left of it
+	charstring::printf(label,sizeof(label),
+			"%s: the answer is a summary object, not a describe",
+			mode);
+	report(label,client->getResponseTtcCode()==ORA_TTC_ERROR);
+
+	uint32_t	oranum=0;
+	bool		readnumber=readQuery3SummaryOraNumber(client,&oranum);
 	charstring::printf(label,sizeof(label),
 				"%s: the answer says ORA-%05d",
 				mode,(int)expectedoranum);
@@ -1000,6 +1212,272 @@ static void runTooManyBindsCase(const char *mode,
 	client.disconnect();
 }
 
+// the same limit on the modern path: a query3 parse and execute naming one
+// bind past maxbindcount.  pre-fix installQuery3Binds() stopped at the limit
+// and the statement ran on the first 256 of the 257 values, so this request
+// came back a describe and the client had no way to know
+static void runQuery3TooManyBindsCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	char	query[ORA_MAX_QUERY3_QUERY_SIZE];
+	if (!buildBindQuery(query,sizeof(query),ORA_TOO_MANY_BINDS)) {
+		charstring::printf(label,sizeof(label),
+					"%s: build the statement",mode);
+		report(label,false);
+		return;
+	}
+
+	oracleprotocolbind	binds[ORA_TOO_MANY_BINDS];
+	oracleprotocolbindvalue	values[ORA_TOO_MANY_BINDS];
+	buildBindValues(binds,values,ORA_TOO_MANY_BINDS);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+							0,&cursorid)) {
+		return;
+	}
+
+	if (!sendBindQuery3(&client,mode,"the wide bind list",cursorid,
+					query,binds,values,ORA_TOO_MANY_BINDS)) {
+		client.disconnect();
+		return;
+	}
+
+	checkQuery3Refusal(&client,mode,ORA_MAX_BIND_COUNT_EXCEEDED,
+					ORA_MAX_BIND_COUNT_EXCEEDED_TEXT);
+
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
+// the control for it: the same shape one descriptor short of the limit, which
+// has to parse, execute and answer with the values it bound.  a harness that
+// can't tell that from a refusal says nothing about the case above, and the
+// limit itself is where an off by one in either direction shows up
+static void runQuery3InLimitBindsCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	char	query[ORA_MAX_QUERY3_QUERY_SIZE];
+	if (!buildBindQuery(query,sizeof(query),ORA_IN_LIMIT_BINDS)) {
+		charstring::printf(label,sizeof(label),
+					"%s: build the statement",mode);
+		report(label,false);
+		return;
+	}
+
+	oracleprotocolbind	binds[ORA_IN_LIMIT_BINDS];
+	oracleprotocolbindvalue	values[ORA_IN_LIMIT_BINDS];
+	buildBindValues(binds,values,ORA_IN_LIMIT_BINDS);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+							0,&cursorid)) {
+		return;
+	}
+
+	if (!sendBindQuery3(&client,mode,"the bind list",cursorid,
+					query,binds,values,ORA_IN_LIMIT_BINDS)) {
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+				"%s: the statement was executed",mode);
+	bool	executed=(client.getResponseTtcCode()==ORA_TTC_DESCRIBE_INFO);
+	report(label,executed);
+	if (!executed) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+			"%s: the answer isn't the bind count limit",mode);
+	report(label,!client.responseContains(
+				ORA_MAX_BIND_COUNT_EXCEEDED_TEXT));
+
+	charstring::printf(label,sizeof(label),"%s: fetch",mode);
+	if (!client.fetch(cursorid,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	// the first and last bind's values, concatenated by the statement.  the
+	// last is the one a list clamped at the limit would have dropped, so a
+	// row carrying both says every descriptor was installed
+	charstring::printf(label,sizeof(label),
+			"%s: the whole bind list was installed",mode);
+	bool	installed=client.responseContains(ORA_IN_LIMIT_VALUE);
+	report(label,installed);
+	if (!installed) {
+		reportResponse(&client);
+	}
+
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
+// what a refusal costs the cursor it lands on, which is nothing.  query3()
+// refuses ahead of saveQuery3Binds(), and getQuery3Binds() touches no cursor
+// state at all, so a cursor that already carries a statement keeps it and
+// keeps the binds saved with it - a bare re-execute still re-runs it, with
+// fresh values of its own.  pre-fix there was no refusal to survive: the wide
+// request parsed its own statement over the top of this one
+static void runQuery3RefusalKeepsStatementCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	char	widequery[ORA_MAX_QUERY3_QUERY_SIZE];
+	if (!buildBindQuery(widequery,sizeof(widequery),ORA_TOO_MANY_BINDS)) {
+		charstring::printf(label,sizeof(label),
+					"%s: build the statement",mode);
+		report(label,false);
+		return;
+	}
+
+	oracleprotocolbind	widebinds[ORA_TOO_MANY_BINDS];
+	oracleprotocolbindvalue	widevalues[ORA_TOO_MANY_BINDS];
+	buildBindValues(widebinds,widevalues,ORA_TOO_MANY_BINDS);
+
+	oracleprotocolbind	pairbinds[ORA_PAIR_BINDS];
+	oracleprotocolbindvalue	pairvalues[ORA_PAIR_BINDS];
+	pairbinds[0].varchar(ORA_QUERY3_BIND_BUFFER_SIZE);
+	pairbinds[1].varchar(ORA_QUERY3_BIND_BUFFER_SIZE);
+	pairvalues[0].set(ORA_PRIOR_BIND_VALUE1);
+	pairvalues[1].set(ORA_PRIOR_BIND_VALUE2);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+							0,&cursorid)) {
+		return;
+	}
+
+	// the statement the cursor is carrying when the refusal arrives, and
+	// the binds saved with it
+	charstring::printf(label,sizeof(label),
+				"%s: parse and execute the pair statement",mode);
+	if (!client.query3(ORA_OPTION_PARSE|
+				ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,
+				cursorid,0,ORA_PAIR_QUERY,
+				pairbinds,ORA_PAIR_BINDS,1,
+				pairvalues,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+
+	bool	executed=(client.getResponseTtcCode()==ORA_TTC_DESCRIBE_INFO);
+	report(label,executed);
+	if (!executed) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+				"%s: the pair statement's own values",mode);
+	if (!client.fetch(cursorid,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,client.responseContains(ORA_PRIOR_VALUE));
+
+	// the refusal, on that same cursor
+	if (!sendBindQuery3(&client,mode,"the wide bind list",cursorid,
+				widequery,widebinds,widevalues,
+				ORA_TOO_MANY_BINDS)) {
+		client.disconnect();
+		return;
+	}
+
+	checkQuery3Refusal(&client,mode,ORA_MAX_BIND_COUNT_EXCEEDED,
+					ORA_MAX_BIND_COUNT_EXCEEDED_TEXT);
+
+	// and the re-execute, which carries values and nothing else - the
+	// statement and the descriptors behind them are whatever the cursor
+	// still has
+	pairvalues[0].set(ORA_FRESH_BIND_VALUE1);
+	pairvalues[1].set(ORA_FRESH_BIND_VALUE2);
+
+	charstring::printf(label,sizeof(label),
+				"%s: re-execute the pair statement",mode);
+	if (!client.reexecute(cursorid,1,ORA_OPTION_EXECUTE,0,
+					ORA_PAIR_BINDS,pairvalues,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+
+	uint32_t	oranum=0;
+	bool		readnumber=readQuery3SummaryOraNumber(&client,&oranum);
+	report(label,readnumber && !oranum);
+	if (!readnumber) {
+		stdoutput.printf("  the summary object didn't decode\n");
+		reportResponse(&client);
+	} else if (oranum) {
+		stdoutput.printf("  it says ORA-%05d\n",(int)oranum);
+		reportResponse(&client);
+	}
+
+	// the substantive assertion: the statement the refusal was supposed to
+	// leave alone, run again on values of its own
+	charstring::printf(label,sizeof(label),
+			"%s: the re-executed statement answers with its fresh "
+			"values",mode);
+	if (!client.fetch(cursorid,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	bool	refreshed=client.responseContains(ORA_FRESH_VALUE);
+	report(label,refreshed);
+	if (!refreshed) {
+		reportResponse(&client);
+	}
+
+	charstring::printf(label,sizeof(label),
+			"%s: and not the previous execution's",mode);
+	report(label,!client.responseContains(ORA_PRIOR_VALUE));
+
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
 // the port a listener ended up on.  the default is what
 // test/sqlrelay.conf.d/oracleprotocol.conf.in's @ORACLEPROTOCOLPORT1@ token
 // defaults to; test/test.sh exports the real one, the same way
@@ -1014,7 +1492,8 @@ static uint16_t portFromEnvironment(const char *name, uint16_t fallback) {
 
 int main(int argc, char **argv) {
 
-	stdoutput.printf("\n====== #10059 query2 descriptor limits ======\n\n");
+	stdoutput.printf("\n====== #10059/#10067 descriptor and bind "
+							"limits ======\n\n");
 
 	// the oracleprotocol test instance - see
 	// test/sqlrelay.conf.d/oracleprotocol.conf.  it isn't a real oracle
@@ -1033,6 +1512,18 @@ int main(int argc, char **argv) {
 	// and the two it has to refuse
 	runTooManyDefinesCase("too many defines",host,port,sid,user,password);
 	runTooManyBindsCase("too many binds",host,port,sid,user,password);
+
+	// the same bind limit on the query3 path, which has to be refused
+	// rather than clamped, and the bind list at the limit that still runs
+	runQuery3TooManyBindsCase("too many query3 binds",
+					host,port,sid,user,password);
+	runQuery3InLimitBindsCase("query3 binds at the limit",
+					host,port,sid,user,password);
+
+	// and what the refusal leaves the cursor carrying, which is everything
+	// it was carrying before
+	runQuery3RefusalKeepsStatementCase("a refusal keeps the statement",
+					host,port,sid,user,password);
 
 	if (status==0) {
 		stdoutput.printf("\n\033[34mAll tests succeeded\033[0m\n");

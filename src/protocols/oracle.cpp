@@ -310,7 +310,9 @@
 // numbers from the same user-defined range, and for the same reason, as
 // ORA_QUERY_FAILED above.  the wording is the server's own for these two
 // limits - see SQLR_ERROR_MAXCOLUMNCOUNTEXCEEDED_STRING and
-// SQLR_ERROR_MAXBINDCOUNT_STRING in src/common/defines.h
+// SQLR_ERROR_MAXBINDCOUNT_STRING in src/common/defines.h.  a query3 request
+// gets the bind one back for the same reason (see query3()); it has no define
+// list of its own to run past maxcolumncount, so the column one stays query2's
 #define ORA_MAX_COLUMN_COUNT_EXCEEDED	20002
 #define ORA_MAX_COLUMN_COUNT_EXCEEDED_MESSAGE \
 	"ORA-20002: Maximum column count exceeded.\n"
@@ -1744,6 +1746,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const char **name,
 							uint16_t *namesize);
 		bool	sendNotAllVariablesBoundError(uint32_t cursorid);
+		bool	sendMaxBindCountExceededError(uint32_t cursorid);
 		bool	sendQuery3Response(sqlrservercursor *cursor,
 							uint32_t options,
 							uint32_t cursorid,
@@ -2338,6 +2341,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// execute
 		bool		query3unbound;
 
+		// whether the request's bind section named more binds than
+		// maxbindcount allows, which ends the call in an error
+		// instead of a statement - see query3() and getQuery3Binds()
+		bool		query3toomanybinds;
+
 		// the same thing on the classic path, where nothing names the
 		// binds: the client's value block ran out with binds still
 		// unfilled, which is the only signature that case leaves on
@@ -2538,6 +2546,7 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	query3bindvalueavail=0;
 	query3blocks=0;
 	query3unbound=false;
+	query3toomanybinds=false;
 	query3affectedrows=0;
 	query3knowsaffectedrows=false;
 
@@ -12583,6 +12592,19 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		}
 	}
 
+	// a bind list over the deployment's limit is refused here, ahead of
+	// the save, parse and execute below, so the statement never runs.
+	// nothing needs undoing first, unlike query2's version of this:
+	// getQuery3Binds() has already run by now, but all it filled in is
+	// this module's own query3binds and query3binddescs - it touches no
+	// cursor state at all.  the cursor is left exactly as the last
+	// successful request left it, so a bare re-execute still re-runs that
+	// statement with its own saved, in-limit binds
+	if (query3toomanybinds) {
+		debugWrite("bind count exceeds maxbindcount %d",maxbindcount);
+		return sendMaxBindCountExceededError(cursorid);
+	}
+
 	// a re-execute of this statement will send values without
 	// descriptors, so keep the ones that came with it
 	if (query3binddescs || (options&OPTION_PARSE)) {
@@ -12975,6 +12997,7 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 	query3binddescs=0;
 	query3blocks=0;
 	query3unbound=false;
+	query3toomanybinds=false;
 
 	// nothing else in the request needs reading
 	if (!bindcount && !definecount) {
@@ -13056,6 +13079,14 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 		}
 	}
 	query3binddescs=bindcount;
+
+	// a bind list wider than maxbindcount can't be installed or saved -
+	// installQuery3Binds() and saveQuery3Binds() write into arrays sized
+	// to maxbindcount.  query3() refuses the whole request as soon as this
+	// comes back, rather than quietly running the statement with only the
+	// first maxbindcount of them.  the walk below still consumes the rest
+	// of the request, since the packet has to be read either way
+	query3toomanybinds=(bindcount>maxbindcount);
 
 	// the define descriptors, which need consuming but nothing else
 	for (uint32_t i=0; i<definecount; i++) {
@@ -13470,6 +13501,10 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 
 	uint16_t	incount=0;
 	uint16_t	outcount=0;
+
+	// query3() refuses a request with more descriptors than maxbindcount
+	// before this runs, so the count checks here and below are just bounds
+	// on the fixed-size arrays they index
 	for (uint32_t i=0; i<query3binddescs && incount<maxbindcount; i++) {
 
 		oraclequery3bind	*bd=&(query3binds[i]);
@@ -13499,6 +13534,8 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 		// until it re-executes or closes
 		if (bd->type==ORACLE_TYPE_RESULT_SET) {
 
+			// bounds outbinds[] and refcursorids[parentid][],
+			// both sized to maxbindcount
 			if (outcount>=maxbindcount) {
 				continue;
 			}
@@ -13680,7 +13717,8 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 		// buffer this side owns.  pre-filling that buffer with the
 		// value the wire sent is what makes it behave as in-out:
 		// what's in the buffer at execute time is what the statement
-		// reads, and what the statement writes is what's in it after
+		// reads, and what the statement writes is what's in it after.
+		// the count check is just the bound on outbinds[]
 		if (bd->direction!=BIND_DIRECTION_INOUT ||
 						outcount>=maxbindcount) {
 			continue;
@@ -13838,6 +13876,12 @@ void sqlrprotocol_oracle::forgetRefCursor(uint16_t childid) {
 // keeps the descriptors that came with the statement, since a re-execute
 // sends fresh values without them
 void sqlrprotocol_oracle::saveQuery3Binds(sqlrservercursor *cursor) {
+
+	// query3() refuses a request with more descriptors than maxbindcount
+	// before this runs, so the clamp is just the bound on cursorbinds[],
+	// which the constructor allocates to maxbindcount.  it can't simply
+	// go away: query3binddescs itself is never capped, so a walk to it
+	// would run off the end of that array
 	uint32_t	count=(query3binddescs<maxbindcount)?
 					query3binddescs:maxbindcount;
 	oraclequery3bind	*saved=cursorbinds[cont->getId(cursor)];
@@ -19499,6 +19543,27 @@ bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
 
 	putSummary(cursorid,ORA_NOT_ALL_VARIABLES_BOUND,0,
 				ORA_NOT_ALL_VARIABLES_BOUND_MESSAGE);
+
+	return sendPacket(true);
+}
+
+// answers a request whose bind section named more binds than maxbindcount
+// allows.  the query2 path answers the same case in the oci7 shape instead -
+// see query2()
+bool sqlrprotocol_oracle::sendMaxBindCountExceededError(uint32_t cursorid) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("max bind count exceeded error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugWrite("cursor id: %d",cursorid);
+	debugEnd();
+
+	putSummary(cursorid,ORA_MAX_BIND_COUNT_EXCEEDED,0,
+				ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE);
 
 	return sendPacket(true);
 }

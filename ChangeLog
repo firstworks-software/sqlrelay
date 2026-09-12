@@ -2579,6 +2579,11 @@
 		loop kept sending rows past that until the result set or
 		the packet ran out; it now writes the count that
 		actually follows (#10065)
+	fixed the oracle protocol module silently clamping a query3
+		request's bind descriptor list at maxbindcount, where it
+		installed and saved only the first maxbindcount binds and
+		ran the statement anyway; it now comes back ORA-20003
+		before the statement is prepared or executed (#10067)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
