@@ -1446,7 +1446,7 @@ bool sqlrservercontroller::initCursors(uint16_t count) {
 		}
 		if (!open(pvt->_cur[i])) {
 			raiseInternalErrorEvent(
-				NULL,"cursor init failed: %hd",i);
+				NULL,"cursor init failed: %hu",i);
 			debugEnd();
 			return false;
 		}
@@ -1628,7 +1628,7 @@ bool sqlrservercontroller::openSockets() {
 				}
 
 				debugWrite(
-					"listening on inet socket: %hd",
+					"listening on inet socket: %hu",
 					pvt->_inetport);
 
 				pvt->_lsnr.addReadFileDescriptor(
@@ -1636,12 +1636,12 @@ bool sqlrservercontroller::openSockets() {
 
 			} else {
 				raiseInternalErrorEvent(NULL,
-					"failed to listen on port: %hd",
+					"failed to listen on port: %hu",
 					pvt->_inetport);
 
 				stderror.printf(
-					"Could not listen on inet socket: ",
-					"%hd\n\n",pvt->_inetport);
+					"Could not listen on inet socket: "
+					"%hu\n\n",pvt->_inetport);
 
 				retval=false;
 			}
@@ -2381,7 +2381,7 @@ sqlrservercursor *sqlrservercontroller::getCursor(uint16_t id) {
 
 	raiseClientProtocolErrorEvent(NULL,1,
 				"get cursor failed: "
-				"client requested an invalid cursor: %hd",id);
+				"client requested an invalid cursor: %hu",id);
 
 	return NULL;
 }
@@ -2393,7 +2393,7 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 	// find an available cursor
 	for (uint16_t i=0; i<pvt->_cursorcount; i++) {
 		if (pvt->_cur[i]->getState()==SQLRCURSORSTATE_AVAILABLE) {
-			debugWrite("available cursor: %hd",i);
+			debugWrite("available cursor: %hu",i);
 			pvt->_cur[i]->setState(SQLRCURSORSTATE_BUSY);
 			incrementTimesNewCursorUsed();
 			// reset the bind variable translation veto and any
@@ -2416,7 +2416,7 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 			if (querysize>40) {
 				querysize=40;
 			}
-			debugWrite("cursor %hd: %.*s",i,querysize,
+			debugWrite("cursor %hu: %.*s",i,querysize,
 						pvt->_cur[i]->getQueryBuffer());
 		}
 		debugEnd();
@@ -2434,7 +2434,7 @@ sqlrservercursor *sqlrservercontroller::getCursor() {
 		pvt->_cur[pvt->_cursorcount]=newCursor(pvt->_cursorcount);
 		if (!open(pvt->_cur[pvt->_cursorcount])) {
 			raiseInternalErrorEvent(
-					NULL,"cursor init failure: %hd",
+					NULL,"cursor init failure: %hu",
 					pvt->_cursorcount);
 			return NULL;
 		}
