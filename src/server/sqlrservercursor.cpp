@@ -1868,7 +1868,7 @@ bool sqlrservercursor::containsOnCommitPreserveRows(const char *query) {
 	const char	*end=query+charstring::getLength(query);
 	while (ptr<end) {
 		if (character::isInSet(*ptr,"'\"`")) {
-			ptr=conn->cont->skipStringLiteral(ptr,end,true);
+			ptr=conn->cont->skipStringLiteral(ptr,end,false);
 			stripped.append(' ');
 		} else if (!charstring::compare(ptr,"--",2)) {
 			while (ptr<end && *ptr!='\n') {

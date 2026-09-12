@@ -2699,6 +2699,53 @@
 		call it at load time, so a platform where csprng falls back
 		to a non-cryptographic prng warns instead of quietly
 		generating predictable secrets (#9773)
+	fixed the postgresql protocol module's getQuery() hardcoding
+		mysql/mariadb backslash-escaping rules when scanning quoted
+		strings/identifiers, even though this protocol module can
+		front a mysql/mariadb backend too (see the
+		mysqlpostgresqlprotocol test instance); it now bases that
+		on the connection's native db type instead (#7433)
+	fixed the sap connection module's rewriteBindMarkersToPositional()
+		quote-tracking: it treated a backslash before a quote as an
+		escape and a doubled quote as closing one string literal and
+		opening another, but sybase/ase has no backslash-escaping in
+		string literals and represents an embedded literal quote by
+		doubling it; it now jumps over each literal with
+		charstring::findEndOfQuotedString() instead of toggling an
+		inquotes flag on every unescaped quote (#7433)
+	fixed sqlrservercontroller::getFirstValuesFromInsertQuery()
+		hardcoding mysql/mariadb backslash-escaping rules when
+		scanning quoted string literals in an insert statement's
+		values, even though the function is reached for other
+		backends too; it now bases that on the connection's
+		native db type. also fixed the scan having no bound check
+		against the end of the query, so a malformed value list
+		could send it reading past the end of the buffer (#7433)
+	fixed the replay trigger's appendValues() hardcoding mysql/mariadb
+		backslash-escaping rules when scanning quoted string literals
+		in an insert statement's values, now based on the connection's
+		native db type instead. also fixed the scan having no bound
+		check against the end of the query, so a malformed value list
+		could send it reading past the end of the buffer (#7433)
+	fixed the splitmultiinsert trigger's parseValues() hardcoding
+		mysql/mariadb backslash-escaping rules when scanning quoted
+		string literals in a multi-insert's value sets, even though
+		the trigger isn't restricted to those backends; it now bases
+		that on the connection's native db type. also fixed the scan
+		having no bound check against the end of the query, so a
+		malformed value list could send it reading past the end of
+		the buffer (#7433)
+	fixed the sequence_nextval query translation module's run()
+		hardcoding mysql/mariadb backslash-escaping rules when
+		copying string literals verbatim, even though the module
+		isn't restricted to a single backend; it now bases that on
+		the connection's native db type (#7433)
+	fixed the listagg_to_string_agg and keep_dense_rank_to_array_agg
+		query translation modules, and sqlrservercursor's
+		containsOnCommitPreserveRows(), hardcoding mysql/mariadb
+		backslash-escaping rules when scanning quoted string literals,
+		even though none of them can ever run against a mysql/mariadb
+		backend (#7433)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

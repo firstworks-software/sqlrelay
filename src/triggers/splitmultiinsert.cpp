@@ -176,7 +176,7 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 		singleinsert.clear();
 
 		// continue if there are any more sets of values, otherwise bail
-		if (*ptr==',') {
+		if (ptr<queryend && *ptr==',') {
 			ptr++;
 		} else {
 			break;
@@ -255,7 +255,7 @@ void sqlrtrigger_splitmultiinsert::parseSuffix(const char *startofvalues,
 	*ptr=startofvalues;
 	for (;;) {
 		parseValues(ptr,queryend,NULL);
-		if (**ptr!=',') {
+		if (*ptr>=queryend || **ptr!=',') {
 			break;
 		}
 		(*ptr)++;
@@ -277,13 +277,26 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 	// skip opening paren
 	(*ptr)++;
 
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+
 	// skip to the closing paren, accounting for nested parens and quotes
 	uint16_t	depth=0;
 	for (;;) {
+
+		// bail if we ran off the end without finding a closing paren
+		if (*ptr>=queryend) {
+			*ptr=queryend;
+			return;
+		}
+
 		if (**ptr=='\'') {
 			*ptr=charstring::findEndOfQuotedString(
 						*ptr,queryend-*ptr,
-						'\'',true,true);
+						'\'',backslash,true);
+			continue;
 		}
 		if (**ptr==')') {
 			if (!depth) {

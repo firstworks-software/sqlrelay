@@ -104,7 +104,7 @@ void sqlrquerytranslation_keep_dense_rank_to_array_agg::translateRange(
 
 		// copy out string literals verbatim
 		if (*ptr=='\'') {
-			ptr=cont->copyStringLiteral(ptr,end,out,true);
+			ptr=cont->copyStringLiteral(ptr,end,out,false);
 			continue;
 		}
 
@@ -144,7 +144,7 @@ const char *sqlrquerytranslation_keep_dense_rank_to_array_agg::translateKeep(
 	exprstart++;
 
 	// find the end of EXPR, bailing on a multi-argument call
-	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end,true);
+	const char	*exprend=cont->findCommaOrCloseParen(exprstart,end,false);
 	if (!exprend || *exprend!=')' || exprend==exprstart) {
 		return NULL;
 	}
@@ -197,7 +197,7 @@ const char *sqlrquerytranslation_keep_dense_rank_to_array_agg::translateKeep(
 	// scan for the matching ")" of the keep clause, bailing on a top-level
 	// comma - only a single sort key is supported
 	const char	*sortstart=p;
-	const char	*keepend=cont->findCommaOrCloseParen(sortstart,end,true);
+	const char	*keepend=cont->findCommaOrCloseParen(sortstart,end,false);
 	if (!keepend || *keepend!=')') {
 		return NULL;
 	}

@@ -522,18 +522,33 @@ void sqlrtrigger_replay::appendValues(const char *values,
 						const char *autoinccolumn) {
 	value.clear();
 
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+
 	listnode<char *>	*col=columns->getFirst();
 	const char		*c=values;
 	uint32_t		parens=0;
 	for (;;) {
 
+		// ran off the end without finding the close paren -
+		// truncated or malformed query
+		if (c>=queryend) {
+			newquery.append(value.getString());
+			newquery.append(')');
+			return;
+		}
+
 		// handle quotes
 		if (*c=='\'') {
 			const char	*after=
 				charstring::findEndOfQuotedString(
-						c,queryend-c,'\'',true,true);
+						c,queryend-c,'\'',
+						backslash,true);
 			value.append(c,after-c-1);
 			c=after;
+			continue;
 		}
 
 		// handle parens

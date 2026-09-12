@@ -3103,11 +3103,10 @@ static bool rewriteBindMarkersToPositional(const char *query, uint32_t size,
 	bool		foundmarker=false;
 	const char	*p=query;
 	const char	*end=query+size;
-	bool		inquotes=false;
 	char		prev='\0';
 	while (p<end) {
 		char	c=*p;
-		if (!inquotes && c=='@' && (p==query ||
+		if (c=='@' && (p==query ||
 				character::isWhitespace(prev) ||
 				prev=='(' || prev==',' || prev=='=')) {
 			const char	*namestart=p+1;
@@ -3124,8 +3123,18 @@ static bool rewriteBindMarkersToPositional(const char *query, uint32_t size,
 				continue;
 			}
 		}
-		if (c=='\'' && prev!='\\') {
-			inquotes=!inquotes;
+		if (c=='\'') {
+			// sybase has no backslash-escaping in string
+			// literals, only doubling for an embedded quote -
+			// jump over the whole literal verbatim so nothing
+			// inside it is mistaken for a bind marker
+			const char	*litend=
+				charstring::findEndOfQuotedString(
+						p,end-p,'\'',false,true);
+			out->append(p,litend-p);
+			prev=litend[-1];
+			p=litend;
+			continue;
 		}
 		out->append(c);
 		prev=c;

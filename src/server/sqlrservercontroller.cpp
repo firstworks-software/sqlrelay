@@ -4540,12 +4540,26 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 	const char	*c=start;
 	uint32_t	parens=0;
 	const char	*startofvalue=c;
+
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					getNativeDbType(),"mysql");
+
 	for (;;) {
+
+		// ran off the end without finding the close paren -
+		// truncated or malformed query
+		if (c>=queryend) {
+			*multiinsert=false;
+			return;
+		}
 
 		// handle quotes
 		if (*c=='\'') {
 			c=charstring::findEndOfQuotedString(
-						c,queryend-c,'\'',true,true);
+					c,queryend-c,'\'',backslash,true);
+			continue;
 		}
 
 		// handle parens
@@ -4566,7 +4580,7 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 				// if there's a comma after the closing
 				// paren, then this is a multi-insert
 				c++;
-				*multiinsert=(*c==',');
+				*multiinsert=(c<queryend && *c==',');
 				return;
 			}
 

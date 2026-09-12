@@ -131,6 +131,11 @@ bool sqlrquerytranslation_sequence_nextval::run(
 		return true;
 	}
 
+	// mysql/mariadb escape backslashes inside quoted strings,
+	// other backends don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+
 	// walk the query, translating any sequence-nextval expressions
 	const char	*start=query;
 	const char	*end=query+querylength;
@@ -139,7 +144,8 @@ bool sqlrquerytranslation_sequence_nextval::run(
 
 		// copy out string literals verbatim
 		if (*ptr=='\'') {
-			ptr=cont->copyStringLiteral(ptr,end,translatedquery,true);
+			ptr=cont->copyStringLiteral(ptr,end,
+						translatedquery,backslash);
 			continue;
 		}
 
