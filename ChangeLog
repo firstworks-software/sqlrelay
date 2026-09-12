@@ -2619,6 +2619,13 @@
 		a request over the row count limit, or a batch that runs
 		past the response size limit while it's being built, is now
 		refused rather than sent (#10092)
+	fixed the cursors and maxcursors config attributes accepting an
+		unbounded value with no warning, silently wrapping into their
+		uint16_t members instead (e.g. maxcursors="70000" became
+		4464); both now go through a new atouint16_t() helper that
+		clamps any value over 65535 down to 65535 and prints a
+		warning naming the attribute and the requested and clamped
+		values (#9991)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

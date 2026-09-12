@@ -177,6 +177,12 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		uint32_t	atouint32_t(const char *value,
 						const char *defaultvalue,
 						uint32_t minvalue);
+		// clamps to the largest uint16_t value, with a warning,
+		// rather than silently truncating
+		uint16_t	atouint16_t(const char *attribute,
+						const char *value,
+						const char *defaultvalue,
+						uint32_t minvalue);
 		int32_t		atoint32_t(const char *value,
 						const char *defaultvalue,
 						int32_t minvalue);
@@ -2075,14 +2081,16 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("cursors");
 	if (!attr->isNullNode()) {
-		cursors=atouint32_t(attr->getValue(),DEFAULT_CURSORS,0);
+		cursors=atouint16_t("cursors",attr->getValue(),
+						DEFAULT_CURSORS,0);
 		if (maxcursors<cursors) {
 			maxcursors=cursors;
 		}
 	}
 	attr=instance->getAttribute("maxcursors");
 	if (!attr->isNullNode()) {
-		maxcursors=atouint32_t(attr->getValue(),DEFAULT_CURSORS,0);
+		maxcursors=atouint16_t("maxcursors",attr->getValue(),
+						DEFAULT_CURSORS,0);
 		if (maxcursors<cursors) {
 			maxcursors=cursors;
 		}
@@ -2604,6 +2612,22 @@ uint32_t sqlrconfig_xmldom::atouint32_t(const char *value,
 		retval=charstring::convertToUnsignedInteger(defaultvalue);
 	}
 	return retval;
+}
+
+uint16_t sqlrconfig_xmldom::atouint16_t(const char *attribute,
+				const char *value,
+				const char *defaultvalue, uint32_t minvalue) {
+	// use a literal rather than UINT16_MAX - some platforms need
+	// __STDC_LIMIT_MACROS defined before the first inclusion of
+	// stdint.h to get it in a c++ file, which isn't guaranteed here
+	uint32_t	retval=atouint32_t(value,defaultvalue,minvalue);
+	if (retval>65535) {
+		stderror.printf("Warning: %s value %u is too large, "
+				"using 65535 instead\n",
+				attribute,retval);
+		retval=65535;
+	}
+	return (uint16_t)retval;
 }
 
 int32_t sqlrconfig_xmldom::atoint32_t(const char *value,
