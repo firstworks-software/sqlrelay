@@ -1397,7 +1397,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>Any number of cursors can be opened.  A good rule of thumb is to open as few as possible, but as many as you know that your application will need.</p>
+<p>Any number of cursors can be opened, up to 65535, which is also the largest value allowed for the cursors and maxcursors attributes.  A good rule of thumb is to open as few as possible, but as many as you know that your application will need.</p>
 
 <blockquote>
 ( <b>NOTE:</b> The documentation above says that by default, each connection opens one cursor, and this is true, but it would be more accurate to say that by default each connection opens one cursor, but will open additional cursors on-demand, up to 5.  This is because it is common for an app to run at least one level of nested queries.  For example, it is common to run a select and then run an insert, update, or delete for each row in the result set.  Unfortunately, it is also not uncommon for apps to just manage cursors poorly.  So, SQL Relay's default configuration offers a bit of flexibility to accommodate these circumstances.  See the next section on Dynamic Scaling for more information about configuring connections and cursors to scale up and down on-demand.)
@@ -10630,7 +10630,7 @@ http://www.gnu.org/software/src-highlite -->
 
 </ul>
 
-<p>Additional configuration files may be created under this directory.  These files must follow the same format as the main configuration file.</p>
+<p>Additional configuration files may be created under this directory.  These files must follow the same format as the main configuration file.  Only files whose name ends in <b>.conf</b> are read from the directory; anything else, such as a backup copy left with a different suffix, is skipped.</p>
 
 <p>For example, if you wanted to split up oracle, sap and db2 configurations into 3 separate files, you could create:</p>
 

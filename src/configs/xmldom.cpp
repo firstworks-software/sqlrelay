@@ -2692,8 +2692,10 @@ void sqlrconfig_xmldom::parseDir(const char *urlname) {
 			if (!filename) {
 				break;
 			}
-			if (charstring::compare(filename,".") &&
-				charstring::compare(filename,"..")) {
+			// only parse *.conf files, so that backup
+			// copies left in the dir don't get parsed as
+			// additional instance definitions
+			if (charstring::endsWith(filename,".conf")) {
 
 				fullpath.clear();
 				fullpath.append(dir);

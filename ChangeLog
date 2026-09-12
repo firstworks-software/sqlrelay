@@ -2630,6 +2630,11 @@
 		cursors instead of its prior count, since closeCursors()
 		had already zeroed the pool's cursor count by the time
 		initCursors() read it (#9994)
+	fixed sqlrconfig_xmldom::parseDir() parsing every file in a
+		sqlrelay.conf.d directory as configuration regardless of name,
+		so backup copies and temp files silently became duplicate
+		definitions; the directory parser now only parses files whose
+		name ends in ".conf" (#10010)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
