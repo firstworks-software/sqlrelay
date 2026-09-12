@@ -1770,6 +1770,51 @@ stage_modules() {
 	echo
 }
 
+# make sure the binaries and test programs under -buildtree actually
+# resolve libsqlr* from $BUILDDIR rather than a stale install.  without
+# ldd, warn and skip rather than fail (#9997)
+verify_buildtree_libs() {
+
+	if ( test -z "`which ldd 2> /dev/null`" )
+	then
+		echo "ldd not found - cannot verify -buildtree is using this build's libsqlr* libraries" 1>&2
+		return 0
+	fi
+
+	# gather the binaries to check, skipping any a disabled api or
+	# component left unbuilt
+	_bins=""
+	if ( test -f "$BUILDDIR/src/server/.libs/sqlr-listener" -a -x "$BUILDDIR/src/server/.libs/sqlr-listener" )
+	then
+		_bins="$_bins $BUILDDIR/src/server/.libs/sqlr-listener"
+	fi
+	if ( test -f "$BUILDDIR/src/cmdline/.libs/sqlrsh" -a -x "$BUILDDIR/src/cmdline/.libs/sqlrsh" )
+	then
+		_bins="$_bins $BUILDDIR/src/cmdline/.libs/sqlrsh"
+	fi
+	for _bin in $TESTDIR/c++/* $TESTDIR/c/* $TESTDIR/extensions/*
+	do
+		if ( test -f "$_bin" -a -x "$_bin" )
+		then
+			_bins="$_bins $_bin"
+		fi
+	done
+	if ( test -z "$_bins" )
+	then
+		return 0
+	fi
+
+	# any libsqlr* line ldd didn't resolve into $BUILDDIR is a stale
+	# install getting loaded instead
+	_stale=`ldd $_bins 2> /dev/null | grep libsqlr | grep -v "=> $BUILDDIR/"`
+	if ( test -n "$_stale" )
+	then
+		echo "test.sh would run libsqlr* libraries from outside $BUILDDIR under -buildtree:" 1>&2
+		echo "$_stale" 1>&2
+		exit 1
+	fi
+}
+
 
 # paths
 PREFIX=@prefix@
@@ -1919,6 +1964,20 @@ then
 	SQLRSHDIR=$BUILDDIR/src/cmdline
 	MODULEDIR=$STAGEDIR
 	PATHOPTS="-libexecdir $STAGEDIR -bindir $SQLRBINDIR"
+
+	# the programs under test have no rpath, and the installed prefix is
+	# in the ldconfig cache, so without this they can silently load the
+	# installed libsqlr* rather than this build tree's (#9997)
+	BUILDTREELIBS=$BUILDDIR/src/server/.libs:$BUILDDIR/src/util/.libs:$BUILDDIR/src/api/c++/.libs:$BUILDDIR/src/api/c/.libs
+	if ( test -n "$LD_LIBRARY_PATH" )
+	then
+		LD_LIBRARY_PATH=$BUILDTREELIBS:$LD_LIBRARY_PATH
+	else
+		LD_LIBRARY_PATH=$BUILDTREELIBS
+	fi
+	export LD_LIBRARY_PATH
+	verify_buildtree_libs
+
 	stage_modules
 fi
 
