@@ -5325,30 +5325,24 @@ void sqlrprotocol_oracle::putTtiResponse(byte_t version,
 
 	// protocol version and server banner...
 	//
-	// this is the server's platform, and it is what an OCI client picks
-	// its wire encoding from: one whose own platform matches marshals
-	// every request in its own memory layout - 8 byte pointer sentinels,
-	// fixed width little endian counts, buffer sizes rather than byte
-	// counts - and one whose platform doesn't marshals portably, for the
-	// whole session.  this module implements the portable encoding
-	// everywhere, so the string it sends has to be one that can never
-	// match, and naming a platform SQL Relay merely isn't - solaris, say -
-	// is a promise it can't keep, since it builds there.
+	// the server's platform, echoed back to the client as a plain string
+	// it compares but doesn't parse.  native vs portable TTC encoding is
+	// decided independently, by the pointer representation negotiated in
+	// recvDataTypeRequest()/countDataTypes() - not by this string.
+	// measured: OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for
+	// "SQLRelay" and for "SQL Relay 2.3.0" alike.
 	//
 	// a real server's is its platform - a live 11.2 on centos 5 x64 and a
 	// live 12.2 on centos 7 x64 both send "x86_64/Linux 2.4.xx", an 8i,
 	// 9i, 10g or 11g on x86 sends "Linuxi386/Linux-2.0.34-8.1.0", and an
 	// 8.0.5 sends "Linuxi386/Linux-2.0.34 ", where dropping the trailing
 	// space makes the client send a marker after the first phase of
-	// authentication.  sending any of them brings the problem back for a
-	// client on the same platform, which on a typical deployment is most
-	// of them.
-	//
-	// a client compares this string; it doesn't parse it.  measured:
-	// OCI 23.26 goes portable for "Solaris64/SunOS 5.9", for "SQLRelay"
-	// and for "SQL Relay 2.3.0" alike, and ojdbc, python-oracledb and
-	// node-oracledb take a non-platform string too - their own are
-	// "Java_TTC-8.2.0", "python-oracledb" and "node-oracledb".
+	// authentication.  this module sends a fixed string that never claims
+	// a real platform - naming a platform SQL Relay merely isn't, like
+	// solaris, is a promise it can't keep, since it builds there.  ojdbc,
+	// python-oracledb and node-oracledb take a non-platform string too -
+	// their own are "Java_TTC-8.2.0", "python-oracledb" and
+	// "node-oracledb".
 	serverstring=SERVER_BANNER;
 
 	write(&reqpacket,version);
@@ -7753,12 +7747,12 @@ bool sqlrprotocol_oracle::peekO3LogonField(const byte_t *rp,
 // beside it is the same client's login once the bug was fixed, running on
 // through the summary response and a fetch, which no earlier sample
 // covered.  Neither earlier capture pinned this form:
-// #9658's reference capture is an OCI7 client against a real server
-// whose platform banner matched its own, so it marshalled natively - a
-// raw dump of 26 32-bit words, which isn't even the native form this
-// module implements (that one is 64-bit).  #9654's capture of the same
-// client against sqlr-listener, which is the portable form, was taken
-// at the default snaplen and is truncated.
+// #9658's reference capture is an OCI7 client against a real server that
+// negotiated the native pointer representation, so it marshalled
+// natively - a raw dump of 26 32-bit words, which isn't even the native
+// form this module implements (that one is 64-bit).  #9654's capture of
+// the same client against sqlr-listener, which is the portable form, was
+// taken at the default snaplen and is truncated.
 //
 // So rather than walk a block whose layout isn't known, this finds the item
 // list directly: a run of items, each either a bare printable
@@ -7940,9 +7934,9 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // every pointer field is the client's own raw address - four bytes, native
 // byte order, the same width and order getPointer() already reads for
 // TTI_OPEN - but every count field is an ordinary length-prefixed int, the
-// same as everywhere else this module answers no platform any client
-// matches; a login this old apparently never marshals its pointers any way
-// but natively, unlike everything else in it
+// same as everywhere else in this module, regardless of the negotiated
+// pointer representation; a login this old apparently never marshals its
+// pointers any way but natively, unlike everything else in it
 //
 // the mode value and the first unnamed count are always zero in every
 // capture on file and what they are for is unknown, the same way several
@@ -7980,12 +7974,12 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// the negotiated pointer representation, the same width getPointer()
 	// already reads off "pointersize" for TTI_OPEN.  its count fields,
 	// unlike its pointers, are ordinary length-prefixed ints, the same as
-	// everywhere else this module answers no platform any client matches
-	// - "nativeencoding" never gets set for a 9i login, because
-	// recvAuthenticationRequest() hands off to here and returns ahead of
-	// the probe that would set it, and that is confirmed correct rather
-	// than a gap: every count field on file reads clean under the plain
-	// length-prefixed reading - from a genuine OCI7 client
+	// everywhere else in this module regardless of the negotiated pointer
+	// representation - "nativeencoding" never gets set for a 9i login,
+	// because recvAuthenticationRequest() hands off to here and returns
+	// ahead of the probe that would set it, and that is confirmed correct
+	// rather than a gap: every count field on file reads clean under the
+	// plain length-prefixed reading - from a genuine OCI7 client
 	// (samples/oracle102-oci7-portable-login-select.cap) and from a
 	// client wire-speaking the legacy OCI7 API on top of a modern
 	// Instant Client
@@ -8282,9 +8276,10 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	// it is the name's byte count, and for OCI it is a buffer size - the
 	// character count times the bytes per character of its charset - so an
 	// 8 character name in AL32UTF8 is declared as 24.  these are OCI
-	// properties, not native encoding properties, and OCI does them in
-	// the portable encoding too, which is where every client ends up now
-	// that the module answers a banner none of them match.
+	// properties, not native encoding properties, and OCI does the
+	// portable encoding too - that follows from the pointer representation
+	// negotiated in recvDataTypeRequest()/countDataTypes(), not from
+	// SERVER_BANNER.
 	//
 	// so the prefix is taken when the next byte can be one: the bytes are
 	// there for it, and either it is below a space - no user name starts
@@ -8548,10 +8543,11 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 	}
 
 	// a marshalled struct rather than a field stream, so it gets no
-	// summary extension.  no client reaches it now that the module answers
-	// a banner none of them match; it is kept as the fallback if one ever
-	// does.  the live pointer value the 11.2 capture carried is zeroed.
-	// the rest of the trailer is unexplained
+	// summary extension.  no client reaches it now that none negotiates
+	// the native pointer representation in recvDataTypeRequest()/
+	// countDataTypes(); it is kept as the fallback if one ever does.  the
+	// live pointer value the 11.2 capture carried is zeroed.  the rest of
+	// the trailer is unexplained
 	// see "Oracle Wire Protocol - Authentication - Username"
 	static const byte_t	nativetrailer[]={
 		0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -8661,10 +8657,11 @@ byte_t sqlrprotocol_oracle::oci7CommandType(sqlrservercursor *cursor) {
 // of test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap.
 // the architectures genuinely differ there, so both ends run the portable
 // encoding - the encoding every o3logon session with this module runs in,
-// since the module answers a platform banner no client matches.  the native
-// capture beside it carries the same fields in the same order, and it is what
-// pins where they start and end: every field there is a fixed four bytes,
-// where a zero in the portable encoding is one byte whatever its width.
+// per the pointer-representation negotiation in recvDataTypeRequest()/
+// countDataTypes().  the native capture beside it carries the same fields
+// in the same order, and it is what pins where they start and end: every
+// field there is a fixed four bytes, where a zero in the portable
+// encoding is one byte whatever its width.
 //
 // five fields carry a value: the end of call status of 1 at the front, the
 // cursor id, the command type, the sequence number of the call being answered,
