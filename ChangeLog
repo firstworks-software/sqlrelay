@@ -2573,6 +2573,12 @@
 		client session, because their cursor-reset blocks were
 		missing clearDefines() and/or clearParams() calls
 		(#10080)
+	fixed the oracle protocol module's legacy fetch response
+		writing a row-header row count of 1 whenever the client
+		asked for no particular count, even though the fetch
+		loop kept sending rows past that until the result set or
+		the packet ran out; it now writes the count that
+		actually follows (#10065)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

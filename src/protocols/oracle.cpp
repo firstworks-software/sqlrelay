@@ -17297,8 +17297,14 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 	// couldn't be read passes 0, which keeps the older behavior of
 	// sending every row that's left, and there the negotiated packet size
 	// bounds the batch instead - less enough room for the largest trailer
-	// sent after this loop.
+	// sent after this loop, and for the row header spliced in ahead of the
+	// rows after it - 30 bytes native, at most 13 portable - which isn't in
+	// the buffer yet while the loop is running.
 	const uint32_t	trailerreserve=128;
+	const uint32_t	headerreserve=32;
+
+	// where the row header goes, once the row count it carries is known
+	uint32_t	preloopsize=(uint32_t)reqpacket.getSize();
 
 	// for each row...
 	uint32_t rowsfetched=0;
@@ -17330,13 +17336,25 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// and stopping at the packet boundary is what keeps a whole
 		// result set out of the buffer.  it runs before the row is
 		// fetched and written, so the rowsfetched guard matters mainly
-		// for a small negotiated sdu, where the header plus the
-		// trailer reserve alone would leave no room to even attempt a
-		// first row, and the response would claim zero rows without
-		// having fetched one
+		// for a small negotiated sdu, where the header and trailer
+		// reserves alone would leave no room to even attempt a first
+		// row, and the response would claim zero rows without having
+		// fetched one
 		if (!rowstofetch && rowsfetched &&
-			reqpacket.getSize()+trailerreserve>=sdu) {
+			reqpacket.getSize()+trailerreserve+headerreserve>=sdu) {
 			debugWrite("packet full");
+			break;
+		}
+
+		// a native row header's row count is a single confirmed byte
+		// (see the "8th byte" comment below) - every capture on file
+		// asks for under 256 rows, so nothing pins what the three
+		// bytes ahead of it mean for a wider count.  staying under
+		// 256 here keeps a count-less native fetch inside what's
+		// actually confirmed instead of guessing at the rest of that
+		// word
+		if (nativeencoding && !rowstofetch && rowsfetched>=0xff) {
+			debugWrite("native row count limit reached");
 			break;
 		}
 
@@ -17348,114 +17366,6 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			}
 			endofrows=true;
 			break;
-		}
-
-		// ok, so there is at least one row...
-		// send the row header
-		if (!rowsfetched) {
-
-			if (nativeencoding) {
-
-				// a bare re-fetch on an already-described
-				// cursor answers with an outer row-header
-				// ttc code, then a fixed block whose 4th
-				// byte is the column count - confirmed
-				// byte-for-byte against real OCI7 legacy
-				// captures for 1 through 5 columns.  the
-				// same ttc code and block precede a row sent
-				// through query2's exact-fetch path too, so
-				// this reads as a generic row-header preamble
-				// rather than something specific to a bare
-				// fetch.
-				//
-				// every one of those captures is a native
-				// encoding session, and [0024] of
-				// test/protocol/oracle/samples/
-				// oracle102-oci7-native-login-select.cap
-				// carries this block byte for byte, so this
-				// is the native form of the row header the
-				// portable branch below builds field by
-				// field, not a form independent of the
-				// encoding
-				//
-				// the block's 8th byte is the row count, and
-				// the count it carries is the one the client
-				// asked for rather than the one that follows:
-				// [0065] of test/protocol/oracle/samples/
-				// 10030-redhat9x86-native-multirowfetch-
-				// realserver.oraproxy asks a three row result
-				// set for five, and [0066] answers with a
-				// header saying five, three rows and
-				// ORA-01403.  the captures behind the literal
-				// are all single row fetches, where 1 was
-				// right by coincidence.  only the byte is
-				// pinned - every capture on file asks for
-				// fewer than 256 rows, so the three zeros
-				// ahead of it may be the rest of a big endian
-				// word or three fields of their own
-				byte_t		ttccode=TTC_ROW_HEADER;
-
-				write(&reqpacket,ttccode);
-
-				uint32_t	headerrows=
-						(rowstofetch)?rowstofetch:1;
-
-				const byte_t	rowheader[]={
-					0x01, 0x02, 0x01, (byte_t)sendcolcount,
-					(byte_t)((headerrows>>24)&0xff),
-					(byte_t)((headerrows>>16)&0xff),
-					(byte_t)((headerrows>>8)&0xff),
-					(byte_t)(headerrows&0xff),
-					0x00, 0x00, 0x00, 0x00,
-					0x00, 0x00, 0x00, 0x00,
-					0x00, 0x00, 0x00, 0x00,
-					0x01, 0x00, 0x00, 0x00,
-					0x00, 0x00, 0x00, 0x00,
-					0x00
-				};
-				reqpacket.append(rowheader,sizeof(rowheader));
-
-				if (getDebug()) {
-					debugStart("fetch response header");
-					debugTtcCode(ttccode);
-					debugWrite("column count: %d",
-								sendcolcount);
-					debugWrite("row count: %d",
-								headerrows);
-					debugHexDump(rowheader,sizeof(rowheader));
-					debugEnd();
-				}
-
-			} else {
-
-				// a portable session gets the ordinary row
-				// header putRowHeader() builds, not a
-				// re-encoding of the literal above: the same
-				// six fields, as counts rather than fixed
-				// four-byte words, behind the same flags byte.
-				// [0024] of test/protocol/oracle/samples/
-				// oracle102-oci7-portable-login-select.cap
-				// answers this client with nine bytes -
-				// "06 02 01 01 00 01 01 00 00 00" - which is
-				// exactly TTC_ROW_HEADER, the 0x02 flags a
-				// fetch carries, a column count of 1, an
-				// iteration number of 0, a row count of 1 and
-				// three zeros.  the reference capture of
-				// "select 1 from dual" on #9658 sends the same
-				// nine bytes for its own single number column.
-				//
-				// the row count is the count the client asked
-				// for and not the count that follows, which
-				// is what a real server sends: [0065] of
-				// test/protocol/oracle/samples/
-				// 10030-redhat9x86-native-multirowfetch-
-				// realserver.oraproxy asks a three row result
-				// set for five and [0066] answers with a
-				// header saying five.  a caller whose count
-				// couldn't be read writes 1
-				putRowHeader(0x02,sendcolcount,
-						(rowstofetch)?rowstofetch:1);
-			}
 		}
 
 		// row marker, written ahead of each row
@@ -17478,6 +17388,108 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		rowsfetched++;
 
 	} while (true);
+
+	// the row header leads the rows, but the count it carries isn't known
+	// until they've been fetched: a fetch with no count of its own runs to
+	// the end of the result set or the end of the packet.  the portable
+	// header writes that count with writeLenPreInt(), whose field is 1, 2,
+	// 3 or 5 bytes wide depending on the value, so a placeholder written
+	// ahead of the rows couldn't be overwritten in place afterward.  the
+	// rows are set aside instead, the header written where they started,
+	// and the rows appended behind it
+	if (rowsfetched) {
+
+		// the count in the header is the count the client asked for
+		// and not the count that follows, which is what a real server
+		// sends: [0065] of test/protocol/oracle/samples/
+		// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy
+		// asks a three row result set for five, and [0066] answers
+		// with a header saying five, three rows and ORA-01403.  a
+		// caller whose count couldn't be read passes 0, and there the
+		// header carries the count that really did go out
+		uint32_t	headerrows=(rowstofetch)?rowstofetch:rowsfetched;
+
+		// set the rows aside
+		bytebuffer	rows;
+		rows.append(reqpacket.getBuffer()+preloopsize,
+				reqpacket.getSize()-preloopsize);
+		reqpacket.truncate(preloopsize);
+
+		if (nativeencoding) {
+
+			// a bare re-fetch on an already-described cursor
+			// answers with an outer row-header ttc code, then a
+			// fixed block whose 4th byte is the column count -
+			// confirmed byte-for-byte against real OCI7 legacy
+			// captures for 1 through 5 columns.  the same ttc code
+			// and block precede a row sent through query2's
+			// exact-fetch path too, so this reads as a generic
+			// row-header preamble rather than something specific
+			// to a bare fetch.
+			//
+			// every one of those captures is a native encoding
+			// session, and [0024] of test/protocol/oracle/samples/
+			// oracle102-oci7-native-login-select.cap carries this
+			// block byte for byte, so this is the native form of
+			// the row header the portable branch below builds
+			// field by field, not a form independent of the
+			// encoding
+			//
+			// the block's 8th byte is the row count.  the captures
+			// behind the literal are all single row fetches, so
+			// only that byte is pinned - every capture on file
+			// asks for fewer than 256 rows, so the three zeros
+			// ahead of it may be the rest of a big endian word or
+			// three fields of their own
+			byte_t		ttccode=TTC_ROW_HEADER;
+
+			write(&reqpacket,ttccode);
+
+			const byte_t	rowheader[]={
+				0x01, 0x02, 0x01, (byte_t)sendcolcount,
+				(byte_t)((headerrows>>24)&0xff),
+				(byte_t)((headerrows>>16)&0xff),
+				(byte_t)((headerrows>>8)&0xff),
+				(byte_t)(headerrows&0xff),
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x01, 0x00, 0x00, 0x00,
+				0x00, 0x00, 0x00, 0x00,
+				0x00
+			};
+			reqpacket.append(rowheader,sizeof(rowheader));
+
+			if (getDebug()) {
+				debugStart("fetch response header");
+				debugTtcCode(ttccode);
+				debugWrite("column count: %d",sendcolcount);
+				debugWrite("row count: %d",headerrows);
+				debugHexDump(rowheader,sizeof(rowheader));
+				debugEnd();
+			}
+
+		} else {
+
+			// a portable session gets the ordinary row header
+			// putRowHeader() builds, not a re-encoding of the
+			// literal above: the same six fields, as counts rather
+			// than fixed four-byte words, behind the same flags
+			// byte.  [0024] of test/protocol/oracle/samples/
+			// oracle102-oci7-portable-login-select.cap answers this
+			// client with nine bytes - "06 02 01 01 00 01 01 00 00
+			// 00" - which is exactly TTC_ROW_HEADER, the 0x02 flags
+			// a fetch carries, a column count of 1, an iteration
+			// number of 0, a row count of 1 and three zeros.  the
+			// reference capture of "select 1 from dual" on #9658
+			// sends the same nine bytes for its own single number
+			// column
+			putRowHeader(0x02,sendcolcount,headerrows);
+		}
+
+		// put the rows back, behind the header
+		reqpacket.append(rows.getBuffer(),rows.getSize());
+	}
 
 	// the rows-processed field this response carries is the cursor's
 	// running total, not the count this one call fetched - three real

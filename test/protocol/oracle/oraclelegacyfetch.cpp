@@ -166,11 +166,18 @@ static bool responseContainsBytes(oracleprotocolclient *client,
 // *colcount is checked against in main() below.  a legacy fetch with more
 // than one defined column would need an inner loop over *colcount here;
 // nothing in this file exercises that
+//
+// the header's row count comes back in "headerrowcount" rather than being
+// skipped with the rest: a fetch that named a row count gets that count back
+// there, and a fetch that asked for 0 - every row there is - gets the number
+// of rows that really follow, which is the only thing in the response that
+// says how many the client was sent
 static bool readLegacyFetchRows(oracleprotocolclient *client,
 					int64_t *values,
 					size_t maxvalues,
 					size_t *valuecount,
-					uint32_t *colcount) {
+					uint32_t *colcount,
+					uint32_t *headerrowcount) {
 
 	client->rewindResponse();
 
@@ -184,7 +191,7 @@ static bool readLegacyFetchRows(oracleprotocolclient *client,
 		!client->readByte(&flags) ||
 		!client->readLenPreInt(colcount) ||	// column count
 		!client->readLenPreInt(&skipint) ||	// iteration number
-		!client->readLenPreInt(&skipint) ||	// row count
+		!client->readLenPreInt(headerrowcount) ||	// row count
 		!client->readLenPreInt(&skipint) ||	// uac buffer length
 		!client->readLenPreInt(&skipint) ||	// bit vector size
 		!client->readLenPreInt(&skipint)) {
@@ -453,9 +460,10 @@ int main(int argc, char **argv) {
 	int64_t	values[8];
 	size_t	valuecount=0;
 	uint32_t	colcount=0;
+	uint32_t	headerrows=0;
 	bool	decoded=readLegacyFetchRows(&client,values,
 					sizeof(values)/sizeof(values[0]),
-					&valuecount,&colcount);
+					&valuecount,&colcount,&headerrows);
 	report("fetch response decodes",decoded);
 	if (!decoded) {
 		stdoutput.printf("response (%d bytes):\n",
@@ -475,6 +483,16 @@ int main(int argc, char **argv) {
 	report("fetch response carries 1, 2, 3",
 			valuecount==3 &&
 			values[0]==1 && values[1]==2 && values[2]==3);
+
+	// a fetch that asked for 0 rows asked for every row there is, so the
+	// header's row count is the count that came out of the fetch loop and
+	// nothing the client named.  an ofen() caller reads that many rows out
+	// of its define buffers, so a header saying 1 in front of three rows
+	// loses the other two - see sendFetchResponse() in
+	// src/protocols/oracle.cpp
+	stdoutput.printf("  header row count: %d\n",(int)headerrows);
+	report("the row header counts the rows that followed",
+			headerrows==valuecount);
 
 
 	// and now the query this test exists for.  a fresh cursor, so
@@ -652,9 +670,11 @@ int main(int argc, char **argv) {
 	int64_t	seqvalues[8];
 	size_t	seqvaluecount=0;
 	uint32_t	seqcolcount=0;
+	uint32_t	seqheaderrows=0;
 	bool	seqdecoded=readLegacyFetchRows(&client,seqvalues,
 					sizeof(seqvalues)/sizeof(seqvalues[0]),
-					&seqvaluecount,&seqcolcount);
+					&seqvaluecount,&seqcolcount,
+					&seqheaderrows);
 	report("sequence query fetch response decodes",seqdecoded);
 	if (!seqdecoded) {
 		stdoutput.printf("response (%d bytes):\n",
@@ -702,7 +722,8 @@ int main(int argc, char **argv) {
 
 	bool	controldecoded=readLegacyFetchRows(&client,seqvalues,
 					sizeof(seqvalues)/sizeof(seqvalues[0]),
-					&seqvaluecount,&seqcolcount);
+					&seqvaluecount,&seqcolcount,
+					&seqheaderrows);
 	report("sequence query (control) fetch response decodes",
 			controldecoded);
 	if (!controldecoded) {
@@ -719,6 +740,81 @@ int main(int argc, char **argv) {
 	report("sequence query (control) carries the value behind "
 			"the arm above's",
 			seqvaluecount==1 && seqvalues[0]==secondnextval);
+
+
+	// the other half of the row header's row-count rule, on a fetch that
+	// did name a count.  there the header carries the count the client
+	// asked for and not the count that follows, which is what a real
+	// server sends: [0065] of test/protocol/oracle/samples/
+	// 10030-redhat9x86-native-multirowfetch-realserver.oraproxy asks a
+	// three row result set for five, and [0066] answers with a header
+	// saying five, three rows and ORA-01403.  this arm asks the same
+	// three row result set for five too, so the header (5) and the rows
+	// that actually come back (3) have to differ - asking for exactly
+	// what came back, the way this arm used to, can't tell the asked-for
+	// count from the delivered one
+	uint32_t	boundedcursorid=0;
+	if (!client.open(&boundedcursorid)) {
+		report("open fourth cursor",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("open fourth cursor",true);
+
+	if (!client.legacyQuery(boundedcursorid,goodquery)) {
+		report("parse bounded fetch query",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("parse bounded fetch query",
+			checkLegacySummaryResponse(&client,boundedcursorid,0,0));
+
+	if (!client.legacyExecute(boundedcursorid,1,0)) {
+		report("execute bounded fetch query",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+	report("execute bounded fetch query",
+			checkLegacySummaryResponse(&client,boundedcursorid,0,1));
+
+	// five, though the query only has three rows
+	if (!client.legacyFetch(boundedcursorid,5)) {
+		report("bounded fetch",false);
+		stdoutput.printf("%s\n",client.getError());
+		return status;
+	}
+
+	int64_t	boundedvalues[8];
+	size_t	boundedvaluecount=0;
+	uint32_t	boundedcolcount=0;
+	uint32_t	boundedheaderrows=0;
+	bool	boundeddecoded=readLegacyFetchRows(&client,boundedvalues,
+				sizeof(boundedvalues)/sizeof(boundedvalues[0]),
+				&boundedvaluecount,&boundedcolcount,
+				&boundedheaderrows);
+	report("bounded fetch response decodes",boundeddecoded);
+	if (!boundeddecoded) {
+		stdoutput.printf("response (%d bytes):\n",
+					(int)client.getResponseSize());
+		stdoutput.safePrint(client.getResponse(),
+					client.getResponseSize());
+		stdoutput.printf("\n");
+		client.disconnect();
+		return status;
+	}
+	stdoutput.printf("  header row count: %d\n",(int)boundedheaderrows);
+	for (size_t i=0; i<boundedvaluecount; i++) {
+		stdoutput.printf("  row %d: %lld\n",
+					(int)i+1,(long long)boundedvalues[i]);
+	}
+	report("bounded fetch response carries the three rows there are",
+			boundedvaluecount==3);
+	report("bounded fetch response carries 1, 2, 3",
+			boundedvaluecount==3 &&
+			boundedvalues[0]==1 && boundedvalues[1]==2 &&
+			boundedvalues[2]==3);
+	report("the row header counts the rows the client asked for",
+			boundedheaderrows==5);
 
 
 	client.disconnect();
