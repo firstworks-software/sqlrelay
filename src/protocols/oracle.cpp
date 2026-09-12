@@ -2055,12 +2055,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// whether the client marshals in its own memory layout.
 		//
 		// no real client ever turns this on.  it is picked by the
-		// sentinel in the login request's first pointer field, and an
-		// OCI client only writes that sentinel when the server's
-		// platform banner matches its own, which SERVER_BANNER never
-		// does, on purpose - see putTtiResponse().  a 9i login can't
-		// turn it on at all: recvAuthenticationRequest() returns
-		// ahead of the probe that sets it.
+		// sentinel in the login request's first pointer field, which
+		// follows from the pointer representation negotiated in
+		// recvDataTypeRequest(): a modern 64-bit OCI client offers a
+		// representation this module can't echo and falls back to
+		// the universal one, so it never writes the sentinel.  a
+		// legacy client offering the native representation would, but
+		// every one on file goes through the 9i/classic dispatch
+		// instead, which returns ahead of the probe that sets this
+		// (#9812, #10068).
 		//
 		// the branches behind it are still exercised, though -
 		// test/protocol/oracle/oracledescribe.cpp writes the sentinel
@@ -7977,10 +7980,8 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// - "nativeencoding" never gets set for a 9i login, because
 	// recvAuthenticationRequest() hands off to here and returns ahead of
 	// the probe that would set it, and that is confirmed correct rather
-	// than a gap: this module's banner matches no real platform, so no
-	// client ever thinks it is talking native-to-native here, and every
-	// count field on file reads clean under the plain length-prefixed
-	// reading - from a genuine OCI7 client
+	// than a gap: every count field on file reads clean under the plain
+	// length-prefixed reading - from a genuine OCI7 client
 	// (samples/oracle102-oci7-portable-login-select.cap) and from a
 	// client wire-speaking the legacy OCI7 API on top of a modern
 	// Instant Client
@@ -8234,10 +8235,10 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		return retval;
 	}
 
-	// which of the two wire encodings the client uses is decided by the
-	// platform banner the module answered the tti protocol negotiation
-	// with, and the first pointer field tells them apart - 0x01 against
-	// the first byte of the native sentinel, 0xfe.  phase two keeps
+	// which of the two wire encodings the client uses follows from the
+	// pointer representation negotiated in recvDataTypeRequest(), and
+	// the first pointer field tells them apart here - 0x01 against the
+	// first byte of the native sentinel, 0xfe.  phase two keeps
 	// whatever phase one decided.
 	// (the native encoding isn't something the module provokes - an OCI
 	// client sends the same bytes to a real oracle server, and a real
@@ -11253,12 +11254,16 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// the native descriptor is shaped differently - 33 bytes, an extra
 	// leading byte and a tail whose counts aren't all one width - so the
 	// walk below, which is four raw bytes and eight counts, doesn't fit
-	// it.  that costs nothing, and the reason to skip it is that it is
-	// unreachable rather than unpinned: this module only ever negotiates
-	// the portable encoding (see SERVER_BANNER and #9812), so no real
-	// session gets here in the native one.  if one ever does, leave the
-	// define list empty and send every column, the way this call always
-	// did
+	// it.  that costs nothing: every query2 capture on file negotiates
+	// the portable encoding on this path (#9812, and #10068's fresh
+	// sweep confirmed the same).  a legacy 32-bit client that
+	// negotiated native encoding could in principle reach here, but
+	// every native-encoding login on file takes the separate 9i/classic
+	// dispatch instead, which never runs this code - so whether that
+	// combination can happen at all is unconfirmed, not ruled out, and
+	// not worth a decoder until one shows up.  if one ever does get
+	// here, leave the define list empty and send every column, the way
+	// this call always did
 	if (nativeencoding) {
 		debugWrite("native encoding, defines not decoded");
 		debugEnd();
