@@ -2135,7 +2135,8 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxquerysize");
 	if (!attr->isNullNode()) {
-		maxquerysize=charstring::convertToInteger(attr->getValue());
+		maxquerysize=atouint32_t("maxquerysize",attr->getValue(),
+						DEFAULT_MAXQUERYSIZE,0);
 	}
 	attr=instance->getAttribute("maxbindcount");
 	if (!attr->isNullNode()) {
@@ -2149,13 +2150,15 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("maxstringbindvaluesize");
 	if (!attr->isNullNode()) {
-		maxstringbindvaluesize=
-				charstring::convertToInteger(attr->getValue());
+		maxstringbindvaluesize=atouint32_t("maxstringbindvaluesize",
+					attr->getValue(),
+					DEFAULT_MAXSTRINGBINDVALUESIZE,0);
 	}
 	attr=instance->getAttribute("maxlobbindvaluesize");
 	if (!attr->isNullNode()) {
-		maxlobbindvaluesize=
-			charstring::convertToInteger(attr->getValue());
+		maxlobbindvaluesize=atouint32_t("maxlobbindvaluesize",
+					attr->getValue(),
+					DEFAULT_MAXLOBBINDVALUESIZE,0);
 	}
 	attr=instance->getAttribute("maxerrorsize");
 	if (!attr->isNullNode()) {
@@ -2170,7 +2173,10 @@ void sqlrconfig_xmldom::getTreeValues() {
 	}
 	attr=instance->getAttribute("idleclienttimeout");
 	if (!attr->isNullNode()) {
-		idleclienttimeout=charstring::convertToInteger(attr->getValue());
+		// -1 means wait forever
+		idleclienttimeout=atoint32_t("idleclienttimeout",
+					attr->getValue(),
+					DEFAULT_IDLECLIENTTIMEOUT,-1);
 	}
 	attr=instance->getAttribute("maxlisteners");
 	if (!attr->isNullNode()) {
@@ -2441,8 +2447,8 @@ void sqlrconfig_xmldom::getTreeValues() {
 
 	// default listener parameters
 	defaultaddresses=defaultlistener->getAttributeValue("addresses");
-	defaultport=charstring::convertToUnsignedInteger(
-			defaultlistener->getAttributeValue("port"));
+	defaultport=atouint16_t("port",
+			defaultlistener->getAttributeValue("port"),"0",0);
 	defaultsocket=defaultlistener->getAttributeValue("socket");
 	defaultkrb=charstring::isYes(defaultlistener->getAttributeValue("krb"));
 	defaultkrbkeytab=defaultlistener->getAttributeValue("krbkeytab");
