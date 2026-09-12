@@ -2654,6 +2654,11 @@
 		also fixed a route's port attribute silently truncating
 		the same way, since it was assigned from atouint32_t()
 		into a uint16_t member (#10094)
+	fixed sqlrservercontroller::initCursors() printing
+		maxcursorcount/cursorcount with %hd, misprinting values
+		over 32767 as negative in debug output even though both
+		are uint16_t and used correctly elsewhere; now printed
+		with %hu (#10097)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

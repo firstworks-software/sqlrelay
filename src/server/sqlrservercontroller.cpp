@@ -1428,8 +1428,8 @@ bool sqlrservercontroller::setAutoCommit(bool ac) {
 bool sqlrservercontroller::initCursors(uint16_t count) {
 
 	debugStart("initializing cursors");
-	debugWrite("maxcursorcount: %hd",pvt->_maxcursorcount);
-	debugWrite("cursorcount: %hd",pvt->_cursorcount);
+	debugWrite("maxcursorcount: %hu",pvt->_maxcursorcount);
+	debugWrite("cursorcount: %hu",pvt->_cursorcount);
 
 	pvt->_cursorcount=count;
 	if (!pvt->_cur) {
