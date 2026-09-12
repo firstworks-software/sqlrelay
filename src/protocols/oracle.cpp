@@ -11,7 +11,7 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/bytebuffer.h>
 #include <rudiments/character.h>
-#include <rudiments/prng.h>
+#include <rudiments/csprng.h>
 #include <rudiments/datetime.h>
 #include <rudiments/process.h>
 #include <rudiments/error.h>
@@ -2197,7 +2197,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// pull another packet in instead of failing.  see have()
 		bool		reassemble;
 
-		prng	r;
+		csprng	r;
 		//uint32_t	seed;
 
 		char		*username;
@@ -2428,6 +2428,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrprotocol(cont,parameters) {
 
+	checkCsprngIsCryptographicallySecure("oracle");
+
 	clientsock=NULL;
 
 	// the SID/SERVICE_NAME(s) this listener presents itself as, so an
@@ -2580,8 +2582,6 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 							"off":"auto"));
 		debugEnd();
 	}
-
-	r.setSeed(prng::getSeed());
 
 	resppacketpool=new memorypool(1024,1024,10240);
 
@@ -3691,7 +3691,7 @@ char *sqlrprotocol_oracle::generateHex(uint16_t bytes) {
 	uint32_t	number;
 	for (uint16_t i=0; i<bytes*2; i++) {
 		r.generate(&number);
-		int32_t	nibble=prng::scale(number,0,15);
+		int32_t	nibble=csprng::scale(number,0,15);
 		str.append((char)(nibble+((nibble<10)?'0':'A'-10)));
 	}
 	return str.detachString();

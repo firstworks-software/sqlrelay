@@ -6453,6 +6453,17 @@ class SQLRSERVER_DLLSPEC sqlrservermodule : public sqlrserverbase {
 		 *  as "parameters" to the constructor. */
 		domnode	*getParameters();
 
+		/** Warns (but does not fail) if csprng is not
+		 *  cryptographically secure on this platform.
+		 *
+		 *  Call this from a module identified by "modulename" that
+		 *  uses csprng to generate secrets.  rudiments' csprng falls
+		 *  back to a seeded, non-cryptographic prng if /dev/urandom
+		 *  is unavailable and no SSL support was compiled in, so
+		 *  generated secrets may be predictable in that case. */
+		void	checkCsprngIsCryptographicallySecure(
+						const char *modulename);
+
 		sqlrservercontroller	*cont;
 
 	#include <sqlrelay/private/sqlrservermodule.h>

@@ -153,6 +153,8 @@ sqlrauth_oracle_connectstrings::sqlrauth_oracle_connectstrings(
 					domnode *parameters) :
 					sqlrauth(cont,parameters) {
 
+	checkCsprngIsCryptographicallySecure("oracle_connectstrings");
+
 	linkedlist< connectstringcontainer * >	*connectstrings=
 				cont->getConfig()->getConnectStringList();
 

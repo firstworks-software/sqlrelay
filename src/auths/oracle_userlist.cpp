@@ -159,6 +159,8 @@ sqlrauth_oracle_userlist::sqlrauth_oracle_userlist(
 					domnode *parameters) :
 					sqlrauth(cont,parameters) {
 
+	checkCsprngIsCryptographicallySecure("oracle_userlist");
+
 	users=NULL;
 	passwords=NULL;
 	passwordencryptions=NULL;

@@ -2331,6 +2331,8 @@ sqlrprotocol_firebird::sqlrprotocol_firebird(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrprotocol(cont,parameters) {
 
+	checkCsprngIsCryptographicallySecure("firebird");
+
 	clientsock=NULL;
 
 	// warn if tls was requested

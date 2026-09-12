@@ -5,7 +5,7 @@
 #include <rudiments/bytebuffer.h>
 #include <rudiments/bytestring.h>
 #include <rudiments/character.h>
-#include <rudiments/prng.h>
+#include <rudiments/csprng.h>
 #include <rudiments/process.h>
 #include <rudiments/datetime.h>
 #include <rudiments/file.h>
@@ -877,7 +877,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 		uint64_t	reqpacketsize;
 		bytebuffer	longreqpacketbuffer;
 
-		prng	r;
+		csprng	r;
 		uint32_t	seed;
 
 		uint32_t	servercapabilityflags;
@@ -912,6 +912,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrprotocol(cont,parameters) {
+
+	checkCsprngIsCryptographicallySecure("mysql");
 
 	clientsock=NULL;
 
@@ -970,8 +972,6 @@ sqlrprotocol_mysql::sqlrprotocol_mysql(sqlrservercontroller *cont,
 		debugWrite("tls: no");
 	}
 	debugEnd();
-
-	r.setSeed(prng::getSeed());
 
 	maxcursorcount=cont->getConfig()->getMaxCursors();
 	maxquerysize=cont->getConfig()->getMaxQuerySize();
@@ -1480,7 +1480,7 @@ void sqlrprotocol_mysql::generateChallenge() {
 	uint32_t	number;
 	for (uint16_t i=0; i<bytes; i++) {
 		r.generate(&number);
-		str.append((char)prng::scale(number,' ','~'));
+		str.append((char)csprng::scale(number,' ','~'));
 	}
 	delete[] challenge;
 	challenge=str.detachString();

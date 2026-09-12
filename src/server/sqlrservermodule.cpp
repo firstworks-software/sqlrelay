@@ -3,6 +3,8 @@
 
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/charstring.h>
+#include <rudiments/csprng.h>
+#include <rudiments/stdio.h>
 
 class sqlrservermoduleprivate {
 	friend class sqlrservermodule;
@@ -118,4 +120,18 @@ void sqlrservermodule::endTransaction(bool commit) {
 
 void sqlrservermodule::endSession() {
 	// by default, do nothing
+}
+
+void sqlrservermodule::checkCsprngIsCryptographicallySecure(
+						const char *modulename) {
+	csprng	csr;
+	if (!csr.isCryptographicallySecure()) {
+		stderror.printf("Warning: module \"%s\" generates secrets "
+				"using csprng, but csprng is not "
+				"cryptographically secure on this "
+				"platform, falling back to a "
+				"non-cryptographic prng.  Generated "
+				"secrets may be predictable.\n",
+				modulename);
+	}
 }

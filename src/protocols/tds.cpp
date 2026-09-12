@@ -3140,6 +3140,8 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 					domnode *parameters) :
 					sqlrprotocol(cont,parameters) {
 
+	checkCsprngIsCryptographicallySecure("tds");
+
 	rawclientsock=NULL;
 	clientsock=NULL;
 

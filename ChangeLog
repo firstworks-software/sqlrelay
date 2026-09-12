@@ -2687,6 +2687,18 @@
 		not one, the same way an unrecognized "UNKNOWN" type name
 		already was; affects the column size reported to the
 		client on describe (#10024)
+	the mysql, postgresql and oracle protocol modules now generate
+		wire-visible secrets (mysql's auth scramble, postgresql's
+		auth salt and cancel-request secret key, oracle's
+		AUTH_VFR_DATA, pbkdf2 csk salt and fabricated challenge)
+		with csprng instead of the seeded, reproducible prng; also
+		added sqlrservermodule::checkCsprngIsCryptographicallySecure()
+		and made every csprng-using module (the mysql, postgresql,
+		oracle, tds and firebird protocol modules and the
+		oracle_userlist and oracle_connectstrings auth modules)
+		call it at load time, so a platform where csprng falls back
+		to a non-cryptographic prng warns instead of quietly
+		generating predictable secrets (#9773)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
