@@ -3115,28 +3115,31 @@ int main(int argc, char **argv) {
 
 	if (!isfetchatonce) {
 
-		stdoutput.printf("oexec/ofen - error mid-fetch\n");
-		// this used to assert oexec() itself failing here, on the
-		// theory that fetchatonce (10 by default - see FETCH_AT_ONCE
-		// in sqlrserverconnection.cpp) makes the query3 protocol's
-		// inline prefetch on execute pull the whole 3-row result set
-		// in one backend fetch, hitting the row 2 divide by zero
-		// there (sendQuery3Response()'s fetchRow() error branch,
-		// #9585) - which is genuinely how oci8.cpp's counterpart
-		// case behaves.  but an OCI7 client's oexec() puts a bare
-		// TTI_EXECUTE on the wire, not TTI_QUERY3, and TTI_EXECUTE
-		// has no inline prefetch of its own: a real 10.2 server
-		// answers it with success, confirmed by capturing this exact
-		// oparse/oexec pair directly against the farm's OCI7 backend
-		// with oci7describe --describe=parseexec (#10053).  the error
-		// still lands on the first ofen() rather than the second,
-		// though: fetchatonce governs the connection module's own
-		// backend-side array fetch, independent of what the wire
-		// protocol asked for, and pulls all 3 rows - including row
-		// 2's divide by zero - into that one backend round trip,
-		// which fails as a whole and leaves row 1 unreturned too.
-		// the fetchatonce=1 instance below fetches one row per
-		// backend round trip instead, so its row 1 comes back clean
+		stdoutput.printf("oexec - error mid-fetch\n");
+		// this used to assert oexec() succeeding and the error landing
+		// on the first ofen() instead (#10053), reasoning that an OCI7
+		// client's oexec() puts a bare TTI_EXECUTE on the wire, not
+		// TTI_QUERY3, and TTI_EXECUTE has no inline prefetch of its
+		// own.  that part is still true at the wire level - a real
+		// capture shows this oexec() as TTI_QUERY2/OPTION_EXECUTE, no
+		// OPTION_FETCH - but it's not the reason the error surfaces
+		// where it does.  real farm hardware (redhat9x86, solaris8sparc)
+		// consistently shows this error landing at oexec, and #10061
+		// traced it to the connection module itself: independent of
+		// what's on the wire, fetchatonce (10 by default - see
+		// FETCH_AT_ONCE in sqlrserverconnection.cpp, the batching
+		// feature from #9585/#9601) makes executeQuery() eagerly
+		// array-fetch up to that many rows from the real backend as
+		// part of the execute.  this result set has only 3 rows, well
+		// under that batch size, so row 2's divide by zero is pulled in
+		// during the execute and fails it outright.  a real Oracle
+		// server has no such eager prefetch and always defers this
+		// error to whichever fetch actually reaches the bad row -
+		// confirmed directly against the real backend, this exact
+		// odefin-before-oexec shape included - so this is sqlrelay's
+		// fetchatonce diverging from real-server timing by design, not
+		// a defect.  the fetchatonce=1 instance below avoids the
+		// divergence, fetching one row per backend round trip instead
 		assertEquals(check(&errcda,
 				oparse(&errcda,(text *)divzero,
 						(sb4)-1,0,(ub4)2)),0);
@@ -3151,8 +3154,7 @@ int main(int argc, char **argv) {
 					SQLT_STR,-1,&errind,
 					(text *)0,-1,-1,
 					&errlen,&errcode)),0);
-		assertEquals(check(&errcda,oexec(&errcda)),0);
-		assertTrue(ofen(&errcda,1)!=0);
+		assertTrue(oexec(&errcda)!=0);
 		// ORA-01476, divisor is equal to zero
 		assertEquals(errorCode(&errcda),1476);
 		stdoutput.printf("\n\n");
