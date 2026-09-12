@@ -11136,6 +11136,10 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// header - see getQuery2Descriptors().  it stays 0 where that
 		// walk didn't run or didn't finish, which leaves the older
 		// behavior of sending every row that's left
+		//
+		// fetch()'s standalone legacy TTI_FETCH call shares this same
+		// 0 sentinel, even though its count is always real rather than
+		// unread - see #10066
 		return sendFetchResponse(cursor,true,query2rowcount);
 	}
 
@@ -17239,6 +17243,24 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 	// a standalone legacy fetch asks for rows and nothing else.  with no
 	// options field on the wire there is nothing to ask an exact fetch
 	// with, so it never is one
+	//
+	// rowstofetch is always a value fetch() itself successfully decoded
+	// off the wire by the time it gets here - a request whose count
+	// can't be read returns false above, at the getAuthCount() calls
+	// near the top of this function, before ever reaching this line.
+	// so a 0 passed in here is a field that decoded to 0, not one that
+	// couldn't be decoded at all.
+	//
+	// sendFetchResponse() treats a 0 from either of its callers as
+	// "count unknown, keep fetching" (see its own comment below) rather
+	// than "count read as zero" - the two meanings really are different,
+	// but the sentinel is shared on purpose.  query2()'s OPTION_FETCH
+	// branch is the caller that genuinely has no count to give; this
+	// call is the one whose count is always real.  no legacy fetch
+	// request in any capture under test/protocol/oracle/samples/ has
+	// ever asked for 0 rows, so nothing today distinguishes "the client
+	// wants zero rows" from "the count is unknown" for this caller -
+	// see #10066
 	return sendFetchResponse(cursor,false,rowstofetch);
 }
 
