@@ -2593,6 +2593,13 @@
 		the request instead of returning early, and any request
 		the walk still can't get through ends the session with a
 		malformed-packet error instead of a misread (#10069)
+	fixed a narrower version of the same oracle protocol module bug: a
+		query2 request whose wire bind count disagreed with its
+		OPTION_BIND flag had its bind count dropped, but the bind
+		descriptors and values behind it were never read off the
+		socket either, so a split request could still leave a
+		fragment behind for the next request's parse to misread;
+		that block is now walked and discarded the same way (#10084)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

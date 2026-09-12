@@ -109,6 +109,34 @@
 // the session negotiates, so each one goes out through sendSplitPacket().  That
 // is safe here and isn't above because the bind walk consumes the whole request
 // whatever it finds, so a refusal leaves no fragment of it on the socket.
+//
+// #10084 is a different bail in getQuery2Descriptors(), on the same walk:
+// where the wire's bind count and OPTION_BIND disagree, the count is dropped
+// to 0 so nothing is installed, but the walk used to return without ever
+// reading the (really nonzero) bind descriptors and their values off the
+// wire.  those bytes are on the socket regardless of the disagreement, so
+// pre-fix they were left for the next request's parse to read as the front
+// of one of its own - #10069's desync, from a different bail in the same
+// function.  the fix walks and discards the bind block here too.
+//
+// Two more cases, each on its own session:
+//
+//	- a define list well within the limit, and a wire bind count naming
+//	  real descriptors with OPTION_BIND unset, split across packets at
+//	  ORA_SPLIT_SDU so the mismatched bind block lands partly behind the
+//	  first one.  the mismatch costs the call nothing of its own - the
+//	  exact fetch behind it answers the same as the control case's - so
+//	  the case's assertion is the one #10084 is really about: the next
+//	  request still parses, rather than landing on a session already lost
+//	  to the same "bad ttccode" desync #10069 fixed for the two limits
+//	  above
+//	- the same disagreement with a bind count past maxbindcount rather
+//	  than inside it.  the count is dropped either way, so the request
+//	  is answered rather than refused, but the block the walk steps over
+//	  is now wider than the arrays it would write into.  those writes are
+//	  all behind the walk's discard guard, and this is the case that runs
+//	  off the end of them if the guard is lost - the case above stays
+//	  inside them with or without it
 
 // what the control case's session asks for, and now the two split-request
 // refusal cases too - since it is the floor recvConnectRequest() clamps to,
@@ -132,6 +160,19 @@ static const uint32_t	ORA_TOO_MANY_BINDS=257;
 // and the limit itself, which is the widest bind list the query3 path still
 // has to honor
 static const uint32_t	ORA_IN_LIMIT_BINDS=256;
+
+// a bind count named on the wire while OPTION_BIND is left unset - the
+// #10084 disagreement getQuery2Descriptors() drops to 0.  wide enough that
+// its descriptors and values don't fit behind one define in the first packet
+// at ORA_SPLIT_SDU, so some of them land in the next one
+static const uint32_t	ORA_MISMATCHED_BINDS=60;
+
+// and the same disagreement one past the bind limit, which the count above
+// is well inside of.  the walk steps over a block this wide with the wire's
+// count while query2bindtypes[] and the arrays beside it hold maxbindcount
+// entries, so it is this case rather than the one above that runs off the
+// end of them if the walk's discard guard is ever lost
+static const uint32_t	ORA_MISMATCHED_BINDS_OVER_LIMIT=ORA_TOO_MANY_BINDS;
 
 // what the two refusals come back as - ORA_MAX_COLUMN_COUNT_EXCEEDED and
 // ORA_MAX_BIND_COUNT_EXCEEDED in src/protocols/oracle.cpp, whose wording is
@@ -1426,6 +1467,226 @@ static void runTooManyBindsSplitCase(const char *mode,
 	client.disconnect();
 }
 
+// #10084: the disagreement check just above the two limits, in the same
+// walk - a wire bind count naming real descriptors while OPTION_BIND is
+// unset, split across packets the way the two cases above are.
+// getQuery2Descriptors() drops the count to 0 either way, so the mismatch
+// costs the call nothing of its own: the exact fetch behind it answers the
+// same as the control case's.  pre-fix, though, the walk that drops the
+// count also skipped reading the (really nonzero) bind descriptors and
+// values off the wire, so the block's own bytes - the ones this sdu pushes
+// behind the first packet - were left on the socket for the next request's
+// parse to read as the front of one of its own, the same desync #10069
+// fixed for the two refusals above
+static void runBindCountMismatchSplitCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+						ORA_SPLIT_SDU,&cursorid)) {
+		return;
+	}
+
+	if (!parseAndExecute(&client,mode,"the batch statement",
+						cursorid,ORA_BATCH_QUERY)) {
+		client.disconnect();
+		return;
+	}
+
+	// one define - the column the batch statement selects - and a wire
+	// bind count naming real descriptors, with OPTION_BIND left unset.
+	// the exact fetch is the control case's own shape, so a correct
+	// answer here is the same batch it gets
+	buildQuery2Descriptors(&client,1,ORA_OPTION_DEFINE|ORA_OPTION_FETCH,
+						cursorid,1,ORA_MISMATCHED_BINDS,
+						ORA_BATCH_ROWS);
+
+	stdoutput.printf("  request: %d bytes, 1 define, %d mismatched "
+				"binds, %d packets of at most %d\n",
+				(int)client.getRequestSize(),
+				(int)ORA_MISMATCHED_BINDS,
+				(int)fragmentCount(client.getRequestSize(),
+							client.getSdu()),
+				(int)client.getSdu());
+
+	charstring::printf(label,sizeof(label),
+			"%s: the request needs more than one packet",mode);
+	report(label,fragmentCount(client.getRequestSize(),
+						client.getSdu())>1);
+
+	charstring::printf(label,sizeof(label),
+			"%s: send the mismatched descriptor block",mode);
+	if (!client.sendSplitPacket() || !client.recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	oraclefetchrow	rows[ORA_MAX_DECODED_ROWS];
+	unsigned char	flags=0;
+	uint32_t	colcount=0;
+	uint32_t	headerrowcount=0;
+	size_t		rowcount=0;
+	bool		decoded=readFetchRows(&client,&flags,&colcount,
+						&headerrowcount,rows,
+						ORA_MAX_DECODED_ROWS,&rowcount);
+
+	stdoutput.printf("  answer: %d bytes, ttc code 0x%02x, %d rows\n",
+				(int)client.getResponseSize(),
+				(int)client.getResponseTtcCode(),
+				(int)rowcount);
+
+	charstring::printf(label,sizeof(label),
+				"%s: the batch response decodes",mode);
+	report(label,decoded);
+	if (!decoded) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	// the substantive assertion about this request's own answer: the
+	// mismatch is not a refusal, so it has to come back as the batch, not
+	// as the summary object the two limit cases above get
+	charstring::printf(label,sizeof(label),
+			"%s: the answer isn't an error",mode);
+	report(label,client.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	charstring::printf(label,sizeof(label),
+			"%s: every row of the batch came back whole",mode);
+	report(label,rowcount==(size_t)ORA_BATCH_ROWS &&
+				checkBatchRows(rows,rowcount));
+
+	// the substantive assertion about the one after it: the mismatched
+	// bind block's own packet was consumed rather than left on the
+	// socket.  pre-fix it wasn't, and the next request's parse read it as
+	// the front of one of its own
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
+// #10084 again, with the same disagreement carrying a bind count past the
+// instance's maxbindcount rather than one inside it.  the count is still
+// dropped to 0, so this is no more a refusal than the case above is - the
+// batch still comes back whole - but the walk steps over a block wider than
+// query2bindtypes[] and the arrays beside it, which are sized to
+// maxbindcount.  every write into them is behind the walk's discard guard,
+// and this is the case that runs off the end of them if that guard is ever
+// lost: the 60 bind case above stays inside them whether the guard is there
+// or not
+static void runBindCountMismatchOverLimitSplitCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+						ORA_SPLIT_SDU,&cursorid)) {
+		return;
+	}
+
+	if (!parseAndExecute(&client,mode,"the batch statement",
+						cursorid,ORA_BATCH_QUERY)) {
+		client.disconnect();
+		return;
+	}
+
+	// the same request as the case above, with a wire bind count past the
+	// limit instead of inside it
+	buildQuery2Descriptors(&client,1,ORA_OPTION_DEFINE|ORA_OPTION_FETCH,
+					cursorid,1,
+					ORA_MISMATCHED_BINDS_OVER_LIMIT,
+					ORA_BATCH_ROWS);
+
+	stdoutput.printf("  request: %d bytes, 1 define, %d mismatched "
+				"binds, %d packets of at most %d\n",
+				(int)client.getRequestSize(),
+				(int)ORA_MISMATCHED_BINDS_OVER_LIMIT,
+				(int)fragmentCount(client.getRequestSize(),
+							client.getSdu()),
+				(int)client.getSdu());
+
+	charstring::printf(label,sizeof(label),
+			"%s: the request needs more than one packet",mode);
+	report(label,fragmentCount(client.getRequestSize(),
+						client.getSdu())>1);
+
+	charstring::printf(label,sizeof(label),
+			"%s: send the mismatched descriptor block",mode);
+	if (!client.sendSplitPacket() || !client.recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	oraclefetchrow	rows[ORA_MAX_DECODED_ROWS];
+	unsigned char	flags=0;
+	uint32_t	colcount=0;
+	uint32_t	headerrowcount=0;
+	size_t		rowcount=0;
+	bool		decoded=readFetchRows(&client,&flags,&colcount,
+						&headerrowcount,rows,
+						ORA_MAX_DECODED_ROWS,&rowcount);
+
+	stdoutput.printf("  answer: %d bytes, ttc code 0x%02x, %d rows\n",
+				(int)client.getResponseSize(),
+				(int)client.getResponseTtcCode(),
+				(int)rowcount);
+
+	charstring::printf(label,sizeof(label),
+				"%s: the batch response decodes",mode);
+	report(label,decoded);
+	if (!decoded) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	// a count past the limit is still not a refusal here - the
+	// disagreement drops it before the limit is ever checked against it,
+	// so this comes back as the batch rather than as the summary object
+	// the bind limit case gets
+	charstring::printf(label,sizeof(label),
+			"%s: the answer isn't an error",mode);
+	report(label,client.getResponseTtcCode()!=ORA_TTC_ERROR);
+
+	charstring::printf(label,sizeof(label),
+			"%s: the answer isn't the bind count refusal",mode);
+	report(label,!client.responseContains(
+				ORA_MAX_BIND_COUNT_EXCEEDED_TEXT));
+
+	charstring::printf(label,sizeof(label),
+			"%s: every row of the batch came back whole",mode);
+	report(label,rowcount==(size_t)ORA_BATCH_ROWS &&
+				checkBatchRows(rows,rowcount));
+
+	// and the same assertion about the request after it: the block's
+	// packets came off the socket rather than being left for that
+	// request's parse to read as the front of one of its own
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
 // #10069: a define count the walk can't get past at all, rather than one
 // merely over a configured limit.  pre-fix this bailed quietly too, leaving
 // whatever was left of the request unread on the socket for the next request
@@ -1775,8 +2036,8 @@ int main(int argc, char **argv) {
 	signalmanager::ignoreSignals(&set);
 	#endif
 
-	stdoutput.printf("\n====== #10059/#10067/#10069 descriptor and bind "
-							"limits ======\n\n");
+	stdoutput.printf("\n====== #10059/#10067/#10069/#10084 descriptor and "
+							"bind limits ======\n\n");
 
 	// the oracleprotocol test instance - see
 	// test/sqlrelay.conf.d/oracleprotocol.conf.  it isn't a real oracle
@@ -1801,6 +2062,21 @@ int main(int argc, char **argv) {
 					host,port,sid,user,password);
 	runTooManyBindsSplitCase("too many binds, split request",
 					host,port,sid,user,password);
+
+	// #10084: a wire bind count and OPTION_BIND that disagree, split the
+	// same way, whose own bind block has to come off the wire even though
+	// nothing from it is kept
+	runBindCountMismatchSplitCase("bind count and OPTION_BIND disagree, "
+					"split request",
+					host,port,sid,user,password);
+
+	// and the same disagreement carrying more binds than the arrays the
+	// walk would write into hold, which is the shape a lost discard guard
+	// shows up in
+	runBindCountMismatchOverLimitSplitCase(
+				"bind count and OPTION_BIND disagree past "
+				"the bind limit, split request",
+				host,port,sid,user,password);
 
 	// #10069's other new path: a count the walk can't read past at all,
 	// which ends the session with ORA-03137 rather than refusing the

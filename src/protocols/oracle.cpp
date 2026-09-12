@@ -11374,12 +11374,31 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// the bind count and OPTION_BIND have to agree.  where they don't,
 	// only the bind half is in doubt, so the count is dropped rather than
 	// the whole walk abandoned - the define block ahead of it is still
-	// whatever it was.  a dropped count leaves the bind bytes unread, the
-	// landing check below then fails, and the request ends up exactly
-	// where it was before #9700 rather than somewhere nothing pins
+	// whatever it was.  the wire's own count is kept beside the dropped
+	// one and the walk steps over the block with it, pulling in the
+	// packets behind this one where the block runs past the first and
+	// throwing away everything it reads: dropping the count without
+	// walking the block leaves those packets for the next request's parse
+	// to read as a request of its own (#10084).
+	//
+	// that trusts the count over the flag, which is a bet rather than a
+	// certainty.  the disagreement could as easily mean the count itself
+	// was misread, and then the descriptors it names aren't on the socket
+	// at all, the walk blocks in have()/refillPacket() until
+	// continuationtimeout, and the session ends on a malformed packet
+	// where before it silently survived.  taken anyway: a client whose
+	// bytes really do line up pays nothing for it, and one whose count
+	// lies was already somewhere nothing pins.
+	//
+	// only the nonzero-count direction is closed here.  OPTION_BIND set
+	// with a count that reads 0 trips this same check and leaves nothing
+	// to walk, so a real bind block behind a misread 0 is still stranded
+	uint32_t	bindstowalk=bindcount;
+	bool		discardbinds=false;
 	if ((bindcount>0)!=((options&OPTION_BIND)>0)) {
 		debugWrite("bind count and OPTION_BIND disagree");
 		bindcount=0;
+		discardbinds=true;
 	}
 
 	// a descriptor is at least twelve bytes - four raw and eight one-byte
@@ -11401,7 +11420,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// are nonsense.  the session ends instead
 	uint32_t	descriptorspace=(uint32_t)
 			((resppacket+maxrequestsize-rp)/12);
-	if (definitions>descriptorspace || bindcount>descriptorspace) {
+	if (definitions>descriptorspace || bindstowalk>descriptorspace) {
 		debugWrite("descriptor counts out of range");
 		if (hasdefines) {
 			clearDefines(curid);
@@ -11411,7 +11430,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	}
 
 	// nothing to read, and nothing to commit
-	if (!definitions && !bindcount) {
+	if (!definitions && !bindstowalk) {
 		debugWrite("no descriptors");
 		debugEnd();
 		return true;
@@ -11536,11 +11555,14 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 				datatype,buffersize);
 	}
 
+	// a count the walk only steps over is kept no more than a refused one
+	bool	binddiscard=(discard || discardbinds);
+
 	// the bind descriptors sit behind the defines, in the same shape.
 	// the buffer size here is the client's own program variable width,
 	// not the width of the value that follows, which carries its own
 	// length
-	for (uint32_t i=0; i<bindcount; i++) {
+	for (uint32_t i=0; i<bindstowalk; i++) {
 
 		byte_t		datatype=0;
 		byte_t		flag=0;
@@ -11557,8 +11579,9 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		}
 
 		// same as the define loop above - the arrays are sized to
-		// maxbindcount, which a discarded walk may have run past
-		if (discard) {
+		// maxbindcount, which a discarded walk, or one stepping over
+		// a count query2() is never getting, may have run past
+		if (binddiscard) {
 			continue;
 		}
 
@@ -11598,11 +11621,11 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// a descriptor that pulled in another packet left this frame's end
 	// behind, so it is taken fresh here rather than trusted
 	end=resppacket+resppacketsize;
-	bool	values=(bindcount>0 && rp<end);
+	bool	values=(bindstowalk>0 && rp<end);
 
 	if (values) {
 
-		if (!getQuery2BindValues(rp,end,bindcount,discard,&rp)) {
+		if (!getQuery2BindValues(rp,end,bindstowalk,binddiscard,&rp)) {
 			if (hasdefines) {
 				clearDefines(curid);
 			}
@@ -11617,9 +11640,14 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 			return query2unbound;
 		}
 
-	} else if (bindcount) {
-		debugWrite("%d binds with no values - pl/sql out binds",
-								bindcount);
+	} else if (bindstowalk) {
+
+		// a block the walk only stepped over has no values behind it
+		// for the same reason nothing else about it was kept, which
+		// is not the pl/sql shape it otherwise looks like
+		debugWrite("%d binds with no values - %s",bindstowalk,
+					(binddiscard)?"discarded block":
+							"pl/sql out binds");
 	}
 
 	// the descriptor block is the last thing in the request, so a walk
@@ -11721,10 +11749,12 @@ bool sqlrprotocol_oracle::getQuery2Descriptor(const byte_t *rp,
 // sends.  a single TTC_ROW_DATA byte, then one length-prefixed value per
 // bind, in bind order
 //
-// discard walks the block without keeping any of it, for a caller that has
-// already refused the request but still has to get to the end of it - the
-// arrays below are sized to maxbindcount, which such a request may name more
-// binds than
+// discard walks the block without keeping any of it, for a caller that has to
+// read its way to the end of a request without acting on what the block
+// holds: one that has already refused the request, or one whose bind count
+// disagreed with OPTION_BIND and got dropped, which answers the request
+// normally.  the arrays below are sized to maxbindcount, which either sort of
+// request may name more binds than
 bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 						const byte_t *end,
 						uint32_t bindcount,
