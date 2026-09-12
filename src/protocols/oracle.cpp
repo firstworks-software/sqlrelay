@@ -320,6 +320,15 @@
 #define ORA_MAX_BIND_COUNT_EXCEEDED_MESSAGE \
 	"ORA-20003: Maximum bind variable count exceeded.\n"
 
+// what a request this module could only read part of gets back, just ahead of
+// the session being dropped - a real server's answer to a ttc request it
+// can't parse, and terminal there too.  nothing on the wire says where a
+// request ends, so a parse that stops part way through one leaves the rest of
+// it on the socket with no way to find the front of the next one
+#define ORA_MALFORMED_TTC_PACKET	3137
+#define ORA_MALFORMED_TTC_PACKET_MESSAGE \
+	"ORA-03137: malformed TTC packet from client rejected\n"
+
 // the two ways the handshake can say no.  a refuse packet carries a tns error
 // number, which is what a listener reports; an error packet after the accept
 // carries an oracle error number, which is what a server reports.
@@ -1668,7 +1677,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	query(const byte_t *rp);
 		bool	sendQueryResponse(sqlrservercursor *cursor);
 		bool	query2(const byte_t *rp);
-		void	getQuery2Descriptors(const byte_t *rp,
+		bool	getQuery2Descriptors(const byte_t *rp,
 							const byte_t *end,
 							uint32_t options,
 							sqlrservercursor *cursor);
@@ -1680,7 +1689,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							const byte_t **rpout);
 		bool	getQuery2BindValues(const byte_t *rp,
 							const byte_t *end,
-							uint16_t bindcount,
+							uint32_t bindcount,
+							bool discard,
 							const byte_t **rpout);
 		bool	classifyQuery2Binds(uint32_t options,
 							sqlrservercursor *cursor);
@@ -10954,7 +10964,19 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	query2toomanydefines=false;
 	query2toomanybinds=false;
 	if (options&(OPTION_DEFINE|OPTION_BIND)) {
-		getQuery2Descriptors(rp,end,options,cursor);
+
+		// a walk that couldn't get to the end of the request leaves
+		// the rest of it on the socket, and nothing on the wire says
+		// where it ends, so there is no way back to the front of the
+		// client's next request.  the error goes out first, so the
+		// call this request was ends in an error the client can read
+		// rather than in a socket that closed under it (#10069)
+		if (!getQuery2Descriptors(rp,end,options,cursor)) {
+			sendOci7StatementError(wireCursorId(cursor),
+					ORA_MALFORMED_TTC_PACKET,
+					ORA_MALFORMED_TTC_PACKET_MESSAGE);
+			return false;
+		}
 	}
 
 	// a block that named more defines or binds than the deployment allows
@@ -11199,7 +11221,15 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 // note getPointer() consumes four bytes here even in the portable encoding,
 // because pointersize comes from the pointer datatype negotiation rather than
 // from nativeencoding.  the walk depends on that
-void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
+//
+// the return says whether the request was read to its end, not whether the
+// walk liked what it found: a block this call refuses is still walked, and
+// still returns true.  false means the walk stopped part way through the
+// request, so whatever is left of it is still on the socket - packets behind
+// this one, with nothing on the wire to say where they end.  query2() answers
+// that by ending the session rather than reading the leftovers as the front
+// of the client's next request (#10069)
+bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 						const byte_t *end,
 						uint32_t options,
 						sqlrservercursor *cursor) {
@@ -11232,7 +11262,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	if (nativeencoding) {
 		debugWrite("native encoding, defines not decoded");
 		debugEnd();
-		return;
+		return true;
 	}
 
 	// The front of the block is the one place in this walk that must not
@@ -11246,7 +11276,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	if (rp>=end) {
 		debugWrite("no descriptor block");
 		debugEnd();
-		return;
+		return true;
 	}
 
 	uint32_t	unused=0;
@@ -11278,9 +11308,19 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		!getAuthCount(rp,end,&definitions,4,&rp) ||
 		!getPointer(rp,end,&unused,&rp) ||
 		!getAuthCount(rp,end,&bindcount,4,&rp)) {
+
+		// most reads from here to the end of the walk go through
+		// have(), which pulls in the packet behind this one wherever
+		// the request runs short - so a read that fails there is a
+		// refill that failed: a timeout waiting for the rest of the
+		// request, a marker packet in place of a continuation, or a
+		// request grown past the buffer.  a length byte this walk
+		// can't make sense of fails the same way without ever calling
+		// have().  neither leaves a socket the next request can be
+		// read from
 		debugWrite("truncated query2 descriptor header");
 		debugEnd();
-		return;
+		return false;
 	}
 
 	// then seven more counts, of which the SECOND is the number of rows
@@ -11311,7 +11351,7 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 								4,&rp)) {
 			debugWrite("truncated query2 descriptor header");
 			debugEnd();
-			return;
+			return false;
 		}
 	}
 
@@ -11341,7 +11381,12 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// the two are checked separately rather than as a sum: both come
 	// straight off the wire as full-width uint32_ts, and adding them
 	// first lets a count of 0xffffffff wrap past a check it should have
-	// failed
+	// failed.
+	//
+	// a count this far out is the one refusal below the walk can't read
+	// its way past: the counts are what say how many descriptors to step
+	// over, so there is no getting to the end of a request whose counts
+	// are nonsense.  the session ends instead
 	uint32_t	descriptorspace=(uint32_t)
 			((resppacket+maxrequestsize-rp)/12);
 	if (definitions>descriptorspace || bindcount>descriptorspace) {
@@ -11350,14 +11395,14 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 			clearDefines(curid);
 		}
 		debugEnd();
-		return;
+		return false;
 	}
 
 	// nothing to read, and nothing to commit
 	if (!definitions && !bindcount) {
 		debugWrite("no descriptors");
 		debugEnd();
-		return;
+		return true;
 	}
 
 	// a bind list wider than the deployment's limit ends the call in an
@@ -11365,15 +11410,22 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// this call comes back.  a quiet return does keep the client from
 	// executing anything, since query2()'s bind block refuses a request
 	// whose bind count came back 0, but it refuses it with ORA-01007,
-	// which says nothing about a bind count limit
+	// which says nothing about a bind count limit.
+	//
+	// the counts are in hand, so the walk below can still step over the
+	// block; it just throws away everything it reads.  that is what the
+	// refusal costs at a small sdu, where the block runs past the first
+	// packet: returning here would leave the packets behind this one
+	// unread, for the next request's parse to find and read as a request
+	// of its own (#10069)
+	bool	discard=false;
 	if (bindcount>maxbindcount) {
 		debugWrite("bind count exceeds maxbindcount %d",maxbindcount);
 		query2toomanybinds=true;
 		if (hasdefines) {
 			clearDefines(curid);
 		}
-		debugEnd();
-		return;
+		discard=true;
 	}
 
 	// columndefined[], definetypes[] and definebuffersizes[] are sized by
@@ -11383,24 +11435,28 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// instead.  this is the same
 	// lazy sizing cacheColumnDefinitions() does for columntypes[], and
 	// without it the whole of this call would quietly do nothing on those
-	// backends
+	// backends.
+	//
+	// a walk that is already discarding what it reads needs neither the
+	// check nor the arrays
 	uint32_t	maxcolumns=cont->getMaxColumnCount();
-	if (definitions) {
+	if (definitions && !discard) {
 		if (maxcolumns) {
 
 			// a define list wider than that limit can't be
-			// walked - columndefined[] and the arrays beside it
+			// kept - columndefined[] and the arrays beside it
 			// are sized to maxcolumncount - and returning
 			// quietly would leave definecounts[curid] unset and
 			// the request's row count lost, which query2()'s
 			// fetch turns into a silent short batch.  query2()
-			// answers this with an error instead
+			// answers this with an error instead, and the walk
+			// reads the block out for the same reason the bind
+			// refusal above does
 			if (definitions>maxcolumns) {
 				debugWrite("define count exceeds max "
 						"column count %d",maxcolumns);
 				query2toomanydefines=true;
-				debugEnd();
-				return;
+				discard=true;
 			}
 		} else {
 			delete[] columndefined[curid];
@@ -11436,7 +11492,14 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 				clearDefines(curid);
 			}
 			debugEnd();
-			return;
+			return false;
+		}
+
+		// the arrays below are sized to a limit a discarded walk ran
+		// past, and on a backend with no limit they don't exist at
+		// all, so it reads the descriptors only to get past them
+		if (discard) {
+			continue;
 		}
 
 		// a placeholder carries the skip bit and a zero buffer size,
@@ -11478,7 +11541,13 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 				clearDefines(curid);
 			}
 			debugEnd();
-			return;
+			return false;
+		}
+
+		// same as the define loop above - the arrays are sized to
+		// maxbindcount, which a discarded walk may have run past
+		if (discard) {
+			continue;
 		}
 
 		query2bindtypes[i]=(uint16_t)datatype;
@@ -11521,12 +11590,19 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 
 	if (values) {
 
-		if (!getQuery2BindValues(rp,end,(uint16_t)bindcount,&rp)) {
+		if (!getQuery2BindValues(rp,end,bindcount,discard,&rp)) {
 			if (hasdefines) {
 				clearDefines(curid);
 			}
 			debugEnd();
-			return;
+
+			// a block that ran out on a value boundary is a
+			// client that sent fewer values than it declared
+			// binds - a request that ended where it said it
+			// would, which query2() answers ORA-01008.  any
+			// other bad read stopped mid-value, with the rest
+			// of the request still unread behind it
+			return query2unbound;
 		}
 
 	} else if (bindcount) {
@@ -11557,7 +11633,15 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 			clearDefines(curid);
 		}
 		debugEnd();
-		return;
+		return true;
+	}
+
+	// a discarded walk read the block only to get to the end of the
+	// request, and query2() is about to refuse it, so none of it is
+	// committed
+	if (discard) {
+		debugEnd();
+		return true;
 	}
 
 	// only a bind block that carried values is one this module can install
@@ -11573,6 +11657,8 @@ void sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	}
 
 	debugEnd();
+
+	return true;
 }
 
 // one descriptor out of a query2 request - four raw bytes, the wire
@@ -11622,9 +11708,15 @@ bool sqlrprotocol_oracle::getQuery2Descriptor(const byte_t *rp,
 // in a query2 request, or on their own in the bare TTI_EXECUTE a re-execute
 // sends.  a single TTC_ROW_DATA byte, then one length-prefixed value per
 // bind, in bind order
+//
+// discard walks the block without keeping any of it, for a caller that has
+// already refused the request but still has to get to the end of it - the
+// arrays below are sized to maxbindcount, which such a request may name more
+// binds than
 bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 						const byte_t *end,
-						uint16_t bindcount,
+						uint32_t bindcount,
+						bool discard,
 						const byte_t **rpout) {
 
 	*rpout=rp;
@@ -11643,7 +11735,7 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 		return false;
 	}
 
-	for (uint16_t i=0; i<bindcount; i++) {
+	for (uint32_t i=0; i<bindcount; i++) {
 
 		// A value boundary is the one place in this block that must not
 		// pull another packet in.  Running out here is a shape a real
@@ -11680,8 +11772,10 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 				return false;
 			}
 
-			query2bindvalues[i]=value;
-			query2bindvaluesizes[i]=valuesize;
+			if (!discard) {
+				query2bindvalues[i]=value;
+				query2bindvaluesizes[i]=valuesize;
+			}
 
 			debugWrite("bind %d value: %d bytes (long form)",
 						i+1,(int32_t)valuesize);
@@ -11696,8 +11790,10 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 			}
 			byte_t	nullbyte=0;
 			read(rp,&nullbyte,&rp);
-			query2bindvalues[i]=NULL;
-			query2bindvaluesizes[i]=0;
+			if (!discard) {
+				query2bindvalues[i]=NULL;
+				query2bindvaluesizes[i]=0;
+			}
 			debugWrite("bind %d value: null (0x%02x)",
 						i+1,nullbyte);
 			continue;
@@ -11716,8 +11812,10 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 
 		// pointing into the request buffer rather than copying -
 		// installQuery2Binds() runs before any other packet is read
-		query2bindvalues[i]=rp;
-		query2bindvaluesizes[i]=(uint32_t)size;
+		if (!discard) {
+			query2bindvalues[i]=rp;
+			query2bindvaluesizes[i]=(uint32_t)size;
+		}
 		rp+=size;
 
 		debugWrite("bind %d value: %d bytes",i+1,(int32_t)size);
@@ -11887,7 +11985,7 @@ bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugEnd();
 
-	if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
+	if (!getQuery2BindValues(rp,end,query2bindcount,false,&rp)) {
 		if (query2unbound) {
 			return sendOci7StatementError(wireCursorId(cursor),
 					ORA_NOT_ALL_VARIABLES_BOUND,
@@ -16825,7 +16923,7 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 					query2cursorbindbuffersizes[curid][i];
 		}
 
-		if (!getQuery2BindValues(rp,end,query2bindcount,&rp)) {
+		if (!getQuery2BindValues(rp,end,query2bindcount,false,&rp)) {
 			if (query2unbound) {
 				return sendOci7StatementError(cursorid,
 					ORA_NOT_ALL_VARIABLES_BOUND,

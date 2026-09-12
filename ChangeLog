@@ -2584,6 +2584,15 @@
 		installed and saved only the first maxbindcount binds and
 		ran the statement anyway; it now comes back ORA-20003
 		before the statement is prepared or executed (#10067)
+	fixed the oracle protocol module leaving the rest of a split
+		query2 request unread on the socket whenever its
+		descriptor block named more defines or binds than the
+		deployment allows, which made the module misread the
+		leftover fragments as a new request and drop the
+		session; the refusal now walks and discards the rest of
+		the request instead of returning early, and any request
+		the walk still can't get through ends the session with a
+		malformed-packet error instead of a misread (#10069)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

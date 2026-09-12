@@ -3,6 +3,7 @@
 
 #include <rudiments/charstring.h>
 #include <rudiments/environment.h>
+#include <rudiments/signalclasses.h>
 #include <rudiments/stdio.h>
 
 #include "oracleprotocolclient.cpp"
@@ -33,7 +34,7 @@
 // test/sqlrelay.conf.d/oracleprotocol.conf.in), so 257 of either is one past
 // the limit and no instance of its own is needed.
 //
-// Three cases, each on its own session:
+// Six cases, each on its own session:
 //
 //	- the defined batch, which is the control.  a define list well
 //	  within the limit, and an exact fetch of every row the statement
@@ -50,18 +51,37 @@
 //	  request was refused too, but by query2()'s own bind block, with
 //	  the ORA-01007 it sends for any request whose bind count came back
 //	  0 - an answer that says nothing about a limit
+//	- the same 257 defines again, refused the same way, but on the
+//	  control case's 512 byte sdu rather than the default.  #10069: the
+//	  walk used to bail on the limit without reading the rest of the
+//	  request, so a request split across packets left its later
+//	  fragments on the socket for the module to read as the front of the
+//	  next one - which it answered "bad ttccode 0xff" and dropped the
+//	  session over, so the client's next write hit a closed socket and
+//	  got SIGPIPE
+//	- the same 257 binds again, refused the same way, at the same 512
+//	  byte sdu and for the same reason
+//	- a definitions count nothing on the wire could really carry, rather
+//	  than one merely over a configured limit.  #10069: this is the bail
+//	  the walk can never read its way past, so it can't be answered with
+//	  a refusal the session survives the way the four above are - the
+//	  module answers ORA-03137 and ends the session instead, and the case
+//	  asserts both: the error came back, and a further request on the
+//	  same connection has nowhere to land
 //
-// Both refusal cases run on the sdu the session negotiates by default rather
-// than on the control case's 512, and that is load bearing rather than
-// incidental.  A descriptor block naming 257 positions is around 3600 bytes,
-// and a bail abandons the walk without reading the rest of the request - so a
-// request split across packets would leave its later fragments on the socket
-// for the module to read as the front of the next request.  Each of the two
-// asserts that its request really did fit one packet before it sends it.
+// The two default-sdu refusal cases still earn their place: each asserts its
+// request really did fit one packet before sending it, which is what
+// isolates the refusal from #10069's fragment handling, and is why they send
+// with sendPacket() rather than sendSplitPacket().  It's the two 512-sdu
+// cases below them that prove the fix - each asserts the opposite, that its
+// request needed more than one packet, then sends it with sendSplitPacket()
+// the way sendBindQuery3() does further down for the query3 cases.
 //
-// Every case ends by opening a second cursor and running a statement on it,
-// since a refusal that cost the session its place in the byte stream would
-// show up there rather than in the answer itself.
+// Every refusal case ends by opening a second cursor and running a statement
+// on it, since a refusal that cost the session its place in the byte stream
+// would show up there rather than in the answer itself.  the malformed count
+// case ends the opposite way, asserting that a further request fails, since
+// the session it lands on is already gone.
 //
 // #10067 is the same silent truncation on the modern path.  installQuery3Binds()
 // and saveQuery3Binds() write into arrays sized to maxbindcount and used to
@@ -90,8 +110,9 @@
 // is safe here and isn't above because the bind walk consumes the whole request
 // whatever it finds, so a refusal leaves no fragment of it on the socket.
 
-// what the control case's session asks for, and so - since it is the floor
-// recvConnectRequest() clamps to - what it gets
+// what the control case's session asks for, and now the two split-request
+// refusal cases too - since it is the floor recvConnectRequest() clamps to,
+// it's what each of them gets
 static const uint16_t	ORA_SPLIT_SDU=512;
 
 // TTI_QUERY2 - an oci7 client's oexec() and oexfet().  the call a define or
@@ -121,6 +142,18 @@ static const char	*ORA_MAX_COLUMN_COUNT_EXCEEDED_TEXT=
 			"ORA-20002: Maximum column count exceeded.";
 static const char	*ORA_MAX_BIND_COUNT_EXCEEDED_TEXT=
 			"ORA-20003: Maximum bind variable count exceeded.";
+
+// a define count nothing on the wire could really carry - past descriptorspace
+// however wide the request behind it is, so the walk bails on the count
+// itself rather than on one merely over a configured limit
+static const uint32_t	ORA_HUGE_DEFINE_COUNT=0xfffffff0;
+
+// what a count that far out comes back as - ORA_MALFORMED_TTC_PACKET in
+// src/protocols/oracle.cpp, #10069's answer to a request the walk can't read
+// its way past
+static const uint32_t	ORA_MALFORMED_TTC_PACKET=3137;
+static const char	*ORA_MALFORMED_TTC_PACKET_TEXT=
+			"ORA-03137: malformed TTC packet from client rejected";
 
 // ORA-01007, "variable not in select list" - what query2()'s bind block
 // answers a request whose bind count came back 0, and so what the bind case
@@ -474,6 +507,43 @@ static void buildQuery2Descriptors(oracleprotocolclient *client,
 	}
 }
 
+// the same header buildQuery2Descriptors() writes, up through the seven field
+// tail behind the bind count, but with a definitions value the module can't
+// possibly walk and no descriptors behind it - getQuery2Descriptors() bails
+// on the count before it ever tries to read one, so there is nothing here for
+// a descriptor loop to build
+static void buildQuery2MalformedDescriptors(oracleprotocolclient *client,
+					unsigned char sequence,
+					uint32_t options,
+					uint32_t cursorid,
+					uint32_t hugedefinitions) {
+
+	client->beginTtiCall(ORA_TTI_QUERY2);
+	client->appendByte(sequence);
+	client->appendAuthCount(options,4);
+	client->appendAuthCount(cursorid,4);
+
+	appendPointer(client);
+	appendPointer(client);
+	client->appendAuthCount(0,4);
+	client->appendAuthCount(0,4);
+	appendPointer(client);
+	client->appendAuthCount(0,4);
+	appendPointer(client);
+	client->appendAuthCount(0,4);
+	appendPointer(client);
+	appendPointer(client);
+
+	client->appendAuthCount(hugedefinitions,4);
+
+	// no binds, and the seven counts behind them, all zero
+	appendPointer(client);
+	client->appendAuthCount(0,4);
+	for (size_t i=0; i<ORA_DESCRIPTOR_HEADER_TAIL; i++) {
+		client->appendAuthCount(0,4);
+	}
+}
+
 
 // ---- reading the answers ----
 
@@ -654,8 +724,10 @@ static size_t responseFragmentCount(oracleprotocolclient *client) {
 // ---- the pieces every case is built from ----
 
 // the login and the cursor a case starts with.  an "sdu" of 0 leaves the
-// session on the one it negotiates by default, which is what the two refusal
-// cases need: their requests are too big to fit a small one
+// session on the one it negotiates by default, which is what the two
+// default-sdu refusal cases need to fit their request in one packet; the
+// split-request variants pass ORA_SPLIT_SDU instead, deliberately too small
+// for theirs to fit
 static bool startSession(oracleprotocolclient *client,
 				const char *mode,
 				const char *host, uint16_t port,
@@ -761,6 +833,21 @@ static void checkSessionSurvived(oracleprotocolclient *client,
 		return;
 	}
 	report(label,client->responseContains(ORA_ALIVE_VALUE));
+}
+
+// the opposite of checkSessionSurvived(): a bail the module couldn't walk
+// past closes the connection rather than leaving the session to go on, so the
+// next request on it has nowhere to land.  a fresh cursor is the lightest
+// thing to ask for it - the send finds the socket already gone, or the recv
+// comes back empty, and either one is success here
+static void checkSessionEnded(oracleprotocolclient *client, const char *mode) {
+
+	char	label[192];
+
+	uint32_t	cursorid=0;
+	charstring::printf(label,sizeof(label),
+				"%s: the session is over, not just the call",mode);
+	report(label,!client->open(&cursorid));
 }
 
 // everything a refused request's answer has to be: the summary object, the
@@ -1212,6 +1299,188 @@ static void runTooManyBindsCase(const char *mode,
 	client.disconnect();
 }
 
+// #10069: the same refusal as above, but with the request split across
+// packets rather than fitting one.  pre-fix the walk bailed on the limit
+// without reading the rest of the request, so the later fragments sat
+// unread on the socket, the module read them as the front of the next
+// request and answered "bad ttccode 0xff", and the session was gone by the
+// time the client wrote to it again
+static void runTooManyDefinesSplitCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+						ORA_SPLIT_SDU,&cursorid)) {
+		return;
+	}
+
+	if (!parseAndExecute(&client,mode,"the wide statement",
+						cursorid,ORA_WIDE_QUERY)) {
+		client.disconnect();
+		return;
+	}
+
+	buildQuery2Descriptors(&client,1,ORA_OPTION_DEFINE|ORA_OPTION_FETCH,
+						cursorid,ORA_TOO_MANY_DEFINES,
+						0,ORA_WIDE_ROWS);
+
+	stdoutput.printf("  request: %d bytes, %d defines, "
+				"%d packets of at most %d\n",
+				(int)client.getRequestSize(),
+				(int)ORA_TOO_MANY_DEFINES,
+				(int)fragmentCount(client.getRequestSize(),
+							client.getSdu()),
+				(int)client.getSdu());
+
+	charstring::printf(label,sizeof(label),
+			"%s: the request needs more than one packet",mode);
+	report(label,fragmentCount(client.getRequestSize(),
+						client.getSdu())>1);
+
+	charstring::printf(label,sizeof(label),
+				"%s: send the define list",mode);
+	if (!client.sendSplitPacket() || !client.recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	checkRefusal(&client,mode,ORA_MAX_COLUMN_COUNT_EXCEEDED,
+				ORA_MAX_COLUMN_COUNT_EXCEEDED_TEXT);
+
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
+// the bind limit's own split-request case, for the same reason as above
+static void runTooManyBindsSplitCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+						ORA_SPLIT_SDU,&cursorid)) {
+		return;
+	}
+
+	if (!parseAndExecute(&client,mode,"the wide statement",
+						cursorid,ORA_WIDE_QUERY)) {
+		client.disconnect();
+		return;
+	}
+
+	buildQuery2Descriptors(&client,1,ORA_OPTION_BIND|ORA_OPTION_EXECUTE,
+						cursorid,0,
+						ORA_TOO_MANY_BINDS,0);
+
+	stdoutput.printf("  request: %d bytes, %d binds, "
+				"%d packets of at most %d\n",
+				(int)client.getRequestSize(),
+				(int)ORA_TOO_MANY_BINDS,
+				(int)fragmentCount(client.getRequestSize(),
+							client.getSdu()),
+				(int)client.getSdu());
+
+	charstring::printf(label,sizeof(label),
+			"%s: the request needs more than one packet",mode);
+	report(label,fragmentCount(client.getRequestSize(),
+						client.getSdu())>1);
+
+	charstring::printf(label,sizeof(label),
+				"%s: send the bind list",mode);
+	if (!client.sendSplitPacket() || !client.recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	checkRefusal(&client,mode,ORA_MAX_BIND_COUNT_EXCEEDED,
+				ORA_MAX_BIND_COUNT_EXCEEDED_TEXT);
+
+	charstring::printf(label,sizeof(label),
+			"%s: the answer isn't the old ORA-01007",mode);
+	report(label,!client.responseContains(ORA_NOT_IN_SELECT_LIST_TEXT));
+
+	checkSessionSurvived(&client,mode);
+
+	client.disconnect();
+}
+
+// #10069: a define count the walk can't get past at all, rather than one
+// merely over a configured limit.  pre-fix this bailed quietly too, leaving
+// whatever was left of the request unread on the socket for the next request
+// to be misread against; there being no describing this bail as a limit, the
+// module now answers ORA-03137 and ends the session instead of going on with
+// the socket out of sync
+static void runMalformedDescriptorCountCase(const char *mode,
+					const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	char	label[192];
+
+	stdoutput.printf("\n--- %s ---\n\n",mode);
+
+	oracleprotocolclient	client;
+
+	uint32_t	cursorid=0;
+	if (!startSession(&client,mode,host,port,sid,user,password,
+							0,&cursorid)) {
+		return;
+	}
+
+	if (!parseAndExecute(&client,mode,"the wide statement",
+						cursorid,ORA_WIDE_QUERY)) {
+		client.disconnect();
+		return;
+	}
+
+	buildQuery2MalformedDescriptors(&client,1,
+					ORA_OPTION_DEFINE|ORA_OPTION_FETCH,
+					cursorid,ORA_HUGE_DEFINE_COUNT);
+
+	stdoutput.printf("  request: %d bytes, %d claimed defines\n",
+				(int)client.getRequestSize(),
+				(int)ORA_HUGE_DEFINE_COUNT);
+
+	charstring::printf(label,sizeof(label),
+				"%s: send the malformed descriptor block",mode);
+	if (!client.sendPacket() || !client.recvPacket()) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	checkRefusal(&client,mode,ORA_MALFORMED_TTC_PACKET,
+				ORA_MALFORMED_TTC_PACKET_TEXT);
+
+	checkSessionEnded(&client,mode);
+
+	client.disconnect();
+}
+
 // the same limit on the modern path: a query3 parse and execute naming one
 // bind past maxbindcount.  pre-fix installQuery3Binds() stopped at the limit
 // and the statement ran on the first 256 of the 257 values, so this request
@@ -1492,7 +1761,21 @@ static uint16_t portFromEnvironment(const char *name, uint16_t fallback) {
 
 int main(int argc, char **argv) {
 
-	stdoutput.printf("\n====== #10059/#10067 descriptor and bind "
+	// the malformed descriptor count case (#10069) sends the module a
+	// request it ends the session over, so the write behind that
+	// session's next call - checkSessionEnded()'s open() - lands on a
+	// socket the peer already closed.  a real client hits the same
+	// SIGPIPE the ticket describes; this one ignores it instead, the way
+	// sqlrsh.cpp does, so that write comes back as an ordinary failed
+	// call rather than taking the whole harness down with it
+	#ifdef SIGPIPE
+	signalset	set;
+	set.removeAllSignals();
+	set.addSignal(SIGPIPE);
+	signalmanager::ignoreSignals(&set);
+	#endif
+
+	stdoutput.printf("\n====== #10059/#10067/#10069 descriptor and bind "
 							"limits ======\n\n");
 
 	// the oracleprotocol test instance - see
@@ -1512,6 +1795,18 @@ int main(int argc, char **argv) {
 	// and the two it has to refuse
 	runTooManyDefinesCase("too many defines",host,port,sid,user,password);
 	runTooManyBindsCase("too many binds",host,port,sid,user,password);
+
+	// the same two refusals, forced across more than one packet - #10069
+	runTooManyDefinesSplitCase("too many defines, split request",
+					host,port,sid,user,password);
+	runTooManyBindsSplitCase("too many binds, split request",
+					host,port,sid,user,password);
+
+	// #10069's other new path: a count the walk can't read past at all,
+	// which ends the session with ORA-03137 rather than refusing the
+	// request and going on the way the four cases above do
+	runMalformedDescriptorCountCase("malformed descriptor count",
+					host,port,sid,user,password);
 
 	// the same bind limit on the query3 path, which has to be refused
 	// rather than clamped, and the bind list at the limit that still runs

@@ -1249,22 +1249,36 @@ run_protocol_test() {
 	# error and no way for a legacy client to ask for the rest.  both
 	# limits default to 256 - maxcolumncount off the connect string,
 	# maxbindcount off the instance attributes - and this instance sets
-	# neither, so 257 of either trips it.  it runs six cases, each on
-	# its own session.  three for the query2 path: a define list within
+	# neither, so 257 of either trips it.  it runs nine cases, each on
+	# its own session.  six for the query2 path: a define list within
 	# the limit whose exact fetch spans several packets at a 512 byte
-	# sdu, which is the control, and then 257 defines and 257 binds,
-	# which have to come back ORA-20002 and ORA-20003 with no rows at
-	# all.  three more for #10067, the same silent clamp on the query3
-	# path, where installQuery3Binds() and saveQuery3Binds() ran the
-	# statement on the first maxbindcount values and answered with an
-	# ordinary describe: 257 binds, which have to come back ORA-20003
-	# instead, 256 binds, which still have to parse, execute and answer
-	# with every value they bound, and a refusal landing on a cursor
-	# that already carries a statement, whose own saved binds have to
+	# sdu, which is the control, then 257 defines and 257 binds, which
+	# have to come back ORA-20002 and ORA-20003 with no rows at all, and
+	# the same two refusals again at that same 512 byte sdu instead of
+	# the default one, for #10069 - the bail used to abandon the walk
+	# without reading the rest of a request it was refusing, so a
+	# request split across packets left its later fragments on the
+	# socket for the module to misread as the front of the next one,
+	# answer "bad ttccode 0xff" to, and drop the session over, which is
+	# what a real client's next write then hit as a SIGPIPE.  the sixth
+	# is #10069's other new path: a definitions count nothing on the
+	# wire could really carry, which the walk can't read its way past at
+	# all rather than merely refuse - the module answers ORA-03137 and
+	# ends the session outright, and the case checks both the error and
+	# that a further request on the same connection has nowhere to
+	# land.  three more for #10067, the same silent clamp on the query3
+	# path, where
+	# installQuery3Binds() and saveQuery3Binds() ran the statement on
+	# the first maxbindcount values and answered with an ordinary
+	# describe: 257 binds, which have to come back ORA-20003 instead,
+	# 256 binds, which still have to parse, execute and answer with
+	# every value they bound, and a refusal landing on a cursor that
+	# already carries a statement, whose own saved binds have to
 	# survive it - a bare re-execute of them still runs.  it reads
 	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
-	# neither $server nor TNS_ADMIN either.  finally it runs oci7, the
-	# OCI7 legacy-call-interface parity test for #9653 - it drives the same
+	# neither $server nor
+	# TNS_ADMIN either.  finally it runs oci7, the OCI7
+	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
 	# call interface get compared against the OCI8 run's.  it is built
