@@ -18,7 +18,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_splitmultiinsert : public sqlrtrigger {
 		bool	runBeforeExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *micur);
 	private:
-		void	parsePrefix(const char *query,
+		bool	parsePrefix(const char *query,
+					const char *queryend,
 					const char **ptr,
 					stringbuffer *prefix);
 		void	parseSuffix(const char *startofvalues,
@@ -92,7 +93,15 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 
 	// parse out the prefix
 	const char	*ptr=NULL;
-	parsePrefix(query,&ptr,&prefix);
+	if (!parsePrefix(query,queryend,&ptr,&prefix)) {
+
+		// malformed query - run the original, unmodified
+		// multi-insert instead of dropping it
+		cont->setQuerySuppressed(micur,false);
+		debugWrite("failed to parse prefix, running original query");
+		debugEnd();
+		return true;
+	}
 
 	// parse out the suffix
 	const char	*suffixptr=NULL;
@@ -197,7 +206,8 @@ bool sqlrtrigger_splitmultiinsert::runBeforeExecute(sqlrserverconnection *sqlrco
 	return success;
 }
 
-void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
+bool sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
+						const char *queryend,
 						const char **ptr,
 						stringbuffer *prefix) {
 
@@ -219,8 +229,29 @@ void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 	// skip columns
 	if (**ptr=='(') {
 
-		// skip until closing paren
-		*ptr=charstring::findFirst(*ptr,')');
+		// mysql/mariadb treat backslash as an escape character
+		// inside quoted strings, other databases don't
+		bool	backslash=!charstring::compareIgnoringCase(
+						cont->getNativeDbType(),"mysql");
+
+		// skip past the opening paren, then skip over each
+		// column, accounting for quoted column names that might
+		// contain a literal ')', until we reach the one that
+		// closes the column list
+		const char	*p=(*ptr)+1;
+		for (;;) {
+			const char	*c=cont->findCommaOrCloseParen(
+							p,queryend,backslash);
+			if (!c) {
+				// truncated or malformed query
+				return false;
+			}
+			if (*c==')') {
+				*ptr=c;
+				break;
+			}
+			p=c+1;
+		}
 
 		// skip closing paren
 		(*ptr)++;
@@ -245,6 +276,7 @@ void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 
 	// append the prefix to the stringbuffer
 	prefix->append(query,*ptr-query);
+	return true;
 }
 
 void sqlrtrigger_splitmultiinsert::parseSuffix(const char *startofvalues,

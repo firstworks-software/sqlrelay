@@ -2768,6 +2768,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   id when deciding whether to splice it into a replayed insert (#10119)
 - fixed the upsert trigger treating a bind followed by more expression
   text as a whole-token bind (#10121)
+- fixed the multi-insert-split trigger to recognize double- and
+  backtick-quoted column names, not just unquoted ones (#10122)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
