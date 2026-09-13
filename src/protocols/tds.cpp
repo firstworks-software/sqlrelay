@@ -6658,7 +6658,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	byte_t		optionflags2=0;
 	byte_t		typeflags=0;
 	byte_t		optionflags3=0;
-	uint32_t	clienttimzone=0;
+	int32_t		clienttimzone=0;
 	uint32_t	clientlcid=0;
 
 	uint16_t	ibhostname=0;
@@ -6741,7 +6741,7 @@ bool sqlrprotocol_tds::tds7Login() {
 	fchangepassword=(optionflags3&(0x01));
 	fextension=(optionflags3&(0x01<<4))>>4;
 
-	readLE(rp,&clienttimzone,&rp);
+	readLE(rp,(uint32_t *)&clienttimzone,&rp);
 	readLE(rp,&clientlcid,&rp);
 	readLE(rp,&ibhostname,&rp);
 	readLE(rp,&cchhostname,&rp);

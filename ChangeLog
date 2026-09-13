@@ -2788,6 +2788,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   unsigned (#10108)
 - fixed the postgresql protocol module's numeric bind-parameter
   parser to place decimal points and handle sign sentinels (#10133)
+- fixed the tds protocol module misdeclaring the LOGIN7 clienttimzone
+  field as unsigned (#10134)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
