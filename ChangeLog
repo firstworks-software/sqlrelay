@@ -2752,6 +2752,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   not on commas inside a function call's argument list, which could
   otherwise misalign the values against their columns and corrupt a
   function call's argument (#10113)
+- fixed the replay trigger splicing a stale last-insert-id, left over
+  from an earlier, successful insert, into an insert that itself
+  errored, which collided with that earlier insert's id on replay
+  (#10114)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

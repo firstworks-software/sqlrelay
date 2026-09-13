@@ -270,6 +270,14 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	uint64_t	liid=0;
 	bool		gotliid=cont->getLastInsertId(&liid);
 
+	// The last insert id is cached from the last insert that succeeded,
+	// so if the query we're about to log is itself the one that failed,
+	// the id belongs to some earlier insert, not this one.
+	bool	thisqueryerrored=(cont->getErrorSize(sqlrcur) ||
+					cont->getErrorNumber(sqlrcur) ||
+					!charstring::isNullOrEmpty(
+						cont->getSqlStateBuffer(sqlrcur)));
+
 	// get query type
 	const char		*query=sqlrcur->getQueryBuffer();
 	uint32_t		querysize=sqlrcur->getQuerySize();
@@ -316,7 +324,8 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 
 		// did the insert supply a null for the auto-increment column?
 		bool	nullautoincvalue=(querytype==SQLRQUERYTYPE_INSERT &&
-					gotliid && autoinccolumn &&
+					gotliid && !thisqueryerrored &&
+					autoinccolumn &&
 					columnsincludeautoinccolumn &&
 					autoincValueIsNull(columns,values,
 							autoinccolumn));
@@ -331,13 +340,17 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 					columnsincludeautoinccolumn,rawvalues);
 
 		} else if (!gotliid || !autoinccolumn ||
-					columnsincludeautoinccolumn) {
+					columnsincludeautoinccolumn ||
+					(thisqueryerrored &&
+					querytype==SQLRQUERYTYPE_INSERT)) {
 
 			// If there was no last-insert-id or auto-increment
 			// column, or if there was an auto-increment column,
 			// but it was included in the insert, then we don't
 			// actually have to rewrite anything.  Just do a normal
-			// copy.
+			// copy.  If this insert itself errored, rewriting would
+			// be wrong rather than just unnecessary, since liid
+			// belongs to a different insert - copy verbatim instead.
 			copyQuery(qd,query,querysize);
 
 		} else if (querytype==SQLRQUERYTYPE_INSERT) {
