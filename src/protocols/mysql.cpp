@@ -3153,6 +3153,11 @@ sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 	const char	*start=cont->skipWhitespaceAndComments(query);
 	const char	*end=query+querysize;
 
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+
 	// FIXME: assumes a normalized query, same as parseInsert()
 	if (querysize<12 || charstring::compareIgnoringCase(
 						start,"insert into ",12)) {
@@ -3168,9 +3173,18 @@ sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 
 	// skip an optional column list
 	if (ptr<end && *ptr=='(') {
-		const char	*close=charstring::findFirst(ptr,')');
-		if (!close || close>=end) {
-			return SQLRQUERYTYPE_INSERT;
+		const char	*close=NULL;
+		const char	*startofcolumn=ptr+1;
+		for (;;) {
+			close=cont->findCommaOrCloseParen(
+					startofcolumn,end,backslash);
+			if (!close) {
+				return SQLRQUERYTYPE_INSERT;
+			}
+			if (*close==')') {
+				break;
+			}
+			startofcolumn=close+1;
 		}
 		ptr=close+1;
 		while (ptr<end && character::isWhitespace(*ptr)) {
@@ -3213,9 +3227,8 @@ sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 		if (c>=end) {
 			return SQLRQUERYTYPE_INSERT;
 		}
-		if (*c=='\'') {
-			c=charstring::findEndOfQuotedString(
-					c,end-c,'\'',true,true);
+		if (character::isInSet(*c,"'\"`")) {
+			c=cont->skipStringLiteral(c,end,backslash);
 			continue;
 		}
 		if (*c=='(') {

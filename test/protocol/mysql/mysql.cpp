@@ -1103,6 +1103,36 @@ int main(int argc, char **argv) {
 	}
 	stdoutput.printf("\n");
 
+	// #10125: the column-list-end scan stopped at the first ')'
+	// anywhere, even one inside a backtick-quoted column name
+	stdoutput.printf("mysql_info: multi-row insert with quoted column name\n");
+	query="create table mysqlinfotest2 (id int, `val)x` int)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	query="insert into mysqlinfotest2 (id,`val)x`) values (1,10),(2,20)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)2);
+	assertEquals(mysql_info(&mysql),
+			"Records: 2  Duplicates: 0  Warnings: 0");
+	stdoutput.printf("\n");
+
+	query="drop table mysqlinfotest2";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+
+	// #10125: the values-list scan only recognized single-quote as
+	// starting a quoted literal, missing double-quote and backtick
+	stdoutput.printf("mysql_info: multi-row insert with quoted value\n");
+	query="create table mysqlinfotest3 (id int, txt varchar(50))";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	query="insert into mysqlinfotest3 (id,txt) values (1,\"a,b)\"),(2,\"c\")";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)2);
+	assertEquals(mysql_info(&mysql),
+			"Records: 2  Duplicates: 0  Warnings: 0");
+	stdoutput.printf("\n");
+
+	query="drop table mysqlinfotest3";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+
 	query="drop table mysqlinfotest";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 

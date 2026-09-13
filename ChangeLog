@@ -2770,6 +2770,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   text as a whole-token bind (#10121)
 - fixed the multi-insert-split trigger to recognize double- and
   backtick-quoted column names, not just unquoted ones (#10122)
+- fixed the mysql protocol module's insert-type classifier to
+  handle quoted column names and values (#10125)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
