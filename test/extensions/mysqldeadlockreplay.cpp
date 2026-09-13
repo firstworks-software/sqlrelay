@@ -16,6 +16,11 @@ uint16_t	sessionid;
 const char *success="\033[32msuccess\033[0m";
 const char *failure="\033[31mfailure\033[0m";
 
+// the replay trigger's <log file="..."/> for the deadlock condition.  it gets
+// the transaction log the replay ran, which is the only place the queries
+// replay rewrote are visible from outside the server
+const char	*deadlocklog="/tmp/mysqldeadlockreplay-deadlock.log";
+
 void assertEquals(const char *actual, const char *expected) {
 
 	if (!expected) {
@@ -88,6 +93,23 @@ void assertTrue(bool actual) {
 	}
 }
 
+void assertLogContains(const char *filename, const char *needle) {
+
+	char	*contents=file::getContents(filename);
+	if (contents && charstring::contains(contents,needle)) {
+		stdoutput.printf("%s ",success);
+		delete[] contents;
+		return;
+	}
+	stdoutput.printf("%s does not contain \"%s\":\n%s\n",
+				filename,needle,(contents)?contents:"(null)");
+	stdoutput.printf("%s ",failure);
+	delete[] contents;
+	delete sem;
+	file::remove("semkey");
+	process::exit(1);
+}
+
 int main(int argc, char **argv) {
 
 	// deadlock replay needs a transactional storage engine, which the
@@ -126,6 +148,10 @@ int main(int argc, char **argv) {
 		process::exit(1);
 	}
 
+	// The trigger appends to the log file, so one left behind by a previous
+	// run would make the replayed-query checks at the end a false pass.
+	file::remove(deadlocklog);
+
 	pid_t	pid1=process::fork();
 	if (!pid1) {
 
@@ -157,10 +183,22 @@ int main(int argc, char **argv) {
 			"insert into testtable "
 			"(col2,col3,col4) "
 			"values (1,'hello','hello')"));
+		sqlrcur.sendQuery("drop table weighttable");
+		assertTrue(sqlrcur.sendQuery("create table weighttable "
+						"(col1 int)"));
 		stdoutput.printf("\n");
 
-		// execute the initial update
 		assertTrue(sqlrcon.begin());
+
+		// Innodb rolls back whichever of the two transactions changed
+		// fewer rows, so the inserts session 2 runs below would
+		// otherwise make session 1 the victim instead.  These rows
+		// outweigh them and keep session 2 the one that gets replayed.
+		assertTrue(sqlrcur.sendQuery("insert into weighttable values "
+			"(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),"
+			"(11),(12),(13),(14),(15),(16),(17),(18),(19),(20)"));
+
+		// execute the initial update
 		assertTrue(sqlrcur.sendQuery("update testtable set "
 						"col2=col2+1 where col1=1"));
 		stdoutput.printf("\n");
@@ -208,8 +246,29 @@ int main(int argc, char **argv) {
 
 		stdoutput.printf("SESSION 2...\n");
 
-		// execute the conflicting updates
 		assertTrue(sqlrcon.begin());
+
+		// Inserts that supply a literal null for the auto-increment
+		// column.  The deadlock below rolls these rows back, but
+		// innodb's auto_increment counter doesn't roll back with them,
+		// so replaying them as written would land them on new, higher
+		// ids.  The replay has to substitute the ids they got here.
+		// The third one also carries a clause after the values list,
+		// which the replay has to keep.
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable "
+			"values (null,10,'aaa','aaa')"));
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable "
+			"(col1,col2,col3,col4) "
+			"values (null,20,'bbb','bbb')"));
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable "
+			"(col1,col2,col3,col4) "
+			"values (null,30,'ccc','ccc') "
+			"on duplicate key update col2=col2"));
+
+		// execute the conflicting updates
 		assertTrue(sqlrcur.sendQuery("update testtable set "
 						"col2=col2+1 where col1=2"));
 		stdoutput.printf("\n");
@@ -251,6 +310,38 @@ int main(int argc, char **argv) {
 	assertEquals(sqlrcur.getField(0,"col2"),"3");
 	assertEquals(sqlrcur.getField(1,"col1"),"2");
 	assertEquals(sqlrcur.getField(1,"col2"),"3");
+	assertEquals((int)sqlrcur.rowCount(),5);
+	stdoutput.printf("\n");
+
+	// The rows session 2 inserted kept the ids they got before the deadlock
+	// rolled them back, instead of the higher ones the auto_increment
+	// counter would have handed out when the replay re-ran the inserts.
+	stdoutput.printf("REPLAYED INSERT IDS: \n");
+	assertEquals(sqlrcur.getField(2,"col1"),"3");
+	assertEquals(sqlrcur.getField(2,"col2"),"10");
+	assertEquals(sqlrcur.getField(2,"col3"),"aaa");
+	assertEquals(sqlrcur.getField(3,"col1"),"4");
+	assertEquals(sqlrcur.getField(3,"col2"),"20");
+	assertEquals(sqlrcur.getField(3,"col3"),"bbb");
+	assertEquals(sqlrcur.getField(4,"col1"),"5");
+	assertEquals(sqlrcur.getField(4,"col2"),"30");
+	assertEquals(sqlrcur.getField(4,"col3"),"ccc");
+	stdoutput.printf("\n");
+
+	// The replayed queries themselves.  The row state above can't tell
+	// whether the clause after the values list survived the rewrite, since
+	// no duplicate key ever collides here, so check the query text.
+	stdoutput.printf("REPLAYED QUERIES: \n");
+	assertLogContains(deadlocklog,
+			"insert into testtable (col1,col2,col3,col4) "
+			"values (3,10,'aaa','aaa')");
+	assertLogContains(deadlocklog,
+			"insert into testtable (col1,col2,col3,col4) "
+			"values (4,20,'bbb','bbb')");
+	assertLogContains(deadlocklog,
+			"insert into testtable (col1,col2,col3,col4) "
+			"values (5,30,'ccc','ccc') "
+			"on duplicate key update col2=col2");
 	stdoutput.printf("\n");
 
 	// clean up

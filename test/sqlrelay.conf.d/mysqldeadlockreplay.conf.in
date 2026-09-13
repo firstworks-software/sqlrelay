@@ -10,8 +10,14 @@
                 </translations>
                 <triggers>
                         <trigger module="replay" when="after">
-                                <!-- deadlock -->
-                                <condition error="1213" scope="transaction"/>
+                                <!-- deadlock.  the log file is the only place
+                                     the queries the replay actually ran show
+                                     up, so it's where the test looks for the
+                                     substituted auto-increment value and for
+                                     the clause that follows the values list -->
+                                <condition error="1213" scope="transaction">
+                                        <log file="/tmp/mysqldeadlockreplay-deadlock.log"/>
+                                </condition>
                                 <!-- lock wait timeout -->
                                 <condition error="1205" scope="query"/>
                         </trigger>

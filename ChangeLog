@@ -2797,6 +2797,14 @@
 		null out typestring after it's deleted in
 		sqlrcursor::clearColumns() to close off a latent double-free
 		on the same reused buffer (#10100)
+	fixed the replay trigger's INSERT replay to recognize when an
+		auto-increment column was given a literal null and substitute
+		the actual last-insert-id on replay rather than generate a new
+		one; the rewriteQuery() code path was unreachable due to a
+		routing bug in logQuery(), now fixed, which also exposed and
+		fixed three latent bugs: dropping text after the values list,
+		null pointer dereference on malformed inserts, and failure to
+		recognize quoted column names (#10110)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

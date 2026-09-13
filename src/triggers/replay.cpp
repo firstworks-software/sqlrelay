@@ -101,10 +101,19 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_replay : public sqlrtrigger {
 					uint64_t liid,
 					bool columnsincludeautoinccolumn,
 					const char *values);
-		void	appendValues(const char *values,
+		// appends the values, substituting the last-insert-id for
+		// a null auto-increment column value, and returns the
+		// position in the query just past the close paren of the
+		// values
+		const char	*appendValues(const char *values,
 						const char *queryend,
 						linkedlist<char *> *columns,
 						uint64_t liid,
+						const char *autoinccolumn);
+		// returns true if the value supplied for the auto-increment
+		// column was a null
+		bool	autoincValueIsNull(linkedlist<char *> *columns,
+						linkedlist<char *> *values,
 						const char *autoinccolumn);
 
 		bool		includeselects;
@@ -270,6 +279,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	const char 		*autoinccolumn=NULL;
 	bool			columnsincludeautoinccolumn=false;
 	const char		*rawvalues=NULL;
+	linkedlist<char *>	*values=NULL;
 	cont->parseInsert(query,querysize,
 				&querytype,
 				NULL,
@@ -277,7 +287,8 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 				&allcolumns,
 				&autoinccolumn,
 				&columnsincludeautoinccolumn,
-				NULL,NULL,NULL,
+				NULL,NULL,
+				&values,
 				&rawvalues);
 
 	// bail if the query was a select, and we're ignoring selects
@@ -286,6 +297,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		debugWrite("%.*s",(int)sqlrcur->getQuerySize(),
 					sqlrcur->getQueryBuffer());
 		delete columns;
+		delete values;
 		return;
 	}
 
@@ -293,6 +305,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	if (querytype==SQLRQUERYTYPE_SELECTINTO) {
 		disableUntilEndOfTx(query,querysize,querytype);
 		delete columns;
+		delete values;
 		return;
 	}
 
@@ -301,11 +314,24 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	if (querytype==SQLRQUERYTYPE_INSERT ||
 		 querytype==SQLRQUERYTYPE_MULTIINSERT) {
 
-// FIXME: there's a case we're not handling...  if the query contains a null
-// for the auto-increment column, then we need to replace it with the
-// last-insert-id
+		// did the insert supply a null for the auto-increment column?
+		bool	nullautoincvalue=(querytype==SQLRQUERYTYPE_INSERT &&
+					gotliid && autoinccolumn &&
+					columnsincludeautoinccolumn &&
+					autoincValueIsNull(columns,values,
+							autoinccolumn));
 
-		if (!gotliid || !autoinccolumn || columnsincludeautoinccolumn) {
+		if (nullautoincvalue) {
+
+			// The database generated an id for the null, and
+			// would generate a different one on replay, so
+			// replace the null with the id it generated.
+			rewriteQuery(qd,query,querysize,
+					columns,autoinccolumn,liid,
+					columnsincludeautoinccolumn,rawvalues);
+
+		} else if (!gotliid || !autoinccolumn ||
+					columnsincludeautoinccolumn) {
 
 			// If there was no last-insert-id or auto-increment
 			// column, or if there was an auto-increment column,
@@ -327,6 +353,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 			// There's no way (currently) to handle these.
 			disableUntilEndOfTx(query,querysize,querytype);
 			delete columns;
+			delete values;
 			return;
 		}
 
@@ -335,6 +362,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 		// There's no way (currently) to handle these.
 		disableUntilEndOfTx(query,querysize,querytype);
 		delete columns;
+		delete values;
 		return;
 
 	} else {
@@ -397,6 +425,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 #endif
 
 	delete columns;
+	delete values;
 }
 
 void sqlrtrigger_replay::disableUntilEndOfTx(const char *query, 
@@ -507,15 +536,22 @@ void sqlrtrigger_replay::rewriteQuery(querydetails *qd,
 		newquery.append(liid)->append(',');
 		newquery.append(rawvalues,querysize-(rawvalues-query));
 	} else {
-		appendValues(rawvalues,query+querysize,
-					columns,liid,autoinccolumn);
+		const char	*queryend=query+querysize;
+		const char	*valuesend=appendValues(rawvalues,queryend,
+						columns,liid,autoinccolumn);
+
+		// append whatever followed the values, eg. an
+		// "on duplicate key update ..." or "returning ..." clause
+		if (valuesend<queryend) {
+			newquery.append(valuesend,queryend-valuesend);
+		}
 	}
 
 	// copy out the rewritten query
 	copyQuery(qd,newquery.getString(),newquery.getSize());
 }
 
-void sqlrtrigger_replay::appendValues(const char *values,
+const char *sqlrtrigger_replay::appendValues(const char *values,
 						const char *queryend,
 						linkedlist<char *> *columns,
 						uint64_t liid,
@@ -537,7 +573,7 @@ void sqlrtrigger_replay::appendValues(const char *values,
 		if (c>=queryend) {
 			newquery.append(value.getString());
 			newquery.append(')');
-			return;
+			return queryend;
 		}
 
 		// handle quotes
@@ -570,7 +606,8 @@ void sqlrtrigger_replay::appendValues(const char *values,
 				// the autoincrement column, then
 				// append the last-insert-id,
 				// otherwise just append the value
-				if (!charstring::compare(col->getValue(),
+				if (col &&
+					!cont->compareQuoted(col->getValue(),
 							autoinccolumn) &&
 					!charstring::compare(
 							value.getString(),
@@ -584,7 +621,7 @@ void sqlrtrigger_replay::appendValues(const char *values,
 				// append the )
 				newquery.append(')');
 
-				return;
+				return c+1;
 			}
 
 		} else
@@ -595,7 +632,8 @@ void sqlrtrigger_replay::appendValues(const char *values,
 			// if the value was a null and this is the
 			// autoincrement column, then append the
 			// last-insert-id, otherwise just append the value
-			if (!charstring::compare(col->getValue(),
+			if (col &&
+				!cont->compareQuoted(col->getValue(),
 						autoinccolumn) &&
 				!charstring::compare(
 						value.getString(),
@@ -608,7 +646,11 @@ void sqlrtrigger_replay::appendValues(const char *values,
 			// append the comma
 			newquery.append(',');
 
-			col=col->getNext();
+			// a malformed query can supply more values than
+			// there are columns, running col off the end
+			if (col) {
+				col=col->getNext();
+			}
 			value.clear();
 
 		} else
@@ -621,6 +663,30 @@ void sqlrtrigger_replay::appendValues(const char *values,
 		// keep going
 		c++;
 	}
+}
+
+bool sqlrtrigger_replay::autoincValueIsNull(linkedlist<char *> *columns,
+						linkedlist<char *> *values,
+						const char *autoinccolumn) {
+
+	// bail if we have nothing to compare
+	if (!columns || !values) {
+		return false;
+	}
+
+	// the columns and values are in the same order, so walk them
+	// together, looking for the value of the autoincrement column
+	listnode<char *>	*valnode=values->getFirst();
+	for (listnode<char *> *colnode=columns->getFirst();
+				colnode && valnode;
+				colnode=colnode->getNext(),
+				valnode=valnode->getNext()) {
+
+		if (!cont->compareQuoted(colnode->getValue(),autoinccolumn)) {
+			return !charstring::compare(valnode->getValue(),"null");
+		}
+	}
+	return false;
 }
 
 bool sqlrtrigger_replay::replay(sqlrservercursor *sqlrcur, condition *cond) {
