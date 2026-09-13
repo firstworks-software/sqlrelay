@@ -1968,7 +1968,7 @@ then
 	# the programs under test have no rpath, and the installed prefix is
 	# in the ldconfig cache, so without this they can silently load the
 	# installed libsqlr* rather than this build tree's (#9997)
-	BUILDTREELIBS=$BUILDDIR/src/server/.libs:$BUILDDIR/src/util/.libs:$BUILDDIR/src/api/c++/.libs:$BUILDDIR/src/api/c/.libs
+	BUILDTREELIBS=$BUILDDIR/src/server/.libs:$BUILDDIR/src/util/.libs:$BUILDDIR/src/api/c++/.libs:$BUILDDIR/src/api/c/.libs:$BUILDDIR/src/api/java/.libs
 	if ( test -n "$LD_LIBRARY_PATH" )
 	then
 		LD_LIBRARY_PATH=$BUILDTREELIBS:$LD_LIBRARY_PATH

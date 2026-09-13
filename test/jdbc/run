@@ -3,7 +3,13 @@
 if ( test -z "$2" )
 then
 	export CLASSPATH=$CLASSPATH:/usr/local/firstworks/java/sqlrelay.jar:/usr/local/firstworks/java/sqlrelayjdbc.jar
-	export LD_LIBRARY_PATH="/usr/local/firstworks/java/com/firstworks/sqlrelay:/usr/local/firstworks/lib"
+	if ( test -n "$LD_LIBRARY_PATH" )
+	then
+		LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/firstworks/java/com/firstworks/sqlrelay:/usr/local/firstworks/lib"
+	else
+		LD_LIBRARY_PATH="/usr/local/firstworks/java/com/firstworks/sqlrelay:/usr/local/firstworks/lib"
+	fi
+	export LD_LIBRARY_PATH
 else
 	if ( test "$2" = "native" )
 	then
