@@ -508,6 +508,26 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n");
 
 
+	// dont get column info, then get table list
+	// (server always sends column info for list commands, regardless of
+	// the app's preference - make sure the client doesn't desync the wire
+	// when it skips reading that column info back)
+	stdoutput.printf("DONT GET COLUMN INFO, THEN GET TABLE LIST: \n");
+	cur->dontGetColumnInfo();
+	assertTrue(cur->getTableList(NULL));
+	assertTrue(cur->sendQuery("select testint from testtable order by testint"));
+	assertEquals(cur->getField(0,(uint32_t)0),"1");
+	assertEquals(cur->getField(1,(uint32_t)0),"2");
+	assertEquals(cur->getField(2,(uint32_t)0),"3");
+	assertEquals(cur->getField(3,(uint32_t)0),"4");
+	assertEquals(cur->getField(4,(uint32_t)0),"5");
+	assertEquals(cur->getField(5,(uint32_t)0),"6");
+	assertEquals(cur->getField(6,(uint32_t)0),"7");
+	assertEquals(cur->getField(7,(uint32_t)0),"8");
+	cur->getColumnInfo();
+	stdoutput.printf("\n");
+
+
 	// suspended session
 	stdoutput.printf("SUSPENDED SESSION: \n");
 	assertTrue(cur->sendQuery("select * from testtable order by testint"));

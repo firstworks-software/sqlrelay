@@ -4920,6 +4920,10 @@ bool sqlrprotocol_sqlrclient::getObjectListCommand(sqlrservercursor *cursor,
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
 	cont->setInputOutputBindCount(cursor,0);
+
+	// column info is always sent for a list command, regardless of
+	// what the client asked for; the client keys off the wire flag,
+	// not its own request, so this is safe
 	cont->setSendColumnInfo(true);
 
 	// get the list and return it
@@ -5184,6 +5188,10 @@ bool sqlrprotocol_sqlrclient::getComponentListCommand(
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
 	cont->setInputOutputBindCount(cursor,0);
+
+	// column info is always sent for a list command, regardless of
+	// what the client asked for; the client keys off the wire flag,
+	// not its own request, so this is safe
 	cont->setSendColumnInfo(true);
 
 	// get the list and return it

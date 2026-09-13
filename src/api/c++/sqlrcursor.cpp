@@ -764,8 +764,8 @@ void sqlrcursor::cacheColumnInfo() {
 	pvt->_cachedest->write(pvt->_colcount);
 
 	// write column descriptions to the cache file
-	if (pvt->_sendcolumninfo==SEND_COLUMN_INFO && 
-			pvt->_sentcolumninfo==SEND_COLUMN_INFO) {
+	// (this must match the flag written above, not what the app asked for)
+	if (pvt->_sentcolumninfo==SEND_COLUMN_INFO) {
 
 		// write column type format
 		pvt->_cachedest->write(pvt->_columntypeformat);
@@ -4253,8 +4253,10 @@ bool sqlrcursor::parseColumnInfo() {
 	// variable no matter what
 	createColumnBuffers();
 
-	if (pvt->_sendcolumninfo==SEND_COLUMN_INFO && 
-			pvt->_sentcolumninfo==SEND_COLUMN_INFO) {
+	// read the column info whenever the server actually sent it, even if
+	// the app asked us not to get it, otherwise the reads that follow will
+	// be out of sync
+	if (pvt->_sentcolumninfo==SEND_COLUMN_INFO) {
 
 		// get whether column types will be predefined id's or strings
 		if (getShort(&pvt->_columntypeformat)!=sizeof(uint16_t)) {
@@ -6103,8 +6105,9 @@ bool sqlrcursor::parseResults() {
 			currentcol->longdatatype=(type==END_LONG_DATA)?1:0;
 		}
 
-		if (pvt->_sendcolumninfo==SEND_COLUMN_INFO && 
-				pvt->_sentcolumninfo==SEND_COLUMN_INFO) {
+		// the column is only populated if the server actually sent
+		// column info
+		if (pvt->_sentcolumninfo==SEND_COLUMN_INFO) {
 
 			// keep track of the longest field
 			if (length>currentcol->longest) {

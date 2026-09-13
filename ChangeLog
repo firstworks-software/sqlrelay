@@ -2790,6 +2790,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   parser to place decimal points and handle sign sentinels (#10133)
 - fixed the tds protocol module misdeclaring the LOGIN7 clienttimzone
   field as unsigned (#10134)
+- fixed a c++ api wire desync when dontGetColumnInfo() was followed by
+  getTableList(), getColumnList(), getDatabaseList(), or a similar
+  list method (#10109)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
