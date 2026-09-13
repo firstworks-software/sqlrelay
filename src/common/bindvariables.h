@@ -37,6 +37,58 @@ static bool afterBindVariable(const char *c) {
 }
 #endif
 
+#ifdef NEED_WHOLE_BIND_VARIABLE
+// (requires NEED_IS_BIND_DELIMITER)
+// returns the start of the bind variable in "var", and its length in "len", if
+// "var" is nothing but a single bind variable, optionally surrounded by
+// whitespace, or NULL otherwise - a bind inside an expression, "?+1", feeds no
+// column on its own.  the result is not NULL-terminated, use it with "len".
+// "len" may be NULL if the caller only needs a yes/no answer.
+static const char *wholeBindVariable(const char *var,
+					bool questionmark,
+					bool colon,
+					bool atsign,
+					bool dollarsign,
+					size_t *len) {
+
+	if (!var) {
+		return NULL;
+	}
+
+	// skip leading whitespace
+	const char	*start=var;
+	while (character::isWhitespace(*start)) {
+		start++;
+	}
+
+	if (!isBindDelimiter(start,questionmark,colon,atsign,dollarsign)) {
+		return NULL;
+	}
+
+	// scan the name
+	// (oracle bind names may also contain $ and #)
+	const char	*p=start+1;
+	while (character::isAlphanumeric(*p) ||
+			*p=='_' || *p=='$' || *p=='#') {
+		p++;
+	}
+	const char	*end=p;
+
+	// skip trailing whitespace
+	while (character::isWhitespace(*p)) {
+		p++;
+	}
+	if (*p) {
+		return NULL;
+	}
+
+	if (len) {
+		*len=end-start;
+	}
+	return start;
+}
+#endif
+
 #ifdef NEED_COUNT_BIND_VARIABLES
 static uint16_t countBindVariables(const char *query,
 					uint32_t querylen,

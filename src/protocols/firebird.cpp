@@ -10,6 +10,12 @@
 #include <rudiments/file.h>
 #include <rudiments/error.h>
 
+// insert values have to be matched to columns, and a value that is a whole
+// bind variable is walked the same way the rest of the server walks one
+#define NEED_IS_BIND_DELIMITER
+#define NEED_WHOLE_BIND_VARIABLE
+#include <bindvariables.h>
+
 #include <datatypes.h>
 #include <defines.h>
 
@@ -2137,7 +2143,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 		bool	buildBindProbe(sqlrservercursor *cursor,
 					stringbuffer *probe,
 					uint16_t *bindcount);
-		bool	isBindMarker(const char *value);
 
 		bool	describeOutputColumns(sqlrservercursor *cursor,
 					sqlrfirebirdstatement *stmt);
@@ -11700,7 +11705,13 @@ bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 		for (; cnode && vnode;
 			cnode=cnode->getNext(), vnode=vnode->getNext()) {
 
-			if (!isBindMarker(vnode->getValue())) {
+			// take any of the four markers SQL Relay knows - a
+			// protocol module can't see the flags
+			// countBindVariables() consults, and no literal,
+			// identifier or function call in a value list starts
+			// with one
+			if (!wholeBindVariable(vnode->getValue(),
+						true,true,true,true,NULL)) {
 				continue;
 			}
 			if (found) {
@@ -11730,37 +11741,6 @@ bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 	debugEnd();
 
 	return success;
-}
-
-bool sqlrprotocol_firebird::isBindMarker(const char *value) {
-
-	if (!value) {
-		return false;
-	}
-
-	// parseInsert() doesn't trim the values it splits out
-	const char	*p=value;
-	while (character::isWhitespace(*p)) {
-		p++;
-	}
-
-	// take any of the four markers SQL Relay knows - a protocol module
-	// can't see the flags countBindVariables() consults, and no literal,
-	// identifier or function call in a value list starts with one
-	if (*p!='?' && *p!=':' && *p!='@' && *p!='$') {
-		return false;
-	}
-	p++;
-
-	// the marker has to be the whole value - a bind inside an expression,
-	// "values (?+1)", feeds no column on its own
-	while (character::isAlphanumeric(*p) || *p=='_') {
-		p++;
-	}
-	while (character::isWhitespace(*p)) {
-		p++;
-	}
-	return !*p;
 }
 
 bool sqlrprotocol_firebird::describeOutputColumns(sqlrservercursor *cursor,

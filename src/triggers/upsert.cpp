@@ -9,6 +9,7 @@
 #include <rudiments/snooze.h>
 
 #define NEED_IS_BIND_DELIMITER 1
+#define NEED_WHOLE_BIND_VARIABLE 1
 #include <bindvariables.h>
 #include <defines.h>
 
@@ -701,17 +702,8 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 
 const char *sqlrtrigger_upsert::trimmedBind(const char *var, size_t *len) {
 
-	if (!var) {
-		return NULL;
-	}
-
 	// the values were split out of the query without being trimmed
-	const char	*start=var;
-	while (character::isWhitespace(*start)) {
-		start++;
-	}
-
-	if (!isBindDelimiter(start,
+	return wholeBindVariable(var,
 				cont->getConfig()->
 				getBindVariableDelimiterQuestionMarkSupported(),
 				cont->getConfig()->
@@ -719,30 +711,8 @@ const char *sqlrtrigger_upsert::trimmedBind(const char *var, size_t *len) {
 				cont->getConfig()->
 				getBindVariableDelimiterAtSignSupported(),
 				cont->getConfig()->
-				getBindVariableDelimiterDollarSignSupported())) {
-		return NULL;
-	}
-
-	// the marker has to be the whole value - a bind inside an expression,
-	// "values (?+1)", feeds no column on its own
-	// (oracle bind names may also contain $ and #)
-	const char	*p=start+1;
-	while (character::isAlphanumeric(*p) ||
-			*p=='_' || *p=='$' || *p=='#') {
-		p++;
-	}
-	const char	*end=p;
-
-	// skip trailing whitespace
-	while (character::isWhitespace(*p)) {
-		p++;
-	}
-	if (*p) {
-		return NULL;
-	}
-
-	*len=end-start;
-	return start;
+				getBindVariableDelimiterDollarSignSupported(),
+				len);
 }
 
 extern "C" {

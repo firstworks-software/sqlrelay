@@ -875,6 +875,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   va_list reuse bug in rudiments' charstring::printf() (see
   rudiments' own ChangeLog) - these are defensive hardening
   for the same code path (#10021)
+- unified the upsert trigger's and the firebird protocol module's
+  whole-value bind checks into one shared helper in
+  bindvariables.h, so a fix to one no longer has to be repeated in
+  the other; the firebird protocol module now also accepts $ and #
+  in bind names, matching the upsert trigger (#10131)
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
