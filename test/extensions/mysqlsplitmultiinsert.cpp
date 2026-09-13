@@ -192,18 +192,12 @@ int main(int argc, char **argv) {
 
 	// create a table whose own name is backtick-quoted and contains a
 	// literal space
-	// #10126: the table-name scan in parsePrefix() looked for the
-	// first space to mark the end of the table name, so a quoted
-	// table name containing a literal space would stop there instead
-	// of at the real separating space, corrupting the rewritten
-	// single-inserts.  NOTE: sqlrservercontroller::parseInsert() has
-	// the same bug in its own table-name scan (#10127, still open), so
-	// today it misclassifies this query and this trigger's
-	// runBeforeExecute() bails out before ever calling parsePrefix() -
-	// the insert below succeeds because it then runs unmodified, not
-	// because parsePrefix() rewrote it correctly.  This is the same
-	// kind of masking #10122 described: once #10127 is fixed, this
-	// case starts actually exercising parsePrefix()'s fix.
+	// #10126 fixed parsePrefix()'s table-name scan, which stopped at
+	// the first space instead of the real separator; #10127 fixed the
+	// same bug in sqlrservercontroller::parseInsert()'s own table-name
+	// scan.  Before #10127, parseInsert() misclassified this query and
+	// runBeforeExecute() bailed out before ever reaching parsePrefix().
+	// Now this case genuinely exercises both fixes together.
 	stdoutput.printf("CREATE TABLE WITH SPACE IN NAME: \n");
 	cur->sendQuery("drop table `table with space`");
 	assertTrue(cur->sendQuery(
@@ -269,11 +263,7 @@ int main(int argc, char **argv) {
 
 	// #10126: a quoted table name might be followed directly by the
 	// column list's opening paren, with no separating space (normalize
-	// deliberately never inserts one there).  Unlike the space-in-name
-	// case above, this table name has no internal space, so
-	// sqlrservercontroller::parseInsert() classifies it correctly and
-	// this case really does reach and exercise parsePrefix() - it's
-	// not masked by #10127.
+	// deliberately never inserts one there).
 	stdoutput.printf("CREATE TABLE FOR QUOTED NAME WITH NO SPACE BEFORE PAREN: \n");
 	cur->sendQuery("drop table `quotedinserttable`");
 	assertTrue(cur->sendQuery(

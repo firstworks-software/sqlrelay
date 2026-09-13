@@ -4157,10 +4157,23 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		// skip past "insert into "
 		start+=12;
 
-		// find first space after table name
-		// FIXME: the table name could be quoted and contain a space
-		const char	*ptr=charstring::findFirst(start,' ');
-		if (ptr>=end) {
+		// mysql/mariadb treat backslash as an escape character
+		// inside quoted strings, other databases don't
+		bool	backslash=!charstring::compareIgnoringCase(
+						getNativeDbType(),"mysql");
+
+		// find the space after the table name, skipping over a
+		// quoted table name that might contain a literal space
+		const char	*ptr=NULL;
+		bool		quotedtablename=start<end &&
+					character::isInSet(*start,"'\"`");
+		if (quotedtablename) {
+			ptr=skipStringLiteral(start,end,backslash);
+		} else {
+			ptr=charstring::findFirst(start,' ');
+		}
+		if (!ptr || ptr>=end) {
+			// truncated or malformed query
 			return false;
 		}
 
@@ -4173,8 +4186,13 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		// * the "(" before the list of columns
 		// * the word "values"
 		// * the word "select"
-		ptr++;
+		// a quoted table name might instead be followed directly
+		// by the column list's opening paren, with no space
+		if (!quotedtablename || *ptr==' ') {
+			ptr++;
+		}
 		if (ptr>=end) {
+			delete[] localtable;
 			return false;
 		}
 
