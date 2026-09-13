@@ -4838,7 +4838,12 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 
 	// use 1-based index for bind variables
 	uint16_t	bindindex=1;
-	
+
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					getNativeDbType(),"mysql");
+
 	// run through the querybuffer...
 	const char	*ptr=querybuffer;
 	const char	*endptr=querybuffer+cursor->getQuerySize();
@@ -4879,7 +4884,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 			// then we're back in the query
 			// (or we're in between one of these: '...''...'
 			// which is functionally the same)
-			if (*ptr=='\'' && prev!='\\') {
+			if (*ptr=='\'' && (!backslash || prev!='\\')) {
 				parsestate=IN_QUERY;
 			}
 

@@ -2746,6 +2746,24 @@
 		backslash-escaping rules when scanning quoted string literals,
 		even though none of them can ever run against a mysql/mariadb
 		backend (#7433)
+	fixed sqlrservercursor's fakeInputBinds(), sqlrservercontroller's
+		translateBindVariables(), and the oracle protocol module's
+		getBindVariableName() hardcoding mysql/mariadb
+		backslash-escaping rules while scanning a query for bind
+		variables, even though all three are reached for other
+		backends too; a literal ending in a backslash right before a
+		quote could swallow the quote, and anything after it
+		including a later bind variable. they now base that on the
+		connection's native db type instead (#7433)
+	fixed an out-of-bounds read in the c++ api's
+		sqlrcursor::performSubstitutionsInternal(): its quote-tracking
+		check looked at the byte before the current one on every
+		iteration, including the first, reading one byte before the
+		start of the query buffer (#7433)
+	fixed the php pdo driver's sqlrconnectionRewriteQuery() dropping
+		the last bind variable in a query when that variable ran to
+		the very end of the query with no trailing delimiter to close
+		it, e.g. "...where id=:id" (#7433)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

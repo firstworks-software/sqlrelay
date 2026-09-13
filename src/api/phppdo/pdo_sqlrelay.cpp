@@ -1225,6 +1225,15 @@ static void sqlrconnectionRewriteQuery(sqlrconnection *sqlrcon,
 		}
 
 	} while (ptr<endptr);
+
+	// a bind variable can run to the end of the query with no
+	// trailing delimiter to close it out above, e.g. "...where id=:id"
+	if (parsestate==IN_BIND) {
+		newquery->append("$(");
+		newquery->append(varcounter);
+		newquery->append(')');
+		varcounter++;
+	}
 }
 
 static

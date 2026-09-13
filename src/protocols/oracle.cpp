@@ -13637,6 +13637,11 @@ bool sqlrprotocol_oracle::getBindVariableName(const char *query,
 	char			prev='\0';
 	uint16_t		count=0;
 
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+
 	while (ptr<endptr) {
 
 		if (parsestate==IN_QUERY) {
@@ -13652,7 +13657,7 @@ bool sqlrprotocol_oracle::getBindVariableName(const char *query,
 		}
 
 		if (parsestate==IN_QUOTES) {
-			if (*ptr=='\'' && prev!='\\') {
+			if (*ptr=='\'' && (!backslash || prev!='\\')) {
 				parsestate=IN_QUERY;
 			}
 			prev=(*ptr=='\\' && prev=='\\')?'\0':*ptr;

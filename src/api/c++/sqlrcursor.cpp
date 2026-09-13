@@ -2704,9 +2704,11 @@ bool sqlrcursor::performSubstitutionsInternal() {
 	// iterate through the string
 	while (ptr<endptr) {
 	
-		// figure out whether we're inside a quoted 
-		// string or not
-		if (*ptr=='\'' && *(ptr-1)!='\\') {
+		// figure out whether we're inside a quoted string or not -
+		// guard against reading before the start of the buffer on
+		// the first character
+		if (*ptr=='\'' &&
+			(ptr==pvt->_queryptr || *(ptr-1)!='\\')) {
 			inquotes=!inquotes;
 		}
 	
