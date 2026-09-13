@@ -2779,6 +2779,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   name containing a space (#10127)
 - fixed the upsert trigger to quote a table name containing a space
   when rewriting an insert into an update (#10128)
+- fixed the upsert trigger not recognizing a bind value with leading
+  whitespace as a whole-token bind (#10124)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

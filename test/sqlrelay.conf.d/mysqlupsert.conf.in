@@ -37,4 +37,27 @@
 		</connections>
 	</instance>
 
+	<instance id="mysqlupsertnonormalize" dbase="mysql">
+		<listeners>
+			<listener port="9043" socket="/tmp/mysqlupsertnonormalize.socket"/>
+		</listeners>
+		<triggers>
+			<trigger module="upsert" when="after">
+				<errors>
+					<error number="1062"/>
+				</errors>
+				<tables>
+					<table name="student">
+						<primarykey name="id"/>
+						<column name="firstname"/>
+						<column name="lastname"/>
+					</table>
+				</tables>
+			</trigger>
+		</triggers>
+		<connections>
+			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;foundrows=yes"/>
+		</connections>
+	</instance>
+
 </instances>

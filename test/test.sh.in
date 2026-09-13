@@ -166,10 +166,21 @@ stop_instances() {
 
 		# the postgresqlupsert test also has a second instance, whose
 		# trigger recognizes the duplicate-key error via sqlstate=
-		# instead of string= (#9620)
+		# instead of string= (#9620), and a third instance with no
+		# normalize translation, to exercise leading whitespace before
+		# a bind marker reaching the upsert trigger unstripped (#10124)
 		if ( test "$_instance" = "postgresqlupsert" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id postgresqlupsertsqlstate
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id postgresqlupsertnonormalize
+		fi
+
+		# the mysqlupsert test also has a second instance with no
+		# normalize translation, to exercise leading whitespace before
+		# a bind marker reaching the upsert trigger unstripped (#10124)
+		if ( test "$_instance" = "mysqlupsert" )
+		then
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id mysqlupsertnonormalize
 		fi
 
 		# the oracleprotocol test also has 11g and 12c
@@ -426,10 +437,23 @@ start_instance() {
 
 	# the postgresqlupsert test needs a second instance, whose trigger
 	# recognizes the duplicate-key error via sqlstate= instead of
-	# string= (#9620)
+	# string= (#9620), and a third instance with no normalize
+	# translation, to exercise leading whitespace before a bind marker
+	# reaching the upsert trigger unstripped (#10124)
 	if ( test "$instance" = "postgresqlupsert" )
 	then
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlupsertsqlstate -backtrace $BACKTRACEDIR
+		sleep 2
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlupsertnonormalize -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
+	# the mysqlupsert test needs a second instance with no normalize
+	# translation, to exercise leading whitespace before a bind marker
+	# reaching the upsert trigger unstripped (#10124)
+	if ( test "$instance" = "mysqlupsert" )
+	then
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id mysqlupsertnonormalize -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
 
@@ -496,6 +520,13 @@ stop_instance() {
 	then
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlupsertsqlstate
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlupsertnonormalize
+	fi
+	if ( test "$instance" = "mysqlupsert" )
+	then
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id mysqlupsertnonormalize
 	fi
 	sleep 2
 	$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance}

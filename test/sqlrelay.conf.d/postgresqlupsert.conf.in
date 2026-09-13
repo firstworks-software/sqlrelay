@@ -58,4 +58,27 @@
 		</connections>
 	</instance>
 
+	<instance id="postgresqlupsertnonormalize" dbase="postgresql">
+		<listeners>
+			<listener port="9040" socket="/tmp/postgresqlupsertnonormalize.socket"/>
+		</listeners>
+		<triggers>
+			<trigger module="upsert" when="after">
+				<errors>
+					<error string="duplicate key value"/>
+				</errors>
+				<tables>
+					<table name="student">
+						<primarykey name="id"/>
+						<column name="firstname"/>
+						<column name="lastname"/>
+					</table>
+				</tables>
+			</trigger>
+		</triggers>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;lastinsertidfunction=testfunc();typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
 </instances>

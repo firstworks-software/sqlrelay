@@ -41,7 +41,8 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_upsert : public sqlrtrigger {
 					const char *primarykeycolumn,
 					domnode *tablenode,
 					stringbuffer *query);
-		bool	isBind(const char *var);
+		const char	*trimmedBind(const char *var,
+							size_t *len);
 
 		domnode	*errors;
 		domnode	*tables;
@@ -340,7 +341,9 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 
 		// if val is a bind variable then map
 		// it to the corresponding column
-		if (isBind(val)) {
+		size_t		tblen=0;
+		const char	*tb=trimmedBind(val,&tblen);
+		if (tb) {
 
 			wholebinds++;
 
@@ -359,9 +362,12 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 			} else {
 
 				// we support bind by name/number
+				// (key off of the trimmed marker - the bind
+				// names this is looked up by carry no
+				// surrounding whitespace)
 				bindtocol.setValue(
-					charstring::duplicate(val),col);
-				debugWrite("%s -> %s",val,col);
+					charstring::duplicate(tb,tblen),col);
+				debugWrite("%.*s -> %s",(int)tblen,tb,col);
 			}
 		}
 
@@ -644,8 +650,12 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 		// copyInputBinds for use in the where clause.
 		// If "val" is not a bind variable (or it is, but it's just a ?)
 		// then append "val" literally.
-		if (isBind(val) && val[0]!='?') {
-			query->append(settowhere.getValue(val));
+		size_t		tblen=0;
+		const char	*tb=trimmedBind(val,&tblen);
+		if (tb && *tb!='?') {
+			char	*bindname=charstring::duplicate(tb,tblen);
+			query->append(settowhere.getValue(bindname));
+			delete[] bindname;
 		} else {
 			query->append(val);
 		}
@@ -659,9 +669,19 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 	return retval;
 }
 
-bool sqlrtrigger_upsert::isBind(const char *var) {
+const char *sqlrtrigger_upsert::trimmedBind(const char *var, size_t *len) {
 
-	if (!var || !isBindDelimiter(var,
+	if (!var) {
+		return NULL;
+	}
+
+	// the values were split out of the query without being trimmed
+	const char	*start=var;
+	while (character::isWhitespace(*start)) {
+		start++;
+	}
+
+	if (!isBindDelimiter(start,
 				cont->getConfig()->
 				getBindVariableDelimiterQuestionMarkSupported(),
 				cont->getConfig()->
@@ -670,21 +690,27 @@ bool sqlrtrigger_upsert::isBind(const char *var) {
 				getBindVariableDelimiterAtSignSupported(),
 				cont->getConfig()->
 				getBindVariableDelimiterDollarSignSupported())) {
-		return false;
+		return NULL;
 	}
 
 	// the marker has to be the whole value - a bind inside an expression,
 	// "values (?+1)", feeds no column on its own
-	const char	*p=var+1;
+	const char	*p=start+1;
 	while (character::isAlphanumeric(*p) || *p=='_') {
 		p++;
 	}
+	const char	*end=p;
 
-	// the values were split out of the query without being trimmed
+	// skip trailing whitespace
 	while (character::isWhitespace(*p)) {
 		p++;
 	}
-	return !*p;
+	if (*p) {
+		return NULL;
+	}
+
+	*len=end-start;
+	return start;
 }
 
 extern "C" {
