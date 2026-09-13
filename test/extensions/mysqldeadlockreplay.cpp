@@ -249,12 +249,13 @@ int main(int argc, char **argv) {
 		assertTrue(sqlrcon.begin());
 
 		// Inserts that supply a literal null for the auto-increment
-		// column.  The deadlock below rolls these rows back, but
-		// innodb's auto_increment counter doesn't roll back with them,
-		// so replaying them as written would land them on new, higher
-		// ids.  The replay has to substitute the ids they got here.
-		// The third one also carries a clause after the values list,
-		// which the replay has to keep.
+		// column, in null, NULL, and Null case, since detection has
+		// to be case-insensitive.  The deadlock below rolls these
+		// rows back, but innodb's auto_increment counter doesn't roll
+		// back with them, so replaying them as written would land
+		// them on new, higher ids.  The replay has to substitute the
+		// ids they got here.  The third one also carries a clause
+		// after the values list, which the replay has to keep.
 		assertTrue(sqlrcur.sendQuery(
 			"insert into testtable "
 			"values (null,10,'aaa','aaa')"));
@@ -267,6 +268,13 @@ int main(int argc, char **argv) {
 			"(col1,col2,col3,col4) "
 			"values (null,30,'ccc','ccc') "
 			"on duplicate key update col2=col2"));
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable "
+			"values (NULL,40,'ddd','ddd')"));
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable "
+			"(col1,col2,col3,col4) "
+			"values (Null,50,'eee','eee')"));
 
 		// execute the conflicting updates
 		assertTrue(sqlrcur.sendQuery("update testtable set "
@@ -310,7 +318,7 @@ int main(int argc, char **argv) {
 	assertEquals(sqlrcur.getField(0,"col2"),"3");
 	assertEquals(sqlrcur.getField(1,"col1"),"2");
 	assertEquals(sqlrcur.getField(1,"col2"),"3");
-	assertEquals((int)sqlrcur.rowCount(),5);
+	assertEquals((int)sqlrcur.rowCount(),7);
 	stdoutput.printf("\n");
 
 	// The rows session 2 inserted kept the ids they got before the deadlock
@@ -326,6 +334,12 @@ int main(int argc, char **argv) {
 	assertEquals(sqlrcur.getField(4,"col1"),"5");
 	assertEquals(sqlrcur.getField(4,"col2"),"30");
 	assertEquals(sqlrcur.getField(4,"col3"),"ccc");
+	assertEquals(sqlrcur.getField(5,"col1"),"6");
+	assertEquals(sqlrcur.getField(5,"col2"),"40");
+	assertEquals(sqlrcur.getField(5,"col3"),"ddd");
+	assertEquals(sqlrcur.getField(6,"col1"),"7");
+	assertEquals(sqlrcur.getField(6,"col2"),"50");
+	assertEquals(sqlrcur.getField(6,"col3"),"eee");
 	stdoutput.printf("\n");
 
 	// The replayed queries themselves.  The row state above can't tell
@@ -342,6 +356,12 @@ int main(int argc, char **argv) {
 			"insert into testtable (col1,col2,col3,col4) "
 			"values (5,30,'ccc','ccc') "
 			"on duplicate key update col2=col2");
+	assertLogContains(deadlocklog,
+			"insert into testtable (col1,col2,col3,col4) "
+			"values (6,40,'ddd','ddd')");
+	assertLogContains(deadlocklog,
+			"insert into testtable (col1,col2,col3,col4) "
+			"values (7,50,'eee','eee')");
 	stdoutput.printf("\n");
 
 	// clean up

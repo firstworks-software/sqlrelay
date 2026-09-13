@@ -2743,6 +2743,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   fixed three latent bugs: dropping text after the values list,
   null pointer dereference on malformed inserts, and failure to
   recognize quoted column names (#10110)
+- fixed the replay trigger's auto-increment substitution (added in
+  #10110) to match a literal null case-insensitively, since
+  clients don't always write the keyword in lowercase
+  (#10112)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

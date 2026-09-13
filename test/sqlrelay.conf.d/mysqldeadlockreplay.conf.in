@@ -6,7 +6,7 @@
 			<listener port="9017" socket="/tmp/mysqldeadlockreplay.socket"/>
 		</listeners>
                 <translations>
-                        <translation module="normalize"/>
+                        <translation module="normalize" convertcase="no"/>
                 </translations>
                 <triggers>
                         <trigger module="replay" when="after">

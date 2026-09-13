@@ -609,7 +609,7 @@ const char *sqlrtrigger_replay::appendValues(const char *values,
 				if (col &&
 					!cont->compareQuoted(col->getValue(),
 							autoinccolumn) &&
-					!charstring::compare(
+					!charstring::compareIgnoringCase(
 							value.getString(),
 							"null")) {
 					newquery.append(liid);
@@ -635,7 +635,7 @@ const char *sqlrtrigger_replay::appendValues(const char *values,
 			if (col &&
 				!cont->compareQuoted(col->getValue(),
 						autoinccolumn) &&
-				!charstring::compare(
+				!charstring::compareIgnoringCase(
 						value.getString(),
 						"null")) {
 				newquery.append(liid);
@@ -683,7 +683,8 @@ bool sqlrtrigger_replay::autoincValueIsNull(linkedlist<char *> *columns,
 				valnode=valnode->getNext()) {
 
 		if (!cont->compareQuoted(colnode->getValue(),autoinccolumn)) {
-			return !charstring::compare(valnode->getValue(),"null");
+			return !charstring::compareIgnoringCase(
+						valnode->getValue(),"null");
 		}
 	}
 	return false;
