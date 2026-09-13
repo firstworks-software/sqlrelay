@@ -234,9 +234,9 @@ void sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 	//	insert into blah values(...);
 	// with no space after "values", and the normalize translation
 	// doesn't fix this (though it ought to)
-	if (!charstring::compare(*ptr,"values(",7)) {
+	if (!charstring::compareIgnoringCase(*ptr,"values(",7)) {
 		(*ptr)+=6;
-	} else if (!charstring::compare(*ptr,"values (",8)) {
+	} else if (!charstring::compareIgnoringCase(*ptr,"values (",8)) {
 		(*ptr)+=7;
 	}
 

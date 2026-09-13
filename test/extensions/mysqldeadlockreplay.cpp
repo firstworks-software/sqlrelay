@@ -337,9 +337,11 @@ int main(int argc, char **argv) {
 		// them on new, higher ids.  The replay has to substitute the
 		// ids they got here.  The third one also carries a clause
 		// after the values list, which the replay has to keep.
+		// #10115: the first one also uses uppercase INSERT/VALUES,
+		// since keyword detection has to be case-insensitive too.
 		assertTrue(sqlrcur.sendQuery(
-			"insert into testtable "
-			"values (null,10,'aaa','aaa')"));
+			"INSERT INTO testtable "
+			"VALUES (NULL,10,'aaa','aaa')"));
 		assertTrue(sqlrcur.sendQuery(
 			"insert into testtable "
 			"(col1,col2,col3,col4) "
@@ -488,7 +490,7 @@ int main(int argc, char **argv) {
 	// no duplicate key ever collides here, so check the query text.
 	stdoutput.printf("REPLAYED QUERIES: \n");
 	assertLogContains(deadlocklog,
-			"insert into testtable (col1,col2,col3,col4) "
+			"INSERT INTO testtable (col1,col2,col3,col4) "
 			"values (3,10,'aaa','aaa')");
 	assertLogContains(deadlocklog,
 			"insert into testtable (col1,col2,col3,col4) "

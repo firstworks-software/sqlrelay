@@ -4144,7 +4144,8 @@ bool sqlrservercontroller::parseInsert(const char *query,
 
 	// FIXME: assumes normalized query...
 
-	if (querysize>12 && !charstring::compare(start,"insert into ",12)) {
+	if (querysize>12 && !charstring::compareIgnoringCase(
+						start,"insert into ",12)) {
 
 		// if it was an insert...
 
@@ -4230,12 +4231,12 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		// doesn't fix this (though it ought to)
 		const char	*localrawvalues=NULL;
 		if (end>ptr+7) {
-			if (!charstring::compare(ptr,"values(",7)) {
+			if (!charstring::compareIgnoringCase(ptr,"values(",7)) {
 				localrawvalues=ptr+7;
 			}
 		}
 		if (!localrawvalues && end>ptr+8) {
-			if (!charstring::compare(ptr,"values (",8)) {
+			if (!charstring::compareIgnoringCase(ptr,"values (",8)) {
 				localrawvalues=ptr+8;
 			}
 		}
@@ -4330,7 +4331,8 @@ bool sqlrservercontroller::parseInsert(const char *query,
 			*primarykeycolumn=localprimarykeycolumn;
 		}
 
-	} else if (querysize>7 && !charstring::compare(start,"select ",7)) {
+	} else if (querysize>7 && !charstring::compareIgnoringCase(
+						start,"select ",7)) {
 
 		// if it was a select...
 
