@@ -2760,6 +2760,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   INSERT, VALUES, and SELECT keywords case-insensitively (#10115)
 - fixed the INSERT value splitters to recognize double- and
   backtick-quoted literals, not just single-quoted ones (#10117)
+- fixed the upsert trigger to refuse rewriting an insert into an
+  update when a bind sits inside a value expression
 
 ### Security
 - fixed an authentication hole in the des password encryption module

@@ -328,6 +328,7 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 	dictionary<char *, const char *>	bindtocol;
 	bindtocol.setManageArrayKeys(true);
 	uint16_t		bindnum=1;
+	uint16_t		wholebinds=0;
 	listnode<char *>	*cnode=cols->getFirst();
 	listnode<char *>	*vnode=vals->getFirst();
 	while (cnode && vnode) {
@@ -339,6 +340,8 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 		// if val is a bind variable then map
 		// it to the corresponding column
 		if (isBind(val)) {
+
+			wholebinds++;
 
 			if (cont->getBindFormat()[0]=='?') {
 
@@ -364,6 +367,23 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 		// next...
 		cnode=cnode->getNext();
 		vnode=vnode->getNext();
+	}
+
+	// a bind hiding inside a value expression (eg. f(1,?)) isn't a
+	// whole-token bind, so it wasn't counted above, leaving wholebinds
+	// short of ibcount - bail rather than build a corrupted bindtocol map
+	// (wholebinds>ibcount is fine - it just means one named/numbered
+	// bind was reused as the whole value for more than one column)
+	if (wholebinds<ibcount) {
+		debugWrite("wholebinds (%hu) < ibcount (%hu), bailing",
+							wholebinds,ibcount);
+		cont->setError(ucur,
+			"upsert failed - a bind variable was found "
+			"inside a value expression rather than standing "
+			"alone, making bind-to-column mapping unreliable",
+			SQLR_ERROR_TRIGGER,true);
+		debugEnd();
+		return false;
 	}
 
 	// make 2 copies of icur's input binds in ucur:
