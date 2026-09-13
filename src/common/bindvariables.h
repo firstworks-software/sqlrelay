@@ -38,6 +38,46 @@ static bool afterBindVariable(const char *c) {
 #endif
 
 #ifdef NEED_WHOLE_BIND_VARIABLE
+// true if [start,contentend) is entirely a postgres dollar-quoted string:
+// $$...$$ or $tag$...$tag$, tag being alphanumeric/'_'.  postgres closes the
+// string at the first matching closing delimiter, so this requires that same
+// first match to land exactly on "contentend".
+static bool isDollarQuotedLiteral(const char *start, const char *contentend) {
+
+	// opening delimiter: '$', an optional tag, then '$'
+	const char	*tag=start+1;
+	const char	*p=tag;
+	while (p<contentend &&
+			(character::isAlphanumeric(*p) || *p=='_')) {
+		p++;
+	}
+	if (p>=contentend || *p!='$') {
+		return false;
+	}
+	size_t		taglen=p-tag;
+	const char	*bodystart=p+1;
+
+	// find the first closing delimiter - the same tag, between two '$'s
+	size_t		delimlen=taglen+2;
+	for (const char *q=bodystart;
+			(size_t)(contentend-q)>=delimlen; q++) {
+		if (*q!='$' || *(q+delimlen-1)!='$') {
+			continue;
+		}
+		bool	tagmatches=true;
+		for (size_t i=0; i<taglen; i++) {
+			if (*(q+1+i)!=*(tag+i)) {
+				tagmatches=false;
+				break;
+			}
+		}
+		if (tagmatches) {
+			return q+delimlen==contentend;
+		}
+	}
+	return false;
+}
+
 // (requires NEED_IS_BIND_DELIMITER)
 // returns the start of the bind variable in "var", and its length in "len", if
 // "var" is nothing but a single bind variable, optionally surrounded by
@@ -62,6 +102,25 @@ static const char *wholeBindVariable(const char *var,
 	}
 
 	if (!isBindDelimiter(start,questionmark,colon,atsign,dollarsign)) {
+		return NULL;
+	}
+
+	// find the end of the string, then back off any trailing whitespace,
+	// to get the bounds of the content: "start" through "contentend"
+	const char	*strend=start;
+	while (*strend) {
+		strend++;
+	}
+	const char	*contentend=strend;
+	while (contentend>start &&
+			character::isWhitespace(*(contentend-1))) {
+		contentend--;
+	}
+
+	// a postgres dollar-quoted literal, e.g. $$abc$$ or $tag$abc$tag$, is
+	// alphanumeric-and-'$' start to end, just like a bind name below would
+	// take it to be - rule it out first
+	if (*start=='$' && isDollarQuotedLiteral(start,contentend)) {
 		return NULL;
 	}
 

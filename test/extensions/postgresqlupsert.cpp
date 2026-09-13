@@ -373,6 +373,82 @@ int main(int argc, char **argv) {
 	con=NULL;
 	stdoutput.printf("\n");
 
+	// upsert with a postgres dollar-quoted string literal standing in for
+	// one of the trigger's configured where-clause columns (firstname,
+	// lastname - see the "student" table's <column> entries in
+	// postgresqlupsert.conf); regression test for #10135.
+	// wholeBindVariable() classified a whole value token that was
+	// alphanumeric-and-'$' start to end as a bind name, and a
+	// dollar-quoted literal like $$abc$$ or $tag$abc$tag$ matches that
+	// shape too.  Since firstname/lastname feed the generated update's
+	// where clause, misclassifying one of them as a bind sent
+	// convertInsertToUpdate() (upsert.cpp) looking up a bind name that
+	// was never actually bound, producing "firstname= and lastname=..."
+	// with no value - a query syntax error - instead of a real update.
+	// this instance has no normalize translation, so the dollar-quoted
+	// text reaches the trigger with its case intact (normalize doesn't
+	// recognize dollar-quoting and would otherwise lowercase it
+	// character by character, same as any other unquoted text)
+	stdoutput.printf("UPSERT WITH POSTGRES DOLLAR-QUOTED LITERAL "
+				"WHERE-CLAUSE VALUE:\n");
+	con=new sqlrconnection("sqlrelay",9040,
+					"/tmp/postgresqlupsertnonormalize.socket",
+					"testuser","testpassword",0,1);
+	cur=new sqlrcursor(con);
+	secondcur=new sqlrcursor(con);
+	cur->sendQuery("drop table student");
+	cur->sendQuery("drop sequence student_id");
+	assertTrue(cur->sendQuery("create sequence student_id"));
+	assertTrue(cur->sendQuery("create table student ("
+					"id int, "
+					"firstname varchar(20), "
+					"lastname varchar(20), "
+					"year varchar(20), "
+					"major varchar(20), "
+					"gpa varchar(20), "
+					"primary key (id), "
+					"unique (firstname,lastname) "
+					")"));
+	stdoutput.printf("\n");
+	// initial insert
+	assertTrue(cur->sendQuery("insert into student values "
+				"(nextval('student_id'),"
+				"'David','Muse','Freshman','ME','4.0')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	// duplicate insert (same firstname/lastname, so postgresql reports a
+	// duplicate key and the trigger converts this to an update), with
+	// firstname and lastname given as dollar-quoted literals - one $$...$$,
+	// one $tag$...$tag$ - rather than binds, and bind numbering kept
+	// contiguous (there's no bind for a where-clause column here at all)
+	cur->prepareQuery("insert into student values "
+				"(nextval('student_id'),"
+				"$$David$$,$tag$Muse$tag$,$1,$2,$3)");
+	cur->inputBind("1","Sophomore");
+	cur->inputBind("2","ME");
+	cur->inputBind("3","3.5");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Sophomore");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"3.5");
+	stdoutput.printf("\n");
+	assertTrue(cur->sendQuery("drop table student"));
+	assertTrue(cur->sendQuery("drop sequence student_id"));
+	delete secondcur;
+	secondcur=NULL;
+	delete cur;
+	cur=NULL;
+	delete con;
+	con=NULL;
+	stdoutput.printf("\n");
+
 	reportTestStatus();
 
 	return status;

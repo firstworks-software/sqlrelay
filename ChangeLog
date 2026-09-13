@@ -2800,6 +2800,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed a c++ api wire desync when dontGetColumnInfo() was followed by
   getTableList(), getColumnList(), getDatabaseList(), or a similar
   list method (#10109)
+- fixed the upsert trigger misclassifying a postgres dollar-quoted literal
+  as a whole-token bind (#10135)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
