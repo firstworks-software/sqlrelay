@@ -189,6 +189,120 @@ int main(int argc, char **argv) {
 
 	cur->sendQuery("drop table testtable");
 
+
+	// create a table whose own name is backtick-quoted and contains a
+	// literal space
+	// #10126: the table-name scan in parsePrefix() looked for the
+	// first space to mark the end of the table name, so a quoted
+	// table name containing a literal space would stop there instead
+	// of at the real separating space, corrupting the rewritten
+	// single-inserts.  NOTE: sqlrservercontroller::parseInsert() has
+	// the same bug in its own table-name scan (#10127, still open), so
+	// today it misclassifies this query and this trigger's
+	// runBeforeExecute() bails out before ever calling parsePrefix() -
+	// the insert below succeeds because it then runs unmodified, not
+	// because parsePrefix() rewrote it correctly.  This is the same
+	// kind of masking #10122 described: once #10127 is fixed, this
+	// case starts actually exercising parsePrefix()'s fix.
+	stdoutput.printf("CREATE TABLE WITH SPACE IN NAME: \n");
+	cur->sendQuery("drop table `table with space`");
+	assertTrue(cur->sendQuery(
+		"create table `table with space` ("
+		"	testid int, "
+		"	testval varchar(40))"));
+	stdoutput.printf("\n");
+
+
+	// insert into the quoted, space-containing table name
+	stdoutput.printf("INSERT INTO TABLE WITH SPACE IN NAME: \n");
+	assertTrue(cur->sendQuery(
+		"insert into `table with space` values "
+		"(1,'val1'),"
+		"(2,'val2')"));
+	stdoutput.printf("\n");
+
+
+	// affected rows
+	stdoutput.printf("AFFECTED ROWS: \n");
+	assertEquals(cur->affectedRows(),2);
+	stdoutput.printf("\n");
+
+
+	// insert with columns, into the same quoted, space-containing
+	// table name
+	stdoutput.printf("INSERT WITH COLUMNS INTO TABLE WITH SPACE IN NAME: \n");
+	assertTrue(cur->sendQuery(
+		"insert into `table with space` (testid,testval) values "
+		"(3,'val3'),"
+		"(4,'val4')"));
+	stdoutput.printf("\n");
+
+
+	// affected rows
+	stdoutput.printf("AFFECTED ROWS: \n");
+	assertEquals(cur->affectedRows(),2);
+	stdoutput.printf("\n");
+
+
+	// row count
+	stdoutput.printf("ROW COUNT: \n");
+	assertTrue(cur->sendQuery("select count(*) from `table with space`"));
+	assertEquals(cur->getFieldAsInteger(0,(uint32_t)0),4);
+	stdoutput.printf("\n");
+
+
+	// #10126: all 4 rows must have landed with their values intact,
+	// rather than the insert erroring out or the table-name scan
+	// corrupting the rewritten single-inserts
+	stdoutput.printf("ROWS IN TABLE WITH SPACE IN NAME: \n");
+	assertTrue(cur->sendQuery(
+		"select testval from `table with space` "
+		"order by testid"));
+	assertEquals(cur->getField((uint64_t)0,"testval"),"val1");
+	assertEquals(cur->getField((uint64_t)1,"testval"),"val2");
+	assertEquals(cur->getField((uint64_t)2,"testval"),"val3");
+	assertEquals(cur->getField((uint64_t)3,"testval"),"val4");
+	stdoutput.printf("\n");
+
+	cur->sendQuery("drop table `table with space`");
+
+
+	// #10126: a quoted table name might be followed directly by the
+	// column list's opening paren, with no separating space (normalize
+	// deliberately never inserts one there).  Unlike the space-in-name
+	// case above, this table name has no internal space, so
+	// sqlrservercontroller::parseInsert() classifies it correctly and
+	// this case really does reach and exercise parsePrefix() - it's
+	// not masked by #10127.
+	stdoutput.printf("CREATE TABLE FOR QUOTED NAME WITH NO SPACE BEFORE PAREN: \n");
+	cur->sendQuery("drop table `quotedinserttable`");
+	assertTrue(cur->sendQuery(
+		"create table `quotedinserttable` ("
+		"	testid int, "
+		"	testval varchar(40))"));
+	stdoutput.printf("\n");
+
+	stdoutput.printf("INSERT WITH NO SPACE BEFORE COLUMN LIST: \n");
+	assertTrue(cur->sendQuery(
+		"insert into `quotedinserttable`(testid,testval) values "
+		"(1,'val1'),"
+		"(2,'val2')"));
+	stdoutput.printf("\n");
+
+	stdoutput.printf("AFFECTED ROWS: \n");
+	assertEquals(cur->affectedRows(),2);
+	stdoutput.printf("\n");
+
+	stdoutput.printf("ROWS IN QUOTEDINSERTTABLE: \n");
+	assertTrue(cur->sendQuery(
+		"select testval from `quotedinserttable` "
+		"order by testid"));
+	assertEquals(cur->getField((uint64_t)0,"testval"),"val1");
+	assertEquals(cur->getField((uint64_t)1,"testval"),"val2");
+	stdoutput.printf("\n");
+
+	cur->sendQuery("drop table `quotedinserttable`");
+
 	delete cur;
 	delete con;
 

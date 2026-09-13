@@ -3164,12 +3164,25 @@ sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 		return SQLRQUERYTYPE_INSERT;
 	}
 
-	// skip "insert into " and the table name
-	const char	*ptr=charstring::findFirst(start+12,' ');
+	// skip "insert into " and the table name, which may be a
+	// single-quoted, double-quoted, or back-tick-quoted identifier
+	// containing spaces
+	const char	*ptr=NULL;
+	bool		quotedtablename=start+12<end &&
+					character::isInSet(*(start+12),"'\"`");
+	if (quotedtablename) {
+		ptr=cont->skipStringLiteral(start+12,end,backslash);
+	} else {
+		ptr=charstring::findFirst(start+12,' ');
+	}
 	if (!ptr || ptr>=end) {
 		return SQLRQUERYTYPE_INSERT;
 	}
-	ptr++;
+	// a quoted table name might instead be followed directly by the
+	// column list's opening paren, with no space
+	if (!quotedtablename || *ptr==' ') {
+		ptr++;
+	}
 
 	// skip an optional column list
 	if (ptr<end && *ptr=='(') {

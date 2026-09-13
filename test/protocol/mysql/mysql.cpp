@@ -1139,6 +1139,36 @@ int main(int argc, char **argv) {
 	query="drop table mysqlinfotest3";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 
+	// #10126: the table-name scan stopped at the first space anywhere,
+	// even one inside a backtick-quoted table name
+	stdoutput.printf("mysql_info: multi-row insert with quoted table name\n");
+	query="create table `mysqlinfotest 4` (id int, val int)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	query="insert into `mysqlinfotest 4` (id,val) values (1,10),(2,20)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)2);
+	assertEquals(mysql_info(&mysql),
+			"Records: 2  Duplicates: 0  Warnings: 0");
+	stdoutput.printf("\n");
+
+	query="drop table `mysqlinfotest 4`";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+
+	// #10126: a quoted table name might be followed directly by the
+	// column list's opening paren, with no separating space
+	stdoutput.printf("mysql_info: multi-row insert, quoted table name with no space before column list\n");
+	query="create table `mysqlinfotest5` (id int, val int)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	query="insert into `mysqlinfotest5`(id,val) values (1,10),(2,20)";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)2);
+	assertEquals(mysql_info(&mysql),
+			"Records: 2  Duplicates: 0  Warnings: 0");
+	stdoutput.printf("\n");
+
+	query="drop table `mysqlinfotest5`";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+
 	query="drop table mysqlinfotest";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 

@@ -219,20 +219,32 @@ bool sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 	// skip insert into
 	(*ptr)+=12;
 
-	// find first space after table name
-	// FIXME: the table name could be quoted and contain a space
-	*ptr=charstring::findFirst(*ptr,' ');
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
 
-	// skip space
-	(*ptr)++;
+	// find the space after the table name, skipping over a quoted
+	// table name that might contain a literal space
+	bool	quotedtablename=character::isInSet(**ptr,"'\"`");
+	if (quotedtablename) {
+		*ptr=cont->skipStringLiteral(*ptr,queryend,backslash);
+	} else {
+		*ptr=charstring::findFirst(*ptr,' ');
+	}
+	if (!*ptr || *ptr>=queryend) {
+		// truncated or malformed query
+		return false;
+	}
+
+	// skip space; a quoted table name might instead be followed
+	// directly by the column list's opening paren, with no space
+	if (!quotedtablename || **ptr==' ') {
+		(*ptr)++;
+	}
 
 	// skip columns
 	if (**ptr=='(') {
-
-		// mysql/mariadb treat backslash as an escape character
-		// inside quoted strings, other databases don't
-		bool	backslash=!charstring::compareIgnoringCase(
-						cont->getNativeDbType(),"mysql");
 
 		// skip past the opening paren, then skip over each
 		// column, accounting for quoted column names that might

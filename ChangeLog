@@ -2772,6 +2772,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   backtick-quoted column names, not just unquoted ones (#10122)
 - fixed the mysql protocol module's insert-type classifier to
   handle quoted column names and values (#10125)
+- fixed the multi-insert-split trigger and the mysql protocol
+  module's insert-type classifier to handle a quoted table name
+  containing a space (#10126)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
