@@ -2764,6 +2764,21 @@
 		the last bind variable in a query when that variable ran to
 		the very end of the query with no trailing delimiter to close
 		it, e.g. "...where id=:id" (#7433)
+	fixed the normalize query translation module only recognizing a
+		line comment when "--" was followed by a space, which let a
+		comment written without the space (e.g. "--foo") fall through
+		unstripped and get merged onto the same line by the
+		whitespace-collapse pass that follows, silently commenting out
+		the rest of the statement once it reached the database; also
+		added handling for "/* */" block comments, which it didn't
+		recognize at all before, letting a block comment containing a
+		quote desync its quoted-string tracking; a removed comment now
+		also collapses into a single separating space rather than
+		gluing the surrounding tokens together or leaving a double
+		space; on mysql/mariadb, a bare "--" still requires trailing
+		whitespace (or end of statement) to start a comment, matching
+		that backend's own lexer, since mysql treats something like
+		"5--3" as arithmetic rather than a comment (#9968)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

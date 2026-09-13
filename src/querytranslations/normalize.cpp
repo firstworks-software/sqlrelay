@@ -152,6 +152,14 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 					cont->getNativeDbType(),"mysql");
 	}
 
+	// mysql/mariadb require a "--" line comment to be followed by
+	// whitespace (or the end of the statement) - unlike postgresql,
+	// oracle, and most others, which treat "--" as a comment
+	// unconditionally.  "5--3" is arithmetic (5 - -3) on mysql, but a
+	// comment (just "5") everywhere else.
+	bool	mysqlnativedb=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+
 	if (getDebug()) {
 		debugWrite("original query:");
 		stringbuffer	b;
@@ -176,22 +184,52 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 
 		// NOTE: it matters what order these are in...
 
-		// remove comments
-		if (!charstring::compare(ptr,"-- ",3)) {
-			while (ptr!=end && *ptr!='\n') {
-				ptr++;
+		// remove comments and whitespace, as a single run, and
+		// compress the whole run into at most one separating space -
+		// a removed comment is a token boundary too, just like
+		// whitespace, so the two can't be handled independently
+		// without either gluing tokens together or double-spacing
+		if ((!charstring::compare(ptr,"--",2) &&
+				(!mysqlnativedb || ptr+2==end ||
+				character::isWhitespace(*(ptr+2)))) ||
+			!charstring::compare(ptr,"/*",2) ||
+			character::isWhitespace(*ptr)) {
+			for (;;) {
+				// line comment - on mysql/mariadb, only if
+				// followed by whitespace or end of statement
+				if (!charstring::compare(ptr,"--",2) &&
+					(!mysqlnativedb || ptr+2==end ||
+					character::isWhitespace(*(ptr+2)))) {
+					while (ptr!=end && *ptr!='\n') {
+						ptr++;
+					}
+					if (ptr!=end) {
+						ptr++;
+					}
+					continue;
+				}
+				// block comment (not nested)
+				if (!charstring::compare(ptr,"/*",2)) {
+					ptr+=2;
+					while (ptr!=end &&
+						charstring::compare(
+							ptr,"*/",2)) {
+						ptr++;
+					}
+					if (ptr!=end) {
+						ptr+=2;
+					}
+					continue;
+				}
+				// whitespace
+				if (character::isWhitespace(*ptr)) {
+					do {
+						ptr++;
+					} while (character::isWhitespace(*ptr));
+					continue;
+				}
+				break;
 			}
-			if (ptr!=end) {
-				ptr++;
-			}
-			continue;
-		}
-
-		// convert whitespace into spaces and compress them
-		if (character::isWhitespace(*ptr)) {
-			do {
-				ptr++;
-			} while (character::isWhitespace(*ptr));
 			if (ptr!=end && pass1.getSize()) {
 				pass1.append(' ');
 			}
