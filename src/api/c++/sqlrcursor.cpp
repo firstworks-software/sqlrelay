@@ -134,6 +134,12 @@ uint32_t sqlrclientrow::getFieldLength(uint32_t column) {
 
 class sqlrclientcolumn {
 	public:
+			// _columns is a persistent buffer reused across queries, so
+			// without this, a column left unrefreshed by a partial or
+			// failed parse could be read with a stale value from a
+			// previous query instead of a defined default.
+			sqlrclientcolumn();
+
 		char		*name;
 		uint16_t	type;
 		char		*typestring;
@@ -153,6 +159,27 @@ class sqlrclientcolumn {
 		uint16_t	autoincrement;
 		char		*table;
 };
+
+sqlrclientcolumn::sqlrclientcolumn() {
+	name=NULL;
+	type=UNKNOWN_DATATYPE;
+	typestring=NULL;
+	typestringlength=0;
+	length=0;
+	longest=0;
+	longdatatype=0;
+	precision=0;
+	scale=0;
+	nullable=0;
+	primarykey=0;
+	unique=0;
+	partofkey=0;
+	unsignednumber=0;
+	zerofill=0;
+	binary=0;
+	autoincrement=0;
+	table=NULL;
+}
 
 enum columncase {
 	MIXED_CASE,
@@ -7946,6 +7973,7 @@ void sqlrcursor::clearColumns() {
 				pvt->_columntypeformat!=COLUMN_TYPE_IDS) {
 		for (uint32_t i=0; i<pvt->_colcount; i++) {
 			delete[] getColumnInternal(i)->typestring;
+			getColumnInternal(i)->typestring=NULL;
 		}
 	}
 

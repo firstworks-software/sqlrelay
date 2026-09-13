@@ -2789,6 +2789,14 @@
 		the firebird, mysql, postgresql, sqlrclient, tds and
 		teradata protocol modules, sqlrschedule.cpp, and the upsert
 		trigger; switched to %hu (#10099)
+	fixed the c++ api's sqlrclientcolumn class having no constructor,
+		leaving its 18 members uninitialized until the wire-parse path
+		populated them, which could leak stale values from a prior
+		query into a column left unrefreshed by a partial parse since
+		_columns is a persistent buffer reused across queries; also
+		null out typestring after it's deleted in
+		sqlrcursor::clearColumns() to close off a latent double-free
+		on the same reused buffer (#10100)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
