@@ -1866,15 +1866,34 @@ bool sqlrservercursor::containsOnCommitPreserveRows(const char *query) {
 		return false;
 	}
 
-	// blank out string literals, delimited identifiers, and comments
-	// (so "on commit preserve rows" can't false-match inside one)
+	// blank out string literals (including postgres dollar-quoted
+	// literals), delimited identifiers, and comments (so "on commit
+	// preserve rows" can't false-match inside one)
 	stringbuffer	stripped;
 	const char	*ptr=query;
 	const char	*end=query+charstring::getLength(query);
+
+	// dollar-quoting is postgres-only syntax; elsewhere '$' can be a
+	// legitimate identifier/bind-name character (eg. oracle), so only
+	// look for it there
+	bool	dollarquoting=!charstring::compareIgnoringCase(
+			conn->cont->getNativeDbType(),"postgresql");
+
 	while (ptr<end) {
 		if (character::isInSet(*ptr,"'\"`")) {
 			ptr=conn->cont->skipStringLiteral(ptr,end,false);
 			stripped.append(' ');
+		} else if (dollarquoting && *ptr=='$') {
+			// skip postgres dollar-quoted literals
+			const char	*afterliteral=
+				conn->cont->skipDollarQuotedLiteral(ptr,end);
+			if (afterliteral!=ptr) {
+				ptr=afterliteral;
+				stripped.append(' ');
+			} else {
+				stripped.append(*ptr);
+				ptr++;
+			}
 		} else if (!charstring::compare(ptr,"--",2)) {
 			while (ptr<end && *ptr!='\n') {
 				ptr++;
