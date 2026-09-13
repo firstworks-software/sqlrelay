@@ -4586,8 +4586,9 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 
 		} else
 
-		// handle commas between values
-		if (*c==',') {
+		// handle top-level commas between values (not ones nested
+		// inside a function call's arguments)
+		if (*c==',' && !parens) {
 
 			// copy out the value if we found a comma
 			values->append(charstring::duplicate(

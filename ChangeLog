@@ -2747,6 +2747,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   #10110) to match a literal null case-insensitively, since
   clients don't always write the keyword in lowercase
   (#10112)
+- fixed the replay trigger's auto-increment null substitution to
+  split an INSERT's values list on commas only at paren depth 0,
+  not on commas inside a function call's argument list, which could
+  otherwise misalign the values against their columns and corrupt a
+  function call's argument (#10113)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

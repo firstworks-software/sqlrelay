@@ -626,8 +626,9 @@ const char *sqlrtrigger_replay::appendValues(const char *values,
 
 		} else
 
-		// handle commas between values
-		if (*c==',') {
+		// handle top-level commas between values (not ones nested
+		// inside a function call's arguments)
+		if (*c==',' && !parens) {
 
 			// if the value was a null and this is the
 			// autoincrement column, then append the
