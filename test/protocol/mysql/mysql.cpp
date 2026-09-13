@@ -1120,10 +1120,16 @@ int main(int argc, char **argv) {
 
 	// #10125: the values-list scan only recognized single-quote as
 	// starting a quoted literal, missing double-quote and backtick
-	stdoutput.printf("mysql_info: multi-row insert with quoted value\n");
+	stdoutput.printf("mysql_info: plain insert with quoted value\n");
 	query="create table mysqlinfotest3 (id int, txt varchar(50))";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
-	query="insert into mysqlinfotest3 (id,txt) values (1,\"a,b)\"),(2,\"c\")";
+	query="insert into mysqlinfotest3 (id,txt) values (1,\"a,b)\")";
+	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
+	assertEquals(mysql_info(&mysql),NULL);
+	stdoutput.printf("\n");
+
+	stdoutput.printf("mysql_info: multi-row insert with quoted value\n");
+	query="insert into mysqlinfotest3 (id,txt) values (2,\"a,b)\"),(3,\"c\")";
 	assertEquals(mysql_real_query(&mysql,query,charstring::getLength(query)),0);
 	assertEquals(mysql_affected_rows(&mysql),(my_ulonglong)2);
 	assertEquals(mysql_info(&mysql),
