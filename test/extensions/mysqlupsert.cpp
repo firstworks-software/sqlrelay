@@ -112,6 +112,29 @@ int main(int argc, char **argv) {
 	assertEquals(secondcur->getField(0,4),"CS");
 	assertEquals(secondcur->getField(0,5),"2.5");
 	stdoutput.printf("\n");
+	// negative control: a bind variable immediately followed by more
+	// text in the same value (?+1) rather than standing alone makes
+	// bind-to-column mapping unreliable, so the upsert trigger must
+	// bail out with an error on the original insert cursor rather
+	// than silently converting to a corrupted update
+	stdoutput.printf("UPSERT WITH BIND FOLLOWED BY MORE TEXT FAILS:\n");
+	cur->prepareQuery("insert into student values (null,?,?,?+1,?,?)");
+	cur->inputBind("1","David");
+	cur->inputBind("2","Muse");
+	cur->inputBind("3","2");
+	cur->inputBind("4","CS");
+	cur->inputBind("5","2.0");
+	assertFalse(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Senior");
+	assertEquals(secondcur->getField(0,4),"CS");
+	assertEquals(secondcur->getField(0,5),"2.5");
+	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table student"));
 	delete secondcur;
 	secondcur=NULL;

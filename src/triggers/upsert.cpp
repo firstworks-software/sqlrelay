@@ -4,6 +4,7 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/regularexpression.h>
 #include <rudiments/linkedlist.h>
+#include <rudiments/character.h>
 #include <rudiments/error.h>
 #include <rudiments/snooze.h>
 
@@ -631,7 +632,8 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 }
 
 bool sqlrtrigger_upsert::isBind(const char *var) {
-	return var && isBindDelimiter(var,
+
+	if (!var || !isBindDelimiter(var,
 				cont->getConfig()->
 				getBindVariableDelimiterQuestionMarkSupported(),
 				cont->getConfig()->
@@ -639,7 +641,22 @@ bool sqlrtrigger_upsert::isBind(const char *var) {
 				cont->getConfig()->
 				getBindVariableDelimiterAtSignSupported(),
 				cont->getConfig()->
-				getBindVariableDelimiterDollarSignSupported());
+				getBindVariableDelimiterDollarSignSupported())) {
+		return false;
+	}
+
+	// the marker has to be the whole value - a bind inside an expression,
+	// "values (?+1)", feeds no column on its own
+	const char	*p=var+1;
+	while (character::isAlphanumeric(*p) || *p=='_') {
+		p++;
+	}
+
+	// the values were split out of the query without being trimmed
+	while (character::isWhitespace(*p)) {
+		p++;
+	}
+	return !*p;
 }
 
 extern "C" {
