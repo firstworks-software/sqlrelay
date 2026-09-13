@@ -14,6 +14,14 @@
 
 PGconn	*pgconn;
 
+#ifdef HAVE_POSTGRESQL_PQEXECPREPARED
+// append a big-endian uint16 to a byte buffer, advancing pos
+static void appendUint16BE(unsigned char *buf, size_t *pos, uint16_t val) {
+	buf[(*pos)++]=(unsigned char)((val>>8)&0xff);
+	buf[(*pos)++]=(unsigned char)(val&0xff);
+}
+#endif
+
 int main(int argc, char **argv) {
 
 #ifdef HAVE_POSTGRESQL_PQEXECPREPARED
@@ -372,6 +380,94 @@ int main(int argc, char **argv) {
 	assertEquals(PQntuples(pgresult),1);
 	assertEquals(PQgetisnull(pgresult,0,0),1);
 	assertEquals(PQgetisnull(pgresult,0,1),1);
+	PQclear(pgresult);
+	stdoutput.printf("\n");
+
+	// #10133: the numeric/_numeric binary bind-parameter decoder used
+	// to never place a decimal point and treated sign as a plain
+	// boolean, losing scale and mishandling negative values, NaN and
+	// the two infinities.  bind each case in postgresql's binary
+	// numeric wire format and read the value back to confirm the
+	// decoder built the right text.  the param is still declared as
+	// oid 1700 (numeric) via PQprepare below, so sqlrelay's own
+	// protocol-layer decoder runs, but the target column is text, not
+	// numeric, so the value isn't re-validated as a numeric literal by
+	// the backend - some backends in this shop's test fleet predate
+	// postgresql 14 and reject "Infinity"/"-Infinity" as numeric input
+	stdoutput.printf("PQprepare/PQexecPrepared: binary numeric bind\n");
+	query="alter table testtable add column testnumeric text";
+	pgresult=PQexec(pgconn,query);
+	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
+	PQclear(pgresult);
+
+	query="insert into testtable (testint,testnumeric) values ($1,$2)";
+	Oid	numerictypes[]={23,1700};
+	pgresult=PQprepare(pgconn,"numericbind",query,2,numerictypes);
+	assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
+	PQclear(pgresult);
+
+	// digit groups are base-10000, big-endian, one group per 4 decimal
+	// digits; weight is the power of 10000 the first group is worth
+	uint16_t	digits_half[]={5000};
+	uint16_t	digits_onetwothreefourfive[]={1,2345,6780};
+	uint16_t	digits_fortytwohalf[]={42,5000};
+
+	struct numericcase {
+		int		testint;
+		const uint16_t	*digits;
+		uint16_t	ndigits;
+		int16_t		weight;
+		uint16_t	sign;
+		uint16_t	dscale;
+		const char	*expected;
+	};
+	numericcase	cases[]={
+		{201,digits_half,1,-1,0x0000,1,"0.5"},
+		{202,digits_onetwothreefourfive,3,1,0x0000,3,"12345.678"},
+		{203,digits_fortytwohalf,2,0,0x4000,1,"-42.5"},
+		{204,NULL,0,0,0xC000,0,"NaN"},
+		{205,NULL,0,0,0xD000,0,"Infinity"},
+		{206,NULL,0,0,0xF000,0,"-Infinity"}
+	};
+	unsigned int	ncases=sizeof(cases)/sizeof(cases[0]);
+
+	for (unsigned int i=0; i<ncases; i++) {
+
+		// pack the wire format: ndigits, weight, sign, dscale,
+		// then ndigits big-endian uint16 digit groups
+		unsigned char	buf[8+2*3];
+		size_t		pos=0;
+		appendUint16BE(buf,&pos,cases[i].ndigits);
+		appendUint16BE(buf,&pos,(uint16_t)cases[i].weight);
+		appendUint16BE(buf,&pos,cases[i].sign);
+		appendUint16BE(buf,&pos,cases[i].dscale);
+		for (uint16_t d=0; d<cases[i].ndigits; d++) {
+			appendUint16BE(buf,&pos,cases[i].digits[d]);
+		}
+
+		char	testintstr[12];
+		charstring::printf(testintstr,sizeof(testintstr),
+						"%d",cases[i].testint);
+
+		const char	*paramvalues[]={testintstr,(const char *)buf};
+		int		paramlengths[]={0,(int)pos};
+		int		paramformats[]={0,1};
+		pgresult=PQexecPrepared(pgconn,"numericbind",2,
+				paramvalues,paramlengths,paramformats,0);
+		assertEquals(PQresultStatus(pgresult),PGRES_COMMAND_OK);
+		assertEquals(PQcmdTuples(pgresult),"1");
+		PQclear(pgresult);
+	}
+
+	query="select testint,testnumeric from testtable "
+			"where testint>=201 and testint<=206 "
+			"order by testint";
+	pgresult=PQexec(pgconn,query);
+	assertEquals(PQresultStatus(pgresult),PGRES_TUPLES_OK);
+	assertEquals(PQntuples(pgresult),(int)ncases);
+	for (unsigned int r=0; r<ncases; r++) {
+		assertEquals(PQgetvalue(pgresult,(int)r,1),cases[r].expected);
+	}
 	PQclear(pgresult);
 	stdoutput.printf("\n");
 

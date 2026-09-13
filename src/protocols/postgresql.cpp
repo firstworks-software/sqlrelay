@@ -3034,19 +3034,105 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 				debugEnd();
 				return false;
 			}
-			stringbuffer	str;
-			if (sign) {
-				str.append('-');
+
+			// dscale is postgresql's 14-bit display-scale field;
+			// an out-of-range value would otherwise make the
+			// fraction loop below build an enormous string from
+			// a tiny wire parameter
+			if (dscale>0x3fff) {
+				sendErrorResponse("ERROR","22003",
+							"Invalid parameter scale");
+				debugEnd();
+				debugEnd();
+				return false;
 			}
-			for (uint16_t i=0; i<ndigits; i++) {
-				uint16_t	digit;
-				readBE(rp,&digit,&rp);
-				if (!i) {
-					str.append(digit);
+
+			// sign is a sentinel rather than a flag, and
+			// the not-a-number/infinity values carry no digits
+			stringbuffer	str;
+			bool		finite=true;
+			switch (sign) {
+				case 0x0000:
+					break;
+				case 0x4000:
+					str.append('-');
+					break;
+				case 0xC000:
+					str.append("NaN");
+					finite=false;
+					break;
+				case 0xD000:
+					str.append("Infinity");
+					finite=false;
+					break;
+				case 0xF000:
+					str.append("-Infinity");
+					finite=false;
+					break;
+				default:
+					sendErrorResponse("ERROR","22003",
+							"Invalid parameter sign");
+					debugEnd();
+					debugEnd();
+					return false;
+			}
+
+			// digit d is worth digit*10000^(weight-d), so digits
+			// 0 through weight make up the integer part and the
+			// rest make up the fraction.  Zero-valued groups at
+			// either end may be left off of the wire, so a group
+			// that the value needs but that wasn't sent is 0.
+			uint16_t	digit;
+			uint16_t	digitsread=0;
+			if (finite) {
+
+				// integer part
+				if (weight<0) {
+					str.append('0');
 				} else {
-					str.printf("%04d",digit);
+					for (int32_t d=0; d<=weight; d++) {
+						digit=0;
+						if (d<ndigits) {
+							readBE(rp,&digit,&rp);
+							digitsread++;
+							if (digit>=10000) {
+								sendErrorResponse(
+									"ERROR",
+									"22003",
+									"Invalid parameter digit");
+								debugEnd();
+								debugEnd();
+								return false;
+							}
+						}
+						if (!d) {
+							str.append(digit);
+						} else {
+							str.printf("%04d",digit);
+						}
+					}
+				}
+
+				// fraction, chopped to dscale digits
+				if (dscale) {
+					str.append('.');
+					size_t	fracstart=str.getSize();
+					int32_t	d=weight+1;
+					for (uint32_t f=0; f<dscale; f+=4) {
+						digit=0;
+						if (d>=0 && d<ndigits) {
+							readBE(rp,&digit,&rp);
+							digitsread++;
+						}
+						str.printf("%04d",digit);
+						d++;
+					}
+					str.truncate(fracstart+dscale);
 				}
 			}
+
+			// skip the digits that the value didn't need
+			rp+=2*(uint32_t)(ndigits-digitsread);
 
 			// advance the caller's pointer past this parameter
 			*rpout=rp;
