@@ -202,7 +202,7 @@
 					linkedlist<char *> **columns,
 					const char **autoinccolumn,
 					const char **primarykeycolumn);
-		void	getColumnsFromInsertQuery(
+		const char	*getColumnsFromInsertQuery(
 					const char *start,
 					const char *queryend,
 					linkedlist<char *> *columns);

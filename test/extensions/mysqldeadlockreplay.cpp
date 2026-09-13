@@ -210,11 +210,14 @@ int main(int argc, char **argv) {
 		// directly, instead of a later query in the transaction.
 		// lockcol is the unique key the two sessions contend for, and
 		// the two rows seeded here bound the gap they contend in
+		// #10120: col4,x) is a column whose own name contains a comma
+		// and a close-paren
 		sqlrcur.sendQuery("drop table nullautoinctable");
 		assertTrue(sqlrcur.sendQuery(
 			"create table nullautoinctable "
 			"(col1 int primary key auto_increment, col2 int, "
-			"col3 varchar(20), lockcol int unique)"));
+			"col3 varchar(20), lockcol int unique, "
+			"`col4,x)` varchar(20))"));
 		assertTrue(sqlrcur.sendQuery(
 			"insert into nullautoinctable "
 			"(col2,col3,lockcol) "
@@ -419,6 +422,19 @@ int main(int argc, char **argv) {
 			"(col1,col2,col3,lockcol) "
 			"values (null,1,'kkk',1000)"));
 
+		// #10120: the column list names a backtick-quoted column whose
+		// own name contains both a comma and a close-paren, and that
+		// column comes before col1, so a quote-blind column-list scan
+		// would stop at the embedded close-paren instead of the real
+		// one, desyncing the column list from the values and landing
+		// the substituted id somewhere other than col1.  lockcol=2000
+		// is outside the gap session 1 locked, so this one doesn't
+		// contend for anything either.
+		assertTrue(sqlrcur.sendQuery(
+			"insert into nullautoinctable "
+			"(`col4,x)`,col1,col2,col3,lockcol) "
+			"values ('q,r)s',null,3,'mmm',2000)"));
+
 		// lock the row session 1 waits for
 		assertTrue(sqlrcur.sendQuery("update nullautoinctable set "
 						"col2=col2 where lockcol=10"));
@@ -540,20 +556,32 @@ int main(int argc, char **argv) {
 	// of its own, not the other insert's id
 	stdoutput.printf("REPLAYED NULL-AUTOINCREMENT INSERT, FAILING QUERY ITSELF: \n");
 	sqlrcur.sendQuery("select * from nullautoinctable order by col1");
-	assertEquals((int)sqlrcur.rowCount(),4);
+	assertEquals((int)sqlrcur.rowCount(),5);
 	assertEquals(sqlrcur.getField(2,"col3"),"kkk");
-	assertEquals(sqlrcur.getField(3,"col3"),"lll");
-	assertTrue(charstring::convertToInteger(sqlrcur.getField(3,"col1")) >
-			charstring::convertToInteger(sqlrcur.getField(2,"col1")));
+	assertEquals(sqlrcur.getField(3,"col3"),"mmm");
+	assertEquals(sqlrcur.getField(4,"col3"),"lll");
+	assertTrue(charstring::convertToInteger(sqlrcur.getField(4,"col1")) >
+			charstring::convertToInteger(sqlrcur.getField(3,"col1")));
+	// #10120: the quoted column's value landed on that column, instead
+	// of on whatever column a desynced column list would have put it on
+	assertEquals(sqlrcur.getField(3,"col4,x)"),"q,r)s");
 	stdoutput.printf("\n");
 
-	// The insert that succeeded still gets the id it got here substituted
-	// for its null, but the one that lost the deadlock keeps its null,
-	// rather than the other insert's id.
+	// The inserts that succeeded still get the ids they got here
+	// substituted for their nulls, but the one that lost the deadlock
+	// keeps its null, rather than the other inserts' ids.
 	stdoutput.printf("REPLAYED NULL-AUTOINCREMENT INSERT QUERY TEXT: \n");
 	assertLogContains(deadlocklog,
 			"insert into nullautoinctable (col1,col2,col3,lockcol) "
 			"values (3,1,'kkk',1000)");
+	// #10120: the column name's embedded comma and close-paren must
+	// come through the column list unmolested, and the substituted id
+	// must land on col1, not on a column a quote-blind scan would have
+	// shifted it to
+	assertLogContains(deadlocklog,
+			"insert into nullautoinctable "
+			"(`col4,x)`,col1,col2,col3,lockcol) "
+			"values ('q,r)s',4,3,'mmm',2000)");
 	assertLogContains(deadlocklog,
 			"insert into nullautoinctable (col1,col2,col3,lockcol) "
 			"values (null,2,'lll',5)");

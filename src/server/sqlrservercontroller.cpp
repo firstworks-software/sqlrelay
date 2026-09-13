@@ -4196,8 +4196,11 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		if (*ptr=='(') {
 			ptr++;
 			const char	*colsend=
-					charstring::findFirst(ptr,')');
-			getColumnsFromInsertQuery(ptr,colsend,localcolumns);
+				getColumnsFromInsertQuery(ptr,end,
+							localcolumns);
+			if (!colsend) {
+				return false;
+			}
 			ptr=colsend;
 
 			// NOTE: it might be tempting not to worry about
@@ -4522,16 +4525,43 @@ void sqlrservercontroller::getColumnsInTable(const char *table,
 	pvt->_primarykeycolcache.setValue(tablecopy,*primarykeycolumn);
 }
 
-void sqlrservercontroller::getColumnsFromInsertQuery(
+const char *sqlrservercontroller::getColumnsFromInsertQuery(
 					const char *start,
 					const char *queryend,
 					linkedlist<char *> *columns) {
+
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					getNativeDbType(),"mysql");
+
 	// split the provided set of comma-separated columns
-	char		**cols=NULL;
-	uint64_t	colcount=0;
-	charstring::split(start,queryend-start,",",true,&cols,&colcount);
-	columns->listcollection<char *>::append(cols,colcount);
-	delete[] cols;
+	const char	*startofcolumn=start;
+	for (;;) {
+
+		const char	*c=findCommaOrCloseParen(startofcolumn,
+							queryend,backslash);
+
+		// ran off the end without finding the close paren -
+		// truncated or malformed query
+		if (!c) {
+			return NULL;
+		}
+
+		// copy out the column, skipping empty ones
+		if (c>startofcolumn) {
+			columns->append(charstring::duplicate(
+						startofcolumn,
+						c-startofcolumn));
+		}
+
+		// the close paren ends the list of columns
+		if (*c==')') {
+			return c;
+		}
+
+		startofcolumn=c+1;
+	}
 }
 
 void sqlrservercontroller::getFirstValuesFromInsertQuery(
