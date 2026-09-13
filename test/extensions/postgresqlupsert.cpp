@@ -303,6 +303,76 @@ int main(int argc, char **argv) {
 	con=NULL;
 	stdoutput.printf("\n");
 
+	// upsert with an explicit column list and a leading space after each
+	// comma; regression test for #10132 - getColumnsFromInsertQuery()
+	// didn't trim whitespace from parsed column-name tokens, so
+	// "(id, firstname, lastname)" produced tokens " firstname"/
+	// " lastname" that never exact-matched the trigger's configured
+	// <column name="firstname"/> and <primarykey name="id"/> entries,
+	// and the trigger failed to recognize the columns/primary key for
+	// this insert.  this instance has no normalize translation, so the
+	// leading spaces reach the trigger unstripped
+	stdoutput.printf("UPSERT WITH EXPLICIT COLUMN LIST AND "
+				"LEADING SPACE:\n");
+	con=new sqlrconnection("sqlrelay",9040,
+					"/tmp/postgresqlupsertnonormalize.socket",
+					"testuser","testpassword",0,1);
+	cur=new sqlrcursor(con);
+	secondcur=new sqlrcursor(con);
+	cur->sendQuery("drop table student");
+	cur->sendQuery("drop sequence student_id");
+	assertTrue(cur->sendQuery("create sequence student_id"));
+	assertTrue(cur->sendQuery("create table student ("
+					"id int, "
+					"firstname varchar(20), "
+					"lastname varchar(20), "
+					"year varchar(20), "
+					"major varchar(20), "
+					"gpa varchar(20), "
+					"primary key (id), "
+					"unique (firstname,lastname) "
+					")"));
+	stdoutput.printf("\n");
+	// initial insert
+	assertTrue(cur->sendQuery("insert into student "
+				"(id, firstname, lastname, year, major, gpa) "
+				"values (nextval('student_id'),"
+				"'David','Muse','Freshman','ME','4.0')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	// duplicate insert, with an explicit column list and a leading
+	// space after each comma, should still be converted to an update
+	cur->prepareQuery("insert into student "
+				"(id, firstname, lastname, year, major, gpa) "
+				"values (nextval('student_id'),"
+				" $1, $2, $3, $4, $5)");
+	cur->inputBind("1","David");
+	cur->inputBind("2","Muse");
+	cur->inputBind("3","Sophomore");
+	cur->inputBind("4","ME");
+	cur->inputBind("5","3.5");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"David");
+	assertEquals(secondcur->getField(0,2),"Muse");
+	assertEquals(secondcur->getField(0,3),"Sophomore");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"3.5");
+	stdoutput.printf("\n");
+	assertTrue(cur->sendQuery("drop table student"));
+	assertTrue(cur->sendQuery("drop sequence student_id"));
+	delete secondcur;
+	secondcur=NULL;
+	delete cur;
+	cur=NULL;
+	delete con;
+	con=NULL;
+	stdoutput.printf("\n");
+
 	reportTestStatus();
 
 	return status;

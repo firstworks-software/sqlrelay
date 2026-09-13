@@ -4566,11 +4566,18 @@ const char *sqlrservercontroller::getColumnsFromInsertQuery(
 			return NULL;
 		}
 
-		// copy out the column, skipping empty ones
+		// copy out the column, trimming whitespace and
+		// skipping empty ones
 		if (c>startofcolumn) {
-			columns->append(charstring::duplicate(
+			char	*column=charstring::duplicate(
 						startofcolumn,
-						c-startofcolumn));
+						c-startofcolumn);
+			charstring::bothTrim(column);
+			if (!charstring::isNullOrEmpty(column)) {
+				columns->append(column);
+			} else {
+				delete[] column;
+			}
 		}
 
 		// the close paren ends the list of columns
