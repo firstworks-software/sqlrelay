@@ -546,7 +546,7 @@ void sqlrtrigger_replay::appendValues(const char *values,
 				charstring::findEndOfQuotedString(
 						c,queryend-c,'\'',
 						backslash,true);
-			value.append(c,after-c-1);
+			value.append(c,after-c);
 			c=after;
 			continue;
 		}

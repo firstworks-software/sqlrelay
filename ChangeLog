@@ -2779,6 +2779,11 @@
 		whitespace (or end of statement) to start a comment, matching
 		that backend's own lexer, since mysql treats something like
 		"5--3" as arithmetic rather than a comment (#9968)
+	fixed the replay trigger's appendValues() dropping the closing
+		quote from every quoted insert value it rewrote, turning
+		insert into t values ('a','b',3) into
+		insert into t values ('a,'b,3), which is invalid sql; the
+		value.append() call was copying one byte short (#10102)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems
