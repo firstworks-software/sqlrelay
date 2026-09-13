@@ -3016,11 +3016,11 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 				return false;
 			}
 			uint16_t	ndigits;
-			uint16_t	weight;
+			int16_t		weight;
 			uint16_t	sign;
 			uint16_t	dscale;
 			readBE(rp,&ndigits,&rp);
-			readBE(rp,&weight,&rp);
+			readBE(rp,(uint16_t *)&weight,&rp);
 			readBE(rp,&sign,&rp);
 			readBE(rp,&dscale,&rp);
 
@@ -3062,7 +3062,7 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->isnull=cont->getNonNullBindValue();
 
 			debugWrite("ndigits: %hu",ndigits);
-			debugWrite("weight: %hu",weight);
+			debugWrite("weight: %hd",weight);
 			debugWrite("sign: %hu",sign);
 			debugWrite("dscale: %hu",dscale);
 			debugWrite("value: %.*s",(int)bv->valuesize,

@@ -2784,6 +2784,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed getColumnsFromInsertQuery() not trimming whitespace from parsed
   INSERT column names, breaking the upsert trigger's column/primary-key
   matching when an explicit column list had spaces after commas (#10132)
+- fixed the postgresql protocol module misdeclaring numeric weight as
+  unsigned (#10108)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
