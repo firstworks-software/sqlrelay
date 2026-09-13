@@ -4637,10 +4637,10 @@ bool sqlrprotocol_tds::preLogin() {
 		}
 		readBE(rp,&ploptoff,&rp);
 		rpsize-=sizeof(ploptoff);
-		debugWrite("offset: %hd",ploptoff);
+		debugWrite("offset: %hu",ploptoff);
 		readBE(rp,&ploptsize,&rp);
 		rpsize-=sizeof(ploptsize);
-		debugWrite("size: %hd",ploptsize);
+		debugWrite("size: %hu",ploptsize);
 
 		// the data the option claims has to be inside the packet
 		if (!fitsInPacket(ploptoff,ploptsize,packetsize)) {
@@ -4670,7 +4670,7 @@ bool sqlrprotocol_tds::preLogin() {
 							&subbuild,&dummy);
 				debugWrite("pl_version");
 				debugWrite("version: %d",version);
-				debugWrite("subbuiild: %hd",subbuild);
+				debugWrite("subbuiild: %hu",subbuild);
 				break;
 
 			case PL_ENCRYPTION:
@@ -4816,7 +4816,7 @@ bool sqlrprotocol_tds::preLogin() {
 	writeLE(&packetdata,subbuild);
 	debugWrite("pl_version");
 	debugWrite("version: %d",version);
-	debugWrite("subbuiild: %hd",subbuild);
+	debugWrite("subbuiild: %hu",subbuild);
 
 	// encryption
 	write(&resppacket,(byte_t)PL_ENCRYPTION);
@@ -4998,7 +4998,7 @@ bool sqlrprotocol_tds::fitsInPacket(uint16_t offset,
 	bool	result=(offset<=packetsize && size<=packetsize-offset);
 
 	debugStart("fits in packet");
-	debugWrite("offset: %hd",offset);
+	debugWrite("offset: %hu",offset);
 	debugWrite("size: %lld",(long long)size);
 	debugWrite("packetsize: %lld",(long long)packetsize);
 	debugWrite("result: %d",result);
@@ -5023,7 +5023,7 @@ bool sqlrprotocol_tds::loginFieldFits(const char *name,
 
 	if (*cch>max) {
 		debugStart("tds7 login");
-		debugWrite("%s: %hd exceeds the %hd maximum, "
+		debugWrite("%s: %hu exceeds the %hu maximum, "
 				"dropping the field",name,*cch,max);
 		debugEnd();
 		// drop the length too - safePrint() and envChange() don't
@@ -5034,7 +5034,7 @@ bool sqlrprotocol_tds::loginFieldFits(const char *name,
 
 	if (!fitsInPacket(ib,(size_t)*cch*charsize,rpsize)) {
 		debugStart("tds7 login");
-		debugWrite("%s: (%hd,%hd) lies outside of the packet, "
+		debugWrite("%s: (%hu,%hu) lies outside of the packet, "
 				"dropping the field",name,ib,*cch);
 		debugEnd();
 		*cch=0;
@@ -5807,7 +5807,7 @@ void sqlrprotocol_tds::capability() {
 
 	debugStart("capability");
 	debugTokenType(token);
-	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("tokensize: 0x%02x (%hu)",tokensize,tokensize);
 	debugWrite("request mask: (%d)",(int)grantedrequestmasklen);
 	debugHexDump(grantedrequestmask,grantedrequestmasklen);
 	debugWrite("response mask: (%d)",(int)grantedresponsemasklen);
@@ -6899,7 +6899,7 @@ bool sqlrprotocol_tds::tds7Login() {
 		sspisize=0;
 	} else if (sspisize && !fitsInPacket(ibsspi,sspisize,rpsize)) {
 		debugStart("tds7 login");
-		debugWrite("sspi: (%hd,%d) lies outside of the packet, "
+		debugWrite("sspi: (%hu,%d) lies outside of the packet, "
 					"dropping the field",ibsspi,sspisize);
 		debugEnd();
 		sspisize=0;
@@ -6933,34 +6933,34 @@ bool sqlrprotocol_tds::tds7Login() {
 		stringbuffer	b;
 		b.printBits(clientlcid);
 		debugWrite("clientlcid: %s",b.getString());
-		debugWrite("hostname: (%hd,%hd) %S",
+		debugWrite("hostname: (%hu,%hu) %S",
 					ibhostname,cchhostname,hostname);
-		debugWrite("username: (%hd,%hd) %S",
+		debugWrite("username: (%hu,%hu) %S",
 					ibusername,cchusername,username);
-		debugWrite("password: (%hd,%hd) (hidden)",
+		debugWrite("password: (%hu,%hu) (hidden)",
 					ibpassword,cchpassword);
-		debugWrite("appname: (%hd,%hd) %S",
+		debugWrite("appname: (%hu,%hu) %S",
 					ibappname,cchappname,appname);
-		debugWrite("servername: (%hd,%hd) %S",
+		debugWrite("servername: (%hu,%hu) %S",
 					ibservername,cchservername,servername);
 		b.clear();
 		b.safePrint(extension,cbextension);
-		debugWrite("extension: (%hd,%hd) %s",
+		debugWrite("extension: (%hu,%hu) %s",
 					ibextension,cbextension,b.getString());
-		debugWrite("cltintname: (%hd,%hd) %S",
+		debugWrite("cltintname: (%hu,%hu) %S",
 					ibcltintname,cchcltintname,cltintname);
-		debugWrite("language: (%hd,%hd) %S",
+		debugWrite("language: (%hu,%hu) %S",
 					iblanguage,cchlanguage,language);
-		debugWrite("database: (%hd,%hd) %S",
+		debugWrite("database: (%hu,%hu) %S",
 					ibdatabase,cchdatabase,database);
 		debugWrite("clientid: %02x:%02x:%02x:%02x:%02x:%02x",
 					clientid[0],clientid[1],clientid[2],
 					clientid[3],clientid[4],clientid[5]);
-		debugWrite("atchdbfile: (%hd,%hd) %S",
+		debugWrite("atchdbfile: (%hu,%hu) %S",
 					ibatchdbfile,cchatchdbfile,atchdbfile);
-		debugWrite("changepassword: (%hd,%hd) (hidden)",
+		debugWrite("changepassword: (%hu,%hu) (hidden)",
 					ibchangepassword,cchchangepassword);
-		debugWrite("sspi: (%hd,%hd,%d)",ibsspi,cbsspi,cbsspilong);
+		debugWrite("sspi: (%hu,%hu,%d)",ibsspi,cbsspi,cbsspilong);
 		debugHexDump((byte_t *)sspi,sspisize);
 		debugEnd();
 	}
@@ -7164,7 +7164,7 @@ void sqlrprotocol_tds::loginAck(byte_t status) {
 
 	debugStart("login ack");
 	debugTokenType(token);
-	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("tokensize: 0x%02x (%hu)",tokensize,tokensize);
 	debugWrite("interface: %d",iface);
 	debugWrite("tdsversion: 0x%08x (%d)",tdsversion,negotiatedtdsversion);
 	debugWrite("prognamelength: %d",prognamelength);
@@ -7323,7 +7323,7 @@ void sqlrprotocol_tds::envChangeSqlCollation(uint32_t lcid,
 	if (getDebug()) {
 		debugStart("env change");
 		debugTokenType(token);
-		debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+		debugWrite("tokensize: 0x%02x (%hu)",tokensize,tokensize);
 		debugEnvChangeType(type);
 		debugWrite("newvaluesize: %lld",
 				(long long)(sizeof(uint32_t)+sizeof(byte_t)));
@@ -11254,13 +11254,13 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 	// FIXME: just use multiple type maps instead of the switch/ifs...
 
 	debugStart("map type");
-	debugWrite("type: %hd",type);
+	debugWrite("type: %hu",type);
 
 	// bail on a type that the map doesn't cover
 	// (0x1F is TDS_TYPE_NULL in ms-tds and TDS5_TYPE_VOID in tds 5.0,
 	// so this is a legal answer in either dialect)
 	if (type>=sizeof(tdstypemap)/sizeof(tdstypemap[0])) {
-		debugWrite("invalid column type: %hd",type);
+		debugWrite("invalid column type: %hu",type);
 		debugEnd();
 		return TDS_TYPE_NULL;
 	}
@@ -17547,7 +17547,7 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 		// bounds checking
 		if (procnamelen*sizeof(ucs2_t)>rpsize ||
 					procnamelen>maxquerysize) {
-			debugWrite("invalid proc name length: %hd",procnamelen);
+			debugWrite("invalid proc name length: %hu",procnamelen);
 			debugEnd();
 			return false;
 		}
@@ -21933,7 +21933,7 @@ void sqlrprotocol_tds::envChange(byte_t type,
 
 	debugStart("env change");
 	debugTokenType(token);
-	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("tokensize: 0x%02x (%hu)",tokensize,tokensize);
 	debugEnvChangeType(type);
 	debugWrite("newvaluelensize:%d",newvaluelensize);
 	debugWrite("newvaluelen: %lld",(long long)newvaluelen);
@@ -22095,7 +22095,7 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 
 	debugStart((token==TOKEN_INFO)?"info":"error");
 	debugTokenType(token);
-	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("tokensize: 0x%02x (%hu)",tokensize,tokensize);
 	debugWrite("number: %d",number);
 	debugWrite("state: %d",state);
 	debugWrite("class: %d",infoerrclass);
@@ -22205,7 +22205,7 @@ void sqlrprotocol_tds::preTds7AppendEed(byte_t token,
 
 	debugStart((token==TOKEN_INFO)?"info":"error");
 	debugTokenType(eedtoken);
-	debugWrite("tokensize: 0x%02x (%hd)",tokensize,tokensize);
+	debugWrite("tokensize: 0x%02x (%hu)",tokensize,tokensize);
 	debugWrite("number: %d",number);
 	debugWrite("state: %d",state);
 	debugWrite("class: %d",infoerrclass);
@@ -23867,7 +23867,7 @@ void sqlrprotocol_tds::debugProcId(uint16_t procid) {
 	if (!getDebug()) {
 		return;
 	}
-	debugWrite("procid: %hd (%s)",procid,
+	debugWrite("procid: %hu (%s)",procid,
 			procids[(procid<=SP_MAX_PROCID)?procid:0]);
 }
 

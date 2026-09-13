@@ -3061,10 +3061,10 @@ bool sqlrprotocol_postgresql::bindBinaryParameter(const byte_t *rp,
 			bv->value.stringval[str.getSize()]='\0';
 			bv->isnull=cont->getNonNullBindValue();
 
-			debugWrite("ndigits: %hd",ndigits);
-			debugWrite("weight: %hd",weight);
-			debugWrite("sign: %hd",sign);
-			debugWrite("dscale: %hd",dscale);
+			debugWrite("ndigits: %hu",ndigits);
+			debugWrite("weight: %hu",weight);
+			debugWrite("sign: %hu",sign);
+			debugWrite("dscale: %hu",dscale);
 			debugWrite("value: %.*s",(int)bv->valuesize,
 						bv->value.stringval);
 			}

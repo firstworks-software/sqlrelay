@@ -347,7 +347,7 @@ bool sqlrtrigger_upsert::copyInputBinds(sqlrservercursor *ucur,
 				// val wil just be a ?, append
 				// the bind number to it
 				char	*bindname;
-				charstring::printf(&bindname,"?%hd",bindnum);
+				charstring::printf(&bindname,"?%hu",bindnum);
 				bindtocol.setValue(bindname,col);
 				bindnum++;
 				debugWrite("%s -> %s",bindname,col);
@@ -485,7 +485,7 @@ void sqlrtrigger_upsert::copyInputBind(memorypool *pool, bool where,
 		ubind->variable=(char *)pool->allocate(ubind->variablesize+1);
 		charstring::printf(ubind->variable,
 					ubind->variablesize+1,
-					"%c%hd",
+					"%c%hu",
 					ibind->variable[0],
 					bindnumber);
 

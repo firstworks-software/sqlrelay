@@ -4230,7 +4230,7 @@ bool sqlrprotocol_teradata::parseConnectParcel(
 			(int)sizeof(partitionname),partitionname);
 	debugWrite("logon sequence number:");
 	debugHexDump(logonsequencenumber,sizeof(logonsequencenumber));
-	debugWrite("function: %hd",function);
+	debugWrite("function: %hu",function);
 
 	// return next parcel
 	*parcelout=parceldata+parceldatasize;
@@ -4383,7 +4383,7 @@ bool sqlrprotocol_teradata::parseClientAttributeParcel(
 				debugWrite("%s: %.*s",
 						fieldname,size-1,ptr+1);
 			} else {
-				debugWrite("unknown field %hd: %.*s",
+				debugWrite("unknown field %hu: %.*s",
 						field,size-1,ptr+1);
 			}
 		} else {
@@ -4391,7 +4391,7 @@ bool sqlrprotocol_teradata::parseClientAttributeParcel(
 			if (fieldname) {
 				debugWrite("%s:",fieldname);
 			} else {
-				debugWrite("unknown field %hd:",field);
+				debugWrite("unknown field %hu:",field);
 			}
 			debugHexDump(ptr,size);
 		}
@@ -6359,7 +6359,7 @@ void sqlrprotocol_teradata::appendConfigResponseField7() {
 	debugStart("unknown field 7");
 	debugWrite("unknown1: 0x%02x",unknown1);
 	debugWrite("unknown2: 0x%02x",unknown2);
-	debugWrite("unknown3: %hd",unknown3);
+	debugWrite("unknown3: %hu",unknown3);
 	debugWrite("unknown4: %d",unknown4);
 	debugWrite("unknown5: %d",unknown5);
 	debugWrite("unknown6: %lld",(long long)unknown6);
@@ -6672,7 +6672,7 @@ void sqlrprotocol_teradata::appendGatewayConfigParcel() {
 	write(&respdata,(uint16_t)(sizeof(uint32_t)+sizeof(sessionid)));
 	write(&respdata,sessionid);
 
-	debugWrite("session id: %hd",sessionid);
+	debugWrite("session id: %hu",sessionid);
 
 
 

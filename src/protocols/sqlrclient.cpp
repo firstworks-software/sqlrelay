@@ -297,8 +297,8 @@ sqlrprotocol_sqlrclient::sqlrprotocol_sqlrclient(
 	debugWrite("idleclienttimeout: %d",idleclienttimeout);
 	debugWrite("maxclientinfosize: %lld",(long long)maxclientinfosize);
 	debugWrite("maxquerysize: %d",maxquerysize);
-	debugWrite("maxbindcount: %hd",maxbindcount);
-	debugWrite("maxbindnamesize: %hd",maxbindnamesize);
+	debugWrite("maxbindcount: %hu",maxbindcount);
+	debugWrite("maxbindnamesize: %hu",maxbindnamesize);
 	debugWrite("maxstringbindvaluesize: %d",maxstringbindvaluesize);
 	debugWrite("maxlobbindvaluesize: %d",maxlobbindvaluesize);
 	debugWrite("waitfordowndb: %d",waitfordowndb);
@@ -910,7 +910,7 @@ sqlrservercursor *sqlrprotocol_sqlrclient::getCursor(uint16_t command) {
 	}
 
 	if (cursor) {
-		debugWrite("cursor id: %hd",cont->getId(cursor));
+		debugWrite("cursor id: %hu",cont->getId(cursor));
 	} else {
 		debugWrite("cursor id: not found");
 	}
@@ -1170,7 +1170,7 @@ void sqlrprotocol_sqlrclient::suspendSessionCommand() {
 	uint16_t	unixsocketsize=charstring::getLength(unixsocketname);
 
 	debugWrite("unix socket name: %s",unixsocketname);
-	debugWrite("inet port number: %hd",inetportnumber);
+	debugWrite("inet port number: %hu",inetportnumber);
 
 	// pass the socket info to the client
 	clientsock->write((uint16_t)NO_ERROR_OCCURRED);
@@ -3057,8 +3057,8 @@ bool sqlrprotocol_sqlrclient::getBindVarCount(sqlrservercursor *cursor,
 
 		cont->raiseClientProtocolErrorEvent(cursor,1,
 			"get binds failed: "
-			"client tried to send too many binds: %hd",*count);
-		debugWrite("client tried to send too many binds: %hd",*count);
+			"client tried to send too many binds: %hu",*count);
+		debugWrite("client tried to send too many binds: %hu",*count);
 
 		*count=0;
 		return false;
@@ -3098,7 +3098,7 @@ bool sqlrprotocol_sqlrclient::getBindVarName(sqlrservercursor *cursor,
 
 		cont->raiseClientProtocolErrorEvent(cursor,1,
 				"get binds failed: "
-				"bad variable name size: %hd",bindnamesize);
+				"bad variable name size: %hu",bindnamesize);
 		return false;
 	}
 
@@ -3774,7 +3774,7 @@ void sqlrprotocol_sqlrclient::returnOutputBindValues(
 					bool sendbindvalues) {
 
 	debugStart("returning output bind values");
-	debugWrite("count: %hd",cont->getOutputBindCount(cursor));
+	debugWrite("count: %hu",cont->getOutputBindCount(cursor));
 
 	// bind values are leftovers from a previous command once the bind
 	// pool backing them has been cleared, don't send them in that case
@@ -4012,7 +4012,7 @@ void sqlrprotocol_sqlrclient::returnInputOutputBindValues(
 						bool sendbindvalues) {
 
 	debugStart("returning input/output bind values");
-	debugWrite("count: %hd",cont->getInputOutputBindCount(cursor));
+	debugWrite("count: %hu",cont->getInputOutputBindCount(cursor));
 
 	if (protocolversion<2) {
 		debugWrite("client protocol too old");
@@ -4182,7 +4182,7 @@ void sqlrprotocol_sqlrclient::sendColumnDefinition(
 						const char *table,
 						uint16_t tablesize) {
 
-	debugWrite("%.*s:%hd:%d (%d,%d) %s%s%s",
+	debugWrite("%.*s:%hu:%d (%d,%d) %s%s%s",
 				namesize,name,type,size,precision,scale,
 				(nullable)?"":"NOT NULL ",
 				(primarykey)?"Primary key ":"",
@@ -4913,7 +4913,7 @@ bool sqlrprotocol_sqlrclient::getObjectListCommand(sqlrservercursor *cursor,
 			return false;
 		}
 
-		debugWrite("object types: %hd",objecttypes);
+		debugWrite("object types: %hu",objecttypes);
 	}
 
 	// set the values that we won't get from the client
@@ -5379,9 +5379,9 @@ bool sqlrprotocol_sqlrclient::setCursorNameCommand(sqlrservercursor *cursor) {
 	if (namesize>MAX_CURSOR_NAME_SIZE) {
 		cont->raiseClientProtocolErrorEvent(cursor,1,
 					"set cursor name failed: "
-					"client sent bad cursor name size: %hd",
+					"client sent bad cursor name size: %hu",
 					namesize);
-		debugWrite("client sent bad cursor name size: %hd",namesize);
+		debugWrite("client sent bad cursor name size: %hu",namesize);
 		debugEnd();
 		return false;
 	}
@@ -5424,7 +5424,7 @@ bool sqlrprotocol_sqlrclient::setCursorNameCommand(sqlrservercursor *cursor) {
 }
 
 void sqlrprotocol_sqlrclient::debugCommand(uint16_t command) {
-	debugWrite("command: %hd",command);
+	debugWrite("command: %hu",command);
 	switch (command) {
 		case SQLRCLIENT_PROTOCOL_VERSION:
 			debugWrite("SQLRCLIENT_PROTOCOL_VERSION");

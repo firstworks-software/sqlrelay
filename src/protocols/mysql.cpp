@@ -2287,7 +2287,7 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 		if (servercapabilityflags&CLIENT_PROTOCOL_41 &&
 				clientcapabilityflags&CLIENT_PROTOCOL_41) {
 			debugStatusFlags(statusflags);
-			debugWrite("warnings: %hd",warnings);
+			debugWrite("warnings: %hu",warnings);
 		} else if (servercapabilityflags&CLIENT_TRANSACTIONS &&
 				clientcapabilityflags&CLIENT_TRANSACTIONS) {
 			debugStatusFlags(statusflags);
@@ -2359,7 +2359,7 @@ bool sqlrprotocol_mysql::sendErrPacket(uint16_t errorcode,
 	}
 
 	debugStart("err");
-	debugWrite("error code: %hd",errorcode);
+	debugWrite("error code: %hu",errorcode);
 	debugWrite("error message: \"%.*s\"",(int)errorsize,errormessage);
 	debugWrite("error size: %lld",(long long)errorsize);
 	debugWrite("sql state: \"%s\"",sqlstate);
@@ -2401,7 +2401,7 @@ bool sqlrprotocol_mysql::sendEofPacket(uint16_t warnings,
 
 	debugStart("eof");
 	debugWrite("header: 0xfe");
-	debugWrite("warnings: %hd",warnings);
+	debugWrite("warnings: %hu",warnings);
 	debugStatusFlags(statusflags);
 	debugEnd();
 
@@ -4605,9 +4605,9 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 
 	debugStart("stmt_prepare_ok");
 	debugWrite("statement id: %d",(uint32_t)cont->getId(cursor));
-	debugWrite("number of columns: %hd",ccount);
-	debugWrite("number of params: %hd",pcount);
-	debugWrite("warning count: %hd",warningcount);
+	debugWrite("number of columns: %hu",ccount);
+	debugWrite("number of params: %hu",pcount);
+	debugWrite("warning count: %hu",warningcount);
 	debugEnd();
 
 	resetSendPacketBuffer();

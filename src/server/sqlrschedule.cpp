@@ -142,9 +142,9 @@ bool sqlrschedulerule::inDayParts(int32_t hour, int32_t minute) {
 
 		sqlrscheduledaypart	*dp=dpn->getValue();
 
-		debugPrintf("	%d:%02d>=%hd:%02hd && ",
+		debugPrintf("	%d:%02d>=%hu:%02hu && ",
 				hour,minute,dp->starthour,dp->startminute);
-		debugPrintf("%d:%02d<=%hd:%02hd - ",
+		debugPrintf("%d:%02d<=%hu:%02hu - ",
 				hour,minute,dp->endhour,dp->endminute);
 
 		if (hour>=dp->starthour && minute>=dp->startminute &&

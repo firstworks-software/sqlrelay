@@ -2784,6 +2784,11 @@
 		insert into t values ('a','b',3) into
 		insert into t values ('a,'b,3), which is invalid sql; the
 		value.append() call was copying one byte short (#10102)
+	fixed the same uint16_t/%hd misprinting bug #10097 and #10098
+		fixed in sqlrservercontroller.cpp, at further sites across
+		the firebird, mysql, postgresql, sqlrclient, tds and
+		teradata protocol modules, sqlrschedule.cpp, and the upsert
+		trigger; switched to %hu (#10099)
 
 2.2.0 - added some install targets for unfinished modules
 	fixed some subtle debug attritbute-related problems

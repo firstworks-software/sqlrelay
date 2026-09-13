@@ -10103,7 +10103,7 @@ bool sqlrprotocol_firebird::batchCreate() {
 		return false;
 	}
 
-	debugWrite("message field count: %hd",fieldcount);
+	debugWrite("message field count: %hu",fieldcount);
 
 	// the length of one message in the client's buffer, which means
 	// nothing here - the wire format is packed, and the blr says what it
@@ -10214,7 +10214,7 @@ bool sqlrprotocol_firebird::batchMsg() {
 
 	for (uint32_t m=0; m<msgcount; m++) {
 
-		debugWrite("message %u of %u: %hd field(s)",
+		debugWrite("message %u of %u: %hu field(s)",
 					m+1,msgcount,batch->fieldcount);
 
 		byte_t	*nullbits=NULL;
@@ -10403,7 +10403,7 @@ bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
 	debugStart("exec batch message");
 
 	debugWrite("position: %u",position);
-	debugWrite("value count: %hd",msg->valuecount);
+	debugWrite("value count: %hu",msg->valuecount);
 
 	*affected=0;
 
@@ -10426,14 +10426,14 @@ bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
 							val.blobhigh,
 							val.bloblow);
 			if (bb) {
-				debugWrite("value %hd: batch blob "
+				debugWrite("value %hu: batch blob "
 						"%u:%u -> blob id %u",
 						i,val.blobhigh,val.bloblow,
 						bb->blobid);
 				val.blobhigh=0;
 				val.bloblow=bb->blobid;
 			} else {
-				debugWrite("value %hd: unknown batch blob "
+				debugWrite("value %hu: unknown batch blob "
 						"%u:%u",
 						i,val.blobhigh,val.bloblow);
 			}
@@ -10446,7 +10446,7 @@ bool sqlrprotocol_firebird::execBatchMessage(sqlrservercursor *cursor,
 
 	cont->setInputBindCount(cursor,bindcount);
 
-	debugWrite("bind count: %hd",bindcount);
+	debugWrite("bind count: %hu",bindcount);
 
 	sqlrfirebirdbatcherror	*err=NULL;
 
@@ -11550,8 +11550,8 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 			(cont->getFakeInputBindsForThisQuery(cursor))?
 				0:cont->getInputBindCountFromPrepare(cursor);
 
-	debugWrite("query bind count: %hd",querybindcount);
-	debugWrite("prepare bind count: %hd",preparebindcount);
+	debugWrite("query bind count: %hu",querybindcount);
+	debugWrite("prepare bind count: %hu",preparebindcount);
 
 	// a backend that can't describe binds answers 0 and UNKNOWN_DATATYPE
 	if (preparebindcount && preparebindcount==querybindcount &&
@@ -11566,7 +11566,7 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 				cont->getInputBindSize(cursor,i);
 			stmt->binds[i].colscale=
 				cont->getInputBindScale(cursor,i);
-			debugWrite("bind %hd: type=%hd size=%u scale=%u",
+			debugWrite("bind %hu: type=%hu size=%u scale=%u",
 					i,
 					stmt->binds[i].coltype,
 					stmt->binds[i].colsize,
@@ -11590,7 +11590,7 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 	uint32_t	probequerylen=(uint32_t)probe.getSize();
 
 	debugWrite("bind describe probe: \"%s\"",probequery);
-	debugWrite("bind count: %hd",bindcount);
+	debugWrite("bind count: %hu",bindcount);
 
 	// the probe is built from the table's own column names, not from the
 	// client's query, so a wide table can make it longer than the query
@@ -11637,7 +11637,7 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 				cont->getColumnSize(probecursor,i);
 			stmt->binds[i].colscale=
 				cont->getColumnScale(probecursor,i);
-			debugWrite("bind %hd: type=%hd size=%u scale=%u",
+			debugWrite("bind %hu: type=%hu size=%u scale=%u",
 					i,
 					stmt->binds[i].coltype,
 					stmt->binds[i].colsize,
@@ -11666,7 +11666,7 @@ bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 	*bindcount=cont->countBindVariables(query,querylen);
 
 	debugWrite("query: \"%.*s\"",(int)querylen,query);
-	debugWrite("bind count: %hd",*bindcount);
+	debugWrite("bind count: %hu",*bindcount);
 
 	if (!*bindcount) {
 		debugEnd();
@@ -11722,7 +11722,7 @@ bool sqlrprotocol_firebird::buildBindProbe(sqlrservercursor *cursor,
 	// the whole statement falls back
 	bool	success=(usable && found==*bindcount);
 
-	debugWrite("found: %hd",found);
+	debugWrite("found: %hu",found);
 	const char	*probestr=probe->getString();
 	debugWrite("probe: \"%s\"",(probestr)?probestr:"");
 	debugWrite("success: %s",(success)?"yes":"no");
@@ -11842,7 +11842,7 @@ bool sqlrprotocol_firebird::describeOutputColumns(sqlrservercursor *cursor,
 			stmt->probecols[i].colscale=
 					cont->getColumnScale(probecursor,i);
 			debugWrite("column %u: name=\"%s\" table=\"%s\" "
-					"type=%hd size=%u scale=%u",
+					"type=%hu size=%u scale=%u",
 					i,
 					(stmt->probecols[i].name)?
 						stmt->probecols[i].name:"",
