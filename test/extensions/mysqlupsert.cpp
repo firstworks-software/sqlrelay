@@ -172,15 +172,75 @@ int main(int argc, char **argv) {
 	// a duplicate on (student,course) triggers the upsert trigger; with
 	// the table name correctly extracted, the trigger finds "exam grades"
 	// in its config and acts on the duplicate instead of leaving the raw
-	// duplicate-key error in place
-	assertFalse(cur->sendQuery("insert into `exam grades` values "
+	// duplicate-key error in place; also a regression test for #10128 -
+	// the generated update quotes the table name, so the update actually
+	// runs and succeeds (sendQuery returns true, as it does for the
+	// unquoted "student" table above) and the row comes back updated in
+	// place, rather than the update failing on the unquoted table name
+	// and just happening to not surface the original duplicate-key error
+	assertTrue(cur->sendQuery("insert into `exam grades` values "
 				"(null,"
 				"'Jane','Biology','Spring','93')"));
 	assertFalse(charstring::contains(cur->errorMessage(),"Duplicate entry"));
 	assertTrue(secondcur->sendQuery("select count(*) from `exam grades`"));
 	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from `exam grades`"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"Jane");
+	assertEquals(secondcur->getField(0,2),"Biology");
+	assertEquals(secondcur->getField(0,3),"Spring");
+	assertEquals(secondcur->getField(0,4),"93");
 	stdoutput.printf("\n");
 	assertTrue(cur->sendQuery("drop table `exam grades`"));
+
+	// upsert on a table whose name contains a character ('$') that's
+	// valid in an unquoted mysql identifier; regression test for #10128 -
+	// the fix for the "exam grades" case above must not overcorrect into
+	// quoting every table name with any non-alphanumeric character, since
+	// that would needlessly quote a name like this one
+	stdoutput.printf("UPSERT ON TABLE NAME WITH A DOLLAR SIGN:\n");
+	cur->sendQuery("drop table exam$grades");
+	assertTrue(cur->sendQuery("create table exam$grades ("
+					"id int auto_increment, "
+					"student varchar(20), "
+					"course varchar(20), "
+					"term varchar(20), "
+					"score varchar(20), "
+					"primary key (id), "
+					"unique (student,course) "
+					")"));
+	stdoutput.printf("\n");
+	// initial insert
+	assertTrue(cur->sendQuery("insert into exam$grades values "
+				"(null,"
+				"'Jane','Biology','Fall','88')"));
+	assertTrue(secondcur->sendQuery("select count(*) from exam$grades"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from exam$grades"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"Jane");
+	assertEquals(secondcur->getField(0,2),"Biology");
+	assertEquals(secondcur->getField(0,3),"Fall");
+	assertEquals(secondcur->getField(0,4),"88");
+	stdoutput.printf("\n");
+	// a duplicate on (student,course) triggers the upsert trigger; the
+	// generated update must not quote the table name, since quoting is
+	// only needed for names containing something outside of alphanumeric,
+	// '_', '.', '$', '#', '@'
+	assertTrue(cur->sendQuery("insert into exam$grades values "
+				"(null,"
+				"'Jane','Biology','Spring','93')"));
+	assertFalse(charstring::contains(cur->errorMessage(),"Duplicate entry"));
+	assertTrue(secondcur->sendQuery("select count(*) from exam$grades"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from exam$grades"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"Jane");
+	assertEquals(secondcur->getField(0,2),"Biology");
+	assertEquals(secondcur->getField(0,3),"Spring");
+	assertEquals(secondcur->getField(0,4),"93");
+	stdoutput.printf("\n");
+	assertTrue(cur->sendQuery("drop table exam$grades"));
 
 	assertTrue(cur->sendQuery("drop table student"));
 	delete secondcur;

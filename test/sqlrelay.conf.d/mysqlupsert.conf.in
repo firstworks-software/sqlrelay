@@ -24,6 +24,11 @@
 						<column name="student"/>
 						<column name="course"/>
 					</table>
+					<table name="exam$grades">
+						<primarykey name="id"/>
+						<column name="student"/>
+						<column name="course"/>
+					</table>
 				</tables>
 			</trigger>
 		</triggers>

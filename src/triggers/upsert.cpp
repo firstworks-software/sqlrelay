@@ -536,8 +536,36 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 					domnode *tablenode,
 					stringbuffer *query) {
 
+	// Quote the table name only when it contains something other than a
+	// plain identifier character (eg. a space) - alphanumerics, '_', and
+	// the unquoted-identifier extras '.', '$', '#', '@' (qualifier dots
+	// and characters several backends allow unquoted) don't count.
+	// Quoting unconditionally would break tables that rely on default
+	// identifier-case folding (eg. oracle/db2/firebird uppercase,
+	// postgresql lowercase), since a quoted identifier is matched
+	// case-sensitively. mysql quotes with a backtick, everything else
+	// uses a double quote.
+	bool	mysql=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"mysql");
+	bool	quotetable=false;
+	for (const char *p=table; *p; p++) {
+		if (!character::isAlphanumeric(*p) && *p!='_' &&
+				!character::isInSet(*p,".$#@")) {
+			quotetable=true;
+			break;
+		}
+	}
+
 	// begin building the update query
-	query->append("update ")->append(table)->append(" set ");
+	query->append("update ");
+	if (quotetable) {
+		query->append(mysql?'`':'"')->
+				append(table)->
+				append(mysql?'`':'"');
+	} else {
+		query->append(table);
+	}
+	query->append(" set ");
 
 	debugStart("col-to-val map");
 
