@@ -322,9 +322,16 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 	if (querytype==SQLRQUERYTYPE_INSERT ||
 		 querytype==SQLRQUERYTYPE_MULTIINSERT) {
 
+		// A last-insert-id of 0 is never a real generated value -
+		// some backends use 0 as a sentinel for "no id available"
+		// (e.g. postgresql's InvalidOid) or it's just a stale id
+		// left over from an earlier insert, so treat it the same
+		// as not having gotten one at all.
+		bool	gotusableliid=(gotliid && liid);
+
 		// did the insert supply a null for the auto-increment column?
 		bool	nullautoincvalue=(querytype==SQLRQUERYTYPE_INSERT &&
-					gotliid && !thisqueryerrored &&
+					gotusableliid && !thisqueryerrored &&
 					autoinccolumn &&
 					columnsincludeautoinccolumn &&
 					autoincValueIsNull(columns,values,
@@ -339,7 +346,7 @@ void sqlrtrigger_replay::logQuery(sqlrservercursor *sqlrcur) {
 					columns,autoinccolumn,liid,
 					columnsincludeautoinccolumn,rawvalues);
 
-		} else if (!gotliid || !autoinccolumn ||
+		} else if (!gotusableliid || !autoinccolumn ||
 					columnsincludeautoinccolumn ||
 					(thisqueryerrored &&
 					querytype==SQLRQUERYTYPE_INSERT)) {

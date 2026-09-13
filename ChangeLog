@@ -2764,6 +2764,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   update when a bind sits inside a value expression
 - fixed the INSERT column-list splitter to recognize double- and
   backtick-quoted column names, not just unquoted ones (#10120)
+- fixed the replay trigger treating a last-insert-id of 0 as a usable
+  id when deciding whether to splice it into a replayed insert (#10119)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
