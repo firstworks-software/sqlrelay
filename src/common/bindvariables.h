@@ -30,8 +30,25 @@ static bool isBindDelimiter(const char *c,
 }
 #endif
 
+#if defined(NEED_AFTER_BIND_VARIABLE) || defined(NEED_WHOLE_BIND_VARIABLE)
+// the one definition of what can appear inside a bind variable name:
+// alphanumerics and '_' everywhere, plus '$' and '#' for oracle identifiers.
+static bool isBindVariableNameCharacter(char c) {
+	return (character::isAlphanumeric(c) ||
+			c=='_' || c=='$' || c=='#');
+}
+#endif
+
 #ifdef NEED_AFTER_BIND_VARIABLE
+// deliberately lenient - this walks a whole query, so it only has to find
+// *an* end, and over-consuming into what looks like a name is harmless here.
+// a name character never terminates a name, so this can only run long, never
+// split one - narrowing it to !isBindVariableNameCharacter() would be a
+// real behavior change for its callers, not just a de-duplication.
 static bool afterBindVariable(const char *c) {
+	if (isBindVariableNameCharacter(*c)) {
+		return false;
+	}
 	return (character::isInSet(*c," \t\n\r,);=<>!") ||
 				(*c==':' && *(c+1)=='='));
 }
@@ -125,10 +142,8 @@ static const char *wholeBindVariable(const char *var,
 	}
 
 	// scan the name
-	// (oracle bind names may also contain $ and #)
 	const char	*p=start+1;
-	while (character::isAlphanumeric(*p) ||
-			*p=='_' || *p=='$' || *p=='#') {
+	while (isBindVariableNameCharacter(*p)) {
 		p++;
 	}
 	const char	*end=p;
