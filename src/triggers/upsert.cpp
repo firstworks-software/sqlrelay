@@ -542,32 +542,62 @@ bool sqlrtrigger_upsert::convertInsertToUpdate(
 					domnode *tablenode,
 					stringbuffer *query) {
 
+	// Each backend gets the delimiter that works with no session or
+	// environment setting: a backtick for mysql, the ansi double quote
+	// for postgresql/oracle/db2/sqlite/firebird, and square brackets for
+	// freetds/sap - ms sql server and sybase ase 15+ honor brackets
+	// regardless of QUOTED_IDENTIFIER, but honor the double quote only
+	// when it's on, which isn't guaranteed.  Everything else - informix
+	// (whose double quote needs DELIMIDENT), odbc/router with no dbtype
+	// or identity override to say what's really behind them, and any
+	// unrecognized db type - is left unquoted, since we can't verify
+	// that any delimiter would work there.
+	const char	*dbtype=cont->getDbType();
+	char		openquote='\0';
+	char		closequote='\0';
+	const char	*unquotedchars=".$#@";
+	if (!charstring::compareIgnoringCase(dbtype,"mysql")) {
+		openquote='`';
+		closequote='`';
+		unquotedchars=".$";
+	} else if (!charstring::compareIgnoringCase(dbtype,"postgresql") ||
+			!charstring::compareIgnoringCase(dbtype,"oracle") ||
+			!charstring::compareIgnoringCase(dbtype,"db2") ||
+			!charstring::compareIgnoringCase(dbtype,"sqlite") ||
+			!charstring::compareIgnoringCase(dbtype,"firebird")) {
+		openquote='"';
+		closequote='"';
+	} else if (!charstring::compareIgnoringCase(dbtype,"freetds") ||
+			!charstring::compareIgnoringCase(dbtype,"sap")) {
+		openquote='[';
+		closequote=']';
+	}
+
 	// Quote the table name only when it contains something other than a
 	// plain identifier character (eg. a space) - alphanumerics, '_', and
-	// the unquoted-identifier extras '.', '$', '#', '@' (qualifier dots
-	// and characters several backends allow unquoted) don't count.
-	// Quoting unconditionally would break tables that rely on default
+	// the unquoted-identifier extras above don't count.  Quoting
+	// unconditionally would break tables that rely on default
 	// identifier-case folding (eg. oracle/db2/firebird uppercase,
 	// postgresql lowercase), since a quoted identifier is matched
-	// case-sensitively. mysql quotes with a backtick, everything else
-	// uses a double quote.
-	bool	mysql=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+	// case-sensitively.  The qualifier dot is always exempt, so that a
+	// schema-qualified name isn't quoted as if it were one identifier.
 	bool	quotetable=false;
-	for (const char *p=table; *p; p++) {
-		if (!character::isAlphanumeric(*p) && *p!='_' &&
-				!character::isInSet(*p,".$#@")) {
-			quotetable=true;
-			break;
+	if (openquote) {
+		for (const char *p=table; *p; p++) {
+			if (!character::isAlphanumeric(*p) && *p!='_' &&
+					!character::isInSet(*p,unquotedchars)) {
+				quotetable=true;
+				break;
+			}
 		}
 	}
 
 	// begin building the update query
 	query->append("update ");
 	if (quotetable) {
-		query->append(mysql?'`':'"')->
+		query->append(openquote)->
 				append(table)->
-				append(mysql?'`':'"');
+				append(closequote);
 	} else {
 		query->append(table);
 	}
