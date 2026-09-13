@@ -65,10 +65,11 @@ Most of `src/` is discoverable by listing it (one directory per module type: aut
 
 A single suite is run directly, e.g. from test/: ./test.sh -randomports oracleprotocol
 
-Two things about test.sh that are easy to get wrong, and that make a run prove nothing:
+Three things about test.sh that are easy to get wrong, and that make a run prove nothing:
 
 - **Without -buildtree, test.sh runs the INSTALLED server**, not the build tree. So after editing anything under src/, a plain run exercises the old code at $prefix and passes or fails for the wrong reasons. Pass -buildtree, or make install first. When in doubt, check the installed module for a string your change introduced before trusting the result.
 - **-buildtree does not rebuild the programs under test/protocol.** Those are separate binaries with their own Makefiles - run make in the relevant directory, e.g. test/protocol/oracle, to pick up a change to the test program itself.
+- **-buildtree cannot reach the odbc test client's driver at all.** That client always loads libsqlrodbc through unixODBC's own driver manager, which dlopens the driver by the absolute path in odbcinst.ini's [SQL Relay] stanza, not via the test process's LD_LIBRARY_PATH. So odbc tests always exercise the installed libsqlrodbc.so, never the build tree's, even under -buildtree. Accepted as a known limitation - see #10107.
 
 ## Conventions worth knowing
 
