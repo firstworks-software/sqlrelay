@@ -725,8 +725,10 @@ const char *sqlrtrigger_upsert::trimmedBind(const char *var, size_t *len) {
 
 	// the marker has to be the whole value - a bind inside an expression,
 	// "values (?+1)", feeds no column on its own
+	// (oracle bind names may also contain $ and #)
 	const char	*p=start+1;
-	while (character::isAlphanumeric(*p) || *p=='_') {
+	while (character::isAlphanumeric(*p) ||
+			*p=='_' || *p=='$' || *p=='#') {
 		p++;
 	}
 	const char	*end=p;

@@ -2781,7 +2781,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   delimiters and honor dbtype/identity overrides when quoting a
   rewritten update's table name (#10128, #10129)
 - fixed the upsert trigger not recognizing a bind value with leading
-  whitespace as a whole-token bind (#10124)
+  whitespace, or an oracle bind name containing $ or #, as a
+  whole-token bind (#10124, #10130)
 - fixed getColumnsFromInsertQuery() not trimming whitespace from parsed
   INSERT column names, breaking the upsert trigger's column/primary-key
   matching when an explicit column list had spaces after commas (#10132)
