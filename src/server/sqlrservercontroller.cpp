@@ -3804,9 +3804,58 @@ const char *sqlrservercontroller::skipStringLiteral(const char *ptr,
 							backslash,true);
 }
 
+const char *sqlrservercontroller::skipDollarQuotedLiteral(const char *ptr,
+							const char *end) {
+
+	// opening delimiter: '$', an optional tag, then '$'
+	if (ptr>=end || *ptr!='$') {
+		return ptr;
+	}
+	const char	*tag=ptr+1;
+	const char	*p=tag;
+	if (p<end && (character::isAlphabetical(*p) || *p=='_')) {
+		p++;
+		while (p<end &&
+			(character::isAlphanumeric(*p) || *p=='_')) {
+			p++;
+		}
+	}
+	if (p>=end || *p!='$') {
+		return ptr;
+	}
+	size_t		taglen=p-tag;
+
+	// find the first closing delimiter - the same tag, between two '$'s
+	size_t		delimlen=taglen+2;
+	for (const char *q=p+1; (size_t)(end-q)>=delimlen; q++) {
+		if (*q!='$' || *(q+delimlen-1)!='$') {
+			continue;
+		}
+		bool	tagmatches=true;
+		for (size_t i=0; i<taglen; i++) {
+			if (*(q+1+i)!=*(tag+i)) {
+				tagmatches=false;
+				break;
+			}
+		}
+		if (tagmatches) {
+			return q+delimlen;
+		}
+	}
+
+	// unterminated literal
+	return end;
+}
+
 const char *sqlrservercontroller::findCommaOrCloseParen(const char *ptr,
 							const char *end,
 							bool backslash) {
+
+	// dollar-quoting is postgres-only syntax; elsewhere '$' can be a
+	// legitimate identifier/bind-name character (eg. oracle), so only
+	// look for it there
+	bool	dollarquoting=!charstring::compareIgnoringCase(
+					getNativeDbType(),"postgresql");
 
 	// find the next top-level "," or ")"
 	int32_t		depth=0;
@@ -3817,6 +3866,16 @@ const char *sqlrservercontroller::findCommaOrCloseParen(const char *ptr,
 		if (character::isInSet(*ptr,"'\"`")) {
 			ptr=skipStringLiteral(ptr,end,backslash);
 			continue;
+		}
+
+		// skip postgres dollar-quoted literals
+		if (dollarquoting && *ptr=='$') {
+			const char	*afterliteral=
+					skipDollarQuotedLiteral(ptr,end);
+			if (afterliteral!=ptr) {
+				ptr=afterliteral;
+				continue;
+			}
 		}
 
 		if (*ptr=='(') {
@@ -4603,6 +4662,12 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 	bool	backslash=!charstring::compareIgnoringCase(
 					getNativeDbType(),"mysql");
 
+	// dollar-quoting is postgres-only syntax; elsewhere '$' can be a
+	// legitimate identifier/bind-name character (eg. oracle), so only
+	// look for it there
+	bool	dollarquoting=!charstring::compareIgnoringCase(
+					getNativeDbType(),"postgresql");
+
 	for (;;) {
 
 		// ran off the end without finding the close paren -
@@ -4616,6 +4681,16 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 		if (character::isInSet(*c,"'\"`")) {
 			c=skipStringLiteral(c,queryend,backslash);
 			continue;
+		}
+
+		// skip postgres dollar-quoted literals
+		if (dollarquoting && *c=='$') {
+			const char	*afterliteral=
+					skipDollarQuotedLiteral(c,queryend);
+			if (afterliteral!=c) {
+				c=afterliteral;
+				continue;
+			}
 		}
 
 		// handle parens

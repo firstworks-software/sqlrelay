@@ -327,6 +327,12 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 	bool	backslash=!charstring::compareIgnoringCase(
 					cont->getNativeDbType(),"mysql");
 
+	// dollar-quoting is postgres-only syntax; elsewhere '$' can be a
+	// legitimate identifier/bind-name character (eg. oracle), so only
+	// look for it there
+	bool	dollarquoting=!charstring::compareIgnoringCase(
+					cont->getNativeDbType(),"postgresql");
+
 	// skip to the closing paren, accounting for nested parens and quotes
 	uint16_t	depth=0;
 	for (;;) {
@@ -341,6 +347,17 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 			*ptr=cont->skipStringLiteral(*ptr,queryend,
 							backslash);
 			continue;
+		}
+
+		// skip postgres dollar-quoted literals
+		if (dollarquoting && **ptr=='$') {
+			const char	*afterliteral=
+					cont->skipDollarQuotedLiteral(
+							*ptr,queryend);
+			if (afterliteral!=*ptr) {
+				*ptr=afterliteral;
+				continue;
+			}
 		}
 		if (**ptr==')') {
 			if (!depth) {

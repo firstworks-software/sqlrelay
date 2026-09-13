@@ -449,6 +449,70 @@ int main(int argc, char **argv) {
 	con=NULL;
 	stdoutput.printf("\n");
 
+	// regression test for #10137: getFirstValuesFromInsertQuery() split the
+	// VALUES list on top-level commas/close-parens without understanding
+	// postgres dollar-quoting, so a comma or close-paren inside a
+	// dollar-quoted value's body was treated as a real delimiter instead
+	// of quoted text
+	stdoutput.printf("UPSERT WITH POSTGRES DOLLAR-QUOTED LITERAL VALUE "
+				"CONTAINING COMMA/PAREN:\n");
+	con=new sqlrconnection("sqlrelay",9040,
+					"/tmp/postgresqlupsertnonormalize.socket",
+					"testuser","testpassword",0,1);
+	cur=new sqlrcursor(con);
+	secondcur=new sqlrcursor(con);
+	cur->sendQuery("drop table student");
+	cur->sendQuery("drop sequence student_id");
+	assertTrue(cur->sendQuery("create sequence student_id"));
+	assertTrue(cur->sendQuery("create table student ("
+					"id int, "
+					"firstname varchar(20), "
+					"lastname varchar(20), "
+					"year varchar(20), "
+					"major varchar(20), "
+					"gpa varchar(20), "
+					"primary key (id), "
+					"unique (firstname,lastname) "
+					")"));
+	stdoutput.printf("\n");
+	// initial insert
+	assertTrue(cur->sendQuery("insert into student values "
+				"(nextval('student_id'),"
+				"'Da,vid','Mu)se','Freshman','ME','4.0')"));
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	stdoutput.printf("\n");
+	// duplicate insert (same firstname/lastname, so postgresql reports a
+	// duplicate key and the trigger converts this to an update), with
+	// firstname and lastname given as dollar-quoted literals whose bodies
+	// contain a comma and a close-paren - one $$...$$, one $tag$...$tag$
+	cur->prepareQuery("insert into student values "
+				"(nextval('student_id'),"
+				"$$Da,vid$$,$tag$Mu)se$tag$,$1,$2,$3)");
+	cur->inputBind("1","Sophomore");
+	cur->inputBind("2","ME");
+	cur->inputBind("3","3.5");
+	assertTrue(cur->executeQuery());
+	assertTrue(secondcur->sendQuery("select count(*) from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertTrue(secondcur->sendQuery("select * from student"));
+	assertEquals(secondcur->getField(0,(uint32_t)0),"1");
+	assertEquals(secondcur->getField(0,1),"Da,vid");
+	assertEquals(secondcur->getField(0,2),"Mu)se");
+	assertEquals(secondcur->getField(0,3),"Sophomore");
+	assertEquals(secondcur->getField(0,4),"ME");
+	assertEquals(secondcur->getField(0,5),"3.5");
+	stdoutput.printf("\n");
+	assertTrue(cur->sendQuery("drop table student"));
+	assertTrue(cur->sendQuery("drop sequence student_id"));
+	delete secondcur;
+	secondcur=NULL;
+	delete cur;
+	cur=NULL;
+	delete con;
+	con=NULL;
+	stdoutput.printf("\n");
+
 	reportTestStatus();
 
 	return status;

@@ -3204,6 +3204,20 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 							const char *end,
 							bool backslash);
 
+		/** Skips past a postgres dollar-quoted string literal, either
+		 *  $...$ or $tag$...$tag$, where "tag" starts with a letter or
+		 *  "_" and continues with letters, digits, or "_".  "ptr" must
+		 *  point at the "$" that starts the opening delimiter.  The
+		 *  literal ends at the first matching closing delimiter, and
+		 *  its body has no escape sequences.
+		 *
+		 *  Returns a pointer to the character after the closing
+		 *  delimiter, or to "end" if the literal is unterminated.  If
+		 *  "ptr" doesn't start an opening delimiter (eg. a bare "$" or
+		 *  a "$1" bind variable), returns "ptr" unchanged. */
+		const char	*skipDollarQuotedLiteral(const char *ptr,
+							const char *end);
+
 		/** Walks [ptr, end), tracking nested parens and skipping
 		 *  single-quoted, double-quoted, and back-tick-quoted string
 		 *  literals, and returns a pointer to the next top-level ","
