@@ -4,6 +4,7 @@
 #include <sqlrelay/sqlrserver.h>
 #include <rudiments/regularexpression.h>
 #include <rudiments/linkedlist.h>
+#include <rudiments/character.h>
 #include <rudiments/error.h>
 #include <rudiments/snooze.h>
 
@@ -292,10 +293,9 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 			return;
 		}
 
-		if (**ptr=='\'') {
-			*ptr=charstring::findEndOfQuotedString(
-						*ptr,queryend-*ptr,
-						'\'',backslash,true);
+		if (character::isInSet(**ptr,"'\"`")) {
+			*ptr=cont->skipStringLiteral(*ptr,queryend,
+							backslash);
 			continue;
 		}
 		if (**ptr==')') {

@@ -4558,9 +4558,8 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 		}
 
 		// handle quotes
-		if (*c=='\'') {
-			c=charstring::findEndOfQuotedString(
-					c,queryend-c,'\'',backslash,true);
+		if (character::isInSet(*c,"'\"`")) {
+			c=skipStringLiteral(c,queryend,backslash);
 			continue;
 		}
 

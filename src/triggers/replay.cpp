@@ -590,13 +590,9 @@ const char *sqlrtrigger_replay::appendValues(const char *values,
 		}
 
 		// handle quotes
-		if (*c=='\'') {
-			const char	*after=
-				charstring::findEndOfQuotedString(
-						c,queryend-c,'\'',
-						backslash,true);
-			value.append(c,after-c);
-			c=after;
+		if (character::isInSet(*c,"'\"`")) {
+			c=cont->copyStringLiteral(c,queryend,&value,
+							backslash);
 			continue;
 		}
 

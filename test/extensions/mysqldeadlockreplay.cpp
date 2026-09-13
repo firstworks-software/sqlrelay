@@ -369,6 +369,17 @@ int main(int argc, char **argv) {
 			"(col3,col1,col2,col4) "
 			"values (COALESCE(NULL,'ggg','hhh'),null,60,'iii')"));
 
+		// #10117: col4's value is a double-quoted string literal
+		// containing both a comma and a close-paren, and col4
+		// comes before col1 in the column list, so a quote-blind
+		// comma/close-paren scan would desync the value-to-column
+		// mapping and land the autoincrement null on the wrong
+		// column
+		assertTrue(sqlrcur.sendQuery(
+			"insert into testtable "
+			"(col4,col1,col2,col3) "
+			"values (\"x,y)z\",null,70,'nnn')"));
+
 		// execute the conflicting updates
 		assertTrue(sqlrcur.sendQuery("update testtable set "
 						"col2=col2+1 where col1=2"));
@@ -457,7 +468,7 @@ int main(int argc, char **argv) {
 	assertEquals(sqlrcur.getField(0,"col2"),"3");
 	assertEquals(sqlrcur.getField(1,"col1"),"2");
 	assertEquals(sqlrcur.getField(1,"col2"),"3");
-	assertEquals((int)sqlrcur.rowCount(),8);
+	assertEquals((int)sqlrcur.rowCount(),9);
 	stdoutput.printf("\n");
 
 	// The rows session 2 inserted kept the ids they got before the deadlock
@@ -483,6 +494,10 @@ int main(int argc, char **argv) {
 	assertEquals(sqlrcur.getField(7,"col2"),"60");
 	assertEquals(sqlrcur.getField(7,"col3"),"ggg");
 	assertEquals(sqlrcur.getField(7,"col4"),"iii");
+	assertEquals(sqlrcur.getField(8,"col1"),"9");
+	assertEquals(sqlrcur.getField(8,"col2"),"70");
+	assertEquals(sqlrcur.getField(8,"col3"),"nnn");
+	assertEquals(sqlrcur.getField(8,"col4"),"x,y)z");
 	stdoutput.printf("\n");
 
 	// The replayed queries themselves.  The row state above can't tell
@@ -511,6 +526,13 @@ int main(int argc, char **argv) {
 	assertLogContains(deadlocklog,
 			"insert into testtable (col3,col1,col2,col4) "
 			"values (COALESCE(NULL,'ggg','hhh'),8,60,'iii')");
+	// the double-quoted literal's embedded comma and close-paren
+	// must come through unmolested, and the substituted id must
+	// land on col1, not on a column a quote-blind scan would have
+	// shifted it to
+	assertLogContains(deadlocklog,
+			"insert into testtable (col4,col1,col2,col3) "
+			"values (\"x,y)z\",9,70,'nnn')");
 	stdoutput.printf("\n");
 
 	// #10114: the insert that lost the second deadlock was itself a
