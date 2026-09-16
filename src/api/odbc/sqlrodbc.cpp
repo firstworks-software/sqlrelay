@@ -4413,7 +4413,7 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 					SQLLEN bufferlength,
 					SQLLEN *strlen_or_ind);
 
-static void SQLR_Bind(STMT *stmt) {
+static void SQLR_Bind(STMT *stmt, bool rebindinputs=true) {
 
 	// bail if there are no binds at all
 	if (!stmt->inputbinds.getCount() &&
@@ -4429,38 +4429,41 @@ static void SQLR_Bind(STMT *stmt) {
 		return;
 	}
 
-	// input binds
-	for (listnode<int32_t> *node=
-			stmt->inputbinds.getKeys()->getFirst();
-						node; node=node->getNext()) {
+	// input binds (skipped on the SQLParamData completion execute,
+	// where the application's buffers may be stale - see caller)
+	if (rebindinputs) {
+		for (listnode<int32_t> *node=
+				stmt->inputbinds.getKeys()->getFirst();
+							node; node=node->getNext()) {
 
-		// get the bind variable/value
-		inputbind	*ib=
-			stmt->inputbinds.getValue(node->getValue());
+			// get the bind variable/value
+			inputbind	*ib=
+				stmt->inputbinds.getValue(node->getValue());
 
-		// skip binds past the query's bind count
-		if (ib->parameternumber>inquerybindcount) {
-			continue;
+			// skip binds past the query's bind count
+			if (ib->parameternumber>inquerybindcount) {
+				continue;
+			}
+
+			// skip data-at-exec placeholders; data for those
+			// parameters is sent later via SQLParamData/SQLPutData
+			if (ib->strlen_or_ind &&
+				(*ib->strlen_or_ind==SQL_DATA_AT_EXEC ||
+				*ib->strlen_or_ind<=SQL_LEN_DATA_AT_EXEC_OFFSET)) {
+				continue;
+			}
+
+			// bind the variable/value
+			SQLR_InputBindParameter((SQLHSTMT)stmt,
+						ib->parameternumber,
+						ib->valuetype,
+						ib->parametertype,
+						ib->lengthprecision,
+						ib->parameterscale,
+						ib->parametervalue,
+						ib->bufferlength,
+						ib->strlen_or_ind);
 		}
-
-		// skip data-at-exec placeholders; data for those parameters
-		// is sent later via SQLParamData/SQLPutData
-		if (ib->strlen_or_ind &&
-			(*ib->strlen_or_ind==SQL_DATA_AT_EXEC ||
-			*ib->strlen_or_ind<=SQL_LEN_DATA_AT_EXEC_OFFSET)) {
-			continue;
-		}
-
-		// bind the variable/value
-		SQLR_InputBindParameter((SQLHSTMT)stmt,
-					ib->parameternumber,
-					ib->valuetype,
-					ib->parametertype,
-					ib->lengthprecision,
-					ib->parameterscale,
-					ib->parametervalue,
-					ib->bufferlength,
-					ib->strlen_or_ind);
 	}
 
 	// output binds
@@ -4641,7 +4644,8 @@ SQLRETURN SQL_API SQLExecDirect(SQLHSTMT statementhandle,
 	return SQLR_SQLExecDirect(statementhandle,statementtext,textlength);
 }
 
-static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
+static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle,
+						bool rebindinputs=true) {
 	debugFunction();
 
 	STMT	*stmt=(STMT *)statementhandle;
@@ -4651,7 +4655,7 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle) {
 	}
 
 	// apply the stashed binds
-	SQLR_Bind(stmt);
+	SQLR_Bind(stmt,rebindinputs);
 
 	// defer execution if there are any data-at-exec binds
 	if (stmt->dataatexec) {
@@ -12178,7 +12182,11 @@ SQLRETURN SQL_API SQLParamData(SQLHSTMT statementhandle,
 	SQLRETURN	retval=SQL_ERROR;
 	{
 		debugPrintf("  exececuting...\n");
-		retval=SQLR_SQLExecute(statementhandle);
+		// the original SQLExecute/SQLExecDirect already captured
+		// non-data-at-exec input binds; the application's buffers for
+		// those may be stale now that SQLPutData has run, so don't
+		// re-read them here
+		retval=SQLR_SQLExecute(statementhandle,false);
 	}
 
 	return retval;

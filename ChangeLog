@@ -2808,6 +2808,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   literals (#10137)
 - fixed containsOnCommitPreserveRows() to recognize postgres dollar-quoted
   literals (#10138)
+- fixed the ODBC driver re-reading non-data-at-exec input binds from
+  stale application buffers when completing a SQLParamData/SQLPutData
+  sequence (#10160)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
