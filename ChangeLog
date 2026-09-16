@@ -2811,9 +2811,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the ODBC driver re-reading non-data-at-exec input binds from
   stale application buffers when completing a SQLParamData/SQLPutData
   sequence (#10160)
-- fixed the ODBC driver's SQLGetData returning SQL_NO_DATA instead of
-  SQL_SUCCESS with a zero indicator after delivering all of a
-  piecewise fetch's data (#10161)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

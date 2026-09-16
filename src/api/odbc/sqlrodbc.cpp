@@ -5610,18 +5610,14 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 					bytestocopy=fieldlength+1;
 					*offset+=fieldlength;
 				}
-			} else if (*offset==fieldlength) {
-				// ODBC 2.0-era apps treat an immediate
-				// SQL_NO_DATA as an error, so once all of the
-				// field's data has been delivered, return
-				// SQL_SUCCESS with a 0 indicator, and only
-				// return SQL_NO_DATA after that.  A conformant
-				// ODBC 3.x app already stops calling once a
-				// call returns plain SQL_SUCCESS, so it never
-				// makes this extra call either way.
-				*offset=fieldlength+1;
+			} else if (!*offset) {
+				// Per the ODBC spec, the first call on a
+				// zero-length (but non-NULL) field should
+				// return SQL_SUCCESS with the indicator set
+				// to 0.  A subsequent call should return
+				// SQL_NO_DATA.
+				*offset=1;
 				bytestocopy=0;
-				fieldlength=0;
 			} else {
 				nodata=true;
 				fieldlength=0;
@@ -5786,18 +5782,14 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 					bytestocopy=fieldlength;
 					*offset+=fieldlength;
 				}
-			} else if (*offset==fieldlength) {
-				// ODBC 2.0-era apps treat an immediate
-				// SQL_NO_DATA as an error, so once all of the
-				// field's data has been delivered, return
-				// SQL_SUCCESS with a 0 indicator, and only
-				// return SQL_NO_DATA after that.  A conformant
-				// ODBC 3.x app already stops calling once a
-				// call returns plain SQL_SUCCESS, so it never
-				// makes this extra call either way.
-				*offset=fieldlength+1;
+			} else if (!*offset) {
+				// Per the ODBC spec, the first call on a
+				// zero-length (but non-NULL) field should
+				// return SQL_SUCCESS with the indicator set
+				// to 0.  A subsequent call should return
+				// SQL_NO_DATA.
+				*offset=1;
 				bytestocopy=0;
-				fieldlength=0;
 			} else {
 				nodata=true;
 				fieldlength=0;
