@@ -5615,7 +5615,10 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 				// SQL_NO_DATA as an error, so once all of the
 				// field's data has been delivered, return
 				// SQL_SUCCESS with a 0 indicator, and only
-				// return SQL_NO_DATA after that.
+				// return SQL_NO_DATA after that.  A conformant
+				// ODBC 3.x app already stops calling once a
+				// call returns plain SQL_SUCCESS, so it never
+				// makes this extra call either way.
 				*offset=fieldlength+1;
 				bytestocopy=0;
 				fieldlength=0;
@@ -5788,7 +5791,10 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 				// SQL_NO_DATA as an error, so once all of the
 				// field's data has been delivered, return
 				// SQL_SUCCESS with a 0 indicator, and only
-				// return SQL_NO_DATA after that.
+				// return SQL_NO_DATA after that.  A conformant
+				// ODBC 3.x app already stops calling once a
+				// call returns plain SQL_SUCCESS, so it never
+				// makes this extra call either way.
 				*offset=fieldlength+1;
 				bytestocopy=0;
 				fieldlength=0;
