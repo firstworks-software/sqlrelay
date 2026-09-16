@@ -139,7 +139,6 @@ struct CONN {
 	bool				mapdatetimetodate;
 	bool				mapdatetotimestamp;
 	bool				mapnewdatetotimestamp;
-	bool				legacylobindicator;
 
 	char				bindvariabledelimiters[5];
 
@@ -2698,13 +2697,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					ODBC_INI);
 	conn->mapnewdatetotimestamp=
 			charstring::isYes(mapnewdatetotimestampbuf);
-	char	legacylobindicatorbuf[6];
-	SQLGetPrivateProfileString((const char *)conn->dsn,
-					"LegacyLobIndicator","no",
-					legacylobindicatorbuf,
-					sizeof(legacylobindicatorbuf),
-					ODBC_INI);
-	conn->legacylobindicator=charstring::isYes(legacylobindicatorbuf);
 
 	// bind variable delimiters
 	SQLGetPrivateProfileString((const char *)conn->dsn,
@@ -2893,12 +2885,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 			conn->mapnewdatetotimestamp=
 				charstring::isYes(connmapnewdatetotimestamp);
 		}
-		const char	*connlegacylobindicator=
-				connparams->getValue("LegacyLobIndicator");
-		if (connlegacylobindicator!=NULL) {
-			conn->legacylobindicator=
-				charstring::isYes(connlegacylobindicator);
-		}
 
 		// bind variable delimiters
 		const char	*conn_bindvariabledelimiters=
@@ -2962,8 +2948,6 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	debugPrintf("  MapDateToTimeStamp: %d\n",conn->mapdatetotimestamp);
 	debugPrintf("  MapNewDateToTimeStamp: %d\n",
 					conn->mapnewdatetotimestamp);
-	debugPrintf("  LegacyLobIndicator: %d\n",
-					conn->legacylobindicator);
 	debugPrintf("  BindVariableDelimiters: %s\n",
 					conn->bindvariabledelimiters);
 
@@ -5814,16 +5798,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 			debugPrintf("  bytestocopy: %ld\n",bytestocopy);
 
 			if (strlen_or_ind) {
-				// LegacyLobIndicator: some clients (e.g. CA
-				// Harvest, tested against Oracle's driver)
-				// read the indicator as bytes remaining AFTER
-				// this call, not bytes available INCLUDING
-				// it, and size their next request from it -
-				// report it their way instead of the ODBC 3.x
-				// convention.
-				*strlen_or_ind=(stmt->conn->legacylobindicator)?
-						(fieldlength-bytestocopy):
-						fieldlength;
+				*strlen_or_ind=fieldlength;
 			}
 
 			if (targetvalue) {

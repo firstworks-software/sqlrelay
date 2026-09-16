@@ -297,9 +297,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   client that binds once and executes many times now has its
   later executes' values read too, though the answer such an
   execute gets is still a hardcoded one it may not accept
-- added a LegacyLobIndicator odbc dsn option, off by default, for clients
-  that read SQLGetData's indicator as bytes remaining after the call
-  instead of bytes available including it
 
 ### Changed
 - requires rudiments 2.3.0 or newer
