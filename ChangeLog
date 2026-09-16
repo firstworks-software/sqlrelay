@@ -2811,6 +2811,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the ODBC driver re-reading non-data-at-exec input binds from
   stale application buffers when completing a SQLParamData/SQLPutData
   sequence (#10160)
+- fixed the ODBC driver reporting Column Size 32768 for an unsized
+  LONGVARCHAR/LONGVARBINARY column instead of an effectively unlimited
+  size (#10163)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

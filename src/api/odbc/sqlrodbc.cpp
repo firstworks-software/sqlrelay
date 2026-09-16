@@ -1647,18 +1647,13 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn, sqlrcursor *cur, uint32_t col) {
 		case SQL_UNKNOWN_TYPE:
 		case SQL_CHAR:
 		case SQL_VARCHAR:
-		case SQL_LONGVARCHAR:
 		case SQL_BINARY:
 		case SQL_VARBINARY:
-		case SQL_LONGVARBINARY:
 		#ifdef SQL_WCHAR
 		case SQL_WCHAR:
 		#endif
 		#ifdef SQL_WVARCHAR
 		case SQL_WVARCHAR:
-		#endif
-		#ifdef SQL_WLONGVARCHAR
-		case SQL_WLONGVARCHAR:
 		#endif
 			{
 			// FIXME: this really ought to be sorted out in the
@@ -1669,6 +1664,25 @@ static SQLULEN SQLR_GetColumnSize(CONN *conn, sqlrcursor *cur, uint32_t col) {
 							length:precision;
 			// FIXME: is there a better fallback value?
 			return (size)?size:32768;
+			}
+		case SQL_LONGVARCHAR:
+		case SQL_LONGVARBINARY:
+		#ifdef SQL_WLONGVARCHAR
+		case SQL_WLONGVARCHAR:
+		#endif
+			{
+			uint32_t	precision=cur->getColumnPrecision(col);
+			uint32_t	length=cur->getColumnLength(col);
+			uint32_t	size=(length>precision)?
+							length:precision;
+			// An unsized LOB column (eg. a postgresql bytea/text
+			// with no declared length) has to report something;
+			// 32768 made clients that size their LOB reads off
+			// Column Size (eg. CA Harvest's hco, #10163) refuse
+			// to read past it. Report the same effectively-
+			// unbounded size Oracle/DataDirect drivers use for
+			// BLOB/CLOB instead.
+			return (size)?size:2147483647;
 			}
 		case SQL_TINYINT:
 			return 3;
