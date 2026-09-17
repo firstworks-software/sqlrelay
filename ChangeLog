@@ -2822,6 +2822,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the ODBC driver leaving autocommit off, rather than on as the
   ODBC spec requires, when neither the app nor the DSN asked for a
   particular autocommit state (#10182)
+- fixed the JDBC driver leaving autocommit off, rather than on as the
+  JDBC spec requires, when the app set no AutoCommit property (#10183)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

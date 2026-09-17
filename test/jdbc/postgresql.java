@@ -2172,6 +2172,48 @@ class postgresql extends sqlrtest {
 		System.out.println();
 
 
+		// autocommit default
+		// a connection that never sets the AutoCommit property must
+		// get JDBC's default of autocommit on (#10183)
+		System.out.println("AUTOCOMMIT DEFAULT:");
+
+		// connect without asking for any particular autocommit state
+		Properties	acprops=new Properties();
+		acprops.setProperty("user",user);
+		acprops.setProperty("password",password);
+		Connection	accon=DriverManager.getConnection(url,acprops);
+		assertTrue((accon!=null));
+		assertTrue(accon.getAutoCommit());
+
+		// create a table and insert a row, without committing
+		Statement	acstmt=accon.createStatement();
+		acstmt.executeUpdate("drop table if exists autocommittable");
+		acstmt.executeUpdate(
+			"create table autocommittable (testint int)");
+		assertEquals(acstmt.executeUpdate(
+			"insert into autocommittable values (1)"),1);
+
+		// from an independent connection: row count should be 1,
+		// accon's insert was auto-committed
+		Connection	acsecondcon=
+				DriverManager.getConnection(url,acprops);
+		assertTrue((acsecondcon!=null));
+		Statement	acsecondstmt=acsecondcon.createStatement();
+		ResultSet	acsecondrs=acsecondstmt.executeQuery(
+			"select count(*) from autocommittable");
+		assertTrue(acsecondrs.next());
+		assertEquals(acsecondrs.getInt(1),1);
+		acsecondrs.close();
+
+		// clean up
+		acsecondstmt.close();
+		acsecondcon.close();
+		acstmt.executeUpdate("drop table autocommittable");
+		acstmt.close();
+		accon.close();
+		System.out.println();
+
+
 		// null and empty clobs and blobs
 		System.out.println("NULL AND EMPTY CLOBS AND BLOBS:");
 		stmt=con.createStatement();

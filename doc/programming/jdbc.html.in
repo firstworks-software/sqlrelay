@@ -62,7 +62,7 @@
   <li><b>Tries</b> - If a connection fails, retry this many times.  Defaults to 1.</li>
   <li><b>DATE to TimeStamp</b> - If set to <b>yes</b>, <b>true</b>, <b>on</b>, <b>y</b>, <b>t</b>, or <b>1</b>, columns of type DATE are mapped to java.sql.Timestamp instead of java.sql.Date.  Defaults to <b>false</b>.</li>
   <li><b>Output Parameter Buffer Size</b> - Buffer size, in bytes, to use for output parameters when the application calls a method that does not have a length parameter.  Defaults to 4096.</li>
-  <li><b>AutoCommit</b> - Controls whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>backend</b>.</li>
+  <li><b>AutoCommit</b> - Controls whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>yes</b>, the JDBC-mandated default.</li>
 </ul>
 
 <h3>Sample Session</h3>
@@ -232,7 +232,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>You can also turn Autocommit on or off using setAutoCommit().  When Autocommit is on, the database performs a commit after each successful DML or DDL query.  When Autocommit is off, the database commits when the client instructs it to, or (by default) when a client disconnects.  For databases that don't support Autocommit, setAutoCommit() has no effect.</p>
 
-<p>You can also pass an <b>AutoCommit</b> property to DriverManager.getConnection() to control whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>backend</b>.</p>
+<p>You can also pass an <b>AutoCommit</b> property to DriverManager.getConnection() to control whether the driver explicitly turns autocommit on or off after connecting.  May be set to <b>yes</b> (autocommit on), <b>no</b> (autocommit off), or <b>backend</b> (leave it up to the backend).  Defaults to <b>yes</b>, the JDBC-mandated default.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

@@ -59,16 +59,25 @@ public class SQLRelayDriver implements Driver {
 				conn.throwErrorMessageException();
 			}
 
-			if (ci.autocommit!=null) {
+			if (ci.autocommit!=null && !ci.autocommit.isEmpty()) {
 				if (ci.autocommit.equalsIgnoreCase("yes")) {
 					conn.setAutoCommit(true);
 				} else if (ci.autocommit.
 						equalsIgnoreCase("no")) {
 					conn.setAutoCommit(false);
 				}
+				// if autocommit is "backend" then
+				// we'll just do whatever the backend does
+			} else {
+				// The implicit transaction model turns
+				// autocommit off, but JDBC says that a new
+				// Connection has autocommit on.  So, if the
+				// app didn't ask for a specific autocommit
+				// state, turn it back on, rather than leaving
+				// the app in a transaction that it never began
+				// and might never commit.
+				conn.setAutoCommit(true);
 			}
-			// if autocommit is "backend" or unset then
-			// we'll just do whatever the backend does
 		}
 		debugEnd();
 		return conn;
@@ -353,7 +362,7 @@ public class SQLRelayDriver implements Driver {
 			dpilist.add(dpi);
 		}
 		if (ci.autocommit==null) {
-			dpi=new DriverPropertyInfo("AutoCommit","backend");
+			dpi=new DriverPropertyInfo("AutoCommit","yes");
 			dpi.choices=new String[]{"yes","no","backend"};
 			dpi.description="Controls whether the driver "+
 					"explicitly turns autocommit on or "+
@@ -361,7 +370,8 @@ public class SQLRelayDriver implements Driver {
 					"to \"yes\" (autocommit on), \"no\" "+
 					"(autocommit off), or \"backend\" "+
 					"(leave it up to the backend).  "+
-					"Defaults to \"backend\".";
+					"Defaults to \"yes\", the "+
+					"JDBC-mandated default.";
 			dpi.required=false;
 			dpilist.add(dpi);
 		}
