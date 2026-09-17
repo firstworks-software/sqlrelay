@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqloracleidentity" dbase="postgresql">
+		<listeners>
+			<listener port="9044" socket="/tmp/postgresqloracleidentity.socket"/>
+		</listeners>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;dbtype=Oracle;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+</instances>

@@ -4434,6 +4434,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
 
+<p><b>dbtype=</b> impersonation also affects how numeric result-set columns are reported: when it overrides a non-Oracle backend to identify as Oracle, integer columns and <i>numeric</i> columns are reported to the client as Oracle's <i>NUMBER</i> type - precision 38, scale 0, unless the column already declares a scale - the same as a real Oracle server would report, instead of the backend's native integer or numeric type.  This matters for ODBC (or other API) clients written against Oracle-specific drivers, which may not understand another backend's native integer types and can mishandle them.</p>
+
 <a name="oraclelimitations"/><h3>Limitations</h3>
 
 <p>The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:</p>

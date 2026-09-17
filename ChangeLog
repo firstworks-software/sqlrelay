@@ -2816,6 +2816,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   size (#10163)
 - fixed the ODBC driver ignoring SQL_ATTR_PARAMSET_SIZE and executing
   array-bound parameters only once (#10176)
+- fixed instances impersonating oracle via dbtype= reporting integer and
+  numeric result-set columns using the real backend's native types
+  instead of oracle NUMBER (#10179)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

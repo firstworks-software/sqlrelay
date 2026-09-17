@@ -10,10 +10,10 @@ include ../../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(ODBCTESTCPPFLAGS) $(COMPILE) $<
 
-all: oracle mysql postgresql db2 sap freetds-sap freetds-mssql odbc-mssql informix firebird sqlite
+all: oracle mysql postgresql postgresqloracleidentity db2 sap freetds-sap freetds-mssql odbc-mssql informix firebird sqlite
 
 clean:
-	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) db2$(EXE) sap$(EXE) freetds-sap$(EXE) freetds-mssql$(EXE) odbc-mssql$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj oracle$(EXE) mysql$(EXE) postgresql$(EXE) postgresqloracleidentity$(EXE) db2$(EXE) sap$(EXE) freetds-sap$(EXE) freetds-mssql$(EXE) odbc-mssql$(EXE) informix$(EXE) firebird$(EXE) sqlite$(EXE) cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 mysql: mysql.cpp mysql.$(OBJ)
@@ -24,6 +24,9 @@ oracle: oracle.cpp oracle.$(OBJ)
 
 postgresql: postgresql.cpp postgresql.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ postgresql.$(OBJ) $(ODBCTESTLIBS)
+
+postgresqloracleidentity: postgresqloracleidentity.cpp postgresqloracleidentity.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ postgresqloracleidentity.$(OBJ) $(ODBCTESTLIBS)
 
 db2: db2.cpp db2.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@ db2.$(OBJ) $(ODBCTESTLIBS)

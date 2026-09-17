@@ -12286,6 +12286,65 @@ void sqlrservercontroller::getColumnNames(sqlrservercursor *cursor,
 	}
 }
 
+bool sqlrservercontroller::impersonatingOracle() {
+	return !charstring::compareIgnoringCase(getDbType(),"oracle") &&
+		charstring::compareIgnoringCase(getNativeDbType(),"oracle");
+}
+
+void sqlrservercontroller::oracleImpersonationColumnInfo(uint32_t col) {
+
+	// oracle has real counterparts for the char, date, float, bool, lob
+	// and array types, so only the integer/decimal types need remapping
+	switch (pvt->_columntypes[col]) {
+		case INT2_DATATYPE:
+		case INT4_DATATYPE:
+		case INT8_DATATYPE:
+		case NUMERIC_DATATYPE:
+		case OID_DATATYPE:
+		case INT_DATATYPE:
+		case INTEGER_DATATYPE:
+		case SMALLINT_DATATYPE:
+		case TINYINT_DATATYPE:
+		case BIGINT_DATATYPE:
+		case DECIMAL_DATATYPE:
+		case MEDIUMINT_DATATYPE:
+		case YEAR_DATATYPE:
+		case QUAD_DATATYPE:
+		case USHORT_DATATYPE:
+		case UBIGINT_DATATYPE:
+		case MONEY_DATATYPE:
+		case SMALLMONEY_DATATYPE:
+		// Sybase's 64-bit int.  Remapping it also keeps downstream code
+		// from mistaking it for oracle's deprecated LONG character
+		// type, which shares this type id.
+		case LONG_DATATYPE:
+			break;
+		default:
+			return;
+	}
+
+	// report it as oracle's NUMBER
+	pvt->_columntypes[col]=NUMBER_DATATYPE;
+	pvt->_columntypenames[col]=datatypestring[NUMBER_DATATYPE];
+	pvt->_columntypenamesizes[col]=(uint16_t)charstring::getLength(
+					datatypestring[NUMBER_DATATYPE]);
+
+	// an undeclared NUMBER is NUMBER(38)
+	if (!pvt->_columnprecisions[col]) {
+		// Postgresql and sqlite don't implement
+		// getColumnPrecision().  They report a declared numeric
+		// column's precision as the column size instead, but only
+		// when there's a scale.  For a plain integer, the column
+		// size means something else entirely.
+		if (pvt->_columnsizes[col] && pvt->_columnscales[col]>0) {
+			pvt->_columnprecisions[col]=pvt->_columnsizes[col];
+		} else {
+			pvt->_columnprecisions[col]=38;
+		}
+	}
+	pvt->_columnsizes[col]=pvt->_columnprecisions[col];
+}
+
 bool sqlrservercontroller::handleResultSetHeader(sqlrservercursor *cursor) {
 
 	// set flag indicating that the column info is now valid
@@ -12364,6 +12423,14 @@ bool sqlrservercontroller::handleResultSetHeader(sqlrservercursor *cursor) {
 			cursor->getColumnTable(mapColumn(col));
 		pvt->_columntablesizes[col]=
 			cursor->getColumnTableSize(mapColumn(col));
+	}
+
+	// present a non-oracle backend's number types the way an oracle
+	// server would, when the client was told it's talking to oracle
+	if (impersonatingOracle()) {
+		for (uint32_t col=0; col<colcount; col++) {
+			oracleImpersonationColumnInfo(col);
+		}
 	}
 
 	// translate columns

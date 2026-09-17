@@ -142,6 +142,8 @@
 		uint32_t	mapColumnCount(uint32_t colcount);
 
 		bool	handleResultSetHeader(sqlrservercursor *cursor);
+		bool	impersonatingOracle();
+		void	oracleImpersonationColumnInfo(uint32_t col);
 
 		bool	reformatField(sqlrservercursor *cursor,
 						const char *name,
