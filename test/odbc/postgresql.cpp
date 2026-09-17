@@ -7043,6 +7043,110 @@ int main(int argc, char **argv) {
 
 
 
+	// autocommit default
+	// a connection that never touches SQL_ATTR_AUTOCOMMIT must get the
+	// ODBC spec's default of autocommit on (#10182)
+	stdoutput.printf("AUTOCOMMIT DEFAULT: \n");
+
+	// connect without asking for any particular autocommit state
+	stringbuffer	acstr;
+	if (issqlrelay) {
+		acstr.append(
+			"Driver={SQL Relay};"
+			"Server=sqlrelay;Port=9003;"
+			"Socket=/tmp/postgresql.socket;"
+			"User=testuser;Password=testpassword;"
+			"NullsAsNulls=yes;");
+	} else {
+		acstr.append(
+			"Driver={PostgreSQL};"
+			"Server=postgresql;Port=5432;"
+			"Database=")->append(hostname)->append(
+			";UID=testuser;PWD=testpassword;");
+	}
+	SQLHDBC		dbc3;
+	SQLHSTMT	stmt3;
+	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc3);
+	assertSuccessEnv(env,erg);
+	SQLCHAR		outcstring3[1024];
+	SQLSMALLINT	outcstringlen3;
+	erg=SQLDriverConnect(dbc3,NULL,
+			(SQLCHAR *)acstr.getString(),
+			SQL_NTS,
+			outcstring3,
+			sizeof(outcstring3),
+			&outcstringlen3,
+			SQL_DRIVER_NOPROMPT);
+	assertSuccessDbc(dbc3,erg);
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc3,&stmt3);
+	assertSuccessDbc(dbc3,erg);
+
+	// SQL_ATTR_AUTOCOMMIT must report on
+	erg=SQLGetConnectAttr(dbc3,SQL_ATTR_AUTOCOMMIT,
+			(SQLPOINTER)&dbcuintval,0,&dbcstrlen);
+	assertSuccessDbc(dbc3,erg);
+	assertEqualDbc(dbc3,(int)dbcuintval,(int)SQL_AUTOCOMMIT_ON);
+
+	// create a table and insert a row, without committing
+	erg=SQLExecDirect(stmt3,(SQLCHAR *)
+		"drop table if exists autocommittable",SQL_NTS);
+	assertSuccessStmt(stmt3,erg);
+	SQLFreeStmt(stmt3,SQL_CLOSE);
+	erg=SQLExecDirect(stmt3,(SQLCHAR *)
+		"create table autocommittable (testint int)",SQL_NTS);
+	assertSuccessStmt(stmt3,erg);
+	SQLFreeStmt(stmt3,SQL_CLOSE);
+	erg=SQLExecDirect(stmt3,(SQLCHAR *)
+		"insert into autocommittable values (1)",SQL_NTS);
+	assertSuccessStmt(stmt3,erg);
+	SQLFreeStmt(stmt3,SQL_CLOSE);
+
+	// open an independent connection
+	SQLHDBC		dbc4;
+	SQLHSTMT	stmt4;
+	erg=SQLAllocHandle(SQL_HANDLE_DBC,env,&dbc4);
+	assertSuccessEnv(env,erg);
+	SQLCHAR		outcstring4[1024];
+	SQLSMALLINT	outcstringlen4;
+	erg=SQLDriverConnect(dbc4,NULL,
+			(SQLCHAR *)acstr.getString(),
+			SQL_NTS,
+			outcstring4,
+			sizeof(outcstring4),
+			&outcstringlen4,
+			SQL_DRIVER_NOPROMPT);
+	assertSuccessDbc(dbc4,erg);
+	erg=SQLAllocHandle(SQL_HANDLE_STMT,dbc4,&stmt4);
+	assertSuccessDbc(dbc4,erg);
+
+	// get row count (should be 1, dbc3's insert was auto-committed)
+	erg=SQLExecDirect(stmt4,(SQLCHAR *)
+		"select count(*) from autocommittable",SQL_NTS);
+	assertSuccessStmt(stmt4,erg);
+	erg=SQLBindCol(stmt4,1,SQL_C_SLONG,
+		&rowcount,sizeof(rowcount),&rowcountind);
+	assertSuccessStmt(stmt4,erg);
+	rowcount=-1;
+	erg=SQLFetch(stmt4);
+	assertSuccessStmt(stmt4,erg);
+	assertEqualStmt(stmt4,(int)rowcount,1);
+
+	// clean up and disconnect
+	SQLFreeStmt(stmt4,SQL_CLOSE);
+	SQLFreeStmt(stmt4,SQL_UNBIND);
+	SQLFreeHandle(SQL_HANDLE_STMT,stmt4);
+	SQLDisconnect(dbc4);
+	SQLFreeHandle(SQL_HANDLE_DBC,dbc4);
+	erg=SQLExecDirect(stmt3,(SQLCHAR *)
+		"drop table if exists autocommittable",SQL_NTS);
+	assertSuccessStmt(stmt3,erg);
+	SQLFreeHandle(SQL_HANDLE_STMT,stmt3);
+	SQLDisconnect(dbc3);
+	SQLFreeHandle(SQL_HANDLE_DBC,dbc3);
+	stdoutput.printf("\n");
+
+
+
 	// null values
 	stdoutput.printf("NULL VALUES: \n");
 	SQLFreeStmt(stmt,SQL_CLOSE);

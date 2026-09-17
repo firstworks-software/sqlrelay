@@ -2819,6 +2819,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed instances impersonating oracle via dbtype= reporting integer and
   numeric result-set columns using the real backend's native types
   instead of oracle NUMBER (#10179)
+- fixed the ODBC driver leaving autocommit off, rather than on as the
+  ODBC spec requires, when neither the app nor the DSN asked for a
+  particular autocommit state (#10182)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

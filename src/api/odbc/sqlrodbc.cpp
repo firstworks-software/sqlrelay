@@ -2923,7 +2923,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	// * "backend" - whatever the backend does, overriding anything
 	//               set by SQLSetConnectAttr prior to connect
 	// * "" (or unset) - whatever was set by SQLSetConnectAttr prior to
-	//                   connect, or backend if nothing was set
+	//                   connect, or on - the ODBC default - if nothing
+	//                   was set
 	if (charstring::isYes(autocommitbuf)) {
 		conn->setautocommiton=true;
 		conn->setautocommitoff=false;
@@ -3010,6 +3011,18 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 			conn->con->errorSqlState());
 		debugPrintf("  Set Transaction Model Implicit: failed\n");
 		success=SQL_SUCCESS_WITH_INFO;
+	}
+
+	// The implicit transaction model turns autocommit off, but the ODBC
+	// spec says that SQL_ATTR_AUTOCOMMIT defaults to SQL_AUTOCOMMIT_ON.
+	// So, if nothing asked for a specific autocommit state - neither a
+	// SQLSetConnectAttr call before this function nor the DSN's
+	// AutoCommit key - then turn autocommit back on, rather than leaving
+	// the app in a transaction that it never began and might never
+	// commit.
+	if (!conn->setautocommiton && !conn->setautocommitoff &&
+			charstring::isNullOrEmpty(autocommitbuf)) {
+		conn->setautocommiton=true;
 	}
 
 	// Set autocommit on/off per the flag that was set when the conn
