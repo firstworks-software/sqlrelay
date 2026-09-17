@@ -2814,6 +2814,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the ODBC driver reporting Column Size 32768 for an unsized
   LONGVARCHAR/LONGVARBINARY column instead of an effectively unlimited
   size (#10163)
+- fixed the ODBC driver ignoring SQL_ATTR_PARAMSET_SIZE and executing
+  array-bound parameters only once (#10176)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

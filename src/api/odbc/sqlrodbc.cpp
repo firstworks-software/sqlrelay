@@ -253,6 +253,10 @@ struct STMT {
 	uint64_t				*coloffsets;
 	SQLULEN					*paramsprocessed;
 	SQLULEN					*parambindoffsetptr;
+	SQLULEN					paramsetsize;
+	SQLULEN					parambindtype;
+	bool					arrayexecuted;
+	uint64_t				arrayaffectedrows;
 	SQLULEN					attrquerytimeout;
 	SQLULEN					attrmaxrows;
 	SQLULEN					attrnoscan;
@@ -547,6 +551,10 @@ static SQLRETURN SQLR_SQLAllocHandle(SQLSMALLINT handletype,
 				stmt->attrenableautoipd=SQL_TRUE;
 				stmt->paramoperationptr=NULL;
 				stmt->paramstatusptr=NULL;
+				stmt->paramsetsize=1;
+				stmt->parambindtype=0;
+				stmt->arrayexecuted=false;
+				stmt->arrayaffectedrows=0;
 				stmt->rowbindoffsetptr=NULL;
 				stmt->rowoperationptr=NULL;
 				stmt->inputbindstrings.
@@ -4427,7 +4435,81 @@ static SQLRETURN SQLR_InputOutputBindParameter(
 					SQLLEN bufferlength,
 					SQLLEN *strlen_or_ind);
 
-static void SQLR_Bind(STMT *stmt, bool rebindinputs=true) {
+// returns the size of one element of a parameter's value array, which is how
+// far to step that array to get from one parameter set to the next
+static SQLLEN SQLR_ParamElementSize(inputbind *ib) {
+
+	switch (ib->valuetype) {
+
+		// for character and binary data, the buffer length is the
+		// element size, even when the data itself is shorter
+		case SQL_C_CHAR:
+		case SQL_C_BINARY:
+			return ib->bufferlength;
+		default:
+			break;
+	}
+
+	// for everything else, an explicit buffer length still wins, but
+	// apps usually leave it 0 and rely on the fixed size of the type
+	if (ib->bufferlength>0) {
+		return ib->bufferlength;
+	}
+
+	switch (ib->valuetype) {
+		case SQL_C_LONG:
+		case SQL_C_SLONG:
+		case SQL_C_ULONG:
+			return sizeof(SQLINTEGER);
+		case SQL_C_SHORT:
+		case SQL_C_SSHORT:
+		case SQL_C_USHORT:
+			return sizeof(SQLSMALLINT);
+		case SQL_C_TINYINT:
+		case SQL_C_STINYINT:
+		case SQL_C_UTINYINT:
+		case SQL_C_BIT:
+			return sizeof(SQLCHAR);
+		case SQL_C_SBIGINT:
+		case SQL_C_UBIGINT:
+			return 8;
+		case SQL_C_FLOAT:
+			return sizeof(SQLREAL);
+		case SQL_C_DOUBLE:
+			return sizeof(SQLDOUBLE);
+		case SQL_C_NUMERIC:
+			return sizeof(SQL_NUMERIC_STRUCT);
+		case SQL_C_DATE:
+		case SQL_C_TYPE_DATE:
+			return sizeof(DATE_STRUCT);
+		case SQL_C_TIME:
+		case SQL_C_TYPE_TIME:
+			return sizeof(TIME_STRUCT);
+		case SQL_C_TIMESTAMP:
+		case SQL_C_TYPE_TIMESTAMP:
+			return sizeof(TIMESTAMP_STRUCT);
+		case SQL_C_INTERVAL_YEAR:
+		case SQL_C_INTERVAL_MONTH:
+		case SQL_C_INTERVAL_DAY:
+		case SQL_C_INTERVAL_HOUR:
+		case SQL_C_INTERVAL_MINUTE:
+		case SQL_C_INTERVAL_SECOND:
+		case SQL_C_INTERVAL_YEAR_TO_MONTH:
+		case SQL_C_INTERVAL_DAY_TO_HOUR:
+		case SQL_C_INTERVAL_DAY_TO_MINUTE:
+		case SQL_C_INTERVAL_DAY_TO_SECOND:
+		case SQL_C_INTERVAL_HOUR_TO_MINUTE:
+		case SQL_C_INTERVAL_HOUR_TO_SECOND:
+		case SQL_C_INTERVAL_MINUTE_TO_SECOND:
+			return sizeof(SQL_INTERVAL_STRUCT);
+		case SQL_C_GUID:
+			return sizeof(SQLGUID);
+		default:
+			return ib->bufferlength;
+	}
+}
+
+static void SQLR_Bind(STMT *stmt, bool rebindinputs=true, SQLULEN paramset=0) {
 
 	// bail if there are no binds at all
 	if (!stmt->inputbinds.getCount() &&
@@ -4459,11 +4541,62 @@ static void SQLR_Bind(STMT *stmt, bool rebindinputs=true) {
 				continue;
 			}
 
+			// step to this parameter set's value and indicator
+			SQLPOINTER	pv=ib->parametervalue;
+			SQLLEN		*ind=ib->strlen_or_ind;
+			if (stmt->paramsetsize>1) {
+
+				SQLULEN	bindoffset=
+					(stmt->parambindoffsetptr)?
+					*(stmt->parambindoffsetptr):0;
+
+				if (stmt->parambindtype) {
+
+					// row-wise: the attribute is the stride
+					SQLULEN	rowoffset=bindoffset+
+						stmt->parambindtype*paramset;
+					if (pv) {
+						pv=(SQLPOINTER)
+							((unsigned char *)pv+
+								rowoffset);
+					}
+					if (ind) {
+						ind=(SQLLEN *)
+							((unsigned char *)ind+
+								rowoffset);
+					}
+
+				} else {
+
+					// column-wise: the value array steps by
+					// the parameter's own element size, the
+					// indicator array by sizeof(SQLLEN)
+					SQLLEN	elementsize=
+						SQLR_ParamElementSize(ib);
+					if (pv && elementsize>0) {
+						pv=(SQLPOINTER)
+							((unsigned char *)pv+
+							bindoffset+
+							elementsize*paramset);
+					} else if (pv) {
+						pv=(SQLPOINTER)
+							((unsigned char *)pv+
+								bindoffset);
+					}
+					if (ind) {
+						ind=(SQLLEN *)
+							((unsigned char *)ind+
+							bindoffset+
+							sizeof(SQLLEN)*paramset);
+					}
+				}
+			}
+
 			// skip data-at-exec placeholders; data for those
 			// parameters is sent later via SQLParamData/SQLPutData
-			if (ib->strlen_or_ind &&
-				(*ib->strlen_or_ind==SQL_DATA_AT_EXEC ||
-				*ib->strlen_or_ind<=SQL_LEN_DATA_AT_EXEC_OFFSET)) {
+			if (ind &&
+				(*ind==SQL_DATA_AT_EXEC ||
+				*ind<=SQL_LEN_DATA_AT_EXEC_OFFSET)) {
 				continue;
 			}
 
@@ -4474,9 +4607,9 @@ static void SQLR_Bind(STMT *stmt, bool rebindinputs=true) {
 						ib->parametertype,
 						ib->lengthprecision,
 						ib->parameterscale,
-						ib->parametervalue,
+						pv,
 						ib->bufferlength,
-						ib->strlen_or_ind);
+						ind);
 		}
 	}
 
@@ -4581,6 +4714,124 @@ static void SQLR_SetResultSetBufferSize(STMT *stmt) {
 	stmt->cur->setResultSetBufferSize(rows);
 }
 
+// returns false if any input parameter that column-wise stepping would have to
+// step has no element size to step by
+static bool SQLR_ParamElementSizesValid(STMT *stmt) {
+
+	uint16_t	inquerybindcount=stmt->cur->countBindVariables();
+
+	for (listnode<int32_t> *node=stmt->inputbinds.getKeys()->getFirst();
+						node; node=node->getNext()) {
+
+		inputbind	*ib=stmt->inputbinds.getValue(node->getValue());
+
+		// skip binds past the query's bind count,
+		// and binds with no value array to step
+		if (ib->parameternumber>inquerybindcount ||
+						!ib->parametervalue) {
+			continue;
+		}
+
+		if (SQLR_ParamElementSize(ib)<=0) {
+			debugPrintf("  parameter %d has no element size\n",
+						(int)ib->parameternumber);
+			return false;
+		}
+	}
+	return true;
+}
+
+static SQLRETURN SQLR_ExecuteParamSets(STMT *stmt, bool rebindinputs) {
+	debugFunction();
+
+	// A character or binary parameter bound with a BufferLength of 0 is
+	// legal for a single execute, but column-wise stepping walks each
+	// value array by the parameter's own element size, so a 0 there would
+	// quietly run every set against element 0 instead.
+	if (!stmt->parambindtype && !SQLR_ParamElementSizesValid(stmt)) {
+		SQLR_STMTSetError(stmt,
+			"Invalid string or buffer length",0,"HY090");
+		return SQL_ERROR;
+	}
+
+	stmt->arrayexecuted=true;
+	stmt->arrayaffectedrows=0;
+
+	SQLULEN		processed=0;
+	SQLRETURN	retval=SQL_SUCCESS;
+
+	debugPrintf("  paramset size: %lld\n",(uint64_t)stmt->paramsetsize);
+
+	for (SQLULEN i=0; i<stmt->paramsetsize; i++) {
+
+		debugPrintf("  paramset %lld...\n",(uint64_t)i);
+
+		// rebind this set's values and run the query
+		SQLR_Bind(stmt,rebindinputs,i);
+
+		SQLR_SetResultSetBufferSize(stmt);
+
+		bool	result=stmt->cur->executeQuery();
+
+		// the statement has been executed
+		stmt->executed=true;
+		stmt->nodata=false;
+
+		// handle error
+		if (!result) {
+			debugPrintf("  error\n");
+			#if (ODBCVER >= 0x0300)
+			if (stmt->paramstatusptr) {
+				stmt->paramstatusptr[i]=SQL_PARAM_ERROR;
+			}
+			#endif
+			SQLR_STMTSetError(stmt,stmt->cur->errorMessage(),
+						stmt->cur->errorNumber(),
+						stmt->cur->errorSqlState());
+			retval=SQL_ERROR;
+
+			// the failed set counts as processed, otherwise
+			// the app never looks at its status entry
+			processed=i+1;
+
+			// flag the sets that were never attempted
+			#if (ODBCVER >= 0x0300)
+			if (stmt->paramstatusptr) {
+				for (SQLULEN j=i+1;
+					j<stmt->paramsetsize; j++) {
+					stmt->paramstatusptr[j]=
+							SQL_PARAM_UNUSED;
+				}
+			}
+			#endif
+			break;
+		}
+
+		// handle success
+		#if (ODBCVER >= 0x0300)
+		if (stmt->paramstatusptr) {
+			stmt->paramstatusptr[i]=SQL_PARAM_SUCCESS;
+		}
+		#endif
+
+		stmt->arrayaffectedrows+=stmt->cur->affectedRows();
+		processed++;
+
+		SQLR_FetchOutputBinds(stmt);
+		SQLR_FetchInputOutputBinds(stmt);
+	}
+
+	// set the number of sets of input binds that were processed
+	if (stmt->paramsprocessed) {
+		*(stmt->paramsprocessed)=processed;
+	}
+
+	debugPrintf("  paramsets processed: %lld\n",(uint64_t)processed);
+	debugPrintf("  affected rows: %lld\n",stmt->arrayaffectedrows);
+
+	return retval;
+}
+
 static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 						SQLCHAR *statementtext,
 						SQLINTEGER textlength) {
@@ -4624,6 +4875,12 @@ static SQLRETURN SQLR_SQLExecDirect(SQLHSTMT statementhandle,
 
 	// clear the error
 	SQLR_STMTClearError(stmt);
+
+	// run the query once per parameter set if an array was bound
+	stmt->arrayexecuted=false;
+	if (stmt->paramsetsize>1) {
+		return SQLR_ExecuteParamSets(stmt,true);
+	}
 
 	// set the result set buffer size
 	SQLR_SetResultSetBufferSize(stmt);
@@ -4695,6 +4952,14 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle,
 	// clear the error
 	SQLR_STMTClearError(stmt);
 
+	// Run the query once per parameter set if an array was bound.  The
+	// rebindinputs test keeps the SQLParamData() completion execute out of
+	// this; data-at-exec sends one set of values and must execute once.
+	stmt->arrayexecuted=false;
+	if (rebindinputs && stmt->paramsetsize>1) {
+		return SQLR_ExecuteParamSets(stmt,rebindinputs);
+	}
+
 	// set the result set buffer size
 	SQLR_SetResultSetBufferSize(stmt);
 
@@ -4709,7 +4974,8 @@ static SQLRETURN SQLR_SQLExecute(SQLHSTMT statementhandle,
 	if (result) {
 
 		// set the number of sets of input binds that were processed
-		// (always 1 because we don't support array binds)
+		// (always 1 here; SQLR_ExecuteParamSets() handles the case
+		// where an array of parameter sets was bound)
 		if (stmt->paramsprocessed) {
 			*(stmt->paramsprocessed)=1;
 		}
@@ -11213,14 +11479,16 @@ SQLRETURN SQL_API SQLGetInfo(SQLHDBC connectionhandle,
 		case SQL_PARAM_ARRAY_ROW_COUNTS:
 			debugPrintf("  infotype: "
 					"SQL_PARAM_ARRAY_ROW_COUNTS\n");
-			// sqlrelay supports bind arrays, but this driver doesn't
+			// only a cumulative row count is
+			// available, not one count per set
 			val.uintval=SQL_PARC_NO_BATCH;
 			type=1;
 			break;
 		case SQL_PARAM_ARRAY_SELECTS:
 			debugPrintf("  infotype: "
 					"SQL_PARAM_ARRAY_SELECTS\n");
-			// sqlrelay supports bind arrays, but this driver doesn't
+			// result-set-generating statements aren't
+			// supported with a parameter array
 			val.uintval=SQL_PAS_NO_SELECT;
 			type=1;
 			break;
@@ -11673,8 +11941,7 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_ATTR_PARAM_BIND_TYPE:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_PARAM_BIND_TYPE\n");
-			// sqlrelay doesn't implement parameter arrays
-			val.ulenval=SQL_PARAM_BIND_BY_COLUMN;
+			val.ulenval=stmt->parambindtype;
 			type=2;
 			break;
 		case SQL_ATTR_PARAM_OPERATION_PTR:
@@ -11685,7 +11952,7 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 			break;
 		case SQL_ATTR_PARAM_STATUS_PTR:
 			debugPrintf("  attribute: "
-					"SQL_ATTR_PARAM_STATUS_PTR (stub)\n");
+					"SQL_ATTR_PARAM_STATUS_PTR\n");
 			val.usmallintptrval=stmt->paramstatusptr;
 			type=3;
 			break;
@@ -11698,8 +11965,7 @@ static SQLRETURN SQLR_SQLGetStmtAttr(SQLHSTMT statementhandle,
 		case SQL_ATTR_PARAMSET_SIZE:
 			debugPrintf("  attribute: "
 					"SQL_ATTR_PARAMSET_SIZE\n");
-			// sqlrelay doesn't implement parameter arrays
-			val.ulenval=1;
+			val.ulenval=stmt->paramsetsize;
 			type=2;
 			break;
 		case SQL_ATTR_ROW_BIND_OFFSET_PTR:
@@ -12296,12 +12562,16 @@ SQLRETURN SQL_API SQLRowCount(SQLHSTMT statementhandle,
 		return SQL_INVALID_HANDLE;
 	}
 
+	// after an array execute, report the total across the parameter sets
+	uint64_t	rows=(stmt->arrayexecuted)?
+				stmt->arrayaffectedrows:
+				stmt->cur->affectedRows();
+
 	if (rowcount) {
-		*rowcount=stmt->cur->affectedRows();
+		*rowcount=(SQLLEN)rows;
 		debugPrintf("  rowcount: %lld\n",(int64_t)*rowcount);
 	} else {
-		debugPrintf("  rowcount is null (not copying out %lld)\n",
-						stmt->cur->affectedRows());
+		debugPrintf("  rowcount is null (not copying out %lld)\n",rows);
 	}
 
 	return SQL_SUCCESS;
@@ -13007,11 +13277,9 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: SQL_ATTR_PARAM_BIND_TYPE: "
 							"%lld\n",(uint64_t)val);
-			// sqlrelay doesn't implement parameter arrays
-			if (val!=SQL_PARAM_BIND_BY_COLUMN) {
-				SQLR_StmtSetOptionValueChangedError(stmt);
-				return SQL_SUCCESS_WITH_INFO;
-			}
+			// 0 means bind by column, anything
+			// else is a row-wise binding stride
+			stmt->parambindtype=val;
 			return SQL_SUCCESS;
 			}
 		case SQL_ATTR_PARAM_OPERATION_PTR:
@@ -13021,7 +13289,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			return SQL_SUCCESS;
 		case SQL_ATTR_PARAM_STATUS_PTR:
 			debugPrintf("  attribute: "
-					"SQL_ATTR_PARAM_STATUS_PTR (stub)\n");
+					"SQL_ATTR_PARAM_STATUS_PTR\n");
 			stmt->paramstatusptr=(SQLUSMALLINT *)value;
 			return SQL_SUCCESS;
 		case SQL_ATTR_PARAMS_PROCESSED_PTR:
@@ -13037,11 +13305,7 @@ static SQLRETURN SQLR_SQLSetStmtAttr(SQLHSTMT statementhandle,
 			SQLULEN	val=(SQLULEN)(uint64_t)value;
 			debugPrintf("  attribute: SQL_ATTR_PARAMSET_SIZE: "
 					"%lld\n",(uint64_t)val);
-			// sqlrelay doesn't implement parameter arrays
-			if (val!=1) {
-				SQLR_StmtSetOptionValueChangedError(stmt);
-				return SQL_SUCCESS_WITH_INFO;
-			}
+			stmt->paramsetsize=(val)?val:1;
 			return SQL_SUCCESS;
 			}
 		case SQL_ATTR_ROW_BIND_OFFSET_PTR:
@@ -14264,8 +14528,8 @@ static SQLRETURN SQLR_InputBindParameter(SQLHSTMT statementhandle,
 	debugPrintf("  lengthprecision: %lld\n",(uint64_t)lengthprecision);
 	debugPrintf("  parameterscale: %lld\n",(uint64_t)parameterscale);
 	if (stmt->parambindoffsetptr && *(stmt->parambindoffsetptr)) {
-		debugPrintf("  WARNING: stmt->parambindoffsetptr=%lld "
-				"(but is unused)\n",
+		debugPrintf("  stmt->parambindoffsetptr=%lld "
+				"(already applied by the caller)\n",
 				(uint64_t)*(stmt->parambindoffsetptr));
 	}
 

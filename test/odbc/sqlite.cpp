@@ -5475,8 +5475,6 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PARAMSET_SIZE
-	// sqlrelay lacks parameter arrays; values other than 1 are
-	// substituted with 1, returning SQL_SUCCESS_WITH_INFO + 01S02
 	stdoutput.printf("  SQL_ATTR_PARAMSET_SIZE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5484,20 +5482,11 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)stmtinitial,1);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)(uintptr_t)10,0);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
-	} else {
-		assertSuccessStmt(stmt,erg);
-	}
+	assertSuccessStmt(stmt,erg);
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// get reflects the substituted value, not what the app set
-		assertEqualStmt(stmt,(int)stmtulenval,1);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,10);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,10);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);
@@ -5505,8 +5494,6 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PARAM_BIND_TYPE (0 or row length)
-	// sqlrelay lacks parameter arrays; row-wise (non-zero) is substituted
-	// with SQL_PARAM_BIND_BY_COLUMN, returning SQL_SUCCESS_WITH_INFO + 01S02
 	stdoutput.printf("  SQL_ATTR_PARAM_BIND_TYPE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5516,21 +5503,11 @@ int main(int argc, char **argv) {
 	// row-wise: spec allows any non-zero row length
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)(uintptr_t)32,0);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
-	} else {
-		assertSuccessStmt(stmt,erg);
-	}
+	assertSuccessStmt(stmt,erg);
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// get reflects the substituted value, not what the app set
-		assertEqualStmt(stmt,(int)stmtulenval,
-					(int)SQL_PARAM_BIND_BY_COLUMN);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,32);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,32);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)(uintptr_t)SQL_PARAM_BIND_BY_COLUMN,0);
 	assertSuccessStmt(stmt,erg);
@@ -7378,6 +7355,132 @@ int main(int argc, char **argv) {
 	// no row 4
 	erg=SQLFetch(stmt);
 	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"drop table testtable2",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	stdoutput.printf("\n");
+
+
+
+	// parameter arrays (SQL_ATTR_PARAMSET_SIZE)
+	stdoutput.printf("PARAMETER ARRAYS: \n");
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	SQLExecDirect(stmt,(SQLCHAR *)
+			"drop table if exists testtable2",SQL_NTS);
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"create table testtable2 (col1 int)",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+
+	SQLINTEGER	pavals[3]={101,102,103};
+	SQLLEN		paind[3]={0,0,0};
+	SQLULEN		paprocessed=0;
+	SQLUSMALLINT	pastatus[3]={0,0,0};
+
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
+			(SQLPOINTER)(uintptr_t)SQL_PARAM_BIND_BY_COLUMN,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
+			(SQLPOINTER)(uintptr_t)3,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMS_PROCESSED_PTR,
+			(SQLPOINTER)&paprocessed,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
+			(SQLPOINTER)pastatus,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+
+	erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+				SQL_C_SLONG,SQL_INTEGER,
+				0,0,(SQLPOINTER)pavals,
+				sizeof(SQLINTEGER),paind);
+	assertSuccessStmt(stmt,erg);
+
+	// one execute, one parameter set per array element
+	if (issqlrelay) {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable2 values (:1)",SQL_NTS);
+	} else {
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable2 values (?)",SQL_NTS);
+	}
+	assertSuccessStmt(stmt,erg);
+
+	assertEqualStmt(stmt,(int)paprocessed,3);
+	assertEqualStmt(stmt,(int)pastatus[0],(int)SQL_PARAM_SUCCESS);
+	assertEqualStmt(stmt,(int)pastatus[1],(int)SQL_PARAM_SUCCESS);
+	assertEqualStmt(stmt,(int)pastatus[2],(int)SQL_PARAM_SUCCESS);
+
+	erg=SQLRowCount(stmt,&affectedrows);
+	assertSuccessStmt(stmt,erg);
+	if (issqlrelay) {
+		assertEqualStmt(stmt,(int)affectedrows,3);
+	}
+
+	// a column-wise character array with a BufferLength of 0 has no
+	// element size to step by, so the bind must fail rather than run
+	// every set against element 0 (#10176)
+	if (issqlrelay) {
+
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+
+		char	pastrs[3][8]={"one","two","three"};
+		SQLLEN	pastrind[3]={SQL_NTS,SQL_NTS,SQL_NTS};
+		erg=SQLBindParameter(stmt,1,SQL_PARAM_INPUT,
+					SQL_C_CHAR,SQL_CHAR,
+					8,0,(SQLPOINTER)pastrs,
+					0,pastrind);
+		assertSuccessStmt(stmt,erg);
+
+		erg=SQLExecDirect(stmt,(SQLCHAR *)
+			"insert into testtable2 values (:1)",SQL_NTS);
+		assertEqualStmt(stmt,(int)erg,(int)SQL_ERROR);
+
+		SQLFreeStmt(stmt,SQL_CLOSE);
+		SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+	}
+
+	// SQL_RESET_PARAMS doesn't clear statement attributes; a leftover
+	// PARAMSET_SIZE of 3 would run every later section in this file 3x
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
+			(SQLPOINTER)(uintptr_t)1,0);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMS_PROCESSED_PTR,
+			(SQLPOINTER)NULL,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_STATUS_PTR,
+			(SQLPOINTER)NULL,SQL_IS_POINTER);
+	assertSuccessStmt(stmt,erg);
+	SQLFreeStmt(stmt,SQL_CLOSE);
+	SQLFreeStmt(stmt,SQL_UNBIND);
+	SQLFreeStmt(stmt,SQL_RESET_PARAMS);
+
+	// read back all 3 rows in order, confirm none were dropped
+	erg=SQLExecDirect(stmt,(SQLCHAR *)
+		"select col1 from testtable2 order by col1",SQL_NTS);
+	assertSuccessStmt(stmt,erg);
+	SQLINTEGER	pareadback=0;
+	SQLLEN		pareadbackind=0;
+	erg=SQLBindCol(stmt,1,SQL_C_SLONG,
+			(SQLPOINTER)&pareadback,0,&pareadbackind);
+	assertSuccessStmt(stmt,erg);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)pareadback,101);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)pareadback,102);
+	erg=SQLFetch(stmt);
+	assertSuccessStmt(stmt,erg);
+	assertEqualStmt(stmt,(int)pareadback,103);
+	erg=SQLFetch(stmt);
+	assertEqualStmt(stmt,(int)erg,(int)SQL_NO_DATA);
+
 	SQLFreeStmt(stmt,SQL_CLOSE);
 	SQLFreeStmt(stmt,SQL_UNBIND);
 	SQLFreeStmt(stmt,SQL_RESET_PARAMS);

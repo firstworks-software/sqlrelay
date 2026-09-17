@@ -5029,8 +5029,6 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PARAMSET_SIZE
-	// sqlrelay lacks parameter arrays; values other than 1 are
-	// substituted with 1, returning SQL_SUCCESS_WITH_INFO + 01S02
 	stdoutput.printf("  SQL_ATTR_PARAMSET_SIZE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5038,20 +5036,11 @@ int main(int argc, char **argv) {
 	assertEqualStmt(stmt,(int)stmtinitial,1);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)(uintptr_t)10,0);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
-	} else {
-		assertSuccessStmt(stmt,erg);
-	}
+	assertSuccessStmt(stmt,erg);
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// get reflects the substituted value, not what the app set
-		assertEqualStmt(stmt,(int)stmtulenval,1);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,10);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,10);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAMSET_SIZE,
 			(SQLPOINTER)(uintptr_t)stmtinitial,0);
 	assertSuccessStmt(stmt,erg);
@@ -5059,8 +5048,6 @@ int main(int argc, char **argv) {
 
 
 	// SQL_ATTR_PARAM_BIND_TYPE (0 or row length)
-	// sqlrelay lacks parameter arrays; row-wise (non-zero) is substituted
-	// with SQL_PARAM_BIND_BY_COLUMN, returning SQL_SUCCESS_WITH_INFO + 01S02
 	stdoutput.printf("  SQL_ATTR_PARAM_BIND_TYPE\n");
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)&stmtinitial,0,&stmtstrlen);
@@ -5070,21 +5057,11 @@ int main(int argc, char **argv) {
 	// row-wise: spec allows any non-zero row length
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)(uintptr_t)32,0);
-	if (issqlrelay) {
-		assertEqualStmt(stmt,(int)erg,(int)SQL_SUCCESS_WITH_INFO);
-	} else {
-		assertSuccessStmt(stmt,erg);
-	}
+	assertSuccessStmt(stmt,erg);
 	erg=SQLGetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)&stmtulenval,0,&stmtstrlen);
 	assertSuccessStmt(stmt,erg);
-	if (issqlrelay) {
-		// get reflects the substituted value, not what the app set
-		assertEqualStmt(stmt,(int)stmtulenval,
-					(int)SQL_PARAM_BIND_BY_COLUMN);
-	} else {
-		assertEqualStmt(stmt,(int)stmtulenval,32);
-	}
+	assertEqualStmt(stmt,(int)stmtulenval,32);
 	erg=SQLSetStmtAttr(stmt,SQL_ATTR_PARAM_BIND_TYPE,
 			(SQLPOINTER)(uintptr_t)SQL_PARAM_BIND_BY_COLUMN,0);
 	assertSuccessStmt(stmt,erg);
