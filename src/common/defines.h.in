@@ -267,7 +267,8 @@
 // These indices, and the dbfeaturenames[] array below, are positional wire
 // protocol state that already-deployed clients depend on.
 #define FEATURE_SUPPORTS_SET_CURSOR_NAME 136
-#define FEATURE_COUNT 137
+#define FEATURE_QUOTE_ESCAPES 137
+#define FEATURE_COUNT 138
 
 #ifdef NEED_DBFEATURENAMES
 static const char *dbfeaturenames[]={
@@ -410,7 +411,8 @@ static const char *dbfeaturenames[]={
 	// NOTE: new feature names must be appended at the end, out of
 	// alphabetical order.  This array is positional wire protocol state
 	// that already-deployed clients depend on.
-	"supports_set_cursor_name"
+	"supports_set_cursor_name",
+	"quote_escapes"
 };
 #endif
 

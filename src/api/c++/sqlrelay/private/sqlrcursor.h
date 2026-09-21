@@ -28,9 +28,9 @@
 				const char *object, const char *component);
 		void	sendCursorStatus();
 		void	performSubstitutions();
-		bool	performSubstitutionsInternal();
+		bool	performSubstitutionsInternal(bool backslash);
 		void	validateBindsInternal();
-		bool	validateBind(const char *variable);
+		bool	validateBind(const char *variable, bool backslash);
 		void	sendInputBinds();
 		void	sendOutputBinds();
 		void	sendInputOutputBinds();

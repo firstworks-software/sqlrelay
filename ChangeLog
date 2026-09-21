@@ -297,6 +297,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   client that binds once and executes many times now has its
   later executes' values read too, though the answer such an
   execute gets is still a hardcoded one it may not accept
+- added a quote_escapes database feature, reporting which characters
+  escape a single quote inside a string literal for the connected
+  backend (#10218)
 
 ### Changed
 - requires rudiments 2.3.0 or newer
@@ -2824,13 +2827,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   particular autocommit state (#10182)
 - fixed the JDBC driver leaving autocommit off, rather than on as the
   JDBC spec requires, when the app set no AutoCommit property (#10183)
-- fixed sqlrservercontroller's countBindVariables()/hasBindVariables()/
-  substituteNullForBindVariables() hardcoding mysql/mariadb
-  backslash-escaping rules while scanning a query for bind
-  variables, even though they're reached for other backends too
-  (via the mysql, tds, firebird protocol modules and the odbc
-  connection module); they now base that on the connection's
-  native db type instead (#10103)
+- fixed bind-variable detection and a dozen other query-scanning routines,
+  server-side and client-side (the c++ api and the php pdo driver),
+  hardcoding mysql/mariadb backslash-escaping rules for quoted
+  string literals; they now base that on the new quote_escapes
+  database feature instead (#10103) (#10218)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

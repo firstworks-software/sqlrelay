@@ -2231,6 +2231,11 @@ const char * const *odbcconnection::getDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		charstring::duplicate("true");
 
+	// no SQLGetInfo call reports what escapes a quote inside a string
+	// literal; fall back to the standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		charstring::duplicate("'");
+
 	// SQL_MAX_IDENTIFIER_LEN -> usmallint
 	usmallintbuf=0;
 	SQLGetInfo(dbc,SQL_MAX_IDENTIFIER_LEN,

@@ -1108,14 +1108,12 @@ sqlrconnectionClose(pdo_dbh_t *dbh TSRMLS_DC) {
 static void sqlrconnectionRewriteQuery(sqlrconnection *sqlrcon,
 						const char *query,
 						uint32_t querylen,
-						stringbuffer *newquery) {
+						stringbuffer *newquery,
+						bool backslash) {
 
 	queryparsestate_t	parsestate=IN_QUERY;
 
 	uint16_t	varcounter=0;
-
-	// FIXME: backslash=true isn't true for all dbs
-	bool	backslash=true;
 
 	// run through the querybuffer...
 	const char	*ptr=query;
@@ -1313,8 +1311,17 @@ sqlrconnectionPrepare(pdo_dbh_t *dbh,
 #endif
 
 	if (sqlrdbh->usesubvars) {
+
+		// some databases (mysql/mariadb) treat backslash as an
+		// escape character inside quoted strings, other
+		// databases don't
+		bool	backslash=charstring::contains(
+				sqlrdbh->sqlrcon->getDatabaseFeature(
+							"quote_escapes"),'\\');
+
 		sqlrconnectionRewriteQuery(sqlrdbh->sqlrcon,sql,sqllen,
-							&sqlrstmt->subvarquery);
+							&sqlrstmt->subvarquery,
+							backslash);
 		sql=sqlrstmt->subvarquery.getString();
 		sqllen=sqlrstmt->subvarquery.getSize();
 	}

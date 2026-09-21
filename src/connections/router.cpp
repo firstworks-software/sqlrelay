@@ -791,6 +791,12 @@ void routerconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		"";
 
+	// depends on which backend is actually routed to, same as
+	// FEATURE_SUPPORTS_SET_CURSOR_NAME above; fall back to the
+	// standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'";
+
 }
 
 void routerconnection::handleConnectString() {

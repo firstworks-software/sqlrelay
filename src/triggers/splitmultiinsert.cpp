@@ -219,10 +219,7 @@ bool sqlrtrigger_splitmultiinsert::parsePrefix(const char *query,
 	// skip insert into
 	(*ptr)+=12;
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+	bool	backslash=cont->backslashEscapesQuotes();
 
 	// find the space after the table name, skipping over a quoted
 	// table name that might contain a literal space
@@ -322,10 +319,7 @@ void sqlrtrigger_splitmultiinsert::parseValues(const char **ptr,
 	// skip opening paren
 	(*ptr)++;
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+	bool	backslash=cont->backslashEscapesQuotes();
 
 	// dollar-quoting is postgres-only syntax; elsewhere '$' can be a
 	// legitimate identifier/bind-name character (eg. oracle), so only

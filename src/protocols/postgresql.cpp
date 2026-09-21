@@ -1415,13 +1415,7 @@ void sqlrprotocol_postgresql::getQuery(const char *query,
 
 	*start=cont->skipWhitespaceAndComments(query);
 
-	// this protocol module can front a mysql/mariadb backend too (see
-	// eg. test/sqlrelay.conf.d/mysqlprotocol.conf's
-	// mysqlpostgresqlprotocol instance), and mysql/mariadb treat
-	// backslash as an escape character inside quoted strings, other
-	// databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+	bool	backslash=cont->backslashEscapesQuotes();
 
 	const char	*ch=*start;
 	const char	*queryend=query+querysize;

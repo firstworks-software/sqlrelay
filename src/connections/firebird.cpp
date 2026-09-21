@@ -1781,6 +1781,10 @@ void firebirdconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		"true";
 
+	// firebird only supports the standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'";
+
 }
 
 void firebirdconnection::handleConnectString() {

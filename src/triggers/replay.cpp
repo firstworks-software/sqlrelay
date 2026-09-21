@@ -578,10 +578,7 @@ const char *sqlrtrigger_replay::appendValues(const char *values,
 						const char *autoinccolumn) {
 	value.clear();
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+	bool	backslash=cont->backslashEscapesQuotes();
 
 	listnode<char *>	*col=columns->getFirst();
 	const char		*c=values;

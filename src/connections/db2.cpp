@@ -887,6 +887,10 @@ void db2connection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		"true";
 
+	// db2 only supports the standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'";
+
 }
 
 void db2connection::handleConnectString() {

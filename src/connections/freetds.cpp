@@ -943,6 +943,10 @@ void freetdsconnection::initDatabaseFeatures() {
 		"false";
 	#endif
 
+	// freetds only supports the standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'";
+
 }
 
 void freetdsconnection::handleConnectString() {

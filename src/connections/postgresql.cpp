@@ -841,6 +841,10 @@ void postgresqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		"false";
 
+	// postgresql only supports the standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'";
+
 }
 
 

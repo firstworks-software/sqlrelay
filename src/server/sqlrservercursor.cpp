@@ -1296,10 +1296,7 @@ bool sqlrservercursor::fakeInputBinds() {
 	// use 1-based index for bind variables
 	int64_t		bindindex=1;
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					conn->cont->getNativeDbType(),"mysql");
+	bool	backslash=conn->cont->backslashEscapesQuotes();
 
 	// run through the querybuffer...
 	char		*ptr=pvt->_querybuffer;

@@ -3973,10 +3973,7 @@ const char *sqlrservercontroller::asciiToOctal(byte_t ch) {
 
 bool sqlrservercontroller::hasBindVariables(const char *query,
 						uint32_t querysize) {
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					getNativeDbType(),"mysql");
+	bool	backslash=backslashEscapesQuotes();
 	return ::countBindVariables(query,querysize,
 				pvt->_questionmarksupported,
 				pvt->_colonsupported,
@@ -3987,10 +3984,7 @@ bool sqlrservercontroller::hasBindVariables(const char *query,
 
 uint16_t sqlrservercontroller::countBindVariables(const char *query,
 							uint32_t querysize) {
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					getNativeDbType(),"mysql");
+	bool	backslash=backslashEscapesQuotes();
 	return ::countBindVariables(query,querysize,
 				pvt->_questionmarksupported,
 				pvt->_colonsupported,
@@ -4003,10 +3997,7 @@ uint16_t sqlrservercontroller::substituteNullForBindVariables(
 							const char *query,
 							uint32_t querysize,
 							stringbuffer *output) {
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					getNativeDbType(),"mysql");
+	bool	backslash=backslashEscapesQuotes();
 	return ::substituteNullForBindVariables(query,querysize,
 				pvt->_questionmarksupported,
 				pvt->_colonsupported,
@@ -4231,10 +4222,7 @@ bool sqlrservercontroller::parseInsert(const char *query,
 		// skip past "insert into "
 		start+=12;
 
-		// mysql/mariadb treat backslash as an escape character
-		// inside quoted strings, other databases don't
-		bool	backslash=!charstring::compareIgnoringCase(
-						getNativeDbType(),"mysql");
+		bool	backslash=backslashEscapesQuotes();
 
 		// find the space after the table name, skipping over a
 		// quoted table name that might contain a literal space
@@ -4622,10 +4610,7 @@ const char *sqlrservercontroller::getColumnsFromInsertQuery(
 					const char *queryend,
 					linkedlist<char *> *columns) {
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					getNativeDbType(),"mysql");
+	bool	backslash=backslashEscapesQuotes();
 
 	// split the provided set of comma-separated columns
 	const char	*startofcolumn=start;
@@ -4672,10 +4657,7 @@ void sqlrservercontroller::getFirstValuesFromInsertQuery(
 	uint32_t	parens=0;
 	const char	*startofvalue=c;
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					getNativeDbType(),"mysql");
+	bool	backslash=backslashEscapesQuotes();
 
 	// dollar-quoting is postgres-only syntax; elsewhere '$' can be a
 	// legitimate identifier/bind-name character (eg. oracle), so only
@@ -4986,10 +4968,7 @@ void sqlrservercontroller::translateBindVariables(sqlrservercursor *cursor) {
 	// use 1-based index for bind variables
 	uint16_t	bindindex=1;
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					getNativeDbType(),"mysql");
+	bool	backslash=backslashEscapesQuotes();
 
 	// run through the querybuffer...
 	const char	*ptr=querybuffer;
@@ -11615,6 +11594,15 @@ const char *sqlrservercontroller::getDbVersion() {
 
 const char * const *sqlrservercontroller::getDatabaseFeatures() {
 	return pvt->_conn->getDatabaseFeatures();
+}
+
+// true if the backend's quote-escapes feature includes a backslash
+bool sqlrservercontroller::backslashEscapesQuotes() {
+	const char * const *features=getDatabaseFeatures();
+	if (!features || !features[FEATURE_QUOTE_ESCAPES]) {
+		return false;
+	}
+	return charstring::contains(features[FEATURE_QUOTE_ESCAPES],'\\');
 }
 
 sqlrdatabaseobject *sqlrservercontroller::createDatabaseObject(

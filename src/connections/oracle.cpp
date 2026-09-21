@@ -993,6 +993,10 @@ void oracleconnection::initDatabaseFeatures() {
 	// PL/SQL-declared named cursor, not reachable from plain OCI calls
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		"false";
+
+	// oracle only supports the standard doubled-quote convention
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'";
 }
 
 

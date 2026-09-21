@@ -1488,13 +1488,19 @@ void sqlrcursor::attachToBindCursor(uint16_t bindcursorid) {
 }
 
 uint16_t sqlrcursor::countBindVariables() {
-	// FIXME: backslash=true isn't true for all dbs
+
+	// some databases (mysql/mariadb) treat backslash as an
+	// escape character inside quoted strings, other databases don't
+	bool	backslash=charstring::contains(
+				pvt->_sqlrc->getDatabaseFeature(
+							"quote_escapes"),'\\');
+
 	return ::countBindVariables(pvt->_queryptr,pvt->_querylen,
 		pvt->_sqlrc->getBindVariableDelimiterQuestionMarkSupported(),
 		pvt->_sqlrc->getBindVariableDelimiterColonSupported(),
 		pvt->_sqlrc->getBindVariableDelimiterAtSignSupported(),
 		pvt->_sqlrc->getBindVariableDelimiterDollarSignSupported(),
-		true);
+		backslash);
 }
 
 void sqlrcursor::clearVariables() {
@@ -2701,8 +2707,14 @@ void sqlrcursor::performSubstitutions() {
 		return;
 	}
 
+	// some databases (mysql/mariadb) treat backslash as an
+	// escape character inside quoted strings, other databases don't
+	bool	backslash=charstring::contains(
+				pvt->_sqlrc->getDatabaseFeature(
+							"quote_escapes"),'\\');
+
 	for (uint16_t i=0; i<pvt->_maxsubstitutionpasses; i++) {
-		if (!performSubstitutionsInternal()) {
+		if (!performSubstitutionsInternal(backslash)) {
 			break;
 		}
 	}
@@ -2717,7 +2729,7 @@ void sqlrcursor::performSubstitutions() {
 	pvt->_dirtysubs=false;
 }
 
-bool sqlrcursor::performSubstitutionsInternal() {
+bool sqlrcursor::performSubstitutionsInternal(bool backslash) {
 
 	// perform substitutions
 	stringbuffer	container;
@@ -2737,7 +2749,8 @@ bool sqlrcursor::performSubstitutionsInternal() {
 		// guard against reading before the start of the buffer on
 		// the first character
 		if (*ptr=='\'' &&
-			(ptr==pvt->_queryptr || *(ptr-1)!='\\')) {
+			(ptr==pvt->_queryptr || !backslash ||
+						*(ptr-1)!='\\')) {
 			inquotes=!inquotes;
 		}
 	
@@ -2869,6 +2882,12 @@ void sqlrcursor::validateBindsInternal() {
 		return;
 	}
 
+	// some databases (mysql/mariadb) treat backslash as an
+	// escape character inside quoted strings, other databases don't
+	bool	backslash=charstring::contains(
+				pvt->_sqlrc->getDatabaseFeature(
+							"quote_escapes"),'\\');
+
 	// check each input bind
 	for (uint64_t in=0; in<pvt->_inbindvars->getCount(); in++) {
 
@@ -2879,7 +2898,8 @@ void sqlrcursor::validateBindsInternal() {
 		}
 
 		(*pvt->_inbindvars)[in].send=
-			validateBind((*pvt->_inbindvars)[in].variable);
+			validateBind((*pvt->_inbindvars)[in].variable,
+								backslash);
 	}
 
 	// check each output bind
@@ -2892,7 +2912,8 @@ void sqlrcursor::validateBindsInternal() {
 		}
 
 		(*pvt->_outbindvars)[out].send=
-			validateBind((*pvt->_outbindvars)[out].variable);
+			validateBind((*pvt->_outbindvars)[out].variable,
+								backslash);
 	}
 
 	// check each input/output bind
@@ -2906,19 +2927,17 @@ void sqlrcursor::validateBindsInternal() {
 		}
 
 		(*pvt->_inoutbindvars)[inout].send=
-			validateBind((*pvt->_inoutbindvars)[inout].variable);
+			validateBind((*pvt->_inoutbindvars)[inout].variable,
+								backslash);
 	}
 }
 
-bool sqlrcursor::validateBind(const char *variable) {
+bool sqlrcursor::validateBind(const char *variable, bool backslash) {
 
 	queryparsestate_t	parsestate=IN_QUERY;
 	stringbuffer		currentbind;
 
 	size_t	len=charstring::getLength(variable);
-
-	// FIXME: backslash=true isn't true for all dbs
-	bool	backslash=true;
 
 	// run through the querybuffer...
 	const char	*ptr=pvt->_queryptr;

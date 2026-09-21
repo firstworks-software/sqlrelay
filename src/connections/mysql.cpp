@@ -907,6 +907,11 @@ void mysqlconnection::initDatabaseFeatures() {
 	databasefeatures[FEATURE_SUPPORTS_SET_CURSOR_NAME]=
 		"false";
 
+	// mysql/mariadb treat a backslash as a quote-escape character,
+	// in addition to the standard doubled-quote
+	databasefeatures[FEATURE_QUOTE_ESCAPES]=
+		"'\\";
+
 }
 
 

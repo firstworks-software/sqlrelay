@@ -129,8 +129,8 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 	// database engine parses the literal, not what the client believes
 	// it's talking to.  An explicit attribute still overrides the
 	// default either way.  The default is resolved from
-	// getNativeDbType() in run() instead of here, matching how
-	// src/directives/singlestep.cpp checks it.
+	// backslashEscapesQuotes() in run() instead of here, matching how
+	// src/directives/singlestep.cpp checks its own backend behavior.
 	slashescapeattr=parameters->getAttributeValue("slashescape");
 	slashescape=!charstring::isNo(slashescapeattr);
 }
@@ -148,8 +148,7 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 	// resolve the slashescape default against the real backend - an
 	// explicit attribute always wins over this
 	if (!slashescapeattr) {
-		slashescape=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+		slashescape=cont->backslashEscapesQuotes();
 	}
 
 	// mysql/mariadb require a "--" line comment to be followed by

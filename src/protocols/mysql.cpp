@@ -3153,10 +3153,7 @@ sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 	const char	*start=cont->skipWhitespaceAndComments(query);
 	const char	*end=query+querysize;
 
-	// mysql/mariadb treat backslash as an escape character
-	// inside quoted strings, other databases don't
-	bool	backslash=!charstring::compareIgnoringCase(
-					cont->getNativeDbType(),"mysql");
+	bool	backslash=cont->backslashEscapesQuotes();
 
 	// FIXME: assumes a normalized query, same as parseInsert()
 	if (querysize<12 || charstring::compareIgnoringCase(

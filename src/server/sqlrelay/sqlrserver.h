@@ -482,6 +482,11 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		/** Returns the database features. */
 		const char * const	*getDatabaseFeatures();
 
+		/** Returns true if the backend allows a backslash to escape
+		 *  a quote inside a string literal, in addition to the
+		 *  standard doubled-quote. */
+		bool	backslashEscapesQuotes();
+
 		/** Returns the host name of the server hosting the
 		 *  database. */
 		const char	*getDbHostName();
