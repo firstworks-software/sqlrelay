@@ -795,7 +795,7 @@ bool sqlrquerytranslation_normalize::removeQuotes(
 		ptr++;
 
 		// until we find the end-quote...
-		do {
+		for (;;) {
 
 			// if we found a double-escaped quote like "" or ``,
 			// a slash-escaped quote like \" or \`,
@@ -810,23 +810,24 @@ bool sqlrquerytranslation_normalize::removeQuotes(
 				// unescape it
 				sb->write(*(ptr+1));
 				ptr=ptr+2;
-
-			} else
-
-			// if we didn't find escaped quotes,
-			// or if we found an empty string...
-			if (*ptr!=quote) {
-				if (upper) {
-					sb->write((char)character::upper(*ptr));
-				} else if (lower) {
-					sb->write((char)character::lower(*ptr));
-				} else {
-					sb->write(*ptr);
-				}
-				ptr++;
+				continue;
 			}
 
-		} while (ptr!=end && *ptr!=quote);
+			// stop at the real end-quote, or the end of input
+			if (ptr==end || *ptr==quote) {
+				break;
+			}
+
+			// otherwise it's ordinary content
+			if (upper) {
+				sb->write((char)character::upper(*ptr));
+			} else if (lower) {
+				sb->write((char)character::lower(*ptr));
+			} else {
+				sb->write(*ptr);
+			}
+			ptr++;
+		}
 
 		// skip the end-quote
 		if (ptr!=end) {

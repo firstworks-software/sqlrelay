@@ -2845,6 +2845,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the normalize query translation's caseConvertQuotedStrings() and
   removeQuotes() treating an empty quoted identifier as still open,
   swallowing the rest of the query (#10233)
+- fixed the normalize query translation's removeQuotes() dropping an
+  embedded doubled-quote-escaped character and everything after it
+  (#10234)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
