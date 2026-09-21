@@ -184,8 +184,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   router connection modules supply a real value, other
   backends report an empty string until their modules
   implement it; the sqlrclient error response carries it as
-  a new trailing field, on protocol version 4, which the
-  null blob/clob bind change above already bumped to
+  a new trailing field, on protocol version 3, which the
+  extra-result-set change below already bumped to
 - the client apis expose the sqlstate on both the connection and the
   cursor as errorSqlState() - c, c++, cs, java, nodejs, perl,
   php, python, ruby, tcl and erlang - and report an empty
@@ -317,7 +317,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   output parameters, and cancel; fixed an authentication bypass
   and a pile of pre-auth buffer overruns and unbounded allocations
 - bumped the sqlrclient protocol to version 3 (extra result sets carry
-  their column metadata and rows now); fixed
+  their column metadata and rows now) - an older client still works
+  against a newer server, but a version 3 client is rejected at
+  connect time by a server that predates this; fixed
   sqlrcursor::nextResultSet() not refreshing cached
   metadata/buffers, which broke odbc, php pdo and sqlrsh
 - date/time reformatting now leaves an unformatted field alone
@@ -389,11 +391,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   parameter path already got, applied to the bulk load path
 - a null blob or clob bind now reaches the connection module's blob/clob
   bind rather than arriving as a plain null character bind, so
-  modules can bind it as the right type; bumped the sqlrclient
-  protocol to version 4 for it - an older client still works
-  against a newer server, but a version 4 client is rejected at
-  connect time by a server that predates this; version 4 also
-  carries the sqlstate field described below
+  modules can bind it as the right type; carried on
+  sqlrclient protocol version 3, which the extra-result-set
+  change above already bumped to
 - hardened the db2, informix, odbc, firebird and oracle connection
   modules' date/time inputBind() overload, which
   ignored its isnull argument and would bind the possibly

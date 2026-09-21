@@ -74,7 +74,7 @@ enum sqlrserverbindvartype_t {
 
 	SQLRSERVERBINDVARTYPE_ARRAY,
 
-	// null lob binds, from a protocol version 4 or newer client
+	// null lob binds, from a protocol version 3 or newer client
 	SQLRSERVERBINDVARTYPE_NULLBLOB,
 	SQLRSERVERBINDVARTYPE_NULLCLOB
 };

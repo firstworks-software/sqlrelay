@@ -4813,7 +4813,7 @@ bool odbccursor::inputBind(const char *variable,
 
 		// a plain null bind carries no type, so the only way to tell
 		// whether this one is aimed at a binary column is to ask the
-		// driver.  A null lob bind from a protocol version 4 or newer
+		// driver.  A null lob bind from a protocol version 3 or newer
 		// client arrives typed and reaches inputBindBlob() directly,
 		// but older clients and the other protocol modules still
 		// flatten their nulls to this path.

@@ -6234,7 +6234,7 @@ void sqlrcursor::getErrorFromServer() {
 	// get the sqlstate
 	//
 	// A short read here isn't reported as an error.  A server that
-	// predates protocol version 4 sends no sqlstate at all, and the
+	// predates protocol version 3 sends no sqlstate at all, and the
 	// error that has already been read is the one worth reporting.
 	if (!networkerror) {
 		uint16_t	sqlstatelength;

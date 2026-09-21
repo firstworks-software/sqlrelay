@@ -38,7 +38,7 @@ enum sqlrclientbindvartype_t {
 	// A null lob bind keeps its lob-ness rather than collapsing to
 	// NULL, so the server can route it to the connection module's
 	// inputBindBlob()/inputBindClob() rather than to its plain
-	// character inputBind().  Only a protocol version 4 or newer
+	// character inputBind().  Only a protocol version 3 or newer
 	// client sends these.
 	SQLRCLIENTBINDVARTYPE_NULLBLOB=11,
 	SQLRCLIENTBINDVARTYPE_NULLCLOB=12
