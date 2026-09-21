@@ -737,9 +737,13 @@ bool sqlrquerytranslation_normalize::caseConvertQuotedStrings(
 				ptr=ptr+2;
 			} else
 
-			// if we found a slash-escaped quote like \" or \`...
-			if (slashescape && (*ptr=='\\' && *(ptr+1)==quote)) {
-				// convert to a double-escaped quote
+			// if we found a slash-escaped quote like \" or \`,
+			// or a slash-escaped slash like \\...
+			if (slashescape && (*ptr=='\\' &&
+						(*(ptr+1)==quote ||
+						*(ptr+1)=='\\'))) {
+				// convert to a double-escaped quote,
+				// or leave \\ alone
 				sb->write(*(ptr+1));
 				sb->write(*(ptr+1));
 				ptr=ptr+2;
@@ -792,12 +796,15 @@ bool sqlrquerytranslation_normalize::removeQuotes(
 		// until we find the end-quote...
 		do {
 
-			// if we found a double-escaped quote like "" or ``
-			// or a slash-escaped quote like \" or \`...
+			// if we found a double-escaped quote like "" or ``,
+			// a slash-escaped quote like \" or \`,
+			// or a slash-escaped slash like \\...
 			if ((doubleescape &&
 					(*ptr==quote && *(ptr+1)==quote)) ||
 				(slashescape &&
-					(*ptr=='\\' && *(ptr+1)==quote))) {
+					(*ptr=='\\' &&
+						(*(ptr+1)==quote ||
+						*(ptr+1)=='\\')))) {
 
 				// unescape it
 				sb->write(*(ptr+1));

@@ -2836,6 +2836,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a string literal ending in an escaped backslash as still open when
   substituting query variables, for backends where backslash escapes
   quotes (#10221)
+- fixed the normalize query translation's caseConvertQuotedStrings() and
+  removeQuotes() treating a quoted identifier ending in an escaped
+  backslash as still open, for backends where backslash escapes quotes
+  (#10230)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
