@@ -749,8 +749,9 @@ bool sqlrquerytranslation_normalize::caseConvertQuotedStrings(
 				ptr=ptr+2;
 			} else
 
-			// if we didn't find escaped quotes...
-			{
+			// if we didn't find escaped quotes,
+			// or if we found an empty string...
+			if (*ptr!=quote) {
 				if (upper) {
 					sb->write((char)character::upper(*ptr));
 				} else {
@@ -812,8 +813,9 @@ bool sqlrquerytranslation_normalize::removeQuotes(
 
 			} else
 
-			// if we didn't find escaped quotes...
-			{
+			// if we didn't find escaped quotes,
+			// or if we found an empty string...
+			if (*ptr!=quote) {
 				if (upper) {
 					sb->write((char)character::upper(*ptr));
 				} else if (lower) {

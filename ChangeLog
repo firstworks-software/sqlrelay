@@ -2842,6 +2842,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (#10230)
 - fixed sqlrcrud::getValidColumnName() hanging on column names with
   leading whitespace and rejecting quoted column names (#10231)
+- fixed the normalize query translation's caseConvertQuotedStrings() and
+  removeQuotes() treating an empty quoted identifier as still open,
+  swallowing the rest of the query (#10233)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
