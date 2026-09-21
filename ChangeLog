@@ -2840,6 +2840,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   removeQuotes() treating a quoted identifier ending in an escaped
   backslash as still open, for backends where backslash escapes quotes
   (#10230)
+- fixed sqlrcrud::getValidColumnName() hanging on column names with
+  leading whitespace and rejecting quoted column names (#10231)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

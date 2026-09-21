@@ -341,34 +341,52 @@ void sqlrcrud::getValidColumnName(const char *c,
 
 	// init return values...
 
-	// col returns the actual start of the given column name
-	*col=c;
-
 	// collen returns the number of valid characters
 	// after the start of the given column name
 	*collen=0;
 
 	// skip leading whitespace
 	while (character::isWhitespace(*c)) {
-		col++;
+		c++;
 	}
+
+	// col returns the actual start of the given column name
+	*col=c;
 
 	// run through the given column name
 	for (;;) {
 
-		// skip quoted strings
+		// skip quoted strings, including the quotes themselves
 		if (*c=='\'') {
+			c++;
+			(*collen)++;
 			while (*c && *c!='\'') {
 				c++;
 				(*collen)++;
 			}
+			if (*c=='\'') {
+				c++;
+				(*collen)++;
+			}
 		} else if (*c=='"') {
+			c++;
+			(*collen)++;
 			while (*c && *c!='"') {
 				c++;
 				(*collen)++;
 			}
+			if (*c=='"') {
+				c++;
+				(*collen)++;
+			}
 		} else if (*c=='`') {
+			c++;
+			(*collen)++;
 			while (*c && *c!='`') {
+				c++;
+				(*collen)++;
+			}
+			if (*c=='`') {
 				c++;
 				(*collen)++;
 			}
