@@ -2741,13 +2741,25 @@ bool sqlrcursor::performSubstitutionsInternal(bool backslash) {
 	// iterate through the string
 	while (ptr<endptr) {
 	
-		// figure out whether we're inside a quoted string or not -
-		// guard against reading before the start of the buffer on
-		// the first character
-		if (*ptr=='\'' &&
-			(ptr==pvt->_queryptr || !backslash ||
-						*(ptr-1)!='\\')) {
-			inquotes=!inquotes;
+		// figure out whether we're inside a quoted string or not
+		if (*ptr=='\'') {
+
+			// a doubled-up backslash escapes itself, not the
+			// quote, so count the run of backslashes behind the
+			// quote - an odd count means the quote is escaped,
+			// an even count (including 0) means it's a real quote
+			bool	escaped=false;
+			if (backslash) {
+				const char	*bptr=ptr;
+				while (bptr>pvt->_queryptr &&
+						*(bptr-1)=='\\') {
+					escaped=!escaped;
+					bptr--;
+				}
+			}
+			if (!escaped) {
+				inquotes=!inquotes;
+			}
 		}
 	
 		// if we find an open-brace then start 

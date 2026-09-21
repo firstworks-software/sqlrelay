@@ -2832,6 +2832,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   hardcoding mysql/mariadb backslash-escaping rules for quoted
   string literals; they now base that on the new quote_escapes
   database feature instead (#10103) (#10218)
+- fixed the c++ api's sqlrcursor::performSubstitutionsInternal() treating
+  a string literal ending in an escaped backslash as still open when
+  substituting query variables, for backends where backslash escapes
+  quotes (#10221)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
