@@ -1488,11 +1488,13 @@ void sqlrcursor::attachToBindCursor(uint16_t bindcursorid) {
 }
 
 uint16_t sqlrcursor::countBindVariables() {
+	// FIXME: backslash=true isn't true for all dbs
 	return ::countBindVariables(pvt->_queryptr,pvt->_querylen,
 		pvt->_sqlrc->getBindVariableDelimiterQuestionMarkSupported(),
 		pvt->_sqlrc->getBindVariableDelimiterColonSupported(),
 		pvt->_sqlrc->getBindVariableDelimiterAtSignSupported(),
-		pvt->_sqlrc->getBindVariableDelimiterDollarSignSupported());
+		pvt->_sqlrc->getBindVariableDelimiterDollarSignSupported(),
+		true);
 }
 
 void sqlrcursor::clearVariables() {
@@ -2915,6 +2917,9 @@ bool sqlrcursor::validateBind(const char *variable) {
 
 	size_t	len=charstring::getLength(variable);
 
+	// FIXME: backslash=true isn't true for all dbs
+	bool	backslash=true;
+
 	// run through the querybuffer...
 	const char	*ptr=pvt->_queryptr;
 	const char	*endptr=pvt->_queryptr+pvt->_querylen;
@@ -2952,7 +2957,7 @@ bool sqlrcursor::validateBind(const char *variable) {
 			// then we're back in the query
 			// (or we're in between one of these: '...''...'
 			// which is functionally the same)
-			if (*ptr=='\'' && prev!='\\') {
+			if (*ptr=='\'' && (!backslash || prev!='\\')) {
 				parsestate=IN_QUERY;
 			}
 

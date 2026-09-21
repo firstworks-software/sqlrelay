@@ -1114,6 +1114,9 @@ static void sqlrconnectionRewriteQuery(sqlrconnection *sqlrcon,
 
 	uint16_t	varcounter=0;
 
+	// FIXME: backslash=true isn't true for all dbs
+	bool	backslash=true;
+
 	// run through the querybuffer...
 	const char	*ptr=query;
 	const char	*endptr=ptr+querylen;
@@ -1154,7 +1157,7 @@ static void sqlrconnectionRewriteQuery(sqlrconnection *sqlrcon,
 			// then we're back in the query
 			// (or we're in between one of these: '...''...'
 			// which is functionally the same)
-			if (*ptr=='\'' && prev!='\\') {
+			if (*ptr=='\'' && (!backslash || prev!='\\')) {
 				parsestate=IN_QUERY;
 			}
 

@@ -2824,6 +2824,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   particular autocommit state (#10182)
 - fixed the JDBC driver leaving autocommit off, rather than on as the
   JDBC spec requires, when the app set no AutoCommit property (#10183)
+- fixed sqlrservercontroller's countBindVariables()/hasBindVariables()/
+  substituteNullForBindVariables() hardcoding mysql/mariadb
+  backslash-escaping rules while scanning a query for bind
+  variables, even though they're reached for other backends too
+  (via the mysql, tds, firebird protocol modules and the odbc
+  connection module); they now base that on the connection's
+  native db type instead (#10103)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

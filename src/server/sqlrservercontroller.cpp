@@ -3973,31 +3973,46 @@ const char *sqlrservercontroller::asciiToOctal(byte_t ch) {
 
 bool sqlrservercontroller::hasBindVariables(const char *query,
 						uint32_t querysize) {
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					getNativeDbType(),"mysql");
 	return ::countBindVariables(query,querysize,
 				pvt->_questionmarksupported,
 				pvt->_colonsupported,
 				pvt->_atsignsupported,
-				pvt->_dollarsignsupported);
+				pvt->_dollarsignsupported,
+				backslash);
 }
 
 uint16_t sqlrservercontroller::countBindVariables(const char *query,
 							uint32_t querysize) {
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					getNativeDbType(),"mysql");
 	return ::countBindVariables(query,querysize,
 				pvt->_questionmarksupported,
 				pvt->_colonsupported,
 				pvt->_atsignsupported,
-				pvt->_dollarsignsupported);
+				pvt->_dollarsignsupported,
+				backslash);
 }
 
 uint16_t sqlrservercontroller::substituteNullForBindVariables(
 							const char *query,
 							uint32_t querysize,
 							stringbuffer *output) {
+	// mysql/mariadb treat backslash as an escape character
+	// inside quoted strings, other databases don't
+	bool	backslash=!charstring::compareIgnoringCase(
+					getNativeDbType(),"mysql");
 	return ::substituteNullForBindVariables(query,querysize,
 				pvt->_questionmarksupported,
 				pvt->_colonsupported,
 				pvt->_atsignsupported,
 				pvt->_dollarsignsupported,
+				backslash,
 				output);
 }
 

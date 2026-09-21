@@ -169,7 +169,8 @@ static uint16_t countBindVariables(const char *query,
 					bool questionmark,
 					bool colon,
 					bool atsign,
-					bool dollarsign) {
+					bool dollarsign,
+					bool backslash) {
 
 	if (!query) {
 		return 0;
@@ -218,7 +219,7 @@ static uint16_t countBindVariables(const char *query,
 			// then we're back in the query
 			// (or we're in between one of these: '...''...'
 			// which is functionally the same)
-			if (*ptr=='\'' && prev!='\\') {
+			if (*ptr=='\'' && (!backslash || prev!='\\')) {
 				parsestate=IN_QUERY;
 			}
 
@@ -313,6 +314,7 @@ static uint16_t substituteNullForBindVariables(const char *query,
 						bool colon,
 						bool atsign,
 						bool dollarsign,
+						bool backslash,
 						stringbuffer *output) {
 
 	if (!query || !querylen || !output) {
@@ -327,16 +329,20 @@ static uint16_t substituteNullForBindVariables(const char *query,
 	bool	a=false;
 	bool	d=false;
 	if (dollarsign &&
-		countBindVariables(query,querylen,false,false,false,true)) {
+		countBindVariables(query,querylen,
+				false,false,false,true,backslash)) {
 		d=true;
 	} else if (questionmark &&
-		countBindVariables(query,querylen,true,false,false,false)) {
+		countBindVariables(query,querylen,
+				true,false,false,false,backslash)) {
 		q=true;
 	} else if (colon &&
-		countBindVariables(query,querylen,false,true,false,false)) {
+		countBindVariables(query,querylen,
+				false,true,false,false,backslash)) {
 		c=true;
 	} else if (atsign &&
-		countBindVariables(query,querylen,false,false,true,false)) {
+		countBindVariables(query,querylen,
+				false,false,true,false,backslash)) {
 		a=true;
 	} else {
 		// nothing to substitute
@@ -385,7 +391,7 @@ static uint16_t substituteNullForBindVariables(const char *query,
 			// then we're back in the query
 			// (or we're in between one of these: '...''...'
 			// which is functionally the same)
-			if (*ptr=='\'' && prev!='\\') {
+			if (*ptr=='\'' && (!backslash || prev!='\\')) {
 				parsestate=IN_QUERY;
 			}
 
