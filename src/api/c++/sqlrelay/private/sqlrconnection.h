@@ -70,6 +70,7 @@
 					bool copyreferences);
 		static	bool	isYes(const char *str);
 		static	bool	isNo(const char *str);
+		bool		backslashEscapesQuotes();
 
 		const char	*getDefaultIsolationLevel(
 				sqlrclientisolationlevelformat_t format);

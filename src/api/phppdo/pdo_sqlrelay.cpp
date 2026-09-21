@@ -1315,9 +1315,7 @@ sqlrconnectionPrepare(pdo_dbh_t *dbh,
 		// some databases (mysql/mariadb) treat backslash as an
 		// escape character inside quoted strings, other
 		// databases don't
-		bool	backslash=charstring::contains(
-				sqlrdbh->sqlrcon->getDatabaseFeature(
-							"quote_escapes"),'\\');
+		bool	backslash=sqlrdbh->sqlrcon->backslashEscapesQuotes();
 
 		sqlrconnectionRewriteQuery(sqlrdbh->sqlrcon,sql,sqllen,
 							&sqlrstmt->subvarquery,

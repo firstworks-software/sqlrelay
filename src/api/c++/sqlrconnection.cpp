@@ -2994,6 +2994,10 @@ bool sqlrconnection::isNo(const char *str) {
 	return charstring::isNo(str);
 }
 
+bool sqlrconnection::backslashEscapesQuotes() {
+	return charstring::contains(getDatabaseFeature("quote_escapes"),'\\');
+}
+
 void sqlrconnection::setBindVariableDelimiters(const char *delimiters) {
 	pvt->_questionmarksupported=charstring::contains(delimiters,'?');
 	pvt->_colonsupported=charstring::contains(delimiters,':');

@@ -1491,9 +1491,7 @@ uint16_t sqlrcursor::countBindVariables() {
 
 	// some databases (mysql/mariadb) treat backslash as an
 	// escape character inside quoted strings, other databases don't
-	bool	backslash=charstring::contains(
-				pvt->_sqlrc->getDatabaseFeature(
-							"quote_escapes"),'\\');
+	bool	backslash=pvt->_sqlrc->backslashEscapesQuotes();
 
 	return ::countBindVariables(pvt->_queryptr,pvt->_querylen,
 		pvt->_sqlrc->getBindVariableDelimiterQuestionMarkSupported(),
@@ -2709,9 +2707,7 @@ void sqlrcursor::performSubstitutions() {
 
 	// some databases (mysql/mariadb) treat backslash as an
 	// escape character inside quoted strings, other databases don't
-	bool	backslash=charstring::contains(
-				pvt->_sqlrc->getDatabaseFeature(
-							"quote_escapes"),'\\');
+	bool	backslash=pvt->_sqlrc->backslashEscapesQuotes();
 
 	for (uint16_t i=0; i<pvt->_maxsubstitutionpasses; i++) {
 		if (!performSubstitutionsInternal(backslash)) {
@@ -2884,9 +2880,7 @@ void sqlrcursor::validateBindsInternal() {
 
 	// some databases (mysql/mariadb) treat backslash as an
 	// escape character inside quoted strings, other databases don't
-	bool	backslash=charstring::contains(
-				pvt->_sqlrc->getDatabaseFeature(
-							"quote_escapes"),'\\');
+	bool	backslash=pvt->_sqlrc->backslashEscapesQuotes();
 
 	// check each input bind
 	for (uint64_t in=0; in<pvt->_inbindvars->getCount(); in++) {
