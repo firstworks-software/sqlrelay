@@ -20,6 +20,7 @@ all: router \
 	emoji \
 	postgresqlupsert \
 	postgresqlsavepoint \
+	postgresqlsavepointsplit \
 	postgresqlglobaltemptables \
 	postgresqlstringagg \
 	postgresqlsequencenextval \
@@ -29,7 +30,7 @@ all: router \
 	postgresqlreplay
 
 clean:
-	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlupsertreplay$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) postgresqlkeepdenserank$(EXE) postgresqlslashescape$(EXE) postgresqlconvertslashescape$(EXE) postgresqlreplay$(EXE) *.csv *.xml cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlupsertreplay$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlsavepointsplit$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) postgresqlkeepdenserank$(EXE) postgresqlslashescape$(EXE) postgresqlconvertslashescape$(EXE) postgresqlreplay$(EXE) *.csv *.xml cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 router: router.cpp router.$(OBJ)
@@ -61,6 +62,9 @@ postgresqlupsert: postgresqlupsert.cpp postgresqlupsert.$(OBJ)
 
 postgresqlsavepoint: postgresqlsavepoint.cpp postgresqlsavepoint.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlsavepoint.$(OBJ) $(CPPTESTLIBS)
+
+postgresqlsavepointsplit: postgresqlsavepointsplit.cpp postgresqlsavepointsplit.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlsavepointsplit.$(OBJ) $(CPPTESTLIBS)
 
 postgresqlglobaltemptables: postgresqlglobaltemptables.cpp postgresqlglobaltemptables.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) postgresqlglobaltemptables.$(OBJ) $(CPPTESTLIBS)

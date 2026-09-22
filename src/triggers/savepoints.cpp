@@ -3,6 +3,26 @@
 
 #include <sqlrelay/sqlrserver.h>
 
+// owns spname
+class savepointentry {
+	public:
+		savepointentry(uint16_t cursorid, char *spname);
+		~savepointentry();
+
+		uint16_t	cursorid;
+		char		*spname;
+};
+
+savepointentry::savepointentry(uint16_t cursorid, char *spname) {
+	this->cursorid=cursorid;
+	this->spname=spname;
+}
+
+savepointentry::~savepointentry() {
+	delete[] spname;
+}
+
+
 class SQLRSERVER_DLLSPEC sqlrtrigger_savepoints : public sqlrtrigger {
 	public:
 		sqlrtrigger_savepoints(sqlrservercontroller *cont,
@@ -17,13 +37,24 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_savepoints : public sqlrtrigger {
 		bool	runAfterExecute(sqlrserverconnection *sqlrcon,
 						sqlrservercursor *sqlrcur);
 
+		void	endTransaction(bool commit);
+		void	endSession();
+
 	private:
 		bool	shouldSkip(sqlrservercursor *sqlrcur);
+
+		// Returns the live savepoint name for "sqlrcur", or NULL if
+		// there isn't one.  An entry left behind by a deleted cursor
+		// that happened to be allocated at the same address is
+		// detected by its id and dropped.
+		const char	*getSavepointName(sqlrservercursor *sqlrcur);
+
 		void	buildSavepointSql(const char *format,
+						const char *spname,
 						stringbuffer *out);
-		bool	runQuery(const char *format);
-		bool	createSavepoint();
-		void	finishSavepoint(bool error);
+		bool	runQuery(const char *format, const char *spname);
+		bool	createSavepoint(sqlrservercursor *sqlrcur);
+		void	finishSavepoint(sqlrservercursor *sqlrcur, bool error);
 
 		const char	*savepointquery;
 		const char	*rollbackquery;
@@ -31,12 +62,19 @@ class SQLRSERVER_DLLSPEC sqlrtrigger_savepoints : public sqlrtrigger {
 		bool		dorelease;
 
 		const char	*prefix;
-		uint64_t	spcounter;
-		stringbuffer	spname;
 
-		// true between successful savepoint creation and its
-		// rollback/release
-		bool		spactive;
+		// Shared across cursors on purpose.  A per-cursor counter
+		// would give two cursors' savepoints the same name, and
+		// databases resolve a rollback or release against the most
+		// recent savepoint of that name, so one cursor would roll
+		// back to the other cursor's savepoint.
+		uint64_t	spcounter;
+
+		// name of the live savepoint, keyed by cursor - this module is
+		// instantiated once per connection, but each cursor gets its
+		// own savepoint, and an entry exists only between successful
+		// savepoint creation and its rollback/release
+		dictionary< sqlrservercursor *, savepointentry * >	spnames;
 
 		stringbuffer	spsql;
 };
@@ -70,7 +108,34 @@ sqlrtrigger_savepoints::sqlrtrigger_savepoints(sqlrservercontroller *cont,
 	}
 
 	spcounter=0;
-	spactive=false;
+
+	// let the dictionary delete each entry on remove/clear/destruction,
+	// which deletes the name it owns too
+	spnames.setManageValues(true);
+}
+
+const char *sqlrtrigger_savepoints::getSavepointName(
+					sqlrservercursor *sqlrcur) {
+
+	savepointentry	*spe=spnames.getValue(sqlrcur);
+	if (!spe) {
+		return NULL;
+	}
+
+	// A cursor can be deleted without its savepoint being finished, and
+	// newCursor() can hand the same address back later with a different
+	// id.  The entry then belongs to the earlier cursor, and its
+	// savepoint no longer exists, so drop it rather than reuse it.
+	if (spe->cursorid!=sqlrcur->getId()) {
+		debugWrite("dropping stale savepoint %s (cursor id %d, "
+					"entry id %d)",spe->spname,
+					(int)sqlrcur->getId(),
+					(int)spe->cursorid);
+		spnames.remove(sqlrcur);
+		return NULL;
+	}
+
+	return spe->spname;
 }
 
 bool sqlrtrigger_savepoints::shouldSkip(sqlrservercursor *sqlrcur) {
@@ -113,7 +178,7 @@ bool sqlrtrigger_savepoints::runBeforePrepare(sqlrserverconnection *sqlrcon,
 	debugStart("savepoints runBeforePrepare");
 
 	// reset state
-	spactive=false;
+	spnames.remove(sqlrcur);
 
 	if (shouldSkip(sqlrcur)) {
 		debugEnd();
@@ -124,7 +189,7 @@ bool sqlrtrigger_savepoints::runBeforePrepare(sqlrserverconnection *sqlrcon,
 	// postgresql) parse and resolve references during prepare, so
 	// reference-related failures occur here rather than during
 	// execute.
-	createSavepoint();
+	createSavepoint(sqlrcur);
 
 	debugEnd();
 
@@ -135,7 +200,7 @@ bool sqlrtrigger_savepoints::runAfterPrepare(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur) {
 
 	// bail if we never created a savepoint
-	if (!spactive) {
+	if (!getSavepointName(sqlrcur)) {
 		return true;
 	}
 
@@ -149,7 +214,7 @@ bool sqlrtrigger_savepoints::runAfterPrepare(sqlrserverconnection *sqlrcon,
 	}
 
 	debugStart("savepoints runAfterPrepare");
-	finishSavepoint(true);
+	finishSavepoint(sqlrcur,true);
 	debugEnd();
 
 	// preserve the user's error
@@ -160,7 +225,7 @@ bool sqlrtrigger_savepoints::runBeforeExecute(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur) {
 
 	// reuse the savepoint created by runBeforePrepare
-	if (spactive) {
+	if (getSavepointName(sqlrcur)) {
 		return true;
 	}
 
@@ -172,7 +237,7 @@ bool sqlrtrigger_savepoints::runBeforeExecute(sqlrserverconnection *sqlrcon,
 		return true;
 	}
 
-	createSavepoint();
+	createSavepoint(sqlrcur);
 
 	debugEnd();
 
@@ -183,7 +248,7 @@ bool sqlrtrigger_savepoints::runAfterExecute(sqlrserverconnection *sqlrcon,
 					sqlrservercursor *sqlrcur) {
 
 	// bail if no savepoint is live
-	if (!spactive) {
+	if (!getSavepointName(sqlrcur)) {
 		return true;
 	}
 
@@ -193,7 +258,7 @@ bool sqlrtrigger_savepoints::runAfterExecute(sqlrserverconnection *sqlrcon,
 	bool	error=(cont->getErrorSize(sqlrcur) ||
 				cont->getErrorNumber(sqlrcur));
 
-	finishSavepoint(error);
+	finishSavepoint(sqlrcur,error);
 
 	debugEnd();
 
@@ -201,70 +266,115 @@ bool sqlrtrigger_savepoints::runAfterExecute(sqlrserverconnection *sqlrcon,
 	return true;
 }
 
-bool sqlrtrigger_savepoints::createSavepoint() {
+void sqlrtrigger_savepoints::endTransaction(bool commit) {
+
+	debugStart("savepoints endTransaction");
+
+	// a commit or rollback destroys every savepoint
+	debugWrite("dropping %lld savepoints",
+			(long long)spnames.getCount());
+	spnames.clear();
+
+	debugEnd();
+}
+
+void sqlrtrigger_savepoints::endSession() {
+
+	debugStart("savepoints endSession");
+
+	debugWrite("dropping %lld savepoints",
+			(long long)spnames.getCount());
+	spnames.clear();
+
+	debugEnd();
+}
+
+bool sqlrtrigger_savepoints::createSavepoint(sqlrservercursor *sqlrcur) {
 
 	// build a unique savepoint name
-	spname.clear();
+	stringbuffer	spname;
 	spname.append(prefix)->append(spcounter++);
 
 	// if this fails, log it but let the user query run anyway
-	if (runQuery(savepointquery)) {
-		spactive=true;
+	if (runQuery(savepointquery,spname.getString())) {
+
+		// setValue() would overwrite, rather than delete, an entry
+		// that's somehow still here
+		spnames.remove(sqlrcur);
+
+		// the entry takes ownership of the name
+		spnames.setValue(sqlrcur,
+				new savepointentry(sqlrcur->getId(),
+						spname.detachString()));
 		return true;
 	}
 	debugWrite("failed to create savepoint %s",spname.getString());
 	return false;
 }
 
-void sqlrtrigger_savepoints::finishSavepoint(bool error) {
+void sqlrtrigger_savepoints::finishSavepoint(sqlrservercursor *sqlrcur,
+								bool error) {
 
-	spactive=false;
+	const char	*livespname=getSavepointName(sqlrcur);
+	if (!livespname) {
+		return;
+	}
+
+	// Take our own copy of the name and drop the entry before running
+	// anything.  The rollback and release queries go through
+	// interceptQuery(), so a configured query that classifies as a
+	// commit, rollback or autocommit change reaches endTransaction(),
+	// which clears the map and would free the name mid-use.
+	char	*spname=charstring::duplicate(livespname);
+	spnames.remove(sqlrcur);
 
 	if (error) {
 
 		// undo any partial effects of the failed query
-		if (!runQuery(rollbackquery)) {
+		if (!runQuery(rollbackquery,spname)) {
 			debugWrite("failed to roll back to savepoint %s",
-							spname.getString());
+									spname);
 		}
 
 		// release the savepoint after rolling back, so the stack
 		// doesn't grow
 		if (dorelease) {
-			if (!runQuery(releasequery)) {
+			if (!runQuery(releasequery,spname)) {
 				debugWrite("failed to release savepoint %s",
-							spname.getString());
+									spname);
 			}
 		}
 
 	} else if (dorelease) {
 
 		// release the savepoint so the stack doesn't grow
-		if (!runQuery(releasequery)) {
-			debugWrite("failed to release savepoint %s",
-							spname.getString());
+		if (!runQuery(releasequery,spname)) {
+			debugWrite("failed to release savepoint %s",spname);
 		}
 	}
+
+	delete[] spname;
 }
 
 void sqlrtrigger_savepoints::buildSavepointSql(const char *format,
+						const char *spname,
 						stringbuffer *out) {
 
 	// replace "%s" with the savepoint name
 	const char	*pct=charstring::findFirst(format,"%s");
 	if (pct) {
 		out->append(format,pct-format);
-		out->append(spname.getString(),spname.getSize());
+		out->append(spname);
 		out->append(pct+2);
 	} else {
 		out->append(format);
 	}
 }
 
-bool sqlrtrigger_savepoints::runQuery(const char *format) {
+bool sqlrtrigger_savepoints::runQuery(const char *format, const char *spname) {
 
 	spsql.clear();
-	buildSavepointSql(format,&spsql);
+	buildSavepointSql(format,spname,&spsql);
 
 	debugWrite("%.*s",(int)spsql.getSize(),spsql.getString());
 

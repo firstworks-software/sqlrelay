@@ -184,6 +184,14 @@ stop_instances() {
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id mysqlupsertnonormalize
 		fi
 
+		# the postgresqlsavepointsplit test also has a second
+		# instance, listing savepoints and splitmultiinsert in the
+		# opposite order (#10252)
+		if ( test "$_instance" = "postgresqlsavepointsplit" )
+		then
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id postgresqlsplitsavepoint
+		fi
+
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, a connectstrings-default-auth
 		# instance, a fetchatonce=1 instance, and an oci7
@@ -458,6 +466,15 @@ start_instance() {
 		sleep 2
 	fi
 
+	# the postgresqlsavepointsplit test needs a second instance, listing
+	# savepoints and splitmultiinsert in the opposite order, since the
+	# nesting that #10252 is about happens either way
+	if ( test "$instance" = "postgresqlsavepointsplit" )
+	then
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlsplitsavepoint -backtrace $BACKTRACEDIR
+		sleep 2
+	fi
+
 	# start the instance
 	$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance} -backtrace $BACKTRACEDIR
 	sleep 2
@@ -528,6 +545,11 @@ stop_instance() {
 	then
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id mysqlupsertnonormalize
+	fi
+	if ( test "$instance" = "postgresqlsavepointsplit" )
+	then
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id postgresqlsplitsavepoint
 	fi
 	sleep 2
 	$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id ${instance}

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- savepoints and splitmultiinsert on the same connection.
+	     splitmultiinsert runs its single-inserts on a private cursor with
+	     triggers enabled, so savepoints runs again, nested inside the
+	     outer cursor's savepoint.  savepoints has to track its live
+	     savepoint per cursor for the outer cursor's savepoint to survive
+	     that and get rolled back when a single-insert fails (#10252) -->
+
+	<instance id="postgresqlsavepointsplit" dbase="postgresql">
+		<listeners>
+			<listener port="9046" socket="/tmp/postgresqlsavepointsplit.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+		</translations>
+		<triggers>
+			<trigger module="savepoints" when="all"/>
+			<trigger module="splitmultiinsert" when="before"/>
+		</triggers>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+	<!-- the same two triggers in the opposite order.  splitmultiinsert
+	     does its work in a before-execute trigger, by which point
+	     savepoints' before-prepare trigger has already taken the outer
+	     savepoint, so the nesting - and the defect - is the same either
+	     way -->
+
+	<instance id="postgresqlsplitsavepoint" dbase="postgresql">
+		<listeners>
+			<listener port="9047" socket="/tmp/postgresqlsplitsavepoint.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+		</translations>
+		<triggers>
+			<trigger module="splitmultiinsert" when="before"/>
+			<trigger module="savepoints" when="all"/>
+		</triggers>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+</instances>
