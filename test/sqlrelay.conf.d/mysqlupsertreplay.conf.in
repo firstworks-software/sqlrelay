@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="mysqlupsertreplay" dbase="mysql" connections="2">
+		<listeners>
+			<listener port="9045" socket="/tmp/mysqlupsertreplay.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize"/>
+		</translations>
+		<triggers>
+			<!-- the order of these two trigger tags is the point
+			     of this instance - replay has to be listed before
+			     upsert, or the update that upsert substitutes for
+			     the failed insert never makes it into the replay
+			     log -->
+			<trigger module="replay" when="after" maxretries="5">
+				<!-- deadlock.  innodb rolls the whole
+				     transaction back, so the update that
+				     upsert ran in place of the duplicate
+				     insert is only reapplied if it's in the
+				     log.  the log file is the only place the
+				     logged transaction is visible from
+				     outside the server -->
+				<condition error="1213" scope="transaction">
+					<log file="/tmp/mysqlupsertreplay-deadlock.log"/>
+				</condition>
+				<!-- lock wait timeout -->
+				<condition error="1205" scope="query"/>
+			</trigger>
+			<trigger module="upsert" when="after">
+				<errors>
+					<error number="1062"/>
+				</errors>
+				<tables>
+					<table name="student">
+						<primarykey name="id"/>
+						<column name="firstname"/>
+						<column name="lastname"/>
+					</table>
+				</tables>
+			</trigger>
+		</triggers>
+		<connections>
+			<connection string="host=mysql;user=testuser;password=testpassword;db=@HOSTNAME@;foundrows=yes;autocommit=yes"/>
+		</connections>
+	</instance>
+
+</instances>

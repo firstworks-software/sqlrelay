@@ -2873,6 +2873,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the tcl api's debug() call falling through into
   setDebugFile()'s argument check, overwriting the debug file path
   with the boolean it was passed (#10245)
+- fixed the upsert trigger's converted update skipping directives,
+  translations, filters, and triggers, so it never reached the replay
+  log (#10123)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

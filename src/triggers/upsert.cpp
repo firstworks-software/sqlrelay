@@ -211,6 +211,8 @@ bool sqlrtrigger_upsert::runAfterExecute(sqlrserverconnection *sqlrcon,
 	// copy input binds from icur to ucur, convert the insert
 	// to an update, then prepare and execute the update query
 	// (each of these sets the error message internally if it fails)
+	// (be sure to run directives, translations, filters,
+	// and triggers on the update query, as well)
 	stringbuffer		update;
 	bool	success=copyInputBinds(ucur,icur,cols,vals,tablenode) &&
 				convertInsertToUpdate(ucur,table,
@@ -218,8 +220,9 @@ bool sqlrtrigger_upsert::runAfterExecute(sqlrserverconnection *sqlrcon,
 						autoinccolumn,primarykeycolumn,
 						tablenode,&update) &&
 				cont->prepareQuery(ucur,update.getString(),
-							update.getSize()) &&
-				cont->executeQuery(ucur);
+							update.getSize(),
+							true,true,true,true) &&
+				cont->executeQuery(ucur,true,true,true,true);
 	if (success) {
 
 		// icur currenty contains the error that

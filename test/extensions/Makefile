@@ -14,6 +14,7 @@ all: router \
 	extensions \
 	mysqlupsert \
 	mysqldeadlockreplay \
+	mysqlupsertreplay \
 	mysqlsplitmultiinsert \
 	mysqlimportexport \
 	emoji \
@@ -28,7 +29,7 @@ all: router \
 	postgresqlreplay
 
 clean:
-	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) postgresqlkeepdenserank$(EXE) postgresqlslashescape$(EXE) postgresqlconvertslashescape$(EXE) postgresqlreplay$(EXE) *.csv *.xml cachefile* sqlnet.log
+	$(RM) *.lo *.o *.obj router$(EXE) extensions$(EXE) mysqldeadlockreplay$(EXE) mysqlsplitmultiinsert$(EXE) mysqlupsert$(EXE) mysqlupsertreplay$(EXE) mysqlexport$(EXE) mysqlimportexport$(EXE) emoji$(EXE) postgresqlupsert$(EXE) postgresqlsavepoint$(EXE) postgresqlglobaltemptables$(EXE) postgresqlstringagg$(EXE) postgresqlsequencenextval$(EXE) postgresqlkeepdenserank$(EXE) postgresqlslashescape$(EXE) postgresqlconvertslashescape$(EXE) postgresqlreplay$(EXE) *.csv *.xml cachefile* sqlnet.log
 	$(RMTREE) .libs
 
 router: router.cpp router.$(OBJ)
@@ -42,6 +43,9 @@ mysqlupsert: mysqlupsert.cpp mysqlupsert.$(OBJ)
 
 mysqldeadlockreplay: mysqldeadlockreplay.cpp mysqldeadlockreplay.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqldeadlockreplay.$(OBJ) $(CPPTESTLIBS)
+
+mysqlupsertreplay: mysqlupsertreplay.cpp mysqlupsertreplay.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlupsertreplay.$(OBJ) $(CPPTESTLIBS)
 
 mysqlsplitmultiinsert: mysqlsplitmultiinsert.cpp mysqlsplitmultiinsert.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) mysqlsplitmultiinsert.$(OBJ) $(CPPTESTLIBS)

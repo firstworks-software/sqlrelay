@@ -87,7 +87,8 @@ usage() {
 	echo "  that share a backend share a schema and the same testtable, and still"
 	echo "  have to run one at a time relative to each other:"
 	echo
-	echo "    mysql, mysqlupsert, mysqldeadlockreplay, mysqlsplitmultiinsert,"
+	echo "    mysql, mysqlupsert, mysqldeadlockreplay, mysqlupsertreplay,"
+	echo "    mysqlsplitmultiinsert,"
 	echo "    mysqlimportexport, mysqlprotocol, mysqlprotocoltls,"
 	echo "    mysqlprotocoltlsserverauth and mysqlprotocoltlsmutualauth all"
 	echo "    hit the mysql server"

@@ -6457,6 +6457,11 @@ There are some considerations that need to be taken into account when using the 
 * If you don't specify any columns in the table tag, then the where clause of the generated update will be empty, and the update query will fail.
 * If the insert doesn't contain values for the columns specified in the table tag, then the conversion to update will fail.
 
+As noted in [#triggers Triggers], above, trigger modules run in the order that they're listed in the config file.  When upsert is combined with the replay or savepoints module on the same connection, upsert must be listed after both of them:
+
+* replay must be listed before upsert.  Upsert clears the cursor error when it converts a failed insert into an update.  If replay is listed after upsert, it sees no error, and it can splice a stale last insert id into the insert that it logs.  The log also comes out in the wrong order, with the converted update ahead of the insert that provoked it, since upsert runs its update before replay has logged anything.
+* savepoints must be listed before upsert.  The savepoints module tracks its active savepoint per module instance, not per cursor.  Upsert's converted update triggers a nested prepare, which resets that tracked state.  If savepoints is listed after upsert, the outer savepoint is never rolled back or released, which on !PostgreSQL leaves the transaction in the aborted state that savepoints exists to prevent.
+
 
 [[br]][=#globaltemptables]
 == globaltemptables ==
