@@ -5896,7 +5896,8 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 				// calculate size to copy
 				// make sure to include the null-terminator
 				if ((uint32_t)bufferlength<fieldlength+1) {
-					bytestocopy=bufferlength;
+					bytestocopy=(bufferlength)?
+							(bufferlength-1):0;
 					*offset+=bytestocopy;
 					trunc=true;
 				} else {
@@ -5931,7 +5932,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 				// (even if data has to be truncated)
 				if (trunc) {
 					((char *)targetvalue)
-						[bytestocopy-1]='\0';
+						[bytestocopy]='\0';
 				}
 
 				debugPrintf("  value: %.*s%s",
