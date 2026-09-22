@@ -120,8 +120,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		bool		getBindVariableDelimiterDollarSignSupported();
 		bool		getTranslateBindVariables();
 		const char	*getIsolationLevel();
-		const char	*getBackslashEscapesQuotes();
-		const char	*getQuoteEscapesQuotes();
+		const char	*getQuoteEscapes();
 		bool		getIgnoreSelectDatabase();
 		bool		getWaitForDownDatabase();
 		const char	*getPasswordPath();
@@ -278,8 +277,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		bool		dollarsignsupported;
 		bool		translatebindvariables;
 		const char	*isolationlevel;
-		const char	*backslashescapesquotes;
-		const char	*quoteescapesquotes;
+		const char	*quoteescapes;
 		bool		ignoreselectdb;
 		bool		waitfordowndb;
 		const char	*passwordpath;
@@ -441,8 +439,7 @@ void sqlrconfig_xmldom::init() {
 	translatebindvariables=charstring::isYes(
 					DEFAULT_TRANSLATEBINDVARIABLES);
 	isolationlevel=NULL;
-	backslashescapesquotes=NULL;
-	quoteescapesquotes=NULL;
+	quoteescapes=NULL;
 	ignoreselectdb=false;
 	waitfordowndb=true;
 	passwordpath=NULL;
@@ -819,12 +816,8 @@ const char *sqlrconfig_xmldom::getIsolationLevel() {
 	return isolationlevel;
 }
 
-const char *sqlrconfig_xmldom::getBackslashEscapesQuotes() {
-	return backslashescapesquotes;
-}
-
-const char *sqlrconfig_xmldom::getQuoteEscapesQuotes() {
-	return quoteescapesquotes;
+const char *sqlrconfig_xmldom::getQuoteEscapes() {
+	return quoteescapes;
 }
 
 bool sqlrconfig_xmldom::getIgnoreSelectDatabase() {
@@ -2230,13 +2223,9 @@ void sqlrconfig_xmldom::getTreeValues() {
 		dollarsignsupported=charstring::contains(
 						bindvariabledelimiters,'$');
 	}
-	attr=instance->getAttribute("backslashescapesquotes");
+	attr=instance->getAttribute("quoteescapes");
 	if (!attr->isNullNode()) {
-		backslashescapesquotes=attr->getValue();
-	}
-	attr=instance->getAttribute("quoteescapesquotes");
-	if (!attr->isNullNode()) {
-		quoteescapesquotes=attr->getValue();
+		quoteescapes=attr->getValue();
 	}
 	attr=instance->getAttribute("translatebindvariables");
 	if (!attr->isNullNode()) {

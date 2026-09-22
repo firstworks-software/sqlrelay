@@ -104,11 +104,15 @@ void	sqlrcon_setBindVariableDelimiters(sqlrcon sqlrconref,
 						const char *delimiters);
 
 /** @ingroup sqlrclientwrapper
- *  Overrides whether a backslash is treated as escaping a quote
- *  inside a string literal, instead of deriving that behavior
- *  from the real backend's quote-escaping database feature. */
-void	sqlrcon_setBackslashEscapesQuotes(sqlrcon sqlrconref,
-						int backslashescapesquotes);
+ *  Overrides which characters, if any, are treated as escaping
+ *  a quote inside a string literal, instead of deriving that
+ *  behavior from the real backend's quote-escaping database
+ *  feature.  "escapechars" follows the same convention as that
+ *  feature: it may contain a single quote, a backslash, both,
+ *  or be empty to mean that nothing escapes a quote.  Passing
+ *  NULL clears the override and falls back to the feature. */
+void	sqlrcon_setQuoteEscapes(sqlrcon sqlrconref,
+						const char *escapechars);
 
 /** @ingroup sqlrclientwrapper
  *  Returns true if question marks (?) are considered to be

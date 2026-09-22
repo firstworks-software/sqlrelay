@@ -164,7 +164,7 @@ class SQLRConnection : public ObjectWrap {
 							const ARGS &args);
 		static RET	getBindVariableDelimiterDollarSignSupported(
 							const ARGS &args);
-		static RET	setBackslashEscapesQuotes(const ARGS &args);
+		static RET	setQuoteEscapes(const ARGS &args);
 		static RET	enableKerberos(const ARGS &args);
 		static RET	enableTls(const ARGS &args);
 		static RET	disableEncryption(const ARGS &args);
@@ -408,8 +408,8 @@ void SQLRConnection::Init(Handle<Object> exports) {
 			"getBindVariableDelimiterDollarSignSupported",
 			getBindVariableDelimiterDollarSignSupported);
 	NODE_SET_PROTOTYPE_METHOD(tpl,
-			"setBackslashEscapesQuotes",
-			setBackslashEscapesQuotes);
+			"setQuoteEscapes",
+			setQuoteEscapes);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"enableKerberos",enableKerberos);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"enableTls",enableTls);
 	NODE_SET_PROTOTYPE_METHOD(tpl,"disableEncryption",disableEncryption);
@@ -623,13 +623,13 @@ RET SQLRConnection::getBindVariableDelimiterDollarSignSupported(
 	returnBoolean(result);
 }
 
-RET SQLRConnection::setBackslashEscapesQuotes(const ARGS &args) {
+RET SQLRConnection::setQuoteEscapes(const ARGS &args) {
 
 	initLocalScope();
 
 	checkArgCount(args,1);
 
-	sqlrcon(args)->setBackslashEscapesQuotes((bool)toInt32(args[0]));
+	sqlrcon(args)->setQuoteEscapes(toString(args[0]));
 
 	returnVoid();
 }

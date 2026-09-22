@@ -134,9 +134,8 @@ class sqlrconnectionprivate {
 		bool		_atsignsupported;
 		bool		_dollarsignsupported;
 
-		// backslash-escapes-quotes override
-		bool		_backslashescapesquotesoverridden;
-		bool		_backslashescapesquotesoverride;
+		// quote-escapes override
+		char		*_quoteescapes;
 
 		// client info
 		char		*_clientinfo;
@@ -281,8 +280,8 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	pvt->_atsignsupported=true;
 	pvt->_dollarsignsupported=true;
 
-	// backslash-escapes-quotes override
-	pvt->_backslashescapesquotesoverridden=false;
+	// quote-escapes override
+	pvt->_quoteescapes=NULL;
 
 	// client info
 	pvt->_clientinfo=NULL;
@@ -377,6 +376,9 @@ sqlrconnection::~sqlrconnection() {
 
 	// deallocate client info
 	delete[] pvt->_clientinfo;
+
+	// deallocate quote-escapes override
+	delete[] pvt->_quoteescapes;
 
 	// deallocate copied references
 	if (pvt->_copyrefs) {
@@ -3029,8 +3031,8 @@ bool sqlrconnection::isNo(const char *str) {
 }
 
 bool sqlrconnection::backslashEscapesQuotes() {
-	if (pvt->_backslashescapesquotesoverridden) {
-		return pvt->_backslashescapesquotesoverride;
+	if (pvt->_quoteescapes) {
+		return charstring::contains(pvt->_quoteescapes,'\\');
 	}
 	return charstring::contains(getDatabaseFeature("quote_escapes"),'\\');
 }
@@ -3042,9 +3044,9 @@ void sqlrconnection::setBindVariableDelimiters(const char *delimiters) {
 	pvt->_dollarsignsupported=charstring::contains(delimiters,'$');
 }
 
-void sqlrconnection::setBackslashEscapesQuotes(bool backslashescapesquotes) {
-	pvt->_backslashescapesquotesoverride=backslashescapesquotes;
-	pvt->_backslashescapesquotesoverridden=true;
+void sqlrconnection::setQuoteEscapes(const char *escapechars) {
+	delete[] pvt->_quoteescapes;
+	pvt->_quoteescapes=charstring::duplicate(escapechars);
 }
 
 bool sqlrconnection::getBindVariableDelimiterQuestionMarkSupported() {

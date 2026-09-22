@@ -393,18 +393,18 @@ int main() {
 			ENCODE_VOID;
 		}
 
-		if (strcmp("setBackslashEscapesQuotes", command) == TRUE) {
-			long backslashescapesquotes;
+		if (strcmp("setQuoteEscapes", command) == TRUE) {
+			char escapechars[128];
 
 			// check number of arguments
 		    	if (arity != 1) return ERR_NUMBER_OF_ARGS;
 
 			// get input parameters
-			if (ei_decode_long(buf, &index, &backslashescapesquotes)) {
+			if (ei_decode_string(buf, &index, &escapechars[0])) {
 				return ERR_DECODING_ARGS;
 			}
 
-			sqlrcon_setBackslashEscapesQuotes(con, backslashescapesquotes);
+			sqlrcon_setQuoteEscapes(con, escapechars);
 			ENCODE_VOID;
 		}
 

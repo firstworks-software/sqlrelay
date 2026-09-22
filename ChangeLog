@@ -300,17 +300,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added a quote_escapes database feature, reporting which characters
   escape a single quote inside a string literal for the connected
   backend (#10218)
-- added a backslash-quote-escaping override to the c++ client api and
-  its language wrappers
-- added a backslashescapesquotes connect/dsn option to the odbc,
-  phppdo, and perl dbi drivers, and to the python db-api connect()
-- added a backslashescapesquotes instance option to sqlr.conf
+- added a quote-escapes override to the c++ client api and its language
+  wrappers
+- added a quoteescapes connect/dsn option to the odbc, phppdo, and
+  perl dbi drivers, and to the python db-api connect()
 - added a convertslashescape option to the normalize query translation,
   rewriting a backslash-escaped quote to the doubled-quote form when the
   real backend doesn't accept backslash as a quote-escape
-- added sqlrservercontroller::quoteEscapesQuotes() and a
-  quoteescapesquotes instance option to sqlr.conf, reporting whether the
-  backend accepts a doubled quote as an escaped quote; defaults to true,
+- added sqlrservercontroller::quoteEscapesQuotes() and a single
+  quoteescapes instance option to sqlr.conf, overriding both it and
+  backslashEscapesQuotes(); quoteEscapesQuotes() reports whether the
+  backend accepts a doubled quote as an escaped quote, defaults to true
   so behavior is unchanged, and gates the normalize query translation's
   doubleescape and the server's string-literal-skipping helpers
 
@@ -2868,8 +2868,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the sqlrclient protocol sending more database features than an
   older client can read, desyncing its session (#10219)
 - fixed the tcl api's getBindVariableDelimiter*Supported() calls falling
-  through into setBackslashEscapesQuotes()'s argument check and
-  returning an error instead of the boolean (#10244)
+  through into setQuoteEscapes()'s argument check and returning an
+  error instead of the boolean (#10244)
 - fixed the tcl api's debug() call falling through into
   setDebugFile()'s argument check, overwriting the debug file path
   with the boolean it was passed (#10245)

@@ -102,16 +102,19 @@ class sqlrconnection:
         """
         return CSQLRelay.setBindVariableDelimiters(self.connection, delimiters)
 
-    def setBackslashEscapesQuotes(self, backslashescapesquotes):
+    def setQuoteEscapes(self, escapechars):
         """
-        Overrides whether a backslash is treated as escaping a quote
-        inside a string literal, instead of deriving that behavior
-        from the real backend's quote-escaping database feature.  Use
-        this when a query was written in a different backend's dialect
+        Overrides which characters, if any, are treated as escaping
+        a quote inside a string literal, instead of deriving that
+        behavior from the real backend's quote-escaping database
+        feature.  "escapechars" follows the same convention as that
+        feature: it may contain a single quote, a backslash, both,
+        or be empty to mean that nothing escapes a quote.  Use this
+        when a query was written in a different backend's dialect
         (eg. mysql/mariadb's backslash-escaped quotes) and is being run
         through a proxy to a backend with different native rules.
         """
-        return CSQLRelay.setBackslashEscapesQuotes(self.connection, backslashescapesquotes)
+        return CSQLRelay.setQuoteEscapes(self.connection, escapechars)
 
     def getBindVariableDelimiterQuestionMarkSupported(self):
         """

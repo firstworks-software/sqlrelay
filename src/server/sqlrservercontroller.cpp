@@ -266,8 +266,7 @@ class sqlrservercontrollerprivate {
 
 	const char	*_isolationlevel;
 
-	const char	*_backslashescapesquotesoverride;
-	const char	*_quoteescapesquotesoverride;
+	const char	*_quoteescapesoverride;
 
 	bool		_sendcolumninfo;
 
@@ -546,8 +545,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 
 	pvt->_isolationlevel=NULL;
 
-	pvt->_backslashescapesquotesoverride=NULL;
-	pvt->_quoteescapesquotesoverride=NULL;
+	pvt->_quoteescapesoverride=NULL;
 
 	pvt->_sendcolumninfo=true;
 
@@ -1054,11 +1052,8 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 		pvt->_cfg->getBindVariableDelimiterDollarSignSupported();
 	pvt->_debugbindtranslation=pvt->_cfg->getDebugBindTranslations();
 
-	// get backslash-escapes-quotes override
-	pvt->_backslashescapesquotesoverride=
-			pvt->_cfg->getBackslashEscapesQuotes();
-	pvt->_quoteescapesquotesoverride=
-			pvt->_cfg->getQuoteEscapesQuotes();
+	// get quote-escapes override
+	pvt->_quoteescapesoverride=pvt->_cfg->getQuoteEscapes();
 
 	// initialize cursors
 	pvt->_mincursorcount=pvt->_cfg->getCursors();
@@ -11610,11 +11605,11 @@ const char * const *sqlrservercontroller::getDatabaseFeatures() {
 }
 
 // true if the backend's quote-escapes feature includes a backslash,
-// unless overridden by the backslashescapesquotes instance attribute
+// unless overridden by the quoteescapes instance attribute
 bool sqlrservercontroller::backslashEscapesQuotes() {
-	if (pvt->_backslashescapesquotesoverride) {
-		return charstring::isYes(
-				pvt->_backslashescapesquotesoverride);
+	if (pvt->_quoteescapesoverride) {
+		return charstring::contains(
+				pvt->_quoteescapesoverride,'\\');
 	}
 	const char * const *features=getDatabaseFeatures();
 	if (!features || !features[FEATURE_QUOTE_ESCAPES]) {
@@ -11624,16 +11619,16 @@ bool sqlrservercontroller::backslashEscapesQuotes() {
 }
 
 // true if the backend's quote-escapes feature includes the quote
-// character itself, unless overridden by the quoteescapesquotes
-// instance attribute - defaults to true (rather than false, the way
+// character itself, unless overridden by the quoteescapes instance
+// attribute - defaults to true (rather than false, the way
 // backslashEscapesQuotes() defaults to false) because every backend's
 // quote_escapes value already includes the quote character; this
 // capability exists for a hypothetical future backend that doesn't,
 // and must not change behavior for any backend that does.
 bool sqlrservercontroller::quoteEscapesQuotes() {
-	if (pvt->_quoteescapesquotesoverride) {
-		return charstring::isYes(
-				pvt->_quoteescapesquotesoverride);
+	if (pvt->_quoteescapesoverride) {
+		return charstring::contains(
+				pvt->_quoteescapesoverride,'\'');
 	}
 	const char * const *features=getDatabaseFeatures();
 	if (!features || !features[FEATURE_QUOTE_ESCAPES]) {

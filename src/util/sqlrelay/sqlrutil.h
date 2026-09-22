@@ -243,8 +243,13 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 
 		virtual const char	*getIsolationLevel()=0;
 
-		virtual const char	*getBackslashEscapesQuotes()=0;
-		virtual const char	*getQuoteEscapesQuotes()=0;
+		// Returns the string of characters that override the
+		// backend's own quote_escapes database feature: '\\' if a
+		// backslash escapes a quote in a string literal, '\'' if a
+		// doubled quote does, both, or neither. NULL means the
+		// attribute wasn't set in sqlr.conf and the backend's own
+		// quote_escapes feature should be used instead.
+		virtual const char	*getQuoteEscapes()=0;
 
 		virtual bool		getIgnoreSelectDatabase()=0;
 

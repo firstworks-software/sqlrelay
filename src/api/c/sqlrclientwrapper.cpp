@@ -78,9 +78,9 @@ void sqlrcon_setBindVariableDelimiters(sqlrcon sqlrconref,
 	sqlrconref->setBindVariableDelimiters(delimiters);
 }
 
-void sqlrcon_setBackslashEscapesQuotes(sqlrcon sqlrconref,
-						int backslashescapesquotes) {
-	sqlrconref->setBackslashEscapesQuotes(backslashescapesquotes);
+void sqlrcon_setQuoteEscapes(sqlrcon sqlrconref,
+						const char *escapechars) {
+	sqlrconref->setQuoteEscapes(escapechars);
 }
 
 int sqlrcon_getBindVariableDelimiterQuestionMarkSupported(

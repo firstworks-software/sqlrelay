@@ -7,7 +7,7 @@
 % API
 -export([start/0, start/1, stop/0]).
 
--export([alloc/7, connectionFree/0, cursorFree/0, setConnectTimeout/2, getConnectTimeoutSeconds/0, getConnectTimeoutMicroseconds/0, setResponseTimeout/2, getResponseTimeoutSeconds/0, getResponseTimeoutMicroseconds/0, setBindVariableDelimiters/1, setBackslashEscapesQuotes/1, getBindVariableDelimiterQuestionMarkSupported/0, getBindVariableDelimiterColonSupported/0, getBindVariableDelimiterAtSignSupported/0, getBindVariableDelimiterDollarSignSupported/0, enableKerberos/3, enableTls/7, disableEncryption/0, endSession/0, suspendSession/0, resumeSession/2]).
+-export([alloc/7, connectionFree/0, cursorFree/0, setConnectTimeout/2, getConnectTimeoutSeconds/0, getConnectTimeoutMicroseconds/0, setResponseTimeout/2, getResponseTimeoutSeconds/0, getResponseTimeoutMicroseconds/0, setBindVariableDelimiters/1, setQuoteEscapes/1, getBindVariableDelimiterQuestionMarkSupported/0, getBindVariableDelimiterColonSupported/0, getBindVariableDelimiterAtSignSupported/0, getBindVariableDelimiterDollarSignSupported/0, enableKerberos/3, enableTls/7, disableEncryption/0, endSession/0, suspendSession/0, resumeSession/2]).
 -export([ping/0, identify/0, dbVersion/0, dbHostName/0, dbIpAddress/0, serverVersion/0, clientVersion/0, bindFormat/0, nextvalFormat/0, connectionErrorMessage/0, connectionErrorNumber/0, connectionErrorSqlState/0, errorMessage/0, errorNumber/0, errorSqlState/0]).
 -export([selectDatabase/1, getCurrentDatabase/0, getDatabaseIsSchema/0, selectCatalog/1, getCurrentCatalog/0, selectSchema/1, getCurrentSchema/0, getCurrentUser/0, getLastInsertId/0]).
 -export([getConnectionPort/0, getConnectionSocket/0]).
@@ -145,8 +145,8 @@ getResponseTimeoutMicroseconds() -> call_port({getResponseTimeoutMicroseconds}).
 %% @doc Sets which delimiters are used to identify bind variables in countBindVariables() and validateBinds().  Valid delimiters include ?,:,@, and $.  Defaults to "?:@$"
 setBindVariableDelimiters(Delimiters) -> call_port({setBindVariableDelimiters, Delimiters}).
 
-%% @doc Sets whether a backslash escapes the quote character that follows it inside a quoted string literal when parsing queries.
-setBackslashEscapesQuotes(BackslashEscapesQuotes) -> call_port({setBackslashEscapesQuotes, BackslashEscapesQuotes}).
+%% @doc Overrides which characters are treated as escaping a quote inside a string literal, instead of deriving that behavior from the real backend's quote-escaping database feature.
+setQuoteEscapes(EscapeChars) -> call_port({setQuoteEscapes, EscapeChars}).
 
 %% @doc Returns true if question marks (?) are considered to be valid bind variable delimiters.
 getBindVariableDelimiterQuestionMarkSupported() -> call_port({getBindVariableDelimiterQuestionMarkSupported}).

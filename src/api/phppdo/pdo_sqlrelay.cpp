@@ -2039,7 +2039,7 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 		{"connecttime",(char *)"",0},
 		{"autocommit",(char *)"0",0},
 		{"bindvariabledelimiters",(char *)"?:@$",0},
-		{"backslashescapesquotes",(char *)"",0},
+		{"quoteescapes",(char *)"",0},
 		{"emulatepreparesunicodestrings",(char *)"0",0},
 		{"fetchlobsasstrings",(char *)"0",0},
 		{"lazyconnectautocommit",(char *)"1",0},
@@ -2072,7 +2072,7 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	const char      *connecttime=options[23].optval;
 	const char	*autocommit=options[24].optval;
 	const char	*bindvariabledelimiters=options[25].optval;
-	const char	*backslashescapesquotes=options[26].optval;
+	const char	*quoteescapes=options[26].optval;
 	bool		emulatepreparesunicodestrings=
 				charstring::isYes(options[27].optval);
 	bool		fetchlobsasstrings=
@@ -2147,10 +2147,9 @@ static int sqlrelayHandleFactory(pdo_dbh_t *dbh,
 	// set bind variable delimiters
 	sqlrdbh->sqlrcon->setBindVariableDelimiters(bindvariabledelimiters);
 
-	// override backslash-escapes-quotes, if one was specified
-	if (!charstring::isNullOrEmpty(backslashescapesquotes)) {
-		sqlrdbh->sqlrcon->setBackslashEscapesQuotes(
-				charstring::isYes(backslashescapesquotes));
+	// override quote escapes, if any were specified
+	if (!charstring::isNullOrEmpty(quoteescapes)) {
+		sqlrdbh->sqlrcon->setQuoteEscapes(quoteescapes);
 	}
 
 	// if we're not doing lazy connects, then do something lightweight

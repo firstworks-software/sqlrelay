@@ -508,22 +508,22 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
 
 /**
  *  call-seq:
- *  sqlrcon_setBackslashEscapesQuotes($sqlrconref, $backslashescapesquotes)
+ *  sqlrcon_setQuoteEscapes($sqlrconref, $escapechars)
  *
- *  Sets whether backslashes are treated as escape characters
+ *  Sets which characters are treated as escape characters
  *  for quotes in queries. */
-DLEXPORT ZEND_FUNCTION(sqlrcon_setbackslashescapesquotes) {
+DLEXPORT ZEND_FUNCTION(sqlrcon_setquoteescapes) {
 	ZVAL sqlrcon;
-	ZVAL backslashescapesquotes;
+	ZVAL escapechars;
 	if (ZEND_NUM_ARGS() != 2 ||
 		GET_PARAMETERS(
 				ZEND_NUM_ARGS() TSRMLS_CC,
 				PARAMS("zz")
 				&sqlrcon,
-				&backslashescapesquotes) == FAILURE) {
+				&escapechars) == FAILURE) {
 		WRONG_PARAM_COUNT;
 	}
-	convert_to_long_ex(backslashescapesquotes);
+	convert_to_string_ex(escapechars);
 	sqlrconnection *connection=NULL;
 	ZEND_FETCH_RESOURCE(connection,
 				sqlrconnection *,
@@ -532,8 +532,7 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setbackslashescapesquotes) {
 				"sqlrelay connection",
 				sqlrelay_connection);
 	if (connection) {
-		connection->setBackslashEscapesQuotes(
-					LVAL(backslashescapesquotes)!=0);
+		connection->setQuoteEscapes(SVAL(escapechars));
 	}
 }
 
@@ -8468,9 +8467,9 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setbindvariabledelimiters,0,0,2)
 	ZEND_ARG_INFO(0, delimiters)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setbackslashescapesquotes,0,0,2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setquoteescapes,0,0,2)
 	ZEND_ARG_INFO(0, sqlrconref)
-	ZEND_ARG_INFO(0, backslashescapesquotes)
+	ZEND_ARG_INFO(0, escapechars)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getbindvariabledelimiterquestionmarksupported,0,0,1)
@@ -9450,8 +9449,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_getresponsetimeoutmicroseconds))
 	ZEND_FE(sqlrcon_setbindvariabledelimiters,
 		ARGINFO(arginfo_sqlrcon_setbindvariabledelimiters))
-	ZEND_FE(sqlrcon_setbackslashescapesquotes,
-		ARGINFO(arginfo_sqlrcon_setbackslashescapesquotes))
+	ZEND_FE(sqlrcon_setquoteescapes,
+		ARGINFO(arginfo_sqlrcon_setquoteescapes))
 	ZEND_FE(sqlrcon_getbindvariabledelimiterquestionmarksupported,
 	ARGINFO(arginfo_sqlrcon_getbindvariabledelimiterquestionmarksupported))
 	ZEND_FE(sqlrcon_getbindvariabledelimitercolonsupported,

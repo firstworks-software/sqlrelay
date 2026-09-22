@@ -141,7 +141,7 @@ struct CONN {
 	bool				mapnewdatetotimestamp;
 
 	char				bindvariabledelimiters[5];
-	char				backslashescapesquotes[6];
+	char				quoteescapes[8];
 
 	SQLSMALLINT			sqlerrorindex;
 
@@ -2728,12 +2728,12 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(conn->bindvariabledelimiters),
 					ODBC_INI);
 
-	// backslash escapes quotes, left empty/unset unless the dsn
+	// quote escape characters, left empty/unset unless the dsn
 	// specifies it, so the client's own default is used otherwise
 	SQLGetPrivateProfileString((const char *)conn->dsn,
-					"BackslashEscapesQuotes","",
-					conn->backslashescapesquotes,
-					sizeof(conn->backslashescapesquotes),
+					"QuoteEscapes","",
+					conn->quoteescapes,
+					sizeof(conn->quoteescapes),
 					ODBC_INI);
 
 	// override dsn values with values passed in via the connectstring
@@ -2925,12 +2925,12 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(conn->bindvariabledelimiters),
 					conn_bindvariabledelimiters);
 		}
-		const char	*conn_backslashescapesquotes=
-				connparams->getValue("BackslashEscapesQuotes");
-		if (conn_backslashescapesquotes!=NULL) {
-			charstring::safeCopy(conn->backslashescapesquotes,
-					sizeof(conn->backslashescapesquotes),
-					conn_backslashescapesquotes);
+		const char	*conn_quoteescapes=
+				connparams->getValue("QuoteEscapes");
+		if (conn_quoteescapes!=NULL) {
+			charstring::safeCopy(conn->quoteescapes,
+					sizeof(conn->quoteescapes),
+					conn_quoteescapes);
 		}
 	}
 
@@ -2989,9 +2989,9 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					conn->mapnewdatetotimestamp);
 	debugPrintf("  BindVariableDelimiters: %s\n",
 					conn->bindvariabledelimiters);
-	debugPrintf("  BackslashEscapesQuotes: %s\n",
-		(charstring::isNullOrEmpty(conn->backslashescapesquotes))?
-					"(unset)":conn->backslashescapesquotes);
+	debugPrintf("  QuoteEscapes: %s\n",
+		(charstring::isNullOrEmpty(conn->quoteescapes))?
+					"(unset)":conn->quoteescapes);
 
 	// create connection
 	conn->con=new sqlrconnection(conn->server,
@@ -3108,9 +3108,8 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	}
 
 	conn->con->setBindVariableDelimiters(conn->bindvariabledelimiters);
-	if (conn->backslashescapesquotes[0]) {
-		conn->con->setBackslashEscapesQuotes(
-				charstring::isYes(conn->backslashescapesquotes));
+	if (conn->quoteescapes[0]) {
+		conn->con->setQuoteEscapes(conn->quoteescapes);
 	}
 
 	// if we're not doing lazy connects, then do something lightweight

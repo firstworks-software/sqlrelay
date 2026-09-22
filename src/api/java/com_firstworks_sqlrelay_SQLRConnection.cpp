@@ -156,14 +156,18 @@ JNIEXPORT void setBindVariableDelimiters
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
- * Method:    setBackslashEscapesQuotes
- * Signature: (Z)V
+ * Method:    setQuoteEscapes
+ * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void setBackslashEscapesQuotes
-  (JNIEnv *env, jobject self, jboolean backslashescapesquotes) {
+JNIEXPORT void setQuoteEscapes
+  (JNIEnv *env, jobject self, jstring escapechars) {
+
+	char	*escapecharsstring=conGetStringUTFChars(env,escapechars,0);
 
 	getSqlrConnection(env,self)->
-		setBackslashEscapesQuotes(backslashescapesquotes);
+		setQuoteEscapes(escapecharsstring);
+
+	conReleaseStringUTFChars(env,escapechars,escapecharsstring);
 }
 
 /*

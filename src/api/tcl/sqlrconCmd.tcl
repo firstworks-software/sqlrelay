@@ -75,9 +75,10 @@ proc getBindVariableDelimiterAtSignSupported {}
 # valid bind variable delimiters.
 proc getBindVariableDelimiterDollarSignSupported {}
 
-# Sets whether backslashes are treated as escaping quotes
-# within string literals.
-proc setBackslashEscapesQuotes {backslashescapesquotes}
+# Overrides which characters are treated as escaping a quote
+# within string literals, instead of deriving that behavior
+# from the real backend's quote-escaping database feature.
+proc setQuoteEscapes {escapechars}
 
 
 
