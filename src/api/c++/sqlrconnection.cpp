@@ -134,6 +134,10 @@ class sqlrconnectionprivate {
 		bool		_atsignsupported;
 		bool		_dollarsignsupported;
 
+		// backslash-escapes-quotes override
+		bool		_backslashescapesquotesoverridden;
+		bool		_backslashescapesquotesoverride;
+
 		// client info
 		char		*_clientinfo;
 		uint64_t	_clientinfolen;
@@ -276,6 +280,9 @@ void sqlrconnection::init(const char *server, uint16_t port,
 	pvt->_colonsupported=true;
 	pvt->_atsignsupported=true;
 	pvt->_dollarsignsupported=true;
+
+	// backslash-escapes-quotes override
+	pvt->_backslashescapesquotesoverridden=false;
 
 	// client info
 	pvt->_clientinfo=NULL;
@@ -3022,6 +3029,9 @@ bool sqlrconnection::isNo(const char *str) {
 }
 
 bool sqlrconnection::backslashEscapesQuotes() {
+	if (pvt->_backslashescapesquotesoverridden) {
+		return pvt->_backslashescapesquotesoverride;
+	}
 	return charstring::contains(getDatabaseFeature("quote_escapes"),'\\');
 }
 
@@ -3030,6 +3040,11 @@ void sqlrconnection::setBindVariableDelimiters(const char *delimiters) {
 	pvt->_colonsupported=charstring::contains(delimiters,':');
 	pvt->_atsignsupported=charstring::contains(delimiters,'@');
 	pvt->_dollarsignsupported=charstring::contains(delimiters,'$');
+}
+
+void sqlrconnection::setBackslashEscapesQuotes(bool backslashescapesquotes) {
+	pvt->_backslashescapesquotesoverride=backslashescapesquotes;
+	pvt->_backslashescapesquotesoverridden=true;
 }
 
 bool sqlrconnection::getBindVariableDelimiterQuestionMarkSupported() {

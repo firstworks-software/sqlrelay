@@ -188,6 +188,15 @@ static PyObject *setBindVariableDelimiters(PyObject *self, PyObject *args) {
   return Py_BuildValue("h", 0);
 }
 
+static PyObject *setBackslashEscapesQuotes(PyObject *self, PyObject *args) {
+  long sqlrcon;
+  int backslashescapesquotes;
+  if (!PyArg_ParseTuple(args, "li", &sqlrcon, &backslashescapesquotes))
+    return NULL;
+  ((sqlrconnection *)sqlrcon)->setBackslashEscapesQuotes((bool)backslashescapesquotes);
+  return Py_BuildValue("h", 0);
+}
+
 static PyObject *getBindVariableDelimiterQuestionMarkSupported(PyObject *self, PyObject *args) {
   long sqlrcon;
   bool rc;
@@ -3409,6 +3418,7 @@ static PyMethodDef SQLRMethods[] = {
   {"getResponseTimeoutSeconds", getResponseTimeoutSeconds, METH_VARARGS},
   {"getResponseTimeoutMicroseconds", getResponseTimeoutMicroseconds, METH_VARARGS},
   {"setBindVariableDelimiters", setBindVariableDelimiters, METH_VARARGS},
+  {"setBackslashEscapesQuotes", setBackslashEscapesQuotes, METH_VARARGS},
   {"getBindVariableDelimiterQuestionMarkSupported", getBindVariableDelimiterQuestionMarkSupported, METH_VARARGS},
   {"getBindVariableDelimiterColonSupported", getBindVariableDelimiterColonSupported, METH_VARARGS},
   {"getBindVariableDelimiterAtSignSupported", getBindVariableDelimiterAtSignSupported, METH_VARARGS},

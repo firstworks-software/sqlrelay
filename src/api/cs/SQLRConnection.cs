@@ -108,6 +108,14 @@ public class SQLRConnection : IDisposable
         sqlrcon_setBindVariableDelimiters(sqlrconref, delimiters);
     }
 
+    /** Overrides whether queries use backslashes to escape quotes,
+     *  so that a query written in another backend's SQL dialect can
+     *  be proxied correctly to this backend. */
+    public void setBackslashEscapesQuotes(Boolean backslashescapesquotes)
+    {
+        sqlrcon_setBackslashEscapesQuotes(sqlrconref, backslashescapesquotes?1:0);
+    }
+
     /** Returns true if question marks (?) are considered to be
     *  valid bind variable delimiters. */
     public Boolean getBindVariableDelimiterQuestionMarkSupported()
@@ -1049,6 +1057,9 @@ public class SQLRConnection : IDisposable
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern void sqlrcon_setBindVariableDelimiters(IntPtr sqlrconref, String delimiters);
+
+    [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+    private static extern void sqlrcon_setBackslashEscapesQuotes(IntPtr sqlrconref, Int32 backslashescapesquotes);
 
     [DllImport("libsqlrclientwrapper.dll", CallingConvention = CallingConvention.Cdecl)]
     private static extern Int32 sqlrcon_getBindVariableDelimiterQuestionMarkSupported(IntPtr sqlrconref);

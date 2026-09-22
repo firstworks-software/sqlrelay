@@ -508,6 +508,37 @@ DLEXPORT ZEND_FUNCTION(sqlrcon_setbindvariabledelimiters) {
 
 /**
  *  call-seq:
+ *  sqlrcon_setBackslashEscapesQuotes($sqlrconref, $backslashescapesquotes)
+ *
+ *  Sets whether backslashes are treated as escape characters
+ *  for quotes in queries. */
+DLEXPORT ZEND_FUNCTION(sqlrcon_setbackslashescapesquotes) {
+	ZVAL sqlrcon;
+	ZVAL backslashescapesquotes;
+	if (ZEND_NUM_ARGS() != 2 ||
+		GET_PARAMETERS(
+				ZEND_NUM_ARGS() TSRMLS_CC,
+				PARAMS("zz")
+				&sqlrcon,
+				&backslashescapesquotes) == FAILURE) {
+		WRONG_PARAM_COUNT;
+	}
+	convert_to_long_ex(backslashescapesquotes);
+	sqlrconnection *connection=NULL;
+	ZEND_FETCH_RESOURCE(connection,
+				sqlrconnection *,
+				sqlrcon,
+				-1,
+				"sqlrelay connection",
+				sqlrelay_connection);
+	if (connection) {
+		connection->setBackslashEscapesQuotes(
+					LVAL(backslashescapesquotes)!=0);
+	}
+}
+
+/**
+ *  call-seq:
  *  sqlrcon_getBindVariableDelimiterQuestionMarkSupported($sqlrconref)
  *
  *  Returns 1 if question marks (?) are considered to be
@@ -8437,6 +8468,11 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setbindvariabledelimiters,0,0,2)
 	ZEND_ARG_INFO(0, delimiters)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_setbackslashescapesquotes,0,0,2)
+	ZEND_ARG_INFO(0, sqlrconref)
+	ZEND_ARG_INFO(0, backslashescapesquotes)
+ZEND_END_ARG_INFO()
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_sqlrcon_getbindvariabledelimiterquestionmarksupported,0,0,1)
 	ZEND_ARG_INFO(0, sqlrconref)
 ZEND_END_ARG_INFO()
@@ -9414,6 +9450,8 @@ zend_function_entry sql_relay_functions[] = {
 		ARGINFO(arginfo_sqlrcon_getresponsetimeoutmicroseconds))
 	ZEND_FE(sqlrcon_setbindvariabledelimiters,
 		ARGINFO(arginfo_sqlrcon_setbindvariabledelimiters))
+	ZEND_FE(sqlrcon_setbackslashescapesquotes,
+		ARGINFO(arginfo_sqlrcon_setbackslashescapesquotes))
 	ZEND_FE(sqlrcon_getbindvariabledelimiterquestionmarksupported,
 	ARGINFO(arginfo_sqlrcon_getbindvariabledelimiterquestionmarksupported))
 	ZEND_FE(sqlrcon_getbindvariabledelimitercolonsupported,

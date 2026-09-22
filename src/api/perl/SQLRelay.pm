@@ -143,6 +143,13 @@ sub connect {
 	# set bind variable delimiters
 	$connection->setBindVariableDelimiters($dsn{'bindvariabledelimiters'});
 
+	# override backslash-quote-escaping, if specified
+	if (length($dsn{'backslashescapesquotes'})) {
+		$connection->setBackslashEscapesQuotes(
+			SQLRelay::Connection->isYes(
+				$dsn{'backslashescapesquotes'}));
+	}
+
 	# set the transaction model, if one was specified
 	if (length($dsn{'transactionmodel'})) {
 		$connection->setTransactionModel($dsn{'transactionmodel'});

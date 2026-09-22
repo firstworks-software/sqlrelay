@@ -3155,6 +3155,7 @@ void sqlrconDelete(ClientData data) {
  *  $con getBindVariableDelimiterColonSupported
  *  $con getBindVariableDelimiterAtSignSupported
  *  $con getBindVariableDelimiterDollarSignSupported
+ *  $con setBackslashEscapesQuotes
  *  $con enableKerberos
  *  $con enableTls
  *  $con disableEncryption
@@ -3211,6 +3212,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     "getBindVariableDelimiterColonSupported",
     "getBindVariableDelimiterAtSignSupported",
     "getBindVariableDelimiterDollarSignSupported",
+    "setBackslashEscapesQuotes",
     "enableKerberos",
     "enableTls",
     "disableEncryption",
@@ -3271,6 +3273,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     SQLR_GETBINDVARIABLEDELIMITERCOLONSUPPORTED,
     SQLR_GETBINDVARIABLEDELIMITERATSIGNSUPPORTED,
     SQLR_GETBINDVARIABLEDELIMITERDOLLARSIGNSUPPORTED,
+    SQLR_SETBACKSLASHESCAPESQUOTES,
     SQLR_ENABLEKERBEROS,
     SQLR_ENABLETLS,
     SQLR_DISABLEENCRYPTION,
@@ -3450,6 +3453,18 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(
 			con->getBindVariableDelimiterDollarSignSupported()));
+  }
+  case SQLR_SETBACKSLASHESCAPESQUOTES: {
+    int flag = 0;
+    if (objc != 3) {
+      Tcl_WrongNumArgs(interp, 2, objv, "bool");
+      return TCL_ERROR;
+    }
+    if (Tcl_GetBooleanFromObj(interp, objv[2], &flag) != TCL_OK) {
+      return TCL_ERROR;
+    }
+    con->setBackslashEscapesQuotes(flag);
+    break;
   }
   case SQLR_ENABLEKERBEROS: {
     const char *service;

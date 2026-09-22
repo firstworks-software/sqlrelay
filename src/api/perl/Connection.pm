@@ -90,6 +90,15 @@ __END__
             # in countBindVariables() and validateBinds().  Valid
             # delimiters include ?,:,@, and $.  Defaults to "?:@$"
 
+        setBackslashEscapesQuotes(backslashescapesquotes);
+            # Overrides whether a backslash is treated as escaping a
+            # quote inside a string literal, instead of deriving that
+            # behavior from the real backend's quote-escaping database
+            # feature.  Use this when a query was written in a different
+            # backend's dialect (eg. mysql/mariadb's backslash-escaped
+            # quotes) and is being run through a proxy to a backend with
+            # different native rules.
+
         getBindVariableDelimiterQuestionMarkSupported();
             # Returns true if question marks (?) are considered to be
             # valid bind variable delimiters.

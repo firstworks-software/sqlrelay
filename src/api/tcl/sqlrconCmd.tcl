@@ -75,6 +75,10 @@ proc getBindVariableDelimiterAtSignSupported {}
 # valid bind variable delimiters.
 proc getBindVariableDelimiterDollarSignSupported {}
 
+# Sets whether backslashes are treated as escaping quotes
+# within string literals.
+proc setBackslashEscapesQuotes {backslashescapesquotes}
+
 
 
 # Enables Kerberos authentication and encryption.
