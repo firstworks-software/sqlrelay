@@ -269,6 +269,14 @@
 #define FEATURE_SUPPORTS_SET_CURSOR_NAME 136
 #define FEATURE_QUOTE_ESCAPES 137
 #define FEATURE_COUNT 138
+// FEATURE_COUNT as shipped in SQL Relay 2.2.0, the only released client
+// speaking protocol version 2 that has the GET_DATABASE_FEATURES command
+// at all (getDatabaseFeature() first appeared in 2.2.0). This value must
+// never change - not even for a hypothetical 2.2.1 cut from the
+// sqlrelay-2_2 branch, which must never backport features. Version 3 and
+// later clients drain any surplus wire data on their own, so only this
+// version-2 count needs to stay frozen forever.
+#define FEATURE_COUNT_V2 136
 
 #ifdef NEED_DBFEATURENAMES
 static const char *dbfeaturenames[]={

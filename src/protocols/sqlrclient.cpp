@@ -2079,13 +2079,20 @@ void sqlrprotocol_sqlrclient::getDatabaseFeaturesCommand() {
 		debugWrite("success");
 		clientsock->write((uint16_t)NO_ERROR_OCCURRED);
 
-		debugWrite("%d features",(int)(FEATURE_COUNT));
+		// protocol version 2 clients are 2.2.0, which shipped with
+		// FEATURE_COUNT_V2 features; sending more than that would
+		// leave surplus bytes on the wire that they never read and
+		// desync the stream on the next command
+		uint16_t	featurecount=(protocolversion<3)?
+						FEATURE_COUNT_V2:FEATURE_COUNT;
+
+		debugWrite("%d features",(int)(featurecount));
 
 		// send the number of features
-		clientsock->write((uint16_t)(FEATURE_COUNT));
+		clientsock->write(featurecount);
 
 		// send each feature
-		for (uint16_t i=0; i<FEATURE_COUNT; i++) {
+		for (uint16_t i=0; i<featurecount; i++) {
 
 			const char	*value=features[i];
 			uint16_t	valuesize=charstring::getLength(value);

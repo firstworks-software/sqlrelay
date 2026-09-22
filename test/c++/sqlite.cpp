@@ -1652,6 +1652,11 @@ int main(int argc, char **argv) {
 	assertFalse(cur->sendQuery("create table testtable"));
 	stdoutput.printf("\n");
 
+	// database features
+	stdoutput.printf("DATABASE FEATURES: \n");
+	assertTrue(con->getDatabaseFeature("quote_escapes")!=NULL);
+	stdoutput.printf("\n");
+
 	// error sqlstate
 	stdoutput.printf("ERROR SQLSTATE: \n");
 	cur->sendQuery("drop table testtable");

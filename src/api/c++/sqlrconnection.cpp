@@ -2611,7 +2611,9 @@ bool sqlrconnection::getDatabaseFeatures() {
 		return false;
 	}
 
-	// sanity check on count
+	// the server may know about more features than this client does,
+	// so cap the number we populate but remember the real count
+	uint16_t	realcount=count;
 	if (count>FEATURE_COUNT) {
 		count=FEATURE_COUNT;
 	}
@@ -2640,6 +2642,31 @@ bool sqlrconnection::getDatabaseFeatures() {
 
 		// populate the dictionary
 		pvt->_dbfeatures.setValue(dbfeaturenames[i],feature);
+	}
+
+	// the server may have sent more features than this client knows
+	// about, drain the rest off the wire so they don't corrupt the
+	// next command's response
+	for (uint16_t i=count; i<realcount; i++) {
+
+		// get the size
+		uint16_t	size;
+		if (pvt->_cs->read(&size,pvt->_responsetimeoutsec,
+				pvt->_responsetimeoutusec)!=sizeof(uint16_t)) {
+			setError("Failed to get database features.\n"
+					"A network error may have occurred.");
+			return false;
+		}
+
+		// discard the value
+		char	*feature=new char[size];
+		if (pvt->_cs->read(feature,size)!=size) {
+			setError("Failed to get database features.\n"
+					"A network error may have occurred.");
+			delete[] feature;
+			return false;
+		}
+		delete[] feature;
 	}
 
 	if (pvt->_debug) {
