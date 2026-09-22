@@ -2876,6 +2876,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the upsert trigger's converted update skipping directives,
   translations, filters, and triggers, so it never reached the replay
   log (#10123)
+- fixed the doc comments on sqlrservercontroller's one-argument
+  prepareQuery() and executeQuery() claiming directives, translations,
+  and filters were enabled, when all four flags are disabled (#10255)
 
 ### Security
 - fixed an authentication hole in the des password encryption module

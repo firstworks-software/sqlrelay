@@ -1737,8 +1737,8 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		// running queries...
 
 		/** Copies "size" bytes of "query" to the query buffer of
-		 *  "cursor" and prepares the query, with all directives,
-		 *  translations, and filters enabled.
+		 *  "cursor" and prepares the query, with directives,
+		 *  translations, filters, and triggers all disabled.
 		 *
 		 *  Returns true on success and false otherwise. */
 		bool	prepareQuery(sqlrservercursor *cursor,
@@ -1776,8 +1776,9 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  as set by a call to setQuerySuppressed(). */
 		bool	getQuerySuppressed(sqlrservercursor *cursor);
 
-		/** Executes the currently prepared query of "cursor", with all
-		 *  directives, translations, and filters enabled.
+		/** Executes the currently prepared query of "cursor", with
+		 *  directives, translations, filters, and triggers all
+		 *  disabled.
 		 *
 		 *  Returns true on success and false otherwise. */
 		bool	executeQuery(sqlrservercursor *cursor);
