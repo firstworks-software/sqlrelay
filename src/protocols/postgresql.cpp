@@ -1416,21 +1416,25 @@ void sqlrprotocol_postgresql::getQuery(const char *query,
 	*start=cont->skipWhitespaceAndComments(query);
 
 	bool	backslash=cont->backslashEscapesQuotes();
+	bool	quotedoubles=cont->quoteEscapesQuotes();
 
 	const char	*ch=*start;
 	const char	*queryend=query+querysize;
 	while (*ch) {
 		if (*ch=='\'') {
 			ch=charstring::findEndOfQuotedString(
-					ch,queryend-ch,'\'',backslash,true);
+					ch,queryend-ch,'\'',
+					backslash,quotedoubles);
 		} else if (*ch=='"') {
 			ch=charstring::findEndOfQuotedString(
-					ch,queryend-ch,'"',backslash,true);
+					ch,queryend-ch,'"',
+					backslash,quotedoubles);
 		} else if (*ch=='`') {
 			// backtick-quoted identifiers never use
 			// backslash-escaping, even in mysql
 			ch=charstring::findEndOfQuotedString(
-					ch,queryend-ch,'`',false,true);
+					ch,queryend-ch,'`',
+					false,quotedoubles);
 		} else if (*ch==';') {
 			break;
 		} else {

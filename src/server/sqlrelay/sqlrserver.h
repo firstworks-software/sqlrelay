@@ -487,6 +487,10 @@ class SQLRSERVER_DLLSPEC sqlrservercontroller : public sqlrserverbase {
 		 *  standard doubled-quote. */
 		bool	backslashEscapesQuotes();
 
+		/** Returns true if the backend accepts a doubled quote as
+		 *  an escaped quote inside a string literal. */
+		bool	quoteEscapesQuotes();
+
 		/** Returns the host name of the server hosting the
 		 *  database. */
 		const char	*getDbHostName();

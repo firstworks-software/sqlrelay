@@ -308,6 +308,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added a convertslashescape option to the normalize query translation,
   rewriting a backslash-escaped quote to the doubled-quote form when the
   real backend doesn't accept backslash as a quote-escape
+- added sqlrservercontroller::quoteEscapesQuotes() and a
+  quoteescapesquotes instance option to sqlr.conf, reporting whether the
+  backend accepts a doubled quote as an escaped quote; defaults to true,
+  so behavior is unchanged, and gates the normalize query translation's
+  doubleescape and the server's string-literal-skipping helpers
 
 ### Changed
 - requires rudiments 2.3.0 or newer

@@ -55,6 +55,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 		bool	lowercasebq;
 		bool	removebq;
 		bool	doubleescape;
+		const char	*doubleescapeattr;
 		bool	slashescape;
 		const char	*slashescapeattr;
 		bool	convertslashescape;
@@ -115,8 +116,8 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 	removebq=charstring::isYes(
 			parameters->getAttributeValue("removebackquotes"));
 
-	doubleescape=!charstring::isNo(
-			parameters->getAttributeValue("doubleescape"));
+	doubleescapeattr=parameters->getAttributeValue("doubleescape");
+	doubleescape=!charstring::isNo(doubleescapeattr);
 
 	// backslash-escaping inside a quoted string (eg. \' or \\) is a
 	// mysql/mariadb behavior - postgresql, oracle, db2, firebird and
@@ -166,6 +167,13 @@ bool sqlrquerytranslation_normalize::run(sqlrserverconnection *sqlrcon,
 	// explicit attribute always wins over this
 	if (!slashescapeattr) {
 		slashescape=cont->backslashEscapesQuotes();
+	}
+
+	// same idea for doubleescape - default it to the real backend's
+	// own quoteEscapesQuotes() rather than assuming every backend
+	// accepts a doubled quote, unless an explicit attribute overrides it
+	if (!doubleescapeattr) {
+		doubleescape=cont->quoteEscapesQuotes();
 	}
 
 	// mysql/mariadb require a "--" line comment to be followed by

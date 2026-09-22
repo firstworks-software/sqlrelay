@@ -267,6 +267,7 @@ class sqlrservercontrollerprivate {
 	const char	*_isolationlevel;
 
 	const char	*_backslashescapesquotesoverride;
+	const char	*_quoteescapesquotesoverride;
 
 	bool		_sendcolumninfo;
 
@@ -546,6 +547,7 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_isolationlevel=NULL;
 
 	pvt->_backslashescapesquotesoverride=NULL;
+	pvt->_quoteescapesquotesoverride=NULL;
 
 	pvt->_sendcolumninfo=true;
 
@@ -1055,6 +1057,8 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	// get backslash-escapes-quotes override
 	pvt->_backslashescapesquotesoverride=
 			pvt->_cfg->getBackslashEscapesQuotes();
+	pvt->_quoteescapesquotesoverride=
+			pvt->_cfg->getQuoteEscapesQuotes();
 
 	// initialize cursors
 	pvt->_mincursorcount=pvt->_cfg->getCursors();
@@ -3795,7 +3799,8 @@ const char *sqlrservercontroller::copyStringLiteral(const char *ptr,
 
 	// find the end of the literal
 	const char	*literalend=charstring::findEndOfQuotedString(
-						ptr,end-ptr,*ptr,backslash,true);
+						ptr,end-ptr,*ptr,backslash,
+						quoteEscapesQuotes());
 
 	// copy it out verbatim
 	out->append(ptr,literalend-ptr);
@@ -3809,7 +3814,7 @@ const char *sqlrservercontroller::skipStringLiteral(const char *ptr,
 
 	// find the end of the literal
 	return charstring::findEndOfQuotedString(ptr,end-ptr,*ptr,
-							backslash,true);
+					backslash,quoteEscapesQuotes());
 }
 
 const char *sqlrservercontroller::skipDollarQuotedLiteral(const char *ptr,
@@ -11616,6 +11621,25 @@ bool sqlrservercontroller::backslashEscapesQuotes() {
 		return false;
 	}
 	return charstring::contains(features[FEATURE_QUOTE_ESCAPES],'\\');
+}
+
+// true if the backend's quote-escapes feature includes the quote
+// character itself, unless overridden by the quoteescapesquotes
+// instance attribute - defaults to true (rather than false, the way
+// backslashEscapesQuotes() defaults to false) because every backend's
+// quote_escapes value already includes the quote character; this
+// capability exists for a hypothetical future backend that doesn't,
+// and must not change behavior for any backend that does.
+bool sqlrservercontroller::quoteEscapesQuotes() {
+	if (pvt->_quoteescapesquotesoverride) {
+		return charstring::isYes(
+				pvt->_quoteescapesquotesoverride);
+	}
+	const char * const *features=getDatabaseFeatures();
+	if (!features || !features[FEATURE_QUOTE_ESCAPES]) {
+		return true;
+	}
+	return charstring::contains(features[FEATURE_QUOTE_ESCAPES],'\'');
 }
 
 sqlrdatabaseobject *sqlrservercontroller::createDatabaseObject(
