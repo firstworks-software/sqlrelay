@@ -57,6 +57,7 @@ class SQLRSERVER_DLLSPEC sqlrquerytranslation_normalize :
 		bool	doubleescape;
 		bool	slashescape;
 		const char	*slashescapeattr;
+		bool	convertslashescape;
 };
 
 sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
@@ -133,6 +134,22 @@ sqlrquerytranslation_normalize::sqlrquerytranslation_normalize(
 	// src/directives/singlestep.cpp checks its own backend behavior.
 	slashescapeattr=parameters->getAttributeValue("slashescape");
 	slashescape=!charstring::isNo(slashescapeattr);
+
+	// convertslashescape: rewrite a backslash-escaped quote (\') into
+	// the doubled-quote form ('') that every backend accepts (per
+	// #10218's quote_escapes convention), for a query written assuming
+	// mysql/mariadb-style backslash-escaping but proxied to a backend
+	// that doesn't treat backslash as a quote-escape.  Off by default,
+	// unlike slashescape - slashescape's default can be derived from
+	// the real backend's own behavior (backslashEscapesQuotes()), but
+	// there's no equivalent signal for what style the query itself was
+	// written in, so this has to be opted into explicitly.  Only
+	// rewrites in that one direction: doubled-quote is already accepted
+	// everywhere, so there's nothing to rewrite when the query already
+	// uses it, and no backend-specific reason (yet) to rewrite it back
+	// to backslash form.
+	convertslashescape=charstring::isYes(
+			parameters->getAttributeValue("convertslashescape"));
 }
 
 static const char beforeset[]=" +-/*=<>(";
@@ -675,7 +692,12 @@ bool sqlrquerytranslation_normalize::skipQuotedStrings(const char *ptr,
 
 			// if we found a slash-escaped quote like \' or \",
 			// or if we found a slash-escaped slash like \\...
-			if (slashescape && (*ptr=='\\' &&
+			// recognized either because the real backend itself
+			// uses backslash-escaping (slashescape), or because
+			// convertslashescape says to recognize and rewrite it
+			// regardless (see convertslashescape's comment above)
+			if ((slashescape || convertslashescape) &&
+						(*ptr=='\\' &&
 						(*(ptr+1)==quote ||
 						*(ptr+1)=='\\'))) {
 				// insert the thing after the slash twice
@@ -739,7 +761,8 @@ bool sqlrquerytranslation_normalize::caseConvertQuotedStrings(
 
 			// if we found a slash-escaped quote like \" or \`,
 			// or a slash-escaped slash like \\...
-			if (slashescape && (*ptr=='\\' &&
+			if ((slashescape || convertslashescape) &&
+						(*ptr=='\\' &&
 						(*(ptr+1)==quote ||
 						*(ptr+1)=='\\'))) {
 				// convert to a double-escaped quote,
@@ -802,7 +825,7 @@ bool sqlrquerytranslation_normalize::removeQuotes(
 			// or a slash-escaped slash like \\...
 			if ((doubleescape &&
 					(*ptr==quote && *(ptr+1)==quote)) ||
-				(slashescape &&
+				((slashescape || convertslashescape) &&
 					(*ptr=='\\' &&
 						(*(ptr+1)==quote ||
 						*(ptr+1)=='\\')))) {

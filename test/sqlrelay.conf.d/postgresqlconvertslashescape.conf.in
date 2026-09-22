@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<instances>
+
+	<instance id="postgresqlconvertslashescape" dbase="postgresql">
+		<listeners>
+			<listener port="9030" socket="/tmp/postgresqlconvertslashescape.socket"/>
+		</listeners>
+		<translations>
+			<translation module="normalize" convertslashescape="yes"/>
+		</translations>
+		<connections>
+			<connection string="host=postgresql;user=testuser;password=testpassword;db=@HOSTNAME@;typemangling=lookup;tablemangling=lookup"/>
+		</connections>
+	</instance>
+
+</instances>

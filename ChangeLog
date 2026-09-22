@@ -305,6 +305,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added a backslashescapesquotes connect/dsn option to the odbc,
   phppdo, and perl dbi drivers, and to the python db-api connect()
 - added a backslashescapesquotes instance option to sqlr.conf
+- added a convertslashescape option to the normalize query translation,
+  rewriting a backslash-escaped quote to the doubled-quote form when the
+  real backend doesn't accept backslash as a quote-escape
 
 ### Changed
 - requires rudiments 2.3.0 or newer
