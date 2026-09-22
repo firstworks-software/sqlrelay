@@ -120,6 +120,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		bool		getBindVariableDelimiterDollarSignSupported();
 		bool		getTranslateBindVariables();
 		const char	*getIsolationLevel();
+		const char	*getBackslashEscapesQuotes();
 		bool		getIgnoreSelectDatabase();
 		bool		getWaitForDownDatabase();
 		const char	*getPasswordPath();
@@ -276,6 +277,7 @@ class SQLRUTIL_DLLSPEC sqlrconfig_xmldom : public sqlrconfig, public xmldom {
 		bool		dollarsignsupported;
 		bool		translatebindvariables;
 		const char	*isolationlevel;
+		const char	*backslashescapesquotes;
 		bool		ignoreselectdb;
 		bool		waitfordowndb;
 		const char	*passwordpath;
@@ -437,6 +439,7 @@ void sqlrconfig_xmldom::init() {
 	translatebindvariables=charstring::isYes(
 					DEFAULT_TRANSLATEBINDVARIABLES);
 	isolationlevel=NULL;
+	backslashescapesquotes=NULL;
 	ignoreselectdb=false;
 	waitfordowndb=true;
 	passwordpath=NULL;
@@ -811,6 +814,10 @@ bool sqlrconfig_xmldom::getTranslateBindVariables() {
 
 const char *sqlrconfig_xmldom::getIsolationLevel() {
 	return isolationlevel;
+}
+
+const char *sqlrconfig_xmldom::getBackslashEscapesQuotes() {
+	return backslashescapesquotes;
 }
 
 bool sqlrconfig_xmldom::getIgnoreSelectDatabase() {
@@ -2215,6 +2222,10 @@ void sqlrconfig_xmldom::getTreeValues() {
 						bindvariabledelimiters,'@');
 		dollarsignsupported=charstring::contains(
 						bindvariabledelimiters,'$');
+	}
+	attr=instance->getAttribute("backslashescapesquotes");
+	if (!attr->isNullNode()) {
+		backslashescapesquotes=attr->getValue();
 	}
 	attr=instance->getAttribute("translatebindvariables");
 	if (!attr->isNullNode()) {

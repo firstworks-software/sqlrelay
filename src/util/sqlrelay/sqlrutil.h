@@ -243,6 +243,8 @@ class SQLRUTIL_DLLSPEC sqlrconfig {
 
 		virtual const char	*getIsolationLevel()=0;
 
+		virtual const char	*getBackslashEscapesQuotes()=0;
+
 		virtual bool		getIgnoreSelectDatabase()=0;
 
 		virtual bool		getWaitForDownDatabase()=0;

@@ -156,6 +156,18 @@ JNIEXPORT void setBindVariableDelimiters
 
 /*
  * Class:     com_firstworks_sqlrelay_SQLRConnection
+ * Method:    setBackslashEscapesQuotes
+ * Signature: (Z)V
+ */
+JNIEXPORT void setBackslashEscapesQuotes
+  (JNIEnv *env, jobject self, jboolean backslashescapesquotes) {
+
+	getSqlrConnection(env,self)->
+		setBackslashEscapesQuotes(backslashescapesquotes);
+}
+
+/*
+ * Class:     com_firstworks_sqlrelay_SQLRConnection
  * Method:    getBindVariableDelimiterQuestionMarkSupported
  * Signature: ()Z
  */

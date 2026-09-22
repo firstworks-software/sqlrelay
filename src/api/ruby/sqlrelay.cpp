@@ -400,6 +400,28 @@ static VALUE sqlrcon_setBindVariableDelimiters(VALUE self, VALUE delimiters) {
 	return Qnil;
 }
 
+static void setBackslashEscapesQuotes(params *p) {
+	p->sqlrc.sqlrcon->setBackslashEscapesQuotes(
+					(bool)(RTEST(p->one)?1:0));
+}
+/**
+ *  call-seq:
+ *  setBackslashEscapesQuotes(backslashescapesquotes)
+ *
+ *  Overrides whether a backslash is treated as escaping a quote
+ *  inside a string literal, instead of deriving that behavior
+ *  from the real backend's quote-escaping database feature.  Use
+ *  this when a query was written in a different backend's dialect
+ *  (eg. mysql/mariadb's backslash-escaped quotes) and is being run
+ *  through a proxy to a backend with different native rules. */
+static VALUE sqlrcon_setBackslashEscapesQuotes(VALUE self,
+					VALUE backslashescapesquotes) {
+	sqlrconnection	*sqlrcon;
+	Data_Get_Struct(self,sqlrconnection,sqlrcon);
+	CON1(sqlrcon,setBackslashEscapesQuotes,backslashescapesquotes);
+	return Qnil;
+}
+
 static void getBindVariableDelimiterQuestionMarkSupported(params *p) {
 	p->result.br=p->sqlrc.sqlrcon->
 			getBindVariableDelimiterQuestionMarkSupported();
@@ -1751,6 +1773,8 @@ void Init_SQLRConnection() {
 				(CAST)sqlrcon_getResponseTimeoutMicroseconds,0);
 	rb_define_method(csqlrconnection,"setBindVariableDelimiters",
 				(CAST)sqlrcon_setBindVariableDelimiters,1);
+	rb_define_method(csqlrconnection,"setBackslashEscapesQuotes",
+				(CAST)sqlrcon_setBackslashEscapesQuotes,1);
 	rb_define_method(csqlrconnection,
 		"getBindVariableDelimiterQuestionMarkSupported",
 		(CAST)sqlrcon_getBindVariableDelimiterQuestionMarkSupported,0);

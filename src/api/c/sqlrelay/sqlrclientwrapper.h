@@ -104,6 +104,13 @@ void	sqlrcon_setBindVariableDelimiters(sqlrcon sqlrconref,
 						const char *delimiters);
 
 /** @ingroup sqlrclientwrapper
+ *  Overrides whether a backslash is treated as escaping a quote
+ *  inside a string literal, instead of deriving that behavior
+ *  from the real backend's quote-escaping database feature. */
+void	sqlrcon_setBackslashEscapesQuotes(sqlrcon sqlrconref,
+						int backslashescapesquotes);
+
+/** @ingroup sqlrclientwrapper
  *  Returns true if question marks (?) are considered to be
  *  valid bind variable delimiters. */
 int	sqlrcon_getBindVariableDelimiterQuestionMarkSupported(

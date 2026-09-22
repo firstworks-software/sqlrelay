@@ -40,6 +40,7 @@ namespace SQLRClient
         public Boolean _nullsasnulls = false;
         private Boolean _lazyconnect = true;
         private String _bindvariabledelimiters = "?:@$";
+        private String _backslashescapesquotes = null;
 
         #endregion
 
@@ -145,6 +146,7 @@ namespace SQLRClient
                 _nullsasnulls = false;
                 _lazyconnect = true;
         	_bindvariabledelimiters = "?:@$";
+                _backslashescapesquotes = null;
 
                 // parse the connection string
                 String[] parts = ConnectionString.Split(";".ToCharArray());
@@ -271,6 +273,10 @@ namespace SQLRClient
                     {
                         _bindvariabledelimiters = subparts[1];
                     }
+                    else if (subparts[0] == "BackslashEscapesQuotes")
+                    {
+                        _backslashescapesquotes = subparts[1];
+                    }
                 }
             }
         }
@@ -373,6 +379,12 @@ namespace SQLRClient
             }
 
             _sqlrcon.setBindVariableDelimiters(_bindvariabledelimiters);
+
+            if (!String.IsNullOrEmpty(_backslashescapesquotes))
+            {
+                _sqlrcon.setBackslashEscapesQuotes(
+                        SQLRConnection.isYes(_backslashescapesquotes));
+            }
 
             ChangeDatabase(_db);
         }

@@ -300,6 +300,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added a quote_escapes database feature, reporting which characters
   escape a single quote inside a string literal for the connected
   backend (#10218)
+- added a backslash-quote-escaping override to the c++ client api and
+  its language wrappers
+- added a backslashescapesquotes connect/dsn option to the odbc,
+  phppdo, and perl dbi drivers, and to the python db-api connect()
+- added a backslashescapesquotes instance option to sqlr.conf
 
 ### Changed
 - requires rudiments 2.3.0 or newer

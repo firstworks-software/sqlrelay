@@ -141,6 +141,7 @@ struct CONN {
 	bool				mapnewdatetotimestamp;
 
 	char				bindvariabledelimiters[5];
+	char				backslashescapesquotes[6];
 
 	SQLSMALLINT			sqlerrorindex;
 
@@ -2727,6 +2728,14 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(conn->bindvariabledelimiters),
 					ODBC_INI);
 
+	// backslash escapes quotes, left empty/unset unless the dsn
+	// specifies it, so the client's own default is used otherwise
+	SQLGetPrivateProfileString((const char *)conn->dsn,
+					"BackslashEscapesQuotes","",
+					conn->backslashescapesquotes,
+					sizeof(conn->backslashescapesquotes),
+					ODBC_INI);
+
 	// override dsn values with values passed in via the connectstring
 	if (connparams!=NULL) {
 		const char	*connserver=connparams->getValue("Server");
@@ -2916,6 +2925,13 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					sizeof(conn->bindvariabledelimiters),
 					conn_bindvariabledelimiters);
 		}
+		const char	*conn_backslashescapesquotes=
+				connparams->getValue("BackslashEscapesQuotes");
+		if (conn_backslashescapesquotes!=NULL) {
+			charstring::safeCopy(conn->backslashescapesquotes,
+					sizeof(conn->backslashescapesquotes),
+					conn_backslashescapesquotes);
+		}
 	}
 
 	// * "yes" - autocommit on
@@ -2973,6 +2989,9 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 					conn->mapnewdatetotimestamp);
 	debugPrintf("  BindVariableDelimiters: %s\n",
 					conn->bindvariabledelimiters);
+	debugPrintf("  BackslashEscapesQuotes: %s\n",
+		(charstring::isNullOrEmpty(conn->backslashescapesquotes))?
+					"(unset)":conn->backslashescapesquotes);
 
 	// create connection
 	conn->con=new sqlrconnection(conn->server,
@@ -3089,6 +3108,10 @@ static SQLRETURN SQLR_SQLConnect(SQLHDBC connectionhandle,
 	}
 
 	conn->con->setBindVariableDelimiters(conn->bindvariabledelimiters);
+	if (conn->backslashescapesquotes[0]) {
+		conn->con->setBackslashEscapesQuotes(
+				charstring::isYes(conn->backslashescapesquotes));
+	}
 
 	// if we're not doing lazy connects, then do something lightweight
 	// that will verify whether SQL Relay is available or not

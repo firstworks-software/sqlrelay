@@ -135,6 +135,10 @@ void
 sqlrconnection::setBindVariableDelimiters(delimiters)
 		const char	*delimiters
 
+void
+sqlrconnection::setBackslashEscapesQuotes(backslashescapesquotes)
+		bool		backslashescapesquotes
+
 bool
 sqlrconnection::getBindVariableDelimiterQuestionMarkSupported()
 

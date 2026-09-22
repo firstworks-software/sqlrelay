@@ -266,6 +266,8 @@ class sqlrservercontrollerprivate {
 
 	const char	*_isolationlevel;
 
+	const char	*_backslashescapesquotesoverride;
+
 	bool		_sendcolumninfo;
 
 	uint32_t	_accepttimeout;
@@ -542,6 +544,8 @@ sqlrservercontroller::sqlrservercontroller() : sqlrserverbase() {
 	pvt->_dollarsignsupported=true;
 
 	pvt->_isolationlevel=NULL;
+
+	pvt->_backslashescapesquotesoverride=NULL;
 
 	pvt->_sendcolumninfo=true;
 
@@ -1047,6 +1051,10 @@ bool sqlrservercontroller::init(int argc, const char **argv) {
 	pvt->_dollarsignsupported=
 		pvt->_cfg->getBindVariableDelimiterDollarSignSupported();
 	pvt->_debugbindtranslation=pvt->_cfg->getDebugBindTranslations();
+
+	// get backslash-escapes-quotes override
+	pvt->_backslashescapesquotesoverride=
+			pvt->_cfg->getBackslashEscapesQuotes();
 
 	// initialize cursors
 	pvt->_mincursorcount=pvt->_cfg->getCursors();
@@ -11596,8 +11604,13 @@ const char * const *sqlrservercontroller::getDatabaseFeatures() {
 	return pvt->_conn->getDatabaseFeatures();
 }
 
-// true if the backend's quote-escapes feature includes a backslash
+// true if the backend's quote-escapes feature includes a backslash,
+// unless overridden by the backslashescapesquotes instance attribute
 bool sqlrservercontroller::backslashEscapesQuotes() {
+	if (pvt->_backslashescapesquotesoverride) {
+		return charstring::isYes(
+				pvt->_backslashescapesquotesoverride);
+	}
 	const char * const *features=getDatabaseFeatures();
 	if (!features || !features[FEATURE_QUOTE_ESCAPES]) {
 		return false;
