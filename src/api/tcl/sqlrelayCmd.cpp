@@ -3429,6 +3429,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(
 			con->getBindVariableDelimiterQuestionMarkSupported()));
+    break;
   }
   case SQLR_GETBINDVARIABLEDELIMITERCOLONSUPPORTED: {
     if (objc > 2) {
@@ -3437,6 +3438,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(
 			con->getBindVariableDelimiterColonSupported()));
+    break;
   }
   case SQLR_GETBINDVARIABLEDELIMITERATSIGNSUPPORTED: {
     if (objc > 2) {
@@ -3445,6 +3447,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(
 			con->getBindVariableDelimiterAtSignSupported()));
+    break;
   }
   case SQLR_GETBINDVARIABLEDELIMITERDOLLARSIGNSUPPORTED: {
     if (objc > 2) {
@@ -3453,6 +3456,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
     }
     Tcl_SetObjResult(interp, Tcl_NewIntObj(
 			con->getBindVariableDelimiterDollarSignSupported()));
+    break;
   }
   case SQLR_SETBACKSLASHESCAPESQUOTES: {
     int flag = 0;

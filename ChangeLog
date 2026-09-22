@@ -2859,6 +2859,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   writing through TargetValuePtr when BufferLength was 0 (#10243)
 - fixed the sqlrclient protocol sending more database features than an
   older client can read, desyncing its session (#10219)
+- fixed the tcl api's getBindVariableDelimiter*Supported() calls falling
+  through into setBackslashEscapesQuotes()'s argument check and
+  returning an error instead of the boolean (#10244)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
