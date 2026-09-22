@@ -3870,6 +3870,7 @@ int sqlrconObjCmd(ClientData data, Tcl_Interp *interp,
       } else {
 	con->debugOff();
       }
+      break;
     } else {
       Tcl_WrongNumArgs(interp, 2, objv, "debug ?bool?");
       return TCL_ERROR;
