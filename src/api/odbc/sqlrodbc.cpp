@@ -5930,7 +5930,7 @@ static SQLRETURN SQLR_SQLGetData(SQLHSTMT statementhandle,
 
 				// make sure to null-terminate
 				// (even if data has to be truncated)
-				if (trunc) {
+				if (trunc && bytestocopy) {
 					((char *)targetvalue)
 						[bytestocopy]='\0';
 				}

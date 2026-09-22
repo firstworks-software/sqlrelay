@@ -2850,6 +2850,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (#10234)
 - fixed sqlrodbc's piecewise SQLGetData for SQL_C_CHAR/SQL_C_WCHAR losing
   a data byte and overflowing on a zero BufferLength (#10162)
+- fixed sqlrodbc's piecewise SQLGetData for SQL_C_CHAR/SQL_C_WCHAR
+  writing through TargetValuePtr when BufferLength was 0 (#10243)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
