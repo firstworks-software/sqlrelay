@@ -82,6 +82,13 @@ oci7bind: oci7bind.cpp oci7bind.$(OBJ)
 oci7utf8clob: oci7utf8clob.cpp oci7utf8clob.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7utf8clob.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
+# #10272 - the OCI7 counterpart of oracleinlinelob (#10267), against the
+# oracleprotocoloci7db2 instance.  gated the same way as oci7/oci7describe/
+# oci7bind above - only built where the legacy OCI7 call interface was
+# detected at configure time
+oci7inlinelob: oci7inlinelob.cpp oci7inlinelob.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oci7inlinelob.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
 ociselect: ociselect.cpp ociselect.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociselect.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 

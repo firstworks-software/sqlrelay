@@ -2889,6 +2889,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   characters, and hanging, under a utf-8 backend nls_lang (#10265)
 - fixed the oracle protocol module returning non-oracle backends' lob
   columns as null
+- fixed the oracle protocol module's legacy describe() always answering
+  from column 1, misdescribing an out-of-order describe request
+- fixed intercepted begin/commit/rollback/autocommit queries permanently
+  disabling column info for the rest of a connection's life on every
+  protocol but the native one
 
 ### Security
 - fixed an authentication hole in the des password encryption module

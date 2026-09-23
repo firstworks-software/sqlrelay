@@ -12,6 +12,7 @@
 /oci7datestr
 /ociloginretry
 /oci7utf8clob
+/oci7inlinelob
 *.o
 *.obj
 *.lo

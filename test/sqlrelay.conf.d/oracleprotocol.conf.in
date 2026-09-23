@@ -235,14 +235,8 @@
 	     putOci7DescribeColumn() path rather than the query3 putRowData()
 	     path oracleinlinelob.cpp already covers - see oracleprotocoloci7utf8
 	     just above for why this would reuse oracleprotocoldb2's backend
-	     rather than oracleprotocoloci7's own separate one.  no test program
-	     against it is checked in yet: live testing against this instance on
-	     redhat9x86 found describe() itself broken against db2 on the legacy
-	     OCI7 path - every column, including a plain integer one, comes back
-	     misdescribed once the table holds a real clob or blob value - a
-	     real, separate, pre-existing bug unrelated to #10267's own fix
-	     (#10272).  this instance is kept wired in for whoever picks that
-	     up. -->
+	     rather than oracleprotocoloci7's own separate one.
+	     test/protocol/oracle/oci7inlinelob.cpp runs against it (#10272). -->
 	<instance id="oracleprotocoloci7db2" dbase="db2" debug="protocols">
 		<listeners>
 			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT11@" serverversion="11.2" verifiertype="9i" sid="ora1"/>

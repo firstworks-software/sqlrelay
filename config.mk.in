@@ -898,7 +898,7 @@ ifneq ($(HAVE_JAVA),)
 ORACLEPROTOCOLTESTTARGETS += oracle.class
 endif
 ifneq ($(strip $(HAVE_OCI7)),)
-ORACLEPROTOCOLTESTTARGETS += oci7 oci7describe oci7bind oci7utf8clob
+ORACLEPROTOCOLTESTTARGETS += oci7 oci7describe oci7bind oci7utf8clob oci7inlinelob
 endif
 TERADATAPROTOCOLTESTTARGETS =
 ifneq ($(HAVE_JAVA),)

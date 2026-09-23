@@ -3713,6 +3713,15 @@ bool sqlrservercontroller::interceptQuery(sqlrservercursor *cursor) {
 		default:
 			break;
 	}
+
+	// the false settings above only apply to the intercepted query
+	// itself, which never has a result set to describe.  restore it so
+	// column info isn't silently suppressed for every later query on
+	// this connection too - only the sqlrclient protocol ever sets this
+	// back on its own (it re-derives the flag from the wire on every
+	// request), so every other protocol needs it restored here
+	pvt->_sendcolumninfo=true;
+
 	return retval;
 }
 

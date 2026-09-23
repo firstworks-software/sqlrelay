@@ -1696,7 +1696,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// describe...
 		bool	describe(const byte_t *rp);
 		bool	sendDescribeResponse(sqlrservercursor *cursor,
-							uint32_t colcount);
+							uint32_t colcount,
+							uint32_t position);
 		void	putOci7DescribeColumn(sqlrservercursor *cursor,
 							uint32_t column);
 		// the buffer width an oci7 describe reports for a column the
@@ -9610,12 +9611,12 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 	return sendPacket(true);
 }
 
-// what an oci7 client's odescr() puts on the wire.  a client sends one of
-// these per statement however many columns it goes on to ask about - the
-// answer carries the whole select list, and the client serves every later
-// odescr() on that statement out of its own cache of it.  the position the
-// request names changes nothing about the answer; it only matters when it
-// runs past the end of the select list, which is an ORA-01007.
+// what an oci7 client's odescr() puts on the wire.  the answer carries the
+// select list from the requested position to the end, and the client files
+// it under that position and serves later odescr() calls for those columns
+// out of its own cache.  an odescr() for a column before that position puts
+// another request on the wire.  a position past the end of the select list
+// is an ORA-01007.
 //
 // decoded byte for byte from a real oci7 client against a 10.2 server, in
 // both encodings: the 18 captures in test/protocol/oracle/samples/ named
@@ -9697,14 +9698,16 @@ bool sqlrprotocol_oracle::describe(const byte_t *rp) {
 					ORA_VARIABLE_NOT_IN_SELECT_LIST_MESSAGE);
 	}
 
-	return sendDescribeResponse(cursor,colcount);
+	return sendDescribeResponse(cursor,colcount,position);
 }
 
-// the answer: the column count twice, one metadata block per column, every
-// column name in one blob behind them, and the status message an oci7 call's
-// answer ends with
+// the answer: the column count, then how many of them are being sent from
+// position onward, one metadata block per column from position to the end,
+// every one of those columns' names in one blob behind them, and the status
+// message an oci7 call's answer ends with
 bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
-						uint32_t colcount) {
+						uint32_t colcount,
+						uint32_t position) {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -9718,29 +9721,32 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
 	debugWrite("column count: %d",colcount);
+	debugWrite("position: %d",position);
 	debugEnd();
 
-	// the column count, twice.  what the second copy is for is
-	// unexplained; the two agree in every capture
+	// the column count, then the number of blocks being sent - a real
+	// server answers from the requested position onward, not always from
+	// column 1, so a describe landing on column N of a multi-describe
+	// sequence only gets columns N through colcount
 	putAuthCount(colcount,2);
-	putAuthCount(colcount,2);
+	putAuthCount(colcount-position+1,2);
 
-	for (uint32_t i=0; i<colcount; i++) {
+	for (uint32_t i=position-1; i<colcount; i++) {
 		putOci7DescribeColumn(cursor,i);
 	}
 
-	// the names, in one blob behind the metadata blocks: every name in
-	// select list order with a double quote after it, sent as a total
-	// size and then the text.  the client splits the blob back up using
-	// the name length each metadata block carries, so the quotes are
-	// separators it never has to count.
+	// the names, in one blob behind the metadata blocks: every name from
+	// position onward, in select list order, with a double quote after
+	// it, sent as a total size and then the text.  the client splits the
+	// blob back up using the name length each metadata block carries, so
+	// the quotes are separators it never has to count.
 	//
 	// the size goes out twice, as a count and then as the text's own
 	// length byte, which is what putLenBytes() writes for anything up to
 	// 252 bytes.  no capture has a blob longer than that - a wider one
 	// takes putLenBytes()'s chunked long form, the same as any other clr
 	stringbuffer	names;
-	for (uint32_t i=0; i<colcount; i++) {
+	for (uint32_t i=position-1; i<colcount; i++) {
 		names.append(cont->getColumnName(cursor,i),
 				cont->getColumnNameSize(cursor,i));
 		names.append('"');

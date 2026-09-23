@@ -27,9 +27,9 @@
 // TTI_DESCRIBE to describe.  A real client caches the whole select list off
 // one describe, and samples/9808-redhat9x86-native-fetch.oraproxy shows it
 // putting only that one on the wire for a whole group of odescr calls, so the
-// describes for positions 2 through 4 here are calls no capture carries - they
-// are there because the answer has to be the same whichever column an odescr
-// names.
+// describes for positions 2 through 4 here are calls no capture carries.  A
+// real server answers each of them from the requested position to the end of
+// the select list (#10272), and each is checked against a model of that.
 //
 // It also covers ticket #9973: the same describe one call earlier, between the
 // TTI_QUERY2 that executes and the first TTI_FETCH, where the client has
@@ -663,25 +663,27 @@ static void appendDescribeColumn(bytebuffer *out, bool native,
 	appendCount(out,native,0,4);
 }
 
-// the whole answer: the column count twice, one block per column, every column
-// name in one blob behind them with a double quote after each, and the status
-// message an oci7 call's answer ends with
+// the whole answer to a describe at position: the column count, the number of
+// columns from position to the end, one block per column from position to the
+// end, those columns' names in one blob behind them with a double quote after
+// each, and the status message an oci7 call's answer ends with
 static void buildDescribeResponse(bytebuffer *out, bool native,
 					const describecolumn *cols,
 					size_t colcount,
-					uint32_t charset) {
+					uint32_t charset,
+					size_t position) {
 
 	out->clear();
 
 	appendCount(out,native,(uint32_t)colcount,2);
-	appendCount(out,native,(uint32_t)colcount,2);
+	appendCount(out,native,(uint32_t)(colcount-position+1),2);
 
-	for (size_t i=0; i<colcount; i++) {
+	for (size_t i=position-1; i<colcount; i++) {
 		appendDescribeColumn(out,native,&(cols[i]),charset);
 	}
 
 	bytebuffer	names;
-	for (size_t i=0; i<colcount; i++) {
+	for (size_t i=position-1; i<colcount; i++) {
 		names.append(cols[i].name);
 		names.append((unsigned char)'"');
 	}
@@ -787,8 +789,11 @@ static bool runParseArm(oracleprotocolclient *client, bytebuffer *describe,
 }
 
 // the oci7.cpp sequence in full: execute, one fetch, three describes, three
-// more fetches
+// more fetches.  native and charset shape the model each later position's
+// describe is compared against
 static bool runMidFetchArm(oracleprotocolclient *client,
+					bool native,
+					uint32_t charset,
 					bytebuffer *describe,
 					bytebuffer *outofrange,
 					bytebuffer *seconddescribe,
@@ -849,10 +854,8 @@ static bool runMidFetchArm(oracleprotocolclient *client,
 	saveResponse(describe,client);
 
 	// the same describe for every other position in the select list.  a
-	// real client caches the whole list off the first one and never asks
-	// again, so only the first of these is a call any capture on file
-	// carries - the rest are here because the answer has to be the same
-	// whichever column an odescr names, TESTDATE included
+	// real server answers from the requested position to the end, so each
+	// one is compared against the model of that answer, TESTDATE included
 	for (size_t i=2; i<=tablecolumncount; i++) {
 
 		stdoutput.printf("  -> TTI_DESCRIBE seq %d cursor %d "
@@ -865,12 +868,16 @@ static bool runMidFetchArm(oracleprotocolclient *client,
 			return false;
 		}
 		dumpResponse("mid-fetch describe response",client);
-		report("midfetch arm: every position answers the same",
+		bytebuffer	expected;
+		buildDescribeResponse(&expected,native,tablecolumns,
+					tablecolumncount,charset,i);
+		report("midfetch arm: every position answers from "
+					"that position on",
 			compareBytes("describe of a later column",
-				client->getResponse(),
-				client->getResponseSize(),
-				(const unsigned char *)describe->getBuffer(),
-				describe->getSize()));
+				client->getResponse()+3,
+				client->getResponseSize()-3,
+				(const unsigned char *)expected.getBuffer(),
+				expected.getSize()));
 	}
 
 	stdoutput.printf("  -> TTI_DESCRIBE seq %d cursor %d position %d\n",
@@ -1514,7 +1521,8 @@ int main(int argc, char **argv) {
 	bytebuffer	midfetchfetch3;
 	bytebuffer	midfetchfetch4;
 	uint32_t	midfetchcursorid=0;
-	if (!runMidFetchArm(&client,&midfetchdescribe,&midfetchoutofrange,
+	if (!runMidFetchArm(&client,native,charset,
+					&midfetchdescribe,&midfetchoutofrange,
 					&midfetchseconddescribe,
 					&midfetchfetch2,&midfetchfetch3,
 					&midfetchfetch4,&midfetchcursorid)) {
@@ -1552,7 +1560,7 @@ int main(int argc, char **argv) {
 
 	bytebuffer	expected;
 	buildDescribeResponse(&expected,native,tablecolumns,
-					tablecolumncount,charset);
+					tablecolumncount,charset,1);
 	report("mid-fetch describe matches a real server's model",
 		compareBytes("mid-fetch describe against the model",
 			(const unsigned char *)midfetchdescribe.getBuffer()+3,

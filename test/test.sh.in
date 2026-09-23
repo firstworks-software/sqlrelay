@@ -1456,9 +1456,13 @@ run_protocol_test() {
 	# only needed when sqlr-connection itself is built against an
 	# OCI7-era client, which isn't the case for whatever host builds and
 	# runs this test.sh.  it tolerates a missing binary the same way oci7
-	# does.  #10267's OCI7-path counterpart is not covered here - see
-	# oracleprotocoloci7db2's own comment in oracleprotocol.conf.in.
-	# all twenty-four runs have to succeed for the instance to pass
+	# does.  then oci7inlinelob, the OCI7 counterpart of oracleinlinelob
+	# above, for #10272 - it covers #10267's fix on the legacy putRow()/
+	# putOci7DescribeColumn() path, and describes the select list out of
+	# order, against oracleprotocoloci7db2 (ORACLEPROTOCOLPORT11).  it is
+	# skipped the same way oracleinlinelob is, and tolerates a missing
+	# binary the same way oci7 does.
+	# all twenty-five runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1527,7 +1531,15 @@ run_protocol_test() {
 			echo "no oci7utf8clob test found (built only with HAVE_OCI7)"
 			resultoci7utf8clob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" )
+		if ( test -x ./oci7inlinelob -a -n "`ls $MODULEDIR/sqlrconnection_db2.* 2> /dev/null`" )
+		then
+			./oci7inlinelob
+			resultoci7inlinelob="$?"
+		else
+			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
+			resultoci7inlinelob="0"
+		fi
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1628,6 +1640,10 @@ run_protocol_test() {
 		if ( test "$resultoci7utf8clob" != "0" )
 		then
 			printf "    % 8s: failed (oci7 utf8 clob)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultoci7inlinelob" != "0" )
+		then
+			printf "    % 8s: failed (oci7 inline lob)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		cd ../..
 		return 1
