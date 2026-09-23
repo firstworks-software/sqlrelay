@@ -202,4 +202,60 @@
 		</connections>
 	</instance>
 
+	<!-- same backend as oracleprotocolutf8 (nls_lang=AMERICAN_AMERICA.AL32UTF8,
+	     so the backend connection's client character set is genuinely
+	     multibyte), but with verifiertype="9i" (see oracleprotocoloci7
+	     above), for an OCI7 client to exercise #10265's fix on the legacy
+	     putLobField() path rather than the query3 sendLobReadResponse()
+	     path oracleutf8clob.cpp already covers.  unlike oracleprotocoloci7,
+	     this reuses the same modern backend oracleprotocolutf8 does rather
+	     than 10.0.2.3 - oracleprotocoloci7's separate old backend is only
+	     needed when sqlr-connection itself is built against an OCI7-era
+	     client (redhat9x86's build; #9654), which can't O5LOGON to the
+	     modern backend; a host new enough to run this test suite generally
+	     has no such restriction. -->
+	<instance id="oracleprotocoloci7utf8" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT10@" serverversion="11.2" verifiertype="9i" sid="ora1"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;nls_lang=AMERICAN_AMERICA.AL32UTF8"/>
+		</connections>
+	</instance>
+
+	<!-- same backend as oracleprotocoldb2 (a genuinely non-oracle backend),
+	     with verifiertype="9i" (see oracleprotocoloci7 above), meant for an
+	     OCI7 client to exercise #10267's fix on the legacy putRow()/
+	     putOci7DescribeColumn() path rather than the query3 putRowData()
+	     path oracleinlinelob.cpp already covers - see oracleprotocoloci7utf8
+	     just above for why this would reuse oracleprotocoldb2's backend
+	     rather than oracleprotocoloci7's own separate one.  no test program
+	     against it is checked in yet: live testing against this instance on
+	     redhat9x86 found describe() itself broken against db2 on the legacy
+	     OCI7 path - every column, including a plain integer one, comes back
+	     misdescribed once the table holds a real clob or blob value - a
+	     real, separate, pre-existing bug unrelated to #10267's own fix
+	     (#10272).  this instance is kept wired in for whoever picks that
+	     up. -->
+	<instance id="oracleprotocoloci7db2" dbase="db2" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT11@" serverversion="11.2" verifiertype="9i" sid="ora1"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="user=db2inst1;password=testpassword;db=@SHORTHOSTNAME@;lang=C;timeout=120"/>
+		</connections>
+	</instance>
+
 </instances>

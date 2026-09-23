@@ -11,6 +11,7 @@
 /oraclemaxdescriptors
 /oci7datestr
 /ociloginretry
+/oci7utf8clob
 *.o
 *.obj
 *.lo
