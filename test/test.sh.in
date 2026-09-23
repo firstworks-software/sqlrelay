@@ -101,7 +101,8 @@ usage() {
 	echo "    odbc-mssql, freetds-mssql, tdsfreetdsmssqlprotocol,"
 	echo "    tdsprotocoltls and tdsprotocoltlsserverauth all hit the mssql"
 	echo "    server, so that group runs alongside the sap group"
-	echo "    db2 and odbc-db2 both hit the db2 server"
+	echo "    db2, odbc-db2 and oracleprotocol (its oracleprotocoldb2"
+	echo "    instance) all hit the db2 server"
 }
 
 # stop any instances left running from a previous run.  only the instances
@@ -194,8 +195,9 @@ stop_instances() {
 
 		# the oracleprotocol test also has 11g and 12c
 		# verifier-type instances, a connectstrings-default-auth
-		# instance, a fetchatonce=1 instance, and an oci7
-		# (o3logon/9i-verifier) instance with its own older backend
+		# instance, a fetchatonce=1 instance, a db2-backed instance,
+		# and an oci7 (o3logon/9i-verifier) instance with its own
+		# older backend
 		if ( test "$_instance" = "oracleprotocol" )
 		then
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol11g
@@ -203,6 +205,7 @@ stop_instances() {
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolfetchatonce
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolutf8
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocoldb2
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocoloci7
 		fi
 
@@ -402,8 +405,11 @@ start_instance() {
 	# the first fetch (#9601), plus one more with
 	# nls_lang=AMERICAN_AMERICA.AL32UTF8 on the connection string, to
 	# cover a multibyte backend client character set (#10265), plus one
-	# more with verifiertype="9i" and its own older backend, to cover an
-	# OCI7 (O3LOGON) client (#9654, #9658)
+	# more backed by db2 rather than oracle, to cover the oracle-wire-
+	# protocol lob-column path against a non-oracle backend (#10267;
+	# skipped on a host without the db2 connection module built), plus
+	# one more with verifiertype="9i" and its own older backend, to cover
+	# an OCI7 (O3LOGON) client (#9654, #9658)
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
@@ -416,6 +422,11 @@ start_instance() {
 		sleep 2
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolutf8 -backtrace $BACKTRACEDIR
 		sleep 2
+		if ( test -n "`ls $MODULEDIR/sqlrconnection_db2.* 2> /dev/null`" )
+		then
+			$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoldb2 -backtrace $BACKTRACEDIR
+			sleep 2
+		fi
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoloci7 -backtrace $BACKTRACEDIR
 		sleep 2
 	fi
@@ -524,6 +535,11 @@ stop_instance() {
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolutf8
 		sleep 2
+		if ( test -n "`ls $MODULEDIR/sqlrconnection_db2.* 2> /dev/null`" )
+		then
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoldb2
+			sleep 2
+		fi
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoloci7
 	fi
 	if ( test "$instance" = "odbc-mssql" )
@@ -1382,7 +1398,17 @@ run_protocol_test() {
 	# character set, corrupting a clob read past the first protocol chunk.
 	# it connects with a literal connect descriptor built from
 	# ORACLEPROTOCOLPORT8 rather than a tnsnames.ora alias, so it needs
-	# neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
+	# neither $server nor TNS_ADMIN.  then oracleinlinelob, another OCI8
+	# test, for #10267 - a clob or blob column from a non-oracle backend
+	# came back NULL over the wire protocol.  it connects to the
+	# oracleprotocoldb2 instance (ORACLEPROTOCOLPORT9), whose backend is
+	# db2 rather than oracle, the same way oracleutf8clob connects to
+	# oracleprotocolutf8 - a literal connect descriptor, so it needs
+	# neither $server nor TNS_ADMIN either.  it is skipped, and treated as
+	# a pass, on a host without the db2 connection module built, the same
+	# way oracleprotocoldb2 itself is skipped above; the run tolerates the
+	# binary being absent too, the same way the oci7 run below tolerates
+	# HAVE_OCI7 being unset.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
@@ -1399,7 +1425,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all twenty-two runs have to succeed for the instance to pass
+	# all twenty-three runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1444,6 +1470,14 @@ run_protocol_test() {
 		resultmaxfetchrowcount="$?"
 		./oracleutf8clob
 		resultutf8clob="$?"
+		if ( test -x ./oracleinlinelob -a -n "`ls $MODULEDIR/sqlrconnection_db2.* 2> /dev/null`" )
+		then
+			./oracleinlinelob
+			resultinlinelob="$?"
+		else
+			echo "no oracleinlinelob test found, or no db2 module built"
+			resultinlinelob="0"
+		fi
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1452,7 +1486,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1541,6 +1575,10 @@ run_protocol_test() {
 		if ( test "$resultutf8clob" != "0" )
 		then
 			printf "    % 8s: failed (utf8 clob)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultinlinelob" != "0" )
+		then
+			printf "    % 8s: failed (inline lob)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then
@@ -1906,6 +1944,7 @@ BACKTRACEDIR=@abs_top_builddir@/test
 REPLACE=@abs_top_builddir@/replace.sh
 MAKE=${MAKE:-make}
 HOSTNAME=@HOSTNAME@
+SHORTHOSTNAME=@SHORTHOSTNAME@
 DONOTEDIT="@DONOTEDIT@"
 
 # where the server programs come from, where they look for modules, and the
@@ -1924,7 +1963,7 @@ STAGEDIR=$TESTDIR/stagedmodules
 # the .conf files get regenerated from these values on every run, since a
 # prior -randomports run may have left one holding a port that no longer
 # matches what this run expects (see regenerate_files() below).
-PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 ORACLEPROTOCOLPORT8 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 ORACLEPROTOCOLPORT8 ORACLEPROTOCOLPORT9 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
 ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
@@ -1933,6 +1972,7 @@ ORACLEPROTOCOLPORT5=@ORACLEPROTOCOLPORT5@
 ORACLEPROTOCOLPORT6=@ORACLEPROTOCOLPORT6@
 ORACLEPROTOCOLPORT7=@ORACLEPROTOCOLPORT7@
 ORACLEPROTOCOLPORT8=@ORACLEPROTOCOLPORT8@
+ORACLEPROTOCOLPORT9=@ORACLEPROTOCOLPORT9@
 FIREBIRDPROTOCOLPORT1=@FIREBIRDPROTOCOLPORT1@
 FIREBIRDPROTOCOLPORT2=@FIREBIRDPROTOCOLPORT2@
 FIREBIRDPROTOCOLPORT3=@FIREBIRDPROTOCOLPORT3@
@@ -1956,7 +1996,7 @@ MYSQLPROTOCOLSOCKET=@MYSQLPROTOCOLSOCKET@
 # the rest of what the templates regenerate_file() rewrites carry.  they are
 # not ports, but they have to be substituted too, or the file would come out
 # with a token left in it
-OTHERTOKENS="MYSQLPROTOCOLSOCKET HOSTNAME DONOTEDIT abs_top_builddir"
+OTHERTOKENS="MYSQLPROTOCOLSOCKET HOSTNAME SHORTHOSTNAME DONOTEDIT abs_top_builddir"
 abs_top_builddir=$BUILDDIR
 
 # the instance configs that carry a listener port

@@ -152,6 +152,30 @@
 		</connections>
 	</instance>
 
+	<!-- same as oracleprotocol, but backed by db2 rather than oracle, so
+	     the oracle-wire-protocol lob-column path (a clob or blob column
+	     read back over OCI8) gets exercised against a genuinely
+	     non-oracle backend - every instance above connects to a real
+	     oracle backend.  the listener stays in the same oracle-protocol
+	     style the rest of this file uses; the <connections> block uses
+	     db2's own connection-string syntax instead (see
+	     test/sqlrelay.conf.d/db2.conf.in) - user, password and db rather
+	     than an oracle connect descriptor. -->
+	<instance id="oracleprotocoldb2" dbase="db2" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT9@" serverversion="11.2" sid="ora1"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="user=db2inst1;password=testpassword;db=@SHORTHOSTNAME@;lang=C;timeout=120"/>
+		</connections>
+	</instance>
+
 	<!-- same as oracleprotocol, but with its own backend, since a
 	     client old enough to speak OCI7 (#9651, #9653) is also too old to
 	     authenticate to the same modern backend the other instances above

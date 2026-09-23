@@ -20,6 +20,7 @@ ORACLEPROTOCOLPORT4 ?= 1524
 ORACLEPROTOCOLPORT5 ?= 1525
 ORACLEPROTOCOLPORT7 ?= 1527
 ORACLEPROTOCOLPORT8 ?= 1528
+ORACLEPROTOCOLPORT9 ?= 1529
 
 # OCI7INCLUDES is for oci7.cpp specifically - it's blank unless the
 # legacy OCI7 call interface was detected at configure time, so this
@@ -46,7 +47,7 @@ ORACLEPROTOCOLPORT8 ?= 1528
 # need rudiments (raw sockets), so they build whether or not OCI is
 # configured - they speak the oracle wire protocol themselves rather than
 # going through a client library
-all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount oracleutf8clob $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount oracleutf8clob oracleinlinelob $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -86,6 +87,13 @@ ociloginretry: ociloginretry.cpp ociloginretry.$(OBJ)
 # raw-socket group below
 oracleutf8clob: oracleutf8clob.cpp oracleutf8clob.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleutf8clob.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
+# #10267 - a clob and a blob column from a non-oracle (db2) backend, read
+# back over the OCI8 wire protocol.  needs OCI, so it's built with the
+# other oci8/ociselect/ociloginretry/oracleutf8clob group above rather
+# than the raw-socket group below
+oracleinlinelob: oracleinlinelob.cpp oracleinlinelob.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleinlinelob.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
 # oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
 # the test's main, the same way asserts.cpp is.  the explicit dependency

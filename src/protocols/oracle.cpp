@@ -942,6 +942,13 @@
 #define ORACLE_TYPE_LOB_BLOB		996
 #define ORACLE_TYPE_LOB_BFILE		997
 
+// and two more, for a lob column of the non-oracle backends that
+// getInlineLobColumnType() recognizes.  these aren't real oracle lob types -
+// there's no locator behind them - and they go out the way a long and a long
+// raw do, with the whole value inline in the row
+#define ORACLE_TYPE_INLINE_CLOB		993
+#define ORACLE_TYPE_INLINE_BLOB		994
+
 
 static uint16_t	oracletypemap[]={
 	// "UNKNOWN"
@@ -1828,6 +1835,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	putRowData(sqlrservercursor *cursor,
 							uint32_t colcount);
 		bool	isLobColumnType(uint16_t columntype);
+		bool	isInlineLobColumnType(uint16_t columntype);
 		bool	hasLobColumn(sqlrservercursor *cursor,
 							uint32_t colcount);
 		void	putLenPreUB8(uint64_t value);
@@ -1962,6 +1970,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t columntype);
+		uint16_t	getInlineLobColumnType(
+						sqlrservercursor *cursor,
+						uint32_t column,
+						uint16_t columntype);
 		uint16_t	getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,
@@ -1987,6 +1999,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						uint16_t requestedtype,
 						uint32_t definebuffersize);
 		bool	putLobField(sqlrservercursor *cursor, uint32_t col);
+		void	putLongLobField(sqlrservercursor *cursor,
+							uint32_t col);
 		void	putOci7Error(uint32_t cursorid,
 					byte_t commandtype,
 					uint32_t rowsprocessed,
@@ -9795,6 +9809,12 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 		precision=127;
 	}
 
+	// a long and a long raw have no precision or scale
+	if (isInlineLobColumnType(columntype)) {
+		precision=0;
+		wirescale=0;
+	}
+
 	// putColumnMetadata() sends a hardcoded 1 here.  a real server sends
 	// 0 for a not null column: 9808-redhat9x86-native-notnull-parse
 	// .oraproxy against 9808-redhat9x86-native-realtable-parse.oraproxy,
@@ -10521,6 +10541,12 @@ void sqlrprotocol_oracle::debugColumnType(uint16_t columntype) {
 			break;
 		case ORACLE_TYPE_LOB_BFILE:
 			debugWrite("ORACLE_TYPE_LOB_BFILE");
+			break;
+		case ORACLE_TYPE_INLINE_CLOB:
+			debugWrite("ORACLE_TYPE_INLINE_CLOB");
+			break;
+		case ORACLE_TYPE_INLINE_BLOB:
+			debugWrite("ORACLE_TYPE_INLINE_BLOB");
 			break;
 		case ORACLE_TYPE_TIMESTAMP:
 			debugWrite("ORACLE_TYPE_TIMESTAMP");
@@ -14551,6 +14577,12 @@ void sqlrprotocol_oracle::putColumnMetadata(sqlrservercursor *cursor,
 		precision=127;
 	}
 
+	// a long and a long raw have no precision or scale
+	if (isInlineLobColumnType(columntype)) {
+		precision=0;
+		wirescale=0;
+	}
+
 	write(&reqpacket,(byte_t)wiretype);
 	write(&reqpacket,(byte_t)((fullencoding)?0x80:0x00));
 
@@ -14693,6 +14725,12 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 		case ORACLE_TYPE_LOB_BFILE:
 			wiretype=ORACLE_TYPE_BFILE;
 			break;
+		case ORACLE_TYPE_INLINE_CLOB:
+			wiretype=ORACLE_TYPE_LONG;
+			break;
+		case ORACLE_TYPE_INLINE_BLOB:
+			wiretype=ORACLE_TYPE_LONG_RAW;
+			break;
 		default:
 			// anything the module can't encode is described as a
 			// varchar2 and sent as text - describing it as its own
@@ -14757,6 +14795,11 @@ bool sqlrprotocol_oracle::isLobColumnType(uint16_t columntype) {
 	return (columntype==ORACLE_TYPE_LOB_CLOB ||
 		columntype==ORACLE_TYPE_LOB_BLOB ||
 		columntype==ORACLE_TYPE_LOB_BFILE);
+}
+
+bool sqlrprotocol_oracle::isInlineLobColumnType(uint16_t columntype) {
+	return (columntype==ORACLE_TYPE_INLINE_CLOB ||
+		columntype==ORACLE_TYPE_INLINE_BLOB);
 }
 
 bool sqlrprotocol_oracle::hasLobColumn(sqlrservercursor *cursor,
@@ -14930,6 +14973,26 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 			putLobLocator(cursor,i,wiretype,(null || !lob));
 			if (!null && lob) {
 				rowhaslob=true;
+			}
+
+		// a non-oracle backend's lob goes out whole, in the row, as
+		// a long or a long raw.  there's no locator for the client to
+		// read it back with later, so the row doesn't pin the
+		// connection the way a real lob's does
+		} else if (isInlineLobColumnType(ct[i])) {
+			if (null) {
+				debugWrite("null");
+				putNullLongField();
+			} else if (lob) {
+				debugWrite("inline lob");
+				putLongLobField(cursor,i);
+			} else if (!field || !fieldsize) {
+				debugWrite("null");
+				putNullLongField();
+			} else {
+				debugWrite("inline lob: %lld bytes",
+							(long long)fieldsize);
+				putLongBytes(field,(uint32_t)fieldsize,true);
 			}
 
 		// one zero byte stands for null and unreadable alike.
@@ -18168,6 +18231,7 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 		ct[i]=getUnknownColumnType(cursor,i,ct[i]);
 		ct[i]=getLongColumnType(cursor,i,ct[i]);
 		ct[i]=getLobColumnType(cursor,i,ct[i]);
+		ct[i]=getInlineLobColumnType(cursor,i,ct[i]);
 		// getColumnTypeName() can return NULL (invalid column info,
 		// or an unrecognized type code) - don't hand that to %s
 		const char	*coltypename=cont->getColumnTypeName(cursor,i);
@@ -18390,6 +18454,56 @@ uint16_t sqlrprotocol_oracle::getLobColumnType(sqlrservercursor *cursor,
 	return columntype;
 }
 
+uint16_t sqlrprotocol_oracle::getInlineLobColumnType(sqlrservercursor *cursor,
+							uint32_t column,
+							uint16_t columntype) {
+
+	// an oracle backend's lobs are real lobs, and getLobColumnType()
+	// already gave them their own types
+	const char	*dbtype=cont->getNativeDbType();
+	if (!charstring::compare(dbtype,"oracle")) {
+		return columntype;
+	}
+
+	// match by (backend,type name), not by name alone - the same name
+	// (eg. "BLOB", "NTEXT") is reused by backends whose getField() never
+	// sets the lob flag for it, and by router, which never reports the
+	// real backend name at all, so a name-only match would also inline
+	// columns that aren't lobs and may not even be bytes
+	const char	*name=cont->getColumnTypeName(cursor,column);
+	if (!charstring::compare(dbtype,"db2") ||
+		!charstring::compare(dbtype,"informix") ||
+		!charstring::compare(dbtype,"firebird")) {
+		if (!charstring::compareIgnoringCase(name,"CLOB")) {
+			return ORACLE_TYPE_INLINE_CLOB;
+		}
+		if (!charstring::compareIgnoringCase(name,"BLOB")) {
+			return ORACLE_TYPE_INLINE_BLOB;
+		}
+		return columntype;
+	}
+	if (!charstring::compare(dbtype,"mysql")) {
+		if (!charstring::compareIgnoringCase(name,"BLOB") ||
+			!charstring::compareIgnoringCase(name,"TINYBLOB") ||
+			!charstring::compareIgnoringCase(name,"MEDIUMBLOB") ||
+			!charstring::compareIgnoringCase(name,"LONGBLOB")) {
+			return ORACLE_TYPE_INLINE_BLOB;
+		}
+		return columntype;
+	}
+	if (!charstring::compare(dbtype,"odbc")) {
+		if (!charstring::compareIgnoringCase(name,"LONGVARCHAR") ||
+			!charstring::compareIgnoringCase(name,"NTEXT")) {
+			return ORACLE_TYPE_INLINE_CLOB;
+		}
+		if (!charstring::compareIgnoringCase(name,"LONGVARBINARY")) {
+			return ORACLE_TYPE_INLINE_BLOB;
+		}
+		return columntype;
+	}
+	return columntype;
+}
+
 uint16_t sqlrprotocol_oracle::getColumnFlags(sqlrservercursor *cursor,
 						uint32_t column,
 						uint16_t sqlrcolumntype,
@@ -18534,6 +18648,12 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			// and reports which case it hit via its return
 			// value.  see its own comments, and #10006
 			wrotenullmarker=putLobField(cursor,i);
+		} else if (!null && field && ct[i]==ORACLE_TYPE_INLINE_BLOB) {
+			// a non-oracle backend's blob is described as a long
+			// raw, but its bytes arrive as they are, not as the hex
+			// text putField()'s long raw case decodes
+			debugWrite("inline blob (%lld)",(long long)fieldsize);
+			putLongBytes(field,(uint32_t)fieldsize,false);
 		} else if (!null && field) {
 			debugWrite("\"%s\" (%lld)",field,(long long)fieldsize);
 			if (!putField(field,fieldsize,wiretype,
@@ -19078,6 +19198,69 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 					countUtf8Chars(lobbuffer,charsread):
 					charsread);
 		}
+	}
+}
+
+void sqlrprotocol_oracle::putLongLobField(sqlrservercursor *cursor,
+							uint32_t col) {
+
+	debugStart("long lob field");
+
+	// get lob size
+	uint64_t	loblength;
+	if (!cont->getLobFieldLength(cursor,col,&loblength) || !loblength) {
+		debugWrite("null");
+		putNullLongField();
+		cont->closeLobField(cursor,col);
+		debugEnd();
+		return;
+	}
+
+	debugWrite("lob length: %lld",(long long)loblength);
+
+	// initialize sizes and status
+	uint64_t	charstoread=sizeof(lobbuffer)/MAX_BYTES_PER_CHAR;
+	uint64_t	charsread=0;
+	uint64_t	offset=0;
+	bool		start=true;
+
+	// There's no utf-8 offset correction here, unlike in putLobField().
+	// That correction is for the oracle backend's own clob reads, and
+	// this is never an oracle backend.
+	for (;;) {
+
+		// read a segment from the lob
+		if (!cont->getLobFieldSegment(cursor,col,
+					lobbuffer,sizeof(lobbuffer),
+					offset,charstoread,&charsread) ||
+					!charsread) {
+
+			// no data at all is a null, otherwise close the run
+			if (start) {
+				debugWrite("null");
+				putNullLongField();
+			} else {
+				debugWrite("end of chunks");
+				write(&reqpacket,(byte_t)0);
+				write(&reqpacket,(byte_t)0);
+				write(&reqpacket,(byte_t)0);
+			}
+			cont->closeLobField(cursor,col);
+			debugEnd();
+			return;
+		}
+
+		// start sending
+		if (start) {
+			write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+			start=false;
+		}
+
+		// send the segment
+		putLenBytesChunks(lobbuffer,(uint32_t)charsread);
+		debugWrite("chunk size: %lld",(long long)charsread);
+
+		offset=offset+charsread;
 	}
 }
 
