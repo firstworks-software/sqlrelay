@@ -13,6 +13,7 @@
 #include <rudiments/character.h>
 #include <rudiments/csprng.h>
 #include <rudiments/datetime.h>
+#include <rudiments/environment.h>
 #include <rudiments/process.h>
 #include <rudiments/error.h>
 
@@ -1858,6 +1859,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 							uint64_t insize,
 							uint64_t chars,
 							byte_t *out);
+		uint32_t	stepUtf8Char(const byte_t *in,
+							const byte_t *end,
+							uint16_t *ch);
+		uint64_t	countUtf8Chars(const char *in, uint64_t insize);
+		bool		clientCharsetIsUtf8();
 		bool	discardLobDataPacket();
 		bool	sendLobDataMarker();
 		bool	sendLobDataChunk(const byte_t *data,
@@ -15361,6 +15367,78 @@ bool sqlrprotocol_oracle::decodeLobLocator(const byte_t *locator,
 	return true;
 }
 
+// decodes the utf-8 character at "in" into "ch" (if "ch" isn't NULL) and
+// returns how many bytes it took.  a byte that doesn't start a valid
+// sequence, and a character above the basic multilingual plane, take one
+// byte and decode to that byte's own value
+uint32_t sqlrprotocol_oracle::stepUtf8Char(const byte_t *in,
+						const byte_t *end,
+						uint16_t *ch) {
+
+	const byte_t	*start=in;
+	uint32_t	c=*in;
+	uint16_t	extra=0;
+	if ((c&0xe0)==0xc0) {
+		c=c&0x1f;
+		extra=1;
+	} else if ((c&0xf0)==0xe0) {
+		c=c&0x0f;
+		extra=2;
+	} else if ((c&0xf8)==0xf0) {
+		c=c&0x07;
+		extra=3;
+	}
+	in++;
+
+	bool	valid=true;
+	for (uint16_t e=0; e<extra; e++) {
+		if (in>=end || ((*in)&0xc0)!=0x80) {
+			valid=false;
+			break;
+		}
+		c=(c<<6)|((*in)&0x3f);
+		in++;
+	}
+
+	if (!valid || c>0xffff) {
+		in=start+1;
+		c=*start;
+	}
+
+	if (ch) {
+		*ch=(uint16_t)c;
+	}
+	return (uint32_t)(in-start);
+}
+
+// counts the characters in "insize" bytes of utf-8 "in", stepped the same
+// way putUtf16Chars() steps them
+uint64_t sqlrprotocol_oracle::countUtf8Chars(const char *in, uint64_t insize) {
+
+	const byte_t	*i=(const byte_t *)in;
+	const byte_t	*end=i+insize;
+	uint64_t	chars=0;
+	while (i<end) {
+		i+=stepUtf8Char(i,end,NULL);
+		chars++;
+	}
+	return chars;
+}
+
+// whether the backend's oci client character set is utf-8.  the oracle
+// connection module applies its nls_lang connect string parameter by setting
+// NLS_LANG in this process's environment
+bool sqlrprotocol_oracle::clientCharsetIsUtf8() {
+	const char	*charset=charstring::findLast(
+					environment::getValue("NLS_LANG"),".");
+	if (!charset) {
+		return false;
+	}
+	charset++;
+	return (!charstring::compareIgnoringCase(charset,"AL32UTF8") ||
+		!charstring::compareIgnoringCase(charset,"UTF8"));
+}
+
 // converts "chars" characters of utf-8 "in" to utf-16 big endian in "out",
 // which has room for two bytes per character, and returns how many bytes it
 // wrote.  a character above the basic multilingual plane, and a byte that
@@ -15386,35 +15464,8 @@ uint32_t sqlrprotocol_oracle::putUtf16Chars(const char *in,
 			continue;
 		}
 
-		const byte_t	*start=i;
-		uint32_t	ch=*i;
-		uint16_t	extra=0;
-		if ((ch&0xe0)==0xc0) {
-			ch=ch&0x1f;
-			extra=1;
-		} else if ((ch&0xf0)==0xe0) {
-			ch=ch&0x0f;
-			extra=2;
-		} else if ((ch&0xf8)==0xf0) {
-			ch=ch&0x07;
-			extra=3;
-		}
-		i++;
-
-		bool	valid=true;
-		for (uint16_t e=0; e<extra; e++) {
-			if (i>=end || ((*i)&0xc0)!=0x80) {
-				valid=false;
-				break;
-			}
-			ch=(ch<<6)|((*i)&0x3f);
-			i++;
-		}
-
-		if (!valid || ch>0xffff) {
-			i=start+1;
-			ch=*start;
-		}
+		uint16_t	ch=0;
+		i+=stepUtf8Char(i,end,&ch);
 
 		out[outsize++]=(byte_t)(ch>>8);
 		out[outsize++]=(byte_t)(ch&0xff);
@@ -15533,6 +15584,7 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 	// bfile's one, so a chunk of the negotiated size carries half as
 	// many characters of a clob as it does of a blob
 	bool		clob=(wiretype==ORACLE_TYPE_CLOB);
+	bool		utf8=(clob && clientCharsetIsUtf8());
 	uint64_t	charsperchunk=(clob)?
 				LOB_CHUNK_SIZE/LOB_CLOB_BYTES_PER_CHAR:
 				LOB_CHUNK_SIZE;
@@ -15592,18 +15644,38 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 		}
 
 		// hold this one back
+		uint64_t	charsthischunk=got;
 		if (clob) {
-			chunksize=putUtf16Chars(lobbuffer,
-						sizeof(lobbuffer),got,chunk);
+
+			// Under a utf-8 client character set, OCILobRead
+			// reports how many bytes it read rather than how many
+			// characters, but position and charsread both count
+			// characters.
+			if (utf8) {
+				charsthischunk=countUtf8Chars(lobbuffer,got);
+			}
+			// A character above the basic multilingual plane
+			// counts as up to 4 here but as 2 to OCILobRead, so
+			// the count can exceed what was asked for.  Clamp it
+			// so it can't overrun chunk or remaining.
+			if (charsthischunk>sizeof(chunk)/LOB_CLOB_BYTES_PER_CHAR) {
+				charsthischunk=sizeof(chunk)/
+							LOB_CLOB_BYTES_PER_CHAR;
+			}
+			if (charsthischunk>remaining) {
+				charsthischunk=remaining;
+			}
+			chunksize=putUtf16Chars(lobbuffer,got,
+						charsthischunk,chunk);
 		} else {
 			chunksize=(uint32_t)got;
 			bytestring::copy(chunk,lobbuffer,(size_t)chunksize);
 		}
 		held=true;
 
-		charsread=charsread+got;
-		position=position+got;
-		remaining=remaining-got;
+		charsread=charsread+charsthischunk;
+		position=position+charsthischunk;
+		remaining=remaining-charsthischunk;
 	}
 
 	debugWrite("lob read %lld",(long long)charsread);
@@ -18925,6 +18997,13 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 	uint64_t	offset=0;
 	bool		start=true;
 
+	// Under a utf-8 client character set, OCILobRead reports a clob
+	// segment in bytes, but the offset it takes counts characters.
+	uint16_t	*ct=columntypes[cont->getId(cursor)];
+	bool		utf8=(ct &&
+				getWireColumnType(ct[col])==ORACLE_TYPE_CLOB &&
+				clientCharsetIsUtf8());
+
 	for (;;) {
 
 		// read a segment from the lob
@@ -18995,7 +19074,9 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 			}
 			debugWrite("chunk size: %lld",(long long)charsread);
 
-			offset=offset+charsread;
+			offset=offset+((utf8)?
+					countUtf8Chars(lobbuffer,charsread):
+					charsread);
 		}
 	}
 }

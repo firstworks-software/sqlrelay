@@ -125,6 +125,33 @@
 		</connections>
 	</instance>
 
+	<!-- same as oracleprotocol, but with nls_lang=AMERICAN_AMERICA.AL32UTF8
+	     on the connection string, so the backend session's client
+	     character set is genuinely multibyte.  none of the instances
+	     above set nls_lang, so their backend connections run at the OCI
+	     client's own default (a single-byte charset on this farm), which
+	     can't reproduce #10265 - OCILobRead's amtp only comes back in
+	     bytes rather than characters for a varying-width client
+	     character set.  test/protocol/oracle/oracleutf8clob.cpp connects
+	     here directly (a literal connect descriptor built from
+	     ORACLEPROTOCOLPORT8, not a tnsnames.ora alias) rather than
+	     through oci8, since the multibyte clob it reads is its own,
+	     separate scenario from oci8's existing ascii one. -->
+	<instance id="oracleprotocolutf8" dbase="oracle" debug="protocols">
+		<listeners>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT8@" serverversion="11.2" sid="ora1"/>
+		</listeners>
+		<auths>
+			<auth module="oracle_userlist">
+				<user user="testuser" password="testpassword"/>
+				<user user="TESTUSER" password="testpassword"/>
+			</auth>
+		</auths>
+		<connections>
+			<connection string="oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = oracle)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)));user=@HOSTNAME@;password=testpassword;date_to_text_format=YYYY-MM-DD HH24:MI:SS;nls_lang=AMERICAN_AMERICA.AL32UTF8"/>
+		</connections>
+	</instance>
+
 	<!-- same as oracleprotocol, but with its own backend, since a
 	     client old enough to speak OCI7 (#9651, #9653) is also too old to
 	     authenticate to the same modern backend the other instances above

@@ -19,6 +19,7 @@ ORACLEPROTOCOLPORT3 ?= 1523
 ORACLEPROTOCOLPORT4 ?= 1524
 ORACLEPROTOCOLPORT5 ?= 1525
 ORACLEPROTOCOLPORT7 ?= 1527
+ORACLEPROTOCOLPORT8 ?= 1528
 
 # OCI7INCLUDES is for oci7.cpp specifically - it's blank unless the
 # legacy OCI7 call interface was detected at configure time, so this
@@ -45,7 +46,7 @@ ORACLEPROTOCOLPORT7 ?= 1527
 # need rudiments (raw sockets), so they build whether or not OCI is
 # configured - they speak the oracle wire protocol themselves rather than
 # going through a client library
-all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
+all: oci8 ociselect ociloginretry oracledescribeonly oracledescribe oraclemidfetchdescribe oraclelegacyfetch oracleclrchunks oracleiterations0 oraclebigchunkclroff oraclerefcursorreuse oraclesplitrequest oraclesplitquery3 oraclesplitresponse oraclemaxdescriptors oraclemaxfetchrowcount oracleutf8clob $(ORACLEPROTOCOLTESTTARGETS) tnsnames.ora
 
 tnsnames.ora: tnsnames.ora.in
 	$(REPLACE) @DONOTEDIT@ "$(DONOTEDIT)" $@.in > $@.out1
@@ -78,6 +79,13 @@ ociselect: ociselect.cpp ociselect.$(OBJ)
 
 ociloginretry: ociloginretry.cpp ociloginretry.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) ociloginretry.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
+
+# #10265 - a multibyte clob read against the oracleprotocolutf8 instance,
+# in pieces.  needs OCI (not just raw sockets), so it's built with the
+# other oci8/ociselect/ociloginretry group above rather than the
+# raw-socket group below
+oracleutf8clob: oracleutf8clob.cpp oracleutf8clob.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) oracleutf8clob.$(OBJ) $(ORACLELIBS) $(RUDIMENTSLIBS)
 
 # oracleprotocolclient.cpp isn't compiled on its own - it's #include'd by
 # the test's main, the same way asserts.cpp is.  the explicit dependency

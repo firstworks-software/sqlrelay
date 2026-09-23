@@ -202,6 +202,7 @@ stop_instances() {
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocol12c
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolconnectstrings
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolfetchatonce
+			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocolutf8
 			$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${_instance}.conf -id oracleprotocoloci7
 		fi
 
@@ -398,9 +399,11 @@ start_instance() {
 	# more with no <auths> block, to cover the default oracle_connectstrings
 	# auth path (#9309), plus one more with fetchatonce=1 on the
 	# connection string, to cover a backend error landing on a row past
-	# the first fetch (#9601), plus one more with verifiertype="9i" and
-	# its own older backend, to cover an OCI7 (O3LOGON) client (#9654,
-	# #9658)
+	# the first fetch (#9601), plus one more with
+	# nls_lang=AMERICAN_AMERICA.AL32UTF8 on the connection string, to
+	# cover a multibyte backend client character set (#10265), plus one
+	# more with verifiertype="9i" and its own older backend, to cover an
+	# OCI7 (O3LOGON) client (#9654, #9658)
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocol11g -backtrace $BACKTRACEDIR
@@ -410,6 +413,8 @@ start_instance() {
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings -backtrace $BACKTRACEDIR
 		sleep 2
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolfetchatonce -backtrace $BACKTRACEDIR
+		sleep 2
+		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolutf8 -backtrace $BACKTRACEDIR
 		sleep 2
 		$SQLRBINDIR/sqlr-start $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoloci7 -backtrace $BACKTRACEDIR
 		sleep 2
@@ -516,6 +521,8 @@ stop_instance() {
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolconnectstrings
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolfetchatonce
+		sleep 2
+		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocolutf8
 		sleep 2
 		$SQLRBINDIR/sqlr-stop $PATHOPTS -config $CONFDIR/${instance}.conf -id oracleprotocoloci7
 	fi
@@ -1361,7 +1368,21 @@ run_protocol_test() {
 	# refusal that cost the session its place in the byte stream would
 	# show up there rather than in the answer itself.  it reads
 	# ORACLEPROTOCOLPORT1 straight from the environment, so it needs
-	# neither $server nor TNS_ADMIN either.  finally it runs oci7, the OCI7
+	# neither $server nor TNS_ADMIN either.  then oracleutf8clob, an OCI8
+	# test (unlike the raw-socket tests above, a real client) for #10265 -
+	# it connects to the oracleprotocolutf8 instance (sqlrelayutf8,
+	# ORACLEPROTOCOLPORT8), whose connection string is the only one here
+	# that sets nls_lang=AMERICAN_AMERICA.AL32UTF8, and reads a multibyte
+	# clob spanning several protocol chunks back in two pieces at a
+	# non-chunk-aligned split.  every instance above runs its backend
+	# connection at the OCI client's own default character set, which is
+	# single-byte on this farm and so cannot reproduce the bug: sendLob
+	# ReadResponse (src/protocols/oracle.cpp) treated OCILobRead's amtp as
+	# a character count, but it comes back in bytes for a multibyte client
+	# character set, corrupting a clob read past the first protocol chunk.
+	# it connects with a literal connect descriptor built from
+	# ORACLEPROTOCOLPORT8 rather than a tnsnames.ora alias, so it needs
+	# neither $server nor TNS_ADMIN.  finally it runs oci7, the OCI7
 	# legacy-call-interface parity test for #9653 - it drives the same
 	# queries through the OCI7 calls (obndrv/odescr/oexfet and friends)
 	# rather than the OCI8 ones, so the server's answers to the older
@@ -1378,7 +1399,7 @@ run_protocol_test() {
 	# above uses - a client old enough to speak OCI7 is also too old to
 	# authenticate to the same modern backend those instances connect to
 	# (#9654), so this instance has its own, older backend.
-	# all twenty-one runs have to succeed for the instance to pass
+	# all twenty-two runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1421,6 +1442,8 @@ run_protocol_test() {
 		resultmaxdescriptors="$?"
 		./oraclemaxfetchrowcount
 		resultmaxfetchrowcount="$?"
+		./oracleutf8clob
+		resultutf8clob="$?"
 		if ( test -x ./oci7 )
 		then
 			./oci7 sqlrelayoci7
@@ -1429,7 +1452,7 @@ run_protocol_test() {
 			echo "no oci7 test found (built only with HAVE_OCI7)"
 			resultoci7="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultoci7" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultoci7" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1514,6 +1537,10 @@ run_protocol_test() {
 		if ( test "$resultmaxfetchrowcount" != "0" )
 		then
 			printf "    % 8s: failed (max fetch row count)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resultutf8clob" != "0" )
+		then
+			printf "    % 8s: failed (utf8 clob)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultoci7" != "0" )
 		then
@@ -1897,7 +1924,7 @@ STAGEDIR=$TESTDIR/stagedmodules
 # the .conf files get regenerated from these values on every run, since a
 # prior -randomports run may have left one holding a port that no longer
 # matches what this run expects (see regenerate_files() below).
-PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
+PORTTOKENS="ORACLEPROTOCOLPORT1 ORACLEPROTOCOLPORT2 ORACLEPROTOCOLPORT3 ORACLEPROTOCOLPORT4 ORACLEPROTOCOLPORT5 ORACLEPROTOCOLPORT6 ORACLEPROTOCOLPORT7 ORACLEPROTOCOLPORT8 FIREBIRDPROTOCOLPORT1 FIREBIRDPROTOCOLPORT2 FIREBIRDPROTOCOLPORT3 MYSQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT1 POSTGRESQLPROTOCOLPORT2 TDSPROTOCOLPORT1 TDSSAPPROTOCOLPORT1 TDSSAPPROTOCOLPORT2 TERADATAPROTOCOLPORT1 MYSQLPROTOCOLTLSPORT1 MYSQLPROTOCOLTLSSERVERAUTHPORT1 MYSQLPROTOCOLTLSMUTUALAUTHPORT1 POSTGRESQLPROTOCOLTLSPORT1 POSTGRESQLPROTOCOLTLSSERVERAUTHPORT1 POSTGRESQLPROTOCOLTLSMUTUALAUTHPORT1 TDSPROTOCOLTLSPORT1 TDSPROTOCOLTLSSERVERAUTHPORT1"
 ORACLEPROTOCOLPORT1=@ORACLEPROTOCOLPORT1@
 ORACLEPROTOCOLPORT2=@ORACLEPROTOCOLPORT2@
 ORACLEPROTOCOLPORT3=@ORACLEPROTOCOLPORT3@
@@ -1905,6 +1932,7 @@ ORACLEPROTOCOLPORT4=@ORACLEPROTOCOLPORT4@
 ORACLEPROTOCOLPORT5=@ORACLEPROTOCOLPORT5@
 ORACLEPROTOCOLPORT6=@ORACLEPROTOCOLPORT6@
 ORACLEPROTOCOLPORT7=@ORACLEPROTOCOLPORT7@
+ORACLEPROTOCOLPORT8=@ORACLEPROTOCOLPORT8@
 FIREBIRDPROTOCOLPORT1=@FIREBIRDPROTOCOLPORT1@
 FIREBIRDPROTOCOLPORT2=@FIREBIRDPROTOCOLPORT2@
 FIREBIRDPROTOCOLPORT3=@FIREBIRDPROTOCOLPORT3@
