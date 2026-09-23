@@ -11201,6 +11201,10 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
 	if (options&OPTION_FETCH) {
 
+		// whatever row the cursor was holding for a lob read, the
+		// client has moved on from it - it's asking for the next one
+		releaseLobPin(cursor);
+
 		// a combined execute-and-fetch: the real server answers with
 		// a row header and row data directly, the same shape a
 		// separate legacy TTI_FETCH gets from sendFetchResponse() -
@@ -17548,6 +17552,10 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
 				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
 	}
+
+	// whatever row the cursor was holding for a lob read, the client has
+	// moved on from it - it's asking for the next one
+	releaseLobPin(cursor);
 
 	// a standalone legacy fetch asks for rows and nothing else.  with no
 	// options field on the wire there is nothing to ask an exact fetch

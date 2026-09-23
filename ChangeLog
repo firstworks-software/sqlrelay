@@ -2883,6 +2883,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   connection instead of per cursor, so a nested query run by another
   trigger left the outer query's savepoint neither rolled back nor
   released (#10252)
+- fixed the oracle protocol module's legacy fetch paths not releasing a
+  cursor's lob pin before advancing to the next row (#10266)
 
 ### Security
 - fixed an authentication hole in the des password encryption module
