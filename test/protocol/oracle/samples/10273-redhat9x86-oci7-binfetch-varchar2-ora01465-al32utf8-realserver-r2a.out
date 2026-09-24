@@ -1,0 +1,12 @@
+NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=41273))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+olog ok
+oopen ok
+oparse: select 'a'||chr(50089)||chr(14844588) from dual
+oparse ok
+odefin ok
+oexec ok
+ofen failed: ORA-01465 (v2_rc=-1465 fc=12 peo=24 ose=0)
+oclose ok
+ologof ok
+done

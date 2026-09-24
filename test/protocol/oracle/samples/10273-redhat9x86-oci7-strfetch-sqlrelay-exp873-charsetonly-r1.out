@@ -1,0 +1,3 @@
+NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43273))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+olog failed: ORA-03113 (v2_rc=-3113 fc=0 peo=0 ose=0)

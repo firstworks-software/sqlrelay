@@ -1,0 +1,15 @@
+NLS_LANG=AMERICAN_AMERICA.WE8ISO8859P1
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=41273))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+olog ok
+oopen ok
+oparse: select 'a'||chr(50089)||chr(14844588) from dual
+oparse ok
+odefin ok
+oexec ok
+ofen ok
+  ind=0 retlen=3 retcode=0
+  string: "aé¿"
+  bytes : 61 e9 bf
+oclose ok
+ologof ok
+done

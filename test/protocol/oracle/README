@@ -272,6 +272,64 @@ block's position and shape were unattributable to anything real, and
 query2()'s OPTION_BIND path was a guess from a pre-8i wiki page that turned
 out to be wrong.
 
+oci7datestr.cpp, gated by the same configure-time check as oci7.cpp and
+oci7bind.cpp, is a minimal OCI7 client for one column at a time: olog,
+oopen, oparse, then odefin/oexec/ofen/oclose/ologof on a single select,
+printing the fetched value in hex, and (for a SQLT_STR/SQLT_DAT define)
+as a string too. Originally written for #9974 to capture a DATE column
+fetched SQLT_STR instead of SQLT_DAT (see the 9974-* capture above);
+#10273 extended it with two more flags rather than writing a new
+program.
+
+    ./oci7datestr SID [--query=QUERY] [--dat] [--bin] [--bindstr]
+                       [--bufsize=N] [--alter=NLSDATEFORMAT]
+                       [USER PASSWORD]
+
+--query= is what to select - one column, default "select sysdate from
+dual". --dat odefin's the column SQLT_DAT (the binary date form)
+instead of the default SQLT_STR; --bufsize= sets the SQLT_STR/SQLT_BIN
+buffer's size (default 64 - the client puts one less than this in the
+define descriptor); --alter= runs an "alter session set
+NLS_DATE_FORMAT='...'" before the select, to show whether the answer
+moves with the session.
+
+--bin and --bindstr were added for #10273. --bin odefin's the column
+SQLT_BIN instead of SQLT_STR, so the raw wire bytes come back with no
+client-side charset reinterpretation - the control a SQLT_STR capture
+is diffed against (--dat wins if both --dat and --bin are given;
+SQLT_BIN output skips the string line, since the bytes are not null
+terminated, but still prints the hex bytes line). --bindstr skips
+--query entirely and instead obndrv's the literal byte sequence
+61 c3 a9 e2 82 ac (ascii 'a' plus the UTF-8 bytes of U+00E9 and U+20AC,
+built byte by byte so the source file never carries a multibyte
+character) as a SQLT_STR IN bind on "select :v from dual", then
+odefin/oexec/ofen's it straight back on a cursor of its own - the
+client-to-server half of a charset capture, kept separate from the
+--query fetch path so the two never tangle.
+
+To reproduce the fetch side of #10273's capture, pass a --query that
+builds the test value from ASCII with chr(), so the client never has
+to send a multibyte character in the statement text itself - for
+example --query="select 'a'||chr(233)||chr(8364) from dual". chr()'s
+argument is a code value in the database's own NLS_CHARACTERSET: for a
+single-byte charset (e.g. WE8ISO8859P1) that lines up with the Unicode
+code point for these values, but for a multibyte one (AL32UTF8) it's
+the raw encoded byte value instead, so the equivalent query against an
+AL32UTF8 database is select 'a'||chr(50089)||chr(14844588) from dual.
+This distinction tripped up the first attempt at #10273's query (see
+comment 7 on the ticket, and the strfetch-al32utf8-realserver-r1
+capture entry below).
+
+Like oci7describe.cpp and oci7bind.cpp it only builds when the
+configure-time OCI7 probe finds a full ORACLE_HOME/rdbms/demo layout,
+which an Instant Client install does not provide - unlike them, it has
+never been wired into this directory's Makefile even on hosts that do
+have that layout, since HAVE_OCI7 has never actually come up set on
+any of them; it carries a hand-compile g++ command in its own header
+comment instead, which is what every #10273 capture, against both
+redhat9x86's real Oracle9i 9.2.0.4.0 client and dev's Instant Client
+23, used to build it.
+
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
 early OCI8-era client installs export the symbol under a short
@@ -1472,6 +1530,340 @@ the decoder can be exercised without live server access:
                                       test, and the section recovers at
                                       "odefin - every type" (#10054)
 
+The following captures document #10273 (a real 9i/OCI7 client
+misreading multibyte SQLT_STR text, traced to the forced 9i charset
+default of 31/WE8ISO8859P1 disagreeing with an AL32UTF8 backend). They
+group into three sets: real-server references (what a genuine 9i client
+does against an honest server, no SQL Relay involved), SQL Relay
+captures taken before any fix (reproducing the bug), and captures from
+a throwaway, uncommitted experimental build (evidence the fix shape
+works, not the shipped fix - see #10273 comment 9 for the build's
+revisions v1-v4). Every run used oci7datestr.cpp's --bin/--bindstr/
+--query= flags (documented above) from the real Oracle9i 9.2.0.4.0
+client on redhat9x86, through oraproxy on dev.firstworks.com, unless
+noted otherwise. "R1" etc. below are the run labels #10273 comments 7-9
+use; .out holds the program's stdout with the NLS_LANG in effect on the
+first line, .debug (where present) is a debug="protocols" sqlrelay log
+slice for that one session.
+
+Real-server references (#10273 comment 7) - a genuine 9i/OCI7 client
+against oracle122, which honestly declares charset 873 (AL32UTF8):
+
+    10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1.oraproxy
+    10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1.out
+                                     R1: select 'a'||chr(50089)||chr(14844588)
+                                      from dual, odefin SQLT_STR,
+                                      NLS_LANG=AMERICAN_AMERICA.AL32UTF8.
+                                      Decisive: the client prints the correct
+                                      bytes 61 c3 a9 e2 82 ac. Proves a real
+                                      OCI7 SQLT_STR client reads multibyte text
+                                      correctly when the server honestly
+                                      declares its real charset (873) - the
+                                      ticket's original client-side framing is
+                                      wrong. TTIPRO charset 873, TTC 02 flags
+                                      0x01, login/parse strings raw and 1x
+                                      sized, row bytes 07 06 61 c3 a9 e2 82 ac.
+
+    10273-redhat9x86-oci7-binfetch-al32utf8-realserver-r2.oraproxy
+    10273-redhat9x86-oci7-binfetch-al32utf8-realserver-r2.out
+                                     R2: select utl_raw.cast_to_raw(...) from
+                                      dual, odefin SQLT_BIN - the raw-bytes
+                                      control. Same row bytes as R1 (07 06 61
+                                      c3 a9 e2 82 ac), confirming R1's bytes
+                                      are the true wire bytes, not an artifact
+                                      of the SQLT_STR define.
+
+    10273-redhat9x86-oci7-binfetch-varchar2-ora01465-al32utf8-realserver-r2a.oraproxy
+    10273-redhat9x86-oci7-binfetch-varchar2-ora01465-al32utf8-realserver-r2a.out
+                                     R2a: odefin SQLT_BIN directly on the plain
+                                      VARCHAR2 query (not cast_to_raw). A real
+                                      server answers ORA-01465 'invalid hex
+                                      number' - it parses VARCHAR2-as-SQLT_BIN
+                                      text as hex, so this is not a raw-bytes
+                                      control for a text column. Flags a
+                                      pre-existing, out-of-scope divergence:
+                                      SQL Relay answers this with raw bytes
+                                      instead (see the sqlrelay-before-r2a
+                                      entry below).
+
+    10273-redhat9x86-oci7-strfetch-clob-al32utf8-realserver-r3.oraproxy
+    10273-redhat9x86-oci7-strfetch-clob-al32utf8-realserver-r3.out
+                                     R3: select
+                                      to_clob('a'||chr(50089)||chr(14844588))
+                                      from dual, odefin SQLT_STR. Clean: bytes
+                                      61 c3 a9 e2 82 ac. The row uses the 0xfe
+                                      long-form clr carrying raw UTF-8, not
+                                      UTF-16 - same define descriptor as R1
+                                      (charset 873).
+
+    10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.oraproxy
+    10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.out
+                                     R4: same as R1 but
+                                      NLS_LANG=AMERICAN_AMERICA.WE8ISO8859P1 on
+                                      the client. Decisive: the server sends
+                                      the same row as R1, and the client
+                                      legitimately converts it to bytes 61 e9
+                                      bf (the euro sign, having no 8859-1 code
+                                      point, becomes Oracle's bf replacement
+                                      byte) - correct, honest client behavior,
+                                      not corruption. This is also the run that
+                                      reproduces #9664's length inflation for
+                                      real against a server that truthfully
+                                      declares 873: TTC 02 flags become 0x02,
+                                      login/parse strings gain a length prefix,
+                                      and every declared size triples (user
+                                      0x18=3x8, host 0x4b=3x25, ALTER SESSION
+                                      0x2e2=3x246, osql7 0x8d=3x47, define
+                                      buffer 0xbd=3x63).
+
+    10273-redhat9x86-oci7-strbind-al32utf8-realserver-r5.oraproxy
+    10273-redhat9x86-oci7-strbind-al32utf8-realserver-r5.out
+                                     R5: --bindstr - obndrv SQLT_STR binds the
+                                      literal bytes 61 c3 a9 e2 82 ac on select
+                                      :v from dual, then fetches it back,
+                                      NLS_LANG=AL32UTF8. Clean round trip, no
+                                      client-side conversion: bind descriptor
+                                      charset 873, value goes out as the six
+                                      raw UTF-8 bytes.
+
+    10273-redhat9x86-oci7-strbind-we8iso8859p1-realserver-r5b.oraproxy
+    10273-redhat9x86-oci7-strbind-we8iso8859p1-realserver-r5b.out
+                                     R5b: R5 again with NLS_LANG=WE8ISO8859P1.
+                                      Decisive for the bind direction: the
+                                      client itself converts the six UTF-8
+                                      bytes to AL32UTF8 before sending, using
+                                      its own WE8ISO8859P1-to-AL32UTF8 table,
+                                      producing 07 0c 61 c3 83 c2 a9 c3 a2 ef
+                                      bf bd c2 ac - byte for byte the
+                                      corruption pattern in the ticket's
+                                      description, including ef bf bd (U+FFFD)
+                                      for the 0x82 byte. Confirms the U+FFFD
+                                      substitution is a genuine 9i client table
+                                      quirk for the 0x80-0x9f range, reproduced
+                                      here with no SQL Relay involved. Bind max
+                                      size is declared 0x12=3x6.
+
+    10273-redhat9x86-oci7-afcfetch-al32utf8-realserver-r7.oraproxy
+                                     SQLT_AFC (fixed CHAR) padding reference:
+                                      select cast('ab' as char(5)), AL32UTF8.
+                                      The server pads to the declared buffer
+                                      size (64 bytes) - confirms putField()'s
+                                      existing SQLT_AFC padding needs no change
+                                      for this ticket.
+
+    10273-redhat9x86-oci7-afcfetch-we8iso8859p1-realserver-r7b.oraproxy
+                                     The same SQLT_AFC run with
+                                      NLS_LANG=WE8ISO8859P1: the server pads to
+                                      192 bytes, 3x the AL32UTF8 run's 64 - the
+                                      same declared-size inflation R4 shows,
+                                      now confirmed for a fixed-width column
+                                      too.
+
+    10273-redhat9x86-oci7-describe-al32utf8-realserver-r6.oraproxy
+    10273-redhat9x86-oci7-describe-al32utf8-realserver-r6.out
+                                     R6: oci7describe --describe=parse against
+                                      the R1 query, AL32UTF8. Decisive for the
+                                      describe path: the real server sends the
+                                      TTI_DESCRIBE names blob as '0b 00' plus
+                                      raw NUM"TXT"DT text with NO length
+                                      prefix, unlike every other 9i describe
+                                      capture on file (which are all against
+                                      charset 31). Charset field on each column
+                                      is 69 03 (873), matching the define
+                                      descriptor charset seen in R1.
+
+    10273-redhat9x86-sqlplus-query-we8iso8859p1-realserver-r8.oraproxy
+                                     R8: sqlplus (not oci7datestr),
+                                      NLS_LANG=WE8ISO8859P1, against oracle122
+                                      (873). A second, independent client
+                                      program confirming the 3x size inflation
+                                      live (ALTER SESSION 141 bytes for 47,
+                                      define buffer 189 for 63) and showing the
+                                      TTC 02 flags byte a real client sends is
+                                      program-dependent, not just
+                                      charset-dependent: sqlplus sends 0x02
+                                      here where oci7datestr sends 0x01 under
+                                      the matching AL32UTF8 case - the module
+                                      must key off the bit the client actually
+                                      sends, never predict it from charsets.
+
+    10273-redhat9x86-sqlplus-query-we8iso8859p1-realserver-oracle102-r8b.oraproxy
+                                     The same sqlplus run against oracle102
+                                      (declares 31, WE8ISO8859P1 client -
+                                      charsets match, no conversion). Flags
+                                      byte 0x12 - confirms 0x02
+                                      (ENCODING_CONV_LENGTH) is clear only when
+                                      client and declared charset genuinely
+                                      match, independent of which program is
+                                      driving.
+
+    10273-dev-oci23api7-strfetch-al32utf8-realserver-r1c.oraproxy
+                                     R1 repeated from dev.firstworks.com using
+                                      Instant Client 23's legacy OCI7 call
+                                      support (the ticket's second named client
+                                      class), against oracle122 directly. Same
+                                      shape as the redhat9x86 R1: flags 0x01,
+                                      raw unprefixed login/osql7 text, 1x
+                                      sizes, unprefixed 64-hex O3LOGON
+                                      challenge key. Corroborates that R1's
+                                      clean result is not specific to the
+                                      9.2.0.4.0 client build.
+
+SQL Relay captures taken before any fix (#10273 comment 8) - the
+oracleprotocoloci7utf8 instance (verifiertype="9i", backend
+nls_lang=AMERICAN_AMERICA.AL32UTF8), unmodified, forcing charset 31 the way
+every 9i listener did before #10273's fix. Same queries as the real-server runs
+above, so each pair diffs cleanly:
+
+    10273-redhat9x86-oci7-strfetch-sqlrelay-before-r1.oraproxy
+    10273-redhat9x86-oci7-strfetch-sqlrelay-before-r1.out
+    10273-redhat9x86-oci7-strfetch-sqlrelay-before-r1.debug
+                                     R1 against SQL Relay. Decisive: reproduces
+                                      the ticket byte for byte. The client
+                                      prints 61 c3 83 c2 a9 c3 a2 ef bf bd c2
+                                      ac (retlen 12, not 6) - exactly the
+                                      corruption the ticket describes,
+                                      including U+FFFD for the euro sign's
+                                      middle byte. But the row SQL Relay put on
+                                      the wire, 07 06 61 c3 a9 e2 82 ac, is
+                                      byte-identical to the real server's R1
+                                      row. TTIPRO charset is 31 (not 873); that
+                                      mislabel is the entire bug - the module's
+                                      bytes were always right.
+
+    10273-redhat9x86-oci7-binfetch-sqlrelay-before-r2.oraproxy
+    10273-redhat9x86-oci7-binfetch-sqlrelay-before-r2.out
+    10273-redhat9x86-oci7-binfetch-sqlrelay-before-r2.debug
+                                     R2 (cast_to_raw, SQLT_BIN) against SQL
+                                      Relay. Matches the real server: clean
+                                      bytes, same row.
+
+    10273-redhat9x86-oci7-binfetch-varchar2-sqlrelay-before-r2a.oraproxy
+    10273-redhat9x86-oci7-binfetch-varchar2-sqlrelay-before-r2a.out
+    10273-redhat9x86-oci7-binfetch-varchar2-sqlrelay-before-r2a.debug
+                                     R2a (SQLT_BIN define directly on VARCHAR2)
+                                      against SQL Relay. Diverges from the real
+                                      server here: SQL Relay answers 'ofen ok'
+                                      with the raw bytes instead of the real
+                                      server's ORA-01465. A separate, small,
+                                      pre-existing gap, out of #10273's scope -
+                                      flagged for a follow-up ticket, and noted
+                                      as what makes oci7utf8clob.cpp's SQLT_BIN
+                                      control work at all.
+
+    10273-redhat9x86-oci7-strbind-sqlrelay-before-r5.oraproxy
+    10273-redhat9x86-oci7-strbind-sqlrelay-before-r5.out
+    10273-redhat9x86-oci7-strbind-sqlrelay-before-r5.debug
+                                     R5 (--bindstr) against SQL Relay. Decisive
+                                      and worse than the fetch case: the client
+                                      converts the AL32UTF8 bind value to the
+                                      declared 31 (WE8ISO8859P1) BEFORE
+                                      sending, so the backend receives 61 e9 bf
+                                      - not valid UTF-8, and what an INSERT or
+                                      UPDATE through a real 9i client would
+                                      actually store. The euro sign is lost
+                                      before it ever leaves the client. The
+                                      ticket described only the fetch
+                                      direction; this capture shows the
+                                      bind/write direction is corrupted too, at
+                                      the source.
+
+    10273-redhat9x86-oci7-strfetch-we8iso8859p1-charset31-sqlrelay-before-r4c.oraproxy
+    10273-redhat9x86-oci7-strfetch-we8iso8859p1-charset31-sqlrelay-before-r4c.out
+                                     A second, pre-existing bug found while
+                                      diagnosing this one: the unmodified
+                                      module, WE8ISO8859P1 client, against a 9i
+                                      listener at its ordinary charset 31 (no
+                                      mismatch at all). Login hangs and then
+                                      fails ORA-03113 -
+                                      recvClassicLogonRequest() misparses the
+                                      login blob the same way it does under 873
+                                      (see 'user: <f0>Xtest' in the debug log).
+                                      Unrelated to the multibyte-charset label;
+                                      the same structural fix (#10273 comment
+                                      9, sites A and 2) repairs it as a side
+                                      effect.
+
+Throwaway experimental-build captures (#10273 comment 9) - built and run from a
+scratch copy of src/protocols/oracle.cpp with charset="873" and, in later
+revisions, the structural fixes comment 9 goes on to specify for the real fix;
+never committed, reverted after this step (src/protocols/oracle.cpp is byte-
+identical to e091dd067 again). Not the shipped fix - evidence that the fix
+shape comment 9 recommends actually works, checked in for that reason:
+
+    10273-redhat9x86-oci7-strfetch-sqlrelay-exp873-charsetonly-r1.oraproxy
+    10273-redhat9x86-oci7-strfetch-sqlrelay-exp873-charsetonly-r1.out
+                                     v1: charset=873 declared, nothing else
+                                      changed. olog fails ORA-03113 - proves
+                                      the charset label cannot be switched to
+                                      873 by itself; recvClassicLogonRequest()
+                                      still expects the old prefixed-string
+                                      shape and misparses the unprefixed one a
+                                      converting 873 client sends.
+
+    10273-redhat9x86-oci7-strfetch-sqlrelay-exp873-r1.oraproxy
+    10273-redhat9x86-oci7-strfetch-sqlrelay-exp873-r1.out
+                                     v3 (charset 873 plus raw classic-logon
+                                      blob, raw challenge key, raw
+                                      osql7/parseExecute text, raw version
+                                      banner): R1 now matches the real server
+                                      exactly - client prints 61 c3 a9 e2 82
+                                      ac, retlen=6.
+
+    10273-redhat9x86-oci7-strfetch-we8iso8859p1-sqlrelay-exp873-r4.oraproxy
+    10273-redhat9x86-oci7-strfetch-we8iso8859p1-sqlrelay-exp873-r4.out
+                                     The v3/v4 build's R4 (WE8ISO8859P1
+                                      client). Matches the real server's R4
+                                      exactly: same client output (61 e9 bf)
+                                      and the same 3x declared-size inflation,
+                                      confirming the fix's size-check
+                                      relaxation handles the converting case,
+                                      not only the raw one.
+
+    10273-redhat9x86-oci7-strbind-sqlrelay-exp873-r5.oraproxy
+    10273-redhat9x86-oci7-strbind-sqlrelay-exp873-r5.out
+    10273-redhat9x86-oci7-strbind-we8iso8859p1-sqlrelay-exp873-r5b.oraproxy
+    10273-redhat9x86-oci7-strbind-we8iso8859p1-sqlrelay-exp873-r5b.out
+                                     The v3/v4 build's R5 and R5b (bind
+                                      direction, AL32UTF8 and WE8ISO8859P1
+                                      clients). Both match the real server's
+                                      R5/R5b - the bind corruption in the
+                                      sqlrelay-before-r5 capture above does not
+                                      recur once the charset label is honest.
+
+    10273-redhat9x86-oci7-describe-sqlrelay-exp873-namesprefixed-r6.oraproxy
+    10273-redhat9x86-oci7-describe-sqlrelay-exp873-namesprefixed-r6.out
+                                     v3's first describe attempt: the names
+                                      blob sent WITH a length prefix, guessing
+                                      the 873 shape would match the prefixed
+                                      shape used at 31. Wrong - every column
+                                      answers ORA-03106, since the real
+                                      server's names blob (see the
+                                      realserver-r6 capture above) is not
+                                      prefixed.
+
+    10273-redhat9x86-oci7-describe-sqlrelay-exp873-r6.oraproxy
+    10273-redhat9x86-oci7-describe-sqlrelay-exp873-r6.out
+                                     v4, with the names blob sent
+                                      raw/unprefixed instead: matches the real
+                                      server's describe-al32utf8-realserver-r6
+                                      capture. (NUM's dbsize 22 vs. the real
+                                      server's 2 is a separate, pre-existing
+                                      difference, not a charset issue.)
+
+After the shipped fix (#10273 comment 10, step 10 verification) - the real
+src/protocols/oracle.cpp change, built and installed, not a throwaway build.
+Confirms the negative control: reverting only oracle.cpp reproduces the
+before-fix captures above exactly, and restoring it reproduces this capture
+again:
+
+    10273-redhat9x86-oci7-strfetch-sqlrelay-after-r1.oraproxy
+    10273-redhat9x86-oci7-strfetch-sqlrelay-after-r1.out
+                                     R1 against the shipped fix: client prints
+                                      61 c3 a9 e2 82 ac, retlen=6 - matches the
+                                      realserver-r1 and exp873-r1 captures
+                                      above exactly.
+
 Each of the 9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above is
 oraproxy's own capture format (see "oraproxy" below), taken by interposing
 oraproxy locally on the client host and pointing the client's tnsnames.ora
@@ -1506,3 +1898,36 @@ OCI7/O3LOGON - it's the backend the oracleprotocoloci7 test instance
 uses (see test/sqlrelay.conf.d/oracleprotocol.conf.in). Its hostname is
 not recorded anywhere in this tree beyond this line; only its IP,
 10.0.2.3, is confirmed (#9664 comment 21).
+
+NLS_CHARACTERSET, confirmed live (nls_charset_id(), #10273): oracle102
+is WE8ISO8859P1 (charset id 31); oracle122 is AL32UTF8 (charset id
+873). Both also carry NCHAR AL16UTF16 (charset id 2000). This is what
+oracleprotocoloci7's forced 9i charset default of 31
+(src/protocols/oracle.cpp, the VERIFIER_TYPE_9I block in the
+constructor) matches for oracle102, but not for oracle122 or for
+oracleprotocoloci7utf8's own AL32UTF8-connected backend - see #10273.
+
+oracle122's server-side login policy was changed for #10273, and is
+still in that changed state as of this writing:
+/u01/app/oracle/product/12.2.0/network/admin/sqlnet.ora on
+oracle122centos7x64.firstworks.com got
+SQLNET.ALLOWED_LOGON_VERSION_SERVER=8 appended (the original is backed
+up alongside it as sqlnet.ora.pre-10273), and testuser's password was
+reset to its own existing value (alter user testuser identified by
+testpassword) to regenerate a 10G/DES password verifier alongside its
+existing 11G/12C ones - the O3LOGON handshake a pre-10g OCI7 client
+uses needs one. Together these let a real pre-10g OCI7 client (the
+genuine Oracle9i 9.2.0.4.0 client on redhat9x86 used throughout
+#10273's captures) log into oracle122 directly with its own
+DESCRIPTION connect string - no oraproxy, and no separate scoped
+listener, needed for that login itself. oracle122 is a pure testbed
+with no sensitive data, so this was done in place rather than standing
+up a separate AL32UTF8 database elsewhere.
+
+#10273's teardown step is expected to restore sqlnet.ora from the
+sqlnet.ora.pre-10273 backup; testuser's password value is unchanged
+(reset to itself), so there is nothing to revert there. If
+ALLOWED_LOGON_VERSION_SERVER=8 is still set on oracle122 and #10273 has
+since been closed, that revert step was likely missed - check the
+ticket's history before assuming the setting is still needed for
+anything.

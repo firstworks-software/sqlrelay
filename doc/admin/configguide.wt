@@ -2935,6 +2935,8 @@ Note that the module only advertises the character sets.  It doesn't convert any
 
 The //charset// option sets the database character set id.  It defaults to 873, which is AL32UTF8.
 
+A listener with //verifiertype="9i"// defaults to 31 instead, which is WE8ISO8859P1.  That matches a connection with no //nls_lang// in its connect string, which hands back single-byte data.  If the connection's //nls_lang// is AL32UTF8, set //charset// to 873 on that listener.  Otherwise an OCI7 client corrupts its non-ASCII text, both in the rows it fetches and in the values it binds.
+
 The //nationalcharset// option sets the national character set id.  It defaults to 2000, which is AL16UTF16.  That is the only national character set modern Oracle databases use, so there is rarely a reason to set it at all.
 
 Prior to version 2.3.0, SQL Relay always reported character set 1, which is US7ASCII, and some clients take that literally.  python-oracledb, for example, maps character set 1 to Python's ascii codec, which raises an exception on any byte of 0x80 or higher.  Such a client cannot read a result set containing any non-ASCII data at all.

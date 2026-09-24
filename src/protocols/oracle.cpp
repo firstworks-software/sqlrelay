@@ -834,6 +834,7 @@
 
 // character set ids
 #define CHARSET_US7ASCII		1
+#define CHARSET_WE8ISO8859P1		31
 #define CHARSET_WE8MSWIN1252		178
 #define CHARSET_AL32UTF8		873
 #define CHARSET_AL16UTF16		2000
@@ -1660,6 +1661,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	recvClassicLogonRequest(const byte_t *rp,
 						const byte_t *end,
 						bool secondphase);
+		bool	classicLogonStringsAt(const byte_t *start,
+						const byte_t *end,
+						const uint32_t *sizes,
+						byte_t sizecount);
 		bool	recvAuthenticationRequest(bool secondphase);
 		bool	sendAuthenticationChallenge();
 		bool	sendAuthenticationResponse();
@@ -1688,6 +1693,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// open...
 		bool	open(const byte_t *rp);
 		bool	sendOpenResponse(sqlrservercursor *cursor);
+
+		// the sql text of an osql7, oparsex or query call
+		bool	getOci7Text(const byte_t *rp,
+					const byte_t *end,
+					uint32_t declaredsize,
+					const byte_t **text,
+					uint32_t *textsize,
+					const byte_t **rpout);
+		bool	oci7TextSizeMatches(uint32_t declaredsize,
+						uint32_t textsize);
 
 		// osql7...
 		bool	osql7(const byte_t *rp);
@@ -2143,6 +2158,15 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		uint16_t	clientnationalcharset;
 		byte_t		encodingflags;
 		bool		ociclient;
+
+		// whether a 9i client sends and expects its oci7 call text -
+		// login strings, sql text, the challenge key, the version
+		// banner, describe's column names - as raw bytes with exact
+		// sizes, rather than as clrs behind declared buffer sizes.
+		// decided per session in recvDataTypeRequest() and reset by
+		// init()
+		bool		rawtextargs;
+
 		byte_t		clientfieldversion;
 		byte_t		fieldversion;
 		bool		clientwantsdbtimezone;
@@ -2470,11 +2494,9 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		maxloginattempts=3;
 	}
 
+	// the default depends on the verifier type, so it's filled in below
 	charset=charstring::convertToInteger(
 				parameters->getAttributeValue("charset"));
-	if (!charset) {
-		charset=CHARSET_AL32UTF8;
-	}
 
 	nationalcharset=charstring::convertToInteger(
 				parameters->getAttributeValue(
@@ -2535,21 +2557,30 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	}
 
 	// a 9i verifier also means talking to a pre-10g client, which reads
-	// a different, smaller TTC 01/02 shape - see putTti6Response().  it
-	// also means answering as charset 31, which a real 10.2 server sent
-	// this client - not otherwise a documented charset id, but confirmed
-	// against a real capture rather than assumed.  and it means reporting
-	// 10.2 rather than whatever serverversion says, since o5logon came in
-	// 11.1 and no server that offers a pre-o5logon verifier is newer than
-	// that.  serverversion has no 10.2 setting of its own for the same
-	// reason - a 10.2 server can't offer the o5logon verifier the other
-	// two settings go with.
+	// a different, smaller TTC 01/02 shape - see putTti6Response().  and
+	// it means reporting 10.2 rather than whatever serverversion says,
+	// since o5logon came in 11.1 and no server that offers a pre-o5logon
+	// verifier is newer than that.  serverversion has no 10.2 setting of
+	// its own for the same reason - a 10.2 server can't offer the o5logon
+	// verifier the other two settings go with.
 	cursoridoffset=CURSOR_ID_OFFSET;
 	if (verifiertype==VERIFIER_TYPE_9I) {
 		serverfieldversion=CCAP_FIELD_VERSION_10_2;
 		serverversionno=SERVER_VERSION_NO_10_2;
-		charset=31;
 		cursoridoffset=CURSOR_ID_OFFSET_9I;
+	}
+
+	// A 9i listener defaults to WE8ISO8859P1 rather than AL32UTF8.  That
+	// is the charset of the 10.2 database the OCI7 clients were first
+	// tested against, not a protocol requirement - a real AL32UTF8 server
+	// declares 873 to a 9i client too.  But it keeps a backend connection
+	// with no nls_lang, which hands back single-byte data, working out of
+	// the box.  One whose nls_lang is AL32UTF8 has to say so with
+	// charset="873", or a converting client re-encodes the UTF-8 bytes as
+	// if they were WE8ISO8859P1.
+	if (!charset) {
+		charset=(verifiertype==VERIFIER_TYPE_9I)?
+				CHARSET_WE8ISO8859P1:CHARSET_AL32UTF8;
 	}
 
 	// build the version response's banner from that version.  the nibbles
@@ -2797,6 +2828,7 @@ void sqlrprotocol_oracle::init() {
 	clientnationalcharset=0;
 	encodingflags=0;
 	ociclient=false;
+	rawtextargs=false;
 	clientfieldversion=0;
 
 	// the module's own, until a data type negotiation lowers it to a
@@ -5913,10 +5945,31 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	readLE(rp,&clientcharsetin,&rp);
 	readLE(rp,&clientcharsetout,&rp);
 
-	// a bit field, not a marker - 9i and OCI 23.26 send
-	// ENCODING_CONV_LENGTH alone, ojdbc 23.26 sends ENCODING_MULTI_BYTE
-	// alone, python-oracledb and node-oracledb send both
+	// a bit field, not a marker.  ENCODING_MULTI_BYTE says the client's
+	// own charset is multibyte.  ENCODING_CONV_LENGTH says converting
+	// between it and the declared charset can change a string's length.
+	// ojdbc 23.26 sends ENCODING_MULTI_BYTE alone, python-oracledb and
+	// node-oracledb send both.  a 9i client, or OCI 23.26 driving the
+	// legacy calls, sends whichever its own charset and the declared one
+	// call for, and the same pair of charsets gets different flags from
+	// different programs - 9i sqlplus sends 0x03 where 9i OCI7 sends 0x01
+	// - so the flags have to be read, never predicted
 	read(rp,&encodingflags,&rp);
+
+	// Without ENCODING_CONV_LENGTH, a 9i client sends the text in its
+	// login, osql7, oparsex and query calls as raw bytes with exact sizes,
+	// and reads the challenge key, the version banner and describe's
+	// column names the same way.  With it, each is a clr and each size it
+	// declares is a buffer size, up to 3x the real length when it
+	// converts into AL32UTF8.  See the 10273-redhat9x86-oci7-strfetch-
+	// al32utf8-realserver-r1 (raw) and strfetch-we8iso8859p1-realserver-
+	// r4 (clrs, 3x) captures in test/protocol/oracle/samples/.
+	//
+	// The 9i term keeps modern clients out of it.  They share the version
+	// call, and ojdbc sends ENCODING_MULTI_BYTE alone but still reads the
+	// banner as a dalc.
+	rawtextargs=(verifiertype==VERIFIER_TYPE_9I &&
+			!(encodingflags&ENCODING_CONV_LENGTH));
 
 	// the client's capability arrays
 	const byte_t	*compilecaps=NULL;
@@ -6108,6 +6161,7 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 			(encodingflags&ENCODING_MULTI_BYTE)?" multibyte":"",
 			(encodingflags&ENCODING_CONV_LENGTH)?" convlength":"");
 		debugWrite("oci client: %s",(ociclient)?"true":"false");
+		debugWrite("raw text args: %s",(rawtextargs)?"true":"false");
 		debugWrite("client compile caps size: %d",compilecapssize);
 		debugHexDump(compilecaps,compilecapssize);
 		debugWrite("client runtime caps size: %d",runtimecapssize);
@@ -7931,10 +7985,16 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 			continue;
 		}
 
-		bool	ishex=true;
+		// fieldsize is the declared size, which a client converting
+		// into a multibyte charset declares as a buffer size - 3x the
+		// value under AL32UTF8 - so the hex is checked against the
+		// value's own length instead
+		uint32_t	valuesize=charstring::getLength(field);
+		bool		ishex=true;
 		if (fieldsize) {
-			ishex=!(fieldsize%O3LOGON_BLOCK_HEX_SIZE);
-			for (uint32_t i=0; ishex && i<fieldsize; i++) {
+			ishex=(valuesize &&
+				!(valuesize%O3LOGON_BLOCK_HEX_SIZE));
+			for (uint32_t i=0; ishex && i<valuesize; i++) {
 				char	c=field[i];
 				ishex=((c>='0' && c<='9') ||
 					(c>='a' && c<='f') ||
@@ -7978,12 +8038,11 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // the host/machine name and os user name a real client's CID block always
 // carries, a second unnamed count, then a pointer and a length for each of
 // the process id string and program name, followed by one contiguous run
-// of those strings with no delimiters and no length prefix of their own -
-// a field's length comes only from its own count above, never from the
-// string data.  decoded byte for byte, field by field, from a real
-// client's own request to this module (#9794, #10048) - both phases carry
-// the same header layout, phase two's password count simply being zero on
-// phase one's own copy of it.
+// of those strings - raw, or each behind a length byte of its own,
+// depending on ENCODING_CONV_LENGTH (see below).  decoded byte for byte,
+// field by field, from a real client's own request to this module (#9794,
+// #10048) - both phases carry the same header layout, phase two's password
+// count simply being zero on phase one's own copy of it.
 //
 // every pointer field is the client's own raw address - four bytes, native
 // byte order, the same width and order getPointer() already reads for
@@ -8006,10 +8065,8 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // to land on the fields this module needs.  what comes after the program
 // name's length is a real client's own request continues into, still
 // unconfirmed - rather than keep walking blind, the string blob is found
-// the same way findO3LogonStrings() finds O3LOGON's: since it has to end
-// exactly on the packet's own end, its start is "end" minus the combined
-// length of the strings already accounted for above, whatever comes
-// between here and there
+// the same way findO3LogonStrings() finds O3LOGON's: it has to end exactly
+// on the packet's own end, whatever comes between here and there
 bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 						const byte_t *end,
 						bool secondphase) {
@@ -8079,46 +8136,56 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// against a real capture (see #9794).  rather than keep walking
 	// blind, land on the string blob the same way findO3LogonStrings()
 	// does for O3LOGON: it has to end exactly on the packet's own end,
-	// so its start is "end" minus the combined length of every string
-	// already accounted for above, whatever comes between here and
-	// there
+	// whatever comes between here and there
 	//
-	// each non-empty string in the blob also carries its own redundant
-	// one-byte length prefix, on top of the header field that already
-	// gives its length - a real client's request, decoded against
-	// samples/oracle102-oci7-portable-login-select.cap packets [0011]
-	// and [0013], shows "03 dev" for a 3-byte user name, "0d
-	// solaris8sparc" for a 13-byte host name, and so on for every field
-	// here, with the byte simply absent for a zero-length one (a phase
-	// one request's empty password).  same duplicate-length-byte shape
-	// #9794 found on the challenge response, just the client doing it
-	// here instead of this module
-	uint32_t	blobprefixes=(usernamesize?1:0)+(passwordsize?1:0)+
-					(terminalsize?1:0)+
-					(hostsize?1:0)+(usersize?1:0)+
-					(pidstringsize?1:0)+(programsize?1:0);
-	uint32_t	bloblen=usernamesize+passwordsize+terminalsize+
-					hostsize+
-					usersize+pidstringsize+programsize+
-					blobprefixes;
-	if ((size_t)(end-rp)<(size_t)bloblen) {
+	// A client that sent ENCODING_CONV_LENGTH puts a one-byte length
+	// prefix on each non-empty string, and declares buffer sizes above
+	// rather than lengths.  At a single-byte charset the two agree -
+	// samples/oracle102-oci7-portable-login-select.cap packet [0011]
+	// shows "03 dev" for a declared 3 - but converting into AL32UTF8
+	// declares 3x ("08 testuser" for a declared 24, in
+	// 10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4), so
+	// only the prefixes give the real lengths and the blob has to be
+	// searched for.  Without ENCODING_CONV_LENGTH there are no prefixes
+	// and the sizes are exact ("testuserredhat9x86..." for 8 and 25, in
+	// 10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1).
+	uint32_t	sizes[]={
+		usernamesize,passwordsize,terminalsize,hostsize,
+		usersize,pidstringsize,programsize
+	};
+	byte_t		sizecount=(byte_t)(sizeof(sizes)/sizeof(uint32_t));
+
+	const byte_t	*blob=NULL;
+	if (rawtextargs) {
+		uint32_t	bloblen=0;
+		for (byte_t i=0; i<sizecount; i++) {
+			bloblen+=sizes[i];
+		}
+		if ((size_t)(end-rp)>=(size_t)bloblen) {
+			blob=end-bloblen;
+		}
+	} else {
+		for (const byte_t *start=rp; start<end && !blob; start++) {
+			if (classicLogonStringsAt(start,end,sizes,sizecount)) {
+				blob=start;
+			}
+		}
+	}
+	if (!blob) {
 		debugWrite("malformed classic logon request: "
 					"string blob doesn't fit");
 		return false;
 	}
-	rp=end-bloblen;
+	rp=blob;
 
-	if (usernamesize) {
-		// skip the user name's own length-prefix byte
+	// user name
+	uint32_t	userlength=usernamesize;
+	if (usernamesize && !rawtextargs) {
+		userlength=*rp;
 		rp++;
 	}
-	if ((size_t)(end-rp)<(size_t)usernamesize) {
-		debugWrite("malformed classic logon request: "
-					"truncated user name");
-		return false;
-	}
 	char	*user=NULL;
-	getString(rp,&user,usernamesize,&rp);
+	getString(rp,&user,userlength,&rp);
 	debugWrite("user: %s",user);
 
 	if (!secondphase) {
@@ -8139,10 +8206,13 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// a zero length password is what a client sends when it has no
 	// password to offer - getAuthField()'s AUTH_PASSWORD does the same
 	if (passwordsize) {
-		// skip the password's own length-prefix byte
-		rp++;
+		uint32_t	passwordlength=passwordsize;
+		if (!rawtextargs) {
+			passwordlength=*rp;
+			rp++;
+		}
 		delete[] authpassword;
-		getString(rp,&authpassword,passwordsize,&rp);
+		getString(rp,&authpassword,passwordlength,&rp);
 		gotauthpassword=true;
 		debugWrite("AUTH_PASSWORD: %s",authpassword);
 	} else {
@@ -8150,11 +8220,37 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	}
 
 	// the terminal name, host name, os user name, pid string and program
-	// name aren't needed for anything this module does - already
-	// accounted for in bloblen above, so there's nothing left to skip
-	// past them for
+	// name aren't needed for anything this module does - the blob was
+	// already found to end on them, so there's nothing left to skip past
+	// them for
 
 	return true;
+}
+
+// whether a run of one-byte-length-prefixed strings starts at "start" and ends
+// exactly at "end" - one for each nonzero size, in order, each at least 1 byte
+// long and no longer than its declared size
+bool sqlrprotocol_oracle::classicLogonStringsAt(const byte_t *start,
+						const byte_t *end,
+						const uint32_t *sizes,
+						byte_t sizecount) {
+	const byte_t	*p=start;
+	for (byte_t i=0; i<sizecount; i++) {
+		if (!sizes[i]) {
+			continue;
+		}
+		if (p>=end) {
+			return false;
+		}
+		uint32_t	length=*p;
+		p++;
+		if (!length || length>sizes[i] ||
+				(size_t)(end-p)<(size_t)length) {
+			return false;
+		}
+		p+=length;
+	}
+	return (p==end);
 }
 
 bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
@@ -8522,21 +8618,27 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 	// (#9792) - while a real classic 0x52 (TTI_LOGON_PRESENT_USER)
 	// client, the only shape an ancient pre-8.0 OCI olog() call ever
 	// sends, wants this branch's older, untagged shape instead: a
-	// count, then the key as a putLenString() (its own single raw
-	// length byte ahead of the bytes - the same idiom putAuthField()
-	// already uses for its own name/value strings), then a bare
-	// summary object.  decoded straight off chunk [0012] of
+	// count, then the key, then a bare summary object.
+	//
+	// The key carries a length byte of its own too, behind the count,
+	// for a client that sent ENCODING_CONV_LENGTH (packet [0012] of
 	// samples/oracle102-oci7-{native,portable}-login-wrongpassword.cap
-	// with oradecode: a real server's challenge carries the count AND
-	// the putLenString() byte both, one byte more than this branch was
-	// writing
+	// and of samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-
+	// realserver-r4), and goes out raw for one that didn't (packet
+	// [0012] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-
+	// realserver-r1).
 	if (o3logon) {
 
 		if (classiclogon) {
 			uint32_t sesskeysize=
 					charstring::getLength(serverauthsesskey);
 			putAuthCount(sesskeysize,2);
-			putLenString(serverauthsesskey,sesskeysize);
+			if (rawtextargs) {
+				write(&reqpacket,serverauthsesskey,
+							(size_t)sesskeysize);
+			} else {
+				putLenString(serverauthsesskey,sesskeysize);
+			}
 			putO3LogonSummary();
 		} else {
 			putAuthCount(1,2);
@@ -9498,13 +9600,10 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	}
 	rp+=skip;
 
-	// the sql text.  querysize above says how long it is too, but this is
-	// a clr, so it carries its own length and can run past what one
-	// length byte holds
+	// the sql text
 	const byte_t	*query=NULL;
 	uint32_t	querybytes=0;
-	bool		querynull=false;
-	if (!getLenBytes(rp,end,&query,&querybytes,&querynull,&rp)) {
+	if (!getOci7Text(rp,end,querysize,&query,&querybytes,&rp)) {
 		return false;
 	}
 
@@ -9519,12 +9618,11 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	debugWrite("query: \"%.*s\"",(int)querybytes,(const char *)query);
 	debugEnd();
 
-	// both captures carry the length twice and both times it agrees.  a
-	// request whose two lengths disagree is one this parse landed on the
-	// wrong offsets in - reading a pointer field at the wrong width lands
-	// exactly there - and preparing whatever text that found would run a
-	// statement the client never sent
-	if (querysize!=querybytes) {
+	// a request whose declared size doesn't fit the text behind it is one
+	// this parse landed on the wrong offsets in - reading a pointer field
+	// at the wrong width lands exactly there - and preparing whatever
+	// text that found would run a statement the client never sent
+	if (!oci7TextSizeMatches(querysize,querybytes)) {
 		debugWrite("query size %d doesn't match the %d bytes of "
 				"query text behind it",querysize,querybytes);
 		return false;
@@ -9741,10 +9839,13 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	// blob back up using the name length each metadata block carries, so
 	// the quotes are separators it never has to count.
 	//
-	// the size goes out twice, as a count and then as the text's own
-	// length byte, which is what putLenBytes() writes for anything up to
-	// 252 bytes.  no capture has a blob longer than that - a wider one
-	// takes putLenBytes()'s chunked long form, the same as any other clr
+	// A client that sent ENCODING_CONV_LENGTH gets the size twice, as a
+	// count and then as the text's own clr length byte.  One that didn't
+	// gets the count and then the raw text (packet [0028] of
+	// samples/10273-redhat9x86-oci7-describe-al32utf8-realserver-r6), and
+	// answers a clr with ORA-03106 (describe-sqlrelay-exp873-namesprefixed-
+	// r6 beside it).  no capture has a blob longer than 252 bytes - a
+	// wider clr takes putLenBytes()'s chunked long form
 	stringbuffer	names;
 	for (uint32_t i=position-1; i<colcount; i++) {
 		names.append(cont->getColumnName(cursor,i),
@@ -9754,7 +9855,11 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	uint32_t	namessize=(uint32_t)names.getStringLength();
 
 	putAuthCount(namessize,2);
-	putLenBytes(names.getString(),namessize);
+	if (rawtextargs) {
+		write(&reqpacket,names.getString(),(size_t)namessize);
+	} else {
+		putLenBytes(names.getString(),namessize);
+	}
 
 	debugStart("column names");
 	debugWrite("size: %d",namessize);
@@ -9982,6 +10087,55 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 	return sendPacket(true);
 }
 
+// Reads the text argument of an osql7, oparsex or query call.  A client that
+// sent ENCODING_CONV_LENGTH sends it as a clr and declares a buffer size ahead
+// of it - 3x the text for AL32UTF8 when it converts, "query size" 0x8d ahead
+// of 47 bytes of osql7 text in packet [0025] of
+// samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.  One that
+// didn't sends it raw, and the declared size is its exact length (packet
+// [0025] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1).
+bool sqlrprotocol_oracle::getOci7Text(const byte_t *rp,
+					const byte_t *end,
+					uint32_t declaredsize,
+					const byte_t **text,
+					uint32_t *textsize,
+					const byte_t **rpout) {
+
+	if (!rawtextargs) {
+		bool	isnull=false;
+		return getLenBytes(rp,end,text,textsize,&isnull,rpout);
+	}
+
+	// the declared size is what says how much to wait for, so a bogus
+	// one would otherwise read packets toward a size no number of them
+	// can satisfy
+	if ((size_t)declaredsize>(size_t)(resppacket+maxrequestsize-rp)) {
+		debugWrite("text past the request");
+		return false;
+	}
+	if (!have(rp,(size_t)declaredsize,&end)) {
+		debugWrite("truncated text");
+		return false;
+	}
+	*text=rp;
+	*textsize=declaredsize;
+	*rpout=rp+declaredsize;
+	return true;
+}
+
+// whether a text argument's declared size fits the text read by getOci7Text().
+// a buffer size is the text's character count times the bytes per character
+// of the declared charset, so it runs from the text's own length up to 4x it -
+// the same 1x-4x span recvAuthenticationRequest() allows a user name's count
+bool sqlrprotocol_oracle::oci7TextSizeMatches(uint32_t declaredsize,
+						uint32_t textsize) {
+	if (rawtextargs) {
+		return (declaredsize==textsize);
+	}
+	return (declaredsize>=textsize &&
+		(uint64_t)declaredsize<=(uint64_t)textsize*4);
+}
+
 // the pre-8.0 parse-and-execute (oparsex), the one call an oci7 client makes
 // that both parses and runs a statement.  a real oci7 client sends one on
 // its own initiative as soon as it has logged in, to push its own nls
@@ -9997,8 +10151,8 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 // server, packet [0019] of test/protocol/oracle/samples/
 // oracle102-oci7-native-multicol-5col-exfet.cap.  the fields are osql7()'s
 // cursor id, query pointer and query size, in that order, with the sql text
-// behind them as a clr.  no capture on file carries this call in the
-// portable encoding, so the two counts are read the encoding-aware way
+// behind them (see getOci7Text()).  no capture on file carries this call in
+// the portable encoding, so the two counts are read the encoding-aware way
 // close() reads its cursor id rather than the way osql7() reads its own -
 // that lands on the native capture's field boundaries as well as the
 // portable ones.  the open ahead of it,
@@ -10038,13 +10192,10 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 		return false;
 	}
 
-	// the sql text.  querysize above says how long it is too, but this is
-	// a clr, so it carries its own length and can run past what one
-	// length byte holds
+	// the sql text
 	const byte_t	*query=NULL;
 	uint32_t	querybytes=0;
-	bool		querynull=false;
-	if (!getLenBytes(rp,end,&query,&querybytes,&querynull,&rp)) {
+	if (!getOci7Text(rp,end,querysize,&query,&querybytes,&rp)) {
 		return false;
 	}
 
@@ -10056,12 +10207,11 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 	debugWrite("query: \"%.*s\"",(int)querybytes,(const char *)query);
 	debugEnd();
 
-	// the capture carries the length twice and both times it agrees.  a
-	// request whose two lengths disagree is one this parse landed on the
-	// wrong offsets in - reading a pointer field at the wrong width lands
-	// exactly there - and running whatever text that found would run a
-	// statement the client never sent
-	if (querysize!=querybytes) {
+	// a request whose declared size doesn't fit the text behind it is one
+	// this parse landed on the wrong offsets in - reading a pointer field
+	// at the wrong width lands exactly there - and running whatever text
+	// that found would run a statement the client never sent
+	if (!oci7TextSizeMatches(querysize,querybytes)) {
 		debugWrite("query size %d doesn't match the %d bytes of "
 				"query text behind it",querysize,querybytes);
 		return false;
@@ -10741,31 +10891,17 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	byte_t		seqnumber=0;
 	uint32_t	cursorid=0;
 
-	// one pointer into the client's own address space, and one plain
-	// byte (0x01 in the capture - unconfirmed meaning, maybe a bind or
-	// iteration count) follow the cursor id - nothing behind this call
-	// needs either, and nothing on file says what they're for beyond
-	// landing on the query size ahead of the text.  getPointer() has no
-	// presence flag - it always consumes a fixed pointersize bytes - so
-	// calling it more than once here (an earlier version of this fix
-	// called it five times, guessing five one-byte pointers) silently
-	// eats into the query text instead of failing: see comment 5 on
-	// #9793, where that version's own consistency check caught it
-	// ("query size 82 doesn't match repeated size 79") against this same
-	// capture.  the only capture on file is a portable-encoding session
-	// where the pointer datatype itself happens to be 4 bytes wide (see
-	// getPointer()) - a client whose pointer datatype is the 1-byte
-	// universal one, or a fully native-encoded session, is unverified
+	// one pointer into the client's own address space follows the cursor
+	// id - nothing behind this call needs it, and nothing on file says
+	// what it's for beyond landing on the query size ahead of the text.
+	// getPointer() has no presence flag - it always consumes a fixed
+	// pointersize bytes - so calling it more than once here (an earlier
+	// version of this fix called it five times, guessing five one-byte
+	// pointers) silently eats into the query text instead of failing:
+	// see comment 5 on #9793, where that version's own consistency check
+	// caught it ("query size 82 doesn't match repeated size 79") against
+	// this same capture
 	uint32_t	unknown1=0;
-	byte_t		unknown2=0;
-
-	// the query size is carried twice, both times as a raw byte rather
-	// than a count - both come out 0x16 (22) ahead of the 21-byte
-	// "select user from dual" plus its own trailing nul in the capture.
-	// like the pointer above, this is only confirmed in the portable
-	// encoding
-	byte_t		querysizebyte1=0;
-	byte_t		querysizebyte2=0;
 
 	if (!have(rp,1,&end)) {
 		debugWrite("truncated query sequence number");
@@ -10777,56 +10913,54 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// back, the same way osql7()'s and query2()'s do
 	callnumber=seqnumber;
 
+	// The query size is a count, and the text behind it includes its own
+	// trailing nul.  The #9793 capture's "01 16 16" ahead of the 21-byte
+	// "select user from dual" is the count 0x16 and then the text's clr
+	// length byte, which agree there.  But the count is a buffer size for
+	// a converting client, the same as osql7()'s: 9i sqlplus declares
+	// "42 00 00 00" (3x) ahead of "16 SELECT USER FROM DUAL 00" in packet
+	// [0023] of samples/10273-redhat9x86-sqlplus-query-we8iso8859p1-
+	// realserver-r8, and the 1x "16 00 00 00" against a WE8ISO8859P1
+	// server in r8b beside it.
+	uint32_t	querysize=0;
 	if (!getAuthCount(rp,end,&cursorid,4,&rp) ||
-		!getPointer(rp,end,&unknown1,&rp)) {
+		!getPointer(rp,end,&unknown1,&rp) ||
+		!getAuthCount(rp,end,&querysize,4,&rp)) {
+		debugWrite("truncated query request");
 		return false;
 	}
 
-	if (!have(rp,3,&end)) {
-		debugWrite("truncated query size");
+	// the query text
+	const byte_t	*querytext=NULL;
+	uint32_t	querytextsize=0;
+	if (!getOci7Text(rp,end,querysize,&querytext,&querytextsize,&rp)) {
 		return false;
 	}
-	read(rp,&unknown2,&rp);
-	read(rp,&querysizebyte1,&rp);
-	read(rp,&querysizebyte2,&rp);
+	const char	*query=(const char *)querytext;
 
-	// a zero size, or one that doesn't agree with its own repeat, is one
-	// this parse landed on the wrong offsets in, the same as osql7()'s
-	// own length-agreement check
-	if (!querysizebyte1) {
+	// a zero size, one that doesn't fit the text behind it, or text that
+	// doesn't end on the nul it's supposed to include, is one this parse
+	// landed on the wrong offsets in, the same as osql7()'s own
+	// length-agreement check - not a statement worth running
+	if (!querytextsize) {
 		debugWrite("query size is 0");
 		return false;
 	}
-	if (querysizebyte1!=querysizebyte2) {
-		debugWrite("query size %d doesn't match repeated size %d",
-				querysizebyte1,querysizebyte2);
+	if (!oci7TextSizeMatches(querysize,querytextsize)) {
+		debugWrite("query size %d doesn't match the %d bytes of "
+				"query text behind it",querysize,querytextsize);
 		return false;
 	}
-
-	// the query text, including its own trailing nul - see above
-	uint32_t	querysize=querysizebyte1;
-	if (!have(rp,(size_t)querysize,&end)) {
-		debugWrite("truncated query text");
-		return false;
-	}
-	const char	*query=(const char *)rp;
-	uint32_t	querybytes=querysize-1;
-
-	// a query whose declared size doesn't end on the nul it's supposed
-	// to include is one where the size counts something other than what
-	// was assumed above - the same wrong-offsets signal as the checks
-	// before this one, not a statement worth running
+	uint32_t	querybytes=querytextsize-1;
 	if (query[querybytes]!='\0') {
-		debugWrite("query size %d doesn't end on its own nul",
-				querysize);
+		debugWrite("query text doesn't end on its own nul");
 		return false;
 	}
-	rp+=querysize;
 
 	debugStart("query request");
 	debugWrite("seq number: %d",seqnumber);
 	debugWrite("cursor id: %d",cursorid);
-	debugWrite("unknown: 0x%08x 0x%02x",unknown1,unknown2);
+	debugWrite("unknown: 0x%08x",unknown1);
 	debugWrite("query size: %d",querysize);
 	debugWrite("query: \"%.*s\"",(int)querybytes,query);
 	debugEnd();
@@ -19797,7 +19931,20 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	// rather than a bare ub4, and the response ends with the same status
 	// message a logoff gets
 	// see "Oracle Wire Protocol - Version"
-	putDalc(serverversionbanner,bannerlength);
+	//
+	// A 9i client that didn't send ENCODING_CONV_LENGTH reads the banner
+	// as the total size and then the raw text instead - "01 00 4f" in
+	// packet [0016] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-
+	// realserver-r1, against "03 00 03 4f 72 61" in strfetch-we8iso8859p1-
+	// realserver-r4.  It answers a dalc with a marker and an ORA-03120.
+	if (rawtextargs) {
+		debugWrite("banner: %d",bannerlength);
+		debugHexDump((const byte_t *)serverversionbanner,bannerlength);
+		writeLenPreInt(&reqpacket,bannerlength);
+		write(&reqpacket,serverversionbanner,(size_t)bannerlength);
+	} else {
+		putDalc(serverversionbanner,bannerlength);
+	}
 	writeLenPreInt(&reqpacket,serverversionpacked);
 	write(&reqpacket,statusttccode);
 	writeLenPreInt(&reqpacket,callstatus);

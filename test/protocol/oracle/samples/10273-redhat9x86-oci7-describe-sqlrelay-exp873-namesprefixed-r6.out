@@ -1,0 +1,13 @@
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43273))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+olog ok
+oopen ok
+oparse ok
+odescr - column 1
+odescr failed: ORA-03106
+odescr - column 2
+odescr failed: ORA-03106
+odescr - column 3
+odescr failed: ORA-03106
+oclose ok
+ologof ok
+done

@@ -1,0 +1,13 @@
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=41273))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+olog ok
+oopen ok
+oparse ok
+odescr - column 1
+  name=NUM dbtype=2 dbsize=2 dsize=40 precision=0 scale=-127 nullok=1
+odescr - column 2
+  name=TXT dbtype=96 dbsize=3 dsize=3 precision=0 scale=0 nullok=1
+odescr - column 3
+  name=DT dbtype=12 dbsize=7 dsize=75 precision=0 scale=0 nullok=1
+oclose ok
+ologof ok
+done

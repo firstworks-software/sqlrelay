@@ -22,16 +22,15 @@
 // descriptor built from ORACLEPROTOCOLPORT10 rather than a tnsnames.ora
 // alias, so it needs no TNS_ADMIN.
 //
-// The clob column is defined SQLT_BIN, not SQLT_STR - confirmed live on
-// both a real Oracle9i 9.2.0.4.0 client and a modern client's legacy call
-// support, a column defined as text gets its bytes reinterpreted as a
-// single-byte charset and transcoded into NLS_LANG a second time, which
-// corrupts any non-ASCII byte. That reproduces on a single, one-segment
-// character with no clob involved at all, so it's a separate OCI7 client-
-// side charset-handling gap (#10273), not anything putLobField() writes or
-// controls - out of scope here. SQLT_BIN reads the bytes raw, the same way the
-// native Lobs section's blob column already does, which is what a byte-
-// for-byte check of the wire needs regardless.
+// The clob is fetched both SQLT_BIN and SQLT_STR.  SQLT_BIN reads the wire
+// bytes raw, so it checks putLobField() on its own.  SQLT_STR has the client
+// convert from the listener's declared charset into NLS_LANG, so it also
+// checks that declaration.  #10273: a 9i listener declared WE8ISO8859P1 (31)
+// while sending AL32UTF8 bytes, and the client converted every non-ASCII
+// byte a second time, in both directions and with or without a clob.  See
+// samples/10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1 (a real
+// AL32UTF8 server, clean) and -strfetch-sqlrelay-before-r1 (corrupt).  So a
+// multibyte varchar2 fetch and bind are checked SQLT_STR here too.
 
 #include <rudiments/charstring.h>
 #include <rudiments/bytestring.h>
@@ -238,16 +237,8 @@ int main(int argc, char **argv) {
 	const ub4	bufsize=totalbytes+64;
 
 	stdoutput.printf("odefin, oexec, ofen - the multibyte clob\n");
-	// SQLT_BIN, not SQLT_STR - defined as text, the real OCI7 client
-	// library reinterprets what it reads as though it were a single-byte
-	// charset and transcodes it into NLS_LANG a second time, corrupting
-	// any non-ASCII byte (confirmed live, independent of this fix: a
-	// single, one-segment multibyte character shows the same corruption,
-	// with no clob involved at all - a separate client-charset-handling
-	// gap, not anything putLobField() controls).  SQLT_BIN asks for the
-	// bytes raw, the same way the native Lobs section's blob column
-	// does, which is what a byte-for-byte check of the wire actually
-	// needs here anyway
+	// SQLT_BIN gets the raw wire bytes, with no client-side charset
+	// conversion, so this passes whatever charset the listener declares
 	Cda_Def	cda;
 	assertEquals((int)check(&cda,openCursor(&cda)),0);
 	assertEquals((int)check(&cda,
@@ -284,8 +275,109 @@ int main(int argc, char **argv) {
 	assertTrue(!bytestring::compare(clobbuffer,expected,totalbytes));
 	stdoutput.printf("\n\n");
 
-	assertEquals((int)check(&cda,oclose(&cda)),0);
+	stdoutput.printf("odefin, oexec, ofen - the multibyte clob, as text\n");
+	// SQLT_STR has the client convert from the listener's declared charset
+	// into NLS_LANG, so this only passes if the listener declares the
+	// charset the bytes are really in
+	assertEquals((int)check(&cda,
+			oparse(&cda,(text *)clobquery,(sb4)-1,0,(ub4)2)),0);
+	bytestring::zero(clobbuffer,bufsize);
+	clobind=0;
+	cloblen=0;
+	clobcode=0;
+	assertEquals((int)check(&cda,
+			odefin(&cda,1,(ub1 *)clobbuffer,(sword)bufsize,
+				SQLT_STR,-1,&clobind,(text *)0,-1,-1,
+				&cloblen,&clobcode)),0);
+	assertEquals((int)check(&cda,oexec(&cda)),0);
+	assertEquals((int)check(&cda,ofen(&cda,1)),0);
+	assertEquals((int)clobind,0);
+	assertEquals((int)cloblen,(int)totalbytes);
+	assertTrue(!bytestring::compare(clobbuffer,expected,totalbytes));
+	stdoutput.printf("\n\n");
+
+	stdoutput.printf("odefin, oexfet - the same multibyte clob, as text\n");
+	assertEquals((int)check(&cda,
+			oparse(&cda,(text *)clobquery,(sb4)-1,0,(ub4)2)),0);
+	bytestring::zero(clobbuffer,bufsize);
+	clobind=0;
+	cloblen=0;
+	clobcode=0;
+	assertEquals((int)check(&cda,
+			odefin(&cda,1,(ub1 *)clobbuffer,(sword)bufsize,
+				SQLT_STR,-1,&clobind,(text *)0,-1,-1,
+				&cloblen,&clobcode)),0);
+	assertEquals((int)check(&cda,oexfet(&cda,(ub4)1,0,1)),0);
+	assertEquals((int)cda.rpc,1);
+	assertEquals((int)clobind,0);
+	assertEquals((int)cloblen,(int)totalbytes);
+	assertTrue(!bytestring::compare(clobbuffer,expected,totalbytes));
+	stdoutput.printf("\n\n");
+
 	delete[] clobbuffer;
+
+
+	stdoutput.printf("========= Multibyte varchar2 =========\n\n");
+
+	stdoutput.printf("odefin, oexec, ofen - a multibyte varchar2, "
+							"as text\n");
+	// one repeat of the clob's content, built the same way
+	const char	*varcharquery=
+			"select to_char(unistr('a\\00E9\\20AC')) from dual";
+	char	varcharbuffer[64];
+	sb2	varcharind=0;
+	ub2	varcharlen=0;
+	ub2	varcharcode=0;
+	bytestring::zero(varcharbuffer,sizeof(varcharbuffer));
+	assertEquals((int)check(&cda,
+			oparse(&cda,(text *)varcharquery,(sb4)-1,0,(ub4)2)),0);
+	assertEquals((int)check(&cda,
+			odefin(&cda,1,(ub1 *)varcharbuffer,
+				(sword)sizeof(varcharbuffer),
+				SQLT_STR,-1,&varcharind,(text *)0,-1,-1,
+				&varcharlen,&varcharcode)),0);
+	assertEquals((int)check(&cda,oexec(&cda)),0);
+	assertEquals((int)check(&cda,ofen(&cda,1)),0);
+	assertEquals((int)varcharind,0);
+	assertEquals((int)varcharlen,(int)bytesperrepeat);
+	assertTrue(!bytestring::compare(varcharbuffer,expected,
+							bytesperrepeat));
+	stdoutput.printf("\n\n");
+
+	stdoutput.printf("obndrv, odefin, oexec, ofen - a multibyte bind, "
+							"as text\n");
+	// dump() reports the bytes the database received, in ascii, so this
+	// checks the bind on its own rather than a round trip, where two wrong
+	// conversions could cancel out
+	ub1	bindvalue[bytesperrepeat+1];
+	bytestring::copy(bindvalue,expected,bytesperrepeat);
+	bindvalue[bytesperrepeat]=0x00;
+	sb2	bindind=0;
+	char	dumpbuffer[128];
+	sb2	dumpind=0;
+	ub2	dumplen=0;
+	ub2	dumpcode=0;
+	bytestring::zero(dumpbuffer,sizeof(dumpbuffer));
+	assertEquals((int)check(&cda,
+			oparse(&cda,(text *)"select dump(:v,16) from dual",
+							(sb4)-1,0,(ub4)2)),0);
+	assertEquals((int)check(&cda,
+			obndrv(&cda,(text *)":v",-1,bindvalue,
+				(sword)sizeof(bindvalue),SQLT_STR,-1,
+				&bindind,(text *)0,-1,-1)),0);
+	assertEquals((int)check(&cda,
+			odefin(&cda,1,(ub1 *)dumpbuffer,
+				(sword)sizeof(dumpbuffer),
+				SQLT_STR,-1,&dumpind,(text *)0,-1,-1,
+				&dumplen,&dumpcode)),0);
+	assertEquals((int)check(&cda,oexec(&cda)),0);
+	assertEquals((int)check(&cda,ofen(&cda,1)),0);
+	assertEquals((int)dumpind,0);
+	assertTrue(charstring::contains(dumpbuffer,
+					"Len=6: 61,c3,a9,e2,82,ac"));
+	stdoutput.printf("\n\n");
+
+	assertEquals((int)check(&cda,oclose(&cda)),0);
 	delete[] expected;
 
 	execImmediate("drop table oci7utf8clobtest");

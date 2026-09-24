@@ -1,0 +1,1871 @@
+initial handshake {
+	connect {
+		recv {
+			large header: no
+			packet size: 227
+			packet checksum: 0
+			packet type: 1
+			packet flags: 0
+			header checksum: 0
+			body size: 219
+			01  38  01  2c  0c  01  08  00     7f  ff  7f  08  00  00  01  00     
+00  a9  00  3a  00  00  02  00     41  41  00  00  00  00  00  00     
+00  00  00  00  7d  f3  00  00     00  00  00  00  00  00  00  00     
+00  00  28  44  45  53  43  52     49  50  54  49  4f  4e  3d  28     
+41  44  44  52  45  53  53  3d     28  50  52  4f  54  4f  43  4f     
+4c  3d  54  43  50  29  28  48     4f  53  54  3d  64  65  76  2e     
+66  69  72  73  74  77  6f  72     6b  73  2e  63  6f  6d  29  28     
+50  4f  52  54  3d  34  33  32     37  33  29  29  28  43  4f  4e     
+4e  45  43  54  5f  44  41  54     41  3d  28  53  45  52  56  49     
+43  45  5f  4e  41  4d  45  3d     6f  72  61  31  29  28  43  49     
+44  3d  28  50  52  4f  47  52     41  4d  3d  29  28  48  4f  53     
+54  3d  72  65  64  68  61  74     39  78  38  36  2e  66  69  72     
+73  74  77  6f  72  6b  73  2e     63  6f  6d  29  28  55  53  45     
+52  3d  64  6d  75  73  65  29     29  29  29  
+.   8   .   ,   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   :   .   .   .   .      A   A   .   .   .   .   .   .      
+.   .   .   .   }   .   .   .      .   .   .   .   .   .   .   .      
+.   .   (   D   E   S   C   R      I   P   T   I   O   N   =   (      
+A   D   D   R   E   S   S   =      (   P   R   O   T   O   C   O      
+L   =   T   C   P   )   (   H      O   S   T   =   d   e   v   .      
+f   i   r   s   t   w   o   r      k   s   .   c   o   m   )   (      
+P   O   R   T   =   4   3   2      7   3   )   )   (   C   O   N      
+N   E   C   T   _   D   A   T      A   =   (   S   E   R   V   I      
+C   E   _   N   A   M   E   =      o   r   a   1   )   (   C   I      
+D   =   (   P   R   O   G   R      A   M   =   )   (   H   O   S      
+T   =   r   e   d   h   a   t      9   x   8   6   .   f   i   r      
+s   t   w   o   r   k   s   .      c   o   m   )   (   U   S   E      
+R   =   d   m   u   s   e   )      )   )   )   
+
+		}
+		connect {
+			version: 0x0138
+			lowest supported version: 0x012c
+			gso: 0x0c01
+			sdu: 2048
+			tdu: 32767
+			protocol characteristics: 0x7f08
+			max packets before ack: 0
+			client is little endian: 1
+			connect data size: 169
+			connect data offset: 58
+			max connect data that can be received: 512
+			ANO flags: 0x4141
+			trace cross facility item 1: 0x00000000
+			trace cross facility item 2: 0x00000000
+			trace unique connection id 1: 0x00007df300000000
+			trace unique connection id 2: 0x0000000000000000
+			connect data: (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43273))(CONNECT_DATA=(SERVICE_NAME=ora1)(CID=(PROGRAM=)(HOST=redhat9x86.firstworks.com)(USER=dmuse))))
+			requested service: ora1
+		}
+		resend {
+			packet type: 11
+			packet size: 0 (no body)
+		}
+		send {
+			large header: no
+			packet size: 8
+			packet checksum: 0
+			packet type: 11
+			packet flags: 0x0000
+			header checksum: 0
+			body size: 0
+		}
+		wrote 8 bytes
+		send packet flush...
+		recv {
+			large header: no
+			packet size: 227
+			packet checksum: 0
+			packet type: 1
+			packet flags: 0
+			header checksum: 0
+			body size: 219
+			01  38  01  2c  0c  01  08  00     7f  ff  7f  08  00  00  01  00     
+00  a9  00  3a  00  00  02  00     41  41  00  00  00  00  00  00     
+00  00  00  00  7d  f3  00  00     00  00  00  00  00  00  00  00     
+00  00  28  44  45  53  43  52     49  50  54  49  4f  4e  3d  28     
+41  44  44  52  45  53  53  3d     28  50  52  4f  54  4f  43  4f     
+4c  3d  54  43  50  29  28  48     4f  53  54  3d  64  65  76  2e     
+66  69  72  73  74  77  6f  72     6b  73  2e  63  6f  6d  29  28     
+50  4f  52  54  3d  34  33  32     37  33  29  29  28  43  4f  4e     
+4e  45  43  54  5f  44  41  54     41  3d  28  53  45  52  56  49     
+43  45  5f  4e  41  4d  45  3d     6f  72  61  31  29  28  43  49     
+44  3d  28  50  52  4f  47  52     41  4d  3d  29  28  48  4f  53     
+54  3d  72  65  64  68  61  74     39  78  38  36  2e  66  69  72     
+73  74  77  6f  72  6b  73  2e     63  6f  6d  29  28  55  53  45     
+52  3d  64  6d  75  73  65  29     29  29  29  
+.   8   .   ,   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   :   .   .   .   .      A   A   .   .   .   .   .   .      
+.   .   .   .   }   .   .   .      .   .   .   .   .   .   .   .      
+.   .   (   D   E   S   C   R      I   P   T   I   O   N   =   (      
+A   D   D   R   E   S   S   =      (   P   R   O   T   O   C   O      
+L   =   T   C   P   )   (   H      O   S   T   =   d   e   v   .      
+f   i   r   s   t   w   o   r      k   s   .   c   o   m   )   (      
+P   O   R   T   =   4   3   2      7   3   )   )   (   C   O   N      
+N   E   C   T   _   D   A   T      A   =   (   S   E   R   V   I      
+C   E   _   N   A   M   E   =      o   r   a   1   )   (   C   I      
+D   =   (   P   R   O   G   R      A   M   =   )   (   H   O   S      
+T   =   r   e   d   h   a   t      9   x   8   6   .   f   i   r      
+s   t   w   o   r   k   s   .      c   o   m   )   (   U   S   E      
+R   =   d   m   u   s   e   )      )   )   )   
+
+		}
+		connect {
+			version: 0x0138
+			lowest supported version: 0x012c
+			gso: 0x0c01
+			sdu: 2048
+			tdu: 32767
+			protocol characteristics: 0x7f08
+			max packets before ack: 0
+			client is little endian: 1
+			connect data size: 169
+			connect data offset: 58
+			max connect data that can be received: 512
+			ANO flags: 0x4141
+			trace cross facility item 1: 0x00000000
+			trace cross facility item 2: 0x00000000
+			trace unique connection id 1: 0x00007df300000000
+			trace unique connection id 2: 0x0000000000000000
+			connect data: (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43273))(CONNECT_DATA=(SERVICE_NAME=ora1)(CID=(PROGRAM=)(HOST=redhat9x86.firstworks.com)(USER=dmuse))))
+			requested service: ora1
+		}
+		requested service known {
+			requested service: "ora1"
+			configured sids: "ora1"
+			known: 1
+		}
+		connect response {
+			negotiated version: 0x0138
+			sending accept
+		}
+		accept {
+			version: 0x0138
+			large header: 0
+			gso: 0x0c01
+			sdu: 2048
+			tdu: 32767
+			data size: 0
+			data offset: 32
+			ANO flags: 0x4141
+		}
+		send {
+			large header: no
+			packet size: 32
+			packet checksum: 0
+			packet type: 2
+			packet flags: 0x0000
+			header checksum: 0
+			body size: 24
+			01  38  0c  01  08  00  7f  ff     01  00  00  00  00  20  41  41     
+00  00  00  00  00  00  00  00     
+.   8   .   .   .   .   .   .      .   .   .   .   .       A   A      
+.   .   .   .   .   .   .   .      
+
+		}
+		wrote 32 bytes
+		send packet flush...
+		result: 1
+	}
+	ano negotiation {
+		client requested ano, negotiating
+	}
+	recv {
+		large header: no
+		packet size: 156
+		packet checksum: 0
+		packet type: 6
+		packet flags: 0
+		header checksum: 0
+		body size: 148
+		00  00  de  ad  be  ef  00  92     09  20  04  00  00  04  00  00     
+04  00  03  00  00  00  00  00     04  00  05  09  20  04  00  00     
+08  00  01  00  00  7d  f3  ae     a6  dc  35  00  12  00  01  de     
+ad  be  ef  00  03  00  00  00     04  00  04  00  01  00  01  00     
+02  00  01  00  03  00  00  00     00  00  04  00  05  09  20  04     
+00  00  02  00  03  e0  e1  00     02  00  06  fc  ff  00  02  00     
+02  00  00  00  00  00  04  00     05  09  20  04  00  00  0c  00     
+01  00  11  06  10  0c  0f  0a     0b  08  02  01  03  00  03  00     
+02  00  00  00  00  00  04  00     05  09  20  04  00  00  03  00     
+01  00  03  01  
+.   .   .   .   .   .   .   .      .       .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .       .   .   .      
+.   .   .   .   .   }   .   .      .   .   5   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .       .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .       .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .       .   .   .   .   .      
+.   .   .   .   
+
+	}
+	ano request header bounds ok, needed 15 bytes
+	ano request header {
+		data flags: 0x0000
+		overall size: 146
+		version: 0x09200400
+		service count 4
+		desired options flag: 0x00
+		ano service header bounds ok, needed 8 bytes
+		ano service header {
+			service: 4
+			field count: 3
+		}
+		supervisor {
+			service: ANO Supervisor
+			ano version field bounds ok, needed 8 bytes
+			version {
+				version: 0x09200400
+			}
+			ano connection info field bounds ok, needed 12 bytes
+			connection info {
+				pid: 32243
+				connection type: 0xaea6dc35
+			}
+			array count: 4
+			array[0]: 4
+			array[1]: 1
+			array[2]: 1
+			array[3]: 2
+		}
+		ano service header bounds ok, needed 8 bytes
+		ano service header {
+			service: 1
+			field count: 3
+		}
+		authentication {
+			service: ANO Authentication
+			ano version field bounds ok, needed 8 bytes
+			version {
+				version: 0x09200400
+			}
+			ano constant field bounds ok, needed 6 bytes
+			constant {
+				constant: 0xe0e1
+			}
+			ano status field bounds ok, needed 6 bytes
+			status {
+				status: 0xfcff
+			}
+		}
+		ano service header bounds ok, needed 8 bytes
+		ano service header {
+			service: 2
+			field count: 2
+		}
+		encryption {
+			service: ANO Encryption
+			ano version field bounds ok, needed 8 bytes
+			version {
+				version: 0x09200400
+			}
+			ano driver list field bounds ok, needed 4 bytes
+			driver list {
+				ano driver list field bounds ok, needed 12 bytes
+				driver[0]: 0
+				driver[1]: 17
+				driver[2]: 6
+				driver[3]: 16
+				driver[4]: 12
+				driver[5]: 15
+				driver[6]: 10
+				driver[7]: 11
+				driver[8]: 8
+				driver[9]: 2
+				driver[10]: 1
+				driver[11]: 3
+			}
+		}
+		ano service header bounds ok, needed 8 bytes
+		ano service header {
+			service: 3
+			field count: 2
+		}
+		data integrity {
+			service: ANO Data Integrity
+			ano version field bounds ok, needed 8 bytes
+			version {
+				version: 0x09200400
+			}
+			ano driver list field bounds ok, needed 4 bytes
+			driver list {
+				ano driver list field bounds ok, needed 3 bytes
+				driver[0]: 0
+				driver[1]: 3
+				driver[2]: 1
+			}
+		}
+	}
+	ano declined {
+		ano driver offered {
+			index: 1
+			driver id: 0x0011
+		}
+		ano driver offered {
+			index: 2
+			driver id: 0x0006
+		}
+		ano driver offered {
+			index: 3
+			driver id: 0x0010
+		}
+		ano driver offered {
+			index: 4
+			driver id: 0x000c
+		}
+		ano driver offered {
+			index: 5
+			driver id: 0x000f
+		}
+		ano driver offered {
+			index: 6
+			driver id: 0x000a
+		}
+		ano driver offered {
+			index: 7
+			driver id: 0x000b
+		}
+		ano driver offered {
+			index: 8
+			driver id: 0x0008
+		}
+		ano driver offered {
+			index: 9
+			driver id: 0x0002
+		}
+		ano driver offered {
+			index: 10
+			driver id: 0x0001
+		}
+		ano driver offered {
+			index: 11
+			driver id: 0x0003
+		}
+		declining 11 offered encryption driver(s)
+		ano driver offered {
+			index: 1
+			driver id: 0x0003
+		}
+		ano driver offered {
+			index: 2
+			driver id: 0x0001
+		}
+		declining 2 offered data integrity driver(s)
+	}
+	ano response header {
+		data flags: 0x0000
+		version: 0x0a200100
+		services to be used: 0
+		supervisor {
+			service: ANO Supervisor
+			ano service header {
+				service: 4
+				field count: 3
+				service name: ANO Supervisor
+			}
+			version {
+				version: 0x0a200100
+			}
+			status {
+				status: 0x001f
+			}
+			array field {
+				array count: 2
+				array[0]: 4
+				array[1]: 1
+			}
+		}
+		authentication {
+			service: ANO Authentication
+			ano service header {
+				service: 1
+				field count: 2
+				service name: ANO Authentication
+			}
+			version {
+				version: 0x0a200100
+			}
+			status {
+				status: 0xfbff
+			}
+		}
+		encryption {
+			service: ANO Encryption
+			ano service header {
+				service: 2
+				field count: 2
+				service name: ANO Encryption
+			}
+			version {
+				version: 0x0a200100
+			}
+			constant {
+				constant: 0x00
+			}
+		}
+		data integrity {
+			service: ANO Data Integrity
+			ano service header {
+				service: 3
+				field count: 2
+				service name: ANO Data Integrity
+			}
+			version {
+				version: 0x0a200100
+			}
+			constant {
+				constant: 0x00
+			}
+		}
+		overall size: 117
+		service count: 4
+	}
+	send {
+		large header: no
+		packet size: 127
+		packet checksum: 0
+		packet type: 6
+		packet flags: 0x0000
+		header checksum: 0
+		body size: 119
+		00  00  de  ad  be  ef  00  75     0a  20  01  00  00  04  00  00     
+04  00  03  00  00  00  00  00     04  00  05  0a  20  01  00  00     
+02  00  06  00  1f  00  0e  00     01  de  ad  be  ef  00  03  00     
+00  00  02  00  04  00  01  00     01  00  02  00  00  00  00  00     
+04  00  05  0a  20  01  00  00     02  00  06  fb  ff  00  02  00     
+02  00  00  00  00  00  04  00     05  0a  20  01  00  00  01  00     
+02  00  00  03  00  02  00  00     00  00  00  04  00  05  0a  20     
+01  00  00  01  00  02  00  
+.   .   .   .   .   .   .   u      .       .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .       .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .       .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .       .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .          
+.   .   .   .   .   .   .   
+
+	}
+	wrote 127 bytes
+	send packet flush...
+	ano negotiation {
+		result: 1
+	}
+	recv {
+		large header: no
+		packet size: 47
+		packet checksum: 0
+		packet type: 6
+		packet flags: 0
+		header checksum: 0
+		body size: 39
+		00  00  01  06  05  04  03  02     01  00  4c  69  6e  75  78  69     
+33  38  36  2f  4c  69  6e  75     78  2d  32  2e  30  2e  33  34     
+2d  38  2e  31  2e  30  00  
+.   .   .   .   .   .   .   .      .   .   L   i   n   u   x   i      
+3   8   6   /   L   i   n   u      x   -   2   .   0   .   3   4      
+-   8   .   1   .   0   .   
+
+	}
+	null terminated array count: 6
+	string: "Linuxi386/Linux-2.0.34-8.1.0"
+	tti request {
+		data flags: 0x0000
+		ttc code: (0x01) TTC_PROTOCOL_NEGOTIATION
+		version[0]: 6
+		version[1]: 5
+		version[2]: 4
+		version[3]: 3
+		version[4]: 2
+		version[5]: 1
+		client string: "Linuxi386/Linux-2.0.34-8.1.0"
+	}
+	selected tti version: 6
+	calling putTti6Response
+	tti 6 response {
+		protocol version: 6
+		charset: 31
+		national charset: 2000
+		server flags: 0x01
+		logon types: 0x0d
+		field version: 0x04
+		compile caps size: 33
+		runtime caps size: 5
+	}
+	tti response {
+		data flags: 0x0000
+		ttc code: (0x01) TTC_PROTOCOL_NEGOTIATION
+		version: 6
+		server string: "SQLRelay/PortableTTC"
+		charset: 31
+		national charset: 2000
+		charset graph elements: 0
+		fdo size: 100
+		fdo part 1 size: 36
+		compile caps size: 33
+		field version: 4
+		runtime caps size: 5
+	}
+	send {
+		large header: no
+		packet size: 181
+		packet checksum: 0
+		packet type: 6
+		packet flags: 0x0000
+		header checksum: 0
+		body size: 173
+		00  00  01  06  00  53  51  4c     52  65  6c  61  79  2f  50  6f     
+72  74  61  62  6c  65  54  54     43  00  1f  00  01  00  00  00     
+64  00  00  00  60  01  24  0f     05  0b  0c  03  0c  0c  05  04     
+05  0d  06  09  07  08  05  05     05  05  05  0f  05  05  05  05     
+05  0a  05  05  05  05  05  04     05  06  07  08  08  23  43  23     
+23  08  11  23  08  11  41  b0     23  00  83  00  1f  07  d0  03     
+00  00  00  00  00  00  00  00     00  00  00  00  00  00  00  00     
+00  00  00  00  00  00  00  00     00  00  00  00  00  00  00  00     
+00  00  00  00  00  21  06  01     01  01  0d  01  01  04  01  01     
+01  01  01  01  01  ff  ff  03     08  03  00  01  00  3f  01  07     
+3f  01  01  01  01  03  01  05     02  01  00  01  18  
+.   .   .   .   .   S   Q   L      R   e   l   a   y   /   P   o      
+r   t   a   b   l   e   T   T      C   .   .   .   .   .   .   .      
+d   .   .   .   `   .   $   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   #   C   #      
+#   .   .   #   .   .   A   .      #   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   !   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   ?   .   .      
+?   .   .   .   .   .   .   .      .   .   .   .   .   
+
+	}
+	wrote 181 bytes
+	send packet flush...
+	data type negotiation {
+		recv {
+			large header: no
+			packet size: 1029
+			packet checksum: 0
+			packet type: 6
+			packet flags: 0
+			header checksum: 0
+			body size: 1021
+			00  00  02  1f  00  1f  00  03     15  06  01  01  01  05  01  01     
+02  01  01  01  01  01  01  01     7f  0f  03  06  03  00  02  02     
+01  80  00  00  00  3c  3c  3c     80  00  00  00  01  01  01  00     
+02  02  0a  00  08  08  01  00     0c  0c  0a  00  17  17  01  00     
+18  18  01  00  19  19  18  19     01  00  1a  1a  19  1a  01  00     
+1b  1b  0a  1b  01  00  1c  1c     16  1c  01  00  1d  1d  17  1d     
+01  00  1e  1e  17  1e  01  00     1f  1f  19  1f  01  00  20  20     
+0a  20  01  00  21  21  0a  21     01  00  0a  0a  01  00  0b  0b     
+01  00  22  22  01  00  23  23     01  23  01  00  24  24  01  00     
+25  25  01  00  26  26  01  00     28  28  01  00  29  29  01  00     
+2a  2a  01  00  2b  2b  01  00     2c  2c  01  00  2d  2d  01  00     
+2e  2e  01  00  2f  2f  01  00     30  30  01  00  31  31  01  00     
+32  32  01  00  33  33  01  00     34  34  01  00  35  35  01  00     
+36  36  01  00  37  37  01  00     38  38  01  00  39  39  01  00     
+3b  3b  01  00  3c  3c  01  00     3d  3d  01  00  3e  3e  01  00     
+3f  3f  01  00  40  40  01  00     41  41  01  00  42  42  01  00     
+43  43  01  00  47  47  01  00     48  48  01  00  49  49  01  00     
+4b  4b  01  00  4d  4d  01  00     4e  4e  01  00  4f  4f  01  00     
+50  50  01  00  51  51  01  00     52  52  01  00  53  53  01  00     
+54  54  01  00  55  55  01  00     56  56  01  00  57  57  01  57     
+01  00  59  59  01  00  5a  5a     01  00  5c  5c  01  00  5d  5d     
+01  00  62  62  01  00  63  63     01  00  67  67  01  00  6b  6b     
+01  00  75  75  01  00  78  78     01  00  7c  7c  01  42  01  00     
+7d  7d  01  00  7e  7e  01  00     7f  7f  01  00  80  80  01  00     
+81  81  01  00  82  82  01  00     83  83  01  00  84  84  01  00     
+85  85  01  00  86  86  01  00     87  87  01  00  89  89  01  00     
+8a  8a  01  00  8b  8b  01  00     8c  8c  01  00  8d  8d  01  00     
+8e  8e  01  00  8f  8f  01  00     90  90  01  00  91  91  01  00     
+94  94  01  25  01  00  95  95     01  00  96  96  01  00  97  97     
+01  00  9d  9d  01  00  9e  9e     01  00  9f  9f  01  00  a0  a0     
+01  00  a1  a1  01  00  a2  a2     01  00  a3  a3  01  00  a4  a4     
+01  00  a5  a5  01  00  a6  a6     01  00  a7  a7  01  00  a8  a8     
+01  00  a9  a9  01  00  aa  aa     01  00  ab  ab  01  00  ad  ad     
+01  00  ae  ae  01  00  af  af     01  00  b0  b0  01  00  b1  b1     
+01  00  c1  c1  01  00  c2  c2     01  25  01  00  c6  c6  01  00     
+c7  c7  01  00  c8  c8  01  00     c9  c9  01  00  ca  ca  01  9f     
+01  00  cb  cb  01  a0  01  00     cc  cc  01  a2  01  00  cd  cd     
+01  a3  01  00  ce  ce  01  b1     01  00  cf  cf  01  22  01  00     
+d2  d2  01  00  d3  d3  01  ab     01  00  d4  d4  01  00  d5  d5     
+01  00  d6  d6  01  00  d7  d7     01  00  d8  d8  01  00  d9  d9     
+01  00  da  da  01  00  db  db     01  00  dc  dc  01  00  dd  dd     
+01  00  de  de  01  00  df  df     01  00  e0  e0  01  00  e1  e1     
+01  00  e2  e2  01  00  e3  e3     01  6b  01  00  e4  e4  01  00     
+e5  e5  01  00  e6  e6  01  00     ea  ea  01  00  eb  eb  01  00     
+ec  ec  01  00  ed  ed  01  00     ee  ee  01  00  ef  ef  01  00     
+f2  f2  01  00  f4  f4  01  00     f5  f5  01  00  03  02  0a  00     
+04  02  0a  00  05  01  01  00     06  02  0a  00  07  02  0a  00     
+09  01  01  00  0d  00  0e  00     0f  17  01  00  10  00  11  00     
+12  00  13  00  14  00  15  00     16  00  27  78  01  5d  01  26     
+01  00  3a  3a  01  00  44  02     0a  00  45  00  46  00  4a  6d     
+01  00  4c  00  58  00  5b  02     0a  00  5e  01  01  00  5f  17     
+01  00  60  60  01  00  61  60     01  00  64  00  65  00  66  66     
+01  00  68  00  69  00  6a  6a     01  00  6c  6d  01  00  6d  6d     
+01  00  6e  6f  01  00  6f  6f     01  00  70  70  01  00  71  71     
+01  00  72  72  01  00  73  73     01  00  74  66  01  00  76  00     
+77  00  79  79  01  00  7a  7a     01  00  7b  7b  01  00  88  00     
+92  92  01  00  93  93  01  00     98  02  0a  00  99  02  0a  00     
+9a  02  0a  00  9b  01  01  00     9c  0c  0a  00  ac  02  0a  00     
+b2  b2  01  00  b3  b3  01  00     b4  b4  01  00  b5  b5  01  00     
+b6  b6  01  00  b7  b7  01  00     b8  0c  0a  00  b9  b2  01  00     
+ba  b3  01  00  bb  b4  01  00     bc  b5  01  00  bd  b6  01  00     
+be  b7  01  00  bf  00  c0  00     c3  70  01  00  c4  71  01  00     
+c5  72  01  00  d0  d0  01  00     d1  00  e7  e7  01  00  e8  e7     
+01  00  e9  00  f0  00  f1  6d     01  00  f3  00  00  
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   <   <   <      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .              
+.       .   .   !   !   .   !      .   .   .   .   .   .   .   .      
+.   .   "   "   .   .   #   #      .   #   .   .   $   $   .   .      
+%   %   .   .   &   &   .   .      (   (   .   .   )   )   .   .      
+*   *   .   .   +   +   .   .      ,   ,   .   .   -   -   .   .      
+.   .   .   .   /   /   .   .      0   0   .   .   1   1   .   .      
+2   2   .   .   3   3   .   .      4   4   .   .   5   5   .   .      
+6   6   .   .   7   7   .   .      8   8   .   .   9   9   .   .      
+;   ;   .   .   <   <   .   .      =   =   .   .   >   >   .   .      
+?   ?   .   .   @   @   .   .      A   A   .   .   B   B   .   .      
+C   C   .   .   G   G   .   .      H   H   .   .   I   I   .   .      
+K   K   .   .   M   M   .   .      N   N   .   .   O   O   .   .      
+P   P   .   .   Q   Q   .   .      R   R   .   .   S   S   .   .      
+T   T   .   .   U   U   .   .      V   V   .   .   W   W   .   W      
+.   .   Y   Y   .   .   Z   Z      .   .   \   \   .   .   ]   ]      
+.   .   b   b   .   .   c   c      .   .   g   g   .   .   k   k      
+.   .   u   u   .   .   x   x      .   .   |   |   .   B   .   .      
+}   }   .   .   ~   ~   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   %   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   %   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   "   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   k   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   '   x   .   ]   .   &      
+.   .   :   :   .   .   D   .      .   .   E   .   F   .   J   m      
+.   .   L   .   X   .   [   .      .   .   ^   .   .   .   _   .      
+.   .   `   `   .   .   a   `      .   .   d   .   e   .   f   f      
+.   .   h   .   i   .   j   j      .   .   l   m   .   .   m   m      
+.   .   n   o   .   .   o   o      .   .   p   p   .   .   q   q      
+.   .   r   r   .   .   s   s      .   .   t   f   .   .   v   .      
+w   .   y   y   .   .   z   z      .   .   {   {   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   p   .   .   .   q   .   .      
+.   r   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   m      .   .   .   .   .   
+
+		}
+		capability[0]: 0x06
+		capability[1]: 0x01
+		capability[2]: 0x01
+		capability[3]: 0x01
+		capability[4]: 0x05
+		capability[5]: 0x01
+		capability[6]: 0x01
+		capability[7]: 0x02
+		capability[8]: 0x01
+		capability[9]: 0x01
+		capability[10]: 0x01
+		capability[11]: 0x01
+		capability[12]: 0x01
+		capability[13]: 0x01
+		capability[14]: 0x01
+		capability[15]: 0x7f
+		capability[16]: 0x0f
+		capability[17]: 0x03
+		capability[18]: 0x06
+		capability[19]: 0x03
+		capability[20]: 0x00
+		capability[0]: 0x02
+		capability[1]: 0x01
+		total data type count: 245
+		data types offered in more than one representation: 23
+		pointer size: 4
+		datatype request {
+			data flags: 0x0000
+			ttc code: (0x02) TTC_DATATYPE_NEGOTIATION
+			client charset in: 31
+			client charset out: 31
+			encoding flags: 0x03 multibyte convlength
+			oci client: true
+			client compile caps size: 21
+			06  01  01  01  05  01  01  02     01  01  01  01  01  01  01  7f     
+0f  03  06  03  00  
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   
+
+			client runtime caps size: 2
+			02  01  
+.   .   
+
+			client field version: 2
+			negotiated field version: 2
+			big chunk clr: false
+			ub2 data types: false
+			client wants the db time zone
+			client national charset: 0
+			data types: 245
+			01  01  01  00  02  02  0a  00     08  08  01  00  0c  0c  0a  00     
+17  17  01  00  18  18  01  00     19  19  18  19  01  00  1a  1a     
+19  1a  01  00  1b  1b  0a  1b     01  00  1c  1c  16  1c  01  00     
+1d  1d  17  1d  01  00  1e  1e     17  1e  01  00  1f  1f  19  1f     
+01  00  20  20  0a  20  01  00     21  21  0a  21  01  00  0a  0a     
+01  00  0b  0b  01  00  22  22     01  00  23  23  01  23  01  00     
+24  24  01  00  25  25  01  00     26  26  01  00  28  28  01  00     
+29  29  01  00  2a  2a  01  00     2b  2b  01  00  2c  2c  01  00     
+2d  2d  01  00  2e  2e  01  00     2f  2f  01  00  30  30  01  00     
+31  31  01  00  32  32  01  00     33  33  01  00  34  34  01  00     
+35  35  01  00  36  36  01  00     37  37  01  00  38  38  01  00     
+39  39  01  00  3b  3b  01  00     3c  3c  01  00  3d  3d  01  00     
+3e  3e  01  00  3f  3f  01  00     40  40  01  00  41  41  01  00     
+42  42  01  00  43  43  01  00     47  47  01  00  48  48  01  00     
+49  49  01  00  4b  4b  01  00     4d  4d  01  00  4e  4e  01  00     
+4f  4f  01  00  50  50  01  00     51  51  01  00  52  52  01  00     
+53  53  01  00  54  54  01  00     55  55  01  00  56  56  01  00     
+57  57  01  57  01  00  59  59     01  00  5a  5a  01  00  5c  5c     
+01  00  5d  5d  01  00  62  62     01  00  63  63  01  00  67  67     
+01  00  6b  6b  01  00  75  75     01  00  78  78  01  00  7c  7c     
+01  42  01  00  7d  7d  01  00     7e  7e  01  00  7f  7f  01  00     
+80  80  01  00  81  81  01  00     82  82  01  00  83  83  01  00     
+84  84  01  00  85  85  01  00     86  86  01  00  87  87  01  00     
+89  89  01  00  8a  8a  01  00     8b  8b  01  00  8c  8c  01  00     
+8d  8d  01  00  8e  8e  01  00     8f  8f  01  00  90  90  01  00     
+91  91  01  00  94  94  01  25     01  00  95  95  01  00  96  96     
+01  00  97  97  01  00  9d  9d     01  00  9e  9e  01  00  9f  9f     
+01  00  a0  a0  01  00  a1  a1     01  00  a2  a2  01  00  a3  a3     
+01  00  a4  a4  01  00  a5  a5     01  00  a6  a6  01  00  a7  a7     
+01  00  a8  a8  01  00  a9  a9     01  00  aa  aa  01  00  ab  ab     
+01  00  ad  ad  01  00  ae  ae     01  00  af  af  01  00  b0  b0     
+01  00  b1  b1  01  00  c1  c1     01  00  c2  c2  01  25  01  00     
+c6  c6  01  00  c7  c7  01  00     c8  c8  01  00  c9  c9  01  00     
+ca  ca  01  9f  01  00  cb  cb     01  a0  01  00  cc  cc  01  a2     
+01  00  cd  cd  01  a3  01  00     ce  ce  01  b1  01  00  cf  cf     
+01  22  01  00  d2  d2  01  00     d3  d3  01  ab  01  00  d4  d4     
+01  00  d5  d5  01  00  d6  d6     01  00  d7  d7  01  00  d8  d8     
+01  00  d9  d9  01  00  da  da     01  00  db  db  01  00  dc  dc     
+01  00  dd  dd  01  00  de  de     01  00  df  df  01  00  e0  e0     
+01  00  e1  e1  01  00  e2  e2     01  00  e3  e3  01  6b  01  00     
+e4  e4  01  00  e5  e5  01  00     e6  e6  01  00  ea  ea  01  00     
+eb  eb  01  00  ec  ec  01  00     ed  ed  01  00  ee  ee  01  00     
+ef  ef  01  00  f2  f2  01  00     f4  f4  01  00  f5  f5  01  00     
+03  02  0a  00  04  02  0a  00     05  01  01  00  06  02  0a  00     
+07  02  0a  00  09  01  01  00     0d  00  0e  00  0f  17  01  00     
+10  00  11  00  12  00  13  00     14  00  15  00  16  00  27  78     
+01  5d  01  26  01  00  3a  3a     01  00  44  02  0a  00  45  00     
+46  00  4a  6d  01  00  4c  00     58  00  5b  02  0a  00  5e  01     
+01  00  5f  17  01  00  60  60     01  00  61  60  01  00  64  00     
+65  00  66  66  01  00  68  00     69  00  6a  6a  01  00  6c  6d     
+01  00  6d  6d  01  00  6e  6f     01  00  6f  6f  01  00  70  70     
+01  00  71  71  01  00  72  72     01  00  73  73  01  00  74  66     
+01  00  76  00  77  00  79  79     01  00  7a  7a  01  00  7b  7b     
+01  00  88  00  92  92  01  00     93  93  01  00  98  02  0a  00     
+99  02  0a  00  9a  02  0a  00     9b  01  01  00  9c  0c  0a  00     
+ac  02  0a  00  b2  b2  01  00     b3  b3  01  00  b4  b4  01  00     
+b5  b5  01  00  b6  b6  01  00     b7  b7  01  00  b8  0c  0a  00     
+b9  b2  01  00  ba  b3  01  00     bb  b4  01  00  bc  b5  01  00     
+bd  b6  01  00  be  b7  01  00     bf  00  c0  00  c3  70  01  00     
+c4  71  01  00  c5  72  01  00     d0  d0  01  00  d1  00  e7  e7     
+01  00  e8  e7  01  00  e9  00     f0  00  f1  6d  01  00  f3  00     
+00  
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .           .       .   .      !   !   .   !   .   .   .   .      
+.   .   .   .   .   .   "   "      .   .   #   #   .   #   .   .      
+$   $   .   .   %   %   .   .      &   &   .   .   (   (   .   .      
+)   )   .   .   *   *   .   .      +   +   .   .   ,   ,   .   .      
+-   -   .   .   .   .   .   .      /   /   .   .   0   0   .   .      
+1   1   .   .   2   2   .   .      3   3   .   .   4   4   .   .      
+5   5   .   .   6   6   .   .      7   7   .   .   8   8   .   .      
+9   9   .   .   ;   ;   .   .      <   <   .   .   =   =   .   .      
+>   >   .   .   ?   ?   .   .      @   @   .   .   A   A   .   .      
+B   B   .   .   C   C   .   .      G   G   .   .   H   H   .   .      
+I   I   .   .   K   K   .   .      M   M   .   .   N   N   .   .      
+O   O   .   .   P   P   .   .      Q   Q   .   .   R   R   .   .      
+S   S   .   .   T   T   .   .      U   U   .   .   V   V   .   .      
+W   W   .   W   .   .   Y   Y      .   .   Z   Z   .   .   \   \      
+.   .   ]   ]   .   .   b   b      .   .   c   c   .   .   g   g      
+.   .   k   k   .   .   u   u      .   .   x   x   .   .   |   |      
+.   B   .   .   }   }   .   .      ~   ~   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   %      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   %   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   "   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   k   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   '   x      
+.   ]   .   &   .   .   :   :      .   .   D   .   .   .   E   .      
+F   .   J   m   .   .   L   .      X   .   [   .   .   .   ^   .      
+.   .   _   .   .   .   `   `      .   .   a   `   .   .   d   .      
+e   .   f   f   .   .   h   .      i   .   j   j   .   .   l   m      
+.   .   m   m   .   .   n   o      .   .   o   o   .   .   p   p      
+.   .   q   q   .   .   r   r      .   .   s   s   .   .   t   f      
+.   .   v   .   w   .   y   y      .   .   z   z   .   .   {   {      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   p   .   .      
+.   q   .   .   .   r   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   m   .   .   .   .      
+.   
+
+			using charset: 31, national charset: 2000 (the listener's)
+		}
+		datatype response {
+			data flags: 0x0000
+			ttc code: (0x02) TTC_DATATYPE_NEGOTIATION
+			db time zone:
+			80  00  00  00  3c  3c  3c  80     00  00  00  
+.   .   .   .   <   <   <   .      .   .   .   
+
+			negotiated field version: 2
+			data types: 248
+		}
+		send {
+			large header: no
+			packet size: 951
+			packet checksum: 0
+			packet type: 6
+			packet flags: 0x0000
+			header checksum: 0
+			body size: 943
+			00  00  02  80  00  00  00  3c     3c  3c  80  00  00  00  01  01     
+01  00  02  02  0a  00  08  08     01  00  0c  0c  0a  00  17  17     
+01  00  18  18  01  00  19  19     01  00  1a  1a  01  00  1b  1b     
+0a  00  1c  1c  01  00  1d  1d     01  00  1e  1e  01  00  1f  1f     
+01  00  20  20  0a  00  21  21     0a  00  0a  0a  01  00  0b  0b     
+01  00  28  28  01  00  29  29     01  00  75  75  01  00  78  78     
+01  00  22  22  01  00  23  23     01  00  24  24  01  00  25  25     
+01  00  26  26  01  00  2a  2a     01  00  2b  2b  01  00  2c  2c     
+01  00  2d  2d  01  00  2e  2e     01  00  2f  2f  01  00  30  30     
+01  00  31  31  01  00  32  32     01  00  33  33  01  00  34  34     
+01  00  35  35  01  00  36  36     01  00  37  37  01  00  38  38     
+01  00  39  39  01  00  3b  3b     01  00  3c  3c  01  00  3d  3d     
+01  00  3e  3e  01  00  3f  3f     01  00  40  40  01  00  41  41     
+01  00  42  42  01  00  43  43     01  00  47  47  01  00  48  48     
+01  00  49  49  01  00  4b  4b     01  00  4d  4d  01  00  4e  4e     
+01  00  4f  4f  01  00  50  50     01  00  51  51  01  00  52  52     
+01  00  53  53  01  00  54  54     01  00  55  55  01  00  56  56     
+01  00  57  57  01  00  58  00     59  59  01  00  5a  5a  01  00     
+5c  5c  01  00  5d  5d  01  00     62  62  01  00  63  63  01  00     
+67  67  01  00  6b  6b  01  00     7c  7c  01  00  7d  7d  01  00     
+7e  7e  01  00  7f  7f  01  00     80  80  01  00  81  81  01  00     
+82  82  01  00  83  83  01  00     84  84  01  00  85  85  01  00     
+86  86  01  00  87  87  01  00     89  89  01  00  8a  8a  01  00     
+8b  8b  01  00  8c  8c  01  00     8d  8d  01  00  8e  8e  01  00     
+8f  8f  01  00  90  90  01  00     91  91  01  00  94  94  01  00     
+95  95  01  00  96  96  01  00     97  97  01  00  9d  9d  01  00     
+9e  9e  01  00  9f  9f  01  00     a0  a0  01  00  a1  a1  01  00     
+a2  a2  01  00  a3  a3  01  00     a4  a4  01  00  a5  a5  01  00     
+a6  a6  01  00  a7  a7  01  00     a8  a8  01  00  a9  a9  01  00     
+aa  aa  01  00  ab  ab  01  00     ad  ad  01  00  ae  ae  01  00     
+af  af  01  00  b0  b0  01  00     b1  b1  01  00  c1  c1  01  00     
+c2  c2  01  00  c6  c6  01  00     c7  c7  01  00  c8  c8  01  00     
+c9  c9  01  00  ca  ca  01  00     cb  cb  01  00  cc  cc  01  00     
+cd  cd  01  00  ce  ce  01  00     cf  cf  01  00  d2  d2  01  00     
+d3  d3  01  00  d4  00  d5  00     d6  d6  01  00  d7  d7  01  00     
+d8  d8  01  00  d9  d9  01  00     da  da  01  00  db  db  01  00     
+dc  dc  01  00  dd  dd  01  00     de  de  01  00  df  df  01  00     
+e0  e0  01  00  e1  e1  01  00     e2  e2  01  00  e3  e3  01  00     
+e4  e4  01  00  e5  e5  01  00     e6  e6  01  00  ea  ea  01  00     
+eb  eb  01  00  ec  ec  01  00     ed  ed  01  00  ee  ee  01  00     
+ef  ef  01  00  f0  00  f2  f2     01  00  f3  00  f4  f4  01  00     
+f5  f5  01  00  f6  00  fd  00     fe  00  03  02  0a  00  04  02     
+0a  00  05  01  01  00  06  02     0a  00  07  02  0a  00  09  01     
+01  00  0d  00  0e  00  0f  17     01  00  10  00  11  00  12  00     
+13  00  14  00  15  00  16  00     27  78  01  00  3a  3a  01  00     
+44  02  0a  00  45  00  46  00     4a  00  4c  00  5b  02  0a  00     
+5e  01  01  00  5f  17  01  00     60  60  01  00  61  60  01  00     
+64  00  65  00  66  66  01  00     68  00  69  00  6a  6a  01  00     
+6c  6d  01  00  6d  6d  01  00     6e  6f  01  00  6f  6f  01  00     
+70  70  01  00  71  71  01  00     72  72  01  00  73  73  01  00     
+74  66  01  00  76  00  77  00     79  79  01  00  7a  7a  01  00     
+7b  7b  01  00  88  00  92  92     01  00  93  93  01  00  98  02     
+0a  00  99  02  0a  00  9a  02     0a  00  9b  01  01  00  9c  0c     
+0a  00  ac  02  0a  00  b2  b2     01  00  b3  b3  01  00  b4  b4     
+01  00  b5  b5  01  00  b6  b6     01  00  b7  b7  01  00  b8  0c     
+0a  00  b9  b2  01  00  ba  b3     01  00  bb  b4  01  00  bc  b5     
+01  00  bd  b6  01  00  be  b7     01  00  bf  00  c0  00  c3  70     
+01  00  c4  71  01  00  c5  72     01  00  d0  d0  01  00  d1  00     
+e7  e7  01  00  e8  e7  01  00     e9  00  f1  6d  01  00  00  
+.   .   .   .   .   .   .   <      <   <   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .           .   .   !   !      .   .   .   .   .   .   .   .      
+.   .   (   (   .   .   )   )      .   .   u   u   .   .   x   x      
+.   .   "   "   .   .   #   #      .   .   $   $   .   .   %   %      
+.   .   &   &   .   .   *   *      .   .   +   +   .   .   ,   ,      
+.   .   -   -   .   .   .   .      .   .   /   /   .   .   0   0      
+.   .   1   1   .   .   2   2      .   .   3   3   .   .   4   4      
+.   .   5   5   .   .   6   6      .   .   7   7   .   .   8   8      
+.   .   9   9   .   .   ;   ;      .   .   <   <   .   .   =   =      
+.   .   >   >   .   .   ?   ?      .   .   @   @   .   .   A   A      
+.   .   B   B   .   .   C   C      .   .   G   G   .   .   H   H      
+.   .   I   I   .   .   K   K      .   .   M   M   .   .   N   N      
+.   .   O   O   .   .   P   P      .   .   Q   Q   .   .   R   R      
+.   .   S   S   .   .   T   T      .   .   U   U   .   .   V   V      
+.   .   W   W   .   .   X   .      Y   Y   .   .   Z   Z   .   .      
+\   \   .   .   ]   ]   .   .      b   b   .   .   c   c   .   .      
+g   g   .   .   k   k   .   .      |   |   .   .   }   }   .   .      
+~   ~   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      '   x   .   .   :   :   .   .      
+D   .   .   .   E   .   F   .      J   .   L   .   [   .   .   .      
+^   .   .   .   _   .   .   .      `   `   .   .   a   `   .   .      
+d   .   e   .   f   f   .   .      h   .   i   .   j   j   .   .      
+l   m   .   .   m   m   .   .      n   o   .   .   o   o   .   .      
+p   p   .   .   q   q   .   .      r   r   .   .   s   s   .   .      
+t   f   .   .   v   .   w   .      y   y   .   .   z   z   .   .      
+{   {   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   p      
+.   .   .   q   .   .   .   r      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   m   .   .   .   
+
+		}
+		wrote 951 bytes
+		send packet flush...
+		outcome: succeeded
+	}
+	authentication attempt 1 {
+		recv {
+			large header: no
+			packet size: 180
+			packet checksum: 0
+			packet type: 6
+			packet flags: 0
+			header checksum: 0
+			body size: 172
+			00  00  03  52  02  80  96  04     08  01  08  00  00  00  00  00     
+00  00  00  00  00  00  00  62     5d  05  08  00  a1  5e  05  08     
+01  19  61  5e  05  08  01  05     02  11  30  21  5f  05  08  01     
+05  31  5f  05  08  01  31  00     00  00  00  00  00  00  00  00     
+00  f2  58  05  08  01  21  f0     58  05  08  08  74  65  73  74     
+75  73  65  72  19  72  65  64     68  61  74  39  78  38  36  2e     
+66  69  72  73  74  77  6f  72     6b  73  2e  63  6f  6d  05  64     
+6d  75  73  65  05  33  32  32     34  33  31  6f  63  69  37  64     
+61  74  65  73  74  72  40  72     65  64  68  61  74  39  78  38     
+36  2e  66  69  72  73  74  77     6f  72  6b  73  2e  63  6f  6d     
+20  28  54  4e  53  20  56  31     2d  56  33  29  
+.   .   .   R   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   b      ]   .   .   .   .   ^   .   .      
+.   .   a   ^   .   .   .   .      .   .   0   !   _   .   .   .      
+.   1   _   .   .   .   1   .      .   .   .   .   .   .   .   .      
+.   .   X   .   .   .   !   .      X   .   .   .   t   e   s   t      
+u   s   e   r   .   r   e   d      h   a   t   9   x   8   6   .      
+f   i   r   s   t   w   o   r      k   s   .   c   o   m   .   d      
+m   u   s   e   .   3   2   2      4   3   1   o   c   i   7   d      
+a   t   e   s   t   r   @   r      e   d   h   a   t   9   x   8      
+6   .   f   i   r   s   t   w      o   r   k   s   .   c   o   m      
+    (   T   N   S       V   1      -   V   3   )   
+
+		}
+		bad ttifunction 0x52, expected 0x76
+
+		o3logon request (phase 1) {
+			data flags: 0x0000
+			ttc code: (0x03) TTC_TTI_FUNCTION
+			tti function: (0x52) TTI_LOGON_PRESENT_USER
+			seq number: 2
+			pointer {
+				pointer: 0x08049680
+			}
+			pointer {
+				pointer: 0x00000000
+			}
+			pointer {
+				pointer: 0x00000000
+			}
+			pointer {
+				pointer: 0x08055d62
+			}
+			pointer {
+				pointer: 0x08055ea1
+			}
+			pointer {
+				pointer: 0x08055e61
+			}
+			pointer {
+				pointer: 0x08055f21
+			}
+			pointer {
+				pointer: 0x08055f31
+			}
+			user length: 8
+			password length: 0
+			terminal name length: 0
+			host length: 25
+			os user length: 5
+			pid string length: 5
+			program length: 49
+			string: "testuser", size: 8
+			user: testuser
+		}
+		auth extra (phase 1) {
+			field count: 1
+			verifiertype: 2304
+		}
+		authentication challenge {
+			data flags: 0x0000
+			ttc code: (0x08) TTC_OK
+			verifier type: 2304 (9i)
+			serverauthsesskey: C94F4227B113FA900F3DFA22015EB6E6
+			fabricated challenge: no
+			count: 32
+			oci7 summary {
+				cursor id: 0
+				command type: 0
+				call number: 2
+				success iterations: 0
+				parse error offset: 0
+			}
+		}
+		send {
+			large header: no
+			packet size: 75
+			packet checksum: 0
+			packet type: 6
+			packet flags: 0x0000
+			header checksum: 0
+			body size: 67
+			00  00  08  01  20  20  43  39     34  46  34  32  32  37  42  31     
+31  33  46  41  39  30  30  46     33  44  46  41  32  32  30  31     
+35  45  42  36  45  36  04  01     01  00  00  00  00  00  00  00     
+00  00  00  00  00  00  00  00     00  00  00  00  02  00  00  00     
+00  00  00  
+.   .   .   .           C   9      4   F   4   2   2   7   B   1      
+1   3   F   A   9   0   0   F      3   D   F   A   2   2   0   1      
+5   E   B   6   E   6   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   
+
+		}
+		wrote 75 bytes
+		send packet flush...
+		recv {
+			large header: no
+			packet size: 229
+			packet checksum: 0
+			packet type: 6
+			packet flags: 0
+			header checksum: 0
+			body size: 221
+			00  00  03  51  03  80  96  04     08  01  08  32  5c  05  08  01     
+30  00  00  00  00  00  00  00     62  5d  05  08  00  a1  5e  05     
+08  01  19  61  5e  05  08  01     05  02  11  30  21  5f  05  08     
+01  05  31  5f  05  08  01  31     00  00  00  00  00  00  00  00     
+00  00  00  00  00  00  00  00     00  00  00  08  74  65  73  74     
+75  73  65  72  30  33  46  33     41  39  36  30  31  34  35  45     
+36  32  34  36  42  41  39  42     34  42  45  46  38  41  34  32     
+33  35  42  45  33  46  45  33     44  41  37  31  32  37  39  34     
+38  42  46  35  41  19  72  65     64  68  61  74  39  78  38  36     
+2e  66  69  72  73  74  77  6f     72  6b  73  2e  63  6f  6d  05     
+64  6d  75  73  65  05  33  32     32  34  33  31  6f  63  69  37     
+64  61  74  65  73  74  72  40     72  65  64  68  61  74  39  78     
+38  36  2e  66  69  72  73  74     77  6f  72  6b  73  2e  63  6f     
+6d  20  28  54  4e  53  20  56     31  2d  56  33  29  
+.   .   .   Q   .   .   .   .      .   .   .   2   \   .   .   .      
+0   .   .   .   .   .   .   .      b   ]   .   .   .   .   ^   .      
+.   .   .   a   ^   .   .   .      .   .   .   0   !   _   .   .      
+.   .   1   _   .   .   .   1      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   t   e   s   t      
+u   s   e   r   0   3   F   3      A   9   6   0   1   4   5   E      
+6   2   4   6   B   A   9   B      4   B   E   F   8   A   4   2      
+3   5   B   E   3   F   E   3      D   A   7   1   2   7   9   4      
+8   B   F   5   A   .   r   e      d   h   a   t   9   x   8   6      
+.   f   i   r   s   t   w   o      r   k   s   .   c   o   m   .      
+d   m   u   s   e   .   3   2      2   4   3   1   o   c   i   7      
+d   a   t   e   s   t   r   @      r   e   d   h   a   t   9   x      
+8   6   .   f   i   r   s   t      w   o   r   k   s   .   c   o      
+m       (   T   N   S       V      1   -   V   3   )   
+
+		}
+		bad ttifunction 0x51, expected 0x73
+
+		o3logon request (phase 2) {
+			data flags: 0x0000
+			ttc code: (0x03) TTC_TTI_FUNCTION
+			tti function: (0x51) TTI_LOGON_PRESENT_PWD
+			seq number: 3
+			pointer {
+				pointer: 0x08049680
+			}
+			pointer {
+				pointer: 0x08055c32
+			}
+			pointer {
+				pointer: 0x00000000
+			}
+			pointer {
+				pointer: 0x08055d62
+			}
+			pointer {
+				pointer: 0x08055ea1
+			}
+			pointer {
+				pointer: 0x08055e61
+			}
+			pointer {
+				pointer: 0x08055f21
+			}
+			pointer {
+				pointer: 0x08055f31
+			}
+			user length: 8
+			password length: 48
+			terminal name length: 0
+			host length: 25
+			os user length: 5
+			pid string length: 5
+			program length: 49
+			string: "testuser", size: 8
+			user: testuser
+			string: "3F3A960145E6246BA9B4BEF8A4235BE3FE3DA7127948BF5A", size: 48
+			AUTH_PASSWORD: 3F3A960145E6246BA9B4BEF8A4235BE3FE3DA7127948BF5A
+		}
+		auth extra (phase 2) {
+			field count: 2
+			verifiertype: 2304
+			serverauthsesskey: C94F4227B113FA900F3DFA22015EB6E6
+		}
+		auth succeeded
+		authentication success {
+			data flags: 0x0000
+			user: testuser
+		}
+		oci7 summary {
+			cursor id: 0
+			command type: 0
+			call number: 3
+			success iterations: 0
+			parse error offset: 0
+		}
+		send {
+			large header: no
+			packet size: 39
+			packet checksum: 0
+			packet type: 6
+			packet flags: 0x0000
+			header checksum: 0
+			body size: 31
+			00  00  04  01  01  00  00  00     00  00  00  00  00  00  00  00     
+00  00  00  00  00  00  00  00     03  00  00  00  00  00  00  
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   
+
+		}
+		wrote 39 bytes
+		send packet flush...
+		outcome: authenticated
+	}
+	result: 1
+}
+recv {
+	large header: no
+	packet size: 27
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 19
+	00  00  03  3b  04  12  59  05     08  01  01  50  c1  ff  bf  4c     
+c1  ff  bf  
+.   .   .   ;   .   .   Y   .      .   .   .   P   .   .   .   L      
+.   .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x3b) TTI_VERSION
+}
+pointer {
+	pointer: 0x08055912
+}
+pointer {
+	pointer: 0xbfffc150
+}
+pointer {
+	pointer: 0xbfffc14c
+}
+version request {
+	seq number: 4
+	rdbms version: 134568210
+	buffer length: 1
+	return version length: -1073757872
+	return version number: -1073757876
+}
+dalc: 1
+4f  
+O   
+
+version response {
+	data flags: 0x0000
+	ttc code: (0x08) TTC_OK
+	server version:
+	Oracle Database 10g Enterprise Edition Release 10.2.0.1.0 - 64bit Production
+	packed version: 0x0a200100
+	ttc code: (0x09) TTC_STATUS
+	call status: 1
+}
+send {
+	large header: no
+	packet size: 23
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 15
+	00  00  08  01  01  01  4f  04     0a  20  01  00  09  01  01  
+.   .   .   .   .   .   O   .      .       .   .   .   .   .   
+
+}
+wrote 23 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 18
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 10
+	00  00  03  02  05  84  61  05     08  00  
+.   .   .   .   .   .   a   .      .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x02) TTI_OPEN
+}
+pointer {
+	pointer: 0x08056184
+}
+open request {
+	seq number: 5
+	cursor id pointer: 0x08056184
+	open size: 0
+	cursor id: 0
+}
+open response {
+	data flags: 0x0000
+	ttc code: (0x08) TTC_OK
+	cursor id: 0
+	ttc code: (0x09) TTC_STATUS
+	call status: 1
+}
+send {
+	large header: no
+	packet size: 16
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 8
+	00  00  08  01  02  09  01  01     
+.   .   .   .   .   .   .   .      
+
+}
+wrote 16 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 273
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 265
+	00  00  03  27  06  01  02  12     59  05  08  01  f6  fe  40  41     
+4c  54  45  52  20  53  45  53     53  49  4f  4e  20  53  45  54     
+20  4e  4c  53  5f  4c  41  4e     47  55  41  47  45  3d  20  27     
+41  4d  45  52  49  43  41  4e     27  20  4e  4c  53  5f  54  45     
+52  52  49  54  4f  52  59  3d     20  27  41  4d  45  52  49  40     
+43  41  27  20  4e  4c  53  5f     43  55  52  52  45  4e  43  59     
+3d  20  27  24  27  20  4e  4c     53  5f  49  53  4f  5f  43  55     
+52  52  45  4e  43  59  3d  20     27  41  4d  45  52  49  43  41     
+27  20  4e  4c  53  5f  4e  55     4d  45  52  49  43  5f  43  48     
+40  41  52  41  43  54  45  52     53  3d  20  27  2e  2c  27  20     
+4e  4c  53  5f  43  41  4c  45     4e  44  41  52  3d  20  27  47     
+52  45  47  4f  52  49  41  4e     27  20  4e  4c  53  5f  44  41     
+54  45  5f  46  4f  52  4d  41     54  3d  20  27  44  44  2d  4d     
+4f  36  4e  2d  52  52  27  20     4e  4c  53  5f  44  41  54  45     
+5f  4c  41  4e  47  55  41  47     45  3d  20  27  41  4d  45  52     
+49  43  41  4e  27  20  4e  4c     53  5f  53  4f  52  54  3d  20     
+27  42  49  4e  41  52  59  27     00  
+.   .   .   '   .   .   .   .      Y   .   .   .   .   .   @   A      
+L   T   E   R       S   E   S      S   I   O   N       S   E   T      
+    N   L   S   _   L   A   N      G   U   A   G   E   =       '      
+A   M   E   R   I   C   A   N      '       N   L   S   _   T   E      
+R   R   I   T   O   R   Y   =          '   A   M   E   R   I   @      
+C   A   '       N   L   S   _      C   U   R   R   E   N   C   Y      
+=       '   $   '       N   L      S   _   I   S   O   _   C   U      
+R   R   E   N   C   Y   =          '   A   M   E   R   I   C   A      
+'       N   L   S   _   N   U      M   E   R   I   C   _   C   H      
+@   A   R   A   C   T   E   R      S   =       '   .   ,   '          
+N   L   S   _   C   A   L   E      N   D   A   R   =       '   G      
+R   E   G   O   R   I   A   N      '       N   L   S   _   D   A      
+T   E   _   F   O   R   M   A      T   =       '   D   D   -   M      
+O   6   N   -   R   R   '          N   L   S   _   D   A   T   E      
+_   L   A   N   G   U   A   G      E   =       '   A   M   E   R      
+I   C   A   N   '       N   L      S   _   S   O   R   T   =          
+'   B   I   N   A   R   Y   '      .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x27) TTI_PARSE_EXECUTE
+}
+pointer {
+	pointer: 0x08055912
+}
+parse-execute request {
+	seq number: 6
+	cursor id: 2
+	query pointer: 0x08055912
+	query size: 246
+	query: "ALTER SESSION SET NLS_LANGUAGE= 'AMERICAN' NLS_TERRITORY= 'AMERICA' NLS_CURRENCY= '$' NLS_ISO_CURRENCY= 'AMERICA' NLS_NUMERIC_CHARACTERS= '.,' NLS_CALENDAR= 'GREGORIAN' NLS_DATE_FORMAT= 'DD-MON-RR' NLS_DATE_LANGUAGE= 'AMERICAN' NLS_SORT= 'BINARY'"
+}
+cache column definitions {
+	column count: 0
+	no columns
+	cursor id: 0
+}
+parse-execute response {
+	data flags: 0x0000
+}
+oci7 summary {
+	cursor id: 2
+	command type: 42
+	call number: 6
+	success iterations: 1
+	parse error offset: 0
+}
+send {
+	large header: no
+	packet size: 41
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 33
+	00  00  04  01  01  00  00  00     00  01  02  00  2a  00  00  00     
+00  00  00  00  00  00  00  00     00  06  00  01  01  00  00  00     
+00  
+.   .   .   .   .   .   .   .      .   .   .   .   *   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   
+
+}
+wrote 41 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 15
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 7
+	00  00  03  08  07  01  02  
+.   .   .   .   .   .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x08) TTI_CLOSE
+}
+close request {
+	seq number: 7
+	cursor id: 2
+}
+close response {
+	data flags: 0x0000
+	ttc code: (0x09) TTC_STATUS
+	call status: 1
+	count: 1
+}
+send {
+	large header: no
+	packet size: 13
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 5
+	00  00  09  01  01  
+.   .   .   .   .   
+
+}
+wrote 13 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 18
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 10
+	00  00  03  02  08  60  eb  ff     bf  00  
+.   .   .   .   .   `   .   .      .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x02) TTI_OPEN
+}
+pointer {
+	pointer: 0xbfffeb60
+}
+open request {
+	seq number: 8
+	cursor id pointer: 0xbfffeb60
+	open size: 0
+	cursor id: 0
+}
+open response {
+	data flags: 0x0000
+	ttc code: (0x08) TTC_OK
+	cursor id: 0
+	ttc code: (0x09) TTC_STATUS
+	call status: 1
+}
+send {
+	large header: no
+	packet size: 16
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 8
+	00  00  08  01  02  09  01  01     
+.   .   .   .   .   .   .   .      
+
+}
+wrote 16 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 103
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 95
+	00  00  03  4a  09  01  01  01     02  33  fe  ff  bf  01  2f  00     
+00  00  00  00  84  ea  ff  bf     01  01  00  00  00  00  00  00     
+00  00  00  00  00  00  00  00     00  00  00  00  00  2f  73  65     
+6c  65  63  74  20  27  61  27     7c  7c  63  68  72  28  35  30     
+30  38  39  29  7c  7c  63  68     72  28  31  34  38  34  34  35     
+38  38  29  20  66  72  6f  6d     20  64  75  61  6c  01  02  
+.   .   .   J   .   .   .   .      .   3   .   .   .   .   /   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   /   s   e      
+l   e   c   t       '   a   '      |   |   c   h   r   (   5   0      
+0   8   9   )   |   |   c   h      r   (   1   4   8   4   4   5      
+8   8   )       f   r   o   m          d   u   a   l   .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x4a) TTI_OSQL7
+}
+pointer {
+	pointer: 0xbffffe33
+}
+pointer {
+	pointer: 0x00000000
+}
+pointer {
+	pointer: 0xbfffea84
+}
+osql7 request {
+	seq number: 9
+	unknown: 1
+	cursor id: 2
+	query pointer: 0xbffffe33
+	query size: 47
+	unknown: 0x00000000 0 0xbfffea84 1
+	query: "select 'a'||chr(50089)||chr(14844588) from dual"
+}
+osql7 response {
+	data flags: 0x0000
+}
+oci7 summary {
+	cursor id: 2
+	command type: 3
+	call number: 9
+	success iterations: 0
+	parse error offset: 0
+}
+send {
+	large header: no
+	packet size: 40
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 32
+	00  00  04  01  01  00  00  00     00  01  02  00  03  00  00  00     
+00  00  00  00  00  00  00  00     00  09  00  00  00  00  00  00     
+
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+
+
+}
+wrote 40 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 76
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 68
+	00  00  03  47  0a  02  80  30     01  02  00  00  00  00  00  00     
+00  00  00  00  84  58  05  08     01  07  9c  27  05  08  01  02     
+00  00  00  00  e4  26  05  08     01  01  00  00  00  00  00  00     
+01  01  00  00  00  00  00  17     07  00  00  01  40  00  00  00     
+00  00  00  00  
+.   .   .   G   .   .   .   0      .   .   .   .   .   .   .   .      
+.   .   .   .   .   X   .   .      .   .   .   '   .   .   .   .      
+.   .   .   .   .   &   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   @   .   .   .      
+.   .   .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x47) TTI_QUERY2
+}
+query2 request {
+	sequence: 10
+	options: 0x00008030
+	OPTION_DEFINE
+	OPTION_EXECUTE
+	OPTION_NOPLSQL
+	cursor id: 2
+}
+query2 descriptors {
+	pointer {
+		pointer: 0x00000000
+	}
+	pointer {
+		pointer: 0x00000000
+	}
+	pointer {
+		pointer: 0x08055884
+	}
+	pointer {
+		pointer: 0x0805279c
+	}
+	pointer {
+		pointer: 0x00000000
+	}
+	pointer {
+		pointer: 0x080526e4
+	}
+	pointer {
+		pointer: 0x00000000
+	}
+	define count: 1
+	bind count: 0
+	row count: 1
+	column 0: defined (type 23, buffer size 64)
+}
+cache column definitions {
+	column count: 1
+	cursor id: 0
+	VARCHAR2: 1
+}
+oci7 summary {
+	cursor id: 2
+	command type: 3
+	call number: 10
+	success iterations: 1
+	parse error offset: 0
+}
+query2 response {
+	data flags: 0x0000
+	ttc code: (0x08) TTC_OK
+}
+send {
+	large header: no
+	packet size: 50
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 42
+	00  00  08  01  02  04  00  00     00  00  00  04  01  01  00  00     
+00  00  01  02  00  03  00  00     00  00  00  00  00  00  00  00     
+00  00  0a  00  01  01  00  00     00  00  
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   
+
+}
+wrote 50 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 17
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 9
+	00  00  03  05  0b  01  02  01     01  
+.   .   .   .   .   .   .   .      .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x05) TTI_FETCH
+}
+fetch request {
+	sequence: 11
+	cursor id: 2
+	rows to fetch: 1
+}
+fetch response header {
+	data flags: 0x0000
+}
+cache column definitions {
+	column count: 1
+	cursor id: 0
+	already cached
+}
+fetch response row {
+	row marker: 0x07
+	col 0 {
+		wire column type {
+			input type: 0x01
+			ORACLE_TYPE_VARCHAR
+		}
+		ORACLE_TYPE_VARCHAR
+		"aé€" (6)
+		field size: 6
+		field: "aé€"
+		count: 0
+		count: 0
+		indicator and return code
+	}
+}
+fetched every row asked for
+row header {
+	flags: 0x02
+	column count: 1
+	prefetch rows: 1
+}
+oci7 summary {
+	cursor id: 2
+	command type: 3
+	call number: 11
+	success iterations: 1
+	parse error offset: 0
+}
+fetch response footer {
+	not exact fetch
+	rows fetched: 1
+}
+send {
+	large header: no
+	packet size: 62
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 54
+	00  00  06  02  01  01  00  01     01  00  00  00  07  06  61  c3     
+a9  e2  82  ac  00  00  04  01     01  01  01  00  00  00  01  02     
+00  03  00  00  00  00  00  00     00  00  00  00  00  00  0b  00     
+01  01  00  00  00  00  
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   a   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   .   .      .   .   .   .   .   .   .   .      
+.   .   .   .   .   .   
+
+}
+wrote 62 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 15
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 7
+	00  00  03  08  0c  01  02  
+.   .   .   .   .   .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x08) TTI_CLOSE
+}
+close request {
+	seq number: 12
+	cursor id: 2
+}
+close response {
+	data flags: 0x0000
+	ttc code: (0x09) TTC_STATUS
+	call status: 1
+	count: 1
+}
+send {
+	large header: no
+	packet size: 13
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 5
+	00  00  09  01  01  
+.   .   .   .   .   
+
+}
+wrote 13 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 13
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 5
+	00  00  03  09  0d  
+.   .   .   .   .   
+
+}
+get tti function {
+	data flags: 0x0000
+	ttc code: (0x03) TTC_TTI_FUNCTION
+	tti function: (0x09) TTI_DISCONNECT
+}
+disconnect request {
+	seq number: 13
+}
+disconnect response {
+	data flags: 0x0000
+	ttc code: (0x09) TTC_STATUS
+	call status: 1
+	count: 1
+}
+send {
+	large header: no
+	packet size: 13
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0x0000
+	header checksum: 0
+	body size: 5
+	00  00  09  01  01  
+.   .   .   .   .   
+
+}
+wrote 13 bytes
+send packet flush...
+recv {
+	large header: no
+	packet size: 10
+	packet checksum: 0
+	packet type: 6
+	packet flags: 0
+	header checksum: 0
+	body size: 2
+	00  40  
+.   @   
+
+}
+get tti function {
+	data flags: 0x0040
+	eof flag
+}

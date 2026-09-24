@@ -1880,13 +1880,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   summary the module answers a successful O3LOGON login with is
   that same object now too, instead of putSummary()'s field
   stream
-- fixed the oracle protocol module answering a verifiertype="9i"
-  connection with its default AL32UTF8 charset instead of the
-  single-byte charset (31) a real 10.2 server sends this
-  client. AL32UTF8 is variable-width, which was the actual
-  source of the 3x buffer length inflation seen in the
-  client's datatype negotiation request, misattributed before
-  to the ENCODING_CONV_LENGTH flag
+- fixed the oracle protocol module to default a verifiertype="9i"
+  listener to charset 31 (WE8ISO8859P1), overridable with charset=
 - fixed the oracle protocol module's o3logon phase-1 challenge and
   login-success summary against a real portable-mode reference -
   a SPARC Solaris OCI7 client's login into an x86 linux 10.2
@@ -2894,6 +2889,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed intercepted begin/commit/rollback/autocommit queries permanently
   disabling column info for the rest of a connection's life on every
   protocol but the native one
+- fixed OCI7 clients corrupting multibyte text fetched or bound through a
+  verifiertype="9i" oracle protocol listener
+- fixed OCI7 clients with a WE8ISO8859P1 NLS_LANG failing to log in to a
+  verifiertype="9i" oracle protocol listener
 
 ### Security
 - fixed an authentication hole in the des password encryption module

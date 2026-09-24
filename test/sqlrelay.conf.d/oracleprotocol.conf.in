@@ -213,10 +213,13 @@
 	     needed when sqlr-connection itself is built against an OCI7-era
 	     client (redhat9x86's build; #9654), which can't O5LOGON to the
 	     modern backend; a host new enough to run this test suite generally
-	     has no such restriction. -->
+	     has no such restriction.  charset="873" overrides a 9i listener's
+	     WE8ISO8859P1 default to match nls_lang, or an OCI7 client
+	     converting to its own NLS_LANG re-encodes the UTF-8 bytes as if
+	     they were WE8ISO8859P1 (#10273). -->
 	<instance id="oracleprotocoloci7utf8" dbase="oracle" debug="protocols">
 		<listeners>
-			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT10@" serverversion="11.2" verifiertype="9i" sid="ora1"/>
+			<listener protocol="oracle" port="@ORACLEPROTOCOLPORT10@" serverversion="11.2" verifiertype="9i" sid="ora1" charset="873"/>
 		</listeners>
 		<auths>
 			<auth module="oracle_userlist">
