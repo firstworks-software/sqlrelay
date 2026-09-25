@@ -5887,8 +5887,8 @@ bool sqlrsh::substitution(sqlrshenv *env, const char *args) {
 	char	*name=poolCopy(&env->subpool,arg,charstring::getLength(arg));
 	delete[] arg;
 
-	// if the substitution variable is already defined, clear it...
-	// Only the value is freed - what it points at belongs to the pool.
+	// clear an already-defined substitution variable
+	// (only the value is freed - what it points at belongs to the pool)
 	sqlrshbindvalue	*bv=NULL;
 	if (env->substitutions.getValue(name,&bv)) {
 		delete bv;
@@ -6229,8 +6229,7 @@ bool sqlrsh::openCache(sqlrshenv *env,
 		return false;
 	}
 
-	// if the file name starts with a slash then use it as-is, otherwise
-	// prepend the default cache directory.
+	// build filename, relative to the cache directory
 	stringbuffer	fn;
 	fn.append(sqlrpth->getCacheDir())->append(command);
 
