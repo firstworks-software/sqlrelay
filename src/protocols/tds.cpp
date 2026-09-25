@@ -6391,29 +6391,32 @@ byte_t sqlrprotocol_tds::preTds7FieldOrder(byte_t value,
 	return PRE_TDS7_ORDER_UNKNOWN;
 }
 
-// Works the login record's typeflags block out into the single byte order
-// the rest of the session runs in, and returns false if the record didn't
-// declare one.
-//
-// Only the exact values the spec defines are recognized, one field at a
-// time.  Anything else - including a byte of 0 in a position where 0
-// isn't a defined value - falls back to little-endian rather than being
-// read as anything in particular.  That matters most for a block of all
-// zeros, which isn't a valid declaration at all but would otherwise
-// decode as big-endian, because 0 is what TDS_INT4_LSB_HI happens to be.
-// Every client that reaches this in practice runs on little-endian
-// hardware, so little-endian is the safe fallback, and an unrecognized
-// value gets a debug line rather than a refused login.
-//
-// A genuine disagreement between fields is a different matter.  The
-// record declares integers, floats and datetimes separately, so a client
-// could in principle ask for little-endian integers and big-endian
-// floats.  Nothing downstream can serve that: the byte order is one
-// per-session flag, so picking either order would get the other one
-// wrong in every row.  Refuse the login instead - real clients declare a
-// consistent order, so this costs nothing that works today.
 bool sqlrprotocol_tds::preTds7ByteOrder(const byte_t *typeflags,
 					bool *bigendian) {
+
+	// works the login record's typeflags block out into the single
+	// byte order the rest of the session runs in, and returns false
+	// if the record didn't declare one.
+	//
+	// Only the exact values the spec defines are recognized, one
+	// field at a time.  Anything else - including a byte of 0 in a
+	// position where 0 isn't a defined value - falls back to
+	// little-endian rather than being read as anything in particular.
+	// That matters most for a block of all zeros, which isn't a valid
+	// declaration at all but would otherwise decode as big-endian,
+	// because 0 is what TDS_INT4_LSB_HI happens to be.  Every client
+	// that reaches this in practice runs on little-endian hardware,
+	// so little-endian is the safe fallback, and an unrecognized
+	// value gets a debug line rather than a refused login.
+	//
+	// A genuine disagreement between fields is a different matter.
+	// The record declares integers, floats and datetimes separately,
+	// so a client could in principle ask for little-endian integers
+	// and big-endian floats.  Nothing downstream can serve that: the
+	// byte order is one per-session flag, so picking either order
+	// would get the other one wrong in every row.  Refuse the login
+	// instead - real clients declare a consistent order, so this
+	// costs nothing that works today.
 
 	// A block of all zeros declares nothing - it's what a client that
 	// never filled the field in sends.  It has to be caught up front
@@ -6510,15 +6513,17 @@ bool sqlrprotocol_tds::preTds7ByteOrder(const byte_t *typeflags,
 	return true;
 }
 
-// "value" must point at a buffer of at least "size"+1 bytes: "size" for the
-// field itself, and one more for the nul written after the last real
-// character.  Nothing checks that, so every call site pairs a
-// char[SOMETHING+1] with a matching SOMETHING here.
 void sqlrprotocol_tds::readPreTds7Field(const byte_t *rp,
 					char *value,
 					size_t size,
 					byte_t *length,
 					const byte_t **rpout) {
+
+	// "value" must point at a buffer of at least "size"+1 bytes:
+	// "size" for the field itself, and one more for the nul written
+	// after the last real character.  Nothing checks that, so every
+	// call site pairs a char[SOMETHING+1] with a matching SOMETHING
+	// here.
 
 	// the field is a fixed run of "size" nul-padded bytes, followed by a
 	// trailing byte giving how many of them are real characters
@@ -6534,15 +6539,17 @@ void sqlrprotocol_tds::readPreTds7Field(const byte_t *rp,
 	*rpout=rp;
 }
 
-// The tds 7.x login record doesn't send its passwords in the clear, but
-// what it does send is only a fixed xor-and-nibble-swap away from them -
-// see readPassword() - so a raw dump of one gives them up just as surely.
-// Unlike the pre-tds7 record, login7 declares where its fields are rather
-// than laying them out at fixed offsets, so read the offsets back out of
-// the header that's arrived so far.
 void sqlrprotocol_tds::maskTds7Passwords(byte_t *packet,
 					uint32_t packetsize,
 					uint64_t packetoffset) {
+
+	// the tds 7.x login record doesn't send its passwords in the
+	// clear, but what it does send is only a fixed xor-and-nibble-swap
+	// away from them - see readPassword() - so a raw dump of one gives
+	// them up just as surely.  Unlike the pre-tds7 record, login7
+	// declares where its fields are rather than laying them out at
+	// fixed offsets, so read the offsets back out of the header that's
+	// arrived so far.
 
 	const byte_t	*rq=reqpacket.getBuffer();
 	uint64_t	rqsize=reqpacket.getSize();
@@ -7137,7 +7144,7 @@ void sqlrprotocol_tds::loginAck(byte_t status) {
 
 	byte_t		token=TOKEN_LOGIN_ACK;
 
-	// For a tds 7.x client this byte names the sql interface, for a
+	// for a tds 7.x client this byte names the sql interface, for a
 	// pre-tds7 client it reports how the login came out - so "status" is
 	// ignored on the tds 7.x path.  A tds 7.x login that fails gets an
 	// error token and no login ack at all, so only success reaches here
@@ -7147,7 +7154,7 @@ void sqlrprotocol_tds::loginAck(byte_t status) {
 	// login ack is sent big-endian
 	uint32_t	tdsversion=
 			tdsVersionDecToHex(negotiatedtdsversion,true);
-	// A pre-tds7 client parses this as the server program name and
+	// a pre-tds7 client parses this as the server program name and
 	// decides from it what dialect to speak, so it has to be an ase
 	// product name rather than the backend's version string.
 	const char	*progname=(pretds7)?
@@ -7518,24 +7525,27 @@ bool sqlrprotocol_tds::sspi() {
 	return sendUnimplementedFeatureError();
 }
 
-// How many bytes the length field of a tds 5.0 request token takes.
-// There's no rule that derives this from the token byte - see the note
-// at the TDS5_LENSIZE_* defines - so it's a table, and anything not in
-// it is TDS5_LENSIZE_UNKNOWN and can't be stepped over.
-//
-// preTds7Normal() dispatches language, dbrpc and dynamic itself, and
-// uses this to step over a command it can't answer so that the walk can
-// reach the commands behind it.
-//
-// Re-verify a value against a capture before relying on one.  Freetds
-// and the wireshark dissector agree with everything here that they
-// define, but they don't define curdeclare2/3, curupdate, curinfo2/3,
-// dbrpc2 or key at all, and those rest on the spec alone - and the spec
-// is not reliable on its own either.  Freetds calls dynamic2 0xA3,
-// which is a *type* byte here; a real sap client sends 0x62.  The
-// wireshark dissector was seeded from freetds, so the two are one
-// source rather than two.
 byte_t sqlrprotocol_tds::preTds7TokenLength(byte_t token) {
+
+	// how many bytes the length field of a tds 5.0 request token
+	// takes.  There's no rule that derives this from the token byte -
+	// see the note at the TDS5_LENSIZE_* defines - so it's a table,
+	// and anything not in it is TDS5_LENSIZE_UNKNOWN and can't be
+	// stepped over.
+	//
+	// preTds7Normal() dispatches language, dbrpc and dynamic itself,
+	// and uses this to step over a command it can't answer so that
+	// the walk can reach the commands behind it.
+	//
+	// Re-verify a value against a capture before relying on one.
+	// Freetds and the wireshark dissector agree with everything here
+	// that they define, but they don't define curdeclare2/3,
+	// curupdate, curinfo2/3, dbrpc2 or key at all, and those rest on
+	// the spec alone - and the spec is not reliable on its own
+	// either.  Freetds calls dynamic2 0xA3, which is a *type* byte
+	// here; a real sap client sends 0x62.  The wireshark dissector
+	// was seeded from freetds, so the two are one source rather than
+	// two.
 
 	switch (token) {
 		case TDS5_TOKEN_CURDECLARE3:
@@ -7578,12 +7588,14 @@ byte_t sqlrprotocol_tds::preTds7TokenLength(byte_t token) {
 	}
 }
 
-// Refuses the rest of a request that carries more commands than
-// MAX_COMMANDS_PER_REQUEST, with its own done, so the client sees the
-// refusal rather than waiting for results that won't come.
-// "token" is the done token that ends the request being refused - a batch
-// of rpc's is closed with doneproc, the way rpc() closes each one it ran.
 void sqlrprotocol_tds::tooManyCommands(byte_t token) {
+
+	// refuses the rest of a request that carries more commands than
+	// MAX_COMMANDS_PER_REQUEST, with its own done, so the client sees
+	// the refusal rather than waiting for results that won't come.
+	// "token" is the done token that ends the request being refused -
+	// a batch of rpc's is closed with doneproc, the way rpc() closes
+	// each one it ran.
 
 	char	countstr[11];
 	charstring::printf(countstr,sizeof(countstr),"%d",
@@ -7602,10 +7614,11 @@ void sqlrprotocol_tds::tooManyCommands(byte_t token) {
 	done(token,DONE_ERROR|DONE_FINAL,transState(),0);
 }
 
-// Refuses one token, with its own done, so the client sees this command
-// fail rather than being left waiting for a result that never comes.
-// "more" is whether the walk goes on past it.
 void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token, bool more) {
+
+	// refuses one token, with its own done, so the client sees this
+	// command fail rather than being left waiting for a result that
+	// never comes.  "more" is whether the walk goes on past it.
 
 	char	tokenstr[3];
 	charstring::printf(tokenstr,sizeof(tokenstr),"%02x",
@@ -7630,19 +7643,20 @@ void sqlrprotocol_tds::preTds7UnsupportedToken(byte_t token, bool more) {
 	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
 }
 
-// Steps over a command token this module can't answer, along with the
-// paramfmt/params pair behind it if it brought one, so that the commands
-// behind it in the buffer can still be walked.  The token byte has
-// already been read.
-//
-// Returns false, having appended nothing at all, if the token can't be
-// stepped over - one that carries no length of its own, one that runs
-// off the end of the buffer, or a paramfmt/params pair that can't be
-// read.  Then there's no telling where the next token starts and the
-// walk has to stop.
 bool sqlrprotocol_tds::preTds7SkipCommand(const byte_t **rpinout,
 						size_t *rpsizeinout,
 						byte_t token) {
+
+	// steps over a command token this module can't answer, along with
+	// the paramfmt/params pair behind it if it brought one, so that
+	// the commands behind it in the buffer can still be walked.  The
+	// token byte has already been read.
+	//
+	// Returns false, having appended nothing at all, if the token
+	// can't be stepped over - one that carries no length of its own,
+	// one that runs off the end of the buffer, or a paramfmt/params
+	// pair that can't be read.  Then there's no telling where the
+	// next token starts and the walk has to stop.
 
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
