@@ -7632,7 +7632,7 @@ bool sqlrprotocol_firebird::sendStartResponse(uint32_t msgnumber) {
 	// 	int32_t[]	status vector
 	// }
 	//
-	// It is the same reply op_response carries, sent under an op code
+	// it is the same reply op_response carries, sent under an op code
 	// that tells the client the rows are right behind it rather than
 	// waiting for an op_receive to ask for them.
 
@@ -7667,7 +7667,7 @@ bool sqlrprotocol_firebird::sendRequestRows(uint32_t reqhandle,
 					sqlrservercursor *cursor,
 					sqlrfirebirdblrrequest *req) {
 
-	// The whole result set goes back in one batch.  A real server sends
+	// the whole result set goes back in one batch.  a real server sends
 	// what fits in a batch and waits for an op_receive to ask for the
 	// rest, but every request isql compiles ends with a send that runs
 	// after the loop, and the client stops reading at the message that
@@ -7738,7 +7738,7 @@ bool sqlrprotocol_firebird::sendRequestMessage(uint32_t reqhandle,
 	// 	byte_t[]	message
 	// }
 	//
-	// The message is on the wire either way - the count only says
+	// the message is on the wire either way - the count only says
 	// whether another packet is coming after this one.
 
 	debugStart("send request message");
@@ -7781,7 +7781,7 @@ bool sqlrprotocol_firebird::writeRequestMessage(sqlrservercursor *cursor,
 					sqlrfirebirdblrslot *slots,
 					uint32_t *byteswritten) {
 
-	// A request message is never packed, and carries no null indicator
+	// a request message is never packed, and carries no null indicator
 	// of its own - the request declared an item for every value it
 	// assigns, indicators included, so each item goes on the wire in
 	// full and in order.
@@ -8329,9 +8329,9 @@ void sqlrprotocol_firebird::trimArrays() {
 uint32_t sqlrprotocol_firebird::arrayElementSize(byte_t blrtype,
 						uint16_t length) {
 
-	// This is the stride both ends of the wire use, worked out from the
+	// this is the stride both ends of the wire use, worked out from the
 	// same blr type and length firebird's sdl_desc() (common/sdl.cpp)
-	// works from.  A varying element is described there as a cstring of
+	// works from.  a varying element is described there as a cstring of
 	// length+2 bytes rather than as a varying, so it's stored
 	// null-terminated rather than length-prefixed.
 	// (0 means an element type this module can't stride over.)
