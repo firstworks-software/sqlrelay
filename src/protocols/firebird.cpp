@@ -4875,9 +4875,9 @@ bool sqlrprotocol_firebird::authenticate() {
 	// success
 	if (retval) {
 
-		// The srp exchange runs inside the auth module, so the key
+		// the srp exchange runs inside the auth module, so the key
 		// the wire encryption needs comes back on the credentials,
-		// which go out of scope at the end of this method.  It's
+		// which go out of scope at the end of this method.  it's
 		// there only for the srp methods; the others derive nothing
 		// that could key a cipher, and op_crypt fails without it.
 		if (wirecryptkey) {
@@ -4936,7 +4936,7 @@ bool sqlrprotocol_firebird::validateDatabase() {
 	// step over any host prefix
 	// (the client uses the "host:" or "host/port:" on the front of the
 	// path to pick the server and strips it before sending, so it's in
-	// the configured value but never on the wire.  Only one character
+	// the configured value but never on the wire.  only one character
 	// before the colon is a windows drive letter rather than a host, and
 	// a value that starts with a slash is a path whose colon is its own.)
 	const char	*colon=charstring::findFirst(condb,':');
@@ -5125,7 +5125,7 @@ bool sqlrprotocol_firebird::appendInfoStrings(byte_t item,
 bool sqlrprotocol_firebird::appendInfoCountedString(byte_t item,
 						const char *value) {
 
-	// a length byte, then that many bytes.  Unlike appendInfoStrings()
+	// a length byte, then that many bytes.  unlike appendInfoStrings()
 	// there's no count in front - a real server repeats the whole cluster
 	// when there's more than one string.
 	byte_t	val[256];
@@ -5453,7 +5453,7 @@ bool sqlrprotocol_firebird::infoDatabase() {
 			case isc_info_oldest_snapshot:
 				// one transaction per session, so one handle
 				// answers all three - the same source
-				// infoTransaction() answers the isc_info_tra_*
+				// transactionInfo() answers the isc_info_tra_*
 				// items from, so the two can't disagree
 				fits=appendInfoInt(dbinfoitem,trhandle);
 				break;
@@ -5478,7 +5478,7 @@ bool sqlrprotocol_firebird::infoDatabase() {
 				break;
 
 			case isc_info_limbo:
-				// one cluster per transaction in limbo.  A
+				// one cluster per transaction in limbo.  a
 				// real server with none sends no cluster at
 				// all rather than an empty one.
 				break;
@@ -5987,7 +5987,7 @@ bool sqlrprotocol_firebird::rollbackRetaining() {
 bool sqlrprotocol_firebird::prepare() {
 
 	// op_prepare and op_prepare2 are two-phase commit's first phase, a
-	// durable promise that the second phase can't fail. The server api
+	// durable promise that the second phase can't fail. the server api
 	// has no distributed-transaction support to back that promise with.
 
 	return sendNotImplementedError();
@@ -5996,7 +5996,7 @@ bool sqlrprotocol_firebird::prepare() {
 bool sqlrprotocol_firebird::prepare2() {
 
 	// op_prepare and op_prepare2 are two-phase commit's first phase, a
-	// durable promise that the second phase can't fail. The server api
+	// durable promise that the second phase can't fail. the server api
 	// has no distributed-transaction support to back that promise with.
 
 	return sendNotImplementedError();
