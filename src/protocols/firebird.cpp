@@ -13679,7 +13679,7 @@ bool sqlrprotocol_firebird::parseBlrRse(const byte_t **blr,
 
 	// blr_rse <relation count> <relation>... <clause>... blr_end
 	//
-	// A relation's position in the list is not what a field reference
+	// a relation's position in the list is not what a field reference
 	// names it by - each relation carries a context number of its own,
 	// and that is what blr_field uses.
 
@@ -14293,7 +14293,7 @@ bool sqlrprotocol_firebird::parseBlrLiteral(const byte_t **blr,
 
 	// blr_literal <data type> <type arguments> <value>
 	//
-	// The type arguments and the width of the value are the data type's
+	// the type arguments and the width of the value are the data type's
 	// own - a scale byte and a fixed width integer, or a length and that
 	// many characters.
 
@@ -14867,8 +14867,8 @@ bool sqlrprotocol_firebird::readMessageValue(const sqlrfirebirdfield *fld,
 				break;
 
 			case blr_quad:
-				// An array parameter is an id naming an array
-				// the client built with op_put_slice.  A
+				// an array parameter is an id naming an array
+				// the client built with op_put_slice.  a
 				// blr_quad also turns up for a blob parameter
 				// an older client described that way, and the
 				// id itself is all there is to tell the two
