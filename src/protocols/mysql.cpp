@@ -4172,10 +4172,9 @@ bool sqlrprotocol_mysql::comFieldList(sqlrservercursor *cursor) {
 	rp++;
 	rpsize--;
 
-	// Get the table.  It's a null-terminated string, but the packet
-	// buffer carries no terminator of its own, so the null has to be
-	// found within the bytes that are actually left in the packet
-	// rather than by an unbounded scan.
+	// The table name is null-terminated, but the packet buffer carries
+	// no terminator of its own, so find it within the remaining packet
+	// bytes rather than scanning unbounded.
 	const byte_t	*nullterm=(const byte_t *)
 			bytestring::findFirst(rp,(byte_t)'\0',rpsize);
 	if (!nullterm) {
@@ -4488,8 +4487,8 @@ bool sqlrprotocol_mysql::comShutdown(sqlrservercursor *cursor) {
 	debugShutdownCommand(command);
 	debugEnd();
 
-	// Even though many shutdown commands are defined, Currently, mysql
-	// only supports a "shutdown" without any arguments, which implements
+	// Even though many shutdown commands are defined, mysql currently
+	// only supports "shutdown" without any arguments, which implements
 	// the "shutdown_wait_all_buffers" command.
 	return sendQuery(cursor,"shutdown");
 }
@@ -4531,11 +4530,10 @@ bool sqlrprotocol_mysql::comStmtPrepare(sqlrservercursor *cursor) {
 	uint64_t	querysize=reqpacketsize-1;
 
 	// If reqpacketsize were 0, querysize would underflow to a huge
-	// value, but getRequest() already rejects a zero length packet
-	// before dispatching here, so this can't happen.  Even so, the
-	// bounds check below also happens to catch an underflowed
-	// querysize (it's enormous), so keep this check ahead of any use
-	// of querysize.
+	// value; getRequest() already rejects a zero-length packet before
+	// dispatching here, so this can't happen, but the bounds check
+	// below also happens to catch that underflow, so keep it ahead of
+	// any use of querysize.
 	if (querysize>maxquerysize) {
 		stringbuffer	err;
 		err.append("Query loo large (");
@@ -4629,20 +4627,12 @@ bool sqlrprotocol_mysql::sendStmtPrepareOk(sqlrservercursor *cursor) {
 			}
 		}
 
-		// According to the docs, an EOF packet should be sent after
-		// the params.
-		//
-		// Also, if CLIENT_DEPRECATE_EOF is set then an OK packet
-		// should be sent in place of an EOF.
-		//
-		// However, if CLIENT_DEPRECATE_EOF is set, and an OK or EOF
-		// packet is sent, then the client throws a Malformed Packet
-		// error, as if it were expecting something else.
-		//
-		// In that case, if we just don't send an OK or EOF packet,
-		// then everything works.
-		//
-		// Strange.
+		// The docs say an EOF packet should follow the params, or an
+		// OK packet if CLIENT_DEPRECATE_EOF is negotiated.  But with
+		// CLIENT_DEPRECATE_EOF set, sending either one makes the
+		// client throw a Malformed Packet error, as if it expected
+		// something else.  Skipping the packet entirely is what
+		// actually works.
 		if (!(servercapabilityflags&CLIENT_DEPRECATE_EOF &&
 			clientcapabilityflags&CLIENT_DEPRECATE_EOF)) {
 			flush=false;
@@ -4950,7 +4940,6 @@ bool sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 					int16_t	year;
 					bytestring::copy(&year,
 							rp,sizeof(int16_t));
-					// FIXME: convert LE to host
 					bv->value.dateval.year=
 						filedescriptor::
 						convertLittleEndianToHost(
@@ -4993,7 +4982,6 @@ bool sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 					int16_t	year;
 					bytestring::copy(&year,
 							rp,sizeof(int16_t));
-					// FIXME: convert LE to host
 					bv->value.dateval.year=
 						filedescriptor::
 						convertLittleEndianToHost(
@@ -5017,8 +5005,6 @@ bool sqlrprotocol_mysql::bindParameters(sqlrservercursor *cursor,
 							int32_t	ms;
 							bytestring::copy(&ms,
 							rp,sizeof(int32_t));
-							// FIXME: convert LE
-							// to host
 							bv->value.dateval.
 								microsecond=
 							filedescriptor::
