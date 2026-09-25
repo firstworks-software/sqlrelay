@@ -2517,7 +2517,7 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 
 	clientsock=cs;
 
-	// Set up the socket...
+	// set up the socket...
 	clientsock->setTranslateByteOrder(true);
 	clientsock->setNaglesAlgorithmEnabled(false);
 	clientsock->setSocketReadBufferSize(65536);
@@ -2525,7 +2525,7 @@ clientsessionexitstatus_t sqlrprotocol_firebird::clientSession(
 	clientsock->setReadBufferSize(65536);
 	clientsock->setWriteBufferSize(65536);
 
-	// Reinit session-local data...
+	// reinit session-local data...
 	free();
 	init();
 
@@ -2987,8 +2987,8 @@ bool sqlrprotocol_firebird::connect() {
 		}
 
 		// pflag_compress is deliberately not carried over from
-		// maxtype.  The client turns on zlib framing for every byte
-		// after the accept the moment it sees that bit.
+		// maxtype - the client turns on zlib framing for every
+		// byte after the accept the moment it sees that bit
 	}
 
 	debugWrite("accepted: %s",(accepted)?"true":"false");
@@ -3084,8 +3084,8 @@ bool sqlrprotocol_firebird::connect() {
 // CNCT_client_crypt carries the client's wire encryption level as a little
 // endian integer, in as few bytes as the value needs - the client builds it
 // with ClumpletWriter::insertInt(), which trims the leading zero bytes, so
-// it arrives 1 to 4 bytes long.  Anything else, or a value no level uses,
-// means ENABLED, the level a client that sends no tag at all gets.
+// it arrives 1 to 4 bytes long - anything else, or a value no level uses,
+// falls back to ENABLED, the level a client that sends no tag at all gets
 static uint32_t readClientCryptLevel(const byte_t *value, byte_t valuelen) {
 
 	if (!valuelen || valuelen>4) {
