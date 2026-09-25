@@ -12388,9 +12388,9 @@ bool sqlrprotocol_firebird::readOnlyMetaUpdateResponse(const char *title,
 
 bool sqlrprotocol_firebird::runTransactionStatement(uint32_t stmttype) {
 
-	// A client can ask for a transaction in sql rather than with
+	// a client can ask for a transaction in sql rather than with
 	// op_transaction - isql sends "set transaction" first and reads the new
-	// handle out of the response.  These never reach the backend - SQL
+	// handle out of the response.  these never reach the backend - SQL
 	// Relay drives its transaction through the controller.
 
 	debugStart("run transaction statement");
@@ -12758,9 +12758,9 @@ void sqlrprotocol_firebird::fixupRespBufferLen() {
 
 	respbufferlen=foldSignExtendedLength(respbufferlen,"response buffer");
 
-	// The length is only the ceiling that truncates the response, so a
+	// the length is only the ceiling that truncates the response, so a
 	// client that declares a huge one never truncates and the response
-	// buffer grows to whatever the requested items produce.  Firebird's api
+	// buffer grows to whatever the requested items produce.  firebird's api
 	// types this length as a short, so a cap costs a real client nothing,
 	// and clamping rather than failing leaves the protocol's own truncation
 	// as the answer to too large an ask.
@@ -13006,7 +13006,7 @@ bool sqlrprotocol_firebird::parseBlr(const byte_t *blr,
 	// 	byte_t		blr_eoc
 	// }
 	//
-	// Each column contributes two items - the value and a null indicator -
+	// each column contributes two items - the value and a null indicator -
 	// so the item count is twice the column count.
 
 	debugStart("parse blr");
@@ -13075,8 +13075,8 @@ bool sqlrprotocol_firebird::parseBlrItems(const byte_t **blr,
 					uint16_t *fieldcount,
 					uint32_t *gdscode) {
 
-	// A message blr pairs each value with a null indicator, and only the
-	// value describes a field.  A request blr's message lists every item
+	// a message blr pairs each value with a null indicator, and only the
+	// value describes a field.  a request blr's message lists every item
 	// on its own instead, indicator or not, so every one of them is a
 	// field.
 
@@ -13289,8 +13289,8 @@ bool sqlrprotocol_firebird::parseBlrRequest(const byte_t *blr,
 	// 	byte_t		blr_eoc
 	// }
 	//
-	// The server API takes sql and nothing else, so rather than run the
-	// request the module translates it to a select and runs that.  Only the
+	// the server api takes sql and nothing else, so rather than run the
+	// request the module translates it to a select and runs that.  only the
 	// shape isql's SHOW commands compile is understood; anything else is
 	// refused rather than guessed at, since a request half understood would
 	// answer rows that aren't the ones it asked for.
