@@ -734,7 +734,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_mysql : public sqlrprotocol {
 						uint64_t querysize);
 		bool	sendQueryResult(sqlrservercursor *cursor,
 						bool binary);
+		// Refines a generic SQLRQUERYTYPE_INSERT into
+		// SQLRQUERYTYPE_MULTIINSERT or SQLRQUERYTYPE_INSERTSELECT, when
+		// the query is one of those, without the table/column/
+		// autoincrement metadata lookups that
+		// sqlrservercontroller::parseInsert() does - all that's needed
+		// here is which shape of insert this is, not its columns.
 		sqlrquerytype_t	refineInsertQueryType(sqlrservercursor *cursor);
+		// Appends a mysql_info string to "info" for the query types
+		// that a native mysql server populates it for.  Leaves "info"
+		// empty for everything else, including a plain single-row
+		// insert, matching native behavior.
 		void	appendInfoString(sqlrservercursor *cursor,
 						sqlrquerytype_t querytype,
 						uint64_t affectedrows,
@@ -3103,7 +3113,7 @@ bool sqlrprotocol_mysql::sendQueryResult(sqlrservercursor *cursor,
 
 	uint64_t	id=0;
 	cont->getLastInsertId(&id);
-	// NOTE; getLastInsertId can fail, but that usually just means that the
+	// NOTE: getLastInsertId can fail, but that usually just means that the
 	// db doesn't support it.  So, rather than return an error, we'll just
 	// leave id=0.
 
@@ -3118,11 +3128,6 @@ bool sqlrprotocol_mysql::sendQueryResult(sqlrservercursor *cursor,
 					info.getString(),0,"");
 }
 
-// Refines a generic SQLRQUERYTYPE_INSERT into SQLRQUERYTYPE_MULTIINSERT or
-// SQLRQUERYTYPE_INSERTSELECT, when the query is one of those, without the
-// table/column/autoincrement metadata lookups that
-// sqlrservercontroller::parseInsert() does - all that's needed here is
-// which shape of insert this is, not its columns.
 sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 						sqlrservercursor *cursor) {
 
@@ -3238,9 +3243,6 @@ sqlrquerytype_t sqlrprotocol_mysql::refineInsertQueryType(
 	}
 }
 
-// Appends a mysql_info string to "info" for the query types that a native
-// mysql server populates it for.  Leaves "info" empty for everything else,
-// including a plain single-row insert, matching native behavior.
 void sqlrprotocol_mysql::appendInfoString(sqlrservercursor *cursor,
 						sqlrquerytype_t querytype,
 						uint64_t affectedrows,
@@ -3255,16 +3257,16 @@ void sqlrprotocol_mysql::appendInfoString(sqlrservercursor *cursor,
 		case SQLRQUERYTYPE_MULTIINSERT:
 		case SQLRQUERYTYPE_ALTER:
 			// FIXME: Duplicates and Warnings aren't tracked by
-			// the server API yet (see #9270), so they're always
-			// reported as 0
+			// the server API yet, so they're always reported
+			// as 0
 			info->append("Records: ")->append(affectedrows);
 			info->append("  Duplicates: 0  Warnings: 0");
 			break;
 		case SQLRQUERYTYPE_UPDATE:
 			// FIXME: "Rows matched" (as opposed to "Rows
 			// affected") and "Changed" aren't tracked separately
-			// by the server API yet (see #9270), so both use the
-			// affected row count, and Warnings is always 0
+			// by the server API yet, so both use the affected
+			// row count, and Warnings is always 0
 			info->append("Rows matched: ")->append(affectedrows);
 			info->append("  Changed: ")->append(affectedrows);
 			info->append("  Warnings: 0");
@@ -3522,12 +3524,11 @@ byte_t sqlrprotocol_mysql::getColumnType(const char *columntypestring,
 			// bail on a type that the map doesn't cover.
 			// dataTypeStrings() and mysqltypemap[] are
 			// maintained separately, so a type added to one
-			// and not the other would index past the end (see
-			// #9704, which added one to dataTypeStrings() alone -
-			// this guard is what stops that from becoming an
-			// out-of-bounds read here, the way it's already
+			// and not the other would index past the end here -
+			// this guard stops that from becoming an
+			// out-of-bounds read, the way it's already
 			// guarded in the oracle protocol module's own
-			// getColumnType())
+			// getColumnType()
 			if (index>=sizeof(mysqltypemap)/
 					sizeof(mysqltypemap[0])) {
 				debugWrite("invalid column type: %s",
@@ -4108,24 +4109,14 @@ void sqlrprotocol_mysql::buildLobField(sqlrservercursor *cursor,
 							uint32_t col) {
 
 	// Read the lob into a temp buffer, then append that to resppacket.
-	// This isn't especially efficient.  However, the mysql protocol needs
-	// us to send the number of bytes that compose the lob, but for clobs,
-	// getLobFieldLength() may return the number of characters instead.  If
-	// the lob contains multi-byte characters, then there will be more bytes
-	// than characters and the client will complain about a malformed
-	// packet, at best.  This is the only reliable way to get the actual
-	// number of bytes of the lob that I can think of.
-	//
-	// My original alternative solution idea was to write the data to the
-	// resppacket, and then back-patch the size.  But, since it's a
-	// length-encoded integer, we don't know how much space to leave
-	// ourselves.
-	//
-	// The only other idea that I can think of is to keep a list of
-	// resppackets, append data to them until we hit a lob, then start a
-	// new packet, append it's size to the end of the previous packet,
-	// and so on.  Then sendPacket could send all of the packets.  Maybe
-	// we'll do that eventually.
+	// This isn't especially efficient, but the mysql protocol needs the
+	// number of bytes that compose the lob, and for clobs,
+	// getLobFieldLength() may return the number of characters instead.
+	// If the lob contains multi-byte characters, there will be more
+	// bytes than characters, and sending the character count produces a
+	// malformed packet on the client side.  Reading into a temp buffer
+	// first is the only reliable way to know the real byte count before
+	// writing the length-encoded size.
 
 	// temp buffer
 	bytebuffer	temp;
