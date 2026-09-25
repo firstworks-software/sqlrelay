@@ -7765,16 +7765,18 @@ bool sqlrprotocol_tds::preTds7SkipCommand(const byte_t **rpinout,
 	return true;
 }
 
-// A tds 5.0 "normal" buffer carries token-framed requests rather than the
-// bare payload that a tds 7.x sql batch or rpc packet carries.  This walks
-// the tokens in one.
-//
-// Modelled on remoteProcedureCall(), which does the same thing for a batch
-// of tds 7.x rpc's: clear the response once, append a done per command as
-// each is answered, and send the whole thing at the end.  The buffer can
-// carry several commands and ct-lib expects one done per command, not one
-// per buffer, so a command that isn't the last one sets DONE_MORE.
 bool sqlrprotocol_tds::preTds7Normal() {
+
+	// A tds 5.0 "normal" buffer carries token-framed requests rather
+	// than the bare payload that a tds 7.x sql batch or rpc packet
+	// carries.  This walks the tokens in one.
+	//
+	// Modelled on remoteProcedureCall(), which does the same thing for
+	// a batch of tds 7.x rpc's: clear the response once, append a done
+	// per command as each is answered, and send the whole thing at the
+	// end.  The buffer can carry several commands and ct-lib expects
+	// one done per command, not one per buffer, so a command that
+	// isn't the last one sets DONE_MORE.
 
 	const byte_t	*rp=reqpacket.getBuffer();
 	size_t		rpsize=reqpacket.getSize();
@@ -7811,7 +7813,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 
 		anycommands=true;
 
-		// A logout isn't a command to refuse - it's the client
+		// a logout isn't a command to refuse - it's the client
 		// hanging up, and ct_close() waits for a done before it
 		// does.  Answering it with an error would put a spurious
 		// message through the client's callback on a perfectly
@@ -7824,7 +7826,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 			break;
 		}
 
-		// Too many commands in one buffer.  A parameterized command
+		// too many commands in one buffer.  A parameterized command
 		// is three tokens on the wire but one command, and it counts
 		// as one here because whoever handles the command token
 		// consumes the paramfmt/params pair behind it rather than
@@ -7896,7 +7898,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 			}
 			break;
 		}
-		// Both take the key token behind them along with them.  It
+		// both take the key token behind them along with them.  It
 		// carries no length of its own, so a walk that didn't take
 		// the pair together would end at the first one a client sent.
 		if (token==TDS5_TOKEN_CURUPDATE ||
@@ -7908,7 +7910,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 			break;
 		}
 
-		// Anything else.  There's nothing to answer the command with
+		// anything else.  There's nothing to answer the command with
 		// either way, so it gets refused either way; the only question
 		// is whether the walk can go on.  A token that carries its own
 		// length can be stepped over, so refuse just that command and
@@ -7921,7 +7923,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 		// above, and no client was ever seen sending one - ct-lib
 		// sends the narrow forms even when the server grants the
 		// capabilities that invite the wide ones.
-		// FIXME: #9480 bulk copy
+		// FIXME: bulk copy is not supported yet
 		if (!preTds7SkipCommand(&rp,&rpsize,token)) {
 			preTds7UnsupportedToken(token,false);
 			break;
@@ -7929,7 +7931,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 		preTds7UnsupportedToken(token,rpsize>0);
 	}
 
-	// An empty buffer would otherwise get an empty response, which
+	// an empty buffer would otherwise get an empty response, which
 	// leaves the client waiting forever.
 	if (!anycommands) {
 		debugWrite("no tokens in the buffer");
@@ -7945,19 +7947,20 @@ bool sqlrprotocol_tds::preTds7Normal() {
 	return sendPacket();
 }
 
-// Handles one tds 5.0 language token, appending its result to the
-// response packet.  Returns false if the walk should stop, having
-// already appended an error and a final done.
-//
-// The token is:
-//	int32, little-endian	how much follows - the status byte
-//				plus the sql
-//	byte			status - 0x01 means a paramfmt/params
-//				pair follows
-//	bytes			the sql, as single-byte characters,
-//				not nul terminated
 bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 					size_t *rpsizeinout) {
+
+	// Handles one tds 5.0 language token, appending its result to the
+	// response packet.  Returns false if the walk should stop, having
+	// already appended an error and a final done.
+	//
+	// The token is:
+	//	int32, little-endian	how much follows - the status byte
+	//				plus the sql
+	//	byte			status - 0x01 means a paramfmt/params
+	//				pair follows
+	//	bytes			the sql, as single-byte characters,
+	//				not nul terminated
 
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
@@ -7982,7 +7985,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 
 	debugWrite("token length: %lld",(long long)tokenlength);
 
-	// The length covers the status byte, so a token that doesn't have
+	// the length covers the status byte, so a token that doesn't have
 	// room for one is malformed, as is one that runs off the end of
 	// the buffer.
 	if (tokenlength<sizeof(byte_t) || (size_t)tokenlength>rpsize) {
@@ -8037,7 +8040,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 	*rpinout=rp;
 	*rpsizeinout=rpsize;
 
-	// A parameterized command's values ride in the paramfmt/params pair
+	// a parameterized command's values ride in the paramfmt/params pair
 	// behind this token, so read both before the sql can be run.
 	uint16_t	paramcount=0;
 	if (status&TDS5_LANGUAGE_PARAMS) {
@@ -8057,7 +8060,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 		*rpsizeinout=rpsize;
 	}
 
-	// Whether another command follows this one in the buffer.  This has
+	// whether another command follows this one in the buffer.  This has
 	// to be worked out here, behind the paramfmt/params pair rather than
 	// in front of it - the pair is part of this command, so counting it
 	// as "more" would put DONE_MORE on the last command's done, and
@@ -8090,7 +8093,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 	// by something that used it earlier
 	cont->setInputOutputBindCount(cursor,0);
 
-	// A language command without parameters has no bind variables at
+	// a language command without parameters has no bind variables at
 	// all, and @name in bare sql is a local variable or a parameter
 	// declaration rather than one, so bind translation is off for that
 	// case the way sqlBatch() turns it off.
@@ -8124,7 +8127,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 
 		if (cont->colCount(cursor)) {
 
-			// A result set in this dialect is a rowfmt (0xEE)
+			// a result set in this dialect is a rowfmt (0xEE)
 			// and rows (0xD1), not the colmetadata (0x81) that
 			// colMetaData() writes - 0x81 is a cursor-delete
 			// token here.
@@ -8142,7 +8145,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 			// batch and tds 5.0 has neither token.
 			for (;;) {
 
-				// A result set that's too wide for the token
+				// a result set that's too wide for the token
 				// is refused in here, with its own error and
 				// done, so don't send a second one.
 				if (!preTds7RowFmt(cursor,more)) {
@@ -8206,30 +8209,31 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 	return true;
 }
 
-// Handles one tds 5.0 dbrpc token, appending its result to the response
-// packet.  Returns false if the walk should stop, having already
-// appended an error and a done.
-//
-// A dbrpc names its procedure by string where an ms-tds rpc names the
-// numbered ones by id, and its parameters ride in the paramfmt/params
-// pair behind it rather than inside the token.  So this is the decode
-// half of rpc() rather than a sibling of it, and it hands what it
-// decoded to the same proc dispatch.
-//
-// The token is:
-//	uint16, little-endian	how much follows - the name length byte,
-//				the name and the options
-//	byte			name length
-//	bytes			the name, as single-byte characters, not
-//				nul terminated
-//	uint16, little-endian	options - TDS5_RPC_PARAMS when a
-//				paramfmt/params pair follows
-//
-// Dbrpc2 (0xE8) gets no case of its own.  No client was ever seen
-// sending one and freetds has no code that can, so it stays with the
-// tokens preTds7Normal() refuses rather than being guessed at.
 bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 					size_t *rpsizeinout) {
+
+	// Handles one tds 5.0 dbrpc token, appending its result to the
+	// response packet.  Returns false if the walk should stop, having
+	// already appended an error and a done.
+	//
+	// A dbrpc names its procedure by string where an ms-tds rpc names
+	// the numbered ones by id, and its parameters ride in the
+	// paramfmt/params pair behind it rather than inside the token.  So
+	// this is the decode half of rpc() rather than a sibling of it,
+	// and it hands what it decoded to the same proc dispatch.
+	//
+	// The token is:
+	//	uint16, little-endian	how much follows - the name length
+	//				byte, the name and the options
+	//	byte			name length
+	//	bytes			the name, as single-byte characters,
+	//				not nul terminated
+	//	uint16, little-endian	options - TDS5_RPC_PARAMS when a
+	//				paramfmt/params pair follows
+	//
+	// Dbrpc2 (0xE8) gets no case of its own.  No client was ever seen
+	// sending one and freetds has no code that can, so it stays with
+	// the tokens preTds7Normal() refuses rather than being guessed at.
 
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
@@ -8251,7 +8255,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 
 	debugWrite("token length: %d",tokenlength);
 
-	// The length covers the name-length byte and the options, so a
+	// the length covers the name-length byte and the options, so a
 	// token without room for both is malformed, as is one that runs
 	// off the end of the buffer.
 	if ((size_t)tokenlength<sizeof(byte_t)+sizeof(uint16_t) ||
@@ -8313,7 +8317,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 	*rpinout=rp;
 	*rpsizeinout=rpsize;
 
-	// The values ride in the paramfmt/params pair behind the token, and
+	// the values ride in the paramfmt/params pair behind the token, and
 	// the count has to be reset either way - namedProc() builds its
 	// query from it, and whatever ran before this left its own count
 	// behind.
@@ -8332,7 +8336,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 		*rpsizeinout=rpsize;
 	}
 
-	// Whether another command follows this one in the buffer.  This has
+	// whether another command follows this one in the buffer.  This has
 	// to be worked out behind the paramfmt/params pair rather than in
 	// front of it, for the reason preTds7Language() spells out - the
 	// pair is part of this command, so counting it as "more" would put
@@ -8363,7 +8367,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 		debugProcId(procid);
 	}
 
-	// The numbered procs whose reply tail is still ms-tds only.  Their
+	// the numbered procs whose reply tail is still ms-tds only.  Their
 	// cores are wire-neutral, but each of them either writes
 	// colmetadata (0x81) and rows (0xD1) straight out rather than going
 	// through rpcResultSet(), or sends several output parameters, which
@@ -8398,7 +8402,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 
 	delete[] procname;
 
-	// A handler that gave up can't say where the request stream now
+	// a handler that gave up can't say where the request stream now
 	// stands, so end the walk after this command's own done rather
 	// than leaving DONE_MORE on it.
 	if (!retval) {
@@ -8406,7 +8410,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 		*rpsizeinout=0;
 	}
 
-	// A failed rpc has to set DONE_ERROR - ct-lib reports
+	// a failed rpc has to set DONE_ERROR - ct-lib reports
 	// CS_CMD_SUCCEED for a done without it, so a failed call would
 	// report success and the client's result walk would fall a result
 	// out of step.  A real ase closes an rpc with a plain done (0xFD)
@@ -8422,21 +8426,23 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 	return retval;
 }
 
-// Refuses one dynamic sql command, with its own done, so the client sees
-// that command fail rather than being left waiting for a result that
-// never comes.  Class 16 for the same reason preTds7UnsupportedToken()
-// uses it - the session stays usable.
 void sqlrprotocol_tds::preTds7DynamicError(const char *msgtext, bool more) {
+	// Refuses one dynamic sql command, with its own done, so the
+	// client sees that command fail rather than being left waiting
+	// for a result that never comes.  Class 16 for the same reason
+	// preTds7UnsupportedToken() uses it - the session stays usable.
 	// FIXME: is there a real error number/state for this?
 	appendError(0,1,16,msgtext,srvname,NULL,1);
 	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
 }
 
-// Looks a dynamic sql statement id up.  A live one names a prepared
-// statement handle that still has a cursor; one whose cursor was evicted
-// to make room for another request is dropped here rather than left to
-// be found again.
 bool sqlrprotocol_tds::dynamicHandle(const char *id, uint32_t *handle) {
+
+	// Looks a dynamic sql statement id up.  A live one names a
+	// prepared statement handle that still has a cursor; one whose
+	// cursor was evicted to make room for another request is dropped
+	// here rather than left to be found again.
+
 	*handle=0;
 	if (!dynamicids.getValue((char *)id,handle)) {
 		return false;
@@ -8450,9 +8456,10 @@ bool sqlrprotocol_tds::dynamicHandle(const char *id, uint32_t *handle) {
 	return true;
 }
 
-// Names a prepared statement handle with a dynamic sql statement id,
-// replacing whatever that id named before.
 void sqlrprotocol_tds::setDynamicHandle(const char *id, uint32_t handle) {
+
+	// Names a prepared statement handle with a dynamic sql statement
+	// id, replacing whatever that id named before.
 
 	// the map owns its keys, so drop the old one rather than leaving
 	// two entries for the same id
@@ -8469,11 +8476,12 @@ void sqlrprotocol_tds::removeDynamicHandle(const char *id) {
 	dynamicids.remove((char *)id);
 }
 
-// Drops the oldest dynamic sql statement id, along with the cursor its
-// handle was holding.  The same thing evictOldestHandle() does for the
-// handle maps, and for the same reason - a client can walk off and leave
-// ids prepared forever.
 void sqlrprotocol_tds::evictOldestDynamicHandle() {
+
+	// Drops the oldest dynamic sql statement id, along with the
+	// cursor its handle was holding.  The same thing
+	// evictOldestHandle() does for the handle maps, and for the same
+	// reason - a client can walk off and leave ids prepared forever.
 
 	debugStart("evict-oldest-dynamic-handle");
 
@@ -8502,15 +8510,16 @@ void sqlrprotocol_tds::evictOldestDynamicHandle() {
 	debugEnd();
 }
 
-// Writes the dynamic ack that answers every dynamic sql command.  Unlike
-// the request form, this one stops after the id - it has no statement
-// length field at all, which is how a client tells a server's dynamic
-// token from its own.
 void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
+
+	// Writes the dynamic ack that answers every dynamic sql command.
+	// Unlike the request form, this one stops after the id - it has no
+	// statement length field at all, which is how a client tells a
+	// server's dynamic token from its own.
 
 	byte_t	token=TDS5_TOKEN_DYNAMIC;
 
-	// The id arrived in the client's charset and preTds7ToUtf8()
+	// the id arrived in the client's charset and preTds7ToUtf8()
 	// converted it, so it goes back converted the other way - and
 	// before the sizes below, which count the bytes on the wire.
 	size_t	convidsize=0;
@@ -8548,29 +8557,33 @@ void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
 	debugEnd();
 }
 
-// Strips the "create proc <id> as " wrapper that a client puts in front
-// of a dynamic prepare's statement.  Ct-lib writes one when the server's
-// request capability mask sets bit 48, TDS_PROTO_DYNPROC, which
-// capability() grants to any client that asks for it.
-//
-// On an ase that wrapper is real - the prepare becomes a stored
-// procedure named for the id, and the dealloc drops it.  Here it can't
-// be.  The backend may not be an ase at all, "create proc" is not
-// portable, and a real stored procedure would outlive the session that
-// asked for it if anything went wrong before the dealloc.
-//
-// So the wrapper is stripped rather than run, and rather than cleared
-// out of the capability mask.  Clearing the bit would change what
-// ct_capability() reports to the application, and it wouldn't be enough
-// anyway - nothing stops a client from wrapping the statement without
-// being asked, so both forms have to be handled either way.
-//
-// Returns a pointer into "stmt", or "stmt" itself when there's no
-// wrapper to strip.  Only a wrapper naming this command's own id is
-// stripped; anything else is somebody's real "create procedure" and gets
-// prepared as it stands.
 const char *sqlrprotocol_tds::preTds7DynamicStatement(const char *stmt,
 							const char *id) {
+
+	// Strips the "create proc <id> as " wrapper that a client puts in
+	// front of a dynamic prepare's statement.  Ct-lib writes one when
+	// the server's request capability mask sets bit 48,
+	// TDS_PROTO_DYNPROC, which capability() grants to any client that
+	// asks for it.
+	//
+	// On an ase that wrapper is real - the prepare becomes a stored
+	// procedure named for the id, and the dealloc drops it.  Here it
+	// can't be.  The backend may not be an ase at all, "create proc"
+	// is not portable, and a real stored procedure would outlive the
+	// session that asked for it if anything went wrong before the
+	// dealloc.
+	//
+	// So the wrapper is stripped rather than run, and rather than
+	// cleared out of the capability mask.  Clearing the bit would
+	// change what ct_capability() reports to the application, and it
+	// wouldn't be enough anyway - nothing stops a client from wrapping
+	// the statement without being asked, so both forms have to be
+	// handled either way.
+	//
+	// Returns a pointer into "stmt", or "stmt" itself when there's no
+	// wrapper to strip.  Only a wrapper naming this command's own id
+	// is stripped; anything else is somebody's real "create procedure"
+	// and gets prepared as it stands.
 
 	const char	*ptr=stmt;
 
@@ -8629,30 +8642,34 @@ const char *sqlrprotocol_tds::preTds7DynamicStatement(const char *stmt,
 	return ptr;
 }
 
-// Handles one tds 5.0 dynamic sql token, appending its result to the
-// response packet.  Returns false if the walk should stop, having
-// already appended an error and a done.
-//
-// The token is:
-//	uint16, little-endian	how much follows - everything below
-//	byte			type - which operation this is
-//	byte			status - TDS5_DYN_HASARGS when a
-//				paramfmt/params pair follows
-//	byte			id length
-//	bytes			the id, as single-byte characters, not
-//				nul terminated
-//	uint16, little-endian	statement length
-//	bytes			the statement, as single-byte characters
-//
-// Every operation sends that same layout.  The ones with no statement of
-// their own send a zero length rather than leaving the field out, and
-// exec-immediate sends a zero id length rather than an id.
-//
-// Dynamic2 (0xA3) gets no case of its own, for the same reason dbrpc2
-// doesn't - no client was ever seen sending one and freetds has no code
-// that can, so it stays with the tokens preTds7Normal() refuses.
 bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 					size_t *rpsizeinout) {
+
+	// Handles one tds 5.0 dynamic sql token, appending its result to
+	// the response packet.  Returns false if the walk should stop,
+	// having already appended an error and a done.
+	//
+	// The token is:
+	//	uint16, little-endian	how much follows - everything below
+	//	byte			type - which operation this is
+	//	byte			status - TDS5_DYN_HASARGS when a
+	//				paramfmt/params pair follows
+	//	byte			id length
+	//	bytes			the id, as single-byte characters,
+	//				not nul terminated
+	//	uint16, little-endian	statement length
+	//	bytes			the statement, as single-byte
+	//				characters
+	//
+	// Every operation sends that same layout.  The ones with no
+	// statement of their own send a zero length rather than leaving
+	// the field out, and exec-immediate sends a zero id length rather
+	// than an id.
+	//
+	// Dynamic2 (0xA3) gets no case of its own, for the same reason
+	// dbrpc2 doesn't - no client was ever seen sending one and freetds
+	// has no code that can, so it stays with the tokens
+	// preTds7Normal() refuses.
 
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
@@ -8674,7 +8691,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 
 	debugWrite("token length: %d",tokenlength);
 
-	// The length covers the type, status and id-length bytes and the
+	// the length covers the type, status and id-length bytes and the
 	// statement length, so a token without room for all four is
 	// malformed, as is one that runs off the end of the buffer.
 	if ((size_t)tokenlength<sizeof(byte_t)*3+sizeof(uint16_t) ||
@@ -8752,7 +8769,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 	*rpinout=rp;
 	*rpsizeinout=rpsize;
 
-	// An execute's values ride in the paramfmt/params pair behind the
+	// an execute's values ride in the paramfmt/params pair behind the
 	// token, and the count has to be reset either way - whatever ran
 	// before this left its own count behind.
 	rpcparamcount=0;
@@ -8770,7 +8787,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 		*rpsizeinout=rpsize;
 	}
 
-	// Whether another command follows this one in the buffer.  This has
+	// whether another command follows this one in the buffer.  This has
 	// to be worked out behind the paramfmt/params pair rather than in
 	// front of it, for the reason preTds7Language() spells out - the
 	// pair is part of this command, so counting it as "more" would put
@@ -8800,7 +8817,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 	debugWrite("id: %s",idstr);
 	debugWrite("statement: %s",stmtstr);
 
-	// Every operation is answered with an ack naming the same id, so
+	// every operation is answered with an ack naming the same id, so
 	// write it once here.  A failed operation gets one too - that's
 	// what a real ase sends, with the error and the done behind it.
 	preTds7DynamicAck(idstr,idsize);
@@ -8841,7 +8858,7 @@ bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 	delete[] idstr;
 	delete[] stmtstr;
 
-	// A handler that gave up can't say where the request stream now
+	// a handler that gave up can't say where the request stream now
 	// stands, so end the walk after its own done rather than leaving
 	// DONE_MORE on it.
 	if (!retval) {
