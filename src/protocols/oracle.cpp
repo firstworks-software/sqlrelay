@@ -200,7 +200,7 @@
 // only ever rides in that field's flags, so nothing carries a verifier type on
 // the wire for an o3logon login: this value isn't an oracle constant, it just
 // selects the code path, and it has to match the auth module's.
-// see the "Oracle Wire Protocol - Authentication" wiki page and #9658
+// see the "Oracle Wire Protocol - Authentication" wiki page
 #define VERIFIER_TYPE_9I	0x0900
 #define SESSION_KEY_SIZE_9I	16
 
@@ -272,7 +272,7 @@
 	"ORA-01007: variable not in select list\n"
 
 // what completes the call a client's marker interrupted (see the
-// "Oracle Wire Protocol - Cancel" wiki page and #9591) - a real server's
+// "Oracle Wire Protocol - Cancel" wiki page) - a real server's
 // documented response to a break/reset
 #define ORA_USER_REQUESTED_CANCEL	1013
 #define ORA_USER_REQUESTED_CANCEL_MESSAGE \
@@ -477,12 +477,12 @@
 // answering - captured at cursor ids 1, 2 and 3, over 1 to 5 columns and 1 to
 // 4 defines.  what it means is unknown; only that it does not move.
 //
-// it was read as the cursor id once, because every capture available then was
-// answering cursor id 2, which makes a constant and the cursor id look
-// identical.  writing the cursor id here instead cost the call for any cursor
-// whose id was not 2: the client read the response, rejected it, and cancelled
-// with a marker (#9699).  the cursor id has its own field inside the summary
-// object, which does vary.
+// this has to stay a constant rather than the cursor id it resembles: every
+// capture available answers cursor id 2, so a constant and the cursor id look
+// identical here, but the cursor id varies and writing it in this field costs
+// the call for any cursor whose id isn't 2 - the client rejects the response
+// and cancels with a marker.  the cursor id has its own field inside the
+// summary object.
 //
 // not verified against any other server version - no oracle newer than 10.2
 // accepts an oci7 login, so there is no second server to compare against
@@ -870,8 +870,8 @@
 #define OCI7_DEFINE_SKIPPED	0x80
 
 // where a length byte would go, this marks a bind the client passed a null
-// indicator for, and one more byte follows it.  in #9700's nullbind capture
-// - the three-bind insert with two of the three indicators set to -1 - each
+// indicator for, and one more byte follows it.  in the nullbind capture -
+// the three-bind insert with two of the three indicators set to -1 - each
 // of the two null binds is exactly "fd 01" where the non-null bind beside
 // them is a length and that many bytes.  the trailing byte's meaning is not
 // pinned by anything; what is pinned is that a null takes two bytes here and
