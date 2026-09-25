@@ -41,7 +41,7 @@
 #define CLIENT_DEPRECATE_EOF				0x01000000
 
 // smallest and largest sane values for a client's declared max-packet size
-// (the wire format caps a single packet at 16MB - 1, same ceiling used
+// (the wire format caps a single packet at 16mb - 1, the same ceiling used
 // elsewhere in this file for outgoing packets)
 #define MIN_PACKET_SIZE		1024
 #define MAX_PACKET_SIZE		16777215
@@ -1074,8 +1074,7 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 	clientsessionexitstatus_t	status=CLIENTSESSIONEXITSTATUS_ERROR;
 	if (initialHandshake()) {
 
-		// run session-start queries, now that the client is
-		// authenticated
+		// run session-start queries now that the client is authenticated
 		cont->beginSession();
 
 		// loop, getting and executing requests
@@ -1096,8 +1095,8 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 				continue;
 			}
 
-			// some requests don't need a cursor or will request a
-			// specific cursor internally...
+			// some requests don't need a cursor, or manage their
+			// own internally...
 			bool	loopback=false;
 			switch (request) {
 				case COM_SLEEP:
@@ -1105,8 +1104,7 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 					loopback=true;
 					break;
 				case COM_QUIT:
-					// just end the session and
-					// close the connection
+					// end the session and close the connection
 					debugStart("com_quit");
 					debugEnd();
 					loop=false;
@@ -1274,13 +1272,12 @@ bool sqlrprotocol_mysql::sendPacket() {
 
 bool sqlrprotocol_mysql::sendPacket(bool flush) {
 
-	// initialize the position in resppacket to start sending from
 	uint32_t	resppacketpos=0;
 
 	// send in chunks until we've sent everything...
 	for (;;) {
 
-		// determine the number of bytes to send in the next chunk
+		// bytes to send in this chunk
 		uint32_t	totalsendsize=
 				resppacket.getSize()-resppacketpos;
 
@@ -1297,11 +1294,11 @@ bool sqlrprotocol_mysql::sendPacket(bool flush) {
 			totalsendsize=16777215+4;
 		}
 
-		// set the position in resppacket to start sending from
+		// seek to the start of this chunk
 		resppacket.setPositionRelativeToBeginning(resppacketpos);
 
-		// overwrite the first 4 bytes with the size of the data and 
-		// the sequence number...
+		// overwrite the first 4 bytes with the size of the data
+		// and the sequence number...
 
 		// data size: 3 bytes
 		uint32_t	size=hostToBE((uint32_t)totalsendsize-4);
@@ -1340,9 +1337,8 @@ bool sqlrprotocol_mysql::sendPacket(bool flush) {
 		// bump seq
 		seq++;
 
-		// update the position in resppacket to start sending from
-		// (make sure to give ourselves 4 bytes for the size of the
-		// data and the sequence number)
+		// advance the send position, leaving 4 bytes of overlap for
+		// the next chunk's size and sequence number
 		resppacketpos+=totalsendsize-4;
 	}
 
