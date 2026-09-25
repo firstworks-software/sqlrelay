@@ -11142,10 +11142,9 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		return sendCursorNotOpenError(cursorid);
 	}
 
-	// the descriptor block - defines, binds and the bind values - which
-	// the "no idea..." above used to walk straight past.  rp is left
-	// wherever the header parse stopped, which is the front of it.  an
-	// insert whose placeholders are all bound carries binds and no
+	// the descriptor block - defines, binds and the bind values - sits
+	// wherever the header parse above stopped, which is the front of it.
+	// an insert whose placeholders are all bound carries binds and no
 	// defines, so this runs for either bit rather than for OPTION_DEFINE
 	// alone - see getQuery2Descriptors()
 	query2bindcount=0;
@@ -11392,9 +11391,10 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 }
 
 // what the client's odefin's asked for.  they ride inside the query2 request,
-// behind the header, and this call is what the "no idea..." in query2() used
-// to walk straight past - so a legacy fetch sent back every column of the
-// select list however few of them the client had buffers for.
+// behind the header, in the block query2()'s own "no idea..." comment marks
+// as unread.  left unparsed, the define list stays empty, so a legacy fetch
+// sends back every column of the select list however few of them the client
+// had buffers for.
 //
 // a real server sends back the columns it was asked for and no others.  the
 // same client, same four column query, defining only column 1 gets a 130 byte
@@ -11680,7 +11680,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// definecounts[] at the end of this call, and that count is what bounds
 	// every later read of these arrays, so sizing them here to a count that
 	// never lands there leaves the standing, wider count reading off the
-	// end of the new, narrower arrays (#10085).  the width check goes with
+	// end of the new, narrower arrays.  the width check goes with
 	// the sizing for the same reason - a count that is never kept has no
 	// width to refuse, and refusing it would fail a re-executed select over
 	// a define list it isn't replacing
@@ -11746,7 +11746,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 		// a request with no define block reads them for the same
 		// reason: nothing above resized the arrays for it, so writing
 		// them would overwrite - or run off the end of - a define list
-		// that still stands (#10085)
+		// that still stands
 		if (discard || !hasdefines) {
 			continue;
 		}
