@@ -3107,8 +3107,8 @@ static uint32_t readClientCryptLevel(const byte_t *value, byte_t valuelen) {
 void sqlrprotocol_firebird::parseUserId(const byte_t *userid,
 						uint32_t useridlen) {
 
-	// The user id block in the connect request is a sequence of
-	// tag/length/value items, each length a single byte.  Protocol 13
+	// the user id block in the connect request is a sequence of
+	// tag/length/value items, each length a single byte.  protocol 13
 	// and up carry the first round of the auth plugin handshake in it -
 	// see ServerAuth::ServerAuth(), server.cpp:568-627.
 
@@ -3223,7 +3223,7 @@ void sqlrprotocol_firebird::parseUserId(const byte_t *userid,
 
 bool sqlrprotocol_firebird::clientSupportsPlugin(const char *plugin) {
 
-	// Whether the client's CNCT_plugin_list names "plugin".  The list is
+	// whether the client's CNCT_plugin_list names "plugin".  the list is
 	// comma-separated, and firebird's ParsedList tolerates spaces around
 	// the names.
 
@@ -3286,7 +3286,7 @@ static void appendSrpData(bytebuffer *data, const char *value) {
 
 bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
 
-	// Runs the server's half of the srp exchange's first round and
+	// runs the server's half of the srp exchange's first round and
 	// formats the answer the way SrpServer::authenticate() does -
 	// SrpServer.cpp:328-340:
 	//
@@ -3309,10 +3309,10 @@ bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
 	debugWrite("client public key length: %lld",
 			(long long)charstring::getLength(authclientdata));
 
-	// The ephemeral private key b belongs to the session rather than to
+	// the ephemeral private key b belongs to the session rather than to
 	// the auth module.  challenge() keeps no state, so handing the same b
 	// back at verify time is what reproduces B, and with it the session
-	// key.  See the contract at the top of
+	// key.  see the contract at the top of
 	// src/auths/firebird_connectstrings.cpp.
 	byte_t	privatekey[FIREBIRD_SRP_PRIVATE_KEY_SIZE];
 	csprng	rng;
@@ -3337,7 +3337,7 @@ bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
 
 	// A false return means no auth module knows the user, or has its
 	// password under a one-way encryption, or supports the method.
-	// Firebird's srp plugin answers AUTH_CONTINUE in the same situation
+	// firebird's srp plugin answers AUTH_CONTINUE in the same situation
 	// and the server moves on to the next plugin - SrpServer.cpp:400-410
 	// and server.cpp:2166-2176 - so the caller does that here too.
 	stringbuffer	challenge;
@@ -3375,8 +3375,8 @@ bool sqlrprotocol_firebird::srpChallenge(bytebuffer *data) {
 
 bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
 
-	// Picks the plugin to continue the handshake with, and builds
-	// whatever data goes back with it.  Mirrors accept_connection(),
+	// picks the plugin to continue the handshake with, and builds
+	// whatever data goes back with it.  mirrors accept_connection(),
 	// server.cpp:2126-2190.
 
 	debugStart("select auth plugin");
@@ -3433,14 +3433,14 @@ bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
 		authmethod=NULL;
 	}
 
-	// Otherwise, name the best plugin we have that the client also has,
-	// and let it start over with that one.  An empty p_acpt_data next to
+	// otherwise, name the best plugin we have that the client also has,
+	// and let it start over with that one.  an empty p_acpt_data next to
 	// a plugin name is what tells the client to do that -
 	// server.cpp:2177-2181.
 	//
-	// The srp plugins are skipped when the challenge above already failed,
+	// the srp plugins are skipped when the challenge above already failed,
 	// because both of them derive the verifier from the same configured
-	// password and would fail for the same reason.  Firebird would walk
+	// password and would fail for the same reason.  firebird would walk
 	// its whole list here; there is nothing to be gained from the extra
 	// round trips.
 	static const char	*plugins[]={
@@ -3472,7 +3472,7 @@ bool sqlrprotocol_firebird::selectAuthPlugin(bytebuffer *data) {
 
 void sqlrprotocol_firebird::negotiateWireCrypt() {
 
-	// Combines the level the client asked for with the level the module
+	// combines the level the client asked for with the level the module
 	// asks for, the way accept_connection() does:
 	//
 	//	                DISABLED(srv)  ENABLED(srv)  REQUIRED(srv)
@@ -3536,13 +3536,13 @@ static void appendKeyItem(bytebuffer *keys, byte_t tag, const char *value) {
 
 void sqlrprotocol_firebird::appendKeyBlock(bytebuffer *keys) {
 
-	// The key block names the kind of key the module has and the wire
+	// the key block names the kind of key the module has and the wire
 	// encryption plugins that can use it, in that order - the same pair
-	// ServerAuth::authenticate() builds.  It's a sequence of
+	// ServerAuth::authenticate() builds.  it's a sequence of
 	// tag/length/value items, each length a single byte, the same
 	// encoding the connect block's user id uses.
 	//
-	// Nothing at all goes out when the negotiated level is DISABLED,
+	// nothing at all goes out when the negotiated level is DISABLED,
 	// which is also what firebird sends when it has no plugin to offer.
 
 	debugStart("key block");
@@ -3565,17 +3565,17 @@ void sqlrprotocol_firebird::appendKeyBlock(bytebuffer *keys) {
 
 bool sqlrprotocol_firebird::cryptRequest() {
 
-	// The client answers the key block by naming the plugin it picked
+	// the client answers the key block by naming the plugin it picked
 	// out of it and the kind of key that plugin should use, which is
 	// what firebird's start_crypt() (server.cpp) checks against the keys
-	// it handed out.  Only the plugin and key the key block advertised
+	// it handed out.  only the plugin and key the key block advertised
 	// are accepted; anything else gets the same errors firebird raises -
 	// isc_wirecrypt_plugin for a plugin that wasn't offered,
 	// isc_wirecrypt_key for a key that isn't there.
 	//
-	// The request itself is still in the clear, but the response to it
+	// the request itself is still in the clear, but the response to it
 	// is not - encryption starts with the response, and with everything
-	// read after the request.  So the ciphers are built here and
+	// read after the request.  so the ciphers are built here and
 	// startWireCrypt() puts them under the socket in between the two -
 	// see firebirdcryptlayer.
 
@@ -3661,8 +3661,8 @@ bool sqlrprotocol_firebird::cryptRequest() {
 
 bool sqlrprotocol_firebird::startWireCrypt() {
 
-	// Builds the ciphers and puts them under the client socket's reads
-	// and writes.  Called from cryptRequest(), after the op_crypt request
+	// builds the ciphers and puts them under the client socket's reads
+	// and writes.  called from cryptRequest(), after the op_crypt request
 	// has been read and before the response to it is written, which is
 	// where the two directions switch over - see firebirdcryptlayer for
 	// why exactly there.
@@ -3713,7 +3713,7 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 	// it go away
 	stopWireCrypt();
 
-	// Firebird uses the srp session key as the rc4 key directly, and
+	// firebird uses the srp session key as the rc4 key directly, and
 	// both directions start from it - the keystreams diverge only
 	// because each side consumes its own.
 	delete wirecryptreadcipher;
@@ -3740,7 +3740,7 @@ bool sqlrprotocol_firebird::startWireCrypt() {
 
 void sqlrprotocol_firebird::stopWireCrypt() {
 
-	// Takes the layer back off the socket at the end of the session.  A
+	// takes the layer back off the socket at the end of the session.  a
 	// no-op unless op_crypt actually turned encryption on.
 
 	if (!wirecryptlayer) {
@@ -3760,20 +3760,20 @@ void sqlrprotocol_firebird::stopWireCrypt() {
 
 bool sqlrprotocol_firebird::allowedBeforeWireCrypt() {
 
-	// Whether the op that just came in may run while wire encryption is
-	// required but not actually on yet.  Firebird's own server keeps a
+	// whether the op that just came in may run while wire encryption is
+	// required but not actually on yet.  firebird's own server keeps a
 	// list like this - process_packet() (server.cpp) refuses everything
 	// else with isc_miss_wirecrypt while port_crypt_level is
 	// WIRE_CRYPT_REQUIRED and port_crypt_complete is still false - and
 	// without it "required" means nothing, since a client can agree to
 	// it in the connect and then just never send op_crypt.
 	//
-	// The list is the ops that can't be encrypted by definition -
+	// the list is the ops that can't be encrypted by definition -
 	// op_crypt itself, and the auth traffic that surrounds it - plus the
-	// ones that only end the session or keep it alive.  Nothing that
+	// ones that only end the session or keep it alive.  nothing that
 	// carries data is on it.
 	//
-	// (op_attach isn't on the list and doesn't need to be.  It runs
+	// (op_attach isn't on the list and doesn't need to be.  it runs
 	// during the initial handshake, ahead of the loop this gates, and a
 	// client sends op_crypt only after the response to it - see
 	// cryptRequest().)
@@ -3837,7 +3837,7 @@ bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
 	// op_cond_accept carries exactly the same fields, and firebird uses it
 	// in place of op_accept_data only when the login finished inside the
 	// accept - the AUTH_COND_ACCEPT path at server.cpp:2084-2098 and
-	// 764-772.  Nothing here finishes a login that early, so it always
+	// 764-772.  nothing here finishes a login that early, so it always
 	// sends op_accept_data.
 
 	bytebuffer	data;
@@ -3912,14 +3912,14 @@ bool sqlrprotocol_firebird::acceptData(uint32_t acptversion,
 
 bool sqlrprotocol_firebird::continueAuthentication() {
 
-	// The second and later rounds of the plugin handshake, when the
+	// the second and later rounds of the plugin handshake, when the
 	// client's first message didn't arrive with the connect request.
-	// The server sends op_cont_auth and the client answers with one -
+	// the server sends op_cont_auth and the client answers with one -
 	// ServerAuth::authenticate() at server.cpp:773-780 and
 	// continue_authentication() at server.cpp:5446-5452.
 	//
-	// Only the srp plugins ever get here, and only when the client had to
-	// start them over on the plugin the accept named.  In the ordinary
+	// only the srp plugins ever get here, and only when the client had to
+	// start them over on the plugin the accept named.  in the ordinary
 	// case the client leads with a plugin the module has, its public key
 	// rides in CNCT_specific_data, and the whole exchange is done by the
 	// time the attach arrives.
