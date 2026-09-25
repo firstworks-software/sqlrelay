@@ -3235,10 +3235,9 @@ bool sqlrsh::csvFieldNeedsQuotes(const char *field, uint32_t length) {
 		}
 	}
 
-	// quote the field if it's not a number, or if it is a number,
-	// but has more than 12 digits.  Excel (and presumably other
-	// spreadsheet apps) likes to convert 12+ digit numbers to
-	// scientific notation.
+	// also quote a number with 12+ digits - excel (and presumably
+	// other spreadsheet apps) turns numbers that long into
+	// scientific notation
 	return (!charstring::isNumber(field,(int32_t)length) || length>=12);
 }
 
