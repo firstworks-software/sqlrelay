@@ -476,12 +476,11 @@
 // answering - captured at cursor ids 1, 2 and 3, over 1 to 5 columns and 1 to
 // 4 defines.  what it means is unknown; only that it does not move.
 //
-// this has to stay a constant rather than the cursor id it resembles: every
-// capture available answers cursor id 2, so a constant and the cursor id look
-// identical here, but the cursor id varies and writing it in this field costs
-// the call for any cursor whose id isn't 2 - the client rejects the response
-// and cancels with a marker.  the cursor id has its own field inside the
-// summary object.
+// this has to stay a constant rather than the cursor id it resembles: at
+// cursor id 2 the two look identical, but writing the cursor id in this field
+// costs the call for any cursor whose id isn't 2 - the client rejects the
+// response and cancels with a marker.  the cursor id has its own field inside
+// the summary object.
 //
 // not verified against any other server version - no oracle newer than 10.2
 // accepts an oci7 login, so there is no second server to compare against
