@@ -17307,7 +17307,8 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 	// is why the types have to be remembered per cursor from the query2
 	// that set them up (see installQuery2Binds()).
 	//
-	// #9700's "many" capture, the second of three executes:
+	// a capture of a client that binds once and executes many times,
+	// the second of three executes:
 	//   04 | 13 | 01 02 | 01 01 | 00 | 07 | 02 c1 0c | 08 "bindchar"
 	//   | 0b "bindvarchar"
 	// which is this header and then the same TTC_ROW_DATA value block a
