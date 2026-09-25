@@ -7701,8 +7701,9 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	}
 
 	// handle the result set format
-	// An unrecognized name used to quietly fall back to plain.  It's a
-	// usage error now.
+	// An unrecognized name is a usage error rather than a silent
+	// fallback to plain, so a mistyped format doesn't look like it
+	// worked.
 	if (cmdline->isFound("format")) {
 		const char	*formatname=cmdline->getValue("format");
 		if (!formatFromName(formatname,&env.format)) {
@@ -7806,7 +7807,7 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 		}
 	}
 
-	// point the completer at the connection.  It opens a cursor of its
+	// Point the completer at the connection. It opens a cursor of its
 	// own on it, but not until something actually needs a completion.
 	completer.setConnection(&sqlrcon);
 
@@ -7828,17 +7829,17 @@ int32_t sqlrsh::execute(int argc, const char **argv) {
 	int32_t	exitcode=SQLRSH_EXIT_SUCCESS;
 
 	if (!charstring::isNullOrEmpty(script)) {
-		// if a script was specified, run it
+		// run the script
 		exitcode=runScript(&sqlrcon,&sqlrcur,&env,script,true);
 		reportErrorCount(&env,&exitcode);
 	} else if (!charstring::isNullOrEmpty(command)) {
-		// if a command was specified, run it
+		// run the command list
 		if (!runCommands(&sqlrcon,&sqlrcur,&env,command,NULL)) {
 			exitcode=SQLRSH_EXIT_QUERY;
 		}
 		reportErrorCount(&env,&exitcode);
 	} else if (!charstring::isNullOrEmpty(query)) {
-		// if a query was specified, run it as a single statement
+		// run the query as a single statement
 		// (no delimiter scan, so an embedded delimiter can't split it,
 		// but a trailing one has to come off)
 		char	*trimmedquery=charstring::duplicate(query);
