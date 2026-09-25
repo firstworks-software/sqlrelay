@@ -2038,8 +2038,8 @@ bool sqlrsh::internalCommand(sqlrconnection *sqlrcon, sqlrcursor *sqlrcur,
 
 	// handle format
 	// An unrecognized name is a failed command rather than a silent
-	// fallback to plain, so an unsupported name like "jsonl" on a build
-	// without jsonl support doesn't look like it worked.
+	// fallback to plain, so a mistyped format doesn't look like it
+	// worked.
 	if (cmdtype==10) {
 		char	*name=charstring::duplicate(ptr);
 		charstring::bothTrim(name);
