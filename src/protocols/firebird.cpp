@@ -214,12 +214,12 @@
 #define FB_PROTOCOL_FLAG	0x8000
 #define FB_PROTOCOL_MASK	0x7fff
 
-// Firebird holds versions 11 and up in a USHORT as (FB_PROTOCOL_FLAG|n), so
-// 11 is 0x800b.  But remote/protocol.cpp marshals p_cnct_version and
+// firebird holds versions 11 and up in a USHORT as (FB_PROTOCOL_FLAG|n), so
+// 11 is 0x800b.  but remote/protocol.cpp marshals p_cnct_version and
 // p_acpt_version with xdr_short, which is signed, so 0x800b arrives
-// sign-extended as 0xffff800b.  Those fields are read here into a uint32_t,
+// sign-extended as 0xffff800b.  those fields are read here into a uint32_t,
 // so 0xffff8000|n is the right constant to compare against and the
-// wrong-looking high bits are correct.  Do not extend this to the type
+// wrong-looking high bits are correct.  do not extend this to the type
 // fields.  p_cnct_min_type and p_cnct_max_type are marshalled with
 // xdr_u_short, not signed, so pflag_compress arrives as plain 0x00000100.
 
@@ -1152,9 +1152,10 @@
 // srp.h:108 sets to 128)
 #define FIREBIRD_SRP_PRIVATE_KEY_SIZE	128
 
-// SEGMENT_DATA_SIZE - server.cpp:511.  A CNCT_specific_data item is capped at
-// 255 bytes, of which the first is the sequence number, so each item after
-// the first starts 254 bytes further into the data.
+// how far into a CNCT_specific_data item's data the next item starts
+// (SEGMENT_DATA_SIZE in firebird's server.cpp - an item is capped at 255
+// bytes, whose first byte is the sequence number, so each item after the
+// first starts 254 bytes further into the data)
 #define FIREBIRD_CNCT_SEGMENT_SIZE	254
 
 // connection type
@@ -1382,13 +1383,13 @@ struct sqlrfirebirdblob {
 	bool		isstream;
 };
 
-// ISC_ARRAY_DESC, laid out the way ibase.h lays it out.  When the backend
-// is firebird, that's what getArrayFieldDescriptor() hands back, and there's
-// no way to reach ibase.h from here - a protocol module builds without any
-// database client library - so the layout is mirrored instead.  It's only
-// read when the descriptor is exactly this big, and the ISC_ARRAY_DESC
-// layout has been fixed since interbase, so a descriptor that came from
-// something else won't be mistaken for one of these.
+// ISC_ARRAY_DESC, laid out the way ibase.h lays it out
+// (mirrored here since a protocol module builds without any database client
+// library, so ibase.h itself can't be reached.  this is what
+// getArrayFieldDescriptor() hands back when the backend is firebird.  only
+// read when the descriptor is exactly this size - the ISC_ARRAY_DESC layout
+// has been fixed since interbase, so a descriptor from something else won't
+// be mistaken for one of these)
 struct sqlrfirebirdarraybound {
 	int16_t		lower;
 	int16_t		upper;
@@ -1445,16 +1446,16 @@ int32_t firebirdsharedfd::lowLevelClose() {
 	return 0;
 }
 
-// The wire encryption that op_crypt turns on.  It goes under the client
+// the wire encryption that op_crypt turns on.  it goes under the client
 // socket's own reads and writes, as a rudiments socket layer - the same
 // place a tls context goes in mysql.cpp - so that every read and write the
-// module already does is encrypted without any of them changing.  Bytes are
+// module already does is encrypted without any of them changing.  bytes are
 // encrypted on their way out and decrypted on their way in, right at the
 // socket, which is the only place both directions are still in wire order.
 // (the module's typed reads and writes byte-swap above this, and rc4 runs
 // over the bytes in the order they cross the wire)
 //
-// The layer is only installed once op_crypt has agreed on a cipher, and
+// the layer is only installed once op_crypt has agreed on a cipher, and
 // each direction switches over at a different moment:
 //
 //	- reads - the op_crypt request itself comes in cleartext, and
@@ -1462,14 +1463,14 @@ int32_t firebirdsharedfd::lowLevelClose() {
 //	- writes - the response to op_crypt is already encrypted
 //
 // so installing the layer between the two - after the request has been
-// read, before the response is written - is exactly that switch.  Firebird
+// read, before the response is written - is exactly that switch.  firebird
 // switches at the same point: start_crypt() (server.cpp) sets
 // port_crypt_complete before it sends its response, and packet_send() /
-// packet_receive() (inet.cpp) encrypt everything from there on.  Its client
+// packet_receive() (inet.cpp) encrypt everything from there on.  its client
 // is the mirror image - it sends op_crypt in the clear, then switches, so
 // the response is the first thing it decrypts.
 //
-// Nothing here is installed at all unless op_crypt succeeded, so a session
+// nothing here is installed at all unless op_crypt succeeded, so a session
 // that never negotiates encryption reads and writes exactly the way it did
 // before.
 class firebirdcryptlayer : public socketlayer {
