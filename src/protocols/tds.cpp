@@ -20722,7 +20722,7 @@ bool sqlrprotocol_tds::paramValue(uint16_t param,
 	byte_t		precision=0;
 	byte_t		scale=0;
 
-	// Whether the value below is partially length prefixed.  bigvarchr,
+	// whether the value below is partially length prefixed.  bigvarchr,
 	// bigvarbin and nvarchar are var-len or part-len depending on the
 	// USHORTMAXLEN that follows the type byte, not on the type byte alone,
 	// so this can only be decided once that's been read.  xml and udt are
