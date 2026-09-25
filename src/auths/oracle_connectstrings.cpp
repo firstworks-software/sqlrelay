@@ -785,10 +785,10 @@ static bool o3logonCreateKey(const byte_t *in, size_t insize,
 				byte_t *key) {
 
 	// The o3logon key derivation - a 24 byte 3des key from an input and one
-	// of the two entropy blobs.  The first 20 bytes are sha1(input||entropy).
-	// The last 4 are the front of a second sha1, over the input, a 0x02
-	// byte, all but the first byte of the first digest, and the entropy
-	// again.
+	// of the two entropy blobs.  The first 20 bytes are
+	// sha1(input||entropy).  The last 4 are the front of a second sha1,
+	// over the input, a 0x02 byte, all but the first byte of the first
+	// digest, and the entropy again.
 
 	sha1	first;
 	if (!first.append(in,(uint32_t)insize) ||

@@ -5789,11 +5789,11 @@ uint16_t sqlrprotocol_oracle::countDataTypes9i(const byte_t *rp,
 						const byte_t *end,
 						uint16_t *multirepcount) {
 
-	// the same list a pre-10g client sends, where every field is a ub1 rather
-	// than a ub2 - same framing otherwise.  unlike countDataTypes(), this one
-	// stores the representation it settles on for each type, because the
-	// response has to answer each of its own types with one - see
-	// sendDataTypeResponse().
+	// the same list a pre-10g client sends, where every field is a ub1
+	// rather than a ub2 - same framing otherwise.  unlike countDataTypes(),
+	// this one stores the representation it settles on for each type,
+	// because the response has to answer each of its own types with one -
+	// see sendDataTypeResponse().
 
 	uint16_t	count=0;
 	uint16_t	multireps=0;
@@ -7203,21 +7203,22 @@ bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 					uint32_t *value,
 					const byte_t **rpout) {
 
-	// a pointer field.  in the universal representation it is one byte, and only
-	// whether it's null can be read out of it.  in the native representation it
-	// is the client's own pointer, raw - four bytes, in the client's own byte
-	// order, for the 32-bit oci7 clients this module ever answers that
-	// representation to (see countDataTypes9i(), which is where the width is
-	// decided, and recvConnectRequest(), which is where the byte order comes
-	// from).  either way the value is a client-side address that means nothing
-	// here; what the read is for is landing on the field behind it.
+	// a pointer field.  in the universal representation it is one byte, and
+	// only whether it's null can be read out of it.  in the native
+	// representation it is the client's own pointer, raw - four bytes, in
+	// the client's own byte order, for the 32-bit oci7 clients this module
+	// ever answers that representation to (see countDataTypes9i(), which is
+	// where the width is decided, and recvConnectRequest(), which is where
+	// the byte order comes from).  either way the value is a client-side
+	// address that means nothing here; what the read is for is landing on
+	// the field behind it.
 	//
 	// packet [0017] of test/protocol/oracle/samples/
-	// oracle102-oci7-portable-login-select.cap is the wide shape against a real
-	// 10.2 server - a tti open whose whole body is "02 05 ff be fd b0 00", a
-	// sparc client's big-endian 0xffbefdb0 between the sequence byte and an lpi
-	// 0.  the same call from an x86 client is "02 05 40 f1 ff bf 00", carrying
-	// the same field little-endian
+	// oracle102-oci7-portable-login-select.cap is the wide shape against a
+	// real 10.2 server - a tti open whose whole body is "02 05 ff be fd b0
+	// 00", a sparc client's big-endian 0xffbefdb0 between the sequence byte
+	// and an lpi 0.  the same call from an x86 client is "02 05 40 f1 ff bf
+	// 00", carrying the same field little-endian
 
 	debugStart("pointer");
 
@@ -7246,8 +7247,8 @@ bool sqlrprotocol_oracle::getPointer(const byte_t *rp,
 
 void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
 
-	// a text - one length byte, then that many bytes.  there is no long form;
-	// a value over 252 bytes takes a clr instead
+	// a text - one length byte, then that many bytes.  there is no long
+	// form; a value over 252 bytes takes a clr instead
 	// see "Oracle Wire Protocol - Data Types"
 	write(&reqpacket,(byte_t)size);
 	write(&reqpacket,string,(size_t)size);
@@ -7255,8 +7256,8 @@ void sqlrprotocol_oracle::putLenString(const char *string, uint32_t size) {
 
 void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 
-	// a clr - the text-shaped short form up to 252 bytes, the chunked long form
-	// above that
+	// a clr - the text-shaped short form up to 252 bytes, the chunked long
+	// form above that
 	// see "Oracle Wire Protocol - Data Types"
 
 	if (size<=CLR_MAX_SHORT_LENGTH) {
@@ -7281,9 +7282,9 @@ void sqlrprotocol_oracle::putLenBytes(const char *bytes, uint32_t size) {
 
 void sqlrprotocol_oracle::putLenBytesChunks(const char *bytes, uint32_t size) {
 
-	// the run of chunks in the middle of a long form clr, without the marker
-	// ahead of it or the empty chunk that closes it - so that a value made of
-	// more than one run of bytes can be written as one clr
+	// the run of chunks in the middle of a long form clr, without the
+	// marker ahead of it or the empty chunk that closes it - so that a
+	// value made of more than one run of bytes can be written as one clr
 	uint32_t	maxchunk=(bigchunkclr)?
 				CLR_MAX_BIG_CHUNK_SIZE:CLR_MAX_CHUNK_SIZE;
 	uint32_t	offset=0;
@@ -7309,8 +7310,8 @@ bool sqlrprotocol_oracle::getLenBytes(const byte_t *rp,
 					bool *isnull,
 					const byte_t **rpout) {
 
-	// reads a clr - a length byte, then that many bytes.  0xfd introduces a null
-	// and 0xfe the chunked long form, which isn't contiguous and so is
+	// reads a clr - a length byte, then that many bytes.  0xfd introduces a
+	// null and 0xfe the chunked long form, which isn't contiguous and so is
 	// reassembled into the response packet pool, which lives as long as the
 	// packet the value came out of
 	// see "Oracle Wire Protocol - Data Types"
@@ -7379,13 +7380,13 @@ bool sqlrprotocol_oracle::getLongFormBytes(const byte_t *rp,
 					uint32_t *size,
 					const byte_t **rpout) {
 
-	// reads the chunked long form of a value - a run of chunks, each a length and
-	// that many bytes, ended by a zero length.  a chunk's length is a raw byte,
-	// or, if the client negotiated CCAP_TTC3_BIG_CHUNK_CLR, a count prefixed ub4 -
-	// and since a ub4 zero is a lone zero byte, the closing chunk reads the same
-	// either way.  the chunks aren't contiguous, so the value is reassembled into
-	// the response packet pool, which lives as long as the request the value came
-	// out of
+	// reads the chunked long form of a value - a run of chunks, each a
+	// length and that many bytes, ended by a zero length.  a chunk's length
+	// is a raw byte, or, if the client negotiated CCAP_TTC3_BIG_CHUNK_CLR,
+	// a count prefixed ub4 - and since a ub4 zero is a lone zero byte, the
+	// closing chunk reads the same either way.  the chunks aren't
+	// contiguous, so the value is reassembled into the response packet
+	// pool, which lives as long as the request the value came out of
 	// see "Oracle Wire Protocol - Data Types"
 
 	*bytes=NULL;
@@ -7431,9 +7432,9 @@ bool sqlrprotocol_oracle::readLongFormChunks(const byte_t *rp,
 					uint32_t *size,
 					const byte_t **rpout) {
 
-	// walks a long form value's chunks, copying them into value, or only sizing
-	// them up if it is NULL, and leaves rp behind the zero-length chunk that ends
-	// them
+	// walks a long form value's chunks, copying them into value, or only
+	// sizing them up if it is NULL, and leaves rp behind the zero-length
+	// chunk that ends them
 
 	uint32_t	valuesize=0;
 	for (;;) {
@@ -7581,13 +7582,13 @@ bool sqlrprotocol_oracle::getOracleDateBindValue(const byte_t *value,
 						uint32_t valuesize,
 						sqlrserverbindvar *bv) {
 
-	// the inverse of putOracleDate() above - a bind value coming off the wire
-	// rather than one going out.  shared by installQuery2Binds() and
+	// the inverse of putOracleDate() above - a bind value coming off the
+	// wire rather than one going out.  shared by installQuery2Binds() and
 	// installQuery3Binds(), which otherwise decoded this seven-byte layout
-	// (excess-100 century and year, then month, day, and excess-1 hour, minute,
-	// second) twice.  false on a value too short to hold a full date; the two
-	// callers differ in what a truncated value means to them, so this leaves
-	// that to them rather than picking one
+	// (excess-100 century and year, then month, day, and excess-1 hour,
+	// minute, second) twice.  false on a value too short to hold a full
+	// date; the two callers differ in what a truncated value means to them,
+	// so this leaves that to them rather than picking one
 
 	if (valuesize<ORACLE_DATE_SIZE) {
 		return false;
@@ -7703,16 +7704,16 @@ bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 						const byte_t *end,
 						const byte_t **rpout) {
 
-	// checks for one printable string: the bare length-prefixed short form (a
-	// length byte and that many printable bytes, the last of which can be a
-	// NUL terminator), or, above the short form's reach, the chunked long form
-	// a 0xfe marker introduces (see getLenString(), which reads the same
-	// shape - a real client's AUTH_ALTER_SESSION value, the ~700 bytes of
-	// NLS-sync ALTER SESSION text, is what turned out to need it).
-	// factored out of findO3LogonStrings() so peekO3LogonField() can require the
-	// same shape of a field's name and value.  doesn't allocate or log anything,
-	// since findO3LogonStrings() tries this at every candidate offset and only
-	// the one it settles on is worth recording
+	// checks for one printable string: the bare length-prefixed short form
+	// (a length byte and that many printable bytes, the last of which can
+	// be a NUL terminator), or, above the short form's reach, the chunked
+	// long form a 0xfe marker introduces (see getLenString(), which reads
+	// the same shape - a real client's AUTH_ALTER_SESSION value, the ~700
+	// bytes of NLS-sync ALTER SESSION text, is what turned out to need it).
+	// factored out of findO3LogonStrings() so peekO3LogonField() can
+	// require the same shape of a field's name and value.  doesn't allocate
+	// or log anything, since findO3LogonStrings() tries this at every
+	// candidate offset and only the one it settles on is worth recording
 
 	if (end-rp<1) {
 		return false;
@@ -7816,10 +7817,11 @@ bool sqlrprotocol_oracle::peekO3LogonField(const byte_t *rp,
 	// checks for one o3logon session attribute in its tagged, name/value
 	// shape - a count, a printable length-prefixed name, another count, a
 	// printable length-prefixed value when that count is nonzero, and a
-	// trailing count for flags.  a real session-key login sends AUTH_TERMINAL,
-	// AUTH_PROGRAM_NM, AUTH_MACHINE and AUTH_PID this way rather than as bare
-	// strings, so findO3LogonStrings() tries this shape first.  same
-	// no-allocation, no-logging contract as peekPrintableString()
+	// trailing count for flags.  a real session-key login sends
+	// AUTH_TERMINAL, AUTH_PROGRAM_NM, AUTH_MACHINE and AUTH_PID this way
+	// rather than as bare strings, so findO3LogonStrings() tries this shape
+	// first.  same no-allocation, no-logging contract as
+	// peekPrintableString()
 
 	uint32_t	namesize=0;
 	if (!getAuthCount(rp,end,&namesize,4,&rp) ||
@@ -7848,26 +7850,27 @@ bool sqlrprotocol_oracle::peekO3LogonField(const byte_t *rp,
 const byte_t *sqlrprotocol_oracle::findO3LogonStrings(const byte_t *rp,
 							const byte_t *end) {
 
-	// the o3logon login packets are shaped nothing like the o5logon ones.  their
-	// argument block is positional - a marshalled OCI argument list, with no
-	// AUTH_xxx names on the wire anywhere - and everything this module needs out
-	// of it is a length-prefixed string at the end of the block: the user name,
-	// then AUTH_PASSWORD in phase two, then the session attributes.  how much
-	// room the block takes ahead of those strings depends on the client's own
-	// marshalling, so rather than walk a block whose layout isn't known, this
-	// finds the item list directly: a run of items, each either a bare
-	// printable length-prefixed string or a session-key login's tagged
-	// name/value field (see peekO3LogonField()), that ends exactly where the
-	// packet does.  having to land exactly on the end of the packet is what
-	// makes a wrong offset unlikely rather than merely unlucky.
+	// the o3logon login packets are shaped nothing like the o5logon ones.
+	// their argument block is positional - a marshalled OCI argument list,
+	// with no AUTH_xxx names on the wire anywhere - and everything this
+	// module needs out of it is a length-prefixed string at the end of the
+	// block: the user name, then AUTH_PASSWORD in phase two, then the
+	// session attributes.  how much room the block takes ahead of those
+	// strings depends on the client's own marshalling, so rather than walk
+	// a block whose layout isn't known, this finds the item list directly:
+	// a run of items, each either a bare printable length-prefixed string
+	// or a session-key login's tagged name/value field (see
+	// peekO3LogonField()), that ends exactly where the packet does.  having
+	// to land exactly on the end of the packet is what makes a wrong offset
+	// unlikely rather than merely unlucky.
 	//
-	// it is still a heuristic, so it is bounded on both sides: the search stays
-	// inside the block rather than running the length of the packet, since the
-	// block is a fixed size struct and no marshalling makes it bigger than
-	// O3LOGON_MAX_BLOCK_SIZE, and a run is capped at O3LOGON_MAX_STRINGS.  every
-	// way it can pick a wrong offset fails closed - a user name that isn't one
-	// matches no account, and the login is refused with the same ORA-01017 a
-	// wrong password gets.
+	// it is still a heuristic, so it is bounded on both sides: the search
+	// stays inside the block rather than running the length of the packet,
+	// since the block is a fixed size struct and no marshalling makes it
+	// bigger than O3LOGON_MAX_BLOCK_SIZE, and a run is capped at
+	// O3LOGON_MAX_STRINGS.  every way it can pick a wrong offset fails
+	// closed - a user name that isn't one matches no account, and the login
+	// is refused with the same ORA-01017 a wrong password gets.
 	// see "Oracle Wire Protocol - Authentication"
 
 	const byte_t	*last=rp+O3LOGON_MAX_BLOCK_SIZE;
@@ -8017,50 +8020,54 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 						bool secondphase) {
 
 	// the classic, pre-session-key login (TTI_LOGON_PRESENT_USER/
-	// TTI_LOGON_PRESENT_PWD - 0x52/0x51) that an ancient pre-8.0 OCI client's
-	// olog() call sends - the only shape that interface ever sends, since it
-	// predates O3LOGON's tagged AUTH_SESSKEY exchange entirely.
+	// TTI_LOGON_PRESENT_PWD - 0x52/0x51) that an ancient pre-8.0 OCI
+	// client's olog() call sends - the only shape that interface ever
+	// sends, since it predates O3LOGON's tagged AUTH_SESSKEY exchange
+	// entirely.
 	//
-	// unlike O3LOGON's self-delimiting shapes, this one is a fixed sequence of
-	// positional fields mirroring olog()'s own C argument list: a pointer and a
-	// length for the user name, a pointer and a length for the password, a
-	// pointer and a length for the connect string (never populated - the
-	// connect string is already resolved by the time a login is sent), a mode
-	// value, an unnamed count, a pointer and a length for the terminal name
-	// (the V$SESSION TERMINAL column - empty in every capture taken from a
-	// client with no controlling terminal), a pointer and a length for each of
-	// the host/machine name and os user name a real client's CID block always
-	// carries, a second unnamed count, then a pointer and a length for each of
-	// the process id string and program name, followed by one contiguous run
-	// of those strings - raw, or each behind a length byte of its own,
-	// depending on ENCODING_CONV_LENGTH (see below).  decoded byte for byte,
-	// field by field, from a real client's own request to this module - both
-	// phases carry the same header layout, phase two's password count simply
-	// being zero on phase one's own copy of it.
+	// unlike O3LOGON's self-delimiting shapes, this one is a fixed sequence
+	// of positional fields mirroring olog()'s own C argument list: a
+	// pointer and a length for the user name, a pointer and a length for
+	// the password, a pointer and a length for the connect string (never
+	// populated - the connect string is already resolved by the time a
+	// login is sent), a mode value, an unnamed count, a pointer and a
+	// length for the terminal name (the V$SESSION TERMINAL column - empty
+	// in every capture taken from a client with no controlling terminal), a
+	// pointer and a length for each of the host/machine name and os user
+	// name a real client's CID block always carries, a second unnamed
+	// count, then a pointer and a length for each of the process id string
+	// and program name, followed by one contiguous run of those strings -
+	// raw, or each behind a length byte of its own, depending on
+	// ENCODING_CONV_LENGTH (see below).  decoded byte for byte, field by
+	// field, from a real client's own request to this module - both phases
+	// carry the same header layout, phase two's password count simply being
+	// zero on phase one's own copy of it.
 	//
-	// every pointer field is the client's own raw address - four bytes, native
-	// byte order, the same width and order getPointer() already reads for
-	// TTI_OPEN - but every count field is an ordinary length-prefixed int, the
-	// same as everywhere else in this module, regardless of the negotiated
-	// pointer representation; a login this old apparently never marshals its
-	// pointers any way but natively, unlike everything else in it
+	// every pointer field is the client's own raw address - four bytes,
+	// native byte order, the same width and order getPointer() already
+	// reads for TTI_OPEN - but every count field is an ordinary
+	// length-prefixed int, the same as everywhere else in this module,
+	// regardless of the negotiated pointer representation; a login this old
+	// apparently never marshals its pointers any way but natively, unlike
+	// everything else in it
 	//
 	// the mode value and the first unnamed count are always zero in every
-	// capture on file and what they are for is unknown, the same way several
-	// of putOci7Summary()'s fields are.  the second unnamed count is not zero
-	// - it is 0x1130 on every 32-bit client on file and 0x2260 on every
-	// 64-bit one, x86 and SPARC alike, and reads the same for a genuine old
-	// OCI7 client and for a client wire-speaking the legacy OCI7 API on top of
-	// a modern Instant Client.  it is only the client's own pointer width
-	// doubled, already known from the negotiated datatype representation, and
-	// does not distinguish one client generation from another - what does is
-	// not in this header at all, see the CCAP_LOGON_TYPES read in
-	// recvDataTypeRequest().  every field here still has to be read in order,
-	// to land on the fields this module needs.  what comes after the program
-	// name's length is a real client's own request continues into, still
-	// unconfirmed - rather than keep walking blind, the string blob is found
-	// the same way findO3LogonStrings() finds O3LOGON's: it has to end exactly
-	// on the packet's own end, whatever comes between here and there
+	// capture on file and what they are for is unknown, the same way
+	// several of putOci7Summary()'s fields are.  the second unnamed count
+	// is not zero - it is 0x1130 on every 32-bit client on file and 0x2260
+	// on every 64-bit one, x86 and SPARC alike, and reads the same for a
+	// genuine old OCI7 client and for a client wire-speaking the legacy
+	// OCI7 API on top of a modern Instant Client.  it is only the client's
+	// own pointer width doubled, already known from the negotiated datatype
+	// representation, and does not distinguish one client generation from
+	// another - what does is not in this header at all, see the
+	// CCAP_LOGON_TYPES read in recvDataTypeRequest().  every field here
+	// still has to be read in order, to land on the fields this module
+	// needs.  what comes after the program name's length is a real client's
+	// own request continues into, still unconfirmed - rather than keep
+	// walking blind, the string blob is found the same way
+	// findO3LogonStrings() finds O3LOGON's: it has to end exactly on the
+	// packet's own end, whatever comes between here and there
 
 	uint32_t	usernamesize=0;
 	uint32_t	passwordsize=0;
@@ -8229,9 +8236,9 @@ bool sqlrprotocol_oracle::classicLogonStringsAt(const byte_t *start,
 						const uint32_t *sizes,
 						byte_t sizecount) {
 
-	// whether a run of one-byte-length-prefixed strings starts at "start" and ends
-	// exactly at "end" - one for each nonzero size, in order, each at least 1 byte
-	// long and no longer than its declared size
+	// whether a run of one-byte-length-prefixed strings starts at "start"
+	// and ends exactly at "end" - one for each nonzero size, in order, each
+	// at least 1 byte long and no longer than its declared size
 	const byte_t	*p=start;
 	for (byte_t i=0; i<sizecount; i++) {
 		if (!sizes[i]) {
@@ -8740,27 +8747,27 @@ void sqlrprotocol_oracle::putAuthTrailer(const byte_t *portable,
 
 void sqlrprotocol_oracle::putO3LogonSummary() {
 
-	// the login's own answer - no cursor and no statement, so the two fields that
-	// vary are both zero.  a real 10.2 server writes the same object as the tail
-	// of the phase one challenge
+	// the login's own answer - no cursor and no statement, so the two
+	// fields that vary are both zero.  a real 10.2 server writes the same
+	// object as the tail of the phase one challenge
 	putOci7Summary(0,0,0,0);
 }
 
 byte_t sqlrprotocol_oracle::oci7CommandType(sqlrservercursor *cursor) {
 
-	// what goes in a summary object's command type field.  an oci7 client keeps it
-	// in cda->ft, after mapping it onto its own OTY* code - see the OCI7_COMMAND_*
-	// constants.
+	// what goes in a summary object's command type field.  an oci7 client
+	// keeps it in cda->ft, after mapping it onto its own OTY* code - see
+	// the OCI7_COMMAND_* constants.
 	//
-	// sqlrquerytype_t covers four of the five, but has nothing for a pl/sql block:
-	// SQLRQUERYTYPE_BEGIN is a transaction begin, and a block lands in
-	// SQLRQUERYTYPE_ETC with everything else.  so a block is picked off the
-	// statement text first, the same begin/declare test classifyQuery2Binds()
-	// makes.
+	// sqlrquerytype_t covers four of the five, but has nothing for a pl/sql
+	// block:  SQLRQUERYTYPE_BEGIN is a transaction begin, and a block lands
+	// in SQLRQUERYTYPE_ETC with everything else.  so a block is picked off
+	// the statement text first, the same begin/declare test
+	// classifyQuery2Binds() makes.
 	//
-	// anything else - ddl, a commit, a set - falls back to select, which is what
-	// every summary carried before any of this was classified.  no capture on file
-	// pins what a real server answers there
+	// anything else - ddl, a commit, a set - falls back to select, which is
+	// what every summary carried before any of this was classified.  no
+	// capture on file pins what a real server answers there
 
 	if (!cursor) {
 		return OCI7_COMMAND_SELECT;
@@ -8806,31 +8813,33 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 						uint32_t successiterations,
 						uint32_t oranum) {
 
-	// the summary object a real 10.2 server answers an oci7 client with.  the same
-	// object serves the whole session: the o3logon challenge's tail, the login's
-	// answer, and the answer to the osql7 parse behind it.  its fields don't map
-	// onto putSummary()'s arguments - it drops one of the zero fields in front of
-	// the cursor id, and its success iteration count is 0 where putSummary() sends
-	// 1 - so it gets its own writer.
+	// the summary object a real 10.2 server answers an oci7 client with.
+	// the same object serves the whole session: the o3logon challenge's
+	// tail, the login's answer, and the answer to the osql7 parse behind
+	// it.  its fields don't map onto putSummary()'s arguments - it drops
+	// one of the zero fields in front of the cursor id, and its success
+	// iteration count is 0 where putSummary() sends 1 - so it gets its own
+	// writer.
 	//
-	// decoded byte for byte from a real SPARC Solaris OCI7 client's session with
-	// an x86 linux 10.2 server, packets [0014] (the login) and [0020] (the parse)
-	// of test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap.
-	// the architectures genuinely differ there, so both ends run the portable
-	// encoding - the encoding every o3logon session with this module runs in,
-	// per the pointer-representation negotiation in recvDataTypeRequest()/
-	// countDataTypes().  the native capture beside it carries the same fields
-	// in the same order, and it is what pins where they start and end: every
-	// field there is a fixed four bytes, where a zero in the portable
-	// encoding is one byte whatever its width.
+	// decoded byte for byte from a real SPARC Solaris OCI7 client's session
+	// with an x86 linux 10.2 server, packets [0014] (the login) and [0020]
+	// (the parse) of
+	// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap.
+	// the architectures genuinely differ there, so both ends run the
+	// portable encoding - the encoding every o3logon session with this
+	// module runs in, per the pointer-representation negotiation in
+	// recvDataTypeRequest()/ countDataTypes().  the native capture beside
+	// it carries the same fields in the same order, and it is what pins
+	// where they start and end: every field there is a fixed four bytes,
+	// where a zero in the portable encoding is one byte whatever its width.
 	//
-	// five fields carry a value: the end of call status of 1 at the front, the
-	// cursor id, the command type, the sequence number of the call being answered,
-	// and the success iteration count.  the parse error offset is a sixth that a
-	// real server sometimes leaves set, but that this module always sends 0 for -
-	// see below.  the error number, the row fields and everything else a summary
-	// can carry are zero in every capture, and what several of them are for is
-	// unexplained
+	// five fields carry a value: the end of call status of 1 at the front,
+	// the cursor id, the command type, the sequence number of the call
+	// being answered, and the success iteration count.  the parse error
+	// offset is a sixth that a real server sometimes leaves set, but that
+	// this module always sends 0 for - see below.  the error number, the
+	// row fields and everything else a summary can carry are zero in every
+	// capture, and what several of them are for is unexplained
 	// see "Oracle Wire Protocol - Authentication - Password"
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
@@ -8952,38 +8961,39 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 						uint32_t successiterations,
 						uint32_t oranum) {
 
-	// the native encoding of the same object, shared by every summary-writing
-	// caller in this module (sendOsql7Response() and the rest).
-	// decoded byte for byte against a real redhat9x86 x86 OCI7 client's
-	// native-mode session with an x86 linux 10.2 server: packets [0014] (the
-	// login answer), [0020] (the parse this call answers), [0022] (the
-	// execute) and [0024] (the fetch) of test/protocol/oracle/samples/
-	// oracle102-oci7-native-login-select.cap all carry this same 93-byte
-	// object, and comparing all four against each other - not just against the
-	// portable object above - is what pins which bytes are which: the four
-	// captures agree on every byte except the ones written as fields below, so
-	// those are the only ones with any evidence for what varies.
+	// the native encoding of the same object, shared by every
+	// summary-writing caller in this module (sendOsql7Response() and the
+	// rest).  decoded byte for byte against a real redhat9x86 x86 OCI7
+	// client's native-mode session with an x86 linux 10.2 server: packets
+	// [0014] (the login answer), [0020] (the parse this call answers),
+	// [0022] (the execute) and [0024] (the fetch) of
+	// test/protocol/oracle/samples/ oracle102-oci7-native-login-select.cap
+	// all carry this same 93-byte object, and comparing all four against
+	// each other - not just against the portable object above - is what
+	// pins which bytes are which: the four captures agree on every byte
+	// except the ones written as fields below, so those are the only ones
+	// with any evidence for what varies.
 	//
 	// end of call status is a fixed 4-byte little endian field, the same as
-	// decode_o3logon_summary_native() in test/protocol/oracle/oradecode already
-	// established for this object's use as the o3logon challenge's tail. the
-	// byte behind it is 1 in all four captures - unexplained, but confirmed
-	// constant rather than assumed. rows processed, cursor id and success
-	// iterations are only ever confirmed as 0 or a small single digit in the
-	// four captures on file, but sendErrorPacket()'s native branch places its
-	// own ora-number field 4 bytes wide at the equivalent distance
-	// from that same "36 01" marker below, which only lines up if the fields
-	// ahead of it here are 4 bytes too - so each goes out the same width as end
-	// of call status, not truncated to whatever a capture happened to need.
-	// call number is confirmed as one byte across all four, and command type
-	// is a byte everywhere putOci7Summary() sends it too, so both stay bytes.
-	// two more bytes go out non-zero in every capture here (a marker, "36 01",
-	// 4 bytes ahead of a live value) - the same marker sendErrorPacket()'s
-	// native branch and putAuthTrailer()'s native trailer both carry too (at
-	// their own equivalent positions, not this one), so it reads as a real
-	// constant, and the live value after it as the same class of
-	// non-reproducible server-side data sendErrorPacket()'s native branch
-	// zeroes rather than guesses
+	// decode_o3logon_summary_native() in test/protocol/oracle/oradecode
+	// already established for this object's use as the o3logon challenge's
+	// tail. the byte behind it is 1 in all four captures - unexplained, but
+	// confirmed constant rather than assumed. rows processed, cursor id and
+	// success iterations are only ever confirmed as 0 or a small single
+	// digit in the four captures on file, but sendErrorPacket()'s native
+	// branch places its own ora-number field 4 bytes wide at the equivalent
+	// distance from that same "36 01" marker below, which only lines up if
+	// the fields ahead of it here are 4 bytes too - so each goes out the
+	// same width as end of call status, not truncated to whatever a capture
+	// happened to need.  call number is confirmed as one byte across all
+	// four, and command type is a byte everywhere putOci7Summary() sends it
+	// too, so both stay bytes.  two more bytes go out non-zero in every
+	// capture here (a marker, "36 01", 4 bytes ahead of a live value) - the
+	// same marker sendErrorPacket()'s native branch and putAuthTrailer()'s
+	// native trailer both carry too (at their own equivalent positions, not
+	// this one), so it reads as a real constant, and the live value after
+	// it as the same class of non-reproducible server-side data
+	// sendErrorPacket()'s native branch zeroes rather than guesses
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
@@ -9180,13 +9190,13 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 bool sqlrprotocol_oracle::sendAuthenticationSuccess() {
 
-	// what a real 10.2 server answers a successful o3logon login with - a summary
-	// object carrying error 0, and nothing else.  the o5logon path can't be reused
-	// here: it sends a ttc 0x08 field list whose AUTH_SVR_RESPONSE o3logon has no
-	// equivalent of, and an OCI7 client reading one would desync.  putSummary()
-	// can't be reused either - a real server answers this client with the same
-	// object the challenge carries, and it is two fields shorter than putSummary()
-	// writes.
+	// what a real 10.2 server answers a successful o3logon login with - a
+	// summary object carrying error 0, and nothing else.  the o5logon path
+	// can't be reused here: it sends a ttc 0x08 field list whose
+	// AUTH_SVR_RESPONSE o3logon has no equivalent of, and an OCI7 client
+	// reading one would desync.  putSummary() can't be reused either - a
+	// real server answers this client with the same object the challenge
+	// carries, and it is two fields shorter than putSummary() writes.
 	// see "Oracle Wire Protocol - Authentication - Password"
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -9238,8 +9248,8 @@ bool sqlrprotocol_oracle::sendAuthenticationBreak() {
 
 	// the marker exchange a real 10.2 server runs in front of any login
 	// failure: a break marker, then a reset marker, then the client's reset
-	// marker back.  a client that sends something else is out of step with the
-	// module either way, so anything but a marker ends the exchange.
+	// marker back.  a client that sends something else is out of step with
+	// the module either way, so anything but a marker ends the exchange.
 
 	debugStart("authentication break");
 	debugEnd();
@@ -9402,17 +9412,18 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 
 uint32_t sqlrprotocol_oracle::wireCursorId(sqlrservercursor *cursor) {
 
-	// the cursor id this module puts on the wire for one of its own cursors, and
-	// the way back.  every call that hands a cursor id out or reads one in goes
-	// through these two, so the shift is stated once - see CURSOR_ID_OFFSET
+	// the cursor id this module puts on the wire for one of its own
+	// cursors, and the way back.  every call that hands a cursor id out or
+	// reads one in goes through these two, so the shift is stated once -
+	// see CURSOR_ID_OFFSET
 	return (uint32_t)(cont->getId(cursor)+cursoridoffset);
 }
 
 sqlrservercursor *sqlrprotocol_oracle::wireIdToCursor(uint32_t wirecursorid) {
 
 	// the lookup cursorFromWireId() does, without its lastwirecursorid side
-	// effect - for callers that need to peek at a cursor the wire named without
-	// overwriting what sendMarkerCancelError() later reads there
+	// effect - for callers that need to peek at a cursor the wire named
+	// without overwriting what sendMarkerCancelError() later reads there
 
 	// an id below the shift never named a cursor this module handed out,
 	// and 0 is the client saying it has none, so neither is a cursor
@@ -9531,18 +9542,20 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 
-	// what an oci7 client parses with - the pre-8.0 call an oparse() puts on the
-	// wire, where an oci8 client sends query, query2 or query3.  it carries the
-	// sql text and the id of a cursor a previous open handed out, and nothing
-	// else this module needs: the client executes separately, with a query2 whose
-	// OPTION_PARSE is clear, so this call prepares the statement and stops there.
+	// what an oci7 client parses with - the pre-8.0 call an oparse() puts
+	// on the wire, where an oci8 client sends query, query2 or query3.  it
+	// carries the sql text and the id of a cursor a previous open handed
+	// out, and nothing else this module needs: the client executes
+	// separately, with a query2 whose OPTION_PARSE is clear, so this call
+	// prepares the statement and stops there.
 	//
-	// decoded field by field from a real oci7 client parsing "select banner from
-	// v$version where rownum=1" against a 10.2 server, packet [0019] of both
-	// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap and
-	// the native capture beside it.  the native encoding is what pins the field
-	// boundaries - every field there is a fixed four bytes, and the portable
-	// capture reads as the same fields in the same order
+	// decoded field by field from a real oci7 client parsing "select banner
+	// from v$version where rownum=1" against a 10.2 server, packet [0019]
+	// of both
+	// test/protocol/oracle/samples/oracle102-oci7-portable-login-select.cap
+	// and the native capture beside it.  the native encoding is what pins
+	// the field boundaries - every field there is a fixed four bytes, and
+	// the portable capture reads as the same fields in the same order
 	// see "Oracle Wire Protocol - Osql7"
 
 	// the sql text can run past one packet
@@ -9715,25 +9728,26 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::describe(const byte_t *rp) {
 
-	// what an oci7 client's odescr() puts on the wire.  the answer carries the
-	// select list from the requested position to the end, and the client files
-	// it under that position and serves later odescr() calls for those columns
-	// out of its own cache.  an odescr() for a column before that position puts
-	// another request on the wire.  a position past the end of the select list
-	// is an ORA-01007.
+	// what an oci7 client's odescr() puts on the wire.  the answer carries
+	// the select list from the requested position to the end, and the
+	// client files it under that position and serves later odescr() calls
+	// for those columns out of its own cache.  an odescr() for a column
+	// before that position puts another request on the wire.  a position
+	// past the end of the select list is an ORA-01007.
 	//
-	// decoded byte for byte from a real oci7 client against a 10.2 server, in
-	// both encodings: the 18 captures in test/protocol/oracle/samples/ named
-	// 9808-redhat9x86-native-* and 9808-solaris8sparc-portable-*.  the native
-	// ones, where every count is a fixed width, are what pin where each field
-	// starts and ends.  the -parse, -exec and -fetch captures all carry the
-	// same answer, so nothing about it depends on how far along the cursor is.
+	// decoded byte for byte from a real oci7 client against a 10.2 server,
+	// in both encodings: the 18 captures in test/protocol/oracle/samples/
+	// named 9808-redhat9x86-native-* and 9808-solaris8sparc-portable-*.
+	// the native ones, where every count is a fixed width, are what pin
+	// where each field starts and ends.  the -parse, -exec and -fetch
+	// captures all carry the same answer, so nothing about it depends on
+	// how far along the cursor is.
 	//
-	// the fields are the cursor id and the position, then five pointers into
-	// the client's own address space and two counts (32 and 960 whatever the
-	// statement) describing the buffers odescr() reads the answer into.  those
-	// seven go unread - nothing behind this call needs them and nothing is
-	// piggybacked behind it
+	// the fields are the cursor id and the position, then five pointers
+	// into the client's own address space and two counts (32 and 960
+	// whatever the statement) describing the buffers odescr() reads the
+	// answer into.  those seven go unread - nothing behind this call needs
+	// them and nothing is piggybacked behind it
 
 	const byte_t	*end=resppacket+resppacketsize;
 
@@ -9808,10 +9822,10 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 						uint32_t colcount,
 						uint32_t position) {
 
-	// the answer: the column count, then how many of them are being sent from
-	// position onward, one metadata block per column from position to the end,
-	// every one of those columns' names in one blob behind them, and the status
-	// message an oci7 call's answer ends with
+	// the answer: the column count, then how many of them are being sent
+	// from position onward, one metadata block per column from position to
+	// the end, every one of those columns' names in one blob behind them,
+	// and the status message an oci7 call's answer ends with
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -9885,12 +9899,12 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 						uint32_t column) {
 
-	// one column's metadata - 47 bytes in the native encoding, 19 to 25 in the
-	// portable one (the count-prefixed fields, including the scale for an
-	// oci7endtoendseqnumber client, vary in width).  the fields are the same
-	// and in the same order either way,
-	// and they are the fields putColumnMetadata() writes for the modern describe
-	// path, minus the inline column name and one trailing count
+	// one column's metadata - 47 bytes in the native encoding, 19 to 25 in
+	// the portable one (the count-prefixed fields, including the scale for
+	// an oci7endtoendseqnumber client, vary in width).  the fields are the
+	// same and in the same order either way, and they are the fields
+	// putColumnMetadata() writes for the modern describe path, minus the
+	// inline column name and one trailing count
 
 	uint16_t	curid=cont->getId(cursor);
 	const char	*columntypestring=
@@ -10029,22 +10043,23 @@ void sqlrprotocol_oracle::putOci7DescribeColumn(sqlrservercursor *cursor,
 uint32_t sqlrprotocol_oracle::getOci7DescribeColumnSize(uint16_t wiretype,
 							uint32_t size) {
 
-	// the buffer width an oci7 describe reports, which is getWireColumnSize()'s
-	// for every type but the date.  a real server describes a date column 1
-	// byte wide here and the client works the 7 bytes a date really takes back
-	// out from the type - the same way getWireColumnSize() already describes a
-	// rowid, an interval and a timestamp with time zone 1 byte wide.  confirmed
-	// in both encodings and against both a real date column and a sysdate: the
-	// -realtable-parse and -parse captures.  a rowid's wire size of 1 is the
-	// same story: sending it unchanged, alongside the internal type 11 (rather
-	// than the 104 the client's own SQLT_RDD names), is what makes a live oci7
-	// client report the size back as 16, matching a real server exactly - a
-	// server/sqlrelay comparison confirmed live on redhat9x86 and solaris8sparc,
-	// the samples/10016-*-oci7describe-rowid-* captures.  sending 104 instead of
-	// 11 is what makes a live client report 208 there, also in those captures;
-	// putting the client's own reported size, 16, directly on the wire instead
-	// of 1 was tried and made a live client report 256 - not committed anywhere,
-	// don't repeat it
+	// the buffer width an oci7 describe reports, which is
+	// getWireColumnSize()'s for every type but the date.  a real server
+	// describes a date column 1 byte wide here and the client works the 7
+	// bytes a date really takes back out from the type - the same way
+	// getWireColumnSize() already describes a rowid, an interval and a
+	// timestamp with time zone 1 byte wide.  confirmed in both encodings
+	// and against both a real date column and a sysdate: the
+	// -realtable-parse and -parse captures.  a rowid's wire size of 1 is
+	// the same story: sending it unchanged, alongside the internal type 11
+	// (rather than the 104 the client's own SQLT_RDD names), is what makes
+	// a live oci7 client report the size back as 16, matching a real server
+	// exactly - a server/sqlrelay comparison confirmed live on redhat9x86
+	// and solaris8sparc, the samples/10016-*-oci7describe-rowid-* captures.
+	// sending 104 instead of 11 is what makes a live client report 208
+	// there, also in those captures; putting the client's own reported
+	// size, 16, directly on the wire instead of 1 was tried and made a live
+	// client report 256 - not committed anywhere, don't repeat it
 	if (wiretype==ORACLE_TYPE_DATE) {
 		return ORACLE_OCI7_DATE_SIZE;
 	}
@@ -10056,22 +10071,22 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 						uint32_t oranum,
 						const char *message) {
 
-	// a general-purpose oci7 statement-level error, for any call whose failure
-	// the caller can name with an ora number and message.  a real server answers
-	// such a call with the summary object every other oci7 call is answered with
-	// - not sendErrorPacket()'s template, which is that same object frozen with
-	// a login failure's field values in it.  the cursor id, command type and
-	// call number all go out live here, which is the whole difference between
-	// the two: for the describe-out-of-range case, the ORA-01007 in
-	// 9808-redhat9x86-native-realtable-outofrange.oraproxy
-	// and its portable counterpart match this byte for byte, and
-	// sendErrorPacket() would send the login's 0, 0 and 3 for those three
-	// instead.
+	// a general-purpose oci7 statement-level error, for any call whose
+	// failure the caller can name with an ora number and message.  a real
+	// server answers such a call with the summary object every other oci7
+	// call is answered with - not sendErrorPacket()'s template, which is
+	// that same object frozen with a login failure's field values in it.
+	// the cursor id, command type and call number all go out live here,
+	// which is the whole difference between the two: for the
+	// describe-out-of-range case, the ORA-01007 in
+	// 9808-redhat9x86-native-realtable-outofrange.oraproxy and its portable
+	// counterpart match this byte for byte, and sendErrorPacket() would
+	// send the login's 0, 0 and 3 for those three instead.
 	//
-	// the success iteration count is the one field those two captures disagree
-	// about - the native one sends 1 and the portable one 0 - so it goes out as
-	// the 0 sendOsql7Response() already sends for a statement that hasn't been
-	// executed on the client's behalf
+	// the success iteration count is the one field those two captures
+	// disagree about - the native one sends 1 and the portable one 0 - so
+	// it goes out as the 0 sendOsql7Response() already sends for a
+	// statement that hasn't been executed on the client's behalf
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -10102,13 +10117,14 @@ bool sqlrprotocol_oracle::getOci7Text(const byte_t *rp,
 					uint32_t *textsize,
 					const byte_t **rpout) {
 
-	// reads the text argument of an osql7, oparsex or query call.  a client that
-	// sent ENCODING_CONV_LENGTH sends it as a clr and declares a buffer size ahead
-	// of it - 3x the text for AL32UTF8 when it converts, "query size" 0x8d ahead
-	// of 47 bytes of osql7 text in packet [0025] of
-	// samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.  one that
-	// didn't sends it raw, and the declared size is its exact length (packet
-	// [0025] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1).
+	// reads the text argument of an osql7, oparsex or query call.  a client
+	// that sent ENCODING_CONV_LENGTH sends it as a clr and declares a
+	// buffer size ahead of it - 3x the text for AL32UTF8 when it converts,
+	// "query size" 0x8d ahead of 47 bytes of osql7 text in packet [0025] of
+	// samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.
+	// one that didn't sends it raw, and the declared size is its exact
+	// length (packet [0025] of
+	// samples/10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1).
 	if (!rawtextargs) {
 		bool	isnull=false;
 		return getLenBytes(rp,end,text,textsize,&isnull,rpout);
@@ -10134,10 +10150,11 @@ bool sqlrprotocol_oracle::getOci7Text(const byte_t *rp,
 bool sqlrprotocol_oracle::oci7TextSizeMatches(uint32_t declaredsize,
 						uint32_t textsize) {
 
-	// whether a text argument's declared size fits the text read by getOci7Text().
-	// a buffer size is the text's character count times the bytes per character
-	// of the declared charset, so it runs from the text's own length up to 4x it -
-	// the same 1x-4x span recvAuthenticationRequest() allows a user name's count
+	// whether a text argument's declared size fits the text read by
+	// getOci7Text().  a buffer size is the text's character count times the
+	// bytes per character of the declared charset, so it runs from the
+	// text's own length up to 4x it - the same 1x-4x span
+	// recvAuthenticationRequest() allows a user name's count
 	if (rawtextargs) {
 		return (declaredsize==textsize);
 	}
@@ -10147,30 +10164,30 @@ bool sqlrprotocol_oracle::oci7TextSizeMatches(uint32_t declaredsize,
 
 bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 
-	// the pre-8.0 parse-and-execute (oparsex), the one call an oci7 client makes
-	// that both parses and runs a statement.  a real oci7 client sends one on
-	// its own initiative as soon as it has logged in, to push its own nls
-	// environment at the session: it opens a cursor, sends an "ALTER SESSION SET
-	// NLS_LANGUAGE=... NLS_TERRITORY=..." naming every nls setting the client
-	// has, closes the cursor, and only then goes on to the application's first
-	// statement.  an ora-03001 back from this call costs the whole session - the
-	// client sends a marker and aborts, the same way it aborts on any bytes it
-	// doesn't expect (see sendAuthenticationError()) - so it gets run rather
-	// than refused.
+	// the pre-8.0 parse-and-execute (oparsex), the one call an oci7 client
+	// makes that both parses and runs a statement.  a real oci7 client
+	// sends one on its own initiative as soon as it has logged in, to push
+	// its own nls environment at the session: it opens a cursor, sends an
+	// "ALTER SESSION SET NLS_LANGUAGE=... NLS_TERRITORY=..." naming every
+	// nls setting the client has, closes the cursor, and only then goes on
+	// to the application's first statement.  an ora-03001 back from this
+	// call costs the whole session - the client sends a marker and aborts,
+	// the same way it aborts on any bytes it doesn't expect (see
+	// sendAuthenticationError()) - so it gets run rather than refused.
 	//
 	// decoded field by field from a real oci7 client's session with a 10.2
 	// server, packet [0019] of test/protocol/oracle/samples/
-	// oracle102-oci7-native-multicol-5col-exfet.cap.  the fields are osql7()'s
-	// cursor id, query pointer and query size, in that order, with the sql text
-	// behind them (see getOci7Text()).  no capture on file carries this call in
-	// the portable encoding, so the two counts are read the encoding-aware way
-	// close() reads its cursor id rather than the way osql7() reads its own -
-	// that lands on the native capture's field boundaries as well as the
-	// portable ones.  the open ahead of it,
-	// packets [0017] and [0018], is what identifies the first field as the
-	// cursor id: its value is the id that open handed out, the answer echoes it
-	// back, and the close behind it, packet [0021], closes the same one
-	// the sql text can run past one packet
+	// oracle102-oci7-native-multicol-5col-exfet.cap.  the fields are
+	// osql7()'s cursor id, query pointer and query size, in that order,
+	// with the sql text behind them (see getOci7Text()).  no capture on
+	// file carries this call in the portable encoding, so the two counts
+	// are read the encoding-aware way close() reads its cursor id rather
+	// than the way osql7() reads its own - that lands on the native
+	// capture's field boundaries as well as the portable ones.  the open
+	// ahead of it, packets [0017] and [0018], is what identifies the first
+	// field as the cursor id: its value is the id that open handed out, the
+	// answer echoes it back, and the close behind it, packet [0021], closes
+	// the same one the sql text can run past one packet
 	reassemble=true;
 
 	const byte_t	*end=resppacket+resppacketsize;
@@ -11419,59 +11436,65 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 						uint32_t options,
 						sqlrservercursor *cursor) {
 
-	// what the client's odefin's asked for.  they ride inside the query2 request,
-	// behind the header, in the block query2()'s own "no idea..." comment marks
-	// as unread.  left unparsed, the define list stays empty, so a legacy fetch
-	// sends back every column of the select list however few of them the client
-	// had buffers for.
+	// what the client's odefin's asked for.  they ride inside the query2
+	// request, behind the header, in the block query2()'s own "no idea..."
+	// comment marks as unread.  left unparsed, the define list stays empty,
+	// so a legacy fetch sends back every column of the select list however
+	// few of them the client had buffers for.
 	//
-	// a real server sends back the columns it was asked for and no others.  the
-	// same client, same four column query, defining only column 1 gets a 130 byte
-	// row from a real 10.2 server carrying just that column, and defining only
-	// column 3 gets column 3's value, in slot 3 - test/protocol/oracle/samples/
+	// a real server sends back the columns it was asked for and no others.
+	// the same client, same four column query, defining only column 1 gets
+	// a 130 byte row from a real 10.2 server carrying just that column, and
+	// defining only column 3 gets column 3's value, in slot 3 -
+	// test/protocol/oracle/samples/
 	// 9810-redhat9x86-native-midfetch-defines1-realserver.oraproxy and
-	// -defines3-realserver.oraproxy.  sending the rest overruns the buffers the
-	// client set up for the ones it did ask for, which is what segfaults a real
-	// oci7 client mid-fetch
+	// -defines3-realserver.oraproxy.  sending the rest overruns the buffers
+	// the client set up for the ones it did ask for, which is what
+	// segfaults a real oci7 client mid-fetch
 	//
 	// the block runs to the end of the request: ten fields, the number of
-	// positions the define list names, nine more fields, then one descriptor per
-	// position from 1 up.  a descriptor is four raw bytes - the wire datatype, a
-	// flag, a precision and a scale - then eight counts, of which the first is
-	// the client's buffer size and the sixth its character set.  a position the
-	// client never defined gets a descriptor too, carrying OCI7_DEFINE_SKIPPED in
-	// its flag byte and zeros behind it, which is why the count alone doesn't say
-	// which columns to send.
+	// positions the define list names, nine more fields, then one
+	// descriptor per position from 1 up.  a descriptor is four raw bytes -
+	// the wire datatype, a flag, a precision and a scale - then eight
+	// counts, of which the first is the client's buffer size and the sixth
+	// its character set.  a position the client never defined gets a
+	// descriptor too, carrying OCI7_DEFINE_SKIPPED in its flag byte and
+	// zeros behind it, which is why the count alone doesn't say which
+	// columns to send.
 	//
 	// the field kinds and offsets were decoded from real captures at four
 	// different define counts and in both encodings - the 9810-redhat9x86-*
-	// -midfetch-* captures above, 9808-redhat9x86-native-fetch.oraproxy (three
-	// defines), and oracle102-oci7-native-multicol-1col-fetch.cap and -5col-
-	// (one and five).  the native ones, where every count is a fixed four bytes,
-	// are what pin the field sequence: the count sits 40 bytes past where the
-	// header parse stops and the descriptors 36 past the count, which is ten and
-	// nine fields.  five of those nineteen slots are zero in every capture, so
-	// pointer-versus-count is undetermined for them - only the total width is
-	// pinned, and that is all this walk needs.
+	// -midfetch-* captures above, 9808-redhat9x86-native-fetch.oraproxy
+	// (three defines), and oracle102-oci7-native-multicol-1col-fetch.cap
+	// and -5col- (one and five).  the native ones, where every count is a
+	// fixed four bytes, are what pin the field sequence: the count sits 40
+	// bytes past where the header parse stops and the descriptors 36 past
+	// the count, which is ten and nine fields.  five of those nineteen
+	// slots are zero in every capture, so pointer-versus-count is
+	// undetermined for them - only the total width is pinned, and that is
+	// all this walk needs.
 	//
-	// the walk itself is only ever exercised in the portable encoding, and it
-	// lands exactly on the end of the payload in all six portable query2 requests
-	// on file: the 9810 one above, oracle102-oci7-portable-login-select.cap,
-	// 9806-solaris8sparc-9i-o3logon-success and three 9808-solaris8sparc-portable-
-	// ones - two clients, both endiannesses, a real server and this one.  that
-	// exact landing is the check this call makes before it believes what it read.
+	// the walk itself is only ever exercised in the portable encoding, and
+	// it lands exactly on the end of the payload in all six portable query2
+	// requests on file: the 9810 one above,
+	// oracle102-oci7-portable-login-select.cap,
+	// 9806-solaris8sparc-9i-o3logon-success and three
+	// 9808-solaris8sparc-portable- ones - two clients, both endiannesses, a
+	// real server and this one.  that exact landing is the check this call
+	// makes before it believes what it read.
 	//
-	// note getPointer() consumes four bytes here even in the portable encoding,
-	// because pointersize comes from the pointer datatype negotiation rather than
-	// from nativeencoding.  the walk depends on that
+	// note getPointer() consumes four bytes here even in the portable
+	// encoding, because pointersize comes from the pointer datatype
+	// negotiation rather than from nativeencoding.  the walk depends on
+	// that
 	//
-	// the return says whether the request was read to its end, not whether the
-	// walk liked what it found: a block this call refuses is still walked, and
-	// still returns true.  false means the walk stopped part way through the
-	// request, so whatever is left of it is still on the socket - packets behind
-	// this one, with nothing on the wire to say where they end.  query2() answers
-	// that by ending the session rather than reading the leftovers as the front
-	// of the client's next request
+	// the return says whether the request was read to its end, not whether
+	// the walk liked what it found: a block this call refuses is still
+	// walked, and still returns true.  false means the walk stopped part
+	// way through the request, so whatever is left of it is still on the
+	// socket - packets behind this one, with nothing on the wire to say
+	// where they end.  query2() answers that by ending the session rather
+	// than reading the leftovers as the front of the client's next request
 	uint16_t	curid=cont->getId(cursor);
 
 	// only a request that carries a define block gets to change the
@@ -11941,10 +11964,11 @@ bool sqlrprotocol_oracle::getQuery2Descriptor(const byte_t *rp,
 						const byte_t **rpout) {
 
 	// one descriptor out of a query2 request - four raw bytes, the wire
-	// datatype, a flag, a precision and a scale, then eight counts of which the
-	// first is the client's buffer size and the sixth the character set.  a
-	// define and a bind descriptor are byte-identical in shape, which real
-	// captures confirm at three bind counts, so both walks share this
+	// datatype, a flag, a precision and a scale, then eight counts of which
+	// the first is the client's buffer size and the sixth the character
+	// set.  a define and a bind descriptor are byte-identical in shape,
+	// which real captures confirm at three bind counts, so both walks share
+	// this
 	*datatype=0;
 	*flag=0;
 	*buffersize=0;
@@ -11982,17 +12006,17 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 						bool discard,
 						const byte_t **rpout) {
 
-	// the bind values themselves, wherever they turn up: behind the descriptors
-	// in a query2 request, or on their own in the bare TTI_EXECUTE a re-execute
-	// sends.  a single TTC_ROW_DATA byte, then one length-prefixed value per
-	// bind, in bind order
+	// the bind values themselves, wherever they turn up: behind the
+	// descriptors in a query2 request, or on their own in the bare
+	// TTI_EXECUTE a re-execute sends.  a single TTC_ROW_DATA byte, then one
+	// length-prefixed value per bind, in bind order
 	//
-	// discard walks the block without keeping any of it, for a caller that has to
-	// read its way to the end of a request without acting on what the block
-	// holds: one that has already refused the request, or one whose bind count
-	// disagreed with OPTION_BIND and got dropped, which answers the request
-	// normally.  the arrays below are sized to maxbindcount, which either sort of
-	// request may name more binds than
+	// discard walks the block without keeping any of it, for a caller that
+	// has to read its way to the end of a request without acting on what
+	// the block holds: one that has already refused the request, or one
+	// whose bind count disagreed with OPTION_BIND and got dropped, which
+	// answers the request normally.  the arrays below are sized to
+	// maxbindcount, which either sort of request may name more binds than
 	*rpout=rp;
 	query2unbound=false;
 
@@ -12103,29 +12127,31 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 bool sqlrprotocol_oracle::classifyQuery2Binds(uint32_t options,
 						sqlrservercursor *cursor) {
 
-	// whether a bind block that carried no values is a pl/sql block's, and which
-	// way each of its placeholders goes.  the same unknowable classifyQuery3Binds()
-	// answers, answered the same way and for the same reason: an out-only and an
-	// in-out descriptor are byte-identical, so the direction has to come off the
-	// statement, and a placeholder in a pl/sql block is declared in-out.
+	// whether a bind block that carried no values is a pl/sql block's, and
+	// which way each of its placeholders goes.  the same unknowable
+	// classifyQuery3Binds() answers, answered the same way and for the same
+	// reason: an out-only and an in-out descriptor are byte-identical, so
+	// the direction has to come off the statement, and a placeholder in a
+	// pl/sql block is declared in-out.
 	//
 	// the legacy path has a second reason to answer in-out, and it is not
-	// optional.  a real 10.2 server parses the block, so it knows an out-only
-	// placeholder is out-only, reports 0x10 for it, and answers the whole call in
-	// one packet - the io vector, the out value and the trailer together, which is
-	// what the 9984-* out and nullout captures show.  this module can't: it never
-	// sees the block's text as pl/sql, and it has no value to run the block with
-	// until the client sends one.  reporting 0x10 is what tells an oci7 client not
-	// to send one, so a module that reported 0x10 and then had nothing to put in
-	// that same packet would desync the client.  reporting 0x30 always asks for
-	// the value round trip the deferred execute needs, and costs a truly out-only
-	// block one extra round trip whose value the block ignores
+	// optional.  a real 10.2 server parses the block, so it knows an
+	// out-only placeholder is out-only, reports 0x10 for it, and answers
+	// the whole call in one packet - the io vector, the out value and the
+	// trailer together, which is what the 9984-* out and nullout captures
+	// show.  this module can't: it never sees the block's text as pl/sql,
+	// and it has no value to run the block with until the client sends one.
+	// reporting 0x10 is what tells an oci7 client not to send one, so a
+	// module that reported 0x10 and then had nothing to put in that same
+	// packet would desync the client.  reporting 0x30 always asks for the
+	// value round trip the deferred execute needs, and costs a truly
+	// out-only block one extra round trip whose value the block ignores
 	//
-	// the flag byte in a query2 bind descriptor carries no equivalent of query3's
-	// use-indicators bit - a real define's flag reads 0x07 in most captures and
-	// 0x00 in others from the same host, whatever the type - so the type is all
-	// there is to go on here
-	// a client that didn't ask for an io vector isn't expecting out binds
+	// the flag byte in a query2 bind descriptor carries no equivalent of
+	// query3's use-indicators bit - a real define's flag reads 0x07 in most
+	// captures and 0x00 in others from the same host, whatever the type -
+	// so the type is all there is to go on here a client that didn't ask
+	// for an io vector isn't expecting out binds
 	if (!(options&OPTION_SNDIOV) || (options&OPTION_NOPLSQL)) {
 		return false;
 	}
@@ -12193,17 +12219,17 @@ bool sqlrprotocol_oracle::classifyQuery2Binds(uint32_t options,
 
 bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 
-	// the two round trips a pl/sql bind block takes.  the first is the io vector
-	// this sends: the directions alone, and nothing else in the packet - no row
-	// data, no trailer - which is byte for byte what the 9984-* inout capture's
-	// real server sends for the same shape.  the client answers it with the values
-	// for every bind the vector marked in-out, and only then is there anything to
-	// execute.
+	// the two round trips a pl/sql bind block takes.  the first is the io
+	// vector this sends: the directions alone, and nothing else in the
+	// packet - no row data, no trailer - which is byte for byte what the
+	// 9984-* inout capture's real server sends for the same shape.  the
+	// client answers it with the values for every bind the vector marked
+	// in-out, and only then is there anything to execute.
 	//
-	// the client's answer is a bare TTC_ROW_DATA packet with no tti function code
-	// in front of it, so the session loop's getTtiFunction() would refuse it as a
-	// bad ttc code.  it is read here instead, which keeps the whole exchange
-	// inside the one TTI_QUERY2 call it belongs to
+	// the client's answer is a bare TTC_ROW_DATA packet with no tti
+	// function code in front of it, so the session loop's getTtiFunction()
+	// would refuse it as a bad ttc code.  it is read here instead, which
+	// keeps the whole exchange inside the one TTI_QUERY2 call it belongs to
 	// the descriptors are installable now that they have directions
 	query2bindcount=query2plsqlbindcount;
 
@@ -12305,11 +12331,12 @@ bool sqlrprotocol_oracle::runQuery2PlSqlBlock(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::sendQuery2IoVector() {
 
-	// which way each of a pl/sql block's binds goes, and nothing else - the answer
-	// to the bind block, one round trip ahead of the values.  the six header fields
-	// are putIoVector()'s, in the same order and with the same constant third
-	// field: the 9984-* captures' io vector reads as the same object the modern
-	// path's does, and the direction bytes ride behind it the same way
+	// which way each of a pl/sql block's binds goes, and nothing else - the
+	// answer to the bind block, one round trip ahead of the values.  the
+	// six header fields are putIoVector()'s, in the same order and with the
+	// same constant third field: the 9984-* captures' io vector reads as
+	// the same object the modern path's does, and the direction bytes ride
+	// behind it the same way
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -12338,12 +12365,13 @@ bool sqlrprotocol_oracle::sendQuery2IoVector() {
 
 bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 
-	// hands the values a query2 request carried to the cursor - inline behind the
-	// descriptors for an ordinary statement, in a round trip of their own for a
-	// pl/sql block.  the names come out of the statement the cursor last prepared,
-	// the same way the modern query3 path gets them - oci7 binds by name through
-	// obndrv, but the names themselves never reach the wire, so the nth value on
-	// the wire is the nth placeholder in the text
+	// hands the values a query2 request carried to the cursor - inline
+	// behind the descriptors for an ordinary statement, in a round trip of
+	// their own for a pl/sql block.  the names come out of the statement
+	// the cursor last prepared, the same way the modern query3 path gets
+	// them - oci7 binds by name through obndrv, but the names themselves
+	// never reach the wire, so the nth value on the wire is the nth
+	// placeholder in the text
 	const char	*query=cont->getQueryBuffer(cursor);
 	uint32_t	querysize=cont->getQuerySize(cursor);
 
@@ -12557,19 +12585,21 @@ void sqlrprotocol_oracle::installQuery2OutBind(sqlrservercursor *cursor,
 						memorypool *bindpool,
 						uint16_t *outcount) {
 
-	// an in-out bind gets a second, writable slot.  the backend has no in-out bind
-	// of its own - the base class's is a no-op - so the value goes out through the
-	// output bind, whose buffer is a plain bidirectional bind over a buffer this
-	// side owns.  pre-filling that buffer with the value the wire sent is what
-	// makes it behave as in-out: what's in the buffer at execute time is what the
-	// statement reads, and what the statement writes is what's in it after.
+	// an in-out bind gets a second, writable slot.  the backend has no
+	// in-out bind of its own - the base class's is a no-op - so the value
+	// goes out through the output bind, whose buffer is a plain
+	// bidirectional bind over a buffer this side owns.  pre-filling that
+	// buffer with the value the wire sent is what makes it behave as
+	// in-out: what's in the buffer at execute time is what the statement
+	// reads, and what the statement writes is what's in it after.
 	//
-	// sized the same way installQuery3Binds() sizes its own: off the descriptor's
-	// declared buffer size where that is wider than the value going in, with
-	// MIN_OUT_BIND_SIZE as a floor under both.  a query2 descriptor's buffer size
-	// is the client's program variable width rather than anything the statement
-	// writes, and query2cursorbindbuffersizes[] is what keeps it around across
-	// the re-executes that reuse these binds - see getQuery2Descriptors()
+	// sized the same way installQuery3Binds() sizes its own: off the
+	// descriptor's declared buffer size where that is wider than the value
+	// going in, with MIN_OUT_BIND_SIZE as a floor under both.  a query2
+	// descriptor's buffer size is the client's program variable width
+	// rather than anything the statement writes, and
+	// query2cursorbindbuffersizes[] is what keeps it around across the
+	// re-executes that reuse these binds - see getQuery2Descriptors()
 	if (query2binddirections[index]!=BIND_DIRECTION_INOUT ||
 					*outcount>=maxbindcount) {
 		return;
@@ -12629,12 +12659,13 @@ bool sqlrprotocol_oracle::hasQuery2OutBinds() {
 
 void sqlrprotocol_oracle::putQuery2OutBindValues(sqlrservercursor *cursor) {
 
-	// what the statement left in each out bind, in descriptor order - the same
-	// object, in the same encoding, that putOutBindValues() writes for the modern
-	// path, minus its ref cursor arm, which no oci7 bind descriptor can ask for.
-	// the indicator behind each value is a count prefixed int here too rather than
-	// the raw sb2 the 9984-* captures' native session carries: this module only
-	// ever negotiates the portable encoding, where the two differ
+	// what the statement left in each out bind, in descriptor order - the
+	// same object, in the same encoding, that putOutBindValues() writes for
+	// the modern path, minus its ref cursor arm, which no oci7 bind
+	// descriptor can ask for.  the indicator behind each value is a count
+	// prefixed int here too rather than the raw sb2 the 9984-* captures'
+	// native session carries: this module only ever negotiates the portable
+	// encoding, where the two differ
 	write(&reqpacket,(byte_t)TTC_ROW_DATA);
 
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
@@ -12687,18 +12718,18 @@ void sqlrprotocol_oracle::putQuery2OutBindValues(sqlrservercursor *cursor) {
 void sqlrprotocol_oracle::clearDefines(uint16_t curid) {
 
 	// zeroing the count is the whole of it - columnIsDefined() answers true
-	// without touching columndefined[] when the count is 0, and every entry below
-	// a nonzero count was written by the walk that set it
+	// without touching columndefined[] when the count is 0, and every entry
+	// below a nonzero count was written by the walk that set it
 	definecounts[curid]=0;
 }
 
 bool sqlrprotocol_oracle::columnIsDefined(sqlrservercursor *cursor,
 						uint32_t column) {
 
-	// whether a legacy fetch sends this column back.  a cursor whose define list
-	// wasn't decoded sends all of them, which is what a session that never sets
-	// OPTION_DEFINE gets, and what every session got before this module decoded
-	// define lists at all
+	// whether a legacy fetch sends this column back.  a cursor whose define
+	// list wasn't decoded sends all of them, which is what a session that
+	// never sets OPTION_DEFINE gets, and what every session got before this
+	// module decoded define lists at all
 	uint16_t	curid=cont->getId(cursor);
 	if (!definecounts[curid]) {
 		return true;
@@ -12709,9 +12740,10 @@ bool sqlrprotocol_oracle::columnIsDefined(sqlrservercursor *cursor,
 uint16_t sqlrprotocol_oracle::definedColumnType(sqlrservercursor *cursor,
 						uint32_t column) {
 
-	// and which wire type its define asked the column's values to be converted to.
-	// 0 means the define list named no such position, or wasn't decoded at all, and
-	// the column goes out in whatever type the fetch would have sent anyway
+	// and which wire type its define asked the column's values to be
+	// converted to.  0 means the define list named no such position, or
+	// wasn't decoded at all, and the column goes out in whatever type the
+	// fetch would have sent anyway
 	uint16_t	curid=cont->getId(cursor);
 	if (!definecounts[curid]) {
 		return 0;
@@ -12723,9 +12755,9 @@ uint32_t sqlrprotocol_oracle::definedColumnBufferSize(
 						sqlrservercursor *cursor,
 						uint32_t column) {
 
-	// and how wide a buffer it gave for the column's values.  0 means the same
-	// thing it does above, and also that the define named the position but gave
-	// it no width, which is what a skipped position carries
+	// and how wide a buffer it gave for the column's values.  0 means the
+	// same thing it does above, and also that the define named the position
+	// but gave it no width, which is what a skipped position carries
 	uint16_t	curid=cont->getId(cursor);
 	if (!definecounts[curid]) {
 		return 0;
@@ -12737,10 +12769,11 @@ uint32_t sqlrprotocol_oracle::definedColumnBufferSize(
 uint32_t sqlrprotocol_oracle::definedColumnCount(sqlrservercursor *cursor,
 						uint32_t colcount) {
 
-	// and how many of them there are, which is what the row header carries.  a
-	// real server counts the positions it actually sends, not the ones the define
-	// list names: the -defines3-realserver capture's request names three
-	// descriptors, only the third of them real, and its row header says 1
+	// and how many of them there are, which is what the row header carries.
+	// a real server counts the positions it actually sends, not the ones
+	// the define list names: the -defines3-realserver capture's request
+	// names three descriptors, only the third of them real, and its row
+	// header says 1
 	if (!definecounts[cont->getId(cursor)]) {
 		return colcount;
 	}
@@ -12755,11 +12788,12 @@ uint32_t sqlrprotocol_oracle::definedColumnCount(sqlrservercursor *cursor,
 
 bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 
-	// the ordinary answer to a query2: what the statement left in its out binds,
-	// if it had any, and the execute trailer.  no io vector rides in front of them
-	// - a statement with out binds is a pl/sql block, and its client was told the
-	// directions in the answer to the bind block, one round trip back.  that is
-	// the same split sendReexecuteResponse() makes on the modern path
+	// the ordinary answer to a query2: what the statement left in its out
+	// binds, if it had any, and the execute trailer.  no io vector rides in
+	// front of them - a statement with out binds is a pl/sql block, and its
+	// client was told the directions in the answer to the bind block, one
+	// round trip back.  that is the same split sendReexecuteResponse()
+	// makes on the modern path
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags;
@@ -13277,30 +13311,32 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 
 		} else {
 
-			// a length byte in front of the text.  python-oracledb and
-			// node-oracledb declare the byte count and write a length
-			// byte that matches it, OCI declares a buffer size - the
-			// character count times the bytes per character of its
-			// charset, the same thing it does with the user name in the
-			// login - and writes a length byte with the real byte count,
-			// and ojdbc declares the byte count and writes no length byte
-			// at all.  so the declared size is only wrong for OCI, and
-			// only OCI's length byte can be believed over it - believing
+			// a length byte in front of the text.  python-oracledb
+			// and node-oracledb declare the byte count and write a
+			// length byte that matches it, OCI declares a buffer
+			// size - the character count times the bytes per
+			// character of its charset, the same thing it does with
+			// the user name in the login - and writes a length byte
+			// with the real byte count, and ojdbc declares the byte
+			// count and writes no length byte at all.  so the
+			// declared size is only wrong for OCI, and only OCI's
+			// length byte can be believed over it - believing
 			// ojdbc's first character as a length would eat it
 			//
-			// how many bytes have arrived says nothing about which of
-			// them sent this, so the module's own oci flag decides it
-			// alone.  a declared size that overflows what has arrived
-			// doesn't mean an inflated one: the rest of the text may
-			// simply still be on the wire, and taking that for OCI's
-			// case reads an ojdbc statement's first character as a
-			// length and hands the backend the rest.  nor is it enough
-			// even when a request does fit one packet - "commit" on a
-			// 4 byte per character charset declares 24 with 24 bytes
-			// still on hand, and the 18 bytes past the text going to
-			// the backend as part of the query is an ORA-00911.  and
-			// waiting for the declared size and deciding after doesn't
-			// work either: for OCI those bytes never come, so the
+			// how many bytes have arrived says nothing about which
+			// of them sent this, so the module's own oci flag
+			// decides it alone.  a declared size that overflows
+			// what has arrived doesn't mean an inflated one: the
+			// rest of the text may simply still be on the wire, and
+			// taking that for OCI's case reads an ojdbc statement's
+			// first character as a length and hands the backend the
+			// rest.  nor is it enough even when a request does fit
+			// one packet - "commit" on a 4 byte per character
+			// charset declares 24 with 24 bytes still on hand, and
+			// the 18 bytes past the text going to the backend as
+			// part of the query is an ORA-00911.  and waiting for
+			// the declared size and deciding after doesn't work
+			// either: for OCI those bytes never come, so the
 			// session would wait out the continuation timeout on an
 			// ordinary request.
 			if (*rp && (uint32_t)(*rp)<*querysize && ociclient) {
@@ -13367,10 +13403,10 @@ bool sqlrprotocol_oracle::getQuery3Binds(const byte_t *rp,
 						const char *query,
 						uint32_t querysize) {
 
-	// reads the tail of a query3 request: the al8i4 vector, then one descriptor
-	// per bind and one per define, then one row data block per execution
-	// iteration.  binds are positional, so a descriptor and its values are only
-	// tied to a placeholder by their order.
+	// reads the tail of a query3 request: the al8i4 vector, then one
+	// descriptor per bind and one per define, then one row data block per
+	// execution iteration.  binds are positional, so a descriptor and its
+	// values are only tied to a placeholder by their order.
 	// see "Oracle Wire Protocol - Query3"
 	query3binddescs=0;
 	query3blocks=0;
@@ -13503,8 +13539,8 @@ bool sqlrprotocol_oracle::getQuery3BindValues(const byte_t *rp,
 						uint32_t iterations) {
 
 	// one row data block per execution iteration, each carrying a value for
-	// every bind, in descriptor order.  there is no per-value type tag - the
-	// type comes from the matching descriptor
+	// every bind, in descriptor order.  there is no per-value type tag -
+	// the type comes from the matching descriptor
 	// see "Oracle Wire Protocol - Query3"
 	query3blocks=0;
 
@@ -13602,8 +13638,8 @@ bool sqlrprotocol_oracle::getQuery3BindDescriptor(const byte_t *rp,
 						uint32_t *buffersize,
 						const byte_t **rpout) {
 
-	// a bind or define descriptor - twelve fields, no name and no position, and
-	// a thirteenth once the negotiated field version reaches 12.2
+	// a bind or define descriptor - twelve fields, no name and no position,
+	// and a thirteenth once the negotiated field version reaches 12.2
 	// see "Oracle Wire Protocol - Query3"
 	*type=0;
 	*flags=0;
@@ -13688,14 +13724,15 @@ void sqlrprotocol_oracle::classifyQuery3Binds(uint32_t options,
 						const char *query,
 						uint32_t querysize) {
 
-	// which way each bind's value travels.  the wire can't say - an out-only, an
-	// in-out and an in-only descriptor are byte-identical, right down to the
-	// garbage value every one of them carries - so the direction has to come off
-	// the statement.  a placeholder in a pl/sql block is declared in-out, which
-	// is the safe reading of an unknowable: a value goes in either way, so a
-	// block that only reads it behaves as it always did, and one that writes it
-	// has somewhere to write to.  keeping the in bit also keeps a re-execute's
-	// request shape unchanged - oci sends a value for every bind that has it
+	// which way each bind's value travels.  the wire can't say - an
+	// out-only, an in-out and an in-only descriptor are byte-identical,
+	// right down to the garbage value every one of them carries - so the
+	// direction has to come off the statement.  a placeholder in a pl/sql
+	// block is declared in-out, which is the safe reading of an unknowable:
+	// a value goes in either way, so a block that only reads it behaves as
+	// it always did, and one that writes it has somewhere to write to.
+	// keeping the in bit also keeps a re-execute's request shape unchanged
+	// - oci sends a value for every bind that has it
 	// see "Oracle Wire Protocol - Query3"
 	// a client that didn't ask for an io vector isn't expecting out binds,
 	// and a request that didn't carry the text says nothing about what
@@ -13779,10 +13816,11 @@ bool sqlrprotocol_oracle::getBindVariableName(const char *query,
 						const char **name,
 						uint16_t *namesize) {
 
-	// the name of the "index"th bind variable in the query text, without its
-	// leading marker.  the wire carries no names, so a positional descriptor's
-	// name has to come back out of the query.  the walk matches the one
-	// countBindVariables() does in src/common/bindvariables.h
+	// the name of the "index"th bind variable in the query text, without
+	// its leading marker.  the wire carries no names, so a positional
+	// descriptor's name has to come back out of the query.  the walk
+	// matches the one countBindVariables() does in
+	// src/common/bindvariables.h
 	*name=NULL;
 	*namesize=0;
 
@@ -14159,9 +14197,10 @@ bool sqlrprotocol_oracle::installQuery3Binds(sqlrservercursor *cursor,
 bool sqlrprotocol_oracle::fetchFromRefCursors(sqlrservercursor *cursor,
 						sqlrservercursor **failed) {
 
-	// opens each ref cursor bind's result set.  the statement's execute is what
-	// fills the cursor in, but nothing reads its column metadata until this
-	// runs - and the response can't describe a cursor it hasn't described yet
+	// opens each ref cursor bind's result set.  the statement's execute is
+	// what fills the cursor in, but nothing reads its column metadata until
+	// this runs - and the response can't describe a cursor it hasn't
+	// described yet
 	*failed=NULL;
 
 	for (uint32_t i=0; i<query3binddescs; i++) {
@@ -14198,10 +14237,10 @@ bool sqlrprotocol_oracle::fetchFromRefCursors(sqlrservercursor *cursor,
 
 void sqlrprotocol_oracle::releaseRefCursors(uint16_t parentid) {
 
-	// hands back what a statement's ref cursor binds took out of the pool.  a
-	// client that opens ref cursors in a loop runs the pool dry without this
-	// a child can be a parent itself, so this recurses.  the count gets
-	// zeroed up front rather than at the end to guard against a cycle:
+	// hands back what a statement's ref cursor binds took out of the pool.
+	// a client that opens ref cursors in a loop runs the pool dry without
+	// this a child can be a parent itself, so this recurses.  the count
+	// gets zeroed up front rather than at the end to guard against a cycle:
 	// a stale row - exactly what this releases - can name a cursor whose
 	// own row names this one back
 	uint16_t	count=refcursorcounts[parentid];
@@ -14255,13 +14294,13 @@ void sqlrprotocol_oracle::forgetRefCursor(uint16_t childid) {
 
 void sqlrprotocol_oracle::saveQuery3Binds(sqlrservercursor *cursor) {
 
-	// keeps the descriptors that came with the statement, since a re-execute
-	// sends fresh values without them
-	// query3() refuses a request with more descriptors than maxbindcount
-	// before this runs, so the clamp is just the bound on cursorbinds[],
-	// which the constructor allocates to maxbindcount.  it can't simply
-	// go away: query3binddescs itself is never capped, so a walk to it
-	// would run off the end of that array
+	// keeps the descriptors that came with the statement, since a
+	// re-execute sends fresh values without them query3() refuses a request
+	// with more descriptors than maxbindcount before this runs, so the
+	// clamp is just the bound on cursorbinds[], which the constructor
+	// allocates to maxbindcount.  it can't simply go away: query3binddescs
+	// itself is never capped, so a walk to it would run off the end of that
+	// array
 	uint32_t	count=(query3binddescs<maxbindcount)?
 					query3binddescs:maxbindcount;
 	oraclequery3bind	*saved=cursorbinds[cont->getId(cursor)];
@@ -14464,9 +14503,10 @@ bool sqlrprotocol_oracle::sendQuery3Response(sqlrservercursor *cursor,
 
 void sqlrprotocol_oracle::putIoVector() {
 
-	// tells the client which way each bind went.  four of the six header fields
-	// were zero in every capture and nothing explains them; the third was always
-	// one.  they go out exactly as the live server sends them
+	// tells the client which way each bind went.  four of the six header
+	// fields were zero in every capture and nothing explains them; the
+	// third was always one.  they go out exactly as the live server sends
+	// them
 	// see "Oracle Wire Protocol - Query3"
 	write(&reqpacket,(byte_t)TTC_IO_VECTOR);
 	write(&reqpacket,(byte_t)IO_VECTOR_CONSTANT);
@@ -14488,9 +14528,9 @@ void sqlrprotocol_oracle::putIoVector() {
 
 void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 
-	// what the statement left in each out bind, in descriptor order.  an in-only
-	// bind contributes nothing here - the client isn't expecting one for it -
-	// and every value carries a signed indicator behind it
+	// what the statement left in each out bind, in descriptor order.  an
+	// in-only bind contributes nothing here - the client isn't expecting
+	// one for it - and every value carries a signed indicator behind it
 	// see "Oracle Wire Protocol - Query3"
 	write(&reqpacket,(byte_t)TTC_ROW_DATA);
 
@@ -14566,9 +14606,9 @@ void sqlrprotocol_oracle::putOutBindValues(sqlrservercursor *cursor) {
 
 void sqlrprotocol_oracle::putRefCursorBindValue(sqlrservercursor *child) {
 
-	// what a ref cursor's out bind slot carries: a constant, the describe of
-	// the cursor the statement opened, and the id the client drives it with.
-	// unlike a scalar out bind's slot, no null indicator follows
+	// what a ref cursor's out bind slot carries: a constant, the describe
+	// of the cursor the statement opened, and the id the client drives it
+	// with.  unlike a scalar out bind's slot, no null indicator follows
 	// see "Oracle Wire Protocol - Query3"
 	write(&reqpacket,(byte_t)REF_CURSOR_CONSTANT);
 
@@ -14613,9 +14653,10 @@ void sqlrprotocol_oracle::putDescribeInfo(sqlrservercursor *cursor,
 void sqlrprotocol_oracle::putDescribeInfoBody(sqlrservercursor *cursor,
 						uint32_t colcount) {
 
-	// everything a describe says about a statement's columns, from the max row
-	// size on.  a ref cursor's out bind slot carries the same fields with no ttc
-	// code and no prologue in front of them, so both writers share this
+	// everything a describe says about a statement's columns, from the max
+	// row size on.  a ref cursor's out bind slot carries the same fields
+	// with no ttc code and no prologue in front of them, so both writers
+	// share this
 	uint16_t	curid=cont->getId(cursor);
 	uint32_t	maxrowsize=0;
 	for (uint32_t i=0; i<colcount; i++) {
@@ -15227,8 +15268,8 @@ bool sqlrprotocol_oracle::putRowData(sqlrservercursor *cursor,
 
 void sqlrprotocol_oracle::putLenPreUB8(uint64_t value) {
 
-	// writes "value" as a count prefixed 8 byte integer, which is what a lob
-	// length goes out as.  the base class only writes the 4 byte form
+	// writes "value" as a count prefixed 8 byte integer, which is what a
+	// lob length goes out as.  the base class only writes the 4 byte form
 	if (!value) {
 		write(&reqpacket,(byte_t)0);
 		return;
@@ -15258,14 +15299,14 @@ uint32_t sqlrprotocol_oracle::buildLobLocator(sqlrservercursor *cursor,
 						uint16_t wiretype,
 						byte_t *locator) {
 
-	// builds the locator a lob column's value is made of, and returns how many
-	// bytes of "locator" it filled in.  what identifies the lob is the cursor
-	// and the column it came from, in the four bytes a real server fills with a
-	// per-lob id - two locators in the same row have to differ there - and the
-	// cursor's pin generation, so a locator echoed back after its row has gone
-	// can be told from one that's still good.  which row is never encoded: only
-	// one row per cursor is ever pinned, so the row is whichever one the pin is
-	// on
+	// builds the locator a lob column's value is made of, and returns how
+	// many bytes of "locator" it filled in.  what identifies the lob is the
+	// cursor and the column it came from, in the four bytes a real server
+	// fills with a per-lob id - two locators in the same row have to differ
+	// there - and the cursor's pin generation, so a locator echoed back
+	// after its row has gone can be told from one that's still good.  which
+	// row is never encoded: only one row per cursor is ever pinned, so the
+	// row is whichever one the pin is on
 	uint16_t	curid=cont->getId(cursor);
 
 	if (wiretype==ORACLE_TYPE_BFILE) {
@@ -15382,9 +15423,9 @@ void sqlrprotocol_oracle::pinLobRow(sqlrservercursor *cursor,
 						uint32_t colcount) {
 
 	// holds the connection on the row a locator was just sent for.  the
-	// controller's lob calls only ever address a cursor's current row, so the
-	// row a locator points at has to stay current until the client is done
-	// reading it
+	// controller's lob calls only ever address a cursor's current row, so
+	// the row a locator points at has to stay current until the client is
+	// done reading it
 	uint16_t	curid=cont->getId(cursor);
 	lobpinned[curid]=true;
 	lobpincolcount[curid]=colcount;
@@ -15395,8 +15436,8 @@ void sqlrprotocol_oracle::releaseLobPin(sqlrservercursor *cursor) {
 
 	// takes the pin off and catches the connection up.  a client closing a
 	// locator isn't visible on the wire, so this runs at the cursor's next
-	// fetch instead - by then the client has moved on from the row whatever it
-	// did with the locator
+	// fetch instead - by then the client has moved on from the row whatever
+	// it did with the locator
 	uint16_t	curid=cont->getId(cursor);
 	if (!lobpinned[curid]) {
 		return;
@@ -15420,8 +15461,8 @@ void sqlrprotocol_oracle::releaseLobPin(sqlrservercursor *cursor) {
 
 void sqlrprotocol_oracle::clearLobPin(uint16_t curid) {
 
-	// forgets a pin without stepping over the row, for the places the result
-	// set itself is going away
+	// forgets a pin without stepping over the row, for the places the
+	// result set itself is going away
 	lobpinned[curid]=false;
 	lobpincolcount[curid]=0;
 	lobpingeneration[curid]++;
@@ -15436,9 +15477,9 @@ bool sqlrprotocol_oracle::readLenPreUB8(const byte_t *rp,
 						uint64_t *value,
 						const byte_t **rpout) {
 
-	// reads a count prefixed 8 byte integer, the counterpart of putLenPreUB8().
-	// the base class only reads the 4 byte form, and a lob offset or amount
-	// doesn't fit in one
+	// reads a count prefixed 8 byte integer, the counterpart of
+	// putLenPreUB8().  the base class only reads the 4 byte form, and a lob
+	// offset or amount doesn't fit in one
 	*value=0;
 
 	if (!have(rp,1,&end)) {
@@ -15471,11 +15512,12 @@ bool sqlrprotocol_oracle::decodeLobLocator(const byte_t *locator,
 						uint16_t *wiretype) {
 
 	// works out which cursor and column minted the locator a lob operation
-	// request quotes.  a locator only means anything while the row it came from
-	// is still pinned, and only if the pin is the one that minted it - the
-	// generation counter goes up every time a pin comes off, so a locator from a
-	// cursor that has since been fetched past, re-executed, or closed and reused
-	// doesn't decode, rather than being read against whatever row is there now
+	// request quotes.  a locator only means anything while the row it came
+	// from is still pinned, and only if the pin is the one that minted it -
+	// the generation counter goes up every time a pin comes off, so a
+	// locator from a cursor that has since been fetched past, re-executed,
+	// or closed and reused doesn't decode, rather than being read against
+	// whatever row is there now
 	*cursor=NULL;
 	*column=0;
 	*wiretype=0;
@@ -15558,10 +15600,10 @@ uint32_t sqlrprotocol_oracle::stepUtf8Char(const byte_t *in,
 						const byte_t *end,
 						uint16_t *ch) {
 
-	// decodes the utf-8 character at "in" into "ch" (if "ch" isn't NULL) and
-	// returns how many bytes it took.  a byte that doesn't start a valid
-	// sequence, and a character above the basic multilingual plane, take one
-	// byte and decode to that byte's own value
+	// decodes the utf-8 character at "in" into "ch" (if "ch" isn't NULL)
+	// and returns how many bytes it took.  a byte that doesn't start a
+	// valid sequence, and a character above the basic multilingual plane,
+	// take one byte and decode to that byte's own value
 	const byte_t	*start=in;
 	uint32_t	c=*in;
 	uint16_t	extra=0;
@@ -15600,8 +15642,8 @@ uint32_t sqlrprotocol_oracle::stepUtf8Char(const byte_t *in,
 
 uint64_t sqlrprotocol_oracle::countUtf8Chars(const char *in, uint64_t insize) {
 
-	// counts the characters in "insize" bytes of utf-8 "in", stepped the same
-	// way putUtf16Chars() steps them
+	// counts the characters in "insize" bytes of utf-8 "in", stepped the
+	// same way putUtf16Chars() steps them
 	const byte_t	*i=(const byte_t *)in;
 	const byte_t	*end=i+insize;
 	uint64_t	chars=0;
@@ -15615,8 +15657,8 @@ uint64_t sqlrprotocol_oracle::countUtf8Chars(const char *in, uint64_t insize) {
 bool sqlrprotocol_oracle::clientCharsetIsUtf8() {
 
 	// whether the backend's oci client character set is utf-8.  the oracle
-	// connection module applies its nls_lang connect string parameter by setting
-	// NLS_LANG in this process's environment
+	// connection module applies its nls_lang connect string parameter by
+	// setting NLS_LANG in this process's environment
 	const char	*charset=charstring::findLast(
 					environment::getValue("NLS_LANG"),".");
 	if (!charset) {
@@ -15632,12 +15674,13 @@ uint32_t sqlrprotocol_oracle::putUtf16Chars(const char *in,
 						uint64_t chars,
 						byte_t *out) {
 
-	// converts "chars" characters of utf-8 "in" to utf-16 big endian in "out",
-	// which has room for two bytes per character, and returns how many bytes it
-	// wrote.  a character above the basic multilingual plane, and a byte that
-	// doesn't start a valid sequence, go out as the lead byte's own value
-	// widened - two bytes per character has to hold either way, since the count
-	// is what the client works the character count back out from
+	// converts "chars" characters of utf-8 "in" to utf-16 big endian in
+	// "out", which has room for two bytes per character, and returns how
+	// many bytes it wrote.  a character above the basic multilingual plane,
+	// and a byte that doesn't start a valid sequence, go out as the lead
+	// byte's own value widened - two bytes per character has to hold either
+	// way, since the count is what the client works the character count
+	// back out from
 	const byte_t	*i=(const byte_t *)in;
 	const byte_t	*end=i+insize;
 	uint32_t	outsize=0;
@@ -15664,10 +15707,10 @@ uint32_t sqlrprotocol_oracle::putUtf16Chars(const char *in,
 
 bool sqlrprotocol_oracle::discardLobDataPacket() {
 
-	// reads and throws away one of the lob data packets a client sends behind
-	// a lob write request.  the layout is the one sendLobDataChunk() writes -
-	// a 64 byte descriptor whose second field is the byte count, and the bytes
-	// themselves riding after the packet's declared end
+	// reads and throws away one of the lob data packets a client sends
+	// behind a lob write request.  the layout is the one sendLobDataChunk()
+	// writes - a 64 byte descriptor whose second field is the byte count,
+	// and the bytes themselves riding after the packet's declared end
 	if (resppacketsize<LOB_DATA_DESCRIPTOR_SIZE) {
 		debugWrite("truncated lob data descriptor: %d",resppacketsize);
 		return false;
@@ -15723,8 +15766,9 @@ bool sqlrprotocol_oracle::sendLobDataChunk(const byte_t *data,
 						bool last) {
 
 	// one chunk of a lob read's answer.  the packet's own length counts the
-	// 64 byte descriptor alone - the lob bytes ride after the packet's declared
-	// end, which is what a real 12.2 server does and what the client reads
+	// 64 byte descriptor alone - the lob bytes ride after the packet's
+	// declared end, which is what a real 12.2 server does and what the
+	// client reads
 	resetSendPacketBuffer(PACKET_DATA_DESCRIPTOR);
 	reqpacketflags=LOB_DATA_PACKET_FLAGS;
 
@@ -15766,11 +15810,11 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 						uint64_t offset,
 						uint64_t amount) {
 
-	// a read of the pinned row's lob column, sent as the marker, then a chunk
-	// per packet, then the ordinary answer carrying how much came back
-	// a clob's characters go out two bytes each and a blob's or a
-	// bfile's one, so a chunk of the negotiated size carries half as
-	// many characters of a clob as it does of a blob
+	// a read of the pinned row's lob column, sent as the marker, then a
+	// chunk per packet, then the ordinary answer carrying how much came
+	// back a clob's characters go out two bytes each and a blob's or a
+	// bfile's one, so a chunk of the negotiated size carries half as many
+	// characters of a clob as it does of a blob
 	bool		clob=(wiretype==ORACLE_TYPE_CLOB);
 	bool		utf8=(clob && clientCharsetIsUtf8());
 	uint64_t	charsperchunk=(clob)?
@@ -15877,9 +15921,9 @@ bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
 						byte_t resulttype,
 						uint64_t result) {
 
-	// what every lob operation that worked gets back: the locator it quoted,
-	// the operation's result, and the same summary object the rest of the
-	// modern path ends a call with
+	// what every lob operation that worked gets back: the locator it
+	// quoted, the operation's result, and the same summary object the rest
+	// of the modern path ends a call with
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -15918,8 +15962,8 @@ bool sqlrprotocol_oracle::sendLobOperationError(uint32_t oranum,
 						const char *message) {
 
 	// what a lob operation that can't be answered gets back.  unlike
-	// sendUnimplementedFunctionError(), the request has already been read in
-	// full by the time this runs, so the session carries on in step
+	// sendUnimplementedFunctionError(), the request has already been read
+	// in full by the time this runs, so the session carries on in step
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -15943,11 +15987,12 @@ bool sqlrprotocol_oracle::sendLobOperationError(uint32_t oranum,
 
 bool sqlrprotocol_oracle::lobOperations(const byte_t *rp) {
 
-	// the call a client makes to work with a lob it was handed a locator for.
-	// the read side operations are answered for real; the write side ones are
-	// parsed in full and then refused, so the stream stays in step either way -
-	// falling through to sendUnimplementedFunctionError() wouldn't read the
-	// request body at all, and the session would desync on the next call
+	// the call a client makes to work with a lob it was handed a locator
+	// for.  the read side operations are answered for real; the write side
+	// ones are parsed in full and then refused, so the stream stays in step
+	// either way - falling through to sendUnimplementedFunctionError()
+	// wouldn't read the request body at all, and the session would desync
+	// on the next call
 	// see "Oracle Wire Protocol - Lob Operations"
 	// the locators the request echoes back can run past one packet
 	reassemble=true;
@@ -16417,10 +16462,10 @@ bool sqlrprotocol_oracle::getNumberField(const byte_t *bytes,
 						uint32_t outsize,
 						uint32_t *outlen) {
 
-	// the inverse of putNumberField() - oracle's internal number format back to
-	// decimal text.  a bound number goes to the database as that text, which the
-	// database implicitly converts, rather than as an oracle number the server
-	// side has no bind type for
+	// the inverse of putNumberField() - oracle's internal number format
+	// back to decimal text.  a bound number goes to the database as that
+	// text, which the database implicitly converts, rather than as an
+	// oracle number the server side has no bind type for
 
 	*outlen=0;
 
@@ -17394,9 +17439,9 @@ bool sqlrprotocol_oracle::execute(const byte_t *rp) {
 
 bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 
-	// the modern path's second and later executes of a statement whose binds
-	// changed: fresh values for the descriptors the statement was parsed with,
-	// and no query text, descriptors or defines of its own
+	// the modern path's second and later executes of a statement whose
+	// binds changed: fresh values for the descriptors the statement was
+	// parsed with, and no query text, descriptors or defines of its own
 	// see "Oracle Wire Protocol - Execute"
 
 	// the bind values behind the header can run past one packet
@@ -19058,20 +19103,21 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			}
 			// every other type this function writes goes out as a
 			// clr - a length byte, then that many bytes, via
-			// putLenBytes() - and putRowData()'s own ORACLE_TYPE_DATE
-			// case, above, already wraps these same 7 raw bytes in
-			// putLenBytes() rather than writing them bare.  so does
-			// this case: with no length byte, the client reads the
-			// date's own century byte - 0x78, 120, for a year in the
-			// 2000s - as the clr length instead, and blocks waiting
-			// for a 120-byte field that never comes (seen live with
-			// odefin then oexec then a standalone ofen returning a
-			// NUMBER, CHAR, VARCHAR2 and DATE column, portable
-			// encoding).  see putField()'s ORACLE_TYPE_CHAR
-			// et al. case above for [0024] of test/protocol/oracle/
+			// putLenBytes() - and putRowData()'s own
+			// ORACLE_TYPE_DATE case, above, already wraps these
+			// same 7 raw bytes in putLenBytes() rather than writing
+			// them bare.  so does this case: with no length byte,
+			// the client reads the date's own century byte - 0x78,
+			// 120, for a year in the 2000s - as the clr length
+			// instead, and blocks waiting for a 120-byte field that
+			// never comes (seen live with odefin then oexec then a
+			// standalone ofen returning a NUMBER, CHAR, VARCHAR2
+			// and DATE column, portable encoding).  see
+			// putField()'s ORACLE_TYPE_CHAR et al. case above for
+			// [0024] of test/protocol/oracle/
 			// samples/oracle102-oci7-portable-login-select.cap, the
-			// real-server capture confirming the clr shape every other
-			// field here follows
+			// real-server capture confirming the clr shape every
+			// other field here follows
 			byte_t	date[ORACLE_DATE_SIZE];
 			if (!getOracleDate(field,fieldsize,date)) {
 				// better to send nothing at all than
@@ -19389,17 +19435,18 @@ void sqlrprotocol_oracle::putOci7Error(uint32_t cursorid,
 						const char *message,
 						uint32_t messagesize) {
 
-	// what a legacy (non-query3) call's answer carries: the same oci7 summary
-	// object every other call answers this client with, with the ora number in
-	// its error field, and the message behind it.  it replaces a 48-byte literal
-	// plus putGenericFooter() that answered every call the same bytes in either
-	// encoding, and that no capture ever showed a server sending - the client's
-	// parse ran off the end of it, abandoned the call, and failed the next
-	// one with ORA-03120.
+	// what a legacy (non-query3) call's answer carries: the same oci7
+	// summary object every other call answers this client with, with the
+	// ora number in its error field, and the message behind it.  it
+	// replaces a 48-byte literal plus putGenericFooter() that answered
+	// every call the same bytes in either encoding, and that no capture
+	// ever showed a server sending - the client's parse ran off the end of
+	// it, abandoned the call, and failed the next one with ORA-03120.
 	//
-	// the shape is taken from real 10.2 server captures in both encodings, not
-	// built - each of the four below was hand-assembled from the writers here
-	// and diffed against the capture, and each matches to the byte:
+	// the shape is taken from real 10.2 server captures in both encodings,
+	// not built - each of the four below was hand-assembled from the
+	// writers here and diffed against the capture, and each matches to the
+	// byte:
 	//
 	//  - the native half is packet [0036] of test/protocol/oracle/samples/
 	//    9810-redhat9x86-native-midfetch-defines1-realserver.oraproxy (and
@@ -19423,14 +19470,15 @@ void sqlrprotocol_oracle::putOci7Error(uint32_t cursorid,
 	// bytes and stops there - so the message only goes out behind an ora
 	// number, the same condition putSummary() writes its own message under.
 	//
-	// what those captures pin is the object's shape and the message behind it,
-	// in both encodings.  the field values are the caller's, and the two
-	// captured calls disagree about them in the way their own contexts explain:
-	// a fetch's answer carries the cursor id, command type 3 and one success
-	// iteration ([0036]), and a login failure - a call with no cursor and no
-	// statement - carries 0 in all three ([0017] of either wrongpassword
-	// capture).  so callers with a cursor pass the fetch's values and
-	// cursorless ones pass zeros, rather than one set going out everywhere
+	// what those captures pin is the object's shape and the message behind
+	// it, in both encodings.  the field values are the caller's, and the
+	// two captured calls disagree about them in the way their own contexts
+	// explain:  a fetch's answer carries the cursor id, command type 3 and
+	// one success iteration ([0036]), and a login failure - a call with no
+	// cursor and no statement - carries 0 in all three ([0017] of either
+	// wrongpassword capture).  so callers with a cursor pass the fetch's
+	// values and cursorless ones pass zeros, rather than one set going out
+	// everywhere
 
 	// the data flags word is per-packet, not per-message, so it's up
 	// to the caller to have already written it
@@ -19519,10 +19567,11 @@ void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
 
 	// the array-only per-cursor resets, with no live cursor or controller
 	// call among them.  shared by close(), occa(), reInit(), and
-	// releaseRefCursors() - reInit() depends on that: the previous session's
-	// cursors are already gone by the time it runs (endSession() aborted and
-	// released every one of them), so calling anything here that touches a
-	// live cursor would be working on one that no longer exists
+	// releaseRefCursors() - reInit() depends on that: the previous
+	// session's cursors are already gone by the time it runs (endSession()
+	// aborted and released every one of them), so calling anything here
+	// that touches a live cursor would be working on one that no longer
+	// exists
 	cursorbindcounts[curid]=0;
 
 	// and the oci7 bind shape a query2 left on it.  cursor
@@ -19755,11 +19804,11 @@ bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
 
 bool sqlrprotocol_oracle::sendTransactionResponse() {
 
-	// what a bare commit, rollback or autocommit change gets back on success -
-	// the same summary-object split every other cursorless ack in this module
-	// uses (sendCursorNotOpenError, sendMarkerCancelError,
-	// sendUnimplementedFunctionError), with success field values in place of
-	// an error
+	// what a bare commit, rollback or autocommit change gets back on
+	// success - the same summary-object split every other cursorless ack in
+	// this module uses (sendCursorNotOpenError, sendMarkerCancelError,
+	// sendUnimplementedFunctionError), with success field values in place
+	// of an error
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -19782,9 +19831,9 @@ bool sqlrprotocol_oracle::sendTransactionResponse() {
 bool sqlrprotocol_oracle::sendTransactionError(uint32_t cursorid) {
 
 	// what a commit, rollback or autocommit change gets back when the
-	// controller call fails.  unlike sendQueryError(), there's no cursor here -
-	// a bare commit isn't tied to one - so this reads the connection-level
-	// error instead of the cursor-level one
+	// controller call fails.  unlike sendQueryError(), there's no cursor
+	// here - a bare commit isn't tied to one - so this reads the
+	// connection-level error instead of the cursor-level one
 
 	const char	*errorstring;
 	uint32_t	errorsize;
@@ -20208,9 +20257,9 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 
 bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
 
-	// answers an execute that the statement's placeholders weren't all bound
-	// for.  only the query3 path can see it - the descriptor flag that says so
-	// is part of that request's bind section
+	// answers an execute that the statement's placeholders weren't all
+	// bound for.  only the query3 path can see it - the descriptor flag
+	// that says so is part of that request's bind section
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -20230,9 +20279,9 @@ bool sqlrprotocol_oracle::sendNotAllVariablesBoundError(uint32_t cursorid) {
 
 bool sqlrprotocol_oracle::sendMaxBindCountExceededError(uint32_t cursorid) {
 
-	// answers a request whose bind section named more binds than maxbindcount
-	// allows.  the query2 path answers the same case in the oci7 shape instead -
-	// see query2()
+	// answers a request whose bind section named more binds than
+	// maxbindcount allows.  the query2 path answers the same case in the
+	// oci7 shape instead - see query2()
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -20254,10 +20303,10 @@ bool sqlrprotocol_oracle::sendMaxResponseError(uint32_t cursorid,
 						uint32_t oranum,
 						const char *message) {
 
-	// answers a request that asked for more rows than MAX_FETCH_ROW_COUNT, or
-	// whose batch ran past MAX_RESPONSE_SIZE while it was being built.  both
-	// paths can see either one, so the answer takes the shape the session is in,
-	// the way sendQueryError() does
+	// answers a request that asked for more rows than MAX_FETCH_ROW_COUNT,
+	// or whose batch ran past MAX_RESPONSE_SIZE while it was being built.
+	// both paths can see either one, so the answer takes the shape the
+	// session is in, the way sendQueryError() does
 
 	if (!query3session) {
 		return sendOci7StatementError(cursorid,oranum,message);
@@ -20313,9 +20362,9 @@ bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {
 bool sqlrprotocol_oracle::sendMarkerCancelError() {
 
 	// what completes the call a client's marker packet interrupted - a real
-	// server answers a break/reset with ora-01013 for whatever was in flight,
-	// and the client is waiting to read that, not another marker, before it
-	// will send anything else
+	// server answers a break/reset with ora-01013 for whatever was in
+	// flight, and the client is waiting to read that, not another marker,
+	// before it will send anything else
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -20331,20 +20380,20 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 					ORA_USER_REQUESTED_CANCEL_MESSAGE);
 	} else {
 
-		// an older client gets the same summary object every other
-		// call answers it with - a real server's own answer to a
-		// genuine client-side cancel is this exact object, decoded
-		// field for field, ora number included; command type 3 and
-		// success iterations 1 come from that same capture, and are
-		// also what this object's other error path (putSummary(),
-		// above) already sends unconditionally.
-		// the cursor id field answers with whichever cursor id the
-		// client's own last request carried (see lastwirecursorid),
-		// rather than a hardcoded 0: with more than one cursor open, an
-		// id naming neither live cursor here causes ORA-03106 on the
-		// client side.  it's still an unconfirmed guess for what a real
-		// server sends here (no capture on file has a marker cancel
-		// with a second cursor open), just not a value known to be wrong
+		// an older client gets the same summary object every other call
+		// answers it with - a real server's own answer to a genuine
+		// client-side cancel is this exact object, decoded field for
+		// field, ora number included; command type 3 and success
+		// iterations 1 come from that same capture, and are also what
+		// this object's other error path (putSummary(), above) already
+		// sends unconditionally.  the cursor id field answers with
+		// whichever cursor id the client's own last request carried
+		// (see lastwirecursorid), rather than a hardcoded 0: with more
+		// than one cursor open, an id naming neither live cursor here
+		// causes ORA-03106 on the client side.  it's still an
+		// unconfirmed guess for what a real server sends here (no
+		// capture on file has a marker cancel with a second cursor
+		// open), just not a value known to be wrong
 		putOci7Error(lastwirecursorid,3,0,1,
 				ORA_USER_REQUESTED_CANCEL,
 				ORA_USER_REQUESTED_CANCEL_MESSAGE,
@@ -20357,9 +20406,10 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 
 bool sqlrprotocol_oracle::sendUnimplementedFunctionError() {
 
-	// what a tti function this module doesn't implement (or doesn't recognize
-	// at all) gets back, instead of the caller dropping the session - keeps
-	// the client connected so the rest of the session can still run
+	// what a tti function this module doesn't implement (or doesn't
+	// recognize at all) gets back, instead of the caller dropping the
+	// session - keeps the client connected so the rest of the session can
+	// still run
 
 	resetSendPacketBuffer(PACKET_DATA);
 
