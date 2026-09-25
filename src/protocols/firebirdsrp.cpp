@@ -153,13 +153,15 @@ class sqlrfirebirdsrpprivate {
 };
 
 
-// Firebird's BigInteger::getText() is mp_to_radix(), which writes uppercase
-// hex with no leading zeros (BigInteger.cpp:205-212).  bignumber::getString(16)
-// writes uppercase hex too, but always pads out to a whole number of bytes,
-// so a value whose top nibble is zero comes out one digit longer.  That
-// difference matters, because the salt and the public keys are hashed as
-// text, not as bytes.  So, strip the leading zeros.
 static char *sqlrfirebirdsrpBnToHex(bignumber &bn) {
+
+	// Firebird's BigInteger::getText() is mp_to_radix(), which writes
+	// uppercase hex with no leading zeros (BigInteger.cpp:205-212).
+	// bignumber::getString(16) writes uppercase hex too, but always pads
+	// out to a whole number of bytes, so a value whose top nibble is
+	// zero comes out one digit longer.  That matters because the salt
+	// and the public keys are hashed as text, not as bytes.  So, strip
+	// the leading zeros.
 	const char	*hex=bn.getString(16);
 	if (!hex) {
 		return NULL;
@@ -321,11 +323,11 @@ const char *sqlrfirebirdsrp::getSalt() const {
 }
 
 
-// RemotePassword::setKey() - srp.cpp:222-229.  A key that is 0 or 1 mod the
-// prime is rejected outright.
 static bool sqlrfirebirdsrpSetKey(bignumber *key, const char *keystr,
 						bignumber &n) {
 
+	// RemotePassword::setKey() - srp.cpp:222-229.  A key that is 0 or 1
+	// mod the prime is rejected outright.
 	if (!keystr || !keystr[0]) {
 		return false;
 	}
@@ -386,10 +388,10 @@ bool sqlrfirebirdsrp::setServerPrivateKey(const char *serverprivatekey) {
 	return true;
 }
 
-// RemotePassword::makePrivate() - srp.cpp:75-83.  128 random bytes, reduced
-// mod the prime.
 static bool sqlrfirebirdsrpMakePrivate(bignumber *privatekey, bignumber &n) {
 
+	// RemotePassword::makePrivate() - srp.cpp:75-83.  128 random bytes,
+	// reduced mod the prime.
 	byte_t	bytes[SQLRFIREBIRDSRP_KEY_SIZE];
 	csprng	rng;
 	if (!rng.generateBytes(bytes,sizeof(bytes))) {
@@ -402,25 +404,26 @@ static bool sqlrfirebirdsrpMakePrivate(bignumber *privatekey, bignumber &n) {
 }
 
 
-// RemotePassword::getUserHash() - srp.cpp:85-101, then computeVerifier() at
-// srp.cpp:103-107.
-//
-//	x=H(salt,H(username:password))
-//	v=g^x mod N
-//
-// This is not RFC 5054's x.  RFC 5054 hashes the username into the
-// inner hash and the salt as raw bytes.  Firebird hashes the salt as its hex
-// TEXT (srp.cpp:88-96 takes a const char * and runs it through
-// SHA::process(const char *), which is strlen-based - sha.h:62-65).
-//
-// The hash here is sha-1 for both plugins.  It comes from
-// RemotePassword::hash, declared SecureHash<Firebird::Sha1> at srp.h:91,
-// not from the plugin's template parameter.
 static void sqlrfirebirdsrpGetUserHash(bignumber *x,
 					const char *username,
 					const char *salt,
 					const char *password) {
 
+	// RemotePassword::getUserHash() - srp.cpp:85-101, then
+	// computeVerifier() at srp.cpp:103-107.
+	//
+	//	x=H(salt,H(username:password))
+	//	v=g^x mod N
+	//
+	// This is not RFC 5054's x.  RFC 5054 hashes the username into the
+	// inner hash and the salt as raw bytes.  Firebird hashes the salt as
+	// its hex TEXT (srp.cpp:88-96 takes a const char * and runs it
+	// through SHA::process(const char *), which is strlen-based -
+	// sha.h:62-65).
+	//
+	// The hash here is sha-1 for both plugins.  It comes from
+	// RemotePassword::hash, declared SecureHash<Firebird::Sha1> at
+	// srp.h:91, not from the plugin's template parameter.
 	sqlrfirebirdsrpdigest	digest(false);
 
 	digest.reset();
@@ -572,15 +575,16 @@ bool sqlrfirebirdsrp::generateServerPublicKey(const char *username,
 }
 
 
-// RemotePassword::computeScramble() - srp.cpp:147-155.
-//
-//	u=H(A,B)
-//
-// sha-1 for both plugins, and the operands go in stripped - see
-// processStrippedInt() above.
 static void sqlrfirebirdsrpComputeScramble(bignumber *u,
 					bignumber &clientpublickey,
 					bignumber &serverpublickey) {
+
+	// RemotePassword::computeScramble() - srp.cpp:147-155.
+	//
+	//	u=H(A,B)
+	//
+	// sha-1 for both plugins, and the operands go in stripped - see
+	// processStrippedInt() above.
 	sqlrfirebirdsrpdigest	digest(false);
 	digest.reset();
 	digest.processStrippedInt(clientpublickey);
