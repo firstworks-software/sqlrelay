@@ -40,8 +40,8 @@ class sqlrshbindvalue {
 		// A union in C++98 can't hold anything with a constructor, so
 		// every member here is a plain type.
 		union {
-			// string, blob and clob values carry their own
-			// length, so an embedded null isn't cut short
+			// String, blob and clob values carry their own
+			// length, so an embedded null isn't cut short.
 			struct {
 				char		*value;
 				uint32_t	length;
@@ -1239,16 +1239,14 @@ bool sqlrsh::getCommandFromFileOrString(file *fl,
 		// get a character from the file or string
 		if (fl) {
 			if (fl->read(&ch)!=sizeof(ch)) {
-				// end of the command...
-				// only return false if we're at the
-				// beginning, prior to any actual command
+				// end of the command - only return false if we're at
+				// the beginning, prior to any actual command
 				return !ininitialwhitespace;
 			}
 		} else {
 			if (!*string) {
-				// end of the command...
-				// only return false if we're at the
-				// beginning, prior to any actual command
+				// end of the command - only return false if we're at
+				// the beginning, prior to any actual command
 				if (stringpos) {
 					*stringpos=string;
 				}
@@ -1284,9 +1282,8 @@ bool sqlrsh::getCommandFromFileOrString(file *fl,
 					ch=*string;
 					string++;
 				}
-				// if we didn't get 2 single-quotes in a row
-				// while already inside of single-quotes, then
-				// we're no longer inside of single-quotes
+				// a doubled quote is an escaped quote, not the
+				// end of the string
 				if (ch!='\'') {
 					insinglequotes=false;
 				}
@@ -1313,9 +1310,8 @@ bool sqlrsh::getCommandFromFileOrString(file *fl,
 					ch=*string;
 					string++;
 				}
-				// if we didn't get 2 double-quotes in a row
-				// while already inside of double-quotes, then
-				// we're no longer inside of double-quotes
+				// a doubled quote is an escaped quote, not the
+				// end of the string
 				if (ch!='"') {
 					indoublequotes=false;
 				}
@@ -1354,11 +1350,10 @@ bool sqlrsh::runCommand(sqlrconnection *sqlrcon,
 	bool	retval=true;
 
 	if (cmdtype>0) {
-		// if the command an internal command, run it as one
+		// run it as an internal command
 		retval=internalCommand(sqlrcon,sqlrcur,env,command);
 	} else if (cmdtype==0) {
-		// if the command is not an internal command,
-		// execute it as a query and display the result set
+		// run it as a query and display the result set
 		retval=externalCommand(sqlrcon,sqlrcur,env,command);
 	} else {
 		// exit
