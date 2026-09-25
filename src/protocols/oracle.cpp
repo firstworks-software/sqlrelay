@@ -17862,8 +17862,7 @@ bool sqlrprotocol_oracle::fetch(const byte_t *rp) {
 	// call is the one whose count is always real.  no legacy fetch
 	// request in any capture under test/protocol/oracle/samples/ has
 	// ever asked for 0 rows, so nothing today distinguishes "the client
-	// wants zero rows" from "the count is unknown" for this caller -
-	// see #10066
+	// wants zero rows" from "the count is unknown" for this caller
 	return sendFetchResponse(cursor,false,rowstofetch);
 }
 
@@ -17893,11 +17892,11 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	// a legacy client gets back the columns its odefin's asked for and no
 	// others - a real server sends only those, and sending the rest
-	// overruns the buffers it set up for the ones it did ask for (#9810).
+	// overruns the buffers it set up for the ones it did ask for.
 	// the row header carries this count rather than the select list's,
 	// and putRow() below skips the columns it leaves out.  a cursor whose
-	// define list wasn't decoded counts every column, which is what every
-	// session got before #9810.  see getQuery2Descriptors()
+	// define list wasn't decoded counts every column.  see
+	// getQuery2Descriptors()
 	uint32_t	sendcolcount=definedColumnCount(cursor,colcount);
 
 	// the column count is written below as a single byte, and captures
@@ -18115,10 +18114,9 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			// client with nine bytes - "06 02 01 01 00 01 01 00 00
 			// 00" - which is exactly TTC_ROW_HEADER, the 0x02 flags
 			// a fetch carries, a column count of 1, an iteration
-			// number of 0, a row count of 1 and three zeros.  the
-			// reference capture of "select 1 from dual" on #9658
-			// sends the same nine bytes for its own single number
-			// column
+			// number of 0, a row count of 1 and three zeros.  a
+			// reference capture of "select 1 from dual" sends the
+			// same nine bytes for its own single number column
 			putRowHeader(0x02,sendcolcount,headerrows);
 		}
 
@@ -18146,7 +18144,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// sendQuery2Response() writes ahead of a plain execute's
 		// summary object - a ttc 0x08, the lead-in constant and a
 		// server address - which is all the native exactfetchmarker[]
-		// below is: "08 02 00 e7 ..." in #9637's legacy-exfet captures,
+		// below is: "08 02 00 e7 ..." in real legacy-exfet captures,
 		// the constant behind the ttc code and then the address.
 		// the address goes out as zero here for the same reason it
 		// does there: nothing echoes it back, and the width has to be
@@ -18171,7 +18169,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// re-encoding of the native trailer below, and no generic
 		// footer behind it.  [0024] of test/protocol/oracle/samples/
 		// oracle102-oci7-portable-login-select.cap and the reference
-		// capture of "select 1 from dual" on #9658 both end their
+		// capture of "select 1 from dual" both end their
 		// fetch reply at this object's last field.
 		//
 		// the native trailer below is this same object written four
@@ -18181,7 +18179,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// written for real (see trailer1a/trailer1b/trailer2 below);
 		// the rest of the block stays literal, since a full
 		// putOci7SummaryNative() rewrite still has no client that
-		// could check it (#9812).
+		// could check it.
 		//
 		// a batch that asked for more rows than the result set had
 		// left ends in ORA-01403 even though rows did go out - the
@@ -18220,7 +18218,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// 5-byte close - and, for an exact fetch only, an 11-byte
 		// marker ahead of all of that.  confirmed byte-for-byte
 		// against real OCI7 legacy-fetch/legacy-exfet captures
-		// (#9637) for 1 through 5 columns: unlike the old
+		// for 1 through 5 columns: unlike the old
 		// unknown6/unknown8 lookup tables this replaces, none of it
 		// varies with column count, so there's no cap on colcount
 		// and nothing to index.  the 47-byte block is split up here,
@@ -18250,21 +18248,21 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		};
 
 		// callseq reads 0x0b for a plain fetch and 0x0a for an exact
-		// fetch in every capture on file.  #9656 confirmed that the
-		// request-side field this byte was suspected of echoing (the
-		// high byte of query2()'s/fetch()'s "options") really is a
+		// fetch in every capture on file.  the request-side field this
+		// byte was suspected of echoing (the high byte of
+		// query2()'s/fetch()'s "options") turned out to really be a
 		// per-call sequence counter, not independent flags - so this
 		// really could be an echo of that same counter rather than
 		// something tied to exact-fetch as such.  that still isn't
 		// confirmed for this response-side byte specifically though:
-		// #9656's shifted-fetch-3/shifted-exfet-3/commit-fetch-3
-		// captures move the fetch call to new sequence positions, but
-		// were taken with too small a capture snaplen to keep this
-		// byte - it sits ~90 bytes into a row-fetch response, past
-		// where every capture in that batch was cut off.  left as a
-		// fixed value tied to exactfetch, since that's still all that's
-		// confirmed; a future capture with a full snaplen could confirm
-		// whether to track the real call sequence instead
+		// the shifted-fetch-3/shifted-exfet-3/commit-fetch-3 captures
+		// move the fetch call to new sequence positions, but were
+		// taken with too small a capture snaplen to keep this byte -
+		// it sits ~90 bytes into a row-fetch response, past where
+		// every capture in that batch was cut off.  left as a fixed
+		// value tied to exactfetch, since that's still all that's
+		// confirmed; a future capture with a full snaplen could
+		// confirm whether to track the real call sequence instead
 		const byte_t	callseq=exactfetch?(byte_t)0x0a:(byte_t)0x0b;
 
 		if (exactfetch) {
@@ -18335,7 +18333,6 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// nothing else - see putOci7Error(), which reproduces that
 		// capture.  what used to go out here instead cost the client
 		// the whole call and turned up on the next one as ORA-03120
-		// (#9976)
 		debugWrite("no rows fetched");
 		putOci7Error(wireCursorId(cursor),commandtype,rowcount,1,
 				ORA_NO_DATA_FOUND,
@@ -18390,10 +18387,10 @@ void sqlrprotocol_oracle::cacheColumnDefinitions(sqlrservercursor *cursor,
 					ct[i]);
 	}
 
-	// A cursor with no columns has nothing to cache.  Marking it cached
+	// a cursor with no columns has nothing to cache.  marking it cached
 	// anyway hands every later execute on the cursor an array that was
 	// never filled in - which is what a parse-only request does, since it
-	// executes nothing.
+	// executes nothing
 	if (colcount) {
 		columntypescached[curid]=true;
 	}
@@ -18759,7 +18756,7 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// not even a null marker.  a real server leaves them out of
 		// the row entirely, which is why its answer to a one-of-four
 		// define is the same length as its answer to a genuine
-		// one-column select (#9810).  see getQuery2Descriptors()
+		// one-column select.  see getQuery2Descriptors()
 		if (!columnIsDefined(cursor,i)) {
 			debugWrite("col %d: not defined, skipped",i);
 			continue;
@@ -18797,7 +18794,7 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 			// putLobField() writes real data, a zero-length
 			// marker, or nothing at all for a genuine null,
 			// and reports which case it hit via its return
-			// value.  see its own comments, and #10006
+			// value.  see its own comments
 			wrotenullmarker=putLobField(cursor,i);
 		} else if (!null && field && ct[i]==ORACLE_TYPE_INLINE_BLOB) {
 			// a non-oracle backend's blob is described as a long
@@ -18830,7 +18827,7 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// two fields after every column, including the last:
 		// the indicator and the return code odefin() gave the client
 		// a pointer for.  confirmed against real OCI7 legacy-fetch
-		// captures (#9637) for 1 through 5 columns, both with and
+		// captures for 1 through 5 columns, both with and
 		// without the exact-fetch flag set - four bytes there, never
 		// varying with column position, column count, or exact-fetch,
 		// and two in [0024] of test/protocol/oracle/samples/
@@ -18859,10 +18856,10 @@ bool sqlrprotocol_oracle::putRow(sqlrservercursor *cursor,
 		// there (see its own comments), and a live portable session
 		// broke (ORA-03106) when putLobField() omitted the marker
 		// byte the same way for that encoding too, with no capture
-		// to back it - #10006 comment 10.  putLobField() only omits
+		// to back it.  putLobField() only omits
 		// the byte for a genuine null under native encoding now,
 		// still writing it under portable, matching every other
-		// type there (see its own comments).  #10006.
+		// type there (see its own comments).
 		if (wrotenullmarker) {
 			putAuthCount(0xffff,2);
 			putAuthCount(1405,2);
