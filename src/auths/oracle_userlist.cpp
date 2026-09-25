@@ -649,7 +649,7 @@ static bool o5logonServerResponse(const char *password,
 // released to the general public under the following terms: Redistribution and
 // use in source and binary forms, with or without modification, are permitted."
 // Every constant and every step is pinned against two real captures of an
-// oracle 9.2 OCI7 client logging into a real 10.2 server; see trac #9658.
+// oracle 9.2 OCI7 client logging into a real 10.2 server.
 
 // The 3DES CBC initialization vector, the same for every 3DES operation here,
 // and the two entropy blobs the key derivation folds in.  All three are baked
@@ -687,15 +687,15 @@ static const byte_t	o3logonhashiv[]={
 // at the front, and 4 bytes at the back that the rotation duplicates
 #define O3LOGON_PASSWORD_OVERHEAD	4
 
-// A single or triple des cbc block transform, chosen by key size, with padding
-// off.  The password hash runs under a zero iv and every 3des operation under
-// o3logoniv, so the caller passes the one it wants.
 static bool desCbc(bool encrypt,
 			const byte_t *key, size_t keysize,
 			const byte_t *iv,
 			const byte_t *in, size_t insize,
 			byte_t *out) {
 
+	// A single or triple des cbc block transform, chosen by key size, with
+	// padding off.  The password hash runs under a zero iv and every 3des
+	// operation under o3logoniv, so the caller passes the one it wants.
 	if (!insize || insize%O3LOGON_BLOCK_SIZE ||
 		(keysize!=O3LOGON_HASH_SIZE && keysize!=O3LOGON_KEY_SIZE)) {
 		return false;
@@ -730,19 +730,19 @@ static bool desCbc(bool encrypt,
 	return retval;
 }
 
-// The oracle des password hash - the 8 bytes SYS.USER$.PASSWORD held before
-// 11g.  uppercase(user||password) as utf-16be, zero padded to a block
-// multiple, des-cbc encrypted under a fixed key, then des-cbc encrypted again
-// under the last block of that first pass.  The last block of the second pass
-// is the hash.
-//
-// Note that it folds the case of the password as well as of the user name, so
-// the hash alone can't tell "testpassword" from "TESTPASSWORD".  Case still
-// decides the login: the password auth() recovers is compared to the stored
-// one byte for byte.
 static bool o3logonPasswordHash(const char *user, const char *password,
 							byte_t *hash) {
 
+	// The oracle des password hash - the 8 bytes SYS.USER$.PASSWORD held
+	// before 11g.  uppercase(user||password) as utf-16be, zero padded to a
+	// block multiple, des-cbc encrypted under a fixed key, then des-cbc
+	// encrypted again under the last block of that first pass.  The last
+	// block of the second pass is the hash.
+	//
+	// Note that it folds the case of the password as well as of the user
+	// name, so the hash alone can't tell "testpassword" from
+	// "TESTPASSWORD".  Case still decides the login: the password auth()
+	// recovers is compared to the stored one byte for byte.
 	stringbuffer	userpassword;
 	userpassword.append(user)->append(password);
 	char	*upper=userpassword.detachString();
@@ -786,14 +786,15 @@ static bool o3logonPasswordHash(const char *user, const char *password,
 	return retval;
 }
 
-// The o3logon key derivation - a 24 byte 3des key from an input and one of the
-// two entropy blobs.  The first 20 bytes are sha1(input||entropy).  The last 4
-// are the front of a second sha1, over the input, a 0x02 byte, all but the
-// first byte of the first digest, and the entropy again.
 static bool o3logonCreateKey(const byte_t *in, size_t insize,
 				const byte_t *entropy, size_t entropysize,
 				byte_t *key) {
 
+	// The o3logon key derivation - a 24 byte 3des key from an input and
+	// one of the two entropy blobs.  The first 20 bytes are
+	// sha1(input||entropy).  The last 4 are the front of a second sha1,
+	// over the input, a 0x02 byte, all but the first byte of the first
+	// digest, and the entropy again.
 	sha1	first;
 	if (!first.append(in,(uint32_t)insize) ||
 		!first.append(entropy,(uint32_t)entropysize)) {
@@ -830,9 +831,10 @@ static bool o3logonSupported() {
 	return (sd.isSupported() && td.isSupported());
 }
 
-// The verifier type the login is running under, or 0 for one this module has
-// no O3LOGON crypto for.
 static uint32_t o3logonVerifierType(parameterstring *p) {
+
+	// The verifier type the login is running under, or 0 for one this
+	// module has no O3LOGON crypto for.
 	uint32_t	verifiertype=
 			(uint32_t)charstring::convertToUnsignedInteger(
 				p->getValue("verifiertype"),(int32_t)0);
