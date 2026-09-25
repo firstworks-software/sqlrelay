@@ -1084,7 +1084,8 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 	clientsessionexitstatus_t	status=CLIENTSESSIONEXITSTATUS_ERROR;
 	if (initialHandshake()) {
 
-		// run session-start queries now that the client is authenticated
+		// run session-start queries now that the client is
+		// authenticated
 		cont->beginSession();
 
 		// loop, getting and executing requests
@@ -1114,7 +1115,8 @@ clientsessionexitstatus_t sqlrprotocol_mysql::clientSession(
 					loopback=true;
 					break;
 				case COM_QUIT:
-					// end the session and close the connection
+					// end the session and close the
+					// connection
 					debugStart("com_quit");
 					debugEnd();
 					loop=false;
@@ -3445,7 +3447,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 
 	if (clientcapabilityflags&CLIENT_PROTOCOL_41) {
 
-		// Column Definition 41
+		// column definition 41
 
 		writeLenEncStr(&resppacket,catalog);
 		writeLenEncStr(&resppacket,schema);
@@ -3466,7 +3468,7 @@ bool sqlrprotocol_mysql::sendColumnDefinition(sqlrservercursor *cursor,
 
 	} else {
 
-		// Column Definition 320
+		// column definition 320
 
 		writeLenEncStr(&resppacket,table);
 		writeLenEncStr(&resppacket,colname);
