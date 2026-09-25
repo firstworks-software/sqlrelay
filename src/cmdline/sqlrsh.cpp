@@ -4905,8 +4905,6 @@ bool sqlrsh::databasefeature(sqlrconnection *sqlrcon,
 bool sqlrsh::columninfocommand(sqlrcursor *sqlrcur,
 				sqlrshenv *env, const char *args) {
 
-	// with an argument it turns column info on or off, without one it
-	// dumps the metadata
 	char	*arg=commandArgument(args);
 	if (!arg) {
 		columninfo(sqlrcur,env);
@@ -5031,9 +5029,9 @@ bool sqlrsh::resumecachedresultset(sqlrcursor *sqlrcur,
 
 	bool	success=sqlrcur->resumeCachedResultSet(id,newcacheto);
 
-	// The cursor doesn't copy the name, so whichever one it's holding now
-	// has to stay alive.  Asking it is the only way to know - it can
-	// return before it gets as far as taking the new one.
+	// The cursor doesn't copy the name, and can return before it gets as
+	// far as taking the new one, so ask it which name it actually holds
+	// rather than trusting success.
 	if (sqlrcur->getCacheFileName()==newcacheto) {
 		delete[] env->cacheto;
 		env->cacheto=newcacheto;
@@ -5177,10 +5175,8 @@ bool sqlrsh::inputbind(sqlrcursor *sqlrcur,
 		valuelen=(size_t)unescapedlen;
 	}
 
-	// first handle nulls, then a value given with an explicit length,
-	// then quoted values, which are strings...
-	// if it's unquoted, check to see if it's an integer, float or date
-	// if it's not, then it's a string
+	// order: null, explicit length, quoted string, date, integer, float,
+	// else plain string
 	if (!value) {
 		bv->type=SQLRCLIENTBINDVARTYPE_NULL;
 	} else if (haslength) {
@@ -5307,8 +5303,9 @@ bool sqlrsh::inputbindlob(sqlrcursor *sqlrcur,
 		bv->type=(type==SQLRCLIENTBINDVARTYPE_BLOB)?
 				SQLRCLIENTBINDVARTYPE_NULLBLOB:
 				SQLRCLIENTBINDVARTYPE_NULLCLOB;
-		// stringval is a union member with no constructor to
-		// zero it, and printbinds() reads it for these types
+		// stringval is a union member with no constructor, so it
+		// must be zeroed explicitly; printbinds() reads it for
+		// these types
 		bv->stringval.value=NULL;
 		bv->stringval.length=0;
 	} else if (valuelen>=2 &&
