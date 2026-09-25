@@ -5777,7 +5777,7 @@ void sqlrprotocol_tds::capability() {
 		TDS5_CAP_RES_NOEED
 	};
 
-	// Answer at the length the client declared.  The intersection is
+	// answer at the length the client declared.  The intersection is
 	// byte-for-byte, and a bit the client's mask is too short to hold
 	// is one the client didn't ask for anyway.
 	grantedrequestmasklen=clientrequestmasklen;
@@ -5848,7 +5848,7 @@ bool sqlrprotocol_tds::preTds7SecEncryptLogin(char *password,
 	// isn't available; the caller then fails the login rather than
 	// authenticating with an empty password.
 
-	// The key.  Fresh per login: a fixed one would make the blob a
+	// the key.  Fresh per login: a fixed one would make the blob a
 	// constant function of the password, and one captured login
 	// replayable forever.  Nul terminated because
 	// preTds7ParamValueWrite() renders a value as text as well as as
@@ -5940,7 +5940,7 @@ bool sqlrprotocol_tds::preTds7SecEncryptLogin(char *password,
 	byte_t	rempwd[SEC_ENCRYPT_BLOB_SIZE];
 	bool	haslogpwd=false;
 
-	// Every token in the buffer, not just the first - sec_logpwd and
+	// every token in the buffer, not just the first - sec_logpwd and
 	// sec_rempwd arrive together.
 	while (rpsize) {
 
@@ -6021,7 +6021,7 @@ bool sqlrprotocol_tds::preTds7SecEncryptLogin(char *password,
 	if (!decrypted) {
 		debugWrite("failed to decrypt the password");
 		debugEnd();
-		// The cipher may simply not be there, and that's the one
+		// the cipher may simply not be there, and that's the one
 		// failure the client can do something about, so it gets the
 		// message that says so.
 		sendSecEncryptUnsupportedError();
@@ -6034,10 +6034,11 @@ bool sqlrprotocol_tds::preTds7SecEncryptLogin(char *password,
 	return true;
 }
 
-// Writes a tds 5.0 msg token.  All three of the encrypted-password
-// exchange's messages carry nothing but a status and a msgid, so the
-// token length is fixed.
 void sqlrprotocol_tds::preTds7Msg(byte_t status, uint16_t msgid) {
+
+	// writes a tds 5.0 msg token.  All three of the encrypted-password
+	// exchange's messages carry nothing but a status and a msgid, so the
+	// token length is fixed.
 
 	byte_t	token=TDS5_TOKEN_MSG;
 
@@ -6054,12 +6055,14 @@ void sqlrprotocol_tds::preTds7Msg(byte_t status, uint16_t msgid) {
 	write(&resppacket,msgid);
 }
 
-// Reads a tds 5.0 msg token.  The token byte has already been read.
-// Whatever the token declares past the msgid is stepped over rather than
-// refused, so a message carrying more than the three above still parses.
 bool sqlrprotocol_tds::preTds7MsgRead(const byte_t **rpinout,
 					size_t *rpsizeinout,
 					uint16_t *msgid) {
+
+	// reads a tds 5.0 msg token.  The token byte has already been read.
+	// Whatever the token declares past the msgid is stepped over rather
+	// than refused, so a message carrying more than the three above still
+	// parses.
 
 	const byte_t	*&rp=*rpinout;
 	size_t		&rpsize=*rpsizeinout;
@@ -6074,7 +6077,7 @@ bool sqlrprotocol_tds::preTds7MsgRead(const byte_t **rpinout,
 	read(rp,&tokenlength,&rp);
 	rpsize--;
 
-	// Everything below is bounded by the token's own length rather than
+	// everything below is bounded by the token's own length rather than
 	// by what's left in the buffer, so a msg that lies about its size
 	// can't read into the token behind it.
 	if (tokenlength<TDS5_MSG_SIZE || (size_t)tokenlength>rpsize) {
@@ -6121,7 +6124,7 @@ bool sqlrprotocol_tds::preTds7SecEncryptBlob(const byte_t **rpinout,
 		return false;
 	}
 
-	// The declared type, checked before the value is read rather than
+	// the declared type, checked before the value is read rather than
 	// after.  preTds7ParamsRead() routes a value by the type its
 	// paramfmt declared, and the string types print the value into the
 	// debug output - which for a blob declared as varchar would be the
@@ -6167,7 +6170,7 @@ bool sqlrprotocol_tds::preTds7SecEncryptBlob(const byte_t **rpinout,
 	}
 	bytestring::copy(blob,bv->value.stringval,SEC_ENCRYPT_BLOB_SIZE);
 
-	// The blob's last byte says how long the password inside it is, and
+	// the blob's last byte says how long the password inside it is, and
 	// the cipher clamps that to SEC_ENCRYPT_MAX_PASSWORD.  Checked here
 	// as well as in secEncryptDecryptPassword() so that a malformed blob
 	// gets the protocol error it deserves rather than the "encrypted
@@ -6216,7 +6219,7 @@ static secencryptdecryptfunction	secencryptdecrypt=NULL;
 
 static bool secEncryptLoadCipher(sqlrprotocol_tds *tds) {
 
-	// One attempt per process, however many logins ask for it.  The
+	// one attempt per process, however many logins ask for it.  The
 	// check-then-set needs no lock: sqlr-connection is single threaded
 	// and is exec'd per process, so the statics start out fresh.
 	if (secencrypttried) {
@@ -6272,7 +6275,7 @@ static bool secEncryptLoadCipher(sqlrprotocol_tds *tds) {
 			path++;
 		}
 		if (*path) {
-			// Local (not global) symbols are the safer default
+			// local (not global) symbols are the safer default
 			// here: sqlr-connection may already have a different
 			// backend's client library loaded, and resolving
 			// this library's symbols globally could collide
@@ -6307,7 +6310,7 @@ bool sqlrprotocol_tds::secEncryptDecryptPassword(const byte_t *key,
 						char *password,
 						size_t passwordsize) {
 
-	// The blob is 32 bytes of ciphertext and a trailing byte giving how
+	// the blob is 32 bytes of ciphertext and a trailing byte giving how
 	// long the password inside them is.  Nothing about it is logged -
 	// it's password-equivalent, and so is what comes out.
 	if (bloblen!=SEC_ENCRYPT_BLOB_SIZE) {
@@ -6333,7 +6336,7 @@ bool sqlrprotocol_tds::secEncryptDecryptPassword(const byte_t *key,
 	int	outlen=0;
 	bytestring::zero(out,sizeof(out));
 
-	// The cipher carries no integrity check, so this is not one.  The
+	// the cipher carries no integrity check, so this is not one.  The
 	// library takes the length from the blob's own trailing byte and
 	// returns 1 either way, so a blob that isn't what the client's
 	// library produced decrypts to a wrong password rather than to an
@@ -6468,7 +6471,7 @@ bool sqlrprotocol_tds::preTds7ByteOrder(const byte_t *typeflags,
 
 	debugStart("pre-tds7 byte order");
 
-	// The char field isn't a byte order, but decode it here anyway so
+	// the char field isn't a byte order, but decode it here anyway so
 	// the debug output says what the whole block declared.  Nothing
 	// acts on it - an ebcdic client would need a translation this
 	// module doesn't do, and none has ever turned up.
@@ -7721,7 +7724,7 @@ bool sqlrprotocol_tds::preTds7SkipCommand(const byte_t **rpinout,
 	rp+=tokenlength;
 	rpsize-=tokenlength;
 
-	// Which commands can carry a paramfmt/params pair is a status bit
+	// which commands can carry a paramfmt/params pair is a status bit
 	// inside each one's own body, and nothing here decodes bodies, so go
 	// by what's actually on the wire instead - a paramfmt is never a
 	// command on its own, so one sitting here can only belong to the
@@ -7950,7 +7953,7 @@ bool sqlrprotocol_tds::preTds7Normal() {
 bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 					size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 language token, appending its result to the
+	// handles one tds 5.0 language token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a final done.
 	//
@@ -8212,7 +8215,7 @@ bool sqlrprotocol_tds::preTds7Language(const byte_t **rpinout,
 bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 					size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 dbrpc token, appending its result to the
+	// handles one tds 5.0 dbrpc token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a done.
 	//
@@ -8427,7 +8430,7 @@ bool sqlrprotocol_tds::preTds7DbRpc(const byte_t **rpinout,
 }
 
 void sqlrprotocol_tds::preTds7DynamicError(const char *msgtext, bool more) {
-	// Refuses one dynamic sql command, with its own done, so the
+	// refuses one dynamic sql command, with its own done, so the
 	// client sees that command fail rather than being left waiting
 	// for a result that never comes.  Class 16 for the same reason
 	// preTds7UnsupportedToken() uses it - the session stays usable.
@@ -8438,7 +8441,7 @@ void sqlrprotocol_tds::preTds7DynamicError(const char *msgtext, bool more) {
 
 bool sqlrprotocol_tds::dynamicHandle(const char *id, uint32_t *handle) {
 
-	// Looks a dynamic sql statement id up.  A live one names a
+	// looks a dynamic sql statement id up.  A live one names a
 	// prepared statement handle that still has a cursor; one whose
 	// cursor was evicted to make room for another request is dropped
 	// here rather than left to be found again.
@@ -8458,7 +8461,7 @@ bool sqlrprotocol_tds::dynamicHandle(const char *id, uint32_t *handle) {
 
 void sqlrprotocol_tds::setDynamicHandle(const char *id, uint32_t handle) {
 
-	// Names a prepared statement handle with a dynamic sql statement
+	// names a prepared statement handle with a dynamic sql statement
 	// id, replacing whatever that id named before.
 
 	// the map owns its keys, so drop the old one rather than leaving
@@ -8478,7 +8481,7 @@ void sqlrprotocol_tds::removeDynamicHandle(const char *id) {
 
 void sqlrprotocol_tds::evictOldestDynamicHandle() {
 
-	// Drops the oldest dynamic sql statement id, along with the
+	// drops the oldest dynamic sql statement id, along with the
 	// cursor its handle was holding.  The same thing
 	// evictOldestHandle() does for the handle maps, and for the same
 	// reason - a client can walk off and leave ids prepared forever.
@@ -8512,7 +8515,7 @@ void sqlrprotocol_tds::evictOldestDynamicHandle() {
 
 void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
 
-	// Writes the dynamic ack that answers every dynamic sql command.
+	// writes the dynamic ack that answers every dynamic sql command.
 	// Unlike the request form, this one stops after the id - it has no
 	// statement length field at all, which is how a client tells a
 	// server's dynamic token from its own.
@@ -8560,7 +8563,7 @@ void sqlrprotocol_tds::preTds7DynamicAck(const char *id, size_t idsize) {
 const char *sqlrprotocol_tds::preTds7DynamicStatement(const char *stmt,
 							const char *id) {
 
-	// Strips the "create proc <id> as " wrapper that a client puts in
+	// strips the "create proc <id> as " wrapper that a client puts in
 	// front of a dynamic prepare's statement.  Ct-lib writes one when
 	// the server's request capability mask sets bit 48,
 	// TDS_PROTO_DYNPROC, which capability() grants to any client that
@@ -8645,7 +8648,7 @@ const char *sqlrprotocol_tds::preTds7DynamicStatement(const char *stmt,
 bool sqlrprotocol_tds::preTds7Dynamic(const byte_t **rpinout,
 					size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 dynamic sql token, appending its result to
+	// handles one tds 5.0 dynamic sql token, appending its result to
 	// the response packet.  Returns false if the walk should stop,
 	// having already appended an error and a done.
 	//
@@ -8874,7 +8877,7 @@ bool sqlrprotocol_tds::preTds7DynamicPrepare(const char *id,
 						const char *stmt,
 						bool more) {
 
-	// Prepares a dynamic sql statement under the id the client named it
+	// prepares a dynamic sql statement under the id the client named it
 	// with.  The reply is the ack, the prepared statement's output column
 	// formats when the backend can describe them without running it, and a
 	// done.  Ct-lib caches those formats and answers
@@ -8950,7 +8953,7 @@ bool sqlrprotocol_tds::preTds7DynamicPrepare(const char *id,
 
 bool sqlrprotocol_tds::preTds7DynamicExecute(const char *id, bool more) {
 
-	// Runs a dynamic sql statement that was prepared under this id, with
+	// runs a dynamic sql statement that was prepared under this id, with
 	// the values that rode in the paramfmt/params pair behind the token.
 
 	debugStart("pre-tds7 dynamic execute");
@@ -9001,7 +9004,7 @@ bool sqlrprotocol_tds::preTds7DynamicExecute(const char *id, bool more) {
 		return true;
 	}
 
-	// One rowfmt/rows/done group per result set, the way
+	// one rowfmt/rows/done group per result set, the way
 	// preTds7Language() sends them.  DONE_MORE on every one of them,
 	// including the last: the command's own done follows behind.
 	for (;;) {
@@ -9032,7 +9035,7 @@ bool sqlrprotocol_tds::preTds7DynamicExecute(const char *id, bool more) {
 		}
 	}
 
-	// The execute's own done, behind the result sets it produced.  A
+	// the execute's own done, behind the result sets it produced.  A
 	// real ase sends this one too, and ct-lib reports it as an extra
 	// CS_CMD_SUCCEED/CS_CMD_DONE pair after the rows - the same pair
 	// sp_execute's done produces over ms-tds.
@@ -9045,7 +9048,7 @@ bool sqlrprotocol_tds::preTds7DynamicExecute(const char *id, bool more) {
 
 bool sqlrprotocol_tds::preTds7DynamicDealloc(const char *id, bool more) {
 
-	// Drops a dynamic sql statement and the cursor it was holding.
+	// drops a dynamic sql statement and the cursor it was holding.
 	//
 	// An id that was never prepared isn't an error.  Ct-lib refuses a
 	// dealloc of an id it doesn't know about before it ever reaches the
@@ -9078,7 +9081,7 @@ bool sqlrprotocol_tds::preTds7DynamicExecImmediate(const char *stmt,
 							size_t stmtsize,
 							bool more) {
 
-	// Runs one statement immediately, without preparing it under an id.
+	// runs one statement immediately, without preparing it under an id.
 	//
 	// A real ase takes only statements that return no rows here and
 	// rejects anything else outright, and ct-lib sends no parameters
@@ -9171,7 +9174,7 @@ void sqlrprotocol_tds::preTds7DynamicDescribe(const char *id,
 						bool output,
 						bool more) {
 
-	// Describes a prepared dynamic sql statement's parameters or
+	// describes a prepared dynamic sql statement's parameters or
 	// columns.
 	//
 	// Neither describe was ever seen on the wire - both sap's ct-lib
@@ -9216,7 +9219,7 @@ void sqlrprotocol_tds::preTds7DynamicDescribe(const char *id,
 
 void sqlrprotocol_tds::preTds7CurError(const char *msgtext, bool more) {
 
-	// Refuses one cursor command, with its own done, so the client sees
+	// refuses one cursor command, with its own done, so the client sees
 	// that command fail rather than being left waiting for a result that
 	// never comes.  Class 16 for the same reason
 	// preTds7UnsupportedToken() uses it - the session stays usable.
@@ -9250,7 +9253,7 @@ tds5cursor *sqlrprotocol_tds::preTds7Cursor(uint32_t id,
 						const byte_t *name,
 						byte_t namelen) {
 
-	// Finds the cursor a token named.  A client sends the name only
+	// finds the cursor a token named.  A client sends the name only
 	// until it has an id to send instead, so nearly every lookup is by
 	// id; the name walks the map, which MAX_PRETDS7_CURSORS bounds.
 
@@ -9291,7 +9294,7 @@ tds5cursor *sqlrprotocol_tds::preTds7CursorByName(const char *name) {
 tds5cursor *sqlrprotocol_tds::newPreTds7Cursor(const char *name,
 							size_t namesize) {
 
-	// Mints a cursor under the name a curdeclare gave it.
+	// mints a cursor under the name a curdeclare gave it.
 	//
 	// Declaring a name that's already live drops what it named first.
 	// A real ase refuses the declare instead, but a client that lost a
@@ -9324,7 +9327,7 @@ tds5cursor *sqlrprotocol_tds::newPreTds7Cursor(const char *name,
 
 void sqlrprotocol_tds::closePreTds7Cursor(tds5cursor *curs) {
 
-	// Drops the backend cursor an open one is holding, leaving it
+	// drops the backend cursor an open one is holding, leaving it
 	// declared and open-able again - what a curclose without the
 	// dealloc option does.
 
@@ -9348,7 +9351,7 @@ void sqlrprotocol_tds::removePreTds7Cursor(tds5cursor *curs) {
 
 void sqlrprotocol_tds::evictOldestPreTds7Cursor() {
 
-	// Drops the oldest cursor, along with whatever it was holding.  The
+	// drops the oldest cursor, along with whatever it was holding.  The
 	// same thing evictOldestDynamicHandle() does for dynamic sql
 	// statement ids, and for the same reason - a client can walk off
 	// and leave cursors declared forever.
@@ -9390,7 +9393,7 @@ void sqlrprotocol_tds::releaseAllPreTds7Cursors() {
 uint16_t sqlrprotocol_tds::preTds7CurStatus(tds5cursor *curs,
 							uint16_t extra) {
 
-	// The state bits a curinfo ack reports, or'ed with whatever that
+	// the state bits a curinfo ack reports, or'ed with whatever that
 	// ack is itself saying.  Every ack carries the read-only/updatable
 	// pair the declare's options byte asked for, and where the cursor
 	// stands now.
@@ -9405,7 +9408,7 @@ void sqlrprotocol_tds::preTds7CurInfoAck(tds5cursor *curs,
 						uint16_t status,
 						uint32_t rowcount) {
 
-	// Writes the curinfo ack that answers every cursor command.  It's
+	// writes the curinfo ack that answers every cursor command.  It's
 	// the same token byte a client's own set-rows request uses; the
 	// command byte tells the two apart, "inform" here and "set rows"
 	// there.
@@ -9447,7 +9450,7 @@ bool sqlrprotocol_tds::preTds7CurTokenLength(const byte_t **rpinout,
 						size_t minbody,
 						size_t *tokenlengthout) {
 
-	// Reads the length field a cursor token starts with, and checks it
+	// reads the length field a cursor token starts with, and checks it
 	// against the smallest body that token can have and against what's
 	// left in the buffer.  Returns false, with the buffer emptied, when
 	// it can't be trusted; the caller appends the error.
@@ -9493,7 +9496,7 @@ bool sqlrprotocol_tds::preTds7CurIdAndName(const byte_t **rpinout,
 						const byte_t **name,
 						byte_t *namelen) {
 
-	// Reads the cursor id at the front of a cursor token's body, and
+	// reads the cursor id at the front of a cursor token's body, and
 	// the name behind it.
 	//
 	// The name is there only while the id is 0.  A client sends it
@@ -9545,7 +9548,7 @@ bool sqlrprotocol_tds::preTds7CurIdAndName(const byte_t **rpinout,
 bool sqlrprotocol_tds::preTds7CurDeclare(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 curdeclare token, appending its result to the
+	// handles one tds 5.0 curdeclare token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a final done.
 	//
@@ -9728,7 +9731,7 @@ bool sqlrprotocol_tds::preTds7CurDeclare(const byte_t **rpinout,
 bool sqlrprotocol_tds::preTds7CurInfo(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 curinfo token, appending its result to the
+	// handles one tds 5.0 curinfo token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a final done.
 	//
@@ -9880,7 +9883,7 @@ bool sqlrprotocol_tds::preTds7CurInfo(const byte_t **rpinout,
 bool sqlrprotocol_tds::preTds7CurOpen(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 curopen token, appending its result to the
+	// handles one tds 5.0 curopen token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a final done.
 	//
@@ -9964,7 +9967,7 @@ bool sqlrprotocol_tds::preTds7CurOpen(const byte_t **rpinout,
 		*rpsizeinout=rpsize;
 	}
 
-	// Whether another command follows this one in the buffer.  This has
+	// whether another command follows this one in the buffer.  This has
 	// to be worked out behind the paramfmt/params pair rather than in
 	// front of it, for the reason preTds7Language() spells out.
 	bool	more=(rpsize>0);
@@ -10035,7 +10038,7 @@ bool sqlrprotocol_tds::preTds7CurOpen(const byte_t **rpinout,
 bool sqlrprotocol_tds::preTds7CurFetch(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 curfetch token, appending its result to the
+	// handles one tds 5.0 curfetch token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a final done.
 	//
@@ -10136,7 +10139,7 @@ bool sqlrprotocol_tds::preTds7CurFetch(const byte_t **rpinout,
 		return true;
 	}
 
-	// Send as many rows as the set-rows command asked for, keeping their
+	// send as many rows as the set-rows command asked for, keeping their
 	// values so that a curupdate or curdelete behind this can build a
 	// where clause out of the row the cursor landed on.
 	uint64_t	rowcount=preTds7Rows(curs->cursor,curs->rowcount,
@@ -10160,7 +10163,7 @@ bool sqlrprotocol_tds::preTds7CurFetch(const byte_t **rpinout,
 bool sqlrprotocol_tds::preTds7CurClose(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
-	// Handles one tds 5.0 curclose token, appending its result to the
+	// handles one tds 5.0 curclose token, appending its result to the
 	// response packet.  Returns false if the walk should stop, having
 	// already appended an error and a final done.
 	//
@@ -10268,7 +10271,7 @@ bool sqlrprotocol_tds::preTds7CurUpdateDelete(const byte_t **rpinout,
 						size_t *rpsizeinout,
 						bool update) {
 
-	// Handles one tds 5.0 curupdate or curdelete token, appending its
+	// handles one tds 5.0 curupdate or curdelete token, appending its
 	// result to the response packet.  Returns false if the walk should
 	// stop, having already appended an error and a final done.
 	//
@@ -10427,7 +10430,7 @@ void sqlrprotocol_tds::preTds7CurPositioned(tds5cursor *curs,
 						bool update,
 						bool more) {
 
-	// Runs the update or delete a curupdate or curdelete asked for
+	// runs the update or delete a curupdate or curdelete asked for
 	// against the row the cursor landed on, and writes the reply.  The
 	// positioning itself is positionedWhere()'s, shared with the
 	// ms-tds sp_cursor.
@@ -10451,7 +10454,7 @@ void sqlrprotocol_tds::preTds7CurPositioned(tds5cursor *curs,
 		return;
 	}
 
-	// The row the cursor is on is the last one the fetch delivered.
+	// the row the cursor is on is the last one the fetch delivered.
 	// Nothing on the wire says which of a multi-row fetch's rows that is
 	// - the key token that would is empty, since the row format marks no
 	// key columns - so a fetch that delivered more than one row is a
@@ -10533,7 +10536,7 @@ void sqlrprotocol_tds::preTds7CurPositioned(tds5cursor *curs,
 void sqlrprotocol_tds::preTds7CurKey(const byte_t **rpinout,
 						size_t *rpsizeinout) {
 
-	// Steps over the key token behind a curupdate or a curdelete.
+	// steps over the key token behind a curupdate or a curdelete.
 	//
 	// The token carries no length of its own.  Its body is a row of
 	// the columns the cursor's rowfmt marked as key columns, laid out
@@ -10563,7 +10566,7 @@ void sqlrprotocol_tds::preTds7CurKey(const byte_t **rpinout,
 
 uint16_t sqlrprotocol_tds::preTds7CurFetchType(byte_t fetchtype) {
 
-	// Maps a curfetch fetch type onto the CURSOR_FETCH_* value that
+	// maps a curfetch fetch type onto the CURSOR_FETCH_* value that
 	// fetchCursorStatement() understands.  The two are unrelated
 	// namespaces - a curfetch sends a small sequential enum where
 	// sp_cursorfetch sends a bitmask, and 1 means "next" in the one
@@ -11141,7 +11144,7 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 
 bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 
-	// The tds 5.0 counterpart of colMetaData(), and a sibling of it
+	// the tds 5.0 counterpart of colMetaData(), and a sibling of it
 	// rather than a branch inside it.  The token byte can't be shared -
 	// 0x81 is a cursor-delete request in tds 5.0 - and nothing after it
 	// is laid out the same way either: the length and column count come
@@ -11181,7 +11184,7 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 	debugStart("pre-tds7 row fmt");
 	debugTokenType(token);
 
-	// The column count is 16 bits wide here.  A wider result set needs
+	// the column count is 16 bits wide here.  A wider result set needs
 	// rowfmt2 (0x61), which this module doesn't write, so refuse the
 	// whole thing rather than send a count that the blocks after it
 	// don't match.  Class 16 for the same reason
@@ -11199,7 +11202,7 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 
 	debugWrite("count: %d",count);
 
-	// The token length counts bytes that aren't written yet, and every
+	// the token length counts bytes that aren't written yet, and every
 	// column block is a different size, so build the blocks into a
 	// scratch buffer and measure them.  The alternative - a second pass
 	// that adds up what the writers below are going to produce - is a
@@ -11277,7 +11280,7 @@ bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
 	// the length covers the column count too, not just the blocks
 	size_t	tokenlength=sizeof(uint16_t)+cols.getSize();
 
-	// Metadata too wide for the 16-bit length needs rowfmt2 (0x61),
+	// metadata too wide for the 16-bit length needs rowfmt2 (0x61),
 	// whose length field is 32 bits.  Refuse rather than truncate - a
 	// truncated rowfmt isn't a smaller result set, it's a stream the
 	// client can't parse at all.
@@ -11312,7 +11315,7 @@ void sqlrprotocol_tds::cekTable() {
 		return;
 	}
 
-	// FIXME: The client doesn't seem to care that this isn't
+	// FIXME: the client doesn't seem to care that this isn't
 	// being sent.  How do we decide when to send it?
 
 	// FIXME: actually implement this.  A cek table is a count of
@@ -11324,7 +11327,7 @@ void sqlrprotocol_tds::cekTable() {
 
 byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 
-	// Some protocol versions don't support some types.  If the server
+	// some protocol versions don't support some types.  If the server
 	// returned a type not supported by the protocol, then map it to a
 	// type that is.
 
@@ -11342,7 +11345,7 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 		return TDS_TYPE_NULL;
 	}
 
-	// Tds 5.0 has its own map, and none of the version downgrades below
+	// tds 5.0 has its own map, and none of the version downgrades below
 	// apply to it.  They rewrite types to TDS_TYPE_NVARCHAR, which isn't
 	// a datatype in tds 5.0 at all, and a pre-tds7 session negotiates
 	// version 500, so every one of them would fire.  The date/time to
@@ -11396,7 +11399,7 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 
 byte_t sqlrprotocol_tds::preTds7VarintSize(byte_t tds5type) {
 
-	// How wide a tds 5.0 datatype's length field is - its "varint
+	// how wide a tds 5.0 datatype's length field is - its "varint
 	// class".  It decides both the size field in a rowfmt and the
 	// length prefix in front of the value in a row:
 	//
@@ -11448,7 +11451,7 @@ byte_t sqlrprotocol_tds::preTds7VarintSize(byte_t tds5type) {
 
 byte_t sqlrprotocol_tds::preTds7FixedSize(byte_t tds5type) {
 
-	// How wide a varint-0 type's value is.  Nothing but the value goes
+	// how wide a varint-0 type's value is.  Nothing but the value goes
 	// on the wire for one of these - there's no length field in front
 	// of it - so this is also how many bytes a null has to be padded
 	// out to, since a fixed type has no way to say "null" at all.
@@ -11593,7 +11596,7 @@ void sqlrprotocol_tds::preTds7ColFlags(bytebuffer *buffer,
 						uint16_t col,
 						byte_t tds5type) {
 
-	// The tds 5.0 counterpart of colFlags().  One byte rather than two,
+	// the tds 5.0 counterpart of colFlags().  One byte rather than two,
 	// and the bits mean different things, so the two can't share an
 	// implementation.
 
@@ -11826,7 +11829,7 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 						uint16_t coltype,
 						byte_t tds5type) {
 
-	// The tds 5.0 counterpart of the size/collation/precision/scale
+	// the tds 5.0 counterpart of the size/collation/precision/scale
 	// part of typeInfo().  A separate function rather than another
 	// branch in that one: typeInfo() is on the hot ms-tds path, and
 	// almost nothing it does carries over.  What's sent here is decided
@@ -11838,7 +11841,7 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 	debugStart("pre-tds7 type info");
 	debugPreTds7ColumnType(tds5type);
 
-	// Decimal and numeric carry a precision and a scale after their
+	// decimal and numeric carry a precision and a scale after their
 	// size, and the size is how wide that precision makes the value on
 	// the wire, not the column's declared width.
 	if (tds5type==TDS5_TYPE_DECN || tds5type==TDS5_TYPE_NUMN) {
@@ -11873,13 +11876,13 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 			write(buffer,size);
 			debugWrite("size: %d (32-bit)",size);
 
-			// Only the blob types carry a table name, and
+			// only the blob types carry a table name, and
 			// writing one for anything else desynchronizes the
 			// stream.  Xml and unitext are varint 4 but aren't
 			// blob types, so they take none.
 			if (tds5type==TDS5_TYPE_TEXT ||
 					tds5type==TDS5_TYPE_IMAGE) {
-				// The module has no table name to give - the
+				// the module has no table name to give - the
 				// backends don't expose one for a result-set
 				// column - and an empty one is legal.
 				write(buffer,(uint16_t)0);
@@ -11908,7 +11911,7 @@ uint32_t sqlrprotocol_tds::preTds7DeclaredSize(sqlrservercursor *cursor,
 						uint16_t coltype,
 						byte_t tds5type) {
 
-	// The size a column's values are declared at in a pre-tds7 rowfmt.
+	// the size a column's values are declared at in a pre-tds7 rowfmt.
 	// preTds7TypeInfo() writes what this returns, and preTds7Field()
 	// caps every value it writes against it, so a field can't come out
 	// wider than the buffer the client sized from the rowfmt.  One
@@ -11960,7 +11963,7 @@ uint32_t sqlrprotocol_tds::preTds7DeclaredSize(sqlrservercursor *cursor,
 					size=dateTimeStringSize(coltype,size);
 					break;
 			}
-			// The size byte is unsigned here, so the whole 255 is
+			// the size byte is unsigned here, so the whole 255 is
 			// usable - unlike the ms-tds path, which stops at 127
 			// because the client reads that one signed.
 			// FIXME: a wider column should go out as longchar
