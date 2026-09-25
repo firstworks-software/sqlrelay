@@ -23256,9 +23256,12 @@ void sqlrprotocol_tds::debugTokenType(byte_t token) {
 			(uint32_t)(0x000000ff&token),tokenstring);
 }
 
-// Separate from debugTokenType() on purpose - these are request-direction
-// tokens, and several of the values mean something else in a response.
 void sqlrprotocol_tds::debugPreTds7TokenType(byte_t token) {
+
+	// separate from debugTokenType() on purpose - these are
+	// request-direction tokens, and several of the values mean something
+	// else in a response.
+
 	if (!getDebug()) {
 		return;
 	}
@@ -23835,9 +23838,11 @@ void sqlrprotocol_tds::debugColumnType(byte_t type) {
 			(uint32_t)(0x000000ff&type),typestring);
 }
 
-// Separate from debugColumnType() on purpose - these are tds 5.0
-// datatypes, and several of the values name something else in ms-tds.
 void sqlrprotocol_tds::debugPreTds7ColumnType(byte_t type) {
+
+	// separate from debugColumnType() on purpose - these are tds 5.0
+	// datatypes, and several of the values name something else in ms-tds.
+
 	if (!getDebug()) {
 		return;
 	}
