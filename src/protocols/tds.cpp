@@ -51,22 +51,23 @@
 #define TOKEN_DONEINPROC		0xFF
 #define TOKEN_RETURNSTATUS		0x79
 #define TOKEN_RETURNVALUE		0xAC
-// The tds 5.0 counterpart of TOKEN_COLMETADATA - what describes the
+// the tds 5.0 counterpart of TOKEN_COLMETADATA - what describes the
 // columns of a result set in that dialect.  They can't share a token
 // byte, and not just because their contents differ: 0x81 is
 // TDS5_TOKEN_CURDELETE in tds 5.0, so a tds 5.0 client reading an 0x81
 // would take it for a cursor-delete request rather than metadata.
 #define TOKEN_ROWFMT			0xEE
-// The tds 5.0 counterpart of TOKEN_INFO/TOKEN_ERROR - a single token
+// the tds 5.0 counterpart of TOKEN_INFO/TOKEN_ERROR - a single token
 // carrying what those two, plus a sqlstate and transaction state, carry
 // between them.  A tds 5.0 client reads this instead of TOKEN_INFO/
 // TOKEN_ERROR unless it granted itself TDS5_CAP_RES_NOEED at login.
 #define TOKEN_EED			0xE5
 
-// Tds 5.0 request tokens - what a client can send inside a
+// tds 5.0 request tokens - what a client can send inside a
 // PRE_TDS7_NORMAL buffer.  Only TDS5_TOKEN_LANGUAGE is implemented; the
 // rest are defined so that preTds7TokenLength() can name what it's
-// refusing, and so that a later ticket adding one has the value already.
+// refusing, and so their wire values are on hand if support for one of
+// them gets added.
 //
 // These live in the request direction only.  Some of the values mean
 // something else in the other direction, or in tds 7.x - 0x81 is
@@ -102,7 +103,7 @@
 #define	TDS5_TOKEN_DBRPC2		0xE8
 #define	TDS5_TOKEN_PARAMFMT		0xEC
 
-// How long a tds 5.0 request token's length field is.  There's no rule
+// how long a tds 5.0 request token's length field is.  There's no rule
 // that derives this from the token byte - the tds 7.x "token&0x30"
 // classification gets LANGUAGE and MSG wrong - so it's a table, and a
 // token that isn't in it can't be skipped at all.  Both freetds and the
@@ -128,7 +129,7 @@
 #define	TDS5_MSG_HASARGS		0x01
 #define	TDS5_MSG_SIZE			3
 
-// The msg id's of the tds 5.0 encrypted-password exchange.  The server
+// the msg id's of the tds 5.0 encrypted-password exchange.  The server
 // sends sec_encrypt with the key it chose; the client answers with
 // sec_logpwd, and with sec_rempwd as well when it has a remote password.
 #define	TDS5_MSG_SEC_ENCRYPT		0x0001
@@ -141,7 +142,7 @@
 #define	TDS5_RPC_RECOMPILE		0x0001
 #define	TDS5_RPC_PARAMS			0x0002
 
-// The tds 5.0 dynamic token's operation type.  0x20 is the server's
+// the tds 5.0 dynamic token's operation type.  0x20 is the server's
 // answer to all four of the others; the rest are what a client sends.
 // Procname, describe-input and describe-output were never seen on the
 // wire from any client - ct-lib answers both describes out of the
@@ -156,19 +157,19 @@
 #define	TDS5_DYN_DESCRIBE_INPUT		0x40
 #define	TDS5_DYN_DESCRIBE_OUTPUT	0x80
 
-// The tds 5.0 dynamic token's status byte.  "suppress fmt" is advisory -
+// the tds 5.0 dynamic token's status byte.  "suppress fmt" is advisory -
 // a real ase re-sends the formats whether or not the client asked it to,
 // so this module ignores the bit rather than acting on it.
 #define	TDS5_DYN_HASARGS		0x01
 #define	TDS5_DYN_SUPPRESS_FMT		0x02
 
-// How many dynamic sql statement ids one session can name at once.  Each
+// how many dynamic sql statement ids one session can name at once.  Each
 // one holds a cursor, so the real ceiling is how many cursors the
 // session has, and this only keeps a client that prepares under a fresh
 // id forever from growing the map without bound.
 #define	MAX_DYNAMIC_IDS			1024
 
-// The tds 5.0 curdeclare token's options byte.  These are ct-lib's own
+// the tds 5.0 curdeclare token's options byte.  These are ct-lib's own
 // numbering rather than the CS_READ_ONLY/CS_FOR_UPDATE constants an
 // application passes ct_cursor(), so don't read them against those.  All
 // this module needs out of the byte is whether the cursor is updatable,
@@ -176,7 +177,7 @@
 #define	TDS5_CUR_DOPT_RDONLY		0x01
 #define	TDS5_CUR_DOPT_UPDATABLE		0x02
 
-// The tds 5.0 curinfo token's command byte.  A client sends set-rows to
+// the tds 5.0 curinfo token's command byte.  A client sends set-rows to
 // say how many rows a fetch should deliver, and list-all to re-sync the
 // cursor state it keeps; the server answers every cursor command with an
 // inform.  Inquire was never seen from any client.
@@ -185,7 +186,7 @@
 #define	TDS5_CUR_CMD_INFORM		0x03
 #define	TDS5_CUR_CMD_LISTALL		0x04
 
-// The tds 5.0 curinfo token's status word - what state the cursor it
+// the tds 5.0 curinfo token's status word - what state the cursor it
 // names is in.  These match ct-lib's CS_CURSTAT_* values, which is how a
 // client reads them back out through ct_cmd_props(CS_CUR_STATUS).
 // "rowcnt" says a row count follows the status rather than describing
@@ -207,7 +208,7 @@
 // its own - a bare dealloc is a curclose with this bit set.
 #define	TDS5_CUR_CLOSE_DEALLOC		0x01
 
-// The tds 5.0 curfetch token's fetch type.  A small sequential enum,
+// the tds 5.0 curfetch token's fetch type.  A small sequential enum,
 // with nothing in common with the CURSOR_FETCH_* bitmask that
 // sp_cursorfetch uses - see preTds7CurFetchType(), which maps one onto
 // the other.
@@ -221,7 +222,7 @@
 // how many rows a fetch delivers when no curinfo set-rows ever said
 #define	DEFAULT_CUR_ROWCOUNT		1
 
-// How many tds 5.0 cursors one session can hold at once.  The same bound
+// how many tds 5.0 cursors one session can hold at once.  The same bound
 // as MAX_DYNAMIC_IDS, so that a client declaring under a fresh name
 // forever can't grow the map without bound.  A declared-but-unopened
 // cursor holds no backend cursor, but it does keep a copy of the
@@ -243,7 +244,7 @@
 // query text rather than the whole request.
 #define	MIN_MAX_REQUEST_SIZE		(16*1024*1024)
 
-// A ceiling on how many commands one request buffer may carry.  Neither
+// a ceiling on how many commands one request buffer may carry.  Neither
 // maxquerysize nor maxrequestsize bounds this - the first bounds a single
 // command's sql and the second bounds the buffer, and a 16mb buffer packed
 // with 6-byte language tokens is millions of commands, each a backend
@@ -258,7 +259,7 @@
 #define	LOGIN7_HEADER_SIZE		86
 #define	LOGIN7_HEADER_SIZE_72		94
 
-// Where login7's fixed header declares its version and its two password
+// where login7's fixed header declares its version and its two password
 // fields.  tds7Login() finds every field by walking the header, but these
 // three have to be located before the record is parsed at all, so that the
 // received-packet dump can blank the passwords.  Each ib is followed
@@ -277,7 +278,7 @@
 // implemented
 #define	MAX_LOGIN_SSPI_BYTES		65535
 
-// The pre-tds7 login record is entirely fixed-length, unlike login7.
+// the pre-tds7 login record is entirely fixed-length, unlike login7.
 // Tds 4.2 and 5.0 lay it out at different sizes (572 and 568 bytes), but
 // the record also carries the client's dialect in 4 bytes of its own, and
 // that's what this module goes by, so only the 5.0 size is defined here,
@@ -294,7 +295,7 @@
 #define	PRE_TDS7_PROGNAME_SIZE		10
 #define	PRE_TDS7_PACKET_SIZE_SIZE	6
 
-// Where the two cleartext credential fields start in the pre-tds7 login
+// where the two cleartext credential fields start in the pre-tds7 login
 // record.  Each preceding string field counts as its fixed run of bytes
 // plus its trailing length byte: hostname and username put password at
 // 62, and hostproc, the fixed-length block, appname and servername put
@@ -309,7 +310,7 @@
 #define	PRE_TDS7_SEC_SPARE_SIZE		2
 #define	PRE_TDS7_DUMMY_SIZE		4
 
-// Which byte of the login record's typeflags block declares what.  The
+// which byte of the login record's typeflags block declares what.  The
 // block is where a pre-tds7 client says how it lays out multi-byte
 // values, and a tds 5.0 token stream follows what it says - unlike tds
 // 7.x, which the ms-tds spec fixes as little-endian.
@@ -320,7 +321,7 @@
 #define	PRE_TDS7_TYPE_FLAGS_DATE	4
 #define	PRE_TDS7_TYPE_FLAGS_USEDB	5
 
-// What each of those bytes can say.  These names and numbers are the tds
+// what each of those bytes can say.  These names and numbers are the tds
 // 5.0 spec's - no header on this box declares them - and they match the
 // le1[] array freetds's login.c fills in.  A live capture of a real
 // ct-lib client on x86 sends 03 01 06 0a 09 01, which is every "_LO"
@@ -361,7 +362,7 @@
 					PRE_TDS7_SEC_LOG_ENCRYPT2| \
 					PRE_TDS7_SEC_LOG_ENCRYPT3)
 
-// The sizes of the encrypted-password exchange: the key the server
+// the sizes of the encrypted-password exchange: the key the server
 // chooses, and the blob the client answers with - 32 bytes of ciphertext
 // and a trailing byte giving how long the password inside them is.  The
 // cipher clamps a password to 30 bytes, which is also as long as the
@@ -386,7 +387,7 @@
 // rather than a policy
 #define	MAX_CAPABILITY_MASK_BYTES	255
 
-// Tds 5.0 capability numbers, as capability() and the bit helpers under
+// tds 5.0 capability numbers, as capability() and the bit helpers under
 // it use them.
 //
 // The numbers below are freetds's wire bit positions (its enum_cap.h),
@@ -451,7 +452,7 @@
 #define	TDS5_CAP_REQ_WIDETABLE		59
 #define	TDS5_CAP_REQ_SRVPKTSIZE		79
 
-// The response mask is inverted - a bit means "don't send me this" -
+// the response mask is inverted - a bit means "don't send me this" -
 // except for the SUPPRESS_ ones, which mean "you may leave this out".
 #define	TDS5_CAP_RES_NOEED		2
 #define	TDS5_CAP_RES_NOTDSDEBUG		33
@@ -461,7 +462,7 @@
 #define	TDS5_CAP_RES_SUPPRESS_FMT	62
 #define	TDS5_CAP_RES_NO_TDSCONTROL	67
 
-// In a tds 7.x login ack, the byte after the token size says which sql
+// in a tds 7.x login ack, the byte after the token size says which sql
 // interface the server speaks (SQL_DFLT/SQL_TSQL).  In a tds 4.2/5.0
 // login ack the same byte says how the login came out instead, and 4.2
 // and 5.0 don't spell it the same way (4.2 says 1, 5.0 says 5) - which
@@ -473,7 +474,7 @@
 #define	PRE_TDS7_LOGIN_ACK_FAIL		0x06
 #define	PRE_TDS7_LOGIN_ACK_NEGOTIATE	0x07
 
-// What the login ack reports as the server program, for pre-tds7 clients.
+// what the login ack reports as the server program, for pre-tds7 clients.
 // ct-lib decides sybase-vs-mssql from the product version's high bit, so
 // keep it clear, and report a modern ase - 16.0.0 here - since older
 // versions send ct-lib down compatibility paths this module doesn't
@@ -578,7 +579,7 @@
 #define TDS_NONUNICODE_CHARSET	"CP1252//TRANSLIT"
 #define TDS_BACKEND_CHARSET	"UTF-8"
 
-// The charsets a pre-tds7 client is allowed to name in its login record,
+// the charsets a pre-tds7 client is allowed to name in its login record,
 // and the iconv encodings each one maps to.  "outenc" is "inenc" with
 // //TRANSLIT, so that a character the client's charset has no form for
 // comes out as a substitute rather than failing the whole conversion,
@@ -721,7 +722,7 @@ static const pretds7charset	pretds7charsets[]={
 #define TDS_TYPE_TVP			0xF3	// Table Valued Parameter
 						// (introduced in TDS 7.3)
 
-// Tds 5.0 data types - the full set from the tds 5.0 datatype summary,
+// tds 5.0 data types - the full set from the tds 5.0 datatype summary,
 // whether or not anything sends one yet.
 //
 // A separate block from the TDS_TYPE_* values above, rather than more
@@ -782,7 +783,7 @@ static const pretds7charset	pretds7charsets[]={
 #define	TDS5_TYPE_INT8			0xBF	// Integer
 #define	TDS5_TYPE_LONGBINARY		0xE1	// Binary (4 byte length)
 
-// Tds 5.0 rowfmt column flags.  One byte, and not the 16-bit map that
+// tds 5.0 rowfmt column flags.  One byte, and not the 16-bit map that
 // colFlags() writes - there's no case-sensitivity bit, no 2-bit
 // updateable field, and nullable sits somewhere else.
 #define	TDS5_COLFLAG_HIDDEN		0x01
@@ -791,7 +792,7 @@ static const pretds7charset	pretds7charsets[]={
 #define	TDS5_COLFLAG_NULLABLE		0x20
 #define	TDS5_COLFLAG_IDENTITY		0x40
 
-// Tds 5.0 paramfmt parameter status.  One byte in a paramfmt (0xEC) and
+// tds 5.0 paramfmt parameter status.  One byte in a paramfmt (0xEC) and
 // four in a paramfmt2 (0x20), but the same bits either way.
 //
 // Not the same namespace as the rowfmt column flags above, even though
@@ -804,7 +805,7 @@ static const pretds7charset	pretds7charsets[]={
 #define	TDS5_PARAM_COLUMNSTATUS		0x08
 #define	TDS5_PARAM_NULLALLOWED		0x20
 
-// Tds 5.0 done transaction states - the second uint16 of a done, which
+// tds 5.0 done transaction states - the second uint16 of a done, which
 // is CurCmd in ms-tds.  The values are ct-lib's CS_TRAN_* (cspublic.h),
 // and ct_res_info(CS_TRANS_STATE) is what surfaces them.  The whole set
 // is here for the reader's sake, though transState() only ever sends
@@ -1217,7 +1218,7 @@ static byte_t	tdstypemap[]={
 	(byte_t)TDS_TYPE_BIGVARCHR
 };
 
-// The tds 5.0 counterpart of tdstypemap[] - the same length, and the same
+// the tds 5.0 counterpart of tdstypemap[] - the same length, and the same
 // *_DATATYPE index order, but carrying tds 5.0 datatypes.
 //
 // It deliberately deviates from what a real ase sends for the same column
@@ -1675,7 +1676,7 @@ typedef char	pretds7typemapsizecheck[
 // how many bytes a guid occupies on the wire
 #define TDS_GUID_SIZE		16
 
-// A USHORTMAXLEN of 0xFFFF in a bigvarchr/bigvarbin/nvarchar TYPE_INFO isn't
+// a USHORTMAXLEN of 0xFFFF in a bigvarchr/bigvarbin/nvarchar TYPE_INFO isn't
 // a length at all - it's varchar(max)/varbinary(max)/nvarchar(max), and it
 // means the value that follows is partially length prefixed (MS-TDS 2.2.5.2.3)
 // rather than prefixed with one plain length.
@@ -1811,7 +1812,7 @@ class tdsrow {
 		uint64_t	*sizes;
 };
 
-// One parameter's format, as a tds 5.0 paramfmt declared it.  A params
+// one parameter's format, as a tds 5.0 paramfmt declared it.  A params
 // token carries no lengths of its own, so the whole set has to be kept
 // between the two tokens and replayed to size each value.  The same
 // shape drives the writers, so a paramfmt/params pair going out is
@@ -1837,7 +1838,7 @@ class tds5paramfmt {
 		byte_t		scale;
 };
 
-// One tds 5.0 cursor.  A curdeclare names it and carries the statement,
+// one tds 5.0 cursor.  A curdeclare names it and carries the statement,
 // a curinfo says how many rows a fetch delivers, a curopen runs the
 // statement, and curfetch/curclose work on what the open produced - so
 // what each token needs has to outlive the token before it.
