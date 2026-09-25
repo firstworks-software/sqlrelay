@@ -13106,14 +13106,14 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// decoded byte for byte against a real oci7 9i client's O3LOGON
 	// sqlplus session parsing its own third bootstrap statement, "SELECT
 	// NULL FROM DUAL FOR UPDATE NOWAIT" - the TTI_QUERY3 piggybacked
-	// behind packet [0024]'s TTI_SWITCH_SESSION in the capture attached
-	// to #9793.  an earlier version of this field list called
+	// behind packet [0024]'s TTI_SWITCH_SESSION in that capture.
+	// an earlier version of this field list called
 	// getPointer() four more times and readLenPreInt() into "unused"
 	// four more times between definecount and the query text.  in that
 	// capture, the first of those eight extra calls (a readLenPreInt())
 	// landed on the query text's own length byte (0x28 = 40) and failed
 	// immediately, since 40 is too large for readLenPreInt()'s 4-byte
-	// value cap - this ticket's "truncated query3 request" and ORA-03114.
+	// value cap - producing "truncated query3 request" and ORA-03114.
 	// a shorter query would have failed silently instead: getPointer()
 	// has no presence flag, so those eight calls only fail loudly when
 	// they happen to land on a byte too large to be mistaken for one of
@@ -13137,9 +13137,9 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// length byte in front of it - ojdbc's own shape.  the zero-skip
 	// loop below, run on its own against this same capture, stops two
 	// bytes early on the "1" inside this trailer and misreads the query
-	// text from there - the same over-read-by-a-different-name bug as
-	// #9817's, just triggered by a real client this time instead of the
-	// raw-socket test client
+	// text from there - the same over-read-by-a-different-name bug
+	// already fixed for the raw-socket test client, just triggered by
+	// a real client this time
 	//
 	// the fixed-field count itself is confirmed only against a 10.2
 	// backend's negotiated field version - a newer one (see
@@ -13198,9 +13198,9 @@ bool sqlrprotocol_oracle::getQuery3Request(const byte_t *rp,
 	// a registration id and three more pointer/length pairs here that an
 	// oci7 native-encoding (pointersize=4) client's doesn't - see the
 	// capture cited above.  restore these reads for that encoding only:
-	// reading them unconditionally is what over-read into the query text
-	// for a real oci7 client and #9817 fixed.  the raw-socket test
-	// client in test/protocol/oracle/oracleprotocolclient.cpp writes
+	// reading them unconditionally over-read into the query text for a
+	// real oci7 client.  the raw-socket test client in
+	// test/protocol/oracle/oracleprotocolclient.cpp writes
 	// this same shape (it negotiates no representation for the pointer
 	// datatype, which leaves pointersize at its universal default)
 	if (pointersize==POINTER_SIZE_UNIVERSAL &&
