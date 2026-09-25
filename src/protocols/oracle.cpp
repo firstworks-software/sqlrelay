@@ -5956,16 +5956,16 @@ bool sqlrprotocol_oracle::recvDataTypeRequest() {
 	// - so the flags have to be read, never predicted
 	read(rp,&encodingflags,&rp);
 
-	// Without ENCODING_CONV_LENGTH, a 9i client sends the text in its
+	// without ENCODING_CONV_LENGTH, a 9i client sends the text in its
 	// login, osql7, oparsex and query calls as raw bytes with exact sizes,
 	// and reads the challenge key, the version banner and describe's
-	// column names the same way.  With it, each is a clr and each size it
+	// column names the same way.  with it, each is a clr and each size it
 	// declares is a buffer size, up to 3x the real length when it
-	// converts into AL32UTF8.  See the 10273-redhat9x86-oci7-strfetch-
+	// converts into AL32UTF8.  see the 10273-redhat9x86-oci7-strfetch-
 	// al32utf8-realserver-r1 (raw) and strfetch-we8iso8859p1-realserver-
 	// r4 (clrs, 3x) captures in test/protocol/oracle/samples/.
 	//
-	// The 9i term keeps modern clients out of it.  They share the version
+	// the 9i term keeps modern clients out of it.  they share the version
 	// call, and ojdbc sends ENCODING_MULTI_BYTE alone but still reads the
 	// banner as a dalc.
 	rawtextargs=(verifiertype==VERIFIER_TYPE_9I &&
@@ -6990,14 +6990,13 @@ void sqlrprotocol_oracle::resetLoginAttempt() {
 	classiclogon=false;
 }
 
-// reads a text
-// see "Oracle Wire Protocol - Data Types"
 bool sqlrprotocol_oracle::getLenString(const byte_t *rp,
 					const byte_t *end,
 					char **string,
 					uint32_t *size,
 					const byte_t **rpout) {
 
+	// see the "Oracle Wire Protocol - Data Types" wiki page
 	*string=NULL;
 	*size=0;
 
