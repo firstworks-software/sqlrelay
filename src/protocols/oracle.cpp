@@ -10848,21 +10848,21 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	const byte_t	*end=resppacket+resppacketsize;
 
 	// used to be read as three raw big-endian ub2s (options, moreoptions
-	// and the cursor id) - the same shape query2() carried before #9656,
-	// and wrong for the same reason: it lands on the right bytes only by
+	// and the cursor id) - the same shape query2() used to carry, and
+	// wrong for the same reason: it lands on the right bytes only by
 	// coincidence, if at all, and never in the portable encoding every
 	// capture of this call on file is in.  which encoding a session ends
 	// up in follows from the client's pointer representation, negotiated
 	// in recvDataTypeRequest(), not from SERVER_BANNER.  decoded byte for
 	// byte instead against a real oci7 9i client's o3logon sqlplus
 	// session parsing its own post-login bootstrap query "select user
-	// from dual" - packet [0019] of the capture attached to #9793 - the
+	// from dual" - packet [0019] of that session's capture - the
 	// cursor id is a count, a length-prefixed int in this module's
 	// portable encoding, sitting right behind the one-byte sequence
 	// number with no options field between them.  reading the old shape
-	// instead handed cursorFromWireId() garbage, which is this ticket's
-	// ORA-01001 and, on the classic-login path that reaches this same
-	// code, #9805's "cursor id 46604 not found"
+	// instead handed cursorFromWireId() garbage, producing ORA-01001
+	// and, on the classic-login path that reaches this same code, a
+	// "cursor id 46604 not found" error
 	byte_t		seqnumber=0;
 	uint32_t	cursorid=0;
 
@@ -10872,10 +10872,9 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	// getPointer() has no presence flag - it always consumes a fixed
 	// pointersize bytes - so calling it more than once here (an earlier
 	// version of this fix called it five times, guessing five one-byte
-	// pointers) silently eats into the query text instead of failing:
-	// see comment 5 on #9793, where that version's own consistency check
-	// caught it ("query size 82 doesn't match repeated size 79") against
-	// this same capture
+	// pointers) silently eats into the query text instead of failing,
+	// which showed up as a consistency check catching "query size 82
+	// doesn't match repeated size 79" against this same capture
 	uint32_t	unknown1=0;
 
 	if (!have(rp,1,&end)) {
@@ -10889,7 +10888,7 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 	callnumber=seqnumber;
 
 	// The query size is a count, and the text behind it includes its own
-	// trailing nul.  The #9793 capture's "01 16 16" ahead of the 21-byte
+	// trailing nul.  That capture's "01 16 16" ahead of the 21-byte
 	// "select user from dual" is the count 0x16 and then the text's clr
 	// length byte, which agree there.  But the count is a buffer size for
 	// a converting client, the same as osql7()'s: 9i sqlplus declares
@@ -11010,7 +11009,7 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 	// sendOsql7Response().  the canned TTC_ERROR blob this used to send
 	// unconditionally, regardless of whether the parse actually
 	// succeeded, is what put "ORA-01001: invalid cursor" in front of
-	// every client that ever reached this call - see #9793
+	// every client that ever reached this call
 	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
 		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,0);
@@ -11045,15 +11044,15 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 	// "moreoptions" and the cursor id - which is the shape the wiki
 	// page's own table records.  that read lands on the right bytes only
 	// in the native encoding, and even there only by coincidence: the
-	// sequence byte and the options' low byte fall into the first ub2
-	// (the aliasing #9656 tracked down), the options' upper bytes into
-	// the second, and the cursor id's low byte into the third.  in the
-	// portable encoding every field lands a byte short.  a real oci7
-	// client sends "07 | 02 80 30 | 01 01" there - sequence 7, an lpi
-	// options of 0x8030, an lpi cursor id of 1 - and reading that as raw
-	// ub2s gives options 0x0702, moreoptions 0x8030 and cursor id 257,
-	// so the cursor lookup fails with ORA-01001 and the client cancels
-	// (#9658).  reading the options out of the wrong field costs the call
+	// sequence byte and the options' low byte fall into the first ub2,
+	// the options' upper bytes into the second, and the cursor id's low
+	// byte into the third.  in the portable encoding every field lands a
+	// byte short.  a real oci7 client sends "07 | 02 80 30 | 01 01"
+	// there - sequence 7, an lpi options of 0x8030, an lpi cursor id of
+	// 1 - and reading that as raw ub2s gives options 0x0702, moreoptions
+	// 0x8030 and cursor id 257, so the cursor lookup fails with
+	// ORA-01001 and the client cancels.  reading the options out of the
+	// wrong field costs the call
 	// even when the cursor is found: the real 0x8030 is DEFINE, EXECUTE
 	// and NOPLSQL, and 0x0702 has none of those bits, so nothing would
 	// execute.
@@ -11160,7 +11159,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// where it ends, so there is no way back to the front of the
 		// client's next request.  the error goes out first, so the
 		// call this request was ends in an error the client can read
-		// rather than in a socket that closed under it (#10069)
+		// rather than in a socket that closed under it
 		if (!getQuery2Descriptors(rp,end,options,cursor)) {
 			sendOci7StatementError(wireCursorId(cursor),
 					ORA_MALFORMED_TTC_PACKET,
@@ -11252,7 +11251,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
 	// the binds a real oci7 client sends ride INLINE in this same request,
 	// behind the define descriptors, and getQuery2Descriptors() above has
-	// already read them.  five real captures taken for #9700 - a 9.2.0.4.0
+	// already read them.  five real captures - a 9.2.0.4.0
 	// client against this module, at one, two and three binds, with and
 	// without defines, and with nulls - show the client sending everything
 	// in one packet and then waiting.
@@ -11268,7 +11267,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		clearParams(cursor);
 
 		// a bind block with no values behind it is a pl/sql block's -
-		// #9700's out and inout captures are byte-identical to each
+		// the out and inout captures are byte-identical to each
 		// other and both stop on the last byte of their one bind
 		// descriptor, sending no value at all, not even the in half
 		// of an in-out.  both set OPTION_SNDIOV, so the client is
@@ -11330,15 +11329,14 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// a TTI_DESCRIBE landing between this execute and the client's
 		// first fetch found both of describe()'s guard flags still
 		// false and re-ran the statement, rewinding the result set
-		// (#9973)
 		cacheColumnDefinitions(cursor,cont->colCount(cursor));
 	}
 
-	// OPTION_COMMIT (bit 8) is not read here.  #9656 proved bits 8 and up
-	// of this field are a per-call sequence counter, not independent
-	// flags - every real explicit commit seen in any capture arrives as
+	// OPTION_COMMIT (bit 8) is not read here.  bits 8 and up of this
+	// field are a per-call sequence counter, not independent flags -
+	// every real explicit commit seen in any capture arrives as
 	// its own separate TTI_COMMIT call, never through this bit, and
-	// commit-fetch-3 (#9656 comment 2) shows this bit set on a plain
+	// commit-fetch-3 shows this bit set on a plain
 	// execute that has no commit due for another three calls yet, purely
 	// because the call count happened to be odd at that point.  trusting
 	// it would fire an unintended commit() (or skip a real one) depending
@@ -11355,9 +11353,9 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		// a row header and row data directly, the same shape a
 		// separate legacy TTI_FETCH gets from sendFetchResponse() -
 		// confirmed byte-for-byte against real OCI7 legacy-exfet
-		// captures (#9637) for 1 through 5 columns, and again, at
-		// different call-sequence positions, against the shifted-exfet-3
-		// captures (#9656 comment 2).
+		// captures for 1 through 5 columns, and again, at different
+		// call-sequence positions, against the shifted-exfet-3
+		// captures.
 
 		// OPTION_DEFINE is set on every exact-fetch capture, but the
 		// response never carries a column-definition block - the
@@ -11367,11 +11365,11 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 
 		// exactfetch is NOT read from the options bitfield here -
 		// bits 8 and up of this field are a per-call sequence
-		// counter, not independent flags (#9656: shifted-exfet-3's
+		// counter, not independent flags - shifted-exfet-3's
 		// two identical exact-fetch calls land at different
 		// call-sequence positions and their options high bytes differ
 		// accordingly, even though nothing about the call itself
-		// changed).  a query2 with OPTION_FETCH set is exactly the
+		// changed.  a query2 with OPTION_FETCH set is exactly the
 		// exact-fetch case in every capture on file, so exactfetch is
 		// hardcoded true.
 		//
@@ -11383,7 +11381,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 		//
 		// fetch()'s standalone legacy TTI_FETCH call shares this same
 		// 0 sentinel, even though its count is always real rather than
-		// unread - see #10066
+		// unread
 		return sendFetchResponse(cursor,true,query2rowcount);
 	}
 
@@ -11403,7 +11401,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 // 9810-redhat9x86-native-midfetch-defines1-realserver.oraproxy and
 // -defines3-realserver.oraproxy.  sending the rest overruns the buffers the
 // client set up for the ones it did ask for, which is what segfaults a real
-// oci7 client mid-fetch (#9810)
+// oci7 client mid-fetch
 //
 // the block runs to the end of the request: ten fields, the number of
 // positions the define list names, nine more fields, then one descriptor per
@@ -11442,7 +11440,7 @@ bool sqlrprotocol_oracle::query2(const byte_t *rp) {
 // request, so whatever is left of it is still on the socket - packets behind
 // this one, with nothing on the wire to say where they end.  query2() answers
 // that by ending the session rather than reading the leftovers as the front
-// of the client's next request (#10069)
+// of the client's next request
 bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 						const byte_t *end,
 						uint32_t options,
@@ -11454,8 +11452,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// cursor's define list.  a re-executed select sends its new bind
 	// values with OPTION_BIND alone and no defines - its old list still
 	// stands, and clearing it here would put that cursor back to sending
-	// every column, which is the shape that segfaulted a real client in
-	// #9810
+	// every column, which is the shape that segfaulted a real client
 	bool	hasdefines=((options&OPTION_DEFINE)>0);
 
 	if (hasdefines) {
@@ -11468,8 +11465,8 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// leading byte and a tail whose counts aren't all one width - so the
 	// walk below, which is four raw bytes and eight counts, doesn't fit
 	// it.  that costs nothing: every query2 capture on file negotiates
-	// the portable encoding on this path (#9812, and #10068's fresh
-	// sweep confirmed the same).  a legacy 32-bit client that
+	// the portable encoding on this path, and a fresh sweep confirmed
+	// the same.  a legacy 32-bit client that
 	// negotiated native encoding could in principle reach here, but
 	// every native-encoding login on file takes the separate 9i/classic
 	// dispatch instead, which never runs this code - so whether that
@@ -11505,13 +11502,13 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// ten fields ahead of the define count, and one pointer behind it -
 	// the client's address of its own define array, opaque, and it moves
 	// from cursor to cursor.  it reads 0 in a request that defines
-	// nothing, which the #9700 insert capture confirms.
+	// nothing, which the insert capture confirms.
 	//
 	// then eight counts, of which the FIRST is the bind count.  that one
 	// used to go into unused with the other seven; it is what makes the
 	// bind block readable at all.  the pointer immediately ahead of it is
 	// the client's address of its own bind array, and it is identical
-	// across all three #9700 captures where the define pointer is not,
+	// across all three captures where the define pointer is not,
 	// which is the corroboration that the two are a matched pair
 	if (!getPointer(rp,end,&unused,&rp) ||
 		!getPointer(rp,end,&unused,&rp) ||
@@ -11585,7 +11582,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// packets behind this one where the block runs past the first and
 	// throwing away everything it reads: dropping the count without
 	// walking the block leaves those packets for the next request's parse
-	// to read as a request of its own (#10084).
+	// to read as a request of its own.
 	//
 	// that trusts the count over the flag, which is a bet rather than a
 	// certainty.  the disagreement could as easily mean the count itself
@@ -11654,7 +11651,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// refusal costs at a small sdu, where the block runs past the first
 	// packet: returning here would leave the packets behind this one
 	// unread, for the next request's parse to find and read as a request
-	// of its own (#10069)
+	// of its own
 	bool	discard=false;
 	if (bindcount>maxbindcount) {
 		debugWrite("bind count exceeds maxbindcount %d",maxbindcount);
@@ -11827,7 +11824,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// bind values with.  each value is a length-prefixed run of bytes,
 	// in bind order.
 	//
-	// a pl/sql block sends no values at all: #9700's out and inout
+	// a pl/sql block sends no values at all: the out and inout
 	// captures are byte-identical to each other and both stop dead on
 	// the last byte of their one bind descriptor, even though the inout
 	// case has an initial value of 21 to pass in.  both set OPTION_SNDIOV
@@ -11871,7 +11868,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// the descriptor block is the last thing in the request, so a walk
 	// that lands anywhere else read something wrong.  drop what it read
 	// and go back to sending every column rather than shape a row from a
-	// bad read.  that restores the pre-#9810 behavior for this one
+	// bad read.  that restores the original behavior for this one
 	// request, segfault included if the client really did define a
 	// subset - it is not a safe answer, it is the old answer, chosen
 	// because a row shaped from a misread define block would desync the
@@ -11879,8 +11876,8 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 	// today.
 	//
 	// this check is what used to fire on every bind-carrying request,
-	// before #9700 pinned the bind block: the leftover bytes it counted
-	// were the bind descriptors and values this call now walks. the
+	// before the bind block was parsed here: the leftover bytes it
+	// counted were the bind descriptors and values this call now walks. the
 	// module was reporting the block's existence in its own debug log
 	// the whole time
 	end=resppacket+resppacketsize;
@@ -11922,7 +11919,7 @@ bool sqlrprotocol_oracle::getQuery2Descriptors(const byte_t *rp,
 // one descriptor out of a query2 request - four raw bytes, the wire
 // datatype, a flag, a precision and a scale, then eight counts of which the
 // first is the client's buffer size and the sixth the character set.  a
-// define and a bind descriptor are byte-identical in shape, which the #9700
+// define and a bind descriptor are byte-identical in shape, which real
 // captures confirm at three bind counts, so both walks share this
 bool sqlrprotocol_oracle::getQuery2Descriptor(const byte_t *rp,
 						const byte_t *end,
