@@ -5067,7 +5067,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// the whole request, in bytes
 	size_t		rpsize=reqpacket.getSize();
 
-	// Unlike login7, this record has no offset/length table - every field
+	// unlike login7, this record has no offset/length table - every field
 	// is at a fixed offset and the whole record is read straight through
 	// below, so all of it has to be there.
 	if (rpsize<PRE_TDS7_LOGIN_SIZE) {
@@ -5140,7 +5140,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 	readPreTds7Field(rp,hostproc,PRE_TDS7_NAME_SIZE,&hostproclen,&rp);
 	read(rp,typeflags,sizeof(typeflags),&rp);
 
-	// Typeflags is where the client declares its byte order for 2-byte
+	// typeflags is where the client declares its byte order for 2-byte
 	// ints, 4-byte ints, floats and datetimes.  The declaration covers
 	// the rest of this record as much as it covers the token stream
 	// after it, so decode it and set the order here, mid-parse, rather
@@ -5189,13 +5189,13 @@ bool sqlrprotocol_tds::preTds7Login() {
 				charstring::convertToUnsignedInteger(
 								packetsizestr);
 
-	// The client's tds version arrives twice - as the 4 bytes read above,
+	// the client's tds version arrives twice - as the 4 bytes read above,
 	// and as the size of the record itself (572 for 4.2, 568 for 5.0).
 	// Go with the 4 bytes; tdsVersionHexToDec() knows both 0x05000000
 	// (5.0) and 0x04020000 (4.2).
 	clienttdsversion=tdsVersionHexToDec(tdsversion);
 
-	// A capability token may follow the record.  What it declares is
+	// a capability token may follow the record.  What it declares is
 	// kept for the whole session, in clientrequestmask/
 	// clientresponsemask, because capability() answers with the
 	// intersection of it and what this module supports, and because
@@ -5326,7 +5326,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 		debugEnd();
 	}
 
-	// Tds 5.0 is the only pre-tds7 dialect this module implements.  A
+	// tds 5.0 is the only pre-tds7 dialect this module implements.  A
 	// client that declares an older one (4.2, say) lays the rest of the
 	// session out differently - starting with the login ack, where 4.2
 	// spells success as 1 rather than as 5 - so answering it as though
@@ -5342,14 +5342,14 @@ bool sqlrprotocol_tds::preTds7Login() {
 		debugWrite("unsupported pre-tds7 version: 0x%08x (%d)",
 					tdsversion,clienttdsversion);
 		debugEnd();
-		// The login is refused whether or not the error makes it
+		// the login is refused whether or not the error makes it
 		// out, so the send result isn't the return value here, the
 		// same as the tls-required refusal above.
 		sendPreTds7VersionUnsupportedError();
 		return false;
 	}
 
-	// A client whose typeflags block declared more than one byte order
+	// a client whose typeflags block declared more than one byte order
 	// is refused for the same reason an unsupported version is:
 	// answering it anyway hands it a response it can't parse.  See
 	// preTds7ByteOrder() for what the decode does and doesn't refuse.
@@ -5358,7 +5358,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 		return false;
 	}
 
-	// Apply the record's charset and language fields.  This runs before
+	// apply the record's charset and language fields.  This runs before
 	// anything below can send character data back - an auth error, say -
 	// because the charset decides how that data is encoded.  The
 	// envchanges that answer both fields go out further down, once the
@@ -5370,7 +5370,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// negotiate tds version
 	negotiateTdsVersion();
 
-	// A client that asks for password encryption sets a seclogin bit and
+	// a client that asks for password encryption sets a seclogin bit and
 	// sends empty password fields, then waits for the server to drive
 	// the exchange that hands the password over enciphered instead.
 	// Nothing below this point can tell the difference: the exchange
@@ -5407,7 +5407,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 
 		loginAck(PRE_TDS7_LOGIN_ACK_SUCCEED);
 
-		// A client that sent a capability token rejects the whole
+		// a client that sent a capability token rejects the whole
 		// login response unless one comes back, so unlike the
 		// envchanges a real ase also sends, this isn't optional.
 		if (clientcapabilities) {
@@ -5417,7 +5417,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 	} else {
 		authError(username);
 
-		// Unlike tds 7.x, where a failed login gets an error token
+		// unlike tds 7.x, where a failed login gets an error token
 		// and nothing else, a real ase answers a failed pre-tds7
 		// login with a login ack too, carrying the "failed" byte.
 		loginAck(PRE_TDS7_LOGIN_ACK_FAIL);
@@ -5429,7 +5429,7 @@ bool sqlrprotocol_tds::preTds7Login() {
 	// encrypted login went to some trouble to keep it off the wire
 	bytestring::zero(password,sizeof(password));
 
-	// The envchanges that answer the login.  A real ase sends a database
+	// the envchanges that answer the login.  A real ase sends a database
 	// envchange along with these, but there's nothing here to source one
 	// from: a pre-tds7 login record has no database field at all - a tds
 	// 5.0 client picks its database with a "use" command after the login
@@ -5474,7 +5474,7 @@ void sqlrprotocol_tds::preTds7SetCharsetAndLanguage(const char *charset,
 	clientcharset[charsetlen]='\0';
 	clientcharsetlen=charsetlen;
 
-	// An empty charset isn't an error and isn't a name to look up.
+	// an empty charset isn't an error and isn't a name to look up.
 	// Freetds sends one on purpose - its login.c says "use empty charset
 	// to handle conversions on client" - so the bytes it sends are
 	// already in whatever encoding it wants them in, and this module
@@ -5513,7 +5513,7 @@ void sqlrprotocol_tds::preTds7SetCharsetAndLanguage(const char *charset,
 
 void sqlrprotocol_tds::envChangeCharset() {
 
-	// A client that named no charset gets no answer.  Freetds names
+	// a client that named no charset gets no answer.  Freetds names
 	// none on purpose, so telling it what the session settled on would
 	// be answering a question it never asked.  This is not gated on
 	// whether the name was recognized: an unrecognized name leaves the
@@ -5527,7 +5527,7 @@ void sqlrprotocol_tds::envChangeCharset() {
 	debugWrite("charset: %s",clientcharset);
 	debugEnd();
 
-	// The name goes back exactly as it arrived, with no conversion:
+	// the name goes back exactly as it arrived, with no conversion:
 	// clientcharset holds the client's own bytes, and writeVarchar()
 	// narrows each wchar back to the byte it was widened from.  The
 	// language envchange below and the packet size one after it are the
@@ -5538,7 +5538,7 @@ void sqlrprotocol_tds::envChangeCharset() {
 
 	envChange(ENV_CHANGE_CHARSET,
 			charset32,clientcharsetlen,
-			// This module has no charset of its own to name as
+			// this module has no charset of its own to name as
 			// the old one - it speaks utf-8 internally whatever
 			// the client declared - so the new value stands in,
 			// the way a language envchange echoes its new value
@@ -5575,7 +5575,7 @@ void sqlrprotocol_tds::preTds7ChangeLanguage() {
 				// the same gap.
 				language32,clientlanguagelen);
 
-		// Suppresslanguage is the client saying "don't send me the
+		// suppresslanguage is the client saying "don't send me the
 		// language-change message", and that message is all it
 		// means - the envchange above still goes out.  A tds7 login
 		// record has no equivalent flag, so this is the one place
@@ -5586,7 +5586,7 @@ void sqlrprotocol_tds::preTds7ChangeLanguage() {
 
 	} else {
 
-		// A pre-tds7 login record carries no option flags, so
+		// a pre-tds7 login record carries no option flags, so
 		// there's nothing in it saying whether a refused language
 		// should be fatal the way fsetlangfatal does on the tds7
 		// path.  Warn and carry on rather than failing a login the
@@ -5635,7 +5635,7 @@ void sqlrprotocol_tds::buildCapabilityMask(byte_t *mask,
 		setCapabilityBit(mask,masklen,caps[i],true);
 	}
 
-	// A real ase never answers with a bit the client didn't ask for,
+	// a real ase never answers with a bit the client didn't ask for,
 	// and neither does this.  The intersection can only clear bits, so
 	// nothing this module doesn't support can survive it either.
 	for (byte_t i=0; i<masklen; i++) {
@@ -5661,27 +5661,29 @@ bool sqlrprotocol_tds::clientRequestedResponseCapability(uint16_t cap) {
 					clientresponsemasklen,cap);
 }
 
-// Answers the login's capability token.
-//
-// A real ase answers with what the client asked for and it supports -
-// never with a bit the client didn't ask for - so that's what this does:
-// the tables below say what this module supports, and each one is
-// intersected with the mask the client declared.  Anything else invites
-// the client to send something that gets refused, or promises the client
-// something that gets sent anyway.
-//
-// The numbers are the TDS5_CAP_* constants at the top of this file, whose
-// note explains the numbering.  A capability this module doesn't support
-// is simply absent here, which leaves its bit clear under either
-// numbering scheme.
 void sqlrprotocol_tds::capability() {
+
+	// answers the login's capability token.
+	//
+	// A real ase answers with what the client asked for and it supports -
+	// never with a bit the client didn't ask for - so that's what this
+	// does: the tables below say what this module supports, and each
+	// one is intersected with the mask the client declared.  Anything
+	// else invites the client to send something that gets refused, or
+	// promises the client something that gets sent anyway.
+	//
+	// The numbers are the TDS5_CAP_* constants at the top of this file,
+	// whose note explains the numbering.  A capability this module
+	// doesn't support is simply absent here, which leaves its bit clear
+	// under either numbering scheme.
 
 	byte_t	token=TOKEN_CAPABILITY;
 
-	// What this module can be asked to do.
+	// what this module can be asked to do.
 	//
 	// Deliberately absent:
-	// * bcp (5) and dol bulk (53) - #9480 implements bulk copy
+	// * dol bulk (53) - bulkLoad() refuses a pre-tds7 session outright,
+	//   so this dialect never reaches a bulk load to apply it to
 	// * the positioning bits (33-37: CSR_PREV/FIRST/LAST/ABS/REL) - the
 	//   backend cursor implementation is forward-only (cursorFetch()
 	//   only ever calls skipRows() forward), so none of these can be
@@ -5748,7 +5750,7 @@ void sqlrprotocol_tds::capability() {
 		TDS5_CAP_REQ_SRVPKTSIZE
 	};
 
-	// What this module promises not to send.  A bit here means "don't
+	// what this module promises not to send.  A bit here means "don't
 	// send me this", so it's set for what never goes out.
 	//
 	// Deliberately absent are the NO<datatype> bits: an output
@@ -5826,23 +5828,25 @@ void sqlrprotocol_tds::capability() {
 	write(&resppacket,grantedresponsemask,(size_t)grantedresponsemasklen);
 }
 
-// Drives the tds 5.0 encrypted-password exchange and hands back the
-// cleartext password it recovers.
-//
-// The server opens it, in a normal buffer rather than a tabular result:
-// a login ack carrying NEGOTIATE, a msg token carrying SEC_ENCRYPT, and
-// a paramfmt/params pair carrying the 8-byte key the server chose.  The
-// client answers with SEC_LOGPWD, and with SEC_REMPWD as well when it
-// has a remote password - both msg tokens arrive in one buffer, each
-// with a paramfmt/params pair of its own.
-//
-// This runs inline rather than through the main loop, which rejects a
-// non-login packet before login.  Returns false, having sent its own
-// error, on anything the client got wrong or when the cipher isn't
-// available; the caller then fails the login rather than authenticating
-// with an empty password.
 bool sqlrprotocol_tds::preTds7SecEncryptLogin(char *password,
 						size_t passwordsize) {
+
+	// drives the tds 5.0 encrypted-password exchange and hands back the
+	// cleartext password it recovers.
+	//
+	// The server opens it, in a normal buffer rather than a tabular
+	// result: a login ack carrying NEGOTIATE, a msg token carrying
+	// SEC_ENCRYPT, and a paramfmt/params pair carrying the 8-byte key
+	// the server chose.  The client answers with SEC_LOGPWD, and with
+	// SEC_REMPWD as well when it has a remote password - both msg
+	// tokens arrive in one buffer, each with a paramfmt/params pair of
+	// its own.
+	//
+	// This runs inline rather than through the main loop, which rejects
+	// a non-login packet before login.  Returns false, having sent its
+	// own error, on anything the client got wrong or when the cipher
+	// isn't available; the caller then fails the login rather than
+	// authenticating with an empty password.
 
 	// The key.  Fresh per login: a fixed one would make the blob a
 	// constant function of the password, and one captured login
