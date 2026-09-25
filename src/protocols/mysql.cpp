@@ -1422,17 +1422,11 @@ bool sqlrprotocol_mysql::recvPacket() {
 			break;
 		}
 
-		// The memorypool that we're reading into above gets
-		// overwritten by each read.  Using a memorypool this way is
-		// fast, and minimizes heap fragmentation.
-		//
-		// However, if we have to do multiple reads, we don't end up
-		// with a contiguous buffer to just set reqpacket to.
-		//
-		// Since, presumably, having to do multiple reads is the rare
-		// case, rather than rework everything above to use some other
-		// method than results in reading directly into a contiguous 
-		// buffer, we'll just concatenate to a second buffer here.
+		// the memorypool above gets overwritten by each read, so
+		// multiple reads don't end up in one contiguous buffer for
+		// reqpacket to point at. that's the rare case, so rather than
+		// rework everything above to read straight into a contiguous
+		// buffer, just concatenate into a second buffer here
 		longreqpacketbuffer.append(reqpacket,localreqpacketsize);
 	}
 
@@ -1576,10 +1570,9 @@ void sqlrprotocol_mysql::buildHandshake10() {
 	writeLE(&resppacket,lowservercapabilityflags);
 	write(&resppacket,servercharacterset);
 	writeLE(&resppacket,statusflags);
-	// Old enough versions of the mariadb jdbc driver (eg. 1.4.6) don't
-	// properly process the server capabilities and crash soon after.
-	// Sending all 1's for the high-order bits of the flags appears to
-	// solve the problem.
+	// old versions of the mariadb jdbc driver (eg. 1.4.6) don't process
+	// the server capabilities correctly and crash soon after - sending
+	// all 1's for the high-order bits of the flags works around it
 	if (oldmariadbjdbcservercapabilitieshack) {
 		writeLE(&resppacket,(uint16_t)0xFFFF);
 	} else {
@@ -1680,16 +1673,12 @@ bool sqlrprotocol_mysql::parseHandshakeResponse41(
 
 	// handle tls
 	if (clientcapabilityflags&CLIENT_SSL) {
-		// If the client supports TLS then it will include the
-		// CLIENT_SSL flag, terminate the packet here, perform a TLS
-		// handshake, and resend the full packet.
-		//
-		// We can distinguish between the first or second iteration by
-		// seeing if the packet is terminated here or not.  If it is
-		// then we're in the first iteration, and need to establish
-		// the TLS session.  If it's not then we're in the second
-		// iteration and we need to fall through and process the
-		// rest of the packet.
+		// if the client supports tls it includes the CLIENT_SSL flag,
+		// terminates the packet here, and resends the full packet
+		// after the tls handshake - tell first pass from second by
+		// whether the packet ends here: if so, establish the tls
+		// session; if not, fall through and process the rest of the
+		// packet
 		if (rp==end) {
 			return handleTlsRequest();
 		}
@@ -1894,16 +1883,12 @@ bool sqlrprotocol_mysql::parseHandshakeResponse320(
 
 	// handle tls
 	if (clientcapabilityflags&CLIENT_SSL) {
-		// If the client supports TLS then it will include the
-		// CLIENT_SSL flag, terminate the packet here, perform a TLS
-		// handshake, and resend the full packet.
-		//
-		// We can distinguish between the first or second iteration by
-		// seeing if the packet is terminated here or not.  If it is
-		// then we're in the first iteration, and need to establish
-		// the TLS session.  If it's not then we're in the second
-		// iteration and we need to fall through and process the
-		// rest of the packet.
+		// if the client supports tls it includes the CLIENT_SSL flag,
+		// terminates the packet here, and resends the full packet
+		// after the tls handshake - tell first pass from second by
+		// whether the packet ends here: if so, establish the tls
+		// session; if not, fall through and process the rest of the
+		// packet
 		if (rp==end) {
 			return handleTlsRequest();
 		}
@@ -1962,11 +1947,9 @@ bool sqlrprotocol_mysql::handleTlsRequest() {
 		err.append("SSL connection error: ");
 		err.append(getTlsContext()->getErrorString());
 		sendErrPacket(2026,err.getString(),err.getSize(),"HY000");
-		// FIXME: The clients that I've tested with don't report this
-		// error.  Instead they just keep trying to connect using a
-		// non-tls connection. I suspect that if the client had an
-		// --ssl-mode=required option (or similar) then it would fail
-		// here.
+		// FIXME: clients tested so far don't report this error - they
+		// just keep retrying without tls. an --ssl-mode=required-style
+		// client option would probably make the failure surface
 		return false;
 	}
 
@@ -2023,11 +2006,11 @@ bool sqlrprotocol_mysql::negotiateAuthMethod() {
 
 	// at this point, the client must support protocol 41...
 
-	// If the client does not support plugin auth, then it must support
-	// mysql_old_password and mysql_native_password.  If it didn't send a
-	// challenge response, then it didn't like the auth that we
-	// offered, which must have been mysql_native_password.  So, try
-	// switching to mysql_old_password using the "old auth switch"
+	// if the client doesn't support plugin auth, it must support
+	// mysql_old_password and mysql_native_password - if it didn't send a
+	// challenge response, it didn't like the auth we offered, which
+	// must have been mysql_native_password, so try switching to
+	// mysql_old_password using the old auth switch
 	if (!(clientcapabilityflags&CLIENT_PLUGIN_AUTH) &&
 		charstring::isNullOrEmpty(clientauthpluginname)) {
 
@@ -2222,8 +2205,8 @@ bool sqlrprotocol_mysql::authenticate() {
 	debugWrite("auth %s",(retval)?"success":"failed");
 	debugEnd();
 
-	// FIXME: there are apparently cases where an
-	// AuthMoreData packet should be sent here
+	// FIXME: there are apparently cases where an auth-more-data packet
+	// should be sent here
 
 	if (!retval) {
 		char	*peeraddr=clientsock->getPeerAddress();
@@ -2311,14 +2294,13 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 			clientcapabilityflags&CLIENT_TRANSACTIONS) {
 		writeLE(&resppacket,statusflags);
 	}
-	// The protocol docs say that the info field is only length-encoded if
-	// CLIENT_SESSION_TRACK was negotiated, and is a plain string running to
-	// the end of the packet otherwise.  No real implementation does that.
-	// Mysql and mariadb servers always write it length-encoded, and mysql,
-	// mariadb and mysqlnd clients always read it that way.  Writing it raw
-	// makes them consume its first character as a length byte and then
-	// reject the packet as malformed.  It's omitted entirely, rather than
-	// written as a zero length, when there's nothing to send.
+	// the protocol docs say the info field is length-encoded only when
+	// CLIENT_SESSION_TRACK was negotiated, and otherwise runs raw to
+	// the end of the packet - no real implementation does that. mysql,
+	// mariadb and mysqlnd always write and read it length-encoded;
+	// writing it raw makes them consume the first byte as a length and
+	// reject the packet as malformed. it's omitted entirely, not
+	// written as zero length, when there's nothing to send
 	bool	sessionstatechanged=
 			(servercapabilityflags&CLIENT_SESSION_TRACK &&
 			clientcapabilityflags&CLIENT_SESSION_TRACK &&
