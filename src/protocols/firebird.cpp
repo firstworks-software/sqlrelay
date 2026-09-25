@@ -6379,17 +6379,16 @@ bool sqlrprotocol_firebird::setCursor() {
 					FEATURE_SUPPORTS_SET_CURSOR_NAME],
 					"true"));
 
-	// A backend that names cursors only takes a name between the prepare
-	// and the open.  A name that arrives before the query runs is just
-	// stored above, and the backend applies it when it prepares or
-	// executes, but runPreparedQuery() pre-executes a select with no
-	// binds, to answer the prepare with the shape of the result set, so
-	// the backend's cursor may already be open by now - too late to name.
-	// Re-executing closes that result set and opens it again with the
-	// name applied.
+	// a backend that names cursors only takes the name between prepare
+	// and open. a name that arrives before the query runs is just stored
+	// above and applied when it prepares or executes, but
+	// runPreparedQuery() may already have pre-executed a no-bind select
+	// to answer the prepare with the result set's shape, opening the
+	// cursor too late to name - so re-execute here to close and reopen
+	// it with the name applied
 	// (only a select with no binds is ever pre-executed, so re-executing
-	// here can't repeat the side effects of a write, and the client has
-	// done nothing but prepare, so no fetched rows are lost either)
+	// can't repeat a write's side effects, and no rows have been fetched
+	// yet to lose)
 	if (stmt->preexecuted && backendcannameit &&
 			!charstring::isNullOrEmpty(cursorname)) {
 
@@ -6712,8 +6711,8 @@ bool sqlrprotocol_firebird::runPreparedQuery(bool execimmediate,
 	// on a cursor of its own, from a copy of the query with NULL in place
 	// of every bind
 	// (the client's own cursor is left alone, and executes the real query
-	// with the real binds later.  the intercept path prepareQuery() also
-	// returns early from needs no test of its own - it only ever takes
+	// with the real binds later. prepareQuery()'s own intercept path also
+	// returns early, but needs no test here - it only ever takes
 	// begin/commit/rollback/autocommit/set, never a select)
 	if (!execimmediate && !executed && stmt &&
 		(stmttype==isc_info_sql_stmt_select ||
