@@ -11139,34 +11139,36 @@ void sqlrprotocol_tds::colMetaData(sqlrservercursor *cursor, bool nometadata) {
 	debugEnd();
 }
 
-// The tds 5.0 counterpart of colMetaData(), and a sibling of it rather
-// than a branch inside it.  The token byte can't be shared - 0x81 is a
-// cursor-delete request in tds 5.0 - and nothing after it is laid out
-// the same way either: the length and column count come first, the
-// names are single-byte characters, the flags are one byte with
-// different bits, the usertype is always 4 bytes, and there's no
-// collation anywhere.
-//
-//	byte			0xEE
-//	uint16, little-endian	how much follows, counting the column
-//				count as well as the column blocks
-//	uint16, little-endian	column count
-//	then per column:
-//		byte		name length
-//		bytes		the name, as single-byte characters
-//		byte		flags
-//		int32, LE	usertype
-//		byte		datatype
-//		...		size/precision/scale, keyed off the
-//				datatype's varint class
-//		byte		locale length (then that many bytes)
-//
-// "more" says whether another command follows this one in the request
-// buffer, and only matters on the refusal paths - it decides whether
-// their done gets DONE_MORE, the way every other refusal in this module
-// does.  A refusal here doesn't stop the token walk, so a DONE_FINAL
-// would leave the dones of those later commands unread in the socket.
 bool sqlrprotocol_tds::preTds7RowFmt(sqlrservercursor *cursor, bool more) {
+
+	// The tds 5.0 counterpart of colMetaData(), and a sibling of it
+	// rather than a branch inside it.  The token byte can't be shared -
+	// 0x81 is a cursor-delete request in tds 5.0 - and nothing after it
+	// is laid out the same way either: the length and column count come
+	// first, the names are single-byte characters, the flags are one
+	// byte with different bits, the usertype is always 4 bytes, and
+	// there's no collation anywhere.
+	//
+	//	byte			0xEE
+	//	uint16, little-endian	how much follows, counting the column
+	//				count as well as the column blocks
+	//	uint16, little-endian	column count
+	//	then per column:
+	//		byte		name length
+	//		bytes		the name, as single-byte characters
+	//		byte		flags
+	//		int32, LE	usertype
+	//		byte		datatype
+	//		...		size/precision/scale, keyed off the
+	//				datatype's varint class
+	//		byte		locale length (then that many bytes)
+	//
+	// "more" says whether another command follows this one in the
+	// request buffer, and only matters on the refusal paths - it
+	// decides whether their done gets DONE_MORE, the way every other
+	// refusal in this module does.  A refusal here doesn't stop the
+	// token walk, so a DONE_FINAL would leave the dones of those later
+	// commands unread in the socket.
 
 	// get col count and bail if there are no columns
 	uint32_t	count=cont->colCount(cursor);
@@ -11392,20 +11394,22 @@ byte_t sqlrprotocol_tds::mapType(uint16_t type) {
 	return tdstype;
 }
 
-// How wide a tds 5.0 datatype's length field is - its "varint class".
-// It decides both the size field in a rowfmt and the length prefix in
-// front of the value in a row:
-//
-//	0 - no length at all.  The type carries its own width, and there's
-//	    no way to encode a null.
-//	1 - a single byte.  The default, and a length of 0 means null.
-//	4 - a 4-byte length, for the blob types.
-//	5 - a 4-byte length, for longbinary and longchar.
-//
-// The membership is freetds's tds_get_varint_size(), restricted to its
-// tds 5.0 branch.  Note that 0x7F isn't in the fixed set here the way it
-// is in ms-tds - the tds 5.0 8-byte integer is TDS5_TYPE_INT8 (0xBF).
 byte_t sqlrprotocol_tds::preTds7VarintSize(byte_t tds5type) {
+
+	// How wide a tds 5.0 datatype's length field is - its "varint
+	// class".  It decides both the size field in a rowfmt and the
+	// length prefix in front of the value in a row:
+	//
+	//	0 - no length at all.  The type carries its own width, and
+	//	    there's no way to encode a null.
+	//	1 - a single byte.  The default, and a length of 0 means null.
+	//	4 - a 4-byte length, for the blob types.
+	//	5 - a 4-byte length, for longbinary and longchar.
+	//
+	// The membership is freetds's tds_get_varint_size(), restricted to
+	// its tds 5.0 branch.  Note that 0x7F isn't in the fixed set here
+	// the way it is in ms-tds - the tds 5.0 8-byte integer is
+	// TDS5_TYPE_INT8 (0xBF).
 
 	switch (tds5type) {
 		case TDS5_TYPE_VOID:
@@ -11442,11 +11446,12 @@ byte_t sqlrprotocol_tds::preTds7VarintSize(byte_t tds5type) {
 	}
 }
 
-// How wide a varint-0 type's value is.  Nothing but the value goes on
-// the wire for one of these - there's no length field in front of it -
-// so this is also how many bytes a null has to be padded out to, since
-// a fixed type has no way to say "null" at all.
 byte_t sqlrprotocol_tds::preTds7FixedSize(byte_t tds5type) {
+
+	// How wide a varint-0 type's value is.  Nothing but the value goes
+	// on the wire for one of these - there's no length field in front
+	// of it - so this is also how many bytes a null has to be padded
+	// out to, since a fixed type has no way to say "null" at all.
 
 	switch (tds5type) {
 		case TDS5_TYPE_INT1:
@@ -11583,13 +11588,14 @@ void sqlrprotocol_tds::colFlags(sqlrservercursor *cursor,
 	debugEnd();
 }
 
-// The tds 5.0 counterpart of colFlags().  One byte rather than two, and
-// the bits mean different things, so the two can't share an
-// implementation.
 void sqlrprotocol_tds::preTds7ColFlags(bytebuffer *buffer,
 						sqlrservercursor *cursor,
 						uint16_t col,
 						byte_t tds5type) {
+
+	// The tds 5.0 counterpart of colFlags().  One byte rather than two,
+	// and the bits mean different things, so the two can't share an
+	// implementation.
 
 	debugStart("pre-tds7 col flags");
 
@@ -11814,18 +11820,20 @@ void sqlrprotocol_tds::typeInfo(sqlrservercursor *cursor,
 	debugEnd();
 }
 
-// The tds 5.0 counterpart of the size/collation/precision/scale part of
-// typeInfo().  A separate function rather than another branch in that
-// one: typeInfo() is on the hot ms-tds path, and almost nothing it does
-// carries over.  What's sent here is decided by the datatype's varint
-// class rather than by an isVarLenType()/isPartLenType() chain, the
-// sizes have different widths and different limits, and there's no
-// collation in tds 5.0 at all.
 void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 						sqlrservercursor *cursor,
 						uint16_t col,
 						uint16_t coltype,
 						byte_t tds5type) {
+
+	// The tds 5.0 counterpart of the size/collation/precision/scale
+	// part of typeInfo().  A separate function rather than another
+	// branch in that one: typeInfo() is on the hot ms-tds path, and
+	// almost nothing it does carries over.  What's sent here is decided
+	// by the datatype's varint class rather than by an
+	// isVarLenType()/isPartLenType() chain, the sizes have different
+	// widths and different limits, and there's no collation in tds 5.0
+	// at all.
 
 	debugStart("pre-tds7 type info");
 	debugPreTds7ColumnType(tds5type);
@@ -11895,20 +11903,21 @@ void sqlrprotocol_tds::preTds7TypeInfo(bytebuffer *buffer,
 	debugEnd();
 }
 
-// The size a column's values are declared at in a pre-tds7 rowfmt.
-// preTds7TypeInfo() writes what this returns, and preTds7Field() caps
-// every value it writes against it, so a field can't come out wider
-// than the buffer the client sized from the rowfmt.  One function
-// rather than the same rules written out twice - a second copy of them
-// is a copy that can drift.
-//
-// Decimal and numeric don't come through here.  Their width isn't a
-// size at all, it's decimalSize() of the precision, so they go through
-// preTds7DecimalInfo() instead.
 uint32_t sqlrprotocol_tds::preTds7DeclaredSize(sqlrservercursor *cursor,
 						uint16_t col,
 						uint16_t coltype,
 						byte_t tds5type) {
+
+	// The size a column's values are declared at in a pre-tds7 rowfmt.
+	// preTds7TypeInfo() writes what this returns, and preTds7Field()
+	// caps every value it writes against it, so a field can't come out
+	// wider than the buffer the client sized from the rowfmt.  One
+	// function rather than the same rules written out twice - a second
+	// copy of them is a copy that can drift.
+	//
+	// Decimal and numeric don't come through here.  Their width isn't a
+	// size at all, it's decimalSize() of the precision, so they go
+	// through preTds7DecimalInfo() instead.
 
 	uint32_t	size=cont->getColumnSize(cursor,col);
 
