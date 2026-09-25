@@ -3194,13 +3194,15 @@ bool sqlrprotocol_oracle::sendPacket(bool flush) {
 	return true;
 }
 
-// sends an oversized data packet as several ordinary data packets, each
-// bounded by the negotiated sdu.  every fragment is a complete packet with the
-// same type and flags, and repeats the 2 data flag bytes a data packet's body
-// starts with.  nothing marks a fragment as a continuation or marks the last
-// one - the client keeps reading packets until the ttc layer above it has the
-// bytes it expects - so a fragment may end at any byte offset
 bool sqlrprotocol_oracle::sendSplitPacket(bool flush) {
+
+	// sends an oversized data packet as several ordinary data packets,
+	// each bounded by the negotiated sdu.  every fragment is a complete
+	// packet with the same type and flags, and repeats the 2 data flag
+	// bytes a data packet's body starts with.  nothing marks a fragment
+	// as a continuation or marks the last one - the client keeps reading
+	// packets until the ttc layer above it has the bytes it expects - so
+	// a fragment may end at any byte offset
 
 	// the 8 byte header and the 2 data flag bytes ride on every fragment
 	const byte_t	*dataflags=reqpacket.getBuffer()+8;
@@ -3390,22 +3392,25 @@ bool sqlrprotocol_oracle::recvPacket() {
 	return true;
 }
 
-// pulls in the next packet of a request that arrived in more than one, and
-// appends its body to the request buffer in place - same address, more valid
-// bytes behind it - so that pointers a parse already handed out stay good.
-//
-// nothing on the wire says a packet continues the one before it: there is no
-// continuation bit, no total length and no end marker, and a fragment is
-// byte for byte an ordinary packet.  so this is only ever called from have(),
-// at the point a parse discovers it needs a byte the request buffer doesn't
-// have yet - reading one on any other cue would block on a packet the client
-// never sends.  see the "Splitting a Message Across Packets" section of the
-// Oracle Wire Protocol - Packet Structure wiki page.
-//
-// every read here is bounded, unlike the ones that start a request: a packet
-// that declares more data than the client goes on to send would otherwise
-// leave the session waiting on it for good
 bool sqlrprotocol_oracle::refillPacket() {
+
+	// pulls in the next packet of a request that arrived in more than
+	// one, and appends its body to the request buffer in place - same
+	// address, more valid bytes behind it - so that pointers a parse
+	// already handed out stay good.
+	//
+	// nothing on the wire says a packet continues the one before it:
+	// there is no continuation bit, no total length and no end marker,
+	// and a fragment is byte for byte an ordinary packet.  so this is
+	// only ever called from have(), at the point a parse discovers it
+	// needs a byte the request buffer doesn't have yet - reading one on
+	// any other cue would block on a packet the client never sends.  see
+	// the "Splitting a Message Across Packets" section of the Oracle
+	// Wire Protocol - Packet Structure wiki page.
+	//
+	// every read here is bounded, unlike the ones that start a request:
+	// a packet that declares more data than the client goes on to send
+	// would otherwise leave the session waiting on it for good
 
 	uint32_t	packetsize=0;
 	uint16_t	packetchecksum=0;
@@ -3495,8 +3500,8 @@ bool sqlrprotocol_oracle::refillPacket() {
 	// we've already received 8 bytes...
 	packetsize-=8;
 
-	// A fragment with nothing behind its data flags would leave the parse
-	// exactly where it was, so a client could spin this on empty packets.
+	// a fragment with nothing behind its data flags would leave the parse
+	// exactly where it was, so a client could spin this on empty packets
 	if (packetsize<=sizeof(uint16_t)) {
 		debugWrite("empty continuation packet");
 		debugSystemError();
@@ -3515,9 +3520,9 @@ bool sqlrprotocol_oracle::refillPacket() {
 	dataflags=beToHost(dataflags);
 	packetsize-=sizeof(uint16_t);
 
-	// The request buffer is one fixed region, so this is what keeps a
-	// client from growing a request past it.  Nothing on the wire ends a
-	// request, so without this a client could keep sending fragments.
+	// the request buffer is one fixed region, so this is what keeps a
+	// client from growing a request past it.  nothing on the wire ends a
+	// request, so without this a client could keep sending fragments
 	if ((uint64_t)resppacketsize+(uint64_t)packetsize>
 					(uint64_t)maxrequestsize) {
 		debugWrite("request too large: %lld",
@@ -3557,17 +3562,19 @@ bool sqlrprotocol_oracle::refillPacket() {
 	return true;
 }
 
-// makes sure a parse has the bytes it is about to read, and moves the
-// caller's end out to whatever the request now holds.  where the request may
-// span packets, running out of bytes mid-structure is the only signal tns
-// gives that the rest of it is still on the wire, so a shortfall pulls another
-// packet in and re-checks rather than failing.
-//
-// the end is refreshed even when nothing is short, since a refill further down
-// the parse leaves every caller's copy of it behind
 bool sqlrprotocol_oracle::have(const byte_t *rp,
 					size_t bytes,
 					const byte_t **end) {
+
+	// makes sure a parse has the bytes it is about to read, and moves
+	// the caller's end out to whatever the request now holds.  where the
+	// request may span packets, running out of bytes mid-structure is
+	// the only signal tns gives that the rest of it is still on the
+	// wire, so a shortfall pulls another packet in and re-checks rather
+	// than failing.
+	//
+	// the end is refreshed even when nothing is short, since a refill
+	// further down the parse leaves every caller's copy of it behind
 
 	if (*end<resppacket+resppacketsize) {
 		*end=resppacket+resppacketsize;
@@ -3587,13 +3594,14 @@ bool sqlrprotocol_oracle::have(const byte_t *rp,
 	return true;
 }
 
-// a count prefixed integer, out of a request that may span packets.  the base
-// class read is bounded by the end it's handed, so the bytes it needs have to
-// be in hand before it runs
 bool sqlrprotocol_oracle::getLenPreInt(const byte_t *rp,
 					const byte_t **end,
 					uint32_t *value,
 					const byte_t **rpout) {
+
+	// a count prefixed integer, out of a request that may span packets.
+	// the base class read is bounded by the end it's handed, so the
+	// bytes it needs have to be in hand before it runs
 
 	// the count byte says how many bytes follow it, so it is what says how
 	// much to pull in.  a count too large to be one is left to the read
@@ -3943,7 +3951,7 @@ bool sqlrprotocol_oracle::recvConnectRequest() {
 	}
 
 	// negotiate the sdu instead of just echoing back whatever the client
-	// asked for (#9989): take the smaller of the client's request and the
+	// asked for: take the smaller of the client's request and the
 	// 4086 this module defaults to in init(), then floor the result at
 	// 512 - the documented TNS/SQL*Net minimum - so a tiny or bogus
 	// client-requested sdu can't make recvPacket() reject ordinary
@@ -4054,19 +4062,10 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 	// answer with the highest protocol version both ends can speak: the
 	// client's own, unless it is higher than this module goes
 	// (python-oracledb and node-oracledb refuse anything under
-	// PROTOCOL_VERSION_12 outright, so 12 is what makes them connect)
-	//
-	// this used to round the answer down to a release boundary, and only
-	// 12, 11 and 8 were boundaries, so every client between 8 and 11 got
-	// told 8 - a 9i client that asked for 0x0137 or 0x0138 was answered
-	// 0x0136, the 8.1.7 version.  a real server does not do that.  the
-	// two 10.2 captures in test/protocol/oracle/samples/ answer each
+	// PROTOCOL_VERSION_12 outright, so 12 is what makes them connect).
+	// the two 10.2 captures in test/protocol/oracle/samples/ answer each
 	// client with the version that client asked for, and their accepts
-	// are otherwise identical to this module's, byte for byte:
-	//
-	//	client asked	real 10.2 answered	this module answered
-	//	0x0137 (9.0.1)	0x0137			0x0136
-	//	0x0138 (9.2.0.4) 0x0138			0x0136
+	// are otherwise identical to this module's, byte for byte.
 	//
 	// the version the accept names is what the client believes the far
 	// end is.  it is also the only byte that differs between the two
@@ -4074,7 +4073,8 @@ bool sqlrprotocol_oracle::sendConnectResponse() {
 	// fields four bytes wide (both 10.2 captures) and the two in which
 	// the same two clients marshal them one byte wide (both live runs
 	// against this module) - so the width may follow it.  that much is
-	// correlation, not proof; the accept being wrong is not - see #9658
+	// correlation, not proof, but naming the wrong version in the accept
+	// is not something a real server does
 	if (connectversion>PROTOCOL_VERSION_12) {
 		connectversion=PROTOCOL_VERSION_12;
 	}
@@ -4187,8 +4187,8 @@ bool sqlrprotocol_oracle::sendMarker(byte_t markertype) {
 	// build packet - 1 (one data byte follows), 0 (reserved), then
 	// the marker type.  the header's reserved byte carries the marker
 	// flag, same as a real client's marker does - except on the 9i path,
-	// where it doesn't: in #9658's capture the 10.2 server and the OCI7
-	// client both send a marker with that byte clear, and that client
+	// where it doesn't: a capture of the 10.2 server and an oci7 client
+	// shows both sending a marker with that byte clear, and that client
 	// aborts on bytes it doesn't expect
 	resetSendPacketBuffer(PACKET_MARKER);
 	reqpacketflags=(verifiertype==VERIFIER_TYPE_9I)?0:PACKET_FLAG_MARKER;
