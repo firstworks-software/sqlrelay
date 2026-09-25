@@ -898,6 +898,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   in bind names, matching the upsert trigger (#10131)
 - unified bindvariables.h's two definitions of a bind variable name
   character into one shared predicate
+- cleaned up the source code comments in the mysql protocol module
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
