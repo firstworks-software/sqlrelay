@@ -14815,12 +14815,10 @@ uint16_t sqlrprotocol_oracle::getWireColumnType(uint16_t columntype) {
 			wiretype=ORACLE_TYPE_REF_TYPE;
 			break;
 		case ORACLE_TYPE_TIMESTAMPLTZ:
-			// until #9704, this type could never actually reach
-			// here - src/connections/oracle.cpp folded a timestamp
-			// with local time zone into the same generic datatype
-			// as a plain timestamp, so a real column always arrived
-			// as ORACLE_TYPE_TIMESTAMP instead.  now that it has its
-			// own datatype, getWireColumnSize() and
+			// src/connections/oracle.cpp gives a timestamp with
+			// local time zone its own datatype rather than folding
+			// it into a plain timestamp, so a real column reaches
+			// here as this type.  getWireColumnSize() and
 			// putColumnMetadata()'s fullencoding flag both have a
 			// case of their own for it too, matching plain
 			// TIMESTAMP's 11-byte binary wire size - a local-time-
@@ -14978,10 +14976,10 @@ uint32_t sqlrprotocol_oracle::getWireColumnSize(sqlrservercursor *cursor,
 		// the same 11 bytes as a plain timestamp, not the 1-byte form
 		// timestamp with time zone and the intervals get - a local-
 		// time-zone value carries no stored offset of its own to
-		// widen it.  live #9704 evidence: before this type had its
-		// own datatype it was always described as a plain
-		// ORACLE_TYPE_TIMESTAMP and the size a real client saw was
-		// never wrong, only the type code was
+		// widen it.  before this type had its own datatype it was
+		// always described as a plain ORACLE_TYPE_TIMESTAMP, and the
+		// size a real client saw was never wrong, only the type
+		// code was
 		size=ORACLE_TIMESTAMP_SIZE;
 	} else if (wiretype==ORACLE_TYPE_CLOB ||
 			wiretype==ORACLE_TYPE_BLOB) {
@@ -15822,17 +15820,17 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 		uint64_t	charsthischunk=got;
 		if (clob) {
 
-			// Under a utf-8 client character set, OCILobRead
+			// under a utf-8 client character set, OCILobRead
 			// reports how many bytes it read rather than how many
 			// characters, but position and charsread both count
-			// characters.
+			// characters
 			if (utf8) {
 				charsthischunk=countUtf8Chars(lobbuffer,got);
 			}
-			// A character above the basic multilingual plane
+			// a character above the basic multilingual plane
 			// counts as up to 4 here but as 2 to OCILobRead, so
-			// the count can exceed what was asked for.  Clamp it
-			// so it can't overrun chunk or remaining.
+			// the count can exceed what was asked for - clamp it
+			// so it can't overrun chunk or remaining
 			if (charsthischunk>sizeof(chunk)/LOB_CLOB_BYTES_PER_CHAR) {
 				charsthischunk=sizeof(chunk)/
 							LOB_CLOB_BYTES_PER_CHAR;
