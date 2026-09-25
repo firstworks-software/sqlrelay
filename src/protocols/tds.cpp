@@ -21960,19 +21960,20 @@ void sqlrprotocol_tds::writeVarcharLength(bytebuffer *buffer,
 	}
 }
 
-// These write "length" units at the session's character width and
-// nothing else - in particular they don't convert to the charset a
-// pre-tds7 client declared, even though that's where a pre-tds7 client's
-// column names and message text go out.  The conversion is the caller's,
-// because a converted string isn't necessarily the same number of bytes
-// as the utf-8 it came from, and every caller here has already written a
-// length - its own, and usually a token size containing it - that has to
-// agree with what lands in the buffer.  See utf8ToClientCharset() and its
-// callers.
 void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
 					size_t lensize,
 					const char *str,
 					size_t length) {
+
+	// these write "length" units at the session's character width and
+	// nothing else - in particular they don't convert to the charset a
+	// pre-tds7 client declared, even though that's where a pre-tds7
+	// client's column names and message text go out.  The conversion is
+	// the caller's, because a converted string isn't necessarily the same
+	// number of bytes as the utf-8 it came from, and every caller here has
+	// already written a length - its own, and usually a token size
+	// containing it - that has to agree with what lands in the buffer.
+	// See utf8ToClientCharset() and its callers.
 
 	writeVarcharLength(buffer,lensize,length);
 
@@ -22011,16 +22012,17 @@ void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
 	}
 }
 
-// "str" is already ucs-2, e.g. from utf8ToUcs2(), and "length" is a count
-// of ucs-2 units - the caller has already done the real UTF-8-aware
-// conversion and sized things accordingly, so this just writes the length
-// prefix and the units, with no charset handling of its own.  Only ever
-// used on the tds7+ path, since a pre-tds7 client's strings never become
-// ucs-2 in the first place.
 void sqlrprotocol_tds::writeVarchar(bytebuffer *buffer,
 					size_t lensize,
 					const ucs2_t *str,
 					size_t length) {
+
+	// "str" is already ucs-2, e.g. from utf8ToUcs2(), and "length" is a
+	// count of ucs-2 units - the caller has already done the real
+	// UTF-8-aware conversion and sized things accordingly, so this just
+	// writes the length prefix and the units, with no charset handling of
+	// its own.  Only ever used on the tds7+ path, since a pre-tds7
+	// client's strings never become ucs-2 in the first place.
 
 	writeVarcharLength(buffer,lensize,length);
 
@@ -22252,18 +22254,6 @@ void sqlrprotocol_tds::appendInfoOrError(byte_t token,
 	delete[] msgtext16;
 }
 
-// The tds 5.0 shape of an info/error message - see TOKEN_EED.  Called by
-// appendInfoOrError() once its charset conversion has already run, so
-// msgtext/servername/procname here are already in the client's charset.
-//
-// sqlstate, status and transtate have no equivalent in appendInfoOrError()'s
-// argument list.  Only a backend query error has a real sqlstate, so
-// appendQueryError() leaves it in querysqlstate rather than every one of
-// appendError()'s callers having to pass one.  The other two are fixed here:
-// this module never sends the TDS5_TOKEN_PARAMFMT/PARAMS pair that a status
-// of TDS_EED_FOLLOWS would promise, and the transaction state a real ASE
-// puts here doesn't match transState()'s TDS5_TRAN_* values (see done()) -
-// it's a plain in-transaction/not flag instead.
 void sqlrprotocol_tds::preTds7AppendEed(byte_t token,
 					uint32_t number,
 					byte_t state,
@@ -22272,6 +22262,21 @@ void sqlrprotocol_tds::preTds7AppendEed(byte_t token,
 					const char *servername,
 					const char *procname,
 					uint32_t linenumber) {
+
+	// the tds 5.0 shape of an info/error message - see TOKEN_EED.  Called
+	// by appendInfoOrError() once its charset conversion has already run,
+	// so msgtext/servername/procname here are already in the client's
+	// charset.
+	//
+	// sqlstate, status and transtate have no equivalent in
+	// appendInfoOrError()'s argument list.  Only a backend query error has
+	// a real sqlstate, so appendQueryError() leaves it in querysqlstate
+	// rather than every one of appendError()'s callers having to pass one.
+	// The other two are fixed here: this module never sends the
+	// TDS5_TOKEN_PARAMFMT/PARAMS pair that a status of TDS_EED_FOLLOWS
+	// would promise, and the transaction state a real ASE puts here
+	// doesn't match transState()'s TDS5_TRAN_* values (see done()) - it's
+	// a plain in-transaction/not flag instead.
 
 	byte_t		eedtoken=TOKEN_EED;
 
@@ -22426,11 +22431,14 @@ bool sqlrprotocol_tds::sendAlreadyLoggedInError() {
 	return sendError(0,1,16,"Already logged in",1);
 }
 
-// The value done() writes for a tds 5.0 session, and 0 for an ms-tds one.
-// The field means two different things in the two dialects - see done().
-// A real ASE sends CS_TRAN_COMPLETED on every done that isn't inside a
-// transaction, so match that rather than leaving it CS_TRAN_UNDEFINED.
 uint16_t sqlrprotocol_tds::transState() {
+
+	// the value done() writes for a tds 5.0 session, and 0 for an ms-tds
+	// one.  The field means two different things in the two dialects -
+	// see done().  A real ASE sends CS_TRAN_COMPLETED on every done that
+	// isn't inside a transaction, so match that rather than leaving it
+	// CS_TRAN_UNDEFINED.
+
 	if (!pretds7) {
 		// CurCmd.  Ms-tds clients ignore it and freetds expects
 		// the 0 that this module has always sent.
@@ -22450,13 +22458,15 @@ void sqlrprotocol_tds::done(uint16_t status,
 	done(TOKEN_DONE,status,curcmdortransstate,donerowcount);
 }
 
-// "curcmdortransstate" is the second uint16 of the token, and it carries
-// a different thing in each dialect: CurCmd in ms-tds, TransState (one of
-// the TDS5_TRAN_* values) in tds 5.0.  transState() picks the right one.
 void sqlrprotocol_tds::done(byte_t token,
 				uint16_t status,
 				uint16_t curcmdortransstate,
 				uint64_t donerowcount) {
+
+	// "curcmdortransstate" is the second uint16 of the token, and it
+	// carries a different thing in each dialect: CurCmd in ms-tds,
+	// TransState (one of the TDS5_TRAN_* values) in tds 5.0.
+	// transState() picks the right one.
 
 	switch (token) {
 		case TOKEN_DONEINPROC:
@@ -22486,16 +22496,17 @@ void sqlrprotocol_tds::done(byte_t token,
 	}
 }
 
-// "curcmd" is only ever a CurCmd - every caller passes 0, and the field
-// is a TransState rather than a CurCmd in tds 5.0, which is why it goes
-// through transState() there.  Self-guarding the same way transState()
-// itself is: for an ms-tds session it hands back exactly what the caller
-// asked for, so the ms-tds wire can't move.  A done-in-proc used to be
-// an ms-tds-only token, but a tds 5.0 dbrpc closes its result set with
-// one too.
 void sqlrprotocol_tds::doneInProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount) {
+
+	// "curcmd" is only ever a CurCmd - every caller passes 0, and the
+	// field is a TransState rather than a CurCmd in tds 5.0, which is
+	// why it goes through transState() there.  Self-guarding the same
+	// way transState() itself is: for an ms-tds session it hands back
+	// exactly what the caller asked for, so the ms-tds wire can't
+	// move.  A done-in-proc is an ms-tds token, but a tds 5.0 dbrpc
+	// closes its result set with one too.
 
 	// a done-in-proc is never the last done in a response, and sql server
 	// always sets DONE_MORE on one.  without that bit freetds takes it for
@@ -22616,17 +22627,18 @@ void sqlrprotocol_tds::returnValueHeader(uint16_t ordinal,
 	debugEnd();
 }
 
-// One unnamed integer output parameter, which is how the numbered procs
-// hand a handle back.  A tds 5.0 session gets the paramfmt/params pair
-// instead of the ms-tds returnvalue token, the same swap
-// procReturnValues() makes.
-//
-// A pair carries the whole set rather than one parameter, so this only
-// works where the proc sends exactly one - preTds7DbRpc() refuses the
-// procs that send several.
 void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 						int32_t value,
 						bool isnull) {
+
+	// one unnamed integer output parameter, which is how the numbered
+	// procs hand a handle back.  A tds 5.0 session gets the
+	// paramfmt/params pair instead of the ms-tds returnvalue token, the
+	// same swap procReturnValues() makes.
+	//
+	// A pair carries the whole set rather than one parameter, so this only
+	// works where the proc sends exactly one - preTds7DbRpc() refuses the
+	// procs that send several.
 
 	if (pretds7) {
 		preTds7ReturnValueInteger(value,isnull);
@@ -22655,11 +22667,12 @@ void sqlrprotocol_tds::returnValueInteger(uint16_t ordinal,
 	debugEnd();
 }
 
-// the tds 5.0 counterpart of returnValueInteger().  No name - the ms-tds
-// token doesn't carry one here either, and a parameter is identified by
-// position in this dialect anyway.
 void sqlrprotocol_tds::preTds7ReturnValueInteger(int32_t value,
 						bool isnull) {
+
+	// the tds 5.0 counterpart of returnValueInteger().  No name - the
+	// ms-tds token doesn't carry one here either, and a parameter is
+	// identified by position in this dialect anyway.
 
 	debugStart("pre-tds7 return-value integer");
 
@@ -22714,18 +22727,20 @@ void sqlrprotocol_tds::writeIntN(int64_t value, byte_t size) {
 	}
 }
 
-// An ieee float raises the same byte-order question an integer of the
-// same width does, and a pre-tds7 client answers both in the same place -
-// the login record's typeflags block.  But the base class's
-// write(bytebuffer *,float) and write(bytebuffer *,double) append the
-// host's raw bytes without consulting the order the login settled on, and
-// there is no writeLE/writeBE for either, so this hands the bits to the
-// integer path instead, which does consult it.
-//
-// On a little-endian host serving a little-endian client - every client
-// that turns up in practice - this writes the same bytes write(float)
-// would have.
 void sqlrprotocol_tds::writeFloatN(double value, byte_t size) {
+
+	// an ieee float raises the same byte-order question an integer of the
+	// same width does, and a pre-tds7 client answers both in the same
+	// place - the login record's typeflags block.  But the base class's
+	// write(bytebuffer *,float) and write(bytebuffer *,double) append the
+	// host's raw bytes without consulting the order the login settled on,
+	// and there is no writeLE/writeBE for either, so this hands the bits
+	// to the integer path instead, which does consult it.
+	//
+	// On a little-endian host serving a little-endian client - every
+	// client that turns up in practice - this writes the same bytes
+	// write(float) would have.
+
 	if (size==sizeof(float)) {
 		float		f=(float)value;
 		uint32_t	bits=0;
@@ -22894,7 +22909,7 @@ void sqlrprotocol_tds::returnValueDecimal(sqlrserverbindvar *bv,
 	debugStart("return-value-decimal");
 	debugColumnType(tdstype);
 
-	// The nullable forms are the only ones a real server sends back,
+	// the nullable forms are the only ones a real server sends back,
 	// and the legacy fixed-size forms have no length byte to say null
 	// with, so a legacy declaration goes back as its nullable twin.
 	byte_t	outtype=(tdstype==TDS_TYPE_DECIMAL ||
@@ -22965,7 +22980,7 @@ void sqlrprotocol_tds::returnValueDecimal(sqlrserverbindvar *bv,
 	bytestring::zero(val,sizeof(val));
 	decimal(field,&ispositive,&size,val);
 
-	// The width on the wire comes from the declared precision rather
+	// the width on the wire comes from the declared precision rather
 	// than from the value.  The client reads the sign byte and then as
 	// many magnitude bytes as that precision calls for, whatever length
 	// it was sent, so anything else decodes to garbage.  The magnitude
@@ -23092,10 +23107,12 @@ void sqlrprotocol_tds::returnValue(sqlrservercursor *cursor,
 	debugEnd();
 }
 
-// self-guarded the same way doneInProc() is, and for the same reason
 void sqlrprotocol_tds::doneProc(uint16_t status,
 					uint16_t curcmd,
 					uint64_t donerowcount) {
+
+	// self-guarded the same way doneInProc() is, and for the same reason
+
 	done(TOKEN_DONEPROC,status,
 			(pretds7)?transState():curcmd,donerowcount);
 }
