@@ -1632,8 +1632,6 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 						bool secondphase);
 		void	putO3LogonSummary();
 
-		// the command type a summary object about this cursor's
-		// statement carries - one of the OCI7_COMMAND_* codes
 		byte_t	oci7CommandType(sqlrservercursor *cursor);
 
 		void	putOci7Summary(uint32_t cursorid,
@@ -2131,8 +2129,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// the universal one, so it never writes the sentinel.  a
 		// legacy client offering the native representation would, but
 		// every one on file goes through the 9i/classic dispatch
-		// instead, which returns ahead of the probe that sets this
-		// (#9812, #10068).
+		// instead, which returns ahead of the probe that sets this.
 		//
 		// the branches behind it are still exercised, though -
 		// test/protocol/oracle/oracledescribe.cpp writes the sentinel
@@ -2263,7 +2260,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// 0x51) rather than O3LOGON's newer, tagged-field
 		// TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY one (0x76) - set from
 		// phase one's ttifunction, since sendAuthenticationChallenge()
-		// answers the two differently (see #9794)
+		// answers the two differently
 		bool		classiclogon;
 
 		// whether the login was refused, as opposed to the exchange
@@ -2275,17 +2272,17 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// refusal on this connection - unlike loginrefused, this
 		// isn't cleared between retries.  recvAuthenticationRequest()
 		// needs it: oci7.cpp's Instant-Client-23-backed legacy build
-		// (see #10035) does a second, separate marker of its own on
-		// the same connection after reading the error, on top of the
+		// does a second, separate marker of its own on the same
+		// connection after reading the error, on top of the
 		// break/reset sendAuthenticationError() already sent for the
 		// attempt that just failed, and that one needs answering too
-		// or both sides block in read() forever (#10035).  a genuine
-		// modern OCI client doesn't send it - packets [0017] and
-		// [0018] of test/protocol/oracle/samples/10039-dev-oci23-
-		// native-loginretry-realserver.oraproxy show it going
-		// straight from the error to its next login - so this stays
-		// a safety net for the client that does, not a case this
-		// server ever has to invite (#10039)
+		// or both sides block in read() forever.  a genuine modern
+		// OCI client doesn't send it - packets [0017] and [0018] of
+		// test/protocol/oracle/samples/10039-dev-oci23-native-
+		// loginretry-realserver.oraproxy show it going straight from
+		// the error to its next login - so this stays a safety net
+		// for the client that does, not a case this server ever has
+		// to invite
 		bool		priorloginattemptrefused;
 
 		// whether the client walked away instead of sending a login -
@@ -2399,7 +2396,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// this, since a real server's answer has to name the cursor the
 		// client considers its outstanding call to be on, and this is
 		// the only evidence this module has for that with more than one
-		// cursor live - see cursorFromWireId() and #9699
+		// cursor live - see cursorFromWireId()
 		uint32_t	lastwirecursorid;
 
 		bool		query3session;
@@ -2570,12 +2567,12 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 		cursoridoffset=CURSOR_ID_OFFSET_9I;
 	}
 
-	// A 9i listener defaults to WE8ISO8859P1 rather than AL32UTF8.  That
+	// a 9i listener defaults to WE8ISO8859P1 rather than AL32UTF8.  that
 	// is the charset of the 10.2 database the OCI7 clients were first
 	// tested against, not a protocol requirement - a real AL32UTF8 server
-	// declares 873 to a 9i client too.  But it keeps a backend connection
+	// declares 873 to a 9i client too.  but it keeps a backend connection
 	// with no nls_lang, which hands back single-byte data, working out of
-	// the box.  One whose nls_lang is AL32UTF8 has to say so with
+	// the box.  one whose nls_lang is AL32UTF8 has to say so with
 	// charset="873", or a converting client re-encodes the UTF-8 bytes as
 	// if they were WE8ISO8859P1.
 	if (!charset) {
@@ -2667,8 +2664,8 @@ sqlrprotocol_oracle::sqlrprotocol_oracle(sqlrservercontroller *cont,
 	requestvalueavail=maxrequestsize;
 	resppacketbuffer=NULL;
 
-	// The wait for the rest of a request that arrived in more than one
-	// packet.  A client that has begun sending a request isn't idle, so
+	// the wait for the rest of a request that arrived in more than one
+	// packet.  a client that has begun sending a request isn't idle, so
 	// idleclienttimeout is only borrowed here when it is set to a real
 	// wait; where it says to leave an idle client alone forever, a
 	// half-sent request still has to fail rather than hang the session.
