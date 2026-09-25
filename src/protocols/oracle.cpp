@@ -18893,13 +18893,13 @@ bool sqlrprotocol_oracle::putField(const char *field,
 			// convert.  odefin()'s external type travels in the
 			// tti query2 request, and every real-server capture on
 			// file defines with the type that lands on the wire as
-			// oracle's own varchar2: #9637's legacy-fetch and
+			// oracle's own varchar2: the legacy-fetch and
 			// legacy-exfet captures run "select 1, 2, 3 from dual"
 			// against a real 10.2 server and its rows are
 			// "01 31", "01 32" and "01 33" - one-byte clrs holding
 			// the ascii digits - where putNumberField() would have
-			// written "02 c1 02".  the reference capture of
-			// "select 1 from dual" on #9658 is the same "01 31"
+			// written "02 c1 02".  a reference capture of
+			// "select 1 from dual" is the same "01 31"
 			// in the portable encoding, and the module's own oci7
 			// test program defines every number column SQLT_STR
 			// too (test/protocol/oracle/oci7.cpp:811).
@@ -19223,7 +19223,7 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 		// own comments).  a live portable-encoding session broke
 		// (ORA-03106) when this function omitted the byte there
 		// too, on the unproven assumption that native's shape
-		// carried over - #10006 comment 10.  no portable capture of
+		// carried over.  no portable capture of
 		// a null lob exists yet, so this keeps the original,
 		// already-proven-safe zero byte for portable and only omits
 		// it where the capture actually supports doing so.
@@ -19239,7 +19239,7 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 	// for lobs of 0 length - a real, non-null empty lob, not a null
 	// one, so this keeps the zero-byte marker and reports "not
-	// null" - unlike the null case above, #10006's capture doesn't
+	// null" - unlike the null case above, that capture doesn't
 	// cover this shape, so it's left exactly as it was
 	if (!loblength) {
 		write(&reqpacket,(byte_t)0);
@@ -19250,8 +19250,8 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 
 	// clr framing - always the 0xfe long form, chunked, never the plain
 	// short-length-byte form putLenBytes() above uses for values under
-	// 252 bytes.  confirmed against real OCI7 legacy-fetch captures
-	// (#9638): a 10-byte and a 30-byte lob both went out under the 0xfe
+	// 252 bytes.  confirmed against real OCI7 legacy-fetch captures:
+	// a 10-byte and a 30-byte lob both went out under the 0xfe
 	// marker, so unlike an ordinary clr field, a lob column's length
 	// never decides the framing - only its type does.  the lob's bytes
 	// aren't available in one contiguous buffer up front, so the marker
@@ -19284,8 +19284,8 @@ bool sqlrprotocol_oracle::putLobField(sqlrservercursor *cursor, uint32_t col) {
 			// null - a nonzero length that never actually produced
 			// a segment - and, under native encoding only, writes no
 			// value byte, same as the length-lookup-failure case
-			// above and for the same reason (see its comment,
-			// #10006).  if a chunk run is already under way, this
+			// above and for the same reason (see its comment
+			// above).  if a chunk run is already under way, this
 			// just closes it out, and the zero byte here is real
 			// chunk framing, not a null marker, so it stays
 			// regardless of encoding
@@ -19372,9 +19372,9 @@ void sqlrprotocol_oracle::putLongLobField(sqlrservercursor *cursor,
 	uint64_t	offset=0;
 	bool		start=true;
 
-	// There's no utf-8 offset correction here, unlike in putLobField().
-	// That correction is for the oracle backend's own clob reads, and
-	// this is never an oracle backend.
+	// there's no utf-8 offset correction here, unlike in putLobField() -
+	// that correction is for the oracle backend's own clob reads, and
+	// this is never an oracle backend
 	for (;;) {
 
 		// read a segment from the lob
@@ -19425,8 +19425,8 @@ void sqlrprotocol_oracle::putOci7Error(uint32_t cursorid,
 	// its error field, and the message behind it.  it replaces a 48-byte literal
 	// plus putGenericFooter() that answered every call the same bytes in either
 	// encoding, and that no capture ever showed a server sending - the client's
-	// parse ran off the end of it, abandoned the call, and failed the next one
-	// ORA-03120 (#9976).
+	// parse ran off the end of it, abandoned the call, and failed the next
+	// one with ORA-03120.
 	//
 	// the shape is taken from real 10.2 server captures in both encodings, not
 	// built - each of the four below was hand-assembled from the writers here
@@ -19580,10 +19580,9 @@ void sqlrprotocol_oracle::resetCursorState(uint16_t curid) {
 
 void sqlrprotocol_oracle::clearParams(sqlrservercursor *cursor) {
 
-	// forgets the cursor's binds.  the values themselves come out of the
-	// cursor's bind pool, which owns them - freeing one individually is a free
+	// counts only - the values live in the cursor's bind pool, which owns
+	// them and frees them itself; freeing one individually here is a free
 	// of pool memory, and glibc rejects it
-	// counts only - the bind pool owns the values and frees them itself
 	cont->setInputBindCount(cursor,0);
 	cont->setOutputBindCount(cursor,0);
 	// a ref cursor bind holds a real cursor, which isn't the bind pool's
@@ -19945,11 +19944,11 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	// message a logoff gets
 	// see "Oracle Wire Protocol - Version"
 	//
-	// A 9i client that didn't send ENCODING_CONV_LENGTH reads the banner
+	// a 9i client that didn't send ENCODING_CONV_LENGTH reads the banner
 	// as the total size and then the raw text instead - "01 00 4f" in
 	// packet [0016] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-
 	// realserver-r1, against "03 00 03 4f 72 61" in strfetch-we8iso8859p1-
-	// realserver-r4.  It answers a dalc with a marker and an ORA-03120.
+	// realserver-r4.  it answers a dalc with a marker and an ORA-03120
 	if (rawtextargs) {
 		debugWrite("banner: %d",bannerlength);
 		debugHexDump((const byte_t *)serverversionbanner,bannerlength);
@@ -20148,8 +20147,8 @@ void sqlrprotocol_oracle::putGenericFooter() {
 	// what is left of those paths is the three native-encoding literals
 	// that end with it - the two in sendQuery2Response() and the
 	// row-fetch trailer in sendFetchResponse().  it used to end the
-	// error responses too, and #9976 settled that half against a real
-	// 10.2 server: an error answer is the ordinary summary object with
+	// error responses too; checking that half against a real 10.2
+	// server settled it: an error answer is the ordinary summary object with
 	// the message behind it and no footer at all, which is what
 	// putOci7Error() now sends.  the same reading says the three
 	// remaining literals are that object too, with these 41 bytes
@@ -20348,7 +20347,7 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 	// what completes the call a client's marker packet interrupted - a real
 	// server answers a break/reset with ora-01013 for whatever was in flight,
 	// and the client is waiting to read that, not another marker, before it
-	// will send anything else (see #9591)
+	// will send anything else
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -20372,14 +20371,13 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 		// success iterations 1 come from that same capture, and are
 		// also what this object's other error path (putSummary(),
 		// above) already sends unconditionally.
-		// the cursor id field used to be hardcoded 0 - #9699 found
-		// live that with more than one cursor open, an id naming neither
-		// live cursor here causes ORA-03106 on the client side, so this
-		// answers with whichever cursor id the client's own last request
-		// carried instead (see lastwirecursorid) - still an unconfirmed
-		// guess for what a real server sends here (no capture on file
-		// has a marker cancel with a second cursor open), just no longer
-		// a value known to be wrong
+		// the cursor id field answers with whichever cursor id the
+		// client's own last request carried (see lastwirecursorid),
+		// rather than a hardcoded 0: with more than one cursor open, an
+		// id naming neither live cursor here causes ORA-03106 on the
+		// client side.  it's still an unconfirmed guess for what a real
+		// server sends here (no capture on file has a marker cancel
+		// with a second cursor open), just not a value known to be wrong
 		putOci7Error(lastwirecursorid,3,0,1,
 				ORA_USER_REQUESTED_CANCEL,
 				ORA_USER_REQUESTED_CANCEL_MESSAGE,
