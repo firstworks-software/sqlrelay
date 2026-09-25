@@ -3578,7 +3578,7 @@ void sqlrprotocol_tds::init() {
 	dbversion=cont->getDbVersion();
 	getServerTdsVersion();
 
-	// The database in play, not the connection module, decides some
+	// the database in play, not the connection module, decides some
 	// divergences - odbc and freetds each reach both an ASE and a SQL
 	// Server, so check the version string; sap always means ASE.
 	dbisase=(!charstring::compare(cont->getDbType(),"sap") ||
@@ -3600,7 +3600,7 @@ void sqlrprotocol_tds::init() {
 	clientlanguagelen=0;
 	clientsuppresslanguage=false;
 
-	// Tds 7.x is little-endian by spec, and a pre-tds7 client declares
+	// tds 7.x is little-endian by spec, and a pre-tds7 client declares
 	// its own order in its login record - see preTds7ByteOrder().  The
 	// module instance outlives the session, so a big-endian client's
 	// setting must not leak into the next session on this instance.
@@ -3640,7 +3640,7 @@ void sqlrprotocol_tds::init() {
 	nexthandle=SQLRELAY_HANDLE_BASE;
 	pendingcursor=NULL;
 
-	// A tds 5.0 cursor id is the server's to mint, and a real ase
+	// a tds 5.0 cursor id is the server's to mint, and a real ase
 	// starts at 1 and counts up.  It has nothing to do with the
 	// handles above - the client reads it back out of a curinfo ack
 	// rather than out of a return value.
@@ -3850,19 +3850,20 @@ char *sqlrprotocol_tds::utf8ToClientCharset(const char *str,
 					outsize);
 }
 
-// The pre-tds7 counterpart to ucs2ToUtf8().  A tds 5.0 client sends
-// single-byte characters rather than ucs-2, and they aren't nul
-// terminated, so this both converts and nul-terminates.
-//
-// The charset converted from is the one the login record declared - see
-// preTds7SetCharsetAndLanguage().  A client that declared utf8, or
-// declared nothing, or declared a charset pretds7charsets[] doesn't
-// cover gets its bytes passed through instead, and the outbound side
-// passes the same cases through too, so the two directions agree and a
-// round trip comes back intact.
 char *sqlrprotocol_tds::preTds7ToUtf8(const byte_t *str,
 					size_t size,
 					size_t *outsize) {
+
+	// the pre-tds7 counterpart to ucs2ToUtf8().  A tds 5.0 client sends
+	// single-byte characters rather than ucs-2, and they aren't nul
+	// terminated, so this both converts and nul-terminates.
+	//
+	// The charset converted from is the one the login record declared -
+	// see preTds7SetCharsetAndLanguage().  A client that declared utf8,
+	// or declared nothing, or declared a charset pretds7charsets[]
+	// doesn't cover gets its bytes passed through instead, and the
+	// outbound side passes the same cases through too, so the two
+	// directions agree and a round trip comes back intact.
 
 	debugStart("pre-tds7 to utf8");
 	debugWrite("size: %lld",(long long)size);
@@ -3934,7 +3935,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// Sanity checks.  TABULAR_RESULT is omitted because clients
+		// sanity checks.  TABULAR_RESULT is omitted because clients
 		// never send it; it's only the type sendPacket() uses.
 		if (*packettype!=SQL_BATCH &&
 			*packettype!=PRE_TDS7_LOGIN &&
@@ -3960,7 +3961,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		// bump the packet size down
 		packetsize-=PACKET_HEADER_SIZE;
 
-		// A zero-byte payload is legal only on the final packet;
+		// a zero-byte payload is legal only on the final packet;
 		// otherwise a client could spin this loop with empty packets.
 		if (!packetsize && !(packetstatus&STATUS_EOM)) {
 			debugWrite("empty non-eom packet");
@@ -3968,7 +3969,7 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 			return false;
 		}
 
-		// Cap the reassembled request size; STATUS_EOM is set by the
+		// cap the reassembled request size; STATUS_EOM is set by the
 		// client, so without this check reqpacket could grow unbounded.
 		if ((uint64_t)reqpacket.getSize()+(uint64_t)packetsize>
 							maxrequestsize) {
@@ -3993,14 +3994,14 @@ bool sqlrprotocol_tds::recvPacket(byte_t *packettype) {
 		// append the data to the receive buffer
 		reqpacket.append(packet,packetsize);
 
-		// The dump below writes the packet exactly as it arrived, so
+		// the dump below writes the packet exactly as it arrived, so
 		// a login packet hands over the password that the field-level
 		// output takes care to print as "(hidden)".  Blank it first.
 		// reqpacket already has its own copy, so this only affects
 		// the dump.
 		if (getDebug()) {
 			if (secencryptreply) {
-				// The answer to a sec_encrypt negotiate is
+				// the answer to a sec_encrypt negotiate is
 				// nothing but the encrypted password and its
 				// framing, so blank all of it - the tokens
 				// are printed field by field as they're read.
@@ -4145,12 +4146,12 @@ bool sqlrprotocol_tds::sendPacket(byte_t packettype) {
 wchar_t *sqlrprotocol_tds::readPassword(const byte_t *rp,
 						size_t charcount) {
 
-	// The decoded password itself is never logged; callers log it as
+	// the decoded password itself is never logged; callers log it as
 	// "(hidden)" and only its length and decode status appear here.
 	debugStart("read password");
 	debugWrite("charcount: %lld",(long long)charcount);
 
-	// Callers also cap charcount, but this has to stand on its own:
+	// callers also cap charcount, but this has to stand on its own:
 	// size and i must be size_t, or a 16-bit size truncates the copy
 	// and a 16-bit i with a 64-bit size never terminates the loop.
 	if (charcount>MAX_LOGIN_CHARS) {
@@ -4224,7 +4225,7 @@ void sqlrprotocol_tds::getServerTdsVersion() {
 		servertdsversion=740;
 	}
 
-	// Never report a version below 700, even for a genuinely older
+	// never report a version below 700, even for a genuinely older
 	// backend.  The wire format follows the login record the client
 	// sent, not the backend's version, so a LOGIN7 client has to end up
 	// with a LOGIN7-era version; negotiateTdsVersion() takes the minimum
@@ -4424,7 +4425,7 @@ uint32_t sqlrprotocol_tds::tdsVersionDecToHex(uint32_t tdsversion,
 
 void sqlrprotocol_tds::negotiateTdsVersion() {
 
-	// If the backend's version is unknown, go with what the client
+	// if the backend's version is unknown, go with what the client
 	// asked for; falling back to an older version hangs the client.
 	uint32_t	stv=(servertdsversion)?servertdsversion:
 					(clienttdsversion)?clienttdsversion:700;
@@ -4473,7 +4474,7 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 			break;
 		}
 
-		// Reject login/non-login requests in the wrong state - a repeat
+		// reject login/non-login requests in the wrong state - a repeat
 		// login request would re-auth and renegotiate mid-session.
 		bool	loginrequest=(packettype==PRE_LOGIN ||
 					packettype==PRE_TDS7_LOGIN ||
@@ -4561,7 +4562,7 @@ clientsessionexitstatus_t sqlrprotocol_tds::clientSession(
 				break;
 		}
 
-		// Nothing is left for an attention to cancel once the request
+		// nothing is left for an attention to cancel once the request
 		// is answered; a cursor meant to stay open is in its handle map.
 		pendingcursor=NULL;
 
