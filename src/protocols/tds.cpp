@@ -17589,7 +17589,7 @@ bool sqlrprotocol_tds::remoteProcedureCall() {
 		}
 	}
 
-	// An empty request - or one too short for rpc() to read even a
+	// an empty request - or one too short for rpc() to read even a
 	// proc name length - hits rpc()'s own "nothing left to do" check
 	// on the first pass and returns without appending anything.
 	// Left alone that would send a response with no done token, the
@@ -17748,15 +17748,17 @@ bool sqlrprotocol_tds::rpc(const byte_t **rpinout,
 	return retval;
 }
 
-// Runs whichever proc the call named, once the caller has decoded it and
-// filled in the rpcparams[] family.  Nothing in here reads the wire, so
-// both dialects share it: an ms-tds rpc names the numbered procs by id
-// and everything else by string, and a tds 5.0 dbrpc names all of them
-// by string, but procNameToProcId() maps a name back to an id either
-// way, so both arrive here with the same two arguments.
 bool sqlrprotocol_tds::runProc(uint16_t procid,
 					const char *procname,
 					bool nometadata) {
+
+	// runs whichever proc the call named, once the caller has decoded it
+	// and filled in the rpcparams[] family.  Nothing in here reads the
+	// wire, so both dialects share it: an ms-tds rpc names the numbered
+	// procs by id and everything else by string, and a tds 5.0 dbrpc names
+	// all of them by string, but procNameToProcId() maps a name back to an
+	// id either way, so both arrive here with the same two arguments.
+
 	switch (procid) {
 		case SP_CURSOR:
 			return cursorPositioned();
@@ -17822,7 +17824,7 @@ void sqlrprotocol_tds::batchFlags(const byte_t *rp,
 
 		if (flag==RPC_BATCH_FLAG) {
 
-			// Only claim another rpc follows if enough bytes
+			// only claim another rpc follows if enough bytes
 			// remain behind the flag for rpc() to find one -
 			// rpc() bails out below that same threshold without
 			// appending anything, so setting *more here on a
@@ -18454,16 +18456,18 @@ void sqlrprotocol_tds::rpcResultSet(sqlrservercursor *cursor,
 	debugEnd();
 }
 
-// Writes a proc's output parameters in whichever dialect the session
-// negotiated.  The two are different tokens rather than two shapes of
-// one - ms-tds gives each parameter its own self-describing returnvalue
-// (0xAC), and tds 5.0 sends the whole set as a paramfmt/params pair, the
-// way a result set is a rowfmt and rows.
-//
-// A real ase does send 0xAC, but only to a client that set response
-// capability bit 45, TDS_NO_WIDETABLES.  The sap client leaves it clear,
-// so the pair is what actually gets asked for.
 void sqlrprotocol_tds::procReturnValues(sqlrservercursor *cursor) {
+
+	// writes a proc's output parameters in whichever dialect the session
+	// negotiated.  The two are different tokens rather than two shapes of
+	// one - ms-tds gives each parameter its own self-describing
+	// returnvalue (0xAC), and tds 5.0 sends the whole set as a
+	// paramfmt/params pair, the way a result set is a rowfmt and rows.
+	//
+	// A real ase does send 0xAC, but only to a client that set response
+	// capability bit 45, TDS_NO_WIDETABLES.  The sap client leaves it
+	// clear, so the pair is what actually gets asked for.
+
 	if (pretds7) {
 		preTds7ReturnValues(cursor);
 	} else {
@@ -18471,15 +18475,16 @@ void sqlrprotocol_tds::procReturnValues(sqlrservercursor *cursor) {
 	}
 }
 
-// The tds 5.0 counterpart of returnValues().  The format each parameter
-// goes back in is the one the client declared it with, on the same
-// reasoning returnValue() echoes the declared ms-tds type: sql relay's
-// own bind type can't tell a char(20) from a varchar(max), and
-// ct_describe() reports whatever arrives.  A real ase re-derives the
-// type instead and sends a fixed INT4 where the client declared an
-// INTN(4), but a fixed type has no null form, so echoing what came in
-// keeps a null output parameter expressible.
 void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
+
+	// the tds 5.0 counterpart of returnValues().  The format each
+	// parameter goes back in is the one the client declared it with, on
+	// the same reasoning returnValue() echoes the declared ms-tds type:
+	// sql relay's own bind type can't tell a char(20) from a varchar(max),
+	// and ct_describe() reports whatever arrives.  A real ase re-derives
+	// the type instead and sends a fixed INT4 where the client declared an
+	// INTN(4), but a fixed type has no null form, so echoing what came in
+	// keeps a null output parameter expressible.
 
 	debugStart("pre-tds7 return-values");
 
@@ -18487,7 +18492,7 @@ void sqlrprotocol_tds::preTds7ReturnValues(sqlrservercursor *cursor) {
 	sqlrserverbindvar	*outbinds=cont->getOutputBinds(cursor);
 	debugWrite("outbindcount: %d",outbindcount);
 
-	// The paramfmt and the params are two tokens but one set, and the
+	// the paramfmt and the params are two tokens but one set, and the
 	// second can only be parsed by replaying the first, so both are
 	// written from the same array - built here rather than in place,
 	// since the return value drops out of the middle of the output
@@ -18818,14 +18823,6 @@ bool sqlrprotocol_tds::executeSql(bool nometadata) {
 	return true;
 }
 
-// Prepares a query on a cursor of its own and mints a handle for it.
-// Shared with tds 5.0 dynamic sql, which prepares by string id and looks
-// the handle up in a map of its own.
-//
-// "oldhandle" is the handle the caller is re-preparing, if it's
-// re-preparing one - a live one's cursor is dropped first.  "exec" runs
-// the query as well, with the parameters starting at "firstvalue", the
-// way sp_prepexec does.
 bool sqlrprotocol_tds::prepareStatement(uint32_t oldhandle,
 					const char *query,
 					size_t querylen,
@@ -18833,6 +18830,15 @@ bool sqlrprotocol_tds::prepareStatement(uint32_t oldhandle,
 					uint16_t firstvalue,
 					sqlrservercursor **cursorout,
 					uint32_t *handleout) {
+
+	// prepares a query on a cursor of its own and mints a handle for it.
+	// Shared with tds 5.0 dynamic sql, which prepares by string id and
+	// looks the handle up in a map of its own.
+	//
+	// "oldhandle" is the handle the caller is re-preparing, if it's
+	// re-preparing one - a live one's cursor is dropped first.  "exec"
+	// runs the query as well, with the parameters starting at
+	// "firstvalue", the way sp_prepexec does.
 
 	*cursorout=NULL;
 	*handleout=0;
@@ -18887,11 +18893,12 @@ bool sqlrprotocol_tds::prepareStatement(uint32_t oldhandle,
 	return true;
 }
 
-// Binds and runs a query that prepareStatement() prepared.  Shared with
-// tds 5.0 dynamic sql.  "firstvalue" is which parameter the values start
-// at.
 bool sqlrprotocol_tds::executeStatement(sqlrservercursor *cursor,
 					uint16_t firstvalue) {
+
+	// binds and runs a query that prepareStatement() prepared.  Shared
+	// with tds 5.0 dynamic sql.  "firstvalue" is which parameter the
+	// values start at.
 
 	bindParams(cursor,firstvalue);
 
@@ -18915,11 +18922,13 @@ bool sqlrprotocol_tds::executeStatement(sqlrservercursor *cursor,
 	return success;
 }
 
-// Drops a statement that prepareStatement() prepared, along with
-// everything kept alongside its cursor.  Shared with tds 5.0 dynamic
-// sql.
 void sqlrprotocol_tds::unprepareStatement(uint32_t handle,
 					sqlrservercursor *cursor) {
+
+	// drops a statement that prepareStatement() prepared, along with
+	// everything kept alongside its cursor.  Shared with tds 5.0 dynamic
+	// sql.
+
 	stmthandles.remove(handle);
 	executeflag.remove(cursor);
 	bindmarkercount.remove(cursor);
@@ -19226,7 +19235,7 @@ void sqlrprotocol_tds::positionedBind(sqlrserverbindvar *bv,
 	bv->variable=bindvarnames[bindindex];
 	bv->variablesize=bindvarnamesizes[bindindex];
 
-	// The value comes out of the row as text, but an integer key column
+	// the value comes out of the row as text, but an integer key column
 	// has to be bound as an integer.  Sap ase refuses to compare an
 	// integer column against a string at all, however the string is
 	// spelled.  Only whole numbers are converted - a decimal or a float
@@ -19756,17 +19765,19 @@ size_t sqlrprotocol_tds::stripForUpdateOf(const char *stmt, size_t stmtlen) {
 	return stmtlen;
 }
 
-// Runs a statement on a cursor of its own and mints a cursor handle for
-// it.  Shared with tds 5.0 cursors.
-//
-// "firstvalue" is which rpc parameter the values start at - a statement
-// that comes with none is prepared without bind variable translation.
 bool sqlrprotocol_tds::openCursorStatement(const char *stmt,
 						size_t stmtlen,
 						uint16_t firstvalue,
 						const char *cursorname,
 						sqlrservercursor **cursorout,
 						uint32_t *handleout) {
+
+	// runs a statement on a cursor of its own and mints a cursor handle
+	// for it.  Shared with tds 5.0 cursors.
+	//
+	// "firstvalue" is which rpc parameter the values start at - a
+	// statement that comes with none is prepared without bind variable
+	// translation.
 
 	*cursorout=NULL;
 	*handleout=0;
@@ -19778,7 +19789,7 @@ bool sqlrprotocol_tds::openCursorStatement(const char *stmt,
 	}
 	*cursorout=cursor;
 
-	// Hand the name the client declared the cursor with to the backend,
+	// hand the name the client declared the cursor with to the backend,
 	// which declares its own cursor with it if it can (see
 	// FEATURE_SUPPORTS_SET_CURSOR_NAME).  That has to happen in front of
 	// the prepare below, since that's where the backend declares it.
