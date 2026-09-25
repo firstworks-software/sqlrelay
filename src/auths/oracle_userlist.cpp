@@ -169,9 +169,7 @@ sqlrauth_oracle_userlist::sqlrauth_oracle_userlist(
 		return;
 	}
 
-	// create an array of users and passwords and store the
-	// users and passwords from the configuration in them
-	// this is faster than running through the xml over and over
+	// cache users, passwords and encryptions
 	users=new const char *[usercount];
 	passwords=new const char *[usercount];
 	passwordencryptions=new const char *[usercount];
@@ -1305,8 +1303,8 @@ bool sqlrauth_oracle_userlist::challenge(sqlrcredentials *cred,
 		debugEnd();
 	}
 
-	// the two O5LOGON phases and the one O3LOGON phase are the only things
-	// this builds.  the crypto each needs is gated separately - O5LOGON's
+	// The two O5LOGON phases and the one O3LOGON phase are the only things
+	// this builds.  The crypto each needs is gated separately - O5LOGON's
 	// pbkdf2-hmac-sha512 has no non-openssl fallback in rudiments, and
 	// O3LOGON's des and 3des may or may not be there on their own.
 	bool	serverresponse=

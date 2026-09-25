@@ -166,8 +166,7 @@ sqlrauth_oracle_connectstrings::sqlrauth_oracle_connectstrings(
 		return;
 	}
 
-	// cache users, passwords, and encryptions in arrays here, rather than
-	// walking the config's xml on every auth() call
+	// cache users, passwords and encryptions
 	users=new const char *[usercount];
 	passwords=new const char *[usercount];
 	passwordencryptions=new const char *[usercount];
