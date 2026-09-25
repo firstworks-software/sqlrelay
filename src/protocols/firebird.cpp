@@ -15315,9 +15315,9 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_quad:
 		case blr_blob2:
 			{
-			// The backend's blob id isn't reachable through the
-			// server API, so the module answers with an id of its
-			// own.  The bytes are read now rather than when the
+			// the backend's blob id isn't reachable through the
+			// server api, so the module answers with an id of its
+			// own.  the bytes are read now rather than when the
 			// client asks for them, because the fetch loop has
 			// moved past the row by then.
 			uint32_t	high=0;
@@ -15367,9 +15367,9 @@ bool sqlrprotocol_firebird::writeField(sqlrservercursor *cursor,
 		case blr_cstring:
 		case blr_cstring2:
 			{
-			// A cstring is null-terminated in storage but goes
+			// a cstring is null-terminated in storage but goes
 			// over length-first, like a varying, and only the
-			// bytes before the terminator go at all.  Its declared
+			// bytes before the terminator go at all.  its declared
 			// width includes the terminator.
 			uint32_t	width=fld->length;
 			uint32_t	max=(width)?width-1:0;
@@ -16038,7 +16038,7 @@ void sqlrprotocol_firebird::decodeDate(uint32_t date,
 					int16_t *month,
 					int16_t *day) {
 
-	// firebird's own decode_date, digit for digit.  The day count comes
+	// firebird's own decode_date, digit for digit.  the day count comes
 	// off the wire, and the arithmetic below multiplies it by four, so a
 	// value near the top of the range has to be refused rather than
 	// overflowed into a garbage date.
