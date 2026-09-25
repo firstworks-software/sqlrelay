@@ -11976,21 +11976,22 @@ uint32_t sqlrprotocol_tds::preTds7DeclaredSize(sqlrservercursor *cursor,
 	}
 }
 
-// The precision and scale a decimal or numeric column is declared at in
-// a pre-tds7 rowfmt, and with them the width of its values - the client
-// reads the sign byte and then as many magnitude bytes as
-// decimalSize(precision) calls for, whatever length it was sent.  Both
-// writers call this for the same reason they both call
-// preTds7DeclaredSize().
-//
-// The client fails the connection outright on a precision of 0, a
-// precision over the maximum, or a scale wider than the precision, so
-// clamp all three - a backend that reports 0 would otherwise kill the
-// session.
 void sqlrprotocol_tds::preTds7DecimalInfo(sqlrservercursor *cursor,
 						uint16_t col,
 						byte_t *precision,
 						byte_t *scale) {
+
+	// the precision and scale a decimal or numeric column is declared at
+	// in a pre-tds7 rowfmt, and with them the width of its values - the
+	// client reads the sign byte and then as many magnitude bytes as
+	// decimalSize(precision) calls for, whatever length it was sent.  Both
+	// writers call this for the same reason they both call
+	// preTds7DeclaredSize().
+	//
+	// The client fails the connection outright on a precision of 0, a
+	// precision over the maximum, or a scale wider than the precision, so
+	// clamp all three - a backend that reports 0 would otherwise kill the
+	// session.
 
 	uint32_t	p=cont->getColumnPrecision(cursor,col);
 	uint32_t	s=cont->getColumnScale(cursor,col);
@@ -12031,7 +12032,7 @@ void sqlrprotocol_tds::tableName(byte_t tdstype) {
 		return;
 	}
 
-	// It's not really clear what this is...
+	// it's not really clear what this is...
 	// We only send it for text, ntext, and image columns.  It's called
 	// "table" name but it appears to be a list of "part names".  I assume
 	// they are partition names, but why would the client need to know
@@ -12040,7 +12041,7 @@ void sqlrprotocol_tds::tableName(byte_t tdstype) {
 	// FIXME: how do we get this?
 	byte_t	numparts=1;
 
-	// The spec is confusing about this, but it appears that 7.1- only
+	// the spec is confusing about this, but it appears that 7.1- only
 	// supports 1 partname, while 7.2+ supports more than 1, and you have
 	// to tell it how many you're going to send.
 	if (negotiatedtdsversion<720) {
@@ -12074,7 +12075,7 @@ void sqlrprotocol_tds::cryptoMetaData() {
 		return;
 	}
 
-	// FIXME: The client doesn't seem to care that this isn't
+	// FIXME: the client doesn't seem to care that this isn't
 	// being sent.  How do we decide when to send it?
 
 	// FIXME: actually implement this.  Crypto metadata is the
@@ -12232,30 +12233,31 @@ bool sqlrprotocol_tds::isCharType(byte_t tdstype) {
 	}
 }
 
-// The ms-tds datatype that means what a tds 5.0 datatype means, or 0 for
-// one that has no ms-tds counterpart at all.
-//
-// rpcparamtdstypes[] is read by ms-tds predicates - isCharType() at the
-// top of this file and paramIsUnicode() - and by everything built on
-// them, so whatever goes in it has to be an ms-tds type byte whichever
-// dialect the parameter arrived in.  Putting a raw tds 5.0 byte there
-// would be silently wrong rather than merely unrecognized:
-//
-// * 0xE7 and 0x63 are nvarchar and ntext in ms-tds, and neither is a
-//   datatype in tds 5.0 at all - they're the dynamic and optioncmd2
-//   token bytes - so paramIsUnicode() would answer false for every tds
-//   5.0 parameter, and executeSql() and prepare() reject a call whose
-//   parameters aren't unicode.
-// * 0xAF is a blank-padded, 2-byte-counted bigchar in ms-tds and a
-//   4-byte-counted longchar here, so isCharType() would answer true and
-//   returnValueChar() would write the wrong length field.
-//
-// The raw byte is kept alongside, in rpcparamtds5types[], for a reply
-// that has to echo the type the client declared.
-//
-// A byte that isn't a tds 5.0 datatype is refused rather than passed
-// through, so nothing can land in the array in the wrong namespace.
 byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
+
+	// the ms-tds datatype that means what a tds 5.0 datatype means, or 0
+	// for one that has no ms-tds counterpart at all.
+	//
+	// rpcparamtdstypes[] is read by ms-tds predicates - isCharType() at
+	// the top of this file and paramIsUnicode() - and by everything built
+	// on them, so whatever goes in it has to be an ms-tds type byte
+	// whichever dialect the parameter arrived in.  Putting a raw tds 5.0
+	// byte there would be silently wrong rather than merely unrecognized:
+	//
+	// * 0xE7 and 0x63 are nvarchar and ntext in ms-tds, and neither is
+	//   a datatype in tds 5.0 at all - they're the dynamic and
+	//   optioncmd2 token bytes - so paramIsUnicode() would answer false
+	//   for every tds 5.0 parameter, and executeSql() and prepare()
+	//   reject a call whose parameters aren't unicode.
+	// * 0xAF is a blank-padded, 2-byte-counted bigchar in ms-tds and a
+	//   4-byte-counted longchar here, so isCharType() would answer true
+	//   and returnValueChar() would write the wrong length field.
+	//
+	// The raw byte is kept alongside, in rpcparamtds5types[], for a reply
+	// that has to echo the type the client declared.
+	//
+	// A byte that isn't a tds 5.0 datatype is refused rather than passed
+	// through, so nothing can land in the array in the wrong namespace.
 
 	switch (tds5type) {
 
@@ -12286,7 +12288,7 @@ byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
 		case TDS5_TYPE_LONGBINARY:
 			return tds5type;
 
-		// The unsigned integers, which ms-tds doesn't have - each
+		// the unsigned integers, which ms-tds doesn't have - each
 		// one becomes the signed type of its own width.  The value
 		// itself is read here rather than by anything that reads
 		// this array, so nothing is lost by it.
@@ -12320,7 +12322,7 @@ byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
 		case TDS5_TYPE_TIMEN:
 			return TDS_TYPE_TIMEN;
 
-		// Longchar is 4-byte counted and not blank padded, so it's
+		// longchar is 4-byte counted and not blank padded, so it's
 		// a bigvarchr rather than the bigchar that happens to share
 		// its byte in ms-tds.  Blank padding a value out to a
 		// declared size that a longchar never meant as a fixed
@@ -12332,7 +12334,7 @@ byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
 		case TDS5_TYPE_UNITEXT:
 			return TDS_TYPE_NTEXT;
 
-		// Xml has text's wire shape here - a 4-byte length - and
+		// xml has text's wire shape here - a 4-byte length - and
 		// text is also what makes isCharType() answer correctly for
 		// it.  TDS_TYPE_XML is the closer name, but no ms-tds
 		// character predicate covers it, so a parameter tagged with
@@ -12342,7 +12344,7 @@ byte_t sqlrprotocol_tds::tds5TypeToMsType(byte_t tds5type) {
 			return TDS_TYPE_TEXT;
 
 		default:
-			// Nothing else is bindable.  Blob (0x24) is a
+			// nothing else is bindable.  Blob (0x24) is a
 			// serialized object behind a class id, interval
 			// (0x2E) has no counterpart, and sensitivity (0x67)
 			// and boundary (0x68) are labels rather than values.
@@ -12475,7 +12477,7 @@ uint32_t sqlrprotocol_tds::dateTimeStringSize(uint16_t coltype,
 	debugWrite("coltype: %d",coltype);
 	debugWrite("colsize: %d",colsize);
 
-	// A date/time column only gets here when mapType() downgraded it to
+	// a date/time column only gets here when mapType() downgraded it to
 	// nvarchar for a pre-7.3 client.  Back ends report the size of the
 	// binary form (odbc says 10 for a date, ct-lib says 4), which is too
 	// small for the rendered string - these sizes are wide enough for
@@ -12598,16 +12600,6 @@ uint64_t sqlrprotocol_tds::rows(sqlrservercursor *cursor, uint64_t maxrows,
 	return rowcount;
 }
 
-// The tds 5.0 counterpart of rows().  The token byte is the same in
-// both dialects but nothing inside the row is, so the two don't share a
-// body: the column type comes out of pretds7typemap[] rather than
-// tdstypemap[], the length prefix and the null form come from the
-// datatype's varint class rather than from the type itself, and there's
-// no separate lob-data step - a tds 5.0 blob's text pointer is part of
-// its field.
-//
-// The position list is the same one though - a curupdate or curdelete
-// builds its where clause out of it, the way an sp_cursor does.
 uint64_t sqlrprotocol_tds::preTds7Rows(sqlrservercursor *cursor) {
 	return preTds7Rows(cursor,0);
 }
@@ -12615,6 +12607,17 @@ uint64_t sqlrprotocol_tds::preTds7Rows(sqlrservercursor *cursor) {
 uint64_t sqlrprotocol_tds::preTds7Rows(sqlrservercursor *cursor,
 						uint64_t maxrows,
 						tdsrows *position) {
+
+	// the tds 5.0 counterpart of rows().  The token byte is the same in
+	// both dialects but nothing inside the row is, so the two don't share
+	// a body: the column type comes out of pretds7typemap[] rather than
+	// tdstypemap[], the length prefix and the null form come from the
+	// datatype's varint class rather than from the type itself, and
+	// there's no separate lob-data step - a tds 5.0 blob's text pointer is
+	// part of its field.
+	//
+	// The position list is the same one though - a curupdate or curdelete
+	// builds its where clause out of it, the way an sp_cursor does.
 
 	// get col count and bail if there are no columns
 	uint32_t	colcount=cont->colCount(cursor);
@@ -12676,7 +12679,7 @@ uint64_t sqlrprotocol_tds::preTds7Rows(sqlrservercursor *cursor,
 				// FIXME: handle error
 			}
 
-			// Decimal and numeric are sized by the precision
+			// decimal and numeric are sized by the precision
 			// rather than by a column size.
 			// FIXME: cache this earlier too
 			byte_t	precision=0;
@@ -12687,7 +12690,7 @@ uint64_t sqlrprotocol_tds::preTds7Rows(sqlrservercursor *cursor,
 							&precision,&scale);
 			}
 
-			// Send the field, capped against the size the rowfmt
+			// send the field, capped against the size the rowfmt
 			// declared for this column.  Both numbers come from
 			// the same helpers preTds7TypeInfo() declared them
 			// with, so they agree by construction rather than by
@@ -13220,18 +13223,6 @@ void sqlrprotocol_tds::field(uint16_t coltype,
 	debugEnd();
 }
 
-// The tds 5.0 counterpart of field().  The value encodings themselves
-// are the same ones field() writes - only the length in front of them,
-// the way a null is spelled, and the layout of a decimal come out
-// differently - but the length and the null form are driven by the
-// datatype's varint class here rather than by field()'s two per-type
-// switches, so there's nothing worth sharing between them.
-//
-// "colsize" is what preTds7DeclaredSize() gave preTds7TypeInfo() for
-// this column, and "precision" what preTds7DecimalInfo() gave it, so
-// capping a value against them is the same thing as capping it against
-// the rowfmt.  A field wider than the rowfmt declared would overrun the
-// buffer the client sized from that rowfmt.
 void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 					byte_t tds5type,
 					uint32_t colsize,
@@ -13239,6 +13230,19 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 					const char *field,
 					uint64_t fieldsize,
 					bool null) {
+
+	// the tds 5.0 counterpart of field().  The value encodings themselves
+	// are the same ones field() writes - only the length in front of them,
+	// the way a null is spelled, and the layout of a decimal come out
+	// differently - but the length and the null form are driven by the
+	// datatype's varint class here rather than by field()'s two per-type
+	// switches, so there's nothing worth sharing between them.
+	//
+	// "colsize" is what preTds7DeclaredSize() gave preTds7TypeInfo() for
+	// this column, and "precision" what preTds7DecimalInfo() gave it, so
+	// capping a value against them is the same thing as capping it against
+	// the rowfmt.  A field wider than the rowfmt declared would overrun
+	// the buffer the client sized from that rowfmt.
 
 	debugStart("pre-tds7 field");
 	debugPreTds7ColumnType(tds5type);
@@ -13251,7 +13255,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 		switch (preTds7VarintSize(tds5type)) {
 			case 0:
 				{
-				// A fixed-length type has no null form at
+				// a fixed-length type has no null form at
 				// all - there's no length field to set to
 				// zero - so a null has to go out as a zero
 				// value.  Bit is the only varint-0 type
@@ -13275,7 +13279,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 				write(&resppacket,(uint32_t)0);
 				break;
 			default:
-				// A length of 0 is a varint-1 type's only
+				// a length of 0 is a varint-1 type's only
 				// null form, and it's also what an empty
 				// value comes out as - so an empty varchar
 				// and a null varchar are the same bytes on
@@ -13293,7 +13297,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 
 	switch (tds5type) {
 
-		// The n-types: a size byte, then the value at that width.
+		// the n-types: a size byte, then the value at that width.
 		// The size is the one the rowfmt declared, which nTypeSize()
 		// already narrowed to a width the type allows.
 		case TDS5_TYPE_INTN:
@@ -13339,7 +13343,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			if (size==4) {
 				write(&resppacket,(uint32_t)(int32_t)data);
 			} else {
-				// The high half goes first, ahead of the
+				// the high half goes first, ahead of the
 				// low half.  That ordering is the type's
 				// own, not a byte order - each half goes
 				// out in the order the login declared.
@@ -13402,7 +13406,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			bytestring::zero(val,sizeof(val));
 			decimal(field,&ispositive,&size,val);
 
-			// Two things are inverted from the ms-tds form that
+			// two things are inverted from the ms-tds form that
 			// decimal() produces and field() writes:
 			//
 			// * the sign byte is 0 for positive and 1 for
@@ -13439,7 +13443,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 		case TDS5_TYPE_VARCHAR:
 		case TDS5_TYPE_CHAR:
 			{
-			// Character data goes out in the charset the login
+			// character data goes out in the charset the login
 			// record declared, converted from the utf-8 the back
 			// end handed over.  A tds 5.0 rowfmt has no collation
 			// field, so the login record is the only thing that
@@ -13520,7 +13524,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 				size=colsize;
 			}
 
-			// A non-null varint-4 field is a 16-byte text
+			// a non-null varint-4 field is a 16-byte text
 			// pointer, an 8-byte timestamp, a 32-bit data
 			// length, and then the data.  lobData() already
 			// writes the first two - the dummy values it makes
@@ -13573,7 +13577,7 @@ void sqlrprotocol_tds::preTds7Field(uint16_t coltype,
 			break;
 
 		default:
-			// Nothing else comes out of pretds7typemap[].  Write
+			// nothing else comes out of pretds7typemap[].  Write
 			// the null form rather than nothing at all, so a type
 			// added to the map without a case here costs one
 			// value rather than the whole stream.
