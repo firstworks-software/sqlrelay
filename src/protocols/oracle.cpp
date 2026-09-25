@@ -8834,9 +8834,8 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	// send 0 and [0024] sends 1
 	writeLenPreInt(&reqpacket,rowsprocessed);
 
-	// the first of the three zero fields this comment used to call
-	// unexplained is the error number - confirmed against a real
-	// server's marker-cancel response, which is this same object with
+	// the error number - confirmed against a real server's
+	// marker-cancel response, which is this same object with
 	// ORA-01013 sitting here, and independently against
 	// sendErrorPacket()'s portable branch, whose "01 01 00" prefix plus
 	// an immediately-following oranum is this function's first three
@@ -8942,8 +8941,8 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 // byte behind it is 1 in all four captures - unexplained, but confirmed
 // constant rather than assumed. rows processed, cursor id and success
 // iterations are only ever confirmed as 0 or a small single digit in the
-// four captures on file, but sendErrorPacket()'s native branch (~line 7505)
-// places its own ora-number field 4 bytes wide at the equivalent distance
+// four captures on file, but sendErrorPacket()'s native branch places its
+// own ora-number field 4 bytes wide at the equivalent distance
 // from that same "36 01" marker below, which only lines up if the fields
 // ahead of it here are 4 bytes too - so each goes out the same width as end
 // of call status, not truncated to whatever a capture happened to need.
@@ -8974,9 +8973,9 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	writeLE(&reqpacket,rowsprocessed);
 
 	// the error number, the same field putOci7Summary() carries in the
-	// same place in its own field order.  what used to be a 6 byte pad
-	// here is this 4 byte field and 2 zero bytes: an ORA-01007 answering
-	// a describe puts 1007 in exactly these four bytes - packet [0028] of
+	// same place in its own field order: this 4 byte field and the 2
+	// zero bytes (pad2) behind it.  an ORA-01007 answering a describe
+	// puts 1007 in exactly these four bytes - packet [0028] of
 	// test/protocol/oracle/samples/
 	// 9808-redhat9x86-native-realtable-outofrange.oraproxy
 	writeLE(&reqpacket,oranum);
@@ -8988,7 +8987,7 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	write(&reqpacket,commandtype);
 
 	// one byte of this pad - the fifth - is not always zero: it is 0x09
-	// in every fetch answer of the #9810 midfetch captures whose client
+	// in every fetch answer of the midfetch captures whose client
 	// odefin'd fewer columns than the select list has (-defines1- and
 	// -defines3-) and 0x00 throughout the one that defined all four
 	// (-defines1234-).  it reads as a warning flag about the define list
@@ -9193,8 +9192,8 @@ bool sqlrprotocol_oracle::sendAuthenticationError(uint32_t oranum,
 	// sequence, packets [0014] through [0017].
 	//
 	// an OCI7 client aborts a connection whenever it doesn't get bytes
-	// shaped the way it expects (see #9654), so the break goes out even
-	// though the module has nothing to interrupt.
+	// shaped the way it expects, so the break goes out even though the
+	// module has nothing to interrupt.
 	//
 	// a break that doesn't come back is not a refused login, it's an
 	// exchange that broke down partway through, so it leaves loginrefused
@@ -9253,9 +9252,9 @@ bool sqlrprotocol_oracle::sendErrorPacket(const char *what,
 	// own and reports whatever the shift decodes to.  a modern OCI
 	// client told the oci7 shape reports ORA-03120 (integer overflow)
 	// for a wrong password and ORA-24327 for the OCISessionBegin after
-	// it, never the ORA-01017 actually on the wire (#10039).  the field
-	// values stay literals because this call runs before the login is
-	// far enough along for them to come from anywhere else
+	// it, never the ORA-01017 actually on the wire.  the field values
+	// stay literals because this call runs before the login is far
+	// enough along for them to come from anywhere else
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -9408,9 +9407,8 @@ sqlrservercursor *sqlrprotocol_oracle::cursorFromWireId(uint32_t wirecursorid) {
 
 bool sqlrprotocol_oracle::open(const byte_t *rp) {
 
-	// sqlplus 8.0.5, 8i, 9i
-	// call this to open a cursor
-	// sqlplus 10g+ use query3
+	// sqlplus 8.0.5, 8i and 9i call this to open a cursor; 10g and
+	// later use query3()
 
 	const byte_t	*end=resppacket+resppacketsize;
 
@@ -9442,7 +9440,7 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	// a cursor out of the pool is reset before it gets here, so this is
 	// insurance: should some path into query()/execute() ever leave
 	// binds on one, they aren't this session's to run with. unlike
-	// installQuery3Binds()'s ref-cursor insurance (~13492), this calls
+	// installQuery3Binds()'s ref-cursor insurance, this calls
 	// releaseRefCursors() rather than the safer forgetRefCursor() -
 	// fine here only because refcursorcounts is already 0 for any
 	// cursor reaching open()
@@ -9816,8 +9814,8 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	// blob back up using the name length each metadata block carries, so
 	// the quotes are separators it never has to count.
 	//
-	// A client that sent ENCODING_CONV_LENGTH gets the size twice, as a
-	// count and then as the text's own clr length byte.  One that didn't
+	// a client that sent ENCODING_CONV_LENGTH gets the size twice, as a
+	// count and then as the text's own clr length byte.  one that didn't
 	// gets the count and then the raw text (packet [0028] of
 	// samples/10273-redhat9x86-oci7-describe-al32utf8-realserver-r6), and
 	// answers a clr with ORA-03106 (describe-sqlrelay-exp873-namesprefixed-
@@ -10064,11 +10062,11 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 	return sendPacket(true);
 }
 
-// Reads the text argument of an osql7, oparsex or query call.  A client that
+// reads the text argument of an osql7, oparsex or query call.  a client that
 // sent ENCODING_CONV_LENGTH sends it as a clr and declares a buffer size ahead
 // of it - 3x the text for AL32UTF8 when it converts, "query size" 0x8d ahead
 // of 47 bytes of osql7 text in packet [0025] of
-// samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.  One that
+// samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4.  one that
 // didn't sends it raw, and the declared size is its exact length (packet
 // [0025] of samples/10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1).
 bool sqlrprotocol_oracle::getOci7Text(const byte_t *rp,
