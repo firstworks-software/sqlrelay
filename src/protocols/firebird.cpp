@@ -9169,7 +9169,7 @@ static void appendScaledInt64(stringbuffer *output, int64_t v, int8_t scale) {
 		p*=10;
 	}
 
-	// Integer division truncates toward zero and the remainder carries
+	// integer division truncates toward zero and the remainder carries
 	// the sign, so formatting the halves separately would put a sign on
 	// each of them, and lose it entirely when the integer part is zero.
 	int64_t	whole=v/p;
@@ -9547,8 +9547,8 @@ bool sqlrprotocol_firebird::writeSliceElement(byte_t blrtype,
 	debugWrite("element size: %u",elementsize);
 	debugWrite("offset: %u",*byteswritten);
 
-	// One element, encoded the way firebird's xdr_datum() (common/xdr.cpp)
-	// encodes it.  The module always accepts arch_generic (see connect()),
+	// one element, encoded the way firebird's xdr_datum() (common/xdr.cpp)
+	// encodes it.  the module always accepts arch_generic (see connect()),
 	// so the client keeps xdr on and reads the elements one at a time
 	// rather than as raw bytes.
 	// (the elements are packed, so nothing is guaranteed to be aligned -
@@ -9675,7 +9675,7 @@ bool sqlrprotocol_firebird::getSlice() {
 	// 	int32_t		slice length	(always 0 here)
 	// }
 	//
-	// (firebird's P_SLC - see FB4 src/remote/protocol.cpp:590.  The
+	// (firebird's P_SLC - see FB4 src/remote/protocol.cpp:590.  the
 	// trailing slice is the request's own copy of the elements, which is
 	// empty on a get and only carries anything on a put.)
 
@@ -9768,8 +9768,8 @@ bool sqlrprotocol_firebird::getSlice() {
 
 		uint64_t	index=i;
 
-		// A slice can be a sub-range of the array, so its subscripts
-		// have to be mapped onto the array's.  With no bounds from the
+		// a slice can be a sub-range of the array, so its subscripts
+		// have to be mapped onto the array's.  with no bounds from the
 		// backend to map onto, the slice is taken as covering the
 		// whole array.
 		if (array->dimensions) {
@@ -9808,7 +9808,7 @@ bool sqlrprotocol_firebird::getSlice() {
 	// 	byte_t[]	elements
 	// }
 	//
-	// (firebird's P_SLR - see FB4 src/remote/protocol.cpp:616.  The
+	// (firebird's P_SLR - see FB4 src/remote/protocol.cpp:616.  the
 	// length is written twice because xdr_slice() writes one of its own,
 	// and both are the length of the slice in the client's own internal
 	// representation, not the length of what goes on the wire - the
@@ -9916,9 +9916,9 @@ bool sqlrprotocol_firebird::putSlice() {
 	if (!parsedsdl.parse(sdl,sdllen)) {
 		debugWrite("sdl parse failed: %s",parsedsdl.getError());
 		delete[] sdl;
-		// The elements are xdr-encoded per the sdl's element type, so
+		// the elements are xdr-encoded per the sdl's element type, so
 		// with no type to decode by there's no way to know how many
-		// bytes of slice still have to come off the wire.  The
+		// bytes of slice still have to come off the wire.  the
 		// connection can't be trusted for another request.
 		debugEnd();
 		return false;
@@ -9957,9 +9957,9 @@ bool sqlrprotocol_firebird::putSlice() {
 	if (sentcount>count) {
 		sentcount=count;
 	}
-	// Count and elementsize both come off the wire, so count*elementsize
+	// count and elementsize both come off the wire, so count*elementsize
 	// can wrap a 64-bit int and slip an undersized buffer past a check on
-	// the product.  Divide instead.
+	// the product.  divide instead.
 	if (count>MAX_ARRAY_BUFFER/elementsize) {
 		if (!drainSliceElements(elementtype,elementsize,
 					slicelen/elementsize,&bytesread)) {
@@ -9999,8 +9999,8 @@ bool sqlrprotocol_firebird::putSlice() {
 
 	debugEnd();
 
-	// An id of 0 asks for a new array - which is what a client that is
-	// building an array to bind into an insert or update sends.  A
+	// an id of 0 asks for a new array - which is what a client that is
+	// building an array to bind into an insert or update sends.  a
 	// nonzero id rewrites an array the session already has.
 	sqlrfirebirdarray	*array=getArrayById(high,low);
 	if (!array) {
@@ -10180,7 +10180,7 @@ bool sqlrprotocol_firebird::batchMsg() {
 	// 	message[]	that many packed messages
 	// }
 	//
-	// The messages run back-to-back, each one packed the way
+	// the messages run back-to-back, each one packed the way
 	// readMessage() reads it, rather than being wrapped in a counted
 	// buffer of their own - see the op_batch_msg case in firebird's
 	// src/remote/protocol.cpp, which decodes them with the same
