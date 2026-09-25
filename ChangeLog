@@ -2895,6 +2895,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   verifiertype="9i" oracle protocol listener
 - fixed OCI7 clients with a WE8ISO8859P1 NLS_LANG failing to log in to a
   verifiertype="9i" oracle protocol listener
+- fixed several OCI7 correctness bugs in the oracle protocol module, most
+  unreachable by real clients today
 
 ### Security
 - fixed an authentication hole in the des password encryption module

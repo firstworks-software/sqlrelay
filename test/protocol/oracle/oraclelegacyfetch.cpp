@@ -358,9 +358,10 @@ static bool readLegacySummary(oracleprotocolclient *client,
 
 // a parse or execute response decodes as a summary answering the given
 // cursor, with the given rows-processed and success-iteration counts
-// (both known ahead of time here - every query in this file is a select,
-// so a parse always sends 0/0 and an execute always sends 0/1, per
-// sendQueryResponse()/sendExecuteResponse() in src/protocols/oracle.cpp),
+// (rows processed is always 0 here - every query in this file is a select,
+// so nothing is processed before a fetch.  success iterations is 0 for the
+// session's first parse and 1 for everything after the session's first
+// execute, on any cursor - see oci7executed in src/protocols/oracle.cpp),
 // a command type of 3 (parse or execute of a select), and nothing left
 // over
 static bool checkLegacySummaryResponse(oracleprotocolclient *client,
@@ -511,7 +512,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("parse failing query",
-			checkLegacySummaryResponse(&client,badcursorid,0,0));
+			checkLegacySummaryResponse(&client,badcursorid,0,1));
 
 	// the execute has to succeed - legacy execute() never fetches a row,
 	// so nothing has divided by zero yet.  an error here would mean the
@@ -767,7 +768,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("parse bounded fetch query",
-			checkLegacySummaryResponse(&client,boundedcursorid,0,0));
+			checkLegacySummaryResponse(&client,boundedcursorid,0,1));
 
 	if (!client.legacyExecute(boundedcursorid,1,0)) {
 		report("execute bounded fetch query",false);

@@ -2035,6 +2035,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	rollback(const byte_t *rp);
 		bool	autoCommitOn(const byte_t *rp);
 		bool	autoCommitOff(const byte_t *rp);
+		bool	sendCommitResponse();
 		bool	sendTransactionResponse();
 		bool	sendTransactionError(uint32_t cursorid=0);
 
@@ -2386,6 +2387,12 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		// the sequence number the summary object has to echo back
 		byte_t		callnumber;
+
+		// whether anything has executed yet this session - an oci7
+		// summary object's success iteration count is 1 once this is
+		// set and 0 until then, session-wide rather than per-cursor.
+		// see putOci7Summary()
+		bool		oci7executed;
 
 		// the wire cursor id of the last incoming request that named one
 		// - not necessarily a cursor that still exists or ever resolved,
@@ -2845,6 +2852,7 @@ void sqlrprotocol_oracle::init() {
 
 	query3session=false;
 	callnumber=0;
+	oci7executed=false;
 	lastwirecursorid=0;
 
 	resppacket=NULL;
@@ -8933,11 +8941,14 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	writeLenPreInt(&reqpacket,0);
 
 	// success iterations - one execution rather than one row, the same
-	// field putSummary() documents.  it counts executions that have
-	// happened on this cursor, so the login and the parse send 0 and
-	// everything from the execute on sends 1: [0020], [0022] and [0024]
-	// of the portable capture send 0, 1 and 1, and their native
-	// counterparts send the same three values
+	// field putSummary() documents.  it tracks whether anything has
+	// executed yet in the session, not on the cursor being answered - a
+	// parse on a cursor that has never itself executed still gets 1 if an
+	// earlier cursor in the same session already ran something.  the
+	// login sends 0, and every call from the first execute on sends 1 for
+	// the rest of the session: [0020], [0022] and [0024] of the portable
+	// capture send 0, 1 and 1, and their native counterparts send the
+	// same three values.  see oci7executed
 	writeLenPreInt(&reqpacket,successiterations);
 
 	writeLenPreInt(&reqpacket,0);
@@ -8977,22 +8988,25 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	// decode_o3logon_summary_native() in test/protocol/oracle/oradecode
 	// already established for this object's use as the o3logon challenge's
 	// tail. the byte behind it is 1 in all four captures - unexplained, but
-	// confirmed constant rather than assumed. rows processed, cursor id and
-	// success iterations are only ever confirmed as 0 or a small single
-	// digit in the four captures on file, but sendErrorPacket()'s native
-	// branch places its own ora-number field 4 bytes wide at the equivalent
+	// confirmed constant rather than assumed. rows processed and success
+	// iterations are only ever confirmed as 0 or a small single digit in
+	// the four captures on file, but sendErrorPacket()'s native branch
+	// places its own ora-number field 4 bytes wide at the equivalent
 	// distance from that same "36 01" marker below, which only lines up if
 	// the fields ahead of it here are 4 bytes too - so each goes out the
 	// same width as end of call status, not truncated to whatever a capture
-	// happened to need.  call number is confirmed as one byte across all
-	// four, and command type is a byte everywhere putOci7Summary() sends it
-	// too, so both stay bytes.  two more bytes go out non-zero in every
-	// capture here (a marker, "36 01", 4 bytes ahead of a live value) - the
-	// same marker sendErrorPacket()'s native branch and putAuthTrailer()'s
-	// native trailer both carry too (at their own equivalent positions, not
-	// this one), so it reads as a real constant, and the live value after
-	// it as the same class of non-reproducible server-side data
-	// sendErrorPacket()'s native branch zeroes rather than guesses
+	// happened to need.  the cursor id is the exception: it is 2 bytes,
+	// followed by the 2-byte parse error offset, which together fill the
+	// same 4 bytes - see below.  call number is confirmed as one byte
+	// across all four, and command type is a byte everywhere
+	// putOci7Summary() sends it too, so both stay bytes.  two more bytes
+	// go out non-zero in every capture here (a marker, "36 01", 4 bytes
+	// ahead of a live value) - the same marker sendErrorPacket()'s native
+	// branch and putAuthTrailer()'s native trailer both carry too (at
+	// their own equivalent positions, not this one), so it reads as a
+	// real constant, and the live value after it as the same class of
+	// non-reproducible server-side data sendErrorPacket()'s native branch
+	// zeroes rather than guesses
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
@@ -9015,7 +9029,15 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 
 	static const byte_t	pad2[2]={0};
 	reqpacket.append(pad2,sizeof(pad2));
-	writeLE(&reqpacket,cursorid);
+
+	// the cursor id and the parse error offset, 2 bytes each.  packet
+	// [0028] of test/protocol/oracle/samples/
+	// 9808-redhat9x86-native-concurrent.oraproxy carries "01 00 19 00"
+	// here - cursor 1 and offset 25, the same offset the portable capture
+	// of that query carries.  the offset is always 0, for the reasons
+	// putOci7Summary() gives
+	writeLE(&reqpacket,(uint16_t)cursorid);
+	writeLE(&reqpacket,(uint16_t)0);
 
 	write(&reqpacket,commandtype);
 
@@ -9059,6 +9081,7 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	debugWrite("call number: %d",callnumber);
 	debugWrite("success iterations: %d",successiterations);
 	debugWrite("error: %d",oranum);
+	debugWrite("parse error offset: %d",0);
 	debugEnd();
 }
 
@@ -9713,13 +9736,16 @@ bool sqlrprotocol_oracle::sendOsql7Response(sqlrservercursor *cursor) {
 	// nothing else - no describe, no column definitions - and the client
 	// goes straight on to execute.  this is where the client reads the
 	// command type it keeps in cda->ft, so it's classified rather than
-	// sent as a constant - see oci7CommandType().  nothing has executed
-	// yet, so the success iteration count is 0
+	// sent as a constant - see oci7CommandType().  the success iteration
+	// count carries whether anything has executed yet this session - see
+	// oci7executed
 	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
-		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,0);
+		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,
+							oci7executed);
 	} else {
-		putOci7Summary(wireCursorId(cursor),commandtype,0,0);
+		putOci7Summary(wireCursorId(cursor),commandtype,0,
+							oci7executed);
 	}
 
 	return sendPacket(true);
@@ -9885,11 +9911,14 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	debugWrite("names: %s",names.getString());
 	debugEnd();
 
-	// the same status message an open response ends with
+	// the same status message an open response ends with, except that
+	// the end-to-end sequence number is 2 bytes wide here in the native
+	// encoding, not 4 - putAuthCount() ignores nativesize for portable,
+	// so that encoding is untouched
 	write(&reqpacket,(byte_t)TTC_STATUS);
 	putAuthCount(1,4);
 	if (oci7endtoendseqnumber) {
-		putAuthCount(0,4);
+		putAuthCount(0,2);
 	}
 
 	return sendPacket(true);
@@ -10083,9 +10112,10 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 	// send the login's 0, 0 and 3 for those three instead.
 	//
 	// the success iteration count is the one field those two captures
-	// disagree about - the native one sends 1 and the portable one 0 - so
-	// it goes out as the 0 sendOsql7Response() already sends for a
-	// statement that hasn't been executed on the client's behalf
+	// disagree about - the native one sends 1 and the portable one 0.
+	// that isn't an encoding difference: it's oci7executed, whichever way
+	// each of those two sessions happened to have it set by the time this
+	// call landed - see oci7executed
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
@@ -10099,9 +10129,11 @@ bool sqlrprotocol_oracle::sendOci7StatementError(
 
 	byte_t	commandtype=oci7CommandType(cursorFromWireId(cursorid));
 	if (nativeencoding) {
-		putOci7SummaryNative(cursorid,commandtype,0,0,oranum);
+		putOci7SummaryNative(cursorid,commandtype,0,
+						oci7executed,oranum);
 	} else {
-		putOci7Summary(cursorid,commandtype,0,0,oranum);
+		putOci7Summary(cursorid,commandtype,0,
+						oci7executed,oranum);
 	}
 	putLenString(message,charstring::getLength(message));
 
@@ -10323,6 +10355,7 @@ bool sqlrprotocol_oracle::sendParseExecuteResponse(sqlrservercursor *cursor) {
 	// the one command type actually pinned here.  one execution has
 	// happened, so the success iteration count is 1, and a statement with
 	// no result set processed no rows
+	oci7executed=true;
 	if (nativeencoding) {
 		putOci7SummaryNative(wireCursorId(cursor),42,0,1);
 	} else {
@@ -11055,9 +11088,11 @@ bool sqlrprotocol_oracle::sendQueryResponse(sqlrservercursor *cursor) {
 	// sendOsql7Response()
 	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
-		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,0);
+		putOci7SummaryNative(wireCursorId(cursor),commandtype,0,
+							oci7executed);
 	} else {
-		putOci7Summary(wireCursorId(cursor),commandtype,0,0);
+		putOci7Summary(wireCursorId(cursor),commandtype,0,
+							oci7executed);
 	}
 
 	return sendPacket(true);
@@ -12834,10 +12869,10 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		// path - captures agree this is 0x00 whenever no rows come
 		// back, so it may mark whether rows accompany the response
 
-		// index 57 is callseq, the per-call sequence number
-		// sendFetchResponse() also hardcodes as 0x0a for exactfetch -
-		// every capture on file happens to land on
-		// call 0x0a, so there's no evidence yet for computing it
+		// index 57 is callseq, the per-call sequence number - every
+		// capture on file happens to land on call 0x0a here, so
+		// there's no evidence yet for computing it instead of
+		// hardcoding it
 
 		// indices 0-1 are the native form of the lead-in the portable
 		// branch below writes - a constant rather than the cursor id,
@@ -17606,6 +17641,7 @@ bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 	// whether an execution happened.  a bare TTI_EXECUTE is the
 	// single-purpose case, so it gets none.  one execution has just
 	// completed, so the success iteration count is 1
+	oci7executed=true;
 	byte_t	commandtype=oci7CommandType(cursor);
 	if (nativeencoding) {
 		putOci7SummaryNative(wireCursorId(cursor),commandtype,
@@ -18160,6 +18196,9 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 
 	byte_t		commandtype=oci7CommandType(cursor);
 
+	// a fetch never runs without an execute ahead of it - see oci7executed
+	oci7executed=true;
+
 	if (rowsfetched && !nativeencoding) {
 
 		// an exact fetch leads its trailer with the same three fields
@@ -18189,8 +18228,8 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// capture of "select 1 from dual" both end their
 		// fetch reply at this object's last field.
 		//
-		// the native trailer below is this same object written four
-		// bytes to a field: its 47-byte block is putOci7Summary()'s
+		// the native trailer below is this same object in the native
+		// encoding: its 47-byte block is putOci7Summary()'s
 		// fields down to the call number, and callseq is the call
 		// number.  the rows processed and cursor id fields are both
 		// written for real (see trailer1a/trailer1b/trailer2 below);
@@ -18239,15 +18278,15 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		// unknown6/unknown8 lookup tables this replaces, none of it
 		// varies with column count, so there's no cap on colcount
 		// and nothing to index.  the 47-byte block is split up here,
-		// around the four fields that carry a value - the same four
-		// putOci7SummaryNative() writes with
-		// writeLE(&reqpacket,rowsprocessed),
-		// writeLE(&reqpacket,oranum),
-		// writeLE(&reqpacket,cursorid) and write(commandtype) - so the
-		// real row count, error number, cursor id and command type go
-		// out between them instead of literals.  the literal halves
-		// are the pads either side of those fields, and every one of
-		// them is zero in every capture
+		// around the fields that carry a value - the same ones
+		// putOci7SummaryNative() writes: rows processed, error number,
+		// a 2-byte cursor id and 2-byte parse error offset, and command
+		// type - so the real row count, error number, cursor id and
+		// command type go out between them instead of literals.  the
+		// parse error offset is 0 here, as it is in the two native
+		// fetch answers cited below, ORA-01403 included.  the literal
+		// halves are the pads either side of those fields, and every
+		// one of them is zero in every capture
 		const byte_t	trailer1a[]={
 			0x04, 0x01, 0x00, 0x00, 0x00, 0x01
 		};
@@ -18263,24 +18302,6 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		const byte_t	trailerend[]={
 			0x00, 0x00, 0x01, 0x00, 0x00
 		};
-
-		// callseq reads 0x0b for a plain fetch and 0x0a for an exact
-		// fetch in every capture on file.  the request-side field this
-		// byte was suspected of echoing (the high byte of
-		// query2()'s/fetch()'s "options") turned out to really be a
-		// per-call sequence counter, not independent flags - so this
-		// really could be an echo of that same counter rather than
-		// something tied to exact-fetch as such.  that still isn't
-		// confirmed for this response-side byte specifically though:
-		// the shifted-fetch-3/shifted-exfet-3/commit-fetch-3 captures
-		// move the fetch call to new sequence positions, but were
-		// taken with too small a capture snaplen to keep this byte -
-		// it sits ~90 bytes into a row-fetch response, past where
-		// every capture in that batch was cut off.  left as a fixed
-		// value tied to exactfetch, since that's still all that's
-		// confirmed; a future capture with a full snaplen could
-		// confirm whether to track the real call sequence instead
-		const byte_t	callseq=exactfetch?(byte_t)0x0a:(byte_t)0x0b;
 
 		if (exactfetch) {
 			// the exact-fetch marker: a fixed 3-byte prefix, an
@@ -18314,10 +18335,16 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		writeLE(&reqpacket,rowcount);
 		writeLE(&reqpacket,oranum);
 		reqpacket.append(trailer1b,sizeof(trailer1b));
-		writeLE(&reqpacket,wireCursorId(cursor));
+		writeLE(&reqpacket,(uint16_t)wireCursorId(cursor));
+		writeLE(&reqpacket,(uint16_t)0);
 		write(&reqpacket,commandtype);
 		reqpacket.append(trailer2,sizeof(trailer2));
-		write(&reqpacket,callseq);
+
+		// this byte echoes the request's own call sequence number -
+		// confirmed against [0024] of oracle102-oci7-native-login-
+		// select.cap and [0065]/[0066] of samples/10030-redhat9x86-
+		// native-multirowfetch-realserver.oraproxy
+		write(&reqpacket,callnumber);
 		reqpacket.append(trailerend,sizeof(trailerend));
 
 		if (getDebug()) {
@@ -18328,14 +18355,32 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 			debugWrite("error: %u",oranum);
 			debugHexDump(trailer1b,sizeof(trailer1b));
 			debugWrite("cursor id: %d",wireCursorId(cursor));
+			debugWrite("parse error offset: %d",0);
 			debugWrite("command type: %d",commandtype);
 			debugHexDump(trailer2,sizeof(trailer2));
-			debugHexDump(&callseq,1);
+			debugHexDump(&callnumber,1);
 			debugHexDump(trailerend,sizeof(trailerend));
 			debugEnd();
 		}
 
 		putGenericFooter();
+
+		// a batch shorter than the one asked for carries the ORA-01403
+		// message behind the trailer above, the same as the rowsfetched==0
+		// case below sends via putOci7Error() - confirmed against [0066] of
+		// samples/10030-redhat9x86-native-multirowfetch-realserver.oraproxy:
+		// a length byte of 0x19 (25) then "ORA-01403: no data found\n"
+		if (endofrows) {
+			putLenString(ORA_NO_DATA_FOUND_MESSAGE,
+					charstring::getLength(
+						ORA_NO_DATA_FOUND_MESSAGE));
+			if (getDebug()) {
+				debugStart("fetch response footer");
+				debugWrite("message: %s",
+						ORA_NO_DATA_FOUND_MESSAGE);
+				debugEnd();
+			}
+		}
 
 	} else {
 
@@ -19729,7 +19774,7 @@ bool sqlrprotocol_oracle::commit(const byte_t *rp) {
 	if (!cont->commit()) {
 		return sendTransactionError();
 	}
-	return sendTransactionResponse();
+	return sendCommitResponse();
 }
 
 bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
@@ -19801,13 +19846,54 @@ bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
 	return sendTransactionResponse();
 }
 
+bool sqlrprotocol_oracle::sendCommitResponse() {
+
+	if (query3session) {
+		return sendTransactionResponse();
+	}
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_STATUS;
+	uint32_t	callstatus=5;
+	uint32_t	endtoendseqnumber=0;
+
+	debugStart("commit response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("call status: %d",callstatus);
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+
+	// an oci7 commit gets a bare status message back, not a summary
+	// object.  a live 10.2 server answering three ocom() calls in one
+	// native-encoding session sends "00 00 09 05 00 00 00" to each - the
+	// same shape as a close answer (see sendCloseResponse()), but with a
+	// call status of 5.  the 5 isn't an echo of anything in the request,
+	// whose sequence numbers were 0x0a, 0x10 and 0x16
+	putAuthCount(callstatus,4);
+	if (oci7endtoendseqnumber) {
+		putAuthCount(endtoendseqnumber,4);
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
+	}
+
+	debugEnd();
+
+	return sendPacket(true);
+}
+
 bool sqlrprotocol_oracle::sendTransactionResponse() {
 
-	// what a bare commit, rollback or autocommit change gets back on
-	// success - the same summary-object split every other cursorless ack in
-	// this module uses (sendCursorNotOpenError, sendMarkerCancelError,
-	// sendUnimplementedFunctionError), with success field values in place
-	// of an error
+	// what a rollback or autocommit change gets back on success, and a
+	// commit in a query3 session - the same summary-object split every
+	// other cursorless ack in this module uses (sendCursorNotOpenError,
+	// sendMarkerCancelError, sendUnimplementedFunctionError), with success
+	// field values in place of an error.  no capture shows what a real
+	// server sends an oci7 client for a rollback or autocommit change, so
+	// unlike a commit (see sendCommitResponse()) they keep the summary
+	// object
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -20246,6 +20332,7 @@ bool sqlrprotocol_oracle::sendQueryError(sqlrservercursor *cursor) {
 					rowssent[cont->getId(cursor)],
 					message,messagesize);
 	} else {
+		oci7executed=true;
 		putOci7Error(wireCursorId(cursor),oci7CommandType(cursor),
 					rowssent[cont->getId(cursor)],1,
 					oranum,message,messagesize);
@@ -20393,6 +20480,7 @@ bool sqlrprotocol_oracle::sendMarkerCancelError() {
 		// unconfirmed guess for what a real server sends here (no
 		// capture on file has a marker cancel with a second cursor
 		// open), just not a value known to be wrong
+		oci7executed=true;
 		putOci7Error(lastwirecursorid,3,0,1,
 				ORA_USER_REQUESTED_CANCEL,
 				ORA_USER_REQUESTED_CANCEL_MESSAGE,

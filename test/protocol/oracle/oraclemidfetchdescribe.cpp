@@ -227,14 +227,17 @@ static const unsigned char	nativeoutofrange[]={
 // where the summary object an ORA-01007 travels in keeps the fields that are
 // session data rather than protocol - the same offsets oracledescribe.cpp
 // works from.  the cursor id and the call number legitimately differ per
-// session; the last two are the native encoding's alone, and are the two
-// fields the module answers differently from the capture
+// session; the native live pointer field is one the module always answers
+// differently from the capture, and success iterations, in both encodings,
+// is this arm's own divergence from the capture - this arm's session
+// already executed before this parse, where the capture's hadn't
 static const size_t	NATIVE_CURSOR_ID_OFFSET=15;
 static const size_t	NATIVE_CALL_NUMBER_OFFSET=46;
 static const size_t	NATIVE_SUCCESS_ITERATIONS_OFFSET=49;
 static const size_t	NATIVE_LIVE_POINTER_OFFSET=61;
 static const size_t	PORTABLE_CURSOR_ID_OFFSET=8;
 static const size_t	PORTABLE_CALL_NUMBER_OFFSET=24;
+static const size_t	PORTABLE_SUCCESS_ITERATIONS_OFFSET=26;
 
 // one column, as much of it as a describe answer carries - the fields
 // putOci7DescribeColumn() writes in src/protocols/oracle.cpp, in its order,
@@ -715,14 +718,28 @@ static void buildOutOfRangeError(bytebuffer *out, bool native,
 		for (size_t i=0; i<4; i++) {
 			buffer[NATIVE_CURSOR_ID_OFFSET+i]=
 					(unsigned char)((cursorid>>(8*i))&0xff);
-			buffer[NATIVE_SUCCESS_ITERATIONS_OFFSET+i]=0;
+
+			// this arm's session already executed before this
+			// parse, so the model is 1 rather than the capture's 0
+			buffer[NATIVE_SUCCESS_ITERATIONS_OFFSET+i]=
+					(unsigned char)((i==0)?1:0);
+
 			buffer[NATIVE_LIVE_POINTER_OFFSET+i]=0;
 		}
 		buffer[NATIVE_CALL_NUMBER_OFFSET]=callnumber;
 		return;
 	}
 
-	out->append(portableoutofrange,sizeof(portableoutofrange));
+	// the capture's success iterations is a bare zero byte - a real
+	// server's length-prefixed encoding of 0.  this arm's session
+	// already executed before this parse, so the model needs the
+	// length-prefixed encoding of 1 instead, one byte longer
+	out->append(portableoutofrange,PORTABLE_SUCCESS_ITERATIONS_OFFSET);
+	out->append((unsigned char)0x01);
+	out->append((unsigned char)0x01);
+	out->append(portableoutofrange+PORTABLE_SUCCESS_ITERATIONS_OFFSET+1,
+			sizeof(portableoutofrange)-
+				PORTABLE_SUCCESS_ITERATIONS_OFFSET-1);
 
 	unsigned char	*buffer=(unsigned char *)out->getBuffer();
 
