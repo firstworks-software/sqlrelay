@@ -899,6 +899,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - unified bindvariables.h's two definitions of a bind variable name
   character into one shared predicate
 - cleaned up the source code comments in the mysql protocol module
+- cleaned up the source code comments in sqlrsh
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
