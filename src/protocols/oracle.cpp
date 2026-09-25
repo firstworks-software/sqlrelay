@@ -4277,9 +4277,10 @@ void sqlrprotocol_oracle::warnAnoDeclined() {
 
 	debugStart("ano declined");
 
-	// through the logger modules rather than stderror.printf(), because
-	// this fires per connection rather than once at construction.  there's
-	// no cursor during the handshake, hence the NULL.
+	// warnings here go through the logger modules rather than
+	// stderror.printf(), because this fires per connection rather than
+	// once at construction.  there's no cursor during the handshake,
+	// hence the NULL.
 	uint32_t	encdrivers=anoDriversOffered(encryptiondrivers,
 							encryptiondrivercount);
 	if (encdrivers) {
@@ -4385,7 +4386,7 @@ bool sqlrprotocol_oracle::recvAnoRequest() {
 		return false;
 	}
 
-	// service count ...
+	// read each service
 	bool	success=true;
 	for (uint16_t i=0; i<servicecount; i++) {
 
@@ -4985,16 +4986,18 @@ bool sqlrprotocol_oracle::sendAnoResponse() {
 	return sendPacket(true);
 }
 
-// each service carries a version field of its own, and every real server
-// capture on file writes its own version into all four of them - 0x0a200100
-// from the 10.2 server, 0x0b200100 from the 11.2 one and 0x0c200100 from the
-// 12.2 one, whatever the client offered.  the header field they sit under is
-// the one that goes empty on a server newer than 10.2 - see sendAnoResponse().
 uint16_t sqlrprotocol_oracle::putSupervisorService() {
 
 	debugStart("supervisor");
 	debugWrite("service: ANO Supervisor");
 
+	// each service carries a version field of its own, and every real
+	// server capture on file writes its own version into all four of
+	// them - 0x0a200100 from the 10.2 server, 0x0b200100 from the 11.2
+	// one and 0x0c200100 from the 12.2 one, whatever the client offered.
+	// the header field they sit under is the one that goes empty on a
+	// server newer than 10.2 - see sendAnoResponse().
+	//
 	// the driver pair is unexplained.  the status reports success
 	// see "Oracle Wire Protocol - ANO Negotiation"
 	uint16_t drivers[]={0x0004,0x0001};
@@ -5558,15 +5561,15 @@ void sqlrprotocol_oracle::putTti6Response() {
 	// right, and 0x2f logs in.  a live 12.2 server sets both, and a live
 	// 11.2 server sets neither.
 	//
-	// a 9i verifier changes nothing here, which is not what #9658 expected
-	// going in.  the live 10.2 server the o3logon capture came from - a
-	// server that predates o5logon entirely - sends CCAP_LOGON_TYPES 0x0d,
-	// which is byte for byte the value below, and leaves CCAP_O7LOGON
-	// clear.  so the bit isn't what selects the des logon, and an OCI7
-	// client doesn't read it to pick a path: it has one login path, and it
-	// takes it whatever this byte says.  #9654's capture agrees - that
-	// client got through this negotiation against the module as it stands
-	// and went straight to the o3logon TTI functions.
+	// a 9i verifier changes nothing here.  the live 10.2 server the
+	// o3logon capture came from - a server that predates o5logon
+	// entirely - sends CCAP_LOGON_TYPES 0x0d, which is byte for byte the
+	// value below, and leaves CCAP_O7LOGON clear.  so the bit isn't what
+	// selects the des logon, and an OCI7 client doesn't read it to pick a
+	// path: it has one login path, and it takes it whatever this byte
+	// says.  a separate client capture agrees - that client got through
+	// this negotiation against the module as it stands and went straight
+	// to the o3logon TTI functions.
 	// a 9i client gets the real 10.2 server's own arrays, byte for byte,
 	// rather than the module's normal ones - see ttiservercompilecaps9i
 	const byte_t	*servercompilecaps=ttiservercompilecaps;
