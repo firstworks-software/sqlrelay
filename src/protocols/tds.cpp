@@ -20188,12 +20188,14 @@ bool sqlrprotocol_tds::cursorUnprepare() {
 	return true;
 }
 
-// Runs the query behind an open cursor, if it hasn't run yet, and moves
-// the cursor to where a fetch asked for.  Shared with tds 5.0 cursors.
 bool sqlrprotocol_tds::fetchCursorStatement(sqlrservercursor *cursor,
 						uint16_t fetchtype,
 						int32_t rownum,
 						bool *unsupported) {
+
+	// runs the query behind an open cursor, if it hasn't run yet, and
+	// moves the cursor to where a fetch asked for.  Shared with tds 5.0
+	// cursors.
 
 	*unsupported=false;
 
@@ -20321,10 +20323,11 @@ bool sqlrprotocol_tds::cursorOption() {
 	return true;
 }
 
-// Drops a cursor that openCursorStatement() opened, along with
-// everything kept alongside it.  Shared with tds 5.0 cursors.
 void sqlrprotocol_tds::closeCursorStatement(uint32_t handle,
 						sqlrservercursor *cursor) {
+
+	// drops a cursor that openCursorStatement() opened, along with
+	// everything kept alongside it.  Shared with tds 5.0 cursors.
 
 	cursorhandles.remove(handle);
 
