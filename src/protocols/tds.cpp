@@ -16321,7 +16321,7 @@ bool sqlrprotocol_tds::bulkTypeInfo(const byte_t **rpinout,
 	bulktypes[col]=tdstype;
 	bulksizes[col]=0;
 	bulkscales[col]=0;
-	// Whether this column's values are partially length prefixed.
+	// whether this column's values are partially length prefixed.
 	// bigvarchr, bigvarbin and nvarchar are var-len or part-len depending
 	// on the USHORTMAXLEN that follows the type byte, not on the type byte
 	// alone, so this can only be decided once that's been read.  xml is
