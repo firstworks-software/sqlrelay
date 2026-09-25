@@ -11994,8 +11994,8 @@ bool sqlrprotocol_oracle::getQuery2BindValues(const byte_t *rp,
 
 	for (uint32_t i=0; i<bindcount; i++) {
 
-		// A value boundary is the one place in this block that must not
-		// pull another packet in.  Running out here is a shape a real
+		// a value boundary is the one place in this block that must not
+		// pull another packet in.  running out here is a shape a real
 		// client sends and a real server answers ORA-01008, so reading
 		// for more would hang the session on an ordinary client error
 		// rather than fail it.
@@ -12378,16 +12378,15 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 		char		numbertext[MAX_NUMBER_TEXT_SIZE];
 		uint32_t	numbertextlen=0;
 
-		// number, character and date are captured on this path now
-		// (see #9986 - a real OCI7 client's DATE bind puts the same
-		// seven-byte layout on the wire that installQuery3Binds()
-		// already decodes, confirmed against a live capture of
-		// oci7bind's datebind variant).  anything else - a lob, a
-		// rowid - would still have to be decoded from bytes nothing
-		// on file has, and binding its raw wire form as text would
-		// put garbage in the statement - refuse instead, which
-		// leaves the client no worse off than the ORA-03113 every
-		// bind used to get.  see #9700.
+		// number, character and date are captured on this path now -
+		// a real OCI7 client's DATE bind puts the same seven-byte
+		// layout on the wire that installQuery3Binds() already
+		// decodes, confirmed against a live capture of oci7bind's
+		// datebind variant.  anything else - a lob, a rowid - would
+		// still have to be decoded from bytes nothing on file has,
+		// and binding its raw wire form as text would put garbage in
+		// the statement - refuse instead, which leaves the client no
+		// worse off than the ORA-03113 every bind used to get.
 		//
 		// this is checked ahead of the null shortcut below rather
 		// than inside the switch, so that a null of an unsupported
@@ -12421,7 +12420,7 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 		// pointer stale bound an empty string with a not-null
 		// indicator instead of a null, so a null bind inserted ''
 		// rather than NULL.  found by querying the inserted row back
-		// on redhat9x86, #9700
+		// on redhat9x86
 		if (!value) {
 			bv->type=SQLRSERVERBINDVARTYPE_STRING;
 			bv->valuesize=0;
@@ -12440,7 +12439,7 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 				// oracle's internal base-100 form, the same
 				// one the modern path decodes with this call.
 				// "select :num from dual" bound SQLT_INT=10
-				// puts c1 0b on the wire (#9700's selectint)
+				// puts c1 0b on the wire
 				if (!getNumberField(value,valuesize,
 							numbertext,
 							sizeof(numbertext),
@@ -12462,8 +12461,8 @@ bool sqlrprotocol_oracle::installQuery2Binds(sqlrservercursor *cursor) {
 			case ORACLE_TYPE_CHAR:
 			case ORACLE_TYPE_LONG:
 				// raw text, exactly as sent - "bindchar" and
-				// "bindvarchar" appear verbatim in #9700's
-				// insert capture
+				// "bindvarchar" appear verbatim in the insert
+				// capture
 				bv->type=SQLRSERVERBINDVARTYPE_STRING;
 				bv->valuesize=valuesize;
 				bv->value.stringval=(char *)
@@ -12680,7 +12679,8 @@ void sqlrprotocol_oracle::clearDefines(uint16_t curid) {
 
 // whether a legacy fetch sends this column back.  a cursor whose define list
 // wasn't decoded sends all of them, which is what a session that never sets
-// OPTION_DEFINE gets, and what every session got before #9810
+// OPTION_DEFINE gets, and what every session got before this module decoded
+// define lists at all
 bool sqlrprotocol_oracle::columnIsDefined(sqlrservercursor *cursor,
 						uint32_t column) {
 	uint16_t	curid=cont->getId(cursor);
@@ -12751,7 +12751,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 	// execute really does process no rows - they arrive on the fetch,
 	// and that is where the count shows up.  a dml has no fetch to carry
 	// it, so an insert answered with 0 tells the client nothing was
-	// inserted even when a row went in, which is what #9700's insert and
+	// inserted even when a row went in, which is what the insert and
 	// nullbind runs saw.  so a select keeps sending 0, byte for byte as
 	// before, and everything else sends what the backend actually did
 	uint32_t	rowsprocessed=0;
@@ -12842,17 +12842,17 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		//
 		// so a ub2, a ub4, and a ub4 that is zero in both.
 		//
-		// The first of the three is not the cursor id, though it was
+		// the first of the three is not the cursor id, though it was
 		// read as one for a long time and written as one - every
 		// capture it was decoded from happened to be answering cursor
 		// id 2, so a constant and the cursor id were indistinguishable.
-		// A real 10.2 server sends 2 here whichever cursor it is
+		// a real 10.2 server sends 2 here whichever cursor it is
 		// answering: captured at cursor ids 1, 2 and 3, across 1 to 5
-		// columns and 1 to 4 defines.  The cursor id itself rides in
+		// columns and 1 to 4 defines.  the cursor id itself rides in
 		// putOci7Summary()'s own field further down, which does vary
-		// and is correct.  Sending the cursor id here instead cost the
+		// and is correct.  sending the cursor id here instead cost the
 		// call for any cursor whose id was not 2 - the client read the
-		// response, rejected it, and cancelled with a marker.  See
+		// response, rejected it, and cancelled with a marker.  see
 		// QUERY2_RESPONSE_LEAD_IN.
 
 		writeLenPreInt(&reqpacket,QUERY2_RESPONSE_LEAD_IN);
