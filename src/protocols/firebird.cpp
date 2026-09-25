@@ -2319,8 +2319,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_firebird : public sqlrprotocol {
 };
 
 
-// the wire encryption levels, by name, for debug output
 static const char *wireCryptLevelName(uint32_t level) {
+
+	// the wire encryption levels, by name, for debug output
 	switch (level) {
 		case WIRE_CRYPT_DISABLED:
 			return "disabled";
@@ -3081,13 +3082,14 @@ bool sqlrprotocol_firebird::connect() {
 	return true;
 }
 
-// CNCT_client_crypt carries the client's wire encryption level as a little
-// endian integer, in as few bytes as the value needs - the client builds it
-// with ClumpletWriter::insertInt(), which trims the leading zero bytes, so
-// it arrives 1 to 4 bytes long - anything else, or a value no level uses,
-// falls back to ENABLED, the level a client that sends no tag at all gets
 static uint32_t readClientCryptLevel(const byte_t *value, byte_t valuelen) {
 
+	// CNCT_client_crypt carries the client's wire encryption level as a
+	// little endian integer, in as few bytes as the value needs - the
+	// client builds it with ClumpletWriter::insertInt(), which trims the
+	// leading zero bytes, so it arrives 1 to 4 bytes long - anything
+	// else, or a value no level uses, falls back to ENABLED, the level a
+	// client that sends no tag at all gets
 	if (!valuelen || valuelen>4) {
 		return WIRE_CRYPT_ENABLED;
 	}
@@ -3274,10 +3276,11 @@ void sqlrprotocol_firebird::setAuthMethodFromPlugin(const char *plugin) {
 	debugEnd();
 }
 
-// SrpServer::authenticate() packs each half of its answer as a 2-byte
-// little-endian length and that many bytes of hex text - SrpServer.cpp:
-// 330-338.
 static void appendSrpData(bytebuffer *data, const char *value) {
+
+	// SrpServer::authenticate() packs each half of its answer as a 2-byte
+	// little-endian length and that many bytes of hex text - SrpServer.cpp:
+	// 330-338.
 	size_t	len=charstring::getLength(value);
 	data->append((char)(len&0xff));
 	data->append((char)((len>>8)&0xff));
@@ -9155,11 +9158,11 @@ bool sqlrprotocol_firebird::infoBatch() {
 				statusvectorlen);
 }
 
-// renders a scaled integer the way the firebird connection module's
-// firebirdFormatScaledInt64() does, so an array that goes out through one
-// and comes back through the other reads the same both ways
 static void appendScaledInt64(stringbuffer *output, int64_t v, int8_t scale) {
 
+	// renders a scaled integer the way the firebird connection module's
+	// firebirdFormatScaledInt64() does, so an array that goes out through
+	// one and comes back through the other reads the same both ways
 	int16_t	digits=-scale;
 
 	// 10^10 already overflows an int, so the divisor is built with
