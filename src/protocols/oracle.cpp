@@ -7718,12 +7718,12 @@ bool sqlrprotocol_oracle::peekPrintableString(const byte_t *rp,
 		// a real 9i sqlplus client counts AUTH_ALTER_SESSION's NUL
 		// terminator inside the value's own declared length, the
 		// way the chunked form below does, so the last declared
-		// byte is allowed to be a NUL rather than a printable one
-		// (see the tagged login capture on #9806).  it still takes
-		// a printable byte ahead of it, so a bare 01 00 stays
-		// rejected.  this necessarily loosens a tagged field's name
-		// too, since peekO3LogonField() runs names and values
-		// through here alike, but no captured name is NUL-terminated
+		// byte is allowed to be a NUL rather than a printable one.
+		// it still takes a printable byte ahead of it, so a bare
+		// 01 00 stays rejected.  this necessarily loosens a tagged
+		// field's name too, since peekO3LogonField() runs names and
+		// values through here alike, but no captured name is
+		// NUL-terminated
 		for (byte_t i=0; i<length-1; i++) {
 			if (rp[i]<' ' || rp[i]>'~') {
 				return false;
@@ -7834,48 +7834,27 @@ bool sqlrprotocol_oracle::peekO3LogonField(const byte_t *rp,
 	return true;
 }
 
-// The o3logon login packets are shaped nothing like the o5logon ones.  Their
+// the o3logon login packets are shaped nothing like the o5logon ones.  their
 // argument block is positional - a marshalled OCI argument list, with no
-// AUTH_xxx names on the wire anywhere - and everything the module needs out of
-// it is a length-prefixed string at the end of the block: the user name, then
-// AUTH_PASSWORD in phase two, then the session attributes.
+// AUTH_xxx names on the wire anywhere - and everything this module needs out
+// of it is a length-prefixed string at the end of the block: the user name,
+// then AUTH_PASSWORD in phase two, then the session attributes.  how much
+// room the block takes ahead of those strings depends on the client's own
+// marshalling, so rather than walk a block whose layout isn't known, this
+// finds the item list directly: a run of items, each either a bare
+// printable length-prefixed string or a session-key login's tagged
+// name/value field (see peekO3LogonField()), that ends exactly where the
+// packet does.  having to land exactly on the end of the packet is what
+// makes a wrong offset unlikely rather than merely unlucky.
 //
-// How much room that block takes depends on the client's marshalling.
-// #9806's capture pins the portable form of it: a real sqlplus 9.0.1
-// client on solaris8sparc, negotiating the tagged 0x76 path against a
-// verifiertype="9i" listener (see
-// test/protocol/oracle/samples/9806-solaris8sparc-9i-o3logon-phase2.oraproxy).
-// Its phase-two item list starts at offset 23 - counted from where
-// recvAuthenticationRequest() hands off, just past the sequence number,
-// so 2 bytes further into the packet than what oradecode calls the
-// payload - and runs 8 items to the exact end.  That capture is of the
-// login failing, since
-// it is what found the bug; 9806-solaris8sparc-9i-o3logon-success.oraproxy
-// beside it is the same client's login once the bug was fixed, running on
-// through the summary response and a fetch, which no earlier sample
-// covered.  Neither earlier capture pinned this form:
-// #9658's reference capture is an OCI7 client against a real server that
-// negotiated the native pointer representation, so it marshalled
-// natively - a raw dump of 26 32-bit words, which isn't even the native
-// form this module implements (that one is 64-bit).  #9654's capture of
-// the same client against sqlr-listener, which is the portable form, was
-// taken at the default snaplen and is truncated.
-//
-// So rather than walk a block whose layout isn't known, this finds the item
-// list directly: a run of items, each either a bare printable
-// length-prefixed string or a session-key login's tagged name/value field
-// (see peekO3LogonField()), that ends exactly where the packet does.
-// Having to land exactly on the end of the packet is what makes a wrong
-// offset unlikely rather than merely unlucky.
-//
-// It is still a heuristic, so it is bounded on both sides: the search stays
+// it is still a heuristic, so it is bounded on both sides: the search stays
 // inside the block rather than running the length of the packet, since the
 // block is a fixed size struct and no marshalling makes it bigger than
-// O3LOGON_MAX_BLOCK_SIZE, and a run is capped at O3LOGON_MAX_STRINGS.  Every
+// O3LOGON_MAX_BLOCK_SIZE, and a run is capped at O3LOGON_MAX_STRINGS.  every
 // way it can pick a wrong offset fails closed - a user name that isn't one
-// matches no account, and the login is refused with the same ORA-01017 a wrong
-// password gets.
-// see "Oracle Wire Protocol - Authentication" and #9658
+// matches no account, and the login is refused with the same ORA-01017 a
+// wrong password gets.
+// see "Oracle Wire Protocol - Authentication"
 const byte_t *sqlrprotocol_oracle::findO3LogonStrings(const byte_t *rp,
 							const byte_t *end) {
 
@@ -7955,8 +7934,8 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 	}
 
 	// AUTH_PASSWORD, if the client sent one, arrives as a tagged field in
-	// the same shape #9769 already parses for phase one's session
-	// attributes - see peekO3LogonField().  a non-empty value is a whole
+	// the same shape peekO3LogonField() already parses for phase one's
+	// session attributes.  a non-empty value is a whole
 	// number of des blocks in hex; a zero length value is what a client
 	// sends when it refuses a password, the same as o5logon's
 	// AUTH_PASSWORD (see getAuthField()).  everything else here -
@@ -8024,7 +8003,7 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // the classic, pre-session-key login (TTI_LOGON_PRESENT_USER/
 // TTI_LOGON_PRESENT_PWD - 0x52/0x51) that an ancient pre-8.0 OCI client's
 // olog() call sends - the only shape that interface ever sends, since it
-// predates O3LOGON's tagged AUTH_SESSKEY exchange entirely (see #9794).
+// predates O3LOGON's tagged AUTH_SESSKEY exchange entirely.
 //
 // unlike O3LOGON's self-delimiting shapes, this one is a fixed sequence of
 // positional fields mirroring olog()'s own C argument list: a pointer and a
@@ -8039,9 +8018,9 @@ bool sqlrprotocol_oracle::recvO3LogonRequest(const byte_t *rp,
 // the process id string and program name, followed by one contiguous run
 // of those strings - raw, or each behind a length byte of its own,
 // depending on ENCODING_CONV_LENGTH (see below).  decoded byte for byte,
-// field by field, from a real client's own request to this module (#9794,
-// #10048) - both phases carry the same header layout, phase two's password
-// count simply being zero on phase one's own copy of it.
+// field by field, from a real client's own request to this module - both
+// phases carry the same header layout, phase two's password count simply
+// being zero on phase one's own copy of it.
 //
 // every pointer field is the client's own raw address - four bytes, native
 // byte order, the same width and order getPointer() already reads for
@@ -8094,7 +8073,7 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// client wire-speaking the legacy OCI7 API on top of a modern
 	// Instant Client
 	// (samples/10048-dev-oci23api7-portable-login-sqlrelay-o5logon-
-	// success.oraproxy) alike (#10048).  a client's pointer presence
+	// success.oraproxy) alike.  a client's pointer presence
 	// byte differing between its requests to a real server and to this
 	// module is the negotiated pointer width changing with the peer, not
 	// a native-encoding signal, and has no bearing on these count fields
@@ -8132,20 +8111,20 @@ bool sqlrprotocol_oracle::recvClassicLogonRequest(const byte_t *rp,
 	// the program length is the last field this module has any use for,
 	// but it isn't the last field in the header - a real client's own
 	// request carries more of them after it, of a shape not confirmed
-	// against a real capture (see #9794).  rather than keep walking
-	// blind, land on the string blob the same way findO3LogonStrings()
-	// does for O3LOGON: it has to end exactly on the packet's own end,
-	// whatever comes between here and there
+	// against a real capture.  rather than keep walking blind, land on
+	// the string blob the same way findO3LogonStrings() does for
+	// O3LOGON: it has to end exactly on the packet's own end, whatever
+	// comes between here and there
 	//
-	// A client that sent ENCODING_CONV_LENGTH puts a one-byte length
+	// a client that sent ENCODING_CONV_LENGTH puts a one-byte length
 	// prefix on each non-empty string, and declares buffer sizes above
-	// rather than lengths.  At a single-byte charset the two agree -
+	// rather than lengths.  at a single-byte charset the two agree -
 	// samples/oracle102-oci7-portable-login-select.cap packet [0011]
 	// shows "03 dev" for a declared 3 - but converting into AL32UTF8
 	// declares 3x ("08 testuser" for a declared 24, in
 	// 10273-redhat9x86-oci7-strfetch-we8iso8859p1-realserver-r4), so
 	// only the prefixes give the real lengths and the blob has to be
-	// searched for.  Without ENCODING_CONV_LENGTH there are no prefixes
+	// searched for.  without ENCODING_CONV_LENGTH there are no prefixes
 	// and the sizes are exact ("testuserredhat9x86..." for 8 and 25, in
 	// 10273-redhat9x86-oci7-strfetch-al32utf8-realserver-r1).
 	uint32_t	sizes[]={
@@ -8258,22 +8237,22 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 	// challenge, ahead of a classic login's real phase-two packet, it's
 	// a bare break/reset with nothing in flight yet - a reset marker
 	// back is the whole answer, same as the main query loop answers one
-	// mid-call (see #9794).  a genuine modern OCI client that has just
-	// read a refusal doesn't send one at all: it goes straight on to its
-	// next login as a data packet, the same as it does against a real
-	// server - packets [0017] and [0018] of test/protocol/oracle/
-	// samples/10039-dev-oci23-native-loginretry-realserver.oraproxy show
-	// it (#10039).  but oci7.cpp's Instant-Client-23-backed legacy build
-	// (see #10035) does send a second, separate marker of its own here,
-	// on a retry - the client is waiting to read a call result, not
-	// another marker, same as getTtiFunction() and runQuery2PlSqlBlock()
-	// - so once a login's been refused on this connection, the reset
-	// marker needs their sendMarkerCancelError() follow-up too, or both
-	// sides block in read() forever (#10035).  it doesn't reopen #10039:
-	// that bug was sendErrorPacket() sending the wrong client's summary
-	// shape for every login failure, retried or not, and is fixed there
-	// now - this follow-up answers a stray marker after the real error
-	// already went out correctly, not the error itself
+	// mid-call.  a genuine modern OCI client that has just read a
+	// refusal doesn't send one at all: it goes straight on to its next
+	// login as a data packet, the same as it does against a real server -
+	// packets [0017] and [0018] of test/protocol/oracle/samples/
+	// 10039-dev-oci23-native-loginretry-realserver.oraproxy show it.  but
+	// oci7.cpp's Instant-Client-23-backed legacy build does send a
+	// second, separate marker of its own here, on a retry - the client is
+	// waiting to read a call result, not another marker, same as
+	// getTtiFunction() and runQuery2PlSqlBlock() - so once a login's been
+	// refused on this connection, the reset marker needs their
+	// sendMarkerCancelError() follow-up too, or both sides block in
+	// read() forever.  this is a separate concern from sendErrorPacket()
+	// sending the wrong client's summary shape for every login failure,
+	// retried or not, which is already fixed - this follow-up answers a
+	// stray marker after the real error already went out correctly, not
+	// the error itself
 	for (;;) {
 		if (!recvPacket()) {
 			return false;
@@ -8349,7 +8328,7 @@ bool sqlrprotocol_oracle::recvAuthenticationRequest(bool secondphase) {
 		// phase one's ttifunction is the only place the client's
 		// choice of login format shows up - phase two's matching
 		// TTI_LOGON_PRESENT_PWD carries no such marker of its own,
-		// so this has to be remembered from here (see #9794)
+		// so this has to be remembered from here
 		classiclogon=(ttifunction==TTI_LOGON_PRESENT_USER);
 	} else {
 		if (!read(rp,&ttifunction,"ttifunction",
@@ -8609,17 +8588,16 @@ bool sqlrprotocol_oracle::sendAuthenticationChallenge() {
 			(fabricatedchallenge)?"yes":"no");
 
 	// o3logon answers the session key challenge in one of two shapes,
-	// depending on which login format the client used in phase one (see
-	// #9794): a real 0x76 (TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY)
-	// client wants the tagged AUTH_SESSKEY shape
-	// putAuthField()/putAuthTrailer() below also answer with for
-	// O5LOGON - confirmed live against redhat9x86 and solaris8sparc
-	// (#9792) - while a real classic 0x52 (TTI_LOGON_PRESENT_USER)
-	// client, the only shape an ancient pre-8.0 OCI olog() call ever
-	// sends, wants this branch's older, untagged shape instead: a
-	// count, then the key, then a bare summary object.
+	// depending on which login format the client used in phase one: a
+	// real 0x76 (TTI_LOGON_PRESENT_USER_REQ_AUTH_SESSKEY) client wants
+	// the tagged AUTH_SESSKEY shape putAuthField()/putAuthTrailer() below
+	// also answer with for O5LOGON - confirmed live against redhat9x86
+	// and solaris8sparc - while a real classic 0x52
+	// (TTI_LOGON_PRESENT_USER) client, the only shape an ancient pre-8.0
+	// OCI olog() call ever sends, wants this branch's older, untagged
+	// shape instead: a count, then the key, then a bare summary object.
 	//
-	// The key carries a length byte of its own too, behind the count,
+	// the key carries a length byte of its own too, behind the count,
 	// for a client that sent ENCODING_CONV_LENGTH (packet [0012] of
 	// samples/oracle102-oci7-{native,portable}-login-wrongpassword.cap
 	// and of samples/10273-redhat9x86-oci7-strfetch-we8iso8859p1-
