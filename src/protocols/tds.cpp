@@ -14497,22 +14497,23 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 	return true;
 }
 
-// Writes a tds 5.0 paramfmt describing "count" parameters.  The caller
-// fills in each parameter's name, status, usertype, datatype, size and -
-// for a decimal or numeric - precision and scale; everything else is
-// derived from the datatype here, so that this and preTds7ParamsWrite()
-// can't disagree about a parameter's shape.
-//
-// The narrow token (0xEC) rather than paramfmt2 (0x20), because that's
-// what a real ase sends a client that didn't ask for wide tables, and
-// capability() doesn't offer them.
-//
-// The declared size is not the width the values have to be written at -
-// a real ase declares a decimal(9,2) at 5 where a ct-lib client declares
-// the same parameter at 33 - so nothing here caps what
-// preTds7ParamsWrite() puts on the wire.
 bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 						uint16_t count) {
+
+	// writes a tds 5.0 paramfmt describing "count" parameters.  The caller
+	// fills in each parameter's name, status, usertype, datatype, size
+	// and - for a decimal or numeric - precision and scale; everything
+	// else is derived from the datatype here, so that this and
+	// preTds7ParamsWrite() can't disagree about a parameter's shape.
+	//
+	// The narrow token (0xEC) rather than paramfmt2 (0x20), because that's
+	// what a real ase sends a client that didn't ask for wide tables, and
+	// capability() doesn't offer them.
+	//
+	// The declared size is not the width the values have to be
+	// written at - a real ase declares a decimal(9,2) at 5 where a
+	// ct-lib client declares the same parameter at 33 - so nothing
+	// here caps what preTds7ParamsWrite() puts on the wire.
 
 	byte_t	token=TDS5_TOKEN_PARAMFMT;
 
@@ -14520,7 +14521,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	debugPreTds7TokenType(token);
 	debugWrite("count: %d",count);
 
-	// The token length counts bytes that aren't written yet, and every
+	// the token length counts bytes that aren't written yet, and every
 	// parameter block is a different size, so build the blocks into a
 	// scratch buffer and measure them - the same reason preTds7RowFmt()
 	// does it that way.
@@ -14601,7 +14602,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	// the length covers the parameter count too, not just the blocks
 	size_t	tokenlength=sizeof(uint16_t)+params.getSize();
 
-	// Refuse rather than truncate.  A truncated paramfmt isn't a
+	// refuse rather than truncate.  A truncated paramfmt isn't a
 	// smaller set of parameters, it's a stream the client can't parse
 	// at all, and the params token behind it has no length of its own
 	// to recover from.  Class 16 for the same reason preTds7RowFmt()
@@ -14624,13 +14625,14 @@ bool sqlrprotocol_tds::preTds7ParamFmtWrite(const tds5paramfmt *fmts,
 	return true;
 }
 
-// Writes a tds 5.0 params token carrying "count" values, described by
-// the same format array the paramfmt in front of them was written from.
-// The token has no length field at all - it can only be parsed by
-// replaying that paramfmt - so there's nothing to measure here.
 bool sqlrprotocol_tds::preTds7ParamsWrite(const tds5paramfmt *fmts,
 						sqlrserverbindvar *bvs,
 						uint16_t count) {
+
+	// writes a tds 5.0 params token carrying "count" values, described by
+	// the same format array the paramfmt in front of them was written
+	// from.  The token has no length field at all - it can only be parsed
+	// by replaying that paramfmt - so there's nothing to measure here.
 
 	byte_t	token=TDS5_TOKEN_PARAMS;
 
@@ -14656,20 +14658,21 @@ bool sqlrprotocol_tds::preTds7ParamsWrite(const tds5paramfmt *fmts,
 	return true;
 }
 
-// Writes one parameter's value into a params token.
-//
-// This is preTds7Field() sourced from a bind variable rather than from a
-// result-set field, and it isn't that function for two reasons: a bind
-// holds a value in whatever form the back end put there rather than
-// always as text, and it holds binary as raw bytes rather than as the
-// hex text the ct-lib back ends render a binary column as.
 void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 						sqlrserverbindvar *bv) {
+
+	// writes one parameter's value into a params token.
+	//
+	// This is preTds7Field() sourced from a bind variable rather than from
+	// a result-set field, and it isn't that function for two reasons: a
+	// bind holds a value in whatever form the back end put there rather
+	// than always as text, and it holds binary as raw bytes rather than as
+	// the hex text the ct-lib back ends render a binary column as.
 
 	debugStart("pre-tds7 param value write");
 	debugPreTds7ColumnType(fmt->tds5type);
 
-	// The bind's value, kept in every form the types below need it in.
+	// the bind's value, kept in every form the types below need it in.
 	// The text rendering is what the date/time, money and decimal
 	// writers parse, the same way preTds7Field() gets them.
 	stringbuffer	strb;
@@ -14773,7 +14776,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			if (size==4) {
 				write(&resppacket,(uint32_t)(int32_t)data);
 			} else {
-				// The high half goes first, ahead of the low
+				// the high half goes first, ahead of the low
 				// half.  That ordering is the type's own,
 				// not a byte order - each half goes out in
 				// the order the login declared.
@@ -14908,7 +14911,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 		case TDS5_TYPE_VARCHAR:
 		case TDS5_TYPE_CHAR:
 			{
-			// Character data goes out in the charset the login
+			// character data goes out in the charset the login
 			// record declared, the way preTds7Field() writes it -
 			// a tds 5.0 paramfmt has no collation field to
 			// declare anything else.  The conversion runs before
@@ -15010,7 +15013,7 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 			break;
 
 		default:
-			// Void, and the date and time types the reader
+			// void, and the date and time types the reader
 			// doesn't decode either.  Write the null form rather
 			// than nothing at all, so a type added later without
 			// a case here costs one value rather than the whole
@@ -15025,16 +15028,18 @@ void sqlrprotocol_tds::preTds7ParamValueWrite(const tds5paramfmt *fmt,
 	debugEnd();
 }
 
-// A parameter's null form, which is decided entirely by its type's
-// varint class.  preTds7Field() writes the same shapes for a row field.
 void sqlrprotocol_tds::preTds7ParamNullWrite(const tds5paramfmt *fmt) {
+
+	// a parameter's null form, which is decided entirely by its type's
+	// varint class.  preTds7Field() writes the same shapes for a row
+	// field.
 
 	debugWrite("data: null");
 
 	switch (preTds7VarintSize(fmt->tds5type)) {
 		case 0:
 			{
-			// A fixed-length type has no null form at all -
+			// a fixed-length type has no null form at all -
 			// there's no length field to set to zero - so a null
 			// goes out as a zero value at the type's own width.
 			byte_t	zero[8];
@@ -15060,7 +15065,7 @@ void sqlrprotocol_tds::preTds7ParamNullWrite(const tds5paramfmt *fmt) {
 			write(&resppacket,(uint32_t)0);
 			break;
 		default:
-			// A length of 0 is a varint-1 type's only null form,
+			// a length of 0 is a varint-1 type's only null form,
 			// and it's also what an empty value comes out as -
 			// so an empty varchar and a null varchar are the
 			// same bytes, and the client reads both as null.
@@ -15665,7 +15670,7 @@ void sqlrprotocol_tds::decimal(const char *field,
 
 byte_t sqlrprotocol_tds::decimalSize(byte_t precision) {
 
-	// How many bytes a decimal of a given precision occupies on the
+	// how many bytes a decimal of a given precision occupies on the
 	// wire, counting the sign byte.  The client works this out from the
 	// precision it was sent, rather than from the length byte, so a
 	// value written at any other width decodes to garbage.
@@ -15856,14 +15861,15 @@ uint32_t sqlrprotocol_tds::appendQueryError(sqlrservercursor *cursor) {
 	return (uint32_t)errorcode;
 }
 
-// Refuses an "insert bulk" statement that arrived as sql, with its own
-// done, and says whether it refused one.  The statement opens a bulk
-// copy, and nothing in this dialect reads the bulk data that would
-// follow it, but it is real Transact-SQL, so running it would leave the
-// backend's own connection - which is pooled, and outlives the client
-// session - in bulk-copy mode.  Class 16 for the same reason
-// preTds7CurError() uses it - the session stays usable.
 bool sqlrprotocol_tds::preTds7InsertBulk(const char *sql, bool more) {
+
+	// refuses an "insert bulk" statement that arrived as sql, with its own
+	// done, and says whether it refused one.  The statement opens a bulk
+	// copy, and nothing in this dialect reads the bulk data that would
+	// follow it, but it is real Transact-SQL, so running it would leave
+	// the backend's own connection - which is pooled, and outlives the
+	// client session - in bulk-copy mode.  Class 16 for the same reason
+	// preTds7CurError() uses it - the session stays usable.
 
 	if (!insertBulk(sql)) {
 		return false;
@@ -15882,15 +15888,17 @@ bool sqlrprotocol_tds::preTds7InsertBulk(const char *sql, bool more) {
 	return true;
 }
 
-// Refuses an "insert bulk" statement that arrived as the sql of an rpc,
-// and says whether it refused one.  Same reasoning as
-// preTds7InsertBulk() - running the statement would leave the backend's
-// own connection, which is pooled and outlives the client session, in
-// bulk-copy mode - but an rpc handler can't answer with a done of its
-// own.  rpc() and preTds7DbRpc() each append the done that closes the
-// call after the handler returns, so a second one here would desync the
-// client.  This replies the way an rpc error normally does instead.
 bool sqlrprotocol_tds::rpcInsertBulk(const char *sql) {
+
+	// refuses an "insert bulk" statement that arrived as the sql of an
+	// rpc, and says whether it refused one.  Same reasoning as
+	// preTds7InsertBulk() - running the statement would leave the
+	// backend's own connection, which is pooled and outlives the client
+	// session, in bulk-copy mode - but an rpc handler can't answer with a
+	// done of its own.  rpc() and preTds7DbRpc() each append the done that
+	// closes the call after the handler returns, so a second one here
+	// would desync the client.  This replies the way an rpc error normally
+	// does instead.
 
 	if (!insertBulk(sql)) {
 		return false;
