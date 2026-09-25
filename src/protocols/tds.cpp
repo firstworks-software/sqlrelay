@@ -2005,7 +2005,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t size,
 					size_t *outsize);
 
-		// Convert between the charset the pre-tds7 client declared
+		// convert between the charset the pre-tds7 client declared
 		// in its login record and the utf-8 this module works in.
 		// Both return NULL - and leave *outsize alone - when no
 		// conversion applies, either because the client declared
@@ -2051,7 +2051,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						size_t packetsize);
 
 		bool	preTds7Login();
-		// Applies the charset and language a pre-tds7 login record
+		// applies the charset and language a pre-tds7 login record
 		// declared.  The charset is applied as soon as the record
 		// is parsed, because it decides how character data is
 		// converted in both directions for the rest of the session
@@ -2061,10 +2061,10 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						const char *language,
 						byte_t languagelen,
 						byte_t suppresslanguage);
-		// The envchange (and the info message behind it) that tells
+		// the envchange (and the info message behind it) that tells
 		// a pre-tds7 client what charset the session settled on
 		void	envChangeCharset();
-		// The pre-tds7 counterpart of the language block in
+		// the pre-tds7 counterpart of the language block in
 		// tds7Login()
 		void	preTds7ChangeLanguage();
 		// "value" must point at a buffer of at least "size"+1
@@ -2076,7 +2076,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						const byte_t **rpout);
 		void	capability();
 
-		// Capability mask arithmetic.  A mask arrives most
+		// capability mask arithmetic.  A mask arrives most
 		// significant byte first, so bit "cap" of a mask "masklen"
 		// bytes long is bit (cap&7) of mask[masklen-1-(cap>>3)].
 		// Both are no-ops for a bit past the end of the mask.
@@ -2095,14 +2095,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						uint16_t capcount,
 						const byte_t *clientmask);
 
-		// What the login ended up agreeing to.  All four answer
+		// what the login ended up agreeing to.  All four answer
 		// false when the client sent no capability token at all.
 		bool	requestCapabilityGranted(uint16_t cap);
 		bool	responseCapabilityGranted(uint16_t cap);
 		bool	clientRequestedCapability(uint16_t cap);
 		bool	clientRequestedResponseCapability(uint16_t cap);
 
-		// The tds 5.0 encrypted-password exchange.
+		// the tds 5.0 encrypted-password exchange.
 		// preTds7SecEncryptLogin() drives the whole thing and hands
 		// back the cleartext password; the rest are its pieces.
 		// "password" must point at a buffer of "passwordsize" bytes.
@@ -2118,7 +2118,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					size_t *rpsizeinout,
 					uint16_t param,
 					byte_t *blob);
-		// The cipher itself, and the only thing that knows how the
+		// the cipher itself, and the only thing that knows how the
 		// blob is enciphered - see the note at the definition.
 		bool	secEncryptDecryptPassword(const byte_t *key,
 					const byte_t *blob,
@@ -2164,7 +2164,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	preTds7DbRpc(const byte_t **rpinout,
 					size_t *rpsizeinout);
 
-		// Tds 5.0 dynamic sql.  preTds7Dynamic() decodes the token
+		// tds 5.0 dynamic sql.  preTds7Dynamic() decodes the token
 		// and hands what it decoded to one of the operations below,
 		// each of which appends its own done.  "more" is whether
 		// another command follows in the request buffer.
@@ -2192,7 +2192,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	removeDynamicHandle(const char *id);
 		void	evictOldestDynamicHandle();
 
-		// Tds 5.0 cursors.  One decoder per token, each of which
+		// tds 5.0 cursors.  One decoder per token, each of which
 		// appends its own reply and done.  "more" - whether another
 		// command follows in the request buffer - is worked out
 		// inside each of them, the way the language and dynamic sql
@@ -2280,7 +2280,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	evictOldestPreTds7Cursor();
 		void	releaseAllPreTds7Cursors();
 
-		// Tds 5.0 paramfmt/params, in both directions.  These know
+		// tds 5.0 paramfmt/params, in both directions.  These know
 		// nothing about what the pair is attached to - a language
 		// command, a dbrpc, a dynamic execute and a server-sent msg
 		// all carry the same two tokens and use them the same way.
@@ -2380,7 +2380,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const byte_t **rpout,
 					size_t *rpsizeout);
 		void	colMetaData(sqlrservercursor *cursor, bool nometadata);
-		// The tds 5.0 counterpart of colMetaData().  Returns
+		// the tds 5.0 counterpart of colMetaData().  Returns
 		// false, having sent an error and a done of its own, if
 		// the metadata won't fit in a rowfmt - the caller must
 		// not send rows after that.  "more" is whether another
@@ -2396,7 +2396,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint16_t col,
 					uint16_t coltype,
 					byte_t tds5type);
-		// The single source of the sizes a pre-tds7 result set is
+		// the single source of the sizes a pre-tds7 result set is
 		// declared at.  preTds7TypeInfo() writes what these return
 		// and preTds7Field() caps every value against them, so the
 		// two writers can't drift apart.
@@ -2449,7 +2449,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					const char *field,
 					uint64_t fieldsize,
 					bool null);
-		// The tds 5.0 counterparts of rows() and field().  Separate
+		// the tds 5.0 counterparts of rows() and field().  Separate
 		// implementations rather than branches in those: the length
 		// prefixes, the null forms, the character encoding and the
 		// decimal layout all come out differently, and rows() and
@@ -2624,7 +2624,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		bool	execute(bool nometadata);
 		bool	unprepare();
 
-		// The wire-neutral cores of the three above, shared with
+		// the wire-neutral cores of the three above, shared with
 		// tds 5.0 dynamic sql, which does the same three things by
 		// string id rather than by numeric handle.  What's left in
 		// each wrapper is the ms-tds reply tail.
@@ -2645,7 +2645,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		void	unprepareStatement(uint32_t handle,
 					sqlrservercursor *cursor);
 
-		// The wire-neutral cores of cursorOpen(), cursorFetch(),
+		// the wire-neutral cores of cursorOpen(), cursorFetch(),
 		// and cursorClose(), shared with tds 5.0 cursors, which do
 		// the same three things behind cursor tokens of their own.
 		// What's left in each wrapper is the ms-tds reply tail.
@@ -2698,7 +2698,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 						const char *query,
 						size_t querysize,
 						uint16_t bindcount);
-		// How a positioned statement came out.  The two dialects
+		// how a positioned statement came out.  The two dialects
 		// word the reply differently, so the shared half below
 		// reports the outcome rather than writing it.
 		enum positionedresult {
@@ -2707,7 +2707,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 			POSITIONED_QUERY_FAILED,
 			POSITIONED_NO_ROWS
 		};
-		// Runs one positioned statement, writing no reply.
+		// runs one positioned statement, writing no reply.
 		// Releases "cursor", except on POSITIONED_QUERY_FAILED,
 		// where the caller needs it to build the error out of.
 		positionedresult	positionedExecuteQuery(
@@ -2878,7 +2878,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 					uint16_t status,
 					uint16_t curcmdortransstate,
 					uint64_t donerowcount);
-		// A done-in-proc and a done-proc carry the same
+		// a done-in-proc and a done-proc carry the same
 		// CurCmd-or-TransState second uint16 that a done does.
 		// Both take a CurCmd, and both ignore it for a tds 5.0
 		// session and send what transState() picks instead -
@@ -2994,7 +2994,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		// actually negotiated out tds7-shaped.
 		bool		pretds7;
 
-		// What a pre-tds7 login record declared about character
+		// what a pre-tds7 login record declared about character
 		// data.  The module instance outlives the session, so
 		// init() clears all of these - a client that gets this
 		// connection next must not inherit the previous client's
@@ -3014,7 +3014,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 		const char	*clientcharsetinenc;
 		const char	*clientcharsetoutenc;
 
-		// The language the same record declared, and its "don't
+		// the language the same record declared, and its "don't
 		// send me the language-change message" flag
 		char		clientlanguage[PRE_TDS7_NAME_SIZE+1];
 		byte_t		clientlanguagelen;
@@ -3030,7 +3030,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_tds : public sqlrprotocol {
 
 		bool		loggedin;
 
-		// The tds 5.0 capability masks this session settled on.
+		// the tds 5.0 capability masks this session settled on.
 		// "client*" is what the login's capability token declared,
 		// "granted*" is what capability() answered with; the answer
 		// is the declaration intersected with what this module
@@ -3185,7 +3185,7 @@ sqlrprotocol_tds::sqlrprotocol_tds(sqlrservercontroller *cont,
 	dbistds=(!charstring::compare(dbtype,"freetds") ||
 			!charstring::compare(dbtype,"sap"));
 
-	// The ct-lib-based connection modules hand back binary and varbinary
+	// the ct-lib-based connection modules hand back binary and varbinary
 	// column values as hex text rather than as bytes, because ct-lib's
 	// own binary-to-char conversion renders them that way and neither
 	// module decodes them.  sap does the same with image; freetds
