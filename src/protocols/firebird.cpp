@@ -10664,9 +10664,9 @@ bool sqlrprotocol_firebird::batchRls() {
 
 bool sqlrprotocol_firebird::batchCancel() {
 
-	// A batch has nothing in flight to abort - the messages it holds
+	// a batch has nothing in flight to abort - the messages it holds
 	// haven't run, and the ones a previous op_batch_exec ran belong to
-	// the transaction, which only a commit or rollback can undo.  So
+	// the transaction, which only a commit or rollback can undo.  so
 	// cancelling and releasing come to the same thing here.
 
 	return batchRelease("batch cancel response",true);
@@ -10717,9 +10717,9 @@ bool sqlrprotocol_firebird::batchSync() {
 	// data {
 	// }
 	//
-	// The op carries nothing at all, not even a statement handle - it
+	// the op carries nothing at all, not even a statement handle - it
 	// asks the session to answer everything it still owes, and the
-	// answer is an ordinary response.  Nothing here defers a response,
+	// answer is an ordinary response.  nothing here defers a response,
 	// so there is never anything outstanding to flush.
 
 	debugStart("batch sync");
@@ -10743,7 +10743,7 @@ bool sqlrprotocol_firebird::batchSetBpb() {
 	// 	cstring		blob parameter buffer
 	// }
 	//
-	// The buffer is a plain bpb, not a batch parameter buffer - it sets
+	// the buffer is a plain bpb, not a batch parameter buffer - it sets
 	// the default the batch gives blobs the client registers with it.
 
 	debugStart("batch set bpb");
@@ -10802,7 +10802,7 @@ bool sqlrprotocol_firebird::batchRegBlob() {
 	// 	int32_t		batch blob id, low word
 	// }
 	//
-	// The client is saying "inside this batch, the blob I already built
+	// the client is saying "inside this batch, the blob I already built
 	// is called this" - the messages it queues refer to the blob by the
 	// second id, which it made up itself, and which means nothing outside
 	// the batch.
@@ -10919,17 +10919,17 @@ bool sqlrprotocol_firebird::parseBatchBlobStream(sqlrfirebirdbatch *batch,
 						uint32_t streamlen,
 						uint32_t *bytesread) {
 
-	// A stream is one blob after another, each of them a header - an
+	// a stream is one blob after another, each of them a header - an
 	// 8-byte batch blob id, a 4-byte length and a 4-byte blob parameter
 	// buffer length, all of them big-endian, with the id's high word
 	// first - then that many parameter buffer bytes, then the blob's own
-	// bytes.  A stream blob's bytes are one run, a segmented blob's are
-	// segments, each of them a length and that many bytes.  The length in
+	// bytes.  a stream blob's bytes are one run, a segmented blob's are
+	// segments, each of them a length and that many bytes.  the length in
 	// the header covers the parameter buffer and the segment lengths as
 	// well as the bytes.
 	//
-	// The length the op carries isn't the number of bytes that follow it.
-	// It's the length of the buffer the client laid the stream out in,
+	// the length the op carries isn't the number of bytes that follow it.
+	// it's the length of the buffer the client laid the stream out in,
 	// and the wire only carries the parts of that buffer that mean
 	// something:
 	//
@@ -10938,14 +10938,14 @@ bool sqlrprotocol_firebird::parseBatchBlobStream(sqlrfirebirdbatch *batch,
 	// - a segment length takes 2 bytes of the buffer, but 4 on the wire,
 	//   because xdr sends even a 16-bit value as a 4-byte big-endian one
 	// - a header that would run off the end of the buffer isn't sent at
-	//   all.  The client holds it back and sends it whole at the front of
+	//   all.  the client holds it back and sends it whole at the front of
 	//   the next op, so the buffer's last few bytes just go missing.
 	//
-	// So the stream has to be decoded as it's read, counting buffer bytes
+	// so the stream has to be decoded as it's read, counting buffer bytes
 	// and bytes off the wire separately, and nothing here can read ahead.
-	// See xdr_blob_stream() in firebird's src/remote/protocol.cpp.
+	// see xdr_blob_stream() in firebird's src/remote/protocol.cpp.
 	//
-	// A blob, a parameter buffer or a segment can also break where the
+	// a blob, a parameter buffer or a segment can also break where the
 	// buffer ends and carry on in the next op, which is why how far the
 	// last one got is kept on the batch rather than here.
 
@@ -11236,7 +11236,7 @@ bool sqlrprotocol_firebird::serviceAttach() {
 	// nothing backs the service manager - no backup, restore, repair, or
 	// statistics entry point on any backend - so answering these ops for
 	// real would let a client believe an operation completed when
-	// nothing happened behind it. Refuse, but with isc_service_att_err
+	// nothing happened behind it. refuse, but with isc_service_att_err
 	// rather than the generic isc_wish_list, so the error names the
 	// service manager instead of just "feature is not supported".
 
@@ -11271,11 +11271,11 @@ bool sqlrprotocol_firebird::connectRequest() {
 
 	// connectRequest(), queEvents() and cancelEvents() are firebird's
 	// asynchronous event notification: a trigger or procedure posts an
-	// event, and a client that queued one gets told.  Nothing here can
+	// event, and a client that queued one gets told.  nothing here can
 	// generate an event to deliver - the firebird connection module
 	// never registers for one, and the server api has no path to carry a
 	// database event to a protocol module.  (sqlrevent_t is unrelated -
-	// it's server-side logging and alerting.)  Answering
+	// it's server-side logging and alerting.)  answering
 	// op_connect_request would also mean opening a second, server-owned
 	// socket alongside the live session.
 
@@ -11381,7 +11381,7 @@ bool sqlrprotocol_firebird::errorResponse(const char *title,
 	statusvector[i++]=gdscode;
 
 	// isc_random's whole message template is "@1", so a message written as
-	// its argument becomes the message the client renders.  Every other
+	// its argument becomes the message the client renders.  every other
 	// leading code has a template of its own, and the backend's text
 	// trails it, already rendered - which is what isc_arg_interpreted
 	// means, as opposed to isc_arg_string.
@@ -11517,9 +11517,9 @@ void sqlrprotocol_firebird::describeBinds(sqlrservercursor *cursor,
 					uint32_t itemslen) {
 
 	// a firebird client expects isc_dsql_describe_bind to answer with
-	// each parameter's type, which the module works out two ways.  The
+	// each parameter's type, which the module works out two ways.  the
 	// backend's own prepare answers it exactly, for any statement type,
-	// but only the firebird backend implements that.  Failing it, a probe
+	// but only the firebird backend implements that.  failing it, a probe
 	// query answers it for an insert - the type of a value going into a
 	// column is the column's type, so a select of the columns the binds
 	// feed describes them.
