@@ -13602,61 +13602,66 @@ void sqlrprotocol_tds::binary(const char *field, uint64_t size, bool hextext) {
 	}
 }
 
-// Refuses a malformed or unsupported paramfmt/params pair, with its own
-// done, so the client sees the command fail rather than being left
-// waiting for a result that never comes.  Class 16 for the same reason
-// preTds7UnsupportedToken() uses it - the session stays usable.
-//
-// "more" is whether another done still follows this one.  A refusal on
-// the way in ends the walk, so nothing follows and the done is final;
-// one on the way out is in the middle of a reply whose caller still
-// appends its own closing done, and ct-lib stops reading at the first
-// done without DONE_MORE, so that one would be left in the socket.
 void sqlrprotocol_tds::preTds7ParamError(const char *msgtext, bool more) {
+
+	// refuses a malformed or unsupported paramfmt/params pair, with its
+	// own done, so the client sees the command fail rather than being left
+	// waiting for a result that never comes.  Class 16 for the same reason
+	// preTds7UnsupportedToken() uses it - the session stays usable.
+	//
+	// "more" is whether another done still follows this one.  A refusal on
+	// the way in ends the walk, so nothing follows and the done is final;
+	// one on the way out is in the middle of a reply whose caller still
+	// appends its own closing done, and ct-lib stops reading at the first
+	// done without DONE_MORE, so that one would be left in the socket.
+
 	// FIXME: is there a real error number/state for this?
 	appendError(0,1,16,msgtext,srvname,NULL,1);
 	done(DONE_ERROR|((more)?DONE_MORE:DONE_FINAL),transState(),0);
 }
 
-// Reads a tds 5.0 paramfmt into the retained format array.  The token
-// byte has already been read.  Returns false with a message in "err" if
-// the token can't be walked; preTds7ParamFmt() turns that into the
-// refusal, so that every bail-out here is one line rather than five.
-//
-// "wide" picks the paramfmt2 (0x20) shape over the paramfmt (0xEC) one.
-// They differ in exactly two fields - a 32-bit token length rather than
-// a 16-bit one, and a 32-bit status rather than an 8-bit one - so one
-// function reads both.  Paramfmt2 is NOT rowfmt2's shape: rowfmt2 also
-// prepends label, catalog, schema and table names to every column.
-//
-// A real ase only sends the wide form to a client that echoed the wide
-// tables request capability.  capability() never grants it - it's bit 59
-// in freetds's numbering and 60 in cspublic's, and its table leaves both
-// out - so what actually arrives here is the narrow form; the wide one is
-// read anyway because nothing stops a client from sending it.
-//
-// The token is:
-//	uint16/uint32	how much follows, counting the parameter count
-//			but not the token byte or the length itself
-//	uint16		parameter count
-//	then per parameter:
-//	byte		name length
-//	bytes		name, single-byte characters, often absent
-//	byte/uint32	status
-//	uint32		usertype
-//	byte		datatype
-//	...		size, unless the type's varint class is 0
-//	byte,byte	precision and scale, decimal and numeric only
-//	byte		locale length
-//	bytes		locale
-//
-// Unlike a rowfmt, there's no table name after a text or image size -
-// verified against a real ase's paramfmt and against the wireshark
-// dissector.
 bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 						size_t *rpsizeinout,
 						bool wide,
 						const char **err) {
+
+	// reads a tds 5.0 paramfmt into the retained format array.  The token
+	// byte has already been read.  Returns false with a message in "err"
+	// if the token can't be walked; preTds7ParamFmt() turns that into the
+	// refusal, so that every bail-out here is one line rather than five.
+	//
+	// "wide" picks the paramfmt2 (0x20) shape over the paramfmt (0xEC)
+	// one.  They differ in exactly two fields - a 32-bit token length
+	// rather than a 16-bit one, and a 32-bit status rather than an 8-bit
+	// one - so one function reads both.  Paramfmt2 is NOT rowfmt2's shape:
+	// rowfmt2 also prepends label, catalog, schema and table names to
+	// every column.
+	//
+	// A real ase only sends the wide form to a client that echoed the wide
+	// tables request capability.  capability() never grants it - it's bit
+	// 59 in freetds's numbering and 60 in cspublic's, and its table leaves
+	// both out - so what actually arrives here is the narrow form; the
+	// wide one is read anyway because nothing stops a client from sending
+	// it.
+	//
+	// The token is:
+	//	uint16/uint32	how much follows, counting the parameter count
+	//			but not the token byte or the length itself
+	//	uint16		parameter count
+	//	then per parameter:
+	//	byte		name length
+	//	bytes		name, single-byte characters, often absent
+	//	byte/uint32	status
+	//	uint32		usertype
+	//	byte		datatype
+	//	...		size, unless the type's varint class is 0
+	//	byte,byte	precision and scale, decimal and numeric only
+	//	byte		locale length
+	//	bytes		locale
+	//
+	// Unlike a rowfmt, there's no table name after a text or image size -
+	// verified against a real ase's paramfmt and against the wireshark
+	// dissector.
 
 	const byte_t	*&rp=*rpinout;
 	size_t		&rpsize=*rpsizeinout;
@@ -13683,14 +13688,14 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 
 	debugWrite("token length: %lld",(long long)tokenlength);
 
-	// The length covers the parameter count, so a token without room
+	// the length covers the parameter count, so a token without room
 	// for one is malformed, as is one that runs off the end of the
 	// buffer.
 	if (tokenlength<sizeof(uint16_t) || (size_t)tokenlength>rpsize) {
 		return false;
 	}
 
-	// Everything below is bounded by "left" rather than by rpsize, so
+	// everything below is bounded by "left" rather than by rpsize, so
 	// that a paramfmt claiming more parameters than it carries can't
 	// read past its own end into whatever token follows it.
 	size_t	left=(size_t)tokenlength;
@@ -13761,7 +13766,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 		debugWrite("return: %d",
 				(status&TDS5_PARAM_RETURN)?1:0);
 
-		// A columnstatus byte in front of every value needs the
+		// a columnstatus byte in front of every value needs the
 		// columnstatus request capability, which capability() never
 		// grants - it's bit 58 in freetds's numbering and 57 in
 		// cspublic's, and its table leaves both out - so no client
@@ -13794,7 +13799,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 
 		debugPreTds7ColumnType(fmt->tds5type);
 
-		// A type with no ms-tds counterpart can't be bound, and a
+		// a type with no ms-tds counterpart can't be bound, and a
 		// serialized object (0x24) carries a class id after its
 		// locale that nothing here knows how to skip either.
 		fmt->mstype=tds5TypeToMsType(fmt->tds5type);
@@ -13857,7 +13862,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 			debugWrite("precision: %d",fmt->precision);
 			debugWrite("scale: %d",fmt->scale);
 
-			// A precision of 0, a precision past the maximum, or
+			// a precision of 0, a precision past the maximum, or
 			// a scale wider than the precision are all outside
 			// what decimalSize() and bulkDecimal() can render -
 			// preTds7DecimalInfo() clamps the same three on the
@@ -13899,7 +13904,7 @@ bool sqlrprotocol_tds::preTds7ParamFmtRead(const byte_t **rpinout,
 		debugEnd();
 	}
 
-	// A real client's blocks add up to the length exactly.  Anything
+	// a real client's blocks add up to the length exactly.  Anything
 	// left over means the two disagree, and then there's no telling
 	// where the next token starts.
 	if (left) {
@@ -13928,7 +13933,7 @@ bool sqlrprotocol_tds::preTds7ParamFmt(const byte_t **rpinout,
 	debugWrite("%s",err);
 	debugEnd();
 
-	// A params token behind a paramfmt that couldn't be walked can't be
+	// a params token behind a paramfmt that couldn't be walked can't be
 	// walked either - it carries no length of its own - so nothing
 	// after this point in the buffer can be trusted.
 	*rpsizeinout=0;
@@ -13937,21 +13942,22 @@ bool sqlrprotocol_tds::preTds7ParamFmt(const byte_t **rpinout,
 	return false;
 }
 
-// Reads a tds 5.0 params token, replaying the paramfmt in front of it to
-// size each value.  The token byte has already been read.
-//
-// The results go into the rpcparams[] family, which is wire-neutral -
-// bindParams() and everything above it read them the same way whichever
-// dialect they arrived in.  rpcparamtdstypes[] gets the ms-tds
-// equivalent of each type and rpcparamtds5types[] the raw byte; see
-// tds5TypeToMsType() for why.
-//
-// Split the way preTds7ParamFmtRead() and preTds7ParamFmt() are - this
-// is the walk, and the wrapper turns a failed walk into the refusal.
-// preTds7SkipCommand() needs the walk without the refusal; it appends
-// its own.
 bool sqlrprotocol_tds::preTds7ParamsRead(const byte_t **rpinout,
 						size_t *rpsizeinout) {
+
+	// reads a tds 5.0 params token, replaying the paramfmt in front of it
+	// to size each value.  The token byte has already been read.
+	//
+	// The results go into the rpcparams[] family, which is wire-neutral -
+	// bindParams() and everything above it read them the same way
+	// whichever dialect they arrived in.  rpcparamtdstypes[] gets the
+	// ms-tds equivalent of each type and rpcparamtds5types[] the raw byte;
+	// see tds5TypeToMsType() for why.
+	//
+	// Split the way preTds7ParamFmtRead() and preTds7ParamFmt() are - this
+	// is the walk, and the wrapper turns a failed walk into the refusal.
+	// preTds7SkipCommand() needs the walk without the refusal; it appends
+	// its own.
 
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
@@ -13964,7 +13970,7 @@ bool sqlrprotocol_tds::preTds7ParamsRead(const byte_t **rpinout,
 	rpcparampool.clear();
 	rpcparamcount=0;
 
-	// The loop is bounded by the format array rather than by what's
+	// the loop is bounded by the format array rather than by what's
 	// left in the buffer, so a value that consumed nothing can't spin
 	// it the way params() has to guard against.
 	for (uint16_t i=0; i<pretds7paramfmtcount; i++) {
@@ -13983,7 +13989,7 @@ bool sqlrprotocol_tds::preTds7ParamsRead(const byte_t **rpinout,
 		bv->value.stringval=NULL;
 		bv->isnull=cont->getNullBindValue();
 
-		// A binary or image parameter stays a lob even when the
+		// a binary or image parameter stays a lob even when the
 		// value turns out to be null, the way bulkField() keeps it
 		// one, so it doesn't lose its lob-ness before it's ever
 		// bound.
@@ -14039,7 +14045,7 @@ bool sqlrprotocol_tds::preTds7Params(const byte_t **rpinout,
 		return true;
 	}
 
-	// A params token carries no length of its own, so a walk that ran
+	// a params token carries no length of its own, so a walk that ran
 	// aground in the middle of one leaves no way to find the token
 	// behind it either.
 	*rpsizeinout=0;
@@ -14048,11 +14054,13 @@ bool sqlrprotocol_tds::preTds7Params(const byte_t **rpinout,
 	return false;
 }
 
-// Reads the paramfmt/params pair that a command token declaring
-// parameters carries behind it.  Returns false, having appended its own
-// error and final done, if either token is missing or can't be walked.
 bool sqlrprotocol_tds::preTds7ParamFmtAndParams(const byte_t **rpinout,
 						size_t *rpsizeinout) {
+
+	// reads the paramfmt/params pair that a command token declaring
+	// parameters carries behind it.  Returns false, having appended its
+	// own error and final done, if either token is missing or can't be
+	// walked.
 
 	const byte_t	*rp=*rpinout;
 	size_t		rpsize=*rpsizeinout;
@@ -14104,31 +14112,32 @@ bool sqlrprotocol_tds::preTds7ParamFmtAndParams(const byte_t **rpinout,
 	return true;
 }
 
-// Reads one parameter's value out of a params token.  A params token
-// carries no lengths of its own, so how many bytes a value occupies
-// comes entirely from the format the paramfmt declared:
-//
-//	varint 0	the value alone, at the type's own width.  there's
-//			no length field, so there's no way to say null
-//	varint 1	one length byte, then that many bytes.  a length
-//			of 0 means null
-//	varint 4	a text pointer, a timestamp and a 32-bit length for
-//			the blob types; a bare 32-bit length otherwise
-//	varint 5	a 32-bit length
-//
-// The declared size is not the value's size - a client and a server can
-// declare the same decimal(9,2) at 33 and at 5 - so every value is sized
-// from the length that arrived with it, exactly as preTds7Field() writes
-// one.  This is that function inverted.
 bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 						size_t *rpsizeinout,
 						const tds5paramfmt *fmt,
 						sqlrserverbindvar *bv) {
 
+	// reads one parameter's value out of a params token.  A params token
+	// carries no lengths of its own, so how many bytes a value occupies
+	// comes entirely from the format the paramfmt declared:
+	//
+	//	varint 0	the value alone, at the type's own width.  there's
+	//			no length field, so there's no way to say null
+	//	varint 1	one length byte, then that many bytes.  a length
+	//			of 0 means null
+	//	varint 4	a text pointer, a timestamp and a 32-bit length for
+	//			the blob types; a bare 32-bit length otherwise
+	//	varint 5	a 32-bit length
+	//
+	// The declared size is not the value's size - a client and a server
+	// can declare the same decimal(9,2) at 33 and at 5 - so every value is
+	// sized from the length that arrived with it, exactly as
+	// preTds7Field() writes one.  This is that function inverted.
+
 	const byte_t	*&rp=*rpinout;
 	size_t		&rpsize=*rpsizeinout;
 
-	// A text or image value arrives behind a text pointer and a
+	// a text or image value arrives behind a text pointer and a
 	// timestamp, the way a row field does, and a text-pointer length of
 	// 0 is how it says null.  Xml and unitext are varint 4 too but
 	// aren't blob types, so they carry no text pointer -
@@ -14185,7 +14194,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 
 	debugWrite("size: %d",size);
 
-	// A length of 0 is null for every type that has a length at all.
+	// a length of 0 is null for every type that has a length at all.
 	// It is not gated on TDS5_PARAM_NULLALLOWED: a real ct-lib client
 	// leaves that bit clear even for a parameter it sends a null in,
 	// even when the parameter was declared CS_CANBENULL.
@@ -14230,7 +14239,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			return false;
 		}
 
-		// The width here can be anything from 1 to 8, so this
+		// the width here can be anything from 1 to 8, so this
 		// assembles the value a byte at a time rather than going
 		// through read(), which only has the four standard widths.
 		// Which end of the field the high byte sits at is what the
@@ -14277,7 +14286,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 				debugWrite("invalid size: %d",size);
 				return false;
 			}
-			// An ieee float is as byte-order-sensitive as an
+			// an ieee float is as byte-order-sensitive as an
 			// integer of the same width is, but read() has no
 			// float overload that swaps - see the note in
 			// preTds7Field() - so the bits come in as an
@@ -14303,7 +14312,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 		case TDS5_TYPE_SHORTMONEY:
 		case TDS5_TYPE_MONEYN:
 			{
-			// A 4-byte money is one signed count of
+			// a 4-byte money is one signed count of
 			// ten-thousandths; an 8-byte one is two, the high
 			// half first.  That ordering is the type's own, not
 			// a byte order - each half arrives in the order the
@@ -14364,7 +14373,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 		case TDS5_TYPE_DECN:
 		case TDS5_TYPE_NUMN:
 			{
-			// Two things are inverted from the ms-tds form that
+			// two things are inverted from the ms-tds form that
 			// bulkDecimal() reads, and preTds7Field() inverts
 			// the same two writing one out: the sign byte is 0
 			// for positive rather than 1, and the magnitude is
@@ -14415,7 +14424,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 		case TDS5_TYPE_TEXT:
 		case TDS5_TYPE_XML:
 			{
-			// Character data arrives in the charset the login
+			// character data arrives in the charset the login
 			// record declared - a tds 5.0 paramfmt has no
 			// collation field of its own, so that's the only
 			// thing naming one - and preTds7ToUtf8() converts it
@@ -14476,7 +14485,7 @@ bool sqlrprotocol_tds::preTds7ParamValueRead(const byte_t **rpinout,
 			break;
 
 		default:
-			// Nothing else survives tds5TypeToMsType().  Leave
+			// nothing else survives tds5TypeToMsType().  Leave
 			// the parameter null rather than guess, the way
 			// preTds7Field() writes a null for a type it has no
 			// case for; the value has already been stepped over,
