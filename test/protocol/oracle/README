@@ -330,6 +330,32 @@ comment instead, which is what every #10273 capture, against both
 redhat9x86's real Oracle9i 9.2.0.4.0 client and dev's Instant Client
 23, used to build it.
 
+oci7transaction.cpp, gated the same way, is a minimal OCI7 client for
+capturing the commit, rollback and autocommit-on/off calls (ocom, orol,
+ocon, ocof) - none of which oci7.cpp's own Transactions section drove
+directly before #10293, since acsite.m4's FW_CHECK_OCI7 probe didn't
+check for the four symbols until that ticket extended it from twelve
+checked symbols to sixteen.
+
+    ./oci7transaction SID [--sequence=NAME] [--table=TABLE]
+                           [USER PASSWORD]
+
+--sequence= selects one variant per run: select-commit (a login, a
+select and fetch, then ocom - the #9656 capture's own shape,
+reproduced deliberately so its capture can be diffed against a fresh
+one), dml-commit and dml-rollback (an insert into --table, default
+protocoltest10293txn, then ocom or orol), empty-rollback (orol with
+nothing pending), autocommit-toggle (ocon then ocof, no DML between),
+autocommit-on-dml (ocon, then an insert with no explicit ocom, to
+capture what a real server sends when autocommit alone drives the
+commit), and autocommit-off-dml (ocof, an insert, then an explicit
+ocom). Each variant runs inside its own oopen/oclose pair, then one
+more oopen/oclose, so a capture shows whether the call status a commit
+or rollback answers with carries into the replies that follow it in
+the same session - see the 10293-*-realserver captures below, and
+#10293's "Decode everything and decide" comment for what that carryover
+turned out to be.
+
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
 early OCI8-era client installs export the symbol under a short
@@ -1877,6 +1903,137 @@ column count and fetch mode vary. They evidence the legacy fetch path's
 row/column framing across column counts, not any additional Oracle
 datatype; see #9704 for datatype coverage itself.
 
+    9656-redhat9x86-oci7-native-commitfetch3-realserver.oraproxy
+    9656-redhat9x86-oci7-native-shiftedfetch3-realserver.oraproxy
+    9656-redhat9x86-oci7-native-shiftedexfet3-realserver.oraproxy
+                                     the three captures attached to #9656
+                                      comment 2 as raw base64 tcpdump text
+                                      (snaplen 96, so some packets are cut
+                                      off), archived here in oraproxy's own
+                                      format for #10293 rather than left to
+                                      be pulled out of a ticket comment.
+                                      commitfetch3 is the capture #10292's
+                                      sendCommitResponse() fix was built
+                                      from - a real server committing after
+                                      a fetch, not any DML, packets [0028],
+                                      [0040] and [0052] each answering
+                                      TTI_COMMIT with the 7 raw bytes
+                                      00 00 09 05 00 00 00. shiftedfetch3
+                                      and shiftedexfet3 are the same
+                                      session's other two capture files,
+                                      kept alongside it rather than left
+                                      behind in the same comment.
+                                      test/protocol/oracle/pcap2oracap
+                                      converted all three from tcpdump to
+                                      oraproxy's format, zero-padding and
+                                      warning on stderr wherever the
+                                      snaplen cut a packet's real payload
+                                      short - no capture here needed that,
+                                      but the warning path exists for a
+                                      future one that does (#10293).
+
+pcap2oracap, in this directory, is the converter #9656's captures needed:
+a small Python script that reads a raw tcpdump/libpcap file, follows its
+Ethernet/IPv4/TCP framing, and writes each direction's payload out as an
+oraproxy-format capture oradecode can read directly, the same way the
+9808-*, 9810-*, 9976-* and 9700-*.oraproxy captures above already are.
+It reconstructs each segment's real length from the IP header, and where
+a capture's snaplen cut a segment's payload short, pads it with zeros and
+prints which packet and direction it padded, rather than guessing at the
+missing bytes silently.
+
+    ./pcap2oracap [--server-port=N] PCAPFILE CAPTUREFILE
+
+    10293-redhat9x86-oci7-native-select-commit-realserver.oraproxy
+    10293-redhat9x86-oci7-native-dml-commit-realserver.oraproxy
+    10293-redhat9x86-oci7-native-dml-rollback-realserver.oraproxy
+    10293-redhat9x86-oci7-native-empty-rollback-realserver.oraproxy
+    10293-redhat9x86-oci7-native-autocommit-toggle-realserver.oraproxy
+    10293-redhat9x86-oci7-native-autocommit-on-dml-realserver.oraproxy
+    10293-redhat9x86-oci7-native-autocommit-off-dml-realserver.oraproxy
+    (each with a matching .out - oci7transaction's own stdout for that run)
+                                     oci7transaction.cpp's seven
+                                      --sequence= variants, run from
+                                      redhat9x86's real Oracle9i 9.2.0.4.0
+                                      client through oraproxy on dev
+                                      straight to the real oracle102
+                                      server (10.0.2.3:1521) - native
+                                      encoding, since a same-platform
+                                      real server never negotiates
+                                      portable with this client. commit
+                                      and rollback both answer every
+                                      variant with the same 7 raw bytes
+                                      00 00 09 05 00 00 00, whatever was
+                                      pending or nothing at all; ocon and
+                                      ocof both go on the wire as their
+                                      own TTI calls (0x0c, 0x0d) and both
+                                      answer 00 00 09 01 00 00 00. Once a
+                                      commit or rollback has run, every
+                                      later open/close reply in the
+                                      session carries call status 5
+                                      instead of 1, including after an
+                                      autocommitted insert with no
+                                      explicit ocom (#10293).
+
+    10293-solaris8sparc-oci7-portable-select-commit-realserver.oraproxy
+    10293-solaris8sparc-oci7-portable-dml-commit-realserver.oraproxy
+    10293-solaris8sparc-oci7-portable-dml-rollback-realserver.oraproxy
+    10293-solaris8sparc-oci7-portable-empty-rollback-realserver.oraproxy
+    10293-solaris8sparc-oci7-portable-autocommit-toggle-realserver.oraproxy
+    10293-solaris8sparc-oci7-portable-autocommit-on-dml-realserver.oraproxy
+    10293-solaris8sparc-oci7-portable-autocommit-off-dml-realserver.oraproxy
+    (each with a matching .out)
+                                     the same seven variants, from
+                                      solaris8sparc's real Oracle 9.0.1
+                                      client - the only client on file
+                                      that still negotiates portable
+                                      encoding against a real server -
+                                      against the same oracle102 backend.
+                                      confirmed portable by the
+                                      handshake's datatype negotiation
+                                      (1019 bytes, versus native's 44) as
+                                      well as by the host. behavior
+                                      matches the redhat9x86 native
+                                      captures exactly - commit/rollback
+                                      status 5, ocon/ocof status 1, the
+                                      same carryover - only the int
+                                      encoding differs, in
+                                      00 00 09 01 05 (commit/rollback)
+                                      and 00 00 09 01 01 (ocon/ocof)
+                                      (#10293).
+
+    10293-redhat9x86-oci7-portable-select-commit-sqlrelay-before.oraproxy
+    10293-redhat9x86-oci7-portable-dml-commit-sqlrelay-before.oraproxy
+    10293-redhat9x86-oci7-portable-dml-rollback-sqlrelay-before.oraproxy
+    10293-redhat9x86-oci7-portable-empty-rollback-sqlrelay-before.oraproxy
+    10293-redhat9x86-oci7-portable-autocommit-toggle-sqlrelay-before.oraproxy
+    10293-redhat9x86-oci7-portable-autocommit-on-dml-sqlrelay-before.oraproxy
+    10293-redhat9x86-oci7-portable-autocommit-off-dml-sqlrelay-before.oraproxy
+    (each with a matching .out)
+                                     the same seven variants again, from
+                                      redhat9x86's real client (so
+                                      portable encoding, the only kind it
+                                      negotiates against sqlrelay) but
+                                      against sqlrelay itself, built from
+                                      the working tree before #10293's
+                                      fix landed - the real client's own
+                                      confirmation of what #9656's commit
+                                      fix (#10292) and the still-unfixed
+                                      rollback/autocommit paths looked
+                                      like on the wire. commit already
+                                      matched the real server exactly
+                                      (09 01 05); rollback, ocon and ocof
+                                      each got the old putOci7Error()
+                                      summary object instead - 31 bytes,
+                                      call status 0 - which the real
+                                      client accepted without error every
+                                      time, and every variant's backend
+                                      DML outcome (the rollback row
+                                      absent, the others present) matched
+                                      the realserver runs exactly: a
+                                      wire-shape defect, not a functional
+                                      one (#10293).
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 
@@ -1924,10 +2081,9 @@ listener, needed for that login itself. oracle122 is a pure testbed
 with no sensitive data, so this was done in place rather than standing
 up a separate AL32UTF8 database elsewhere.
 
-#10273's teardown step is expected to restore sqlnet.ora from the
-sqlnet.ora.pre-10273 backup; testuser's password value is unchanged
-(reset to itself), so there is nothing to revert there. If
-ALLOWED_LOGON_VERSION_SERVER=8 is still set on oracle122 and #10273 has
-since been closed, that revert step was likely missed - check the
-ticket's history before assuming the setting is still needed for
-anything.
+This is intended to stay in place permanently, not just for #10273's
+duration - the user asked for OCI7 access to oracle122 to be kept
+enabled for future OCI7 testing (#10273's finish comment). The
+sqlnet.ora.pre-10273 backup is kept in place in case a future need
+arises to compare against the original, unmodified file, but no
+teardown step reverts this.

@@ -2035,8 +2035,8 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	rollback(const byte_t *rp);
 		bool	autoCommitOn(const byte_t *rp);
 		bool	autoCommitOff(const byte_t *rp);
-		bool	sendCommitResponse();
-		bool	sendTransactionResponse();
+		bool	sendTransactionResponse(uint32_t callstatus);
+		bool	sendOci7StatusResponse(uint32_t callstatus);
 		bool	sendTransactionError(uint32_t cursorid=0);
 
 		// version
@@ -19774,7 +19774,7 @@ bool sqlrprotocol_oracle::commit(const byte_t *rp) {
 	if (!cont->commit()) {
 		return sendTransactionError();
 	}
-	return sendCommitResponse();
+	return sendTransactionResponse(5);
 }
 
 bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
@@ -19797,7 +19797,7 @@ bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
 	if (!cont->rollback()) {
 		return sendTransactionError();
 	}
-	return sendTransactionResponse();
+	return sendTransactionResponse(5);
 }
 
 bool sqlrprotocol_oracle::autoCommitOn(const byte_t *rp) {
@@ -19820,7 +19820,7 @@ bool sqlrprotocol_oracle::autoCommitOn(const byte_t *rp) {
 	if (!cont->setAutoCommitOn()) {
 		return sendTransactionError();
 	}
-	return sendTransactionResponse();
+	return sendTransactionResponse(1);
 }
 
 bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
@@ -19843,57 +19843,21 @@ bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
 	if (!cont->setAutoCommitOff()) {
 		return sendTransactionError();
 	}
-	return sendTransactionResponse();
+	return sendTransactionResponse(1);
 }
 
-bool sqlrprotocol_oracle::sendCommitResponse() {
+bool sqlrprotocol_oracle::sendTransactionResponse(uint32_t callstatus) {
 
-	if (query3session) {
-		return sendTransactionResponse();
+	// what a commit, rollback or autocommit change gets back on success.
+	// an oci7 client gets a bare status message (see
+	// sendOci7StatusResponse()).  a query3 session gets the same
+	// summary-object split every other cursorless ack in this module uses
+	// (sendCursorNotOpenError, sendMarkerCancelError,
+	// sendUnimplementedFunctionError), with success field values in place
+	// of an error
+	if (!query3session) {
+		return sendOci7StatusResponse(callstatus);
 	}
-
-	resetSendPacketBuffer(PACKET_DATA);
-
-	uint16_t	dataflags=0;
-	byte_t		ttccode=TTC_STATUS;
-	uint32_t	callstatus=5;
-	uint32_t	endtoendseqnumber=0;
-
-	debugStart("commit response");
-	debugWrite("data flags: 0x%04x",dataflags);
-	debugTtcCode(ttccode);
-	debugWrite("call status: %d",callstatus);
-
-	writeBE(&reqpacket,dataflags);
-	write(&reqpacket,ttccode);
-
-	// an oci7 commit gets a bare status message back, not a summary
-	// object.  a live 10.2 server answering three ocom() calls in one
-	// native-encoding session sends "00 00 09 05 00 00 00" to each - the
-	// same shape as a close answer (see sendCloseResponse()), but with a
-	// call status of 5.  the 5 isn't an echo of anything in the request,
-	// whose sequence numbers were 0x0a, 0x10 and 0x16
-	putAuthCount(callstatus,4);
-	if (oci7endtoendseqnumber) {
-		putAuthCount(endtoendseqnumber,4);
-		debugWrite("end to end seq number: %d",endtoendseqnumber);
-	}
-
-	debugEnd();
-
-	return sendPacket(true);
-}
-
-bool sqlrprotocol_oracle::sendTransactionResponse() {
-
-	// what a rollback or autocommit change gets back on success, and a
-	// commit in a query3 session - the same summary-object split every
-	// other cursorless ack in this module uses (sendCursorNotOpenError,
-	// sendMarkerCancelError, sendUnimplementedFunctionError), with success
-	// field values in place of an error.  no capture shows what a real
-	// server sends an oci7 client for a rollback or autocommit change, so
-	// unlike a commit (see sendCommitResponse()) they keep the summary
-	// object
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -19904,11 +19868,63 @@ bool sqlrprotocol_oracle::sendTransactionResponse() {
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugEnd();
 
-	if (query3session) {
-		putSummary(0,0,0,NULL);
-	} else {
-		putOci7Error(0,0,0,0,0,NULL,0);
+	putSummary(0,0,0,NULL);
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendOci7StatusResponse(uint32_t callstatus) {
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	byte_t		ttccode=TTC_STATUS;
+	uint32_t	endtoendseqnumber=0;
+
+	debugStart("transaction response");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("call status: %d",callstatus);
+
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+
+	// an oci7 commit, rollback or autocommit change gets a bare status
+	// message back, not a summary object - the same shape as a close
+	// answer (see sendCloseResponse()).  a live 10.2 server sends a call
+	// status of 5 for ocom() and orol(), and 1 for ocon() and ocof(), in
+	// every capture in test/protocol/oracle/samples/:
+	// 9656-redhat9x86-oci7-native-commitfetch3-realserver.oraproxy
+	//   ocom() three times, "00 00 09 05 00 00 00" at [0028], [0040]
+	//   and [0052]
+	// 10293-redhat9x86-oci7-native-VARIANT-realserver.oraproxy
+	//   native, "00 00 09 05 00 00 00" or "00 00 09 01 00 00 00"
+	// 10293-solaris8sparc-oci7-portable-VARIANT-realserver.oraproxy
+	//   portable, "00 00 09 01 05" or "00 00 09 01 01"
+	// where VARIANT is:
+	// select-commit - ocom() at [0026]
+	// dml-commit - ocom() at [0024]
+	// dml-rollback - orol() at [0024]
+	// empty-rollback - orol() at [0020]
+	// autocommit-toggle - ocon() at [0020], ocof() at [0022]
+	// autocommit-on-dml - ocon() at [0020]
+	// autocommit-off-dml - ocof() at [0020], ocom() at [0026]
+	// the 5 is the same whatever the transaction held, and whether or not
+	// anything was pending.  it isn't an echo of anything in the request,
+	// which is just the call and its sequence number.  the matching
+	// 10293-redhat9x86-oci7-portable-VARIANT-sqlrelay-before.oraproxy
+	// captures show a real 9i client also accepting a summary object for
+	// orol(), ocon() and ocof(), but a real server never sends one.  a
+	// real server also carries the call status into later replies - a
+	// close after a commit sends 5 - but these are constants here, and
+	// later replies still send 1
+	putAuthCount(callstatus,4);
+	if (oci7endtoendseqnumber) {
+		putAuthCount(endtoendseqnumber,4);
+		debugWrite("end to end seq number: %d",endtoendseqnumber);
 	}
+
+	debugEnd();
 
 	return sendPacket(true);
 }

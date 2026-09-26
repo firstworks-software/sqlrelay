@@ -13,11 +13,13 @@
 /ociloginretry
 /oci7utf8clob
 /oci7inlinelob
+/oracletransaction
 *.o
 *.obj
 *.lo
 *.class
 /.libs/
+/__pycache__/
 
 # tnsnames.ora is generated from tnsnames.ora.in by this directory's
 # Makefile and must not be tracked (#9676).  its content is the

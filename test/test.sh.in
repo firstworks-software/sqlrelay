@@ -1461,8 +1461,12 @@ run_protocol_test() {
 	# putOci7DescribeColumn() path, and describes the select list out of
 	# order, against oracleprotocoloci7db2 (ORACLEPROTOCOLPORT11).  it is
 	# skipped the same way oracleinlinelob is, and tolerates a missing
-	# binary the same way oci7 does.
-	# all twenty-five runs have to succeed for the instance to pass
+	# binary the same way oci7 does.  then oracletransaction, twice, once
+	# per wire encoding, for #10293 - it drives TTI_COMMIT, TTI_ROLLBACK,
+	# TTI_AUTOCOMMIT_ON and TTI_AUTOCOMMIT_OFF directly, with no prior
+	# TTI_QUERY3 call, and checks each reply against the bytes a real
+	# 10.2 server sends (see samples/10293-*-realserver.oraproxy)
+	# all twenty-seven runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
 		./$prog
@@ -1487,6 +1491,10 @@ run_protocol_test() {
 		resultmidfetchdescribenative="$?"
 		./oraclelegacyfetch
 		resultlegacyfetch="$?"
+		./oracletransaction
+		resulttransaction="$?"
+		./oracletransaction -native
+		resulttransactionnative="$?"
 		./oracleclrchunks
 		resultclrchunks="$?"
 		./oracleiterations0
@@ -1539,7 +1547,7 @@ run_protocol_test() {
 			echo "no oci7inlinelob test found (built only with HAVE_OCI7), or no db2 module built"
 			resultoci7inlinelob="0"
 		fi
-		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
+		if ( test "$resultdefault" = "0" ) && ( test "$result11g" = "0" ) && ( test "$result12c" = "0" ) && ( test "$resultconnectstrings" = "0" ) && ( test "$resultfetchatonce" = "0" ) && ( test "$resultdescribeonly" = "0" ) && ( test "$resultdescribe" = "0" ) && ( test "$resultdescribenative" = "0" ) && ( test "$resultmidfetchdescribe" = "0" ) && ( test "$resultmidfetchdescribenative" = "0" ) && ( test "$resultlegacyfetch" = "0" ) && ( test "$resulttransaction" = "0" ) && ( test "$resulttransactionnative" = "0" ) && ( test "$resultclrchunks" = "0" ) && ( test "$resultiterations0" = "0" ) && ( test "$resultbigchunkclroff" = "0" ) && ( test "$resultrefcursorreuse" = "0" ) && ( test "$resultsplitrequest" = "0" ) && ( test "$resultsplitquery3" = "0" ) && ( test "$resultsplitresponse" = "0" ) && ( test "$resultmaxdescriptors" = "0" ) && ( test "$resultmaxfetchrowcount" = "0" ) && ( test "$resultutf8clob" = "0" ) && ( test "$resultinlinelob" = "0" ) && ( test "$resultoci7" = "0" ) && ( test "$resultoci7utf8clob" = "0" ) && ( test "$resultoci7inlinelob" = "0" )
 		then
 			printf "    % 8s: success\n" "protocol" >> "$RESULTSLOG"
 			cd ../..
@@ -1588,6 +1596,14 @@ run_protocol_test() {
 		if ( test "$resultlegacyfetch" != "0" )
 		then
 			printf "    % 8s: failed (legacy fetch)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resulttransaction" != "0" )
+		then
+			printf "    % 8s: failed (transaction)\n" "protocol" >> "$RESULTSLOG"
+		fi
+		if ( test "$resulttransactionnative" != "0" )
+		then
+			printf "    % 8s: failed (transaction, native encoding)\n" "protocol" >> "$RESULTSLOG"
 		fi
 		if ( test "$resultclrchunks" != "0" )
 		then

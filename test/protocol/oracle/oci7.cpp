@@ -16,10 +16,10 @@
 // server - every expected value that could not be confirmed that way is
 // marked "unverified, see #9654" where it appears.
 //
-// only the 12 symbols acsite.m4's FW_CHECK_OCI7 link-tests are called:
+// only the 16 symbols acsite.m4's FW_CHECK_OCI7 link-tests are called:
 // olog oopen oparse odefin oexec ofen ofetch oexfet oclose ologof odescr
-// obndrv.  several of oci8.cpp's sections need an OCI7 call outside that list
-// (obndrn, obndra, oexn, ocom, orol, ocon, ocof, oerhms, odefinps), and each
+// obndrv ocom orol ocon ocof.  several of oci8.cpp's sections need an OCI7
+// call outside that list (obndrn, obndra, oexn, oerhms, odefinps), and each
 // of those is omitted with a comment naming the symbol rather than called on
 // the chance that it links.
 
@@ -964,11 +964,9 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("\n=============== Schema ===============\n\n");
 
-	// every commit and rollback in this program goes through
-	// execImmediate() rather than through ocom()/orol().  those are real
-	// OCI7 calls, but neither is among the symbols acsite.m4's
-	// FW_CHECK_OCI7 link-tests, so they are not called anywhere here.
-	// see the Transactions section for what that costs
+	// the commits and rollbacks in this section go through execImmediate()
+	// rather than ocom()/orol() - those two get their own dedicated
+	// coverage in the Transactions section below
 
 	// unchecked - the tables may not be there yet
 	execImmediate("drop table protocoltesttable");
@@ -1406,7 +1404,7 @@ int main(int argc, char **argv) {
 	// oci8.cpp runs an array bind here (oci8.cpp:1137-1185): one
 	// OCIBindByName per placeholder pointing at an array base, then an
 	// OCIStmtExecute with iters=3.  There is no way to say that with the
-	// twelve symbols acsite.m4's FW_CHECK_OCI7 link-tests.  OCI7's array
+	// sixteen symbols acsite.m4's FW_CHECK_OCI7 link-tests.  OCI7's array
 	// bind is obndra(), its skip-parameter form is obindps(), and running
 	// N iterations of a bound statement is oexn() - none of the three is
 	// probed.  obndrv binds a single program variable and oexec runs a
@@ -2997,12 +2995,10 @@ int main(int argc, char **argv) {
 
 	stdoutput.printf("\n============ Transactions ============\n\n");
 
-	// this section drives the module's SQL path rather than its
-	// TTI_COMMIT (0x0E) and TTI_ROLLBACK (0x0F) opcodes, which is a real
-	// difference from what oci8.cpp exercises here.  OCI7's dedicated
-	// calls are ocom() and orol(), and neither is among the symbols
-	// acsite.m4's FW_CHECK_OCI7 link-tests, so the commits and rollbacks
-	// go through execImmediate() like every other statement
+	// the pair above drives commit/rollback through the module's SQL path,
+	// the same as every other statement in this program.  ocom() and
+	// orol() are OCI7's dedicated TTI_COMMIT (0x0E) and TTI_ROLLBACK
+	// (0x0F) calls, tested below alongside that SQL-path coverage
 
 	stdoutput.printf("rollback\n");
 	assertEquals(
@@ -3023,13 +3019,70 @@ int main(int argc, char **argv) {
 	stdoutput.printf("\n\n");
 
 
-	// oci8.cpp follows those with an OCI_COMMIT_ON_SUCCESS execute and an
-	// autocommit-off execute (oci8.cpp:2705-2740).  OCI7's autocommit
-	// control is ocon() and ocof(), and the module does implement
-	// TTI_AUTOCOMMIT_ON (0x0C) and _OFF (0x0D), but neither call is among
-	// the symbols acsite.m4's FW_CHECK_OCI7 link-tests.  both cases are
-	// omitted, and the row counts above are the ones this shorter sequence
-	// actually produces rather than oci8.cpp's.
+	Cda_Def	trancda;
+
+	stdoutput.printf("orol - TTI_ROLLBACK\n");
+	const char	*tranrolquery="insert into protocoltesttran values (5)";
+	assertEquals(check(&trancda,openCursor(&trancda,-1)),0);
+	assertEquals(check(&trancda,
+			oparse(&trancda,(text *)tranrolquery,
+					(sb4)-1,0,(ub4)2)),0);
+	assertEquals(check(&trancda,oexec(&trancda)),0);
+	assertEquals(check(&trancda,oclose(&trancda)),0);
+	assertEquals(countRows("protocoltesttran"),2);
+	assertEquals(check(&lda,orol(&lda)),0);
+	assertEquals(countRows("protocoltesttran"),1);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("ocom - TTI_COMMIT\n");
+	const char	*trancomquery="insert into protocoltesttran values (6)";
+	assertEquals(check(&trancda,openCursor(&trancda,-1)),0);
+	assertEquals(check(&trancda,
+			oparse(&trancda,(text *)trancomquery,
+					(sb4)-1,0,(ub4)2)),0);
+	assertEquals(check(&trancda,oexec(&trancda)),0);
+	assertEquals(check(&trancda,oclose(&trancda)),0);
+	assertEquals(check(&lda,ocom(&lda)),0);
+	// the commit took, so the rollback after it loses nothing
+	assertEquals(execImmediate("rollback"),0);
+	assertEquals(countRows("protocoltesttran"),2);
+	stdoutput.printf("\n\n");
+
+
+	// oci8.cpp exercises autocommit as a per-execute flag,
+	// OCI_COMMIT_ON_SUCCESS (oci8.cpp:2766-2801).  OCI7 has no per-execute
+	// equivalent - ocon() and ocof() instead toggle autocommit for the
+	// whole session, TTI_AUTOCOMMIT_ON (0x0C) and _OFF (0x0D)
+
+	stdoutput.printf("ocon - autocommit on\n");
+	const char	*tranonquery="insert into protocoltesttran values (7)";
+	assertEquals(check(&lda,ocon(&lda)),0);
+	assertEquals(check(&trancda,openCursor(&trancda,-1)),0);
+	assertEquals(check(&trancda,
+			oparse(&trancda,(text *)tranonquery,
+					(sb4)-1,0,(ub4)2)),0);
+	assertEquals(check(&trancda,oexec(&trancda)),0);
+	assertEquals(check(&trancda,oclose(&trancda)),0);
+	// autocommit committed the insert, so the rollback loses nothing
+	assertEquals(execImmediate("rollback"),0);
+	assertEquals(countRows("protocoltesttran"),3);
+	stdoutput.printf("\n\n");
+
+
+	stdoutput.printf("ocof - autocommit off\n");
+	const char	*tranoffquery="insert into protocoltesttran values (8)";
+	assertEquals(check(&lda,ocof(&lda)),0);
+	assertEquals(check(&trancda,openCursor(&trancda,-1)),0);
+	assertEquals(check(&trancda,
+			oparse(&trancda,(text *)tranoffquery,
+					(sb4)-1,0,(ub4)2)),0);
+	assertEquals(check(&trancda,oexec(&trancda)),0);
+	assertEquals(check(&trancda,oclose(&trancda)),0);
+	assertEquals(countRows("protocoltesttran"),4);
+	assertEquals(execImmediate("rollback"),0);
+	assertEquals(countRows("protocoltesttran"),3);
+	stdoutput.printf("\n\n");
 
 
 

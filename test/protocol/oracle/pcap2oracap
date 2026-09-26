@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+# Copyright (c) David Muse
+# See the file COPYING for more information.
+
+# Converts an ordinary tcpdump/libpcap capture of Oracle TNS/TTC traffic
+# into the chunked capture format oraproxy writes and oradecode reads (see
+# the format comment in oraproxy). Only for archiving a capture that was
+# taken directly with tcpdump rather than through oraproxy - a capture
+# already in oraproxy's own format needs no conversion.
+#
+# Usage:
+#   ./pcap2oracap [--server-port=N] PCAPFILE CAPTUREFILE
+#
+# --server-port= (default 1521) picks which side is which: a packet whose
+# destination port is the server port is client->server, one whose source
+# port is the server port is server->client. Every other packet - non-IP,
+# non-TCP, or on some other port pair - is dropped.
+#
+# A capture taken with a short snap length (tcpdump -s) truncates any
+# packet bigger than that length, which cuts real TNS payload bytes out of
+# the file with no way to recover them. Rather than guess at what was
+# there, a truncated packet's missing bytes are written as zero and a
+# warning naming the packet and the number of zeroed bytes goes to
+# stderr - so a decode of the result is visibly incomplete at exactly the
+# points the source capture was, instead of silently wrong.
+
+import struct
+import sys
+
+PCAP_MAGIC_LE = 0xa1b2c3d4
+PCAP_MAGIC_LE_NS = 0xa1b23c4d
+PCAP_MAGIC_BE = 0xd4c3b2a1
+PCAP_MAGIC_BE_NS = 0x4d3cb2a1
+
+LINKTYPE_ETHERNET = 1
+
+ETHERTYPE_IPV4 = 0x0800
+ETHERTYPE_VLAN = 0x8100
+
+IPPROTO_TCP = 6
+
+DIR_CLIENT_TO_SERVER = b"C"
+DIR_SERVER_TO_CLIENT = b"S"
+
+
+class PcapError(Exception):
+	pass
+
+
+def read_global_header(f):
+	header = f.read(24)
+	if len(header) < 24:
+		raise PcapError("file is shorter than a pcap global header")
+	(magic,) = struct.unpack_from("<I", header, 0)
+	if magic in (PCAP_MAGIC_LE, PCAP_MAGIC_LE_NS):
+		byteorder = "<"
+	elif magic in (PCAP_MAGIC_BE, PCAP_MAGIC_BE_NS):
+		byteorder = ">"
+	else:
+		raise PcapError(
+			"not a pcap file (magic 0x%08x unrecognized - a "
+			"pcapng capture must be converted to classic pcap "
+			"first, e.g. with tshark -F pcap)" % magic)
+	(vermajor, verminor, thiszone, sigfigs, snaplen, network) = \
+			struct.unpack_from(byteorder + "HHiIII", header, 4)
+	if network != LINKTYPE_ETHERNET:
+		raise PcapError(
+			"link type %d is not Ethernet (%d) - this tool only "
+			"parses Ethernet + IPv4 + TCP framing" %
+			(network, LINKTYPE_ETHERNET))
+	return byteorder, snaplen
+
+
+def read_packets(f, byteorder):
+	# yields (packet number, incl_len, orig_len, data) for each packet
+	# record
+	num = 0
+	while True:
+		rechdr = f.read(16)
+		if not rechdr:
+			return
+		if len(rechdr) < 16:
+			sys.stderr.write(
+				"pcap2oracap: truncated packet record header "
+				"at end of file, stopping\n")
+			return
+		num += 1
+		(ts_sec, ts_usec, incl_len, orig_len) = \
+				struct.unpack(byteorder + "IIII", rechdr)
+		data = f.read(incl_len)
+		if len(data) < incl_len:
+			sys.stderr.write(
+				"pcap2oracap: packet %d: truncated packet "
+				"data at end of file, stopping\n" % num)
+			return
+		yield num, incl_len, orig_len, data
+
+
+def parse_ethernet(data):
+	# returns (ethertype, payload offset), skipping one 802.1Q VLAN tag
+	# if present
+	if len(data) < 14:
+		return None, None
+	ethertype, = struct.unpack_from(">H", data, 12)
+	offset = 14
+	if ethertype == ETHERTYPE_VLAN:
+		if len(data) < 18:
+			return None, None
+		ethertype, = struct.unpack_from(">H", data, 16)
+		offset = 18
+	return ethertype, offset
+
+
+def parse_ipv4(data, offset):
+	# returns (protocol, total_length, header_length) or None if data
+	# does not even hold a full IP header at offset
+	if len(data) < offset + 20:
+		return None
+	versionihl = data[offset]
+	if (versionihl >> 4) != 4:
+		return None
+	ihl = (versionihl & 0x0f) * 4
+	if len(data) < offset + ihl:
+		return None
+	proto = data[offset + 9]
+	totallength, = struct.unpack_from(">H", data, offset + 2)
+	return proto, totallength, ihl
+
+
+def parse_tcp_header(data, offset):
+	# returns (srcport, dstport, header_length) or None if data does not
+	# hold a full TCP header (with options) at offset
+	if len(data) < offset + 20:
+		return None
+	srcport, dstport = struct.unpack_from(">HH", data, offset)
+	dataoffset = (data[offset + 12] >> 4) * 4
+	if len(data) < offset + dataoffset:
+		return None
+	return srcport, dstport, dataoffset
+
+
+def convert(pcappath, capturepath, serverport):
+	stats = {
+		"packets": 0,
+		"chunks": 0,
+		"skipped_other": 0,
+		"truncated_packets": 0,
+		"truncated_bytes": 0,
+	}
+	clients = set()
+
+	with open(pcappath, "rb") as inf, open(capturepath, "wb") as outf:
+		byteorder, snaplen = read_global_header(inf)
+		for num, incl_len, orig_len, data in read_packets(
+				inf, byteorder):
+			stats["packets"] += 1
+
+			ethertype, ipoffset = parse_ethernet(data)
+			if ethertype != ETHERTYPE_IPV4:
+				stats["skipped_other"] += 1
+				continue
+
+			ipinfo = parse_ipv4(data, ipoffset)
+			if ipinfo is None:
+				sys.stderr.write(
+					"pcap2oracap: packet %d: captured "
+					"bytes end before a full IP header - "
+					"snap length too short even for "
+					"headers, skipping\n" % num)
+				stats["skipped_other"] += 1
+				continue
+			proto, totallength, iphdrlen = ipinfo
+			if proto != IPPROTO_TCP:
+				stats["skipped_other"] += 1
+				continue
+
+			tcpoffset = ipoffset + iphdrlen
+			tcpinfo = parse_tcp_header(data, tcpoffset)
+			if tcpinfo is None:
+				sys.stderr.write(
+					"pcap2oracap: packet %d: captured "
+					"bytes end before a full TCP header - "
+					"snap length too short even for "
+					"headers, skipping\n" % num)
+				stats["skipped_other"] += 1
+				continue
+			srcport, dstport, tcphdrlen = tcpinfo
+
+			if dstport == serverport:
+				direction = DIR_CLIENT_TO_SERVER
+				clients.add(srcport)
+			elif srcport == serverport:
+				direction = DIR_SERVER_TO_CLIENT
+				clients.add(dstport)
+			else:
+				stats["skipped_other"] += 1
+				continue
+
+			payloadfulllen = (totallength - iphdrlen - tcphdrlen)
+			if payloadfulllen <= 0:
+				# pure ack/syn/fin, no TNS bytes
+				continue
+
+			payloadoffset = tcpoffset + tcphdrlen
+			available = len(data) - payloadoffset
+			present = data[payloadoffset:
+					payloadoffset + payloadfulllen]
+
+			if available < payloadfulllen:
+				padding = payloadfulllen - available
+				stats["truncated_packets"] += 1
+				stats["truncated_bytes"] += padding
+				sys.stderr.write(
+					"pcap2oracap: packet %d (%s): "
+					"snaplen %d truncated this packet - "
+					"zero-padding %d of %d payload "
+					"bytes that were never captured\n" %
+					(num,
+						"client->server"
+						if direction ==
+							DIR_CLIENT_TO_SERVER
+						else "server->client",
+						snaplen, padding,
+						payloadfulllen))
+				present = present + b"\x00" * padding
+
+			outf.write(direction)
+			outf.write(struct.pack(">I", len(present)))
+			outf.write(present)
+			stats["chunks"] += 1
+
+	if len(clients) > 1:
+		sys.stderr.write(
+			"pcap2oracap: WARNING: saw %d distinct client-side "
+			"ports on server port %d - this pcap holds more "
+			"than one TCP connection, and this tool assumes a "
+			"single connection. Interleaved connections would "
+			"be merged into one byte stream incorrectly.\n" %
+			(len(clients), serverport))
+
+	sys.stderr.write(
+		"pcap2oracap: %d packets read, %d chunks written, %d "
+		"packets dropped (non-TCP, other ports, or header cut off "
+		"by the snap length), %d packets zero-padded for %d "
+		"truncated payload bytes total\n" %
+		(stats["packets"], stats["chunks"], stats["skipped_other"],
+			stats["truncated_packets"], stats["truncated_bytes"]))
+
+
+def main():
+	serverport = 1521
+	argv = []
+	for arg in sys.argv[1:]:
+		if arg.startswith("--server-port="):
+			serverport = int(arg[len("--server-port="):])
+		else:
+			argv.append(arg)
+
+	if len(argv) != 2:
+		sys.stderr.write(
+			"usage: %s [--server-port=N] PCAPFILE CAPTUREFILE\n" %
+			sys.argv[0])
+		return 1
+
+	try:
+		convert(argv[0], argv[1], serverport)
+	except PcapError as e:
+		sys.stderr.write("pcap2oracap: %s\n" % e)
+		return 1
+
+	return 0
+
+
+if __name__ == "__main__":
+	sys.exit(main())

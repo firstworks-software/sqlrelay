@@ -457,9 +457,13 @@ extern "C" {
 	void ologof();
 	void odescr();
 	void obndrv();
+	void ocom();
+	void orol();
+	void ocon();
+	void ocof();
 }
 $GLIBC23HACKINCLUDE
-$GLIBC23HACKCODE],[olog(); oopen(); oparse(); odefin(); oexec(); ofen(); ofetch(); oexfet(); oclose(); ologof(); odescr(); obndrv();],[$ORACLESTATIC $ORACLEINCLUDES $OCI7INCLUDES],[$ORACLELIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[HAVE_OCI7="yes"],[OCI7INCLUDES=""])
+$GLIBC23HACKCODE],[olog(); oopen(); oparse(); odefin(); oexec(); ofen(); ofetch(); oexfet(); oclose(); ologof(); odescr(); obndrv(); ocom(); orol(); ocon(); ocof();],[$ORACLESTATIC $ORACLEINCLUDES $OCI7INCLUDES],[$ORACLELIBS $SOCKETLIBS],[$LD_LIBRARY_PATH],[HAVE_OCI7="yes"],[OCI7INCLUDES=""])
 		fi
 	fi
 

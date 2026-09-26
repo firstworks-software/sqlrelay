@@ -21828,13 +21828,17 @@ extern "C" {
 	void ologof();
 	void odescr();
 	void obndrv();
+	void ocom();
+	void orol();
+	void ocon();
+	void ocof();
 }
 $GLIBC23HACKINCLUDE
 $GLIBC23HACKCODE
 int
 main (void)
 {
-olog(); oopen(); oparse(); odefin(); oexec(); ofen(); ofetch(); oexfet(); oclose(); ologof(); odescr(); obndrv();
+olog(); oopen(); oparse(); odefin(); oexec(); ofen(); ofetch(); oexfet(); oclose(); ologof(); odescr(); obndrv(); ocom(); orol(); ocon(); ocof();
   ;
   return 0;
 }
