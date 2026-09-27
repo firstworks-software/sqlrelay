@@ -45,8 +45,8 @@
 // looked like on the wire.
 //
 // A dml-commit arm (commit after a real insert, rather than with nothing
-// pending) was tried here and isn't included - see the note near the end
-// of main() and #10300.
+// pending) runs below too, on its own connection - see the note near the
+// end of main() and #10300.
 
 // the four TTI codes this test drives directly - TTI_AUTOCOMMIT_ON,
 // TTI_AUTOCOMMIT_OFF, TTI_COMMIT and TTI_ROLLBACK in src/protocols/
@@ -75,6 +75,21 @@ static const unsigned char	nativeStatus1[]={
 static const unsigned char	portableStatus1[]={
 	0x00, 0x00, 0x09, 0x01, 0x01
 };
+
+// the dml-commit arm's own scratch table, dropped and recreated each run
+// the same way oraclelegacyfetch.cpp's sequence is - see dropsequence
+// there.  10300 rather than 10293 in the name: the table exists to touch
+// the DML-then-commit path #10300 is about, not the transaction-call
+// shapes #10293 covers
+static const char	*dropscratchtable=
+	"drop table protocoltable10300";
+static const char	*createscratchtable=
+	"create table protocoltable10300 (id number)";
+static const char	*insertscratchtable=
+	"insert into protocoltable10300 (id) values (10300)";
+static const char	*selectscratchtable=
+	"select id from protocoltable10300";
+static const int64_t	scratchtablevalue=10300;
 
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
@@ -174,6 +189,57 @@ static bool checkTransactionCall(oracleprotocolclient *client,
 	return true;
 }
 
+// judge a legacy parse/execute reply from the dml-commit arm below against
+// the decoded summary object - readLegacySummary() and readLegacyError() are
+// both in oracleprotocolclient.cpp, the same decoders
+// checkLegacySummaryResponse()'s other callers use in oraclelegacyfetch.cpp.
+// a mismatch here might be this call's own summary answering the wrong
+// shape, or it might be a genuine error - the same leading TTC_ERROR byte
+// covers both (#10300) - so a mismatch prints the decoded summary fields
+// and, on the chance there's a real ora number and message behind them, the
+// decoded error too
+static bool checkLegacyDmlStep(oracleprotocolclient *client,
+					const char *label,
+					uint32_t expectedcursorid,
+					unsigned char expectedcommandtype,
+					uint32_t expectedrowsprocessed,
+					uint32_t expectedsuccessiterations) {
+
+	if (checkLegacySummaryResponse(client,expectedcursorid,
+					expectedcommandtype,expectedrowsprocessed,
+					expectedsuccessiterations)) {
+		return true;
+	}
+
+	// re-decode to say what actually came back, rather than just that
+	// it didn't match
+	uint32_t	cursorid=0;
+	unsigned char	commandtype=0;
+	uint32_t	rowsprocessed=0;
+	uint32_t	successiterations=0;
+	bool		leftover=false;
+	if (readLegacySummary(client,&cursorid,&commandtype,
+					&rowsprocessed,&successiterations,
+					&leftover)) {
+		stdoutput.printf("  %s: cursor id %d, command type %d, "
+				"rows processed %d, success iterations %d%s\n",
+				label,(int)cursorid,(int)commandtype,
+				(int)rowsprocessed,(int)successiterations,
+				(leftover)?", with a message trailing it":"");
+	}
+
+	uint32_t	oranum=0;
+	char		errmessage[512];
+	size_t		errmessagesize=0;
+	bool		errleftover=false;
+	if (readLegacyError(client,&oranum,errmessage,sizeof(errmessage),
+					&errmessagesize,&errleftover)) {
+		stdoutput.printf("  %s: ora-%d: %s\n",label,
+					(int)oranum,errmessage);
+	}
+	return false;
+}
+
 int main(int argc, char **argv) {
 
 	stdoutput.printf("\n====== #10293 commit, rollback and autocommit "
@@ -260,17 +326,170 @@ int main(int argc, char **argv) {
 		return status;
 	}
 
-	// a dml-commit arm (a real insert on this instance's own backend,
-	// then the same TTI_COMMIT call) was tried here to touch the
-	// DML-then-commit path structurally, rather than only the
-	// nothing-pending shape above.  it's not included: a plain legacy
-	// TTI_QUERY/TTI_EXECUTE pair - the same pair, same query text and
-	// cursor pattern oraclelegacyfetch.cpp already runs successfully
-	// against this same instance - fails here every time, including on
-	// its own fresh connection with none of the four checks above run
-	// first.  the cause wasn't found; see #10300, filed separately, for
-	// what was ruled out and what's still open. the four checks above
-	// are what this ticket needs and they hold up on their own.
+	// #10300's dml-commit arm: a real insert on this instance's own
+	// backend, then TTI_COMMIT, rather than only the nothing-pending
+	// shape above - on its own connection, so nothing above can explain
+	// its answer.  #10300's step 1 found no server bug: the "stub error"
+	// that ticket opened against is the ordinary summary-object reply to
+	// a legacy TTI_QUERY/TTI_EXECUTE, misread as an error because a
+	// genuine error and a genuine success share the same leading
+	// TTC_ERROR byte - see the header comment on readLegacySummary() in
+	// oracleprotocolclient.cpp.  this arm judges every reply through
+	// that decoder instead of the ttc code alone.
+	//
+	// legacyQuery()'s request always goes out in the portable shape,
+	// even in a native-encoding session (#10306, filed separately and
+	// not fixed here), which hangs the server waiting for continuation
+	// packets a native client never sends.  this arm calls legacyQuery(),
+	// so it runs only in the portable invocation and prints a note and
+	// skips under -native rather than hang or count a false pass
+	if (native) {
+		stdoutput.printf("dml commit: skipped under -native (#10306)\n");
+	} else {
+
+		oracleprotocolclient	dmlclient;
+
+		if (!dmlclient.connect(host,port,sid)) {
+			report("dml commit: connect",false);
+			stdoutput.printf("%s\n",dmlclient.getError());
+			client.disconnect();
+			return status;
+		}
+		report("dml commit: connect",true);
+
+		if (!dmlclient.login(user,password)) {
+			report("dml commit: login",false);
+			stdoutput.printf("%s\n",dmlclient.getError());
+			client.disconnect();
+			return status;
+		}
+		report("dml commit: login",true);
+
+		uint32_t	dmlcursorid=0;
+		if (!dmlclient.open(&dmlcursorid)) {
+			report("dml commit: open cursor",false);
+			stdoutput.printf("%s\n",dmlclient.getError());
+			client.disconnect();
+			return status;
+		}
+		report("dml commit: open cursor",true);
+
+		// a drop of a table that isn't there errors, so its result is
+		// deliberately not checked - the same pattern
+		// oraclelegacyfetch.cpp's dropsequence step uses
+		dmlclient.legacyQuery(dmlcursorid,dropscratchtable);
+		dmlclient.legacyExecute(dmlcursorid,1,0);
+
+		if (!dmlclient.legacyQuery(dmlcursorid,createscratchtable) ||
+			!dmlclient.legacyExecute(dmlcursorid,1,0)) {
+			report("dml commit: create table",false);
+			stdoutput.printf("%s\n",dmlclient.getError());
+			client.disconnect();
+			return status;
+		}
+		// a DDL statement's command type comes back as 3, the same
+		// value a select's parse or execute reports - that's
+		// oci7CommandType()'s own fallback in src/protocols/oracle.cpp,
+		// not a real Oracle DDL code - #10300's step 1 confirmed the
+		// value live
+		report("dml commit: create table",
+				checkLegacyDmlStep(&dmlclient,
+						"dml commit: create table",
+						dmlcursorid,3,0,1));
+
+		if (!dmlclient.legacyQuery(dmlcursorid,insertscratchtable) ||
+			!dmlclient.legacyExecute(dmlcursorid,1,0)) {
+			report("dml commit: insert",false);
+			stdoutput.printf("%s\n",dmlclient.getError());
+			client.disconnect();
+			return status;
+		}
+		// an insert's execute processes one row and its command
+		// type is 2 - #10300's step 1 confirmed both live
+		report("dml commit: insert",
+				checkLegacyDmlStep(&dmlclient,
+						"dml commit: insert",
+						dmlcursorid,2,1,1));
+
+		if (!checkTransactionCall(&dmlclient,"dml commit: commit",
+						ORA_TTI_COMMIT,1,
+						status5,status5size)) {
+			client.disconnect();
+			return status;
+		}
+
+		// the commit actually took: read the row back from a second,
+		// separate connection, rather than from dmlclient's own -
+		// if the insert were still only visible within its own
+		// session, this select would come back empty
+		oracleprotocolclient	verifyclient;
+
+		if (!verifyclient.connect(host,port,sid) ||
+			!verifyclient.login(user,password)) {
+			report("dml commit: verify connect",false);
+			stdoutput.printf("%s\n",verifyclient.getError());
+			dmlclient.disconnect();
+			client.disconnect();
+			return status;
+		}
+		report("dml commit: verify connect",true);
+
+		uint32_t	verifycursorid=0;
+		if (!verifyclient.open(&verifycursorid)) {
+			report("dml commit: verify open cursor",false);
+			stdoutput.printf("%s\n",verifyclient.getError());
+			dmlclient.disconnect();
+			client.disconnect();
+			return status;
+		}
+		report("dml commit: verify open cursor",true);
+
+		if (!verifyclient.legacyQuery(verifycursorid,selectscratchtable) ||
+			!verifyclient.legacyExecute(verifycursorid,1,0) ||
+			!verifyclient.legacyFetch(verifycursorid,0)) {
+			report("dml commit: verify select",false);
+			stdoutput.printf("%s\n",verifyclient.getError());
+			dmlclient.disconnect();
+			client.disconnect();
+			return status;
+		}
+
+		int64_t	verifyvalues[4];
+		size_t	verifyvaluecount=0;
+		uint32_t	verifycolcount=0;
+		uint32_t	verifyheaderrows=0;
+		bool	verifydecoded=readLegacyFetchRows(&verifyclient,
+					verifyvalues,
+					sizeof(verifyvalues)/
+						sizeof(verifyvalues[0]),
+					&verifyvaluecount,&verifycolcount,
+					&verifyheaderrows);
+		report("dml commit: verify fetch response decodes",
+				verifydecoded);
+		if (!verifydecoded) {
+			stdoutput.printf("response (%d bytes):\n",
+						(int)verifyclient.getResponseSize());
+			stdoutput.safePrint(verifyclient.getResponse(),
+						verifyclient.getResponseSize());
+			stdoutput.printf("\n");
+		} else {
+			report("dml commit: verify fetch response has one "
+					"column",verifycolcount==1);
+			report("dml commit: the committed row is visible "
+					"from a separate connection",
+					verifyvaluecount==1 &&
+					verifyvalues[0]==scratchtablevalue);
+		}
+
+		verifyclient.disconnect();
+
+		// leave the backend clean for the next run - not checked,
+		// same reasoning as the drop before create table above
+		dmlclient.legacyQuery(dmlcursorid,dropscratchtable);
+		dmlclient.legacyExecute(dmlcursorid,1,0);
+		dmlclient.disconnect();
+	}
+
 	client.disconnect();
 
 	if (status==0) {

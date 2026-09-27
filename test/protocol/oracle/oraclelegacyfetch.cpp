@@ -30,23 +30,13 @@
 // all, so with one row per fetch the divide-by-zero necessarily lands on the
 // second pass of sendFetchResponse()'s do-while loop.
 
-// sendQueryResponse() and sendExecuteResponse() (src/protocols/oracle.cpp)
-// each answer with nothing but a two-byte data flags header and a
-// putOci7Summary() object - no message, no rows, nothing else - and a
-// genuine error answers with that same object, behind the same leading
-// TTC_ERROR (0x04) byte, plus a message.  so the ttc code can't tell a
-// success from an error here, and neither can a fixed total size: the
-// summary object's own fields (cursor id, rows processed, parse error
-// offset) are themselves length-prefixed and vary in width from one
-// answer to the next.  what does tell them apart is walking the object
-// field by field, the way readLegacyError() below walks the matching
-// fields in the error object, and checking nothing is left over once the
-// walk ends - a genuine success is a summary object and nothing else,
-// where a genuine error is a summary object plus a message.
-// readLegacySummary() below does that walk for both call sites
-
-// the marker sendFetchResponse() writes in front of every row
-static const unsigned char	ORA_ROW_MARKER=0x07;
+// a legacy parse or execute success and a genuine error share the same
+// leading TTC_ERROR (0x04) byte and the same summary-object shape - see the
+// "legacy response decoding" section of oracleprotocolclient.cpp for the
+// full explanation and the readLegacySummary()/readLegacyError() decoders
+// this file uses below.  they live there, not here, so oracletransaction.cpp's
+// DML-commit arm can judge its own parse/execute replies the same way
+// (#10300)
 
 // the errors this test tells apart: the divide by zero the query really
 // raises, and the end-of-data the unfixed code answered with instead
@@ -89,41 +79,6 @@ static void report(const char *label, bool ok) {
 	}
 }
 
-// a legacy fetch's NUMBER column, back to an integer.  putField() in
-// src/protocols/oracle.cpp writes a NUMBER as the ascii digits the backend
-// handed back, not as putNumberField()'s base-100 form - "a legacy client
-// asks the server to convert" - so this is a plain decimal parse, not
-// putNumberField()'s inverse.  #9637's legacy-fetch captures against a real
-// 10.2 server confirm it: "select 1, 2, 3 from dual" comes back as the clrs
-// "01 31", "01 32" and "01 33" - one-byte clrs holding the ascii digits -
-// where putNumberField() would have written "02 c1 02" for the first of them
-static bool oracleNumberToInteger(const unsigned char *bytes,
-					size_t size,
-					int64_t *value) {
-
-	if (!size) {
-		return false;
-	}
-
-	bool	negative=(bytes[0]=='-');
-	size_t	i=(negative)?1:0;
-
-	if (i>=size) {
-		return false;
-	}
-
-	int64_t	result=0;
-	for (; i<size; i++) {
-		if (bytes[i]<'0' || bytes[i]>'9') {
-			return false;
-		}
-		result=result*10+(int64_t)(bytes[i]-'0');
-	}
-
-	*value=(negative)?-result:result;
-	return true;
-}
-
 // a substring search over raw bytes, which responseContains() can't do -
 // the row bytes this test looks for the absence of contain zeros
 static bool responseContainsBytes(oracleprotocolclient *client,
@@ -140,248 +95,6 @@ static bool responseContainsBytes(oracleprotocolclient *client,
 		}
 	}
 	return false;
-}
-
-// walk the plainest legacy fetch response - the one a fetch with no options
-// asks for - and collect the value of the single column of each row it
-// carries.  see sendFetchResponse()/putRowHeader() in src/protocols/oracle.cpp:
-// the data flags, then TTC_ROW_HEADER and its flags byte, then six
-// length-prefixed counts (column count, iteration number, row count, uac
-// buffer length, bit vector size and one more of unknown meaning) - it has
-// no fixed size, so it has to be walked field by field the way
-// readLegacyError() below walks the error object, not skipped as a fixed
-// number of bytes.  a marker and a row follow for each row, then a trailer
-// that starts with something other than the marker.
-//
-// putRow() writes two more length-prefixed fields behind every column's
-// value - the indicator and the return code odefin() gave the client a
-// pointer for - both always 0 here, since this test never odefin's
-// anything.  skipping only the value and landing on these as though they
-// were the next row's marker is what made the three-row query decode a
-// single, wrong row: 0x00 isn't ORA_ROW_MARKER, so the walk below stopped
-// after row one every time.
-//
-// the row loop below reads exactly one value/indicator/returncode triple
-// per marker, so it only walks a genuine one-column result - the shape
-// *colcount is checked against in main() below.  a legacy fetch with more
-// than one defined column would need an inner loop over *colcount here;
-// nothing in this file exercises that
-//
-// the header's row count comes back in "headerrowcount" rather than being
-// skipped with the rest: a fetch that named a row count gets that count back
-// there, and a fetch that asked for 0 - every row there is - gets the number
-// of rows that really follow, which is the only thing in the response that
-// says how many the client was sent
-static bool readLegacyFetchRows(oracleprotocolclient *client,
-					int64_t *values,
-					size_t maxvalues,
-					size_t *valuecount,
-					uint32_t *colcount,
-					uint32_t *headerrowcount) {
-
-	client->rewindResponse();
-
-	unsigned char	dataflags[2];
-	unsigned char	ttccode=0;
-	unsigned char	flags=0;
-	uint32_t	skipint=0;
-	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
-		!client->readByte(&ttccode) ||
-		ttccode!=ORA_TTC_ROW_HEADER ||
-		!client->readByte(&flags) ||
-		!client->readLenPreInt(colcount) ||	// column count
-		!client->readLenPreInt(&skipint) ||	// iteration number
-		!client->readLenPreInt(headerrowcount) ||	// row count
-		!client->readLenPreInt(&skipint) ||	// uac buffer length
-		!client->readLenPreInt(&skipint) ||	// bit vector size
-		!client->readLenPreInt(&skipint)) {
-		return false;
-	}
-
-	*valuecount=0;
-	for (;;) {
-
-		unsigned char	marker=0;
-		if (!client->readByte(&marker)) {
-			return false;
-		}
-		if (marker!=ORA_ROW_MARKER) {
-			// the trailer, so the rows are done
-			return true;
-		}
-
-		unsigned char	numbersize=0;
-		unsigned char	number[32];
-		uint32_t	indicator=0;
-		uint32_t	returncode=0;
-		if (!client->readByte(&numbersize) ||
-			numbersize>sizeof(number) ||
-			!client->readBytes(number,numbersize) ||
-			!client->readLenPreInt(&indicator) ||
-			!client->readLenPreInt(&returncode)) {
-			return false;
-		}
-
-		if (*valuecount>=maxvalues) {
-			return false;
-		}
-		if (!oracleNumberToInteger(number,numbersize,
-						&values[*valuecount])) {
-			return false;
-		}
-		(*valuecount)++;
-	}
-}
-
-// walk sendQueryError()'s legacy answer - the data flags, then the ttc code
-// and the summary object putOci7Error() writes, field for field, then the
-// message.  the object's fields are length-prefixed ints in this encoding,
-// so it has no fixed size and has to be walked rather than skipped: see
-// putOci7Summary() in src/protocols/oracle.cpp, which this mirrors.
-//
-// "leftover" says whether anything at all follows the message.  nothing
-// should - #9976 found that what used to answer here ran 21 bytes past the
-// end of the object the client parses, which cost the client the call and
-// turned up on the next one as ORA-03120
-static bool readLegacyError(oracleprotocolclient *client,
-				uint32_t *oranum,
-				char *message,
-				size_t messagemax,
-				size_t *messagesize,
-				bool *leftover) {
-
-	client->rewindResponse();
-
-	unsigned char	dataflags[2];
-	unsigned char	ttccode=0;
-	uint32_t	skipint=0;
-	unsigned char	skipbyte=0;
-	unsigned char	skipbytes[5];
-	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
-		!client->readByte(&ttccode) ||
-		ttccode!=ORA_TTC_ERROR ||
-		!client->readLenPreInt(&skipint) ||	// end of call status
-		!client->readLenPreInt(&skipint) ||	// rows processed
-		!client->readLenPreInt(oranum) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||	// cursor id
-		!client->readLenPreInt(&skipint) ||	// parse error offset
-		!client->readByte(&skipbyte) ||		// command type
-		!client->readBytes(skipbytes,5) ||
-		// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readByte(&skipbyte) ||		// call number
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||	// success iterations
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint)) {
-		return false;
-	}
-
-	unsigned char	size=0;
-	if (!client->readByte(&size) || (size_t)size>=messagemax ||
-		!client->readBytes((unsigned char *)message,size)) {
-		return false;
-	}
-	message[size]='\0';
-	*messagesize=size;
-
-	unsigned char	extra=0;
-	*leftover=client->readByte(&extra);
-	return true;
-}
-
-// walk sendQueryResponse()'s and sendExecuteResponse()'s answer - the data
-// flags, then the ttc code and the same putOci7Summary() fields
-// readLegacyError() above walks for the error object, but nothing after
-// them.  see the note on this function's call sites in main() below: a
-// genuine parse or execute success is this object and nothing else; a
-// genuine error is this object plus a message, which is what "leftover"
-// catches
-static bool readLegacySummary(oracleprotocolclient *client,
-				uint32_t *cursorid,
-				unsigned char *commandtype,
-				uint32_t *rowsprocessed,
-				uint32_t *successiterations,
-				bool *leftover) {
-
-	client->rewindResponse();
-
-	unsigned char	dataflags[2];
-	unsigned char	ttccode=0;
-	uint32_t	skipint=0;
-	unsigned char	skipbyte=0;
-	unsigned char	skipbytes[5];
-	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
-		!client->readByte(&ttccode) ||
-		ttccode!=ORA_TTC_ERROR ||
-		!client->readLenPreInt(&skipint) ||	// end of call status
-		!client->readLenPreInt(rowsprocessed) ||
-		!client->readLenPreInt(&skipint) ||	// error number
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(cursorid) ||
-		!client->readLenPreInt(&skipint) ||	// parse error offset
-		!client->readByte(commandtype) ||
-		!client->readBytes(skipbytes,5) ||
-		// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readByte(&skipbyte) ||		// call number
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(successiterations) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint)) {
-		return false;
-	}
-
-	unsigned char	extra=0;
-	*leftover=client->readByte(&extra);
-	return true;
-}
-
-// a parse or execute response decodes as a summary answering the given
-// cursor, with the given rows-processed and success-iteration counts
-// (rows processed is always 0 here - every query in this file is a select,
-// so nothing is processed before a fetch.  success iterations is 0 for the
-// session's first parse and 1 for everything after the session's first
-// execute, on any cursor - see oci7executed in src/protocols/oracle.cpp),
-// a command type of 3 (parse or execute of a select), and nothing left
-// over
-static bool checkLegacySummaryResponse(oracleprotocolclient *client,
-					uint32_t expectedcursorid,
-					uint32_t expectedrowsprocessed,
-					uint32_t expectedsuccessiterations) {
-
-	uint32_t	curid=0;
-	unsigned char	commandtype=0;
-	uint32_t	rowsprocessed=0;
-	uint32_t	successiterations=0;
-	bool		leftover=false;
-	return readLegacySummary(client,&curid,&commandtype,
-					&rowsprocessed,&successiterations,
-					&leftover) &&
-			curid==expectedcursorid &&
-			commandtype==3 &&
-			rowsprocessed==expectedrowsprocessed &&
-			successiterations==expectedsuccessiterations &&
-			!leftover;
 }
 
 int main(int argc, char **argv) {
@@ -440,14 +153,14 @@ int main(int argc, char **argv) {
 		stdoutput.printf("%s\n",client.getError());
 		return status;
 	}
-	report("parse",checkLegacySummaryResponse(&client,cursorid,0,0));
+	report("parse",checkLegacySummaryResponse(&client,cursorid,3,0,0));
 
 	if (!client.legacyExecute(cursorid,1,0)) {
 		report("execute",false);
 		stdoutput.printf("%s\n",client.getError());
 		return status;
 	}
-	report("execute",checkLegacySummaryResponse(&client,cursorid,0,1));
+	report("execute",checkLegacySummaryResponse(&client,cursorid,3,0,1));
 
 	// no options at all: no column definitions, no iov, and the
 	// non-exact-fetch trailer.  #9609 left the exact-fetch trailer and
@@ -512,7 +225,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("parse failing query",
-			checkLegacySummaryResponse(&client,badcursorid,0,1));
+			checkLegacySummaryResponse(&client,badcursorid,3,0,1));
 
 	// the execute has to succeed - legacy execute() never fetches a row,
 	// so nothing has divided by zero yet.  an error here would mean the
@@ -523,7 +236,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute failing query",
-			checkLegacySummaryResponse(&client,badcursorid,0,1));
+			checkLegacySummaryResponse(&client,badcursorid,3,0,1));
 
 	if (!client.legacyFetch(badcursorid,0)) {
 		report("fetch failing query",false);
@@ -578,7 +291,7 @@ int main(int argc, char **argv) {
 	// out on this path at all, so checking for it here would pass
 	// whether or not the real bytes leaked
 	static const unsigned char	rowone[]={
-		ORA_ROW_MARKER, 0x02, 0x2d, 0x31
+		ORA_TTC_ROW_DATA, 0x02, 0x2d, 0x31
 	};
 	report("no row one residue reached the wire",
 			!responseContainsBytes(&client,rowone,sizeof(rowone)));
@@ -652,7 +365,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute sequence query",
-			checkLegacySummaryResponse(&client,seqcursorid,0,1));
+			checkLegacySummaryResponse(&client,seqcursorid,3,0,1));
 
 	if (!client.describe(seqcursorid,1)) {
 		report("describe sequence query",false);
@@ -713,7 +426,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute sequence query (control)",
-			checkLegacySummaryResponse(&client,seqcursorid,0,1));
+			checkLegacySummaryResponse(&client,seqcursorid,3,0,1));
 
 	if (!client.legacyFetch(seqcursorid,0)) {
 		report("fetch sequence query (control)",false);
@@ -768,7 +481,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("parse bounded fetch query",
-			checkLegacySummaryResponse(&client,boundedcursorid,0,1));
+			checkLegacySummaryResponse(&client,boundedcursorid,3,0,1));
 
 	if (!client.legacyExecute(boundedcursorid,1,0)) {
 		report("execute bounded fetch query",false);
@@ -776,7 +489,7 @@ int main(int argc, char **argv) {
 		return status;
 	}
 	report("execute bounded fetch query",
-			checkLegacySummaryResponse(&client,boundedcursorid,0,1));
+			checkLegacySummaryResponse(&client,boundedcursorid,3,0,1));
 
 	// five, though the query only has three rows
 	if (!client.legacyFetch(boundedcursorid,5)) {
