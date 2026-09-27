@@ -900,6 +900,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   character into one shared predicate
 - cleaned up the source code comments in the mysql protocol module
 - cleaned up the source code comments in sqlrsh
+- documented the firebird protocol module (maxprotocolversion,
+  wirecrypt, connect strings, authentication, and foreign
+  backend) in the configuration guide and reference; added
+  matching example config files under doc/admin/parts/
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
