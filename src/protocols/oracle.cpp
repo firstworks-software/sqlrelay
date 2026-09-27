@@ -9244,7 +9244,7 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 
 	// a real server sends 39 to 44 pairs here, mostly nls settings.  only
 	// AUTH_SVR_RESPONSE is known to be required.
-	putAuthCount(9,2);
+	putAuthCount(10,2);
 
 	// what both live servers send here
 	putAuthField("AUTH_VERSION_STRING","- 64bit Production");
@@ -9264,6 +9264,13 @@ bool sqlrprotocol_oracle::sendAuthenticationResponse() {
 	putAuthField("AUTH_SESSION_ID","9");
 	putAuthField("AUTH_SERIAL_NUM","1981");
 	putAuthField("AUTH_SVR_RESPONSE",svrresponse.getString());
+
+	// python-oracledb thin sizes its cursor-close array from this value,
+	// so it has to match what this connection can actually serve, not
+	// what a real server would report
+	char	*maxopencursors=charstring::parseNumber(maxcursorcount);
+	putAuthField("AUTH_MAX_OPEN_CURSORS",maxopencursors);
+	delete[] maxopencursors;
 
 	putAuthTrailer(trailer,sizeof(trailer),true);
 

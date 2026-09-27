@@ -2937,6 +2937,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module not tracking the call status across
   dml, ddl, commit and rollback
 - fixed the oracle protocol module ignoring a re-execute's commit option
+- fixed the oracle protocol module's login reply omitting AUTH_MAX_OPEN_CURSORS
 
 ### Security
 - fixed an authentication hole in the des password encryption module
