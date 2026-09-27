@@ -9483,6 +9483,10 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	}
 	read(rp,&seqnumber,&rp);
 
+	// the end-to-end sequence number a status message answers this with
+	// is derived from this
+	callnumber=seqnumber;
+
 	// a pointer for the cursor id - the server allocates the cursor and
 	// returns its id, so no cursor id follows it here - then the open
 	// size (opesiz), meaning unknown
@@ -9528,7 +9532,11 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	uint16_t	cursorid=cont->getId(cursor);
 	byte_t		statusttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
-	uint32_t	endtoendseqnumber=0;
+	// a real server's end-to-end sequence number is always exactly the
+	// open call's own seq byte minus 1 - see sendCloseResponse() for the
+	// capture evidence, which shows the same rule on the same status
+	// message shape
+	uint32_t	endtoendseqnumber=(byte_t)(callnumber-1);
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
@@ -19575,6 +19583,10 @@ bool sqlrprotocol_oracle::close(const byte_t *rp) {
 	}
 	read(rp,&seqnumber,&rp);
 
+	// sendCloseResponse()'s end-to-end sequence number is derived from
+	// this
+	callnumber=seqnumber;
+
 	// the cursor id is a count, so it is four bytes in the native encoding
 	// and one to five in the portable one - "08 09 01 02" against
 	// "08 09 02 00 00 00" for the same close of cursor 2, packet [0025] of
@@ -19659,7 +19671,16 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
-	uint32_t	endtoendseqnumber=0;
+	// a real server's end-to-end sequence number is always exactly the
+	// close call's own seq byte minus 1 - callnumber, a byte_t, wraps the
+	// same way that byte does when it passes 255.  packet [0024] of
+	// samples/9746-dev-oci23api7-native-datatypes-realserver.oraproxy
+	// answers a close whose own seq byte is 7 with "01 00 00 00 06 00" -
+	// a 4-byte callstatus of 1 followed by a 2-byte 6.  samples/10048-
+	// dev-oci23api7-portable-describe-realserver.oraproxy shows the same
+	// rule in the portable encoding: "01 01 01 06" against sqlrelay's own
+	// (pre-fix) "01 01 00"
+	uint32_t	endtoendseqnumber=(byte_t)(callnumber-1);
 
 	debugStart("close response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -19681,7 +19702,11 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 	// its logoff
 	putAuthCount(callstatus,4);
 	if (oci7endtoendseqnumber) {
-		putAuthCount(endtoendseqnumber,4);
+		// 2 bytes wide in native encoding, not 4 - see the evidence
+		// above.  the portable encoding is unaffected either way,
+		// putAuthCount() defers to the self-sizing writeLenPreInt()
+		// there regardless of the width passed in
+		putAuthCount(endtoendseqnumber,2);
 		debugWrite("end to end seq number: %d",endtoendseqnumber);
 	}
 
@@ -19721,6 +19746,16 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
+	// unlike every other status message in this module, a logoff's
+	// end-to-end sequence number really is always 0, not derived from
+	// callnumber - confirmed against three real-server captures, at three
+	// different seq bytes (7, 8 and 12): samples/oracle122-oci-portable-
+	// universalreps-login-version-select.cap packet [0036], samples/
+	// 10048-dev-oci23api7-bannerrewrite-both-realserver.oraproxy packet
+	// [0026], and samples/10048-dev-oci23api7-portable-describe-
+	// realserver.oraproxy packet [0036], all "01 01 00" (portable) or
+	// "01 00 00 00 00 00" (native) - callstatus 1, end-to-end 0.  see also
+	// the "Oracle Wire Protocol - Disconnect" wiki page
 	uint32_t	endtoendseqnumber=0;
 
 	// an oci7 client gets the call status and nothing behind it - the
@@ -19879,7 +19914,12 @@ bool sqlrprotocol_oracle::sendOci7StatusResponse(uint32_t callstatus) {
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
-	uint32_t	endtoendseqnumber=0;
+	// same bare-status shape as sendCloseResponse(), and the same rule -
+	// a real server's end-to-end sequence number is exactly this call's
+	// own seq byte minus 1.  commit()/rollback()/autoCommitOn()/
+	// autoCommitOff() all set callnumber to that seq byte before calling
+	// in here
+	uint32_t	endtoendseqnumber=(byte_t)(callnumber-1);
 
 	debugStart("transaction response");
 	debugWrite("data flags: 0x%04x",dataflags);
@@ -19920,7 +19960,9 @@ bool sqlrprotocol_oracle::sendOci7StatusResponse(uint32_t callstatus) {
 	// later replies still send 1
 	putAuthCount(callstatus,4);
 	if (oci7endtoendseqnumber) {
-		putAuthCount(endtoendseqnumber,4);
+		// 2 bytes wide in native encoding, not 4 - see
+		// sendCloseResponse() for the capture evidence
+		putAuthCount(endtoendseqnumber,2);
 		debugWrite("end to end seq number: %d",endtoendseqnumber);
 	}
 
@@ -19991,6 +20033,25 @@ bool sqlrprotocol_oracle::version(const byte_t *rp, bool istticall) {
 	}
 	read(rp,&seqnumber,&rp);
 
+	// sendVersionResponse()'s end-to-end sequence number is derived from
+	// callnumber, but not always from this call's own seq byte: a real
+	// OCI client piggybacks a switch session in front of every call
+	// (see switchSession()), and when it does, the embedded TTI_VERSION
+	// that follows carries its own, higher seq byte, while the server's
+	// reply still echoes the *piggyback's* seq byte minus 1, not this
+	// one.  Confirmed against samples/oracle122-oci-portable-
+	// universalreps-login-version-select.cap: packet [0015]'s piggyback
+	// carries seq 4 and its embedded TTI_VERSION carries seq 5, and
+	// packet [0016]'s reply ends "...09 01 01 01 03" - end-to-end 3,
+	// which is 4-1, not 5-1.  So this call sets callnumber only on the
+	// bare (non-piggybacked, istticall=false) TTI_SWITCH_SESSION path,
+	// where this call has no separate outer envelope; the ordinary
+	// TTI_VERSION path (istticall=true) leaves whatever switchSession()
+	// already set alone
+	if (!istticall) {
+		callnumber=seqnumber;
+	}
+
 	// this handler answers both TTI_VERSION and a bare (non-piggybacked)
 	// TTI_SWITCH_SESSION, and only the sequence number above is known to
 	// be common to both - so a short body here just means fewer fields
@@ -20033,7 +20094,10 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	byte_t		ttccode=TTC_OK;
 	byte_t		statusttccode=TTC_STATUS;
 	uint32_t	callstatus=1;
-	uint32_t	endtoendseqnumber=0;
+	// see sendCloseResponse() for the capture evidence behind this rule -
+	// a real server's end-to-end sequence number is always exactly this
+	// call's own seq byte minus 1
+	uint32_t	endtoendseqnumber=(byte_t)(callnumber-1);
 
 	// the end-to-end sequence number came after 9i.  a real 10.2 server
 	// answering an oci7 client ends this response at the call status, in
@@ -20182,6 +20246,12 @@ bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 		return false;
 	}
 	read(rp,&seqnumber,&rp);
+
+	// a real client packs this in front of every call, including a
+	// TTI_VERSION - see version()'s comment on why its end-to-end
+	// sequence number is derived from this seq byte, the piggyback's
+	// own, rather than the embedded call's
+	callnumber=seqnumber;
 
 	if (!readLenPreInt(rp,end,&sessionid,&rp) ||
 		!readLenPreInt(rp,end,&serialnumber,&rp) ||
