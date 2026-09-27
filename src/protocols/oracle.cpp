@@ -349,6 +349,15 @@
 #define ORA_MAX_RESPONSE_SIZE_EXCEEDED_MESSAGE \
 	"ORA-20005: Maximum response size exceeded.\n"
 
+// what a re-execute-and-fetch request (tti 0x4e) gets back when it carries
+// more than one row data block - that call only ever executes once, and no
+// known client sends more (see reexecuteAndFetch()).  a limit of this module's
+// rather than an oracle one, so it gets a number from the same user-defined
+// range, and for the same reason, as ORA_QUERY_FAILED above
+#define ORA_MULTIPLE_ROW_DATA_BLOCKS		20006
+#define ORA_MULTIPLE_ROW_DATA_BLOCKS_MESSAGE \
+	"ORA-20006: Multiple row data blocks not supported for this call.\n"
+
 // what a request this module could only read part of gets back, just ahead of
 // the session being dropped - a real server's answer to a ttc request it
 // can't parse, and terminal there too.  nothing on the wire says where a
@@ -17999,6 +18008,18 @@ bool sqlrprotocol_oracle::reexecuteAndFetch(const byte_t *rp) {
 	// uses, not fetch3()'s 0x02), one row (the select only had one), and
 	// a summary carrying ORA-01403 - the same shape sendFetch3Response()
 	// already builds for an ordinary fetch, reused below with that flag
+	//
+	// so no real client sends more than one row data block here.  one that
+	// did would get ORA_MULTIPLE_ROW_DATA_BLOCKS back, rather than having
+	// the extra blocks silently dropped - #10330.  that only covers blocks
+	// already in the request buffer though.  the tti dispatch loop sets rp
+	// to NULL after this call, the way it does after almost every other
+	// one (see the switch on ttifunction above), so bytes left in that
+	// buffer are thrown away rather than read as the next call's header,
+	// and never could have desynced the session.  extra blocks in a later
+	// tns packet, not yet read when this returns, still reach the next
+	// tti dispatch as raw bytes and misdecode there.  no client is known
+	// to do that, so it's left as a known limitation
 
 	// the bind values behind the header can run past one packet
 	reassemble=true;
@@ -18048,11 +18069,30 @@ bool sqlrprotocol_oracle::reexecuteAndFetch(const byte_t *rp) {
 	query3affectedrows=0;
 	query3knowsaffectedrows=false;
 
-	// only the values are on the wire, one row data block regardless of
-	// what prefetchrows claims - this call only ever executes once
+	// only the values are on the wire.  prefetchrows isn't a block count,
+	// so the blocks are counted from the buffer (iterations 0) rather than
+	// assumed to be one, and more than one is refused below.  that mode
+	// doesn't wait for a block's own marker byte the way a nonzero
+	// iterations count does, so the first block's marker is waited for
+	// here instead, or a block starting in a packet that hasn't arrived
+	// yet would read as no block at all.  a bindless call has no block
+	// coming, and waiting would just run out continuationtimeout
 	restoreQuery3Binds(cursor);
-	if (!getQuery3BindValues(rp,end,query3binddescs,1)) {
+	if (query3binddescs && !have(rp,1,&end)) {
+		debugWrite("truncated re-execute-and-fetch row data block");
 		return false;
+	}
+	if (!getQuery3BindValues(rp,end,query3binddescs,0)) {
+		return false;
+	}
+
+	// refused ahead of the execute, like the prefetch row guard below
+	if (query3blocks>1) {
+		debugWrite("re-execute-and-fetch got %d row data blocks, "
+				"only one is ever legitimate",query3blocks);
+		return sendMaxResponseError(cursorid,
+				ORA_MULTIPLE_ROW_DATA_BLOCKS,
+				ORA_MULTIPLE_ROW_DATA_BLOCKS_MESSAGE);
 	}
 
 	// refused here, ahead of the execute, the same as query3()'s and
@@ -21282,9 +21322,11 @@ bool sqlrprotocol_oracle::sendMaxResponseError(uint32_t cursorid,
 						const char *message) {
 
 	// answers a request that asked for more rows than MAX_FETCH_ROW_COUNT,
-	// or whose batch ran past MAX_RESPONSE_SIZE while it was being built.
-	// both paths can see either one, so the answer takes the shape the
-	// session is in, the way sendQueryError() does
+	// whose batch ran past MAX_RESPONSE_SIZE while it was being built, or
+	// a re-execute-and-fetch's that carried more than one row data block
+	// (see reexecuteAndFetch()).  any of the callers can see any of these,
+	// so the answer takes the shape the session is in, the way
+	// sendQueryError() does
 
 	if (!query3session) {
 		return sendOci7StatementError(cursorid,oranum,message);

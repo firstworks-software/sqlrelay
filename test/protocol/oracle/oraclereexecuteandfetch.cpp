@@ -29,7 +29,7 @@
 // sendQuery3Response() uses for its own prefetch, not the "answering a
 // fetch" flags (0x02) an ordinary TTI_FETCH gets.
 //
-// Four cases, each on its own session:
+// Five cases, each on its own session:
 //
 //	- a bindless select whose prefetch count exactly matches the rows
 //	  available: every row comes back and the summary carries no error
@@ -56,6 +56,14 @@
 //	  fetch3() apply to their own row counts - and the session left in
 //	  sync behind it, checked by running an ordinary query3 on a fresh
 //	  cursor on the same connection afterward
+//	- a select with a bind, re-executed with two row data blocks behind
+//	  a single TTI_REEXECUTE_AND_FETCH request rather than the one
+//	  python-oracledb always sends: refused with ORA-20006 before the
+//	  cursor is touched at all, rather than reading only the first block
+//	  and silently dropping the second, checked both by running an
+//	  ordinary query3 on a fresh cursor afterward, the same way the
+//	  over-large prefetch case does, and by fetching from the original
+//	  cursor to confirm the rejected request never reached it
 
 // putRowHeader()'s flags byte in src/protocols/oracle.cpp: 0x02 in the
 // answer to a fetch and 0x22 in the answer to an execute (or, now, to a
@@ -63,10 +71,11 @@
 static const unsigned char	ORA_ROW_HEADER_FLAGS_FETCH=0x02;
 static const unsigned char	ORA_ROW_HEADER_FLAGS_EXECUTE=0x22;
 
-// ORA_NO_DATA_FOUND and ORA_MAX_FETCH_ROW_COUNT_EXCEEDED in
-// src/protocols/oracle.cpp
+// ORA_NO_DATA_FOUND, ORA_MAX_FETCH_ROW_COUNT_EXCEEDED and
+// ORA_MULTIPLE_ROW_DATA_BLOCKS in src/protocols/oracle.cpp
 static const uint32_t	ORA_NO_DATA_FOUND=1403;
 static const uint32_t	ORA_MAX_FETCH_ROW_COUNT_EXCEEDED=20004;
+static const uint32_t	ORA_MULTIPLE_ROW_DATA_BLOCKS=20006;
 
 // MAX_FETCH_ROW_COUNT in src/protocols/oracle.cpp
 static const uint32_t	ORA_MAX_FETCH_ROW_COUNT=100000;
@@ -576,6 +585,127 @@ static void runOverLargePrefetch(const char *host, uint16_t port,
 	client.disconnect();
 }
 
+// the multiple-row-data-block case: two row data blocks behind a single
+// TTI_REEXECUTE_AND_FETCH request, something no real python-oracledb thin
+// client ever sends (it always writes exactly one, fixed by self.num_execs -
+// see the header comment above).  #10330: refused with ORA-20006 before the
+// cursor is touched, rather than reading only the first block and silently
+// dropping the second - checked by fetching from the original cursor
+// afterward and confirming the rejected request never reached it, and by
+// the session still being in sync, the same proof runOverLargePrefetch()
+// above uses
+static void runMultipleRowDataBlocks(const char *host, uint16_t port,
+					const char *sid,
+					const char *user, const char *password) {
+
+	const char	*scenario="multiple row data blocks";
+	stdoutput.printf("\n--- %s ---\n\n",scenario);
+
+	oracleprotocolclient	client;
+
+	oracleprotocolbind	bind;
+	bind.varchar(ORA_BIND_BUFFER_SIZE);
+
+	const char	*firstvalue="first value";
+	oracleprotocolbindvalue	firstvalues[1];
+	firstvalues[0].set(firstvalue);
+
+	uint32_t	cursorid=0;
+	if (!beginSelect(&client,scenario,host,port,sid,user,password,
+				"select :b from dual",
+				&bind,1,firstvalues,&cursorid)) {
+		client.disconnect();
+		return;
+	}
+
+	// two row data blocks, block-major, one bind each - the second
+	// block's value should never actually be read
+	oracleprotocolbindvalue	values[2];
+	values[0].set("first block value");
+	values[1].set("second block value");
+
+	char	label[160];
+	charstring::printf(label,sizeof(label),
+				"%s: reexecute and fetch",scenario);
+	if (!client.reexecuteAndFetch(cursorid,1,ORA_OPTION_EXECUTE,0,
+						1,values,2)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	report(label,true);
+
+	uint32_t	callstatus=0;
+	uint32_t	oranum=0;
+	bool	decoded=readQuery3Summary(&client,&callstatus,NULL,&oranum);
+	charstring::printf(label,sizeof(label),
+				"%s: reply decodes",scenario);
+	report(label,decoded);
+	if (!decoded) {
+		reportResponse(&client);
+		client.disconnect();
+		return;
+	}
+
+	charstring::printf(label,sizeof(label),
+				"%s: refused with ORA-20006",scenario);
+	report(label,oranum==ORA_MULTIPLE_ROW_DATA_BLOCKS);
+
+	// the rejected request never reached the cursor - an ordinary fetch
+	// on it still comes back with the value the first execute installed,
+	// not a re-execution against either of the two blocks the rejected
+	// request tried to send
+	charstring::printf(label,sizeof(label),
+				"%s: original cursor still holds its first "
+				"value",scenario);
+	if (!client.fetch(cursorid,1)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	unsigned char	fetchflags=0;
+	uint32_t	fetchcolcount=0;
+	uint32_t	fetchheaderrowcount=0;
+	oraclerow	fetchrows[ORA_MAX_ROWS];
+	size_t		fetchrowcount=0;
+	decoded=readReexecuteAndFetchRows(&client,&fetchflags,&fetchcolcount,
+					&fetchheaderrowcount,fetchrows,
+					ORA_MAX_ROWS,&fetchrowcount);
+	report(label,decoded && fetchrowcount==1 &&
+				rowEquals(&fetchrows[0],firstvalue));
+	if (!decoded || fetchrowcount!=1 ||
+				!rowEquals(&fetchrows[0],firstvalue)) {
+		reportResponse(&client);
+	}
+
+	// the session is still in sync - a fresh query3 on a new cursor,
+	// on the same connection, still gets an ordinary answer
+	charstring::printf(label,sizeof(label),
+				"%s: session still in sync afterward",
+				scenario);
+	if (!client.query3(ORA_OPTION_PARSE|ORA_OPTION_EXECUTE|
+				ORA_OPTION_NOPLSQL,0,0,
+				"select 'stillalive' from dual")) {
+		report(label,false);
+		stdoutput.printf("%s\n",client.getError());
+		client.disconnect();
+		return;
+	}
+	uint32_t	newcursorid=0;
+	uint32_t	neworanum=0;
+	decoded=readQuery3Summary(&client,&callstatus,
+					&newcursorid,&neworanum);
+	report(label,decoded && !neworanum && newcursorid &&
+					newcursorid!=cursorid);
+	if (!decoded || neworanum || !newcursorid) {
+		reportResponse(&client);
+	}
+
+	client.disconnect();
+}
+
 int main(int argc, char **argv) {
 
 	stdoutput.printf("\n====== #10322 TTI_REEXECUTE_AND_FETCH (0x4e) "
@@ -601,6 +731,7 @@ int main(int argc, char **argv) {
 	runPartialBatch(host,port,sid,user,password);
 	runBoundReexecute(host,port,sid,user,password);
 	runOverLargePrefetch(host,port,sid,user,password);
+	runMultipleRowDataBlocks(host,port,sid,user,password);
 
 	if (status==0) {
 		stdoutput.printf("\n\033[34mAll tests succeeded\033[0m\n");
