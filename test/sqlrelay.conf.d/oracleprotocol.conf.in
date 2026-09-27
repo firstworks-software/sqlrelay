@@ -10,7 +10,7 @@
 	     these instances.  A thin-mode client does not fail cleanly
 	     against serverversion="11.2".  It hangs forever at login
 	     instead, with no error.  See the Server Version section of
-	     doc/admin/configguide.wt for the full trade-off across every
+	     doc/admin/configguide/oracleprotocol.wt for the full trade-off across every
 	     client tested against this module. -->
 	<!-- HOST=oracle below (used by this instance and by 11g, 12c,
 	     connectstrings, and fetchatonce below) resolves to a real 12.2

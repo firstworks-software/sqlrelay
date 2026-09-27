@@ -1,0 +1,20 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="altconfigfile.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="altconfigfile.html">Alternative Configuration File Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a></p>
+
+<br/><a name="advanced"/><h1>Advanced Configuration</h1>
+
+<p>The configuration file supports many more attributes and features than the ones described in this guide including tuning options.  See the <a href="../configreference.html">SQL Relay Configuration Reference</a> and <a href="../tuning.html">Tuning SQL Relay</a> for more information.</p>
+
+<hr/>
+
+<p><a href="altconfigfile.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="altconfigfile.html">Alternative Configuration File Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

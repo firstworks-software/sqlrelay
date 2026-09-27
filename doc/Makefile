@@ -109,6 +109,7 @@ install:
 	$(CP) slides/* $(docdir)/slides
 	$(CHMOD) 644 $(docdir)/slides/*
 	$(MKINSTALLDIRS) $(docdir)/admin
+	$(MKINSTALLDIRS) $(docdir)/admin/configguide
 	$(MKINSTALLDIRS) $(docdir)/gettingstarted
 	$(MKINSTALLDIRS) $(docdir)/api
 	$(MKINSTALLDIRS) $(docdir)/api/ado.net/html
@@ -138,6 +139,8 @@ install:
 	$(MKINSTALLDIRS) $(docdir)/programming
 	$(CP) admin/*.html $(docdir)/admin
 	$(CHMOD) 644 $(docdir)/admin/*.html
+	$(CP) admin/configguide/*.html $(docdir)/admin/configguide
+	$(CHMOD) 644 $(docdir)/admin/configguide/*.html
 	$(CP) gettingstarted/*.html $(docdir)/gettingstarted
 	$(CHMOD) 644 $(docdir)/gettingstarted/*.html
 	$(CP) css/*.css $(docdir)/css

@@ -1,0 +1,90 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [basicconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=basicconfiguration.html,vertical-align=middle)]]
+
+[=#quick]
+= Quick Start =
+
+In order to run, the SQL Relay server requires a configuration file.  However, When SQL Relay is first installed, no such configuration file exists.  You must create one in the appropriate location.  This location depends on the platform and on how you installed SQL Relay.
+
+* Unix and Linux
+ * Built from source - '''/usr/local/firstworks/etc/sqlrelay.conf''' (unless you specified a non-standard --prefix or --sysconfdir during the build)
+ * RPM package - '''/etc/sqlrelay.conf'''
+ * !FreeBSD package - '''/usr/local/etc/sqlrelay.conf'''
+ * !NetBSD package - '''/usr/pkg/etc/sqlrelay.conf'''
+ * !OpenBSD package - '''/usr/local/etc/sqlrelay.conf'''
+* Windows
+ * Built from source - '''C:\Program Files\Firstworks\etc\sqlrelay.conf'''
+ * Windows Installer package - '''C:\Program Files\Firstworks\etc\sqlrelay.conf''' (unless you specified a non-standard installation folder)
+
+The most minimal sqlrelay.conf would be something like:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-minimal.conf@
+}}}
+}}}
+
+This configuration defines an instance of SQL Relay named //example// that opens and maintains a pool of 5 persistent connections to the //ora1// instance of an Oracle database using //scott/////tiger// credentials.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{
+sqlr-start -id example
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' When installed from packages, SQL Relay may have to be started and stopped as root.)
+}}}
+
+and can be accessed from the local machine using:
+
+{{{#!blockquote
+{{{
+sqlrsh -host localhost -user scott -password tiger
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
+
+By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{
+sqlrsh -host sqlrserver -user scott -password tiger
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{
+sqlr-stop -id example
+}}}
+}}}
+
+All running instances of SQL Relay can be stopped using:
+
+{{{#!blockquote
+{{{
+sqlr-stop
+}}}
+}}}
+
+(without the -id argument)
+
+----
+
+[[Image(../../images/navprev.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [basicconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=basicconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

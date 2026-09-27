@@ -30,7 +30,7 @@ When run with the -id option, '''sqlr-start''' starts one instance of '''sqlr-li
 
 When run without the -id option, '''sqlr-start''' starts '''sqlr-listener''', '''sqlr-scaler''' and '''sqlr-connection''' daemons as appropriate for each instance in the config file(s) whose enabled parameter is set to "yes".
 
-The optional -config CONFIGFILE argument may be used to specify a config file, directory containing a set of config files, a url that resolves to a config file, or a comma-separated list of any of the above.  See the sections on [configguide.html#specifying Specifying Configuration Files] and [configguide.html#remote Remote Configuration Files] in the SQL Relay Configuration Guide for more info.
+The optional -config CONFIGFILE argument may be used to specify a config file, directory containing a set of config files, a url that resolves to a config file, or a comma-separated list of any of the above.  See the sections on [configguide/altconfigfile.html#specifying Specifying Configuration Files] and [configguide/altconfigfile.html#remote Remote Configuration Files] in the SQL Relay Configuration Guide for more info.
 
 If the optional -localstatedir LOCALSTATEDIR argument is used, it is passed to the programs started by '''sqlr-start''' as appropriate.
 

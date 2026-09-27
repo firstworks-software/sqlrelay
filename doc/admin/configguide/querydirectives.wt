@@ -1,0 +1,157 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+
+[[br]][=#directives]
+= Query Directives =
+
+Query directives enable an app to give the SQL Relay server special per-query instructions in the comments preceeding the query.
+
+{{{#!blockquote
+{{{#!code
+@parts/directives.sql@
+}}}
+}}}
+
+Query directives are implemented by loadable modules.  The //directives// section of the configuration file indicates which directive modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-custom_wf.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All directive modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All directive modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Directive modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates instances of the specified directive modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file. 
+
+Currently, the following directive modules are available in the standard SQL Relay distribution:
+
+* '''custom_wf'''
+* '''singlestep'''
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+
+
+[[br]][=#custom_wf]
+== custom_wf ==
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-custom_wf.conf@
+}}}
+}}}
+
+The '''custom_wf''' module examines the comments preceeding the query and looks for one or more of the following directives:
+
+* sqlexecdirect
+* sqlprepare
+* querytimeout
+
+
+=== sqlexecdirect ===
+
+The sqlexecdirect directive tells SQL Relay to execute the query in a single step, rather than using the standard prepare/execute process.  This is useful for overriding the executedirect=no connection string option (the default) on a case-by-case basis.
+
+{{{#!blockquote
+{{{#!code
+@parts/custom_wf-sqlexecdirect.sql@
+}}}
+}}}
+
+Note that (currently) the only database back-end that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.
+
+
+[[br]]
+=== sqlprepare ===
+
+The sqlprepare directive tells SQL Relay to prepare/execute the query in a two-step step process, rather than executing the query in a single step.  This is useful for overriding the executedirect=yes connection string option on a case-by-case basis.
+
+{{{#!blockquote
+{{{#!code
+@parts/custom_wf-sqlprepare.sql@
+}}}
+}}}
+
+Note that (currently) the only database back-end that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.
+
+
+[[br]]
+=== querytimeout ===
+
+The querytimeout directive sets a timeout (in seconds) for the query.  The following example sets a 60 second timeout.
+
+{{{#!blockquote
+{{{#!code
+@parts/custom_wf-querytimeout.sql@
+}}}
+}}}
+
+Note that this directive takes a colon-delimited parameter, the number of seconds.  Setting a timeout of 0 seconds (or removing the parameter) disables the timeout.
+
+Note that (currently) the only database back-end that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.
+
+
+[[br]][=#singlestep]
+== singlestep ==
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-singlestep.conf@
+}}}
+}}}
+
+The '''singlestep''' module only works when using a !PostgreSQL database.  Attempts to use it with a different database will have no effect.
+
+When using a !PostgreSQL database, the connect string option fetchatonce can be set to 0 or 1.  When set to 0, the SQL Relay server fetches and buffers all rows of the result set from the database before returning any to the SQL Relay client. When set to 1, the SQL Relay server "single-steps" through the rows of the result set, fetching one row at a time from the database, and sending each row back to the SQL Relay client as it is fetched.
+
+Using fetchatonce=0 can cause the SQL Relay serve to consume large amounts of memory when a query returns a large number of rows.  On the other hand, when using fetchatonce=1, due to the quirky way that !PostgreSQL implements fetching one row at a time, if you run a set of nested queries, rows will be truncated in the outer query, if the client uses a non-zero result set buffer size.  See [../../faq.html#postgresqlfetchatonce the faq] for more details.
+
+The '''singlestep''' module allows you to configure the instance one way, but override that configuration on a query-by-query basis.
+
+The module examines the comments preceeding the query and looks for one or more of the following directives:
+
+* singlestep=on
+* singlestep=off
+
+[[br]]
+=== singlestep=on ===
+
+If the singlestep=on directive is used, the SQL Relay Server "single-steps" through the rows of the result set of the associated query, fetching one row at a time from the database and sending each row back to the SQL Reay client as it is fetched.
+
+{{{#!blockquote
+{{{#!code
+@parts/singlestepon.sql@
+}}}
+}}}
+
+[[br]]
+=== singlestep=off ===
+
+If singlestep=off is set, then the SQL Relay Server will fetch and buffer all rows of the result set of the associated query before returning any to the SQL Relay client.
+
+{{{#!blockquote
+{{{#!code
+@parts/singlestepoff.sql@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

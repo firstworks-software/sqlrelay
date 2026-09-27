@@ -209,12 +209,12 @@ sqlrsh -id myinst -batch < script.sql
 
 === Alternate Connection Options ===
 
-* '''-config''' CONFIG - overrides the default configuration with the given one.  This may be a file, a directory of files, a url, or a comma-separated list of any of those.  See [configguide.html#specifying Specifying Configuration Files] in the SQL Relay Configuration Guide.
+* '''-config''' CONFIG - overrides the default configuration with the given one.  This may be a file, a directory of files, a url, or a comma-separated list of any of those.  See [configguide/altconfigfile.html#specifying Specifying Configuration Files] in the SQL Relay Configuration Guide.
 * '''-id''' INSTANCEID - takes the host, port, socket, user and password from the named instance in the configuration, rather than from the command line
 
 An -id run also picks up the instance's kerberos and TLS settings from the configuration.  Anything given on the command line wins over the configuration.
 
-If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See [configguide.html#pwdenc Password Encryptions] in the SQL Relay Configuration Guide.
+If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See [configguide/security.html#pwdenc Password Encryptions] in the SQL Relay Configuration Guide.
 
 * '''-krb''' - use Kerberos authentication and encryption
 * '''-krbservice''' SVC - use the given kerberos service

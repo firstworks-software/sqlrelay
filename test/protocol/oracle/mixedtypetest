@@ -26,7 +26,7 @@
 # resolvable on every host this repro needs to run on.
 #
 # The module's own debug="protocols" log for this run lands under the
-# debug directory named in doc/admin/configguide.wt's "debug" logger
+# debug directory named in doc/admin/configguide/logging.wt's "debug" logger
 # module section (usually /usr/local/firstworks/var/log/sqlrelay/debug),
 # as sqlr-listener.PID and sqlr-connection.PID files - look for the ones
 # with a timestamp inside this run, since debug="protocols" is
@@ -107,7 +107,7 @@ runboth "repro: number then varchar" \
 
 echo
 echo "done.  debug logs for this run are under the debug directory"
-echo "named in doc/admin/configguide.wt's debug logger section"
+echo "named in doc/admin/configguide/logging.wt's debug logger section"
 echo "(usually /usr/local/firstworks/var/log/sqlrelay/debug) - look"
 echo "for the sqlr-connection.PID files created since this script"
 echo "started."

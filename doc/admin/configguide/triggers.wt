@@ -1,0 +1,591 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [logging.html Logging] [[Image(../../images/navnext.png,link=logging.html,vertical-align=middle)]]
+
+[[br]][=#triggers]
+= Triggers =
+
+Triggers enable SQL Relay to execute arbitrary code either before, or after a query is run.  They are similar to a database trigger, but they run inside of SQL Relay, rather than inside of the database.   As such, they are not limited to databaes operations.  They can run queries, make library or system calls, run shell commands, and anything else that an os-level application can do.
+
+ [[Image(../../images/triggers.png,nolink)]]
+
+Triggers are implemented by loadable modules.  The //triggers// section of the configuration file indicates which modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-triggers-replay.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All trigger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All trigger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+All trigger modules also have a //when// attribute which controls the phases in which the trigger runs.  The value is a comma-separated list of phase keywords.  The supported keywords are:
+
+* "beforeExecute" - run the trigger before the query is executed
+* "afterExecute" - run the trigger after the query has been executed
+* "bothExecute" - shorthand for "beforeExecute,afterExecute"
+* "beforePrepare" - run the trigger before the query is prepared
+* "afterPrepare" - run the trigger after the query has been prepared
+* "bothPrepare" - shorthand for "beforePrepare,afterPrepare"
+* "all" - shorthand for "bothPrepare,bothExecute"
+
+For example, //when="all"// runs the trigger before and after both the prepare and execute phases.  Most triggers only need to act at execute time, but some triggers (notably //savepoints//) need to wrap the prepare phase as well, because databases like PostgreSQL parse and resolve references during prepare and fail there rather than at execute time.
+
+Trigger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates instances of the specified trigger modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  Each module may evaluate the query and decide whether to run something or not.
+
+Currently, the following trigger modules are available in the standard SQL Relay distribution:
+
+* '''replay'''
+* '''savepoints'''
+* '''splitmultiinsert'''
+* '''upsert'''
+* '''globaltemptables'''
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+
+
+[[br]][=#replay]
+== replay ==
+
+The replay module enables replay of the previous query, or of the entire transaction, when given conditions occur.
+
+This enables automatic recovery in the event of a deadlock and/or lock wait timeout.  It's possible that the module could be used for other purposes, but it's targeted for this use.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-triggers-replay.conf@
+}}}
+}}}
+
+In this example...
+
+The trigger is configured to run after the query has been executed.  This is the only valid configuration for the replay trigger.  If when="beforeExecute" is set then the trigger will be ignored.
+
+If an error code 1213 occurs (a !MySQL deadlock), then the entire transaction is replayed.  If an error code 1205 occurs (a !MySQL lock wait timeout), then the previous query is replayed.
+
+Note that the normalize translation is also configured.  This helps the trigger parse and rewrite queries more accurately.  See the section on Auto-Increment Columns below for details.
+
+Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a file to log to and a query to run and log the output of, for each condition.  For example:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-triggers-replay-log.conf@
+}}}
+}}}
+
+In this example...
+
+If an error code 1213 occurs (a !MySQL deadlock), then the module logs various bits of information to the log, runs the query "show engine innodb status" and outputs the results of the query to /tmp/example-deadlocks.log as well.  Then, the entire transaction is replayed and details about that are logged to the file too.
+
+If an error code 1205 occurs (a !MySQL lock wait timeout), then the previous query is replayed, but no logging occurs.
+
+In this configuration, the module enables automatic recovery from deadlocks and lock wait timeouts, and the log allows a developer to go back later, examine the queries that caused the deadlocks, and modify them (or the app) to mitigate the problem.
+
+In addition to the '''module''' and '''when''' attributes, the '''trigger''' tag also supports the following attributes:
+
+* '''includeselects'''
+ * If set to "no" (the default) - select queries are not logged or replayed
+ * If set to "yes" - select queries are logged and replayed
+ * Use care when disabling this, as the query log will be larger and replay operations can take much longer.
+* '''maxretries'''
+ * It's possible to encounter another replay condition while replaying a query or transaction.  If this happens, the module retries.  This attribute limits the total number of retries.  If it is exceeded, then whatever error occurred on the last retry is returned to the application.
+
+The '''condition''' tag supports the following attributes:
+
+* '''error'''
+ * if numeric: the condition is true if the error code matches
+ * if string: the condition is true if the error string contains the string
+* '''sqlstate'''
+ * an alternative to '''error''', not an addition to it - if set on a tag, the condition matches on the SQLSTATE alone, and that tag's '''error''' attribute (if also present) is ignored
+ * "set" means non-empty - '''sqlstate=""''' (present but empty) is treated the same as leaving it off, and the tag falls back to '''error'''; this is different from the globaltemptables trigger's '''alreadyexists''' tag, where an empty '''sqlstate''' explicitly disables a built-in default - the replay trigger has no built-in default to disable
+ * compared case-insensitively against the SQLSTATE the database reported for the error
+ * SQLSTATE codes are standardized and locale-independent, unlike error text, and aren't backend-specific magic numbers, unlike error codes on some backends
+ * if the backend didn't report a SQLSTATE for the error, there's nothing to compare, so the condition can't match on '''sqlstate''' - this is never treated as a mismatch, it's simply skipped
+ * '''sqlstate''' and '''error''' are alternatives on a single '''condition''' tag, not combined on one - a site that wants to react to either a particular SQLSTATE or a particular error should configure two separate '''condition''' tags, one using each attribute
+* '''scope'''
+ * transaction - replay the entire transaction if this condition occurs
+ * transaction - replay the previous query if this condition occurs
+
+The '''log''' tag supports the following attributes:
+
+* '''file'''
+ * the name of the file to log information to, including the output of the query specified in the query tag
+ * each log entry consists of a divider, timestamp, and result set
+
+The '''query''' tag contains the query to be run
+
+Sample (partial) log entries follow:
+
+{{{#!blockquote
+{{{
+===============================================================================
+05/15/2019 15:59:40 EDT
+
+Type : InnoDB
+Name : 
+Status : 
+
+=====================================
+2019-05-15 15:59:40 7f2dcb118b00 INNODB MONITOR OUTPUT
+=====================================
+Per second averages calculated from the last 9 seconds
+-----------------
+BACKGROUND THREAD
+-----------------
+srv_master_thread loops: 2625 srv_active, 0 srv_shutdown, 100871 srv_idle
+srv_master_thread log flush and writes: 103455
+... more lines ...
+Spin rounds per wait: 1.97 mutex, 5.00 RW-shared, 3.26 RW-excl
+------------------------
+LATEST DETECTED DEADLOCK
+------------------------
+2019-05-15 15:59:40 7f2dcce8bb00
+*** (1) TRANSACTION:
+TRANSACTION 1449294, ACTIVE 8 sec inserting
+mysql tables in use 1, locked 1
+LOCK WAIT 38 lock struct(s), heap size 6544, 34 row lock(s), undo log entries 22 MySQL thread id 2400, OS thread handle 0x7f2dcb118b00, query id 339194 localhost testuser update
+------------------------
+LATEST DETECTED DEADLOCK
+------------------------
+2019-05-15 15:59:40 7f2dcce8bb00
+*** (1) TRANSACTION:
+TRANSACTION 1449294, ACTIVE 8 sec inserting
+mysql tables in use 1, locked 1
+LOCK WAIT 38 lock struct(s), heap size 6544, 34 row lock(s), undo log entries 22 MySQL thread id 2400, OS thread handle 0x7f2dcb118b00, query id 339194 localhost testuser update
+insert into testtable (col1,col2,col3) values (null,0,2013183)
+*** (1) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 9786 page no 6352 n bits 696 index `col1` of table `testdb`.`testtable` trx table locks 13 total table locks 6 trx id 1449294 lock_mode X locks gap before rec insert intention waiting lock hold time 1 wait time before grant 0 
+*** (2) TRANSACTION:
+TRANSACTION 1449304, ACTIVE 7 sec fetching rows
+mysql tables in use 25, locked 25
+18296 lock struct(s), heap size 2143784, 1437389 row lock(s)
+MySQL thread id 2361, OS thread handle 0x7f2dcce8bb00, query id 334173 localhost testuser Copying to tmp table on disk
+update testtable1,testtable2,testtable3 ... some long where clause ... some long set clause ...
+*** (2) HOLDS THE LOCK(S):
+RECORD LOCKS space id 9786 page no 6352 n bits 592 index `col1` of table `testdb`.`testtable` trx table locks 4 total table locks 6 trx id 1449304 lock mode S lock hold time 7 wait time before grant 0 
+*** (2) WAITING FOR THIS LOCK TO BE GRANTED:
+RECORD LOCKS space id 9786 page no 6327 n bits 368 index `GEN_CLUST_INDEX` of table `testdb`.`testtable` trx table locks 4 total table locks 6 trx id 1449304 lock mode S waiting lock hold time 0 wait time before grant 0 
+*** WE ROLL BACK TRANSACTION (1)
+------------
+TRANSACTIONS
+------------
+... more lines ...
+
+
+===============================================================================
+05/15/2019 17:21:33 EDT
+
+Type : InnoDB
+Name : 
+Status : 
+... more lines ...
+}}}
+}}}
+
+From this log entry, we can see that insert and update queries encountered a gap-locking deadlock.
+
+Currently, each condition tag may contain only one log tag, and each log tag may contain only one query tag.  This restriction may be relaxed in a future release.
+
+If the log file doesn't already exist, the it is created with rw-r--r-- permissions, and will be owned by the user/group that SQL Relay is running as.  There aren't, currently, attributes to control permissions or ownership.
+
+=== Considerations ===
+
+There are some considerations that are important to take into account when using the replay module.
+
+
+==== Deadlock Response ====
+
+!MySQL/MariaDB respond to a deadlock at the transaction level.  When a deadlock occurs, they roll back all of the queries in the current transaction, and all of these queries must be reexecuted in order to recover.  So, when using the replay module with !MySQL/MariaDB and databases which respond similarly, use scope="transaction" in your conditions.
+
+Oracle responds to a deadlock at the query level.  When a deadlock occurs, it rolls back the query that deadlocked, and only that query must be reexecuted in order to recover.  So, when using the replay module with Oracle and databases which respond similarly, use scope="query" in your conditions.
+
+The replay module has been used extensively with !MySQL/MariaDB, but not with other databases.  It should work, but there might be unforseen issues.  For example, the scope="transaction" behavior is modeled after the specific way that !MySQL/MariaDB respond to a deadlock.  When a deadlock occurs, they roll back all of the queries in the current transaction.  However, you are still in the same transaction, it's just as if none of the queries had been run.  As such, when replaying a transaction, the module just re-executes the queries that it logged - it doesn't execute a rollback, or begin a new transaction first.  This may not be correct for all databases which handle deadlocks at the transaction level.
+
+
+==== Memory Usage ====
+
+Queries are, currently, just logged to memory.  If your application runs large queries, and/or has long running transactions, then excess memory consumption could become an issue.  The default behavior of not logging or replaying select queries helps, so use caution when disabling that option.
+
+
+==== Retries ====
+
+If, while replaying a query, or transaction, another replay condition is encountered, then the module will retry until the replay succeeds, or until maxretries is reached.
+
+To avoid hammering the system, the module delays between retries.  The delay is initially 10 milliseconds.  This doubles with each retry until the delay reaches 1 second.  Then that doubles until it reaches 10 seconds.  From then on, the delay between retries is 10 seconds.  This algorithm isn't currently configurable.  It also isn't backed by any particular science.  It just seems to work reasonably well.
+
+
+[=#replayautoinc]
+==== Auto-Increment Columns ====
+
+Auto-increment column values survive rollbacks.  If an insert into a table with an auto-increment column generates the value 300, and that query is rolled back then the row will be removed.  But, if the insert is run again, then it will generate the value 301 instead of 300.
+
+To handle this, the replay module parses and rewrites insert queries to contain the last-insert-id's that they generated and logs the rewritten query instead of the original.  Thus, when replayed, the query won't generate a value, but rather will re-use the value that it generated the first time.
+
+There are some limitations to this.
+
+* Multi-row inserts aren't directly supported if they generate auto-increment column values.  These are impossible to support directly, as post-insert, the last-insert-id only returns the very last value that was generated, and it's not possible to collect the others.  If your application does multi-row inserts into tables with auto-increment columns, then try loading the [#splitmultiinsert splitmultiinsert] module prior to the replay module to split your multi-row inserts into a set of individual insert queries, which can be replayed.
+* Insert-Select queries (eg. insert into onetable select from anothertable) and Select-Into queries (eg. select * from onetable into anothertable) are similarly not supported.
+
+If any of those are detected, then the query log is cleared and the module is disabled until the beginning of the next transaction.  If a replay condition occurs, then the error is just returned as it would have been if the module were not in use.
+
+The module also has to do a bit of work to determine whether the insert contains an auto-increment column, including query the database for the last-insert-id, and potentially column info.  Column info is cached, but the cache isn't shared across sqlr-connection processes, and is (currently) cleared at the end of each transaction.  So, the module should be used with caution in performance-sensitive applications.
+
+
+[[br]][=#savepoints]
+== savepoints ==
+
+The savepoints module wraps each query in a database savepoint, and rolls back to that savepoint if the query fails.  This contains the failure to just the failed query, rather than letting it abort the surrounding transaction.
+
+This is most useful with databases (notably PostgreSQL) that mark the entire transaction as aborted as soon as any query in it fails.  Without intervention, every subsequent query in the transaction fails until the application issues a rollback - even queries that are otherwise unrelated to the one that failed.  With this trigger, the failed query is rolled back to the savepoint taken just before it ran, leaving the rest of the transaction intact and the connection ready to accept the next query.
+
+The trigger only takes savepoints inside a transaction.  Queries run in autocommit mode are passed through untouched, since a savepoint outside a transaction has no effect.  begin, commit, rollback, and autocommit-toggle queries are also passed through untouched.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-savepoints.conf@
+}}}
+}}}
+
+In this example, before every non-transaction-control query that runs inside a transaction, the trigger runs //savepoint sqlrspN// (where //N// is an auto-incrementing counter).  If the user's query succeeds, the trigger runs //release savepoint sqlrspN// to keep the savepoint stack bounded.  If the user's query fails, the trigger runs //rollback to savepoint sqlrspN// to undo the failed query.  Either way, the user's error (if any) is preserved and reported back to the client - the trigger contains the failure but doesn't hide it.
+
+The trigger should be configured with //when="all"//, since it takes a savepoint before each query and rolls back or releases it after, and needs to wrap both the prepare and execute phases.  Wrapping prepare is essential for PostgreSQL and similar databases that parse and resolve references during prepare - reference-related failures occur at prepare time there, not execute time, and without a savepoint bracketing the prepare the entire transaction is poisoned.  Configurations that omit any of the four phases are honored but may not accomplish anything useful.
+
+The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. SAP/Sybase ASE, Microsoft SQL Server), the syntax templates are configurable:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-savepoints-sap.conf@
+}}}
+}}}
+
+The '''trigger''' tag supports the following attributes in addition to the standard '''module''', '''when''', '''enabled''', and '''debug''' attributes:
+
+* '''savepointquery'''
+ * SQL template for creating a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //savepoint %s//.
+* '''rollbackquery'''
+ * SQL template for rolling back to a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //rollback to savepoint %s//.
+* '''releasequery'''
+ * SQL template for releasing a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //release savepoint %s//.
+* '''release'''
+ * If set to "yes" (the default), the trigger runs //releasequery// after each successful query, so the savepoint stack doesn't grow without bound for long-running transactions.  Set to "no" for databases that don't support releasing savepoints (e.g. SAP/Sybase, MS SQL Server).
+* '''prefix'''
+ * Prefix used for the auto-generated savepoint names.  Defaults to //sqlrsp//.  Combined with a per-session counter to form names like //sqlrsp0//, //sqlrsp1//, and so on.
+
+
+=== Considerations ===
+
+There is a performance cost.  Every query inside a transaction generates two extra round-trips to the database (savepoint before, release or rollback after).  For workloads with short transactions or high query rates, this overhead can be significant.
+
+The trigger does not retry the failed query.  After rolling back to the savepoint, the original error is still reported to the client; it's up to the application (or another trigger like //replay//) to decide whether to retry.
+
+The trigger only acts inside a transaction.  Failures of queries run in autocommit mode are passed through unchanged.
+
+
+[[br]][=#splitmultiinsert]
+== splitmultiinsert ==
+
+The splitmultiinsert module splits each multi-row insert query into a set of individual insert queries.
+
+This is useful when using the [#replay replay] module, if your application does multi-row inserts into tables with auto-increment columns.  See [#replayautoinc replay - Auto-Increment Columns] above for details.  This module can, of course, be used without the replay module, but the typical use case is to use the two of them together.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-splitmultiinsert.conf@
+}}}
+}}}
+
+In this example...
+
+The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="afterExecute" is set then the trigger will be ignored.
+
+The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.
+
+Note that the normalize translation is also configured.  This helps the splitmultiinsert and replay triggers parse and rewrite queries more accurately.
+
+In this configuration, if a //students// table exists like:
+
+{{{#!blockquote
+{{{#!code
+create table students (
+	id int primary key auto_increment,
+	firstname varchar2(128) not null,
+	lastname varchar2(128) not null,
+	major varchar2(128)
+)
+}}}
+}}}
+
+...and the following multi-row insert was performed:
+
+{{{#!blockquote
+{{{#!code
+insert into
+	students (firstname,lastname,major)
+values
+	('Richard','Muse','Mechanical Engineering'),
+	('David','Muse','Computer Science')
+}}}
+}}}
+
+...then it would be split into the following two individual inserts:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values ('Richard','Muse','Mechanical Engineering')
+insert into students (firstname,lastname,major) values ('David','Muse','Computer Science')
+}}}
+}}}
+
+The replay module would then be able to fetch the last-insert-id for each, and rewrite them, for replay, as:
+
+{{{#!blockquote
+{{{#!code
+insert into students (id,firstname,lastname,major) values (1,'Richard','Muse','Mechanical Engineering')
+insert into students (id,firstname,lastname,major) values (2,'David','Muse','Computer Science')
+}}}
+}}}
+
+
+=== Considerations ===
+
+The splitmultiinsert trigger imposes a performance penalty.  Not only is there work involved in splitting the original query, but also, a set of individual inserts runs more slowly than a single multi-row insert.
+
+The splitmultiinsert trigger also, currently, struggles with bind variables that are split across rows in the multi-insert query.
+
+For example, consider a multi-row insert like the following:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values (:1,:2,:3),(:4,:2,:3)
+}}}
+}}}
+
+With the following bind variables:
+
+{{{#!blockquote
+{{{#!code
+1 - "David"
+2 - "Muse"
+3 - "Computer Science"
+4 - "Richard"
+}}}
+}}}
+
+Variables 2 and 3 apply to both rows, but variable 1 only applies to the first row and variable 4 only applies to the second row.
+
+This query would be split into:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values (:1,:2,:3)
+insert into students (firstname,lastname,major) values (:4,:2,:3)
+}}}
+}}}
+
+But, currently, all 4 bind variables would be bound when executing both queries.  This causes problems for most databases, as most databases refuse to execute queries with superfluous bind variables.
+
+This will be remedied in the future, but is currently a shortcoming of this module.
+
+
+[[br]][=#upsert]
+== upsert ==
+
+The upsert module enables an insert query to be transparently interpreted as an update query, if the insert failed.
+
+Both the set of errors that trigger the upsert, as well as the set of tables that can be upserted into are configurable.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert.conf@
+}}}
+}}}
+
+In this example...
+
+The trigger is configured to run after the query has been executed. This is the only valid configuration for the upsert trigger. If when="before" or when="both" is set then the trigger will be ignored.
+
+If an insert into the table //students// results in an error string containing "ORA-00001" (an Oracle unique constraint violated), then the insert that generated the error will be converted to an update.
+
+The where clause of the update will only contain columns //FIRSTNAME// and //LASTNAME//.
+
+The trigger will also attempt to identify primary key and autoincrement columns and exclude them from the table update.
+
+For example, if the //students// table exists like:
+
+{{{#!blockquote
+{{{#!code
+create table students (
+	id int primary key,
+	firstname varchar2(128) not null,
+	lastname varchar2(128) not null,
+	major varchar2(128),
+	year int,
+	gpa number(2,1),
+	unique (firstname,lastname)
+)
+}}}
+}}}
+
+And two inserts are run like:
+
+{{{#!blockquote
+{{{#!code
+insert into students values (student_ids.nextval,'David','Muse','Mechanical Engineering',1,4.0);
+insert into students values (student_ids.nextval,'David','Muse','Computer Science',2,3.2);
+}}}
+}}}
+
+Then the first insert will succeed, but the second will fail because the values of 'David' and 'Muse' for the firstname and lastname columns violate the unique constraint.
+
+In this case, the second insert will throw an ORA-00001 error, and the trigger will be converted to the following update:
+
+{{{#!blockquote
+{{{#!code
+update students set firstname='David', lastname='Muse', major='Computer Science', year=2, gpa=3.2 where firstname='David' and lastname='Muse'
+}}}
+}}}
+
+Note that the primary key is omitted from the set clause of the update, and that the where clause only contains the firstname and lastname columns.
+
+Note also that, in the configuration, the columns are uppercased: FIRSTNAME and LASTNAME.  This is because, in this example, we're using an Oracle database and Oracle column names are uppercased by default.  For other databases, you should use lowercased column names.
+
+Also note that, in the configuration, the normalize translation is included.  This helps the trigger parse and rewrite queries more accurately.
+
+Other configuration options are also available.
+
+You can specify the error by number instead of by string:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert-errorcode.conf@
+}}}
+}}}
+
+You can also specify the error by SQLSTATE, using a '''sqlstate''' attribute on the '''error''' tag.  '''sqlstate''' is independent of '''string''' and '''number''', the same way those two are independent of each other - if any one of the three matches, the insert is converted to an update.  Unlike error text, a SQLSTATE is locale-independent - a German-locale !PostgreSQL reporting a unique constraint violation still reports the same SQLSTATE, //23505//, that an English-locale one does.  And unlike error numbers on some backends, SQLSTATE codes aren't backend-specific magic numbers - they're standardized.  '''sqlstate''' is matched case-insensitively against the SQLSTATE the database reported for the error.  There's no built-in default; if the backend doesn't report a SQLSTATE for a given error, the '''sqlstate''' check simply has nothing to compare against and is skipped - never treated as a mismatch - and matching falls back to whatever '''string''' and/or '''number''' attributes are also configured, exactly as before.
+
+If, for some reason, the trigger is unable to identify the primary key of the table, you can manually specify the primary key:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert-primarykey.conf@
+}}}
+}}}
+
+You can also specify multiple tables:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-upsert-multitable.conf@
+}}}
+}}}
+
+In the example configuration above, inserts into any of the students, processors, or courses tables, which fail with ORA-00001, will be converted to updates.
+
+There are some considerations that need to be taken into account when using the upsert trigger.
+
+* Currently, only single-row inserts are supported.  Multi-row inserts, select-into, and insert-select queries will not be converted to update queries, and will just fail.
+* If you don't specify any columns in the table tag, then the where clause of the generated update will be empty, and the update query will fail.
+* If the insert doesn't contain values for the columns specified in the table tag, then the conversion to update will fail.
+
+As noted in [#triggers Triggers], above, trigger modules run in the order that they're listed in the config file.  When upsert is combined with the replay or savepoints module on the same connection, upsert must be listed after both of them:
+
+* replay must be listed before upsert.  Upsert clears the cursor error when it converts a failed insert into an update.  If replay is listed after upsert, it sees no error, and it can splice a stale last insert id into the insert that it logs.  The log also comes out in the wrong order, with the converted update ahead of the insert that provoked it, since upsert runs its update before replay has logged anything.
+* savepoints must be listed before upsert.  On !PostgreSQL, a failed insert leaves the transaction in an aborted state, and every later statement on that session fails until something rolls back.  Upsert's converted update is one of those statements, so it fails too.  If savepoints runs first, its after-execute rolls back to the savepoint, which clears the aborted state, and upsert's update then succeeds.  If upsert runs first, its after-execute fails and the trigger chain stops there, so savepoints never gets a chance to roll back.
+
+
+[[br]][=#globaltemptables]
+== globaltemptables ==
+
+The globaltemptables module simulates Oracle/DB2-style global temporary tables on databases (notably !PostgreSQL) that only support session-local temporary tables.
+
+In databases that support global temporary tables, the table definition is persistent and visible to every session, but each session sees its own private set of rows.  In databases that only support session-local temporary tables, the table itself only exists for the life of the session that created it, so an application that expects a global temp table to already be there will fail with a //relation does not exist// (or similar) error at prepare time.
+
+This module bridges that gap.  For each configured table, the module watches for any query that references that table at prepare time, and the first time it sees one in the current backend session, it issues the configured //create// statement on that session.  Once created, the table persists for the rest of the backend session, which - given the sqlr-connection process model, where one backend session is multiplexed across many client sessions - lets it appear to behave like a global temporary table.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-triggers-globaltemptables.conf@
+}}}
+}}}
+
+In this example...
+
+The trigger is configured to run before the query has been prepared.  This is the only valid configuration for the globaltemptables trigger - the create statement has to run before the database tries to resolve the table reference during prepare, or the prepare itself will fail.  Configurations with any other //when// value will not accomplish anything useful.
+
+Two tables are configured, //gtttest1// and //gtttest2//.  The first time either one is referenced in a given backend session - by an insert, a select, an update, a delete, or the table name turning up in a join or subquery - the corresponding //create temp table ...// statement is run on that session.  Subsequent references in the same session skip the create step.
+
+The first time the create is attempted, it may fail because the table already exists - another agent (e.g. another sqlr-connection process, or the application itself) may have created it already, or the modules own state may believe the table is gone when it isn't (see Considerations below).  The '''alreadyexists''' tag lets the module recognize that situation and treat it as success.  It supports two attributes, '''error''' and '''sqlstate''', either or both of which may be set; if either one matches, the create is treated as success.
+
+The '''error''' attribute may be set to either:
+
+* a numeric value - matched against the database error number
+* a string - matched as a substring against the database error text
+
+Error text is locale-dependent - a German-locale !PostgreSQL reports //existiert bereits// for a duplicate table, not //already exists// - so a substring match tuned for one locale silently stops working under another.  Some databases also give the error number no useful meaning at all - !PostgreSQL's connection module reports error number 1 for literally every error, so a numeric '''error=''' match against it would match every failure, not just an already-exists.
+
+The '''sqlstate''' attribute addresses both problems.  It's a 5-character SQLSTATE code, compared case-insensitively for an exact match against the SQLSTATE the database reported for the failed create.  SQLSTATE codes are standardized and locale-independent, so the same value works regardless of what language the backend is reporting errors in.  The '''sqlstate''' check runs first, as a fast path, and only falls through to the '''error=''' check above if it doesn't match, or if there's nothing to compare (no '''sqlstate=''' configured and no built-in default, or the database didn't report a SQLSTATE for this error) - '''sqlstate''' is checked //in addition to// '''error=''', not instead of it.
+
+If '''sqlstate=''' isn't configured at all, a built-in default is used, based on the real database module in use: !PostgreSQL defaults to //42P07//, the duplicate_table SQLSTATE; !MySQL and !MariaDB default to //42S01//, the base-table-or-view-already-exists SQLSTATE.  No other database gets a built-in default.  A site that wants no sqlstate check at all - relying purely on '''error=''' - can set '''sqlstate=""''' (present, but empty) to explicitly disable the built-in default.
+
+Not every database reports a SQLSTATE for a given error, and most connection modules besides !PostgreSQL, !MySQL/MariaDB, Firebird, DB2, Informix, ODBC, and SAP don't report one at all.  On those, the '''sqlstate''' check simply has nothing to compare against and is skipped, and '''alreadyexists''' behaves exactly as it did before this attribute existed, matching on '''error=''' alone.
+
+If the create fails and neither the '''sqlstate''' nor the '''error''' check matches, that error is reported back to the client as if the user's query had failed.
+
+On a database where transactions abort on any statement error (eg. !PostgreSQL), a create that fails - even one the '''alreadyexists''' handling recognizes and reports as success back to the client - has already put the surrounding transaction into an aborted state, and nothing about that success at the trigger level undoes that.  Every subsequent statement in the same transaction is then refused until the transaction is rolled back, which the client sees as an unrelated later query failing for no apparent reason.  A create that never errors in the first place avoids the problem entirely, so when the target database is !PostgreSQL, the module automatically inserts //if not exists// into the create statement, unless it's already there.  //IF NOT EXISTS// is not universally available - eg. Oracle's //CREATE GLOBAL TEMPORARY TABLE// does not support it - so this is deliberately specific to !PostgreSQL, and the '''alreadyexists''' handling remains necessary, and is still used, for every other database.
+
+This decision is based on the real database module in use, not on a '''dbtype=''' identity a migration may have set in the connection string to make the backend impersonate a different database for the client's benefit - the create statement reaching a real !PostgreSQL backend gets //if not exists// inserted regardless of what the client believes it's talking to.
+
+Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.
+
+The '''trigger''' tag supports the following attributes in addition to the standard '''module''', '''when''', '''enabled''', and '''debug''' attributes:
+
+* none beyond the nested '''alreadyexists''' and '''table''' tags described above
+
+The '''table''' tag supports the following attribute:
+
+* '''name'''
+ * the name of the table to watch for - matched, as a whole word, against every query at prepare time
+ * the table body (between the open and close tags) is the //create// statement to run on the backend session the first time the table is referenced
+
+The body of the '''table''' tag may also use the //[...filename...]// syntax supported elsewhere in the SQL Relay config to read the create statement from an external file - useful for long create statements.
+
+=== Considerations ===
+
+The trigger matches the configured table name as a whole word anywhere in the normalized query text, not just in an insert - so a delete, select, update, or a table name turning up in a join or subquery all cause the table to be created if it hasn't been already.  This can over-fire - a query that only mentions the name inside a string literal or a comment will also trigger an early create - but that's harmless: the table starts out empty either way, and it's only created once per backend session.
+
+The match is keyed off normalized query text.  Make sure the [datatranslation.html#normalize normalize] query translation is loaded ahead of any application code that exercises these tables.
+
+Once a table has been created, the module remembers that and skips the create on subsequent matches - until one of three things happens, at which point it forgets and re-creates on the next reference: the sqlr-connection process is recycled; the client session that referenced the table ends (the create statement may target an object that's scoped to the backend session rather than the sqlr-connection process, eg. !PostgreSQL's //create temporary table//, and the sqlr-connection process outlives any one client session); or the surrounding transaction is rolled back (the create is DDL, and a rollback can undo it on a transactional database, even though the module has no other way to detect that).  In none of these cases does the trigger actively drop the table - it just stops assuming it's still there, and lets the next reference re-create it (or discover, via '''alreadyexists''', that it is still there after all).
+
+Different sqlr-connection processes in the same instance each maintain their own copy of the temp table (since each holds its own backend session).  The data in one is not visible from another, which matches the per-session-private-rows semantics of a real global temporary table.
+
+
+----
+
+[[Image(../../images/navprev.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [logging.html Logging] [[Image(../../images/navnext.png,link=logging.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

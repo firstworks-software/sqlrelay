@@ -4,8 +4,7 @@ include ../../config.mk
 
 .SUFFIXES: .wt .html.in .html
 
-SRCS = configguide.wt \
-	configreference.wt \
+SRCS = configreference.wt \
 	installing.wt \
 	installingpkg.wt \
 	oraclentier.wt \
@@ -17,8 +16,7 @@ SRCS = configguide.wt \
 	tlsca.wt \
 	createtlscert.wt
 
-INS = configguide.html.in \
-	configreference.html.in \
+INS = configreference.html.in \
 	createtlscert.html.in \
 	header.html.in \
 	installing.html.in \
@@ -32,8 +30,7 @@ INS = configguide.html.in \
 	tuning.html.in
 
 # the subset of INS that wt generates from SRCS; the rest are checkout files
-WTOBJS = configguide.html.in \
-	configreference.html.in \
+WTOBJS = configreference.html.in \
 	createtlscert.html.in \
 	installing.html.in \
 	installingpkg.html.in \
@@ -45,8 +42,7 @@ WTOBJS = configguide.html.in \
 	tlscert.html.in \
 	tuning.html.in
 
-OBJS = configguide.html \
-	configreference.html \
+OBJS = configreference.html \
 	createtlscert.html \
 	header.html \
 	installing.html \
@@ -78,8 +74,10 @@ FRAGMENTS = ../contentend.html \
 
 all: $(OBJS)
 	$(CHMOD) 644 $(OBJS)
+	cd configguide $(AND) $(MAKE)
 
 $(OBJS): $(FRAGMENTS)
 
 clean:
 	$(RM) $(OBJS) $(WTOBJS)
+	cd configguide $(AND) $(MAKE) clean

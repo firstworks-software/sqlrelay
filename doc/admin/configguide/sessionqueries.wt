@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [altconfigfile.html Alternative Configuration File Options] [[Image(../../images/navnext.png,link=altconfigfile.html,vertical-align=middle)]]
+
+[[br]][=#sessionqueries]
+= Session-Queries =
+
+SQL Relay can be configured to run a set of queries at the beginning and end of each client session.
+
+By far the most common use for this feature is that some database parameter needs to be reconfigured but you don't have permission or bouncing the database is out of the question, or something like that.  For example, lets say you are using an Oracle database, but one particular app needs the optimizer tuned to return the first rows of a result set quickly, rather than the instance's default optimizer mode.  Ideally you'd alter the optimizer_mode in the instance but you can't, for some reason.
+
+You can use SQL Relay's session queries to work around the problem.
+
+In the following example, the optimizer mode is set to first_rows_10 at the beginning of the session and then reset back to all_rows at the end.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-sessionqueries.conf@
+}}}
+}}}
+
+Actually, in this example, there's no need to set the optimizer mode back to all_rows but it's done here for illustrative purposes.
+
+----
+
+[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [altconfigfile.html Alternative Configuration File Options] [[Image(../../images/navnext.png,link=altconfigfile.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

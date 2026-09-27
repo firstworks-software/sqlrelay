@@ -1,0 +1,154 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+
+[=#teradataprotocol]
+= Teradata Protocol =
+
+SQL Relay can be configured to speak the native Teradata protocol, enabling client programs for Teradata (eg. BTEQ, FastLoad, and the Teradata JDBC and ODBC drivers) to access SQL Relay directly.
+
+If an instance speaks the Teradata client-server protocol, then any client that wishes to use it must also speak the Teradata client-server protocol.  This means that most software written using the Teradata CLI, JDBC driver, or ODBC driver can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs) cannot access this instance.
+
+The Teradata protocol module is still under development, and is less mature than the other protocol modules.  A client's login is always relayed to a real Teradata server first, by a dedicated auth module - see [#teradataauth Authentication/Encryption Options] below - and only once that server answers does the module go on to handle the rest of the session itself.  '''A recognized Failure or Error reply from that server is now rejected, but anything else - including a genuine successful reply, which is encrypted and unparseable - is still accepted''' - see [#teradatalimitations Limitations] below, this is an important caveat before using this module anywhere access control matters.  SQL Relay's own automated test suite only exercises logging in and out.  The source tree also has manual test scripts, not wired into the automated suite, that exercise bteq, isql via the Teradata ODBC driver, fastload and tdload against a real Teradata server - see test/protocol/teradata/ - but they aren't run as part of a normal test pass.  See [#teradatalimitations Limitations] below before relying on this module.
+
+[=#teradataconfiguration]
+== Basic Configuration ==
+
+To enable SQL Relay to speak the Teradata protocol, add the appropriate listener and auth tags:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The listener tag instructs SQL Relay to load the //teradata// protocol module, and listen on port 1025, which is the standard Teradata listener port.
+* The auth tag instructs the instance to relay every client login to a real Teradata server running on //teradatahost//, port 1025.  This is required - see [#teradataauth Authentication/Encryption Options] below, including an important caveat about how that login is checked.
+* The connection tag instructs the instance to run queries against the //teradata// ODBC DSN (see [basicconfiguration.html#db-odbc-teradata Teradata (via ODBC)]) as user //teradatauser// with password //teradatapassword//.  Every query runs as this user, regardless of which credentials a client logged in with.
+* //translatebindvariables="yes"// is set on the instance tag because a Teradata USING-clause query keeps its :name-style bind variables after the module strips off the USING clause itself, and the ODBC driver underneath expects ?-style bind variables instead.
+* //autocommit=yes// is set on the connection string, matching how this module is exercised in SQL Relay's own test suite.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using, for example, BTEQ:
+
+{{{#!blockquote
+{{{#!code
+.logon localhost/teradatauser,teradatapassword
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+Note that the credentials a client logs in with (//teradatauser/////teradatapassword// above) are relayed to the real Teradata server named in the auth tag, not checked against the connection tag's credentials - see [#teradataauth Authentication/Encryption Options] below, including an important caveat about how that login is checked.
+
+[=#teradatalistener]
+== Listener Options ==
+
+By default, SQL Relay listens on port 9000.  Since Teradata's standard port is 1025, the listener tag above sets port="1025" explicitly.
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The Teradata protocol module also has a //debug// attribute, which works the same way as it does for the other protocol modules - see [tdsprotocol.html#tdslistener the TDS Protocol's Listener Options].
+
+The generic //tls// and //krb// listener options don't do anything useful on a Teradata listener - see [#teradatalimitations Limitations] below.
+
+[=#teradataauth]
+== Authentication/Encryption Options ==
+
+Unlike the other protocol modules, the Teradata protocol module doesn't authenticate clients against the connect string's own user/password, a user list, or the database itself.  Instead, it relays each client's login attempt to a real Teradata server.  This is done by the //teradata_sidechannel// auth module, which is required - a Teradata listener with no auths tag configured fails every login, because the default connect-strings auth fallback doesn't exist for this protocol.
+
+'''The real server's answer is only partly checked.'''  The auth module looks at the leading parcel of the real server's reply to the relayed login.  If that parcel is a recognized Failure or Error parcel, the login is rejected.  Otherwise - including when the reply doesn't parse as a recognizable parcel at all - the login is accepted, and the client gets to run queries as the connection tag's own database user.  That "otherwise" case is the important one: a real, successful login reply under Teradata's default TD2 authentication mechanism is encrypted, so it has no plaintext parcel structure the module can parse, and gets accepted along with everything else that doesn't parse as Failure or Error.  Confirming a TD2 success reply for real would require the auth module to decrypt the session key itself, which it doesn't do.  So a client whose credentials the real server rejects with a plain Failure or Error parcel is now correctly turned away, but a client rejected some other way - one whose rejection reply also happens to look encrypted or otherwise unparseable - may still be let through.  Whether a real TD2 server's own rejection replies are ever encrypted this way isn't confirmed one way or the other.  See [#teradatalimitations Limitations] below.  Don't rely on a Teradata listener to reject every client the real server would reject.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafebasic.conf@
+}}}
+}}}
+
+* '''host''' - the host name or IP address of the real Teradata server to check logins against.  Required.
+* '''port''' - the port of the real Teradata server.  Required; there is no default, so omitting it is the same as setting it to 0.
+
+Once a client's login is relayed and answered, every query it sends runs through the connection tag's own connection - as the connection tag's own user, not the client's.  Each sqlr-connection process keeps its side-channel session to the real Teradata server open between client logins (rather than closing it after each one), so that a FastLoad job can find it again on a later request; as a result, each pooled connection ties up one session on the real Teradata server for as long as SQL Relay runs.
+
+A Teradata listener should not share an instance with a listener for another protocol: a login attempt from that other listener - whether it succeeded or failed there - can be handed to this auth module too.  The auth module now checks the credentials it's given and rejects the login outright if they aren't Teradata-shaped, rather than misbehaving on them, but sharing an instance this way still isn't a supported configuration.
+
+[=#teradatapassthrough]
+== Passthrough Mode ==
+
+The listener tag also accepts a //passthrough// attribute, which selects how logins and queries are handled at a lower level.  It accepts "enabled" or "disabled"; any other value, including leaving it unset, selects hybrid mode.
+
+Hybrid mode - the default, and the mode used throughout this section - is the only one that works.  It's what relays the login to a real Teradata server as described above, and then handles the rest of the session itself.
+
+The other two settings exist in the source but aren't usable yet:
+
+* //passthrough="disabled"// has the module negotiate and answer the login itself, without checking it against anything.  It offers only the TD2 authentication mechanism and returns a canned login response, so it accepts any credentials.
+* //passthrough="enabled"// is meant to relay the entire session, not just the login, straight through to the back-end connection.  It takes effect whenever the instance identifies its database type as "teradata" (dbase="teradata", or a dbtype= override in the connect string) - but SQL Relay has no connection module that actually implements a Teradata back-end connection, or the raw send/receive that this mode needs from one, so every session fails once this mode activates.  Don't set dbase="teradata" or a matching dbtype= override on a Teradata listener's instance.
+
+Leave //passthrough// unset.
+
+[=#teradatalimitations]
+== Limitations ==
+
+The implementation of the Teradata protocol isn't 100% complete, and is less mature than the other protocol modules.  Some notable limitations follow:
+
+* Data encryption after login is not supported.  A client that asks for it will find the module can't decrypt what it sends afterward.
+* TLS/SSL and Kerberos encryption and authentication are not supported.  Setting the generic //tls// or //krb// listener options still loads the configured certificate or Kerberos credentials (and can print a warning if that fails), but neither is ever actually used on the wire.
+* In "disabled" passthrough mode, only the TD2 authentication mechanism is offered; in the default hybrid mode, whichever mechanisms the real Teradata server offers are used, since the login is relayed to it.
+* A batch or array bind (for example, the JDBC driver's addBatch() outside of a FastLoad) only keeps the last row of the batch.
+* A request containing more than one SQL statement only returns one statement's status and results.
+* A trailing "COMMIT WORK" in a request is silently stripped rather than executed.
+* BT/ET and BEGIN TRANSACTION/END TRANSACTION/ROLLBACK are mapped to begin/commit/rollback; an ANSI COMMIT is sent to the back-end as an ordinary query.
+* Abort, reassign, reconnect, test, auth-methods, elicit-data, default-connect, and direct messages all get an empty reply rather than being acted on.  A cancel sent as part of an ordinary continue message is handled, and ends the in-progress request.
+* RUN STARTUP always answers "No startup string defined for this user.", regardless of what's configured for the user on the real Teradata server.
+* In USING-clause bind variables, DECIMAL and NUMBER types are accepted but not decoded correctly, and any variables listed after one are misread as a result.  BYTEINT isn't recognized (TINYINT is).
+* INTERVAL, PERIOD, and TIME/TIMESTAMP WITH TIME ZONE result columns aren't mapped to a Teradata wire type.
+* Only one FastLoad job at a time is supported per SQL Relay host - the job is identified by the SQL Relay server's own host name, not the client's.  NODROP, CHECKPOINT, INDICATORS, and DATAENCRYPTION FastLoad options are ignored, and the error-row limit is fixed at 25.
+* TPT/tdload and !MultiLoad have not been tested against this module.
+* The relayed login is only rejected when the real server's reply is a recognized Failure or Error parcel; an unrecognized or opaque reply (including a genuine encrypted TD2 success reply) is still accepted on faith - see [#teradataauth Authentication/Encryption Options] above.
+
+----
+
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

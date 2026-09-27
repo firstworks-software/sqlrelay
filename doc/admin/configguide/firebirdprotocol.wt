@@ -1,0 +1,256 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [teradataprotocol.html Teradata Protocol] [[Image(../../images/navnext.png,link=teradataprotocol.html,vertical-align=middle)]]
+
+[=#firebirdprotocol]
+= Firebird Protocol =
+
+SQL Relay can be configured to speak the native Firebird protocol, enabling client programs for Firebird (eg. the isql command line program) to access SQL Relay directly.
+
+If an instance speaks the Firebird client-server protocol, then any client that wishes to use it must also speak the Firebird client-server protocol.  This means that most software written using the Firebird API (fbclient), or written using a database abstraction layer which loads a driver for Firebird, such as the Jaybird JDBC driver or the Firebird ODBC driver, can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
+
+Like the TDS protocol module, the Firebird protocol module handles the everyday work - clients log in, run queries with or without bind variables, read result sets and blobs, and commit or roll back transactions - and most of the module's configuration doesn't need documenting because the defaults work.  The sections below cover the options that do - notably the protocol version that the module negotiates, and wire encryption.
+
+The Firebird protocol module has not been proven against production Firebird clients and workloads as extensively as the TDS module has.  SQL Relay's own test suite exercises it with the Firebird client library (fbclient) and its C API, covering attaching, transactions, statements, metadata, fetching, bind variables, blobs, errors, cursors and wire encryption.  No other client is part of the test suite.  Since the Firebird protocol is the same for every client, isql, Jaybird, the Firebird ODBC driver, and similar should also work, but they haven't been tested in-tree.  See [#firebirdlimitations Limitations] for what isn't supported.
+
+[=#firebirdconfiguration]
+== Basic Configuration ==
+
+To enable SQL Relay to speak the Firebird protocol, add the appropriate listener tag:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The listener tag instructs SQL Relay to load the //firebird// protocol module, and listen on port 3050, which is the standard Firebird port.
+* The connection tag instructs the instance to log in to the /opt/firebird/firebirddb.gdb database on the Firebird server //firebirdhost// as user //firebirduser// with password //firebirdpassword//.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+isql -user firebirduser -password firebirdpassword localhost/3050:/opt/firebird/firebirddb.gdb
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
+
+By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{#!code
+isql -user firebirduser -password firebirdpassword sqlrserver/3050:/opt/firebird/firebirddb.gdb
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+A Firebird client names the database it wants, as a path, when it connects.  SQL Relay checks that path against the //db// parameter of the string attribute of the connection tag (or the //database// parameter, if //db// isn't set), and refuses the login if they don't match.  Before comparing, it strips any host: or host/port: prefix off of the configured value, since a client strips that prefix off of the path before sending it.  (A single letter before the colon is a Windows drive letter rather than a host, and is kept.)  In the example above, clients have to ask for /opt/firebird/firebirddb.gdb.
+
+Note that:
+
+* The comparison is exact.  A real Firebird server resolves the path on its own filesystem and looks up aliases, but SQL Relay can't do either, so an alias, or the same file spelled a different way, is refused with the same "No such file or directory" error that a missing file would get.
+* The path doesn't select a database.  The connection tag already decides which database the instance uses, so the path only confirms that the client asked for that one.
+* If the connect string has no //db// or //database// parameter, or the client sends an empty path, then no check is made and any path is accepted.
+
+( '''NOTE:''' isql compiles a separate request for each lookup its SHOW commands do, and holds on to all of them until it disconnects - a single SHOW TABLE takes 15.  Each request uses a cursor, so the default //maxcursors// of 5 is nowhere near enough.  If isql will use the instance, set //maxcursors// on the instance tag to something larger, 64 for example.)
+
+[=#firebirdlistener]
+== Listener Options ==
+
+In the example above, the instance is configured to listen on port 3050, which is already the standard Firebird port, so no special port choice is needed.
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The Firebird protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+[=#firebirdprotocolversion]
+== Protocol Version ==
+
+When a Firebird client connects, it offers a list of the protocol versions it can speak, and the server picks one.  Each version adds features, so client and server have to agree on which ones are in use.
+
+The Firebird protocol module speaks version 10, and versions 11 and up to a maximum, which defaults to 13.  Version 13 brought the plugin-based login (Srp, Srp256 and Legacy_Auth) and the packed message format that current clients use, and it is the highest version that has been proven against a real client.
+
+The //maxprotocolversion// attribute on the listener tag changes the maximum.  It accepts a plain decimal integer from 1 to 20.  Leaving it out, setting it to 0, or setting it to anything above 20 is the same as the default of 13.  Version 10 is the oldest the module speaks, and is always accepted, so any value from 1 to 10 limits the module to version 10.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfeprotocolversion.conf@
+}}}
+}}}
+
+Raising the maximum above 13 is opt-in.  Versions 14 through 20 add op_ping, batch operations, op_repl_data, statement timeouts, scrollable cursors (op_fetch_scroll and op_info_cursor), and prepare flags, none of which have been run against a real client yet.  Some of those operations - op_ping and the scrollable cursor operations among them - aren't implemented at all, so a client that negotiates a higher version and then uses one of them has its session ended.  See [#firebirdlimitations Limitations] below.
+
+Lowering the maximum below 13 turns off the plugin-based login.  Clients log in with the older password hash instead, and wire encryption is unavailable, since only version 13 and up has anywhere to carry the encryption key.  See [#firebirdwirecrypt Wire Encryption] below.
+
+[=#firebirdauth]
+== Authentication/Encryption Options ==
+
+When using the Firebird protocol, there is currently only one option for controlling which users are allowed to access an instance of SQL Relay.  As with the TDS protocol, there is no //user list// or //database// auth module for the Firebird protocol.
+
+[=#firebirdconnectstringsauth]
+== Connect Strings Auth ==
+
+The default, and only, authentication option is //connect strings// auth.
+
+When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
+
+The Basic Configuration example above uses this option, and configures SQL Relay to access the database using firebirduser/firebirdpassword credentials.  In that case, clients would also use firebirduser/firebirdpassword credentials to access SQL Relay.
+
+The module answers each of the login methods a Firebird client might use - Srp256, Srp, and Legacy_Auth - by deriving what that method needs from the configured password.  Firebird treats a user name as an SQL identifier, so testuser, !TestUser and TESTUSER are all the same user, and the module applies Firebird's own rules to both the name the client sends and the configured user before comparing them.
+
+( '''NOTE:''' Srp, Srp256 and Legacy_Auth all have to derive their answer from the password itself, so a password stored with a one-way [security.html#pwdenc password encryption] module can't be used with any of them - only reversible password encryption works.  A client that builds its own login request by hand can ask for a plain password comparison instead, which a one-way module does support, but no client library normally used against SQL Relay does this, so in practice this doesn't apply.)
+
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //connect strings// auth module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdconnectstrings.conf@
+}}}
+}}}
+
+[=#firebirdwirecrypt]
+== Wire Encryption ==
+
+Firebird 3 and later encrypt the traffic between client and server with their own wire encryption, rather than with TLS/SSL, and the Firebird protocol module does the same.  The encryption is negotiated during login, and is keyed from the login itself, so no certificate is involved.
+
+The //wirecrypt// attribute on the listener tag sets the level of encryption that SQL Relay asks for:
+
+* '''disabled''' - never encrypt.
+* '''enabled''' - encrypt if the client is willing to.  This is the module's default.  (It matches a stock Firebird client's own default; a stock Firebird //server// instead defaults to '''required'''.)
+* '''required''' - refuse any client that won't encrypt.
+
+The client has a level of its own (the !WireCrypt setting in its firebird.conf), and the two are combined:
+
+* If either side requires encryption, and the other side allows it, the session is encrypted.
+* If one side requires encryption and the other has it disabled, the login is refused.
+* Otherwise, the session is encrypted only if both sides have it enabled.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfewirecrypt.conf@
+}}}
+}}}
+
+When encryption is required, it is enforced.  Until encryption is actually running, only the requests that turn it on, finish the login, keep the connection alive, or end the session are answered.  Anything else is refused and the session ends, so a client that agrees to encryption and then never turns it on can't carry on in the clear.
+
+Note that:
+
+* Encryption needs protocol version 13 or higher - see [#firebirdprotocolversion Protocol Version] above.
+* Encryption needs a client that logs in with Srp or Srp256.  The encryption key comes out of that login, so a client that logs in with Legacy_Auth can't encrypt.
+* Only the Arc4 cipher is offered, not !ChaCha or !ChaCha64.  A client picks its cipher from the ones the server offers.
+* A client that can't encrypt is refused when the level is //required//.
+
+The generic //tls// and //tlscert// listener attributes that the other protocols use are not supported for protocol="firebird".  If tls="yes" is configured on a firebird listener, SQL Relay prints a warning when the instance starts, and nothing is encrypted with TLS/SSL.  Use //wirecrypt// instead.
+
+See the [../configreference.html#attributes SQL Relay Configuration Reference] for the full description of the //wirecrypt// option.
+
+[=#firebirdforeignbackend]
+== Foreign Backend ==
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the Firebird database it was originally written to use.
+
+This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfesqlite.conf@
+}}}
+}}}
+
+In this example, a Firebird front-end provides Firebird applications access to a SQLite back-end database.
+
+Note that the database path check described in [#firebirdconfiguration Basic Configuration] above uses the substitute back-end's own //db// (or //database//) parameter.  In this example, clients have to ask for /var/sqlite/sqlitedb.  If the back-end's connect string has neither parameter, then no check is made.
+
+Also note that isql's SHOW commands look things up in Firebird's own system tables.  The module translates those lookups into queries against the same tables, rather than emulating them, so they only work against a Firebird back-end.
+
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
+
+* In the instance tag:
+ * set translatebindvariables="yes"
+ * set the isolationlevel attribute
+ * set transactionmodel="explicit"
+* In the string attribute of the connection tag:
+ * set autocommit=yes or autocommit=no
+ * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
+ * set the identity parameter to override the database type
+ * set ignorespace=yes
+ * set the overrideschema parameter
+ * set the typemangling and/or tablemangling parameters
+* use [datatranslation.html#querytranslation Query Translation] modules
+* use [datatranslation.html#resultsettranslation Result Set Translation] modules
+* use [datatranslation.html#errortranslation Error Translation] modules
+* use [sessionqueries.html#sessionqueries Session Queries]
+
+In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
+
+[=#firebirdlimitations]
+== Limitations ==
+
+The implementation of the Firebird protocol isn't 100% complete.  Some notable limitations follow:
+
+* TLS/SSL encryption is not supported.  Firebird's own wire encryption is supported instead.  See [#firebirdwirecrypt Wire Encryption] above.
+* The Firebird services manager is not implemented.  It is the interface that administration tools such as fbsvcmgr, and gbak and gsec when they go through the services manager, use for backup and restore, user management, database repair, and statistics.  Nothing behind SQL Relay provides any of those, and answering as though something had would let a client believe an operation succeeded when nothing happened.  A client that asks for the services manager in place of attaching to a database, which is how those tools connect, is refused with "Feature is not supported".  One that asks for it later in a session is refused with "Cannot attach to services manager".
+* Event notification is not implemented.  In Firebird, a trigger or stored procedure can post an event, and a client that registered for it is notified.  Nothing behind SQL Relay can generate such an event, and SQL Relay has no path to carry one from the database to the client, so a client that registers for events is refused.
+* Creating or dropping a database is not supported.  isql's CREATE DATABASE and DROP DATABASE commands, and the isc_create_database() and isc_drop_database() calls they are built on, are refused with "Feature is not supported".
+* Two-phase commit is not supported.  Its first phase, prepare, is a promise that the second phase can't fail, and SQL Relay has no distributed-transaction support to back that promise with, so the prepare is refused.
+* Requests compiled to BLR are only partly supported.  BLR is the binary form Firebird compiles requests to.  Most clients send SQL, but some compile BLR requests themselves - isql does for its SHOW commands.  SQL Relay can only run SQL, so the module translates each BLR request into an equivalent SELECT, and only understands the subset of BLR that isql's SHOW commands use.  Anything else is refused with an error, rather than translated into a query that only half means what it said.  A compiled request can also only be run with the combined start-and-receive operations, not with the separate start, send, and receive operations.  The subset is:
+ * statements - begin, message, send, receive, for (loop over a record selection), and assignment
+ * record selections of at most two tables, with a boolean condition, first, sort, and join type clauses
+ * conditions - and, or, not, missing (is null), between, and the comparisons =, <>, >, >=, <, <=, like, starting with, and containing
+ * values - fields, parameters, null, and integer, text, and boolean literals
+* A few other, rarely used operations aren't implemented either, including op_ping, the scrollable cursor operations, reconnecting to a limbo transaction, and the older op_ddl, op_insert, and op_transact requests.  op_ping and the scrollable cursor operations are only available at protocol versions above the default - see [#firebirdprotocolversion Protocol Version] above.
+
+Except for a BLR request that fails to compile, a request that runs into one of these limitations ends the client's session.  The client is sent an error first, but the rest of the refused request is still unread on the socket at that point, so the connection can't be reused.  A client that treats the error as recoverable and carries on will find the connection closed.
+
+----
+
+[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [teradataprotocol.html Teradata Protocol] [[Image(../../images/navnext.png,link=teradataprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

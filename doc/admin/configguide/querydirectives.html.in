@@ -1,0 +1,214 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="datatranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="datatranslation.html">Data Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="routing.html">Query and Session Routing</a> <a href="routing.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="directives"/><h1>Query Directives</h1>
+
+<p>Query directives enable an app to give the SQL Relay server special per-query instructions in the comments preceeding the query.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> a directive
+<font color="#990000">--</font> <font color="#008080">another</font> directive<font color="#990000">:</font> with a parameter
+<font color="#990000">--</font> yet another directive
+select <font color="#990000">*</font> from exampletable
+</tt></pre>
+
+</blockquote>
+<p>Query directives are implemented by loadable modules.  The <i>directives</i> section of the configuration file indicates which directive modules to load and what parameters to use when executing them.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;directives&gt;</font></b>
+                        <b><font color="#0000FF">&lt;directive</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"custom_wf"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/directives&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <i>module</i> attribute specifies which module to load.</p>
+
+<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
+
+<p>All directive modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All directive modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<p>Directive modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
+
+<p>At startup, the SQL Relay server creates instances of the specified directive modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file. </p>
+
+<p>Currently, the following directive modules are available in the standard SQL Relay distribution:</p>
+
+<ul>
+  <li><b>custom_wf</b></li>
+  <li><b>singlestep</b></li>
+</ul>
+
+<p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
+
+<br/><a name="custom_wf"/><h2>custom_wf</h2>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;directives&gt;</font></b>
+                        <b><font color="#0000FF">&lt;directive</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"custom_wf"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/directives&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <b>custom_wf</b> module examines the comments preceeding the query and looks for one or more of the following directives:</p>
+
+<ul>
+  <li>sqlexecdirect</li>
+  <li>sqlprepare</li>
+  <li>querytimeout</li>
+</ul>
+
+<br/><h3>sqlexecdirect</h3>
+
+<p>The sqlexecdirect directive tells SQL Relay to execute the query in a single step, rather than using the standard prepare/execute process.  This is useful for overriding the executedirect=no connection string option (the default) on a case-by-case basis.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> sqlexecdirect
+select <font color="#990000">*</font> from exampletable
+</tt></pre>
+
+</blockquote>
+<p>Note that (currently) the only database back-end that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.</p>
+
+<br/><h3>sqlprepare</h3>
+
+<p>The sqlprepare directive tells SQL Relay to prepare/execute the query in a two-step step process, rather than executing the query in a single step.  This is useful for overriding the executedirect=yes connection string option on a case-by-case basis.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> sqlprepare
+select <font color="#990000">*</font> from exampletable
+</tt></pre>
+
+</blockquote>
+<p>Note that (currently) the only database back-end that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.</p>
+
+<br/><h3>querytimeout</h3>
+
+<p>The querytimeout directive sets a timeout (in seconds) for the query.  The following example sets a 60 second timeout.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> querytimeout<font color="#990000">:</font><font color="#993399">60</font>
+select <font color="#990000">*</font> from exampletable
+</tt></pre>
+
+</blockquote>
+<p>Note that this directive takes a colon-delimited parameter, the number of seconds.  Setting a timeout of 0 seconds (or removing the parameter) disables the timeout.</p>
+
+<p>Note that (currently) the only database back-end that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.</p>
+
+<br/><a name="singlestep"/><h2>singlestep</h2>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;directives&gt;</font></b>
+                        <b><font color="#0000FF">&lt;directive</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"singlestep"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/directives&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <b>singlestep</b> module only works when using a PostgreSQL database.  Attempts to use it with a different database will have no effect.</p>
+
+<p>When using a PostgreSQL database, the connect string option fetchatonce can be set to 0 or 1.  When set to 0, the SQL Relay server fetches and buffers all rows of the result set from the database before returning any to the SQL Relay client. When set to 1, the SQL Relay server "single-steps" through the rows of the result set, fetching one row at a time from the database, and sending each row back to the SQL Relay client as it is fetched.</p>
+
+<p>Using fetchatonce=0 can cause the SQL Relay serve to consume large amounts of memory when a query returns a large number of rows.  On the other hand, when using fetchatonce=1, due to the quirky way that PostgreSQL implements fetching one row at a time, if you run a set of nested queries, rows will be truncated in the outer query, if the client uses a non-zero result set buffer size.  See <a href="../../faq.html#postgresqlfetchatonce">the faq</a> for more details.</p>
+
+<p>The <b>singlestep</b> module allows you to configure the instance one way, but override that configuration on a query-by-query basis.</p>
+
+<p>The module examines the comments preceeding the query and looks for one or more of the following directives:</p>
+
+<ul>
+  <li>singlestep=on</li>
+  <li>singlestep=off</li>
+</ul>
+
+<br/><h3>singlestep=on</h3>
+
+<p>If the singlestep=on directive is used, the SQL Relay Server "single-steps" through the rows of the result set of the associated query, fetching one row at a time from the database and sending each row back to the SQL Reay client as it is fetched.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> singlestep<font color="#990000">=</font>on
+select <font color="#990000">*</font> from largetable
+</tt></pre>
+
+</blockquote>
+<br/><h3>singlestep=off</h3>
+
+<p>If singlestep=off is set, then the SQL Relay Server will fetch and buffer all rows of the result set of the associated query before returning any to the SQL Relay client.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> singlestep<font color="#990000">=</font>off
+select <font color="#990000">*</font> from smalltable
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="datatranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="datatranslation.html">Data Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="routing.html">Query and Session Routing</a> <a href="routing.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

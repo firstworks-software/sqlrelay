@@ -253,13 +253,13 @@ sqlrsh -id myinst -batch < script.sql
 <h3>Alternate Connection Options</h3>
 
 <ul>
-  <li><b>-config</b> CONFIG - overrides the default configuration with the given one.  This may be a file, a directory of files, a url, or a comma-separated list of any of those.  See <a href="configguide.html#specifying">Specifying Configuration Files</a> in the SQL Relay Configuration Guide.</li>
+  <li><b>-config</b> CONFIG - overrides the default configuration with the given one.  This may be a file, a directory of files, a url, or a comma-separated list of any of those.  See <a href="configguide/altconfigfile.html#specifying">Specifying Configuration Files</a> in the SQL Relay Configuration Guide.</li>
   <li><b>-id</b> INSTANCEID - takes the host, port, socket, user and password from the named instance in the configuration, rather than from the command line</li>
 </ul>
 
 <p>An -id run also picks up the instance's kerberos and TLS settings from the configuration.  Anything given on the command line wins over the configuration.</p>
 
-<p>If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See <a href="configguide.html#pwdenc">Password Encryptions</a> in the SQL Relay Configuration Guide.</p>
+<p>If the instance's password is encrypted, sqlrsh decrypts it with the module named by the user's passwordencryptionid.  That only works for a two-way encryption.  A one-way encryption cannot decrypt anything, and a passwordencryptionid that no passwordencryption in the configuration matches has no module at all.  Either one is a usage error, reported by name, and sqlrsh exits 1.  Use -user and -password along with -id in that case.  See <a href="configguide/security.html#pwdenc">Password Encryptions</a> in the SQL Relay Configuration Guide.</p>
 
 <ul>
   <li><b>-krb</b> - use Kerberos authentication and encryption</li>

@@ -1,0 +1,746 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sqlrclientprotocol"/><h1>SQLRClient Protocol</h1>
+
+<p>SQLRClient is the native SQL Relay protocol, enabled by default.  The example configurations above and throughout most of the rest of the guide configure SQL Relay to speak this protocol.</p>
+
+<p>If an instance speaks the SQLRClient client-server protocol, then any client that wishes to use it must also speak the SQLRClient client-server protocol.  This means that most software written using the SQL Relay native API, or written using a database abstraction layer which loads a driver for SQL Relay can access this instance.  However, it also means that client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
+<a name="sqlrclientconfiguration"/><h2>Basic Configuration</h2>
+
+<p>SQLRClient is the native SQL Relay protocol, no special tags or attributes are required to enable it.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this configuration:</p>
+
+<ul>
+  <li>The connection tag instructs the instance to log in to the <i>ora1</i> database as user <i>scott</i> with password <i>tiger</i>.</li>
+  <li>By default, SQL Relay loads the <i>sqlrclient</i> protocol module, and listens on port 9000.</li>
+</ul>
+
+<p>The instance can be started using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>start <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>and accessed from the local machine using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlrsh <font color="#990000">-</font><font color="#008080">host</font> localhost <font color="#990000">-</font><font color="#008080">user</font> scott <font color="#990000">-</font>password tiger</tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+</blockquote>
+<p>By default, SQL Relay listens on all available network interfaces, on port 9000, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named <i>sqlrserver</i> then it can be accessed from another system using:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger
+</pre>
+
+</blockquote>
+<p>The instance can be stopped using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>sqlrclient</i> protocol module as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listener&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Since this instance speaks the SQLRClient client-server protocol, any client that wishes to use it must also speak the SQLRClient client-server protocol.  This means that software written using the SQL Relay native API, or written using a database abstraction layer which loads a driver for SQL Relay can access this instance.  However, it also means that client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
+<a name="sqlrclientversions"/><h2>Protocol Versions</h2>
+
+<p>The SQLRClient protocol is versioned.  A client announces the version it speaks when it connects, and a server accepts any version between a minimum and a maximum that it understands.  Version 3, which made extra result sets carry their own column metadata and rows rather than reusing the first result set's, which sends a null blob or clob bind as a null lob rather than as a plain null, and which added SQLSTATE to error responses (see <a href="datatranslation.html#errortranslation">Error Translation</a> and the <a href="../../programming/c++.html#errors">programming guides</a> for what a SQLSTATE is), is the current version.</p>
+
+<p>Backward compatibility only runs one direction.  An older client still works against a newer server, since the server accepts any version it understands.  But a version 3 client is rejected at connect time by a server that predates version 3, with an Unsupported protocol error, because that server was never told how to speak it.  The client cannot detect this in advance and downgrade automatically; there is no negotiation, only a version announcement and an accept-or-reject response.</p>
+
+<p>This means the server side of a link should always be upgraded first.  Upgrading a client ahead of the server it talks to breaks that client's connections outright, rather than falling back to the old behavior.</p>
+
+<p>This has a sharp edge for the <i>router</i> database module (see <a href="routing.html#routing">Query and Session Routing</a>): a router instance is itself a SQLRClient client of every instance it routes to.  If a router is upgraded ahead of the instances downstream of it, its connections to those instances fail the same way any other version 3 client's would.  Upgrade the downstream instances before the router that depends on them, not after.</p>
+
+<a name="sqlrclientlistener"/><h2>Listener Options</h2>
+
+<p>By default, SQL Relay listens on port 9000.</p>
+
+<p>However, it can be configured to listen on a different port.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9001"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"192.168.1.50,192.168.1.51"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).</p>
+
+<p>It can also be configured to listen on a unix socket by adding a <i>socket</i> attribute to the listener tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/example.socket"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listener&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The user that SQL Relay runs as must be able to read and write to the path of the socket.)</p>
+
+<p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
+
+<p>The SQLRClient protocol module also has a <i>debug</i> attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<a name="sqlrclientauth"/><h2>Authentication/Encryption Options</h2>
+
+<p>When using the SQLRClient protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
+
+<a name="sqlrclientconnectstringsauth"/><h2>Connect Strings Auth</h2>
+
+<p>The default authentication option is <i>connect strings</i> auth.</p>
+
+<p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
+
+<p>In the following example, SQL Relay is configured to access the database using scott/tiger credentials.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this case, clients would also use scott/tiger credentials to access SQL Relay.</p>
+
+<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>connect strings</i> auth module as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrelay_connectstrings"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<a name="sqlrclientuserlistauth"/><h2>User List Auth</h2>
+
+<p>Another popular authentication option is <i>user list</i> auth.</p>
+
+<p>When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.</p>
+
+<p>To enable user list auth, you must provide a list of user/password combinations, as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"oneuser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"onepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"anotheruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"anotherpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"yetanotheruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"yetanotherpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<br/><a name="sqlrclientdbauth"/><h2>Database Auth</h2>
+
+<p>Another popular authentication option is <i>database</i> auth.</p>
+
+<p>The <i>sqlrclient_database</i> module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.</p>
+
+<p>SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.</p>
+
+<p>To enable database auth, configure SQL Relay to load the <i>sqlrclient_database</i> auth module as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_database"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> Database authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If database authentication is used for that instance, then authentication will fail.)
+</blockquote>
+<p>In this configuration, SQL Relay initially logs in to the database as <i>scott/tiger</i> as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.</p>
+
+<p>For example, if a client initially connects using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlrsh <font color="#990000">-</font><font color="#008080">host</font> localhost <font color="#990000">-</font><font color="#008080">user</font> scott <font color="#990000">-</font>password tiger</tt></pre>
+
+</blockquote>
+<p>...then SQL Relay doesn't need to log out and log back in.</p>
+
+<p>But if the client then tries to connect using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlrsh <font color="#990000">-</font><font color="#008080">host</font> localhost <font color="#990000">-</font><font color="#008080">user</font> anotheruser <font color="#990000">-</font>password anotherpassword</tt></pre>
+
+</blockquote>
+<p>..then SQL Relay does need to log out and log back in.</p>
+
+<p>A subsequent connection using <i>anotheruser/anotherpassword</i> won't require a re-login, but a subsequent connection using any other user/password will.</p>
+
+<p>Though this module is convenient, it has the disadvantage that logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.</p>
+
+<a name="sqlrclientproxiedauth"/><h2>Proxied Auth</h2>
+
+<p>Another authentication option is <i>proxied</i> auth.</p>
+
+<p>When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than database authentication described above.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.</p>
+
+<p>This is currently only supported with Oracle (version 8i or higher) and requires database configuration.  See <a href="../oraclentier.html">this document</a> for more information including instructions for configuring Oracle.</p>
+
+<p>To enable proxied auth, configure SQL Relay to load the <i>proxied</i> auth module as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_proxied"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> Proxied authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If proxied authentication is used for that instance, then authentication will fail.)
+</blockquote>
+<a name="sqlrclientkrb"/><h2>Kerberos and Active Directory Encryption and Authentication</h2>
+
+<p>SQL Relay supports Kerberos encryption and authentication between the SQL Relay client and SQL Relay Server.</p>
+
+<blockquote>
+<img src="../../images/secure-krb-unsecured.png"/>
+</blockquote>
+<p>When Kerberos encryption and authentication is used:</p>
+
+<ul>
+  <li>All communications between the SQL Relay client and SQL Relay server are encrypted.</li>
+  <li>A user who has authenticated against a Kerberos KDC or Active Directory Domain Controller can access SQL Relay without having to provide additional credentials.</li>
+</ul>
+
+<p>On Linux and Unix systems, both server and client environments must be "Kerberized".  On Windows systems, both server and client must join an Active Directory Domain.  Note that this is only available on Professional or Server versions of Windows.  Home versions cannot join Active Directory Domains.</p>
+
+<p>The following configuration configures an instance of SQL Relay to use Kerberos authentication and encryption:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">krb</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">krbservice</font><font color="#990000">=</font><font color="#FF0000">"sqlrelay"</font> <font color="#009900">krbkeytab</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrelay.keytab"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listener&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"dmuse@KRB.FIRSTWORKS.COM"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"kmuse@KRB.FIRSTWORKS.COM"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"imuse@KRB.FIRSTWORKS.COM"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"smuse@KRB.FIRSTWORKS.COM"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"FIRSTWORKS.COM\dmuse"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"FIRSTWORKS.COM\kmuse"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"FIRSTWORKS.COM\imuse"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"FIRSTWORKS.COM\smuse"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>krb</b> attribute enables (or disables) Kerberos authentication and encryption.</li>
+  <li>The <b>krbservice</b> attribute specifies which Kerberos service to use.  This attribute is optional and defaults to "sqlrelay".  It is only shown here for illustrative purposes.</li>
+  <li>The <b>krbkeytab</b> attribute specifies the location of the keytab file containing the key for the specified Kerberos service.  This attribute is not required on Windows.  On Linux or Unix systems if this paramter is omitted, then it defaults to the system keytab, usually /etc/krb5.keytab</li>
+  <li>User list authentication is also used.  Other authentication methods are not currently supported with Kerberos.</li>
+</ul>
+
+<p>Note that no passwords are required in the user list.  Note also that users are specified in both user@REALM (Kerberos) format and REALM\user (Active Directory) format to support users authenticated against both systems.</p>
+
+<p>To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the krbkeytab attribute.</p>
+
+<p>To start the instance on a Windows system, you must be logged in as a user that can proxy the service specified by the krbservice attribute (or it's default value of "sqlrelay" if omitted).</p>
+
+<p>If those criteria are met, starting the Kerberized instance of SQL Relay is the same as starting any other instance:</p>
+
+<blockquote>
+  <pre>sqlr-start -id example
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>To access the instance, you must acquire a Kerberos ticket-granting ticket.  On a Linux or Unix system, this typically involves running <i>kinit</i>, though a fully Kerberized environment may acquire this during login.  On a Windows system, you must log in as an Active Directory domain user.</p>
+
+<p>After acquiring the ticket-granting ticket, the instance of SQL Relay may be accessed from a Linux or Unix system as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -krb
+</pre>
+
+</blockquote>
+<p>From a Windows system, it may be necessary to specify the fully qualified Kerberos service name as well:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -krb -krbservice sqlrelay/sqlrserver.firstworks.com@AD.FIRSTWORKS.COM
+</pre>
+
+</blockquote>
+<p>Note the absence of user and password parameters.</p>
+
+<p>Kerberos authentication establishes trust between the user who acquired the ticket-granting ticket (the user running the client program) and the service (the SQL Relay server) as follows:</p>
+
+<ul>
+  <li>The client program uses the user's ticket-granting ticket to acquire a ticket for the sqlrelay service.</li>
+  <li>The client program then uses this service ticket to establish a security context with the SQL Relay server.</li>
+  <li>During this process the client program sends the SQL Relay server the user name that was used to acquire the original ticket-granting ticket.</li>
+  <li>If the security context can be successfully established, then the SQL Relay server can trust that the client program is being run by the user that it says it is.</li>
+</ul>
+
+<p>Once the SQL Relay server trusts that the client is being run by the user that it says it is, the user is authenticated against the list of users.</p>
+
+<p>While Kerberos authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:</p>
+
+<ul>
+  <li>The client program may have to acquire a service ticket from another server (the Kerberos KDC or Active Directory Domain Controller) prior to connecting to the SQL Relay server.</li>
+  <li>When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.</li>
+  <li>Kerberos imposes a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.</li>
+  <li>Without dedicated encryption hardware and a Kerberos implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.</li>
+</ul>
+
+<p>Any kind of full session encryption should be used with caution in performance-sensitive applications.</p>
+
+<a name="sqlrclienttls"/><h2>TLS/SSL Encryption and Authentication</h2>
+
+<p>SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay Server.</p>
+
+<blockquote>
+<img src="../../images/secure-tls-unsecured.png"/>
+</blockquote>
+<p>When TLS/SSL encryption and authentication is used:</p>
+
+<ul>
+  <li>All communications between the SQL Relay client and SQL Relay server are encrypted.</li>
+  <li>SQL Relay clients and servers may optionally validate each other's certificates and identities.</li>
+</ul>
+
+<p>When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.</p>
+
+<blockquote>
+( <b>NOTE:</b> Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+</blockquote>
+<br/><h2>Encryption Only</h2>
+
+<p>The following configuration enables TLS/SSL encryption for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tls</b> attribute enables (or disables) TLS/SSL encryption.</li>
+  <li>The <b>tlscert</b> attribute specifies the TLS/SSL certificate chain to use.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</li>
+    <li>If the file specified by <b>tlscert</b> doesn't already include the private key, the <b>tlskey</b> attribute may be used to specify a separate file containing it.</li>
+  </ul>
+
+  <li>User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.</li>
+</ul>
+
+<p>To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:</p>
+
+<blockquote>
+  <pre>sqlr-start -id example
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>The instance may be accessed as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger -tls -tlsvalidate no
+</pre>
+
+</blockquote>
+<p>This establishes a TLS/SSL-encrypted session but does not validate the server's certificate or identity.  The session will only continue if the server's certificate is is well-formed and hasn't expired, <b>but the client is still vulnerable to various attacks</b>.</p>
+
+<h2>Certificate Validation</h2>
+
+<p>For a more secure session, the client may validate that the server's certificate was signed by a trusted certificate authority, known to the system, as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger -tls -tlsvalidate ca
+</pre>
+
+</blockquote>
+<p>If the server's certificate is self-signed, then the certificate authority won't be known to the system, but it's certificate may be specified by the tlsca parameter as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger -tls -tlsvalidate ca -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>This establishes a TLS/SSL-encrypted session with the server and validates the server's certificate, but does not validate the server's identity.  The session will only continue if the server's certificate is valid, <b>but the client is still vulnerable to various attacks</b>.</p>
+
+<h2>Host Name Validation</h2>
+
+<p>For a more secure session, the client may validate that the host name provided by the server's certificate matches the host name that the client meant to connect to, as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver.firstworks.com -user scott -password tiger -tls -tlsvalidate ca+host -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>Note that the fully qualified host name was provided.  Note also the use of the ca+host value for the tlsvalidate parameter.  With these parameters, in addition to validating that the server's certificate was signed by a trusted certificate authority, the host name will also be validated.  If the certificate contains Subject Alternative Names, then the host name will be compared to each of them.  If no Subject Alternative Names are provided then the host name will be compared to the certificate's Common Name.  The session will only continue if the sever's certificate and identity are both valid.</p>
+
+<h2>Domain Name Validation</h2>
+
+<p>Unless self-signed, certificates can be expensive, so certificates are often shared by multiple servers across a domain.  To manage environments like this, the host name validation can be relaxed as follows, to just domain name validation:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver.firstworks.com -user scott -password tiger -tls -tlsvalidate ca+domain -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>Note that the fully qualified host name was provided.  Note also the use of the ca+domain value for the tlsvalidate parameter.  With these parameters, in addition to validating that the server's certificate was signed by a trusted certificate authority, the domain name portion of the host name will also be validated.  If the certificate contains Subject Alternative Names, then the domain name portion of the host name will be compared to the domain name portion of each of them.  If no Subject Alternative Names are provided then the domain name portion of the host name will be compared to the domain name portion of the certificate's Common Name.  The session will only continue if the sever's certificate and domain identity are both valid.</p>
+
+<h2>Mutual Authentication</h2>
+
+<p>For an even more secure session, the server may also request a certificate from the client, validate the certificate, and optionally authenticate the client based on the host name provided by the certificate.</p>
+
+<p>The following configuration enables these checks for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font>
+				<font color="#009900">tlsvalidate</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">tlsca</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/myca.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient1.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient2.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient3.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient4.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tlsvalidate</b> attribute enables (or disables) validation that client's certificate was signed by a trusted certificate authority, known to the system, or as provided by the tlsca attribute.</li>
+  <li>The <b>tlsca</b> attribute specifies a certificate authority to include when validating the client's certificate.  This is useful when validating self-signed certificates.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</li>
+  </ul>
+
+  <li>User list authentication is also used.</li>
+</ul>
+
+<p>Note that no passwords are required in the user list.  In this configuration, the Subject Alternative Names in the client's certificate (or Common Name if no SAN's are present) are authenticate against the list of valid names.</p>
+
+<p>Note also that when <b>tlsvalidate</b> is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.</p>
+
+<p>To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -tls -tlsvalidate no -tlscert /usr/local/firstworks/etc/sqlrclient.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</p>
+
+<p>Note the absence of user and password parameters.  Rather than passing a user and password, the client passes the specified certificate to the server.  The server trusts that the client is who they say they are by virtue of having a valid certificate and the name provided by the certificate is authenticated against the list of valid names.</p>
+
+<p>In a more likely use case though, mutual authentication occurs - the client validates the server's certificate and the server validates the client's certificate, as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver.firstworks.com -tls -tlscert /usr/local/firstworks/etc/sqlrclient.pem -tlsvalidate ca+host -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlscert.html">The tlscert Parameter</a> and <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>In this example, the client provides a certificate for the server to validate, validates the host's certificate against the provided certificate authority, and validates the host's identity against the provided host name.</p>
+
+<h2>Performance Considerations</h2>
+
+<p>While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:</p>
+
+<ul>
+  <li>When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.</li>
+  <li>Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.</li>
+  <li>Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.</li>
+</ul>
+
+<p>Any kind of full session encryption should be used with caution in performance-sensitive applications.</p>
+
+<a name="sqlrclientlimitations"/><h2>Limitations</h2>
+
+<p>The SQLRClient protocol is SQL Relay's own, so it has no notable feature gaps the way the emulated protocols do.  The one thing worth knowing about is the version compatibility rule described under <a href="#sqlrclientversions">Protocol Versions</a> above: a newer client cannot talk to an older server, so the server side of any link - including a <i>router</i> instance talking to the instances behind it - has to be upgraded first.</p>
+
+<hr/>
+
+<p><a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

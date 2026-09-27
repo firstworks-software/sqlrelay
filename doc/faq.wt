@@ -328,16 +328,16 @@ Oracle allows a process that is connected to the database to switch users withou
 [[br]][=#routing]
 === Can I use SQL Relay to send all insert/update/delete's to a master database and distribute select's over a set of slaves? ===
 
-Yes, see [admin/configguide.html#masterslave Master-Slave Query Routing].
+Yes, see [admin/configguide/highavailability.html#masterslave Master-Slave Query Routing].
 
 [[br]][=#mysqlrouting]
 === Can I use SQL Relay to make my existing !MySQL/MariaDB, !PostgreSQL, Firebird, TDS or Oracle app send all insert/update/delete's to a master database and distribute select's over a set of slaves? ===
 
 Probably.  You'll need to set up SQL Relay to route queries, and configure it to speak whichever front-end protocol your app already uses - !MySQL/MariaDB, !PostgreSQL, Firebird, TDS, or Oracle - to redirect your app to use SQL Relay without modification.
 
-See [admin/configguide.html#masterslave Master-Slave Query Routing] for details on how to set up SQL Relay as a query router.
+See [admin/configguide/highavailability.html#masterslave Master-Slave Query Routing] for details on how to set up SQL Relay as a query router.
 
-See [admin/configguide.html#protocoloptions Client Protocol Options] in the configuration guide for details about how to configure SQL Relay to speak the !MySQL/MariaDB, !PostgreSQL, Firebird, TDS and Oracle protocols.
+See [admin/configguide/clientprotocoloptions.html#protocoloptions Client Protocol Options] in the configuration guide for details about how to configure SQL Relay to speak the !MySQL/MariaDB, !PostgreSQL, Firebird, TDS and Oracle protocols.
 
 [[br]][=#dropin]
 === What happened to the drop-in replacement libraries for !MySQL/MariaDB and !PostgreSQL? ===
@@ -349,7 +349,7 @@ Until the 2.0.0 release, the drop-in replacement libraries could still be manual
 [[br]][=#filtering]
 === Can SQL Relay be configured to filter out certain queries? ===
 
-Yes, see [admin/configguide.html#filtering Query Filtering].
+Yes, see [admin/configguide/security.html#filtering Query Filtering].
 
 [[br]]
 ----
@@ -481,7 +481,7 @@ The sqlrconnection_freetds module is compiled against !FreeTDS, an open-source i
 
 Very old versions of Microsoft SQL Server are compatible with SAP/Sybase ctlib, but modern versions are not.  !FreeTDS is compatible with all versions of SAP/Sybase Adaptive Server Enterprise and Microsoft SQL Server.  So, if you want to access a modern version of Microsoft SQL Server, use the !FreeTDS connection rather than the SAP/Sybase connection.  You can also access all versions of SAP/Sybase with the !FreeTDS connection.
 
-For Microsoft SQL Server, the ODBC connection is another option, on Windows and on Linux and Unix alike, and it reports column types and sizes more accurately than the !FreeTDS connection does.  See [admin/configguide.html#db-mssql-odbc Microsoft SQL Server (via ODBC)] in the configuration guide.
+For Microsoft SQL Server, the ODBC connection is another option, on Windows and on Linux and Unix alike, and it reports column types and sizes more accurately than the !FreeTDS connection does.  See [admin/configguide/basicconfiguration.html#db-mssql-odbc Microsoft SQL Server (via ODBC)] in the configuration guide.
 
 [[br]][=#postgresql]
 === How do I get data type names instead of numbers when using !PostgreSQL? ===
@@ -520,7 +520,7 @@ So, your main options are:
 * use fetchatonce=0 and expect that the server may require a lot of memory to process large result sets
 * use fetchatonce=1, always use setResultSetBufferSize(0) when running nested queries, and expect that the client may require a lot of memory to process large result sets
 
-However, there is also a "singlestep" query directive module that allows you to configure the instance one way but override that configuration on a query-by-query basis.  See [admin/configguide.html#directives Query Directives] for general information about query directive modules and [admin/configguide.html#singlestep singlestep] for details about the singlestep module.
+However, there is also a "singlestep" query directive module that allows you to configure the instance one way but override that configuration on a query-by-query basis.  See [admin/configguide/querydirectives.html#directives Query Directives] for general information about query directive modules and [admin/configguide/querydirectives.html#singlestep singlestep] for details about the singlestep module.
 
 
 [[br]][=#nlslang]
@@ -538,7 +538,7 @@ When using !MySQL/MariaDB, !PostgreSQL, SAP/Sybase and Firebird databases, the c
 
 When using SAP/Sybase, the '''lang''' variable in the connect string sets it too, indirectly.  That variable sets the '''LANG''' environment variable, and the SAP/Sybase client library takes the character set from the locale it names - lang=en_US.UTF-8 gets utf8, and lang=en_US gets iso_1.  If '''charset''' is set as well, then it wins.  If neither is set, then whatever '''LANG''' the SQL Relay server process inherited decides the character set.
 
-When using !FreeTDS, the connect string's '''charset''' variable does '''not''' set it.  That variable sets the character set that !FreeTDS asks the //server// to use, which is a different thing.  The character set that the SQL Relay server process sees data in comes from the '''client charset''' setting in the freetds.conf file instead.  See [admin/configguide.html#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] in the configuration guide for an example.
+When using !FreeTDS, the connect string's '''charset''' variable does '''not''' set it.  That variable sets the character set that !FreeTDS asks the //server// to use, which is a different thing.  The character set that the SQL Relay server process sees data in comes from the '''client charset''' setting in the freetds.conf file instead.  See [admin/configguide/basicconfiguration.html#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] in the configuration guide for an example.
 
 When using Oracle, the character set can be set by setting the '''nls_lang''' variable in the connect string.
 
@@ -946,14 +946,14 @@ The modern equivalent configuration to the classic '''debug="listener and connec
 
 You can disable logging of either listener or connection daemons by setting "no" to "yes".
 
-See [admin/configguide.html#logging Logging] for more information.
+See [admin/configguide/logging.html#logging Logging] for more information.
 
 [[br]][=#passwordencryption]
 === I don't like storing plaintext passwords in my configuration file.  Can I encrypt them somehow? ===
 
 Yes.  Both database passwords and passwords for accessing SQL Relay itself can be encrypted via extension modules.  You can use one of the provided modules or develop your own.
 
-See [admin/configguide.html#pwdenc Password Encryption] for more information.
+See [admin/configguide/security.html#pwdenc Password Encryption] for more information.
 
 [[br]][=#multipleconfig]
 === Do I have to put define all of my instances in the same configuration file? ===
@@ -972,7 +972,7 @@ Config files can also be located on remote servers and specified by url.
 
 And, if that wasn't enough, a config file can contain lists of other config files, each of which will be consulted during start-up as well.
 
-See the [admin/configguide.html#altconfigfile Alternative Configuration File Options] for more information.
+See the [admin/configguide/altconfigfile.html#altconfigfile Alternative Configuration File Options] for more information.
 
 {{{#!include contentend.html}}}
 

@@ -1,0 +1,379 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="quickstart.html">Quick Start</a> <a href="quickstart.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<h1>SQL Relay Configuration Guide</h1>
+
+<p>This guide is split across the pages listed below - start with Quick Start for a minimal setup, or jump directly to the topic you need.</p>
+
+<ul>
+  <li><a href="quickstart.html#quick">Quick Start</a></li>
+  <li><a href="basicconfiguration.html#basic">Basic Configuration</a></li>
+  <ul>
+    <li><a href="basicconfiguration.html#modules">Modules</a></li>
+    <li><a href="basicconfiguration.html#database">Database Configuration</a></li>
+    <ul>
+      <li><a href="basicconfiguration.html#db-oracle">Oracle</a></li>
+      <li><a href="basicconfiguration.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a></li>
+      <li><a href="basicconfiguration.html#db-sap">SAP/Sybase (via the native SAP/Sybase library)</a></li>
+      <li><a href="basicconfiguration.html#db-sap-freetds">SAP/Sybase (via FreeTDS)</a></li>
+      <li><a href="basicconfiguration.html#db-db2">IBM DB2</a></li>
+      <li><a href="basicconfiguration.html#db-informix">Informix</a></li>
+      <li><a href="basicconfiguration.html#db-mysql">MySQL/MariaDB</a></li>
+      <li><a href="basicconfiguration.html#db-postgresql">PostgreSQL</a></li>
+      <li><a href="basicconfiguration.html#db-firebird">Firebird</a></li>
+      <li><a href="basicconfiguration.html#db-sqlite">SQLite</a></li>
+      <li><a href="basicconfiguration.html#db-odbc-teradata">Teradata (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-odbc-exasol">Exasol (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-odbc-hive">Apache Hive (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-odbc-impala">Apache Impala (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-odbc-redshift">Amazon Redshift (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-postgresql-redshift">Amazon Redshift (via PostgreSQL)</a></li>
+      <li><a href="basicconfiguration.html#db-odbc-athena">Amazon Athena (via ODBC)</a></li>
+      <li><a href="basicconfiguration.html#db-odbc">Generic ODBC</a></li>
+    </ul>
+
+    <li><a href="basicconfiguration.html#dbconnections">Database Connection Count</a></li>
+    <ul>
+      <li><a href="basicconfiguration.html#dbconnections-performance">For Performance</a></li>
+      <li><a href="basicconfiguration.html#dbconnections-throttling">For Throttling</a></li>
+    </ul>
+
+    <li><a href="basicconfiguration.html#dbcursors">Database Cursor Count</a></li>
+    <li><a href="basicconfiguration.html#dynamicscaling">Dynamic Scaling</a></li>
+    <li><a href="basicconfiguration.html#listener">Listener Configuration</a></li>
+    <li><a href="basicconfiguration.html#instances">Multiple Instances</a></li>
+    <li><a href="basicconfiguration.html#autostart">Starting Instances Automatically</a></li>
+  </ul>
+
+  <li><a href="clientprotocoloptions.html#protocoloptions">Client Protocol Options</a></li>
+  <ul>
+    <li><a href="sqlrclientprotocol.html#sqlrclientprotocol">SQLRClient Protocol</a></li>
+    <ul>
+      <li><a href="sqlrclientprotocol.html#sqlrclientconfiguration">Basic Configuration</a></li>
+      <li><a href="sqlrclientprotocol.html#sqlrclientversions">Protocol Versions</a></li>
+      <li><a href="sqlrclientprotocol.html#sqlrclientlistener">Listener Options</a></li>
+      <li><a href="sqlrclientprotocol.html#sqlrclientauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="sqlrclientprotocol.html#sqlrclientconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="sqlrclientprotocol.html#sqlrclientuserlistauth">User List Auth</a></li>
+        <li><a href="sqlrclientprotocol.html#sqlrclientdbauth">Database Auth</a></li>
+        <li><a href="sqlrclientprotocol.html#sqlrclientproxiedauth">Proxied Auth</a></li>
+        <li><a href="sqlrclientprotocol.html#sqlrclientkrb">Kerberos and Active Directory Encryption and Authentication</a></li>
+        <li><a href="sqlrclientprotocol.html#sqlrclienttls">TLS/SSL Encryption and Authentication</a></li>
+      </ul>
+
+      <li><a href="sqlrclientprotocol.html#sqlrclientlimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="mysqlprotocol.html#mysqlprotocol">MySQL Protocol</a></li>
+    <ul>
+      <li><a href="mysqlprotocol.html#mysqlconfiguration">Basic Configuration</a></li>
+      <li><a href="mysqlprotocol.html#mysqllistener">Listener Options</a></li>
+      <li><a href="mysqlprotocol.html#mysqlhandshake">Handshake Protocol Version</a></li>
+      <li><a href="mysqlprotocol.html#mysqlclientprotocol">Client Protocol Flags</a></li>
+      <li><a href="mysqlprotocol.html#mysqlauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="mysqlprotocol.html#mysqlconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="mysqlprotocol.html#mysqluserlistauth">User List Auth</a></li>
+        <li><a href="mysqlprotocol.html#mysqldbauth">Database Auth</a></li>
+        <li><a href="mysqlprotocol.html#mysqltls">TLS/SSL Encryption and Authentication</a></li>
+      </ul>
+
+      <li><a href="mysqlprotocol.html#mysqlforeignbackend">Foreign Backend</a></li>
+      <li><a href="mysqlprotocol.html#mysqlspecialpurpose">Special-Purpose Options</a></li>
+      <li><a href="mysqlprotocol.html#mysqllimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="postgresqlprotocol.html#postgresqlprotocol">PostgreSQL Protocol</a></li>
+    <ul>
+      <li><a href="postgresqlprotocol.html#postgresqlconfiguration">Basic Configuration</a></li>
+      <li><a href="postgresqlprotocol.html#postgresqllistener">Listener Options</a></li>
+      <li><a href="postgresqlprotocol.html#postgresqlauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="postgresqlprotocol.html#postgresqlpasswords">Password Method</a></li>
+        <li><a href="postgresqlprotocol.html#postgresqlconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="postgresqlprotocol.html#postgresqluserlistauth">User List Auth</a></li>
+        <li><a href="postgresqlprotocol.html#postgresqltls">TLS/SSL Encryption and Authentication</a></li>
+      </ul>
+
+      <li><a href="postgresqlprotocol.html#postgresqlforeignbackend">Foreign Backend</a></li>
+      <li><a href="postgresqlprotocol.html#postgresqllimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="tdsprotocol.html#tdsprotocol">TDS Protocol</a></li>
+    <ul>
+      <li><a href="tdsprotocol.html#tdsconfiguration">Basic Configuration</a></li>
+      <li><a href="tdsprotocol.html#tdslistener">Listener Options</a></li>
+      <li><a href="tdsprotocol.html#tdsversion">TDS Version</a></li>
+      <li><a href="tdsprotocol.html#tdspacketsize">Packet Size</a></li>
+      <li><a href="tdsprotocol.html#tdsauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="tdsprotocol.html#tdsconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="tdsprotocol.html#tdstls">TLS/SSL Encryption and Authentication</a></li>
+      </ul>
+
+      <li><a href="tdsprotocol.html#tdsforeignbackend">Foreign Backend</a></li>
+      <li><a href="tdsprotocol.html#tdslimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="oracleprotocol.html#oracleprotocol">Oracle Protocol</a></li>
+    <ul>
+      <li><a href="oracleprotocol.html#oracleconfiguration">Basic Configuration</a></li>
+      <li><a href="oracleprotocol.html#oraclelistener">Listener Options</a></li>
+      <li><a href="oracleprotocol.html#oraclesid">SID / Service Name</a></li>
+      <li><a href="oracleprotocol.html#oracleloginattempts">Login Attempts</a></li>
+      <li><a href="oracleprotocol.html#oracleserverversion">Server Version</a></li>
+      <li><a href="oracleprotocol.html#oracleverifiertype">Password Verifier Type</a></li>
+      <li><a href="oracleprotocol.html#oraclebigchunkclr">Big Chunk CLR Framing</a></li>
+      <li><a href="oracleprotocol.html#oraclecharsets">Character Set Options</a></li>
+      <li><a href="oracleprotocol.html#oracledateformat">Date Format</a></li>
+      <li><a href="oracleprotocol.html#oracleauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="oracleprotocol.html#oracleconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="oracleprotocol.html#oracleuserlistauth">User List Auth</a></li>
+      </ul>
+
+      <li><a href="oracleprotocol.html#oracleforeignbackend">Foreign Backend</a></li>
+      <li><a href="oracleprotocol.html#oraclelimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="firebirdprotocol.html#firebirdprotocol">Firebird Protocol</a></li>
+    <ul>
+      <li><a href="firebirdprotocol.html#firebirdconfiguration">Basic Configuration</a></li>
+      <li><a href="firebirdprotocol.html#firebirdlistener">Listener Options</a></li>
+      <li><a href="firebirdprotocol.html#firebirdprotocolversion">Protocol Version</a></li>
+      <li><a href="firebirdprotocol.html#firebirdauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="firebirdprotocol.html#firebirdconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a></li>
+      </ul>
+
+      <li><a href="firebirdprotocol.html#firebirdforeignbackend">Foreign Backend</a></li>
+      <li><a href="firebirdprotocol.html#firebirdlimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="teradataprotocol.html#teradataprotocol">Teradata Protocol</a></li>
+    <ul>
+      <li><a href="teradataprotocol.html#teradataconfiguration">Basic Configuration</a></li>
+      <li><a href="teradataprotocol.html#teradatalistener">Listener Options</a></li>
+      <li><a href="teradataprotocol.html#teradataauth">Authentication/Encryption Options</a></li>
+      <li><a href="teradataprotocol.html#teradatapassthrough">Passthrough Mode</a></li>
+      <li><a href="teradataprotocol.html#teradatalimitations">Limitations</a></li>
+    </ul>
+
+    <li><a href="multipleprotocols.html#multipleprotocols">Multiple Protocols</a></li>
+    <ul>
+      <li><a href="multipleprotocols.html#multiprotocolconfiguration">Basic Configuration</a></li>
+      <li><a href="multipleprotocols.html#multiprotocollistener">Listener Options</a></li>
+      <li><a href="multipleprotocols.html#multiprotocolauth">Authentication/Encryption Options</a></li>
+    </ul>
+
+  </ul>
+
+  <li><a href="highavailability.html#ha">High Availability</a></li>
+  <ul>
+    <li><a href="highavailability.html#cluster">Load Balancing and Failover With Replicated Databases or Database Clusters</a></li>
+    <li><a href="highavailability.html#rac">Already-Load Balanced Databases</a></li>
+    <li><a href="highavailability.html#masterslave">Master-Slave Query Routing</a></li>
+    <li><a href="highavailability.html#frontendlb">Front-End Load Balancing and Failover</a></li>
+    <ul>
+      <li><a href="highavailability.html#hostrand">Host Randomization</a></li>
+      <li><a href="highavailability.html#lbapp">Load Balancing Appliance</a></li>
+      <li><a href="highavailability.html#rrdns">Round-Robin DNS</a></li>
+    </ul>
+
+  </ul>
+
+  <li><a href="security.html#security">Security Features</a></li>
+  <ul>
+    <li><a href="security.html#frontendencryption">Front-End Encryption and Secure Authentication</a></li>
+    <li><a href="security.html#backendencryption">Back-End Encryption and Secure Authentication</a></li>
+    <ul>
+      <li><a href="security.html#backendenc-oracle">Oracle</a></li>
+      <li><a href="security.html#backendenc-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a></li>
+      <li><a href="security.html#backendenc-mysql">MySQL/MariaDB</a></li>
+      <li><a href="security.html#backendenc-postgresql">PostgreSQL</a></li>
+    </ul>
+
+    <li><a href="security.html#runas">Run-As User and Group</a></li>
+    <li><a href="security.html#deniedallowedips">IP Filtering</a></li>
+    <li><a href="security.html#pwdfiles">Password Files</a></li>
+    <li><a href="security.html#pwdenc">Password Encryption</a></li>
+    <ul>
+      <li><a href="security.html#rot">rot</a></li>
+      <li><a href="security.html#md5">md5</a></li>
+      <li><a href="security.html#sha1">sha1</a></li>
+      <li><a href="security.html#sha256">sha256</a></li>
+      <li><a href="security.html#des">des</a></li>
+      <li><a href="security.html#aes128">aes128</a></li>
+    </ul>
+
+    <li><a href="security.html#schedules">Connection Schedules</a></li>
+    <ul>
+      <li><a href="security.html#cron_userlist">cron_userlist</a></li>
+    </ul>
+
+    <li><a href="security.html#filtering">Query Filtering</a></li>
+    <ul>
+      <li><a href="security.html#filter-patterns">patterns</a></li>
+      <li><a href="security.html#filter-regex">regex</a></li>
+      <li><a href="security.html#filter-string">string</a></li>
+      <li><a href="security.html#filter-tag">tag</a></li>
+    </ul>
+
+  </ul>
+
+  <li><a href="datatranslation.html#translation">Data Translation</a></li>
+  <ul>
+    <li><a href="datatranslation.html#queryparsing">Query Parsing</a></li>
+    <li><a href="datatranslation.html#querytranslation">Query Translation</a></li>
+    <ul>
+      <li><a href="datatranslation.html#normalize">normalize</a></li>
+      <li><a href="datatranslation.html#patterns">patterns</a></li>
+      <li><a href="datatranslation.html#listagg_to_string_agg">listagg_to_string_agg</a></li>
+      <li><a href="datatranslation.html#sequence_nextval">sequence_nextval</a></li>
+      <li><a href="datatranslation.html#keep_dense_rank_to_array_agg">keep_dense_rank_to_array_agg</a></li>
+    </ul>
+
+    <li><a href="datatranslation.html#bindvariabletranslation">Bind Variable Translation</a></li>
+    <li><a href="datatranslation.html#resultsetheadertranslation">Result Set Header Translation</a></li>
+    <li><a href="datatranslation.html#resultsettranslation">Result Set Translation</a></li>
+    <ul>
+      <li><a href="datatranslation.html#reformatdatetime">reformatdatetime</a></li>
+    </ul>
+
+    <li><a href="datatranslation.html#resultsetrowtranslation">Result Set Row Translation</a></li>
+    <li><a href="datatranslation.html#resultsetrowblocktranslation">Result Set Row Block Translation</a></li>
+    <li><a href="datatranslation.html#errortranslation">Error Translation</a></li>
+    <ul>
+      <li><a href="datatranslation.html#error-renumber">renumber</a></li>
+      <li><a href="datatranslation.html#error-patterns">patterns</a></li>
+    </ul>
+
+    <li><a href="datatranslation.html#moduledata">Module Data</a></li>
+  </ul>
+
+  <li><a href="querydirectives.html#directives">Query Directives</a></li>
+  <ul>
+    <li><a href="querydirectives.html#custom_wf">custom_wf</a></li>
+    <li><a href="querydirectives.html#singlestep">singlestep</a></li>
+  </ul>
+
+  <li><a href="routing.html#routing">Query and Session Routing</a></li>
+  <ul>
+    <li><a href="routing.html#regex">regex</a></li>
+    <li><a href="routing.html#userlist">userlist</a></li>
+    <li><a href="routing.html#clientiplist">clientiplist</a></li>
+    <li><a href="routing.html#clientinfolist">clientinfolist</a></li>
+    <li><a href="routing.html#usedatabase">usedatabase</a></li>
+    <li><a href="routing.html#routingquirks">Quirks and Limitations</a></li>
+  </ul>
+
+  <li><a href="customqueries.html#queries">Custom Queries</a></li>
+  <ul>
+    <li><a href="customqueries.html#sqlrcmdcstat">sqlrcmdcstat</a></li>
+    <li><a href="customqueries.html#sqlrcmdgstat">sqlrcmdgstat</a></li>
+  </ul>
+
+  <li><a href="triggers.html#triggers">Triggers</a></li>
+  <ul>
+    <li><a href="triggers.html#replay">replay</a></li>
+    <li><a href="triggers.html#savepoints">savepoints</a></li>
+    <li><a href="triggers.html#splitmultiinsert">splitmultiinsert</a></li>
+    <li><a href="triggers.html#upsert">upsert</a></li>
+  </ul>
+
+  <li><a href="logging.html#logging">Logging</a></li>
+  <ul>
+    <li><a href="logging.html#debug">debug</a></li>
+    <li><a href="logging.html#sql">sql</a></li>
+    <li><a href="logging.html#slowqueries">slowqueries</a></li>
+    <li><a href="logging.html#stalecursors">stalecursors</a></li>
+  </ul>
+
+  <li><a href="notifications.html#notifications">Notifications</a></li>
+  <ul>
+    <li><a href="notifications.html#events">events</a></li>
+  </ul>
+
+  <li><a href="sessionqueries.html#sessionqueries">Session-Queries</a></li>
+  <li><a href="altconfigfile.html#altconfigfile">Alternative Configuration File Options</a></li>
+  <ul>
+    <li><a href="altconfigfile.html#directory">Configuration Directory</a></li>
+    <li><a href="altconfigfile.html#specifying">Specifying Configuration Files</a></li>
+    <li><a href="altconfigfile.html#remote">Remote Configuration Files</a></li>
+    <li><a href="altconfigfile.html#linkfiles">Link Files</a></li>
+  </ul>
+
+  <li><a href="advanced.html#advanced">Advanced Configuration</a></li>
+</ul>
+
+<hr/>
+
+<p><a href="quickstart.html">Quick Start</a> <a href="quickstart.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,406 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="triggers.html">Triggers</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="notifications.html">Notifications</a> <a href="notifications.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="logging"/><h1>Logging</h1>
+
+<p>Logging enables the SQL Relay server programs to log various bits of information as they run.</p>
+
+<p>Logging is implemented by loadable modules.  The <i>loggers</i> section of the configuration file indicates which modules to load and what parameters to use when executing them.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">stdout</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <i>module</i> attribute specifies which module to load.</p>
+
+<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
+
+<p>Different modules may have different parameters.  In this example, stdout="yes" tells the module to log debug info to standard output.</p>
+
+<p>All logger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All logger modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<p>Logger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
+
+<p>At startup, the SQL Relay server processes create instances of the specified logger modules and initialize them.  As events occur, the server passes the event, log level, and optionally, a string of information about the event to each module, in the order that they were specified in the config file.  If a module is listening for that event, at that log level, then it logs information about the event to a log file.</p>
+
+<p>Currently, the following logger modules are available in the standard SQL Relay distribution:</p>
+
+<ul>
+  <li><b>debug</b></li>
+  <li><b>sql</b></li>
+  <li><b>slowqueries</b></li>
+  <li><b>stalecursors</b></li>
+</ul>
+
+<p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>. <a target="_blank" href="http://sqlrelay.sourceforge.net/images/us.png"><img src="http://sqlrelay.sourceforge.net/images/us.png"/></a> <a target="_blank" href="http://sqlrelay.sourceforge.net/images/br.png"><img src="http://sqlrelay.sourceforge.net/images/br.png"/></a></p>
+
+<br/><a name="debug"/><h3>debug</h3>
+
+<p>The <b>debug</b> module enables logging of information about the internal operation of the SQL Relay server.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">stdout</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>This module takes four attributes: <b>stdout</b>, <b>stderr</b>, <b>file</b>, and <b>perms</b>.</p>
+
+<p>If <b>stdout</b> is set to "yes" then the module will log to standard output.</p>
+
+<p>If <b>stderr</b> is set to "yes" then the module will log to standard error.</p>
+
+<p>If <b>file</b> is set to "yes" (or not set to "no" and neither of <b>stdout</b> nor <b>stderr</b> are set to "yes") then the module will log to files in the "debug directory", usually /usr/local/firstworks/var/log/sqlrelay/debug, /usr/local/firstworks/var/sqlrelay/debug, or /var/log/sqlrelay/debug.  It creates files named sqlr-listener."pid" and sqlr-connection."pid" where "pid" is replaced with the process id of the process that is being logged.  As new processes are forked, new files are created with debug information about those processes.</p>
+
+<p>The <b>perms</b> attribute may be set to any ls -l style permissions string, and will set the permissions of the debug files, if <b>file</b> is also set to "yes".  The default is "rw-------" which translates to read/write for owner only.</p>
+
+<p>The <b>stdout</b>, <b>stderr</b>, and <b>file</b> parameters are not mutually exclusive.  Any combination of them may be set to "yes".</p>
+
+<p>Note, that including a logger tag for the debug module doesn't enable debugging, by itself.  Rather, it just defines the destination of any debug that is otherwise enabled.  To enable debugging of a particular module or component, you must include debug="yes" attributes in other tags.</p>
+
+<p>For example...</p>
+
+<p>To enable debugging of all components of SQL Relay, include debug="yes" in the instance tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ... <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of the sqlr-listener process, include debug="yes" in the listeners tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners</font></b> <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+			...
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of a front-end protocol, include debug="yes" in an individual listener tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> ... <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+			...
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of the sqlr-connection process, include debug="yes" in the connections tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;connections</font></b> <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+			...
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To enable debugging of an individual module, include debug="yes" in the tag for an individual module.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font> ... <font color="#009900">debug</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>And so on.</p>
+
+<p>Actually, it's not even explicitly necessary to include a logger tag for the debug module if you just want to log debug output.  If a debug="yes" attribute is included in any valid location in the config file, then the debug module will be implicitly loaded, with both the stdout="yes" and file="yes" options enabled.</p>
+
+<p>Debugging to standard output is handy in a highly constrained dev or QA environemnt, but the SQL Relay server processes normally run as daemons, and a daemonized process's standard output typically isn't going anywhere an admin can see it.  The implicit debug module's file="yes" option covers that case, writing debug output to files in the debug directory as described above.  If you need to debug an environment with multiple, simultaneous client sessions, standard output can also become confusing, since debug from multiple processes all gets sent there, interleved - the files in the debug directory, one per process, avoid that too.  If you'd rather configure the debug module explicitly, for example to turn standard output off and log only to files, use the file="yes" option directly:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">file</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<br/><br/><a name="sql"/><h3>sql</h3>
+
+<p>The <b>sql</b> module logs all queries to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sql"</font> <font color="#009900">sync</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">queryevent</font><font color="#990000">=</font><font color="#FF0000">"received"</font> <font color="#009900">logpidchange</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>This module takes four attributes: <b>sync</b>, <b>queryevent</b>, <b>logerrors</b>, and <b>logpidchange</b>.</p>
+
+<p>If <b>sync</b> is set to "yes" then data will be written to the log synchronously, that is, data will be written to the log immediately and completely after each query has been executed.  This degrades performance, sometimes significantly, but makes it easier to monitor the log.  If <b>sync</b> is set to "no" (the default) then data will be written to the log asynchronously, that is, data may not be written to the log immediately or completely after each query has been executed.  This improves performance, sometimes significantly, but makes it it more difficult to monitor the log, and may require an sqlr-stop to be executed for the final bit of data to be written to the log.</p>
+
+<p>The <b>queryevent</b> parameter may be set to <b>received</b>, <b>prepared</b>, or <b>executed</b>.  The behavior of each is summarized as follows:</p>
+
+<ul>
+  <li><b>received</b> - Each query is logged as soon as it is received by SQL Relay.  All queries are logged.  No errors can be logged.</li>
+  <li><b>prepared</b> - Each query is logged after it has been prepared.  Queries filtered out by a filter module are not logged.  If an error occurs during preparation, then the error may be logged.</li>
+  <li><b>executed</b> - The default.  Each query is logged after it has been executed.  Queries filtered out by a filter module or that failed to prepare are not logged.  Queries may be logged multiple times if they are prepared once and executed over and over.  If an error occurs during exceution, then the error may be logged.</li>
+  <li><b>logerrors</b> - In addition to the query, log prepare/execute errors, if they occur.</li>
+  <li><b>logpidchange</b> - Log process id changes.</li>
+</ul>
+
+<p>The general format is:</p>
+
+<blockquote>
+  <pre>select 1 from dual;
+select 2 from dual;
+select 3 from dual;
+</pre>
+
+</blockquote>
+<p>Errors are logged like:</p>
+
+<blockquote>
+  <pre>-- ERROR: ORA-00942: table or view does not exist
+</pre>
+
+</blockquote>
+<p>Process ID changes are logged like:</p>
+
+<blockquote>
+  <pre>-- pid changed to 12423
+</pre>
+
+</blockquote>
+<br/><br/><a name="slowqueries"/><h3>slowqueries</h3>
+
+<p>The <b>slowqueries</b> module logs queries that take longer to run than a specified threshold to log files in the "log directory", usually /usr/local/firstworks/var/log/sqlrelay, /usr/local/firstworks/var/sqlrelay/log, or /var/log/sqlrelay.  It creates files named sqlr-connection-"id"-querylog."pid" for each sqlr-connection process where "id" is replaced with the id of the instance from the configuration file and "pid" is replaced with the process id.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"slowqueries"</font> <font color="#009900">sec</font><font color="#990000">=</font><font color="#FF0000">"10"</font> <font color="#009900">usec</font><font color="#990000">=</font><font color="#FF0000">"0"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>This module takes three attributes: <b>sec</b>, <b>usec</b>, and <b>sync</b>.</p>
+
+<p>Queries that take longer than <b>sec</b> seconds and <b>usec</b> microseconds will be logged.  Both attributes default to 0 and omitting them causes all queries to be logged.</p>
+
+<p>If <b>sync</b> is set to "yes" then data will be written to the log synchronously, that is, data will be written to the log immediately and completely after each query has been executed.  This degrades performance, sometimes significantly, but makes it easier to monitor the log.  If <b>sync</b> is set to "no" (the default) then data will be written to the log asynchronously, that is, data may not be written to the log immediately or completely after each query has been executed.  This improves performance, sometimes significantly, but makes it it more difficult to monitor the log, and may require an sqlr-stop to be executed for the final bit of data to be written to the log.</p>
+
+<p>The general format is:</p>
+
+<blockquote>
+  <pre>Mon 2014 Apr  6  15:58:17 :
+select 1 from dual
+time: 0.000001
+</pre>
+
+</blockquote>
+<p>Sample log: <a href="../sqlr-connection-oracletest-querylog.2899.html">sqlr-connection-oracletest-querylog.2899</a></p>
+
+<br/><a name="stalecursors"/><h3>stalecursors</h3>
+
+<p>It is not uncommon for a long-running application to open a cursor, and then never close it again.  So-called "cursor leaks" eventually lead to <i>No server-side cursors were available to process the query</i> (or similar) errors, and the root cause can be difficult to track down, especially if a lower-level database abstraction layer does the opening and closing of the cursors.</p>
+
+<p>The <b>stalecursors</b> module logs active cursors, enabling an administrator to see if any cursors have been open for a long time, and if so, what the last query the cursor ran was.</p>
+
+<p>The module works by opening a connection to another instance of SQL Relay (the "log instance"), where it creates a table named "stalecursors" and logs to that table.</p>
+
+<p>In the following example, the "stalecursors" instance (the log instance) provides access to a database where the stale cursors can be logged, and the "example" instance (the app instance) logs cursor activity there.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"stalecursors"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/stalecursors.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">connections</font><font color="#990000">=</font><font color="#FF0000">"5"</font> <font color="#009900">maxconnections</font><font color="#990000">=</font><font color="#FF0000">"10"</font> <font color="#009900">translatebindvariables</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=testuser;password=testpassword;db=testdb;host=mysql;foundrows=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"stalecursors"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/stalecursors.socket"</font> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"stalecursorsuser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"stalecursorspassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In the log instance, note the following:</p>
+
+<ul>
+  <li>It is configured to listen on a unix socket, but not configured to listen on a port.  This is because the app instance is running on the same machine.  This is not a requirement though.  The log instance could be configured to listen on a port as well, and serve app instances running on other machines.</li>
+  <li>translatebindvariable="yes" is set.  The queries that the module generates to insert, update, and delete from the stalecursors table use oracle-style (colon-delimited) bind variables.  If the log database is something other than oracle, then the log instance must translate the bind variables.</li>
+  <li>connections="5" and maxconnections="10" are set.  By default, SQL Relay opens 5 connections to the database.  The app instance uses this default configuration.  If the log instance also only opens 5 connections, then all 5 will be consumed by the app instance, and it won't be possible to access and examine the log from a client program.  So, we'll allow the log instance to scale up accordingly.</li>
+</ul>
+
+<br/><p>The module takes 5 attributes: <b>host</b>, <b>port</b>, <b>socket</b>, <b>user</b>, and <b>password</b>.  These attributes are used to access the other instance of SQL Relay that will be used for logging.</p>
+
+<p>When a cursor is opened, the module adds a new row to the log.  Each time a query is executed, the row is updated.  When the cursor is closed, the module removes the row.</p>
+
+<p>If the cursor is never closed, then the row is never removed, even if the application exits.  The row will also persist across sqlr-starts and sqlr-stops of the app instance and log instances.  As such, it will eventually be necessary to manually clear to the table, or at least manually delete rows from it, analogous to deleting log files.</p>
+
+<p>To view currently active (and possibly stale) cursors, you would access the log instance like:</p>
+
+<blockquote>
+  <pre>sqlrsh -socket /tmp/stalecursors.socket -user stalecursorsuser -password stalecursorspassword
+</pre>
+
+</blockquote>
+<p>And then view the log like:</p>
+
+<blockquote>
+  <pre>select * from stalecursors
+</pre>
+
+</blockquote>
+<p>A typical result set would be something like:</p>
+
+<blockquote>
+  <pre>instance connection_id connection_pid cursor_id most_recent_query       most_recent_query_timestamp
+===================================================================================================
+example  example-0     27155          0         select * from bigtable  2019-10-24 20:34:06        
+example  example-0     27158          0         select * from mytable   2019-10-24 20:34:26        
+example  example-0     27162          0         select * from yourtable 2019-10-24 20:34:41        
+example  example-0     27166          0         select * from thistable 2019-10-24 20:34:53        
+example  example-0     27168          0         select * from thattable 2019-10-24 20:35:03        
+</pre>
+
+</blockquote>
+<p>Multiple app instances may log to the same log instance.  To view cursor activity for a particular instance, just filter on the "instance" column.</p>
+
+<blockquote>
+  <pre>select * from stalecursors where instance='example'
+</pre>
+
+</blockquote>
+<p>Note that each connection of an app instance will consume 1 connection of the log instance, so be sure to configure the log instance to start enough connections to the database.  Eg. if you have 2 app instances, each configured with connections="5", then the log instance should be configured with connections="10" and maxconnections set to something larger than 10 to allow for clients to connect and examine the logs.</p>
+
+<hr/>
+
+<p><a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="triggers.html">Triggers</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="notifications.html">Notifications</a> <a href="notifications.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

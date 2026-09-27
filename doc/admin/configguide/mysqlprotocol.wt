@@ -1,0 +1,477 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
+
+[=#mysqlprotocol]
+= !MySQL Protocol =
+
+SQL Relay can be configured to speak the native !MySQL protocol, enabling client programs for !MySQL/MariaDB (eg. the mysql command line program and !MySQL Workbench) to access SQL Relay directly.
+
+If an instance speaks the !MySQL client-server protocol, then any client that wishes to use it must also speak the !MySQL client-server protocol.  This means that most software written using the !MySQL API, or written using a database abstraction layer which loads a driver for !MySQL can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and sqlplus command line programs, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
+
+[=#mysqlconfiguration]
+== Basic Configuration ==
+
+To enable SQL Relay to speak the !MySQL protocol, add the appropriate listener tag:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The connection tag instructs the instance to log in to the //mysqldb// database on host //mysqlhost// as user //mysqluser// with password //mysqlpassword//.
+* The listener tag instructs SQL Relay to load the //mysql// protocol module, and listen on port 3307.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+mysql --host=127.0.0.1 --port=3307 --user=sqlruser --password=sqlrpassword
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' 127.0.0.1 is used instead of "localhost" because "localhost" instructs the mysql client to use a predefined unix socket.)
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. ) 
+}}}
+
+By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{#!code
+mysql --host=sqlrserver --port=3307 --user=sqlruser --password=sqlrpassword
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+Since this instance speaks the !MySQL client-server protocol, any client that wishes to use it must also speak the !MySQL client-server protocol.  This means that most software written using the !MySQL API, or written using a database abstraction layer which loads a driver for !MySQL can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and sqlplus command line programs, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
+
+[=#mysqllistener]
+== Listener Options ==
+
+In the example above, the instance is configured to listen on port 3307.  The !MySQL/MariaDB database typically listens on port 3306, so port 3307 was chosen to avoid collisions with the database itself.
+
+However, if SQL Relay is run on a different server than the database, then it can be configured to run on port 3306.  This is desirable when using SQL Relay as a transparent proxy.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedbport.conf@
+}}}
+}}}
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The !MySQL protocol module also has a //debug// attribute.  If debug="yes" is configured in the individual listener tag (not in the listeners tag), then debugging information about the protocol is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+[=#mysqlhandshake]
+== Handshake Protocol Version ==
+
+Before a connecting client sends anything, the !MySQL protocol module speaks first: it sends a handshake packet announcing which version of the wire protocol it supports.  Clients read that packet to decide how to format everything that follows.  Modern clients expect the modern handshake packet, known as protocol version 10.  Only a client too old to have ever supported !MySQL 4.1's authentication still expects the legacy handshake packet, protocol version 9.
+
+The //handshake// attribute on the listener tag chooses which one the module sends.  Setting it to anything other than 10 sends the legacy protocol version 9 handshake instead; 9 is the conventional value to use.  Leaving it out, or setting it to 0 or to something that isn't a number, is the same as setting it to 10.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfehandshake.conf@
+}}}
+}}}
+
+There is normally no reason to set this.  It exists only for a client old enough to require the legacy handshake, and switching it on for a modern client doesn't degrade gracefully - the client simply fails to understand the packet.
+
+[=#mysqlclientprotocol]
+== Client Protocol Flags ==
+
+Separately from the handshake packet version, the handshake also advertises a set of capability flags that tell the client what the server can do.  Two of those flags - CLIENT_PROTOCOL_41 (the 4.1-and-later wire format) and CLIENT_PLUGIN_AUTH (pluggable authentication methods) - are controlled by the //clientprotocol// attribute on the listener tag.
+
+Setting //clientprotocol// to "41" (the default) advertises both flags, which is what every currently supported !MySQL/MariaDB client expects.  Setting it to any other explicit value clears both flags, for a client too old to speak the 4.1 protocol at all.  Leaving it unset, or setting it to 0 or to something that isn't a number, is the same as setting it to 41.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeclientprotocol.conf@
+}}}
+}}}
+
+As with //handshake//, there is normally no reason to set this.  It exists only for a client old enough to predate the 4.1 protocol.  It has no effect when //handshake// is also set to send the legacy protocol 9 packet, which carries no capability flags at all.
+
+[=#mysqlauth]
+== Authentication/Encryption Options ==
+
+When using the !MySQL protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
+
+[=#mysqlconnectstringsauth]
+== Connect Strings Auth ==
+
+The default authentication option is //connect strings// auth.
+
+When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
+
+In the following example, SQL Relay is configured to access the database using mysqlsuer/mysqlpassword credentials.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedbport.conf@
+}}}
+}}}
+
+In this case, clients would also use mysqluser/mysqlpassword credentials to access SQL Relay.
+
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //connect strings// auth module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlconnectstrings.conf@
+}}}
+}}}
+
+[=#mysqluserlistauth]
+== User List Auth ==
+
+Another popular authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeuserlistmultiple.conf@
+}}}
+}}}
+
+When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
+
+[=#mysqldbauth]
+== Database Auth ==
+
+Another popular authentication option is //database// auth.
+
+The //mysql_database// module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.
+
+SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.
+
+To enable database auth, configure SQL Relay to load the //mysql_database// auth module as follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedatabase.conf@
+}}}
+}}}
+
+In this configuration, SQL Relay initially logs in to the database as //mysqluser/mysqlpassword// as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.
+
+For example, if a client initially connects using:
+
+{{{#!blockquote
+{{{#!code
+mysql --host=127.0.0.1 --user=mysqluser --password=mysqlpassword --default-auth=mysql_clear_password
+}}}
+}}}
+
+...then SQL Relay doesn't need to log out and log back in.
+
+But if the client then tries to connect using:
+
+{{{#!blockquote
+{{{#!code
+mysql --host=127.0.0.1 --user=anotheruser --password=anotherpassword --default-auth=mysql_clear_password
+}}}
+}}}
+
+..then SQL Relay does need to log out and log back in.
+
+A subsequent connection using //anotheruser/anotherpassword// won't require a re-login, but a subsequent connection using any other user/password will.
+
+Though this module is convenient, it has two disadvantages.
+
+* Logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.
+* The mysql_database module requires that the !MySQL/MariaDB client send it an unencrypted password.  In the examples above, the --default-auth=mysql_clear_password option is used to send an unencrypted password from the mysql command line program.
+
+The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  Note that some !MySQL and !MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default !CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of !MySQL/MariaDB would have to be installed or built from source.
+
+[=#mysqltls]
+== TLS/SSL Encryption and Authentication ==
+
+SQL Relay supports TLS/SSL encryption and authentication between the !MySQL/MariaDB client and SQL Relay Server.
+
+ [[Image(../../images/secure-tls-unsecured.png,nolink)]]
+
+When TLS/SSL encryption and authentication is used:
+
+* All communications between the !MySQL/MariaDB client and SQL Relay server are encrypted.
+* !MySQL/MariaDB clients and servers may optionally validate each other's certificates and identities.
+
+When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.
+
+{{{#!blockquote
+( '''NOTE:''' Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+}}}
+
+
+== Encryption Only ==
+
+The following configuration enables TLS/SSL encryption for an instance of SQL Relay:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqltls.conf@
+}}}
+}}}
+
+* The '''tls''' attribute enables (or disables) TLS/SSL encryption.
+* The '''tlscert''' attribute specifies the TLS/SSL certificate chain to use.
+ * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [../tlscert.html The tlscert Parameter] for details.)
+ * If the file specified by '''tlscert''' doesn't already include the private key, the '''tlskey''' attribute may be used to specify a separate file containing it.
+* User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.
+
+To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:
+
+{{{#!blockquote
+{{{
+sqlr-start -id example
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' When installed from packages, SQL Relay may have to be started and stopped as root.)
+}}}
+
+The instance may be accessed as follows:
+
+{{{#!blockquote
+{{{
+mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl
+}}}
+}}}
+
+(The "--ssl" option enables SSL/TLS encryption.  As !MySQL predates TLS, and originally used SSL, it's various SSL/TLS-related options all still begin with "--ssl".)
+
+This establishes a TLS/SSL-encrypted session but does not validate the server's certificate or identity.  The session will only continue if the server's certificate is is well-formed and hasn't expired, '''but the client is still vulnerable to various attacks'''.
+
+== Certificate Validation ==
+
+For a more secure session, the client may validate that the server's certificate was signed by a trusted certificate authority, known to the system, as follows:
+
+{{{#!blockquote
+{{{
+mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-verify-server-cert
+}}}
+}}}
+
+(The --ssl option is not necessary in this invocation, as the --ssl-verify-server-cert option implies it.)
+
+If the server's certificate is self-signed, then the certificate authority won't be known to the system, but it's certificate may be specified by the tlsca parameter as follows:
+
+{{{#!blockquote
+{{{
+mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-verify-server-cert --ssl-ca=/usr/local/firstworks/etc/myca.pem
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlsca.html The tlsca Parameter] for details.)
+
+This establishes a TLS/SSL-encrypted session with the server and validates the server's certificate, but does not validate the server's identity.  The session will only continue if the server's certificate is valid, '''but the client is still vulnerable to various attacks'''.
+
+Unfortunately, !MySQL/MariaDB doesn't currently support host or domain name validation, so at present, the server's certificate can be validated, but the server's identity cannot.
+
+== Mutual Authentication ==
+
+For an even more secure session, the server may also request a certificate from the client and validate the certificate.
+
+The following configuration enables these checks for an instance of SQL Relay:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqltls-validate.conf@
+}}}
+}}}
+
+* The '''tlsvalidate''' attribute enables (or disables) validation that client's certificate was signed by a trusted certificate authority, known to the system, or as provided by the tlsca attribute.
+* The '''tlsca''' attribute specifies a certificate authority to include when validating the client's certificate.  This is useful when validating self-signed certificates.
+ * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [../tlsca.html The tlsca Parameter] for details.)
+
+To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:
+
+{{{#!blockquote
+{{{
+mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-cert=/usr/local/firstworks/etc/sqlrclient.pem
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlscert.html The tlscert Parameter] for details.)
+
+In a more likely use case though, mutual authentication occurs - the client validates the server's certificate and the server validates the client's certificate, as follows:
+
+{{{#!blockquote
+{{{
+mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-cert=/usr/local/firstworks/etc/sqlrclient.pem --ssl-verify-server-cert --ssl-ca=/usr/local/firstworks/etc/myca.pem
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlscert.html The tlscert Parameter] and [../tlsca.html The tlsca Parameter] for details.)
+
+In this example, the client provides a certificate for the server to validate, validates the host's certificate against the provided certificate authority, and validates the host's identity against the provided host name.
+
+SQL Relay can validate the client's certificate, and reject clients which present invalid certificates, but cannot yet authenticate the user via the Subject Alternative Name or Common Name presented in the certificate in lieu of a !MySQL/MariaDB username.  As such, a username and password must still be supplied for authentication in this configuration.
+
+== Performance Considerations ==
+
+While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:
+
+* When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.
+* Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.
+* Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.
+
+Any kind of full session encryption should be used with caution in performance-sensitive applications.
+
+[=#mysqlforeignbackend]
+== Foreign Backend ==
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the !MySQL/MariaDB database it was originally written to use.
+
+This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeoracle.conf@
+}}}
+}}}
+
+In this example, a !MySQL front-end provides !MySQL/MariaDB applications access to an Oracle back-end database.
+
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
+
+* In the instance tag:
+ * set translatebindvariables="yes"
+ * set the isolationlevel attribute
+ * set transactionmodel="explicit"
+* In the string attribute of the connection tag:
+ * set autocommit=yes or autocommit=no
+ * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
+ * set the identity parameter to override the database type
+ * set ignorespace=yes
+ * set the overrideschema parameter
+ * set the typemangling and/or tablemangling parameters
+* use [datatranslation.html#querytranslation Query Translation] modules
+* use [datatranslation.html#resultsettranslation Result Set Translation] modules
+* use [datatranslation.html#errortranslation Error Translation] modules
+* use [sessionqueries.html#sessionqueries Session Queries]
+* use one of the Special-Purpose Options described below
+
+In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
+
+[=#mysqlspecialpurpose]
+== Special-Purpose Options ==
+
+== Mapping zero-scale DECIMAL to BIGINT ==
+
+When targeting a foreign back-end...
+
+Some back-end databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.
+
+By default, the !MySQL protocol module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  Buy you might want to map them to the !MySQL BIGINT type instead.
+
+The //zeroscaledecimaltobigint// option instructs the module to do this mapping.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfezeroscaledecimal.conf@
+}}}
+}}}
+
+== Mapping DATE to DATETIME ==
+
+When targeting a foreign back-end...
+
+Some back-end databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.
+
+By default, the !MySQL protocol module maps the DATE type to the !MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the !MySQL DATETIME type.
+
+The //datetodatetime// option instructs the module to do this mapping.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedatetodatetime.conf@
+}}}
+}}}
+
+== Supporting Older !MariaDB JDBC Drivers ==
+
+Older !MariaDB JDBC drivers had a bug related to fetching the server's capability flags, and would reliably throw a !NullPointerException when attempting to connect.
+
+(I'm not sure exactly what versions this bug is present in.  It's present in version 1.4.6, but fixed by 2.1.1.)
+
+The //oldmariadbjdbcservercapabilitieshack// option instructs the module to return server capability flags that don't upset the old driver.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeoldmariadbjdbc.conf@
+}}}
+}}}
+
+[=#mysqllimitations]
+== Limitations ==
+
+The implementation of the !MySQL protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:
+
+* Only LATIN1_SWEDISH_CI and UTF8_GENERAL_CI character sets are supported.
+* Only the mysql_native_password and mysql_clear_password authentication methods are supported.  Notably, mysql_old_password and authentication_windows_client are not supported.
+* Multi-statement queries are not supported.
+* mysql_change_user() is not supported.
+* mysql_send_long_data() is not supported.
+* mysql_info() will always returns NULL when used with SQL Relay.
+* MYSQL_FIELD.org_name/org_name_length and MYSQL_FIELD.org_table/org_table_length are not supported.
+* LOAD DATA LOCAL INFILE is not supported - the module never advertises CLIENT_LOCAL_FILES, so a client can't ask it to read a local file into a table.  Server-side LOAD DATA INFILE, reading a file already on the database server, works as an ordinary query, but its reply doesn't include the usual "Records: x Deleted: x Skipped: x Warnings: x" summary.
+* Kerberos authentication and encryption are not supported.
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

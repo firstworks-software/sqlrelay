@@ -115,7 +115,7 @@ The following connect string variables control attributes of the connection:
 
 In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:
 
-See the [../admin/configguide.html#krb SQL Relay Configuration Guide] for more information about Kerberos and Active Directory configurations.  In particular, User ID and Password are not typically used when using Kerberos/AD.
+See the [../admin/configguide/sqlrclientprotocol.html#sqlrclientkrb SQL Relay Configuration Guide] for more information about Kerberos and Active Directory configurations.  In particular, User ID and Password are not typically used when using Kerberos/AD.
 
 * '''Krb''' - Set to '''yes''' to enable Kerberos/AD encryption/authentication or '''no''' to disable it.
 * '''Krbservice''' - Specifies the Kerberos service name of the SQL Relay server.  If omitted or left empty then the service name "sqlrelay" will be used. "sqlrelay" is the default service name of the SQL Relay server.  Note that on Windows platforms the service name must be fully qualified, including the host and realm name.  For example: "sqlrelay/sqlrserver.firstworks.com@AD.FIRSTWORKS.COM".
@@ -124,7 +124,7 @@ See the [../admin/configguide.html#krb SQL Relay Configuration Guide] for more i
 
 The following connect string variables can be used to establish TLS/SSL encryption and authentication with the server:
 
-See the [../admin/configguide.html#tls SQL Relay Configuration Guide] for more information about TLS/SSL configurations.
+See the [../admin/configguide/sqlrclientprotocol.html#sqlrclienttls SQL Relay Configuration Guide] for more information about TLS/SSL configurations.
 
 * '''Tls''' - Set to '''yes''' to enable TLS/SSL encryption/authentication or '''no''' to disable it.
 * '''Tlsversion''' - Specifies the TLS/SSL protocol version that the client will attempt to use.  Valid values include SSL2, SSL3, TLS1, TLS1.1, TLS1.2 or any more recent version of TLS, as supported by and enabled in the underlying TLS/SSL library.  If omittted or left empty then the highest supported version will be negotiated.

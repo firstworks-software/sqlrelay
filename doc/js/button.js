@@ -12,7 +12,9 @@ function setActive(btn,img) {
 }
 
 function setButton() {
-	if (endsWith(document.location.pathname,"index.html") ||
+	if (contains(document.location.pathname,"/admin/configguide/")) {
+		setActive("documentation","../../images/lightbluedenim.png");
+	} else if (endsWith(document.location.pathname,"index.html") ||
 			endsWith(document.location.pathname,"/")) {
 		setActive("about","images/lightbluedenim.png");
 	} else if (contains(document.location.pathname,"/features/")) {

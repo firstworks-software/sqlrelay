@@ -924,6 +924,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - documented the router pseudo-backend's connect string, and its
   unimplemented metadata/catalog calls, in the query and session
   routing guide section and the configuration reference
+- split the configuration guide into multiple pages under
+  doc/admin/configguide/, fixing the programming api guides' broken
+  kerberos and tls links to it in the process
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

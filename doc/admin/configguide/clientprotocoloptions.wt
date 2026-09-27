@@ -1,0 +1,39 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotocol.html SQLRClient Protocol] [[Image(../../images/navnext.png,link=sqlrclientprotocol.html,vertical-align=middle)]]
+
+[=#protocoloptions]
+= Client Protocol Options =
+
+Whether written using the native SQL Relay API, or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using //SQLRClient//, the native SQL Relay client-server protocol.
+
+ [[Image(../../images/sqlrelaynativeprotocol.png,nolink)]]
+
+However, SQL Relay also supports the !MySQL, !PostgreSQL, TDS (Microsoft SQL Server and SAP/Sybase), Oracle, Firebird, and Teradata client-server protocols.  When SQL Relay is configured to use one of these, it allows !MySQL/MariaDB, !PostgreSQL, Microsoft SQL Server/SAP/Sybase, Oracle, Firebird, and Teradata apps to communicate directly with SQL Relay without modification, without having to install any software on the client.
+
+ [[Image(../../images/sqlrelaymysqlprotocol.png,nolink)]]
+
+ [[Image(../../images/sqlrelaypostgresqlprotocol.png,nolink)]]
+
+In these configurations, SQL Relay becomes a transparent proxy.  !MySQL/MariaDB or !PostgreSQL apps aimed at SQL Relay still think that they're talking to a !MySQL/MariaDB or !PostgreSQL database, but in fact, are talking to SQL Relay.
+
+* [sqlrclientprotocol.html SQLRClient Protocol]
+* [mysqlprotocol.html MySQL Protocol]
+* [postgresqlprotocol.html PostgreSQL Protocol]
+* [tdsprotocol.html TDS Protocol]
+* [oracleprotocol.html Oracle Protocol]
+* [firebirdprotocol.html Firebird Protocol]
+* [teradataprotocol.html Teradata Protocol]
+* [multipleprotocols.html Multiple Protocols]
+
+----
+
+[[Image(../../images/navprev.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotocol.html SQLRClient Protocol] [[Image(../../images/navnext.png,link=sqlrclientprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

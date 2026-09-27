@@ -1,0 +1,235 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sessionqueries.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sessionqueries.html">Session-Queries</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="advanced.html">Advanced Configuration</a> <a href="advanced.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="altconfigfile"/><h1>Alternative Configuration File Options</h1>
+
+<a name="directory"/><h2>Configuration Directory</h2>
+
+<p>While any number of SQL Relay instances can be defined in a single configuration file, it might be more convenient to split configurations up into multiple files located in a configuration directory.</p>
+
+<p>The default SQL Relay configuration directory depends on the platform and on how you installed SQL Relay.</p>
+
+<ul>
+  <li>Unix and Linux</li>
+  <ul>
+    <li>Built from source - <b>/usr/local/firstworks/etc/sqlrelay.conf.d</b> (unless you specified a non-standard --prefix or --sysconfdir during the build)</li>
+    <li>RPM package - <b>/etc/sqlrelay.conf.d</b></li>
+    <li>FreeBSD package - <b>/usr/local/etc/sqlrelay.conf.d</b></li>
+    <li>NetBSD package - <b>/usr/pkg/etc/sqlrelay.conf.d</b></li>
+    <li>OpenBSD package - <b>/usr/local/etc/sqlrelay.conf.d</b></li>
+  </ul>
+
+  <li>Windows</li>
+  <ul>
+    <li>Built from source - <b>C:\Program Files\Firstworks\etc\sqlrelay.conf.d</b></li>
+    <li>Windows Installer package - <b>C:\Program Files\Firstworks\etc\sqlrelay.conf.d</b> (unless you specified a non-standard installation folder)</li>
+  </ul>
+
+</ul>
+
+<p>Additional configuration files may be created under this directory.  These files must follow the same format as the main configuration file.  Only files whose name ends in <b>.conf</b> are read from the directory; anything else, such as a backup copy left with a different suffix, is skipped.</p>
+
+<p>For example, if you wanted to split up oracle, sap and db2 configurations into 3 separate files, you could create:</p>
+
+<p><b>sqlrelay.conf.d/oracle.conf</b></p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"oracleexample"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9000"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p><b>sqlrelay.conf.d/sap.conf</b></p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"sapexample"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sap"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9001"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"sybase=/opt/sap;lang=en_US;server=SAPSERVER;user=sapuser;password=sappassword;db=sapdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p><b>sqlrelay.conf.d/db2.conf</b></p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"db2example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"db2"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9002"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"db=exampledb;user=db2inst1;password=db2inst1pass;lang=C;connecttimeout=0"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<br/><br/><a name="specifying"/><h2>Specifying Configuration Files</h2>
+
+<p>It is also possible to specify a particular configuration file or directory by passing the sqlr-start program a -config option.</p>
+
+<p>For example:</p>
+
+<blockquote>
+  <pre>sqlr-start -id oracleexample -config /home/myuser/sqlrelay.conf
+sqlr-start -id oracleexample -config file:///home/myuser/sqlrelay.conf
+sqlr-start -id oracleexample -config dir:///home/myuser/sqlrelay.conf.d
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>(the file:// prefix is optional when specifying a file, but the dir:// prefix must be included when specifying a directory)</p>
+
+<p>The -config option may also be used to specify a comma-separated list of files or directories.</p>
+
+<p>For example:</p>
+
+<blockquote>
+  <pre>sqlr-start -id oracleexample -config /home/myuser/sqlrelay-1.conf,/home/myuser/sqlrelay-2.conf
+sqlr-start -id oracleexample -config /home/myuser/sqlrelay-1.conf,/home/myuser/sqlrelay-2.conf,dir:///home/myuser/sqlrelay.conf.d
+sqlr-start -id oracleexample -config /home/myuser/sqlrelay-1.conf,/home/myuser/sqlrelay-2.conf,dir:///home/myuser/sqlrelay-1.conf.d,dir:///home/myuser/sqlrelay-2.conf.d
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>Files and directories are processed in the order that they are specified.</p>
+
+<br/><a name="remote"/><h2>Remote Configuration Files</h2>
+
+<p>In addition to local configuration files, the -config option may also be used to specify configuration files located on a remote host, accessible via http.</p>
+
+<p>Actually, if the Rudiments library upon which SQL Relay depends was compiled with support for libcurl, then configuration files may also be remotely accessible over other protocols supported by libcurl, such as https, ftp, scp, sftp, smb, etc.</p>
+
+<p>For example:</p>
+
+<blockquote>
+  <pre>sqlr-start -id oracleexample -config http://configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+sqlr-start -id oracleexample -config http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+sqlr-start -id oracleexample -config http://[/usr/local/firstworks/etc/sqlruserpwd.txt]@configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+
+sqlr-start -id oracleexample -config https://configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+sqlr-start -id oracleexample -config https://myuser:mypassword@configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+sqlr-start -id oracleexample -config https://[/usr/local/firstworks/etc/sqlruserpwd.txt]@configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+
+sqlr-start -id oracleexample -config scp://myuser:mypassword@configserver.mydomain.com/usr/local/firstworks/etc/sqlrelay.conf
+sqlr-start -id oracleexample -config scp://[/usr/local/firstworks/etc/sqlruserpwd.txt]@configserver.mydomain.com/usr/local/firstworks/etc/sqlrelay.conf
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+<br/><br/>
+( <b>NOTE:</b> The https and scp examples only work if Rudiments was compiled with support for libcurl.)
+</blockquote>
+<p>In some of the examples above, a user and password are given in the url, separated by a colon, prior to the @ sign.  In other examples, in place of a literal user and password, a user-password file is specified in square brackets.  If a user-password file is used, then the file should contain a single line, consisting of colon-separated user and password.</p>
+
+<p>For example:</p>
+
+<blockquote>
+  <pre>myuser:mypassword
+</pre>
+
+</blockquote>
+<p>Password protection is recommended for remotely accessible configuration files as they may contain users and passwords for accessing the database and SQL Relay itself.</p>
+
+<p>Using user-password files is recommended over passing literal users and passwords.  The files can be protected with file permissions, they prevent the user and password from being stored in the script that starts SQL Relay, and they prevent the user and password from being displayed in a process listing.</p>
+
+<br/><a name="linkfiles"/><h2>Link Files</h2>
+
+<p>So far, the example configuration files have all been XML files, containing configurations for instances of SQL Relay.</p>
+
+<p>However, a configuration file can, alternatively, be a "link file", containing nothing but links to other configuration files.</p>
+
+<p>For example:</p>
+
+<blockquote>
+  <pre># oracle configuration
+http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/oracle.conf
+
+# sap/sybase configuration
+http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/sap.conf
+
+# db2 configuration
+http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/db2.conf
+</pre>
+
+</blockquote>
+<p>Lines starting with # are considered to be comments and blank lines are ignored, but every other line is interpreted as the location of a local configuration file, local configuration directory, or remote configuration file, as described in the previous sections.</p>
+
+<p>Each of these files or directories are processed in the order that they are specified.</p>
+
+<p>Link files can be used to centralize configuration.  For example, if you have several SQL Relay servers, rather than distributing configuration files across the servers, you could create an identical sqlrelay.conf file on each of them like:</p>
+
+<blockquote>
+  <pre>http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/sqlrelay.conf
+</pre>
+
+</blockquote>
+<p>And then, on configserver.mydomain.com, host an sqlrelay.conf file like:</p>
+
+<blockquote>
+  <pre>http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/oracle.conf
+http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/sap.conf
+http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/db2.conf
+</pre>
+
+</blockquote>
+<p>The files oracle.conf, sap.conf, and db2.conf could then be hosted by and maintained on that server as well.</p>
+
+<p>The links in these examples are all urls, but they could just as easily be links to local files and directories as well.  It is important to note though, that SQL Relay interprets all local file and directory locations relative to the local machine.  If a remotely hosted link file contains a reference to a local file or directory, then SQL Relay will look for that file on the local machine, not the remote machine.</p>
+
+<p>Similarly, urls are resolved using the DNS configuration of the local machine as well, not the DNS configuration of the remote machine.</p>
+
+<p>The urls in these examples all contain literal users and passwords.  User-password files can also be used as described in the section <a href="#remote">Remote Configuration Files</a>.  However, the user-password file must exist at the specified location on the local machine.</p>
+
+<p>As link files can be protected by file permissions, and the urls stored in them aren't exposed anywhere else, such as in a process listing, user-password files are not generally necessary when using link files.</p>
+
+<p>There is no limit to the depth of links.  A link file can reference another link file which references another, which references another, etc.  Too great a depth could lead to slow startup times though, especially when using remote configration files. This is especially significant when using <a href="basicconfiguration.html#dynamicscaling">Dynamic Scaling</a>, as the configuration must be loaded each time a new connection is spawned.  Care should also be taken to avoid loops.</p>
+
+<hr/>
+
+<p><a href="sessionqueries.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sessionqueries.html">Session-Queries</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="advanced.html">Advanced Configuration</a> <a href="advanced.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

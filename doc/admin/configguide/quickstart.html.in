@@ -1,0 +1,101 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="index.html">SQL Relay Configuration Guide</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="basicconfiguration.html">Basic Configuration</a> <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="quick"/><h1>Quick Start</h1>
+
+<p>In order to run, the SQL Relay server requires a configuration file.  However, When SQL Relay is first installed, no such configuration file exists.  You must create one in the appropriate location.  This location depends on the platform and on how you installed SQL Relay.</p>
+
+<ul>
+  <li>Unix and Linux</li>
+  <ul>
+    <li>Built from source - <b>/usr/local/firstworks/etc/sqlrelay.conf</b> (unless you specified a non-standard --prefix or --sysconfdir during the build)</li>
+    <li>RPM package - <b>/etc/sqlrelay.conf</b></li>
+    <li>FreeBSD package - <b>/usr/local/etc/sqlrelay.conf</b></li>
+    <li>NetBSD package - <b>/usr/pkg/etc/sqlrelay.conf</b></li>
+    <li>OpenBSD package - <b>/usr/local/etc/sqlrelay.conf</b></li>
+  </ul>
+
+  <li>Windows</li>
+  <ul>
+    <li>Built from source - <b>C:\Program Files\Firstworks\etc\sqlrelay.conf</b></li>
+    <li>Windows Installer package - <b>C:\Program Files\Firstworks\etc\sqlrelay.conf</b> (unless you specified a non-standard installation folder)</li>
+  </ul>
+
+</ul>
+
+<p>The most minimal sqlrelay.conf would be something like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>This configuration defines an instance of SQL Relay named <i>example</i> that opens and maintains a pool of 5 persistent connections to the <i>ora1</i> instance of an Oracle database using <i>scott</i><i>/tiger</i> credentials.</p>
+
+<p>The instance can be started using:</p>
+
+<blockquote>
+  <pre>sqlr-start -id example
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>and can be accessed from the local machine using:</p>
+
+<blockquote>
+  <pre>sqlrsh -host localhost -user scott -password tiger
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+</blockquote>
+<p>By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named <i>sqlrserver</i> then it can be accessed from another system using:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger
+</pre>
+
+</blockquote>
+<p>The instance can be stopped using:</p>
+
+<blockquote>
+  <pre>sqlr-stop -id example
+</pre>
+
+</blockquote>
+<p>All running instances of SQL Relay can be stopped using:</p>
+
+<blockquote>
+  <pre>sqlr-stop
+</pre>
+
+</blockquote>
+<p>(without the -id argument)</p>
+
+<hr/>
+
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="index.html">SQL Relay Configuration Guide</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="basicconfiguration.html">Basic Configuration</a> <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

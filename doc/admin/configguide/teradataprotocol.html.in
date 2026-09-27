@@ -1,0 +1,227 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotocol.html">Firebird Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="multipleprotocols.html">Multiple Protocols</a> <a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="teradataprotocol"/><h1>Teradata Protocol</h1>
+
+<p>SQL Relay can be configured to speak the native Teradata protocol, enabling client programs for Teradata (eg. BTEQ, <a href="FastLoad">FastLoad</a>, and the Teradata JDBC and ODBC drivers) to access SQL Relay directly.</p>
+
+<p>If an instance speaks the Teradata client-server protocol, then any client that wishes to use it must also speak the Teradata client-server protocol.  This means that most software written using the Teradata CLI, JDBC driver, or ODBC driver can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs) cannot access this instance.</p>
+
+<p>The Teradata protocol module is still under development, and is less mature than the other protocol modules.  A client's login is always relayed to a real Teradata server first, by a dedicated auth module - see <a href="#teradataauth">Authentication/Encryption Options</a> below - and only once that server answers does the module go on to handle the rest of the session itself.  <b>A recognized Failure or Error reply from that server is now rejected, but anything else - including a genuine successful reply, which is encrypted and unparseable - is still accepted</b> - see <a href="#teradatalimitations">Limitations</a> below, this is an important caveat before using this module anywhere access control matters.  SQL Relay's own automated test suite only exercises logging in and out.  The source tree also has manual test scripts, not wired into the automated suite, that exercise bteq, isql via the Teradata ODBC driver, fastload and tdload against a real Teradata server - see test/protocol/teradata/ - but they aren't run as part of a normal test pass.  See <a href="#teradatalimitations">Limitations</a> below before relying on this module.</p>
+
+<a name="teradataconfiguration"/><h2>Basic Configuration</h2>
+
+<p>To enable SQL Relay to speak the Teradata protocol, add the appropriate listener and auth tags:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font> <font color="#009900">translatebindvariables</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"teradata"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"teradata_sidechannel"</font> <font color="#009900">host</font><font color="#990000">=</font><font color="#FF0000">"teradatahost"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=teradata;user=teradatauser;password=teradatapassword;autocommit=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this configuration:</p>
+
+<ul>
+  <li>The listener tag instructs SQL Relay to load the <i>teradata</i> protocol module, and listen on port 1025, which is the standard Teradata listener port.</li>
+  <li>The auth tag instructs the instance to relay every client login to a real Teradata server running on <i>teradatahost</i>, port 1025.  This is required - see <a href="#teradataauth">Authentication/Encryption Options</a> below, including an important caveat about how that login is checked.</li>
+  <li>The connection tag instructs the instance to run queries against the <i>teradata</i> ODBC DSN (see <a href="basicconfiguration.html#db-odbc-teradata">Teradata (via ODBC)</a>) as user <i>teradatauser</i> with password <i>teradatapassword</i>.  Every query runs as this user, regardless of which credentials a client logged in with.</li>
+  <li><i>translatebindvariables="yes"</i> is set on the instance tag because a Teradata USING-clause query keeps its :name-style bind variables after the module strips off the USING clause itself, and the ODBC driver underneath expects ?-style bind variables instead.</li>
+  <li><i>autocommit=yes</i> is set on the connection string, matching how this module is exercised in SQL Relay's own test suite.</li>
+</ul>
+
+<p>The instance can be started using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>start <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>and accessed from the local machine using, for example, BTEQ:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">.</font><font color="#008080">logon</font> localhost<font color="#990000">/</font>teradatauser<font color="#990000">,</font>teradatapassword</tt></pre>
+
+</blockquote>
+<p>The instance can be stopped using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>Note that the credentials a client logs in with (//teradatauser/////teradatapassword// above) are relayed to the real Teradata server named in the auth tag, not checked against the connection tag's credentials - see <a href="#teradataauth">Authentication/Encryption Options</a> below, including an important caveat about how that login is checked.</p>
+
+<a name="teradatalistener"/><h2>Listener Options</h2>
+
+<p>By default, SQL Relay listens on port 9000.  Since Teradata's standard port is 1025, the listener tag above sets port="1025" explicitly.</p>
+
+<p>If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font> <font color="#009900">translatebindvariables</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"teradata"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"192.168.1.50,192.168.1.51"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"teradata_sidechannel"</font> <font color="#009900">host</font><font color="#990000">=</font><font color="#FF0000">"teradatahost"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=teradata;user=teradatauser;password=teradatapassword;autocommit=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).</p>
+
+<p>It can also be configured to listen on a unix socket by adding a <i>socket</i> attribute to the listener tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font> <font color="#009900">translatebindvariables</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"teradata"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/teradata.socket"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"teradata_sidechannel"</font> <font color="#009900">host</font><font color="#990000">=</font><font color="#FF0000">"teradatahost"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=teradata;user=teradatauser;password=teradatapassword;autocommit=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The user that SQL Relay runs as must be able to read and write to the path of the socket.)</p>
+
+<p>If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.</p>
+
+<p>The Teradata protocol module also has a <i>debug</i> attribute, which works the same way as it does for the other protocol modules - see <a href="tdsprotocol.html#tdslistener">the TDS Protocol's Listener Options</a>.</p>
+
+<p>The generic <i>tls</i> and <i>krb</i> listener options don't do anything useful on a Teradata listener - see <a href="#teradatalimitations">Limitations</a> below.</p>
+
+<a name="teradataauth"/><h2>Authentication/Encryption Options</h2>
+
+<p>Unlike the other protocol modules, the Teradata protocol module doesn't authenticate clients against the connect string's own user/password, a user list, or the database itself.  Instead, it relays each client's login attempt to a real Teradata server.  This is done by the <i>teradata_sidechannel</i> auth module, which is required - a Teradata listener with no auths tag configured fails every login, because the default connect-strings auth fallback doesn't exist for this protocol.</p>
+
+<p><b>The real server's answer is only partly checked.</b>  The auth module looks at the leading parcel of the real server's reply to the relayed login.  If that parcel is a recognized Failure or Error parcel, the login is rejected.  Otherwise - including when the reply doesn't parse as a recognizable parcel at all - the login is accepted, and the client gets to run queries as the connection tag's own database user.  That "otherwise" case is the important one: a real, successful login reply under Teradata's default TD2 authentication mechanism is encrypted, so it has no plaintext parcel structure the module can parse, and gets accepted along with everything else that doesn't parse as Failure or Error.  Confirming a TD2 success reply for real would require the auth module to decrypt the session key itself, which it doesn't do.  So a client whose credentials the real server rejects with a plain Failure or Error parcel is now correctly turned away, but a client rejected some other way - one whose rejection reply also happens to look encrypted or otherwise unparseable - may still be let through.  Whether a real TD2 server's own rejection replies are ever encrypted this way isn't confirmed one way or the other.  See <a href="#teradatalimitations">Limitations</a> below.  Don't rely on a Teradata listener to reject every client the real server would reject.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font> <font color="#009900">translatebindvariables</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"teradata"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"teradata_sidechannel"</font> <font color="#009900">host</font><font color="#990000">=</font><font color="#FF0000">"teradatahost"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1025"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=teradata;user=teradatauser;password=teradatapassword;autocommit=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li><b>host</b> - the host name or IP address of the real Teradata server to check logins against.  Required.</li>
+  <li><b>port</b> - the port of the real Teradata server.  Required; there is no default, so omitting it is the same as setting it to 0.</li>
+</ul>
+
+<p>Once a client's login is relayed and answered, every query it sends runs through the connection tag's own connection - as the connection tag's own user, not the client's.  Each sqlr-connection process keeps its side-channel session to the real Teradata server open between client logins (rather than closing it after each one), so that a <a href="FastLoad">FastLoad</a> job can find it again on a later request; as a result, each pooled connection ties up one session on the real Teradata server for as long as SQL Relay runs.</p>
+
+<p>A Teradata listener should not share an instance with a listener for another protocol: a login attempt from that other listener - whether it succeeded or failed there - can be handed to this auth module too.  The auth module now checks the credentials it's given and rejects the login outright if they aren't Teradata-shaped, rather than misbehaving on them, but sharing an instance this way still isn't a supported configuration.</p>
+
+<a name="teradatapassthrough"/><h2>Passthrough Mode</h2>
+
+<p>The listener tag also accepts a <i>passthrough</i> attribute, which selects how logins and queries are handled at a lower level.  It accepts "enabled" or "disabled"; any other value, including leaving it unset, selects hybrid mode.</p>
+
+<p>Hybrid mode - the default, and the mode used throughout this section - is the only one that works.  It's what relays the login to a real Teradata server as described above, and then handles the rest of the session itself.</p>
+
+<p>The other two settings exist in the source but aren't usable yet:</p>
+
+<ul>
+  <li><i>passthrough="disabled"</i> has the module negotiate and answer the login itself, without checking it against anything.  It offers only the TD2 authentication mechanism and returns a canned login response, so it accepts any credentials.</li>
+  <li><i>passthrough="enabled"</i> is meant to relay the entire session, not just the login, straight through to the back-end connection.  It takes effect whenever the instance identifies its database type as "teradata" (dbase="teradata", or a dbtype= override in the connect string) - but SQL Relay has no connection module that actually implements a Teradata back-end connection, or the raw send/receive that this mode needs from one, so every session fails once this mode activates.  Don't set dbase="teradata" or a matching dbtype= override on a Teradata listener's instance.</li>
+</ul>
+
+<p>Leave <i>passthrough</i> unset.</p>
+
+<a name="teradatalimitations"/><h2>Limitations</h2>
+
+<p>The implementation of the Teradata protocol isn't 100% complete, and is less mature than the other protocol modules.  Some notable limitations follow:</p>
+
+<ul>
+  <li>Data encryption after login is not supported.  A client that asks for it will find the module can't decrypt what it sends afterward.</li>
+  <li>TLS/SSL and Kerberos encryption and authentication are not supported.  Setting the generic <i>tls</i> or <i>krb</i> listener options still loads the configured certificate or Kerberos credentials (and can print a warning if that fails), but neither is ever actually used on the wire.</li>
+  <li>In "disabled" passthrough mode, only the TD2 authentication mechanism is offered; in the default hybrid mode, whichever mechanisms the real Teradata server offers are used, since the login is relayed to it.</li>
+  <li>A batch or array bind (for example, the JDBC driver's addBatch() outside of a <a href="FastLoad">FastLoad</a>) only keeps the last row of the batch.</li>
+  <li>A request containing more than one SQL statement only returns one statement's status and results.</li>
+  <li>A trailing "COMMIT WORK" in a request is silently stripped rather than executed.</li>
+  <li>BT/ET and BEGIN TRANSACTION/END TRANSACTION/ROLLBACK are mapped to begin/commit/rollback; an ANSI COMMIT is sent to the back-end as an ordinary query.</li>
+  <li>Abort, reassign, reconnect, test, auth-methods, elicit-data, default-connect, and direct messages all get an empty reply rather than being acted on.  A cancel sent as part of an ordinary continue message is handled, and ends the in-progress request.</li>
+  <li>RUN STARTUP always answers "No startup string defined for this user.", regardless of what's configured for the user on the real Teradata server.</li>
+  <li>In USING-clause bind variables, DECIMAL and NUMBER types are accepted but not decoded correctly, and any variables listed after one are misread as a result.  BYTEINT isn't recognized (TINYINT is).</li>
+  <li>INTERVAL, PERIOD, and TIME/TIMESTAMP WITH TIME ZONE result columns aren't mapped to a Teradata wire type.</li>
+  <li>Only one <a href="FastLoad">FastLoad</a> job at a time is supported per SQL Relay host - the job is identified by the SQL Relay server's own host name, not the client's.  NODROP, CHECKPOINT, INDICATORS, and DATAENCRYPTION <a href="FastLoad">FastLoad</a> options are ignored, and the error-row limit is fixed at 25.</li>
+  <li>TPT/tdload and MultiLoad have not been tested against this module.</li>
+  <li>The relayed login is only rejected when the real server's reply is a recognized Failure or Error parcel; an unrecognized or opaque reply (including a genuine encrypted TD2 success reply) is still accepted on faith - see <a href="#teradataauth">Authentication/Encryption Options</a> above.</li>
+</ul>
+
+<hr/>
+
+<p><a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotocol.html">Firebird Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="multipleprotocols.html">Multiple Protocols</a> <a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

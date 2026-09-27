@@ -152,7 +152,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:</p>
 
-<p>See the <a href="../admin/configguide.html#krb">SQL Relay Configuration Guide</a> for more information about Kerberos and Active Directory configurations.  In particular, the user and password are usually left as empty strings or null when using Kerberos/AD.</p>
+<p>See the <a href="../admin/configguide/sqlrclientprotocol.html#sqlrclientkrb">SQL Relay Configuration Guide</a> for more information about Kerberos and Active Directory configurations.  In particular, the user and password are usually left as empty strings or null when using Kerberos/AD.</p>
 
 <ul>
   <li><b>krb</b> - Set to <b>yes</b> to enable Kerberos/AD encryption/authentication or <b>no</b> to disable it.</li>
@@ -163,7 +163,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The following connect string variables can be used to establish TLS/SSL encryption and authentication with the server:</p>
 
-<p>See the <a href="../admin/configguide.html#tls">SQL Relay Configuration Guide</a> for more information about TLS/SSL configurations.</p>
+<p>See the <a href="../admin/configguide/sqlrclientprotocol.html#sqlrclienttls">SQL Relay Configuration Guide</a> for more information about TLS/SSL configurations.</p>
 
 <ul>
   <li><b>tls</b> - Set to <b>yes</b> to enable TLS/SSL encryption/authentication or <b>no</b> to disable it.</li>

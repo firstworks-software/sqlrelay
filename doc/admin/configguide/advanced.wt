@@ -1,0 +1,20 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]
+
+[[br]][=#advanced]
+= Advanced Configuration =
+
+The configuration file supports many more attributes and features than the ones described in this guide including tuning options.  See the [../configreference.html SQL Relay Configuration Reference] and [../tuning.html Tuning SQL Relay] for more information.
+
+----
+
+[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

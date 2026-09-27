@@ -12,7 +12,7 @@
 #
 # HOST/PORT must name a listener at the module's default serverversion
 # (12.1) - see mixedtypetest.conf and the "Server Version" section of
-# doc/admin/configguide.wt.  python-oracledb doesn't support an
+# doc/admin/configguide/oracleprotocol.wt.  python-oracledb doesn't support an
 # serverversion="11.2" server at all, and against one it hangs forever at
 # login, with no error - a different hang than #9635, but indistinguishable
 # from the outside, so pointing this at the wrong listener mis-reproduces
