@@ -2929,6 +2929,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   doc/admin/parts/sqlrelay-teradata.conf
 - fixed teradata listeners with no auths tag failing every login with a
   confusing error instead of naming the missing auths tag
+- fixed enabled="no" not disabling a listener tag, which also
+  misassigned protocol modules to listeners configured after it
 
 ### Security
 - fixed an authentication hole in the des password encryption module

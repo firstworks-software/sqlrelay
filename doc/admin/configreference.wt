@@ -109,6 +109,7 @@ Below is a description of the attributes for each tag.
 
 * '''listener'''
  * '''protocol''' - The client-server protocol to expect on this port/socket/address.  Currently, supported protocols include sqlrclient (the native SQL Relay client-server protocol), mysql, postgresql, firebird, tds, teradata, and oracle.  Defaults to sqlrclient.
+ * '''enabled''' - Whether this listener is active.  If set to "no", SQL Relay does not open this listener's port or socket at all, and does not count the listener when assigning the other listener tags to their protocol modules.  If set to any other value, or omitted, then the listener is enabled.  Defaults to "yes".
  * '''port''' - The port to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to 9000.
  * '''socket''' - The unix socket (filename) to listen for client connections on (note, if multiple instances are configured with the same port or socket, they cannot be run at the same time).  Defaults to /tmp/sqlrelay.socket
  * '''addresses''' - A comma-delimited list of addresses that the instance should bind to.  If absent or set to 0.0.0.0, it will bind to all addresses.  Defaults to 0.0.0.0.

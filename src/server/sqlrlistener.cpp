@@ -798,6 +798,10 @@ bool sqlrlistener::listenOnClientSockets() {
 	for (domnode	*node=listenerlist->getFirstTagChild("listener");
 			!node->isNullNode();
 			node=node->getNextTagSibling("listener")) {
+		// skip disabled listeners
+		if (charstring::isNo(node->getAttributeValue("enabled"))) {
+			continue;
+		}
 		uint64_t	addrcount=0;
 		charstring::split(node->getAttributeValue("addresses"),
 						",",true,NULL,&addrcount);
@@ -819,11 +823,17 @@ bool sqlrlistener::listenOnClientSockets() {
 	pvt->_clientsockunindex=0;
 
 	// listen on sockets
+	// (protocolindex must only advance for enabled listeners, to stay in
+	// sync with sqlrprotocols' compacted, enabled-only module array)
 	bool		listening=false;
 	uint16_t	protocolindex=0;
 	for (domnode	*node=listenerlist->getFirstTagChild("listener");
 			!node->isNullNode();
 			node=node->getNextTagSibling("listener")) {
+		// skip disabled listeners
+		if (charstring::isNo(node->getAttributeValue("enabled"))) {
+			continue;
+		}
 		if (listenOnClientSocket(protocolindex,node)) {
 			listening=true;
 		}
