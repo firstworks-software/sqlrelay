@@ -2461,22 +2461,31 @@ static inline bool oracleNumberToInteger(const unsigned char *bytes,
 
 // walk the plainest legacy fetch response - the one a fetch with no options
 // asks for - and collect the value of the single column of each row it
-// carries.  see sendFetchResponse()/putRowHeader() in src/protocols/oracle.cpp:
-// the data flags, then TTC_ROW_HEADER and its flags byte, then six
-// length-prefixed counts (column count, iteration number, row count, uac
-// buffer length, bit vector size and one more of unknown meaning) - it has
-// no fixed size, so it has to be walked field by field the way
-// readLegacyError() below walks the error object, not skipped as a fixed
-// number of bytes.  a marker and a row follow for each row, then a trailer
-// that starts with something other than the marker.
+// carries: the data flags, then TTC_ROW_HEADER and the row header
+// sendFetchResponse() builds in src/protocols/oracle.cpp.  a portable
+// session's header is the flags byte and six length-prefixed counts
+// (column count, iteration number, row count, uac buffer length, bit
+// vector size and one more of unknown meaning) - it has no fixed size, so
+// the portable branch below walks it field by field the way
+// readLegacyError() above walks the error object, not skipped as a fixed
+// number of bytes.  a native session's header is a
+// fixed 29-byte literal instead, with only the column count (byte 4) and
+// the row count (the following 4 bytes, big endian) ever varying - see
+// sendFetchResponse()'s own comments for where each byte comes from.  a
+// marker and a row follow for each row, either way, then a trailer that
+// starts with something other than the marker.
 //
-// putRow() writes two more length-prefixed fields behind every column's
-// value - the indicator and the return code odefin() gave the client a
-// pointer for - both always 0 here, since this test never odefin's
-// anything.  skipping only the value and landing on these as though they
-// were the next row's marker is what made the three-row query decode a
-// single, wrong row: 0x00 isn't ORA_TTC_ROW_DATA, so the walk below stopped
-// after row one every time.
+// putRow() writes two more fields behind every column's value - the
+// indicator and the return code odefin() gave the client a pointer for,
+// both always 0 here, since this test never odefin's anything - as a
+// length-prefixed int each in the portable encoding and a fixed 2 bytes
+// each in the native one, the same portable-vs-native split
+// appendAuthCount()/readAuthCount() already handle for requests in this
+// file, so readAuthCount() below reads them in either encoding without a
+// branch of its own.  skipping only the value and landing on these as
+// though they were the next row's marker is what made the three-row query
+// decode a single, wrong row: 0x00 isn't ORA_TTC_ROW_DATA, so the walk
+// below stopped after row one every time.
 //
 // the row loop below reads exactly one value/indicator/returncode triple
 // per marker, so it only walks a genuine one-column result - the shape
@@ -2500,19 +2509,46 @@ static inline bool readLegacyFetchRows(oracleprotocolclient *client,
 
 	unsigned char	dataflags[2];
 	unsigned char	ttccode=0;
-	unsigned char	flags=0;
-	uint32_t	skipint=0;
 	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
 		!client->readByte(&ttccode) ||
-		ttccode!=ORA_TTC_ROW_HEADER ||
-		!client->readByte(&flags) ||
-		!client->readLenPreInt(colcount) ||	// column count
-		!client->readLenPreInt(&skipint) ||	// iteration number
-		!client->readLenPreInt(headerrowcount) ||	// row count
-		!client->readLenPreInt(&skipint) ||	// uac buffer length
-		!client->readLenPreInt(&skipint) ||	// bit vector size
-		!client->readLenPreInt(&skipint)) {
+		ttccode!=ORA_TTC_ROW_HEADER) {
 		return false;
+	}
+
+	if (client->getNativeEncoding()) {
+
+		// the fixed 29-byte block: 3 bytes ahead of the column
+		// count, the column count itself, the row count (4 bytes,
+		// big endian), then 21 bytes of trailing padding
+		unsigned char	pre[3];
+		unsigned char	colcountbyte=0;
+		unsigned char	rowcountbytes[4];
+		unsigned char	post[21];
+		if (!client->readBytes(pre,sizeof(pre)) ||
+			!client->readByte(&colcountbyte) ||
+			!client->readBytes(rowcountbytes,
+						sizeof(rowcountbytes)) ||
+			!client->readBytes(post,sizeof(post))) {
+			return false;
+		}
+		*colcount=colcountbyte;
+		*headerrowcount=
+			((uint32_t)rowcountbytes[0]<<24) |
+			((uint32_t)rowcountbytes[1]<<16) |
+			((uint32_t)rowcountbytes[2]<<8) |
+			(uint32_t)rowcountbytes[3];
+	} else {
+		unsigned char	flags=0;
+		uint32_t	skipint=0;
+		if (!client->readByte(&flags) ||
+			!client->readLenPreInt(colcount) ||	// column count
+			!client->readLenPreInt(&skipint) ||	// iteration number
+			!client->readLenPreInt(headerrowcount) ||	// row count
+			!client->readLenPreInt(&skipint) ||	// uac buffer length
+			!client->readLenPreInt(&skipint) ||	// bit vector size
+			!client->readLenPreInt(&skipint)) {
+			return false;
+		}
 	}
 
 	*valuecount=0;
@@ -2534,8 +2570,8 @@ static inline bool readLegacyFetchRows(oracleprotocolclient *client,
 		if (!client->readByte(&numbersize) ||
 			numbersize>sizeof(number) ||
 			!client->readBytes(number,numbersize) ||
-			!client->readLenPreInt(&indicator) ||
-			!client->readLenPreInt(&returncode)) {
+			!client->readAuthCount(&indicator,2) ||
+			!client->readAuthCount(&returncode,2)) {
 			return false;
 		}
 
@@ -2552,9 +2588,14 @@ static inline bool readLegacyFetchRows(oracleprotocolclient *client,
 
 // walk sendQueryError()'s legacy answer - the data flags, then the ttc code
 // and the summary object putOci7Error() writes, field for field, then the
-// message.  the object's fields are length-prefixed ints in this encoding,
-// so it has no fixed size and has to be walked rather than skipped: see
-// putOci7Summary() in src/protocols/oracle.cpp, which this mirrors.
+// message.  a portable-encoding session's object is length-prefixed ints
+// with no fixed size, so the portable branch below walks it field by field
+// rather than skipping it: see putOci7Summary() in src/protocols/oracle.cpp,
+// which it mirrors.  a native-encoding session answers through the separate
+// putOci7SummaryNative() writer instead, whose fields are fixed-width, so
+// the native branch below mirrors that shape instead - the same
+// portable-vs-native split appendAuthCount()/readAuthCount() already handle
+// for requests in this file
 //
 // "leftover" says whether anything at all follows the message.  nothing
 // should - #9976 found that what used to answer here ran 21 bytes past the
@@ -2571,37 +2612,76 @@ static inline bool readLegacyError(oracleprotocolclient *client,
 
 	unsigned char	dataflags[2];
 	unsigned char	ttccode=0;
-	uint32_t	skipint=0;
-	unsigned char	skipbyte=0;
-	unsigned char	skipbytes[5];
 	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
 		!client->readByte(&ttccode) ||
-		ttccode!=ORA_TTC_ERROR ||
-		!client->readLenPreInt(&skipint) ||	// end of call status
-		!client->readLenPreInt(&skipint) ||	// rows processed
-		!client->readLenPreInt(oranum) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||	// cursor id
-		!client->readLenPreInt(&skipint) ||	// parse error offset
-		!client->readByte(&skipbyte) ||		// command type
-		!client->readBytes(skipbytes,5) ||
-		// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readByte(&skipbyte) ||		// call number
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||	// success iterations
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint)) {
+		ttccode!=ORA_TTC_ERROR) {
 		return false;
+	}
+
+	uint32_t	skipint=0;
+	unsigned char	skipbyte=0;
+	if (client->getNativeEncoding()) {
+
+		// putOci7SummaryNative()'s fixed-width 93-byte object: end
+		// of call status, an unexplained constant byte, rows
+		// processed and the error number (4 bytes each), 2 bytes of
+		// padding, the cursor id and parse error offset (2 bytes
+		// each), the command type, 26 bytes of padding, the call
+		// number, 2 bytes of padding, success iterations (4 bytes),
+		// then a marker, a live pointer and trailing padding this
+		// module never reproduces - see that function for the byte
+		// ranges this walks
+		unsigned char	pad2[2];
+		unsigned char	pad4[26];
+		unsigned char	pad5[2];
+		unsigned char	pad6[8];
+		unsigned char	livepointer[4];
+		unsigned char	pad7[28];
+		if (!client->readAuthCount(&skipint,4) ||	// end of call status
+			!client->readByte(&skipbyte) ||	// unexplained constant
+			!client->readAuthCount(&skipint,4) ||	// rows processed
+			!client->readAuthCount(oranum,4) ||
+			!client->readBytes(pad2,sizeof(pad2)) ||
+			!client->readAuthCount(&skipint,2) ||	// cursor id
+			!client->readAuthCount(&skipint,2) ||	// parse error offset
+			!client->readByte(&skipbyte) ||	// command type
+			!client->readBytes(pad4,sizeof(pad4)) ||
+			!client->readByte(&skipbyte) ||	// call number
+			!client->readBytes(pad5,sizeof(pad5)) ||
+			!client->readAuthCount(&skipint,4) ||	// success iterations
+			!client->readBytes(pad6,sizeof(pad6)) ||
+			!client->readBytes(livepointer,sizeof(livepointer)) ||
+			!client->readBytes(pad7,sizeof(pad7))) {
+			return false;
+		}
+	} else {
+		unsigned char	skipbytes[5];
+		if (!client->readLenPreInt(&skipint) ||	// end of call status
+			!client->readLenPreInt(&skipint) ||	// rows processed
+			!client->readLenPreInt(oranum) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||	// cursor id
+			!client->readLenPreInt(&skipint) ||	// parse error offset
+			!client->readByte(&skipbyte) ||	// command type
+			!client->readBytes(skipbytes,5) ||
+			// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readByte(&skipbyte) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readByte(&skipbyte) ||
+			!client->readByte(&skipbyte) ||	// call number
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||	// success iterations
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint)) {
+			return false;
+		}
 	}
 
 	unsigned char	size=0;
@@ -2622,7 +2702,8 @@ static inline bool readLegacyError(oracleprotocolclient *client,
 // readLegacyError() above walks for the error object, but nothing after
 // them.  a genuine parse or execute success is this object and nothing
 // else; a genuine error is this object plus a message, which is what
-// "leftover" catches
+// "leftover" catches.  the portable and native branches below split the
+// object the same way readLegacyError() above does
 static inline bool readLegacySummary(oracleprotocolclient *client,
 				uint32_t *cursorid,
 				unsigned char *commandtype,
@@ -2634,37 +2715,69 @@ static inline bool readLegacySummary(oracleprotocolclient *client,
 
 	unsigned char	dataflags[2];
 	unsigned char	ttccode=0;
-	uint32_t	skipint=0;
-	unsigned char	skipbyte=0;
-	unsigned char	skipbytes[5];
 	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
 		!client->readByte(&ttccode) ||
-		ttccode!=ORA_TTC_ERROR ||
-		!client->readLenPreInt(&skipint) ||	// end of call status
-		!client->readLenPreInt(rowsprocessed) ||
-		!client->readLenPreInt(&skipint) ||	// error number
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(cursorid) ||
-		!client->readLenPreInt(&skipint) ||	// parse error offset
-		!client->readByte(commandtype) ||
-		!client->readBytes(skipbytes,5) ||
-		// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readByte(&skipbyte) ||
-		!client->readByte(&skipbyte) ||		// call number
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(successiterations) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint) ||
-		!client->readLenPreInt(&skipint)) {
+		ttccode!=ORA_TTC_ERROR) {
 		return false;
+	}
+
+	uint32_t	skipint=0;
+	unsigned char	skipbyte=0;
+	if (client->getNativeEncoding()) {
+
+		// putOci7SummaryNative()'s fixed-width 93-byte object - see
+		// the byte-range breakdown on readLegacyError() above
+		unsigned char	pad2[2];
+		unsigned char	pad4[26];
+		unsigned char	pad5[2];
+		unsigned char	pad6[8];
+		unsigned char	livepointer[4];
+		unsigned char	pad7[28];
+		if (!client->readAuthCount(&skipint,4) ||	// end of call status
+			!client->readByte(&skipbyte) ||	// unexplained constant
+			!client->readAuthCount(rowsprocessed,4) ||
+			!client->readAuthCount(&skipint,4) ||	// error number
+			!client->readBytes(pad2,sizeof(pad2)) ||
+			!client->readAuthCount(cursorid,2) ||
+			!client->readAuthCount(&skipint,2) ||	// parse error offset
+			!client->readByte(commandtype) ||
+			!client->readBytes(pad4,sizeof(pad4)) ||
+			!client->readByte(&skipbyte) ||	// call number
+			!client->readBytes(pad5,sizeof(pad5)) ||
+			!client->readAuthCount(successiterations,4) ||
+			!client->readBytes(pad6,sizeof(pad6)) ||
+			!client->readBytes(livepointer,sizeof(livepointer)) ||
+			!client->readBytes(pad7,sizeof(pad7))) {
+			return false;
+		}
+	} else {
+		unsigned char	skipbytes[5];
+		if (!client->readLenPreInt(&skipint) ||	// end of call status
+			!client->readLenPreInt(rowsprocessed) ||
+			!client->readLenPreInt(&skipint) ||	// error number
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(cursorid) ||
+			!client->readLenPreInt(&skipint) ||	// parse error offset
+			!client->readByte(commandtype) ||
+			!client->readBytes(skipbytes,5) ||
+			// the rowid - a ub4, a ub2, a raw byte, a ub4 and a ub2
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readByte(&skipbyte) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readByte(&skipbyte) ||
+			!client->readByte(&skipbyte) ||	// call number
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(successiterations) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint) ||
+			!client->readLenPreInt(&skipint)) {
+			return false;
+		}
 	}
 
 	unsigned char	extra=0;

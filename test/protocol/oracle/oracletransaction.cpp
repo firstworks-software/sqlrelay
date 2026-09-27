@@ -336,163 +336,149 @@ int main(int argc, char **argv) {
 	// TTC_ERROR byte - see the header comment on readLegacySummary() in
 	// oracleprotocolclient.cpp.  this arm judges every reply through
 	// that decoder instead of the ttc code alone.
-	//
-	// legacyQuery() itself is fine under native encoding now - #10306
-	// fixed it to write the native request shape instead of always the
-	// portable one.  but readLegacySummary(), which checkLegacyDmlStep()
-	// uses to judge every reply below, still only walks the portable
-	// summary-object shape src/protocols/oracle.cpp's putOci7Summary()
-	// writes; a native session answers through the separate
-	// putOci7SummaryNative() shape instead, which readLegacySummary()
-	// misreads.  filed separately as #10310 and not fixed here, so this
-	// arm still prints a note and skips under -native rather than count
-	// a false pass
-	if (native) {
-		stdoutput.printf("dml commit: skipped under -native (#10310)\n");
-	} else {
+	oracleprotocolclient	dmlclient;
+	dmlclient.setNativeEncoding(native);
 
-		oracleprotocolclient	dmlclient;
-
-		if (!dmlclient.connect(host,port,sid)) {
-			report("dml commit: connect",false);
-			stdoutput.printf("%s\n",dmlclient.getError());
-			client.disconnect();
-			return status;
-		}
-		report("dml commit: connect",true);
-
-		if (!dmlclient.login(user,password)) {
-			report("dml commit: login",false);
-			stdoutput.printf("%s\n",dmlclient.getError());
-			client.disconnect();
-			return status;
-		}
-		report("dml commit: login",true);
-
-		uint32_t	dmlcursorid=0;
-		if (!dmlclient.open(&dmlcursorid)) {
-			report("dml commit: open cursor",false);
-			stdoutput.printf("%s\n",dmlclient.getError());
-			client.disconnect();
-			return status;
-		}
-		report("dml commit: open cursor",true);
-
-		// a drop of a table that isn't there errors, so its result is
-		// deliberately not checked - the same pattern
-		// oraclelegacyfetch.cpp's dropsequence step uses
-		dmlclient.legacyQuery(dmlcursorid,dropscratchtable);
-		dmlclient.legacyExecute(dmlcursorid,1,0);
-
-		if (!dmlclient.legacyQuery(dmlcursorid,createscratchtable) ||
-			!dmlclient.legacyExecute(dmlcursorid,1,0)) {
-			report("dml commit: create table",false);
-			stdoutput.printf("%s\n",dmlclient.getError());
-			client.disconnect();
-			return status;
-		}
-		// a DDL statement's command type comes back as 3, the same
-		// value a select's parse or execute reports - that's
-		// oci7CommandType()'s own fallback in src/protocols/oracle.cpp,
-		// not a real Oracle DDL code - #10300's step 1 confirmed the
-		// value live
-		report("dml commit: create table",
-				checkLegacyDmlStep(&dmlclient,
-						"dml commit: create table",
-						dmlcursorid,3,0,1));
-
-		if (!dmlclient.legacyQuery(dmlcursorid,insertscratchtable) ||
-			!dmlclient.legacyExecute(dmlcursorid,1,0)) {
-			report("dml commit: insert",false);
-			stdoutput.printf("%s\n",dmlclient.getError());
-			client.disconnect();
-			return status;
-		}
-		// an insert's execute processes one row and its command
-		// type is 2 - #10300's step 1 confirmed both live
-		report("dml commit: insert",
-				checkLegacyDmlStep(&dmlclient,
-						"dml commit: insert",
-						dmlcursorid,2,1,1));
-
-		if (!checkTransactionCall(&dmlclient,"dml commit: commit",
-						ORA_TTI_COMMIT,1,
-						status5,status5size)) {
-			client.disconnect();
-			return status;
-		}
-
-		// the commit actually took: read the row back from a second,
-		// separate connection, rather than from dmlclient's own -
-		// if the insert were still only visible within its own
-		// session, this select would come back empty
-		oracleprotocolclient	verifyclient;
-
-		if (!verifyclient.connect(host,port,sid) ||
-			!verifyclient.login(user,password)) {
-			report("dml commit: verify connect",false);
-			stdoutput.printf("%s\n",verifyclient.getError());
-			dmlclient.disconnect();
-			client.disconnect();
-			return status;
-		}
-		report("dml commit: verify connect",true);
-
-		uint32_t	verifycursorid=0;
-		if (!verifyclient.open(&verifycursorid)) {
-			report("dml commit: verify open cursor",false);
-			stdoutput.printf("%s\n",verifyclient.getError());
-			dmlclient.disconnect();
-			client.disconnect();
-			return status;
-		}
-		report("dml commit: verify open cursor",true);
-
-		if (!verifyclient.legacyQuery(verifycursorid,selectscratchtable) ||
-			!verifyclient.legacyExecute(verifycursorid,1,0) ||
-			!verifyclient.legacyFetch(verifycursorid,0)) {
-			report("dml commit: verify select",false);
-			stdoutput.printf("%s\n",verifyclient.getError());
-			dmlclient.disconnect();
-			client.disconnect();
-			return status;
-		}
-
-		int64_t	verifyvalues[4];
-		size_t	verifyvaluecount=0;
-		uint32_t	verifycolcount=0;
-		uint32_t	verifyheaderrows=0;
-		bool	verifydecoded=readLegacyFetchRows(&verifyclient,
-					verifyvalues,
-					sizeof(verifyvalues)/
-						sizeof(verifyvalues[0]),
-					&verifyvaluecount,&verifycolcount,
-					&verifyheaderrows);
-		report("dml commit: verify fetch response decodes",
-				verifydecoded);
-		if (!verifydecoded) {
-			stdoutput.printf("response (%d bytes):\n",
-						(int)verifyclient.getResponseSize());
-			stdoutput.safePrint(verifyclient.getResponse(),
-						verifyclient.getResponseSize());
-			stdoutput.printf("\n");
-		} else {
-			report("dml commit: verify fetch response has one "
-					"column",verifycolcount==1);
-			report("dml commit: the committed row is visible "
-					"from a separate connection",
-					verifyvaluecount==1 &&
-					verifyvalues[0]==scratchtablevalue);
-		}
-
-		verifyclient.disconnect();
-
-		// leave the backend clean for the next run - not checked,
-		// same reasoning as the drop before create table above
-		dmlclient.legacyQuery(dmlcursorid,dropscratchtable);
-		dmlclient.legacyExecute(dmlcursorid,1,0);
-		dmlclient.disconnect();
+	if (!dmlclient.connect(host,port,sid)) {
+		report("dml commit: connect",false);
+		stdoutput.printf("%s\n",dmlclient.getError());
+		client.disconnect();
+		return status;
 	}
+	report("dml commit: connect",true);
+
+	if (!dmlclient.login(user,password)) {
+		report("dml commit: login",false);
+		stdoutput.printf("%s\n",dmlclient.getError());
+		client.disconnect();
+		return status;
+	}
+	report("dml commit: login",true);
+
+	uint32_t	dmlcursorid=0;
+	if (!dmlclient.open(&dmlcursorid)) {
+		report("dml commit: open cursor",false);
+		stdoutput.printf("%s\n",dmlclient.getError());
+		client.disconnect();
+		return status;
+	}
+	report("dml commit: open cursor",true);
+
+	// a drop of a table that isn't there errors, so its result is
+	// deliberately not checked - the same pattern
+	// oraclelegacyfetch.cpp's dropsequence step uses
+	dmlclient.legacyQuery(dmlcursorid,dropscratchtable);
+	dmlclient.legacyExecute(dmlcursorid,1,0);
+
+	if (!dmlclient.legacyQuery(dmlcursorid,createscratchtable) ||
+		!dmlclient.legacyExecute(dmlcursorid,1,0)) {
+		report("dml commit: create table",false);
+		stdoutput.printf("%s\n",dmlclient.getError());
+		client.disconnect();
+		return status;
+	}
+	// a DDL statement's command type comes back as 3, the same
+	// value a select's parse or execute reports - that's
+	// oci7CommandType()'s own fallback in src/protocols/oracle.cpp,
+	// not a real Oracle DDL code - #10300's step 1 confirmed the
+	// value live
+	report("dml commit: create table",
+			checkLegacyDmlStep(&dmlclient,
+					"dml commit: create table",
+					dmlcursorid,3,0,1));
+
+	if (!dmlclient.legacyQuery(dmlcursorid,insertscratchtable) ||
+		!dmlclient.legacyExecute(dmlcursorid,1,0)) {
+		report("dml commit: insert",false);
+		stdoutput.printf("%s\n",dmlclient.getError());
+		client.disconnect();
+		return status;
+	}
+	// an insert's execute processes one row and its command
+	// type is 2 - #10300's step 1 confirmed both live
+	report("dml commit: insert",
+			checkLegacyDmlStep(&dmlclient,
+					"dml commit: insert",
+					dmlcursorid,2,1,1));
+
+	if (!checkTransactionCall(&dmlclient,"dml commit: commit",
+					ORA_TTI_COMMIT,1,
+					status5,status5size)) {
+		client.disconnect();
+		return status;
+	}
+
+	// the commit actually took: read the row back from a second,
+	// separate connection, rather than from dmlclient's own -
+	// if the insert were still only visible within its own
+	// session, this select would come back empty
+	oracleprotocolclient	verifyclient;
+	verifyclient.setNativeEncoding(native);
+
+	if (!verifyclient.connect(host,port,sid) ||
+		!verifyclient.login(user,password)) {
+		report("dml commit: verify connect",false);
+		stdoutput.printf("%s\n",verifyclient.getError());
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+	report("dml commit: verify connect",true);
+
+	uint32_t	verifycursorid=0;
+	if (!verifyclient.open(&verifycursorid)) {
+		report("dml commit: verify open cursor",false);
+		stdoutput.printf("%s\n",verifyclient.getError());
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+	report("dml commit: verify open cursor",true);
+
+	if (!verifyclient.legacyQuery(verifycursorid,selectscratchtable) ||
+		!verifyclient.legacyExecute(verifycursorid,1,0) ||
+		!verifyclient.legacyFetch(verifycursorid,0)) {
+		report("dml commit: verify select",false);
+		stdoutput.printf("%s\n",verifyclient.getError());
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+
+	int64_t	verifyvalues[4];
+	size_t	verifyvaluecount=0;
+	uint32_t	verifycolcount=0;
+	uint32_t	verifyheaderrows=0;
+	bool	verifydecoded=readLegacyFetchRows(&verifyclient,
+				verifyvalues,
+				sizeof(verifyvalues)/
+					sizeof(verifyvalues[0]),
+				&verifyvaluecount,&verifycolcount,
+				&verifyheaderrows);
+	report("dml commit: verify fetch response decodes",
+			verifydecoded);
+	if (!verifydecoded) {
+		stdoutput.printf("response (%d bytes):\n",
+					(int)verifyclient.getResponseSize());
+		stdoutput.safePrint(verifyclient.getResponse(),
+					verifyclient.getResponseSize());
+		stdoutput.printf("\n");
+	} else {
+		report("dml commit: verify fetch response has one "
+				"column",verifycolcount==1);
+		report("dml commit: the committed row is visible "
+				"from a separate connection",
+				verifyvaluecount==1 &&
+				verifyvalues[0]==scratchtablevalue);
+	}
+
+	verifyclient.disconnect();
+
+	// leave the backend clean for the next run - not checked,
+	// same reasoning as the drop before create table above
+	dmlclient.legacyQuery(dmlcursorid,dropscratchtable);
+	dmlclient.legacyExecute(dmlcursorid,1,0);
+	dmlclient.disconnect();
 
 	client.disconnect();
 
