@@ -904,6 +904,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   wirecrypt, connect strings, authentication, and foreign
   backend) in the configuration guide and reference; added
   matching example config files under doc/admin/parts/
+- documented the oracle protocol module's sid, maxloginattempts,
+  charset and nationalcharset listener attributes, and added lob,
+  tls/kerberos and other limitations to its configuration guide
+  section
+- documented the mysql protocol module's clientprotocol attribute
+  and the postgresql protocol module's passwords attribute, and
+  added limitations to both protocols' configuration guide
+  sections
+- documented the tds protocol module's pre-tds7, bulk copy and
+  cursor limitations in the configuration guide
+- added a teradata protocol section to the configuration guide and
+  reference, with example config files under doc/admin/parts/
+- documented the debug and tlskey listener attributes in the
+  configuration reference, and added a limitations section to the
+  sqlrclient protocol's configuration guide section
+- documented the router pseudo-backend's connect string, and its
+  unimplemented metadata/catalog calls, in the query and session
+  routing guide section and the configuration reference
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
@@ -2904,6 +2922,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module's OCI7 rollback and autocommit replies
 - fixed the oracle protocol module's OCI7 end-to-end sequence number
   being the wrong width and always zero
+- fixed the query and session routing guide section's documented
+  connect string attribute name for the router pseudo-backend
+  (host -> server) and a stale query-normalization claim
+- fixed a malformed closing tag in
+  doc/admin/parts/sqlrelay-teradata.conf
 
 ### Security
 - fixed an authentication hole in the des password encryption module

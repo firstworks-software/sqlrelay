@@ -49,10 +49,12 @@
    * [#sqlrclientproxiedauth Proxied Auth]
    * [#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication]
    * [#sqlrclienttls TLS/SSL Encryption and Authentication]
+  * [#sqlrclientlimitations Limitations]
  * [#mysqlprotocol MySQL Protocol]
   * [#mysqlconfiguration Basic Configuration]
   * [#mysqllistener Listener Options]
   * [#mysqlhandshake Handshake Protocol Version]
+  * [#mysqlclientprotocol Client Protocol Flags]
   * [#mysqlauth Authentication/Encryption Options]
    * [#mysqlconnectstringsauth Connect Strings Auth]
    * [#mysqluserlistauth User List Auth]
@@ -65,6 +67,7 @@
   * [#postgresqlconfiguration Basic Configuration]
   * [#postgresqllistener Listener Options]
   * [#postgresqlauth Authentication/Encryption Options]
+   * [#postgresqlpasswords Password Method]
    * [#postgresqlconnectstringsauth Connect Strings Auth]
    * [#postgresqluserlistauth User List Auth]
    * [#postgresqltls TLS/SSL Encryption and Authentication]
@@ -104,6 +107,12 @@
    * [#firebirdwirecrypt Wire Encryption]
   * [#firebirdforeignbackend Foreign Backend]
   * [#firebirdlimitations Limitations]
+ * [#teradataprotocol Teradata Protocol]
+  * [#teradataconfiguration Basic Configuration]
+  * [#teradatalistener Listener Options]
+  * [#teradataauth Authentication/Encryption Options]
+  * [#teradatapassthrough Passthrough Mode]
+  * [#teradatalimitations Limitations]
  * [#multipleprotocols Multiple Protocols]
   * [#multiprotocolconfiguration Basic Configuration]
   * [#multiprotocollistener Listener Options]
@@ -1244,7 +1253,7 @@ Whether written using the native SQL Relay API, or a connector of some sort, SQL
 
  [[Image(../images/sqlrelaynativeprotocol.png,nolink)]]
 
-However, SQL Relay also supports the !MySQL, !PostgreSQL, TDS (Microsoft SQL Server and SAP/Sybase), and Oracle client-server protocols.  When SQL Relay is configured to use one of these, it allows !MySQL/MariaDB, !PostgreSQL, Microsoft SQL Server/SAP/Sybase, and Oracle apps to communicate directly with SQL Relay without modification, without having to install any software on the client.
+However, SQL Relay also supports the !MySQL, !PostgreSQL, TDS (Microsoft SQL Server and SAP/Sybase), Oracle, Firebird, and Teradata client-server protocols.  When SQL Relay is configured to use one of these, it allows !MySQL/MariaDB, !PostgreSQL, Microsoft SQL Server/SAP/Sybase, Oracle, Firebird, and Teradata apps to communicate directly with SQL Relay without modification, without having to install any software on the client.
 
  [[Image(../images/sqlrelaymysqlprotocol.png,nolink)]]
 
@@ -1598,6 +1607,7 @@ The following configuration enables TLS/SSL encryption for an instance of SQL Re
 * The '''tls''' attribute enables (or disables) TLS/SSL encryption.
 * The '''tlscert''' attribute specifies the TLS/SSL certificate chain to use.
  * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [tlscert.html The tlscert Parameter] for details.)
+ * If the file specified by '''tlscert''' doesn't already include the private key, the '''tlskey''' attribute may be used to specify a separate file containing it.
 * User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.
 
 To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:
@@ -1727,6 +1737,11 @@ While TLS/SSL authenticated and encrypted sessions are substantially more secure
 
 Any kind of full session encryption should be used with caution in performance-sensitive applications.
 
+[=#sqlrclientlimitations]
+=== Limitations ===
+
+The SQLRClient protocol is SQL Relay's own, so it has no notable feature gaps the way the emulated protocols do.  The one thing worth knowing about is the version compatibility rule described under [#sqlrclientversions Protocol Versions] above: a newer client cannot talk to an older server, so the server side of any link - including a //router// instance talking to the instances behind it - has to be upgraded first.
+
 [[br]][=#mysqlprotocol]
 == !MySQL Protocol ==
 
@@ -1843,6 +1858,21 @@ The //handshake// attribute on the listener tag chooses which one the module sen
 }}}
 
 There is normally no reason to set this.  It exists only for a client old enough to require the legacy handshake, and switching it on for a modern client doesn't degrade gracefully - the client simply fails to understand the packet.
+
+[=#mysqlclientprotocol]
+=== Client Protocol Flags ===
+
+Separately from the handshake packet version, the handshake also advertises a set of capability flags that tell the client what the server can do.  Two of those flags - CLIENT_PROTOCOL_41 (the 4.1-and-later wire format) and CLIENT_PLUGIN_AUTH (pluggable authentication methods) - are controlled by the //clientprotocol// attribute on the listener tag.
+
+Setting //clientprotocol// to "41" (the default) advertises both flags, which is what every currently supported !MySQL/MariaDB client expects.  Setting it to any other explicit value clears both flags, for a client too old to speak the 4.1 protocol at all.  Leaving it unset, or setting it to 0 or to something that isn't a number, is the same as setting it to 41.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeclientprotocol.conf@
+}}}
+}}}
+
+As with //handshake//, there is normally no reason to set this.  It exists only for a client old enough to predate the 4.1 protocol.  It has no effect when //handshake// is also set to send the legacy protocol 9 packet, which carries no capability flags at all.
 
 [=#mysqlauth]
 === Authentication/Encryption Options ===
@@ -1971,6 +2001,7 @@ The following configuration enables TLS/SSL encryption for an instance of SQL Re
 * The '''tls''' attribute enables (or disables) TLS/SSL encryption.
 * The '''tlscert''' attribute specifies the TLS/SSL certificate chain to use.
  * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [tlscert.html The tlscert Parameter] for details.)
+ * If the file specified by '''tlscert''' doesn't already include the private key, the '''tlskey''' attribute may be used to specify a separate file containing it.
 * User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.
 
 To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:
@@ -2170,6 +2201,7 @@ The implementation of the !MySQL protocol is likely sufficient for most applicat
 * mysql_send_long_data() is not supported.
 * mysql_info() will always returns NULL when used with SQL Relay.
 * MYSQL_FIELD.org_name/org_name_length and MYSQL_FIELD.org_table/org_table_length are not supported.
+* LOAD DATA LOCAL INFILE is not supported - the module never advertises CLIENT_LOCAL_FILES, so a client can't ask it to read a local file into a table.  Server-side LOAD DATA INFILE, reading a file already on the database server, works as an ordinary query, but its reply doesn't include the usual "Records: x Deleted: x Skipped: x Warnings: x" summary.
 * Kerberos authentication and encryption are not supported.
 
 [[br]][=#postgresqlprotocol]
@@ -2275,6 +2307,19 @@ The !PostgreSQL protocol module also has a //debug// attribute.  If debug="yes" 
 
 When using the !PostgreSQL protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
 
+[=#postgresqlpasswords]
+=== Password Method ===
+
+By default, the !PostgreSQL protocol module challenges a connecting client for an md5 hash of its password rather than the password itself.  Setting the //passwords// attribute on the listener tag to "cleartext" makes the module accept the password itself instead.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqlfecleartext.conf@
+}}}
+}}}
+
+Cleartext passwords are required when a one-way password encryption module is used for a database user's password - see [#pwdenc Password Encryption] for why - and sends the password over the network as typed, so it should only be used with TLS or on a trusted network.
+
 [=#postgresqlconnectstringsauth]
 === Connect Strings Auth ===
 
@@ -2351,6 +2396,7 @@ The following configuration enables TLS/SSL encryption for an instance of SQL Re
 * The '''tls''' attribute enables (or disables) TLS/SSL encryption.
 * The '''tlscert''' attribute specifies the TLS/SSL certificate chain to use.
  * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [tlscert.html The tlscert Parameter] for details.)
+ * If the file specified by '''tlscert''' doesn't already include the private key, the '''tlskey''' attribute may be used to specify a separate file containing it.
 * User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.
 
 To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:
@@ -2512,6 +2558,10 @@ The implementation of the !PostgreSQL protocol is likely sufficient for most app
 
 * Kerberos authentication and encryption are not supported.
 * Multi-statement queries are not supported.
+* Result sets are always returned in text format, even if a client requests binary format.
+* A binary-format bind parameter isn't supported for every type - date, time, timetz, timestamp, timestamptz, interval and oid are notable gaps, so a driver that binds these in binary (rather than as text) will fail.
+* The COPY sub-protocol (COPY FROM STDIN / COPY TO STDOUT) is not implemented.
+* MOVE and FETCH always report a row count of 0, rather than the number of rows actually moved or fetched.
 
 [[br]][=#tdsprotocol]
 == TDS Protocol ==
@@ -2522,7 +2572,7 @@ If an instance speaks the TDS client-server protocol, then any client that wishe
 
 Unlike the Oracle protocol module, the TDS protocol module is complete for query execution, including TLS/SSL encryption and authentication.  Clients log in, run queries, and read result sets, and most of the module's configuration doesn't need documenting because the defaults work.  The sections below cover the options that do - notably the version and packet size that the module negotiates, which is what compatibility with a particular client usually turns on.
 
-Compatibility has been verified in SQL Relay's own test suite against !FreeTDS, using both its ct-lib API and its tsql command line program.  Since TDS is a standard protocol, other MS-TDS-speaking clients and drivers - isql, sqlcmd, jTDS, and similar - should also work, but they haven't been tested in-tree.
+Compatibility has been verified in SQL Relay's own test suite against !FreeTDS, using both its ct-lib API and its tsql command line program, and separately against SAP/Sybase's own Open Client (ct-lib), which is how the pre-TDS7 (TDS 5.0) login path is exercised.  Since TDS is a standard protocol, other MS-TDS-speaking clients and drivers - isql, sqlcmd, jTDS, and similar - should also work, but they haven't been tested in-tree.
 
 [=#tdsconfiguration]
 === Basic Configuration ===
@@ -2678,6 +2728,7 @@ The following configuration enables TLS/SSL encryption for an instance of SQL Re
 * The '''tls''' attribute enables (or disables) TLS/SSL encryption.
 * The '''tlscert''' attribute specifies the TLS/SSL certificate chain to use.
  * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [tlscert.html The tlscert Parameter] for details.)
+ * If the file specified by '''tlscert''' doesn't already include the private key, the '''tlskey''' attribute may be used to specify a separate file containing it.
 
 TDS negotiates encryption in the PRELOGIN exchange, before the login is sent, and the module answers with what the client asked for:
 
@@ -2743,6 +2794,12 @@ The implementation of the TDS protocol is likely sufficient for most application
 
 * TLS/SSL mutual authentication requires a client that can present a client certificate.  The freetds client cannot.  See [#tdstls TLS/SSL Encryption and Authentication] above.
 * For odbc-backed instances, the connect string needs mars=yes for cursors and positioned updates to work.  Without it, a query sent while another cursor still has rows pending fails with "Connection is busy with results for another command".  See the [configreference.html#odbc SQL Relay Configuration Reference] for the //mars// option.
+* TDS 5.0 is the only pre-TDS7 dialect a client can actually log in with.  A client that declares an older dialect (4.2, 4.6, or 4.9.5) is refused with an error, even though some of those are otherwise legal values for the //tdsversion// listener option.
+* A pre-TDS7 login that declares more than one byte order for integers, floats and datetimes is refused.
+* A TDS-native encrypted login (SEC_LOGPWD/CS_SEC_ENCRYPTION) requires a password cipher that SQL Relay loads from SAP's own libsybcomn64 library on the SQL Relay host; if that library isn't installed, or doesn't provide the cipher, the module refuses the login and asks the client to disable password encryption and log in again.  This is separate from, and unrelated to, TLS/SSL encryption.
+* Bulk copy ("insert bulk") is supported, but not as a true bulk load: each incoming row becomes its own INSERT statement and its own round trip to the back-end database, rather than one round trip for the whole batch.  It is also not supported at all when sent as an RPC, or under the TDS 5.0 (pre-TDS7/ct-lib) dialect.
+* A positioned update or delete issued as a numbered cursor operation (sp_cursor, or the TDS 5.0 curupdate/curdelete tokens) can only see the first 1024 buffered rows of a multi-row fetch.  Positioning past that limit fails with "The cursor is not on a row that can be updated".  This cap doesn't apply to an ordinary WHERE CURRENT OF sent as a plain query, which is handled by the back-end database's own cursor instead.
+* A few TDS 5.0 (pre-TDS7/ct-lib) edge cases aren't implemented: the sp_cursorprepare, sp_cursoropen, sp_cursorexecute, sp_cursorprepexec and sp_cursorfetch numbered cursor procedures sent as RPCs (sp_cursor and sp_cursorclose work normally), the "procname" dynamic-SQL type, and a result set wider than 65535 columns or with more than 65535 bytes of metadata.
 
 [[br]][=#oracleprotocol]
 == Oracle Protocol ==
@@ -2844,6 +2901,8 @@ An Oracle client's connect descriptor names a SID or SERVICE_NAME - either is ju
 The //sid// option gives the Oracle protocol module the same check.  Set it to the SID/SERVICE_NAME (or a comma-separated list of them) this instance should accept; a client naming anything else is refused with ORA-12514 before it gets as far as a login prompt.  Matching is case-insensitive, and either CONNECT_DATA key - SID or SERVICE_NAME - is accepted from the client, since a client only ever sends whichever one its own connect descriptor used.
 
 Leaving //sid// unset accepts any SID/SERVICE_NAME a client asks for, which is the default.
+
+A connect descriptor that names no SID or SERVICE_NAME at all is let through even when //sid// is set, since there's nothing to check it against.
 
 {{{#!blockquote
 {{{#!code
@@ -3075,7 +3134,16 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:
 
 * Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.
-* The module always authenticates with O5LOGON, Oracle's challenge/response exchange.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - O5LOGON (or a newer verifier) is mandatory in every client tested against this module.  The //oracle_userlist// and //oracle_database// auth modules also accept an //oracle_clear_password// method, for a protocol module that might need password-based authentication without O5LOGON, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.
+* The module always authenticates with O5LOGON (or O3LOGON when verifiertype="9i"), Oracle's challenge/response exchanges.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - a challenge/response exchange is mandatory in every client tested against this module.  The //oracle_userlist// and //oracle_database// auth modules also accept an //oracle_clear_password// method, for a protocol module that might need password-based authentication without a challenge/response exchange, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.
+* The Oracle protocol module doesn't support TLS/SSL (TCPS) or Kerberos encryption or authentication between the Oracle client and SQL Relay server.  Setting //tls// or //krb// on an Oracle listener still loads the configured certificate or Kerberos credentials (and can print a warning if that fails), but neither is ever actually used on the wire - traffic after login stays in the clear, aside from whatever Oracle's own native network encryption would add, which is also not supported (see above).
+* A LOB value can be bound into an insert or update normally, but once a client has a LOB locator - from a fetched CLOB, BLOB or BFILE column - that locator itself is read-only.  Getting its length, and reading, opening or closing it through the locator all work, but any operation that would change what the locator points to or create a new LOB through it - write, append, trim, erase, creating or freeing a temporary LOB - fails with ORA-03001: unimplemented feature, and the session stays usable afterwards.  Asking whether a locator is currently open (as opposed to a bfile's existence, see below) also fails the same way.  A BFILE's file name, asked for through the locator, fails the same way too, rather than coming back empty; only whether the file exists is answered (faked from whether the LOB has any length at all, since nothing behind SQL Relay actually opens the file to check).
+* A LOB locator is only valid while its row is still the cursor's current row.  A result set containing a LOB column is sent one row per fetch, and the next fetch, a re-execute, or closing the cursor releases the previous row's LOB locators.  Reading a LOB from a released locator afterwards fails with ORA-22275: invalid LOB locator specified.  So an application has to read a row's LOBs before moving on to the next row - fetching an entire result set first and reading LOBs afterwards (for example python-oracledb's fetchall() followed by read(), or a JDBC Clob kept across rs.next()) won't work.  This only applies when the back-end connection is itself Oracle; some other backends send the LOB's value inline in the row instead of handing out a locator, in which case none of this applies.  A legacy OCI7 client (verifiertype="9i") also always gets LOB values inline, even against an Oracle back-end.
+* A bound TIMESTAMP, TIMESTAMP WITH TIME ZONE, or TIMESTAMP WITH LOCAL TIME ZONE value is truncated to a plain DATE on the wire: fractional seconds are dropped and any time zone offset is discarded.
+* A CLOB character above the Basic Multilingual Plane (for example, most emoji) is not converted to a UTF-16 surrogate pair when read, and the read position is also advanced by the wrong amount afterward - so a CLOB read that crosses one of these characters not only garbles it, but can skip some of the text that follows it in the same read.
+* Cancelling a running statement - OCIBreak, Ctrl-C in sqlplus, or a driver's own cancel/interrupt call - does not interrupt it on the back-end.  The module only checks for a break request between calls, so a long-running statement keeps running until it finishes on its own; the cancel is answered afterwards.
+* A few less commonly used operations aren't implemented and get ORA-03001 if a client sends them, including: distributed and two-phase-commit/XA transactions, database startup/shutdown, an explicit TTI-level cancel, and DESCRIBE2.  Setting an end-to-end tracing attribute (module, action, or client identifier) also gets ORA-03001, and since that request arrives piggybacked on the client's next real call, that next call fails too, not just the attribute.  Any other function code the module doesn't recognize is refused the same way.
+* A fetch asking for more than 100,000 rows fails with ORA-20004, and a batch whose total size grows past 32MB fails with ORA-20005, rather than returning a partial result.
+* Legacy OCI7 clients (verifiertype="9i") can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values; binding any other type is refused.
 
 [[br]][=#firebirdprotocol]
 == Firebird Protocol ==
@@ -3317,6 +3385,145 @@ The implementation of the Firebird protocol isn't 100% complete.  Some notable l
 * A few other, rarely used operations aren't implemented either, including op_ping, the scrollable cursor operations, reconnecting to a limbo transaction, and the older op_ddl, op_insert, and op_transact requests.  op_ping and the scrollable cursor operations are only available at protocol versions above the default - see [#firebirdprotocolversion Protocol Version] above.
 
 Except for a BLR request that fails to compile, a request that runs into one of these limitations ends the client's session.  The client is sent an error first, but the rest of the refused request is still unread on the socket at that point, so the connection can't be reused.  A client that treats the error as recoverable and carries on will find the connection closed.
+
+[[br]][=#teradataprotocol]
+== Teradata Protocol ==
+
+SQL Relay can be configured to speak the native Teradata protocol, enabling client programs for Teradata (eg. BTEQ, FastLoad, and the Teradata JDBC and ODBC drivers) to access SQL Relay directly.
+
+If an instance speaks the Teradata client-server protocol, then any client that wishes to use it must also speak the Teradata client-server protocol.  This means that most software written using the Teradata CLI, JDBC driver, or ODBC driver can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs) cannot access this instance.
+
+The Teradata protocol module is still under development, and is less mature than the other protocol modules.  A client's login is always relayed to a real Teradata server first, by a dedicated auth module - see [#teradataauth Authentication/Encryption Options] below - and only once that server answers does the module go on to handle the rest of the session itself.  '''That answer isn't actually checked for success or failure yet''' - see [#teradatalimitations Limitations] below, this is an important caveat before using this module anywhere access control matters.  SQL Relay's own automated test suite only exercises logging in and out.  The source tree also has manual test scripts, not wired into the automated suite, that exercise bteq, isql via the Teradata ODBC driver, fastload and tdload against a real Teradata server - see test/protocol/teradata/ - but they aren't run as part of a normal test pass.  See [#teradatalimitations Limitations] below before relying on this module.
+
+[=#teradataconfiguration]
+=== Basic Configuration ===
+
+To enable SQL Relay to speak the Teradata protocol, add the appropriate listener and auth tags:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The listener tag instructs SQL Relay to load the //teradata// protocol module, and listen on port 1025, which is the standard Teradata listener port.
+* The auth tag instructs the instance to relay every client login to a real Teradata server running on //teradatahost//, port 1025.  This is required - see [#teradataauth Authentication/Encryption Options] below, including an important caveat about how that login is checked.
+* The connection tag instructs the instance to run queries against the //teradata// ODBC DSN (see [#db-odbc-teradata Teradata (via ODBC)]) as user //teradatauser// with password //teradatapassword//.  Every query runs as this user, regardless of which credentials a client logged in with.
+* //translatebindvariables="yes"// is set on the instance tag because a Teradata USING-clause query keeps its :name-style bind variables after the module strips off the USING clause itself, and the ODBC driver underneath expects ?-style bind variables instead.
+* //autocommit=yes// is set on the connection string, matching how this module is exercised in SQL Relay's own test suite.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using, for example, BTEQ:
+
+{{{#!blockquote
+{{{#!code
+.logon localhost/teradatauser,teradatapassword
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+Note that the credentials a client logs in with (//teradatauser/////teradatapassword// above) are relayed to the real Teradata server named in the auth tag, not checked against the connection tag's credentials - see [#teradataauth Authentication/Encryption Options] below, including an important caveat about how that login is checked.
+
+[=#teradatalistener]
+=== Listener Options ===
+
+By default, SQL Relay listens on port 9000.  Since Teradata's standard port is 1025, the listener tag above sets port="1025" explicitly.
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+The Teradata protocol module also has a //debug// attribute, which works the same way as it does for the other protocol modules - see [#tdslistener the TDS Protocol's Listener Options] above.
+
+The generic //tls// and //krb// listener options don't do anything useful on a Teradata listener - see [#teradatalimitations Limitations] below.
+
+[=#teradataauth]
+=== Authentication/Encryption Options ===
+
+Unlike the other protocol modules, the Teradata protocol module doesn't authenticate clients against the connect string's own user/password, a user list, or the database itself.  Instead, it relays each client's login attempt to a real Teradata server.  This is done by the //teradata_sidechannel// auth module, which is required - a Teradata listener with no auths tag configured fails every login, because the default connect-strings auth fallback doesn't exist for this protocol.
+
+'''The real server's answer isn't actually checked yet.'''  As of this release, the auth module treats getting any reply back from the real server as a successful login, without checking whether that reply was actually a login success or a login failure.  A client whose credentials the real server would reject still gets to run queries, as the connection tag's own database user.  See [#teradatalimitations Limitations] below.  Don't rely on a Teradata listener to reject a client the real server would reject.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradatafebasic.conf@
+}}}
+}}}
+
+* '''host''' - the host name or IP address of the real Teradata server to check logins against.  Required.
+* '''port''' - the port of the real Teradata server.  Required; there is no default, so omitting it is the same as setting it to 0.
+
+Once a client's login is relayed and answered, every query it sends runs through the connection tag's own connection - as the connection tag's own user, not the client's.  Each sqlr-connection process keeps its side-channel session to the real Teradata server open between client logins (rather than closing it after each one), so that a FastLoad job can find it again on a later request; as a result, each pooled connection ties up one session on the real Teradata server for as long as SQL Relay runs.
+
+A Teradata listener should not share an instance with a listener for another protocol: a login attempt from that other listener - whether it succeeded or failed there - can be handed to this auth module too, which assumes without checking that it's looking at Teradata-shaped credentials.
+
+[=#teradatapassthrough]
+=== Passthrough Mode ===
+
+The listener tag also accepts a //passthrough// attribute, which selects how logins and queries are handled at a lower level.  It accepts "enabled" or "disabled"; any other value, including leaving it unset, selects hybrid mode.
+
+Hybrid mode - the default, and the mode used throughout this section - is the only one that works.  It's what relays the login to a real Teradata server as described above, and then handles the rest of the session itself.
+
+The other two settings exist in the source but aren't usable yet:
+
+* //passthrough="disabled"// has the module negotiate and answer the login itself, without checking it against anything.  It offers only the TD2 authentication mechanism and returns a canned login response, so it accepts any credentials.
+* //passthrough="enabled"// is meant to relay the entire session, not just the login, straight through to the back-end connection.  It takes effect whenever the instance identifies its database type as "teradata" (dbase="teradata", or a dbtype= override in the connect string) - but SQL Relay has no connection module that actually implements a Teradata back-end connection, or the raw send/receive that this mode needs from one, so every session fails once this mode activates.  Don't set dbase="teradata" or a matching dbtype= override on a Teradata listener's instance.
+
+Leave //passthrough// unset.
+
+[=#teradatalimitations]
+=== Limitations ===
+
+The implementation of the Teradata protocol isn't 100% complete, and is less mature than the other protocol modules.  Some notable limitations follow:
+
+* Data encryption after login is not supported.  A client that asks for it will find the module can't decrypt what it sends afterward.
+* TLS/SSL and Kerberos encryption and authentication are not supported.  Setting the generic //tls// or //krb// listener options still loads the configured certificate or Kerberos credentials (and can print a warning if that fails), but neither is ever actually used on the wire.
+* In "disabled" passthrough mode, only the TD2 authentication mechanism is offered; in the default hybrid mode, whichever mechanisms the real Teradata server offers are used, since the login is relayed to it.
+* A batch or array bind (for example, the JDBC driver's addBatch() outside of a FastLoad) only keeps the last row of the batch.
+* A request containing more than one SQL statement only returns one statement's status and results.
+* A trailing "COMMIT WORK" in a request is silently stripped rather than executed.
+* BT/ET and BEGIN TRANSACTION/END TRANSACTION/ROLLBACK are mapped to begin/commit/rollback; an ANSI COMMIT is sent to the back-end as an ordinary query.
+* Abort, reassign, reconnect, test, auth-methods, elicit-data, default-connect, and direct messages all get an empty reply rather than being acted on.  A cancel sent as part of an ordinary continue message is handled, and ends the in-progress request.
+* RUN STARTUP always answers "No startup string defined for this user.", regardless of what's configured for the user on the real Teradata server.
+* In USING-clause bind variables, DECIMAL and NUMBER types are accepted but not decoded correctly, and any variables listed after one are misread as a result.  BYTEINT isn't recognized (TINYINT is).
+* INTERVAL, PERIOD, and TIME/TIMESTAMP WITH TIME ZONE result columns aren't mapped to a Teradata wire type.
+* Only one FastLoad job at a time is supported per SQL Relay host - the job is identified by the SQL Relay server's own host name, not the client's.  NODROP, CHECKPOINT, INDICATORS, and DATAENCRYPTION FastLoad options are ignored, and the error-row limit is fixed at 25.
+* TPT/tdload and !MultiLoad have not been tested against this module.
+* The relayed login isn't actually checked for success or failure - see [#teradataauth Authentication/Encryption Options] above.
 
 [[br]][=#multipleprotocols]
 == Multiple Protocols ==
@@ -4125,7 +4332,7 @@ There is a further restriction when a client speaks one of the database protocol
 
 Two protocols are affected, and they choose the method differently:
 
-* For the '''postgresql''' protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.
+* For the '''postgresql''' protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.  See [#postgresqlpasswords Password Method] under PostgreSQL Protocol above.
 * For the '''firebird''' protocol, the client chooses, by which item it puts the password in.  fbclient sends the legacy hash, so in practice a one-way module will not authenticate a normal firebird client no matter how the listener is configured.
 
 Use a two-way module for these listeners, or, for postgresql, configure the listener for cleartext passwords.  Note that cleartext sends the password over the network as typed, so it should only be used with TLS or on a trusted network.
@@ -5634,12 +5841,12 @@ In this configuration, DDL/DML queries are routed to the connectionid "master", 
 
 The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid attributes include:
 
-* '''host''' - the host name or IP address of the SQL Relay instance
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
 * '''port''' - the port of the SQL Relay instance
 * '''socket''' - the socket of the SQL Relay instance, if it is running locally
 * '''user''' - the user to use when connecting to the SQL Relay instance as
 * '''password''' - the password to use when connecting to the SQL Relay instance
-* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
 
 Note the use of a notification module to notify //dba@firstworks.com// if an //integrity_violation// event occurs.  SQL Relay must maintain parallel transactions on all databases that a query may be routed to.  An integrity violation occurs when a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeds on some of the back-ends but fails on others.  See [#notifications Notifications] for information about notification modules.
 
@@ -5687,12 +5894,12 @@ In this configuration, queries made by "oracle users" are routed to the connecti
 
 The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:
 
-* '''host''' - the host name or IP address of the SQL Relay instance
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
 * '''port''' - the port of the SQL Relay instance
 * '''socket''' - the socket of the SQL Relay instance, if it is running locally
 * '''user''' - the user to use when connecting to the SQL Relay instance as
 * '''password''' - the password to use when connecting to the SQL Relay instance
-* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
 
 
 [[br]][=#clientiplist]
@@ -5722,12 +5929,12 @@ Each octet of the '''ip''' attribute may be specfied as a number, a dash-separat
 
 The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:
 
-* '''host''' - the host name or IP address of the SQL Relay instance
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
 * '''port''' - the port of the SQL Relay instance
 * '''socket''' - the socket of the SQL Relay instance, if it is running locally
 * '''user''' - the user to use when connecting to the SQL Relay instance as
 * '''password''' - the password to use when connecting to the SQL Relay instance
-* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
 
 
 [[br]][=#clientinfolist]
@@ -5753,12 +5960,12 @@ In this configuration, queries made by users who send client info which contains
 
 The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:
 
-* '''host''' - the host name or IP address of the SQL Relay instance
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
 * '''port''' - the port of the SQL Relay instance
 * '''socket''' - the socket of the SQL Relay instance, if it is running locally
 * '''user''' - the user to use when connecting to the SQL Relay instance as
 * '''password''' - the password to use when connecting to the SQL Relay instance
-* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
 
 
 [[br]][=#usedatabase]
@@ -5803,12 +6010,12 @@ In this example, 3 SQL Relay instances are defined:
 
 The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:
 
-* '''host''' - the host name or IP address of the SQL Relay instance
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
 * '''port''' - the port of the SQL Relay instance
 * '''socket''' - the socket of the SQL Relay instance, if it is running locally
 * '''user''' - the user to use when connecting to the SQL Relay instance as
 * '''password''' - the password to use when connecting to the SQL Relay instance
-* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set)
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
 
 When the router instance starts, it gets the list of databases available from each of the other two instances, and routes to them accordingly.
 
@@ -5896,14 +6103,9 @@ Attempts to "use db2" would fail.
 
 === Query Normalization ===
 
-To make pattern matching easier, SQL Relay "normalizes" the query before
-matching it against the pattern.  The original query is run against the database
-but when matched against the pattern, whitespace is compresssed and the entire
-query (except for quoted strings) is converted to lower-case.
+The '''regex''' router module matches a query's patterns against the query exactly as the client sent it - the same raw text, in the same case, with whatever whitespace the client used.  It is not normalized or lower-cased first.
 
-When matching query operators, you must use lower-cased versions of them such
-as "select", "insert", "and", "or", etc.  When matching table names, you must
-use a lower-cased version of the table-name.
+So a pattern has to account for whatever case and whitespace the client's queries actually use; "^select ", "^SELECT " and "^Select " are three different patterns.  If a client's case or whitespace can't be relied on, add the //normalize// query translation module (see [#querytranslation Query Translation]) ahead of the router, which lower-cases and compresses whitespace in the query the router then sees.  It skips single-quoted string literals, and leaves double-quoted or back-quoted identifiers alone unless its own //convertcasedoublequoted// or //convertcasebackquoted// options are set.  It also normalizes the query that's actually run against the database, not just what the router matches against, so it changes what ends up in the database's own query log.
 
 === Perl Compatible Regular Expressions ===
 
@@ -5946,6 +6148,12 @@ can't route the individual queries run inside the stored procedure.  So, the
 stored procedure and all queries run inside of it will be run against whichever
 database it was routed to.
 
+=== Metadata/Catalog Introspection ===
+
+A router-backed instance doesn't implement any of the calls a client uses to list catalogs, schemas, tables, columns, procedures, or keys and indexes (getColumnList(), getTableList(), and similar, in the native client API's).  A client that calls one of them - including sqlrsh's "describe" command, and the metadata calls ODBC and JDBC drivers make - gets a "not implemented" error, rather than being routed to one of the downstream connections.
+
+A router-backed connection also doesn't report some backend-specific feature flags, since which features are actually available depends on which downstream database a given query ends up routed to.  For example, a client speaking the Firebird wire protocol to a router-backed instance won't get the close-and-re-execute handling that the Firebird protocol module otherwise provides for a cursor.
+
 === Parallel Transactions ===
 
 Router modules like '''userlist''', '''clientiplist''', and '''clientinfolist'''
@@ -5953,6 +6161,8 @@ route entire sessions to one database or another.  Router modules like
 '''regex''' route individual queries.  Behind the scenes, modules which route
 individual queries maintain parallel transactions on each of the databases that
 it is routing queries to, which present the following issues.
+
+'''usedatabase''' behaves like session routing in practice - once a client selects a database, its queries keep going to that connection - but it doesn't route entire sessions from the moment a client connects the way '''userlist''', '''clientiplist''' and '''clientinfolist''' do.  Before the client selects a database, its queries are still subject to the parallel-transaction behavior and integrity-violation checks described below.
 
 '''Integrity Violations'''
 
