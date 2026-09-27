@@ -10,7 +10,7 @@ include ../config.mk
 .cpp.obj:
 	$(CXX) $(CXXFLAGS) $(CXXSTD) $(CPPTESTCPPFLAGS) $(COMPILE) $<
 
-all: $(TESTALLSUBDIRS) $(TESTSCRIPTS) freeport$(EXE)
+all: $(TESTALLSUBDIRS) $(TESTSCRIPTS) freeport$(EXE) pgsslprobe$(EXE)
 	$(MKINSTALLDIRS) log/extensions
 
 # test.sh -randomports shells out to this to pick listener ports.  it only
@@ -18,6 +18,13 @@ all: $(TESTALLSUBDIRS) $(TESTSCRIPTS) freeport$(EXE)
 # apis are configured
 freeport: freeport.cpp freeport.$(OBJ)
 	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) freeport.$(OBJ) $(RUDIMENTSLIBS)
+
+# test.sh's listenerdisabled suite shells out to this to confirm that the
+# listener after a disabled one is paired with the correct protocol module
+# (#10308).  it only needs rudiments, so it builds everywhere, regardless of
+# which databases and apis are configured
+pgsslprobe: pgsslprobe.cpp pgsslprobe.$(OBJ)
+	$(LTLINK) $(LINK) $(LDFLAGS) $(OUT)$@$(EXE) pgsslprobe.$(OBJ) $(RUDIMENTSLIBS)
 
 all-c:
 	cd c $(AND) $(MAKE) all
@@ -82,7 +89,7 @@ clean:
 	cd legacy $(AND) $(MAKE) clean
 	cd protocol $(AND) $(MAKE) clean
 	cd stress $(AND) $(MAKE) clean
-	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db temp1 temp2 temp3 testexitstatus-*.tmp $(TESTSCRIPTS) *.out1 *.out2 *.lo *.o *.obj freeport$(EXE)
+	$(RM) sqlr-*.*.bt sybinit.err sqlrelay.conf.d/sqlite/sqlite.db sqlrelay.conf.d/listenerdisabled/listenerdisabled.db temp1 temp2 temp3 testexitstatus-*.tmp $(TESTSCRIPTS) *.out1 *.out2 *.lo *.o *.obj freeport$(EXE) pgsslprobe$(EXE)
 	$(RMTREE) log .libs stagedmodules
 
 tests: all

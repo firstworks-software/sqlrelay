@@ -256,6 +256,9 @@ instance_applicable() {
 		oracleprotocol)
 			MODULE=oracle
 			;;
+		listenerdisabled)
+			MODULE=sqlite
+			;;
 	esac
 
 	# skip if that module was not built
@@ -1716,6 +1719,58 @@ run_protocol_test() {
 	return 1
 }
 
+# regression coverage for #10305/#10308: a disabled <listener> tag among
+# several must not bind a port, and the listener configured after it must
+# still be paired with its own protocol module rather than one shifted over
+# from the gap the disabled tag leaves.  test/sqlrelay.conf.d/listenerdisabled
+# .conf.in configures three listeners - sqlrclient (9048), a disabled mysql
+# one (9049), and postgresql (9050); ping_instance() already proved the
+# sqlrclient one works before this runs.
+#
+# neither check needs a real client for that database: port_listening()
+# (already used by ping_instance() above) confirms the disabled listener's
+# port was never bound, and pgsslprobe sends the postgresql wire protocol's
+# SSLRequest packet and checks for the single-byte reply
+# (sqlrprotocol_postgresql's fingerprint) to confirm the postgresql listener
+# got the postgresql module rather than whatever landed at its shifted index
+run_listener_disabled_test() {
+
+	STATUS=0
+
+	echo "checking that the disabled listener (port 9049) is not bound..."
+	if port_listening 9049
+	then
+		echo "FAILED: port 9049 (disabled mysql listener) is listening"
+		printf "    % 8s: failed (disabled listener bound)\n" "listener" >> "$RESULTSLOG"
+		STATUS=1
+	else
+		echo "port 9049 correctly refuses connections"
+	fi
+	echo
+
+	echo "checking that the listener after it (port 9050) has the postgresql protocol module..."
+	REPLY=`$TESTDIR/pgsslprobe 9050`
+	if ( test "$REPLY" = "N" )
+	then
+		echo "port 9050 correctly answered as the postgresql protocol module"
+	else
+		echo "FAILED: port 9050 did not answer as the postgresql protocol module (got '$REPLY')"
+		printf "    % 8s: failed (protocol module misaligned)\n" "listener" >> "$RESULTSLOG"
+		STATUS=1
+	fi
+	echo
+
+	if ( test "$STATUS" = "0" )
+	then
+		printf "    % 8s: success\n" "listener" >> "$RESULTSLOG"
+	fi
+
+	echo "================================================================================"
+	echo
+
+	return $STATUS
+}
+
 # the crud test uses oracle-specific sql, so it runs only against oracle
 run_crud_test() {
 
@@ -1772,6 +1827,10 @@ run_instance_tests() {
 	case "$instance" in
 		mysqlprotocol|mysqlprotocoltls|mysqlprotocoltlsserverauth|mysqlprotocoltlsmutualauth|postgresqlprotocol|postgresqlprotocoltls|postgresqlprotocoltlsserverauth|postgresqlprotocoltlsmutualauth|tdsprotocoltls|tdsprotocoltlsserverauth|tdsfreetdsmssqlprotocol|tdsfreetdssapprotocol|tdssapprotocol|firebirdprotocol|oracleprotocol|teradataprotocol)
 			run_protocol_test "$instance"
+			failures=`expr $failures + $?`
+			;;
+		listenerdisabled)
+			run_listener_disabled_test
 			failures=`expr $failures + $?`
 			;;
 		*)

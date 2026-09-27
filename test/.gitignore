@@ -1,4 +1,5 @@
 /freeport
+/pgsslprobe
 *.o
 *.obj
 *.lo

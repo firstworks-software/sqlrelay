@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<instances>
+
+	<!-- regression coverage for #10305/#10308: a disabled listener tag
+	     among several must not bind a port, and the listener configured
+	     after it must still be paired with its own protocol module -
+	     sqlite backend, so this needs no live external database server,
+	     and fixed ports rather than -randomports tokens, since nothing
+	     here proxies a well known port that a real database also uses -->
+	<instance id="listenerdisabled" dbase="sqlite">
+		<listeners>
+			<listener protocol="sqlrclient" port="9048"/>
+			<listener protocol="mysql" port="9049" enabled="no"/>
+			<listener protocol="postgresql" port="9050"/>
+		</listeners>
+		<connections>
+			<connection string="db=@abs_top_builddir@/test/sqlrelay.conf.d/listenerdisabled/listenerdisabled.db;user=testuser;password=testpassword"/>
+		</connections>
+	</instance>
+
+</instances>
