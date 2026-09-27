@@ -9656,6 +9656,17 @@ bool sqlrprotocol_oracle::osql7(const byte_t *rp) {
 	}
 	rp+=skip;
 
+	// a size over maxquerysize is refused below anyway, once the text
+	// behind it has been read - checking it here too, before
+	// getOci7Text() waits for that much of it to arrive, keeps a garbage
+	// or misdecoded size from stalling the session for the continuation
+	// timeout instead of just failing outright
+	if (querysize>maxquerysize) {
+		debugWrite("query size %d exceeds max query size %d",
+					querysize,maxquerysize);
+		return false;
+	}
+
 	// the sql text
 	const byte_t	*query=NULL;
 	uint32_t	querybytes=0;
@@ -10263,6 +10274,17 @@ bool sqlrprotocol_oracle::parseExecute(const byte_t *rp) {
 		!getPointer(rp,end,&querypointer,&rp) ||
 		!getAuthCount(rp,end,&querysize,4,&rp)) {
 		debugWrite("truncated parse-execute request");
+		return false;
+	}
+
+	// a size over maxquerysize is refused below anyway, once the text
+	// behind it has been read - checking it here too, before
+	// getOci7Text() waits for that much of it to arrive, keeps a garbage
+	// or misdecoded size from stalling the session for the continuation
+	// timeout instead of just failing outright
+	if (querysize>maxquerysize) {
+		debugWrite("query size %d exceeds max query size %d",
+					querysize,maxquerysize);
 		return false;
 	}
 
