@@ -20296,8 +20296,14 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 	// the rules below are a real 10.2 server's, from the captures named
 	// 10295-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy and
 	// 10315-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy in
-	// test/protocol/oracle/samples/, cited below by SEQUENCE.  anything
-	// they don't name leaves the call status alone - a select, a failed
+	// test/protocol/oracle/samples/, cited below by SEQUENCE.  the same
+	// rules hold against a real 12.2 server too - dml-dml-commit,
+	// rollback-dml-commit, commit-select and ddl-alone all answer
+	// identically there, in 10325-redhat9x86-oci7-native-SEQUENCE-
+	// realserver.oraproxy - so updateQuery3CallStatus()'s differences
+	// from this function are a call-type difference, not a
+	// server-version one.  anything they don't name leaves the call
+	// status alone - a select, a failed
 	// dml ([0029] of dml-error-rollback stays 2), a statement a filter
 	// turned away, or a pl/sql block.  a pl/sql block can open or end a
 	// transaction, but nothing here can see whether it did: plsql-null
@@ -20353,9 +20359,11 @@ void sqlrprotocol_oracle::updateQuery3CallStatus(sqlrservercursor *cursor,
 	// 10314-dev-pythonoracledb-thin-SEQUENCE-realserver.out in
 	// test/protocol/oracle/samples/.  they differ from
 	// updateOci7CallStatus()'s mainly in when 4 clears: a successful
-	// parse clears it here, where a 10.2 server answering oci7 kept it
-	// until the logoff.  a statement a filter turned away and a pl/sql
-	// block leave the call status alone, as they do there
+	// parse clears it here, where the same 12.2 server answering an oci7
+	// client keeps it until the logoff (see updateOci7CallStatus()) - a
+	// call-type difference, not a server-version one.  a statement a
+	// filter turned away and a pl/sql block leave the call status alone,
+	// as they do there
 	oraclestatementkind_t	kind=getStatementKind(cursor);
 
 	// ddl commits before it is parsed, so it ends a transaction even when

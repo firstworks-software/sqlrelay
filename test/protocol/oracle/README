@@ -2266,6 +2266,40 @@ missing bytes silently.
                                       module's login reply leaving out
                                       AUTH_MAX_OPEN_CURSORS (#10324).
 
+    10325-redhat9x86-oci7-native-VARIANT-realserver.oraproxy
+    (each with a matching .out)
+                                     four of oci7transaction.cpp's
+                                      #10295 variants - dml-dml-commit,
+                                      rollback-dml-commit,
+                                      commit-select and ddl-alone -
+                                      captured the same way as the
+                                      10295-*-realserver captures above,
+                                      but against oracle122 (12.2,
+                                      AL32UTF8) rather than oracle102,
+                                      now that a real 9i client's
+                                      O3LOGON login reaches it directly
+                                      (see below). every call status
+                                      matches its 10295 counterpart
+                                      exactly: dml-dml-commit's [0022]
+                                      and [0026] still answer 2;
+                                      rollback-dml-commit's [0022]
+                                      parse reply still answers 5 (the
+                                      4 bit stays set across the parse)
+                                      before its [0024] execute answers
+                                      6; commit-select's [0026]
+                                      select-after-commit parse reply
+                                      still answers 5; ddl-alone's
+                                      parse and execute replies all
+                                      answer 5. so updateOci7CallStatus()
+                                      needs no change - 12.2 runs the
+                                      same oci7 rules 10.2 does, and
+                                      updateQuery3CallStatus()'s
+                                      differing rules are a call-type
+                                      difference (query3/OALL8 vs
+                                      oci7's separate parse and
+                                      execute calls), not a
+                                      server-version one (#10325).
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 
