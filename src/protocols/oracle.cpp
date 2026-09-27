@@ -2388,6 +2388,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// the sequence number the summary object has to echo back
 		byte_t		callnumber;
 
+		// set by switchSession() right after it sets callnumber from a
+		// piggyback's own seq byte, and cleared by whatever call the
+		// piggyback precedes (currently only version() consumes it) -
+		// tells that call not to overwrite callnumber with its own,
+		// different seq byte.  see version()'s comment for why this is
+		// necessary
+		bool		justpiggybacked;
+
 		// whether anything has executed yet this session - an oci7
 		// summary object's success iteration count is 1 once this is
 		// set and 0 until then, session-wide rather than per-cursor.
@@ -2852,6 +2860,7 @@ void sqlrprotocol_oracle::init() {
 
 	query3session=false;
 	callnumber=0;
+	justpiggybacked=false;
 	oci7executed=false;
 	lastwirecursorid=0;
 
@@ -20043,12 +20052,25 @@ bool sqlrprotocol_oracle::version(const byte_t *rp, bool istticall) {
 	// universalreps-login-version-select.cap: packet [0015]'s piggyback
 	// carries seq 4 and its embedded TTI_VERSION carries seq 5, and
 	// packet [0016]'s reply ends "...09 01 01 01 03" - end-to-end 3,
-	// which is 4-1, not 5-1.  So this call sets callnumber only on the
-	// bare (non-piggybacked, istticall=false) TTI_SWITCH_SESSION path,
-	// where this call has no separate outer envelope; the ordinary
-	// TTI_VERSION path (istticall=true) leaves whatever switchSession()
-	// already set alone
-	if (!istticall) {
+	// which is 4-1, not 5-1.
+	//
+	// istticall alone doesn't tell the piggybacked case apart from a
+	// genuine standalone TTI_VERSION dispatch (case TTI_VERSION in the
+	// main loop) - both call in here with istticall=true.  A standalone
+	// call, with no piggyback in front of it, has to set callnumber from
+	// its own seq byte same as any other call: confirmed against
+	// samples/9746-dev-oci23api7-native-datatypes-realserver.oraproxy,
+	// where an oci23-driving-oci7 client never piggybacks (that's a
+	// modern session-pooling feature the legacy oci7 calls don't use) -
+	// packet [0017]'s bare TTI_VERSION carries seq 4 and packet [0018]'s
+	// reply ends "...09 01 00 00 00 03 00" - end-to-end 3, which is 4-1.
+	// justpiggybacked is what actually tells the two apart: switchSession()
+	// sets it, alongside callnumber, right before the embedded call is
+	// dispatched out of the same buffer, and it's cleared here once
+	// consumed
+	if (justpiggybacked) {
+		justpiggybacked=false;
+	} else {
 		callnumber=seqnumber;
 	}
 
@@ -20250,8 +20272,11 @@ bool sqlrprotocol_oracle::switchSession(const byte_t *rp,
 	// a real client packs this in front of every call, including a
 	// TTI_VERSION - see version()'s comment on why its end-to-end
 	// sequence number is derived from this seq byte, the piggyback's
-	// own, rather than the embedded call's
+	// own, rather than the embedded call's.  justpiggybacked tells
+	// whichever call follows (dispatched fresh out of the same buffer,
+	// right after this returns) not to overwrite callnumber with its own
 	callnumber=seqnumber;
+	justpiggybacked=true;
 
 	if (!readLenPreInt(rp,end,&sessionid,&rp) ||
 		!readLenPreInt(rp,end,&serialnumber,&rp) ||
