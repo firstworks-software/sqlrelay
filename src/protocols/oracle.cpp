@@ -851,6 +851,10 @@
 // a describe-only execute sets this instead of OPTION_EXECUTE
 #define OPTION_DESCRIBE		(1<<17)
 
+// re-execute options, from the second options word - python-oracledb's
+// TNS_EXEC_OPTION_COMMIT_REEXECUTE, set when autocommit is on
+#define REEXECUTE_OPTION_COMMIT	(1<<0)
+
 // one odefin() rides in the query2 request as a descriptor: four raw bytes -
 // the wire datatype, a flag, a precision and a scale - and then this many
 // counts, of which the first is the client's buffer size and the sixth the
@@ -1360,6 +1364,15 @@ enum oraclebigchunkclr_t {
 	ORACLEBIGCHUNKCLR_AUTO=0,
 	ORACLEBIGCHUNKCLR_OFF,
 	ORACLEBIGCHUNKCLR_ON
+};
+
+// what a statement does to the session's end of call status
+enum oraclestatementkind_t {
+	ORACLESTATEMENTKIND_OTHER=0,
+	ORACLESTATEMENTKIND_FILTERED,
+	ORACLESTATEMENTKIND_DDL,
+	ORACLESTATEMENTKIND_DML,
+	ORACLESTATEMENTKIND_TRANSACTION
 };
 
 // what a query3 request's bind section says about one placeholder.  the
@@ -2035,22 +2048,34 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	rollback(const byte_t *rp);
 		bool	autoCommitOn(const byte_t *rp);
 		bool	autoCommitOff(const byte_t *rp);
-		bool	sendTransactionResponse(uint32_t callstatus);
-		bool	sendOci7StatusResponse(uint32_t callstatus);
+		bool	sendTransactionResponse();
+		bool	sendOci7StatusResponse();
 		bool	sendTransactionError(uint32_t cursorid=0);
 
-		// updates oci7callstatus for the statement on "cursor", once it
-		// has been parsed (with "executed" false) and again once it has
-		// been executed ("executed" true only if the execute succeeded)
+		// what the statement on "cursor" does to callstatus
+		oraclestatementkind_t	getStatementKind(
+						sqlrservercursor *cursor);
+
+		// updates an oci7 session's callstatus for the statement on
+		// "cursor", once it has been parsed (with "executed" false) and
+		// again once it has been executed ("executed" true only if the
+		// execute succeeded)
 		void	updateOci7CallStatus(sqlrservercursor *cursor,
 							bool executed);
 
+		// updates a query3 session's callstatus for the statement on
+		// "cursor", once its parse ("executed" false) or its execute
+		// ("executed" true) has succeeded or failed
+		void	updateQuery3CallStatus(sqlrservercursor *cursor,
+							bool executed,
+							bool succeeded);
+
 		// true if "query" starts with a ddl verb that
 		// determineQueryType() calls "etc"
-		bool	isOci7OtherDdl(const char *query);
+		bool	isOtherDdl(const char *query);
 
 		// true if "query" (a select) locks rows with "for update"
-		bool	isOci7SelectForUpdate(const char *query);
+		bool	isSelectForUpdate(const char *query);
 
 		// version
 		bool	version(const byte_t *rp, bool istticall);
@@ -2415,13 +2440,14 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// see putOci7Summary()
 		bool		oci7executed;
 
-		// the end of call status an oci7 client is answered with.  a
-		// real server keeps it per session and sends it in nearly
-		// every reply, and its values act as flags: 1 no transaction
-		// open, 2 one open, 4 one has ended at least once this
-		// session, which sticks until the logoff.  see
-		// updateOci7CallStatus()
-		uint32_t	oci7callstatus;
+		// the end of call status a client is answered with.  a real
+		// server keeps it per session and sends it in nearly every
+		// reply, and its values act as flags: 1 no transaction open,
+		// 2 one open, 4 one has ended.  an oci7 session and a query3
+		// session follow different rules for it, most visibly for when
+		// 4 clears - see updateOci7CallStatus() and
+		// updateQuery3CallStatus()
+		uint32_t	callstatus;
 
 		// the wire cursor id of the last incoming request that named one
 		// - not necessarily a cursor that still exists or ever resolved,
@@ -2883,7 +2909,7 @@ void sqlrprotocol_oracle::init() {
 	callnumber=0;
 	justpiggybacked=false;
 	oci7executed=false;
-	oci7callstatus=1;
+	callstatus=1;
 	lastwirecursorid=0;
 
 	resppacket=NULL;
@@ -8872,7 +8898,7 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	// where a zero in the portable encoding is one byte whatever its width.
 	//
 	// five fields carry a value: the end of call status at the front (see
-	// oci7callstatus), the cursor id, the command type, the sequence number
+	// callstatus), the cursor id, the command type, the sequence number
 	// of the call being answered, and the success iteration count.  the
 	// parse error offset is a sixth that a real server sometimes leaves
 	// set, but that this module always sends 0 for - see below.  the
@@ -8883,7 +8909,7 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
-	writeLenPreInt(&reqpacket,oci7callstatus);
+	writeLenPreInt(&reqpacket,callstatus);
 
 	// the end to end sequence number, the second of the two fields
 	// putSummary() writes at the front, and the one this object was
@@ -8989,7 +9015,7 @@ void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,
 	writeLenPreInt(&reqpacket,0);
 
 	debugStart("oci7 summary");
-	debugWrite("call status: %d",oci7callstatus);
+	debugWrite("call status: %d",callstatus);
 	debugWrite("cursor id: %d",cursorid);
 	debugWrite("command type: %d",commandtype);
 	debugWrite("call number: %d",callnumber);
@@ -9017,7 +9043,7 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	// except the ones written as fields below, so those are the only ones
 	// with any evidence for what varies.
 	//
-	// end of call status (see oci7callstatus) is a fixed 4-byte little
+	// end of call status (see callstatus) is a fixed 4-byte little
 	// endian field, the same as decode_o3logon_summary_native() in
 	// test/protocol/oracle/oradecode already established for this object's
 	// use as the o3logon challenge's tail. it is 1 in all four of these
@@ -9045,7 +9071,7 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
-	writeLE(&reqpacket,oci7callstatus);
+	writeLE(&reqpacket,callstatus);
 
 	// a second byte that is 1 in every capture on file (login, parse,
 	// execute and fetch alike) - unexplained, but confirmed constant
@@ -9110,7 +9136,7 @@ void sqlrprotocol_oracle::putOci7SummaryNative(uint32_t cursorid,
 	reqpacket.append(pad7,sizeof(pad7));
 
 	debugStart("oci7 summary (native)");
-	debugWrite("call status: %d",oci7callstatus);
+	debugWrite("call status: %d",callstatus);
 	debugWrite("cursor id: %d",cursorid);
 	debugWrite("command type: %d",commandtype);
 	debugWrite("rows processed: %d",rowsprocessed);
@@ -9567,11 +9593,6 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	byte_t		ttccode=TTC_OK;
 	uint16_t	cursorid=cont->getId(cursor);
 	byte_t		statusttccode=TTC_STATUS;
-	// the session's call status - an open after a commit sends 5, packet
-	// [0032] of test/protocol/oracle/samples/
-	// 10295-redhat9x86-oci7-native-dml-dml-commit-realserver.oraproxy.
-	// a query3 session still sends 1
-	uint32_t	callstatus=(query3session)?1:oci7callstatus;
 	// a real server's end-to-end sequence number is always exactly the
 	// open call's own seq byte minus 1 - see sendCloseResponse() for the
 	// capture evidence, which shows the same rule on the same status
@@ -9590,6 +9611,10 @@ bool sqlrprotocol_oracle::sendOpenResponse(sqlrservercursor *cursor) {
 	// status behind it, costs the client the whole call: it sends a
 	// marker, cancels (ORA-01013), and the next call it makes fails
 	// ORA-03120
+	//
+	// the call status is the session's - an open after a commit sends 5,
+	// packet [0032] of test/protocol/oracle/samples/
+	// 10295-redhat9x86-oci7-native-dml-dml-commit-realserver.oraproxy
 	write(&reqpacket,statusttccode);
 	writeLenPreInt(&reqpacket,callstatus);
 	if (oci7endtoendseqnumber) {
@@ -9979,10 +10004,9 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	// so that encoding is untouched.  the call status is the session's,
 	// the same as the open response's - [0028] of
 	// 10315-redhat9x86-oci7-native-commit-describe-realserver.oraproxy
-	// in test/protocol/oracle/samples/ sends 5 after a commit.  a query3
-	// session still sends 1
+	// in test/protocol/oracle/samples/ sends 5 after a commit
 	write(&reqpacket,(byte_t)TTC_STATUS);
-	putAuthCount((query3session)?1:oci7callstatus,4);
+	putAuthCount(callstatus,4);
 	if (oci7endtoendseqnumber) {
 		putAuthCount(0,2);
 	}
@@ -12973,7 +12997,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 
 		// index 10 is TTC_ERROR, the start of the summary object, and
 		// indices 11-14 are its end of call status - see
-		// oci7callstatus.  packet [0028] of test/protocol/oracle/
+		// callstatus.  packet [0028] of test/protocol/oracle/
 		// samples/10295-redhat9x86-oci7-native-commit-select-
 		// realserver.oraproxy sends "04 05 00 00 00" there after a
 		// commit, and [0026] of 10295-redhat9x86-oci7-native-dml-
@@ -13014,7 +13038,7 @@ bool sqlrprotocol_oracle::sendQuery2Response(sqlrservercursor *cursor) {
 		}
 		write(&reqpacket,ttccode);
 		reqpacket.append(unknown,sizeof(unknown));
-		writeLE(&reqpacket,oci7callstatus);
+		writeLE(&reqpacket,callstatus);
 		reqpacket.append(unknown2,sizeof(unknown2));
 
 		// the literal above stops 41 bytes short of the 104 a real
@@ -13214,8 +13238,10 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 					cont->getQuerySize(cursor),
 					true,true,true,true)) {
 			debugWrite("prepare query failed");
+			updateQuery3CallStatus(cursor,false,false);
 			return sendQueryError(cursor);
 		}
+		updateQuery3CallStatus(cursor,false,true);
 	}
 
 	// a describe executes too - the column info it answers with only
@@ -13232,11 +13258,16 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 							SQLRQUERYTYPE_SELECT &&
 					!columntypescached[curid] &&
 					!rowssent[curid];
-	if ((options&OPTION_EXECUTE) || describecanexecute) {
+	// a describe alone doesn't count as an execute for the call status
+	bool		executing=((options&OPTION_EXECUTE)!=0);
+	if (executing || describecanexecute) {
 
 		// a placeholder the client never bound anything to
 		if (query3unbound) {
 			debugWrite("not all variables bound");
+			if (executing) {
+				updateQuery3CallStatus(cursor,true,false);
+			}
 			return sendNotAllVariablesBoundError(cursorid);
 		}
 
@@ -13260,12 +13291,26 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 
 			if (block<blocks &&
 				!installQuery3Binds(cursor,block)) {
+				if (executing) {
+					updateQuery3CallStatus(cursor,
+								true,false);
+				}
 				return sendNotAllVariablesBoundError(cursorid);
 			}
 
 			if (!cont->executeQuery(cursor,true,true,true,true)) {
 				debugWrite("execute query failed");
+				if (executing) {
+					updateQuery3CallStatus(cursor,
+								true,false);
+				}
 				return sendQueryError(cursor);
+			}
+
+			// per block, so an earlier block's dml still counts if
+			// a later one fails
+			if (executing) {
+				updateQuery3CallStatus(cursor,true,true);
 			}
 
 			// a ref cursor bind's result set isn't readable
@@ -13291,6 +13336,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		if (!cont->commit()) {
 			return sendTransactionError(wireCursorId(cursor));
 		}
+		callstatus=5;
 	}
 
 	return sendQuery3Response(cursor,options,cursorid,
@@ -16435,10 +16481,11 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	// whole from a live 11.2 server - written out one field at a time.
 	// the end of call status and the ecid sequence at the front are the
 	// two fields CCAP_TTC1 and CCAP_OCI1 bit 0x01 promise, and the module
-	// has to send them because it sets those bits
+	// has to send them because it sets those bits.  the end of call status
+	// is the session's - see callstatus
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
-	writeLenPreInt(&reqpacket,1);
+	writeLenPreInt(&reqpacket,callstatus);
 	writeLenPreInt(&reqpacket,0);
 	writeLenPreInt(&reqpacket,rowcount);
 	writeLenPreInt(&reqpacket,oranum);
@@ -16485,6 +16532,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	}
 
 	debugStart("summary");
+	debugWrite("call status: %d",callstatus);
 	debugWrite("cursor id: %d",cursorid);
 	debugWrite("call number: %d",callnumber);
 	debugWrite("row count: %d",rowcount);
@@ -17666,13 +17714,18 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 
 		if (block<query3blocks &&
 			!installQuery3Binds(cursor,block)) {
+			updateQuery3CallStatus(cursor,true,false);
 			return sendNotAllVariablesBoundError(cursorid);
 		}
 
 		if (!cont->executeQuery(cursor,true,true,true,true)) {
 			debugWrite("execute query failed");
+			updateQuery3CallStatus(cursor,true,false);
 			return sendQueryError(cursor);
 		}
+
+		// per block, as in query3()
+		updateQuery3CallStatus(cursor,true,true);
 
 		// a ref cursor bind's result set isn't readable until the
 		// execute that opened it has run
@@ -17686,6 +17739,15 @@ bool sqlrprotocol_oracle::reexecute(const byte_t *rp) {
 			query3affectedrows+=(uint32_t)
 					cont->getAffectedRows(cursor);
 		}
+	}
+
+	// the execute above already returned on failure, so this only runs
+	// on success, the same as query3()'s OPTION_COMMIT
+	if (moreoptions&REEXECUTE_OPTION_COMMIT) {
+		if (!cont->commit()) {
+			return sendTransactionError(cursorid);
+		}
+		callstatus=5;
 	}
 
 	// keep describe()'s guard current - the same reasoning as
@@ -18458,7 +18520,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		uint32_t	oranum=(endofrows)?ORA_NO_DATA_FOUND:0;
 
 		write(&reqpacket,(byte_t)TTC_ERROR);
-		writeLE(&reqpacket,oci7callstatus);
+		writeLE(&reqpacket,callstatus);
 		write(&reqpacket,(byte_t)1);
 		writeLE(&reqpacket,rowcount);
 		writeLE(&reqpacket,oranum);
@@ -18478,7 +18540,7 @@ bool sqlrprotocol_oracle::sendFetchResponse(sqlrservercursor *cursor,
 		if (getDebug()) {
 			debugStart("fetch response footer");
 			debugWrite(exactfetch?"exact fetch":"not exact fetch");
-			debugWrite("call status: %d",oci7callstatus);
+			debugWrite("call status: %d",callstatus);
 			debugWrite("rows processed: %d",rowcount);
 			debugWrite("error: %u",oranum);
 			debugHexDump(trailer1b,sizeof(trailer1b));
@@ -19790,17 +19852,12 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
-	// the session's call status - a close after a commit sends 5, packet
-	// [0030] of test/protocol/oracle/samples/
-	// 10295-redhat9x86-oci7-native-dml-dml-commit-realserver.oraproxy.
-	// a query3 session still sends 1
-	uint32_t	callstatus=(query3session)?1:oci7callstatus;
 	// a real server's end-to-end sequence number is always exactly the
 	// close call's own seq byte minus 1 - callnumber, a byte_t, wraps the
 	// same way that byte does when it passes 255.  packet [0024] of
 	// samples/9746-dev-oci23api7-native-datatypes-realserver.oraproxy
 	// answers a close whose own seq byte is 7 with "01 00 00 00 06 00" -
-	// a 4-byte callstatus of 1 followed by a 2-byte 6.  samples/10048-
+	// a 4-byte call status of 1 followed by a 2-byte 6.  samples/10048-
 	// dev-oci23api7-portable-describe-realserver.oraproxy shows the same
 	// rule in the portable encoding: "01 01 01 06" against sqlrelay's own
 	// (pre-fix) "01 01 00"
@@ -19824,6 +19881,10 @@ bool sqlrprotocol_oracle::sendCloseResponse(sqlrservercursor *cursor) {
 	// behind it, hangs the client - it reads the status message as a
 	// whole, so it waits on two bytes that never come and never goes on to
 	// its logoff
+	//
+	// the call status is the session's - a close after a commit sends 5,
+	// packet [0030] of test/protocol/oracle/samples/
+	// 10295-redhat9x86-oci7-native-dml-dml-commit-realserver.oraproxy
 	putAuthCount(callstatus,4);
 	if (oci7endtoendseqnumber) {
 		// 2 bytes wide in native encoding, not 4 - see the evidence
@@ -19855,7 +19916,7 @@ bool sqlrprotocol_oracle::disconnect(const byte_t *rp) {
 	debugEnd();
 
 	// a logoff ends the session, and its call status with it
-	oci7callstatus=1;
+	callstatus=1;
 
 	return sendDisconnectResponse();
 }
@@ -19872,11 +19933,11 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_STATUS;
-	// always 1, not oci7callstatus - a logoff ends the session, and a real
-	// server answers one with 1 even right after a commit left the session
-	// at 5: packet [0036] of test/protocol/oracle/samples/
+	// always 1, not the session's callstatus - a logoff ends the session,
+	// and a real server answers one with 1 even right after a commit left
+	// the session at 5: packet [0036] of test/protocol/oracle/samples/
 	// 10295-redhat9x86-oci7-native-dml-dml-commit-realserver.oraproxy
-	uint32_t	callstatus=1;
+	uint32_t	logoffcallstatus=1;
 	// unlike every other status message in this module, a logoff's
 	// end-to-end sequence number really is always 0, not derived from
 	// callnumber - confirmed against three real-server captures, at three
@@ -19885,7 +19946,7 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	// 10048-dev-oci23api7-bannerrewrite-both-realserver.oraproxy packet
 	// [0026], and samples/10048-dev-oci23api7-portable-describe-
 	// realserver.oraproxy packet [0036], all "01 01 00" (portable) or
-	// "01 00 00 00 00 00" (native) - callstatus 1, end-to-end 0.  see also
+	// "01 00 00 00 00 00" (native) - call status 1, end-to-end 0.  see also
 	// the "Oracle Wire Protocol - Disconnect" wiki page
 	uint32_t	endtoendseqnumber=0;
 
@@ -19903,14 +19964,14 @@ bool sqlrprotocol_oracle::sendDisconnectResponse() {
 	debugStart("disconnect response");
 	debugWrite("data flags: 0x%04x",dataflags);
 	debugTtcCode(ttccode);
-	debugWrite("call status: %d",callstatus);
+	debugWrite("call status: %d",logoffcallstatus);
 
 	writeBE(&reqpacket,dataflags);
 	write(&reqpacket,ttccode);
 	if (oci7) {
-		putAuthCount(callstatus,4);
+		putAuthCount(logoffcallstatus,4);
 	} else {
-		writeLenPreInt(&reqpacket,callstatus);
+		writeLenPreInt(&reqpacket,logoffcallstatus);
 		writeLenPreInt(&reqpacket,endtoendseqnumber);
 		debugWrite("end to end seq number: %d",endtoendseqnumber);
 	}
@@ -19941,8 +20002,8 @@ bool sqlrprotocol_oracle::commit(const byte_t *rp) {
 	if (!cont->commit()) {
 		return sendTransactionError();
 	}
-	oci7callstatus=5;
-	return sendTransactionResponse(oci7callstatus);
+	callstatus=5;
+	return sendTransactionResponse();
 }
 
 bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
@@ -19965,8 +20026,8 @@ bool sqlrprotocol_oracle::rollback(const byte_t *rp) {
 	if (!cont->rollback()) {
 		return sendTransactionError();
 	}
-	oci7callstatus=5;
-	return sendTransactionResponse(oci7callstatus);
+	callstatus=5;
+	return sendTransactionResponse();
 }
 
 bool sqlrprotocol_oracle::autoCommitOn(const byte_t *rp) {
@@ -19989,7 +20050,7 @@ bool sqlrprotocol_oracle::autoCommitOn(const byte_t *rp) {
 	if (!cont->setAutoCommitOn()) {
 		return sendTransactionError();
 	}
-	return sendTransactionResponse(oci7callstatus);
+	return sendTransactionResponse();
 }
 
 bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
@@ -20012,10 +20073,10 @@ bool sqlrprotocol_oracle::autoCommitOff(const byte_t *rp) {
 	if (!cont->setAutoCommitOff()) {
 		return sendTransactionError();
 	}
-	return sendTransactionResponse(oci7callstatus);
+	return sendTransactionResponse();
 }
 
-bool sqlrprotocol_oracle::sendTransactionResponse(uint32_t callstatus) {
+bool sqlrprotocol_oracle::sendTransactionResponse() {
 
 	// what a commit, rollback or autocommit change gets back on success.
 	// an oci7 client gets a bare status message (see
@@ -20023,9 +20084,10 @@ bool sqlrprotocol_oracle::sendTransactionResponse(uint32_t callstatus) {
 	// summary-object split every other cursorless ack in this module uses
 	// (sendCursorNotOpenError, sendMarkerCancelError,
 	// sendUnimplementedFunctionError), with success field values in place
-	// of an error
+	// of an error.  a real server answers a query3 session with a bare
+	// status message too, not a summary object
 	if (!query3session) {
-		return sendOci7StatusResponse(callstatus);
+		return sendOci7StatusResponse();
 	}
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -20042,7 +20104,7 @@ bool sqlrprotocol_oracle::sendTransactionResponse(uint32_t callstatus) {
 	return sendPacket(true);
 }
 
-bool sqlrprotocol_oracle::sendOci7StatusResponse(uint32_t callstatus) {
+bool sqlrprotocol_oracle::sendOci7StatusResponse() {
 
 	resetSendPacketBuffer(PACKET_DATA);
 
@@ -20092,7 +20154,7 @@ bool sqlrprotocol_oracle::sendOci7StatusResponse(uint32_t callstatus) {
 	// orol(), ocon() and ocof(), but a real server never sends one.
 	//
 	// ocon() and ocof() don't change the call status, they just echo
-	// the session's - see oci7callstatus.  5 once a rollback has ended a
+	// the session's - see callstatus.  5 once a rollback has ended a
 	// transaction, at [0022] and [0024] of 10295-redhat9x86-oci7-native-
 	// rollback-autocommit-toggle-realserver.oraproxy, and 2 with an
 	// insert pending, at [0024] of 10295-redhat9x86-oci7-native-dml-
@@ -20157,22 +20219,12 @@ bool sqlrprotocol_oracle::sendTransactionError(uint32_t cursorid) {
 	return sendPacket(true);
 }
 
-void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
-							bool executed) {
-
-	// the rules below are a real 10.2 server's, from the captures named
-	// 10295-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy and
-	// 10315-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy in
-	// test/protocol/oracle/samples/, cited below by SEQUENCE.  anything
-	// they don't name leaves the call status alone - a select, a failed
-	// dml ([0029] of dml-error-rollback stays 2), or a pl/sql block.  a
-	// pl/sql block can open or end a transaction, but nothing here can see
-	// whether it did: plsql-null stays 1, plsql-dml-commit goes to 2 and
-	// plsql-commit-inside goes to 5
+oraclestatementkind_t sqlrprotocol_oracle::getStatementKind(
+						sqlrservercursor *cursor) {
 
 	// a statement a filter turned away never reached the backend
 	if (cursor->getQueryStatus()==SQLRQUERYSTATUS_FILTER_VIOLATION) {
-		return;
+		return ORACLESTATEMENTKIND_FILTERED;
 	}
 
 	// classify the text here rather than using getQueryType() - with
@@ -20185,11 +20237,12 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 					cont->getQueryBuffer(cursor));
 
 	// ddl?  alter session and alter system aren't - they don't commit
-	bool	ddl=false;
 	if (querytype==SQLRQUERYTYPE_CREATE ||
-			querytype==SQLRQUERYTYPE_DROP) {
-		ddl=true;
-	} else if (querytype==SQLRQUERYTYPE_ALTER) {
+			querytype==SQLRQUERYTYPE_DROP ||
+			(querytype==SQLRQUERYTYPE_ETC && isOtherDdl(ptr))) {
+		return ORACLESTATEMENTKIND_DDL;
+	}
+	if (querytype==SQLRQUERYTYPE_ALTER) {
 		const char	*after=cont->skipWhitespaceAndComments(ptr+5);
 		bool	altersession=
 			(!charstring::compareIgnoringCase(after,"session",7) &&
@@ -20197,19 +20250,62 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 		bool	altersystem=
 			(!charstring::compareIgnoringCase(after,"system",6) &&
 					character::isWhitespace(after[6]));
-		ddl=(!altersession && !altersystem);
-	} else if (querytype==SQLRQUERYTYPE_ETC) {
-		ddl=isOci7OtherDdl(ptr);
+		return (altersession || altersystem)?
+					ORACLESTATEMENTKIND_OTHER:
+					ORACLESTATEMENTKIND_DDL;
 	}
+
+	// merge is dml that determineQueryType() calls "etc", and a select
+	// for update takes row locks, so it opens a transaction the same way
+	// dml does
+	switch (querytype) {
+		case SQLRQUERYTYPE_INSERT:
+		case SQLRQUERYTYPE_INSERTSELECT:
+		case SQLRQUERYTYPE_MULTIINSERT:
+		case SQLRQUERYTYPE_UPDATE:
+		case SQLRQUERYTYPE_DELETE:
+			return ORACLESTATEMENTKIND_DML;
+		case SQLRQUERYTYPE_ETC:
+			if (!charstring::compareIgnoringCase(ptr,"merge",5) &&
+					character::isWhitespace(ptr[5])) {
+				return ORACLESTATEMENTKIND_DML;
+			}
+			return ORACLESTATEMENTKIND_OTHER;
+		case SQLRQUERYTYPE_SELECT:
+			return (isSelectForUpdate(ptr))?
+					ORACLESTATEMENTKIND_DML:
+					ORACLESTATEMENTKIND_OTHER;
+		case SQLRQUERYTYPE_COMMIT:
+		case SQLRQUERYTYPE_ROLLBACK:
+			return ORACLESTATEMENTKIND_TRANSACTION;
+		default:
+			return ORACLESTATEMENTKIND_OTHER;
+	}
+}
+
+void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
+							bool executed) {
+
+	// the rules below are a real 10.2 server's, from the captures named
+	// 10295-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy and
+	// 10315-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy in
+	// test/protocol/oracle/samples/, cited below by SEQUENCE.  anything
+	// they don't name leaves the call status alone - a select, a failed
+	// dml ([0029] of dml-error-rollback stays 2), a statement a filter
+	// turned away, or a pl/sql block.  a pl/sql block can open or end a
+	// transaction, but nothing here can see whether it did: plsql-null
+	// stays 1, plsql-dml-commit goes to 2 and plsql-commit-inside goes
+	// to 5
+	oraclestatementkind_t	kind=getStatementKind(cursor);
 
 	// ddl commits at the parse, before it runs, so it ends a transaction
 	// whether it then succeeds or not.  [0020] of ddl-alone answers the
 	// parse of a drop that fails ORA-00942 with 5, [0024] of dml-ddl
 	// answers the parse of a drop with 5 while an insert was pending, and
-	// dml-ddl-misc shows the same for every verb isOci7OtherDdl() matches,
+	// dml-ddl-misc shows the same for every verb isOtherDdl() matches,
 	// including a grant that fails ORA-01917 ([0120])
-	if (ddl) {
-		oci7callstatus=5;
+	if (kind==ORACLESTATEMENTKIND_DDL) {
+		callstatus=5;
 		return;
 	}
 
@@ -20217,32 +20313,11 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 		return;
 	}
 
-	// merge is dml that determineQueryType() calls "etc", and a select
-	// for update takes row locks, so it opens a transaction the same way
-	// dml does - [0022] of select-for-update-idle sends 2, [0028] of
+	// getStatementKind() counts merge and a select for update as dml -
+	// [0022] of select-for-update-idle sends 2, [0028] of
 	// commit-select-for-update sends 6 and [0024] of
 	// autocommit-on-select-for-update sends 5
-	bool	dml=false;
-	switch (querytype) {
-		case SQLRQUERYTYPE_INSERT:
-		case SQLRQUERYTYPE_INSERTSELECT:
-		case SQLRQUERYTYPE_MULTIINSERT:
-		case SQLRQUERYTYPE_UPDATE:
-		case SQLRQUERYTYPE_DELETE:
-			dml=true;
-			break;
-		case SQLRQUERYTYPE_ETC:
-			dml=(!charstring::compareIgnoringCase(ptr,"merge",5) &&
-					character::isWhitespace(ptr[5]));
-			break;
-		case SQLRQUERYTYPE_SELECT:
-			dml=isOci7SelectForUpdate(ptr);
-			break;
-		default:
-			break;
-	}
-
-	if (dml) {
+	if (kind==ORACLESTATEMENTKIND_DML) {
 		// with autocommit on, dml commits itself - [0024] and [0028]
 		// of autocommit-on-dml-dml and [0024] of autocommit-on-merge
 		// send 5.  otherwise it opens a transaction, and whether one
@@ -20250,27 +20325,79 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 		// dml-dml-commit send 2, and [0024] of rollback-dml-commit and
 		// of rollback-merge-commit send 6
 		if (cont->getAutoCommit()) {
-			oci7callstatus=5;
+			callstatus=5;
 		} else {
-			oci7callstatus=(oci7callstatus&4)|2;
+			callstatus=(callstatus&4)|2;
+		}
+	} else if (kind==ORACLESTATEMENTKIND_TRANSACTION) {
+		// a commit or rollback run as a statement ends the
+		// transaction the same as ocom()/orol() - [0026] of
+		// dml-sqlcommit sends 5
+		callstatus=5;
+	}
+}
+
+void sqlrprotocol_oracle::updateQuery3CallStatus(sqlrservercursor *cursor,
+							bool executed,
+							bool succeeded) {
+
+	// the rules below are a real 12.2 server's, answering python-oracledb
+	// thin, from the captures named
+	// 10314-dev-pythonoracledb-thin-SEQUENCE-realserver.out in
+	// test/protocol/oracle/samples/.  they differ from
+	// updateOci7CallStatus()'s mainly in when 4 clears: a successful
+	// parse clears it here, where a 10.2 server answering oci7 kept it
+	// until the logoff.  a statement a filter turned away and a pl/sql
+	// block leave the call status alone, as they do there
+	oraclestatementkind_t	kind=getStatementKind(cursor);
+
+	// ddl commits before it is parsed, so it ends a transaction even when
+	// the parse or the execute then fails.  in a session that has never
+	// ended a transaction, a real server answers a failing ddl with 1
+	// instead (main-firstrun), which isn't tracked here
+	if (!succeeded) {
+		if (kind==ORACLESTATEMENTKIND_DDL) {
+			callstatus=5;
 		}
 		return;
 	}
 
-	switch (querytype) {
-		case SQLRQUERYTYPE_COMMIT:
-		case SQLRQUERYTYPE_ROLLBACK:
-			// a commit or rollback run as a statement ends the
-			// transaction the same as ocom()/orol() - [0026] of
-			// dml-sqlcommit sends 5
-			oci7callstatus=5;
+	// ddl waits for its execute - a successful prepare doesn't mean it
+	// won't still fail, which leaves 5
+	if (!executed) {
+		if (kind!=ORACLESTATEMENTKIND_DDL &&
+				kind!=ORACLESTATEMENTKIND_FILTERED) {
+			callstatus&=~(uint32_t)4;
+		}
+		return;
+	}
+
+	switch (kind) {
+		case ORACLESTATEMENTKIND_DML:
+			// with autocommit on, dml commits itself.  otherwise
+			// it opens a transaction, and 4 stays set if no parse
+			// cleared it - a re-execute right after a commit
+			// sends 6
+			if (cont->getAutoCommit()) {
+				callstatus=5;
+			} else {
+				callstatus=(callstatus&4)|2;
+			}
+			break;
+		case ORACLESTATEMENTKIND_DDL:
+			// a real server commits ahead of the parse, and the
+			// parse then clears 4
+			callstatus=1;
+			break;
+		case ORACLESTATEMENTKIND_TRANSACTION:
+			callstatus=5;
 			break;
 		default:
 			break;
 	}
 }
 
-bool sqlrprotocol_oracle::isOci7OtherDdl(const char *query) {
+bool sqlrprotocol_oracle::isOtherDdl(const char *query) {
 
 	// associate and disassociate (statistics) weren't captured - they
 	// need a statistics type to run - but oracle documents them as ddl
@@ -20289,7 +20416,7 @@ bool sqlrprotocol_oracle::isOci7OtherDdl(const char *query) {
 	return false;
 }
 
-bool sqlrprotocol_oracle::isOci7SelectForUpdate(const char *query) {
+bool sqlrprotocol_oracle::isSelectForUpdate(const char *query) {
 
 	// look for "for" (after whitespace or a close paren), then "update",
 	// as whole words, with whitespace or -- comments between them.  the
@@ -20407,7 +20534,7 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 	byte_t		statusttccode=TTC_STATUS;
-	uint32_t	callstatus=1;
+	uint32_t	versioncallstatus=1;
 	// see sendCloseResponse() for the capture evidence behind this rule -
 	// a real server's end-to-end sequence number is always exactly this
 	// call's own seq byte minus 1
@@ -20456,7 +20583,7 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	}
 	writeLenPreInt(&reqpacket,serverversionpacked);
 	write(&reqpacket,statusttccode);
-	writeLenPreInt(&reqpacket,callstatus);
+	writeLenPreInt(&reqpacket,versioncallstatus);
 	if (sendendtoendseqnumber) {
 		writeLenPreInt(&reqpacket,endtoendseqnumber);
 	}
@@ -20468,7 +20595,7 @@ bool sqlrprotocol_oracle::sendVersionResponse(uint32_t bufferlength) {
 	debugWrite("%s",serverversionbanner);
 	debugWrite("packed version: 0x%08x",serverversionpacked);
 	debugTtcCode(statusttccode);
-	debugWrite("call status: %d",callstatus);
+	debugWrite("call status: %d",versioncallstatus);
 	if (sendendtoendseqnumber) {
 		debugWrite("end to end seq number: %d",endtoendseqnumber);
 	}

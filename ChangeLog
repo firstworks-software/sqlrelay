@@ -2934,8 +2934,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module's query(), osql7() and
   parseExecute() not checking their query-size field against
   maxquerysize before waiting for that much data to arrive
-- fixed the oracle protocol module not tracking the OCI7 call status
-  across dml, ddl, commit and rollback
+- fixed the oracle protocol module not tracking the call status across
+  dml, ddl, commit and rollback
+- fixed the oracle protocol module ignoring a re-execute's commit option
 
 ### Security
 - fixed an authentication hole in the des password encryption module

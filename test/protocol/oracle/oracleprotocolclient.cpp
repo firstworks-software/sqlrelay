@@ -88,6 +88,10 @@ static const uint32_t	ORA_OPTION_SNDIOV=(1<<10);
 static const uint32_t	ORA_OPTION_NOPLSQL=(1<<15);
 static const uint32_t	ORA_OPTION_DESCRIBE=(1<<17);
 
+// reexecute()'s second options word: commit once the execute succeeds -
+// python-oracledb's TNS_EXEC_OPTION_COMMIT_REEXECUTE
+static const uint32_t	ORA_EXEC_OPTION_COMMIT_REEXECUTE=(1<<0);
+
 // PROTOCOL_VERSION_12 in src/protocols/oracle.cpp.  sendAccept() switches
 // to a 32-bit packet length at and above it, so a client that offers it has
 // to switch too - on the packet after the accept, not on the accept itself
@@ -2174,6 +2178,336 @@ static inline bool readCallStatus(oracleprotocolclient *client,
 	}
 
 	return client->readAuthCount(status,4);
+}
+
+// ---- modern reply decoding ----
+//
+// a query3 session's replies - to query3(), reexecute(), fetch(), and a
+// commit or rollback - all end in putSummary()'s summary object in
+// src/protocols/oracle.cpp, behind whatever else the reply carries.  its
+// first field is the end of call status, the same session call status the
+// legacy replies carry, which python-oracledb reads as call_status.
+// readQuery3Summary() below walks everything ahead of it, object by object,
+// then the summary itself, field by field.
+//
+// the helpers are "static inline" for the same reason the legacy decoders
+// further down are
+
+// a clr whose value nothing here needs
+static inline bool skipLenBytes(oracleprotocolclient *client) {
+	static unsigned char	value[ORA_MAX_PACKET_SIZE];
+	size_t			size=0;
+	bool			isnull=false;
+	return client->readLenBytes(value,sizeof(value),&size,&isnull);
+}
+
+// putDalc(): a count, then a clr unless the count is 0
+static inline bool skipDalc(oracleprotocolclient *client) {
+	uint32_t	size=0;
+	return client->readLenPreInt(&size) && (!size || skipLenBytes(client));
+}
+
+// a count prefixed int that may be negative - the sign is the count byte's
+// high bit, which readLenPreInt() refuses.  an out bind's null indicator
+// goes out as -1, "81 01"
+static inline bool skipSignedLenPreInt(oracleprotocolclient *client) {
+	unsigned char	count=0;
+	unsigned char	bytes[4];
+	return client->readByte(&count) && (count&0x7f)<=sizeof(bytes) &&
+				client->readBytes(bytes,count&0x7f);
+}
+
+// putDescribeInfo(), as it answers this client: a thin driver's clr
+// prologue rather than OCI's counted one, and a raw scale byte, since this
+// client sends ENCODING_CONV_LENGTH and isn't OCI - see
+// putColumnPrecisionScale()
+static inline bool skipQuery3DescribeInfo(oracleprotocolclient *client) {
+
+	uint32_t	skipint=0;
+	unsigned char	skipbyte=0;
+	uint32_t	colcount=0;
+
+	// prologue, max row size, column count and the constant behind it
+	if (!skipLenBytes(client) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&colcount) ||
+		(colcount && !client->readByte(&skipbyte))) {
+		return false;
+	}
+
+	// putColumnMetadata(), once per column
+	for (uint32_t i=0; i<colcount; i++) {
+
+		// type, flags, precision and scale
+		unsigned char	fixed[4];
+		if (!client->readBytes(fixed,sizeof(fixed))) {
+			return false;
+		}
+
+		// size, four zeros, character set, a byte, size again
+		for (uint32_t j=0; j<6; j++) {
+			if (!client->readLenPreInt(&skipint)) {
+				return false;
+			}
+		}
+		if (!client->readByte(&skipbyte) ||
+			!client->readLenPreInt(&skipint)) {
+			return false;
+		}
+
+		// a constant, the name's size, the name
+		if (!client->readByte(&skipbyte) ||
+			!client->readByte(&skipbyte) ||
+			!skipDalc(client)) {
+			return false;
+		}
+
+		// two zeros, the position, a zero
+		for (uint32_t j=0; j<4; j++) {
+			if (!client->readLenPreInt(&skipint)) {
+				return false;
+			}
+		}
+	}
+
+	// the date, then the data block and prefetch sizes
+	if (!skipDalc(client)) {
+		return false;
+	}
+	for (uint32_t j=0; j<5; j++) {
+		if (!client->readLenPreInt(&skipint)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// putRowHeader(): a flags byte and six counts, the first the column count
+static inline bool readQuery3RowHeader(oracleprotocolclient *client,
+						uint32_t *colcount) {
+	unsigned char	flags=0;
+	uint32_t	skipint=0;
+	if (!client->readByte(&flags) || !client->readLenPreInt(colcount)) {
+		return false;
+	}
+	for (uint32_t j=0; j<5; j++) {
+		if (!client->readLenPreInt(&skipint)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// putRowData(), for a row whose every column is a clr - a number, a date or
+// any text type.  a long, a long raw and a lob locator go out in other
+// shapes, and nothing that calls this selects one
+static inline bool skipQuery3Row(oracleprotocolclient *client,
+						uint32_t colcount) {
+	if (!colcount) {
+		return false;
+	}
+	for (uint32_t i=0; i<colcount; i++) {
+		if (!skipLenBytes(client)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// putIoVector(): a constant, the bind count, five more counts, then one
+// direction byte per bind.  0x0b and 0x10 are TTC_IO_VECTOR and
+// BIND_DIRECTION_OUT - literals, since oracleiterations0.cpp, which
+// includes this file, already defines an ORA_TTC_IO_VECTOR of its own
+static inline bool readQuery3IoVector(oracleprotocolclient *client,
+						uint32_t *outbindcount) {
+
+	unsigned char	constant=0;
+	uint32_t	bindcount=0;
+	uint32_t	skipint=0;
+	if (!client->readByte(&constant) ||
+		!client->readLenPreInt(&bindcount)) {
+		return false;
+	}
+	for (uint32_t j=0; j<5; j++) {
+		if (!client->readLenPreInt(&skipint)) {
+			return false;
+		}
+	}
+
+	*outbindcount=0;
+	for (uint32_t i=0; i<bindcount; i++) {
+		unsigned char	direction=0;
+		if (!client->readByte(&direction)) {
+			return false;
+		}
+		if (direction&0x10) {
+			(*outbindcount)++;
+		}
+	}
+	return true;
+}
+
+// putOutBindValues(), for scalar out binds: a clr and a signed indicator
+// apiece.  a ref cursor's slot is a whole describe instead, and nothing
+// that calls this binds one
+static inline bool skipQuery3OutBindValues(oracleprotocolclient *client,
+						uint32_t outbindcount) {
+	for (uint32_t i=0; i<outbindcount; i++) {
+		if (!skipLenBytes(client) || !skipSignedLenPreInt(client)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// putReturnParameters(): a count, that many counts, then three more
+static inline bool skipQuery3ReturnParameters(oracleprotocolclient *client) {
+	uint32_t	count=0;
+	uint32_t	skipint=0;
+	if (!client->readLenPreInt(&count)) {
+		return false;
+	}
+	for (uint32_t j=0; j<count+3; j++) {
+		if (!client->readLenPreInt(&skipint)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// walk a modern reply to its summary object and decode that, requiring
+// the reply to end exactly where the summary does.  what may come ahead of
+// it, in any order: a describe, a row header and its rows, an io vector and
+// the out bind values behind it, and the return parameters block.  a
+// reexecute()'s out bind values, which come with no io vector ahead of them
+// to count them, aren't handled.
+//
+// the summary is putSummary()'s: the end of call status, the end to end
+// sequence number, the row count, the ora number, ..., the message if the
+// ora number isn't 0.  the two fields putSummaryExtension() adds from field
+// version 12.1 up never go out to this client, which offers 11.2.
+//
+// "cursorid", "oranum" and "message" are optional.  "message" gets the
+// error message, truncated to fit and nul terminated, or "" if there's none
+static inline bool readQuery3Summary(oracleprotocolclient *client,
+						uint32_t *callstatus,
+						uint32_t *cursorid=NULL,
+						uint32_t *oranum=NULL,
+						char *message=NULL,
+						size_t messagemax=0) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	if (!client->readBytes(dataflags,sizeof(dataflags))) {
+		return false;
+	}
+
+	// everything ahead of the summary
+	uint32_t	colcount=0;
+	uint32_t	outbindcount=0;
+	for (;;) {
+
+		unsigned char	ttccode=0;
+		if (!client->readByte(&ttccode)) {
+			return false;
+		}
+		if (ttccode==ORA_TTC_ERROR) {
+			break;
+		}
+
+		bool	ok=false;
+		if (ttccode==ORA_TTC_DESCRIBE_INFO) {
+			ok=skipQuery3DescribeInfo(client);
+		} else if (ttccode==ORA_TTC_ROW_HEADER) {
+			ok=readQuery3RowHeader(client,&colcount);
+		} else if (ttccode==ORA_TTC_ROW_DATA && outbindcount) {
+			ok=skipQuery3OutBindValues(client,outbindcount);
+			outbindcount=0;
+		} else if (ttccode==ORA_TTC_ROW_DATA) {
+			ok=skipQuery3Row(client,colcount);
+		} else if (ttccode==0x0b) {
+			ok=readQuery3IoVector(client,&outbindcount);
+		} else if (ttccode==ORA_TTC_OK) {
+			ok=skipQuery3ReturnParameters(client);
+		}
+		if (!ok) {
+			return false;
+		}
+	}
+
+	// end of call status, end to end sequence number, row count, ora
+	// number, two zeros, cursor id, a zero
+	uint32_t	status=0;
+	uint32_t	number=0;
+	uint32_t	curid=0;
+	uint32_t	skipint=0;
+	unsigned char	skipbyte=0;
+	if (!client->readLenPreInt(&status) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&number) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&curid) ||
+		!client->readLenPreInt(&skipint)) {
+		return false;
+	}
+
+	// six raw bytes, then the rowid - a ub4, a ub2, a raw byte, a ub4 and
+	// a ub2
+	unsigned char	skipbytes[6];
+	if (!client->readBytes(skipbytes,sizeof(skipbytes)) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readByte(&skipbyte) ||
+		!client->readLenPreInt(&skipint) ||
+		!client->readLenPreInt(&skipint)) {
+		return false;
+	}
+
+	// a zero, a raw zero, the call number, a zero, success iterations,
+	// four zeros
+	if (!client->readLenPreInt(&skipint) ||
+		!client->readByte(&skipbyte) ||
+		!client->readByte(&skipbyte)) {
+		return false;
+	}
+	for (uint32_t j=0; j<6; j++) {
+		if (!client->readLenPreInt(&skipint)) {
+			return false;
+		}
+	}
+
+	// the message
+	static unsigned char	text[ORA_MAX_PACKET_SIZE];
+	size_t			textsize=0;
+	bool			isnull=false;
+	if (number && !client->readLenBytes(text,sizeof(text),
+							&textsize,&isnull)) {
+		return false;
+	}
+
+	// nothing may follow
+	if (client->readByte(&skipbyte)) {
+		return false;
+	}
+
+	*callstatus=status;
+	if (cursorid) {
+		*cursorid=curid;
+	}
+	if (oranum) {
+		*oranum=number;
+	}
+	if (message && messagemax) {
+		if (textsize>=messagemax) {
+			textsize=messagemax-1;
+		}
+		bytestring::copy(message,text,textsize);
+		message[textsize]='\0';
+	}
+	return true;
 }
 
 // TTI_QUERY3 without binds, which is what a call that only parses,

@@ -12,9 +12,10 @@
 // off wire replies - TTI_COMMIT (0x0e), TTI_ROLLBACK (0x0f),
 // TTI_AUTOCOMMIT_ON (0x0c) and TTI_AUTOCOMMIT_OFF (0x0d) - on the
 // non-query3session path, since a genuine OCI7 client never sends
-// TTI_QUERY3.  This client never does either: every call it makes is
-// TTI_OPEN or the legacy TTI_QUERY/TTI_EXECUTE pair, so query3session stays
-// false in src/protocols/oracle.cpp for the whole run, the same way
+// TTI_QUERY3.  This client never does either, outside of the query3 arm
+// described below: every call it makes is TTI_OPEN or the legacy
+// TTI_QUERY/TTI_EXECUTE pair, so query3session stays false in
+// src/protocols/oracle.cpp for those sessions, the same way
 // oraclelegacyfetch.cpp's session does.
 //
 // #10295 found that the call status these four calls answer with - and
@@ -73,7 +74,28 @@
 // transaction like DML does (1 -> 2 from idle, 5 -> 6 later), a merge is
 // DML (5 -> 6), and grant and comment are DDL that commit (6 -> 5).
 //
-// Both arms need a fresh session's first DML to land on a table that
+// A query3 arm last, on a fifth connection, for #10314, in the portable
+// run only.  Its first call after login is a TTI_QUERY3, so query3session
+// is true for the whole session, the way it is for python-oracledb, and
+// every reply ends in putSummary()'s summary object, whose first field is
+// the call status - readQuery3Summary() in oracleprotocolclient.cpp walks
+// to it.  The modern rules differ from the OCI7 ones above in one way: a
+// successful non-DDL parse clears 0x04, so a DML right after a commit is 2,
+// not 6.  The walk:
+//
+//	select 1 -> insert 2 -> commit 5 -> select 1
+//	insert 2 -> rollback 5 -> reexecute of the insert 6 -> rollback 5
+//	insert 2 -> comment (DDL) 1 -> failing drop 5 -> failing insert 1
+//	select with OPTION_COMMIT 5 -> insert with OPTION_COMMIT 5
+//	reexecute with the commit-reexecute bit 5 -> rollback 5 -> count 1
+//	insert 2 -> open/close 2 -> rollback 5 -> delete with OPTION_COMMIT 5
+//
+// The count checks that both commit-on-success forms really committed.
+// The expected values come from python-oracledb thin against a real 12.2
+// server - see samples/10314-dev-pythonoracledb-thin-*-realserver.out and
+// callstatustest.py.
+//
+// All of these arms need a fresh session's first DML to land on a table that
 // already exists, or the DDL that creates it would set the status to 5
 // before the DML ever ran - see the ordering note on protocoltable10300
 // below.
@@ -141,6 +163,27 @@ static const char	*commentscratchtable=
 	"comment on table protocoltable10300 is 'protocoltable10300'";
 static const char	*selectforupdatescratchtable=
 	"select id from protocoltable10300 for update";
+
+// the query3 arm's statements.  its rows get an id of their own, so the
+// count only sees them and the delete only removes them.  the bad insert
+// fails at execute with ORA-01722, and the drop names a table that doesn't
+// exist
+static const char	*query3selectdual=
+	"select 1 from dual";
+static const char	*query3insertscratchtable=
+	"insert into protocoltable10300 (id) values (10314)";
+static const char	*query3badinsertscratchtable=
+	"insert into protocoltable10300 (id) values ('protocoltable10314')";
+static const char	*query3dropmissingtable=
+	"drop table protocoltable10314missing";
+static const char	*query3countscratchtable=
+	"select 'rows:'||count(*) from protocoltable10300 where id=10314";
+static const char	*query3expectedcount="rows:4";
+static const char	*query3deletescratchtable=
+	"delete from protocoltable10300 where id=10314";
+static const uint32_t	ORA_NO_DATA_FOUND=1403;
+static const uint32_t	ORA_TABLE_DOES_NOT_EXIST=942;
+static const uint32_t	ORA_INVALID_NUMBER=1722;
 
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
@@ -423,9 +466,254 @@ static bool runLegacyDmlStep(oracleprotocolclient *client,
 	return true;
 }
 
+// judge a query3 session's reply - to a query3(), a reexecute(), or a
+// commit or rollback - by the summary object readQuery3Summary() in
+// oracleprotocolclient.cpp decodes: the ora number it carries, 0 for
+// success, and the end of call status.  "cursorid", if not NULL, gets the
+// cursor id the summary names
+static void checkQuery3Reply(oracleprotocolclient *client,
+					const char *label,
+					uint32_t expectedoranum,
+					uint32_t expectedstatus,
+					uint32_t *cursorid=NULL) {
+
+	uint32_t	callstatus=0;
+	uint32_t	curid=0;
+	uint32_t	oranum=0;
+	char		errmessage[512];
+	bool		decoded=readQuery3Summary(client,&callstatus,&curid,
+						&oranum,errmessage,
+						sizeof(errmessage));
+
+	char	message[192];
+	charstring::printf(message,sizeof(message),
+				"%s: reply decodes",label);
+	report(message,decoded);
+	if (!decoded) {
+		hexDump(label,client->getResponse(),client->getResponseSize());
+		return;
+	}
+
+	if (expectedoranum) {
+		charstring::printf(message,sizeof(message),
+					"%s: fails with ora-%05d",
+					label,(int)expectedoranum);
+	} else {
+		charstring::printf(message,sizeof(message),
+					"%s: succeeds",label);
+	}
+	report(message,oranum==expectedoranum);
+	if (oranum!=expectedoranum && oranum) {
+		stdoutput.printf("  %s: ora-%05d: %s\n",
+					label,(int)oranum,errmessage);
+	}
+
+	charstring::printf(message,sizeof(message),
+				"%s: call status is %d",label,(int)expectedstatus);
+	report(message,callstatus==expectedstatus);
+	if (callstatus!=expectedstatus) {
+		stdoutput.printf("  %s: call status %d\n",
+					label,(int)callstatus);
+	}
+
+	if (cursorid) {
+		*cursorid=curid;
+	}
+}
+
+// send one query3() and judge its reply with checkQuery3Reply() - false
+// only if the call couldn't be made at all
+static bool runQuery3Step(oracleprotocolclient *client,
+					const char *label,
+					uint32_t options,
+					uint32_t cursorid,
+					uint32_t prefetchrows,
+					const char *query,
+					uint32_t expectedoranum,
+					uint32_t expectedstatus,
+					uint32_t *newcursorid=NULL) {
+
+	if (!client->query3(options,cursorid,prefetchrows,query)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	checkQuery3Reply(client,label,expectedoranum,expectedstatus,
+								newcursorid);
+	return true;
+}
+
+// the same for a reexecute() of whatever the cursor last parsed, with no
+// binds
+static bool runReexecuteStep(oracleprotocolclient *client,
+					const char *label,
+					uint32_t cursorid,
+					uint32_t moreoptions,
+					uint32_t expectedstatus) {
+
+	if (!client->reexecute(cursorid,1,ORA_OPTION_EXECUTE,moreoptions,
+								0,NULL,0)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	checkQuery3Reply(client,label,0,expectedstatus);
+	return true;
+}
+
+// and for a commit or rollback, which a query3 session answers with a
+// summary object rather than the bare TTC_STATUS an oci7 session gets
+static bool runQuery3TransactionStep(oracleprotocolclient *client,
+					const char *label,
+					unsigned char tti,
+					unsigned char sequence,
+					uint32_t expectedstatus) {
+
+	if (!sendTransactionCall(client,tti,sequence)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	checkQuery3Reply(client,label,0,expectedstatus);
+	return true;
+}
+
+// the query3 arm - #10314.  a python-oracledb-style session, whose first
+// call after login is a query3, walked through the modern call status
+// rules.  false if a call couldn't be made at all, so the arm stopped part
+// way through
+static bool runQuery3Arm(const char *host, uint16_t port, const char *sid,
+				const char *user, const char *password) {
+
+	oracleprotocolclient	q3client;
+
+	if (!q3client.connect(host,port,sid) ||
+		!q3client.login(user,password)) {
+		report("query3: connect",false);
+		stdoutput.printf("%s\n",q3client.getError());
+		return false;
+	}
+	report("query3: connect",true);
+
+	// every statement here goes on the one cursor the first query3 opens
+	// - cursor id 0 asks for a new one, and the summary names it.  a
+	// select's prefetch of 2 runs past its only row, so its summary
+	// carries ORA-01403 as well as the call status
+	const uint32_t	parseexecute=ORA_OPTION_PARSE|
+					ORA_OPTION_EXECUTE|
+					ORA_OPTION_NOPLSQL;
+	uint32_t	cursorid=0;
+	bool		sent=runQuery3Step(&q3client,"query3: select",
+					parseexecute,0,2,
+					query3selectdual,
+					ORA_NO_DATA_FOUND,1,&cursorid);
+	if (sent && !cursorid) {
+		report("query3: the select's summary names a cursor",false);
+	}
+	if (!sent || !cursorid) {
+		q3client.disconnect();
+		return false;
+	}
+
+	// an insert opens a transaction and a commit ends it.  a select's
+	// parse after that clears the "a transaction ended" bit
+	if (!runQuery3Step(&q3client,"query3: insert",
+				parseexecute,cursorid,0,
+				query3insertscratchtable,0,2) ||
+		!runQuery3TransactionStep(&q3client,"query3: commit",
+				ORA_TTI_COMMIT,1,5) ||
+		!runQuery3Step(&q3client,"query3: select after commit",
+				parseexecute,cursorid,2,
+				query3selectdual,ORA_NO_DATA_FOUND,1)) {
+		q3client.disconnect();
+		return false;
+	}
+
+	// a reexecute doesn't parse, so it keeps the bit the rollback before
+	// it set: 5 -> 6
+	if (!runQuery3Step(&q3client,"query3: second insert",
+				parseexecute,cursorid,0,
+				query3insertscratchtable,0,2) ||
+		!runQuery3TransactionStep(&q3client,"query3: rollback",
+				ORA_TTI_ROLLBACK,2,5) ||
+		!runReexecuteStep(&q3client,
+				"query3: reexecute after rollback",
+				cursorid,0,6) ||
+		!runQuery3TransactionStep(&q3client,"query3: second rollback",
+				ORA_TTI_ROLLBACK,3,5)) {
+		q3client.disconnect();
+		return false;
+	}
+
+	// a ddl commits the insert ahead of it and its own parse clears the
+	// bit, so 1.  a failing ddl ends in 5.  a failing dml after that
+	// still parsed, so 1
+	if (!runQuery3Step(&q3client,"query3: third insert",
+				parseexecute,cursorid,0,
+				query3insertscratchtable,0,2) ||
+		!runQuery3Step(&q3client,"query3: comment",
+				parseexecute,cursorid,0,
+				commentscratchtable,0,1) ||
+		!runQuery3Step(&q3client,"query3: failing drop",
+				parseexecute,cursorid,0,
+				query3dropmissingtable,
+				ORA_TABLE_DOES_NOT_EXIST,5) ||
+		!runQuery3Step(&q3client,"query3: failing insert",
+				parseexecute,cursorid,0,
+				query3badinsertscratchtable,
+				ORA_INVALID_NUMBER,1)) {
+		q3client.disconnect();
+		return false;
+	}
+
+	// commit-on-success, on a select, an insert, and a reexecute of that
+	// insert.  the rollback after them has nothing left to undo, so the
+	// count finds every committed insert: the first, the third (the
+	// comment committed it), and these two
+	if (!runQuery3Step(&q3client,"query3: select with commit",
+				parseexecute|ORA_OPTION_COMMIT,cursorid,2,
+				query3selectdual,ORA_NO_DATA_FOUND,5) ||
+		!runQuery3Step(&q3client,"query3: insert with commit",
+				parseexecute|ORA_OPTION_COMMIT,cursorid,0,
+				query3insertscratchtable,0,5) ||
+		!runReexecuteStep(&q3client,"query3: reexecute with commit",
+				cursorid,ORA_EXEC_OPTION_COMMIT_REEXECUTE,5) ||
+		!runQuery3TransactionStep(&q3client,
+				"query3: rollback after commits",
+				ORA_TTI_ROLLBACK,4,5) ||
+		!runQuery3Step(&q3client,"query3: count",
+				parseexecute,cursorid,2,
+				query3countscratchtable,ORA_NO_DATA_FOUND,1)) {
+		q3client.disconnect();
+		return false;
+	}
+	report("query3: the commits took",
+			q3client.responseContains(query3expectedcount));
+
+	// open and close echo the status of a transaction in progress
+	if (!runQuery3Step(&q3client,"query3: fourth insert",
+				parseexecute,cursorid,0,
+				query3insertscratchtable,0,2) ||
+		!checkOpenCloseStatus(&q3client,
+				"query3: open/close while pending",2) ||
+		!runQuery3TransactionStep(&q3client,"query3: third rollback",
+				ORA_TTI_ROLLBACK,5,5)) {
+		q3client.disconnect();
+		return false;
+	}
+
+	// clean up
+	runQuery3Step(&q3client,"query3: delete with commit",
+				parseexecute|ORA_OPTION_COMMIT,cursorid,0,
+				query3deletescratchtable,0,5);
+
+	q3client.disconnect();
+	return true;
+}
+
 int main(int argc, char **argv) {
 
-	stdoutput.printf("\n====== #10293/#10295 commit, rollback, "
+	stdoutput.printf("\n====== #10293/#10295/#10314 commit, rollback, "
 						"autocommit on/off and call status "
 						"======\n\n");
 
@@ -907,6 +1195,13 @@ int main(int argc, char **argv) {
 	}
 
 	otherclient.disconnect();
+
+	// the query3 arm, while protocoltable10300 still exists.  no modern
+	// client negotiates the native encoding, so it runs in the portable
+	// run only
+	if (!native) {
+		runQuery3Arm(host,port,sid,user,password);
+	}
 
 	// leave the backend clean for the next run - not checked,
 	// same reasoning as the drop before create table above

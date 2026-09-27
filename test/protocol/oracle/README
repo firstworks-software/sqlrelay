@@ -2144,6 +2144,128 @@ missing bytes silently.
                                       autocommit-on-select-for-update's
                                       ofen succeeds (#10315).
 
+    10314-dev-pythonoracledb-thin-main-realserver.oraproxy
+    10314-dev-pythonoracledb-thin-bit4-realserver.oraproxy
+    (each with a matching .out)
+                                     callstatustest.py (this directory)
+                                      drives a python-oracledb thin
+                                      session - a modern (query3) client,
+                                      unlike oci7transaction.cpp's OCI7
+                                      one - through a fixed sequence of
+                                      transaction-affecting calls on one
+                                      connection, printing
+                                      Connection.transaction_in_progress
+                                      (which python-oracledb sets from
+                                      bit 0x02 of the "end of call
+                                      status" carried in every
+                                      summary/status reply) after each
+                                      step. --sequence=main (the default)
+                                      is the broad sweep: select, ddl,
+                                      dml, commit, rollback, failing ddl
+                                      and dml, autocommit, merge, select
+                                      for update, pl/sql, re-execute,
+                                      executemany, parse-only, a lob
+                                      read, a multi-round-trip fetch and
+                                      a close with a transaction open.
+                                      --sequence=bit4 is a narrower
+                                      follow-up pinning down bit 0x04
+                                      specifically, since main showed it
+                                      isn't the session-wide flag the
+                                      OCI7 captures (#10295/#10315) made
+                                      it look like: re-executes of
+                                      cursors opened before and after a
+                                      commit, and failing ddl before and
+                                      after the session's first
+                                      transaction ends. these two
+                                      realserver captures, run from dev
+                                      straight to the real oracle122
+                                      server (see above) through oraproxy
+                                      at oracledb 4.0.2, are the raw
+                                      material the call status rules in
+                                      oracle.cpp's
+                                      updateQuery3CallStatus() were
+                                      derived from (#10314).
+
+    10314-dev-pythonoracledb-thin-main-firstrun-realserver.oraproxy
+    (with a matching .out)
+                                     the first --sequence=main run,
+                                      made before protocoltest10314
+                                      existed on the server - unlike the
+                                      other main captures,
+                                      which reuse a table earlier runs
+                                      leave behind, so their first "drop
+                                      table" DDL usually succeeds rather
+                                      than failing ORA-00942. pins the
+                                      one documented mismatch: a failing
+                                      DDL in a session that has never had
+                                      a transaction end gives call status
+                                      1 on a real server here, where the
+                                      module's rules give 5 (#10314).
+
+    10314-dev-pythonoracledb-thin-main-sqlrelay-before.oraproxy
+    10314-dev-pythonoracledb-thin-main-nolob-sqlrelay-before.oraproxy
+    10314-dev-pythonoracledb-thin-bit4-sqlrelay-before.oraproxy
+    (each with a matching .out)
+                                     the same --sequence= variants
+                                      against sqlrelay's own
+                                      oracle-protocol listener - a
+                                      build-tree instance from this
+                                      directory's mixedtypetest.conf (its
+                                      second listener, the only one in
+                                      the test suite that answers a 12.1+
+                                      client - see test.sh's -buildtree
+                                      and the note at the top of
+                                      mixedtypetest.conf) - captured
+                                      before the module tracked a call
+                                      status for query3 sessions at all:
+                                      every reply carries whatever
+                                      putSummary()'s then-hardcoded
+                                      leading field sent, so
+                                      transaction_in_progress never
+                                      reflects the session's actual
+                                      transaction state (#10314).
+
+    10314-dev-pythonoracledb-thin-main-sqlrelay-after.oraproxy
+    10314-dev-pythonoracledb-thin-main-nolob-sqlrelay-after.oraproxy
+    10314-dev-pythonoracledb-thin-bit4-sqlrelay-after.oraproxy
+    (each with a matching .out)
+                                     the same variants again, from the
+                                      same build-tree instance, after the
+                                      fix. main-nolob skips
+                                      --sequence=main's lob read (s43),
+                                      which hangs the module for ten
+                                      seconds and then times out - a
+                                      known, separate bug (#10323); the
+                                      plain main capture shows that
+                                      timeout for completeness. every
+                                      call status matches the realserver
+                                      captures except three
+                                      already-documented gaps: a pl/sql
+                                      block's own insert doesn't move the
+                                      status (main s31, #10318), TTI 0x4e
+                                      (reexecute and fetch) isn't
+                                      implemented and errors instead
+                                      (main s39; bit4 p05/p07/p13,
+                                      #10322), and the lob read above
+                                      (#10323). the commit/rollback reply
+                                      still answers as a summary object
+                                      rather than a real server's bare
+                                      TTC_STATUS (separately tracked,
+                                      #10321), but the value inside
+                                      matches either way - packet [0026]
+                                      of main-realserver, a bare
+                                      TTC_STATUS answering commit,
+                                      carries 01 05 (call status 5);
+                                      packet [0026] of main-nolob-after,
+                                      a full summary object answering the
+                                      same commit, carries call status 5
+                                      too (#10314). the IndexError
+                                      python-oracledb prints from
+                                      _add_cursor_to_close in the
+                                      sqlrelay runs comes from the
+                                      module's login reply leaving out
+                                      AUTH_MAX_OPEN_CURSORS (#10324).
+
 The three real Oracle test servers on this network
 --------------------------------------------------
 

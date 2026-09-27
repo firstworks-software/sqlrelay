@@ -1468,7 +1468,9 @@ run_protocol_test() {
 	# per wire encoding, for #10293 - it drives TTI_COMMIT, TTI_ROLLBACK,
 	# TTI_AUTOCOMMIT_ON and TTI_AUTOCOMMIT_OFF directly, with no prior
 	# TTI_QUERY3 call, and checks each reply against the bytes a real
-	# 10.2 server sends (see samples/10293-*-realserver.oraproxy)
+	# 10.2 server sends (see samples/10293-*-realserver.oraproxy).  its
+	# portable run also has a query3 arm, for #10314, that checks the call
+	# status a modern session's summary objects carry
 	# all twenty-seven runs have to succeed for the instance to pass
 	if ( test "$instance" = "oracleprotocol" )
 	then
