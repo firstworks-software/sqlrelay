@@ -2328,13 +2328,18 @@ bool oracleprotocolclient::describe(uint32_t cursorid, uint32_t position) {
 // ---- the pre-query3 calls ----
 
 // TTI_QUERY: the legacy parse.  query() in src/protocols/oracle.cpp reads a
-// one-byte sequence number, the cursor id as a count, a pointer field, one
-// unexplained byte (0x01 in the capture #9793's rewrite of query() was
-// derived from), the query size as two raw bytes - both carrying the same
-// value, which includes the query's own trailing nul - and then the query
-// text itself.  there is no options field on this call at all: see
-// legacyExecute() and legacyFetch() below for where a real oci7 client
-// puts options instead
+// one-byte sequence number, the cursor id as a count, a pointer field, the
+// query size as a count, and then the query's own clr length byte -
+// duplicating the query size, for a query this short - ahead of the text
+// itself, which includes its trailing nul.  there is no options field on
+// this call at all: see legacyExecute() and legacyFetch() below for where a
+// real oci7 client puts options instead.
+//
+// the query size has to go out through appendAuthCount() rather than as a
+// raw byte, the same as the cursor id above it: in the portable encoding a
+// count-prefixed int for a value this small happens to look like "0x01"
+// (the count) followed by the value, but a native-encoding session needs
+// the fixed 4-byte form appendAuthCount() switches to instead
 bool oracleprotocolclient::legacyQuery(uint32_t cursorid,
 					const char *query) {
 
@@ -2344,9 +2349,8 @@ bool oracleprotocolclient::legacyQuery(uint32_t cursorid,
 	appendByte(1);			// sequence number
 	appendAuthCount(cursorid,4);
 	appendByte(1);			// pointer
-	appendByte(1);			// unknown byte (0x01 in the capture)
-	appendByte((unsigned char)querysize);
-	appendByte((unsigned char)querysize);
+	appendAuthCount(querysize,4);
+	appendByte((unsigned char)querysize);	// the text's own clr length byte
 	appendBytes((const unsigned char *)query,querysize-1);
 	appendByte(0);			// the query text's own trailing nul
 

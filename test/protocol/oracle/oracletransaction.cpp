@@ -337,14 +337,18 @@ int main(int argc, char **argv) {
 	// oracleprotocolclient.cpp.  this arm judges every reply through
 	// that decoder instead of the ttc code alone.
 	//
-	// legacyQuery()'s request always goes out in the portable shape,
-	// even in a native-encoding session (#10306, filed separately and
-	// not fixed here), which hangs the server waiting for continuation
-	// packets a native client never sends.  this arm calls legacyQuery(),
-	// so it runs only in the portable invocation and prints a note and
-	// skips under -native rather than hang or count a false pass
+	// legacyQuery() itself is fine under native encoding now - #10306
+	// fixed it to write the native request shape instead of always the
+	// portable one.  but readLegacySummary(), which checkLegacyDmlStep()
+	// uses to judge every reply below, still only walks the portable
+	// summary-object shape src/protocols/oracle.cpp's putOci7Summary()
+	// writes; a native session answers through the separate
+	// putOci7SummaryNative() shape instead, which readLegacySummary()
+	// misreads.  filed separately as #10310 and not fixed here, so this
+	// arm still prints a note and skips under -native rather than count
+	// a false pass
 	if (native) {
-		stdoutput.printf("dml commit: skipped under -native (#10306)\n");
+		stdoutput.printf("dml commit: skipped under -native (#10310)\n");
 	} else {
 
 		oracleprotocolclient	dmlclient;
