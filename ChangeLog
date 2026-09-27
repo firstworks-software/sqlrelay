@@ -3019,6 +3019,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   to a non-cryptographic prng warns instead of quietly
   generating predictable secrets (#9773)
 - fixed an authentication bypass in the teradata_sidechannel auth module
+- fixed the oracle protocol module answering a query3 session's commit
+  or rollback with a summary object instead of a bare status message
+- fixed the oracle protocol module's query3 replies always sending 0
+  for the end-to-end sequence number
 
 ## [2.2.0] - 2026-07-27
 

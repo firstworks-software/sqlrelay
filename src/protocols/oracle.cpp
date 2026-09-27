@@ -16569,7 +16569,16 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 	write(&reqpacket,(byte_t)TTC_ERROR);
 
 	writeLenPreInt(&reqpacket,callstatus);
-	writeLenPreInt(&reqpacket,0);
+
+	// the end to end sequence number, hardcoded to 0 here until #10321.
+	// a real server tracks it the same way sendTransactionResponse()'s
+	// bare status message does - the call being answered's own seq byte
+	// plus 1.  packet [0039] of samples/10314-dev-pythonoracledb-thin-
+	// main-realserver.out answers an embedded TTI_QUERY3 whose own seq
+	// byte is 0x11 (17) with a summary whose second field is 0x12 (18)
+	uint32_t	endtoendseqnumber=(byte_t)(callnumber+1);
+	writeLenPreInt(&reqpacket,endtoendseqnumber);
+
 	writeLenPreInt(&reqpacket,rowcount);
 	writeLenPreInt(&reqpacket,oranum);
 	writeLenPreInt(&reqpacket,0);
@@ -16616,6 +16625,7 @@ void sqlrprotocol_oracle::putSummary(uint32_t cursorid,
 
 	debugStart("summary");
 	debugWrite("call status: %d",callstatus);
+	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugWrite("cursor id: %d",cursorid);
 	debugWrite("call number: %d",callnumber);
 	debugWrite("row count: %d",rowcount);
@@ -20163,12 +20173,15 @@ bool sqlrprotocol_oracle::sendTransactionResponse() {
 
 	// what a commit, rollback or autocommit change gets back on success.
 	// an oci7 client gets a bare status message (see
-	// sendOci7StatusResponse()).  a query3 session gets the same
-	// summary-object split every other cursorless ack in this module uses
-	// (sendCursorNotOpenError, sendMarkerCancelError,
-	// sendUnimplementedFunctionError), with success field values in place
-	// of an error.  a real server answers a query3 session with a bare
-	// status message too, not a summary object
+	// sendOci7StatusResponse()).  a real 12.2 server answers a query3
+	// session with a bare status message too, not the summary object
+	// this branch used to build with putSummary() - #10321.  packet
+	// [0026] of samples/10314-dev-pythonoracledb-thin-main-realserver.out
+	// answers a commit whose own seq byte is 0x0b with "01 05 01 0c": a
+	// length-prefixed call status of 5 and a length-prefixed end-to-end
+	// sequence number one past the request's own seq byte, not the whole
+	// summary object.  confirmed against eight more commit/rollback
+	// exchanges in the same capture - every one answered with seq+1
 	if (!query3session) {
 		return sendOci7StatusResponse();
 	}
@@ -20176,13 +20189,20 @@ bool sqlrprotocol_oracle::sendTransactionResponse() {
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint16_t	dataflags=0;
-	writeBE(&reqpacket,dataflags);
+	byte_t		ttccode=TTC_STATUS;
+	uint32_t	endtoendseqnumber=(byte_t)(callnumber+1);
 
 	debugStart("transaction response");
 	debugWrite("data flags: 0x%04x",dataflags);
+	debugTtcCode(ttccode);
+	debugWrite("call status: %d",callstatus);
+	debugWrite("end to end seq number: %d",endtoendseqnumber);
 	debugEnd();
 
-	putSummary(0,0,0,NULL);
+	writeBE(&reqpacket,dataflags);
+	write(&reqpacket,ttccode);
+	writeLenPreInt(&reqpacket,callstatus);
+	writeLenPreInt(&reqpacket,endtoendseqnumber);
 
 	return sendPacket(true);
 }

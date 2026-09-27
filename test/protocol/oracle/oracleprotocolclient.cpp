@@ -2180,6 +2180,31 @@ static inline bool readCallStatus(oracleprotocolclient *client,
 	return client->readAuthCount(status,4);
 }
 
+// the same bare TTC_STATUS (0x09) reply, but for a query3 session's commit,
+// rollback or autocommit-on/off - #10321.  readCallStatus() above can't be
+// reused: a query3 session is never native encoded, so its call status is
+// always length-prefixed rather than a fixed 4 bytes, and a real server
+// puts an end-to-end sequence number behind it that readCallStatus() never
+// reads.  that sequence number is always the request's own seq byte plus
+// 1 - see sendTransactionResponse()'s query3 branch in
+// src/protocols/oracle.cpp
+static inline bool readQuery3TransactionStatus(oracleprotocolclient *client,
+					uint32_t *status,
+					uint32_t *endtoendseqnumber) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) || ttccode!=0x09) {
+		return false;
+	}
+
+	return client->readLenPreInt(status) &&
+			client->readLenPreInt(endtoendseqnumber);
+}
+
 // ---- modern reply decoding ----
 //
 // a query3 session's replies - to query3(), reexecute(), fetch(), and a

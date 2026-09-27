@@ -76,12 +76,16 @@
 //
 // A query3 arm last, on a fifth connection, for #10314, in the portable
 // run only.  Its first call after login is a TTI_QUERY3, so query3session
-// is true for the whole session, the way it is for python-oracledb, and
-// every reply ends in putSummary()'s summary object, whose first field is
-// the call status - readQuery3Summary() in oracleprotocolclient.cpp walks
-// to it.  The modern rules differ from the OCI7 ones above in one way: a
-// successful non-DDL parse clears 0x04, so a DML right after a commit is 2,
-// not 6.  The walk:
+// is true for the whole session, the way it is for python-oracledb.  A
+// query3(), a reexecute() or a fetch ends in putSummary()'s summary
+// object, whose first field is the call status - readQuery3Summary() in
+// oracleprotocolclient.cpp walks to it.  A commit or rollback gets the
+// same bare TTC_STATUS message an oci7 session does instead, not that
+// summary object - #10321 - which runQuery3TransactionStep() and
+// readQuery3TransactionStatus() in oracleprotocolclient.cpp check.  The
+// modern rules differ from the OCI7 ones above in one way: a successful
+// non-DDL parse clears 0x04, so a DML right after a commit is 2, not 6.
+// The walk:
 //
 //	select 1 -> insert 2 -> commit 5 -> select 1
 //	insert 2 -> rollback 5 -> reexecute of the insert 6 -> rollback 5
@@ -561,8 +565,12 @@ static bool runReexecuteStep(oracleprotocolclient *client,
 	return true;
 }
 
-// and for a commit or rollback, which a query3 session answers with a
-// summary object rather than the bare TTC_STATUS an oci7 session gets
+// and for a commit or rollback, which a query3 session answers with the
+// same bare TTC_STATUS an oci7 session gets - #10321 - not the summary
+// object this test used to expect.  the reply's end-to-end sequence
+// number is always this call's own seq byte plus 1 -
+// readQuery3TransactionStatus() in oracleprotocolclient.cpp decodes both
+// fields
 static bool runQuery3TransactionStep(oracleprotocolclient *client,
 					const char *label,
 					unsigned char tti,
@@ -574,7 +582,31 @@ static bool runQuery3TransactionStep(oracleprotocolclient *client,
 		stdoutput.printf("%s\n",client->getError());
 		return false;
 	}
-	checkQuery3Reply(client,label,0,expectedstatus);
+
+	char	message[160];
+	charstring::printf(message,sizeof(message),
+				"%s: answers TTC_STATUS",label);
+	report(message,client->getResponseTtcCode()==ORA_TTC_STATUS);
+
+	uint32_t	callstatus=0;
+	uint32_t	endtoendseqnumber=0;
+	bool		decoded=readQuery3TransactionStatus(client,
+					&callstatus,&endtoendseqnumber);
+	uint32_t	expectedseqnumber=(unsigned char)(sequence+1);
+
+	charstring::printf(message,sizeof(message),
+				"%s: call status is %d",label,(int)expectedstatus);
+	report(message,decoded && callstatus==expectedstatus);
+
+	charstring::printf(message,sizeof(message),
+				"%s: end to end seq number is %d",
+				label,(int)expectedseqnumber);
+	report(message,decoded && endtoendseqnumber==expectedseqnumber);
+
+	if (!decoded || callstatus!=expectedstatus ||
+				endtoendseqnumber!=expectedseqnumber) {
+		hexDump(label,client->getResponse(),client->getResponseSize());
+	}
 	return true;
 }
 
