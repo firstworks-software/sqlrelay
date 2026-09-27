@@ -11000,6 +11000,17 @@ bool sqlrprotocol_oracle::query(const byte_t *rp) {
 		return false;
 	}
 
+	// a size over maxquerysize is refused below anyway, once the text
+	// behind it has been read - checking it here too, before
+	// getOci7Text() waits for that much of it to arrive, keeps a garbage
+	// or misdecoded size from stalling the session for the continuation
+	// timeout instead of just failing outright
+	if (querysize>maxquerysize) {
+		debugWrite("query size %d exceeds max query size %d",
+					querysize,maxquerysize);
+		return false;
+	}
+
 	// the query text
 	const byte_t	*querytext=NULL;
 	uint32_t	querytextsize=0;

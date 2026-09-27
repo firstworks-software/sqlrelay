@@ -2931,6 +2931,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   confusing error instead of naming the missing auths tag
 - fixed enabled="no" not disabling a listener tag, which also
   misassigned protocol modules to listeners configured after it
+- fixed the oracle protocol module's query() not checking its query-size
+  field against maxquerysize before waiting for that much data to
+  arrive
 
 ### Security
 - fixed an authentication hole in the des password encryption module
