@@ -1,0 +1,20 @@
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43296))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+sequence: select-for-update-commit
+olog: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - bracket: return=0 rc=0 v2_rc=0 fc=14 ok
+query: insert into protocoltest10293txn values (1,'select-for-update-commit')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: select txt from protocoltest10293txn where rownum=1 for update
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+odefin: return=0 rc=0 v2_rc=0 fc=8 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+ofen: return=0 rc=0 v2_rc=0 fc=12 ok
+row: "dml-dml-commit-1"
+ocom: return=0 rc=0 v2_rc=0 fc=0 ok
+oclose - bracket: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - after: return=0 rc=0 v2_rc=0 fc=14 ok
+oclose - after: return=0 rc=0 v2_rc=0 fc=0 ok
+ologof: return=0 rc=0 v2_rc=0 fc=0 ok
+done
+exit: 0

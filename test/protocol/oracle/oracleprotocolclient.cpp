@@ -379,6 +379,9 @@ class oracleprotocolclient {
 		// which is the listener's own id plus one
 		bool	open(uint32_t *cursorid);
 
+		// TTI_CLOSE.  "cursorid" is the wire id open() handed back
+		bool	close(uint32_t cursorid);
+
 		// TTI_QUERY3.  "query" may be NULL, which is what a call
 		// that only describes or only executes an already-parsed
 		// cursor sends.  this form sends no binds and no defines
@@ -2104,6 +2107,75 @@ bool oracleprotocolclient::open(uint32_t *cursorid) {
 	return true;
 }
 
+// TTI_CLOSE: a sequence number and the cursor id to close.  see close() in
+// src/protocols/oracle.cpp.  the reply is a bare TTC_STATUS (0x09) message,
+// the same shape commit()/rollback()/autocommit-on/off answer with - see
+// readCallStatus() below.  0x08 rather than a named ORA_TTI_CLOSE constant:
+// several other test programs in this directory already define that name
+// locally, and each one includes this file
+bool oracleprotocolclient::close(uint32_t cursorid) {
+
+	beginTtiCall(0x08);
+	appendByte(1);			// sequence number
+	appendAuthCount(cursorid,4);
+
+	return sendPacket() && recvPacket();
+}
+
+// TTI_OPEN's reply carries a call status too, behind the cursor id open()
+// already decodes: TTC_OK, the cursor id, then TTC_STATUS (0x09) and the
+// status itself - see #10295.  this walks the same response fresh rather
+// than picking up where open() left off, so it works whether or not the
+// caller still cares about the cursor id.  0x09 rather than a named
+// ORA_TTC_STATUS constant - see close() above for why.
+//
+// the status is read the same way open() reads the cursor id, as a
+// length-prefixed int in either encoding, because that's what
+// sendOpenResponse() in src/protocols/oracle.cpp sends even with -native.  a
+// real server's native open reply is fixed-width instead ("01 00 00 00 09 05
+// 00 00 00" at [0034] of samples/10295-redhat9x86-oci7-native-commit-select-
+// realserver.oraproxy), but no real client negotiates the native encoding
+// with the module - see nativeencoding there
+static inline bool readOpenCallStatus(oracleprotocolclient *client,
+					uint32_t *status) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	uint32_t	cursorid=0;
+	unsigned char	statuscode=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) || ttccode!=ORA_TTC_OK ||
+		!client->readLenPreInt(&cursorid) ||
+		!client->readByte(&statuscode) ||
+		statuscode!=0x09) {
+		return false;
+	}
+
+	return client->readLenPreInt(status);
+}
+
+// a bare TTC_STATUS (0x09) reply's status value, in this session's
+// encoding - what close() above answers with, and what commit(), rollback()
+// and autocommit-on/off answer with too (checkTransactionCall() in
+// oracletransaction.cpp matches those against a whole fixed byte array
+// instead, since their reply never carries anything else)
+static inline bool readCallStatus(oracleprotocolclient *client,
+					uint32_t *status) {
+
+	client->rewindResponse();
+
+	unsigned char	dataflags[2];
+	unsigned char	ttccode=0;
+	if (!client->readBytes(dataflags,sizeof(dataflags)) ||
+		!client->readByte(&ttccode) || ttccode!=0x09) {
+		return false;
+	}
+
+	return client->readAuthCount(status,4);
+}
+
 // TTI_QUERY3 without binds, which is what a call that only parses,
 // describes, executes or fetches sends
 bool oracleprotocolclient::query3(uint32_t options, uint32_t cursorid,
@@ -2703,13 +2775,21 @@ static inline bool readLegacyError(oracleprotocolclient *client,
 // them.  a genuine parse or execute success is this object and nothing
 // else; a genuine error is this object plus a message, which is what
 // "leftover" catches.  the portable and native branches below split the
-// object the same way readLegacyError() above does
+// object the same way readLegacyError() above does.
+//
+// "callstatus" is optional (NULL by default, which is what every caller
+// before #10295 passes) - the leading "end of call status" field, the same
+// sticky session status commit()/rollback()/autocommit-on/off and
+// open()/close() answer with (see readOpenCallStatus()/readCallStatus()
+// above).  every parse or execute reply carries it too, whether or not it
+// changed anything
 static inline bool readLegacySummary(oracleprotocolclient *client,
 				uint32_t *cursorid,
 				unsigned char *commandtype,
 				uint32_t *rowsprocessed,
 				uint32_t *successiterations,
-				bool *leftover) {
+				bool *leftover,
+				uint32_t *callstatus=NULL) {
 
 	client->rewindResponse();
 
@@ -2721,6 +2801,7 @@ static inline bool readLegacySummary(oracleprotocolclient *client,
 		return false;
 	}
 
+	uint32_t	endofcallstatus=0;
 	uint32_t	skipint=0;
 	unsigned char	skipbyte=0;
 	if (client->getNativeEncoding()) {
@@ -2733,7 +2814,7 @@ static inline bool readLegacySummary(oracleprotocolclient *client,
 		unsigned char	pad6[8];
 		unsigned char	livepointer[4];
 		unsigned char	pad7[28];
-		if (!client->readAuthCount(&skipint,4) ||	// end of call status
+		if (!client->readAuthCount(&endofcallstatus,4) ||
 			!client->readByte(&skipbyte) ||	// unexplained constant
 			!client->readAuthCount(rowsprocessed,4) ||
 			!client->readAuthCount(&skipint,4) ||	// error number
@@ -2752,7 +2833,7 @@ static inline bool readLegacySummary(oracleprotocolclient *client,
 		}
 	} else {
 		unsigned char	skipbytes[5];
-		if (!client->readLenPreInt(&skipint) ||	// end of call status
+		if (!client->readLenPreInt(&endofcallstatus) ||
 			!client->readLenPreInt(rowsprocessed) ||
 			!client->readLenPreInt(&skipint) ||	// error number
 			!client->readLenPreInt(&skipint) ||
@@ -2782,6 +2863,9 @@ static inline bool readLegacySummary(oracleprotocolclient *client,
 
 	unsigned char	extra=0;
 	*leftover=client->readByte(&extra);
+	if (callstatus) {
+		*callstatus=endofcallstatus;
+	}
 	return true;
 }
 

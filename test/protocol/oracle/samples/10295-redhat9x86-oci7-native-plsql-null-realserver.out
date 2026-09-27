@@ -1,0 +1,13 @@
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43295))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+sequence: plsql-null
+olog: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - bracket: return=0 rc=0 v2_rc=0 fc=14 ok
+query: begin null; end;
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+oclose - bracket: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - after: return=0 rc=0 v2_rc=0 fc=14 ok
+oclose - after: return=0 rc=0 v2_rc=0 fc=0 ok
+ologof: return=0 rc=0 v2_rc=0 fc=0 ok
+done
+exit: 0

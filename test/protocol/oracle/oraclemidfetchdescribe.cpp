@@ -239,6 +239,16 @@ static const size_t	PORTABLE_CURSOR_ID_OFFSET=8;
 static const size_t	PORTABLE_CALL_NUMBER_OFFSET=24;
 static const size_t	PORTABLE_SUCCESS_ITERATIONS_OFFSET=26;
 
+// the end of call status is session data too.  setUpTable() ends with a
+// commit, and a real server answers every call after a commit in the same
+// session with 5 rather than the capture's 1 - see #10295 and samples/
+// 10295-redhat9x86-oci7-native-commit-select-realserver.oraproxy.  it's the
+// first field of the ORA-01007's summary object: 4 bytes wide in native, and
+// the value byte behind a one-byte length in portable
+static const uint32_t	SESSION_CALL_STATUS=5;
+static const size_t	NATIVE_CALL_STATUS_OFFSET=0;
+static const size_t	PORTABLE_CALL_STATUS_OFFSET=1;
+
 // one column, as much of it as a describe answer carries - the fields
 // putOci7DescribeColumn() writes in src/protocols/oracle.cpp, in its order,
 // minus the ones that are constant across every capture on file
@@ -697,7 +707,7 @@ static void buildDescribeResponse(bytebuffer *out, bool native,
 	out->append(names.getBuffer(),namessize);
 
 	out->append(ORA_TTC_STATUS);
-	appendCount(out,native,1,4);
+	appendCount(out,native,SESSION_CALL_STATUS,4);
 }
 
 // the ORA-01007 the model expects, which is the capture's own bytes with the
@@ -725,6 +735,9 @@ static void buildOutOfRangeError(bytebuffer *out, bool native,
 					(unsigned char)((i==0)?1:0);
 
 			buffer[NATIVE_LIVE_POINTER_OFFSET+i]=0;
+
+			buffer[NATIVE_CALL_STATUS_OFFSET+i]=
+				(unsigned char)((SESSION_CALL_STATUS>>(8*i))&0xff);
 		}
 		buffer[NATIVE_CALL_NUMBER_OFFSET]=callnumber;
 		return;
@@ -748,6 +761,7 @@ static void buildOutOfRangeError(bytebuffer *out, bool native,
 	buffer[PORTABLE_CURSOR_ID_OFFSET]=1;
 	buffer[PORTABLE_CURSOR_ID_OFFSET+1]=(unsigned char)cursorid;
 	buffer[PORTABLE_CALL_NUMBER_OFFSET]=callnumber;
+	buffer[PORTABLE_CALL_STATUS_OFFSET]=(unsigned char)SESSION_CALL_STATUS;
 }
 
 

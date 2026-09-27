@@ -338,7 +338,7 @@ check for the four symbols until that ticket extended it from twelve
 checked symbols to sixteen.
 
     ./oci7transaction SID [--sequence=NAME] [--table=TABLE]
-                           [USER PASSWORD]
+                           [--ddltable=TABLE] [USER PASSWORD]
 
 --sequence= selects one variant per run: select-commit (a login, a
 select and fetch, then ocom - the #9656 capture's own shape,
@@ -355,6 +355,16 @@ or rollback answers with carries into the replies that follow it in
 the same session - see the 10293-*-realserver captures below, and
 #10293's "Decode everything and decide" comment for what that carryover
 turned out to be.
+
+#10295 added fifteen more variants, to pin down how that call status
+moves through a session: dml-dml-commit, dml-select-commit,
+dml-openclose-commit, rollback-dml-commit, commit-select,
+rollback-autocommit-toggle, dml-autocommit-on, autocommit-on-dml-dml,
+ddl-alone and dml-ddl (which drop and create --ddltable, default
+protocoltest10295ddl), plsql-null, plsql-dml-commit, dml-sqlcommit
+("commit" run as a statement), dml-error-rollback and
+select-for-update-commit. The program's own header comment describes
+each one. See the 10295-*-realserver captures below.
 
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
@@ -2033,6 +2043,50 @@ missing bytes silently.
                                       the realserver runs exactly: a
                                       wire-shape defect, not a functional
                                       one (#10293).
+
+    10295-redhat9x86-oci7-native-VARIANT-realserver.oraproxy
+    (each with a matching .out)
+                                     oci7transaction.cpp's fifteen #10295
+                                      variants (see above), from
+                                      redhat9x86's real 9.2.0.4.0 client
+                                      straight to oracle102, native
+                                      encoding. they pin the call status
+                                      as session state, whose values act
+                                      as flags: 1 no transaction open, 2
+                                      one open, 4 one has ended at least
+                                      once this session. dml moves 1 to 2
+                                      and 5 to 6, or goes straight to 5
+                                      with autocommit on; commit,
+                                      rollback and ddl (already at its
+                                      parse, even a failing one) give 5;
+                                      select, open, close, a failed dml,
+                                      ocon and ocof leave it alone and
+                                      echo it; a pl/sql block moves it
+                                      the way whatever it ran would;
+                                      logoff always answers 1 (#10295).
+
+    10295-redhat9x86-oci7-portable-VARIANT-sqlrelay-after.oraproxy
+    (each with a matching .out)
+                                     all 22 oci7transaction variants, the
+                                      #10293 seven and the #10295 fifteen,
+                                      from redhat9x86's real client
+                                      (portable encoding) against
+                                      sqlrelay's oracleprotocoloci7
+                                      instance after the #10295 fix.
+                                      every call status matches the
+                                      realserver captures except
+                                      plsql-dml-commit's pl/sql execute,
+                                      which stays 1 where a real server
+                                      sends 2 - the module can't see
+                                      what a block did. ddl-alone has one
+                                      more oexec than its realserver
+                                      capture because the module only
+                                      prepares at the parse, so a drop of
+                                      a missing table fails ORA-00942 at
+                                      its execute ([0022]) rather than at
+                                      its parse the way a real server's
+                                      does ([0020] of the realserver
+                                      capture) (#10295).
 
 The three real Oracle test servers on this network
 --------------------------------------------------
