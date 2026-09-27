@@ -366,6 +366,15 @@ protocoltest10295ddl), plsql-null, plsql-dml-commit, dml-sqlcommit
 select-for-update-commit. The program's own header comment describes
 each one. See the 10295-*-realserver captures below.
 
+#10315 added eleven more, for the cases #10295 left alone: merge-commit,
+rollback-merge-commit, autocommit-on-merge, dml-ddl-misc (an insert
+before each of grant, revoke, comment, rename, analyze, audit, noaudit,
+drop, flashback, purge and a failing grant), select-for-update-idle,
+commit-select-for-update, autocommit-on-select-for-update,
+commit-describe, commit-exfet, plsql-commit-inside and dml-plsql-null.
+It also added --lngflg=, oparse()'s language flag (default 2). See the
+10315-*-realserver captures below.
+
 oci8.cpp's rowid section only calls OCIRowidToChar when the configure-time
 FW_CHECK_OCIROWIDTOCHAR probe found it compiles and links cleanly - some
 early OCI8-era client installs export the symbol under a short
@@ -2087,6 +2096,53 @@ missing bytes silently.
                                       its parse the way a real server's
                                       does ([0020] of the realserver
                                       capture) (#10295).
+
+    10315-redhat9x86-oci7-native-VARIANT-realserver.oraproxy
+    (each with a matching .out)
+                                     oci7transaction.cpp's eleven #10315
+                                      variants (see above), from
+                                      redhat9x86's real 9.2.0.4.0 client
+                                      straight to oracle102, native
+                                      encoding. merge and select for
+                                      update move the call status the way
+                                      dml does (1 to 2, 5 to 6, or 5 with
+                                      autocommit on); grant, revoke,
+                                      comment, rename, analyze, audit,
+                                      noaudit, flashback and purge give 5
+                                      at the parse, like other ddl, even
+                                      when they fail; the describe and
+                                      exact-fetch replies carry the
+                                      session's value; a pl/sql block
+                                      that commits inside gives 5, and a
+                                      null one leaves 2 alone. a merge
+                                      whose ON clause is the constant
+                                      (1=0) makes oracle102 drop the
+                                      connection at the parse, from
+                                      sqlplus too, so the merge variants
+                                      match on a real column instead.
+                                      autocommit-on-select-for-update's
+                                      ofen fails ORA-01002, since the
+                                      autocommit closes the for-update
+                                      fetch (#10315).
+
+    10315-redhat9x86-oci7-portable-VARIANT-sqlrelay-after.oraproxy
+    (each with a matching .out)
+                                     the same eleven variants, from
+                                      redhat9x86's real client (portable
+                                      encoding) against sqlrelay's
+                                      oracleprotocoloci7 instance after
+                                      the #10315 fix. every call status
+                                      matches the realserver captures
+                                      except plsql-commit-inside, which
+                                      stays 1 where a real server goes to
+                                      5 - the module can't see what a
+                                      block did. dml-ddl-misc's failing
+                                      grant fails at its execute rather
+                                      than its parse, with one more oexec
+                                      than the realserver capture, the
+                                      same as ddl-alone's drop, and
+                                      autocommit-on-select-for-update's
+                                      ofen succeeds (#10315).
 
 The three real Oracle test servers on this network
 --------------------------------------------------

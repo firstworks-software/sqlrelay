@@ -2045,6 +2045,13 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	updateOci7CallStatus(sqlrservercursor *cursor,
 							bool executed);
 
+		// true if "query" starts with a ddl verb that
+		// determineQueryType() calls "etc"
+		bool	isOci7OtherDdl(const char *query);
+
+		// true if "query" (a select) locks rows with "for update"
+		bool	isOci7SelectForUpdate(const char *query);
+
 		// version
 		bool	version(const byte_t *rp, bool istticall);
 		bool	sendVersionResponse(uint32_t bufferlength);
@@ -9969,10 +9976,11 @@ bool sqlrprotocol_oracle::sendDescribeResponse(sqlrservercursor *cursor,
 	// the same status message an open response ends with, except that
 	// the end-to-end sequence number is 2 bytes wide here in the native
 	// encoding, not 4 - putAuthCount() ignores nativesize for portable,
-	// so that encoding is untouched.  the call status is assumed to be
-	// the session's, the same as the open response's - no capture on file
-	// shows a describe after a commit or a dml.  a query3 session still
-	// sends 1
+	// so that encoding is untouched.  the call status is the session's,
+	// the same as the open response's - [0028] of
+	// 10315-redhat9x86-oci7-native-commit-describe-realserver.oraproxy
+	// in test/protocol/oracle/samples/ sends 5 after a commit.  a query3
+	// session still sends 1
 	write(&reqpacket,(byte_t)TTC_STATUS);
 	putAuthCount((query3session)?1:oci7callstatus,4);
 	if (oci7endtoendseqnumber) {
@@ -20153,12 +20161,14 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 							bool executed) {
 
 	// the rules below are a real 10.2 server's, from the captures named
-	// 10295-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy in
+	// 10295-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy and
+	// 10315-redhat9x86-oci7-native-SEQUENCE-realserver.oraproxy in
 	// test/protocol/oracle/samples/, cited below by SEQUENCE.  anything
 	// they don't name leaves the call status alone - a select, a failed
 	// dml ([0029] of dml-error-rollback stays 2), or a pl/sql block.  a
 	// pl/sql block can open or end a transaction, but nothing here can see
-	// whether it did: plsql-null stays 1 and plsql-dml-commit goes to 2
+	// whether it did: plsql-null stays 1, plsql-dml-commit goes to 2 and
+	// plsql-commit-inside goes to 5
 
 	// a statement a filter turned away never reached the backend
 	if (cursor->getQueryStatus()==SQLRQUERYSTATUS_FILTER_VIOLATION) {
@@ -20188,15 +20198,16 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 			(!charstring::compareIgnoringCase(after,"system",6) &&
 					character::isWhitespace(after[6]));
 		ddl=(!altersession && !altersystem);
-	} else if (!charstring::compareIgnoringCase(ptr,"truncate",8) &&
-					character::isWhitespace(ptr[8])) {
-		ddl=true;
+	} else if (querytype==SQLRQUERYTYPE_ETC) {
+		ddl=isOci7OtherDdl(ptr);
 	}
 
 	// ddl commits at the parse, before it runs, so it ends a transaction
 	// whether it then succeeds or not.  [0020] of ddl-alone answers the
-	// parse of a drop that fails ORA-00942 with 5, and [0024] of dml-ddl
-	// answers the parse of a drop with 5 while an insert was pending
+	// parse of a drop that fails ORA-00942 with 5, [0024] of dml-ddl
+	// answers the parse of a drop with 5 while an insert was pending, and
+	// dml-ddl-misc shows the same for every verb isOci7OtherDdl() matches,
+	// including a grant that fails ORA-01917 ([0120])
 	if (ddl) {
 		oci7callstatus=5;
 		return;
@@ -20206,23 +20217,47 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 		return;
 	}
 
+	// merge is dml that determineQueryType() calls "etc", and a select
+	// for update takes row locks, so it opens a transaction the same way
+	// dml does - [0022] of select-for-update-idle sends 2, [0028] of
+	// commit-select-for-update sends 6 and [0024] of
+	// autocommit-on-select-for-update sends 5
+	bool	dml=false;
 	switch (querytype) {
 		case SQLRQUERYTYPE_INSERT:
 		case SQLRQUERYTYPE_INSERTSELECT:
 		case SQLRQUERYTYPE_MULTIINSERT:
 		case SQLRQUERYTYPE_UPDATE:
 		case SQLRQUERYTYPE_DELETE:
-			// with autocommit on, dml commits itself - [0024] and
-			// [0028] of autocommit-on-dml-dml send 5.  otherwise it
-			// opens a transaction, and whether one has ended before
-			// sticks - [0022] and [0026] of dml-dml-commit send 2,
-			// and [0024] of rollback-dml-commit sends 6
-			if (cont->getAutoCommit()) {
-				oci7callstatus=5;
-			} else {
-				oci7callstatus=(oci7callstatus&4)|2;
-			}
+			dml=true;
 			break;
+		case SQLRQUERYTYPE_ETC:
+			dml=(!charstring::compareIgnoringCase(ptr,"merge",5) &&
+					character::isWhitespace(ptr[5]));
+			break;
+		case SQLRQUERYTYPE_SELECT:
+			dml=isOci7SelectForUpdate(ptr);
+			break;
+		default:
+			break;
+	}
+
+	if (dml) {
+		// with autocommit on, dml commits itself - [0024] and [0028]
+		// of autocommit-on-dml-dml and [0024] of autocommit-on-merge
+		// send 5.  otherwise it opens a transaction, and whether one
+		// has ended before sticks - [0022] and [0026] of
+		// dml-dml-commit send 2, and [0024] of rollback-dml-commit and
+		// of rollback-merge-commit send 6
+		if (cont->getAutoCommit()) {
+			oci7callstatus=5;
+		} else {
+			oci7callstatus=(oci7callstatus&4)|2;
+		}
+		return;
+	}
+
+	switch (querytype) {
 		case SQLRQUERYTYPE_COMMIT:
 		case SQLRQUERYTYPE_ROLLBACK:
 			// a commit or rollback run as a statement ends the
@@ -20233,6 +20268,54 @@ void sqlrprotocol_oracle::updateOci7CallStatus(sqlrservercursor *cursor,
 		default:
 			break;
 	}
+}
+
+bool sqlrprotocol_oracle::isOci7OtherDdl(const char *query) {
+
+	// associate and disassociate (statistics) weren't captured - they
+	// need a statistics type to run - but oracle documents them as ddl
+	static const char	*verbs[]={
+		"truncate","grant","revoke","rename","comment","audit",
+		"noaudit","analyze","associate","disassociate","purge",
+		"flashback",NULL
+	};
+	for (const char * const *verb=verbs; *verb; verb++) {
+		size_t	len=charstring::getLength(*verb);
+		if (!charstring::compareIgnoringCase(query,*verb,len) &&
+					character::isWhitespace(query[len])) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool sqlrprotocol_oracle::isOci7SelectForUpdate(const char *query) {
+
+	// look for "for" (after whitespace or a close paren), then "update",
+	// as whole words, with whitespace or -- comments between them.  the
+	// text isn't parsed, so "for update" inside a string literal matches
+	// too
+	for (const char *ptr=charstring::findFirstIgnoringCase(query,"for");
+			ptr;
+			ptr=charstring::findFirstIgnoringCase(ptr+3,"for")) {
+
+		if (ptr!=query && !character::isWhitespace(ptr[-1]) &&
+							ptr[-1]!=')') {
+			continue;
+		}
+		if (!character::isWhitespace(ptr[3])) {
+			continue;
+		}
+		const char	*after=cont->skipWhitespaceAndComments(ptr+3);
+		if (charstring::compareIgnoringCase(after,"update",6)) {
+			continue;
+		}
+		if (!after[6] || character::isWhitespace(after[6]) ||
+							after[6]==';') {
+			return true;
+		}
+	}
+	return false;
 }
 
 bool sqlrprotocol_oracle::version(const byte_t *rp, bool istticall) {

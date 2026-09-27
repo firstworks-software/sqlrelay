@@ -1,0 +1,14 @@
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43316))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+sequence: merge-commit
+olog: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - bracket: return=0 rc=0 v2_rc=0 fc=14 ok
+query: merge into protocoltest10293txn t using (select nvl(max(id),0)+1 id from protocoltest10293txn) s on (t.id=s.id) when not matched then insert (id,txt) values (s.id,'merge-commit')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+ocom: return=0 rc=0 v2_rc=0 fc=0 ok
+oclose - bracket: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - after: return=0 rc=0 v2_rc=0 fc=14 ok
+oclose - after: return=0 rc=0 v2_rc=0 fc=0 ok
+ologof: return=0 rc=0 v2_rc=0 fc=0 ok
+done
+exit: 0

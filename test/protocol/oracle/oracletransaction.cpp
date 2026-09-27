@@ -68,6 +68,11 @@
 // checking that open, close and a select in between only ever report
 // whatever the status already was.
 //
+// An other-statements arm after that, on a fourth connection, covers the
+// statements #10315 added rules for: a select for update opens a
+// transaction like DML does (1 -> 2 from idle, 5 -> 6 later), a merge is
+// DML (5 -> 6), and grant and comment are DDL that commit (6 -> 5).
+//
 // Both arms need a fresh session's first DML to land on a table that
 // already exists, or the DDL that creates it would set the status to 5
 // before the DML ever ran - see the ordering note on protocoltable10300
@@ -120,6 +125,22 @@ static const char	*insertscratchtable=
 static const char	*selectscratchtable=
 	"select id from protocoltable10300";
 static const int64_t	scratchtablevalue=10300;
+
+// #10315's statements: a merge, two DDL verbs determineQueryType() calls
+// "etc", and a select for update - all on protocoltable10300.  the merge
+// always inserts one row, one past the table's highest id - a merge whose
+// ON clause is a constant like (1=0) makes a real 10.2 server drop the
+// connection
+static const char	*mergescratchtable=
+	"merge into protocoltable10300 t "
+	"using (select nvl(max(id),0)+1 id from protocoltable10300) s "
+	"on (t.id=s.id) when not matched then insert (id) values (s.id)";
+static const char	*grantscratchtable=
+	"grant select on protocoltable10300 to public";
+static const char	*commentscratchtable=
+	"comment on table protocoltable10300 is 'protocoltable10300'";
+static const char	*selectforupdatescratchtable=
+	"select id from protocoltable10300 for update";
 
 int	status=0;
 const char	*success="\033[32msuccess\033[0m";
@@ -377,6 +398,29 @@ static bool checkLegacyDmlStep(oracleprotocolclient *client,
 					(int)oranum,errmessage);
 	}
 	return false;
+}
+
+// parse and execute QUERY, then judge the execute's reply with
+// checkLegacyDmlStep() - false only if the calls couldn't be made at all
+static bool runLegacyDmlStep(oracleprotocolclient *client,
+					const char *label,
+					uint32_t cursorid,
+					const char *query,
+					unsigned char expectedcommandtype,
+					uint32_t expectedrowsprocessed,
+					uint32_t expectedcallstatus) {
+
+	if (!client->legacyQuery(cursorid,query) ||
+		!client->legacyExecute(cursorid,1,0)) {
+		report(label,false);
+		stdoutput.printf("%s\n",client->getError());
+		return false;
+	}
+	report(label,checkLegacyDmlStep(client,label,cursorid,
+						expectedcommandtype,
+						expectedrowsprocessed,1,
+						expectedcallstatus));
+	return true;
 }
 
 int main(int argc, char **argv) {
@@ -778,6 +822,91 @@ int main(int argc, char **argv) {
 	}
 
 	pendingclient.disconnect();
+
+	// the other-statements arm: a select for update, a merge and two DDL
+	// verbs determineQueryType() calls "etc", each moving the call status
+	// the way samples/10315-redhat9x86-oci7-native-*-realserver.oraproxy
+	// show a real server's moving - #10315.  it runs on a fresh session,
+	// while protocoltable10300 still exists, for the same reason the
+	// pending-dml arm does
+	oracleprotocolclient	otherclient;
+	otherclient.setNativeEncoding(native);
+
+	if (!otherclient.connect(host,port,sid) ||
+		!otherclient.login(user,password)) {
+		report("other statements: connect",false);
+		stdoutput.printf("%s\n",otherclient.getError());
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+	report("other statements: connect",true);
+
+	uint32_t	othercursorid=0;
+	if (!checkOpenStatus(&otherclient,"other statements: open cursor",
+						&othercursorid,1)) {
+		otherclient.disconnect();
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+
+	// a select for update takes row locks, so it opens a transaction the
+	// way dml does, even from idle - select-for-update-idle [0022].  its
+	// command type and rows processed are a select's.  after the
+	// rollback, a merge is dml too - rollback-merge-commit [0024].  its
+	// command type is the select fallback oci7CommandType() gives
+	// anything it doesn't classify, where a real server sends 189 -
+	// #10319
+	if (!runLegacyDmlStep(&otherclient,
+				"other statements: select for update from idle",
+				othercursorid,selectforupdatescratchtable,
+				3,0,2) ||
+		!checkTransactionCall(&otherclient,
+				"other statements: rollback",
+				ORA_TTI_ROLLBACK,1,status5,status5size) ||
+		!runLegacyDmlStep(&otherclient,
+				"other statements: merge",
+				othercursorid,mergescratchtable,3,1,6)) {
+		otherclient.disconnect();
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+
+	// a grant and a comment are both ddl, so each commits the merge
+	// before it - dml-ddl-misc [0032] and [0048]
+	if (!runLegacyDmlStep(&otherclient,
+				"other statements: grant",
+				othercursorid,grantscratchtable,3,0,5) ||
+		!runLegacyDmlStep(&otherclient,
+				"other statements: second merge",
+				othercursorid,mergescratchtable,3,1,6) ||
+		!runLegacyDmlStep(&otherclient,
+				"other statements: comment",
+				othercursorid,commentscratchtable,3,0,5)) {
+		otherclient.disconnect();
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+
+	// a select for update after that is (5&4)|2 -
+	// commit-select-for-update [0028]
+	if (!runLegacyDmlStep(&otherclient,
+				"other statements: select for update",
+				othercursorid,selectforupdatescratchtable,
+				3,0,6) ||
+		!checkTransactionCall(&otherclient,
+				"other statements: second rollback",
+				ORA_TTI_ROLLBACK,2,status5,status5size)) {
+		otherclient.disconnect();
+		dmlclient.disconnect();
+		client.disconnect();
+		return status;
+	}
+
+	otherclient.disconnect();
 
 	// leave the backend clean for the next run - not checked,
 	// same reasoning as the drop before create table above

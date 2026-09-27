@@ -7,7 +7,7 @@
 // then ologof.  Nothing else.
 //
 //   ./oci7transaction SID [--sequence=NAME] [--table=TABLE]
-//                     [--ddltable=TABLE] [USER PASSWORD]
+//                     [--ddltable=TABLE] [--lngflg=N] [USER PASSWORD]
 //
 //   --sequence=  which variant to run, default select-commit:
 //     select-commit          oparse/odefin/oexec/ofen a one-row select, then
@@ -45,6 +45,31 @@
 //                             orol
 //     select-for-update-commit  insert a row, select it back "for update",
 //                             then ocom
+//     merge-commit            from idle, oparse/oexec a MERGE that inserts
+//                             one row, then ocom
+//     rollback-merge-commit   orol with nothing pending, then the merge,
+//                             then ocom
+//     autocommit-on-merge     ocon, then the merge, no ocom
+//     dml-ddl-misc            one insert before each of a batch of otherwise
+//                             unclassified DDL verbs - grant, revoke,
+//                             comment, rename (both ways), analyze, audit,
+//                             noaudit, drop, flashback, purge recyclebin,
+//                             and a deliberately failing grant - then ocom
+//     select-for-update-idle  from idle, select the scratch table's first
+//                             row back "for update", then ocom
+//     commit-describe         insert a row, ocom, then oparse a one-column
+//                             select and odescr column 1
+//     commit-exfet            insert a row, ocom, then oparse a one-column
+//                             select, odefin and oexfet instead of
+//                             oexec/ofen
+//     plsql-commit-inside     from idle, oparse/oexec a PL/SQL block that
+//                             inserts a row into TABLE and commits inside
+//                             the block
+//     dml-plsql-null          insert a row, "begin null; end;", then ocom
+//     commit-select-for-update  insert a row, ocom, then select the scratch
+//                             table's first row back "for update", then ocom
+//     autocommit-on-select-for-update  ocon, then select the scratch
+//                             table's first row back "for update", no ocom
 //   --table=     the scratch table the DML variants insert into, default
 //                protocoltest10293txn.  it must already exist, as:
 //                  create table protocoltest10293txn
@@ -53,8 +78,9 @@
 //   --ddltable=  the scratch table the DDL variants drop and (re)create,
 //                default protocoltest10295ddl.  it need not exist first -
 //                the drop's failure is ignored
+//   --lngflg=    oparse()'s language flag, default 2 (V7 behavior)
 //
-// Written for #10293, extended for #10295.  Every variant runs its
+// Written for #10293, extended for #10295 and #10315.  Every variant runs its
 // transaction calls inside an oopen/oclose pair of its own, then opens and
 // closes one more cursor afterward, and prints the return value, cda.rc,
 // v2_rc and fc after every single call, so this program's output lines up
@@ -83,6 +109,7 @@ const char	*password="testpassword";
 const char	*sid=NULL;
 const char	*table="protocoltest10293txn";
 const char	*ddltable="protocoltest10295ddl";
+ub4		lngflg=2;
 
 Lda_Def		lda;
 ub4		hda[256];
@@ -110,6 +137,17 @@ const char	*variants[]={
 	"dml-sqlcommit",
 	"dml-error-rollback",
 	"select-for-update-commit",
+	"merge-commit",
+	"rollback-merge-commit",
+	"autocommit-on-merge",
+	"dml-ddl-misc",
+	"select-for-update-idle",
+	"commit-describe",
+	"commit-exfet",
+	"plsql-commit-inside",
+	"dml-plsql-null",
+	"commit-select-for-update",
+	"autocommit-on-select-for-update",
 	NULL
 };
 
@@ -135,7 +173,7 @@ static bool closeCursor(const char *what, Cda_Def *cursor) {
 static bool parse(Cda_Def *cursor, const char *query) {
 	stdoutput.printf("query: %s\n",query);
 	return run("oparse",cursor,
-			oparse(cursor,(text *)query,(sb4)-1,0,(ub4)2));
+			oparse(cursor,(text *)query,(sb4)-1,0,lngflg));
 }
 
 // oparse and oexec an arbitrary statement
@@ -149,6 +187,20 @@ static bool insertRow(Cda_Def *cursor, const char *label) {
 	char	query[256];
 	charstring::printf(query,sizeof(query),
 			"insert into %s values (1,'%s')",table,label);
+	return execSql(cursor,query);
+}
+
+// oparse and oexec a MERGE that always inserts one row, with LABEL as the
+// row's txt value.  a 10.2 server drops the connection (ORA-03113) on a
+// MERGE whose ON clause is a constant like (1=0), so this one matches on a
+// source id one past the table's highest instead
+static bool mergeRow(Cda_Def *cursor, const char *label) {
+	char	query[320];
+	charstring::printf(query,sizeof(query),
+			"merge into %s t using "
+			"(select nvl(max(id),0)+1 id from %s) s "
+			"on (t.id=s.id) when not matched then insert (id,txt) "
+			"values (s.id,'%s')",table,table,label);
 	return execSql(cursor,query);
 }
 
@@ -181,6 +233,66 @@ static bool selectQuery(Cda_Def *cursor, const char *query) {
 
 static bool selectRow(Cda_Def *cursor) {
 	return selectQuery(cursor,"select 1 from dual");
+}
+
+// oparse, odefin and oexfet a one-row, one-column QUERY - oexfet is the
+// other legacy fetch shape, with no separate oexec/ofen
+static bool exfetQuery(Cda_Def *cursor, const char *query) {
+
+	if (!parse(cursor,query)) {
+		return false;
+	}
+
+	char	buf[64];
+	sb2	ind=0;
+	ub2	retlen=0;
+	ub2	retcode=0;
+	bytestring::zero(buf,sizeof(buf));
+	if (!run("odefin",cursor,
+			odefin(cursor,1,(ub1 *)buf,(sword)sizeof(buf),
+				SQLT_STR,-1,&ind,(text *)0,-1,-1,
+				&retlen,&retcode))) {
+		return false;
+	}
+
+	if (!run("oexfet",cursor,oexfet(cursor,(ub4)1,0,0))) {
+		return false;
+	}
+	stdoutput.printf("row: \"%s\"\n",buf);
+	return true;
+}
+
+// odescr column POS of the cursor's current parse and print what came back
+static bool describeColumn(Cda_Def *cursor, sword pos) {
+
+	sb4	dbsize=0;
+	sb2	dbtype=0;
+	sb1	cbuf[128];
+	sb4	cbufl=(sb4)sizeof(cbuf);
+	sb4	dsize=0;
+	sb2	precision=0;
+	sb2	scale=0;
+	sb2	nullok=0;
+	bytestring::zero(cbuf,sizeof(cbuf));
+
+	if (!run("odescr",cursor,
+			odescr(cursor,pos,&dbsize,&dbtype,cbuf,&cbufl,
+				&dsize,&precision,&scale,&nullok))) {
+		return false;
+	}
+
+	// odescr does not null terminate the name - cbufl comes back as its
+	// length
+	if (cbufl<0 || cbufl>=(sb4)sizeof(cbuf)) {
+		cbufl=(sb4)sizeof(cbuf)-1;
+	}
+	cbuf[cbufl]='\0';
+	stdoutput.printf("  name=%s dbtype=%d dbsize=%d dsize=%d "
+				"precision=%d scale=%d nullok=%d\n",
+				(char *)cbuf,(int)dbtype,(int)dbsize,
+				(int)dsize,(int)precision,(int)scale,
+				(int)nullok);
+	return true;
 }
 
 // select the scratch table's first row back, with a row lock held
@@ -311,6 +423,118 @@ static bool runSequence(const char *variant) {
 		ok=insertRow(&cda,variant) &&
 			selectForUpdate(&cda) &&
 			run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,"merge-commit")) {
+		ok=mergeRow(&cda,variant) &&
+			run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,"rollback-merge-commit")) {
+		ok=run("orol",&lda,orol(&lda)) &&
+			mergeRow(&cda,variant) &&
+			run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,"autocommit-on-merge")) {
+		ok=run("ocon",&lda,ocon(&lda)) &&
+			mergeRow(&cda,variant);
+	} else if (!charstring::compare(variant,"dml-ddl-misc")) {
+
+		// walk the unclassified DDL verbs, each preceded by an
+		// insert so every DDL is seen ending a pending txn - a DDL
+		// failure here doesn't stop the run, since the point is the
+		// call status each one leaves behind, not whether it succeeds
+		ddlStatement(&cda);
+
+		char	q[160];
+		insertRow(&cda,"grant");
+		charstring::printf(q,sizeof(q),
+				"grant select on %s to public",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"revoke");
+		charstring::printf(q,sizeof(q),
+				"revoke select on %s from public",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"comment");
+		charstring::printf(q,sizeof(q),
+				"comment on table %s is 'x'",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"rename-out");
+		charstring::printf(q,sizeof(q),
+				"rename %s to protocoltest10315ren",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"rename-back");
+		charstring::printf(q,sizeof(q),
+				"rename protocoltest10315ren to %s",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"analyze");
+		charstring::printf(q,sizeof(q),
+				"analyze table %s compute statistics",
+				ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"audit");
+		charstring::printf(q,sizeof(q),
+				"audit select on %s",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"noaudit");
+		charstring::printf(q,sizeof(q),
+				"noaudit select on %s",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"drop");
+		charstring::printf(q,sizeof(q),"drop table %s",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"flashback");
+		charstring::printf(q,sizeof(q),
+				"flashback table %s to before drop",ddltable);
+		execSql(&cda,q);
+
+		insertRow(&cda,"purge");
+		execSql(&cda,"purge recyclebin");
+
+		insertRow(&cda,"grant-fail");
+		charstring::printf(q,sizeof(q),
+				"grant select on %s to nosuchuser10315",
+				ddltable);
+		execSql(&cda,q);
+
+		ok=run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,"select-for-update-idle")) {
+		ok=selectForUpdate(&cda) &&
+			run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,"commit-describe")) {
+		ok=insertRow(&cda,variant) &&
+			run("ocom",&lda,ocom(&lda)) &&
+			parse(&cda,"select 1 from dual") &&
+			describeColumn(&cda,1);
+	} else if (!charstring::compare(variant,"commit-exfet")) {
+		ok=insertRow(&cda,variant) &&
+			run("ocom",&lda,ocom(&lda)) &&
+			exfetQuery(&cda,"select 1 from dual");
+	} else if (!charstring::compare(variant,"plsql-commit-inside")) {
+		char	query[256];
+		charstring::printf(query,sizeof(query),
+				"begin insert into %s values "
+				"(1,'plsql-commit-inside'); commit; end;",
+				table);
+		ok=execSql(&cda,query);
+	} else if (!charstring::compare(variant,"dml-plsql-null")) {
+		ok=insertRow(&cda,variant) &&
+			execSql(&cda,"begin null; end;") &&
+			run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,
+			"commit-select-for-update")) {
+		ok=insertRow(&cda,variant) &&
+			run("ocom",&lda,ocom(&lda)) &&
+			selectForUpdate(&cda) &&
+			run("ocom",&lda,ocom(&lda));
+	} else if (!charstring::compare(variant,
+			"autocommit-on-select-for-update")) {
+		ok=run("ocon",&lda,ocon(&lda)) &&
+			selectForUpdate(&cda);
 	}
 
 	// close the bracketing cursor
@@ -340,6 +564,8 @@ int main(int argc, char **argv) {
 			table=argv[i]+8;
 		} else if (!charstring::compare(argv[i],"--ddltable=",11)) {
 			ddltable=argv[i]+11;
+		} else if (!charstring::compare(argv[i],"--lngflg=",9)) {
+			lngflg=(ub4)charstring::convertToInteger(argv[i]+9);
 		} else if (positional==0) {
 			sid=argv[i];
 			positional++;
@@ -365,8 +591,15 @@ int main(int argc, char **argv) {
 				"ddl-alone|dml-ddl|plsql-null|"
 				"plsql-dml-commit|dml-sqlcommit|"
 				"dml-error-rollback|"
-				"select-for-update-commit] "
+				"select-for-update-commit|merge-commit|"
+				"rollback-merge-commit|"
+				"autocommit-on-merge|dml-ddl-misc|"
+				"select-for-update-idle|commit-describe|"
+				"commit-exfet|plsql-commit-inside|"
+				"dml-plsql-null|commit-select-for-update|"
+				"autocommit-on-select-for-update] "
 				"[--table=TABLE] [--ddltable=TABLE] "
+				"[--lngflg=N] "
 				"[USER PASSWORD]\n",
 				argv[0]);
 		return 1;

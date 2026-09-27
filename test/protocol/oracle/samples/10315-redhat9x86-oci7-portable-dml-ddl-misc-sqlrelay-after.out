@@ -1,0 +1,89 @@
+logging in to (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=dev.firstworks.com)(PORT=43316))(CONNECT_DATA=(SERVICE_NAME=ora1))) as testuser...
+sequence: dml-ddl-misc
+olog: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - bracket: return=0 rc=0 v2_rc=0 fc=14 ok
+query: drop table protocoltest10295ddl
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec (drop, ignored): return=0 rc=0 v2_rc=0 fc=4 ok
+query: create table protocoltest10295ddl (id number, txt varchar2(40))
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'grant')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: grant select on protocoltest10295ddl to public
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'revoke')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: revoke select on protocoltest10295ddl from public
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'comment')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: comment on table protocoltest10295ddl is 'x'
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'rename-out')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: rename protocoltest10295ddl to protocoltest10315ren
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'rename-back')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: rename protocoltest10315ren to protocoltest10295ddl
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'analyze')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: analyze table protocoltest10295ddl compute statistics
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'audit')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: audit select on protocoltest10295ddl
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'noaudit')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: noaudit select on protocoltest10295ddl
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'drop')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: drop table protocoltest10295ddl
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'flashback')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: flashback table protocoltest10295ddl to before drop
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'purge')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: purge recyclebin
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: insert into protocoltest10293txn values (1,'grant-fail')
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=0 rc=0 v2_rc=0 fc=4 ok
+query: grant select on protocoltest10295ddl to nosuchuser10315
+oparse: return=0 rc=0 v2_rc=0 fc=54 ok
+oexec: return=-1917 rc=1917 v2_rc=-1917 fc=4 failed
+ocom: return=0 rc=0 v2_rc=0 fc=0 ok
+oclose - bracket: return=0 rc=0 v2_rc=0 fc=0 ok
+oopen - after: return=0 rc=0 v2_rc=0 fc=14 ok
+oclose - after: return=0 rc=0 v2_rc=0 fc=0 ok
+ologof: return=0 rc=0 v2_rc=0 fc=0 ok
+done
+exit: 0
