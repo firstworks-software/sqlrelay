@@ -3009,6 +3009,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   call it at load time, so a platform where csprng falls back
   to a non-cryptographic prng warns instead of quietly
   generating predictable secrets (#9773)
+- fixed an authentication bypass in the teradata_sidechannel auth module
 
 ## [2.2.0] - 2026-07-27
 

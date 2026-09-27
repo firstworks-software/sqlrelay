@@ -41,6 +41,10 @@ class SQLRSERVER_DLLSPEC sqlrauth_teradata_sidechannel : public sqlrauth {
 		bool	recvMessageFromBackend();
 		bool	forwardBackendMessageToClient();
 
+		// returns the flavor of the first parcel of the backend's
+		// reply, or 0 if the reply is too short to contain one
+		uint16_t	peekReplyParcelFlavor();
+
 		void	copyOut(byte_t *rp,
 					byte_t *value,
 					byte_t **rpout);
@@ -139,6 +143,11 @@ sqlrauth_teradata_sidechannel::~sqlrauth_teradata_sidechannel() {
 
 const char *sqlrauth_teradata_sidechannel::auth(sqlrcredentials *cred) {
 
+	// this module only supports teradata credentials
+	if (charstring::compare(cred->getType(),"teradata")) {
+		return NULL;
+	}
+
 	clientsock=((sqlrteradatacredentials *)cred)->getClientFileDescriptor();
 
 	isc.close();
@@ -188,7 +197,25 @@ const char *sqlrauth_teradata_sidechannel::auth(sqlrcredentials *cred) {
 				debugWrite("...");
 				debugEnd();
 				if (passthrough()) {
-					retval="";
+
+					// Reject only on a Failure (9) or
+					// Error (49) parcel.  A successful
+					// TD2 logon reply is encrypted, so
+					// it can't be parsed for a
+					// Success (8) parcel, and must be
+					// accepted.
+					uint16_t	replyflavor=
+							peekReplyParcelFlavor();
+					if (replyflavor!=9 && replyflavor!=49) {
+						retval="";
+					} else {
+						debugWrite("rejected: "
+							"backend replied "
+							"with a Failure/"
+							"Error parcel "
+							"(flavor %d)",
+							(int)replyflavor);
+					}
 				}
 				loop=false;
 				break;
@@ -439,6 +466,26 @@ bool sqlrauth_teradata_sidechannel::forwardBackendMessageToClient() {
 	}
 	clientsock->flushWriteBuffer(-1,-1);
 	return true;
+}
+
+uint16_t sqlrauth_teradata_sidechannel::peekReplyParcelFlavor() {
+
+	if (sidechannelrecvdatasize<sizeof(uint16_t)) {
+		return 0;
+	}
+
+	// get the parcel flavor
+	// (if it's invalid, then try the other endianness)
+	byte_t		*ptr=sidechannelrecvdata;
+	uint16_t	flavor;
+	copyOutLE(ptr,&flavor,&ptr);
+	if ((flavor&0x7fff)>512) {
+		ptr=sidechannelrecvdata;
+		copyOutBE(ptr,&flavor,&ptr);
+	}
+
+	// remove the large-parcel bit
+	return flavor&0x7fff;
 }
 
 void sqlrauth_teradata_sidechannel::copyOut(byte_t *rp,
