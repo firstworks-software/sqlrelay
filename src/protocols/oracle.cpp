@@ -400,6 +400,7 @@
 #define TTI_K2_TRANSACTIONS	0x43
 #define TTI_QUERY2		0x47
 #define TTI_OSQL7		0x4A
+#define TTI_REEXECUTE_AND_FETCH	0x4E
 #define TTI_OKOD		0x5C
 #define TTI_QUERY3		0x5E
 #define TTI_LOB_OPERATIONS	0x60
@@ -1988,13 +1989,16 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendReexecuteResponse(sqlrservercursor *cursor,
 							uint32_t cursorid);
 		bool	sendExecuteResponse(sqlrservercursor *cursor);
+		bool	reexecuteAndFetch(const byte_t *rp);
 
 		// fetch...
 		bool	fetch(const byte_t *rp);
 		bool	fetch3(const byte_t *rp);
 		bool	sendFetch3Response(sqlrservercursor *cursor,
 							uint32_t cursorid,
-							uint32_t rowstofetch);
+							uint32_t rowstofetch,
+							byte_t rowheaderflags=
+								0x02);
 		bool	sendFetchResponse(sqlrservercursor *cursor,
 							bool exactfetch,
 							uint32_t rowstofetch);
@@ -3054,6 +3058,16 @@ clientsessionexitstatus_t sqlrprotocol_oracle::clientSession(
 					break;
 				case TTI_FETCH:
 					loop=fetch(rp);
+					rp=NULL;
+					break;
+				case TTI_REEXECUTE_AND_FETCH:
+					// python-oracledb thin's
+					// TNS_FUNC_REEXECUTE_AND_FETCH - a
+					// second execute() on a cursor that
+					// already ran a select once,
+					// answered with a prefetch in the
+					// same reply - #10322
+					loop=reexecuteAndFetch(rp);
 					rp=NULL;
 					break;
 				case TTI_CLOSE:
@@ -17959,6 +17973,154 @@ bool sqlrprotocol_oracle::sendReexecuteResponse(sqlrservercursor *cursor,
 	return sendPacket(true);
 }
 
+bool sqlrprotocol_oracle::reexecuteAndFetch(const byte_t *rp) {
+
+	// python-oracledb thin's TNS_FUNC_REEXECUTE_AND_FETCH (0x4e) - a
+	// second execute() on a cursor that already parsed and executed a
+	// select once, answered with a prefetch in the same reply instead
+	// of a separate TTI_FETCH behind it - #10322
+	//
+	// the request header is byte for byte reexecute()'s above: a raw
+	// sequence byte, then cursor id, iterations, options and
+	// moreoptions, each a length-prefixed int.  only what "iterations"
+	// means differs: reexecute()'s is how many array-bind executions to
+	// run; here it's how many rows to prefetch, since this call is only
+	// ever one execution - python-oracledb's _write_reexecute_message()
+	// (src/oracledb/impl/thin/messages/execute.pyx) writes this same
+	// four-field header either way, and separately writes one row data
+	// block per self.num_execs, which _create_execute_message() fixes
+	// at 1 for the plain execute() that can choose this call.  confirmed
+	// against test/protocol/oracle/samples/10314-dev-pythonoracledb-
+	// thin-main-realserver.out, packet [0097]: "4e 2e 01 15 01 02 01 20
+	// 00" is sequence 0x2e, cursor id 0x15, prefetch rows 2, options
+	// 0x20 (OPTION_EXECUTE), no more options and no row data - this
+	// cursor's select has no binds.  [0098] answers with a row header
+	// (flags 0x22 - the "answering an execute" flags sendQuery3Response()
+	// uses, not fetch3()'s 0x02), one row (the select only had one), and
+	// a summary carrying ORA-01403 - the same shape sendFetch3Response()
+	// already builds for an ordinary fetch, reused below with that flag
+
+	// the bind values behind the header can run past one packet
+	reassemble=true;
+
+	const byte_t	*end=resppacket+resppacketsize;
+
+	byte_t		sequence=0;
+	uint32_t	cursorid=0;
+	uint32_t	prefetchrows=0;
+	uint32_t	options=0;
+	uint32_t	moreoptions=0;
+
+	// the sequence number is a raw byte, not a pointer and not a count
+	if (!have(rp,1,&end)) {
+		debugWrite("truncated re-execute-and-fetch sequence number");
+		return false;
+	}
+	read(rp,&sequence,&rp);
+
+	if (!getLenPreInt(rp,&end,&cursorid,&rp) ||
+		!getLenPreInt(rp,&end,&prefetchrows,&rp) ||
+		!getLenPreInt(rp,&end,&options,&rp) ||
+		!getLenPreInt(rp,&end,&moreoptions,&rp)) {
+		debugWrite("truncated re-execute-and-fetch request");
+		return false;
+	}
+
+	// the summary object has to echo this back
+	callnumber=sequence;
+
+	if (getDebug()) {
+		debugStart("re-execute-and-fetch request");
+		debugWrite("sequence: %d",sequence);
+		debugWrite("cursor id: %d",cursorid);
+		debugWrite("prefetch rows: %d",prefetchrows);
+		debugWrite("options: 0x%08x",options);
+		debugWrite("more options: 0x%08x",moreoptions);
+		debugEnd();
+	}
+
+	sqlrservercursor	*cursor=cursorFromWireId(cursorid);
+	if (!cursor) {
+		debugWrite("cursor id %d not found",cursorid);
+		return sendCursorNotOpenError(cursorid);
+	}
+
+	query3affectedrows=0;
+	query3knowsaffectedrows=false;
+
+	// only the values are on the wire, one row data block regardless of
+	// what prefetchrows claims - this call only ever executes once
+	restoreQuery3Binds(cursor);
+	if (!getQuery3BindValues(rp,end,query3binddescs,1)) {
+		return false;
+	}
+
+	// refused here, ahead of the execute, the same as query3()'s and
+	// fetch3()'s own prefetch/fetch row count guard - the cursor is
+	// left exactly as the last successful request left it
+	if (prefetchrows>MAX_FETCH_ROW_COUNT) {
+		debugWrite("prefetch rows %d exceeds %d",
+					prefetchrows,MAX_FETCH_ROW_COUNT);
+		return sendMaxResponseError(cursorid,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED,
+				ORA_MAX_FETCH_ROW_COUNT_EXCEEDED_MESSAGE);
+	}
+
+	// a fresh execute means a new result set - re-start the running
+	// row count, and drop any row it was pinning for a lob read
+	rowssent[cont->getId(cursor)]=0;
+	clearLobPin(cont->getId(cursor));
+
+	// one execution - the same block shape as reexecute()'s loop above,
+	// though this call only ever has the one block
+	for (uint32_t block=0; block<query3blocks || !block; block++) {
+
+		if (block<query3blocks &&
+			!installQuery3Binds(cursor,block)) {
+			updateQuery3CallStatus(cursor,true,false);
+			return sendNotAllVariablesBoundError(cursorid);
+		}
+
+		if (!cont->executeQuery(cursor,true,true,true,true)) {
+			debugWrite("execute query failed");
+			updateQuery3CallStatus(cursor,true,false);
+			return sendQueryError(cursor);
+		}
+
+		updateQuery3CallStatus(cursor,true,true);
+
+		// a ref cursor bind's result set isn't readable until the
+		// execute that opened it has run
+		sqlrservercursor	*failed=NULL;
+		if (!fetchFromRefCursors(cursor,&failed)) {
+			return sendQueryError((failed)?failed:cursor);
+		}
+
+		if (cont->knowsAffectedRows(cursor)) {
+			query3knowsaffectedrows=true;
+			query3affectedrows+=(uint32_t)
+					cont->getAffectedRows(cursor);
+		}
+	}
+
+	// the execute above already returned on failure, so this only runs
+	// on success, the same as reexecute()'s own commit-reexecute check -
+	// python-oracledb thin never sets this bit for this call (it only
+	// ever re-executes a select), but a client that does gets it honored
+	if (moreoptions&REEXECUTE_OPTION_COMMIT) {
+		if (!cont->commit()) {
+			return sendTransactionError(cursorid);
+		}
+		callstatus=5;
+	}
+
+	// keep describe()'s guard current - the same reasoning as
+	// reexecute()'s own call to this
+	cacheColumnDefinitions(cursor,cont->colCount(cursor));
+
+	return sendFetch3Response(cursor,cursorid,prefetchrows,0x22);
+}
+
 bool sqlrprotocol_oracle::sendExecuteResponse(sqlrservercursor *cursor) {
 
 	resetSendPacketBuffer(PACKET_DATA);
@@ -18079,11 +18241,20 @@ bool sqlrprotocol_oracle::fetch3(const byte_t *rp) {
 
 bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 						uint32_t cursorid,
-						uint32_t rowstofetch) {
+						uint32_t rowstofetch,
+						byte_t rowheaderflags) {
 
 	// the modern path body: the same as an execute's answer minus the
 	// describe and the return parameters - a row header, the rows, and a
 	// summary object
+	//
+	// rowheaderflags defaults to 0x02, putRowHeader()'s "answering a
+	// fetch" flags - fetch3() above takes the default.
+	// reexecuteAndFetch() below passes 0x22, the "answering an execute"
+	// flags sendQuery3Response() uses for its own prefetch, since a real
+	// server's reply to TTI_REEXECUTE_AND_FETCH is otherwise this same
+	// shape - see packet [0098] of test/protocol/oracle/samples/10314-
+	// dev-pythonoracledb-thin-main-realserver.out
 	resetSendPacketBuffer(PACKET_DATA);
 
 	uint32_t	colcount=cont->colCount(cursor);
@@ -18137,7 +18308,8 @@ bool sqlrprotocol_oracle::sendFetch3Response(sqlrservercursor *cursor,
 			// summary object alone, so the row header is only
 			// written once the first row is in hand
 			if (!rowsfetched) {
-				putRowHeader(0x02,colcount,rowstofetch);
+				putRowHeader(rowheaderflags,colcount,
+							rowstofetch);
 			}
 
 			rowhaslob=false;

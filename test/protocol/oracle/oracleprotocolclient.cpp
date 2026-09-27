@@ -63,6 +63,7 @@ static const unsigned char	ORA_TTI_OPEN=0x02;
 static const unsigned char	ORA_TTI_QUERY=0x03;
 static const unsigned char	ORA_TTI_EXECUTE=0x04;
 static const unsigned char	ORA_TTI_FETCH=0x05;
+static const unsigned char	ORA_TTI_REEXECUTE_AND_FETCH=0x4e;
 static const unsigned char	ORA_TTI_DISCONNECT=0x09;
 static const unsigned char	ORA_TTI_DESCRIBE=0x2b;
 static const unsigned char	ORA_TTI_QUERY3=0x5e;
@@ -462,6 +463,18 @@ class oracleprotocolclient {
 		// which of the two the listener reads is decided by
 		// query3session there, not by the call
 		bool	reexecute(uint32_t cursorid, uint32_t iterations,
+					uint32_t options, uint32_t moreoptions,
+					uint32_t bindcount,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount);
+
+		// TTI_REEXECUTE_AND_FETCH (0x4e) - python-oracledb's
+		// TNS_FUNC_REEXECUTE_AND_FETCH.  reexecute()'s body, but
+		// under this call the listener reads "iterations" as a row
+		// count to prefetch in the same reply, rather than an
+		// execution count - #10322
+		bool	reexecuteAndFetch(uint32_t cursorid,
+					uint32_t prefetchrows,
 					uint32_t options, uint32_t moreoptions,
 					uint32_t bindcount,
 					const oracleprotocolbindvalue *values,
@@ -2707,6 +2720,36 @@ bool oracleprotocolclient::reexecute(uint32_t cursorid,
 	appendByte(1);				// sequence number
 	appendLenPreInt(cursorid);
 	appendLenPreInt(iterations);
+	appendLenPreInt(options);
+	appendLenPreInt(moreoptions);
+
+	appendRowDataBlocks(values,bindcount,blockcount);
+
+	return sendPacket() && recvPacket();
+}
+
+// TTI_REEXECUTE_AND_FETCH - byte for byte reexecute()'s own body above,
+// just under a different function code and with "iterations" renamed to
+// "prefetchrows" to match what reexecuteAndFetch() in src/protocols/
+// oracle.cpp reads it as - #10322
+bool oracleprotocolclient::reexecuteAndFetch(uint32_t cursorid,
+					uint32_t prefetchrows,
+					uint32_t options,
+					uint32_t moreoptions,
+					uint32_t bindcount,
+					const oracleprotocolbindvalue *values,
+					uint32_t blockcount) {
+
+	if (blockcount && (!bindcount || !values)) {
+		setError("reexecuteAndFetch needs binds and values "
+					"for a row data block");
+		return false;
+	}
+
+	beginTtiCall(ORA_TTI_REEXECUTE_AND_FETCH);
+	appendByte(1);				// sequence number
+	appendLenPreInt(cursorid);
+	appendLenPreInt(prefetchrows);
 	appendLenPreInt(options);
 	appendLenPreInt(moreoptions);
 

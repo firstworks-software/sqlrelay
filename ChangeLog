@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   zero-length-match hang and a capture-group bug in them
 - added a sid listener attribute and maxloginattempts retry limit to the
   oracle protocol module
+- added re-execute and fetch (TTI 0x4e) support to the oracle protocol
+  module
 - added debug tracing to the oracle and tds protocol modules, and brought
   postgresql's debug output to parity with mysql's
 - added -query to sqlrsh, for running a single sql statement, with no
