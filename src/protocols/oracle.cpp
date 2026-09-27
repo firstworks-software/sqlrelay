@@ -1930,7 +1930,9 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		bool	sendLobOperationResponse(const byte_t *locator,
 							uint32_t locatorsize,
 							byte_t resulttype,
-							uint64_t result);
+							uint64_t result,
+							bool appendtoopenpacket=
+								false);
 		bool	sendLobOperationError(uint32_t oranum,
 							const char *message);
 		void	putReturnParameters();
@@ -16093,9 +16095,24 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 						uint64_t offset,
 						uint64_t amount) {
 
-	// a read of the pinned row's lob column, sent as the marker, then a
-	// chunk per packet, then the ordinary answer carrying how much came
-	// back a clob's characters go out two bytes each and a blob's or a
+	// a read of the pinned row's lob column.  a real 12.2 server answers
+	// an OCI client with the marker, then a chunk per packet, then the
+	// ordinary answer - what sendLobDataMarker()/sendLobDataChunk()
+	// implement (#9589, confirmed again for a small sdu by #10005).  but
+	// against the same server, python-oracledb thin's TNS_MSG_TYPE_LOB_DATA
+	// parser wants the value inline, as an ordinary clr long-form run (the
+	// 0xfe marker, a chunk per read, then the closing empty chunk),
+	// immediately followed by the ordinary lob operation answer, all in one
+	// packet - a bare marker with nothing behind it is all thin ever got
+	// before this, and it had no way to parse that (#10323). clientstring,
+	// populated from the client's self-reported driver name during
+	// protocol negotiation, is the only signal on hand that tells the two
+	// apart
+	bool		singlepacket=(clientstring!=NULL &&
+				charstring::contains(clientstring,
+							"python-oracledb"));
+
+	// a clob's characters go out two bytes each and a blob's or a
 	// bfile's one, so a chunk of the negotiated size carries half as many
 	// characters of a clob as it does of a blob
 	bool		clob=(wiretype==ORACLE_TYPE_CLOB);
@@ -16109,6 +16126,27 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 	uint64_t	remaining=amount;
 	uint64_t	charsread=0;
 
+	// bound remaining to what's actually left in the lob, rather than
+	// trusting the read loop below to notice getLobFieldSegment() report
+	// 0 once it runs off the end.  python-oracledb always asks for the
+	// largest amount it can encode (4294967295) instead of the lob's real
+	// size, and an empty lob's getLobFieldSegment() doesn't report 0 for
+	// an out-of-range read (see the oracle connection module's
+	// OCILobRead(), which leaves its readlength unchanged, and so its own
+	// stale charstoread, on a failure result other than
+	// OCI_INVALID_HANDLE) - unbounded, that ran this loop close to a
+	// million times over, each one growing this function's now-single
+	// packet buffer, for what should have been a zero-byte reply (#10323)
+	uint64_t	loblength=0;
+	if (wiretype!=ORACLE_TYPE_BFILE &&
+		cont->getLobFieldLength(cursor,column,&loblength)) {
+		uint64_t	available=(loblength>position)?
+						loblength-position:0;
+		if (remaining>available) {
+			remaining=available;
+		}
+	}
+
 	debugStart("lob read");
 	debugWrite("column: %d",column);
 	debugColumnType(wiretype);
@@ -16116,9 +16154,30 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 	debugWrite("amount: %lld",(long long)amount);
 	debugEnd();
 
+	if (singlepacket) {
+
+		// open the one packet everything below goes into, and start
+		// it with the marker and the clr long-form's own marker byte
+		resetSendPacketBuffer(PACKET_DATA);
+
+		uint16_t	dataflags=0;
+		byte_t		ttccode=TTC_LOB_AND_BFILE_DATA;
+
+		writeBE(&reqpacket,dataflags);
+		write(&reqpacket,ttccode);
+		write(&reqpacket,(byte_t)CLR_LONG_FORM_MARKER);
+
+		debugStart("lob data");
+		debugWrite("data flags: 0x%04x",dataflags);
+		debugTtcCode(ttccode);
+		debugEnd();
+	}
+
 	// the chunk held back, so that the one before it can go out with the
 	// right "more follows" flag - which isn't known until the read after
-	// it comes back empty
+	// it comes back empty.  singlepacket doesn't need that flag, but
+	// holding a chunk back doesn't change what ends up in the packet, so
+	// the same loop serves both
 	byte_t		chunk[LOB_CHUNK_SIZE];
 	uint32_t	chunksize=0;
 	bool		held=false;
@@ -16142,14 +16201,22 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 		// send the chunk held back, now that whether another follows
 		// is known
 		if (held) {
-			if (!markersent) {
-				if (!sendLobDataMarker()) {
+			if (singlepacket) {
+				debugStart("lob data chunk");
+				debugWrite("bytes: %d",chunksize);
+				debugEnd();
+				putLenBytesChunks((const char *)chunk,
+								chunksize);
+			} else {
+				if (!markersent) {
+					if (!sendLobDataMarker()) {
+						return false;
+					}
+					markersent=true;
+				}
+				if (!sendLobDataChunk(chunk,chunksize,!got)) {
 					return false;
 				}
-				markersent=true;
-			}
-			if (!sendLobDataChunk(chunk,chunksize,!got)) {
-				return false;
 			}
 			held=false;
 		}
@@ -16193,26 +16260,36 @@ bool sqlrprotocol_oracle::sendLobReadResponse(sqlrservercursor *cursor,
 		remaining=remaining-charsthischunk;
 	}
 
+	if (singlepacket) {
+		// the empty chunk that closes the clr's long form
+		write(&reqpacket,(byte_t)0);
+	}
+
 	debugWrite("lob read %lld",(long long)charsread);
 
 	return sendLobOperationResponse(locator,locatorsize,
-					LOB_RESULT_UB8,charsread);
+					LOB_RESULT_UB8,charsread,singlepacket);
 }
 
 bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
 						uint32_t locatorsize,
 						byte_t resulttype,
-						uint64_t result) {
+						uint64_t result,
+						bool appendtoopenpacket) {
 
 	// what every lob operation that worked gets back: the locator it
 	// quoted, the operation's result, and the same summary object the rest
-	// of the modern path ends a call with
-	resetSendPacketBuffer(PACKET_DATA);
-
+	// of the modern path ends a call with.  appendtoopenpacket, set by
+	// sendLobReadResponse() for python-oracledb (#10323), folds this into
+	// a packet sendLobReadResponse() already opened and filled with the
+	// lob data inline, rather than starting a fresh one
 	uint16_t	dataflags=0;
 	byte_t		ttccode=TTC_OK;
 
-	writeBE(&reqpacket,dataflags);
+	if (!appendtoopenpacket) {
+		resetSendPacketBuffer(PACKET_DATA);
+		writeBE(&reqpacket,dataflags);
+	}
 	write(&reqpacket,ttccode);
 
 	// the locator goes back exactly as it came in, and with no length in
@@ -16224,7 +16301,9 @@ bool sqlrprotocol_oracle::sendLobOperationResponse(const byte_t *locator,
 	}
 
 	debugStart("lob operation response");
-	debugWrite("data flags: 0x%04x",dataflags);
+	if (!appendtoopenpacket) {
+		debugWrite("data flags: 0x%04x",dataflags);
+	}
 	debugTtcCode(ttccode);
 	debugWrite("locator size: %d",locatorsize);
 	if (resulttype!=LOB_RESULT_NONE) {

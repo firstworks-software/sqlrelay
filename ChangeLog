@@ -2940,6 +2940,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module's login reply omitting AUTH_MAX_OPEN_CURSORS
 - fixed the oracle protocol module's OCI7 command type always reporting
   select for merge and ddl statements
+- fixed the oracle protocol module sending a lob read reply
+  python-oracledb thin can't parse
 
 ### Security
 - fixed an authentication hole in the des password encryption module
