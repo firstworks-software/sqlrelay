@@ -5452,6 +5452,37 @@ bool oraclecursor::getLobFieldSegment(uint32_t col,
 				0,
 				SQLCS_IMPLICIT);
 
+	// A read past the end of a table-column lob (including a genuinely
+	// empty one) leaves result at OCI_SUCCESS with readlength already
+	// set to 0 - the normal case below already handles that.  But a
+	// read of an empty lob returned directly by a function call (eg.
+	// select empty_clob() from dual, as opposed to a table column
+	// holding EMPTY_CLOB()) fails outright with ORA-22275 ("invalid LOB
+	// locator specified") and leaves readlength untouched, at whatever
+	// it was seeded to - confirmed against a real server/client.
+	// OCI_NO_DATA is treated the same way, in case some other
+	// server/client combination signals this case that way instead.
+	// Report that as a normal, error-free empty read rather than
+	// trusting readlength, which is really just the caller's own
+	// unmet request echoed back.
+	if (result==OCI_NO_DATA) {
+		*charsread=0;
+		return true;
+	}
+	if (result==OCI_ERROR) {
+		sb4	errcode=0;
+		text	errtext[512];
+		OCIErrorGet((dvoid *)oracleconn->err,1,(text *)0,&errcode,
+				errtext,sizeof(errtext),OCI_HTYPE_ERROR);
+		if (errcode==22275) {
+			*charsread=0;
+			return true;
+		}
+		// any other error means nothing was read into buffer,
+		// so readlength can't be trusted either
+		return false;
+	}
+
 	// readlength will have been set the number of chars that were read
 	// set that on the way out
 	*charsread=readlength;

@@ -2944,6 +2944,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   select for merge and ddl statements
 - fixed the oracle protocol module sending a lob read reply
   python-oracledb thin can't parse
+- fixed the oracle connection module reporting a caller's own requested
+  read size, instead of 0, past the end of an empty function-result lob
 
 ### Security
 - fixed an authentication hole in the des password encryption module
