@@ -2927,6 +2927,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (host -> server) and a stale query-normalization claim
 - fixed a malformed closing tag in
   doc/admin/parts/sqlrelay-teradata.conf
+- fixed teradata listeners with no auths tag failing every login with a
+  confusing error instead of naming the missing auths tag
 
 ### Security
 - fixed an authentication hole in the des password encryption module

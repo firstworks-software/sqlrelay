@@ -1625,6 +1625,13 @@ void sqlrconfig_xmldom::normalizeTree() {
 
 		// for each protocol, add a "protocol_connectstrings"
 		// auth module...
+		//
+		// teradata is a special case - it has no connectstrings-style
+		// auth of its own, it always relays logins to a real Teradata
+		// server via the teradata_sidechannel auth module - so there's
+		// no "teradata_connectstrings" module to fall back to.  Warn
+		// instead of fabricating a reference to a module that doesn't
+		// exist.
 		stringbuffer	cs;
 		for (domnode *listener=listeners->getFirstTagChild("listener");
 			!listener->isNullNode();
@@ -1632,11 +1639,21 @@ void sqlrconfig_xmldom::normalizeTree() {
 
 			const char	*protocol=
 					listener->getAttributeValue("protocol");
+			if (!charstring::compare(protocol,"teradata")) {
+				stderror.printf(
+					"Warning: there is no default auth "
+					"for the teradata protocol.  A "
+					"teradata listener requires an "
+					"explicit auths tag with a "
+					"teradata_sidechannel auth "
+					"module.\n");
+				continue;
+			}
 			cs.clear();
 			cs.append(protocol)->append("_connectstrings");
 			auths->appendTag("auth")->
 				setAttributeValue("module",cs.getString());
-			
+
 		}
 	}
 
