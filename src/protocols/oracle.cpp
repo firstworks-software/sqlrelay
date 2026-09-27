@@ -241,6 +241,23 @@
 #define OCI7_COMMAND_DELETE	7
 #define OCI7_COMMAND_PLSQL	47
 
+// merge and the ddl verbs oci7DdlCommandType() recognizes by name - the
+// codes a real 10.2 server sent for each in
+// test/protocol/oracle/samples/10315-redhat9x86-oci7-native-*-realserver.
+// oraproxy - #10319
+#define OCI7_COMMAND_CREATE_TABLE	1
+#define OCI7_COMMAND_DROP_TABLE	12
+#define OCI7_COMMAND_GRANT	17
+#define OCI7_COMMAND_REVOKE	18
+#define OCI7_COMMAND_RENAME	28
+#define OCI7_COMMAND_COMMENT	29
+#define OCI7_COMMAND_AUDIT	30
+#define OCI7_COMMAND_NOAUDIT	31
+#define OCI7_COMMAND_ANALYZE_TABLE	62
+#define OCI7_COMMAND_MERGE	189
+#define OCI7_COMMAND_PURGE	197
+#define OCI7_COMMAND_FLASHBACK_TABLE	202
+
 // oracle errors the authentication exchange can end in
 #define ORA_INVALID_USERNAME_PASSWORD	1017
 #define ORA_NULL_PASSWORD		1005
@@ -1644,6 +1661,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		void	putO3LogonSummary();
 
 		byte_t	oci7CommandType(sqlrservercursor *cursor);
+		byte_t	oci7DdlCommandType(const char *query);
 
 		void	putOci7Summary(uint32_t cursorid,
 						byte_t commandtype,
@@ -8829,8 +8847,10 @@ byte_t sqlrprotocol_oracle::oci7CommandType(sqlrservercursor *cursor) {
 	// the statement text first, the same begin/declare test
 	// classifyQuery2Binds() makes.
 	//
-	// anything else - ddl, a commit, a set - falls back to select, which is
-	// what every summary carried before any of this was classified.  no
+	// merge and the ddl verbs oci7DdlCommandType() recognizes are picked
+	// off the statement text too - #10319.  anything else - a commit, a
+	// set, an unrecognized ddl verb - falls back to select, which is what
+	// every summary carried before any of this was classified.  no
 	// capture on file pins what a real server answers there
 
 	if (!cursor) {
@@ -8867,8 +8887,64 @@ byte_t sqlrprotocol_oracle::oci7CommandType(sqlrservercursor *cursor) {
 		case SQLRQUERYTYPE_DELETE:
 			return OCI7_COMMAND_DELETE;
 		default:
-			return OCI7_COMMAND_SELECT;
+			return (query && querysize)?
+				oci7DdlCommandType(
+					cont->skipWhitespaceAndComments(
+								query)):
+				OCI7_COMMAND_SELECT;
 	}
+}
+
+byte_t sqlrprotocol_oracle::oci7DdlCommandType(const char *query) {
+
+	// oracle's own command codes for merge and the ddl verbs #10319's
+	// captures pin, matched the same way isOtherDdl() matches a verb -
+	// literally, then requiring whitespace after it.  a verb with an
+	// "object" entry only counts for that object - "create table" is
+	// captured as 1, but nothing else "create" can be followed by is, so
+	// "create index" and the rest still fall through.  a verb this
+	// doesn't recognize falls through to oci7CommandType()'s select
+	// fallback - no capture pins it either
+	static const struct {
+		const char	*verb;
+		const char	*object;
+		byte_t		commandtype;
+	} ddlcommands[]={
+		{"merge",NULL,OCI7_COMMAND_MERGE},
+		{"create","table",OCI7_COMMAND_CREATE_TABLE},
+		{"drop","table",OCI7_COMMAND_DROP_TABLE},
+		{"grant",NULL,OCI7_COMMAND_GRANT},
+		{"revoke",NULL,OCI7_COMMAND_REVOKE},
+		{"comment",NULL,OCI7_COMMAND_COMMENT},
+		{"rename",NULL,OCI7_COMMAND_RENAME},
+		{"analyze","table",OCI7_COMMAND_ANALYZE_TABLE},
+		{"audit",NULL,OCI7_COMMAND_AUDIT},
+		{"noaudit",NULL,OCI7_COMMAND_NOAUDIT},
+		{"flashback","table",OCI7_COMMAND_FLASHBACK_TABLE},
+		{"purge",NULL,OCI7_COMMAND_PURGE},
+		{NULL,NULL,0}
+	};
+
+	for (size_t i=0; ddlcommands[i].verb; i++) {
+		size_t	len=charstring::getLength(ddlcommands[i].verb);
+		if (charstring::compareIgnoringCase(query,
+						ddlcommands[i].verb,len) ||
+				!character::isWhitespace(query[len])) {
+			continue;
+		}
+		if (!ddlcommands[i].object) {
+			return ddlcommands[i].commandtype;
+		}
+		const char	*after=cont->skipWhitespaceAndComments(
+							query+len);
+		size_t	objlen=charstring::getLength(ddlcommands[i].object);
+		if (!charstring::compareIgnoringCase(after,
+						ddlcommands[i].object,objlen) &&
+				character::isWhitespace(after[objlen])) {
+			return ddlcommands[i].commandtype;
+		}
+	}
+	return OCI7_COMMAND_SELECT;
 }
 
 void sqlrprotocol_oracle::putOci7Summary(uint32_t cursorid,

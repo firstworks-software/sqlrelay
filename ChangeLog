@@ -2938,6 +2938,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   dml, ddl, commit and rollback
 - fixed the oracle protocol module ignoring a re-execute's commit option
 - fixed the oracle protocol module's login reply omitting AUTH_MAX_OPEN_CURSORS
+- fixed the oracle protocol module's OCI7 command type always reporting
+  select for merge and ddl statements
 
 ### Security
 - fixed an authentication hole in the des password encryption module

@@ -849,18 +849,18 @@ int main(int argc, char **argv) {
 		client.disconnect();
 		return status;
 	}
-	// a DDL statement's command type comes back as 3, the same
-	// value a select's parse or execute reports - that's
-	// oci7CommandType()'s own fallback in src/protocols/oracle.cpp,
-	// not a real Oracle DDL code - #10300's step 1 confirmed the
-	// value live.  a DDL statement also sets the call status to 5,
-	// already at this execute reply, whether or not the statement itself
-	// succeeds - #10295, confirmed against samples/10295-redhat9x86-
-	// oci7-native-ddl-alone-realserver.oraproxy
+	// a create table's command type is oracle's own code for it, 1 -
+	// #10300's step 1 confirmed 3 (a select's) live, before #10319 gave
+	// oci7CommandType() the real ddl codes samples/10315-redhat9x86-
+	// oci7-native-dml-ddl-misc-realserver.oraproxy pins.  a DDL statement
+	// also sets the call status to 5, already at this execute reply,
+	// whether or not the statement itself succeeds - #10295, confirmed
+	// against samples/10295-redhat9x86-oci7-native-ddl-alone-
+	// realserver.oraproxy
 	report("dml commit: create table",
 			checkLegacyDmlStep(&dmlclient,
 					"dml commit: create table",
-					dmlcursorid,3,0,1,5));
+					dmlcursorid,1,0,1,5));
 
 	if (!dmlclient.legacyQuery(dmlcursorid,insertscratchtable) ||
 		!dmlclient.legacyExecute(dmlcursorid,1,0)) {
@@ -1143,9 +1143,9 @@ int main(int argc, char **argv) {
 	// way dml does, even from idle - select-for-update-idle [0022].  its
 	// command type and rows processed are a select's.  after the
 	// rollback, a merge is dml too - rollback-merge-commit [0024].  its
-	// command type is the select fallback oci7CommandType() gives
-	// anything it doesn't classify, where a real server sends 189 -
-	// #10319
+	// command type is oracle's own code for it, 189 - #10319, pinned by
+	// samples/10315-redhat9x86-oci7-native-merge-commit-realserver.
+	// oraproxy
 	if (!runLegacyDmlStep(&otherclient,
 				"other statements: select for update from idle",
 				othercursorid,selectforupdatescratchtable,
@@ -1155,7 +1155,7 @@ int main(int argc, char **argv) {
 				ORA_TTI_ROLLBACK,1,status5,status5size) ||
 		!runLegacyDmlStep(&otherclient,
 				"other statements: merge",
-				othercursorid,mergescratchtable,3,1,6)) {
+				othercursorid,mergescratchtable,189,1,6)) {
 		otherclient.disconnect();
 		dmlclient.disconnect();
 		client.disconnect();
@@ -1163,16 +1163,17 @@ int main(int argc, char **argv) {
 	}
 
 	// a grant and a comment are both ddl, so each commits the merge
-	// before it - dml-ddl-misc [0032] and [0048]
+	// before it - dml-ddl-misc [0032] and [0048].  their command types
+	// are oracle's own codes too, 17 and 29 - #10319
 	if (!runLegacyDmlStep(&otherclient,
 				"other statements: grant",
-				othercursorid,grantscratchtable,3,0,5) ||
+				othercursorid,grantscratchtable,17,0,5) ||
 		!runLegacyDmlStep(&otherclient,
 				"other statements: second merge",
-				othercursorid,mergescratchtable,3,1,6) ||
+				othercursorid,mergescratchtable,189,1,6) ||
 		!runLegacyDmlStep(&otherclient,
 				"other statements: comment",
-				othercursorid,commentscratchtable,3,0,5)) {
+				othercursorid,commentscratchtable,29,0,5)) {
 		otherclient.disconnect();
 		dmlclient.disconnect();
 		client.disconnect();
