@@ -1,0 +1,66 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [userlist.html userlist] [[Image(../../images/navnext.png,link=userlist.html,vertical-align=middle)]]
+
+[=#regex]
+= regex =
+
+The '''regex''' module routes queries by matching them against regular expressions.
+
+A classic [highavailability.html#masterslave Master-Slave Query Routing] configuration follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-routers-regex.conf@
+}}}
+}}}
+
+In this example, 3 SQL Relay instances are defined:
+
+* one to maintain connections to the master database
+* one to maintain connections to a pool of slave databases
+* one to route queries to the other two instances
+
+In this configuration, DDL/DML queries are routed to the connectionid "master", and all other queries are routed to the connectionid "slave".
+
+The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid attributes include:
+
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
+* '''port''' - the port of the SQL Relay instance
+* '''socket''' - the socket of the SQL Relay instance, if it is running locally
+* '''user''' - the user to use when connecting to the SQL Relay instance as
+* '''password''' - the password to use when connecting to the SQL Relay instance
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
+
+Note the use of a notification module to notify //dba@firstworks.com// if an //integrity_violation// event occurs.  SQL Relay must maintain parallel transactions on all databases that a query may be routed to.  An integrity violation occurs when a transaction control query (begin, commit, rollback, autocommit on, or autocommit off) succeeds on some of the back-ends but fails on others.  See [notifications.html#notifications Notifications] for information about notification modules.
+
+[[br]]
+
+Master-slave routing isn't all that the '''regex''' module can do though.
+
+In the example below, we provide a single point of access to !MySQL/MariaDB and !PostgreSQL databases.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-router-multipledb.conf@
+}}}
+}}}
+
+In this configuration, all queries containing "mysqldb." are sent to the connectionid "mysqldb" and all queries containing "postgresqldb." are sent to the connectionid "postgresqldb".
+
+As above, the '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.
+
+Note the use of a notification module, as above.
+
+
+----
+
+[[Image(../../images/navprev.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [userlist.html userlist] [[Image(../../images/navnext.png,link=userlist.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

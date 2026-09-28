@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="routing.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="routing.html">Query and Session Routing</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="triggers.html">Triggers</a> <a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="routingquirks.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="routingquirks.html">Quirks and Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrcmdcstat.html">sqlrcmdcstat</a> <a href="sqlrcmdcstat.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="queries"/><h1>Custom Queries</h1>
 
@@ -39,7 +39,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All query modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All query modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>All query modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="debug.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>Custom query modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
@@ -48,222 +48,15 @@ http://www.gnu.org/software/src-highlite -->
 <p>Currently, the following query modules are available in the standard SQL Relay distribution:</p>
 
 <ul>
-  <li><b>sqlrcmdcstat</b></li>
-  <li><b>sqlrcmdgstat</b></li>
+  <li><a href="sqlrcmdcstat.html#sqlrcmdcstat">sqlrcmdcstat</a></li>
+  <li><a href="sqlrcmdgstat.html#sqlrcmdgstat">sqlrcmdgstat</a></li>
 </ul>
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
 
-<br/><a name="sqlrcmdcstat"/><h2>sqlrcmdcstat</h2>
-
-<p>The sqlrcmdcstat module returns statistics about the sqlr-connection processes currently running for this instance of SQL Relay when the query "sqlrcmd cstat" is run.</p>
-
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
-<b><font color="#0000FF">&lt;instances&gt;</font></b>
-	...
-	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
-		...
-		<b><font color="#0000FF">&lt;queries&gt;</font></b>
-			<b><font color="#0000FF">&lt;query</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrcmdcstat"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/queries&gt;</font></b>
-		...
-	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
-	...
-<b><font color="#0000FF">&lt;/instances&gt;</font></b>
-</tt></pre>
-
-</blockquote>
-<p>An example session follows:</p>
-
-<blockquote>
-  <pre>sqlrsh - Version 1.7.0
-	Connected to: localhost:9000 as test
-
-	type help; for help.
-
-0> sqlrcmd cstat;
-INDEX MINE PROCESSID CONNECT STATE                 STATE_TIME   CLIENT_ADDR CLIENT_INFO SQL_TEXT     
-=====================================================================================================
-0     *    24464     1       RETURN_RESULT_SET             0.00 UNIX                    sqlrcmd cstat
-1          24465     0       ANNOUNCE_AVAILABILITY         0.01                                      
-2          24466     0       WAIT_SEMAPHORE                4.42                                      
-3          24467     0       WAIT_SEMAPHORE                4.35                                      
-4          24468     0       WAIT_SEMAPHORE                4.34 
-</pre>
-
-</blockquote>
-<p>In this example:</p>
-
-<ul>
-  <li>the query "sqlrcmd cstat" has been run</li>
-  <li>five sqlr-connection processes are running for this SQL Relay instance</li>
-  <li>one sqlr-connection process is busy returning the result set of that command</li>
-  <li>another sqlr-connection process is announcing that it is available to accept a client connection</li>
-  <li>three other sqlr-connection processes are idle and waiting</li>
-</ul>
-
-<p>The columns of the result set are as follows:</p>
-
-<ul>
-  <li>INDEX - just a row index</li>
-  <li>MINE - contains a * if this sqlr-connection is running the "sqlrcmd cstat" command and null otherwise</li>
-  <li>PROCESSID - the OS process id of the sqlr-connection process</li>
-  <li>CONNECT - the total number of times a client has connected to this process since it was last started</li>
-  <li>STATE - one of the following...</li>
-  <ul>
-    <li>NOT_AVAILABLE - the current state is not available</li>
-    <li>INIT - the process is initializing</li>
-    <li>WAIT_FOR_AVAIL_DB - the process is waiting for the back-end database to become available</li>
-    <li>WAIT_CLIENT - the process is waiting for a client to connect</li>
-    <li>SESSION_START - the client session is in the process of starting</li>
-    <li>GET_COMMAND - the process is waiting for the client to send it a command</li>
-    <li>PROCESS_SQL - a query has been run and the process is waiting for the result set</li>
-    <li>PROCESS_SQLCMD - a sqlcmd has been run and the process is building the result set</li>
-    <li>RETURN_RESULT_SET - a query or sqlcmd has been run and the process is returning the result set</li>
-    <li>END_SESSION - the client session is in the process of ending</li>
-    <li>ANNOUNCE_AVAILABILITY - the process is announcing that it is ready to accept a client</li>
-    <li>WAIT_SEMAPHORE - the process is idle and waiting for the opportunity to announce that it is ready</li>
-  </ul>
-
-  <li>STATE_TIME - the number of seconds that the process has been in the current state</li>
-  <li>CLIENT_ADDR - the IP address of the client, or "UNIX" if the client is connecte via a unix socket</li>
-  <li>CLIENT_INFO - an identifying "client info" string that some SQL Relay API's allow the client to set</li>
-  <li>SQL_TEXT - the query or command that is currently running</li>
-</ul>
-
-<br/><br/><a name="sqlrcmdgstat"/><h2>sqlrcmdgstat</h2>
-
-<p>The sqlrcmdgstat module returns global statistics about this instance of SQL Relay when the query "sqlrcmd gstat" is run.</p>
-
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
-<b><font color="#0000FF">&lt;instances&gt;</font></b>
-	...
-	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
-		...
-		<b><font color="#0000FF">&lt;queries&gt;</font></b>
-			<b><font color="#0000FF">&lt;query</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrcmdgstat"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/queries&gt;</font></b>
-		...
-	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
-	...
-<b><font color="#0000FF">&lt;/instances&gt;</font></b>
-</tt></pre>
-
-</blockquote>
-<p>An example session follows:</p>
-
-<blockquote>
-  <pre>sqlrsh - Version 1.7.0
-	Connected to: localhost:9000 as test
-
-	type help; for help.
-
-0> sqlrcmd gstat;
-KEY                    VALUE               
-===========================================
-start                  2019/10/27 23:06:16 
-uptime                 930                 
-now                    2019/10/27 23:21:46 
-access_count           8                   
-query_total            43                  
-qpm                    2                   
-qpm_1                  4                   
-qpm_5                  1                   
-qpm_15                 2                   
-select_1               0                   
-select_5               0                   
-select_15              0                   
-insert_1               0                   
-insert_5               0                   
-insert_15              0                   
-update_1               0                   
-update_5               0                   
-update_15              0                   
-delete_1               0                   
-delete_5               0                   
-delete_15              0                   
-etc_1                  4                   
-etc_5                  1                   
-etc_15                 2                   
-sqlrcmd_1              0                   
-sqlrcmd_5              0                   
-sqlrcmd_15             0                   
-max_listener           1000                
-max_listener_error     0                   
-busy_listener          1                   
-peak_listener          1                   
-connection             5                   
-session                1                   
-peak_session           1                   
-peak_session_1min      1                   
-peak_session_1min_time 2019/10/27 23:21:46 
-sqlr_version           1.7.0               
-rudiments_version      1.2.1               
-module_compiled        Oct 24 2019 22:20:05
-
-	Rows Returned   : 39
-	Fields Returned : 78
-	Elapsed Time    : 0.018508 sec
-</pre>
-
-</blockquote>
-<p>The result set is a set of key-value pairs, as follows:</p>
-
-<ul>
-  <li>start - the date/time that the instance was started</li>
-  <li>uptime - the number of seconds that the instance has been running</li>
-  <li>now - the current date/time</li>
-  <li>access_count - the number of times a client has connected to the instance</li>
-  <li>query_total - the total number of queries that have been run, intance-wide</li>
-  <li>qpm - queries-per-minute, averaged over total instance uptime</li>
-  <li>qpm_1 - queries-per-minute, for the previous minute</li>
-  <li>qpm_5 - queries-per-minute, averaged over the previous 5 minutes</li>
-  <li>qpm_15 - queries-per-minute, averaged over the previous 15 minutes</li>
-  <li>select_1 - selects-per-minute, averaged over total instance uptime</li>
-  <li>select_5 - selects-per-minute, averaged over the previous 5 minutes</li>
-  <li>seelct_15 - selects-per-minute, averaged over the previous 15 minutes</li>
-  <li>insert_1 - inserts-per-minute, averaged over the total instance uptime</li>
-  <li>insert_5 - inserts-per-minute, averaged over the previous 5 minutes</li>
-  <li>insert_15 - inserts-per-minute, averaged over the previous 15 minutes</li>
-  <li>update_1 - updates-per-minute, averaged over the total instance uptime</li>
-  <li>update_5 - updates-per-minute, averaged over the previous 5 minutes</li>
-  <li>update_15 - updates-per-minute, averaged over the previous 15 minutes</li>
-  <li>delete_1 - deletes-per-minute, averaged over the total instance uptime</li>
-  <li>delete_5 - deletes-per-minute, averaged over the previous 5 minutes</li>
-  <li>delete_15 - deletes-per-minute, averaged over the previous 15 minutes</li>
-  <li>etc_1 - other queries-per-minute, averaged over the total instance uptime</li>
-  <li>etc_5 - other queries-per-minute, averaged over the previous 5 minutes</li>
-  <li>etc_15 - other queries-per-minute, averaged over the previous 15 minutes</li>
-  <li>sqlrcmd_1 - sqlrcmds-per-minute, averaged over the total instance uptime</li>
-  <li>sqlrcmd_5 - sqlrcmds-per-minute, averaged over the previous 5 minutes</li>
-  <li>sqlrcmd_15 - sqlrcmds-per-minute, averaged over the previous 15 minutes</li>
-  <li>max_listener - value of the maxlisteners attribute of the instance tag for this instance (configured or default)</li>
-  <li>max_listener_error - the number of times that the maximum number of sqlr-listener threads were running and another client attempted to connect since the instance was started</li>
-  <li>busy_listener - the current number of sqlr-listener threads that are busy waiting for an available sqlr-connection to hand off a client to since the instance was started</li>
-  <li>peak_listener - the peak number of sqlr-listener threads that were running at the same time since the instance was started</li>
-  <li>connection - number of sqlr-connection processes currently running</li>
-  <li>session - number of currently active client sessions</li>
-  <li>peak_session - peak number of client sessions since the instance was started</li>
-  <li>peak_session_1min - peak number of client sessions in the previous minute</li>
-  <li>peak_session_1min_time - the time that the peak_session_1min value was calculated</li>
-  <li>sqlr_version - the version number of the SQL Relay server</li>
-  <li>rudiments_version - the version number of the Rudiments library that the SQL Relay server is using</li>
-  <li>module_compiled - the date/time that the SQL Relay server was compiled</li>
-</ul>
-
 <hr/>
 
-<p><a href="routing.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="routing.html">Query and Session Routing</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="triggers.html">Triggers</a> <a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="routingquirks.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="routingquirks.html">Quirks and Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrcmdcstat.html">sqlrcmdcstat</a> <a href="sqlrcmdcstat.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

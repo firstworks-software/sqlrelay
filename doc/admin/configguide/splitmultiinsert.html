@@ -1,0 +1,211 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="savepoints.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="savepoints.html">savepoints</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="upsert.html">upsert</a> <a href="upsert.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="splitmultiinsert"/><h1>splitmultiinsert</h1>
+
+<p>The splitmultiinsert module splits each multi-row insert query into a set of individual insert queries.</p>
+
+<p>This is useful when using the <a href="replay.html#replay">replay</a> module, if your application does multi-row inserts into tables with auto-increment columns.  See <a href="replay.html#replayautoinc">replay - Auto-Increment Columns</a> above for details.  This module can, of course, be used without the replay module, but the typical use case is to use the two of them together.</p>
+
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"splitmultiinsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"beforeExecute"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"replay"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1213"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"transaction"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;condition</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"1205"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"query"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example...</p>
+
+<p>The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="afterExecute" is set then the trigger will be ignored.</p>
+
+<p>The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.</p>
+
+<p>Note that the normalize translation is also configured.  This helps the splitmultiinsert and replay triggers parse and rewrite queries more accurately.</p>
+
+<p>In this configuration, if a <i>students</i> table exists like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">table</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>
+	id <font color="#009900">int</font> primary <font color="#008080">key</font> auto_increment<font color="#990000">,</font>
+	<font color="#008080">firstname</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">128</font><font color="#990000">)</font> <font color="#008080">not</font> null<font color="#990000">,</font>
+	<font color="#008080">lastname</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">128</font><font color="#990000">)</font> <font color="#008080">not</font> null<font color="#990000">,</font>
+	<font color="#008080">major</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">128</font><font color="#990000">)</font>
+<font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>...and the following multi-row insert was performed:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert into
+	<b><font color="#000000">students</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font>
+values
+	<font color="#990000">(</font><font color="#FF0000">'Richard'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Mechanical Engineering'</font><font color="#990000">),</font>
+	<font color="#990000">(</font><font color="#FF0000">'David'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Computer Science'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>...then it would be split into the following two individual inserts:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'Richard'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Mechanical Engineering'</font><font color="#990000">)</font>
+insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#FF0000">'David'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Computer Science'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>The replay module would then be able to fetch the last-insert-id for each, and rewrite them, for replay, as:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>id<font color="#990000">,</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#993399">1</font><font color="#990000">,</font><font color="#FF0000">'Richard'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Mechanical Engineering'</font><font color="#990000">)</font>
+insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>id<font color="#990000">,</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#FF0000">'David'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Computer Science'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<br/><h3>Considerations</h3>
+
+<p>The splitmultiinsert trigger imposes a performance penalty.  Not only is there work involved in splitting the original query, but also, a set of individual inserts runs more slowly than a single multi-row insert.</p>
+
+<p>The splitmultiinsert trigger also, currently, struggles with bind variables that are split across rows in the multi-insert query.</p>
+
+<p>For example, consider a multi-row insert like the following:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(:</font><font color="#993399">1</font><font color="#990000">,:</font><font color="#993399">2</font><font color="#990000">,:</font><font color="#993399">3</font><font color="#990000">),(:</font><font color="#993399">4</font><font color="#990000">,:</font><font color="#993399">2</font><font color="#990000">,:</font><font color="#993399">3</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>With the following bind variables:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#993399">1</font> <font color="#990000">-</font> <font color="#FF0000">"David"</font>
+<font color="#993399">2</font> <font color="#990000">-</font> <font color="#FF0000">"Muse"</font>
+<font color="#993399">3</font> <font color="#990000">-</font> <font color="#FF0000">"Computer Science"</font>
+<font color="#993399">4</font> <font color="#990000">-</font> <font color="#FF0000">"Richard"</font></tt></pre>
+
+</blockquote>
+<p>Variables 2 and 3 apply to both rows, but variable 1 only applies to the first row and variable 4 only applies to the second row.</p>
+
+<p>This query would be split into:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(:</font><font color="#993399">1</font><font color="#990000">,:</font><font color="#993399">2</font><font color="#990000">,:</font><font color="#993399">3</font><font color="#990000">)</font>
+insert <font color="#008080">into</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">,</font>major<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(:</font><font color="#993399">4</font><font color="#990000">,:</font><font color="#993399">2</font><font color="#990000">,:</font><font color="#993399">3</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>But, currently, all 4 bind variables would be bound when executing both queries.  This causes problems for most databases, as most databases refuse to execute queries with superfluous bind variables.</p>
+
+<p>This will be remedied in the future, but is currently a shortcoming of this module.</p>
+
+<hr/>
+
+<p><a href="savepoints.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="savepoints.html">savepoints</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="upsert.html">upsert</a> <a href="upsert.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

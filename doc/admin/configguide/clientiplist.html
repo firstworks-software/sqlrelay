@@ -1,0 +1,153 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="userlist.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="userlist.html">userlist</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="clientinfolist.html">clientinfolist</a> <a href="clientinfolist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="clientiplist"/><h1>clientiplist</h1>
+
+<p>The <b>clientiplist</b> module routes queries by matching the client that ran the query against a list of IP addresses.</p>
+
+<blockquote>
+<img src="../../images/router-client-ip.png"/>
+</blockquote>
+<p>An example configuration follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+        <i><font color="#9A1900">&lt;!-- This instance maintains connections to an Oracle database. --&gt;</font></i>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/oracle.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+                <b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+                <b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+
+        <i><font color="#9A1900">&lt;!-- This instance maintains connections to an SAP database. --&gt;</font></i>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"sap"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/sap.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sap"</font><b><font color="#0000FF">&gt;</font></b>
+                <b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"sybase=/opt/sap;lang=en_US;server=SAPSERVER;user=sapuser;password=sappassword;db=sapdb;"</font><b><font color="#0000FF">/&gt;</font></b>
+                <b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+
+        <i><font color="#9A1900">&lt;!-- This instance sends one set of users to the Oracle database and</font></i>
+<i><font color="#9A1900">                all other users to the sap database. --&gt;</font></i>
+        <b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"router"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"router"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+                        	<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"routeruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"routerpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;routers&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"clientiplist"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;client</font></b> <font color="#009900">ip</font><font color="#990000">=</font><font color="#FF0000">"192.168.*.0-50"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/router&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"clientiplist"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;client</font></b> <font color="#009900">ip</font><font color="#990000">=</font><font color="#FF0000">"*"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/router&gt;</font></b>
+		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/oracle.socket;user=scott;password=tiger"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"sap"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/sap.socket;user=sapuser;password=sappassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+        <b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, 3 SQL Relay instances are defined:</p>
+
+<ul>
+  <li>one to maintain connections to an Oracle database</li>
+  <li>one to maintain connections to a SAP database</li>
+  <li>one to route queries to the other two instances</li>
+</ul>
+
+<p>In this configuration, queries made by users originating at IP addresses 192.168.*.0-50 are routed to the connectionid "oracle", and queries made by users originating at all other IP addresses are routed to the connectionid "sap".</p>
+
+<p>Each octet of the <b>ip</b> attribute may be specfied as a number, a dash-separated range of numbers, or a * meaning "all possible values".</p>
+
+<p>The <b>string</b> attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:</p>
+
+<ul>
+  <li><b>server</b> - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a <i>host</i> attribute - the router connection module reads <i>server</i>, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets <i>host</i> instead is silently ignored.)</li>
+  <li><b>port</b> - the port of the SQL Relay instance</li>
+  <li><b>socket</b> - the socket of the SQL Relay instance, if it is running locally</li>
+  <li><b>user</b> - the user to use when connecting to the SQL Relay instance as</li>
+  <li><b>password</b> - the password to use when connecting to the SQL Relay instance</li>
+  <li><b>fetchatonce</b> - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.</li>
+</ul>
+
+<br/><hr/>
+
+<p><a href="userlist.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="userlist.html">userlist</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="clientinfolist.html">clientinfolist</a> <a href="clientinfolist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

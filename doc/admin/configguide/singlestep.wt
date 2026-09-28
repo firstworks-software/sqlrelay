@@ -1,0 +1,59 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=custom_wf.html,vertical-align=middle)]] [custom_wf.html custom_wf] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+
+[=#singlestep]
+= singlestep =
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-singlestep.conf@
+}}}
+}}}
+
+The '''singlestep''' module only works when using a !PostgreSQL database.  Attempts to use it with a different database will have no effect.
+
+When using a !PostgreSQL database, the connect string option fetchatonce can be set to 0 or 1.  When set to 0, the SQL Relay server fetches and buffers all rows of the result set from the database before returning any to the SQL Relay client. When set to 1, the SQL Relay server "single-steps" through the rows of the result set, fetching one row at a time from the database, and sending each row back to the SQL Relay client as it is fetched.
+
+Using fetchatonce=0 can cause the SQL Relay serve to consume large amounts of memory when a query returns a large number of rows.  On the other hand, when using fetchatonce=1, due to the quirky way that !PostgreSQL implements fetching one row at a time, if you run a set of nested queries, rows will be truncated in the outer query, if the client uses a non-zero result set buffer size.  See [../../faq.html#postgresqlfetchatonce the faq] for more details.
+
+The '''singlestep''' module allows you to configure the instance one way, but override that configuration on a query-by-query basis.
+
+The module examines the comments preceeding the query and looks for one or more of the following directives:
+
+* singlestep=on
+* singlestep=off
+
+[[br]]
+=== singlestep=on ===
+
+If the singlestep=on directive is used, the SQL Relay Server "single-steps" through the rows of the result set of the associated query, fetching one row at a time from the database and sending each row back to the SQL Reay client as it is fetched.
+
+{{{#!blockquote
+{{{#!code
+@parts/singlestepon.sql@
+}}}
+}}}
+
+[[br]]
+=== singlestep=off ===
+
+If singlestep=off is set, then the SQL Relay Server will fetch and buffer all rows of the result set of the associated query before returning any to the SQL Relay client.
+
+{{{#!blockquote
+{{{#!code
+@parts/singlestepoff.sql@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=custom_wf.html,vertical-align=middle)]] [custom_wf.html custom_wf] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

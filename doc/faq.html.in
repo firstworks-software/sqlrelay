@@ -491,7 +491,7 @@ user=exampleuser;password=examplepass;db=exampledb;mangletypes=no
   <li>use fetchatonce=1, always use setResultSetBufferSize(0) when running nested queries, and expect that the client may require a lot of memory to process large result sets</li>
 </ul>
 
-<p>However, there is also a "singlestep" query directive module that allows you to configure the instance one way but override that configuration on a query-by-query basis.  See <a href="admin/configguide/querydirectives.html#directives">Query Directives</a> for general information about query directive modules and <a href="admin/configguide/querydirectives.html#singlestep">singlestep</a> for details about the singlestep module.</p>
+<p>However, there is also a "singlestep" query directive module that allows you to configure the instance one way but override that configuration on a query-by-query basis.  See <a href="admin/configguide/querydirectives.html#directives">Query Directives</a> for general information about query directive modules and <a href="admin/configguide/singlestep.html#singlestep">singlestep</a> for details about the singlestep module.</p>
 
 <br/><a name="nlslang"/><h3>Why am I getting question marks and other garbage back when I do a select?  It worked fine when I was using the native database command line tool.</h3>
 

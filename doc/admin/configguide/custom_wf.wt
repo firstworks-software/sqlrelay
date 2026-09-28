@@ -1,0 +1,73 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [singlestep.html singlestep] [[Image(../../images/navnext.png,link=singlestep.html,vertical-align=middle)]]
+
+[=#custom_wf]
+= custom_wf =
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-custom_wf.conf@
+}}}
+}}}
+
+The '''custom_wf''' module examines the comments preceeding the query and looks for one or more of the following directives:
+
+* sqlexecdirect
+* sqlprepare
+* querytimeout
+
+
+=== sqlexecdirect ===
+
+The sqlexecdirect directive tells SQL Relay to execute the query in a single step, rather than using the standard prepare/execute process.  This is useful for overriding the executedirect=no connection string option (the default) on a case-by-case basis.
+
+{{{#!blockquote
+{{{#!code
+@parts/custom_wf-sqlexecdirect.sql@
+}}}
+}}}
+
+Note that (currently) the only database back-end that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.
+
+
+[[br]]
+=== sqlprepare ===
+
+The sqlprepare directive tells SQL Relay to prepare/execute the query in a two-step step process, rather than executing the query in a single step.  This is useful for overriding the executedirect=yes connection string option on a case-by-case basis.
+
+{{{#!blockquote
+{{{#!code
+@parts/custom_wf-sqlprepare.sql@
+}}}
+}}}
+
+Note that (currently) the only database back-end that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.
+
+
+[[br]]
+=== querytimeout ===
+
+The querytimeout directive sets a timeout (in seconds) for the query.  The following example sets a 60 second timeout.
+
+{{{#!blockquote
+{{{#!code
+@parts/custom_wf-querytimeout.sql@
+}}}
+}}}
+
+Note that this directive takes a colon-delimited parameter, the number of seconds.  Setting a timeout of 0 seconds (or removing the parameter) disables the timeout.
+
+Note that (currently) the only database back-end that supports query timeouts is ODBC.  It is known to work with the MS SQL Server driver, though it likely works with some other ODBC drivers as well.
+
+----
+
+[[Image(../../images/navprev.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [singlestep.html singlestep] [[Image(../../images/navnext.png,link=singlestep.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,134 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="custom_wf.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="custom_wf.html">custom_wf</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="routing.html">Query and Session Routing</a> <a href="routing.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="singlestep"/><h1>singlestep</h1>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;directives&gt;</font></b>
+                        <b><font color="#0000FF">&lt;directive</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"singlestep"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/directives&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <b>singlestep</b> module only works when using a PostgreSQL database.  Attempts to use it with a different database will have no effect.</p>
+
+<p>When using a PostgreSQL database, the connect string option fetchatonce can be set to 0 or 1.  When set to 0, the SQL Relay server fetches and buffers all rows of the result set from the database before returning any to the SQL Relay client. When set to 1, the SQL Relay server "single-steps" through the rows of the result set, fetching one row at a time from the database, and sending each row back to the SQL Relay client as it is fetched.</p>
+
+<p>Using fetchatonce=0 can cause the SQL Relay serve to consume large amounts of memory when a query returns a large number of rows.  On the other hand, when using fetchatonce=1, due to the quirky way that PostgreSQL implements fetching one row at a time, if you run a set of nested queries, rows will be truncated in the outer query, if the client uses a non-zero result set buffer size.  See <a href="../../faq.html#postgresqlfetchatonce">the faq</a> for more details.</p>
+
+<p>The <b>singlestep</b> module allows you to configure the instance one way, but override that configuration on a query-by-query basis.</p>
+
+<p>The module examines the comments preceeding the query and looks for one or more of the following directives:</p>
+
+<ul>
+  <li>singlestep=on</li>
+  <li>singlestep=off</li>
+</ul>
+
+<br/><h3>singlestep=on</h3>
+
+<p>If the singlestep=on directive is used, the SQL Relay Server "single-steps" through the rows of the result set of the associated query, fetching one row at a time from the database and sending each row back to the SQL Reay client as it is fetched.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> singlestep<font color="#990000">=</font>on
+select <font color="#990000">*</font> from largetable
+</tt></pre>
+
+</blockquote>
+<br/><h3>singlestep=off</h3>
+
+<p>If singlestep=off is set, then the SQL Relay Server will fetch and buffer all rows of the result set of the associated query before returning any to the SQL Relay client.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">--</font> singlestep<font color="#990000">=</font>off
+select <font color="#990000">*</font> from smalltable
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="custom_wf.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="custom_wf.html">custom_wf</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="routing.html">Query and Session Routing</a> <a href="routing.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

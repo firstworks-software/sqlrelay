@@ -1,0 +1,50 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=userlist.html,vertical-align=middle)]] [userlist.html userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [clientinfolist.html clientinfolist] [[Image(../../images/navnext.png,link=clientinfolist.html,vertical-align=middle)]]
+
+[=#clientiplist]
+= clientiplist =
+
+The '''clientiplist''' module routes queries by matching the client that ran the query against a list of IP addresses.
+
+ [[Image(../../images/router-client-ip.png,nolink)]]
+
+An example configuration follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-routers-clientiplist.conf@
+}}}
+}}}
+
+In this example, 3 SQL Relay instances are defined:
+
+* one to maintain connections to an Oracle database
+* one to maintain connections to a SAP database
+* one to route queries to the other two instances
+
+In this configuration, queries made by users originating at IP addresses 192.168.*.0-50 are routed to the connectionid "oracle", and queries made by users originating at all other IP addresses are routed to the connectionid "sap".
+
+Each octet of the '''ip''' attribute may be specfied as a number, a dash-separated range of numbers, or a * meaning "all possible values".
+
+The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:
+
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
+* '''port''' - the port of the SQL Relay instance
+* '''socket''' - the socket of the SQL Relay instance, if it is running locally
+* '''user''' - the user to use when connecting to the SQL Relay instance as
+* '''password''' - the password to use when connecting to the SQL Relay instance
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
+
+
+----
+
+[[Image(../../images/navprev.png,link=userlist.html,vertical-align=middle)]] [userlist.html userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [clientinfolist.html clientinfolist] [[Image(../../images/navnext.png,link=clientinfolist.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

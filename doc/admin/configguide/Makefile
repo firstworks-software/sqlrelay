@@ -62,11 +62,31 @@ SRCS = index.wt \
 	errorpatterns.wt \
 	moduledata.wt \
 	querydirectives.wt \
+	custom_wf.wt \
+	singlestep.wt \
 	routing.wt \
+	regex.wt \
+	userlist.wt \
+	clientiplist.wt \
+	clientinfolist.wt \
+	usedatabase.wt \
+	routingquirks.wt \
 	customqueries.wt \
+	sqlrcmdcstat.wt \
+	sqlrcmdgstat.wt \
 	triggers.wt \
+	replay.wt \
+	savepoints.wt \
+	splitmultiinsert.wt \
+	upsert.wt \
+	globaltemptables.wt \
 	logging.wt \
+	debug.wt \
+	sql.wt \
+	slowqueries.wt \
+	stalecursors.wt \
 	notifications.wt \
+	events.wt \
 	sessionqueries.wt \
 	altconfigfile.wt \
 	advanced.wt
@@ -129,11 +149,31 @@ INS = index.html.in \
 	errorpatterns.html.in \
 	moduledata.html.in \
 	querydirectives.html.in \
+	custom_wf.html.in \
+	singlestep.html.in \
 	routing.html.in \
+	regex.html.in \
+	userlist.html.in \
+	clientiplist.html.in \
+	clientinfolist.html.in \
+	usedatabase.html.in \
+	routingquirks.html.in \
 	customqueries.html.in \
+	sqlrcmdcstat.html.in \
+	sqlrcmdgstat.html.in \
 	triggers.html.in \
+	replay.html.in \
+	savepoints.html.in \
+	splitmultiinsert.html.in \
+	upsert.html.in \
+	globaltemptables.html.in \
 	logging.html.in \
+	debug.html.in \
+	sql.html.in \
+	slowqueries.html.in \
+	stalecursors.html.in \
 	notifications.html.in \
+	events.html.in \
 	sessionqueries.html.in \
 	altconfigfile.html.in \
 	advanced.html.in \
@@ -198,11 +238,31 @@ WTOBJS = index.html.in \
 	errorpatterns.html.in \
 	moduledata.html.in \
 	querydirectives.html.in \
+	custom_wf.html.in \
+	singlestep.html.in \
 	routing.html.in \
+	regex.html.in \
+	userlist.html.in \
+	clientiplist.html.in \
+	clientinfolist.html.in \
+	usedatabase.html.in \
+	routingquirks.html.in \
 	customqueries.html.in \
+	sqlrcmdcstat.html.in \
+	sqlrcmdgstat.html.in \
 	triggers.html.in \
+	replay.html.in \
+	savepoints.html.in \
+	splitmultiinsert.html.in \
+	upsert.html.in \
+	globaltemptables.html.in \
 	logging.html.in \
+	debug.html.in \
+	sql.html.in \
+	slowqueries.html.in \
+	stalecursors.html.in \
 	notifications.html.in \
+	events.html.in \
 	sessionqueries.html.in \
 	altconfigfile.html.in \
 	advanced.html.in
@@ -265,11 +325,31 @@ OBJS = index.html \
 	errorpatterns.html \
 	moduledata.html \
 	querydirectives.html \
+	custom_wf.html \
+	singlestep.html \
 	routing.html \
+	regex.html \
+	userlist.html \
+	clientiplist.html \
+	clientinfolist.html \
+	usedatabase.html \
+	routingquirks.html \
 	customqueries.html \
+	sqlrcmdcstat.html \
+	sqlrcmdgstat.html \
 	triggers.html \
+	replay.html \
+	savepoints.html \
+	splitmultiinsert.html \
+	upsert.html \
+	globaltemptables.html \
 	logging.html \
+	debug.html \
+	sql.html \
+	slowqueries.html \
+	stalecursors.html \
 	notifications.html \
+	events.html \
 	sessionqueries.html \
 	altconfigfile.html \
 	advanced.html \

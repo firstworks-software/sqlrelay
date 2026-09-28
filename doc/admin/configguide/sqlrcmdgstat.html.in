@@ -1,0 +1,141 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sqlrcmdcstat.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrcmdcstat.html">sqlrcmdcstat</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="triggers.html">Triggers</a> <a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sqlrcmdgstat"/><h1>sqlrcmdgstat</h1>
+
+<p>The sqlrcmdgstat module returns global statistics about this instance of SQL Relay when the query "sqlrcmd gstat" is run.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;queries&gt;</font></b>
+			<b><font color="#0000FF">&lt;query</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrcmdgstat"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/queries&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>An example session follows:</p>
+
+<blockquote>
+  <pre>sqlrsh - Version 1.7.0
+	Connected to: localhost:9000 as test
+
+	type help; for help.
+
+0> sqlrcmd gstat;
+KEY                    VALUE
+===========================================
+start                  2019/10/27 23:06:16
+uptime                 930
+now                    2019/10/27 23:21:46
+access_count           8
+query_total            43
+qpm                    2
+qpm_1                  4
+qpm_5                  1
+qpm_15                 2
+select_1               0
+select_5               0
+select_15              0
+insert_1               0
+insert_5               0
+insert_15              0
+update_1               0
+update_5               0
+update_15              0
+delete_1               0
+delete_5               0
+delete_15              0
+etc_1                  4
+etc_5                  1
+etc_15                 2
+sqlrcmd_1              0
+sqlrcmd_5              0
+sqlrcmd_15             0
+max_listener           1000
+max_listener_error     0
+busy_listener          1
+peak_listener          1
+connection             5
+session                1
+peak_session           1
+peak_session_1min      1
+peak_session_1min_time 2019/10/27 23:21:46
+sqlr_version           1.7.0
+rudiments_version      1.2.1
+module_compiled        Oct 24 2019 22:20:05
+
+	Rows Returned   : 39
+	Fields Returned : 78
+	Elapsed Time    : 0.018508 sec
+</pre>
+
+</blockquote>
+<p>The result set is a set of key-value pairs, as follows:</p>
+
+<ul>
+  <li>start - the date/time that the instance was started</li>
+  <li>uptime - the number of seconds that the instance has been running</li>
+  <li>now - the current date/time</li>
+  <li>access_count - the number of times a client has connected to the instance</li>
+  <li>query_total - the total number of queries that have been run, intance-wide</li>
+  <li>qpm - queries-per-minute, averaged over total instance uptime</li>
+  <li>qpm_1 - queries-per-minute, for the previous minute</li>
+  <li>qpm_5 - queries-per-minute, averaged over the previous 5 minutes</li>
+  <li>qpm_15 - queries-per-minute, averaged over the previous 15 minutes</li>
+  <li>select_1 - selects-per-minute, averaged over total instance uptime</li>
+  <li>select_5 - selects-per-minute, averaged over the previous 5 minutes</li>
+  <li>seelct_15 - selects-per-minute, averaged over the previous 15 minutes</li>
+  <li>insert_1 - inserts-per-minute, averaged over the total instance uptime</li>
+  <li>insert_5 - inserts-per-minute, averaged over the previous 5 minutes</li>
+  <li>insert_15 - inserts-per-minute, averaged over the previous 15 minutes</li>
+  <li>update_1 - updates-per-minute, averaged over the total instance uptime</li>
+  <li>update_5 - updates-per-minute, averaged over the previous 5 minutes</li>
+  <li>update_15 - updates-per-minute, averaged over the previous 15 minutes</li>
+  <li>delete_1 - deletes-per-minute, averaged over the total instance uptime</li>
+  <li>delete_5 - deletes-per-minute, averaged over the previous 5 minutes</li>
+  <li>delete_15 - deletes-per-minute, averaged over the previous 15 minutes</li>
+  <li>etc_1 - other queries-per-minute, averaged over the total instance uptime</li>
+  <li>etc_5 - other queries-per-minute, averaged over the previous 5 minutes</li>
+  <li>etc_15 - other queries-per-minute, averaged over the previous 15 minutes</li>
+  <li>sqlrcmd_1 - sqlrcmds-per-minute, averaged over the total instance uptime</li>
+  <li>sqlrcmd_5 - sqlrcmds-per-minute, averaged over the previous 5 minutes</li>
+  <li>sqlrcmd_15 - sqlrcmds-per-minute, averaged over the previous 15 minutes</li>
+  <li>max_listener - value of the maxlisteners attribute of the instance tag for this instance (configured or default)</li>
+  <li>max_listener_error - the number of times that the maximum number of sqlr-listener threads were running and another client attempted to connect since the instance was started</li>
+  <li>busy_listener - the current number of sqlr-listener threads that are busy waiting for an available sqlr-connection to hand off a client to since the instance was started</li>
+  <li>peak_listener - the peak number of sqlr-listener threads that were running at the same time since the instance was started</li>
+  <li>connection - number of sqlr-connection processes currently running</li>
+  <li>session - number of currently active client sessions</li>
+  <li>peak_session - peak number of client sessions since the instance was started</li>
+  <li>peak_session_1min - peak number of client sessions in the previous minute</li>
+  <li>peak_session_1min_time - the time that the peak_session_1min value was calculated</li>
+  <li>sqlr_version - the version number of the SQL Relay server</li>
+  <li>rudiments_version - the version number of the Rudiments library that the SQL Relay server is using</li>
+  <li>module_compiled - the date/time that the SQL Relay server was compiled</li>
+</ul>
+
+<hr/>
+
+<p><a href="sqlrcmdcstat.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrcmdcstat.html">sqlrcmdcstat</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="triggers.html">Triggers</a> <a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

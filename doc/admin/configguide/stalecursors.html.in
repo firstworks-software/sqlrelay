@@ -1,0 +1,103 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="slowqueries.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="slowqueries.html">slowqueries</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="notifications.html">Notifications</a> <a href="notifications.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="stalecursors"/><h1>stalecursors</h1>
+
+<p>It is not uncommon for a long-running application to open a cursor, and then never close it again.  So-called "cursor leaks" eventually lead to <i>No server-side cursors were available to process the query</i> (or similar) errors, and the root cause can be difficult to track down, especially if a lower-level database abstraction layer does the opening and closing of the cursors.</p>
+
+<p>The <b>stalecursors</b> module logs active cursors, enabling an administrator to see if any cursors have been open for a long time, and if so, what the last query the cursor ran was.</p>
+
+<p>The module works by opening a connection to another instance of SQL Relay (the "log instance"), where it creates a table named "stalecursors" and logs to that table.</p>
+
+<p>In the following example, the "stalecursors" instance (the log instance) provides access to a database where the stale cursors can be logged, and the "example" instance (the app instance) logs cursor activity there.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"stalecursors"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/stalecursors.socket"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">connections</font><font color="#990000">=</font><font color="#FF0000">"5"</font> <font color="#009900">maxconnections</font><font color="#990000">=</font><font color="#FF0000">"10"</font> <font color="#009900">translatebindvariables</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=testuser;password=testpassword;db=testdb;host=mysql;foundrows=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"stalecursors"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/stalecursors.socket"</font> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"stalecursorsuser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"stalecursorspassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In the log instance, note the following:</p>
+
+<ul>
+  <li>It is configured to listen on a unix socket, but not configured to listen on a port.  This is because the app instance is running on the same machine.  This is not a requirement though.  The log instance could be configured to listen on a port as well, and serve app instances running on other machines.</li>
+  <li>translatebindvariable="yes" is set.  The queries that the module generates to insert, update, and delete from the stalecursors table use oracle-style (colon-delimited) bind variables.  If the log database is something other than oracle, then the log instance must translate the bind variables.</li>
+  <li>connections="5" and maxconnections="10" are set.  By default, SQL Relay opens 5 connections to the database.  The app instance uses this default configuration.  If the log instance also only opens 5 connections, then all 5 will be consumed by the app instance, and it won't be possible to access and examine the log from a client program.  So, we'll allow the log instance to scale up accordingly.</li>
+</ul>
+
+<br/><p>The module takes 5 attributes: <b>host</b>, <b>port</b>, <b>socket</b>, <b>user</b>, and <b>password</b>.  These attributes are used to access the other instance of SQL Relay that will be used for logging.</p>
+
+<p>When a cursor is opened, the module adds a new row to the log.  Each time a query is executed, the row is updated.  When the cursor is closed, the module removes the row.</p>
+
+<p>If the cursor is never closed, then the row is never removed, even if the application exits.  The row will also persist across sqlr-starts and sqlr-stops of the app instance and log instances.  As such, it will eventually be necessary to manually clear to the table, or at least manually delete rows from it, analogous to deleting log files.</p>
+
+<p>To view currently active (and possibly stale) cursors, you would access the log instance like:</p>
+
+<blockquote>
+  <pre>sqlrsh -socket /tmp/stalecursors.socket -user stalecursorsuser -password stalecursorspassword
+</pre>
+
+</blockquote>
+<p>And then view the log like:</p>
+
+<blockquote>
+  <pre>select * from stalecursors
+</pre>
+
+</blockquote>
+<p>A typical result set would be something like:</p>
+
+<blockquote>
+  <pre>instance connection_id connection_pid cursor_id most_recent_query       most_recent_query_timestamp
+===================================================================================================
+example  example-0     27155          0         select * from bigtable  2019-10-24 20:34:06
+example  example-0     27158          0         select * from mytable   2019-10-24 20:34:26
+example  example-0     27162          0         select * from yourtable 2019-10-24 20:34:41
+example  example-0     27166          0         select * from thistable 2019-10-24 20:34:53
+example  example-0     27168          0         select * from thattable 2019-10-24 20:35:03
+</pre>
+
+</blockquote>
+<p>Multiple app instances may log to the same log instance.  To view cursor activity for a particular instance, just filter on the "instance" column.</p>
+
+<blockquote>
+  <pre>select * from stalecursors where instance='example'
+</pre>
+
+</blockquote>
+<p>Note that each connection of an app instance will consume 1 connection of the log instance, so be sure to configure the log instance to start enough connections to the database.  Eg. if you have 2 app instances, each configured with connections="5", then the log instance should be configured with connections="10" and maxconnections set to something larger than 10 to allow for clients to connect and examine the logs.</p>
+
+<hr/>
+
+<p><a href="slowqueries.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="slowqueries.html">slowqueries</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="notifications.html">Notifications</a> <a href="notifications.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

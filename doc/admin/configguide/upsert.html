@@ -1,0 +1,308 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="splitmultiinsert.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="splitmultiinsert.html">splitmultiinsert</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="globaltemptables.html">globaltemptables</a> <a href="globaltemptables.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="upsert"/><h1>upsert</h1>
+
+<p>The upsert module enables an insert query to be transparently interpreted as an update query, if the insert failed.</p>
+
+<p>Both the set of errors that trigger the upsert, as well as the set of tables that can be upserted into are configurable.</p>
+
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;errors&gt;</font></b>
+					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"ORA-00001"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
+				<b><font color="#0000FF">&lt;tables&gt;</font></b>
+					<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"students"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"FIRSTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"LASTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;/table&gt;</font></b>
+				<b><font color="#0000FF">&lt;/tables&gt;</font></b>
+			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>In this example...</p>
+
+<p>The trigger is configured to run after the query has been executed. This is the only valid configuration for the upsert trigger. If when="before" or when="both" is set then the trigger will be ignored.</p>
+
+<p>If an insert into the table <i>students</i> results in an error string containing "ORA-00001" (an Oracle unique constraint violated), then the insert that generated the error will be converted to an update.</p>
+
+<p>The where clause of the update will only contain columns <i>FIRSTNAME</i> and <i>LASTNAME</i>.</p>
+
+<p>The trigger will also attempt to identify primary key and autoincrement columns and exclude them from the table update.</p>
+
+<p>For example, if the <i>students</i> table exists like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>create <font color="#008080">table</font> <b><font color="#000000">students</font></b> <font color="#990000">(</font>
+	id <font color="#009900">int</font> <font color="#008080">primary</font> key<font color="#990000">,</font>
+	<font color="#008080">firstname</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">128</font><font color="#990000">)</font> <font color="#008080">not</font> null<font color="#990000">,</font>
+	<font color="#008080">lastname</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">128</font><font color="#990000">)</font> <font color="#008080">not</font> null<font color="#990000">,</font>
+	<font color="#008080">major</font> <b><font color="#000000">varchar2</font></b><font color="#990000">(</font><font color="#993399">128</font><font color="#990000">),</font>
+	<font color="#008080">year</font> <font color="#009900">int</font><font color="#990000">,</font>
+	<font color="#008080">gpa</font> <b><font color="#000000">number</font></b><font color="#990000">(</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">),</font>
+	<b><font color="#000000">unique</font></b> <font color="#990000">(</font>firstname<font color="#990000">,</font>lastname<font color="#990000">)</font>
+<font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>And two inserts are run like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert into <font color="#008080">students</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>student_ids<font color="#990000">.</font>nextval<font color="#990000">,</font><font color="#FF0000">'David'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Mechanical Engineering'</font><font color="#990000">,</font><font color="#993399">1</font><font color="#990000">,</font><font color="#993399">4.0</font><font color="#990000">);</font>
+insert into <font color="#008080">students</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>student_ids<font color="#990000">.</font>nextval<font color="#990000">,</font><font color="#FF0000">'David'</font><font color="#990000">,</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font><font color="#FF0000">'Computer Science'</font><font color="#990000">,</font><font color="#993399">2</font><font color="#990000">,</font><font color="#993399">3.2</font><font color="#990000">);</font></tt></pre>
+
+</blockquote>
+<p>Then the first insert will succeed, but the second will fail because the values of 'David' and 'Muse' for the firstname and lastname columns violate the unique constraint.</p>
+
+<p>In this case, the second insert will throw an ORA-00001 error, and the trigger will be converted to the following update:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>update students <font color="#008080">set</font> firstname<font color="#990000">=</font><font color="#FF0000">'David'</font><font color="#990000">,</font> lastname<font color="#990000">=</font><font color="#FF0000">'Muse'</font><font color="#990000">,</font> major<font color="#990000">=</font><font color="#FF0000">'Computer Science'</font><font color="#990000">,</font> year<font color="#990000">=</font><font color="#993399">2</font><font color="#990000">,</font> gpa<font color="#990000">=</font><font color="#993399">3.2</font> <font color="#008080">where</font> firstname<font color="#990000">=</font><font color="#FF0000">'David'</font> <font color="#008080">and</font> lastname<font color="#990000">=</font><font color="#FF0000">'Muse'</font></tt></pre>
+
+</blockquote>
+<p>Note that the primary key is omitted from the set clause of the update, and that the where clause only contains the firstname and lastname columns.</p>
+
+<p>Note also that, in the configuration, the columns are uppercased: FIRSTNAME and LASTNAME.  This is because, in this example, we're using an Oracle database and Oracle column names are uppercased by default.  For other databases, you should use lowercased column names.</p>
+
+<p>Also note that, in the configuration, the normalize translation is included.  This helps the trigger parse and rewrite queries more accurately.</p>
+
+<p>Other configuration options are also available.</p>
+
+<p>You can specify the error by number instead of by string:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;translations&gt;</font></b>
+			<b><font color="#0000FF">&lt;translation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/translations&gt;</font></b>
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;errors&gt;</font></b>
+					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">number</font><font color="#990000">=</font><font color="#FF0000">"1"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
+				<b><font color="#0000FF">&lt;tables&gt;</font></b>
+					<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"students"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"FIRSTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"LASTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;/table&gt;</font></b>
+				<b><font color="#0000FF">&lt;/tables&gt;</font></b>
+			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>You can also specify the error by SQLSTATE, using a <b>sqlstate</b> attribute on the <b>error</b> tag.  <b>sqlstate</b> is independent of <b>string</b> and <b>number</b>, the same way those two are independent of each other - if any one of the three matches, the insert is converted to an update.  Unlike error text, a SQLSTATE is locale-independent - a German-locale PostgreSQL reporting a unique constraint violation still reports the same SQLSTATE, <i>23505</i>, that an English-locale one does.  And unlike error numbers on some backends, SQLSTATE codes aren't backend-specific magic numbers - they're standardized.  <b>sqlstate</b> is matched case-insensitively against the SQLSTATE the database reported for the error.  There's no built-in default; if the backend doesn't report a SQLSTATE for a given error, the <b>sqlstate</b> check simply has nothing to compare against and is skipped - never treated as a mismatch - and matching falls back to whatever <b>string</b> and/or <b>number</b> attributes are also configured, exactly as before.</p>
+
+<p>If, for some reason, the trigger is unable to identify the primary key of the table, you can manually specify the primary key:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;errors&gt;</font></b>
+					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"ORA-00001"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
+				<b><font color="#0000FF">&lt;tables&gt;</font></b>
+					<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"students"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;primaarykey</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"ID"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"FIRSTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"LASTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;/table&gt;</font></b>
+				<b><font color="#0000FF">&lt;/tables&gt;</font></b>
+			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>You can also specify multiple tables:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"upsert"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"afterExecute"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;errors&gt;</font></b>
+					<b><font color="#0000FF">&lt;error</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"ORA-00001"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/errors&gt;</font></b>
+				<b><font color="#0000FF">&lt;tables&gt;</font></b>
+					<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"students"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"FIRSTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"LASTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;/table&gt;</font></b>
+					<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"professors"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"FIRSTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"LASTNAME"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;/table&gt;</font></b>
+					<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"courses"</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"NUMBER"</font><b><font color="#0000FF">/&gt;</font></b>
+						<b><font color="#0000FF">&lt;column</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"NAME"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;/table&gt;</font></b>
+				<b><font color="#0000FF">&lt;/tables&gt;</font></b>
+			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>In the example configuration above, inserts into any of the students, processors, or courses tables, which fail with ORA-00001, will be converted to updates.</p>
+
+<p>There are some considerations that need to be taken into account when using the upsert trigger.</p>
+
+<ul>
+  <li>Currently, only single-row inserts are supported.  Multi-row inserts, select-into, and insert-select queries will not be converted to update queries, and will just fail.</li>
+  <li>If you don't specify any columns in the table tag, then the where clause of the generated update will be empty, and the update query will fail.</li>
+  <li>If the insert doesn't contain values for the columns specified in the table tag, then the conversion to update will fail.</li>
+</ul>
+
+<p>As noted in <a href="triggers.html#triggers">Triggers</a>, above, trigger modules run in the order that they're listed in the config file.  When upsert is combined with the replay or savepoints module on the same connection, upsert must be listed after both of them:</p>
+
+<ul>
+  <li>replay must be listed before upsert.  Upsert clears the cursor error when it converts a failed insert into an update.  If replay is listed after upsert, it sees no error, and it can splice a stale last insert id into the insert that it logs.  The log also comes out in the wrong order, with the converted update ahead of the insert that provoked it, since upsert runs its update before replay has logged anything.</li>
+  <li>savepoints must be listed before upsert.  On PostgreSQL, a failed insert leaves the transaction in an aborted state, and every later statement on that session fails until something rolls back.  Upsert's converted update is one of those statements, so it fails too.  If savepoints runs first, its after-execute rolls back to the savepoint, which clears the aborted state, and upsert's update then succeeds.  If upsert runs first, its after-execute fails and the trigger chain stops there, so savepoints never gets a chance to roll back.</li>
+</ul>
+
+<hr/>
+
+<p><a href="splitmultiinsert.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="splitmultiinsert.html">splitmultiinsert</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="globaltemptables.html">globaltemptables</a> <a href="globaltemptables.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

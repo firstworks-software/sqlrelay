@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [altconfigfile.html Alternative Configuration File Options] [[Image(../../images/navnext.png,link=altconfigfile.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=events.html,vertical-align=middle)]] [events.html events] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [altconfigfile.html Alternative Configuration File Options] [[Image(../../images/navnext.png,link=altconfigfile.html,vertical-align=middle)]]
 
 [[br]][=#sessionqueries]
 = Session-Queries =
@@ -27,7 +27,7 @@ Actually, in this example, there's no need to set the optimizer mode back to all
 
 ----
 
-[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [altconfigfile.html Alternative Configuration File Options] [[Image(../../images/navnext.png,link=altconfigfile.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=events.html,vertical-align=middle)]] [events.html events] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [altconfigfile.html Alternative Configuration File Options] [[Image(../../images/navnext.png,link=altconfigfile.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

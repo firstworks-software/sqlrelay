@@ -1,0 +1,85 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=slowqueries.html,vertical-align=middle)]] [slowqueries.html slowqueries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [notifications.html Notifications] [[Image(../../images/navnext.png,link=notifications.html,vertical-align=middle)]]
+
+[=#stalecursors]
+= stalecursors =
+
+It is not uncommon for a long-running application to open a cursor, and then never close it again.  So-called "cursor leaks" eventually lead to //No server-side cursors were available to process the query// (or similar) errors, and the root cause can be difficult to track down, especially if a lower-level database abstraction layer does the opening and closing of the cursors.
+
+The '''stalecursors''' module logs active cursors, enabling an administrator to see if any cursors have been open for a long time, and if so, what the last query the cursor ran was.
+
+The module works by opening a connection to another instance of SQL Relay (the "log instance"), where it creates a table named "stalecursors" and logs to that table.
+
+In the following example, the "stalecursors" instance (the log instance) provides access to a database where the stale cursors can be logged, and the "example" instance (the app instance) logs cursor activity there.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-stalecursors.conf@
+}}}
+}}}
+
+In the log instance, note the following:
+
+* It is configured to listen on a unix socket, but not configured to listen on a port.  This is because the app instance is running on the same machine.  This is not a requirement though.  The log instance could be configured to listen on a port as well, and serve app instances running on other machines.
+* translatebindvariable="yes" is set.  The queries that the module generates to insert, update, and delete from the stalecursors table use oracle-style (colon-delimited) bind variables.  If the log database is something other than oracle, then the log instance must translate the bind variables.
+* connections="5" and maxconnections="10" are set.  By default, SQL Relay opens 5 connections to the database.  The app instance uses this default configuration.  If the log instance also only opens 5 connections, then all 5 will be consumed by the app instance, and it won't be possible to access and examine the log from a client program.  So, we'll allow the log instance to scale up accordingly.
+
+
+The module takes 5 attributes: '''host''', '''port''', '''socket''', '''user''', and '''password'''.  These attributes are used to access the other instance of SQL Relay that will be used for logging.
+
+When a cursor is opened, the module adds a new row to the log.  Each time a query is executed, the row is updated.  When the cursor is closed, the module removes the row.
+
+If the cursor is never closed, then the row is never removed, even if the application exits.  The row will also persist across sqlr-starts and sqlr-stops of the app instance and log instances.  As such, it will eventually be necessary to manually clear to the table, or at least manually delete rows from it, analogous to deleting log files.
+
+To view currently active (and possibly stale) cursors, you would access the log instance like:
+
+{{{#!blockquote
+{{{
+sqlrsh -socket /tmp/stalecursors.socket -user stalecursorsuser -password stalecursorspassword
+}}}
+}}}
+
+And then view the log like:
+
+{{{#!blockquote
+{{{
+select * from stalecursors
+}}}
+}}}
+
+A typical result set would be something like:
+
+{{{#!blockquote
+{{{
+instance connection_id connection_pid cursor_id most_recent_query       most_recent_query_timestamp
+===================================================================================================
+example  example-0     27155          0         select * from bigtable  2019-10-24 20:34:06
+example  example-0     27158          0         select * from mytable   2019-10-24 20:34:26
+example  example-0     27162          0         select * from yourtable 2019-10-24 20:34:41
+example  example-0     27166          0         select * from thistable 2019-10-24 20:34:53
+example  example-0     27168          0         select * from thattable 2019-10-24 20:35:03
+}}}
+}}}
+
+Multiple app instances may log to the same log instance.  To view cursor activity for a particular instance, just filter on the "instance" column.
+
+{{{#!blockquote
+{{{
+select * from stalecursors where instance='example'
+}}}
+}}}
+
+Note that each connection of an app instance will consume 1 connection of the log instance, so be sure to configure the log instance to start enough connections to the database.  Eg. if you have 2 app instances, each configured with connections="5", then the log instance should be configured with connections="10" and maxconnections set to something larger than 10 to allow for clients to connect and examine the logs.
+
+----
+
+[[Image(../../images/navprev.png,link=slowqueries.html,vertical-align=middle)]] [slowqueries.html slowqueries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [notifications.html Notifications] [[Image(../../images/navnext.png,link=notifications.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

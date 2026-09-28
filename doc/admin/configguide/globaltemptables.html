@@ -1,0 +1,168 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="upsert.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="upsert.html">upsert</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="logging.html">Logging</a> <a href="logging.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="globaltemptables"/><h1>globaltemptables</h1>
+
+<p>The globaltemptables module simulates Oracle/DB2-style global temporary tables on databases (notably PostgreSQL) that only support session-local temporary tables.</p>
+
+<p>In databases that support global temporary tables, the table definition is persistent and visible to every session, but each session sees its own private set of rows.  In databases that only support session-local temporary tables, the table itself only exists for the life of the session that created it, so an application that expects a global temp table to already be there will fail with a <i>relation does not exist</i> (or similar) error at prepare time.</p>
+
+<p>This module bridges that gap.  For each configured table, the module watches for any query that references that table at prepare time, and the first time it sees one in the current backend session, it issues the configured <i>create</i> statement on that session.  Once created, the table persists for the rest of the backend session, which - given the sqlr-connection process model, where one backend session is multiplexed across many client sessions - lets it appear to behave like a global temporary table.</p>
+
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		<b><font color="#0000FF">&lt;triggers&gt;</font></b>
+			<b><font color="#0000FF">&lt;trigger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"globaltemptables"</font> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"beforePrepare"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;alreadyexists</font></b> <font color="#009900">error</font><font color="#990000">=</font><font color="#FF0000">"already exists"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"gtttest1"</font><b><font color="#0000FF">&gt;</font></b>create temp table gtttest1 (id int primary key, value varchar(20))<b><font color="#0000FF">&lt;/table&gt;</font></b>
+				<b><font color="#0000FF">&lt;table</font></b> <font color="#009900">name</font><font color="#990000">=</font><font color="#FF0000">"gtttest2"</font><b><font color="#0000FF">&gt;</font></b>create temp table gtttest2 (id int primary key, value varchar(20))<b><font color="#0000FF">&lt;/table&gt;</font></b>
+			<b><font color="#0000FF">&lt;/trigger&gt;</font></b>
+		<b><font color="#0000FF">&lt;/triggers&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example...</p>
+
+<p>The trigger is configured to run before the query has been prepared.  This is the only valid configuration for the globaltemptables trigger - the create statement has to run before the database tries to resolve the table reference during prepare, or the prepare itself will fail.  Configurations with any other <i>when</i> value will not accomplish anything useful.</p>
+
+<p>Two tables are configured, <i>gtttest1</i> and <i>gtttest2</i>.  The first time either one is referenced in a given backend session - by an insert, a select, an update, a delete, or the table name turning up in a join or subquery - the corresponding <i>create temp table ...</i> statement is run on that session.  Subsequent references in the same session skip the create step.</p>
+
+<p>The first time the create is attempted, it may fail because the table already exists - another agent (e.g. another sqlr-connection process, or the application itself) may have created it already, or the modules own state may believe the table is gone when it isn't (see Considerations below).  The <b>alreadyexists</b> tag lets the module recognize that situation and treat it as success.  It supports two attributes, <b>error</b> and <b>sqlstate</b>, either or both of which may be set; if either one matches, the create is treated as success.</p>
+
+<p>The <b>error</b> attribute may be set to either:</p>
+
+<ul>
+  <li>a numeric value - matched against the database error number</li>
+  <li>a string - matched as a substring against the database error text</li>
+</ul>
+
+<p>Error text is locale-dependent - a German-locale PostgreSQL reports <i>existiert bereits</i> for a duplicate table, not <i>already exists</i> - so a substring match tuned for one locale silently stops working under another.  Some databases also give the error number no useful meaning at all - PostgreSQL's connection module reports error number 1 for literally every error, so a numeric <b>error=</b> match against it would match every failure, not just an already-exists.</p>
+
+<p>The <b>sqlstate</b> attribute addresses both problems.  It's a 5-character SQLSTATE code, compared case-insensitively for an exact match against the SQLSTATE the database reported for the failed create.  SQLSTATE codes are standardized and locale-independent, so the same value works regardless of what language the backend is reporting errors in.  The <b>sqlstate</b> check runs first, as a fast path, and only falls through to the <b>error=</b> check above if it doesn't match, or if there's nothing to compare (no <b>sqlstate=</b> configured and no built-in default, or the database didn't report a SQLSTATE for this error) - <b>sqlstate</b> is checked <i>in addition to</i> <b>error=</b>, not instead of it.</p>
+
+<p>If <b>sqlstate=</b> isn't configured at all, a built-in default is used, based on the real database module in use: PostgreSQL defaults to <i>42P07</i>, the duplicate_table SQLSTATE; MySQL and MariaDB default to <i>42S01</i>, the base-table-or-view-already-exists SQLSTATE.  No other database gets a built-in default.  A site that wants no sqlstate check at all - relying purely on <b>error=</b> - can set <b>sqlstate=""</b> (present, but empty) to explicitly disable the built-in default.</p>
+
+<p>Not every database reports a SQLSTATE for a given error, and most connection modules besides PostgreSQL, MySQL/MariaDB, Firebird, DB2, Informix, ODBC, and SAP don't report one at all.  On those, the <b>sqlstate</b> check simply has nothing to compare against and is skipped, and <b>alreadyexists</b> behaves exactly as it did before this attribute existed, matching on <b>error=</b> alone.</p>
+
+<p>If the create fails and neither the <b>sqlstate</b> nor the <b>error</b> check matches, that error is reported back to the client as if the user's query had failed.</p>
+
+<p>On a database where transactions abort on any statement error (eg. PostgreSQL), a create that fails - even one the <b>alreadyexists</b> handling recognizes and reports as success back to the client - has already put the surrounding transaction into an aborted state, and nothing about that success at the trigger level undoes that.  Every subsequent statement in the same transaction is then refused until the transaction is rolled back, which the client sees as an unrelated later query failing for no apparent reason.  A create that never errors in the first place avoids the problem entirely, so when the target database is PostgreSQL, the module automatically inserts <i>if not exists</i> into the create statement, unless it's already there.  <i>IF NOT EXISTS</i> is not universally available - eg. Oracle's <i>CREATE GLOBAL TEMPORARY TABLE</i> does not support it - so this is deliberately specific to PostgreSQL, and the <b>alreadyexists</b> handling remains necessary, and is still used, for every other database.</p>
+
+<p>This decision is based on the real database module in use, not on a <b>dbtype=</b> identity a migration may have set in the connection string to make the backend impersonate a different database for the client's benefit - the create statement reaching a real PostgreSQL backend gets <i>if not exists</i> inserted regardless of what the client believes it's talking to.</p>
+
+<p>Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.</p>
+
+<p>The <b>trigger</b> tag supports the following attributes in addition to the standard <b>module</b>, <b>when</b>, <b>enabled</b>, and <b>debug</b> attributes:</p>
+
+<ul>
+  <li>none beyond the nested <b>alreadyexists</b> and <b>table</b> tags described above</li>
+</ul>
+
+<p>The <b>table</b> tag supports the following attribute:</p>
+
+<ul>
+  <li><b>name</b></li>
+  <ul>
+    <li>the name of the table to watch for - matched, as a whole word, against every query at prepare time</li>
+    <li>the table body (between the open and close tags) is the <i>create</i> statement to run on the backend session the first time the table is referenced</li>
+  </ul>
+
+</ul>
+
+<p>The body of the <b>table</b> tag may also use the <i><a href="...filename...">...filename...</a></i> syntax supported elsewhere in the SQL Relay config to read the create statement from an external file - useful for long create statements.</p>
+
+<h3>Considerations</h3>
+
+<p>The trigger matches the configured table name as a whole word anywhere in the normalized query text, not just in an insert - so a delete, select, update, or a table name turning up in a join or subquery all cause the table to be created if it hasn't been already.  This can over-fire - a query that only mentions the name inside a string literal or a comment will also trigger an early create - but that's harmless: the table starts out empty either way, and it's only created once per backend session.</p>
+
+<p>The match is keyed off normalized query text.  Make sure the <a href="normalize.html#normalize">normalize</a> query translation is loaded ahead of any application code that exercises these tables.</p>
+
+<p>Once a table has been created, the module remembers that and skips the create on subsequent matches - until one of three things happens, at which point it forgets and re-creates on the next reference: the sqlr-connection process is recycled; the client session that referenced the table ends (the create statement may target an object that's scoped to the backend session rather than the sqlr-connection process, eg. PostgreSQL's <i>create temporary table</i>, and the sqlr-connection process outlives any one client session); or the surrounding transaction is rolled back (the create is DDL, and a rollback can undo it on a transactional database, even though the module has no other way to detect that).  In none of these cases does the trigger actively drop the table - it just stops assuming it's still there, and lets the next reference re-create it (or discover, via <b>alreadyexists</b>, that it is still there after all).</p>
+
+<p>Different sqlr-connection processes in the same instance each maintain their own copy of the temp table (since each holds its own backend session).  The data in one is not visible from another, which matches the per-session-private-rows semantics of a real global temporary table.</p>
+
+<hr/>
+
+<p><a href="upsert.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="upsert.html">upsert</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="logging.html">Logging</a> <a href="logging.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

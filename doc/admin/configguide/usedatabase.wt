@@ -1,0 +1,145 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=clientinfolist.html,vertical-align=middle)]] [clientinfolist.html clientinfolist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routingquirks.html Quirks and Limitations] [[Image(../../images/navnext.png,link=routingquirks.html,vertical-align=middle)]]
+
+[=#usedatabase]
+= usedatabase =
+
+The '''usedatabase''' module enables you to access databases across multiple database instances via the same SQL Relay front-end with "use database" queries.
+
+ [[Image(../../images/router-use-database.png,nolink)]]
+
+For example, lets say you have two database instances:
+
+A !MySQL/MariaDB instance that hosts 3 databases:
+
+* mydb1
+* mydb2
+* mydb3
+
+...and a !PostgreSQL instance that hosts 2 databases:
+
+* pg1
+* pg2
+
+If you configure an instance of SQL Relay to access the !MySQL/MariaDB instance, then a SQL Relay client can run queries like "use mydb1" or "use mydb2" to select the database.
+
+Similarly, if you configure an instance of SQL Relay to access the !PostgreSQL instance, then a SQL Relay client can run queries like "use pbdb1" or "use pbdb2" to select the database.
+
+The '''usedatabase''' module enables a client connected to a single instance of SQL Relay to select the database across both instances.  For example, "use mydb1" would set the current database to the mydb1 database hosted by the !MySQL/MariaDB instance, and "use pgdb2" would set the current database to the pgdb2 database hosted by the !PostgreSQL instance.
+
+An example configuration follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-routers-usedatabase.conf@
+}}}
+}}}
+
+In this example, 3 SQL Relay instances are defined:
+
+* one to maintain connections to an !MySQL/MariaDB instance
+* one to maintain connections to a !PostgreSQL database
+* one to route queries to the other two instances
+
+The '''string''' attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:
+
+* '''server''' - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a //host// attribute - the router connection module reads //server//, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets //host// instead is silently ignored.)
+* '''port''' - the port of the SQL Relay instance
+* '''socket''' - the socket of the SQL Relay instance, if it is running locally
+* '''user''' - the user to use when connecting to the SQL Relay instance as
+* '''password''' - the password to use when connecting to the SQL Relay instance
+* '''fetchatonce''' - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.
+
+When the router instance starts, it gets the list of databases available from each of the other two instances, and routes to them accordingly.
+
+A sample sqlrsh session follows:
+
+{{{#!blockquote
+{{{
+sqlrsh -host localhost -user routeruser -password routerpassword
+sqlrsh - Version 1.1.0
+        Connected to: localhost:9000 as routeruser
+
+        type help; for help.
+
+0> use mydb1;
+0> currentdb;
+mydb1
+0> select * from exampletable;
+col1
+==========================
+this table is in db mydb1
+
+        Rows Returned   : 1
+        Fields Returned : 1
+        Elapsed Time    : 0.001512 sec
+
+0> use mydb2;
+0> currentdb;
+mydb2
+0> select * from exampletable;
+col1
+==========================
+this table is in db mydb2
+
+        Rows Returned   : 1
+        Fields Returned : 1
+        Elapsed Time    : 0.001512 sec
+
+0> use pgdb1;
+0> currentdb;
+pgdb1
+0> select * from exampletable;
+col1
+==========================
+this table is in db pgdb1
+
+        Rows Returned   : 1
+        Fields Returned : 1
+        Elapsed Time    : 0.001344 sec
+
+0>
+}}}
+}}}
+
+But...  What if two different instances host databases with the same name?  For example, what if your !MySQL/MariaDB instance hosts a database named db2, and your !PostgreSQL instance also hosts a database named db2?
+
+To resolve situations like this, the '''usedatabase''' module enables you to map a database to an alias.  In this example, the db2 database hosted by !MySQL/MariaDB is mapped to mydb2, and the db2 database hosted by !PostgreSQL is mapped to pgdb2.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-routers-usedatabase-alias.conf@
+}}}
+}}}
+
+To access the db2 database hosted by !MySQL/MariaDB, the user would run:
+
+{{{#!blockquote
+{{{
+use mydb2
+}}}
+}}}
+
+To access the db2 database hosted by !PostgreSQL, the user would run:
+
+{{{#!blockquote
+{{{
+use pgdb2
+}}}
+}}}
+
+Attempts to "use db2" would fail.
+
+
+----
+
+[[Image(../../images/navprev.png,link=clientinfolist.html,vertical-align=middle)]] [clientinfolist.html clientinfolist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routingquirks.html Quirks and Limitations] [[Image(../../images/navnext.png,link=routingquirks.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

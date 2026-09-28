@@ -1,0 +1,221 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="clientinfolist.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="clientinfolist.html">clientinfolist</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="routingquirks.html">Quirks and Limitations</a> <a href="routingquirks.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="usedatabase"/><h1>usedatabase</h1>
+
+<p>The <b>usedatabase</b> module enables you to access databases across multiple database instances via the same SQL Relay front-end with "use database" queries.</p>
+
+<blockquote>
+<img src="../../images/router-use-database.png"/>
+</blockquote>
+<p>For example, lets say you have two database instances:</p>
+
+<p>A MySQL/MariaDB instance that hosts 3 databases:</p>
+
+<ul>
+  <li>mydb1</li>
+  <li>mydb2</li>
+  <li>mydb3</li>
+</ul>
+
+<p>...and a PostgreSQL instance that hosts 2 databases:</p>
+
+<ul>
+  <li>pg1</li>
+  <li>pg2</li>
+</ul>
+
+<p>If you configure an instance of SQL Relay to access the MySQL/MariaDB instance, then a SQL Relay client can run queries like "use mydb1" or "use mydb2" to select the database.</p>
+
+<p>Similarly, if you configure an instance of SQL Relay to access the PostgreSQL instance, then a SQL Relay client can run queries like "use pbdb1" or "use pbdb2" to select the database.</p>
+
+<p>The <b>usedatabase</b> module enables a client connected to a single instance of SQL Relay to select the database across both instances.  For example, "use mydb1" would set the current database to the mydb1 database hosted by the MySQL/MariaDB instance, and "use pgdb2" would set the current database to the pgdb2 database hosted by the PostgreSQL instance.</p>
+
+<p>An example configuration follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+	<i><font color="#9A1900">&lt;!-- This instance maintains connections to a MySQL database --&gt;</font></i>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"mysqldb"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">""</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/mysqldb.socket"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqldbuser;password=mysqldbpassword;host=mysqldb;db=mysqldb;"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+
+	<i><font color="#9A1900">&lt;!-- This instance maintains connections to a PostgreSQL database --&gt;</font></i>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"postgresqldb"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">""</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/postgresqldb.socket"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=postgresqldbuser;password=postgresqldbpassword;host=postgresqldb;db=postgresqldb;"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+
+	<i><font color="#9A1900">&lt;!-- This instance sends queries to databases hosted by the mysql</font></i>
+<i><font color="#9A1900">		instance and postgresql instance based on "use ..." queries. --&gt;</font></i>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"router"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"router"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+                        	<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"routeruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"routerpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;routers&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"usedatabase"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"mysqldb"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/mysqldb.socket;user=mysqldbuser;password=mysqldbpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"postgresqldb"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/postgresqldb.socket;user=postgresqldbuser;password=postgresqldbpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, 3 SQL Relay instances are defined:</p>
+
+<ul>
+  <li>one to maintain connections to an MySQL/MariaDB instance</li>
+  <li>one to maintain connections to a PostgreSQL database</li>
+  <li>one to route queries to the other two instances</li>
+</ul>
+
+<p>The <b>string</b> attribute in each connection tag provides the parameters necessary to connect to the other instances.  Valid parameters include:</p>
+
+<ul>
+  <li><b>server</b> - the host name or IP address of the SQL Relay instance.  (Despite the name, this is not a <i>host</i> attribute - the router connection module reads <i>server</i>, the same as the SQL Relay client API's own connect parameter.  A connection tag that sets <i>host</i> instead is silently ignored.)</li>
+  <li><b>port</b> - the port of the SQL Relay instance</li>
+  <li><b>socket</b> - the socket of the SQL Relay instance, if it is running locally</li>
+  <li><b>user</b> - the user to use when connecting to the SQL Relay instance as</li>
+  <li><b>password</b> - the password to use when connecting to the SQL Relay instance</li>
+  <li><b>fetchatonce</b> - the number of rows to fetch at a time (defaults to 10, 0 means fetch the entire result set).  This is read once, from whichever connection tag the router's own spawned connection process happens to be running with, and then applied to every downstream instance that process routes to.  If a router instance's pool spans more than one connectionid, different sessions on the same router instance can end up using different fetchatonce values against the very same downstream target.</li>
+</ul>
+
+<p>When the router instance starts, it gets the list of databases available from each of the other two instances, and routes to them accordingly.</p>
+
+<p>A sample sqlrsh session follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host localhost -user routeruser -password routerpassword
+sqlrsh - Version 1.1.0
+        Connected to: localhost:9000 as routeruser
+
+        type help; for help.
+
+0> use mydb1;
+0> currentdb;
+mydb1
+0> select * from exampletable;
+col1
+==========================
+this table is in db mydb1
+
+        Rows Returned   : 1
+        Fields Returned : 1
+        Elapsed Time    : 0.001512 sec
+
+0> use mydb2;
+0> currentdb;
+mydb2
+0> select * from exampletable;
+col1
+==========================
+this table is in db mydb2
+
+        Rows Returned   : 1
+        Fields Returned : 1
+        Elapsed Time    : 0.001512 sec
+
+0> use pgdb1;
+0> currentdb;
+pgdb1
+0> select * from exampletable;
+col1
+==========================
+this table is in db pgdb1
+
+        Rows Returned   : 1
+        Fields Returned : 1
+        Elapsed Time    : 0.001344 sec
+
+0>
+</pre>
+
+</blockquote>
+<p>But...  What if two different instances host databases with the same name?  For example, what if your MySQL/MariaDB instance hosts a database named db2, and your PostgreSQL instance also hosts a database named db2?</p>
+
+<p>To resolve situations like this, the <b>usedatabase</b> module enables you to map a database to an alias.  In this example, the db2 database hosted by MySQL/MariaDB is mapped to mydb2, and the db2 database hosted by PostgreSQL is mapped to pgdb2.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+	... MySQL/PostgreSQL instance details omitted ...
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"router"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"router"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+                        	<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"routeruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"routerpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;routers&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"usedatabase"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;map</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"mysqldb"</font> <font color="#009900">db</font><font color="#990000">=</font><font color="#FF0000">"db2"</font> <font color="#009900">alias</font><font color="#990000">=</font><font color="#FF0000">"mydb2"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;map</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"postgresqldb"</font> <font color="#009900">db</font><font color="#990000">=</font><font color="#FF0000">"db3"</font> <font color="#009900">alias</font><font color="#990000">=</font><font color="#FF0000">"pgdb3"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/router&gt;</font></b>
+		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"mysqldb"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/mysqldb.socket;user=mysqldbuser;password=mysqldbpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"postgresqldb"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"socket=/tmp/postgresqldb.socket;user=postgresqldbuser;password=postgresqldbpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>To access the db2 database hosted by MySQL/MariaDB, the user would run:</p>
+
+<blockquote>
+  <pre>use mydb2
+</pre>
+
+</blockquote>
+<p>To access the db2 database hosted by PostgreSQL, the user would run:</p>
+
+<blockquote>
+  <pre>use pgdb2
+</pre>
+
+</blockquote>
+<p>Attempts to "use db2" would fail.</p>
+
+<hr/>
+
+<p><a href="clientinfolist.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="clientinfolist.html">clientinfolist</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="routingquirks.html">Quirks and Limitations</a> <a href="routingquirks.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

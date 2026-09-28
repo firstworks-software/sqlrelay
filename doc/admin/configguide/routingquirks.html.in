@@ -1,0 +1,123 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="usedatabase.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="usedatabase.html">usedatabase</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="customqueries.html">Custom Queries</a> <a href="customqueries.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="routingquirks"/><h1>Quirks and Limitations</h1>
+
+<h3>Query Normalization</h3>
+
+<p>The <b>regex</b> router module matches a query's patterns against the query exactly as the client sent it - the same raw text, in the same case, with whatever whitespace the client used.  It is not normalized or lower-cased first.</p>
+
+<p>So a pattern has to account for whatever case and whitespace the client's queries actually use; "^select ", "^SELECT " and "^Select " are three different patterns.  If a client's case or whitespace can't be relied on, add the <i>normalize</i> query translation module (see <a href="querytranslation.html#querytranslation">Query Translation</a>) ahead of the router, which lower-cases and compresses whitespace in the query the router then sees.  It skips single-quoted string literals, and leaves double-quoted or back-quoted identifiers alone unless its own <i>convertcasedoublequoted</i> or <i>convertcasebackquoted</i> options are set.  It also normalizes the query that's actually run against the database, not just what the router matches against, so it changes what ends up in the database's own query log.</p>
+
+<h3>Perl Compatible Regular Expressions</h3>
+
+<p>SQL Relay is built upon the Rudiments library.  Rudiments can be built with
+or without support for libpcre which provides support for Perl Compatible
+Regular Expressions.  PCRE's are more powerful than standard posix regular
+expressions and have many more operators.</p>
+
+<p>As such, if you copy a configuration file from a machine where Rudiments was
+compiled with PCRE support to a machine where Rudiments wasn't compiled with
+PCRE support, then it's possible that your patterns may not work on the new
+machine.</p>
+
+<p>To make matters worse, sufficiently old versions of the posix regular
+expression functions had fewer operators than modern versions.  So, even if
+Rudiments isn't using PCRE's, it's not impossible that after copying a
+configuration file from a fairly modern OS to an antique, the patterns won't
+work on the antique machine either.</p>
+
+<p>The examples above ought to work with PCRE's and all versions of posix
+regular expressions.</p>
+
+<h3>Selects Not Showing Changes</h3>
+
+<p>In the scenario above where DML/DDL is sent to the master database and
+selects are distributed over slaves, an unintuitive thing can happen.</p>
+
+<p>If you begin a transaction and do several inserts, updates and deletes,
+you'll find that if you do a select, you will not see your changes.  This is
+because in a master-slave configuration, changes to the database are not
+pushed out to the slaves until the changes have been committed.  Since your
+selects are being run against the slaves, you must first commit before your
+changes will be visible.</p>
+
+<h3>Stored Procedures</h3>
+
+<p>It's possible to use stored procedures with SQL Relay's query routing
+feature.  However, since stored procedures are run on the database, SQL Relay
+can't route the individual queries run inside the stored procedure.  So, the
+stored procedure and all queries run inside of it will be run against whichever
+database it was routed to.</p>
+
+<h3>Metadata/Catalog Introspection</h3>
+
+<p>A router-backed instance doesn't implement any of the calls a client uses to list catalogs, schemas, tables, columns, procedures, or keys and indexes (getColumnList(), getTableList(), and similar, in the native client API's).  A client that calls one of them - including sqlrsh's "describe" command, and the metadata calls ODBC and JDBC drivers make - gets a "not implemented" error, rather than being routed to one of the downstream connections.</p>
+
+<p>A router-backed connection also doesn't report some backend-specific feature flags, since which features are actually available depends on which downstream database a given query ends up routed to.  For example, a client speaking the Firebird wire protocol to a router-backed instance won't get the close-and-re-execute handling that the Firebird protocol module otherwise provides for a cursor.</p>
+
+<h3>Parallel Transactions</h3>
+
+<p>Router modules like <b>userlist</b>, <b>clientiplist</b>, and <b>clientinfolist</b>
+route entire sessions to one database or another.  Router modules like
+<b>regex</b> route individual queries.  Behind the scenes, modules which route
+individual queries maintain parallel transactions on each of the databases that
+it is routing queries to, which present the following issues.</p>
+
+<p><b>usedatabase</b> behaves like session routing in practice - once a client selects a database, its queries keep going to that connection - but it doesn't route entire sessions from the moment a client connects the way <b>userlist</b>, <b>clientiplist</b> and <b>clientinfolist</b> do.  Before the client selects a database, its queries are still subject to the parallel-transaction behavior and integrity-violation checks described below.</p>
+
+<p><b>Integrity Violations</b></p>
+
+<p>When the client issues a begin, commit or rollback, the router issues a begin,
+commit or rollback to each of the databases.  Similarly, if the client turns
+auto-commit on or off, the router turns auto-commit on or off on each of the
+databases.</p>
+
+<p>There are scenarios where a commit, rollback or auto-commit on/off command
+could succeed on some of the databases and fail on others.  Some databases
+have a 2-phase commit feature to handle these scenarios.  With 2-phase commit,
+you can roll back a commit until you do second commit.  Many databases don't
+support 2-phase commit though.  At present, SQL Relay doesn't currently support
+2-phase commit for any database.  So, currently, to handle this situation,
+SQL Relay returns an error, disables the instance doing the query routing, and
+raises an integrity_violation event.  If a notification is configured to notify
+a DBA when an integrity_violation is raised, then the DBA will receive an
+email about the problem.  Unfortunately, there is no standard way to solve
+the problem.  The DBA must determine the cause, resolve it manually, and restart
+SQL Relay.</p>
+
+<p><b>Commits and Rollbacks</b></p>
+
+<p>Since queries may be routed to different kinds of databases, the router has
+to employ some tricks to maintain parallel transactions on dissimilar
+databases.  Some databases run in auto-commit mode by default and must be
+issued a "begin" query to start a transaction.  Other databases implicitly
+start a new transaction when a client logs in and after each commit or rollback.
+If any of the databases being routed to require a "begin" query to start a
+transaction, then the ones that don't are put in auto-commit mode when the
+client logs in and after each commit or rollback and are taken out of
+auto-commit mode when the client sends a begin query.  If none of the databases
+being routed to require a "begin" query to start a transaction, then the
+databases are not put in auto-commit mode when the client logs in or after each
+commit or rollback.  Rather, transactions are implicitly started by the
+database.  For example, if your client application is using a router which
+routes queries over both PostgreSQL and Oracle databases, then since
+PostgreSQL requires "begin" queries, you must use a "begin" query to start a
+transaction, even if your app only intends to send queries which would be run
+against Oracle.  Conversely, if your client application is using a router which
+only routes queries over a set of Oracle databases, then you do not have to use
+"begin" queries.</p>
+
+<hr/>
+
+<p><a href="usedatabase.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="usedatabase.html">usedatabase</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="customqueries.html">Custom Queries</a> <a href="customqueries.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

@@ -1,0 +1,122 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=savepoints.html,vertical-align=middle)]] [savepoints.html savepoints] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [upsert.html upsert] [[Image(../../images/navnext.png,link=upsert.html,vertical-align=middle)]]
+
+[=#splitmultiinsert]
+= splitmultiinsert =
+
+The splitmultiinsert module splits each multi-row insert query into a set of individual insert queries.
+
+This is useful when using the [replay.html#replay replay] module, if your application does multi-row inserts into tables with auto-increment columns.  See [replay.html#replayautoinc replay - Auto-Increment Columns] above for details.  This module can, of course, be used without the replay module, but the typical use case is to use the two of them together.
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-splitmultiinsert.conf@
+}}}
+}}}
+
+In this example...
+
+The splitmultiinsert trigger is configured to run before the query has been executed.  This is the only valid configuration for the splitmultiinsert trigger.  If when="afterExecute" is set then the trigger will be ignored.
+
+The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.
+
+Note that the normalize translation is also configured.  This helps the splitmultiinsert and replay triggers parse and rewrite queries more accurately.
+
+In this configuration, if a //students// table exists like:
+
+{{{#!blockquote
+{{{#!code
+create table students (
+	id int primary key auto_increment,
+	firstname varchar2(128) not null,
+	lastname varchar2(128) not null,
+	major varchar2(128)
+)
+}}}
+}}}
+
+...and the following multi-row insert was performed:
+
+{{{#!blockquote
+{{{#!code
+insert into
+	students (firstname,lastname,major)
+values
+	('Richard','Muse','Mechanical Engineering'),
+	('David','Muse','Computer Science')
+}}}
+}}}
+
+...then it would be split into the following two individual inserts:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values ('Richard','Muse','Mechanical Engineering')
+insert into students (firstname,lastname,major) values ('David','Muse','Computer Science')
+}}}
+}}}
+
+The replay module would then be able to fetch the last-insert-id for each, and rewrite them, for replay, as:
+
+{{{#!blockquote
+{{{#!code
+insert into students (id,firstname,lastname,major) values (1,'Richard','Muse','Mechanical Engineering')
+insert into students (id,firstname,lastname,major) values (2,'David','Muse','Computer Science')
+}}}
+}}}
+
+
+=== Considerations ===
+
+The splitmultiinsert trigger imposes a performance penalty.  Not only is there work involved in splitting the original query, but also, a set of individual inserts runs more slowly than a single multi-row insert.
+
+The splitmultiinsert trigger also, currently, struggles with bind variables that are split across rows in the multi-insert query.
+
+For example, consider a multi-row insert like the following:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values (:1,:2,:3),(:4,:2,:3)
+}}}
+}}}
+
+With the following bind variables:
+
+{{{#!blockquote
+{{{#!code
+1 - "David"
+2 - "Muse"
+3 - "Computer Science"
+4 - "Richard"
+}}}
+}}}
+
+Variables 2 and 3 apply to both rows, but variable 1 only applies to the first row and variable 4 only applies to the second row.
+
+This query would be split into:
+
+{{{#!blockquote
+{{{#!code
+insert into students (firstname,lastname,major) values (:1,:2,:3)
+insert into students (firstname,lastname,major) values (:4,:2,:3)
+}}}
+}}}
+
+But, currently, all 4 bind variables would be bound when executing both queries.  This causes problems for most databases, as most databases refuse to execute queries with superfluous bind variables.
+
+This will be remedied in the future, but is currently a shortcoming of this module.
+
+----
+
+[[Image(../../images/navprev.png,link=savepoints.html,vertical-align=middle)]] [savepoints.html savepoints] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [upsert.html upsert] [[Image(../../images/navnext.png,link=upsert.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}
