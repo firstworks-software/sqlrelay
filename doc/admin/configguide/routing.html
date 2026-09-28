@@ -137,18 +137,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="routingquirks"/><h3>Quirks and Limitations</h3>
 
-<h4>Selects Not Showing Changes</h4>
-
-<p>In the scenario above where DML/DDL is sent to the master database and
-selects are distributed over slaves, an unintuitive thing can happen.</p>
-
-<p>If you begin a transaction and do several inserts, updates and deletes,
-you'll find that if you do a select, you will not see your changes.  This is
-because in a master-slave configuration, changes to the database are not
-pushed out to the slaves until the changes have been committed.  Since your
-selects are being run against the slaves, you must first commit before your
-changes will be visible.</p>
-
 <h4>Stored Procedures</h4>
 
 <p>It's possible to use stored procedures with SQL Relay's query routing
