@@ -1,0 +1,51 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]
+
+[[br]][=#filterstring]
+= string =
+
+The '''string''' module matches the query against a specified string pattern.  If the query matches, then it is filtered out.  This module is useful if you need to do a quick match without the complexity of regular expressions or of the patterns module.
+
+In addition to the module attribute, each filter tag may contain the following attributes.
+
+* '''pattern''' - Required.  The pattern to match.
+* '''ignorecase''' - Optional.  Defaults to "no".  If set to "yes" then the comparison is case insensitive.
+* '''errornumber''' - Optional.  Defaults to 0.  The error number to return to the client if the query matches this filter.
+* '''error''' - Optional.  Defaults to an empty string.  The error string to return to the client if the query matches this filter.
+
+For example, with the following configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-filters-string.conf@
+}}}
+}}}
+
+This query would be filtered out:
+
+{{{#!blockquote
+{{{#!code
+@parts/string-filtered.sql@
+}}}
+}}}
+
+But this query would not be:
+
+{{{#!blockquote
+{{{#!code
+@parts/string-notfiltered.sql@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

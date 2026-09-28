@@ -44,6 +44,10 @@ SRCS = index.wt \
 	highavailability.wt \
 	security.wt \
 	cron_userlist.wt \
+	filterpatterns.wt \
+	filterregex.wt \
+	filterstring.wt \
+	filtertag.wt \
 	datatranslation.wt \
 	queryparsing.wt \
 	querytranslation.wt \
@@ -132,6 +136,10 @@ INS = index.html.in \
 	highavailability.html.in \
 	security.html.in \
 	cron_userlist.html.in \
+	filterpatterns.html.in \
+	filterregex.html.in \
+	filterstring.html.in \
+	filtertag.html.in \
 	datatranslation.html.in \
 	queryparsing.html.in \
 	querytranslation.html.in \
@@ -222,6 +230,10 @@ WTOBJS = index.html.in \
 	highavailability.html.in \
 	security.html.in \
 	cron_userlist.html.in \
+	filterpatterns.html.in \
+	filterregex.html.in \
+	filterstring.html.in \
+	filtertag.html.in \
 	datatranslation.html.in \
 	queryparsing.html.in \
 	querytranslation.html.in \
@@ -310,6 +322,10 @@ OBJS = index.html \
 	highavailability.html \
 	security.html \
 	cron_userlist.html \
+	filterpatterns.html \
+	filterregex.html \
+	filterstring.html \
+	filtertag.html \
 	datatranslation.html \
 	queryparsing.html \
 	querytranslation.html \

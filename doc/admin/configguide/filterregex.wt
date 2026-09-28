@@ -1,0 +1,50 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=filterpatterns.html,vertical-align=middle)]] [filterpatterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterstring.html string] [[Image(../../images/navnext.png,link=filterstring.html,vertical-align=middle)]]
+
+[[br]][=#filterregex]
+= regex =
+
+The '''regex''' module matches the query against a specified regular expression pattern.  If the query matches, then it is filtered out.  This module is useful if you need to do a quick match, without the complexity of the patterns module.
+
+In addition to the module attribute, each filter tag may contain the following attributes.
+
+* '''pattern''' - Required.  The pattern to match.
+* '''errornumber''' - Optional.  Defaults to 0.  The error number to return to the client if the query matches this filter.
+* '''error''' - Optional.  Defaults to an empty string.  The error string to return to the client if the query matches this filter.
+
+For example, with the following configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-filters-regex-normalize.conf@
+}}}
+}}}
+
+This query would be filtered out:
+
+{{{#!blockquote
+{{{#!code
+@parts/regex-filtered.sql@
+}}}
+}}}
+
+But this query would not be:
+
+{{{#!blockquote
+{{{#!code
+@parts/regex-notfiltered.sql@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=filterpatterns.html,vertical-align=middle)]] [filterpatterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterstring.html string] [[Image(../../images/navnext.png,link=filterstring.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

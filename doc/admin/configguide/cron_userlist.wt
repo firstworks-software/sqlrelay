@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
 
 [[br]][=#cron_userlist]
 = cron_userlist =
@@ -154,7 +154,7 @@ In general, the module works as follows:
 
 ----
 
-[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

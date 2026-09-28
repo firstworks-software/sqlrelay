@@ -1,0 +1,55 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="filterstring.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="filterstring.html">string</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="datatranslation.html">Data Translation</a> <a href="datatranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="filtertag"/><h1>tag</h1>
+
+<p>The <b>tag</b> module matches queries in the same manner as the <a href="filterpatterns.html#filterpatterns">patterns</a> module described above, and is configured similarly:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;moduledatas&gt;</font></b>
+			<b><font color="#0000FF">&lt;moduledata</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"tag"</font> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"tags"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/moduledatas&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;filters&gt;</font></b>
+			<b><font color="#0000FF">&lt;filter</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"tag"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^(create)"</font> <font color="#009900">tag</font><font color="#990000">=</font><font color="#FF0000">"create or drop query"</font> <font color="#009900">moduledataid</font><font color="#990000">=</font><font color="#FF0000">"tags"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"^(drop)"</font> <font color="#009900">tag</font><font color="#990000">=</font><font color="#FF0000">"create or drop query"</font> <font color="#009900">moduledataid</font><font color="#990000">=</font><font color="#FF0000">"tags"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"cistring"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"hugetable"</font> <font color="#009900">tag</font><font color="#990000">=</font><font color="#FF0000">"hugetable query"</font> <font color="#009900">moduledataid</font><font color="#990000">=</font><font color="#FF0000">"tags"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">pattern</font><font color="#990000">=</font><font color="#FF0000">"badstring"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font> <font color="#009900">tag</font><font color="#990000">=</font><font color="#FF0000">"contains badstring"</font> <font color="#009900">moduledataid</font><font color="#990000">=</font><font color="#FF0000">"tags"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/filter&gt;</font></b>
+		<b><font color="#0000FF">&lt;/filters&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Note the moduledata tag defined prior to the filters tag.  Moduledata modules basically allow one module to pass data to another.  See <a href="moduledata.html#moduledata">Module Data</a> for more details.  The tag filter module interoperates with the tag moduledata module and requires an instance of it to work.</p>
+
+<p>In the tag module, if the query matches the pattern, then instead of filtering it out so that it isn't executed, the query is "tagged" with the value specified in the <b>tag</b> attribute in the instance of moduledata specified by the <b>moduledataid</b> attribute.  Other modules (translation modules, for example) could then query the specified moduledata for the presence or absence of this value, and act accordingly.</p>
+
+<p>Currently, no open source modules make use of the tag filter/moduledata module,  however custom modules may be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
+
+<hr/>
+
+<p><a href="filterstring.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="filterstring.html">string</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="datatranslation.html">Data Translation</a> <a href="datatranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

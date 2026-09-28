@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=filtertag.html,vertical-align=middle)]] [filtertag.html tag] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
 
 [[br]][=#translation]
 = Data Translation =
@@ -23,7 +23,7 @@ SQL Relay offers features for parsing and translating queries, and translating r
 
 ----
 
-[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=filtertag.html,vertical-align=middle)]] [filtertag.html tag] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

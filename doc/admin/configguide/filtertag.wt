@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=filterstring.html,vertical-align=middle)]] [filterstring.html string] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+
+[[br]][=#filtertag]
+= tag =
+
+The '''tag''' module matches queries in the same manner as the [filterpatterns.html#filterpatterns patterns] module described above, and is configured similarly:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tag.conf@
+}}}
+}}}
+
+Note the moduledata tag defined prior to the filters tag.  Moduledata modules basically allow one module to pass data to another.  See [moduledata.html#moduledata Module Data] for more details.  The tag filter module interoperates with the tag moduledata module and requires an instance of it to work.
+
+In the tag module, if the query matches the pattern, then instead of filtering it out so that it isn't executed, the query is "tagged" with the value specified in the '''tag''' attribute in the instance of moduledata specified by the '''moduledataid''' attribute.  Other modules (translation modules, for example) could then query the specified moduledata for the presence or absence of this value, and act accordingly.
+
+Currently, no open source modules make use of the tag filter/moduledata module,  however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=filterstring.html,vertical-align=middle)]] [filterstring.html string] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

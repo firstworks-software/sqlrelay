@@ -1,0 +1,52 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]
+
+[[br]][=#filterpatterns]
+= patterns =
+
+The '''patterns''' module matches the query against a specified set of patterns.  Each pattern may be a string, case-insensitive string, or regular expression.  Each pattern may also be matched against the entire query, only the parts of the query that are outside of quotes, or only the parts of the query that are contained within quotes.  If the query matches, then it is filtered out.
+
+The list of patterns is given by a set of '''pattern''' child tags.  Each pattern tag may contain the following attributes.
+
+* '''pattern''' - Required.  The pattern to match.
+* '''type''' - Optional.  Defaults to "string".  Valid values are "string", "cistring" (case insensitive string), and "regex" (regular expression).
+* '''scope''' - Optional.  Defaults to "query".  Valid values are "query" (attempt to match against the entire query), "outsidequotes" (only match parts of the query not surrounded by single-quotes), and "insidequotes" (only match parts of the query surrounded by single-quotes).
+* '''errornumber''' - Optional.  Defaults to 0.  The error number to return to the client if the query matches this filter.
+* '''error''' - Optional.  Defaults to an empty string.  The error string to return to the client if the query matches this filter.
+
+For example, with the following configuration...
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-filters-patterns.conf@
+}}}
+}}}
+
+These queries would be filtered out:
+
+{{{#!blockquote
+{{{#!code
+@parts/patterns-filtered.sql@
+}}}
+}}}
+
+But these queries would not be:
+
+{{{#!blockquote
+{{{#!code
+@parts/patterns-notfiltered.sql@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}
