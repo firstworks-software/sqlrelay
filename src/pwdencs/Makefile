@@ -14,6 +14,7 @@ all: $(SQLR)pwdenc_rot.$(LIBEXT) \
 	$(SQLR)pwdenc_md5.$(LIBEXT) \
 	$(SQLR)pwdenc_sha1.$(LIBEXT) \
 	$(SQLR)pwdenc_sha256.$(LIBEXT) \
+	$(SQLR)pwdenc_sha512.$(LIBEXT) \
 	$(SQLR)pwdenc_des.$(LIBEXT) \
 	$(SQLR)pwdenc_aes128.$(LIBEXT)
 
@@ -36,6 +37,9 @@ $(SQLR)pwdenc_sha1.$(LIBEXT): sha1.cpp sha1.$(OBJ)
 $(SQLR)pwdenc_sha256.$(LIBEXT): sha256.cpp sha256.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ sha256.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)pwdenc_sha512.$(LIBEXT): sha512.cpp sha512.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ sha512.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
+
 $(SQLR)pwdenc_des.$(LIBEXT): des.cpp des.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ des.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
 
@@ -48,6 +52,7 @@ installdll: installdll-rot \
 		installdll-md5 \
 		installdll-sha1 \
 		installdll-sha256 \
+		installdll-sha512 \
 		installdll-des \
 		installdll-aes128
 
@@ -67,6 +72,10 @@ installdll-sha256:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)pwdenc_sha256.$(LIBEXT) $(libexecdir)
 
+installdll-sha512:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)pwdenc_sha512.$(LIBEXT) $(libexecdir)
+
 installdll-des:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)pwdenc_des.$(LIBEXT) $(libexecdir)
@@ -81,6 +90,7 @@ installsharedlib: installsharedlib-rot \
 		installsharedlib-md5 \
 		installsharedlib-sha1 \
 		installsharedlib-sha256 \
+		installsharedlib-sha512 \
 		installsharedlib-des \
 		installsharedlib-aes128
 
@@ -112,6 +122,13 @@ installsharedlib-sha256:
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_sha256.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)pwdenc_sha256.so so $(MODULESUFFIX)
 
+installsharedlib-sha512:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)pwdenc_sha512.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_sha512.a
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_sha512.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)pwdenc_sha512.so so $(MODULESUFFIX)
+
 installsharedlib-des:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)pwdenc_des.$(LIBEXT) $(libexecdir)
@@ -130,6 +147,7 @@ uninstall: uninstall-rot \
 		uninstall-md5 \
 		uninstall-sha1 \
 		uninstall-sha256 \
+		uninstall-sha512 \
 		uninstall-des \
 		uninstall-aes128
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_crypt.* \
@@ -150,6 +168,9 @@ uninstall-sha1:
 
 uninstall-sha256:
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_sha256.*
+
+uninstall-sha512:
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_sha512.*
 
 uninstall-des:
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_des.*
