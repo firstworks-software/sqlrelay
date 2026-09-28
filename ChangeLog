@@ -2968,6 +2968,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pool runs out
 - fixed a crash loading an instance config with no auths and no
   connections (affected sqlr-pwdenc and sqlrsh)
+- fixed the sha256 pwdenc doc example being mislabeled as sha1
 
 ### Security
 - fixed an authentication hole in the des password encryption module
