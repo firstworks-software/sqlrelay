@@ -2262,6 +2262,8 @@ bool sqlrprotocol_mysql::sendOkPacket(bool noteof,
 					const char *sessionstatechangedata) {
 
 	// update statusflags
+	// FIXME: getInTransaction() is only an approximation.  it's true
+	// whenever autocommit is off, and it misses implicit commits.
 	if (cont->getInTransaction()) {
 		statusflags|=SERVER_STATUS_IN_TRANS;
 	} else {
@@ -2383,6 +2385,8 @@ bool sqlrprotocol_mysql::sendEofPacket(uint16_t warnings,
 	resetSendPacketBuffer();
 
 	// update statusflags
+	// FIXME: getInTransaction() is only an approximation - see
+	// sendOkPacket()
 	if (cont->getInTransaction()) {
 		statusflags|=SERVER_STATUS_IN_TRANS;
 	} else {

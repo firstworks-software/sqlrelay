@@ -2487,6 +2487,11 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 		// session follow different rules for it, most visibly for when
 		// 4 clears - see updateOci7CallStatus() and
 		// updateQuery3CallStatus()
+		//
+		// FIXME: this is only an approximation.  pl/sql blocks,
+		// implicit commits, and non-oracle backends aren't tracked
+		// correctly.  this logic belongs in the controller and
+		// connection modules, not here.
 		uint32_t	callstatus;
 
 		// the wire cursor id of the last incoming request that named one
