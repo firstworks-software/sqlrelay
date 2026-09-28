@@ -9,7 +9,7 @@
 [=#basic]
 = Basic Configuration =
 
-The example above may be sufficient for many use cases, but SQL Relay has many configuration options.  For a production deployment, you will alomst certainly want to configure it further.
+The minimal example in [quickstart.html#quick Quick Start] may be sufficient for many use cases, but SQL Relay has many configuration options.  For a production deployment, you will alomst certainly want to configure it further.
 
 
 [[br]][=#modules]
