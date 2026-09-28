@@ -43,6 +43,7 @@ SRCS = index.wt \
 	multipleprotocols.wt \
 	highavailability.wt \
 	security.wt \
+	cron_userlist.wt \
 	datatranslation.wt \
 	queryparsing.wt \
 	querytranslation.wt \
@@ -129,6 +130,7 @@ INS = index.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
+	cron_userlist.html.in \
 	datatranslation.html.in \
 	queryparsing.html.in \
 	querytranslation.html.in \
@@ -217,6 +219,7 @@ WTOBJS = index.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
+	cron_userlist.html.in \
 	datatranslation.html.in \
 	queryparsing.html.in \
 	querytranslation.html.in \
@@ -303,6 +306,7 @@ OBJS = index.html \
 	multipleprotocols.html \
 	highavailability.html \
 	security.html \
+	cron_userlist.html \
 	datatranslation.html \
 	queryparsing.html \
 	querytranslation.html \

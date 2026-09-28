@@ -1,0 +1,161 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+
+[[br]][=#cron_userlist]
+= cron_userlist =
+
+The '''cron_userlist''' module enables you to define a connection schedule for a list of users, using a cron-like syntax.
+
+'''Note though, that the time-and-date fields have different meanings from traditional cron.'''
+
+An example configuration follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-schedules-cron-deny.conf@
+}}}
+}}}
+
+In this example, the module denies access to all users by default, but then allows access to the dmuse, kmuse, imuse, and smuse users during business hours.  In this case, business hours are defined as:
+
+* every year
+* every month
+* every day of the month
+* between days 2-5 (Monday-Friday) of the week
+* between 8:00AM and 11:59AM and 1:00PM and 4:59PM
+
+Another example configuration follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-schedules-cron-allow.conf@
+}}}
+}}}
+
+In this example, the module allows access to all users by default, but then denies access to the dmuse, kmuse, imuse, and smuse users during non-business hours.  In this case, non-business hours are defined as:
+
+* every year
+* every month
+* every day of the month
+* between days 2-5 (Monday-Friday) of the week
+ * between 12:00AM and 7:59AM
+ * between 12:00PM and 12:59PM
+ * between 5:00PM and 11:59PM
+* on days 1 and 7 (Saturday and Sunday) of the week, at all hours
+
+The '''users''' tag defines a list of users to apply the schedule to.  It may contain any number of '''user''' tags.
+
+The '''user''' tags support the following attributes:
+
+* '''user''' - the name of a user or * meaning "all users"
+
+If a user does not appear in this list then it is granted access at any time.  If a user appears in the list then the schedule will be applied to that user.
+
+The '''default''' attribute of the '''schedule''' tag defines the default rule.
+
+* '''allow''' - allow access to the list of users unless they are denied access by the set of rules
+* '''deny''' - deny access to the list of users unless they are allowed access by the set of rules
+
+The '''rules''' tag defines the list of rules that modify the default behavior.  It may contain '''allow''' or '''deny''' tags.
+
+The '''allow''' and '''deny''' tags support the following attributes:
+
+* '''when''' - the years, months, days of month, days of week, and times of day that the rule applies to
+
+The format of the '''when''' attribute is cron-like.  There are 5 fields, separated by spaces.
+
+'''Note again though, that the time-and-date fields have different meanings from traditional cron.'''
+
+The fields represent, in order:
+
+* years
+* months (where 1=January)
+* days of the month
+* days of the week (where 1=Sunday)
+* times of day, in 24-hour format
+
+In each field, ranges may be specified with a dash, and sets may be separated by commas.  A * means "all possible values".
+
+For example:
+
+All day, every day, at any time of day:
+
+{{{#!blockquote
+{{{
+* * * * *
+}}}
+}}}
+
+All day, every month, on the 1st, 3rd through 5th, 8th, and 10th through 12th of the month:
+
+{{{#!blockquote
+{{{
+* * 1,3-5,8,10-12 * *
+}}}
+}}}
+
+Every day from 8:00AM through 11:59AM and 1:00PM through 4:59PM:
+
+{{{#!blockquote
+{{{
+* * * * 8:00-11:59,13:00-16:59
+}}}
+}}}
+
+Every day from 1:00PM to 4:00PM:
+
+{{{#!blockquote
+{{{
+* * * * 13:00-16:00
+}}}
+}}}
+
+All day, every Saturday:
+
+{{{#!blockquote
+{{{
+* * * 6 *
+}}}
+}}}
+
+All day, every day, in February and March:
+
+{{{#!blockquote
+{{{
+* 2,3 * * *
+}}}
+}}}
+
+Every day in February and March, from noon to 3PM:
+
+{{{#!blockquote
+{{{
+* 2,3 * * 12:00-15:00
+}}}
+}}}
+
+...and so on.
+
+In general, the module works as follows:
+
+* When a user connects, the module looks for the user in the list of users.
+ * If the user is not found then access is granted.
+ * If the user is found, then the default rule is applied.
+  * Each rule in the rules list is evaluated.
+   * If the rule doesn't apply to the current time, then it is ignored.
+   * If the rule does apply to the current time, then it is applied.
+    * Each rule may reverse the outcome the previous rules.
+  * When all rules have been applied, the user will have been allowed or denied access.
+
+----
+
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

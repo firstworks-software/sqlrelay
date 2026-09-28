@@ -210,7 +210,7 @@
 
     <li><a href="security.html#schedules">Connection Schedules</a></li>
     <ul>
-      <li><a href="security.html#cron_userlist">cron_userlist</a></li>
+      <li><a href="cron_userlist.html#cron_userlist">cron_userlist</a></li>
     </ul>
 
     <li><a href="security.html#filtering">Query Filtering</a></li>
