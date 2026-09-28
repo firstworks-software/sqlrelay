@@ -11,14 +11,6 @@
 
 The minimal example in [quickstart.html#quick Quick Start] may be sufficient for many use cases, but SQL Relay has many configuration options.  For a production deployment, you will alomst certainly want to configure it further.
 
-
-[[br]][=#modules]
-== Modules ==
-
-The SQL Relay server is highly modular.  Configuring it largely consists of telling it which modules to load, and which options to use for each module.  There are database connection modules, protocol modules, authentication modules, modules related to security, data translation modules, logging and notification modules, and others.
-
-The module that you'll most likely need to configure first is a database connection module.
-
 * [databaseconfiguration.html#database Database Configuration]
 * [databaseconnectioncount.html#dbconnections Database Connection Count]
 * [databasecursorcount.html#dbcursors Database Cursor Count]

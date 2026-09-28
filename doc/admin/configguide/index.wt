@@ -12,7 +12,6 @@ This guide is split across the pages listed below - start with Quick Start for a
 
 * [quickstart.html#quick Quick Start]
 * [basicconfiguration.html#basic Basic Configuration]
- * [basicconfiguration.html#modules Modules]
  * [databaseconfiguration.html#database Database Configuration]
   * [oracleconfiguration.html#db-oracle Oracle]
   * [mssqlodbcconfiguration.html#db-mssql-odbc Microsoft SQL Server (via ODBC)]
