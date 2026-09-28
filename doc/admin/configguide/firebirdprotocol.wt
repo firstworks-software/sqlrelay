@@ -130,12 +130,12 @@ Lowering the maximum below 13 turns off the plugin-based login.  Clients log in 
 [=#firebirdauth]
 == Authentication/Encryption Options ==
 
-When using the Firebird protocol, there is currently only one option for controlling which users are allowed to access an instance of SQL Relay.  As with the TDS protocol, there is no //user list// or //database// auth module for the Firebird protocol.
+When using the Firebird protocol, there are two options for controlling which users are allowed to access an instance of SQL Relay.  There is no //database// auth module for the Firebird protocol.
 
 [=#firebirdconnectstringsauth]
 == Connect Strings Auth ==
 
-The default, and only, authentication option is //connect strings// auth.
+The default authentication option is //connect strings// auth.
 
 When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
 
@@ -152,6 +152,25 @@ Though it is not necessary, it is possible to explicitly configure SQL Relay to 
 @parts/sqlrelay-firebirdconnectstrings.conf@
 }}}
 }}}
+
+[=#firebirduserlistauth]
+== User List Auth ==
+
+Another popular authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfeuserlistmultiple.conf@
+}}}
+}}}
+
+When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
+
+The //firebird_userlist// module answers each login method - Srp256, Srp, and Legacy_Auth - the same way //firebird_connectstrings// does, deriving what the method needs from the configured password rather than from the connect string.  The same account-name and one-way-password-encryption rules described in [#firebirdconnectstringsauth Connect Strings Auth] above apply here too: testuser, !TestUser and TESTUSER are all the same user, and a password stored with a one-way password encryption module can't be used with any of the three methods.
 
 [=#firebirdwirecrypt]
 == Wire Encryption ==

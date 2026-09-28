@@ -234,11 +234,11 @@ http://www.gnu.org/software/src-highlite -->
 
 <a name="firebirdauth"/><h2>Authentication/Encryption Options</h2>
 
-<p>When using the Firebird protocol, there is currently only one option for controlling which users are allowed to access an instance of SQL Relay.  As with the TDS protocol, there is no <i>user list</i> or <i>database</i> auth module for the Firebird protocol.</p>
+<p>When using the Firebird protocol, there are two options for controlling which users are allowed to access an instance of SQL Relay.  There is no <i>database</i> auth module for the Firebird protocol.</p>
 
 <a name="firebirdconnectstringsauth"/><h2>Connect Strings Auth</h2>
 
-<p>The default, and only, authentication option is <i>connect strings</i> auth.</p>
+<p>The default authentication option is <i>connect strings</i> auth.</p>
 
 <p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
 
@@ -272,6 +272,44 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<a name="firebirduserlistauth"/><h2>User List Auth</h2>
+
+<p>Another popular authentication option is <i>user list</i> auth.</p>
+
+<p>When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.</p>
+
+<p>To enable user list auth, you must provide a list of user/password combinations, as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3050"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"firebird_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"oneuser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"onepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"anotheruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"anotherpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"yetanotheruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"yetanotherpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=firebirduser;password=firebirdpassword;db=firebirdhost:/opt/firebird/firebirddb.gdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.</p>
+
+<p>The <i>firebird_userlist</i> module answers each login method - Srp256, Srp, and Legacy_Auth - the same way <i>firebird_connectstrings</i> does, deriving what the method needs from the configured password rather than from the connect string.  The same account-name and one-way-password-encryption rules described in <a href="#firebirdconnectstringsauth">Connect Strings Auth</a> above apply here too: testuser, TestUser and TESTUSER are all the same user, and a password stored with a one-way password encryption module can't be used with any of the three methods.</p>
+
 <a name="firebirdwirecrypt"/><h2>Wire Encryption</h2>
 
 <p>Firebird 3 and later encrypt the traffic between client and server with their own wire encryption, rather than with TLS/SSL, and the Firebird protocol module does the same.  The encryption is negotiated during login, and is keyed from the login itself, so no certificate is involved.</p>

@@ -83,6 +83,7 @@ This guide is split across the pages listed below - start with Quick Start for a
   * [firebirdprotocol.html#firebirdprotocolversion Protocol Version]
   * [firebirdprotocol.html#firebirdauth Authentication/Encryption Options]
    * [firebirdprotocol.html#firebirdconnectstringsauth Connect Strings Auth]
+   * [firebirdprotocol.html#firebirduserlistauth User List Auth]
    * [firebirdprotocol.html#firebirdwirecrypt Wire Encryption]
   * [firebirdprotocol.html#firebirdforeignbackend Foreign Backend]
   * [firebirdprotocol.html#firebirdlimitations Limitations]

@@ -114,6 +114,7 @@
       <li><a href="firebirdprotocol.html#firebirdauth">Authentication/Encryption Options</a></li>
       <ul>
         <li><a href="firebirdprotocol.html#firebirdconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="firebirdprotocol.html#firebirduserlistauth">User List Auth</a></li>
         <li><a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a></li>
       </ul>
 
