@@ -205,6 +205,8 @@
       <li><a href="security.html#sha512">sha512</a></li>
       <li><a href="security.html#des">des</a></li>
       <li><a href="security.html#aes128">aes128</a></li>
+      <li><a href="security.html#aes192">aes192</a></li>
+      <li><a href="security.html#aes256">aes256</a></li>
     </ul>
 
     <li><a href="security.html#schedules">Connection Schedules</a></li>
