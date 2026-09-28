@@ -70,10 +70,17 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>At startup, the SQL Relay server creates instances of the specified router modules and initializes them.  When the client sends a query to the SQL Relay server, the server consults each router module, in the order that they were specified in the config file.  Each module applies its routing rules to determine which connection to run the query on.  If a module returns a connection then the remaining modules are ignored.  If the query makes it through all modules without being routed to a particular connection, then the query is ignored.</p>
 
-<p>Currently, the following router modules are available in the standard SQL Relay distribution:</p>
+<p>Currently, the following router modules are available in the standard SQL Relay distribution, grouped by whether they route individual queries or entire sessions:</p>
+
+<p><b>Query Routing Modules</b></p>
 
 <ul>
   <li><a href="regex.html#regex">regex</a></li>
+</ul>
+
+<p><b>Session Routing Modules</b></p>
+
+<ul>
   <li><a href="userlist.html#userlist">userlist</a></li>
   <li><a href="clientiplist.html#clientiplist">clientiplist</a></li>
   <li><a href="clientinfolist.html#clientinfolist">clientinfolist</a></li>
