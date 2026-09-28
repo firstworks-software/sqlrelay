@@ -59,6 +59,14 @@ Most of `src/` is discoverable by listing it (one directory per module type: aut
 - `doc/` - the project website; not generated from source comments.
 - `init/`, `bin/` - configure-generated (systemd/rc/launchd files; pkg-config-style helper scripts).
 
+## Website (doc/)
+
+`doc/` is hand-built with a sibling firstworks tool called `wt` (source at `../wikitext`, installed at `/usr/local/firstworks/bin/wt`), not from source comments. Each `*.wt` page compiles to `*.html.in` (`wt -i x.wt -o x.html.in`), then `ssi.sh` resolves its Apache-style SSI includes into the final `*.html`.
+
+- **Every wt-built subdirectory needs its own build plumbing.** `admin/`, `programming/`, `features/`, `gettingstarted/`, and `admin/configguide/` each have their own Makefile plus local copies of `header.html.in`/`footer.html`/`projectheader.html`, with every shared-asset path (`title.html`, `css/style.css`, `images/`, etc.) adjusted for that directory's depth from `doc/`. Nothing is inherited or auto-discovered: a parent directory's Makefile must be given an explicit `cd subdir $(AND) $(MAKE)` line to recurse into a new subdirectory, and the top-level `doc/Makefile`'s `install` target needs its own `$(MKINSTALLDIRS)`/`$(CP)`/`$(CHMOD)` lines added for it too.
+- **wt markup worth knowing**: `@parts/foo.conf@` inlines a file's contents relative to the current directory at build time - if the file is missing, wt silently leaves the literal `@parts/foo.conf@` text in the output instead of erroring, so a moved or renamed `parts/` file can go unnoticed without checking the built HTML. `[=#anchor]` defines an anchor; `[#anchor text]` links to one on the same page; `[page.html#anchor text]` links across pages. `[[Image(path,options)]]` embeds an image - `nolink` suppresses the default self-link, `link=url` links it elsewhere, other `key=value` pairs pass through as inline CSS.
+- **Known wt quirk**: it auto-links bare CamelCase words like "PostgreSQL" or "MySQL" into a dead `href` pointing at the literal word. A link checker over built HTML will flag these; they're cosmetic and long predate any given change, not something to chase down.
+
 ## Tests
 
 `make tests` runs everything enabled by configure. Tests live under `test/` and run against real databases via a live sqlr instance the harness starts and stops (no mocking).
