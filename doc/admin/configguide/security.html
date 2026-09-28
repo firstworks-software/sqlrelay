@@ -1003,6 +1003,74 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note that multiple runs of sqlr-pwdenc with the same key and password will generate different results each time.  This is the correct behavior.  The first 128 bits (16 bytes) of the encrypted password are the "initialization vector" - a randomly generated string used in conjunction with the key to encrypt/decrypt the password.  This vector is generated each time sqlr-pwdenc is run.  Successive runs of sqlr-pwdenc generate different initialization vectors, and thus different encrypted passwords.</p>
 
+<br/><a name="aes192"/><h3>aes192</h3>
+
+<p>The <b>aes192</b> module is a two-way encryption module that performs AES192 (CBC) encryption/decryption.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;passwordencryptions&gt;</font></b>
+			<b><font color="#0000FF">&lt;passwordencryption</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"aes192"</font> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"aes192enc"</font> <font color="#009900">key</font><font color="#990000">=</font><font color="#FF0000">"000102030405060708090a0b0c0d0e0f1011121314151617"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/passwordencryptions&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"1dbdbd6e27d31b603c340e2c19e9ca9b09662e41b1f8fb23799af3f407be9da9"</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"aes192enc"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"db"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=oracleuser;password=344204e6dab4cd8e64d1003e222aa5d4b657ed34919f25cd97a9b663692dfe50;..."</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"aes192enc"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Since the aes192 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.</p>
+
+<p>The key attribute of the passwordencryption element contains a hexidecimal representation of the 192 bit (24 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.</p>
+
+<p>As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.</p>
+
+<br/><a name="aes256"/><h3>aes256</h3>
+
+<p>The <b>aes256</b> module is a two-way encryption module that performs AES256 (CBC) encryption/decryption.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;passwordencryptions&gt;</font></b>
+			<b><font color="#0000FF">&lt;passwordencryption</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"aes256"</font> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"aes256enc"</font> <font color="#009900">key</font><font color="#990000">=</font><font color="#FF0000">"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/passwordencryptions&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"537001d4b8a1015193b7121c432c9984b2f20515a6e7eb6afed814dae048c465"</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"aes256enc"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"db"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=oracleuser;password=7499bf233960e024921d05bea214f3b4c1c05d61c9d086a46ccf52ee2ca7eed3;..."</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"aes256enc"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Since the aes256 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.</p>
+
+<p>The key attribute of the passwordencryption element contains a hexidecimal representation of the 256 bit (32 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.</p>
+
+<p>As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.</p>
+
 <br/><a name="schedules"/><h2>Connection Schedules</h2>
 
 <p>Connection schedules enable the SQL Relay server to control when users are allowed to access the database.</p>

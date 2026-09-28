@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- added the aes192 and aes256 password encryption modules
 - added per-module install/uninstall targets throughout the tree
 - added sqlrsh json/jsonl output, full command/option coverage of the
   client apis, -continueonerror, -fieldsas, and distinct exit

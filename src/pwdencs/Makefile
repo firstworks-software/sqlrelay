@@ -16,7 +16,9 @@ all: $(SQLR)pwdenc_rot.$(LIBEXT) \
 	$(SQLR)pwdenc_sha256.$(LIBEXT) \
 	$(SQLR)pwdenc_sha512.$(LIBEXT) \
 	$(SQLR)pwdenc_des.$(LIBEXT) \
-	$(SQLR)pwdenc_aes128.$(LIBEXT)
+	$(SQLR)pwdenc_aes128.$(LIBEXT) \
+	$(SQLR)pwdenc_aes192.$(LIBEXT) \
+	$(SQLR)pwdenc_aes256.$(LIBEXT)
 
 clean:
 	$(RM) *.lo *.o *.obj *.$(LIBEXT) *.lib *.exp *.idb *.pdb *.manifest *.ii
@@ -46,6 +48,12 @@ $(SQLR)pwdenc_des.$(LIBEXT): des.cpp des.$(OBJ)
 $(SQLR)pwdenc_aes128.$(LIBEXT): aes128.cpp aes128.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ aes128.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)pwdenc_aes192.$(LIBEXT): aes192.cpp aes192.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ aes192.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
+
+$(SQLR)pwdenc_aes256.$(LIBEXT): aes256.cpp aes256.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ aes256.$(OBJ) $(LDFLAGS) $(UTILPLUGINLIBS) $(MODLINKFLAGS)
+
 install: $(INSTALLLIB)
 
 installdll: installdll-rot \
@@ -54,7 +62,9 @@ installdll: installdll-rot \
 		installdll-sha256 \
 		installdll-sha512 \
 		installdll-des \
-		installdll-aes128
+		installdll-aes128 \
+		installdll-aes192 \
+		installdll-aes256
 
 installdll-rot:
 	$(MKINSTALLDIRS) $(libexecdir)
@@ -84,6 +94,14 @@ installdll-aes128:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)pwdenc_aes128.$(LIBEXT) $(libexecdir)
 
+installdll-aes192:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)pwdenc_aes192.$(LIBEXT) $(libexecdir)
+
+installdll-aes256:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)pwdenc_aes256.$(LIBEXT) $(libexecdir)
+
 installlib: $(INSTALLSHAREDLIB)
 
 installsharedlib: installsharedlib-rot \
@@ -92,7 +110,9 @@ installsharedlib: installsharedlib-rot \
 		installsharedlib-sha256 \
 		installsharedlib-sha512 \
 		installsharedlib-des \
-		installsharedlib-aes128
+		installsharedlib-aes128 \
+		installsharedlib-aes192 \
+		installsharedlib-aes256
 
 installsharedlib-rot:
 	$(MKINSTALLDIRS) $(libexecdir)
@@ -143,13 +163,29 @@ installsharedlib-aes128:
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes128.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)pwdenc_aes128.so so $(MODULESUFFIX)
 
+installsharedlib-aes192:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)pwdenc_aes192.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes192.a
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes192.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)pwdenc_aes192.so so $(MODULESUFFIX)
+
+installsharedlib-aes256:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)pwdenc_aes256.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes256.a
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes256.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)pwdenc_aes256.so so $(MODULESUFFIX)
+
 uninstall: uninstall-rot \
 		uninstall-md5 \
 		uninstall-sha1 \
 		uninstall-sha256 \
 		uninstall-sha512 \
 		uninstall-des \
-		uninstall-aes128
+		uninstall-aes128 \
+		uninstall-aes192 \
+		uninstall-aes256
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_crypt.* \
 		$(libexecdir)/sqlrpwdenc_rot.* \
 		$(libexecdir)/sqlrpwdenc_md5.* \
@@ -177,3 +213,9 @@ uninstall-des:
 
 uninstall-aes128:
 	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes128.*
+
+uninstall-aes192:
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes192.*
+
+uninstall-aes256:
+	$(RM) $(libexecdir)/$(SQLR)pwdenc_aes256.*
