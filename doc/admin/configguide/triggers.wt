@@ -53,7 +53,7 @@ Currently, the following trigger modules are available in the standard SQL Relay
 * '''upsert'''
 * '''globaltemptables'''
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#replay]

@@ -531,7 +531,7 @@ Currently, the following password encryption modules are available in the standa
 * sha512
 * des
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#rot]
@@ -706,7 +706,7 @@ Connection schedule modules can be "stacked".  Multiple different modules may be
 
 At startup, the SQL Relay server creates instances of the specified schedule modules and initializes them.  When a client connects, the server passes the supplied credentials to each module, in the order that they were specified in the config file.  Each module applies its rules to the specified user.  If a module denies access to a user then the remaining modules are ignored.  If the user makes it through all modules without being denies access, then the user is allowed access.
 
-Currently, only the ''cron_userlist'' connection schedule module is available in the standard SQL Relay distribution.  Custom modules may be developed though.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, only the ''cron_userlist'' connection schedule module is available in the standard SQL Relay distribution.  Custom modules may be developed though.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#cron_userlist]
@@ -908,7 +908,7 @@ Currently, the following filter modules are available in the standard SQL Relay 
 * '''regex'''
 * '''string'''
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#filter-patterns]
@@ -1037,7 +1037,7 @@ Note the moduledata tag defined prior to the filters tag.  Moduledata modules ba
 
 In the tag module, if the query matches the pattern, then instead of filtering it out so that it isn't executed, the query is "tagged" with the value specified in the '''tag''' attribute in the instance of moduledata specified by the '''moduledataid''' attribute.  Other modules (translation modules, for example) could then query the specified moduledata for the presence or absence of this value, and act accordingly.
 
-Currently, no open source modules make use of the tag filter/moduledata module,  however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, no open source modules make use of the tag filter/moduledata module,  however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 ----
 

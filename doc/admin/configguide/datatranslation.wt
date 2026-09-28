@@ -31,7 +31,7 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 At startup, the SQL Relay server creates an instance of the specified parser modules and initializes it.  When a query is run, the server passes the query to the parser, which parses it and makes the DOM tree representing the query available to other modules.
 
-Currently, no open source parser modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, no open source parser modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#querytranslation]
@@ -69,7 +69,7 @@ Currently, the following query translation modules are available in the standard
 * '''sequence_nextval'''
 * '''keep_dense_rank_to_array_agg'''
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#normalize]
@@ -441,7 +441,7 @@ Bind variable translation modules can be "stacked".  Multiple different modules 
 
 At startup, the SQL Relay server creates instances of the specified bind variable translations modules and initializes them.  When a query is run, the server passes the bind variables to each module, in the order that they were specified in the config file.  If a module modifies a bind variable, then that modified variable is passed on to the next module.
 
-Currently, no open source bind variable translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, no open source bind variable translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#resultsetheadertranslation]
@@ -469,7 +469,7 @@ Result set header translation modules can be "stacked".  Multiple different modu
 
 At startup, the SQL Relay server creates instances of the specified result set header translations modules and initializes them.  When a query is run, the server passes the result set header to each module, in the order that they were specified in the config file.  If a module modifies the result set header, then that modified header is passed on to the next module.
 
-Currently, no open source result set header translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, no open source result set header translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#resultsettranslation]
@@ -503,7 +503,7 @@ Currently, the following result set translation module is available in the stand
 
 * '''reformatdatetime'''
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 [[br]][=#reformatdatetime]
 === reformatdatetime ===
@@ -576,7 +576,7 @@ This is useful if the value of one field needs to change based on the value of a
 }}}
 }}}
 
-Currently, no open source result set row translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, no open source result set row translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#resultsetrowblocktranslation]
@@ -592,7 +592,7 @@ This is useful for the same reasons as result set row translation, and tends to 
 }}}
 }}}
 
-Currently, no open source result set row block translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Currently, no open source result set row block translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#errortranslation]
@@ -627,7 +627,7 @@ Currently, the following error translation modules are available in the standard
 * '''renumber'''
 * '''patterns'''
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 [[br]][=#error-renumber]
@@ -777,7 +777,7 @@ Currently, the only open source moduledata module available is:
 
 The tag module works as specified in the documentation for the [security.html#filter-tag tag] filter.
 
-Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
 
 
 ----
