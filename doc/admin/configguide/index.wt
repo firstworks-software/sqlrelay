@@ -93,6 +93,7 @@ This guide is split across the pages listed below - start with Quick Start for a
   * [tdsprotocol.html#tdspacketsize Packet Size]
   * [tdsprotocol.html#tdsauth Authentication/Encryption Options]
    * [tdsprotocol.html#tdsconnectstringsauth Connect Strings Auth]
+   * [tdsprotocol.html#tdsuserlistauth User List Auth]
    * [tdsprotocol.html#tdstls TLS/SSL Encryption and Authentication]
   * [tdsprotocol.html#tdsforeignbackend Foreign Backend]
   * [tdsprotocol.html#tdslimitations Limitations]

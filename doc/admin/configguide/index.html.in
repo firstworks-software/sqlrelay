@@ -130,6 +130,7 @@
       <li><a href="tdsprotocol.html#tdsauth">Authentication/Encryption Options</a></li>
       <ul>
         <li><a href="tdsprotocol.html#tdsconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="tdsprotocol.html#tdsuserlistauth">User List Auth</a></li>
         <li><a href="tdsprotocol.html#tdstls">TLS/SSL Encryption and Authentication</a></li>
       </ul>
 
