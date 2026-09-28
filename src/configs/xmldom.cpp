@@ -2608,12 +2608,15 @@ void sqlrconfig_xmldom::getTreeValues() {
 			isNullNode()) {
 		listnode< connectstringcontainer * >	*node=
 					getConnectStringList()->getFirst();
-		defaultuser=node->getValue()->
-				getConnectStringValue("user");
-		defaultpassword=node->getValue()->
-				getConnectStringValue("password");
-		defaultpasswordencryptionid=node->getValue()->
-						getPasswordEncryption();
+		// (there may not be any connections)
+		if (node) {
+			defaultuser=node->getValue()->
+					getConnectStringValue("user");
+			defaultpassword=node->getValue()->
+					getConnectStringValue("password");
+			defaultpasswordencryptionid=node->getValue()->
+							getPasswordEncryption();
+		}
 	}
 }
 
