@@ -22,6 +22,7 @@ all-base: $(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_postgresql_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_postgresql_userlist.$(LIBEXT) \
 		$(SQLR)auth_tds_connectstrings.$(LIBEXT) \
+		$(SQLR)auth_tds_userlist.$(LIBEXT) \
 		$(SQLR)auth_firebird_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_oracle_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_oracle_userlist.$(LIBEXT) \
@@ -70,6 +71,9 @@ $(SQLR)auth_postgresql_userlist.$(LIBEXT): postgresql_userlist.cpp postgresql_us
 $(SQLR)auth_tds_connectstrings.$(LIBEXT): tds_connectstrings.cpp tds_connectstrings.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ tds_connectstrings.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)auth_tds_userlist.$(LIBEXT): tds_userlist.cpp tds_userlist.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ tds_userlist.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
 $(SQLR)auth_firebird_connectstrings.$(LIBEXT): firebird_connectstrings.cpp firebird_connectstrings.$(OBJ) firebirdsrp.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ firebird_connectstrings.$(OBJ) firebirdsrp.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
@@ -108,6 +112,7 @@ installdll: installdll-sqlrclient_connectstrings \
 		installdll-postgresql_connectstrings \
 		installdll-postgresql_userlist \
 		installdll-tds_connectstrings \
+		installdll-tds_userlist \
 		installdll-firebird_connectstrings \
 		installdll-oracle_connectstrings \
 		installdll-oracle_userlist \
@@ -157,6 +162,10 @@ installdll-tds_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_tds_connectstrings.$(LIBEXT) $(libexecdir)
 
+installdll-tds_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_tds_userlist.$(LIBEXT) $(libexecdir)
+
 installdll-firebird_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_connectstrings.$(LIBEXT) $(libexecdir)
@@ -185,6 +194,7 @@ installsharedlib: installsharedlib-sqlrclient_connectstrings \
 		installsharedlib-postgresql_connectstrings \
 		installsharedlib-postgresql_userlist \
 		installsharedlib-tds_connectstrings \
+		installsharedlib-tds_userlist \
 		installsharedlib-firebird_connectstrings \
 		installsharedlib-oracle_connectstrings \
 		installsharedlib-oracle_userlist \
@@ -260,6 +270,13 @@ installsharedlib-tds_connectstrings:
 	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_tds_connectstrings.so so $(MODULESUFFIX)
 
+installsharedlib-tds_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_tds_userlist.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_tds_userlist.a
+	$(RM) $(libexecdir)/$(SQLR)auth_tds_userlist.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_tds_userlist.so so $(MODULESUFFIX)
+
 installsharedlib-firebird_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_connectstrings.$(LIBEXT) $(libexecdir)
@@ -320,6 +337,7 @@ uninstall: uninstall-sqlrclient_connectstrings \
 		uninstall-postgresql_connectstrings \
 		uninstall-postgresql_userlist \
 		uninstall-tds_connectstrings \
+		uninstall-tds_userlist \
 		uninstall-firebird_connectstrings \
 		uninstall-sqlrclient_sqlrelay \
 		uninstall-oracle_connectstrings \
@@ -372,6 +390,9 @@ uninstall-postgresql_userlist:
 
 uninstall-tds_connectstrings:
 	$(RM) $(libexecdir)/$(SQLR)auth_tds_connectstrings.*
+
+uninstall-tds_userlist:
+	$(RM) $(libexecdir)/$(SQLR)auth_tds_userlist.*
 
 uninstall-firebird_connectstrings:
 	$(RM) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.*
