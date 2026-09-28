@@ -93,6 +93,9 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9001"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/sqlrclient2.socket"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"0.0.0.0"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3306"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/mysql.socket"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"0.0.0.0"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"5432"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/postgresql.socket"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"0.0.0.0"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3050"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/firebird.socket"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"0.0.0.0"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/tds.socket"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"0.0.0.0"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">socket</font><font color="#990000">=</font><font color="#FF0000">"/tmp/oracle.socket"</font> <font color="#009900">addresses</font><font color="#990000">=</font><font color="#FF0000">"0.0.0.0"</font><b><font color="#0000FF">/&gt;</font></b>
 		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
 		<b><font color="#0000FF">&lt;session&gt;</font></b>
 			<b><font color="#0000FF">&lt;start&gt;</font></b>
@@ -244,118 +247,46 @@ http://www.gnu.org/software/src-highlite -->
       <li><b>wirecrypt</b> - Sets the server's wire encryption level for the firebird wire protocol.  Valid values are "disabled" (never encrypt), "enabled" (encrypt if the client is willing to), and "required" (refuse to proceed unless the connection is encrypted).  The client's own requested level is negotiated against this one; either side asking for "required" forces encryption, and either side asking for "disabled" forces it off, provided the other side doesn't require it.  When the negotiated level is "required", the connection is held to it: until encryption is actually running, only the handshake, authentication and session-teardown operations are answered, and anything else is refused with an error, so a client that agrees to "required" and then never turns encryption on can't carry on in the clear.  Defaults to "enabled".  Only the Arc4 cipher is currently implemented, not ChaCha or ChaCha64; this doesn't affect compatibility with a stock Firebird 4 or 5 client, which advertises ChaCha64, ChaCha and Arc4 in that order but falls back cleanly to whichever of those the server actually offers.  The generic <b>tls</b> listener option (see below) is not supported for protocol="firebird" - wire encryption is configured with <b>wirecrypt</b> instead.</li>
     </ul>
 
-  </ul>
+    <li>tds options - These options only apply when protocol="tds".</li>
+    <ul>
+      <li><b>tdsversion</b> - Overrides the TDS protocol version that SQL Relay advertises to tds clients, for back-ends whose version string it can't automatically map to a TDS version.  Accepts a TDS version number as a plain decimal integer in the form used internally: 420 (TDS 4.2), 500 (5.0), 700 (7.0), 710 (7.1), 711 (7.1 SP1), 720 (7.2), 730 (7.3), 731 (7.31), 740 (7.4).  When unset (or 0), SQL Relay guesses the version from the back-end database's version string, falling back further to whatever version the client itself requests if the guess fails.  The value matters beyond just a handshake number: clients such as FreeTDS only send a PRELOGIN packet (where encryption is negotiated) when using TDS 7.1 or later - below that, they go straight to the login packet and any encryption settings are silently never applied.  Defaults to unset (auto-detect).</li>
+      <li><b>packetsize</b> - The tds packet size, in bytes, used until a connecting client negotiates a different size.  Defaults to 4096.  Must not exceed maxpacketsize.</li>
+      <li><b>maxpacketsize</b> - The largest tds packet size, in bytes, that a connecting client is allowed to negotiate.  Defaults to 65535, which is also the maximum allowed value; values of 0 or greater than 65535 are treated as 65535.</li>
+    </ul>
 
-</ul>
+    <li>oracle options - These options only apply when protocol="oracle".  See <a href="configguide/oracleprotocol.html#oracleprotocol">the Oracle Protocol section</a> of the Configuration Guide for a fuller description of each.</li>
+    <ul>
+      <li><b>sid</b> - Restricts which SID/SERVICE_NAME values this listener accepts, as a single value or a comma-separated list.  Matching is case-insensitive, and either the SID or SERVICE_NAME connect-descriptor key is accepted from the client.  A client naming anything not in the list is refused with ORA-12514.  A connect descriptor naming neither is let through regardless.  Defaults to unset, which accepts any SID/SERVICE_NAME.</li>
+      <li><b>maxloginattempts</b> - The number of failed login attempts a client gets on one connection before it's dropped, mirroring a real server's SEC_MAX_FAILED_LOGIN_ATTEMPTS.  Accepts a decimal integer.  Defaults to 3 (also used for 0 or an unparsable value).</li>
+      <li><b>serverversion</b> - The Oracle server version the module imitates on the wire.  Accepts 11.2 or 12.1.  Defaults to 12.1.  Also sets the default <b>verifiertype</b>.</li>
+      <li><b>verifiertype</b> - The password verifier type the module offers during login.  Accepts 9i, 11g or 12c.  Defaults to whatever <b>serverversion</b> implies: 12c for serverversion="12.1", 11g for serverversion="11.2".  9i is for clients too old to speak O5LOGON at all, and is never a default.</li>
+      <li><b>bigchunkclr</b> - Overrides how the module frames a long-form clr chunk over 255 bytes.  Accepts "on", "off", or "auto".  Defaults to "auto", which negotiates the framing with the client; "off" always frames raw bytes (needed for go-ora v1), and "on" always frames big chunks for a TTI 6 session.</li>
+      <li><b>charset</b> - The Oracle character set id the module tells the client to expect for the database character set.  Accepts any Oracle character set id.  Defaults to 873 (AL32UTF8), or 31 (WE8ISO8859P1) on a verifiertype="9i" listener.  Only affects what the module advertises, not how it converts data - see <a href="configguide/oracleprotocol.html#oraclecharsets">Character Set Options</a>.</li>
+      <li><b>nationalcharset</b> - The Oracle character set id the module tells the client to expect for the national character set.  Accepts any Oracle character set id.  Defaults to 2000 (AL16UTF16).</li>
+    </ul>
 
-<p>For example:</p>
+    <li>Kerberos options - Use these options to configure Kerberos encryption and authentication.</li>
+    <ul>
+      <li><b>krb</b> - Set to "yes" to enable Kerberos encryption and authentication.  Set to "no" to disable Kerberos encryption and authentication.  Defaults to "no".</li>
+      <li><b>krbservice</b> - Specifies the kerberos service to run this instance as.  Defaults to "sqlrelay".</li>
+      <li><b>krbkeytab</b> - Sets the Kerberos keytab file to acquire the service key from.  Defaults to the system keytab, usually /etc/krb.keytab.  Has no effect on Windows systems.</li>
+      <li><b>krbmech</b> - Sets the Kerberos mechanism to use.  On Linux and Unix systems this should ba an OID, like: "{ 1 2 840 113554 1 2 2 }".  On Windows systems this should be the string name of the mechanism, like: "Kerberos".  Defaults to the default mechanism of the Kerberos implementation.  Only set this if you know that you have a good reason to.</li>
+      <li><b>krbflags</b> - Sets the Kerberos flags to use.  Multiple flags may be specified, separated by commas.  Valid flags include: GSS_C_MUTUAL_FLAG, GSS_C_REPLAY_FLAG, GSS_C_SEQUENCE_FLAG, GSS_C_CONF_FLAG, and GSS_C_INTEG_FLAG.  For a full list of flags, consult the GSSAPI documentation, though note that only the previously listed flags are supported on Windows.  Only set this if you know that you have a good reason to.</li>
+    </ul>
 
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
-<b><font color="#0000FF">&lt;instances&gt;</font></b>
-	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font><b><font color="#0000FF">&gt;</font></b>
-		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
-			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3050"</font> <font color="#009900">maxprotocolversion</font><font color="#990000">=</font><font color="#FF0000">"13"</font> <font color="#009900">wirecrypt</font><font color="#990000">=</font><font color="#FF0000">"enabled"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
-		<b><font color="#0000FF">&lt;connections&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=firebirduser;password=firebirdpassword;db=firebirdhost:/opt/firebird/firebirddb.gdb"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
-	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
-<b><font color="#0000FF">&lt;/instances&gt;</font></b>
-</tt></pre>
+    <li>TLS/SSL options - Use these options to configure TLS/SSL encryption and authentication.</li>
+    <ul>
+      <li><b>tls</b> - Set to "yes" to enable TLS/SSL encryption and authentication.  Set to "no" to disable TLS/SSL encryption and authentication.  Defaults to "no".</li>
+      <li><b>tlsversion</b> - Sets the TLS/SSL version to use.  Valid values include SSL2, SSL3, TLS1, TLS1.1, TLS1.2 or any more recent version of TLS, as supported by and enabled in the underlying TLS/SSL library.  If left blank or omitted, the highest supported version will be negotiated.</li>
+      <li><b>tlscert</b> - Specifies the TLS/SSL certificate chain to use.  On non-Windows platforms, it must specify a certificate chain file.  On Windows platforms it may specify a certificate chain file or a certificate in a Windows Certificate Store.  (See <a href="tlscert.html">The tlscert Parameter</a> for more information.)</li>
+      <li><b>tlskey</b> - Specifies a separate private key file to use with <b>tlscert</b>, for a certificate chain file that doesn't already include the private key.  Optional.</li>
+      <li><b>tlspassword</b> - Specifies the password to use if the certificate contains a password-protected private key.</li>
+      <li><b>tlsvalidate</b> - Set to "yes" to instruct the server to request a certificate from the client and only allow a session to proceed if it can be validatated against known certificate authorities, including any supplied by the tlsca parameter.  Set to "no" not to request a certificate from the client.  Defaults to "no.</li>
+      <li><b>tlsca</b> - Specifies the location of a certificate store containing the certificate of the certificate authority to use, in addition to the system's root certificates, when validating the client's certificate.  This is useful if the client's certificate is self-signed, or signed in-house.  On non-Windows platforms, this parameter can be either a certificate store file or the name of a directory containing multiple certificate store files.  On Windows platforms it may specify a certificate store file or a Windows Certificate Store.  (See <a href="tlsca.html">The tlsca Parameter</a> for more information.)</li>
+      <li><b>tlsciphers</b> - Specifies a list of ciphers to allow.  Ciphers may be separated by spaces, commas, or colons.  If omitted or left empty then a default set of ciphers is used.  For a list of valid ciphers on Linux/Unix platforms, see: man ciphers.  For a list of valid ciphers on Windows platforms, see: <a target="_blank" href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa375549%28v=vs.85%29.aspx">this link</a>.  On Windows platforms, the ciphers (alg_id's) should omit CALG_ and may be given with underscores or dashes. For example: 3DES_112.  Only set this if you know that you have a good reason to.</li>
+      <li><b>tlsdepth</b> - Sets the maximum certificate chain validation depth.  The absolute maximum depth is 9.  Defaults to "9".</li>
+    </ul>
 
-</blockquote>
-<ul>
-  <li>tds options - These options only apply when protocol="tds".</li>
-  <ul>
-    <li><b>tdsversion</b> - Overrides the TDS protocol version that SQL Relay advertises to tds clients, for back-ends whose version string it can't automatically map to a TDS version.  Accepts a TDS version number as a plain decimal integer in the form used internally: 420 (TDS 4.2), 500 (5.0), 700 (7.0), 710 (7.1), 711 (7.1 SP1), 720 (7.2), 730 (7.3), 731 (7.31), 740 (7.4).  When unset (or 0), SQL Relay guesses the version from the back-end database's version string, falling back further to whatever version the client itself requests if the guess fails.  The value matters beyond just a handshake number: clients such as FreeTDS only send a PRELOGIN packet (where encryption is negotiated) when using TDS 7.1 or later - below that, they go straight to the login packet and any encryption settings are silently never applied.  Defaults to unset (auto-detect).</li>
-    <li><b>packetsize</b> - The tds packet size, in bytes, used until a connecting client negotiates a different size.  Defaults to 4096.  Must not exceed maxpacketsize.</li>
-    <li><b>maxpacketsize</b> - The largest tds packet size, in bytes, that a connecting client is allowed to negotiate.  Defaults to 65535, which is also the maximum allowed value; values of 0 or greater than 65535 are treated as 65535.</li>
-  </ul>
-
-</ul>
-
-<p>For example:</p>
-
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
-<b><font color="#0000FF">&lt;instances&gt;</font></b>
-	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
-		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
-			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">tdsversion</font><font color="#990000">=</font><font color="#FF0000">"731"</font> <font color="#009900">packetsize</font><font color="#990000">=</font><font color="#FF0000">"4096"</font> <font color="#009900">maxpacketsize</font><font color="#990000">=</font><font color="#FF0000">"65535"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
-		<b><font color="#0000FF">&lt;connections&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
-	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
-<b><font color="#0000FF">&lt;/instances&gt;</font></b>
-</tt></pre>
-
-</blockquote>
-<ul>
-  <li>oracle options - These options only apply when protocol="oracle".  See <a href="configguide/oracleprotocol.html#oracleprotocol">the Oracle Protocol section</a> of the Configuration Guide for a fuller description of each.</li>
-  <ul>
-    <li><b>sid</b> - Restricts which SID/SERVICE_NAME values this listener accepts, as a single value or a comma-separated list.  Matching is case-insensitive, and either the SID or SERVICE_NAME connect-descriptor key is accepted from the client.  A client naming anything not in the list is refused with ORA-12514.  A connect descriptor naming neither is let through regardless.  Defaults to unset, which accepts any SID/SERVICE_NAME.</li>
-    <li><b>maxloginattempts</b> - The number of failed login attempts a client gets on one connection before it's dropped, mirroring a real server's SEC_MAX_FAILED_LOGIN_ATTEMPTS.  Accepts a decimal integer.  Defaults to 3 (also used for 0 or an unparsable value).</li>
-    <li><b>serverversion</b> - The Oracle server version the module imitates on the wire.  Accepts 11.2 or 12.1.  Defaults to 12.1.  Also sets the default <b>verifiertype</b>.</li>
-    <li><b>verifiertype</b> - The password verifier type the module offers during login.  Accepts 9i, 11g or 12c.  Defaults to whatever <b>serverversion</b> implies: 12c for serverversion="12.1", 11g for serverversion="11.2".  9i is for clients too old to speak O5LOGON at all, and is never a default.</li>
-    <li><b>bigchunkclr</b> - Overrides how the module frames a long-form clr chunk over 255 bytes.  Accepts "on", "off", or "auto".  Defaults to "auto", which negotiates the framing with the client; "off" always frames raw bytes (needed for go-ora v1), and "on" always frames big chunks for a TTI 6 session.</li>
-    <li><b>charset</b> - The Oracle character set id the module tells the client to expect for the database character set.  Accepts any Oracle character set id.  Defaults to 873 (AL32UTF8), or 31 (WE8ISO8859P1) on a verifiertype="9i" listener.  Only affects what the module advertises, not how it converts data - see <a href="configguide/oracleprotocol.html#oraclecharsets">Character Set Options</a>.</li>
-    <li><b>nationalcharset</b> - The Oracle character set id the module tells the client to expect for the national character set.  Accepts any Oracle character set id.  Defaults to 2000 (AL16UTF16).</li>
-  </ul>
-
-</ul>
-
-<p>For example:</p>
-
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
-<b><font color="#0000FF">&lt;instances&gt;</font></b>
-	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
-		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
-			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">sid</font><font color="#990000">=</font><font color="#FF0000">"ora1"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"12.1"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
-		<b><font color="#0000FF">&lt;connections&gt;</font></b>
-			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
-	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
-<b><font color="#0000FF">&lt;/instances&gt;</font></b>
-</tt></pre>
-
-</blockquote>
-<ul>
-  <li>Kerberos options - Use these options to configure Kerberos encryption and authentication.</li>
-  <ul>
-    <li><b>krb</b> - Set to "yes" to enable Kerberos encryption and authentication.  Set to "no" to disable Kerberos encryption and authentication.  Defaults to "no".</li>
-    <li><b>krbservice</b> - Specifies the kerberos service to run this instance as.  Defaults to "sqlrelay".</li>
-    <li><b>krbkeytab</b> - Sets the Kerberos keytab file to acquire the service key from.  Defaults to the system keytab, usually /etc/krb.keytab.  Has no effect on Windows systems.</li>
-    <li><b>krbmech</b> - Sets the Kerberos mechanism to use.  On Linux and Unix systems this should ba an OID, like: "{ 1 2 840 113554 1 2 2 }".  On Windows systems this should be the string name of the mechanism, like: "Kerberos".  Defaults to the default mechanism of the Kerberos implementation.  Only set this if you know that you have a good reason to.</li>
-    <li><b>krbflags</b> - Sets the Kerberos flags to use.  Multiple flags may be specified, separated by commas.  Valid flags include: GSS_C_MUTUAL_FLAG, GSS_C_REPLAY_FLAG, GSS_C_SEQUENCE_FLAG, GSS_C_CONF_FLAG, and GSS_C_INTEG_FLAG.  For a full list of flags, consult the GSSAPI documentation, though note that only the previously listed flags are supported on Windows.  Only set this if you know that you have a good reason to.</li>
-  </ul>
-
-  <li>TLS/SSL options - Use these options to configure TLS/SSL encryption and authentication.</li>
-  <ul>
-    <li><b>tls</b> - Set to "yes" to enable TLS/SSL encryption and authentication.  Set to "no" to disable TLS/SSL encryption and authentication.  Defaults to "no".</li>
-    <li><b>tlsversion</b> - Sets the TLS/SSL version to use.  Valid values include SSL2, SSL3, TLS1, TLS1.1, TLS1.2 or any more recent version of TLS, as supported by and enabled in the underlying TLS/SSL library.  If left blank or omitted, the highest supported version will be negotiated.</li>
-    <li><b>tlscert</b> - Specifies the TLS/SSL certificate chain to use.  On non-Windows platforms, it must specify a certificate chain file.  On Windows platforms it may specify a certificate chain file or a certificate in a Windows Certificate Store.  (See <a href="tlscert.html">The tlscert Parameter</a> for more information.)</li>
-    <li><b>tlskey</b> - Specifies a separate private key file to use with <b>tlscert</b>, for a certificate chain file that doesn't already include the private key.  Optional.</li>
-    <li><b>tlspassword</b> - Specifies the password to use if the certificate contains a password-protected private key.</li>
-    <li><b>tlsvalidate</b> - Set to "yes" to instruct the server to request a certificate from the client and only allow a session to proceed if it can be validatated against known certificate authorities, including any supplied by the tlsca parameter.  Set to "no" not to request a certificate from the client.  Defaults to "no.</li>
-    <li><b>tlsca</b> - Specifies the location of a certificate store containing the certificate of the certificate authority to use, in addition to the system's root certificates, when validating the client's certificate.  This is useful if the client's certificate is self-signed, or signed in-house.  On non-Windows platforms, this parameter can be either a certificate store file or the name of a directory containing multiple certificate store files.  On Windows platforms it may specify a certificate store file or a Windows Certificate Store.  (See <a href="tlsca.html">The tlsca Parameter</a> for more information.)</li>
-    <li><b>tlsciphers</b> - Specifies a list of ciphers to allow.  Ciphers may be separated by spaces, commas, or colons.  If omitted or left empty then a default set of ciphers is used.  For a list of valid ciphers on Linux/Unix platforms, see: man ciphers.  For a list of valid ciphers on Windows platforms, see: <a target="_blank" href="https://msdn.microsoft.com/en-us/library/windows/desktop/aa375549%28v=vs.85%29.aspx">this link</a>.  On Windows platforms, the ciphers (alg_id's) should omit CALG_ and may be given with underscores or dashes. For example: 3DES_112.  Only set this if you know that you have a good reason to.</li>
-    <li><b>tlsdepth</b> - Sets the maximum certificate chain validation depth.  The absolute maximum depth is 9.  Defaults to "9".</li>
   </ul>
 
 </ul>
