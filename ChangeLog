@@ -2949,6 +2949,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   python-oracledb thin can't parse
 - fixed the oracle connection module reporting a caller's own requested
   read size, instead of 0, past the end of an empty function-result lob
+- fixed the oracle connection module failing to execute a pl/sql block that
+  sets a clob/blob output bind to null
+- hardened the oracle connection module's pl/sql output-bound lob reads
+  against the same past-the-end read defect fixed above for function-result
+  lobs, for consistency, though no reachable caller hits it today
 
 ### Security
 - fixed an authentication hole in the des password encryption module

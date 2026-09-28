@@ -4681,7 +4681,7 @@ bool oraclecursor::outputBindGenericLob(const char *variable,
 			(dvoid *)&outbind_lob[index],
 			(sb4)sizeof(OCILobLocator *),
 			type,
-			(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
+			(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 			OCI_DEFAULT)!=OCI_SUCCESS) {
 				return false;
 		}
@@ -4693,7 +4693,7 @@ bool oraclecursor::outputBindGenericLob(const char *variable,
 				(dvoid *)&outbind_lob[index],
 				(sb4)sizeof(OCILobLocator *),
 				type,
-				(dvoid *)0,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
+				(dvoid *)isnull,(ub2 *)0,(ub2 *)0,0,(ub4 *)0,
 				OCI_DEFAULT)!=OCI_SUCCESS) {
 			return false;
 		}
@@ -4735,6 +4735,37 @@ bool oraclecursor::getLobOutputBindSegment(uint16_t index,
 				(sb4(*)(dvoid *,CONST dvoid *,ub4,ub1))NULL,
 				0,
 				SQLCS_IMPLICIT);
+
+	// An out-bound lob set inside the pl/sql block via eg.
+	// :v:=empty_clob() or :v:=empty_blob(), rather than fetched from a
+	// table column, fails this read outright with ORA-22275 ("invalid
+	// LOB locator specified") and leaves readlength untouched - the
+	// same case getLobFieldSegment() handles for a function-result lob.
+	// getLobOutputBindLength() already reports 0 for this case, so
+	// sendLobOutputBind() (src/protocols/sqlrclient.cpp) never actually
+	// calls down into this path today, but handle it the same way for
+	// consistency, in case some other caller ever does.  OCI_NO_DATA is
+	// handled the same way too, in case some other server/client
+	// combination signals this case that way instead.  Report both as a
+	// normal, error-free empty read rather than trusting readlength,
+	// which is really just the caller's own unmet request echoed back.
+	if (result==OCI_NO_DATA) {
+		*charsread=0;
+		return true;
+	}
+	if (result==OCI_ERROR) {
+		sb4	errcode=0;
+		text	errtext[512];
+		OCIErrorGet((dvoid *)oracleconn->err,1,(text *)0,&errcode,
+				errtext,sizeof(errtext),OCI_HTYPE_ERROR);
+		if (errcode==22275) {
+			*charsread=0;
+			return true;
+		}
+		// any other error means nothing was read into buffer,
+		// so readlength can't be trusted either
+		return false;
+	}
 
 	// readlength will have been set the number of chars that were read
 	// set that on the way out
