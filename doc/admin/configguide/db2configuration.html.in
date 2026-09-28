@@ -1,0 +1,44 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapfreetdsconfiguration.html">SAP/Sybase (via !FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="informixconfiguration.html">Informix</a> <a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-db2"/><h1>IBM DB2</h1>
+
+<p>In this example, SQL Relay is configured to connect to an IBM DB2 database.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"db2"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"db=exampledb;user=db2inst1;password=db2inst1pass;connecttimeout=0"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The db option refers to an entry in the local DB2 instance's database catalog.  See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-ibm-db2.html#accessingremote">Getting Started With IBM DB2 - Accessing Remote Instances</a> for more information.</p>
+
+<p>The connecttimeout=0 option tells SQL Relay not to time out when connecting to the database.  DB2 instances can take a long time to log in to sometimes.  The default timeout is often too short.</p>
+
+<p>See the <a href="../configreference.html#db2">SQL Relay Configuration Reference</a> for other valid IBM DB2 connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-ibm-db2.html">Getting Started With IBM DB2</a> for general assistance installing and configuring an IBM DB2 database.</p>
+
+<hr/>
+
+<p><a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapfreetdsconfiguration.html">SAP/Sybase (via !FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="informixconfiguration.html">Informix</a> <a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

@@ -1,0 +1,82 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listenerconfiguration.html">Listener Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="startinginstancesautomatically.html">Starting Instances Automatically</a> <a href="startinginstancesautomatically.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="instances"/><h1>Multiple Instances</h1>
+
+<p>Any number of SQL Relay instances can be defined in the configuration file.</p>
+
+<p>In following example, instances that connect to Oracle, SAP/Sybase and DB2 are defined in the same file.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"oracleexample"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9000"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"sapexample"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sap"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9001"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"sybase=/opt/sap;lang=en_US;server=SAPSERVER;user=sapuser;password=sappassword;db=sapdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"db2example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"db2"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9002"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"db=db2db;user=db2inst1;password=db2inst1pass;lang=C;connecttimeout=0"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>These instances can be started using:</p>
+
+<blockquote>
+  <pre>sqlr-start -id oracleexample
+sqlr-start -id sapexample
+sqlr-start -id db2example
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>...and accessed using:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -port 9000 -user scott -password tiger
+sqlrsh -host sqlrserver -port 9001 -user sapuser -password sappassword
+sqlrsh -host sqlrserver -port 9002 -user db2inst1 -password db2inst1pass
+</pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listenerconfiguration.html">Listener Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="startinginstancesautomatically.html">Starting Instances Automatically</a> <a href="startinginstancesautomatically.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

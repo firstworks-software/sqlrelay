@@ -1,0 +1,70 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]
+
+[=#listener]
+= Listener Configuration =
+
+By default, SQL Relay listens for client connections on port 9000, on all available network interfaces.
+
+It can be configured to listen on a different port though...
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-port.conf@
+}}}
+}}}
+
+...and accessed using:
+
+{{{#!blockquote
+{{{
+sqlrsh -host sqlrserver -port 9001 -user scott -password tiger
+}}}
+}}}
+
+It can also be configured to listen on a unix socket...
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-socket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+...and accessed from the local server using:
+
+{{{#!blockquote
+{{{
+sqlrsh -socket /tmp/example.socket -user scott -password tiger
+}}}
+}}}
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-addresses.conf@
+}}}
+}}}
+
+When configured this way, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+If the socket option is specified but port and addresses options are not, then SQL Relay will only listen on the socket.  If addresses/port and socket options are both specified then it listens on both.
+
+The listeners tag also supports a //debug// attribute.  If debug="yes" is configured in the listeners tag (not in an individual listener tag) then debugging information about the listener is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Each individual listener tag also has an //enabled// attribute, allowing that listener to be temporarily disabled without removing it from the configuration.  If enabled="no" is configured, then SQL Relay does not open that listener's port or socket at all, and does not count that listener when assigning the other listener tags to their protocol modules.  If set to any other value, or omitted, then the listener is enabled.
+
+----
+
+[[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

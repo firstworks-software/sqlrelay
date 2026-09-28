@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=redshiftodbcconfiguration.html,vertical-align=middle)]] [redshiftodbcconfiguration.html Amazon Redshift (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [athenaconfiguration.html Amazon Athena (via ODBC)] [[Image(../../images/navnext.png,link=athenaconfiguration.html,vertical-align=middle)]]
+
+[=#db-postgresql-redshift]
+= Amazon Redshift (via !PostgreSQL) =
+
+Amazon Redshift is a cloud-hosted data warehouse service.  Since it is based on !PostgreSQL 8, it is possible to connect to a Redshift instance using the !PostgreSQL client library.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-redshift-postgresql.conf@
+}}}
+}}}
+
+The ignoreselectdatabase="yes" attribute of the instance tag works around a quirk.  It instructs SQL Relay to ignore "use database" queries, or other attempts to select the current database/schema.  These options tend to put the connection outside of any database/schema, and unable to return to the desired database/schema.
+
+The port option in the string attribute of the connection tag instructs SQL Relay to connect to the Redshift default port of 5439 rather than the !PostgreSQL default port of 5432.
+
+The typemangling and tablemangling options in the string attribute of the connection tag instruct SQL Relay to return data type and table names rather than data type and table object ID's (the default for !PostgreSQL)
+
+See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid !PostgreSQL connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=redshiftodbcconfiguration.html,vertical-align=middle)]] [redshiftodbcconfiguration.html Amazon Redshift (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [athenaconfiguration.html Amazon Athena (via ODBC)] [[Image(../../images/navnext.png,link=athenaconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

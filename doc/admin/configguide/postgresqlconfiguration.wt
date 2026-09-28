@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=mysqlconfiguration.html,vertical-align=middle)]] [mysqlconfiguration.html !MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdconfiguration.html Firebird] [[Image(../../images/navnext.png,link=firebirdconfiguration.html,vertical-align=middle)]]
+
+[=#db-postgresql]
+= !PostgreSQL =
+
+In this example, SQL Relay is configured to connect to a !PostgreSQL database.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresql.conf@
+}}}
+}}}
+
+The host and db options indicate that SQL Relay should connect to the database exampledb on the host examplehost.
+
+See the [../configreference.html#postgresql SQL Relay Configuration Reference] for other valid !PostgreSQL connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-postgresql.html Getting Started With PostgreSQL] for general assistance installing and configuring a !PostgreSQL database.
+
+----
+
+[[Image(../../images/navprev.png,link=mysqlconfiguration.html,vertical-align=middle)]] [mysqlconfiguration.html !MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdconfiguration.html Firebird] [[Image(../../images/navnext.png,link=firebirdconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

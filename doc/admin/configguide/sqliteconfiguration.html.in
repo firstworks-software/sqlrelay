@@ -1,0 +1,68 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="firebirdconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdconfiguration.html">Firebird</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="teradataconfiguration.html">Teradata (via ODBC)</a> <a href="teradataconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-sqlite"/><h1>SQLite</h1>
+
+<p>In this example, SQL Relay is configured to connect to a SQLite database.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sqlite"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"db=/var/sqlite/sqlitedb;user=sqliteuser;password=sqlitepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The db option indicates that SQL Relay should connect to the database /var/sqlite/exampledb.</p>
+
+<p>Note that the database file (exampledb in this case) and the directory that its located in (/var/sqlite in this case) must both be readable and writable by the user that the instance of SQL Relay runs as.</p>
+
+<p>Also note the user and password parameters in the connection string.  SQLite doesn't require these for SQL Relay to access the database, but they are included to define a user and password for accessing SQL Relay itself.</p>
+
+<p>SQLite also supports a high-performance in-memory mode where tables are maintained in memory and nothing is written to permanent storage.  To use this mode with SQL Relay, set the db option to :memory:.</p>
+
+<p>As each running instance of sqlr-connection will have its own separate in-memory database, you almost certainly want to limit the number of connections to 1.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sqlite"</font> <font color="#009900">connections</font><font color="#990000">=</font><font color="#FF0000">"1"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"db=:memory:;user=sqliteuser;password=sqlitepassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Note that the entire in-memory database will be lost when SQL Relay is stopped.  There is no way to preserve it.  Such is the nature of pure in-memory databases.</p>
+
+<p>See the <a href="../configreference.html#sqlite">SQL Relay Configuration Reference</a> for other valid SQLite connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-sqlite.html">Getting Started With SQLite</a> for general assistance installing and configuring a SQLite database.</p>
+
+<hr/>
+
+<p><a href="firebirdconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdconfiguration.html">Firebird</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="teradataconfiguration.html">Teradata (via ODBC)</a> <a href="teradataconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

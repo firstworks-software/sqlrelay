@@ -194,7 +194,7 @@ The urls in these examples all contain literal users and passwords.  User-passwo
 
 As link files can be protected by file permissions, and the urls stored in them aren't exposed anywhere else, such as in a process listing, user-password files are not generally necessary when using link files.
 
-There is no limit to the depth of links.  A link file can reference another link file which references another, which references another, etc.  Too great a depth could lead to slow startup times though, especially when using remote configration files. This is especially significant when using [basicconfiguration.html#dynamicscaling Dynamic Scaling], as the configuration must be loaded each time a new connection is spawned.  Care should also be taken to avoid loops.
+There is no limit to the depth of links.  A link file can reference another link file which references another, which references another, etc.  Too great a depth could lead to slow startup times though, especially when using remote configration files. This is especially significant when using [dynamicscaling.html#dynamicscaling Dynamic Scaling], as the configuration must be loaded each time a new connection is spawned.  Care should also be taken to avoid loops.
 
 ----
 

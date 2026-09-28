@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=databaseconnectioncount.html,vertical-align=middle)]] [databaseconnectioncount.html Database Connection Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [dynamicscaling.html Dynamic Scaling] [[Image(../../images/navnext.png,link=dynamicscaling.html,vertical-align=middle)]]
+
+[=#dbcursors]
+= Database Cursor Count =
+
+Database cursors are used to execute queries and step through result sets.  Most applications only need to use one cursor at a time.  Some apps require more though, either because they run nested queries, or sometimes because they just don't properly free them.
+
+SQL Relay maintains persistent cursors as well as connections.  By default, each connection opens one cursor, but the number of cursors opened by each connection can be configured using the cursors attribute.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-cursors.conf@
+}}}
+}}}
+
+Any number of cursors can be opened, up to 65535, which is also the largest value allowed for the cursors and maxcursors attributes.  A good rule of thumb is to open as few as possible, but as many as you know that your application will need.
+
+{{{#!blockquote
+( '''NOTE:''' The documentation above says that by default, each connection opens one cursor, and this is true, but it would be more accurate to say that by default each connection opens one cursor, but will open additional cursors on-demand, up to 5.  This is because it is common for an app to run at least one level of nested queries.  For example, it is common to run a select and then run an insert, update, or delete for each row in the result set.  Unfortunately, it is also not uncommon for apps to just manage cursors poorly.  So, SQL Relay's default configuration offers a bit of flexibility to accommodate these circumstances.  See the next section on Dynamic Scaling for more information about configuring connections and cursors to scale up and down on-demand.)
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=databaseconnectioncount.html,vertical-align=middle)]] [databaseconnectioncount.html Database Connection Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [dynamicscaling.html Dynamic Scaling] [[Image(../../images/navnext.png,link=dynamicscaling.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

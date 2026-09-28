@@ -1,0 +1,39 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlconfiguration.html,vertical-align=middle)]] [postgresqlconfiguration.html !PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqliteconfiguration.html SQLite] [[Image(../../images/navnext.png,link=sqliteconfiguration.html,vertical-align=middle)]]
+
+[=#db-firebird]
+= Firebird =
+
+In this example, SQL Relay is configured to connect to a Firebird database.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebird.conf@
+}}}
+}}}
+
+The db option indicates that SQL Relay should connect to the database located at /opt/firebird/exampledb.gdb on the host examplehost.
+
+Note that if the database is located on a Windows host, then the path segment of the db option should be specified as a Windows-style path with doubled backslashes.  For example:
+{{{#!blockquote
+{{{#!code
+examplehost:C:\\Program Files\\Firebird\\Firebird_3_0\\exampledb.gdb
+}}}
+}}}
+
+See the [../configreference.html#firebird SQL Relay Configuration Reference] for other valid Firebird connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-firebird.html Getting Started With Firebird] for general assistance installing and configuring a Firebird database.
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlconfiguration.html,vertical-align=middle)]] [postgresqlconfiguration.html !PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqliteconfiguration.html SQLite] [[Image(../../images/navnext.png,link=sqliteconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

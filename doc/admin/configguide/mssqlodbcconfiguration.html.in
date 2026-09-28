@@ -1,0 +1,77 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="oracleconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleconfiguration.html">Oracle</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mssqlfreetdsconfiguration.html">Microsoft SQL Server (via !FreeTDS)</a> <a href="mssqlfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-mssql-odbc"/><h1>Microsoft SQL Server (via ODBC)</h1>
+
+<p>On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a <a target="_blank" href="https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx">Microsoft-provided ODBC driver</a> for some versions of Linux.  On Linux and Unix platforms, the ODBC driver that comes with <a target="_blank" href="http://www.freetds.org">FreeTDS</a> can be used as well, and requires no vendor software.</p>
+
+<p>In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=odbcdsn;user=odbcuser;password=odbcpassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).</p>
+
+<p>On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).</p>
+
+<p>On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>exampledsn<font color="#990000">]</font>
+Description<font color="#990000">=</font>SQL Server
+Driver<font color="#990000">=</font>ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> SQL Server
+Server<font color="#990000">=</font>examplehost
+Port<font color="#990000">=</font><font color="#993399">1433</font>
+Database<font color="#990000">=</font></tt></pre>
+
+</blockquote>
+<p>The Driver parameter refers to an entry in the odbcinst.ini file (usually /etc/odbcinst.ini) which identifies driver files:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> <font color="#008080">SQL</font> Server<font color="#990000">]</font>
+Description<font color="#990000">=</font>Microsoft ODBC Driver <font color="#993399">11</font> <b><font color="#0000FF">for</font></b> SQL Server
+Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>microsoft<font color="#990000">/</font>msodbcsql<font color="#990000">/</font>lib64<font color="#990000">/</font>libmsodbcsql<font color="#990000">-</font><font color="#993399">11.0</font><font color="#990000">.</font>so<font color="#990000">.</font><font color="#993399">2270.0</font>
+Threading<font color="#990000">=</font><font color="#993399">1</font>
+UsageCount<font color="#990000">=</font><font color="#993399">1</font></tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)</p>
+
+<p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html">Getting Started With ODBC (on a non-MS platform)</a> for general assistance installing and configuring ODBC on a non-MS platform.</p>
+
+<hr/>
+
+<p><a href="oracleconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleconfiguration.html">Oracle</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mssqlfreetdsconfiguration.html">Microsoft SQL Server (via !FreeTDS)</a> <a href="mssqlfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

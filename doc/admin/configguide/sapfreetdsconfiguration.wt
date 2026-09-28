@@ -1,0 +1,48 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sapconfiguration.html,vertical-align=middle)]] [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [db2configuration.html IBM DB2] [[Image(../../images/navnext.png,link=db2configuration.html,vertical-align=middle)]]
+
+[=#db-sap-freetds]
+= SAP/Sybase (via !FreeTDS) =
+
+The native SAP/Sybase library is available on Windows and on some Linux/Unix platforms.
+
+However, on Linux and Unix platforms, access to SAP/Sybase databases is also available via [http://www.freetds.org FreeTDS].
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-sap-freetds.conf@
+}}}
+}}}
+
+The server option refers to an entry in the freetds.conf file (usually /etc/freetds.conf or /usr/local/etc/freetds.conf) which identifies the database server, similar to:
+
+{{{#!blockquote
+{{{#!code
+[FREETDSSERVER]
+	host = examplehost
+	port = 5000
+	tds version = 5.0
+	client charset = UTF-8
+}}}
+}}}
+
+( '''NOTE:''' The freetds.conf file must be readable by the user that the instance of SQL Relay runs as.)
+
+( '''NOTE:''' See [mssqlfreetdsconfiguration.html#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] for what the "client charset" setting does and why the connect string's '''charset''' variable is not a substitute for it.)
+
+See the [../configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-sapsybase.html Getting Started With SAP/Sybase] for general assistance installing and configuring an SAP/Sybase database.
+
+----
+
+[[Image(../../images/navprev.png,link=sapconfiguration.html,vertical-align=middle)]] [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [db2configuration.html IBM DB2] [[Image(../../images/navnext.png,link=db2configuration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

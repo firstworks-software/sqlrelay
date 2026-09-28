@@ -1,0 +1,81 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="redshiftpostgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via !PostgreSQL)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="odbcconfiguration.html">Generic ODBC</a> <a href="odbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-odbc-athena"/><h1>Amazon Athena (via ODBC)</h1>
+
+<p>Amazon Athena is an SQL interface to data stored in Amazon S3.  Simba provides an Athena ODBC driver for Windows and Linux platforms.  This driver (or perhaps Athena itself) has some quirks.</p>
+
+<p>In this example, SQL Relay is configured to connect to a Athena database via ODBC.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=athena;user=RDXDE23X56D9822FFGE3;password=uEEmF+RDexoXpqTD5MiP3421emYP2M+4Rqo6GHio;overrideschema=athenadb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Note the odd user and password options in the string attribute of the connection tag.</p>
+
+<p>Note also that the db option is missing from the string attribute of the connection tag.  The schema must be set in the DSN, and setting it in the connection string doesn't override the one set in the DSN.</p>
+
+<p>The overrideschema option in the string attribute of the connection tag works around a quirk.  The database tends to report the current schema as something other than "athenadb", but when running "show tables" or "describe" queries, the database wants "athenadb" to be passed in as the schema for the table names.</p>
+
+<p>The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).</p>
+
+<p>On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).</p>
+
+<p>On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>athena<font color="#990000">]</font>
+Description<font color="#990000">=</font>Simba Athena <font color="#008080">ODBC</font> <b><font color="#000000">Driver</font></b> <font color="#990000">(</font><font color="#993399">64</font><font color="#990000">-</font>bit<font color="#990000">)</font> DSN
+Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>simba<font color="#990000">/</font>athenaodbc<font color="#990000">/</font>lib<font color="#990000">/</font><font color="#993399">64</font><font color="#990000">/</font>libathenaodbc_sb64<font color="#990000">.</font>so
+AwsRegion<font color="#990000">=</font>us<font color="#990000">-</font>east<font color="#990000">-</font><font color="#993399">1</font>
+Schema<font color="#990000">=</font>athenadb
+S3OutputLocation<font color="#990000">=</font>s3<font color="#990000">:</font><i><font color="#9A1900">//athenadata/</font></i>
+UID<font color="#990000">=</font>RDXDE23X56D9822FFGE3
+PWD<font color="#990000">=</font>uEEmF<font color="#990000">+</font>RDexoXpqTD5MiP3421emYP2M<font color="#990000">+</font>4Rqo6GHio</tt></pre>
+
+</blockquote>
+<p>The Driver parameter refers to an entry in the odbcinst.ini file (usually /etc/odbcinst.ini) which identifies driver files:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>Simba Athena ODBC Driver <font color="#993399">64</font><font color="#990000">-</font>bit<font color="#990000">]</font>
+Description<font color="#990000">=</font>Simba Athena <font color="#008080">ODBC</font> <b><font color="#000000">Driver</font></b> <font color="#990000">(</font><font color="#993399">64</font><font color="#990000">-</font>bit<font color="#990000">)</font>
+Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>simba<font color="#990000">/</font>athenaodbc<font color="#990000">/</font>lib<font color="#990000">/</font><font color="#993399">64</font><font color="#990000">/</font>libathenaodbc_sb64<font color="#990000">.</font>so</tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)</p>
+
+<p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
+
+<hr/>
+
+<p><a href="redshiftpostgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via !PostgreSQL)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="odbcconfiguration.html">Generic ODBC</a> <a href="odbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

@@ -1,0 +1,48 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleconfiguration.html">Oracle</a> <a href="oracleconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="database"/><h1>Database Configuration</h1>
+
+<p>By default, SQL Relay assumes that it's connecting to an Oracle database, but database connection modules for many other databases are provided.</p>
+
+<p>The dbase attribute of the instance tag specifies which database connection module to load.</p>
+
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<ul>
+  <li><a href="oracleconfiguration.html#db-oracle">Oracle</a></li>
+  <li><a href="mssqlodbcconfiguration.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a></li>
+  <li><a href="mssqlfreetdsconfiguration.html#db-mssql-freetds">Microsoft SQL Server (via !FreeTDS)</a></li>
+  <li><a href="sapconfiguration.html#db-sap">SAP/Sybase (via the native SAP/Sybase library)</a></li>
+  <li><a href="sapfreetdsconfiguration.html#db-sap-freetds">SAP/Sybase (via !FreeTDS)</a></li>
+  <li><a href="db2configuration.html#db-db2">IBM DB2</a></li>
+  <li><a href="informixconfiguration.html#db-informix">Informix</a></li>
+  <li><a href="mysqlconfiguration.html#db-mysql">!MySQL/MariaDB</a></li>
+  <li><a href="postgresqlconfiguration.html#db-postgresql">!PostgreSQL</a></li>
+  <li><a href="firebirdconfiguration.html#db-firebird">Firebird</a></li>
+  <li><a href="sqliteconfiguration.html#db-sqlite">SQLite</a></li>
+  <li><a href="teradataconfiguration.html#db-odbc-teradata">Teradata (via ODBC)</a></li>
+  <li><a href="exasolconfiguration.html#db-odbc-exasol">Exasol (via ODBC)</a></li>
+  <li><a href="hiveconfiguration.html#db-odbc-hive">Apache Hive (via ODBC)</a></li>
+  <li><a href="impalaconfiguration.html#db-odbc-impala">Apache Impala (via ODBC)</a></li>
+  <li><a href="redshiftodbcconfiguration.html#db-odbc-redshift">Amazon Redshift (via ODBC)</a></li>
+  <li><a href="redshiftpostgresqlconfiguration.html#db-postgresql-redshift">Amazon Redshift (via !PostgreSQL)</a></li>
+  <li><a href="athenaconfiguration.html#db-odbc-athena">Amazon Athena (via ODBC)</a></li>
+  <li><a href="odbcconfiguration.html#db-odbc">Generic ODBC</a></li>
+</ul>
+
+<hr/>
+
+<p><a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleconfiguration.html">Oracle</a> <a href="oracleconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

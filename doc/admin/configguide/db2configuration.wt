@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]] [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [informixconfiguration.html Informix] [[Image(../../images/navnext.png,link=informixconfiguration.html,vertical-align=middle)]]
+
+[=#db-db2]
+= IBM DB2 =
+
+In this example, SQL Relay is configured to connect to an IBM DB2 database.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-db2.conf@
+}}}
+}}}
+
+The db option refers to an entry in the local DB2 instance's database catalog.  See [http://software.firstworks.com/p/getting-started-with-ibm-db2.html#accessingremote Getting Started With IBM DB2 - Accessing Remote Instances] for more information.
+
+The connecttimeout=0 option tells SQL Relay not to time out when connecting to the database.  DB2 instances can take a long time to log in to sometimes.  The default timeout is often too short.
+
+See the [../configreference.html#db2 SQL Relay Configuration Reference] for other valid IBM DB2 connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-ibm-db2.html Getting Started With IBM DB2] for general assistance installing and configuring an IBM DB2 database.
+
+----
+
+[[Image(../../images/navprev.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]] [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [informixconfiguration.html Informix] [[Image(../../images/navnext.png,link=informixconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

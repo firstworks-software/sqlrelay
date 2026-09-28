@@ -1,0 +1,67 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]] [redshiftpostgresqlconfiguration.html Amazon Redshift (via !PostgreSQL)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [odbcconfiguration.html Generic ODBC] [[Image(../../images/navnext.png,link=odbcconfiguration.html,vertical-align=middle)]]
+
+[=#db-odbc-athena]
+= Amazon Athena (via ODBC) =
+
+Amazon Athena is an SQL interface to data stored in Amazon S3.  Simba provides an Athena ODBC driver for Windows and Linux platforms.  This driver (or perhaps Athena itself) has some quirks.
+
+In this example, SQL Relay is configured to connect to a Athena database via ODBC.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-athena.conf@
+}}}
+}}}
+
+Note the odd user and password options in the string attribute of the connection tag.
+
+Note also that the db option is missing from the string attribute of the connection tag.  The schema must be set in the DSN, and setting it in the connection string doesn't override the one set in the DSN.
+
+The overrideschema option in the string attribute of the connection tag works around a quirk.  The database tends to report the current schema as something other than "athenadb", but when running "show tables" or "describe" queries, the database wants "athenadb" to be passed in as the schema for the table names.
+
+The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).
+
+On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).
+
+On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).
+
+{{{#!blockquote
+{{{#!code
+[athena]
+Description=Simba Athena ODBC Driver (64-bit) DSN
+Driver=/opt/simba/athenaodbc/lib/64/libathenaodbc_sb64.so
+AwsRegion=us-east-1
+Schema=athenadb
+S3OutputLocation=s3://athenadata/
+UID=RDXDE23X56D9822FFGE3
+PWD=uEEmF+RDexoXpqTD5MiP3421emYP2M+4Rqo6GHio
+}}}
+}}}
+
+The Driver parameter refers to an entry in the odbcinst.ini file (usually /etc/odbcinst.ini) which identifies driver files:
+
+{{{#!blockquote
+{{{#!code
+[Simba Athena ODBC Driver 64-bit]
+Description=Simba Athena ODBC Driver (64-bit)
+Driver=/opt/simba/athenaodbc/lib/64/libathenaodbc_sb64.so
+}}}
+}}}
+
+( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
+
+See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]] [redshiftpostgresqlconfiguration.html Amazon Redshift (via !PostgreSQL)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [odbcconfiguration.html Generic ODBC] [[Image(../../images/navnext.png,link=odbcconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

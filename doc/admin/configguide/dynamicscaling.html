@@ -1,0 +1,108 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="databasecursorcount.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databasecursorcount.html">Database Cursor Count</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="listenerconfiguration.html">Listener Configuration</a> <a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="dynamicscaling"/><h1>Dynamic Scaling</h1>
+
+<p>Both connections and cursors can be configured to scale dynamically - open on demand and then die off when no longer needed.  This feature is useful if you have spikes in traffic during certain times of day or if your application has a few modules that occasionally need more cursors than usual.</p>
+
+<p>The maxconnections and maxcursors attribute define the upper bounds.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">connections</font><font color="#990000">=</font><font color="#FF0000">"10"</font> <font color="#009900">maxconnections</font><font color="#990000">=</font><font color="#FF0000">"20"</font> <font color="#009900">cursors</font><font color="#990000">=</font><font color="#FF0000">"2"</font> <font color="#009900">maxcursors</font><font color="#990000">=</font><font color="#FF0000">"10"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, 10 connections will be started initially but more will be be started on-demand, up to 20.  Each of the newly spawned connections will die off if they are inactive for longer than 1 minute.</p>
+
+<p>In this example, each connection will initially open 2 cursors but more will be opened on-demand, up to 10.  Each newly opened cursor will be closed as soon as it is no longer needed.</p>
+
+<p>Other attributes that control dynamic scaling behavior include:</p>
+
+<ul>
+  <li>maxqueuelength</li>
+  <li>growby</li>
+  <li>ttl</li>
+  <li>cursors_growby</li>
+</ul>
+
+<p>See the <a href="../configreference.html">SQL Relay Configuration Reference</a> for more information on these attributes.</p>
+
+<hr/>
+
+<p><a href="databasecursorcount.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databasecursorcount.html">Database Cursor Count</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="listenerconfiguration.html">Listener Configuration</a> <a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2024 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a> <img style="margin-left: 5px; vertical-align: text-bottom;" title="native english speaker" src="../../images/us.png"/> <img style="vertical-align: text-bottom;" title="falo português também" src="../../images/br.png"/>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

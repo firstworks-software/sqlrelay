@@ -1,0 +1,70 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="mssqlfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mssqlfreetdsconfiguration.html">Microsoft SQL Server (via !FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sapfreetdsconfiguration.html">SAP/Sybase (via !FreeTDS)</a> <a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-sap"/><h1>SAP/Sybase (via the native SAP/Sybase library)</h1>
+
+<p>In this example, SQL Relay is configured to connect to a SAP/Sybase database via the native SAP/Sybase library.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sap"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"sybase=/opt/sap;lang=en_US;server=SAPSERVER;user=sapuser;password=sappassword;db=sapdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The sybase option refers to the base directory of the SAP/Sybase software installation.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>C<font color="#990000">:\\</font>SAP</tt></pre>
+
+</blockquote>
+<p>The sybase option is often unnecessary though, as the SYBASE environment variable is usually set system-wide.</p>
+
+<p>On Linux/Unix platforms, the server option refers to an entry in the interfaces (usually $SYBASE/interfaces) file which identifies the database server, similar to:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>SAPSERVER
+	master tcp ether examplehost <font color="#993399">5000</font>
+	query tcp ether examplehost <font color="#993399">5000</font></tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The interfaces file must be readable by the user that the instance of SQL Relay runs as.)</p>
+
+<p>On Windows platforms, the server option refers to a similar entry created in an opaque location with the Open Client Directory Services Editor (dsedit).</p>
+
+<p>The lang option sets the language to a value that is known to be supported by Sybase.  This may not be necessary on all platforms.  See <a href="../../faq.html#sqlserver">the FAQ</a> for more info.</p>
+
+<p>See the <a href="../configreference.html#sap">SQL Relay Configuration Reference</a> for other valid SAP/Sybase connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-sapsybase.html">Getting Started With SAP/Sybase</a> for general assistance installing and configuring an SAP/Sybase database.</p>
+
+<hr/>
+
+<p><a href="mssqlfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mssqlfreetdsconfiguration.html">Microsoft SQL Server (via !FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sapfreetdsconfiguration.html">SAP/Sybase (via !FreeTDS)</a> <a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

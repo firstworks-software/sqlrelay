@@ -1,0 +1,42 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="informixconfiguration.html">Informix</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlconfiguration.html">!PostgreSQL</a> <a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-mysql"/><h1>MySQL/MariaDB</h1>
+
+<p>In this example, SQL Relay is configured to connect to a MySQL/MariaDB database.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The host and db options indicate that SQL Relay should connect to the database exampledb on the host examplehost.</p>
+
+<p>See the <a href="../configreference.html#mysql">SQL Relay Configuration Reference</a> for other valid MySQL/MariaDB connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-mysql.html">Getting Started With MySQL</a> for general assistance installing and configuring a MySQL/MariaDB database.</p>
+
+<hr/>
+
+<p><a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="informixconfiguration.html">Informix</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlconfiguration.html">!PostgreSQL</a> <a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

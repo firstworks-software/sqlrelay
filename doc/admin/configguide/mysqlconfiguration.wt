@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=informixconfiguration.html,vertical-align=middle)]] [informixconfiguration.html Informix] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlconfiguration.html !PostgreSQL] [[Image(../../images/navnext.png,link=postgresqlconfiguration.html,vertical-align=middle)]]
+
+[=#db-mysql]
+= !MySQL/MariaDB =
+
+In this example, SQL Relay is configured to connect to a !MySQL/MariaDB database.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysql.conf@
+}}}
+}}}
+
+The host and db options indicate that SQL Relay should connect to the database exampledb on the host examplehost.
+
+See the [../configreference.html#mysql SQL Relay Configuration Reference] for other valid !MySQL/MariaDB connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-mysql.html Getting Started With MySQL] for general assistance installing and configuring a !MySQL/MariaDB database.
+
+----
+
+[[Image(../../images/navprev.png,link=informixconfiguration.html,vertical-align=middle)]] [informixconfiguration.html Informix] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlconfiguration.html !PostgreSQL] [[Image(../../images/navnext.png,link=postgresqlconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

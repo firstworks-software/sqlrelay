@@ -1,0 +1,58 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html !MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]
+
+[=#db-informix]
+= Informix =
+
+In this example, SQL Relay is configured to connect to an Informix database.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-informix.conf@
+}}}
+}}}
+
+The informixdir option refers to the base directory of the Informix software installation.  On Windows platforms, it should be specified as a Windows-style pathwith doubled backslashes.  For example:
+
+{{{#!blockquote
+{{{#!code
+C:\\Program Files\\IBM Informix Software Bundle
+}}}
+}}}
+
+The informixdir option is often unnecessary, as the INFORMIXDIR environment variable is usually set system-wide.
+
+On Linux and Unix platforms, the servername option refers to an entry in the sqlhosts file (usually $INFORMIXDIR/etc/sqlhosts) which identifies the database server, similar to:
+
+{{{#!blockquote
+{{{#!code
+ol_informix1210 onsoctcp 192.168.123.59 ol_informix1210
+}}}
+}}}
+
+The second ol_informix1210 in the sqlhosts file refers to an entry in /etc/services which identifies the port that the server is listening on, similar to:
+
+{{{#!blockquote
+{{{#!code
+ol_informix1210 29756/tcp
+}}}
+}}}
+
+( '''NOTE:''' The sqlhosts and /etc/services files must be readable by the user that the instance of SQL Relay runs as.)
+
+On Windows platforms, the servername option refers to a similar entry created in an opaque location with the Setnet32 program.
+
+See the [../configreference.html#informix SQL Relay Configuration Reference] for other valid Informix connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html !MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

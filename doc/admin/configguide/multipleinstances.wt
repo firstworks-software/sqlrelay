@@ -1,0 +1,52 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=listenerconfiguration.html,vertical-align=middle)]] [listenerconfiguration.html Listener Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [startinginstancesautomatically.html Starting Instances Automatically] [[Image(../../images/navnext.png,link=startinginstancesautomatically.html,vertical-align=middle)]]
+
+[=#instances]
+= Multiple Instances =
+
+Any number of SQL Relay instances can be defined in the configuration file.
+
+In following example, instances that connect to Oracle, SAP/Sybase and DB2 are defined in the same file.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-multiple.conf@
+}}}
+}}}
+
+These instances can be started using:
+
+{{{#!blockquote
+{{{
+sqlr-start -id oracleexample
+sqlr-start -id sapexample
+sqlr-start -id db2example
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' When installed from packages, SQL Relay may have to be started and stopped as root.)
+}}}
+
+...and accessed using:
+
+{{{#!blockquote
+{{{
+sqlrsh -host sqlrserver -port 9000 -user scott -password tiger
+sqlrsh -host sqlrserver -port 9001 -user sapuser -password sappassword
+sqlrsh -host sqlrserver -port 9002 -user db2inst1 -password db2inst1pass
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=listenerconfiguration.html,vertical-align=middle)]] [listenerconfiguration.html Listener Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [startinginstancesautomatically.html Starting Instances Automatically] [[Image(../../images/navnext.png,link=startinginstancesautomatically.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

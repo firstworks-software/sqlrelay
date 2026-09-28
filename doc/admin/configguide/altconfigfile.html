@@ -269,7 +269,7 @@ http://myuser:mypassword@configserver.mydomain.com/sqlrconfig/db2.conf
 
 <p>As link files can be protected by file permissions, and the urls stored in them aren't exposed anywhere else, such as in a process listing, user-password files are not generally necessary when using link files.</p>
 
-<p>There is no limit to the depth of links.  A link file can reference another link file which references another, which references another, etc.  Too great a depth could lead to slow startup times though, especially when using remote configration files. This is especially significant when using <a href="basicconfiguration.html#dynamicscaling">Dynamic Scaling</a>, as the configuration must be loaded each time a new connection is spawned.  Care should also be taken to avoid loops.</p>
+<p>There is no limit to the depth of links.  A link file can reference another link file which references another, which references another, etc.  Too great a depth could lead to slow startup times though, especially when using remote configration files. This is especially significant when using <a href="dynamicscaling.html#dynamicscaling">Dynamic Scaling</a>, as the configuration must be loaded each time a new connection is spawned.  Care should also be taken to avoid loops.</p>
 
 <hr/>
 

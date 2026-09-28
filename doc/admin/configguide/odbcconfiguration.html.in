@@ -1,0 +1,37 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="athenaconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="athenaconfiguration.html">Amazon Athena (via ODBC)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="databaseconnectioncount.html">Database Connection Count</a> <a href="databaseconnectioncount.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-odbc"/><h1>Generic ODBC</h1>
+
+<p>ODBC can be used to access many databases for which SQL Relay has no native support.</p>
+
+<p>Accessing a database via an ODBC driver usually involves:</p>
+
+<ul>
+  <li>Installing the driver</li>
+  <li>Creating a DSN</li>
+  <ul>
+    <li>On Windows this is done via a control panel</li>
+    <li>On Linux/Unix it is done by adding entries to the odbc.ini and sometimes odbcinst.ini files</li>
+  </ul>
+
+  <li>Creating an instance of SQL Relay with dbase="odbc" which refers to the DSN, optionally specifying the user and password</li>
+</ul>
+
+<p>See the examples above for more details.  It should be possible to adapt one of them to the ODBC driver that you would like to use.</p>
+
+<p>Note that many ODBC drivers have quirks.  Many of the examples above demonstrate ways of working around some of these quirks.</p>
+
+<hr/>
+
+<p><a href="athenaconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="athenaconfiguration.html">Amazon Athena (via ODBC)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="databaseconnectioncount.html">Database Connection Count</a> <a href="databaseconnectioncount.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

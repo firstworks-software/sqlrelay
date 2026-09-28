@@ -1,0 +1,78 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqliteconfiguration.html,vertical-align=middle)]] [sqliteconfiguration.html SQLite] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [exasolconfiguration.html Exasol (via ODBC)] [[Image(../../images/navnext.png,link=exasolconfiguration.html,vertical-align=middle)]]
+
+[=#db-odbc-teradata]
+= Teradata (via ODBC) =
+
+Teradata ODBC drivers are available for many platforms, including Windows and Linux.
+
+In this example, SQL Relay is configured to connect to a Teradata database via ODBC.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-teradata.conf@
+}}}
+}}}
+
+The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).
+
+On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).
+
+On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).
+
+{{{#!blockquote
+{{{#!code
+[teradata]
+Description=Teradata Database ODBC Driver 16.20
+Driver=/opt/teradata/client/16.20/lib64/tdataodbc_sb64.so
+DBCName=teradatahost
+UID=testuser
+PWD=testpassword
+AccountString=
+CharacterSet=ASCII
+DatasourceDNSEntries=
+DateTimeFormat=IAA
+DefaultDatabase=
+DontUseHelpDatabase=0
+DontUseTitles=1
+EnableExtendedStmtInfo=1
+EnableReadAhead=1
+IgnoreODBCSearchPattern=0
+LogErrorEvents=0
+LoginTimeout=20
+MaxRespSize=65536
+MaxSingleLOBBytes=0
+MaxTotalLOBBytesPerRow=0
+MechanismName=
+NoScan=0
+PrintOption=N
+retryOnEINTR=1
+ReturnGeneratedKeys=N
+SessionMode=System Default
+SplOption=Y
+TABLEQUALIFIER=0
+TCPNoDelay=1
+TdmstPortNumber=1025
+UPTMode=Not set
+USE2XAPPCUSTOMCATALOGMODE=0
+UseDataEncryption=0
+UseDateDataForTimeStampParams=0
+}}}
+}}}
+
+( '''NOTE:''' The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
+
+See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=sqliteconfiguration.html,vertical-align=middle)]] [sqliteconfiguration.html SQLite] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [exasolconfiguration.html Exasol (via ODBC)] [[Image(../../images/navnext.png,link=exasolconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

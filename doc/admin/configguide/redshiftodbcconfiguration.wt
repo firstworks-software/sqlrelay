@@ -1,0 +1,63 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via !PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]
+
+[=#db-odbc-redshift]
+= Amazon Redshift (via ODBC) =
+
+Amazon Redshift is a cloud-hosted data warehouse service.  Amazon provides a Redshift ODBC driver for Windows and Linux platforms.  This driver (or perhaps Redshift itself) has some quirks.
+
+In this example, SQL Relay is configured to connect to a Redshift database via ODBC.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-redshift.conf@
+}}}
+}}}
+
+The ignoreselectdatabase="yes" attribute of the instance tag works around a quirk.  It instructs SQL Relay to ignore "use database" queries, or other attempts to select the current database/schema.  These options tend to put the connection outside of any database/schema, and unable to return to the desired database/schema.
+
+The overrideschema option in the string attribute of the connection tag works around another quirk.  When running "show tables" or "describe" queries, the database needs "public" to be passed in as the schema for the table names.
+
+The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).
+
+On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).
+
+On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).
+
+{{{#!blockquote
+{{{#!code
+[redshift]
+Driver=Amazon Redshift (x64)
+Host=redshifthost
+Database=redshiftdb
+Username=redshiftuser
+Password=redshiftpassword
+}}}
+}}}
+
+The Driver parameter refers to an entry in the odbcinst.ini file (usually /etc/odbcinst.ini) which identifies driver files:
+
+{{{#!blockquote
+{{{#!code
+[Amazon Redshift (x64)]
+Description=Amazon Redshift ODBC Driver (64-bit)
+Driver=/opt/amazon/redshiftodbc/lib/64/libamazonredshiftodbc64.so
+}}}
+}}}
+
+( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
+
+See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via !PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,65 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] [[Image(../../images/navnext.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]]
+
+[=#db-oracle]
+= Oracle =
+
+In this example, SQL Relay is configured to connect to an Oracle database.  The dbase attribute defaults to "oracle", so the dbase attribute may be omitted when connecting to an Oracle database.  It is just set here for illustrative purposes.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oracle.conf@
+}}}
+}}}
+
+The oracle_home option refers to the base directory of an Oracle instance.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:
+
+{{{#!blockquote
+{{{#!code
+C:\\Oracle\\ora12.1
+}}}
+}}}
+
+The oracle_home option is often unnecessary though, as the ORACLE_HOME environment variable is usually set system-wide.  Also, since Oracle 10g, the TNS_ADMIN environment variable is preferred to ORACLE_HOME, and the tns_admin option can be used to serve the same purpose.  See the [../configreference.html#oracle SQL Relay Configuration Reference] for details on the tns_admin option.
+
+The oracle_sid option refers to an entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora or $TNS_ADMIN/tnsnames.ora) similar to:
+
+{{{#!blockquote
+{{{#!code
+ORCL =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = examplehost)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ora1)
+    )
+  )
+}}}
+}}}
+
+( '''NOTE:''' The tnsnames.ora file must be readable by the user that the instance of SQL Relay runs as.)
+
+If you are using Oracle Instant Client, then it's likely that you don't have an ORACLE_HOME/TNS_ADMIN, or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home/tns_admin option can be omitted.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oracle-sid.conf@
+}}}
+}}}
+
+See the [../configreference.html#oracle SQL Relay Configuration Reference] for other valid Oracle connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-oracle.html Getting Started With Oracle] for general assistance installing and configuring an Oracle database.
+
+----
+
+[[Image(../../images/navprev.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] [[Image(../../images/navnext.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

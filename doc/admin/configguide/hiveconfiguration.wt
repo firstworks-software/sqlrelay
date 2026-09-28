@@ -1,0 +1,54 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=exasolconfiguration.html,vertical-align=middle)]] [exasolconfiguration.html Exasol (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [impalaconfiguration.html Apache Impala (via ODBC)] [[Image(../../images/navnext.png,link=impalaconfiguration.html,vertical-align=middle)]]
+
+[=#db-odbc-hive]
+= Apache Hive (via ODBC) =
+
+Apache Hive is a data warehouse built on top of Apache Hadoop.  Cloudera provides a Hive ODBC driver for Windows and Linux platforms which implements a SQL interface to Hive.  This driver has some quirks.
+
+The most significant quirk is that version 2.6.4.1004 (and probably other versions) for Linux ship with their own copy of libssl/libcrypto, version 1.1.  These tend to conflict with the versions of libssl/libcrypto that SQL Relay itself is linked against, causing the driver to malfunction.  The only known solution is to build a copy of Rudiments and SQL Relay from source, configuring rudiments with the --disable-ssl --disable-gss --disable-libcurl options, and use this copy to access Hive.  Unfortunately, this has a side effect of disabling all SSL/TLS and Kerberos support in SQL Relay, as well as disabling the ability to load config files over https and ssh.  Perhaps a future version of the Cloudera Hive ODBC driver for Linux will link against the system versions of libssl/libcrypto and eliminate this quirk.
+
+In this example, SQL Relay is configured to connect to a Apache Hive data warehouse via ODBC.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-hive.conf@
+}}}
+}}}
+
+The contents of the session tag work around another quirk.  "hivedb" is specified in the db option of the string attribute of the connection tag, but this doesn't appear to be adequate to actually put you in that schema.  Running the "use hivedb" query at the beginning of the session helps.  But, it appears that the schema isn't actually selected until the first query is run.  So, the "select 1" query immediately following the use query solves this.
+
+The overrideschema option in the string attribute of the connection tag works around yet another quirk.  The database tends to report the current schema as something other than "hivedb", but when running "show tables" or "describe" queries, the database wants "hivedb" to be passed in as the schema for the table names.
+
+The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).
+
+On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).
+
+On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).
+
+{{{#!blockquote
+{{{#!code
+[hive]
+Driver=/opt/cloudera/hiveodbc/lib/64/libclouderahiveodbc64.so
+HiveServerType=2
+Host=hiveserver
+Port=10000
+}}}
+}}}
+
+( '''NOTE:''' The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
+
+See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=exasolconfiguration.html,vertical-align=middle)]] [exasolconfiguration.html Exasol (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [impalaconfiguration.html Apache Impala (via ODBC)] [[Image(../../images/navnext.png,link=impalaconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

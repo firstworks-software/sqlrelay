@@ -205,7 +205,7 @@ For '''freetds''' databases, the connect string syntax is "sybase=SYBASE;lang=LA
 * '''server''': The entry in the "interfaces" or "freetds.conf" file which specifies host, port and other database connection parameters.
 * '''db''': The database to log into.  Required.
 * '''autocommit''': If set to yes, then each insert, update, or delete is committed immediately.  If set to no, then each insert, update, or delete is only committed when a commit statement is executed.  If set to default then the default behavior (autocommit-on) is observed.  Optional, defaults to default.
-* '''charset''': The character set that !FreeTDS asks the server to use.  Optional.  Note that this is '''not''' the character set that data coming out of the database is translated into.  That is set by the "client charset" setting in the "freetds.conf" file instead.  See [configguide/basicconfiguration.html#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] for an example.
+* '''charset''': The character set that !FreeTDS asks the server to use.  Optional.  Note that this is '''not''' the character set that data coming out of the database is translated into.  That is set by the "client charset" setting in the "freetds.conf" file instead.  See [configguide/mssqlfreetdsconfiguration.html#db-mssql-freetds Microsoft SQL Server (via FreeTDS)] for an example.
 * '''language''': The language to use.  Optional.
 * '''hostname''': The host to connect to.  Optional, overrides the host in the "interfaces" or "freetds.conf" file.
 * '''packetsize''': The packetsize to use.  Optional.

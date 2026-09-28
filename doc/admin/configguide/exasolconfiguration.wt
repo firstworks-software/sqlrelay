@@ -1,0 +1,48 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=teradataconfiguration.html,vertical-align=middle)]] [teradataconfiguration.html Teradata (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hiveconfiguration.html Apache Hive (via ODBC)] [[Image(../../images/navnext.png,link=hiveconfiguration.html,vertical-align=middle)]]
+
+[=#db-odbc-exasol]
+= Exasol (via ODBC) =
+
+Exasol ODBC drivers are available for Windows and Linux.
+
+In this example, SQL Relay is configured to connect to an Exasol database via ODBC.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-exasol.conf@
+}}}
+}}}
+
+The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).
+
+On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).
+
+On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).
+
+{{{#!blockquote
+{{{#!code
+[exasolution-uo2214lv2_64]
+DRIVER=/home/dmuse/software/EXASOL_ODBC-6.0.11/lib/linux/x86_64/libexaodbc-uo2214lv2.so
+EXAHOST=192.168.123.12:8563
+EXAUID=sys
+EXAPWD=exasol
+}}}
+}}}
+
+( '''NOTE:''' The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)
+
+See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+----
+
+[[Image(../../images/navprev.png,link=teradataconfiguration.html,vertical-align=middle)]] [teradataconfiguration.html Teradata (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hiveconfiguration.html Apache Hive (via ODBC)] [[Image(../../images/navnext.png,link=hiveconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

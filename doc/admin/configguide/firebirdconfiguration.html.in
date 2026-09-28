@@ -1,0 +1,53 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlconfiguration.html">!PostgreSQL</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqliteconfiguration.html">SQLite</a> <a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-firebird"/><h1>Firebird</h1>
+
+<p>In this example, SQL Relay is configured to connect to a Firebird database.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=firebirduser;password=firebirdpassword;db=firebirdhost:/opt/firebird/firebirddb.gdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The db option indicates that SQL Relay should connect to the database located at /opt/firebird/exampledb.gdb on the host examplehost.</p>
+
+<p>Note that if the database is located on a Windows host, then the path segment of the db option should be specified as a Windows-style path with doubled backslashes.  For example:
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>examplehost<font color="#990000">:</font>C<font color="#990000">:\\</font><font color="#008080">Program</font> Files<font color="#990000">\\</font>Firebird<font color="#990000">\\</font>Firebird_3_0<font color="#990000">\\</font>exampledb<font color="#990000">.</font>gdb</tt></pre>
+
+</blockquote>
+</p>
+
+<p>See the <a href="../configreference.html#firebird">SQL Relay Configuration Reference</a> for other valid Firebird connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-firebird.html">Getting Started With Firebird</a> for general assistance installing and configuring a Firebird database.</p>
+
+<hr/>
+
+<p><a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlconfiguration.html">!PostgreSQL</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqliteconfiguration.html">SQLite</a> <a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

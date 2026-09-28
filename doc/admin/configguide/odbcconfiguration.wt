@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=athenaconfiguration.html,vertical-align=middle)]] [athenaconfiguration.html Amazon Athena (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [databaseconnectioncount.html Database Connection Count] [[Image(../../images/navnext.png,link=databaseconnectioncount.html,vertical-align=middle)]]
+
+[=#db-odbc]
+= Generic ODBC =
+
+ODBC can be used to access many databases for which SQL Relay has no native support.
+
+Accessing a database via an ODBC driver usually involves:
+
+* Installing the driver
+* Creating a DSN
+ * On Windows this is done via a control panel
+ * On Linux/Unix it is done by adding entries to the odbc.ini and sometimes odbcinst.ini files
+* Creating an instance of SQL Relay with dbase="odbc" which refers to the DSN, optionally specifying the user and password
+
+See the examples above for more details.  It should be possible to adapt one of them to the ODBC driver that you would like to use.
+
+Note that many ODBC drivers have quirks.  Many of the examples above demonstrate ways of working around some of these quirks.
+
+----
+
+[[Image(../../images/navprev.png,link=athenaconfiguration.html,vertical-align=middle)]] [athenaconfiguration.html Amazon Athena (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [databaseconnectioncount.html Database Connection Count] [[Image(../../images/navnext.png,link=databaseconnectioncount.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

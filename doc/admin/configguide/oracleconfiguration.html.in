@@ -1,0 +1,89 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mssqlodbcconfiguration.html">Microsoft SQL Server (via ODBC)</a> <a href="mssqlodbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-oracle"/><h1>Oracle</h1>
+
+<p>In this example, SQL Relay is configured to connect to an Oracle database.  The dbase attribute defaults to "oracle", so the dbase attribute may be omitted when connecting to an Oracle database.  It is just set here for illustrative purposes.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The oracle_home option refers to the base directory of an Oracle instance.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>C<font color="#990000">:\\</font>Oracle<font color="#990000">\\</font>ora12<font color="#990000">.</font><font color="#993399">1</font></tt></pre>
+
+</blockquote>
+<p>The oracle_home option is often unnecessary though, as the ORACLE_HOME environment variable is usually set system-wide.  Also, since Oracle 10g, the TNS_ADMIN environment variable is preferred to ORACLE_HOME, and the tns_admin option can be used to serve the same purpose.  See the <a href="../configreference.html#oracle">SQL Relay Configuration Reference</a> for details on the tns_admin option.</p>
+
+<p>The oracle_sid option refers to an entry in the tnsnames.ora file (usually $ORACLE_HOME/network/admin/tnsnames.ora or $TNS_ADMIN/tnsnames.ora) similar to:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>ORCL <font color="#990000">=</font>
+  <font color="#990000">(</font>DESCRIPTION <font color="#990000">=</font>
+    <font color="#990000">(</font>ADDRESS <font color="#990000">=</font> <font color="#990000">(</font>PROTOCOL <font color="#990000">=</font> TCP<font color="#990000">)(</font>HOST <font color="#990000">=</font> examplehost<font color="#990000">)(</font>PORT <font color="#990000">=</font> <font color="#993399">1521</font><font color="#990000">))</font>
+    <font color="#990000">(</font>CONNECT_DATA <font color="#990000">=</font>
+      <font color="#990000">(</font>SERVER <font color="#990000">=</font> DEDICATED<font color="#990000">)</font>
+      <font color="#990000">(</font>SERVICE_NAME <font color="#990000">=</font> ora1<font color="#990000">)</font>
+    <font color="#990000">)</font>
+  <font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The tnsnames.ora file must be readable by the user that the instance of SQL Relay runs as.)</p>
+
+<p>If you are using Oracle Instant Client, then it's likely that you don't have an ORACLE_HOME/TNS_ADMIN, or a tnsnames.ora file.  In that case, the oracle_sid can be set directly to a tnsnames-style expression and the oracle_home/tns_admin option can be omitted.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = examplehost)(PORT = 1521)) (CONNECT_DATA = (SERVER = DEDICATED) (SERVICE_NAME = ora1)))"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>See the <a href="../configreference.html#oracle">SQL Relay Configuration Reference</a> for other valid Oracle connect string options.</p>
+
+<p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-oracle.html">Getting Started With Oracle</a> for general assistance installing and configuring an Oracle database.</p>
+
+<hr/>
+
+<p><a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mssqlodbcconfiguration.html">Microsoft SQL Server (via ODBC)</a> <a href="mssqlodbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

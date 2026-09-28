@@ -1,0 +1,41 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=databasecursorcount.html,vertical-align=middle)]] [databasecursorcount.html Database Cursor Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listenerconfiguration.html Listener Configuration] [[Image(../../images/navnext.png,link=listenerconfiguration.html,vertical-align=middle)]]
+
+[=#dynamicscaling]
+= Dynamic Scaling =
+
+Both connections and cursors can be configured to scale dynamically - open on demand and then die off when no longer needed.  This feature is useful if you have spikes in traffic during certain times of day or if your application has a few modules that occasionally need more cursors than usual.
+
+The maxconnections and maxcursors attribute define the upper bounds.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-dynamicscaling.conf@
+}}}
+}}}
+
+In this example, 10 connections will be started initially but more will be be started on-demand, up to 20.  Each of the newly spawned connections will die off if they are inactive for longer than 1 minute.
+
+In this example, each connection will initially open 2 cursors but more will be opened on-demand, up to 10.  Each newly opened cursor will be closed as soon as it is no longer needed.
+
+Other attributes that control dynamic scaling behavior include:
+
+* maxqueuelength
+* growby
+* ttl
+* cursors_growby
+
+See the [../configreference.html SQL Relay Configuration Reference] for more information on these attributes.
+
+----
+
+[[Image(../../images/navprev.png,link=databasecursorcount.html,vertical-align=middle)]] [databasecursorcount.html Database Cursor Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listenerconfiguration.html Listener Configuration] [[Image(../../images/navnext.png,link=listenerconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

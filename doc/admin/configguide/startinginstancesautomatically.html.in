@@ -1,0 +1,104 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleinstances.html">Multiple Instances</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="clientprotocoloptions.html">Client Protocol Options</a> <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="autostart"/><h1>Starting Instances Automatically</h1>
+
+<p>In all previous examples sqlr-start has been called with the -id option, specifying which instance to start.  If sqlr-start is called without the -id option then it will start all instances configured with the enabled attribute set to yes.</p>
+
+<p>For example, if the following instances are defined...</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"oracleexample"</font> <font color="#009900">enabled</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9000"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"sapexample"</font> <font color="#009900">enabled</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"sap"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9001"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"sybase=/opt/sap;lang=en_US;server=SAPSERVER;user=sapuser;password=sappassword;db=sapdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"db2example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"db2"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"9002"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"db=db2db;user=db2inst1;password=db2inst1pass;lang=C;connecttimeout=0"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>...then calling sqlr-start without the -id parameter will start oracleexample and sapexample because enabled="yes" is configured for those instances.  db2example will not be started because enabled="yes" is not configured for that instance.</p>
+
+<p>When installed on most platforms, SQL Relay creates a systemd service file (usually in /usr/lib/systemd/system or /lib/systemd/system) or an init script in the appropriate place under /etc.  These call sqlr-start with no -id option.  If configured to run at boot, they will start all instances for which enabled="yes" is configured.</p>
+
+<p>How to enable the service file or init script depends on what platform you are using.</p>
+
+<p>On systemd-enabled Linux, this usually involves running:</p>
+
+<blockquote>
+systemctl enable sqlrelay.service
+</blockquote>
+<p>On non-systemd-enabled Linux, Solaris, SCO and other non-BSD Unixes, this usually involves creating a symlink from /etc/init.d/sqlrelay to /etc/rc3.d/S85sqlrelay.  This can be done manually, but most platforms provide utilities to do it for you.</p>
+
+<p>Redhat-derived Linux distributions have a chkconfig command that can do this for you:</p>
+
+<blockquote>
+chkconfig --add sqlrelay
+</blockquote>
+<p>Debian-derived Linux distributions provide the update-rc.d command:</p>
+
+<blockquote>
+update-rc.d sqlrelay defaults
+</blockquote>
+<p>Solaris provides svcadm:</p>
+
+<blockquote>
+svcadm enable sqlrelay
+</blockquote>
+<p>On FreeBSD you must add a line to /etc/rc.conf like:</p>
+
+<blockquote>
+sqlrelay_enabled=YES
+</blockquote>
+<p>On NetBSD you must add a line to /etc/rc.conf like:</p>
+
+<blockquote>
+sqlrelay=YES
+</blockquote>
+<p>On OpenBSD you must add a line to /etc/rc.conf like:</p>
+
+<blockquote>
+sqlrelay_flags=""
+</blockquote>
+<hr/>
+
+<p><a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleinstances.html">Multiple Instances</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="clientprotocoloptions.html">Client Protocol Options</a> <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

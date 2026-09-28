@@ -1,0 +1,90 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqliteconfiguration.html">SQLite</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="exasolconfiguration.html">Exasol (via ODBC)</a> <a href="exasolconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="db-odbc-teradata"/><h1>Teradata (via ODBC)</h1>
+
+<p>Teradata ODBC drivers are available for many platforms, including Windows and Linux.</p>
+
+<p>In this example, SQL Relay is configured to connect to a Teradata database via ODBC.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=teradata;user=teradatauser;password=teradatapassword"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).</p>
+
+<p>On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).</p>
+
+<p>On Linux and Unix platforms, the DSN is an entry in the odbc.ini file (usually /etc/odbc.ini).</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">[</font>teradata<font color="#990000">]</font>
+Description<font color="#990000">=</font>Teradata Database ODBC Driver <font color="#993399">16.20</font>
+Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>teradata<font color="#990000">/</font>client<font color="#990000">/</font><font color="#993399">16.20</font><font color="#990000">/</font>lib64<font color="#990000">/</font>tdataodbc_sb64<font color="#990000">.</font>so
+DBCName<font color="#990000">=</font>teradatahost
+UID<font color="#990000">=</font>testuser
+PWD<font color="#990000">=</font>testpassword
+AccountString<font color="#990000">=</font>
+CharacterSet<font color="#990000">=</font>ASCII
+DatasourceDNSEntries<font color="#990000">=</font>
+DateTimeFormat<font color="#990000">=</font>IAA
+DefaultDatabase<font color="#990000">=</font>
+DontUseHelpDatabase<font color="#990000">=</font><font color="#993399">0</font>
+DontUseTitles<font color="#990000">=</font><font color="#993399">1</font>
+EnableExtendedStmtInfo<font color="#990000">=</font><font color="#993399">1</font>
+EnableReadAhead<font color="#990000">=</font><font color="#993399">1</font>
+IgnoreODBCSearchPattern<font color="#990000">=</font><font color="#993399">0</font>
+LogErrorEvents<font color="#990000">=</font><font color="#993399">0</font>
+LoginTimeout<font color="#990000">=</font><font color="#993399">20</font>
+MaxRespSize<font color="#990000">=</font><font color="#993399">65536</font>
+MaxSingleLOBBytes<font color="#990000">=</font><font color="#993399">0</font>
+MaxTotalLOBBytesPerRow<font color="#990000">=</font><font color="#993399">0</font>
+MechanismName<font color="#990000">=</font>
+NoScan<font color="#990000">=</font><font color="#993399">0</font>
+PrintOption<font color="#990000">=</font>N
+retryOnEINTR<font color="#990000">=</font><font color="#993399">1</font>
+ReturnGeneratedKeys<font color="#990000">=</font>N
+SessionMode<font color="#990000">=</font>System Default
+SplOption<font color="#990000">=</font>Y
+TABLEQUALIFIER<font color="#990000">=</font><font color="#993399">0</font>
+TCPNoDelay<font color="#990000">=</font><font color="#993399">1</font>
+TdmstPortNumber<font color="#990000">=</font><font color="#993399">1025</font>
+UPTMode<font color="#990000">=</font>Not set
+USE2XAPPCUSTOMCATALOGMODE<font color="#990000">=</font><font color="#993399">0</font>
+UseDataEncryption<font color="#990000">=</font><font color="#993399">0</font>
+UseDateDataForTimeStampParams<font color="#990000">=</font><font color="#993399">0</font></tt></pre>
+
+</blockquote>
+<p>( <b>NOTE:</b> The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)</p>
+
+<p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
+
+<hr/>
+
+<p><a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqliteconfiguration.html">SQLite</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="exasolconfiguration.html">Exasol (via ODBC)</a> <a href="exasolconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

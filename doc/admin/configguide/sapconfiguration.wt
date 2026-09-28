@@ -1,0 +1,56 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]] [mssqlfreetdsconfiguration.html Microsoft SQL Server (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] [[Image(../../images/navnext.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]]
+
+[=#db-sap]
+= SAP/Sybase (via the native SAP/Sybase library) =
+
+In this example, SQL Relay is configured to connect to a SAP/Sybase database via the native SAP/Sybase library.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-sap.conf@
+}}}
+}}}
+
+The sybase option refers to the base directory of the SAP/Sybase software installation.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:
+
+{{{#!blockquote
+{{{#!code
+C:\\SAP
+}}}
+}}}
+
+The sybase option is often unnecessary though, as the SYBASE environment variable is usually set system-wide.
+
+On Linux/Unix platforms, the server option refers to an entry in the interfaces (usually $SYBASE/interfaces) file which identifies the database server, similar to:
+
+{{{#!blockquote
+{{{#!code
+SAPSERVER
+	master tcp ether examplehost 5000
+	query tcp ether examplehost 5000
+}}}
+}}}
+
+( '''NOTE:''' The interfaces file must be readable by the user that the instance of SQL Relay runs as.)
+
+On Windows platforms, the server option refers to a similar entry created in an opaque location with the Open Client Directory Services Editor (dsedit).
+
+The lang option sets the language to a value that is known to be supported by Sybase.  This may not be necessary on all platforms.  See [../../faq.html#sqlserver the FAQ] for more info.
+
+See the [../configreference.html#sap SQL Relay Configuration Reference] for other valid SAP/Sybase connect string options.
+
+See [http://software.firstworks.com/p/getting-started-with-sapsybase.html Getting Started With SAP/Sybase] for general assistance installing and configuring an SAP/Sybase database.
+
+----
+
+[[Image(../../images/navprev.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]] [mssqlfreetdsconfiguration.html Microsoft SQL Server (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] [[Image(../../images/navnext.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

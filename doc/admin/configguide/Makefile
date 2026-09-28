@@ -7,6 +7,32 @@ include ../../../config.mk
 SRCS = index.wt \
 	quickstart.wt \
 	basicconfiguration.wt \
+	databaseconfiguration.wt \
+	oracleconfiguration.wt \
+	mssqlodbcconfiguration.wt \
+	mssqlfreetdsconfiguration.wt \
+	sapconfiguration.wt \
+	sapfreetdsconfiguration.wt \
+	db2configuration.wt \
+	informixconfiguration.wt \
+	mysqlconfiguration.wt \
+	postgresqlconfiguration.wt \
+	firebirdconfiguration.wt \
+	sqliteconfiguration.wt \
+	teradataconfiguration.wt \
+	exasolconfiguration.wt \
+	hiveconfiguration.wt \
+	impalaconfiguration.wt \
+	redshiftodbcconfiguration.wt \
+	redshiftpostgresqlconfiguration.wt \
+	athenaconfiguration.wt \
+	odbcconfiguration.wt \
+	databaseconnectioncount.wt \
+	databasecursorcount.wt \
+	dynamicscaling.wt \
+	listenerconfiguration.wt \
+	multipleinstances.wt \
+	startinginstancesautomatically.wt \
 	clientprotocoloptions.wt \
 	sqlrclientprotocol.wt \
 	mysqlprotocol.wt \
@@ -31,6 +57,32 @@ SRCS = index.wt \
 INS = index.html.in \
 	quickstart.html.in \
 	basicconfiguration.html.in \
+	databaseconfiguration.html.in \
+	oracleconfiguration.html.in \
+	mssqlodbcconfiguration.html.in \
+	mssqlfreetdsconfiguration.html.in \
+	sapconfiguration.html.in \
+	sapfreetdsconfiguration.html.in \
+	db2configuration.html.in \
+	informixconfiguration.html.in \
+	mysqlconfiguration.html.in \
+	postgresqlconfiguration.html.in \
+	firebirdconfiguration.html.in \
+	sqliteconfiguration.html.in \
+	teradataconfiguration.html.in \
+	exasolconfiguration.html.in \
+	hiveconfiguration.html.in \
+	impalaconfiguration.html.in \
+	redshiftodbcconfiguration.html.in \
+	redshiftpostgresqlconfiguration.html.in \
+	athenaconfiguration.html.in \
+	odbcconfiguration.html.in \
+	databaseconnectioncount.html.in \
+	databasecursorcount.html.in \
+	dynamicscaling.html.in \
+	listenerconfiguration.html.in \
+	multipleinstances.html.in \
+	startinginstancesautomatically.html.in \
 	clientprotocoloptions.html.in \
 	sqlrclientprotocol.html.in \
 	mysqlprotocol.html.in \
@@ -57,6 +109,32 @@ INS = index.html.in \
 WTOBJS = index.html.in \
 	quickstart.html.in \
 	basicconfiguration.html.in \
+	databaseconfiguration.html.in \
+	oracleconfiguration.html.in \
+	mssqlodbcconfiguration.html.in \
+	mssqlfreetdsconfiguration.html.in \
+	sapconfiguration.html.in \
+	sapfreetdsconfiguration.html.in \
+	db2configuration.html.in \
+	informixconfiguration.html.in \
+	mysqlconfiguration.html.in \
+	postgresqlconfiguration.html.in \
+	firebirdconfiguration.html.in \
+	sqliteconfiguration.html.in \
+	teradataconfiguration.html.in \
+	exasolconfiguration.html.in \
+	hiveconfiguration.html.in \
+	impalaconfiguration.html.in \
+	redshiftodbcconfiguration.html.in \
+	redshiftpostgresqlconfiguration.html.in \
+	athenaconfiguration.html.in \
+	odbcconfiguration.html.in \
+	databaseconnectioncount.html.in \
+	databasecursorcount.html.in \
+	dynamicscaling.html.in \
+	listenerconfiguration.html.in \
+	multipleinstances.html.in \
+	startinginstancesautomatically.html.in \
 	clientprotocoloptions.html.in \
 	sqlrclientprotocol.html.in \
 	mysqlprotocol.html.in \
@@ -81,6 +159,32 @@ WTOBJS = index.html.in \
 OBJS = index.html \
 	quickstart.html \
 	basicconfiguration.html \
+	databaseconfiguration.html \
+	oracleconfiguration.html \
+	mssqlodbcconfiguration.html \
+	mssqlfreetdsconfiguration.html \
+	sapconfiguration.html \
+	sapfreetdsconfiguration.html \
+	db2configuration.html \
+	informixconfiguration.html \
+	mysqlconfiguration.html \
+	postgresqlconfiguration.html \
+	firebirdconfiguration.html \
+	sqliteconfiguration.html \
+	teradataconfiguration.html \
+	exasolconfiguration.html \
+	hiveconfiguration.html \
+	impalaconfiguration.html \
+	redshiftodbcconfiguration.html \
+	redshiftpostgresqlconfiguration.html \
+	athenaconfiguration.html \
+	odbcconfiguration.html \
+	databaseconnectioncount.html \
+	databasecursorcount.html \
+	dynamicscaling.html \
+	listenerconfiguration.html \
+	multipleinstances.html \
+	startinginstancesautomatically.html \
 	clientprotocoloptions.html \
 	sqlrclientprotocol.html \
 	mysqlprotocol.html \
