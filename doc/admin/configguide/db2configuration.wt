@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]] [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [informixconfiguration.html Informix] [[Image(../../images/navnext.png,link=informixconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]] [sapfreetdsconfiguration.html SAP/Sybase (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [informixconfiguration.html Informix] [[Image(../../images/navnext.png,link=informixconfiguration.html,vertical-align=middle)]]
 
 [=#db-db2]
 = IBM DB2 =
@@ -27,7 +27,7 @@ See [http://software.firstworks.com/p/getting-started-with-ibm-db2.html Getting 
 
 ----
 
-[[Image(../../images/navprev.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]] [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [informixconfiguration.html Informix] [[Image(../../images/navnext.png,link=informixconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]] [sapfreetdsconfiguration.html SAP/Sybase (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [informixconfiguration.html Informix] [[Image(../../images/navnext.png,link=informixconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

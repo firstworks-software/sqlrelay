@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="informixconfiguration.html">Informix</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlconfiguration.html">!PostgreSQL</a> <a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="informixconfiguration.html">Informix</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlconfiguration.html">PostgreSQL</a> <a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="db-mysql"/><h1>MySQL/MariaDB</h1>
 
@@ -34,7 +34,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="informixconfiguration.html">Informix</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlconfiguration.html">!PostgreSQL</a> <a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="informixconfiguration.html">Informix</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlconfiguration.html">PostgreSQL</a> <a href="postgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

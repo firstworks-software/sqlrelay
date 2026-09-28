@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapfreetdsconfiguration.html">SAP/Sybase (via !FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="informixconfiguration.html">Informix</a> <a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapfreetdsconfiguration.html">SAP/Sybase (via FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="informixconfiguration.html">Informix</a> <a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="db-db2"/><h1>IBM DB2</h1>
 
@@ -36,7 +36,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapfreetdsconfiguration.html">SAP/Sybase (via !FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="informixconfiguration.html">Informix</a> <a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="sapfreetdsconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapfreetdsconfiguration.html">SAP/Sybase (via FreeTDS)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="informixconfiguration.html">Informix</a> <a href="informixconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleconfiguration.html,vertical-align=middle)]] [oracleconfiguration.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlfreetdsconfiguration.html Microsoft SQL Server (via !FreeTDS)] [[Image(../../images/navnext.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleconfiguration.html,vertical-align=middle)]] [oracleconfiguration.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlfreetdsconfiguration.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]]
 
 [=#db-mssql-odbc]
 = Microsoft SQL Server (via ODBC) =
@@ -56,7 +56,7 @@ See [http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html G
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleconfiguration.html,vertical-align=middle)]] [oracleconfiguration.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlfreetdsconfiguration.html Microsoft SQL Server (via !FreeTDS)] [[Image(../../images/navnext.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleconfiguration.html,vertical-align=middle)]] [oracleconfiguration.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlfreetdsconfiguration.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

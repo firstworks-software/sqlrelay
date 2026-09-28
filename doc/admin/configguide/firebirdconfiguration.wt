@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlconfiguration.html,vertical-align=middle)]] [postgresqlconfiguration.html !PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqliteconfiguration.html SQLite] [[Image(../../images/navnext.png,link=sqliteconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlconfiguration.html,vertical-align=middle)]] [postgresqlconfiguration.html PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqliteconfiguration.html SQLite] [[Image(../../images/navnext.png,link=sqliteconfiguration.html,vertical-align=middle)]]
 
 [=#db-firebird]
 = Firebird =
@@ -32,7 +32,7 @@ See [http://software.firstworks.com/p/getting-started-with-firebird.html Getting
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlconfiguration.html,vertical-align=middle)]] [postgresqlconfiguration.html !PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqliteconfiguration.html SQLite] [[Image(../../images/navnext.png,link=sqliteconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlconfiguration.html,vertical-align=middle)]] [postgresqlconfiguration.html PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqliteconfiguration.html SQLite] [[Image(../../images/navnext.png,link=sqliteconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

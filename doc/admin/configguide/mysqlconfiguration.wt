@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=informixconfiguration.html,vertical-align=middle)]] [informixconfiguration.html Informix] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlconfiguration.html !PostgreSQL] [[Image(../../images/navnext.png,link=postgresqlconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=informixconfiguration.html,vertical-align=middle)]] [informixconfiguration.html Informix] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlconfiguration.html PostgreSQL] [[Image(../../images/navnext.png,link=postgresqlconfiguration.html,vertical-align=middle)]]
 
 [=#db-mysql]
 = !MySQL/MariaDB =
@@ -25,7 +25,7 @@ See [http://software.firstworks.com/p/getting-started-with-mysql.html Getting St
 
 ----
 
-[[Image(../../images/navprev.png,link=informixconfiguration.html,vertical-align=middle)]] [informixconfiguration.html Informix] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlconfiguration.html !PostgreSQL] [[Image(../../images/navnext.png,link=postgresqlconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=informixconfiguration.html,vertical-align=middle)]] [informixconfiguration.html Informix] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlconfiguration.html PostgreSQL] [[Image(../../images/navnext.png,link=postgresqlconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

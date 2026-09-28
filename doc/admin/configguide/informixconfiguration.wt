@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html !MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]
 
 [=#db-informix]
 = Informix =
@@ -51,7 +51,7 @@ See the [../configreference.html#informix SQL Relay Configuration Reference] for
 
 ----
 
-[[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html !MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

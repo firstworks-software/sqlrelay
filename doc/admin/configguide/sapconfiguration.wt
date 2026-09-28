@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]] [mssqlfreetdsconfiguration.html Microsoft SQL Server (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] [[Image(../../images/navnext.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]] [mssqlfreetdsconfiguration.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapfreetdsconfiguration.html SAP/Sybase (via FreeTDS)] [[Image(../../images/navnext.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]]
 
 [=#db-sap]
 = SAP/Sybase (via the native SAP/Sybase library) =
@@ -49,7 +49,7 @@ See [http://software.firstworks.com/p/getting-started-with-sapsybase.html Gettin
 
 ----
 
-[[Image(../../images/navprev.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]] [mssqlfreetdsconfiguration.html Microsoft SQL Server (via !FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapfreetdsconfiguration.html SAP/Sybase (via !FreeTDS)] [[Image(../../images/navnext.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]] [mssqlfreetdsconfiguration.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapfreetdsconfiguration.html SAP/Sybase (via FreeTDS)] [[Image(../../images/navnext.png,link=sapfreetdsconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlconfiguration.html,vertical-align=middle)]] [mysqlconfiguration.html !MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdconfiguration.html Firebird] [[Image(../../images/navnext.png,link=firebirdconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlconfiguration.html,vertical-align=middle)]] [mysqlconfiguration.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdconfiguration.html Firebird] [[Image(../../images/navnext.png,link=firebirdconfiguration.html,vertical-align=middle)]]
 
 [=#db-postgresql]
 = !PostgreSQL =
@@ -25,7 +25,7 @@ See [http://software.firstworks.com/p/getting-started-with-postgresql.html Getti
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlconfiguration.html,vertical-align=middle)]] [mysqlconfiguration.html !MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdconfiguration.html Firebird] [[Image(../../images/navnext.png,link=firebirdconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlconfiguration.html,vertical-align=middle)]] [mysqlconfiguration.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdconfiguration.html Firebird] [[Image(../../images/navnext.png,link=firebirdconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 
