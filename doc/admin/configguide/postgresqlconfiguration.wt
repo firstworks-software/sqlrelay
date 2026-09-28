@@ -25,6 +25,9 @@ See the [../configreference.html#postgresql SQL Relay Configuration Reference] f
 
 See [http://software.firstworks.com/p/getting-started-with-postgresql.html Getting Started With PostgreSQL] for general assistance installing and configuring a !PostgreSQL database.
 
+[[br]][=#debugging]
+== Debugging ==
+
 The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----

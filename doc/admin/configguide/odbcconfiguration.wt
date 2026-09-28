@@ -23,6 +23,9 @@ See the examples on the other [databaseconfiguration.html#database Database Conf
 
 Note that many ODBC drivers have quirks.  Many of the examples on the other [databaseconfiguration.html#database Database Configuration] pages demonstrate ways of working around some of these quirks.
 
+[[br]][=#debugging]
+== Debugging ==
+
 The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
