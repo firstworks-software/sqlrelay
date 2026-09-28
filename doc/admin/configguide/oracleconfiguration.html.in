@@ -8,7 +8,7 @@
 
 <a name="db-oracle"/><h1>Oracle</h1>
 
-<p>In this example, SQL Relay is configured to connect to an Oracle database.  The dbase attribute defaults to "oracle", so the dbase attribute may be omitted when connecting to an Oracle database.  It is just set here for illustrative purposes.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to an Oracle database.  The dbase attribute defaults to "oracle", so the dbase attribute may be omitted when connecting to an Oracle database.  It is just set here for illustrative purposes.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -26,6 +26,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>The oracle_home option refers to the base directory of an Oracle instance.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:</p>
 
 <blockquote>
@@ -78,6 +80,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>See the <a href="../configreference.html#oracle">SQL Relay Configuration Reference</a> for other valid Oracle connect string options.</p>
 
 <p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-oracle.html">Getting Started With Oracle</a> for general assistance installing and configuring an Oracle database.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 

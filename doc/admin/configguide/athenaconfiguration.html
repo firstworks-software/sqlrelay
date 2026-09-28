@@ -56,7 +56,7 @@
 
 <p>Amazon Athena is an SQL interface to data stored in Amazon S3.  Simba provides an Athena ODBC driver for Windows and Linux platforms.  This driver (or perhaps Athena itself) has some quirks.</p>
 
-<p>In this example, SQL Relay is configured to connect to a Athena database via ODBC.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Athena database via ODBC.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -74,6 +74,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>Note the odd user and password options in the string attribute of the connection tag.</p>
 
 <p>Note also that the db option is missing from the string attribute of the connection tag.  The schema must be set in the DSN, and setting it in the connection string doesn't override the one set in the DSN.</p>
@@ -116,6 +118,8 @@ Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>simba<font
 <p>( <b>NOTE:</b> The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)</p>
 
 <p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 

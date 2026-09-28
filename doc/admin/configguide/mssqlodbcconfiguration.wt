@@ -11,13 +11,15 @@
 
 On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a [https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx Microsoft-provided ODBC driver] for some versions of Linux.  On Linux and Unix platforms, the ODBC driver that comes with [http://www.freetds.org FreeTDS] can be used as well, and requires no vendor software.
 
-In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-odbc.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).
 
@@ -53,6 +55,8 @@ UsageCount=1
 See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
 See [http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html Getting Started With ODBC (on a non-MS platform)] for general assistance installing and configuring ODBC on a non-MS platform.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

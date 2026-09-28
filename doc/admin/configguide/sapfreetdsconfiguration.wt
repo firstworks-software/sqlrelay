@@ -13,11 +13,15 @@ The native SAP/Sybase library is available on Windows and on some Linux/Unix pla
 
 However, on Linux and Unix platforms, access to SAP/Sybase databases is also available via [http://www.freetds.org FreeTDS].
 
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a SAP/Sybase database via !FreeTDS.
+
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-sap-freetds.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The server option refers to an entry in the freetds.conf file (usually /etc/freetds.conf or /usr/local/etc/freetds.conf) which identifies the database server, similar to:
 
@@ -38,6 +42,8 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 See the [../configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
 
 See [http://software.firstworks.com/p/getting-started-with-sapsybase.html Getting Started With SAP/Sybase] for general assistance installing and configuring an SAP/Sybase database.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

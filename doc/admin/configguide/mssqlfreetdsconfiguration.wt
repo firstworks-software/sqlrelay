@@ -13,11 +13,15 @@ On Windows platforms, ODBC can be used to access a Microsoft SQL Server database
 
 However, on Linux and Unix platforms, access to Microsoft SQL Server databases is also available via [http://www.freetds.org FreeTDS].
 
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via !FreeTDS.
+
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-mssql-freetds.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The server option refers to an entry in the freetds.conf file (usually /etc/freetds.conf or /usr/local/etc/freetds.conf) which identifies the database server, similar to:
 
@@ -38,6 +42,8 @@ The server option refers to an entry in the freetds.conf file (usually /etc/free
 See the [../configreference.html#freetds SQL Relay Configuration Reference] for other valid !FreeTDS connect string options.
 
 ( '''NOTE:''' The !FreeTDS connection uses !FreeTDS's ctlib API, which doesn't report everything that Microsoft SQL Server sends.  Varchar, nchar and nvarchar columns all come back as char, ntext columns come back as text, and character column sizes can be wrong when the client charset is a multi-byte charset, because ctlib doesn't report each column's collation.  If your application needs accurate column metadata, use the [mssqlodbcconfiguration.html#db-mssql-odbc ODBC connection] instead.  It reports the types and sizes correctly, with either the Microsoft ODBC driver or the ODBC driver that comes with !FreeTDS.)
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

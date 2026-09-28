@@ -10,7 +10,7 @@
 
 <p>On Windows platforms, ODBC can be used to access a Microsoft SQL Server database.  There is also a <a target="_blank" href="https://msdn.microsoft.com/en-us/library/hh568451(v=sql.110).aspx">Microsoft-provided ODBC driver</a> for some versions of Linux.  On Linux and Unix platforms, the ODBC driver that comes with <a target="_blank" href="http://www.freetds.org">FreeTDS</a> can be used as well, and requires no vendor software.</p>
 
-<p>In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Microsoft SQL Server database via ODBC.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -28,6 +28,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).</p>
 
 <p>On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).</p>
@@ -66,6 +68,8 @@ UsageCount<font color="#990000">=</font><font color="#993399">1</font></tt></pre
 <p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
 
 <p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html">Getting Started With ODBC (on a non-MS platform)</a> for general assistance installing and configuring ODBC on a non-MS platform.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 

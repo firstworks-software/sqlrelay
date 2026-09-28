@@ -9,13 +9,15 @@
 [=#db-informix]
 = Informix =
 
-In this example, SQL Relay is configured to connect to an Informix database.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to an Informix database.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-informix.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The informixdir option refers to the base directory of the Informix software installation.  On Windows platforms, it should be specified as a Windows-style pathwith doubled backslashes.  For example:
 
@@ -48,6 +50,8 @@ ol_informix1210 29756/tcp
 On Windows platforms, the servername option refers to a similar entry created in an opaque location with the Setnet32 program.
 
 See the [../configreference.html#informix SQL Relay Configuration Reference] for other valid Informix connect string options.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

@@ -9,13 +9,15 @@
 [=#db-sap]
 = SAP/Sybase (via the native SAP/Sybase library) =
 
-In this example, SQL Relay is configured to connect to a SAP/Sybase database via the native SAP/Sybase library.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a SAP/Sybase database via the native SAP/Sybase library.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-sap.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The sybase option refers to the base directory of the SAP/Sybase software installation.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:
 
@@ -46,6 +48,8 @@ The lang option sets the language to a value that is known to be supported by Sy
 See the [../configreference.html#sap SQL Relay Configuration Reference] for other valid SAP/Sybase connect string options.
 
 See [http://software.firstworks.com/p/getting-started-with-sapsybase.html Getting Started With SAP/Sybase] for general assistance installing and configuring an SAP/Sybase database.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

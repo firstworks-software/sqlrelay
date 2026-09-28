@@ -11,13 +11,15 @@
 
 Amazon Redshift is a cloud-hosted data warehouse service.  Amazon provides a Redshift ODBC driver for Windows and Linux platforms.  This driver (or perhaps Redshift itself) has some quirks.
 
-In this example, SQL Relay is configured to connect to a Redshift database via ODBC.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Redshift database via ODBC.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-redshift.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The ignoreselectdatabase="yes" attribute of the instance tag works around a quirk.  It instructs SQL Relay to ignore "use database" queries, or other attempts to select the current database/schema.  These options tend to put the connection outside of any database/schema, and unable to return to the desired database/schema.
 
@@ -53,6 +55,8 @@ Driver=/opt/amazon/redshiftodbc/lib/64/libamazonredshiftodbc64.so
 ( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

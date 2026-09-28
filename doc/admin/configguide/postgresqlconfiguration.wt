@@ -9,7 +9,7 @@
 [=#db-postgresql]
 = !PostgreSQL =
 
-In this example, SQL Relay is configured to connect to a !PostgreSQL database.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a !PostgreSQL database.
 
 {{{#!blockquote
 {{{#!code
@@ -17,11 +17,15 @@ In this example, SQL Relay is configured to connect to a !PostgreSQL database.
 }}}
 }}}
 
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
+
 The host and db options indicate that SQL Relay should connect to the database exampledb on the host examplehost.
 
 See the [../configreference.html#postgresql SQL Relay Configuration Reference] for other valid !PostgreSQL connect string options.
 
 See [http://software.firstworks.com/p/getting-started-with-postgresql.html Getting Started With PostgreSQL] for general assistance installing and configuring a !PostgreSQL database.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

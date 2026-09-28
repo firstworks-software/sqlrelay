@@ -58,7 +58,7 @@
 
 <p>The most significant quirk is that version 2.5.20 (and probably other versions) for Linux ship linked against libsasl2.so.2.  This library can be found on RedHat Enterprise 6 (or CentOS 6) but modern Linux systems have moved on to newer versions.  To use the driver, it is necessary to get a copy of libsasl2.so.2.0.23 (or a similar version) from an old enough system, install it in an appropriate lib directory, and create libsasl2.so.2 as a symlink to it in that same directory.</p>
 
-<p>In this example, SQL Relay is configured to connect to a Impala database via ODBC.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Impala database via ODBC.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -86,6 +86,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>The contents of the session tag work around a quirk.  Normally the schema would be selected by setting the db option of the string attribute of the connection tag, but this doesn't work at all.  Running the "use default" query at the beginning of the session helps.  But, it appears that the schema isn't actually selected until the first query is run.  So, the "select 1" query immediately following the use query solves this.</p>
 
 <p>The overrideschema option in the string attribute of the connection tag works around yet another quirk.  When running "show tables" or "describe" queries, the database needs "%" (the SQL wildcard) to be passed in as the schema for the table names.</p>
@@ -136,6 +138,8 @@ Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>cloudera<f
 <p>( <b>NOTE:</b> The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)</p>
 
 <p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 

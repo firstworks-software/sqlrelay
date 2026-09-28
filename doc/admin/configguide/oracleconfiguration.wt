@@ -9,13 +9,15 @@
 [=#db-oracle]
 = Oracle =
 
-In this example, SQL Relay is configured to connect to an Oracle database.  The dbase attribute defaults to "oracle", so the dbase attribute may be omitted when connecting to an Oracle database.  It is just set here for illustrative purposes.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to an Oracle database.  The dbase attribute defaults to "oracle", so the dbase attribute may be omitted when connecting to an Oracle database.  It is just set here for illustrative purposes.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-oracle.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 The oracle_home option refers to the base directory of an Oracle instance.  On Windows platforms, it should be specified as a Windows-style path with doubled backslashes.  For example:
 
@@ -55,6 +57,8 @@ If you are using Oracle Instant Client, then it's likely that you don't have an 
 See the [../configreference.html#oracle SQL Relay Configuration Reference] for other valid Oracle connect string options.
 
 See [http://software.firstworks.com/p/getting-started-with-oracle.html Getting Started With Oracle] for general assistance installing and configuring an Oracle database.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

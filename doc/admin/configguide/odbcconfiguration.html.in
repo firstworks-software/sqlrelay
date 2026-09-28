@@ -27,6 +27,8 @@
 
 <p>Note that many ODBC drivers have quirks.  Many of the examples on the other <a href="databaseconfiguration.html#database">Database Configuration</a> pages demonstrate ways of working around some of these quirks.</p>
 
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
 <hr/>
 
 <p><a href="athenaconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="athenaconfiguration.html">Amazon Athena (via ODBC)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="databaseconnectioncount.html">Database Connection Count</a> <a href="databaseconnectioncount.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>

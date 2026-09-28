@@ -54,7 +54,7 @@
 
 <a name="db-informix"/><h1>Informix</h1>
 
-<p>In this example, SQL Relay is configured to connect to an Informix database.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to an Informix database.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -72,6 +72,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>The informixdir option refers to the base directory of the Informix software installation.  On Windows platforms, it should be specified as a Windows-style pathwith doubled backslashes.  For example:</p>
 
 <blockquote>
@@ -109,6 +111,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>On Windows platforms, the servername option refers to a similar entry created in an opaque location with the Setnet32 program.</p>
 
 <p>See the <a href="../configreference.html#informix">SQL Relay Configuration Reference</a> for other valid Informix connect string options.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 

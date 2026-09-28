@@ -56,7 +56,7 @@
 
 <p>Exasol ODBC drivers are available for Windows and Linux.</p>
 
-<p>In this example, SQL Relay is configured to connect to an Exasol database via ODBC.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to an Exasol database via ODBC.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -74,6 +74,8 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>The dsn option in the string attribute of the connection tag refers to an ODBC DSN (Data Source Name).</p>
 
 <p>On Windows platforms, the DSN is an entry in the Windows Registry, created by the ODBC Data Source Administrator (look for "Set up ODBC data sources" in the Control Panel or just run odbcad32.exe).</p>
@@ -95,6 +97,8 @@ EXAPWD<font color="#990000">=</font>exasol</tt></pre>
 <p>( <b>NOTE:</b> The odbc.ini file must be readable by the user that the instance of SQL Relay runs as.)</p>
 
 <p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid ODBC connect string options.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 

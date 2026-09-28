@@ -54,13 +54,7 @@
 
 <a name="database"/><h1>Database Configuration</h1>
 
-<p>By default, SQL Relay assumes that it's connecting to an Oracle database, but database connection modules for many other databases are provided.</p>
-
-<p>The dbase attribute of the instance tag specifies which database connection module to load.</p>
-
-<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.  Connect string options are different for each database.</p>
-
-<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+<p>SQL Relay can be configured to connect to a wide variety of databases.</p>
 
 <ul>
   <li><a href="oracleconfiguration.html#db-oracle">Oracle</a></li>

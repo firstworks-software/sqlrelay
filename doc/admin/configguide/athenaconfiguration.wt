@@ -11,13 +11,15 @@
 
 Amazon Athena is an SQL interface to data stored in Amazon S3.  Simba provides an Athena ODBC driver for Windows and Linux platforms.  This driver (or perhaps Athena itself) has some quirks.
 
-In this example, SQL Relay is configured to connect to a Athena database via ODBC.
+The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Athena database via ODBC.
 
 {{{#!blockquote
 {{{#!code
 @parts/sqlrelay-athena.conf@
 }}}
 }}}
+
+The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.
 
 Note the odd user and password options in the string attribute of the connection tag.
 
@@ -57,6 +59,8 @@ Driver=/opt/simba/athenaodbc/lib/64/libathenaodbc_sb64.so
 ( '''NOTE:''' The odbc.ini and odbcinst.ini files must be readable by the user that the instance of SQL Relay runs as.)
 
 See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
+
+The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
 
 ----
 

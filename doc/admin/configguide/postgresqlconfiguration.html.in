@@ -8,7 +8,7 @@
 
 <a name="db-postgresql"/><h1>PostgreSQL</h1>
 
-<p>In this example, SQL Relay is configured to connect to a PostgreSQL database.</p>
+<p>The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a PostgreSQL database.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -26,11 +26,15 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
+<p>The connect string options (options in the string attribute of the connection tag) specify which parameters to use when connecting to the database.</p>
+
 <p>The host and db options indicate that SQL Relay should connect to the database exampledb on the host examplehost.</p>
 
 <p>See the <a href="../configreference.html#postgresql">SQL Relay Configuration Reference</a> for other valid PostgreSQL connect string options.</p>
 
 <p>See <a target="_blank" href="http://software.firstworks.com/p/getting-started-with-postgresql.html">Getting Started With PostgreSQL</a> for general assistance installing and configuring a PostgreSQL database.</p>
+
+<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <hr/>
 
