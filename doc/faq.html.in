@@ -450,7 +450,7 @@ Hopefully, one day, FreeTDS will support everything that the native SAP/Sybase l
 
 <p>Very old versions of Microsoft SQL Server are compatible with SAP/Sybase ctlib, but modern versions are not.  FreeTDS is compatible with all versions of SAP/Sybase Adaptive Server Enterprise and Microsoft SQL Server.  So, if you want to access a modern version of Microsoft SQL Server, use the FreeTDS connection rather than the SAP/Sybase connection.  You can also access all versions of SAP/Sybase with the FreeTDS connection.</p>
 
-<p>For Microsoft SQL Server, the ODBC connection is another option, on Windows and on Linux and Unix alike, and it reports column types and sizes more accurately than the FreeTDS connection does.  See <a href="admin/configguide/basicconfiguration.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a> in the configuration guide.</p>
+<p>For Microsoft SQL Server, the ODBC connection is another option, on Windows and on Linux and Unix alike, and it reports column types and sizes more accurately than the FreeTDS connection does.  See <a href="admin/configguide/mssqlodbcconfiguration.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a> in the configuration guide.</p>
 
 <br/><a name="postgresql"/><h3>How do I get data type names instead of numbers when using PostgreSQL?</h3>
 
@@ -507,7 +507,7 @@ user=exampleuser;password=examplepass;db=exampledb;mangletypes=no
 
 <p>When using SAP/Sybase, the <b>lang</b> variable in the connect string sets it too, indirectly.  That variable sets the <b>LANG</b> environment variable, and the SAP/Sybase client library takes the character set from the locale it names - lang=en_US.UTF-8 gets utf8, and lang=en_US gets iso_1.  If <b>charset</b> is set as well, then it wins.  If neither is set, then whatever <b>LANG</b> the SQL Relay server process inherited decides the character set.</p>
 
-<p>When using FreeTDS, the connect string's <b>charset</b> variable does <b>not</b> set it.  That variable sets the character set that FreeTDS asks the <i>server</i> to use, which is a different thing.  The character set that the SQL Relay server process sees data in comes from the <b>client charset</b> setting in the freetds.conf file instead.  See <a href="admin/configguide/basicconfiguration.html#db-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a> in the configuration guide for an example.</p>
+<p>When using FreeTDS, the connect string's <b>charset</b> variable does <b>not</b> set it.  That variable sets the character set that FreeTDS asks the <i>server</i> to use, which is a different thing.  The character set that the SQL Relay server process sees data in comes from the <b>client charset</b> setting in the freetds.conf file instead.  See <a href="admin/configguide/mssqlfreetdsconfiguration.html#db-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a> in the configuration guide for an example.</p>
 
 <p>When using Oracle, the character set can be set by setting the <b>nls_lang</b> variable in the connect string.</p>
 
