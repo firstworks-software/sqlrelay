@@ -106,6 +106,21 @@
       <li><a href="postgresqlprotocol.html#postgresqllimitations">Limitations</a></li>
     </ul>
 
+    <li><a href="firebirdprotocol.html#firebirdprotocol">Firebird Protocol</a></li>
+    <ul>
+      <li><a href="firebirdprotocol.html#firebirdconfiguration">Basic Configuration</a></li>
+      <li><a href="firebirdprotocol.html#firebirdlistener">Listener Options</a></li>
+      <li><a href="firebirdprotocol.html#firebirdprotocolversion">Protocol Version</a></li>
+      <li><a href="firebirdprotocol.html#firebirdauth">Authentication/Encryption Options</a></li>
+      <ul>
+        <li><a href="firebirdprotocol.html#firebirdconnectstringsauth">Connect Strings Auth</a></li>
+        <li><a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a></li>
+      </ul>
+
+      <li><a href="firebirdprotocol.html#firebirdforeignbackend">Foreign Backend</a></li>
+      <li><a href="firebirdprotocol.html#firebirdlimitations">Limitations</a></li>
+    </ul>
+
     <li><a href="tdsprotocol.html#tdsprotocol">TDS Protocol</a></li>
     <ul>
       <li><a href="tdsprotocol.html#tdsconfiguration">Basic Configuration</a></li>
@@ -141,21 +156,6 @@
 
       <li><a href="oracleprotocol.html#oracleforeignbackend">Foreign Backend</a></li>
       <li><a href="oracleprotocol.html#oraclelimitations">Limitations</a></li>
-    </ul>
-
-    <li><a href="firebirdprotocol.html#firebirdprotocol">Firebird Protocol</a></li>
-    <ul>
-      <li><a href="firebirdprotocol.html#firebirdconfiguration">Basic Configuration</a></li>
-      <li><a href="firebirdprotocol.html#firebirdlistener">Listener Options</a></li>
-      <li><a href="firebirdprotocol.html#firebirdprotocolversion">Protocol Version</a></li>
-      <li><a href="firebirdprotocol.html#firebirdauth">Authentication/Encryption Options</a></li>
-      <ul>
-        <li><a href="firebirdprotocol.html#firebirdconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a></li>
-      </ul>
-
-      <li><a href="firebirdprotocol.html#firebirdforeignbackend">Foreign Backend</a></li>
-      <li><a href="firebirdprotocol.html#firebirdlimitations">Limitations</a></li>
     </ul>
 
     <li><a href="multipleprotocols.html#multipleprotocols">Multiple Protocols</a></li>

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotocol.html">Firebird Protocol</a> <a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="multipleprotocols.html">Multiple Protocols</a> <a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleprotocol"/><h1>Oracle Protocol</h1>
 
@@ -559,11 +559,12 @@ http://www.gnu.org/software/src-highlite -->
   <li>A few less commonly used operations aren't implemented and get ORA-03001 if a client sends them, including: distributed and two-phase-commit/XA transactions, database startup/shutdown, an explicit TTI-level cancel, and DESCRIBE2.  Setting an end-to-end tracing attribute (module, action, or client identifier) also gets ORA-03001, and since that request arrives piggybacked on the client's next real call, that next call fails too, not just the attribute.  Any other function code the module doesn't recognize is refused the same way.</li>
   <li>A fetch asking for more than 100,000 rows fails with ORA-20004, and a batch whose total size grows past 32MB fails with ORA-20005, rather than returning a partial result.</li>
   <li>Legacy OCI7 clients (verifiertype="9i") can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values; binding any other type is refused.</li>
+  <li>The listener's <i>cursors</i> and <i>maxcursors</i> attributes bound how many statements the module can keep open at once, independent of anything the real Oracle client is told.  A client that keeps several statements cached and open concurrently - for example python-oracledb, whose default client-side statement cache holds up to 20 - needs <i>maxcursors</i> set higher than that concurrent count, or a new statement fails with ORA-01000: maximum open cursors exceeded once the pool fills up.</li>
 </ul>
 
 <hr/>
 
-<p><a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotocol.html">Firebird Protocol</a> <a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="multipleprotocols.html">Multiple Protocols</a> <a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -16,11 +16,11 @@
 
 <p>When configured to use the MySQL or PostgreSQL protocols, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See <a href="mysqlprotocol.html#mysqltls">MySQL TLS/SSL Encryption and Authentication</a> and <a href="postgresqlprotocol.html#postgresqltls">PostgreSQL TLS/SSL Encryption and Authentication</a> for details.</p>
 
+<p>When configured to use the Firebird protocol, SQL Relay does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server.  (Firebird's own wire encryption, a separate feature negotiated within the Firebird protocol itself, is a different matter - see <a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a> under Firebird Protocol.)</p>
+
 <p>When configured to use the TDS protocol, SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay server.  See <a href="tdsprotocol.html#tdstls">TDS TLS/SSL Encryption and Authentication</a> for details.</p>
 
-<p>When configured to use the Oracle protocol, SQL Relay likewise does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server.  (Oracle's own native network encryption and crypto-checksumming, a separate feature negotiated within the Oracle protocol itself, is a different matter - see <a href="oracleprotocol.html#oraclelimitations">Limitations</a> under Oracle Protocol.)</p>
-
-<p>When configured to use the Firebird protocol, SQL Relay likewise does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server.  (Firebird's own wire encryption, a separate feature negotiated within the Firebird protocol itself, is a different matter - see <a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a> under Firebird Protocol.)</p>
+<p>When configured to use the Oracle protocol, SQL Relay - as with the Firebird protocol - does not support TLS/SSL encryption or authentication between the SQL Relay client and SQL Relay server.  (Oracle's own native network encryption and crypto-checksumming, a separate feature negotiated within the Oracle protocol itself, is a different matter - see <a href="oracleprotocol.html#oraclelimitations">Limitations</a> under Oracle Protocol.)</p>
 
 <br/><a name="backendencryption"/><h2>Back-End Encryption and Secure Authentication</h2>
 

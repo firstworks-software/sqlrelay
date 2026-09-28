@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotocol.html">MySQL Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotocol.html">TDS Protocol</a> <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotocol.html">MySQL Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotocol.html">Firebird Protocol</a> <a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="postgresqlprotocol"/><h1>PostgreSQL Protocol</h1>
 
@@ -538,7 +538,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotocol.html">MySQL Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotocol.html">TDS Protocol</a> <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotocol.html">MySQL Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotocol.html">Firebird Protocol</a> <a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

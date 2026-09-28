@@ -927,6 +927,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - split the configuration guide into multiple pages under
   doc/admin/configguide/, fixing the programming api guides' broken
   kerberos and tls links to it in the process
+- moved firebird ahead of tds in the configuration guide
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

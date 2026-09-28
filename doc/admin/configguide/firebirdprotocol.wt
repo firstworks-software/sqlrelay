@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotocol.html TDS Protocol] [[Image(../../images/navnext.png,link=tdsprotocol.html,vertical-align=middle)]]
 
 [=#firebirdprotocol]
 = Firebird Protocol =
@@ -249,7 +249,7 @@ Except for a BLR request that fails to compile, a request that runs into one of 
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotocol.html TDS Protocol] [[Image(../../images/navnext.png,link=tdsprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

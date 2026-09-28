@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
 
 [=#tdsprotocol]
 = TDS Protocol =
@@ -246,7 +246,7 @@ The implementation of the TDS protocol is likely sufficient for most application
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

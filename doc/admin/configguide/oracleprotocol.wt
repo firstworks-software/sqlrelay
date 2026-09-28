@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
 
 [=#oracleprotocol]
 = Oracle Protocol =
@@ -353,7 +353,7 @@ The implementation of the Oracle protocol isn't 100% complete.  Some notable lim
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -11,9 +11,9 @@ SRCS = index.wt \
 	sqlrclientprotocol.wt \
 	mysqlprotocol.wt \
 	postgresqlprotocol.wt \
+	firebirdprotocol.wt \
 	tdsprotocol.wt \
 	oracleprotocol.wt \
-	firebirdprotocol.wt \
 	multipleprotocols.wt \
 	highavailability.wt \
 	security.wt \
@@ -35,9 +35,9 @@ INS = index.html.in \
 	sqlrclientprotocol.html.in \
 	mysqlprotocol.html.in \
 	postgresqlprotocol.html.in \
+	firebirdprotocol.html.in \
 	tdsprotocol.html.in \
 	oracleprotocol.html.in \
-	firebirdprotocol.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
@@ -61,9 +61,9 @@ WTOBJS = index.html.in \
 	sqlrclientprotocol.html.in \
 	mysqlprotocol.html.in \
 	postgresqlprotocol.html.in \
+	firebirdprotocol.html.in \
 	tdsprotocol.html.in \
 	oracleprotocol.html.in \
-	firebirdprotocol.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
@@ -85,9 +85,9 @@ OBJS = index.html \
 	sqlrclientprotocol.html \
 	mysqlprotocol.html \
 	postgresqlprotocol.html \
+	firebirdprotocol.html \
 	tdsprotocol.html \
 	oracleprotocol.html \
-	firebirdprotocol.html \
 	multipleprotocols.html \
 	highavailability.html \
 	security.html \
