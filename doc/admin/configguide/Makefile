@@ -14,7 +14,6 @@ SRCS = index.wt \
 	tdsprotocol.wt \
 	oracleprotocol.wt \
 	firebirdprotocol.wt \
-	teradataprotocol.wt \
 	multipleprotocols.wt \
 	highavailability.wt \
 	security.wt \
@@ -39,7 +38,6 @@ INS = index.html.in \
 	tdsprotocol.html.in \
 	oracleprotocol.html.in \
 	firebirdprotocol.html.in \
-	teradataprotocol.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
@@ -66,7 +64,6 @@ WTOBJS = index.html.in \
 	tdsprotocol.html.in \
 	oracleprotocol.html.in \
 	firebirdprotocol.html.in \
-	teradataprotocol.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
@@ -91,7 +88,6 @@ OBJS = index.html \
 	tdsprotocol.html \
 	oracleprotocol.html \
 	firebirdprotocol.html \
-	teradataprotocol.html \
 	multipleprotocols.html \
 	highavailability.html \
 	security.html \
