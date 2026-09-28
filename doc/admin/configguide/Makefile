@@ -62,6 +62,7 @@ SRCS = index.wt \
 	renumber.wt \
 	errorpatterns.wt \
 	moduledata.wt \
+	tagmoduledata.wt \
 	querydirectives.wt \
 	custom_wf.wt \
 	singlestep.wt \
@@ -149,6 +150,7 @@ INS = index.html.in \
 	renumber.html.in \
 	errorpatterns.html.in \
 	moduledata.html.in \
+	tagmoduledata.html.in \
 	querydirectives.html.in \
 	custom_wf.html.in \
 	singlestep.html.in \
@@ -238,6 +240,7 @@ WTOBJS = index.html.in \
 	renumber.html.in \
 	errorpatterns.html.in \
 	moduledata.html.in \
+	tagmoduledata.html.in \
 	querydirectives.html.in \
 	custom_wf.html.in \
 	singlestep.html.in \
@@ -325,6 +328,7 @@ OBJS = index.html \
 	renumber.html \
 	errorpatterns.html \
 	moduledata.html \
+	tagmoduledata.html \
 	querydirectives.html \
 	custom_wf.html \
 	singlestep.html \

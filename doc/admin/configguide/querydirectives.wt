@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [custom_wf.html custom_wf] [[Image(../../images/navnext.png,link=custom_wf.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tagmoduledata.html,vertical-align=middle)]] [tagmoduledata.html tag] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [custom_wf.html custom_wf] [[Image(../../images/navnext.png,link=custom_wf.html,vertical-align=middle)]]
 
 [[br]][=#directives]
 = Query Directives =
@@ -46,7 +46,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [custom_wf.html custom_wf] [[Image(../../images/navnext.png,link=custom_wf.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tagmoduledata.html,vertical-align=middle)]] [tagmoduledata.html tag] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [custom_wf.html custom_wf] [[Image(../../images/navnext.png,link=custom_wf.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

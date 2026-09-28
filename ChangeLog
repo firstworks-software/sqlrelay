@@ -936,6 +936,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   reference's comprehensive example
 - gave the cron_userlist connection schedule module its own
   configuration guide page
+- gave the tag moduledata module its own configuration guide page
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

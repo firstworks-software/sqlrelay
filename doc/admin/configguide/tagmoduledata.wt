@@ -1,0 +1,36 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
+
+[=#tagmoduledata]
+= tag =
+
+The '''tag''' moduledata module stores an arbitrary set of tags against the query currently running on a cursor.  It doesn't tag anything itself - it's a place for other modules to store and look up tags.  Typically a [security.html#filter-tag tag filter] instance writes the tags, and a translation, router, or logger module reads them back later in that same query's lifecycle.
+
+An example configuration follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-moduledata.conf@
+}}}
+}}}
+
+Besides the //module// attribute (which must be set to "tag"), the tag moduledata module takes only the //id// attribute that all moduledata instances take:
+
+* '''id''' - Required.  Identifies this instance of the moduledata module so that other modules can reference it.  Filter, translation, router, and logger modules that read or write tags do so by referencing this id, typically via their own //moduledataid// attribute.
+
+The tags themselves aren't configured on the moduledata instance at all - they're written at runtime by whichever module writes them.  The tag filter module is the one that ships with SQL Relay for this purpose; see [security.html#filter-tag the tag filter module] for how it's configured to write tags into an instance of this module, including its own //tag// and //moduledataid// attributes.
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

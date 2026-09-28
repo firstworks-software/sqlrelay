@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errorpatterns.html">patterns</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="querydirectives.html">Query Directives</a> <a href="querydirectives.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errorpatterns.html">patterns</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tagmoduledata.html">tag</a> <a href="tagmoduledata.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="moduledata"/><h1>Module Data</h1>
 
@@ -36,19 +36,17 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>At startup, the SQL Relay server creates one instance of the moduledata specified in each moduledata tag.  Each of these tags must specify an <i>id</i> attribute.  This id can be used by other modules to access this instance of moduledata.  If more than one instance of the same kind of moduledata is required, then multiple moduledata tags may be specified with the same <i>module</i> attribute and different <i>id</i> attributes.</p>
 
-<p>Currently, the only open source moduledata module available is:</p>
+<p>Currently, the following moduledata module is available in the standard SQL Relay distribution:</p>
 
 <ul>
-  <li><b>tag</b></li>
+  <li><a href="tagmoduledata.html#tagmoduledata">tag</a></li>
 </ul>
-
-<p>The tag module works as specified in the documentation for the <a href="security.html#filter-tag">tag</a> filter.</p>
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
 
 <hr/>
 
-<p><a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errorpatterns.html">patterns</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="querydirectives.html">Query Directives</a> <a href="querydirectives.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errorpatterns.html">patterns</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tagmoduledata.html">tag</a> <a href="tagmoduledata.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

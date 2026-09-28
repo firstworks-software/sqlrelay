@@ -168,6 +168,7 @@ This guide is split across the pages listed below - start with Quick Start for a
   * [renumber.html#error-renumber renumber]
   * [errorpatterns.html#error-patterns patterns]
  * [moduledata.html#moduledata Module Data]
+  * [tagmoduledata.html#tagmoduledata tag]
 * [querydirectives.html#directives Query Directives]
  * [custom_wf.html#custom_wf custom_wf]
  * [singlestep.html#singlestep singlestep]

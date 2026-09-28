@@ -50,11 +50,13 @@
 <div id="content">
 
 
-<p><a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errorpatterns.html">patterns</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tagmoduledata.html">tag</a> <a href="tagmoduledata.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="moduledata.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="moduledata.html">Module Data</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="querydirectives.html">Query Directives</a> <a href="querydirectives.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
-<a name="moduledata"/><h1>Module Data</h1>
+<a name="tagmoduledata"/><h1>tag</h1>
 
-<p>Moduledata modules allow a developer to pass data between modules.  For example, a query translation module could set a value that a result set translation module could later read.</p>
+<p>The <b>tag</b> moduledata module stores an arbitrary set of tags against the query currently running on a cursor.  It doesn't tag anything itself - it's a place for other modules to store and look up tags.  Typically a <a href="security.html#filter-tag">tag filter</a> instance writes the tags, and a translation, router, or logger module reads them back later in that same query's lifecycle.</p>
+
+<p>An example configuration follows.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -74,25 +76,19 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>The <i>module</i> attribute specifies which module to load.</p>
-
-<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
-
-<p>Module data modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
-
-<p>At startup, the SQL Relay server creates one instance of the moduledata specified in each moduledata tag.  Each of these tags must specify an <i>id</i> attribute.  This id can be used by other modules to access this instance of moduledata.  If more than one instance of the same kind of moduledata is required, then multiple moduledata tags may be specified with the same <i>module</i> attribute and different <i>id</i> attributes.</p>
-
-<p>Currently, the following moduledata module is available in the standard SQL Relay distribution:</p>
+<p>Besides the <i>module</i> attribute (which must be set to "tag"), the tag moduledata module takes only the <i>id</i> attribute that all moduledata instances take:</p>
 
 <ul>
-  <li><a href="tagmoduledata.html#tagmoduledata">tag</a></li>
+  <li><b>id</b> - Required.  Identifies this instance of the moduledata module so that other modules can reference it.  Filter, translation, router, and logger modules that read or write tags do so by referencing this id, typically via their own <i>moduledataid</i> attribute.</li>
 </ul>
+
+<p>The tags themselves aren't configured on the moduledata instance at all - they're written at runtime by whichever module writes them.  The tag filter module is the one that ships with SQL Relay for this purpose; see <a href="security.html#filter-tag">the tag filter module</a> for how it's configured to write tags into an instance of this module, including its own <i>tag</i> and <i>moduledataid</i> attributes.</p>
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
 
 <hr/>
 
-<p><a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errorpatterns.html">patterns</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tagmoduledata.html">tag</a> <a href="tagmoduledata.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="moduledata.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="moduledata.html">Module Data</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="querydirectives.html">Query Directives</a> <a href="querydirectives.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 </div> <!-- content -->
 
