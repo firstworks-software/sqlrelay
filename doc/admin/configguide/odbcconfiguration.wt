@@ -19,9 +19,9 @@ Accessing a database via an ODBC driver usually involves:
  * On Linux/Unix it is done by adding entries to the odbc.ini and sometimes odbcinst.ini files
 * Creating an instance of SQL Relay with dbase="odbc" which refers to the DSN, optionally specifying the user and password
 
-See the examples above for more details.  It should be possible to adapt one of them to the ODBC driver that you would like to use.
+See the examples on the other [databaseconfiguration.html#database Database Configuration] pages for more details.  It should be possible to adapt one of them to the ODBC driver that you would like to use.
 
-Note that many ODBC drivers have quirks.  Many of the examples above demonstrate ways of working around some of these quirks.
+Note that many ODBC drivers have quirks.  Many of the examples on the other [databaseconfiguration.html#database Database Configuration] pages demonstrate ways of working around some of these quirks.
 
 ----
 

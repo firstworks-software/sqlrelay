@@ -8,7 +8,7 @@
 
 <a name="autostart"/><h1>Starting Instances Automatically</h1>
 
-<p>In all previous examples sqlr-start has been called with the -id option, specifying which instance to start.  If sqlr-start is called without the -id option then it will start all instances configured with the enabled attribute set to yes.</p>
+<p>In the examples in the <a href="multipleinstances.html#instances">Multiple Instances</a> section, sqlr-start has been called with the -id option, specifying which instance to start.  If sqlr-start is called without the -id option then it will start all instances configured with the enabled attribute set to yes.</p>
 
 <p>For example, if the following instances are defined...</p>
 
