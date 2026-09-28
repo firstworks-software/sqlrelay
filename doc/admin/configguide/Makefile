@@ -70,7 +70,6 @@ SRCS = index.wt \
 	clientiplist.wt \
 	clientinfolist.wt \
 	usedatabase.wt \
-	routingquirks.wt \
 	customqueries.wt \
 	sqlrcmdcstat.wt \
 	sqlrcmdgstat.wt \
@@ -157,7 +156,6 @@ INS = index.html.in \
 	clientiplist.html.in \
 	clientinfolist.html.in \
 	usedatabase.html.in \
-	routingquirks.html.in \
 	customqueries.html.in \
 	sqlrcmdcstat.html.in \
 	sqlrcmdgstat.html.in \
@@ -246,7 +244,6 @@ WTOBJS = index.html.in \
 	clientiplist.html.in \
 	clientinfolist.html.in \
 	usedatabase.html.in \
-	routingquirks.html.in \
 	customqueries.html.in \
 	sqlrcmdcstat.html.in \
 	sqlrcmdgstat.html.in \
@@ -333,7 +330,6 @@ OBJS = index.html \
 	clientiplist.html \
 	clientinfolist.html \
 	usedatabase.html \
-	routingquirks.html \
 	customqueries.html \
 	sqlrcmdcstat.html \
 	sqlrcmdgstat.html \

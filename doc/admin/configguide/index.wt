@@ -178,7 +178,7 @@ This guide is split across the pages listed below - start with Quick Start for a
  * [clientiplist.html#clientiplist clientiplist]
  * [clientinfolist.html#clientinfolist clientinfolist]
  * [usedatabase.html#usedatabase usedatabase]
- * [routingquirks.html#routingquirks Quirks and Limitations]
+ * [routing.html#routingquirks Quirks and Limitations]
 * [customqueries.html#queries Custom Queries]
  * [sqlrcmdcstat.html#sqlrcmdcstat sqlrcmdcstat]
  * [sqlrcmdgstat.html#sqlrcmdgstat sqlrcmdgstat]

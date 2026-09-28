@@ -124,10 +124,71 @@ http://www.gnu.org/software/src-highlite -->
   <li><a href="clientiplist.html#clientiplist">clientiplist</a></li>
   <li><a href="clientinfolist.html#clientinfolist">clientinfolist</a></li>
   <li><a href="usedatabase.html#usedatabase">usedatabase</a></li>
-  <li><a href="routingquirks.html#routingquirks">Quirks and Limitations</a></li>
 </ul>
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
+
+<a name="routingquirks"/><h3>Quirks and Limitations</h3>
+
+<h4>Selects Not Showing Changes</h4>
+
+<p>In the scenario above where DML/DDL is sent to the master database and
+selects are distributed over slaves, an unintuitive thing can happen.</p>
+
+<p>If you begin a transaction and do several inserts, updates and deletes,
+you'll find that if you do a select, you will not see your changes.  This is
+because in a master-slave configuration, changes to the database are not
+pushed out to the slaves until the changes have been committed.  Since your
+selects are being run against the slaves, you must first commit before your
+changes will be visible.</p>
+
+<h4>Stored Procedures</h4>
+
+<p>It's possible to use stored procedures with SQL Relay's query routing
+feature.  However, since stored procedures are run on the database, SQL Relay
+can't route the individual queries run inside the stored procedure.  So, the
+stored procedure and all queries run inside of it will be run against whichever
+database it was routed to.</p>
+
+<h4>Metadata/Catalog Introspection</h4>
+
+<p>A router-backed instance doesn't implement any of the calls a client uses to list catalogs, schemas, tables, columns, procedures, or keys and indexes (getColumnList(), getTableList(), and similar, in the native client API's).  A client that calls one of them - including sqlrsh's "describe" command, and the metadata calls ODBC and JDBC drivers make - gets a "not implemented" error, rather than being routed to one of the downstream connections.</p>
+
+<p>A router-backed connection also doesn't report some backend-specific feature flags, since which features are actually available depends on which downstream database a given query ends up routed to.  For example, a client speaking the Firebird wire protocol to a router-backed instance won't get the close-and-re-execute handling that the Firebird protocol module otherwise provides for a cursor.</p>
+
+<h4>Parallel Transactions</h4>
+
+<p>Router modules like <b>userlist</b>, <b>clientiplist</b>, and <b>clientinfolist</b>
+route entire sessions to one database or another.  Router modules like
+<b>regex</b> route individual queries.  Behind the scenes, modules which route
+individual queries maintain parallel transactions on each of the databases that
+it is routing queries to, which present the following issues.</p>
+
+<p><b>usedatabase</b> behaves like session routing in practice - once a client selects a database, its queries keep going to that connection - but it doesn't route entire sessions from the moment a client connects the way <b>userlist</b>, <b>clientiplist</b> and <b>clientinfolist</b> do.  Before the client selects a database, its queries are still subject to the parallel-transaction behavior and integrity-violation checks described below.</p>
+
+<p><b>Integrity Violations</b></p>
+
+<p>When the client issues a begin, commit or rollback, the router issues a begin,
+commit or rollback to each of the databases.  Similarly, if the client turns
+auto-commit on or off, the router turns auto-commit on or off on each of the
+databases.</p>
+
+<p>There are scenarios where a commit, rollback or auto-commit on/off command
+could succeed on some of the databases and fail on others.  Some databases
+have a 2-phase commit feature to handle these scenarios.  With 2-phase commit,
+you can roll back a commit until you do second commit.  Many databases don't
+support 2-phase commit though.  At present, SQL Relay doesn't currently support
+2-phase commit for any database.  So, currently, to handle this situation,
+SQL Relay returns an error, disables the instance doing the query routing, and
+raises an integrity_violation event.  If a notification is configured to notify
+a DBA when an integrity_violation is raised, then the DBA will receive an
+email about the problem.  Unfortunately, there is no standard way to solve
+the problem.  The DBA must determine the cause, resolve it manually, and restart
+SQL Relay.</p>
+
+<p><b>Transaction Model</b></p>
+
+<p>Since queries may be routed to different kinds of databases, the router has to employ some tricks to maintain parallel transactions if the databases implement different transaction models.  This may require some unintuitive "begin" queries.  For example, if your client application is using a router which routes queries over both PostgreSQL and Oracle databases, then since PostgreSQL requires "begin" queries, you must use a "begin" query to start a transaction, even if your app only intends to send queries which would be run against Oracle.</p>
 
 <hr/>
 

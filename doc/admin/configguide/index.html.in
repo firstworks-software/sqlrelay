@@ -267,7 +267,7 @@
     <li><a href="clientiplist.html#clientiplist">clientiplist</a></li>
     <li><a href="clientinfolist.html#clientinfolist">clientinfolist</a></li>
     <li><a href="usedatabase.html#usedatabase">usedatabase</a></li>
-    <li><a href="routingquirks.html#routingquirks">Quirks and Limitations</a></li>
+    <li><a href="routing.html#routingquirks">Quirks and Limitations</a></li>
   </ul>
 
   <li><a href="customqueries.html#queries">Custom Queries</a></li>

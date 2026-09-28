@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=clientinfolist.html,vertical-align=middle)]] [clientinfolist.html clientinfolist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routingquirks.html Quirks and Limitations] [[Image(../../images/navnext.png,link=routingquirks.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=clientinfolist.html,vertical-align=middle)]] [clientinfolist.html clientinfolist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [customqueries.html Custom Queries] [[Image(../../images/navnext.png,link=customqueries.html,vertical-align=middle)]]
 
 [=#usedatabase]
 = usedatabase =
@@ -138,7 +138,7 @@ Attempts to "use db2" would fail.
 
 ----
 
-[[Image(../../images/navprev.png,link=clientinfolist.html,vertical-align=middle)]] [clientinfolist.html clientinfolist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routingquirks.html Quirks and Limitations] [[Image(../../images/navnext.png,link=routingquirks.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=clientinfolist.html,vertical-align=middle)]] [clientinfolist.html clientinfolist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [customqueries.html Custom Queries] [[Image(../../images/navnext.png,link=customqueries.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 
