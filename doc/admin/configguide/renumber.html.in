@@ -1,0 +1,55 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="errortranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errortranslation.html">Error Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="errorpatterns.html">patterns</a> <a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="error-renumber"/><h1>renumber</h1>
+
+<p>The <b>renumber</b> module enables you to replace one error number with another.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table already exists --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"955"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1050"</font><b><font color="#0000FF">/&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table doesn't exist --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"942"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1051"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>In this example:</p>
+
+<ul>
+  <li>Oracle error number 955 (ORA-00955: name is already used by an existing object) is replaced with MySQL error number 1050 (Table already exists)</li>
+  <li>Oracle error number 942 (ORA-00942: table or view does not exist) is replaced with MySQL error number 1051 (Unknown table)</li>
+</ul>
+
+<p>The renumber module never rewrites the SQLSTATE.  It maps error numbers, and a SQLSTATE isn't one.  To rewrite a SQLSTATE, use the <a href="errorpatterns.html#error-patterns">patterns</a> module.</p>
+
+<hr/>
+
+<p><a href="errortranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="errortranslation.html">Error Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="errorpatterns.html">patterns</a> <a href="errorpatterns.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

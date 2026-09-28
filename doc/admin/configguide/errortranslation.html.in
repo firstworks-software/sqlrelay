@@ -1,0 +1,72 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="resultsetrowblocktranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsetrowblocktranslation.html">Result Set Row Block Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="renumber.html">renumber</a> <a href="renumber.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="errortranslation"/><h1>Error Translation</h1>
+
+<p>Error translation enables the SQL Relay server to modify errors before passing them back to the client.</p>
+
+<blockquote>
+<img src="../../images/translation-errors.png"/>
+</blockquote>
+<p>Error translation is implemented by loadable modules. The errortranslations section of the configuration file indicates which error translation modules to load and what parameters to use when executing them.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"renumber"</font><b><font color="#0000FF">&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table already exists --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"955"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1050"</font><b><font color="#0000FF">/&gt;</font></b>
+				<i><font color="#9A1900">&lt;!-- table doesn't exist --&gt;</font></i>
+				<b><font color="#0000FF">&lt;renumber</font></b> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"942"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"1051"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+
+</tt></pre>
+
+</blockquote>
+<p>The <i>module</i> attribute specifies which module to load.</p>
+
+<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
+
+<p>All error translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All error translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<p>Error translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
+
+<p>At startup, the SQL Relay server creates instances of the specified error translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.</p>
+
+<p>Currently, the following error translation modules are available in the standard SQL Relay distribution:</p>
+
+<ul>
+  <li><a href="renumber.html#error-renumber">renumber</a></li>
+  <li><a href="errorpatterns.html#error-patterns">patterns</a></li>
+</ul>
+
+<p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
+
+<hr/>
+
+<p><a href="resultsetrowblocktranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsetrowblocktranslation.html">Result Set Row Block Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="renumber.html">renumber</a> <a href="renumber.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

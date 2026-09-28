@@ -44,6 +44,23 @@ SRCS = index.wt \
 	highavailability.wt \
 	security.wt \
 	datatranslation.wt \
+	queryparsing.wt \
+	querytranslation.wt \
+	normalize.wt \
+	patterns.wt \
+	listagg_to_string_agg.wt \
+	sequence_nextval.wt \
+	keep_dense_rank_to_array_agg.wt \
+	bindvariabletranslation.wt \
+	resultsetheadertranslation.wt \
+	resultsettranslation.wt \
+	reformatdatetime.wt \
+	resultsetrowtranslation.wt \
+	resultsetrowblocktranslation.wt \
+	errortranslation.wt \
+	renumber.wt \
+	errorpatterns.wt \
+	moduledata.wt \
 	querydirectives.wt \
 	routing.wt \
 	customqueries.wt \
@@ -94,6 +111,23 @@ INS = index.html.in \
 	highavailability.html.in \
 	security.html.in \
 	datatranslation.html.in \
+	queryparsing.html.in \
+	querytranslation.html.in \
+	normalize.html.in \
+	patterns.html.in \
+	listagg_to_string_agg.html.in \
+	sequence_nextval.html.in \
+	keep_dense_rank_to_array_agg.html.in \
+	bindvariabletranslation.html.in \
+	resultsetheadertranslation.html.in \
+	resultsettranslation.html.in \
+	reformatdatetime.html.in \
+	resultsetrowtranslation.html.in \
+	resultsetrowblocktranslation.html.in \
+	errortranslation.html.in \
+	renumber.html.in \
+	errorpatterns.html.in \
+	moduledata.html.in \
 	querydirectives.html.in \
 	routing.html.in \
 	customqueries.html.in \
@@ -146,6 +180,23 @@ WTOBJS = index.html.in \
 	highavailability.html.in \
 	security.html.in \
 	datatranslation.html.in \
+	queryparsing.html.in \
+	querytranslation.html.in \
+	normalize.html.in \
+	patterns.html.in \
+	listagg_to_string_agg.html.in \
+	sequence_nextval.html.in \
+	keep_dense_rank_to_array_agg.html.in \
+	bindvariabletranslation.html.in \
+	resultsetheadertranslation.html.in \
+	resultsettranslation.html.in \
+	reformatdatetime.html.in \
+	resultsetrowtranslation.html.in \
+	resultsetrowblocktranslation.html.in \
+	errortranslation.html.in \
+	renumber.html.in \
+	errorpatterns.html.in \
+	moduledata.html.in \
 	querydirectives.html.in \
 	routing.html.in \
 	customqueries.html.in \
@@ -196,6 +247,23 @@ OBJS = index.html \
 	highavailability.html \
 	security.html \
 	datatranslation.html \
+	queryparsing.html \
+	querytranslation.html \
+	normalize.html \
+	patterns.html \
+	listagg_to_string_agg.html \
+	sequence_nextval.html \
+	keep_dense_rank_to_array_agg.html \
+	bindvariabletranslation.html \
+	resultsetheadertranslation.html \
+	resultsettranslation.html \
+	reformatdatetime.html \
+	resultsetrowtranslation.html \
+	resultsetrowblocktranslation.html \
+	errortranslation.html \
+	renumber.html \
+	errorpatterns.html \
+	moduledata.html \
 	querydirectives.html \
 	routing.html \
 	customqueries.html \

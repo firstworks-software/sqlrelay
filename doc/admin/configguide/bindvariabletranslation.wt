@@ -1,0 +1,42 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]] [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetheadertranslation.html Result Set Header Translation] [[Image(../../images/navnext.png,link=resultsetheadertranslation.html,vertical-align=middle)]]
+
+[=#bindvariabletranslation]
+= Bind Variable Translation =
+
+Bind variable translation enables the SQL Relay server to modify bind variables before passing them to the database.  Bind variable names or values may be modified.  Variables may also be added or deleted.  Bind variable translation is most often used in conjunction with query translation.
+
+Bind variable translation is implemented by loadable modules.  The //bindvariabletranslations// section of the configuration file indicates which translation modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-bindvariabletranslations.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All bind variable translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All bind variable translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Bind variable translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates instances of the specified bind variable translations modules and initializes them.  When a query is run, the server passes the bind variables to each module, in the order that they were specified in the config file.  If a module modifies a bind variable, then that modified variable is passed on to the next module.
+
+Currently, no open source bind variable translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]] [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetheadertranslation.html Result Set Header Translation] [[Image(../../images/navnext.png,link=resultsetheadertranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

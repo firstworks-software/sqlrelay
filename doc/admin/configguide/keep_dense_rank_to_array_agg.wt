@@ -1,0 +1,69 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sequence_nextval.html,vertical-align=middle)]] [sequence_nextval.html sequence_nextval] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [bindvariabletranslation.html Bind Variable Translation] [[Image(../../images/navnext.png,link=bindvariabletranslation.html,vertical-align=middle)]]
+
+[=#keep_dense_rank_to_array_agg]
+= keep_dense_rank_to_array_agg =
+
+Oracle's //keep (dense_rank first|last order by ...)// clause on //max()// and //min()// picks the aggregated column's value from whichever row sorts first (or last) within each group.  !PostgreSQL has no //keep()// syntax, and a window function can't substitute for it in a grouped aggregate query, so the '''keep_dense_rank_to_array_agg''' module rewrites the call as an ordered //array_agg()// and takes its first element.
+
+A query like:
+
+{{{#!blockquote
+{{{#!code
+select max(pfn.pathfullname) keep (dense_rank last order by hv.versionobjid) pathfullname
+from harversions hv, harpathfullname pfn
+where pfn.versionobjid=hv.versionobjid
+group by hv.itemobjid
+}}}
+}}}
+
+Would be translated to:
+
+{{{#!blockquote
+{{{#!code
+select (array_agg(pfn.pathfullname order by hv.versionobjid desc nulls first,
+                   pfn.pathfullname desc nulls last))[1] pathfullname
+from harversions hv, harpathfullname pfn
+where pfn.versionobjid=hv.versionobjid
+group by hv.itemobjid
+}}}
+}}}
+
+An example configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-keep-dense-rank-to-array-agg.conf@
+}}}
+}}}
+
+The module has no module-specific attributes - only the standard '''module''', '''enabled''', and '''debug''' attributes apply.
+
+Note that, in this example, the normalize translation is also configured.  Loading normalize first helps the module identify //keep (dense_rank ...)// calls more reliably, as their syntactic form (the spacing around //keep//, //dense_rank//, //order by//, etc.) is sensitive to whitespace and case.
+
+=== Considerations ===
+
+The module performs the following transformations on each //max(EXPR) keep (dense_rank first|last order by SORT)// or //min(...)// call, where SORT may include an optional //asc// or //desc// direction and an optional //nulls first// or //nulls last// clause:
+
+* wraps the call in an ordered //array_agg(EXPR order by ...)// and takes its first element
+* for //dense_rank last//, reverses the sort direction and nulls placement, since only the first element of the array can be taken
+* adds EXPR itself as a secondary sort key (descending for //max()//, ascending for //min()//, nulls last), so that ties in SORT resolve to a deterministic value
+
+Calls inside string literals are left alone.  Identifiers like //mymax(...)// that merely end in //max// or //min// are also left alone.
+
+Only a single sort key is supported inside //order by//, and only a single argument is supported inside //max()// or //min()//; either case is passed through untranslated.  An analytic form, eg. //max(x) keep (dense_rank first order by y) over (...)//, also can't be expressed this way and is left untranslated.
+
+EXPR appears twice in the rewritten query.  For a plain column reference this makes no difference, but a volatile EXPR (eg. a call to a random-number function) would be evaluated twice by the rewritten query where Oracle's //keep()// evaluates it once.
+
+----
+
+[[Image(../../images/navprev.png,link=sequence_nextval.html,vertical-align=middle)]] [sequence_nextval.html sequence_nextval] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [bindvariabletranslation.html Bind Variable Translation] [[Image(../../images/navnext.png,link=bindvariabletranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

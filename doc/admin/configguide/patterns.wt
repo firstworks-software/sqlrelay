@@ -1,0 +1,106 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=normalize.html,vertical-align=middle)]] [normalize.html normalize] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listagg_to_string_agg.html listagg_to_string_agg] [[Image(../../images/navnext.png,link=listagg_to_string_agg.html,vertical-align=middle)]]
+
+[=#patterns]
+= patterns =
+
+The '''patterns''' module enables you to match the entire query, or parts of it, against a pattern, and then replace the matching part.
+
+The module is highly configurable, and capable of doing some fairly complex substitutions.  For example:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-patterns.conf@
+}}}
+}}}
+
+In this example, several pattern query translations are defined, instructing the module to:
+
+* Convert //old_tablename// to //new_tablename//, but only outside of quoted strings.
+* Convert //David// to //Dave//, but only inside of quoted strings.
+* Convert //Johnathan// to //John//, but only inside of quoted strings, and using case-insensitive matching.
+* Convert //Dan// or //Danny// to //Daniel//, but only inside of quoted strings.
+* Convert only the first instance of //Rich// or //Richie// to //Richard//, and only inside of quoted strings.
+* Convert the entire query //show tables// to the entire query //select * from user_tables//.
+
+This example illustrates the use of several attributes of the pattern tag:
+
+* '''type''' - The type of matching to do.  Options include:
+ * //string// - basic string matching - the default
+ * //cistring// - case-insensitive string matching
+ * //regex// - regular-expression matching
+* '''from''' - The pattern to match.
+* '''to''' - The string to convert matching parts of the query to.
+* '''scope''' - Where to match and translate.  Options include:
+ * //anywhere// - anywhere in the query - the default
+ * //outsidequotes// - only outside of quoted strings
+ * //insidequotes// - only inside of quoted strings
+* '''global''' - Only valid when type="regex".  Options include:
+ * //yes// - find all matches - the default
+ * //no// - only find the first match
+* '''backrefs''' - Only valid when type="regex" and using from/to (not match).  Options include:
+ * //no// - treat \1, \2, etc. in //to// as literal text - the default
+ * //yes// - treat \1, \2, etc. in //to// as backreferences to the capture groups in //from//, and \0 as the whole match
+
+With backrefs="yes", //to// can refer back to whatever a capture group in //from// matched.  For example:
+
+{{{#!blockquote
+{{{#!code
+<pattern type="regex" from="([a-z]+)\.([a-z]+)" to="\2.\1" backrefs="yes"/>
+}}}
+}}}
+
+swaps //table.column// to //column.table// wherever it occurs.  Without backrefs="yes", \1 and \2 in //to// would be inserted literally, rather than being replaced with what the capture groups matched.
+
+Note that in this example, the normalize query translation is loaded prior to the patterns query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
+Another powerful feature of the patterns query translation module is nested matching:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-patterns-nested.conf@
+}}}
+}}}
+
+In this example...
+
+The first pattern query translation replaces:
+
+* the tinytext column type with varchar2(254)
+* the mediumtext column type with varchar2(1023)
+* the longtext column type with clob
+
+But the replacements are only done in //create table// queries.
+
+It's unlikely that those patterns would show up in other queries, but not impossible.  Also, the query translation is made more efficient by the initial match, as it will bail immediately if the query is something other than a create table, rather than having to scan the entire rest of the query.
+
+The second pattern query translation basically wraps oldvalue and newvalue with to_char(), but only in a very specific query.  This is a good example of how the patterns query translation can help run an app written for one type of database against a different type of database.  One-off query translations are often necessary in these cases.
+
+Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.
+
+The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.
+
+When match is type="regex" and the pattern contains capture groups, it's the whole match, not a capture group, that gets passed down to nested tags.  Capture groups may still be used for grouping and alternation within the pattern; they just don't narrow what nested tags see.
+
+Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.
+
+Though more than 2 levels is rarely necessary, any level of nesting is supported:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-patterns-nested-multi.conf@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=normalize.html,vertical-align=middle)]] [normalize.html normalize] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listagg_to_string_agg.html listagg_to_string_agg] [[Image(../../images/navnext.png,link=listagg_to_string_agg.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

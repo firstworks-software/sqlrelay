@@ -1,0 +1,93 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="resultsettranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsettranslation.html">Result Set Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="resultsetrowtranslation.html">Result Set Row Translation</a> <a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="reformatdatetime"/><h1>reformatdatetime</h1>
+
+<p>The <b>reformatdatetime</b> module examines the field, decides if it's a date/time field, and if so, reformats it based on the given attributes.</p>
+
+<p>The following attributes are currently supported:</p>
+
+<ul>
+  <li><b>datetimeformat</b> - Specifies the format to convert date/time fields to.  May be any combination of the following format characters.  Non-format characters will be inserted as-is.</li>
+  <ul>
+    <li><b>DD</b> - 2 digit day, left padded with 0</li>
+    <li><b>D</b> - 1 or 2 digit day, not left padded with 0</li>
+    <li><b>MM</b> - 2 digit month, left padded with 0</li>
+    <li><b>MON</b> - uppercase, 3-character month abbreviation</li>
+    <li><b>Month</b> - mixed-case full name of the month</li>
+    <li><b>YYYY</b> - 4 digit year, left padded with 0</li>
+    <li><b>YY</b> - 2 digit year, left padded with 0</li>
+    <li><b>HH24</b> - 2 digit hour, in 24-hour format, left padded with 0</li>
+    <li><b>HH</b> - 2 digit hour, in 12-hour format, left padded with 0</li>
+    <li><b>MI</b> - 2 digit minute, left padded with 0</li>
+    <li><b>SS</b> - 2 digit second, left padded with 0</li>
+    <li><b>FFFFFF</b> -  6 digit fractional second, left padded with 0</li>
+    <li><b>FFFFF</b> -  5 digit fractional second, left padded with 0</li>
+    <li><b>FFFF</b> -  4 digit fractional second, left padded with 0</li>
+    <li><b>FFF</b> -  3 digit fractional second, left padded with 0</li>
+    <li><b>FF</b> -  2 digit fractional second, left padded with 0</li>
+    <li><b>F</b> -  1 digit fractional second</li>
+    <li><b>AM</b> - AM or PM</li>
+  </ul>
+
+  <li><b>dateformat</b> - Similar to datetimeformat but if a date without the time component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.</li>
+  <li><b>timeformat</b> - Similar to datetimeformat but if a time without the date component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.</li>
+  <li><b>dateddmm</b> - If set to "yes" then dates are assumed to be in the DD-MM-YYYY format (with days leading), as opposed to MM-DD-YYYY format (with months leading).  This is important for interpreting dates like 03-04-2000.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.</li>
+  <li><b>dateyyyyddmm</b> - If set to "yes" then dates are assumed to be in the YYYY-DD-MM format (with days leading), as opposed to YYYY-MM-DD format (with months leading).  This is important for interpreting dates like 2000-03-04.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.</li>
+  <li><b>datedelimiters</b> - Determining whether the field is a date/time or not can be tricky.  Different cultures and systems delimit dates with different characteres, including slashes, dashes, colons and periods.  This attribute enables you to specify which of these to pay attention to.  For example, if your database contains both slash-delimited and dash-delimited dates, but also contains dot-delimited data that could be misinterpreted as a date, then you'd want to set this to "/-".  Defaults to "/-:."  Characters other than slash, dash, colon and dot are ignored.</li>
+  <li><b>ignorenondatetime</b> - If this attribute is set to "yes" then only fields with date/time datatypes will be examined.  Char, and varchar fields, for example, will be ignored.  By default, all fields are examined and heuristics are used to determine whether the field contains a date/time.</li>
+</ul>
+
+<p>For example, the following configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;resultsettranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;resultsettranslation</font></b>
+				<font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"reformatdatetime"</font>
+				<font color="#009900">datetimeformat</font><font color="#990000">=</font><font color="#FF0000">"MM/DD/YYYY HH24:MI:SS"</font>
+				<font color="#009900">dateformat</font><font color="#990000">=</font><font color="#FF0000">"MM/DD/YYYY"</font>
+				<font color="#009900">timeformat</font><font color="#990000">=</font><font color="#FF0000">"HH24:MI:SS"</font>
+				<font color="#009900">dateddmm</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">ignorenondatetime</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/resultsettranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Would translate the following date/time field:</p>
+
+<blockquote>
+Jul 10 2015 05:17:55:717PM
+</blockquote>
+<p>Into:</p>
+
+<blockquote>
+07/10/2015 17:18:55
+</blockquote>
+<p>Note that <b>dateddmm</b> and <b>dateyyyyddmm</b> should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.</p>
+
+<p>Note also that date/time translation in general is especially problematic with MS SQL Server.  See <a href="../../faq.html#mssqldates">the FAQ</a> for more info.</p>
+
+<hr/>
+
+<p><a href="resultsettranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsettranslation.html">Result Set Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="resultsetrowtranslation.html">Result Set Row Translation</a> <a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

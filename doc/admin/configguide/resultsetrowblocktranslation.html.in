@@ -1,0 +1,42 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsetrowtranslation.html">Result Set Row Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="errortranslation.html">Error Translation</a> <a href="errortranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="resultsetrowblocktranslation"/><h1>Result Set Row Block Translation</h1>
+
+<p>Result set row block translation is similar to result set translation, except that blocks of rows are buffered and sent to the translation module, instead of individual rows or fields being sent to the module one-at-a-time.</p>
+
+<p>This is useful for the same reasons as result set row translation, and tends to be the highest performing option for translating result sets, but the modules tend to be complex.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;resultsetrowblocktranslations</font></b> <font color="#009900">rowblockcount</font><font color="#990000">=</font><font color="#FF0000">"100"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;resultsetrowblocktranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ...<b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/resultsetrowblocktranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Currently, no open source result set row block translation modules are available, however custom modules may be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
+
+<hr/>
+
+<p><a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsetrowtranslation.html">Result Set Row Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="errortranslation.html">Error Translation</a> <a href="errortranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

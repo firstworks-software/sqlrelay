@@ -1,0 +1,117 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=renumber.html,vertical-align=middle)]] [renumber.html renumber] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [moduledata.html Module Data] [[Image(../../images/navnext.png,link=moduledata.html,vertical-align=middle)]]
+
+[=#error-patterns]
+= patterns =
+
+The '''patterns''' module enables you to match the entire error string, or parts of it, against a pattern, and then replace the matching part.
+
+The module is highly configurable, and capable of doing some fairly complex substitutions.  For example:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns.conf@
+}}}
+}}}
+
+In this example, several pattern-translations are defined, instructing the module to:
+
+* Convert the error string "ORA-00955: name is already in use by an existing object" to "Table already exists".
+* Convert the error string "ORA-00942: table or view does not exist" to "Unknown table".
+* Convert //old_tablename// to //new_tablename//, but only inside of quoted strings. (Some errors containg quoted table names)
+* Convert //Old_Tablename// to //new_tablename//, but only inside of quoted strings, and using case-insensitive matching. (Some errors contain quoted table names)
+* Convert ORA-00955: or ORA-00942: to ORA-99999:, but only outside of quoted strings.
+* Convert only the first instance of //ORA-// to //ora-//, but only outside of quoted strings.
+* Convert ORA- to ora- if the error string begins with ORA-.
+
+( '''NOTE:''' Some of the configurations above are nonsensical or redundant, but are included for the sake of illustration.)
+
+This example illustrates the use of several attributes of the pattern tag:
+
+* '''type''' - The type of matching to do.  Options include:
+ * //string// - basic string matching - the default
+ * //cistring// - case-insensitive string matching
+ * //regex// - regular-expression matching
+* '''from''' - The pattern to match.
+* '''to''' - The string to convert matching parts of the query to.
+* '''scope''' - Where to match and translate.  Options include:
+ * //anywhere// - anywhere in the query - the default
+ * //outsidequotes// - only outside of quoted strings
+ * //insidequotes// - only inside of quoted strings
+* '''global''' - Only valid when type="regex".  Options include:
+ * //yes// - find all matches - the default
+ * //no// - only find the first match
+* '''backrefs''' - Only valid when type="regex" and using from/to (not match).  Options include:
+ * //no// - treat \1, \2, etc. in //to// as literal text - the default
+ * //yes// - treat \1, \2, etc. in //to// as backreferences to the capture groups in //from//, and \0 as the whole match
+
+With backrefs="yes", //to// can refer back to whatever a capture group in //from// matched.  For example:
+
+{{{#!blockquote
+{{{#!code
+<pattern type="regex" from="ORA-([0-9]+): (.*)" to="error \1: \2" backrefs="yes"/>
+}}}
+}}}
+
+rewrites an Oracle error string, keeping the error number and message but changing how they're phrased.  Without backrefs="yes", \1 and \2 in //to// would be inserted literally, rather than being replaced with what the capture groups matched.
+
+'''A note on ^, $, and multi-line messages:''' type="regex" patterns are compiled without the multiline or dot-all options, so ^ and $ anchor to the start and end of the //entire// string being matched (or, for $, immediately before one single trailing newline) rather than to the start and end of each line, and . never matches a newline.  This matters because some database client libraries add a second line to an error message - for example, newer Oracle clients append a line like "Help: https://docs.oracle.com/error-help/db/ora-00923/" after the error text.  A pattern anchored with a trailing $, written when errors were still single-line, will silently stop matching such a message: from/to substitution simply passes the string through unchanged when a pattern doesn't match, with no error and no log entry (outside of debug="yes").  To keep a pattern working against a message that may gain a trailing line, drop the trailing $ rather than anchoring all the way to the end of the string - an unanchored //from// like the one above still stops matching at the first newline, since . excludes it, so it captures only the first line and leaves any later lines untouched.
+
+Another powerful feature of the patterns translation module is nested matching:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns-nested.conf@
+}}}
+}}}
+
+In this example...
+
+The first pattern-translation replaces "name is already in use by an existing object" with "Table already exists" but onle when the error begins with "ORA-00955:", resulting in: "ORA-00955: Table already exists".
+
+The second pattern-translation replaces "table or view does not exist" with "Unknown table" but onle when the error begins with "ORA-00942:", resulting in "ORA-00942: Unknown table".
+
+( '''NOTE:''' There are easier ways to perform this replacement, but this way is included for the sake of illustration.)
+
+Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.
+
+The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.
+
+When match is type="regex" and the pattern contains capture groups, it's the whole match, not a capture group, that gets passed down to nested tags.  Capture groups may still be used for grouping and alternation within the pattern; they just don't narrow what nested tags see.
+
+Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.
+
+Though more than 2 levels is rarely necessary, any level of nesting is supported:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns-nested-multi.conf@
+}}}
+}}}
+
+All of the pattern tags shown so far match against the error string.  They never touch the SQLSTATE, which is left alone unless the module is given a separate sqlstate section:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-errortranslations-patterns-sqlstate.conf@
+}}}
+}}}
+
+In this example, a !PostgreSQL duplicate-table error is rephrased the way !MySQL phrases it, and !PostgreSQL's SQLSTATEs 42P07 (duplicate table) and 42P01 (undefined table) are replaced with !MySQL's 42S01 and 42S02.  A client that classifies errors by SQLSTATE then sees a !MySQL-shaped error too, not just !MySQL-shaped wording.
+
+Pattern tags inside the sqlstate section support the same type, match, from, to, global and backrefs attributes, and the same nesting, as the pattern tags outside of it.  The scope attribute isn't valid there, since a SQLSTATE has no quoted strings to match inside or outside of.
+
+If no sqlstate section is configured, or if the database supplied no SQLSTATE, then the SQLSTATE is passed through untouched.
+
+----
+
+[[Image(../../images/navprev.png,link=renumber.html,vertical-align=middle)]] [renumber.html renumber] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [moduledata.html Module Data] [[Image(../../images/navnext.png,link=moduledata.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

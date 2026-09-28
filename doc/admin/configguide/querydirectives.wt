@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
 
 [[br]][=#directives]
 = Query Directives =
@@ -150,7 +150,7 @@ If singlestep=off is set, then the SQL Relay Server will fetch and buffer all ro
 
 ----
 
-[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

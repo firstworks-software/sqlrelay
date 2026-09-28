@@ -1,0 +1,33 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=errortranslation.html,vertical-align=middle)]] [errortranslation.html Error Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [errorpatterns.html patterns] [[Image(../../images/navnext.png,link=errorpatterns.html,vertical-align=middle)]]
+
+[=#error-renumber]
+= renumber =
+
+The '''renumber''' module enables you to replace one error number with another.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-renumber.conf@
+}}}
+}}}
+
+In this example:
+
+* Oracle error number 955 (ORA-00955: name is already used by an existing object) is replaced with !MySQL error number 1050 (Table already exists)
+* Oracle error number 942 (ORA-00942: table or view does not exist) is replaced with !MySQL error number 1051 (Unknown table)
+
+The renumber module never rewrites the SQLSTATE.  It maps error numbers, and a SQLSTATE isn't one.  To rewrite a SQLSTATE, use the [errorpatterns.html#error-patterns patterns] module.
+
+----
+
+[[Image(../../images/navprev.png,link=errortranslation.html,vertical-align=middle)]] [errortranslation.html Error Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [errorpatterns.html patterns] [[Image(../../images/navnext.png,link=errorpatterns.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

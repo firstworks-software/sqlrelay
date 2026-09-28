@@ -1,0 +1,90 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="listagg_to_string_agg.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listagg_to_string_agg.html">listagg_to_string_agg</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="keep_dense_rank_to_array_agg.html">keep_dense_rank_to_array_agg</a> <a href="keep_dense_rank_to_array_agg.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sequence_nextval"/><h1>sequence_nextval</h1>
+
+<p>The <b>sequence_nextval</b> module rewrites expressions that fetch the next value from a sequence, converting them from one database's syntax into another's.  Different databases express this in different ways, so this is useful when running an application written for one database against another.</p>
+
+<p>The module recognizes the following three syntaxes:</p>
+
+<ul>
+  <li><i>seqname.nextval</i> - used by Oracle and DB2</li>
+  <li><i>nextval('seqname')</i> - used by PostgreSQL</li>
+  <li><i>next value for seqname</i> - used by SQL Server, Sybase, Firebird, and DB2</li>
+</ul>
+
+<p>It rewrites any of these that it finds into the single target syntax selected by the <b>style</b> attribute.  The sequence name, including any schema or owner prefix (eg. <i>myschema.myseq</i>), is preserved.</p>
+
+<p>For example, with style=".nextval", a query like:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">mytable</font></b> <font color="#990000">(</font>id<font color="#990000">,</font> name<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font><b><font color="#000000">nextval</font></b><font color="#990000">(</font><font color="#FF0000">'myseq'</font><font color="#990000">),</font> <font color="#FF0000">'hello'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>Would be translated to:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>insert <font color="#008080">into</font> <b><font color="#000000">mytable</font></b> <font color="#990000">(</font>id<font color="#990000">,</font> name<font color="#990000">)</font> <b><font color="#000000">values</font></b> <font color="#990000">(</font>myseq<font color="#990000">.</font>nextval<font color="#990000">,</font> <font color="#FF0000">'hello'</font><font color="#990000">)</font></tt></pre>
+
+</blockquote>
+<p>An example configuration:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sequence_nextval"</font> <font color="#009900">style</font><font color="#990000">=</font><font color="#FF0000">".nextval"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The following attribute is supported, in addition to the standard <b>module</b>, <b>enabled</b>, and <b>debug</b> attributes:</p>
+
+<ul>
+  <li><b>style</b> - The target syntax to convert sequence-nextval expressions to.  Options include:</li>
+  <ul>
+    <li><i>.nextval</i> - eg. <i>myseq.nextval</i> (Oracle, DB2)</li>
+    <li><i>nextval()</i> - eg. <i>nextval('myseq')</i> (PostgreSQL)</li>
+    <li><i>next value for</i> - eg. <i>next value for myseq</i> (SQL Server, Sybase, Firebird, DB2)</li>
+    <li>If omitted or set to an unrecognized value, queries are passed through untranslated.</li>
+  </ul>
+
+</ul>
+
+<p>Sequence references inside string literals are left alone.</p>
+
+<p>The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the <a href="normalize.html#normalize">normalize</a> translation first helps it match reliably.</p>
+
+<hr/>
+
+<p><a href="listagg_to_string_agg.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listagg_to_string_agg.html">listagg_to_string_agg</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="keep_dense_rank_to_array_agg.html">keep_dense_rank_to_array_agg</a> <a href="keep_dense_rank_to_array_agg.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

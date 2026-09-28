@@ -1,0 +1,30 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=resultsetrowtranslation.html,vertical-align=middle)]] [resultsetrowtranslation.html Result Set Row Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [errortranslation.html Error Translation] [[Image(../../images/navnext.png,link=errortranslation.html,vertical-align=middle)]]
+
+[=#resultsetrowblocktranslation]
+= Result Set Row Block Translation =
+
+Result set row block translation is similar to result set translation, except that blocks of rows are buffered and sent to the translation module, instead of individual rows or fields being sent to the module one-at-a-time.
+
+This is useful for the same reasons as result set row translation, and tends to be the highest performing option for translating result sets, but the modules tend to be complex.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-resultsetrowblocktranslations.conf@
+}}}
+}}}
+
+Currently, no open source result set row block translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=resultsetrowtranslation.html,vertical-align=middle)]] [resultsetrowtranslation.html Result Set Row Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [errortranslation.html Error Translation] [[Image(../../images/navnext.png,link=errortranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

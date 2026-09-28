@@ -1,0 +1,234 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="renumber.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="renumber.html">renumber</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="moduledata.html">Module Data</a> <a href="moduledata.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="error-patterns"/><h1>patterns</h1>
+
+<p>The <b>patterns</b> module enables you to match the entire error string, or parts of it, against a pattern, and then replace the matching part.</p>
+
+<p>The module is highly configurable, and capable of doing some fairly complex substitutions.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;errortranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;errortranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"ORA-00955: name is already in use by an existing object"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Table already exists"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"outsidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"ORA-00942: table or view does not exist"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Unknown table"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"outsidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"old_tablename"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"new_tablename"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"cistring"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"Old_Tablename"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"new_tablename"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"(ORA-00955:|ORA-00942:)"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"ORA-99999:"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"outsidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"ORA-"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"ora-"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"outsidequotes"</font> <font color="#009900">global</font><font color="#990000">=</font><font color="#FF0000">"no"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"^ORA-"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"ora-"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/errortranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/errortranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, several pattern-translations are defined, instructing the module to:</p>
+
+<ul>
+  <li>Convert the error string "ORA-00955: name is already in use by an existing object" to "Table already exists".</li>
+  <li>Convert the error string "ORA-00942: table or view does not exist" to "Unknown table".</li>
+  <li>Convert <i>old_tablename</i> to <i>new_tablename</i>, but only inside of quoted strings. (Some errors containg quoted table names)</li>
+  <li>Convert <i>Old_Tablename</i> to <i>new_tablename</i>, but only inside of quoted strings, and using case-insensitive matching. (Some errors contain quoted table names)</li>
+  <li>Convert ORA-00955: or ORA-00942: to ORA-99999:, but only outside of quoted strings.</li>
+  <li>Convert only the first instance of <i>ORA-</i> to <i>ora-</i>, but only outside of quoted strings.</li>
+  <li>Convert ORA- to ora- if the error string begins with ORA-.</li>
+</ul>
+
+<p>( <b>NOTE:</b> Some of the configurations above are nonsensical or redundant, but are included for the sake of illustration.)</p>
+
+<p>This example illustrates the use of several attributes of the pattern tag:</p>
+
+<ul>
+  <li><b>type</b> - The type of matching to do.  Options include:</li>
+  <ul>
+    <li><i>string</i> - basic string matching - the default</li>
+    <li><i>cistring</i> - case-insensitive string matching</li>
+    <li><i>regex</i> - regular-expression matching</li>
+  </ul>
+
+  <li><b>from</b> - The pattern to match.</li>
+  <li><b>to</b> - The string to convert matching parts of the query to.</li>
+  <li><b>scope</b> - Where to match and translate.  Options include:</li>
+  <ul>
+    <li><i>anywhere</i> - anywhere in the query - the default</li>
+    <li><i>outsidequotes</i> - only outside of quoted strings</li>
+    <li><i>insidequotes</i> - only inside of quoted strings</li>
+  </ul>
+
+  <li><b>global</b> - Only valid when type="regex".  Options include:</li>
+  <ul>
+    <li><i>yes</i> - find all matches - the default</li>
+    <li><i>no</i> - only find the first match</li>
+  </ul>
+
+  <li><b>backrefs</b> - Only valid when type="regex" and using from/to (not match).  Options include:</li>
+  <ul>
+    <li><i>no</i> - treat \1, \2, etc. in <i>to</i> as literal text - the default</li>
+    <li><i>yes</i> - treat \1, \2, etc. in <i>to</i> as backreferences to the capture groups in <i>from</i>, and \0 as the whole match</li>
+  </ul>
+
+</ul>
+
+<p>With backrefs="yes", <i>to</i> can refer back to whatever a capture group in <i>from</i> matched.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">&lt;</font><font color="#008080">pattern</font> type<font color="#990000">=</font><font color="#FF0000">"regex"</font> from<font color="#990000">=</font><font color="#FF0000">"ORA-([0-9]+): (.*)"</font> to<font color="#990000">=</font><font color="#FF0000">"error </font><font color="#CC33CC">\1</font><font color="#FF0000">: </font><font color="#CC33CC">\2</font><font color="#FF0000">"</font> backrefs<font color="#990000">=</font><font color="#FF0000">"yes"</font><font color="#990000">/&gt;</font></tt></pre>
+
+</blockquote>
+<p>rewrites an Oracle error string, keeping the error number and message but changing how they're phrased.  Without backrefs="yes", \1 and \2 in <i>to</i> would be inserted literally, rather than being replaced with what the capture groups matched.</p>
+
+<p><b>A note on ^, $, and multi-line messages:</b> type="regex" patterns are compiled without the multiline or dot-all options, so ^ and $ anchor to the start and end of the <i>entire</i> string being matched (or, for $, immediately before one single trailing newline) rather than to the start and end of each line, and . never matches a newline.  This matters because some database client libraries add a second line to an error message - for example, newer Oracle clients append a line like "Help: https://docs.oracle.com/error-help/db/ora-00923/" after the error text.  A pattern anchored with a trailing $, written when errors were still single-line, will silently stop matching such a message: from/to substitution simply passes the string through unchanged when a pattern doesn't match, with no error and no log entry (outside of debug="yes").  To keep a pattern working against a message that may gain a trailing line, drop the trailing $ rather than anchoring all the way to the end of the string - an unanchored <i>from</i> like the one above still stops matching at the first newline, since . excludes it, so it captures only the first line and leaves any later lines untouched.</p>
+
+<p>Another powerful feature of the patterns translation module is nested matching:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;errortranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;errortranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"^ORA-00955:.*"</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"name is already in use by an existing object"</font>
+						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Table already exists"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"^ORA-00942:.*"</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"table or view does not exist"</font>
+						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Unknown table"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+			<b><font color="#0000FF">&lt;/errortranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/errortranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example...</p>
+
+<p>The first pattern-translation replaces "name is already in use by an existing object" with "Table already exists" but onle when the error begins with "ORA-00955:", resulting in: "ORA-00955: Table already exists".</p>
+
+<p>The second pattern-translation replaces "table or view does not exist" with "Unknown table" but onle when the error begins with "ORA-00942:", resulting in "ORA-00942: Unknown table".</p>
+
+<p>( <b>NOTE:</b> There are easier ways to perform this replacement, but this way is included for the sake of illustration.)</p>
+
+<p>Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.</p>
+
+<p>The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.</p>
+
+<p>When match is type="regex" and the pattern contains capture groups, it's the whole match, not a capture group, that gets passed down to nested tags.  Capture groups may still be used for grouping and alternation within the pattern; they just don't narrow what nested tags see.</p>
+
+<p>Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.</p>
+
+<p>Though more than 2 levels is rarely necessary, any level of nesting is supported:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;errortranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;errortranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in error..."</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+						<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in matching pieces of error..."</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+							<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in those pieces..."</font><b><font color="#0000FF">&gt;</font></b>
+							<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+								<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...and so on..."</font><b><font color="#0000FF">&gt;</font></b>
+								<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+									<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"...from pattern..."</font>
+									<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"...to pattern..."</font><b><font color="#0000FF">/&gt;</font></b>
+							<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+						<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+					<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+			<b><font color="#0000FF">&lt;/errortranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/errortranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>All of the pattern tags shown so far match against the error string.  They never touch the SQLSTATE, which is left alone unless the module is given a separate sqlstate section:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;errortranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;errortranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"^relation \"(.*)\" already exists$"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Table '\1' already exists"</font> <font color="#009900">backrefs</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;sqlstate&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"42P07"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"42S01"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"42P01"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"42S02"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/sqlstate&gt;</font></b>
+			<b><font color="#0000FF">&lt;/errortranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/errortranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, a PostgreSQL duplicate-table error is rephrased the way MySQL phrases it, and PostgreSQL's SQLSTATEs 42P07 (duplicate table) and 42P01 (undefined table) are replaced with MySQL's 42S01 and 42S02.  A client that classifies errors by SQLSTATE then sees a MySQL-shaped error too, not just MySQL-shaped wording.</p>
+
+<p>Pattern tags inside the sqlstate section support the same type, match, from, to, global and backrefs attributes, and the same nesting, as the pattern tags outside of it.  The scope attribute isn't valid there, since a SQLSTATE has no quoted strings to match inside or outside of.</p>
+
+<p>If no sqlstate section is configured, or if the database supplied no SQLSTATE, then the SQLSTATE is passed through untouched.</p>
+
+<hr/>
+
+<p><a href="renumber.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="renumber.html">renumber</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="moduledata.html">Module Data</a> <a href="moduledata.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

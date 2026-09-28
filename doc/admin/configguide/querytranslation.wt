@@ -1,0 +1,52 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=queryparsing.html,vertical-align=middle)]] [queryparsing.html Query Parsing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [normalize.html normalize] [[Image(../../images/navnext.png,link=normalize.html,vertical-align=middle)]]
+
+[=#querytranslation]
+= Query Translation =
+
+Query translation enables the SQL Relay server to modify queries before passing them to the database.
+
+ [[Image(../../images/translation-query.png,nolink)]]
+
+Query translation is implemented by loadable modules.  The //querytranslations// section of the configuration file indicates which query translation modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-querytranslations-normalize.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All query translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All query translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Query translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates instances of the specified query translations modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  If a module modifies the query, then that modified query is passed on to the next module.
+
+Currently, the following query translation modules are available in the standard SQL Relay distribution:
+
+* [normalize.html#normalize normalize]
+* [patterns.html#patterns patterns]
+* [listagg_to_string_agg.html#listagg_to_string_agg listagg_to_string_agg]
+* [sequence_nextval.html#sequence_nextval sequence_nextval]
+* [keep_dense_rank_to_array_agg.html#keep_dense_rank_to_array_agg keep_dense_rank_to_array_agg]
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=queryparsing.html,vertical-align=middle)]] [queryparsing.html Query Parsing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [normalize.html normalize] [[Image(../../images/navnext.png,link=normalize.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

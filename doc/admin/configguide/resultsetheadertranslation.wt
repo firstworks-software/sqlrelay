@@ -1,0 +1,42 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=bindvariabletranslation.html,vertical-align=middle)]] [bindvariabletranslation.html Bind Variable Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsettranslation.html Result Set Translation] [[Image(../../images/navnext.png,link=resultsettranslation.html,vertical-align=middle)]]
+
+[=#resultsetheadertranslation]
+= Result Set Header Translation =
+
+Result set header translation enables the SQL Relay server to modify column information in the result set before returning it to the client.  Result set header translation is most often used in conjunction with result set translation.
+
+Result set header translation is implemented by loadable modules.  The //resultsetheadertranslations// section of the configuration file indicates which translation modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-resultsetheadertranslations.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All result set header translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All result set header translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Result set header translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates instances of the specified result set header translations modules and initializes them.  When a query is run, the server passes the result set header to each module, in the order that they were specified in the config file.  If a module modifies the result set header, then that modified header is passed on to the next module.
+
+Currently, no open source result set header translation modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=bindvariabletranslation.html,vertical-align=middle)]] [bindvariabletranslation.html Bind Variable Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsettranslation.html Result Set Translation] [[Image(../../images/navnext.png,link=resultsettranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

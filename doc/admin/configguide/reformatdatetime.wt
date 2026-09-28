@@ -1,0 +1,72 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=resultsettranslation.html,vertical-align=middle)]] [resultsettranslation.html Result Set Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetrowtranslation.html Result Set Row Translation] [[Image(../../images/navnext.png,link=resultsetrowtranslation.html,vertical-align=middle)]]
+
+[=#reformatdatetime]
+= reformatdatetime =
+
+The '''reformatdatetime''' module examines the field, decides if it's a date/time field, and if so, reformats it based on the given attributes.
+
+The following attributes are currently supported:
+
+* '''datetimeformat''' - Specifies the format to convert date/time fields to.  May be any combination of the following format characters.  Non-format characters will be inserted as-is.
+ * '''DD''' - 2 digit day, left padded with 0
+ * '''D''' - 1 or 2 digit day, not left padded with 0
+ * '''MM''' - 2 digit month, left padded with 0
+ * '''MON''' - uppercase, 3-character month abbreviation
+ * '''Month''' - mixed-case full name of the month
+ * '''YYYY''' - 4 digit year, left padded with 0
+ * '''YY''' - 2 digit year, left padded with 0
+ * '''HH24''' - 2 digit hour, in 24-hour format, left padded with 0
+ * '''HH''' - 2 digit hour, in 12-hour format, left padded with 0
+ * '''MI''' - 2 digit minute, left padded with 0
+ * '''SS''' - 2 digit second, left padded with 0
+ * '''FFFFFF''' -  6 digit fractional second, left padded with 0
+ * '''FFFFF''' -  5 digit fractional second, left padded with 0
+ * '''FFFF''' -  4 digit fractional second, left padded with 0
+ * '''FFF''' -  3 digit fractional second, left padded with 0
+ * '''FF''' -  2 digit fractional second, left padded with 0
+ * '''F''' -  1 digit fractional second
+ * '''AM''' - AM or PM
+* '''dateformat''' - Similar to datetimeformat but if a date without the time component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.
+* '''timeformat''' - Similar to datetimeformat but if a time without the date component is detected, the supplied format will be used instead of the format supplied in the datetimeformat attribute.  Defaults to whatever value was supplied in the datetimeformat attribute.
+* '''dateddmm''' - If set to "yes" then dates are assumed to be in the DD-MM-YYYY format (with days leading), as opposed to MM-DD-YYYY format (with months leading).  This is important for interpreting dates like 03-04-2000.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.
+* '''dateyyyyddmm''' - If set to "yes" then dates are assumed to be in the YYYY-DD-MM format (with days leading), as opposed to YYYY-MM-DD format (with months leading).  This is important for interpreting dates like 2000-03-04.  If this attribute is set to "yes" then it would be interprted as March 4th rather than April 3rd.
+* '''datedelimiters''' - Determining whether the field is a date/time or not can be tricky.  Different cultures and systems delimit dates with different characteres, including slashes, dashes, colons and periods.  This attribute enables you to specify which of these to pay attention to.  For example, if your database contains both slash-delimited and dash-delimited dates, but also contains dot-delimited data that could be misinterpreted as a date, then you'd want to set this to "/-".  Defaults to "/-:."  Characters other than slash, dash, colon and dot are ignored.
+* '''ignorenondatetime''' - If this attribute is set to "yes" then only fields with date/time datatypes will be examined.  Char, and varchar fields, for example, will be ignored.  By default, all fields are examined and heuristics are used to determine whether the field contains a date/time.
+
+For example, the following configuration:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-resultsettranslations-reformatdatetime.conf@
+}}}
+}}}
+
+Would translate the following date/time field:
+
+{{{#!blockquote
+Jul 10 2015 05:17:55:717PM
+}}}
+
+Into:
+
+{{{#!blockquote
+07/10/2015 17:18:55
+}}}
+
+Note that '''dateddmm''' and '''dateyyyyddmm''' should usually be set to the same thing.  There are very specific cases where these two attributes need to be set differently from one another.  You'll know if you need to.
+
+Note also that date/time translation in general is especially problematic with MS SQL Server.  See [../../faq.html#mssqldates the FAQ] for more info.
+
+----
+
+[[Image(../../images/navprev.png,link=resultsettranslation.html,vertical-align=middle)]] [resultsettranslation.html Result Set Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetrowtranslation.html Result Set Row Translation] [[Image(../../images/navnext.png,link=resultsetrowtranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

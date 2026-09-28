@@ -1,0 +1,48 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=resultsetheadertranslation.html,vertical-align=middle)]] [resultsetheadertranslation.html Result Set Header Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [reformatdatetime.html reformatdatetime] [[Image(../../images/navnext.png,link=reformatdatetime.html,vertical-align=middle)]]
+
+[=#resultsettranslation]
+= Result Set Translation =
+
+Result set translation enables the SQL Relay server to modify fields in the result set before returning the field to the client.
+
+ [[Image(../../images/translation-resultset.png,nolink)]]
+
+Result set translation is implemented by loadable modules.  The //resultsettranslations// section of the configuration file indicates which result set translation modules to load and what parameters to use when executing them.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-resultsettranslations-reformatdatetime.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+All result set translation modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
+
+All result set translation modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [logging.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
+
+Result set translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates instances of the specified result set translation modules and initializes them.  As each field of the result set is returned, the server passes the field to each module, in the order that they were specified in the config file.  If a module modifies a field, then that modified field is passed on to the next module.
+
+Currently, the following result set translation module is available in the standard SQL Relay distribution:
+
+* [reformatdatetime.html#reformatdatetime reformatdatetime]
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=resultsetheadertranslation.html,vertical-align=middle)]] [resultsetheadertranslation.html Result Set Header Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [reformatdatetime.html reformatdatetime] [[Image(../../images/navnext.png,link=reformatdatetime.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

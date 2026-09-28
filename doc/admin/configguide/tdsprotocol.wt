@@ -242,9 +242,9 @@ Depending on the back-end, it might also be necessary to make some other configu
  * set ignorespace=yes
  * set the overrideschema parameter
  * set the typemangling and/or tablemangling parameters
-* use [datatranslation.html#querytranslation Query Translation] modules
-* use [datatranslation.html#resultsettranslation Result Set Translation] modules
-* use [datatranslation.html#errortranslation Error Translation] modules
+* use [querytranslation.html#querytranslation Query Translation] modules
+* use [resultsettranslation.html#resultsettranslation Result Set Translation] modules
+* use [errortranslation.html#errortranslation Error Translation] modules
 * use [sessionqueries.html#sessionqueries Session Queries]
 
 In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.

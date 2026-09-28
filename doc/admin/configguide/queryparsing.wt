@@ -1,0 +1,36 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querytranslation.html Query Translation] [[Image(../../images/navnext.png,link=querytranslation.html,vertical-align=middle)]]
+
+[=#queryparsing]
+= Query Parsing =
+
+Query parsing enables the SQL Relay server to create a DOM tree representing the query, which can be more easily processed than plain text by other modules.
+
+Parsers are implemented as loadable modules.  The //parser// section of the configuration file indicates which parser module to load and what parameters to configure it with.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-parser.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+At startup, the SQL Relay server creates an instance of the specified parser modules and initializes it.  When a query is run, the server passes the query to the parser, which parses it and makes the DOM tree representing the query available to other modules.
+
+Currently, no open source parser modules are available, however custom modules may be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querytranslation.html Query Translation] [[Image(../../images/navnext.png,link=querytranslation.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

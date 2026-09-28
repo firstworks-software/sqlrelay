@@ -1,0 +1,268 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="normalize.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="normalize.html">normalize</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="listagg_to_string_agg.html">listagg_to_string_agg</a> <a href="listagg_to_string_agg.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="patterns"/><h1>patterns</h1>
+
+<p>The <b>patterns</b> module enables you to match the entire query, or parts of it, against a pattern, and then replace the matching part.</p>
+
+<p>The module is highly configurable, and capable of doing some fairly complex substitutions.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"old_tablename"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"new_tablename"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"outsidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"David"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Dave"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"cistring"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"Johnathan"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"John"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"(Dan|Danny)"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Daniel"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"(Rich|Richie)"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"Richard"</font> <font color="#009900">scope</font><font color="#990000">=</font><font color="#FF0000">"insidequotes"</font> <font color="#009900">global</font><font color="#990000">=</font><font color="#FF0000">"no"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font> <font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"^show tables$"</font> <font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"select * from user_tables"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, several pattern query translations are defined, instructing the module to:</p>
+
+<ul>
+  <li>Convert <i>old_tablename</i> to <i>new_tablename</i>, but only outside of quoted strings.</li>
+  <li>Convert <i>David</i> to <i>Dave</i>, but only inside of quoted strings.</li>
+  <li>Convert <i>Johnathan</i> to <i>John</i>, but only inside of quoted strings, and using case-insensitive matching.</li>
+  <li>Convert <i>Dan</i> or <i>Danny</i> to <i>Daniel</i>, but only inside of quoted strings.</li>
+  <li>Convert only the first instance of <i>Rich</i> or <i>Richie</i> to <i>Richard</i>, and only inside of quoted strings.</li>
+  <li>Convert the entire query <i>show tables</i> to the entire query <i>select * from user_tables</i>.</li>
+</ul>
+
+<p>This example illustrates the use of several attributes of the pattern tag:</p>
+
+<ul>
+  <li><b>type</b> - The type of matching to do.  Options include:</li>
+  <ul>
+    <li><i>string</i> - basic string matching - the default</li>
+    <li><i>cistring</i> - case-insensitive string matching</li>
+    <li><i>regex</i> - regular-expression matching</li>
+  </ul>
+
+  <li><b>from</b> - The pattern to match.</li>
+  <li><b>to</b> - The string to convert matching parts of the query to.</li>
+  <li><b>scope</b> - Where to match and translate.  Options include:</li>
+  <ul>
+    <li><i>anywhere</i> - anywhere in the query - the default</li>
+    <li><i>outsidequotes</i> - only outside of quoted strings</li>
+    <li><i>insidequotes</i> - only inside of quoted strings</li>
+  </ul>
+
+  <li><b>global</b> - Only valid when type="regex".  Options include:</li>
+  <ul>
+    <li><i>yes</i> - find all matches - the default</li>
+    <li><i>no</i> - only find the first match</li>
+  </ul>
+
+  <li><b>backrefs</b> - Only valid when type="regex" and using from/to (not match).  Options include:</li>
+  <ul>
+    <li><i>no</i> - treat \1, \2, etc. in <i>to</i> as literal text - the default</li>
+    <li><i>yes</i> - treat \1, \2, etc. in <i>to</i> as backreferences to the capture groups in <i>from</i>, and \0 as the whole match</li>
+  </ul>
+
+</ul>
+
+<p>With backrefs="yes", <i>to</i> can refer back to whatever a capture group in <i>from</i> matched.  For example:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><font color="#990000">&lt;</font><font color="#008080">pattern</font> type<font color="#990000">=</font><font color="#FF0000">"regex"</font> from<font color="#990000">=</font><font color="#FF0000">"([a-z]+)</font><font color="#CC33CC">\.</font><font color="#FF0000">([a-z]+)"</font> to<font color="#990000">=</font><font color="#FF0000">"</font><font color="#CC33CC">\2</font><font color="#FF0000">.</font><font color="#CC33CC">\1</font><font color="#FF0000">"</font> backrefs<font color="#990000">=</font><font color="#FF0000">"yes"</font><font color="#990000">/&gt;</font></tt></pre>
+
+</blockquote>
+<p>swaps <i>table.column</i> to <i>column.table</i> wherever it occurs.  Without backrefs="yes", \1 and \2 in <i>to</i> would be inserted literally, rather than being replaced with what the capture groups matched.</p>
+
+<p>Note that in this example, the normalize query translation is loaded prior to the patterns query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
+
+<p>Another powerful feature of the patterns query translation module is nested matching:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"^create table .*"</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">" tinytext,"</font>
+						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">" varchar2(254),"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">" mediumtext,"</font>
+						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">" varchar2(1023),"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">" longtext,"</font>
+						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">" clob,"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"^select .*,oldvalue,newvalue,.* from ticket_change .* union .*"</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+						<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">",oldvalue,newvalue,"</font>
+						<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">",to_char(oldvalue),to_char(newvalue),"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example...</p>
+
+<p>The first pattern query translation replaces:</p>
+
+<ul>
+  <li>the tinytext column type with varchar2(254)</li>
+  <li>the mediumtext column type with varchar2(1023)</li>
+  <li>the longtext column type with clob</li>
+</ul>
+
+<p>But the replacements are only done in <i>create table</i> queries.</p>
+
+<p>It's unlikely that those patterns would show up in other queries, but not impossible.  Also, the query translation is made more efficient by the initial match, as it will bail immediately if the query is something other than a create table, rather than having to scan the entire rest of the query.</p>
+
+<p>The second pattern query translation basically wraps oldvalue and newvalue with to_char(), but only in a very specific query.  This is a good example of how the patterns query translation can help run an app written for one type of database against a different type of database.  One-off query translations are often necessary in these cases.</p>
+
+<p>Note that in these examples, the outer pattern tags have a match attribute rather than from/to attributes.  When doing nested matching, outer tags use the match attribute to grab pieces of the query, and pass them down to nested tags.</p>
+
+<p>The type, scope, and global attributes are valid for outer pattern tags, but the from and to attributes are ignored in any pattern tag with a match attribute.</p>
+
+<p>When match is type="regex" and the pattern contains capture groups, it's the whole match, not a capture group, that gets passed down to nested tags.  Capture groups may still be used for grouping and alternation within the pattern; they just don't narrow what nested tags see.</p>
+
+<p>Note also that in these examples, the nested pattern tags use type="string", but type="regex" and type="cistring" are supported, as is the global attribute for type="regex".  However, the scope attribute is only valid at the top level and is ignored in nested pattern tags.</p>
+
+<p>Though more than 2 levels is rarely necessary, any level of nesting is supported:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	...
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ... <b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;querytranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"normalize"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;querytranslation</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"patterns"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+					<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in query..."</font><b><font color="#0000FF">&gt;</font></b>
+					<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+						<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in matching pieces of query..."</font><b><font color="#0000FF">&gt;</font></b>
+						<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+							<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...pattern to match in those pieces..."</font><b><font color="#0000FF">&gt;</font></b>
+							<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"regex"</font>
+								<font color="#009900">match</font><font color="#990000">=</font><font color="#FF0000">"...and so on..."</font><b><font color="#0000FF">&gt;</font></b>
+								<b><font color="#0000FF">&lt;pattern</font></b> <font color="#009900">type</font><font color="#990000">=</font><font color="#FF0000">"string"</font>
+									<font color="#009900">from</font><font color="#990000">=</font><font color="#FF0000">"...from pattern..."</font>
+									<font color="#009900">to</font><font color="#990000">=</font><font color="#FF0000">"...to pattern..."</font><b><font color="#0000FF">/&gt;</font></b>
+							<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+						<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+					<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+				<b><font color="#0000FF">&lt;/pattern&gt;</font></b>
+			<b><font color="#0000FF">&lt;/querytranslation&gt;</font></b>
+		<b><font color="#0000FF">&lt;/querytranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+	...
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="normalize.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="normalize.html">normalize</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="listagg_to_string_agg.html">listagg_to_string_agg</a> <a href="listagg_to_string_agg.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

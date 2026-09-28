@@ -1,0 +1,46 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="datatranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="datatranslation.html">Data Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="querytranslation.html">Query Translation</a> <a href="querytranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="queryparsing"/><h1>Query Parsing</h1>
+
+<p>Query parsing enables the SQL Relay server to create a DOM tree representing the query, which can be more easily processed than plain text by other modules.</p>
+
+<p>Parsers are implemented as loadable modules.  The <i>parser</i> section of the configuration file indicates which parser module to load and what parameters to configure it with.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;parser</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"example"</font> ...<b><font color="#0000FF">/&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <i>module</i> attribute specifies which module to load.</p>
+
+<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
+
+<p>At startup, the SQL Relay server creates an instance of the specified parser modules and initializes it.  When a query is run, the server passes the query to the parser, which parses it and makes the DOM tree representing the query available to other modules.</p>
+
+<p>Currently, no open source parser modules are available, however custom modules may be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
+
+<hr/>
+
+<p><a href="datatranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="datatranslation.html">Data Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="querytranslation.html">Query Translation</a> <a href="querytranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

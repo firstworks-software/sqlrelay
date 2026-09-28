@@ -1,0 +1,246 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="querytranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="querytranslation.html">Query Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="patterns.html">patterns</a> <a href="patterns.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="normalize"/><h1>normalize</h1>
+
+<p>The <b>normalize</b> module performs the following operations on a query:</p>
+
+<ul>
+  <li>Removes comments.</li>
+  <li>Converts all white-space characters to spaces, outside of quoted strings.</li>
+  <li>Converts multiple spaces into a single space, outside of quoted strings.</li>
+  <li>Removes whitespace from around operators.</li>
+  <li>Converts static concatenations to equivalent strings.  Eg. converts 'he' || 'll' || 'o' to 'hello'.</li>
+  <li>Optionally converts the query to lower or upper case as specified by parameters described below.</li>
+  <li>Optionally converts comma-separated decimals to dot-separated decimals.</li>
+  <li>Optionally removes double-quotes around database object names.</li>
+</ul>
+
+<p>For example, the following query:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sElEcT
+	<font color="#990000">*,</font>
+	<font color="#FF0000">'He'</font> <font color="#990000">||</font> <font color="#FF0000">'Ll'</font> <font color="#990000">||</font> <font color="#FF0000">'o'</font>
+from
+	myTABLE
+where
+	myTaBLe<font color="#990000">.</font>CoLuMn1    <font color="#990000">=</font>     myTablE<font color="#990000">.</font>ColuMN2  <font color="#990000">/</font>    <font color="#993399">2</font>
+</tt></pre>
+
+</blockquote>
+<p>Would be translated to:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>select <font color="#990000">*,</font> <font color="#FF0000">'HeLlo'</font> from mytable <font color="#008080">where</font> mytable<font color="#990000">.</font>column1 <font color="#990000">=</font> mytable<font color="#990000">.</font>column2<font color="#990000">/</font><font color="#993399">2</font>
+</tt></pre>
+
+</blockquote>
+<p>Normalizing a query is useful when also using <a href="security.html#filtering">query filtering</a> as it simplifies the patterns that have to be searched for.</p>
+
+<p>The following attributes are currently supported:</p>
+
+<ul>
+  <li><b>foreigndecimals</b> - "yes" or "no".  Defaults to "no".</li>
+  <ul>
+    <li>SQL requires dots for decimal separators.  However, some internationalized apps are not well behaved and build queries with decimals that use commas for decimal separators.  This attribute instructs the module to try to identify comma-separated decimals and replace the commas with dots.</li>
+    <li>This can be tricky, especially with decimals in parentheses, which can be misinterpreted as parameters.  To help manage this, a space before a set of comma-separated numbers is interpreted as a delimiter, and no number may have more than 1 decimal separator.</li>
+    <li>For example:</li>
+    <ul>
+      <li>(111,222, 333,444) is interpreted as having 2 decimals: 111.222 and 333.444</li>
+      <li>(111, 222, 333,444) is interpreted as having 2 integers and 1 decimal: 111 and 222 and 333.444</li>
+      <li>(111,222, 333,444,555) is interpreted as having 2 decimals and 1 integer: 111.222 and 333.444 and 555</li>
+      <li>(111,222) is interpreted as 2 integers: 111 and 222</li>
+      <li>( 111,222) is interpreted as 1 decimal: 111.222</li>
+      <li>etc.</li>
+    </ul>
+
+  </ul>
+
+  <li><b>convertcase</b> - "upper", "lower", or "no".  Defaults to "lower".</li>
+  <ul>
+    <li>If set to "upper" or "lower" then the entire query is converted to the specified case, except for strings surrounded by single or double quotes.</li>
+    <li>If set to "no" then no case conversion is done.</li>
+    <li>If omitted then the value defaults to "lower".</li>
+  </ul>
+
+  <li><b>convertcasedoublequoted</b> - "upper", "lower", "yes", or "no".  Defaults to "no".</li>
+  <ul>
+    <li>If set to "upper" or "lower" then values enclosed in double-quotes are converted to the specified case.  Double-quotes usually surround the names of database objects such as table, index, or column names to indicate that they should be interpreted in a case-sensitive manner.  So, effectively, setting this to "yes" forces the case of the quoted object names in the query.</li>
+    <ul>
+      <li>Some databases (eg. Oracle) default object names to upper case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>EXAMPLETABLE</i> with a column named <i>COL1</i>.</li>
+      </ul>
+
+      <li>Some databases (eg. PostgreSQL, MySQL/MariaDB, others) default object names to the specified case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>exampletable</i> with a column named <i>col1</i>.</li>
+      </ul>
+
+      <li>This can be useful when converting an app from one type of database to the other if the app's queries contain quoted object names.</li>
+    </ul>
+
+    <li>If set to "yes" then values enclosed in double-quotes are converted to the case specified by the convertcase attribute.</li>
+    <li>If set to "no" then no case conversion is done.</li>
+    <li>If omitted then the value defaults to "no".</li>
+  </ul>
+
+  <li><b>convertcasebackquoted</b> - "upper", "lower", "yes", or "no".  Defaults to "no".</li>
+  <ul>
+    <li>If set to "upper" or "lower" then values enclosed in back-quotes are converted to the specified case.  In some database (MySQL/MariaDB) back-quotes can be used to surround the names of database objects such as table, index, or column names to indicate that they should be interpreted in a case-sensitive manner.  So, effectively, setting this to "yes" forces the case of the quoted object names in the query.</li>
+    <ul>
+      <li>Some databases (eg. Oracle) default object names to upper case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>EXAMPLETABLE</i> with a column named <i>COL1</i>.</li>
+      </ul>
+
+      <li>Some databases (eg. PostgreSQL, MySQL/MariaDB, others) default object names to the specified case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>exampletable</i> with a column named <i>col1</i>.</li>
+      </ul>
+
+      <li>This can be useful when converting an app from one type of database to the other if the app's queries contain quoted object names.</li>
+    </ul>
+
+    <li>If set to "yes" then values enclosed in back-quotes are converted to the case specified by the convertcase attribute.</li>
+    <li>If set to "no" then no case conversion is done.</li>
+    <li>If omitted then the value defaults to "no".</li>
+  </ul>
+
+  <li><b>removedoublequotes</b> - "yes" or "no".  Defaults to "no".</li>
+  <ul>
+    <li>If set to "yes" then double-quotes are removed, except for escaped double quotes.  Double-quotes usually surround the names of database objects such as table, index, or column names to indicate that they should be interpreted in a case-sensitive manner.  So, effectively, setting this to "yes" causes the database to interpret the object names case-insensitively.</li>
+    <ul>
+      <li>Some databases (eg. Oracle) default object names to upper case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>EXAMPLETABLE</i> with a column named <i>COL1</i>.</li>
+      </ul>
+
+      <li>Some databases (eg. PostgreSQL, MySQL/MariaDB, others) default object names to the specified case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>exampletable</i> with a column named <i>col1</i>.</li>
+      </ul>
+
+      <li>This can be useful when converting an app from one type of database to the other if the app's queries contain quoted object names.</li>
+    </ul>
+
+    <li>If set to "no" then double-quotes are not removed.</li>
+    <li>If omitted then the value defaults to "no".</li>
+  </ul>
+
+  <li><b>removebackquotes</b> - "yes" or "no".  Defaults to "no".</li>
+  <ul>
+    <li>If set to "yes" then back-quotes are removed, except for escaped back quotes.  In some databases (MySQL/MariaDB) back-quotes can be used to surround the names of database objects such as table, index, or column names to indicate that they should be interpreted in a case-sensitive manner.  So, effectively, setting this to "yes" causes the database to interpret the object names case-insensitively.</li>
+    <ul>
+      <li>Some databases (eg. Oracle) default object names to upper case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>EXAMPLETABLE</i> with a column named <i>COL1</i>.</li>
+      </ul>
+
+      <li>Some databases (eg. PostgreSQL, MySQL/MariaDB, others) default object names to the specified case when creating the object, if the object names are unquoted in the create statement.</li>
+      <ul>
+        <li>Eg. 'create table exampletable (col1 int)' creates a table named <i>exampletable</i> with a column named <i>col1</i>.</li>
+      </ul>
+
+      <li>This can be useful when converting an app from one type of database to the other if the app's queries contain quoted object names.</li>
+    </ul>
+
+    <li>If set to "no" then back-quotes are not removed.</li>
+    <li>If omitted then the value defaults to "no".</li>
+  </ul>
+
+  <li><b>slashescape</b> - "yes" or "no".  Defaults to "yes" when connected to MySQL/MariaDB, "no" otherwise.</li>
+  <ul>
+    <li>Most databases support <i>double-escaped</i> quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'</li>
+    <li>MySQL/MariaDB also supports <i>slash-escaped</i> quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said \'hello\' to her.'  Other databases (eg. PostgreSQL with standard_conforming_strings on, which has been the default since PostgreSQL 9.1, and also Oracle, DB2, Firebird, and SQL Server) treat a backslash inside a quoted string as an ordinary character, not an escape.</li>
+    <li>When connected to MySQL/MariaDB, the normalize query translation converts slash-escaped single, double, and back-quotes to double-escaped single, double, and back-quotes by default.  Against any other database, the slash is left alone by default, since treating it as an escape character there would incorrectly swallow the quote that was meant to close the string - for example, a literal ending in a backslash (as in an <i>escape '\'</i> clause) would never find its closing quote, and the rest of the query would be consumed as string content.</li>
+    <li>Setting slashescape explicitly to "yes" or "no" overrides the default for any database.</li>
+    <li>The default is based on the real database module in use - not the client-facing identity a migration may have set with <b>dbtype=</b> in the connection string to make the backend impersonate a different database, and not the module through which the backend is reached, either - so a MySQL/MariaDB database reached through the ODBC or router modules is reported as <i>odbc</i> or <i>router</i> rather than <i>mysql</i>, and needs slashescape="yes" set explicitly.</li>
+  </ul>
+
+  <li><b>doubleescape</b> - "yes" or "no".  Defaults to "yes".</li>
+  <ul>
+    <li>Most databases support <i>double-escaped</i> quotes.  For example, if a quoted string needs to contains a quote, then that would be expressed like: 'I said ''hello'' to her.'</li>
+    <li>By default, the normalize query translation interprets double-escaped single, double, and back-quotes in this manner.</li>
+    <li>If doubleescape is set to "no" then all quotes, double-quotes, and back-quotes will be interpreted literally, potentially affecting case conversion and quote removal.</li>
+  </ul>
+
+</ul>
+
+<hr/>
+
+<p><a href="querytranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="querytranslation.html">Query Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="patterns.html">patterns</a> <a href="patterns.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

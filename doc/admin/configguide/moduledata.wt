@@ -1,0 +1,42 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=errorpatterns.html,vertical-align=middle)]] [errorpatterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
+
+[=#moduledata]
+= Module Data =
+
+Moduledata modules allow a developer to pass data between modules.  For example, a query translation module could set a value that a result set translation module could later read.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-moduledata.conf@
+}}}
+}}}
+
+The //module// attribute specifies which module to load.
+
+Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
+
+Module data modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
+
+At startup, the SQL Relay server creates one instance of the moduledata specified in each moduledata tag.  Each of these tags must specify an //id// attribute.  This id can be used by other modules to access this instance of moduledata.  If more than one instance of the same kind of moduledata is required, then multiple moduledata tags may be specified with the same //module// attribute and different //id// attributes.
+
+Currently, the only open source moduledata module available is:
+
+* '''tag'''
+
+The tag module works as specified in the documentation for the [security.html#filter-tag tag] filter.
+
+Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
+
+----
+
+[[Image(../../images/navprev.png,link=errorpatterns.html,vertical-align=middle)]] [errorpatterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

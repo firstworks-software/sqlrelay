@@ -1,0 +1,124 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="resultsetheadertranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsetheadertranslation.html">Result Set Header Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="reformatdatetime.html">reformatdatetime</a> <a href="reformatdatetime.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="resultsettranslation"/><h1>Result Set Translation</h1>
+
+<p>Result set translation enables the SQL Relay server to modify fields in the result set before returning the field to the client.</p>
+
+<blockquote>
+<img src="../../images/translation-resultset.png"/>
+</blockquote>
+<p>Result set translation is implemented by loadable modules.  The <i>resultsettranslations</i> section of the configuration file indicates which result set translation modules to load and what parameters to use when executing them.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		...
+		<b><font color="#0000FF">&lt;resultsettranslations&gt;</font></b>
+			<b><font color="#0000FF">&lt;resultsettranslation</font></b>
+				<font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"reformatdatetime"</font>
+				<font color="#009900">datetimeformat</font><font color="#990000">=</font><font color="#FF0000">"MM/DD/YYYY HH24:MI:SS"</font>
+				<font color="#009900">dateformat</font><font color="#990000">=</font><font color="#FF0000">"MM/DD/YYYY"</font>
+				<font color="#009900">timeformat</font><font color="#990000">=</font><font color="#FF0000">"HH24:MI:SS"</font>
+				<font color="#009900">dateddmm</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">ignorenondatetime</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/resultsettranslations&gt;</font></b>
+		...
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>The <i>module</i> attribute specifies which module to load.</p>
+
+<p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
+
+<p>All result set translation modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
+
+<p>All result set translation modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="logging.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
+
+<p>Result set translation modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
+
+<p>At startup, the SQL Relay server creates instances of the specified result set translation modules and initializes them.  As each field of the result set is returned, the server passes the field to each module, in the order that they were specified in the config file.  If a module modifies a field, then that modified field is passed on to the next module.</p>
+
+<p>Currently, the following result set translation module is available in the standard SQL Relay distribution:</p>
+
+<ul>
+  <li><a href="reformatdatetime.html#reformatdatetime">reformatdatetime</a></li>
+</ul>
+
+<p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
+
+<hr/>
+
+<p><a href="resultsetheadertranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsetheadertranslation.html">Result Set Header Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="reformatdatetime.html">reformatdatetime</a> <a href="reformatdatetime.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+
