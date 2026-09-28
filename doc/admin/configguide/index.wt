@@ -44,7 +44,6 @@ This guide is split across the pages listed below - start with Quick Start for a
 * [clientprotocoloptions.html#protocoloptions Client Protocol Options]
  * [sqlrclientprotocol.html#sqlrclientprotocol SQLRClient Protocol]
   * [sqlrclientprotocol.html#sqlrclientconfiguration Basic Configuration]
-  * [sqlrclientprotocol.html#sqlrclientversions Protocol Versions]
   * [sqlrclientprotocol.html#sqlrclientlistener Listener Options]
   * [sqlrclientprotocol.html#sqlrclientauth Authentication/Encryption Options]
    * [sqlrclientprotocol.html#sqlrclientconnectstringsauth Connect Strings Auth]
