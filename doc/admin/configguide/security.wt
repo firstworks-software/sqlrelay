@@ -528,6 +528,7 @@ Currently, the following password encryption modules are available in the standa
 * md5
 * sha1
 * sha256
+* sha512
 * des
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com]. [[Image(http://sqlrelay.sourceforge.net/images/us.png)]] [[Image(http://sqlrelay.sourceforge.net/images/br.png)]]
@@ -587,6 +588,20 @@ The '''sha256''' module is a one-way encryption module that encrypts the passwor
 }}}
 
 Since the SHA-256 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
+
+
+[[br]][=#sha512]
+=== sha512 ===
+
+The '''sha512''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-2 SHA-512] algorithm.  This module has no parameters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-sha512.conf@
+}}}
+}}}
+
+Since the SHA-512 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
 
 
 [[br]][=#des]

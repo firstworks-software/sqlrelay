@@ -139,6 +139,7 @@ This guide is split across the pages listed below - start with Quick Start for a
   * [security.html#md5 md5]
   * [security.html#sha1 sha1]
   * [security.html#sha256 sha256]
+  * [security.html#sha512 sha512]
   * [security.html#des des]
   * [security.html#aes128 aes128]
  * [security.html#schedules Connection Schedules]

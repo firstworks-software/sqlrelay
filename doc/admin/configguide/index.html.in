@@ -202,6 +202,7 @@
       <li><a href="security.html#md5">md5</a></li>
       <li><a href="security.html#sha1">sha1</a></li>
       <li><a href="security.html#sha256">sha256</a></li>
+      <li><a href="security.html#sha512">sha512</a></li>
       <li><a href="security.html#des">des</a></li>
       <li><a href="security.html#aes128">aes128</a></li>
     </ul>
