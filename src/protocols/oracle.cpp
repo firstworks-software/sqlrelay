@@ -271,6 +271,12 @@
 #define ORA_INVALID_CURSOR		1001
 #define ORA_INVALID_CURSOR_MESSAGE	"ORA-01001: invalid cursor\n"
 
+// what a real server reports when a session hits its open_cursors limit -
+// sent when this module's own fixed-size cursor pool is fully busy, which
+// is a distinct condition from ORA_INVALID_CURSOR above
+#define ORA_MAX_OPEN_CURSORS		1000
+#define ORA_MAX_OPEN_CURSORS_MESSAGE	"ORA-01000: maximum open cursors exceeded\n"
+
 // the oracle errors a bind can end a call in - one for a placeholder the
 // statement has but the client never bound, one for a bind naming a
 // placeholder the statement doesn't have
@@ -2127,6 +2133,7 @@ class SQLRSERVER_DLLSPEC sqlrprotocol_oracle : public sqlrprotocol {
 
 		bool	sendQueryError(sqlrservercursor *cursor);
 		bool	sendCursorNotOpenError(uint32_t cursorid=0);
+		bool	sendMaxOpenCursorsError();
 		bool	sendUnimplementedFunctionError();
 		bool	sendMarkerCancelError();
 
@@ -9669,7 +9676,7 @@ bool sqlrprotocol_oracle::open(const byte_t *rp) {
 	sqlrservercursor	*cursor=cont->getCursor();
 	if (!cursor) {
 		debugWrite("couldn't get cursor");
-		return sendCursorNotOpenError();
+		return sendMaxOpenCursorsError();
 	}
 
 	// a cursor out of the pool is reset before it gets here, so this is
@@ -13271,7 +13278,7 @@ bool sqlrprotocol_oracle::query3(const byte_t *rp) {
 		cursor=cont->getCursor();
 		if (!cursor) {
 			debugWrite("couldn't get cursor");
-			return sendCursorNotOpenError();
+			return sendMaxOpenCursorsError();
 		}
 		cursorid=wireCursorId(cursor);
 		debugStart("open request");
@@ -21374,6 +21381,33 @@ bool sqlrprotocol_oracle::sendCursorNotOpenError(uint32_t cursorid) {
 				ORA_INVALID_CURSOR_MESSAGE,
 				charstring::getLength(
 					ORA_INVALID_CURSOR_MESSAGE));
+	}
+
+	return sendPacket(true);
+}
+
+bool sqlrprotocol_oracle::sendMaxOpenCursorsError() {
+
+	// no cursor id was ever allocated for this request, unlike
+	// sendCursorNotOpenError()'s wire-cursor-id case above
+
+	resetSendPacketBuffer(PACKET_DATA);
+
+	uint16_t	dataflags=0;
+	writeBE(&reqpacket,dataflags);
+
+	debugStart("max open cursors error");
+	debugWrite("data flags: 0x%04x",dataflags);
+	debugEnd();
+
+	if (query3session) {
+		putSummary(0,ORA_MAX_OPEN_CURSORS,0,
+					ORA_MAX_OPEN_CURSORS_MESSAGE);
+	} else {
+		putOci7Error(0,0,0,0,ORA_MAX_OPEN_CURSORS,
+				ORA_MAX_OPEN_CURSORS_MESSAGE,
+				charstring::getLength(
+					ORA_MAX_OPEN_CURSORS_MESSAGE));
 	}
 
 	return sendPacket(true);

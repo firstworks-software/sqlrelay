@@ -2954,6 +2954,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - hardened the oracle connection module's pl/sql output-bound lob reads
   against the same past-the-end read defect fixed above for function-result
   lobs, for consistency, though no reachable caller hits it today
+- fixed the oracle protocol module reporting ORA-01001 (invalid cursor)
+  instead of ORA-01000 (maximum open cursors exceeded) when its cursor
+  pool runs out
 
 ### Security
 - fixed an authentication hole in the des password encryption module
