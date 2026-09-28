@@ -316,6 +316,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   so behavior is unchanged, and gates the normalize query translation's
   doubleescape and the server's string-literal-skipping helpers
 - added the tds_userlist auth module
+- added the firebird_userlist auth module
 
 ### Changed
 - requires rudiments 2.3.0 or newer

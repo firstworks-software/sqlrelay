@@ -24,6 +24,7 @@ all-base: $(SQLR)auth_sqlrclient_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_tds_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_tds_userlist.$(LIBEXT) \
 		$(SQLR)auth_firebird_connectstrings.$(LIBEXT) \
+		$(SQLR)auth_firebird_userlist.$(LIBEXT) \
 		$(SQLR)auth_oracle_connectstrings.$(LIBEXT) \
 		$(SQLR)auth_oracle_userlist.$(LIBEXT) \
 		$(SQLR)auth_oracle_database.$(LIBEXT) \
@@ -77,6 +78,9 @@ $(SQLR)auth_tds_userlist.$(LIBEXT): tds_userlist.cpp tds_userlist.$(OBJ)
 $(SQLR)auth_firebird_connectstrings.$(LIBEXT): firebird_connectstrings.cpp firebird_connectstrings.$(OBJ) firebirdsrp.$(OBJ)
 	$(LTLINK) $(LINK) $(OUT)$@ firebird_connectstrings.$(OBJ) firebirdsrp.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
 
+$(SQLR)auth_firebird_userlist.$(LIBEXT): firebird_userlist.cpp firebird_userlist.$(OBJ) firebirdsrp.$(OBJ)
+	$(LTLINK) $(LINK) $(OUT)$@ firebird_userlist.$(OBJ) firebirdsrp.$(OBJ) $(LDFLAGS) $(PLUGINLIBS) $(MODLINKFLAGS)
+
 # the srp crypto lives with the firebird protocol module, which needs it too,
 # so it's compiled here rather than duplicated
 # (one rule per object suffix, because the suffix rules above can't reach
@@ -114,6 +118,7 @@ installdll: installdll-sqlrclient_connectstrings \
 		installdll-tds_connectstrings \
 		installdll-tds_userlist \
 		installdll-firebird_connectstrings \
+		installdll-firebird_userlist \
 		installdll-oracle_connectstrings \
 		installdll-oracle_userlist \
 		installdll-oracle_database
@@ -170,6 +175,10 @@ installdll-firebird_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_connectstrings.$(LIBEXT) $(libexecdir)
 
+installdll-firebird_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_userlist.$(LIBEXT) $(libexecdir)
+
 installdll-oracle_connectstrings:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_oracle_connectstrings.$(LIBEXT) $(libexecdir)
@@ -196,6 +205,7 @@ installsharedlib: installsharedlib-sqlrclient_connectstrings \
 		installsharedlib-tds_connectstrings \
 		installsharedlib-tds_userlist \
 		installsharedlib-firebird_connectstrings \
+		installsharedlib-firebird_userlist \
 		installsharedlib-oracle_connectstrings \
 		installsharedlib-oracle_userlist \
 		installsharedlib-oracle_database
@@ -284,6 +294,13 @@ installsharedlib-firebird_connectstrings:
 	$(RM) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.$(LIBEXT)
 	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.so so $(MODULESUFFIX)
 
+installsharedlib-firebird_userlist:
+	$(MKINSTALLDIRS) $(libexecdir)
+	$(LTINSTALL) $(CP) $(SQLR)auth_firebird_userlist.$(LIBEXT) $(libexecdir)
+	$(RM) $(libexecdir)/$(SQLR)auth_firebird_userlist.a
+	$(RM) $(libexecdir)/$(SQLR)auth_firebird_userlist.$(LIBEXT)
+	$(MODULERENAME) $(libexecdir)/$(SQLR)auth_firebird_userlist.so so $(MODULESUFFIX)
+
 installsharedlib-sqlrclient_sqlrelay:
 	$(MKINSTALLDIRS) $(libexecdir)
 	$(LTINSTALL) $(CP) $(SQLR)auth_sqlrclient_sqlrelay.$(LIBEXT) $(libexecdir)
@@ -339,6 +356,7 @@ uninstall: uninstall-sqlrclient_connectstrings \
 		uninstall-tds_connectstrings \
 		uninstall-tds_userlist \
 		uninstall-firebird_connectstrings \
+		uninstall-firebird_userlist \
 		uninstall-sqlrclient_sqlrelay \
 		uninstall-oracle_connectstrings \
 		uninstall-oracle_database \
@@ -396,6 +414,9 @@ uninstall-tds_userlist:
 
 uninstall-firebird_connectstrings:
 	$(RM) $(libexecdir)/$(SQLR)auth_firebird_connectstrings.*
+
+uninstall-firebird_userlist:
+	$(RM) $(libexecdir)/$(SQLR)auth_firebird_userlist.*
 
 uninstall-sqlrclient_sqlrelay:
 	$(RM) $(libexecdir)/$(SQLR)auth_sqlrclient_sqlrelay.*
