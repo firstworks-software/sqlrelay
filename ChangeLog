@@ -929,6 +929,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - documentation lists Microsoft SQL Server before SAP/Sybase now
 - documentation says SAP/Sybase instead of Sybase alone now
 - updated the Configuration Guide
+- added the JDBC diagram to the database abstraction layers images on the
+  documentation page
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

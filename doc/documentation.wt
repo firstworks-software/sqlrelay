@@ -75,7 +75,8 @@ SQL Relay provides drivers for several popular database abstraction layers.
 [[Image(images/app-phppdo-sqlr-mysql.png,nolink,margin-left=160px)]]
 [[Image(images/app-pythondb-sqlr-mysql.png,nolink,margin-left=10px)]][[br]]
 [[Image(images/app-perldbi-sqlr-mysql.png,nolink,margin-left=160px)]]
-[[Image(images/app-odbc-sqlr-mysql.png,nolink,margin-left=10px)]]
+[[Image(images/app-odbc-sqlr-mysql.png,nolink,margin-left=10px)]][[br]]
+[[Image(images/app-jdbc-sqlr-mysql.png,nolink,margin-left=160px)]]
 }}}
 
 ----
