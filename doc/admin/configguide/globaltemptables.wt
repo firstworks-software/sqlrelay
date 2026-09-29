@@ -64,7 +64,7 @@ The '''table''' tag supports the following attribute:
  * the name of the table to watch for - matched, as a whole word, against every query at prepare time
  * the table body (between the open and close tags) is the //create// statement to run on the backend session the first time the table is referenced
 
-The body of the '''table''' tag may also use the //[...filename...]// syntax supported elsewhere in the SQL Relay config to read the create statement from an external file - useful for long create statements.
+The body of the '''table''' tag may also use the //&#91;...filename...]// syntax supported elsewhere in the SQL Relay config to read the create statement from an external file - useful for long create statements.
 
 === Considerations ===
 
