@@ -62,10 +62,6 @@
 
 <p>If an instance speaks the Firebird client-server protocol, then any client that wishes to use it must also speak the Firebird client-server protocol.  This means that most software written using the Firebird API (fbclient), or written using a database abstraction layer which loads a driver for Firebird, such as the Jaybird JDBC driver or the Firebird ODBC driver, can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
 
-<p>Like the TDS protocol module, the Firebird protocol module handles the everyday work - clients log in, run queries with or without bind variables, read result sets and blobs, and commit or roll back transactions - and most of the module's configuration doesn't need documenting because the defaults work.  The sections below cover the options that do - notably the protocol version that the module negotiates, and wire encryption.</p>
-
-<p>The Firebird protocol module has not been proven against production Firebird clients and workloads as extensively as the TDS module has.  SQL Relay's own test suite exercises it with the Firebird client library (fbclient) and its C API, covering attaching, transactions, statements, metadata, fetching, bind variables, blobs, errors, cursors and wire encryption.  No other client is part of the test suite.  Since the Firebird protocol is the same for every client, isql, Jaybird, the Firebird ODBC driver, and similar should also work, but they haven't been tested in-tree.  See <a href="firebirdprotolimitations.html">Limitations</a> for what isn't supported.</p>
-
 <ul>
   <li><a href="firebirdprotoconfiguration.html">Basic Configuration</a></li>
   <li><a href="firebirdprotolistener.html">Listener Options</a></li>
