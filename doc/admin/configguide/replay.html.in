@@ -46,7 +46,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If an error code 1213 occurs (a MySQL deadlock), then the entire transaction is replayed.  If an error code 1205 occurs (a MySQL lock wait timeout), then the previous query is replayed.</p>
 
-<p>Note that the normalize translation is also configured.  This helps the trigger parse and rewrite queries more accurately.  See the section on Auto-Increment Columns below for details.</p>
+<p>See the section on Auto-Increment Columns below for details on how the trigger parses and rewrites insert queries.</p>
 
 <p>Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
 

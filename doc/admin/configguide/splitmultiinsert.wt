@@ -27,8 +27,6 @@ The splitmultiinsert trigger is configured to run before the query has been exec
 
 The replay trigger is also configured.  In this configuration, the splitmultiinsert trigger supports the replay trigger by splitting multi-row inserts into a set of single-row inserts, for which it is possible to get the last-insert-id of each, if necessary.
 
-Note that the normalize translation is also configured.  This helps the splitmultiinsert and replay triggers parse and rewrite queries more accurately.
-
 Note that in this example, the normalize query translation is loaded prior to the splitmultiinsert and replay triggers.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
 In this configuration, if a //students// table exists like:

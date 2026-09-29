@@ -39,7 +39,7 @@ An example configuration:
 
 The module has no module-specific attributes - only the standard '''module''', '''enabled''', and '''debug''' attributes apply.
 
-Note that, in this example, the normalize translation is also configured.  Loading normalize first helps the module identify //listagg()// calls more reliably, as their syntactic form (the spacing around //within group//, the parenthesized //order by// clause, etc.) is sensitive to whitespace and case.
+Normalizing the query first helps the module identify //listagg()// calls more reliably, as their syntactic form (the spacing around //within group//, the parenthesized //order by// clause, etc.) is sensitive to whitespace and case.
 
 Note that in this example, the normalize query translation is loaded prior to the listagg_to_string_agg query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 

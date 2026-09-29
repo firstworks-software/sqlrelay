@@ -50,7 +50,7 @@ On a database where transactions abort on any statement error (eg. !PostgreSQL),
 
 This decision is based on the real database module in use, not on a '''dbtype=''' identity a migration may have set in the connection string to make the backend impersonate a different database for the client's benefit - the create statement reaching a real !PostgreSQL backend gets //if not exists// inserted regardless of what the client believes it's talking to.
 
-Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.
+The trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.
 
 Note that in this example, the normalize query translation is loaded prior to the globaltemptables trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 

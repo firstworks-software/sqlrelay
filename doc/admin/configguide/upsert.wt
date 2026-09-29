@@ -70,8 +70,6 @@ Note that the primary key is omitted from the set clause of the update, and that
 
 Note also that, in the configuration, the columns are uppercased: FIRSTNAME and LASTNAME.  This is because, in this example, we're using an Oracle database and Oracle column names are uppercased by default.  For other databases, you should use lowercased column names.
 
-Also note that, in the configuration, the normalize translation is included.  This helps the trigger parse and rewrite queries more accurately.
-
 Note that in this example, the normalize query translation is loaded prior to the upsert trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
 Other configuration options are also available.

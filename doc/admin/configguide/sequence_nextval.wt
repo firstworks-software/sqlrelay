@@ -53,7 +53,7 @@ The following attribute is supported, in addition to the standard '''module''', 
 
 Sequence references inside string literals are left alone.
 
-The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the [normalize.html#normalize normalize] translation first helps it match reliably.
+The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).
 
 Note that in this example, the normalize query translation is loaded prior to the sequence_nextval query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
