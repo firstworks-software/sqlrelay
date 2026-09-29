@@ -969,6 +969,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - documentation says SAP/Sybase instead of Sybase alone now
 - the quick start and alternative configuration file pages of the
   configuration guide mention deb packages now
+- shortened the column metadata note on the Microsoft SQL Server (via
+  FreeTDS) page of the configuration guide
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
