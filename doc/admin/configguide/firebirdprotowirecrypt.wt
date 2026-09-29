@@ -19,11 +19,11 @@ The //wirecrypt// attribute on the listener tag sets the level of encryption tha
 * '''enabled''' - encrypt if the client is willing to.  The default.
 * '''required''' - refuse any client that won't encrypt.
 
-The client has a level of its own (the !WireCrypt setting in its firebird.conf), and the two are combined:
+The client offers its encryption level, and the two are negotiated as follows:
 
-* If either side requires encryption, and the other side allows it, the session is encrypted.
-* If one side requires encryption and the other has it disabled, the login is refused.
-* Otherwise, the session is encrypted only if both sides have it enabled.
+* If both sides require or enable encryption, the session is encrypted.
+* If both sides disable encryption, the session is not encrypted.
+* If one side requires encryption and the other disables it, the login is refused.
 
 {{{#!blockquote
 {{{#!code

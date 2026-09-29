@@ -67,12 +67,12 @@
   <li><b>required</b> - refuse any client that won't encrypt.</li>
 </ul>
 
-<p>The client has a level of its own (the WireCrypt setting in its firebird.conf), and the two are combined:</p>
+<p>The client offers its encryption level, and the two are negotiated as follows:</p>
 
 <ul>
-  <li>If either side requires encryption, and the other side allows it, the session is encrypted.</li>
-  <li>If one side requires encryption and the other has it disabled, the login is refused.</li>
-  <li>Otherwise, the session is encrypted only if both sides have it enabled.</li>
+  <li>If both sides require or enable encryption, the session is encrypted.</li>
+  <li>If both sides disable encryption, the session is not encrypted.</li>
+  <li>If one side requires encryption and the other disables it, the login is refused.</li>
 </ul>
 
 <blockquote>
