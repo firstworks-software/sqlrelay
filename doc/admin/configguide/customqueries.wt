@@ -25,8 +25,6 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All query modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All query modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 Custom query modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 At startup, the SQL Relay server creates instances of the specified query modules and initializes them.  When a query is run, the server passes the query to each module, in the order that they were specified in the config file.  Each module may evaluate the query and decide whether to respond or not.  If none of the query modules respond, then the query is passed along to the database.

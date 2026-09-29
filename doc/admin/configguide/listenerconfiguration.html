@@ -139,8 +139,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>If the socket option is specified but port and addresses options are not, then SQL Relay will only listen on the socket.  If addresses/port and socket options are both specified then it listens on both.</p>
 
-<p>The listeners tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the listeners tag (not in an individual listener tag) then debugging information about the listener is written to the destination of the debug logger module (if one is defined, see <a href="debug.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
-
 <p>Each individual listener tag also has an <i>enabled</i> attribute, allowing that listener to be temporarily disabled without removing it from the configuration.  If enabled="no" is configured, then SQL Relay does not open that listener's port or socket at all, and does not count that listener when assigning the other listener tags to their protocol modules.  If set to any other value, or omitted, then the listener is enabled.</p>
 
 <hr/>

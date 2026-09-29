@@ -801,8 +801,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>All schedule modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
 
-<p>All schedule modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="debug.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
-
 <p>Connection schedule modules can be "stacked".  Multiple different modules may be loaded, and multiple instances of the same type of module, with different configurations, may also be loaded.</p>
 
 <blockquote>
@@ -888,8 +886,6 @@ http://www.gnu.org/software/src-highlite -->
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All filter modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>
-
-<p>All filter modules have a <i>debug</i> attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see <a href="debug.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
 
 <p>All filter modules have an <i>when</i> attribute as well, which determines when the filter is applied.  If set to "before" then the module is executed before any query translations are executed.  If set to "after", or omitted, then the module is executed  after all query translations have been executed.  See <a href="querytranslation.html#querytranslation">Query Translations</a> for more information.</p>
 

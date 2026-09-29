@@ -27,8 +27,6 @@ Module configurations may have attributes and/or nested tags.  How these are int
 
 All trigger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All trigger modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 All trigger modules also have a //when// attribute which controls the phases in which the trigger runs.  The value is a comma-separated list of phase keywords.  The supported keywords are:
 
 * "beforeExecute" - run the trigger before the query is executed

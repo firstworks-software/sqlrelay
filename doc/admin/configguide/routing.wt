@@ -37,8 +37,6 @@ Module configurations may have attributes and/or nested tags.  How these element
 
 All router modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.
 
-All router modules have a //debug// attribute.  If debug="yes" is configured then debugging information is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 Router modules can be "stacked".  Multiple modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
 In fact, the example above shows a stacked configuration.  The first instance of the router module sends DDL/DML queries to a "master" database and the second instance of the router module sends all other queries to a "slave" database.
