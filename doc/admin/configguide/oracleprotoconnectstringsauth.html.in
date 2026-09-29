@@ -12,8 +12,6 @@
 
 <p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
 
-<p>The <a href="oracleprotoconfiguration.html">Basic Configuration</a> example uses this option, and configures SQL Relay to access the database using scott/tiger credentials.  In that case, clients would also use scott/tiger credentials to access SQL Relay.</p>
-
 <p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>connect strings</i> auth module as follows:</p>
 
 <blockquote>
