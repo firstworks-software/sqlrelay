@@ -963,6 +963,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - reworded the client protocol options page of the configuration guide to
   cover all native protocols
 - simplified the native protocol text on the front-end compatibility page
+- updated the front-end compatibility card on the home page to list all
+  native protocols
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
