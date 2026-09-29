@@ -32,8 +32,6 @@ The client offers its encryption level, and the two are negotiated as follows:
 }}}
 }}}
 
-When encryption is required, it is enforced.  Until encryption is actually running, only the requests that turn it on, finish the login, keep the connection alive, or end the session are answered.  Anything else is refused and the session ends, so a client that agrees to encryption and then never turns it on can't carry on in the clear.
-
 Note that:
 
 * Encryption needs protocol version 13 or higher - see [firebirdprotoversion.html Protocol Version].
