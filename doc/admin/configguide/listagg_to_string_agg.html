@@ -54,7 +54,7 @@
 
 <a name="listagg_to_string_agg"/><h1>listagg_to_string_agg</h1>
 
-<p>The <b>listagg_to_string_agg</b> module rewrites Oracle/DB2-style <i>listagg()</i> aggregate calls as <a href="PostgreSQL">PostgreSQL</a> <i>string_agg()</i> calls.  It's useful when running an application originally written for Oracle, DB2, or another database that supports <i>listagg()</i>, against <a href="PostgreSQL">PostgreSQL</a> or another database that supports <i>string_agg()</i> but not <i>listagg()</i>.</p>
+<p>The <b>listagg_to_string_agg</b> module rewrites Oracle/DB2-style <i>listagg()</i> aggregate calls as PostgreSQL <i>string_agg()</i> calls.  It's useful when running an application originally written for Oracle, DB2, or another database that supports <i>listagg()</i>, against PostgreSQL or another database that supports <i>string_agg()</i> but not <i>listagg()</i>.</p>
 
 <p>A query like:</p>
 
@@ -113,7 +113,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <ul>
   <li>wraps the aggregated expression in <b>cast(... as text)</b>, because <i>string_agg()</i> requires a text-typed first argument while <i>listagg()</i> accepts any type that can be coerced to a string</li>
-  <li>moves the <i>order by</i> from the <i>within group</i> clause inside the <i>string_agg()</i> argument list, which is where <a href="PostgreSQL">PostgreSQL</a> expects it</li>
+  <li>moves the <i>order by</i> from the <i>within group</i> clause inside the <i>string_agg()</i> argument list, which is where PostgreSQL expects it</li>
 </ul>
 
 <p>Calls inside string literals are left alone.  Identifiers like <i>mylistagg(...)</i> that merely end in <i>listagg</i> are also left alone.</p>
