@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filtertag.html,vertical-align=middle)]] [filtertag.html tag] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filtertag.html,vertical-align=middle)]] [filtertag.html tag] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
 
 [[br]][=#translation]
 = Data Translation =
@@ -25,7 +25,7 @@ SQL Relay offers features for translating queries, result sets, and errors.
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filtertag.html,vertical-align=middle)]] [filtertag.html tag] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filtertag.html,vertical-align=middle)]] [filtertag.html tag] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [queryparsing.html Query Parsing] [[Image(../../images/navnext.png,link=queryparsing.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

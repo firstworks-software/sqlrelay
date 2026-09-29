@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleprotocols.html">Multiple Protocols</a> | <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> <a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleprotocols.html">Multiple Protocols</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">SQL Relay Configuration Guide</a> | <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> <a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="ha"/><h1>High Availability</h1>
 
@@ -19,7 +19,7 @@
 
 <hr/>
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleprotocols.html">Multiple Protocols</a> | <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> <a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="multipleprotocols.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleprotocols.html">Multiple Protocols</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">SQL Relay Configuration Guide</a> | <a href="hacluster.html">Load Balancing and Failover With Replicated Databases or Database Clusters</a> <a href="hacluster.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="stalecursors.html">stalecursors</a> | <a href="events.html">events</a> <a href="events.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="stalecursors.html">stalecursors</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">SQL Relay Configuration Guide</a> | <a href="events.html">events</a> <a href="events.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="notifications"/><h1>Notifications</h1>
 
@@ -97,7 +97,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="stalecursors.html">stalecursors</a> | <a href="events.html">events</a> <a href="events.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="stalecursors.html">stalecursors</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">SQL Relay Configuration Guide</a> | <a href="events.html">events</a> <a href="events.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

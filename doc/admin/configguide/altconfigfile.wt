@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sessionqueries.html,vertical-align=middle)]] [sessionqueries.html Session-Queries] | [advanced.html Advanced Configuration] [[Image(../../images/navnext.png,link=advanced.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sessionqueries.html,vertical-align=middle)]] [sessionqueries.html Session-Queries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [advanced.html Advanced Configuration] [[Image(../../images/navnext.png,link=advanced.html,vertical-align=middle)]]
 
 [[br]][=#altconfigfile]
 = Alternative Configuration File Options =
@@ -198,7 +198,7 @@ There is no limit to the depth of links.  A link file can reference another link
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sessionqueries.html,vertical-align=middle)]] [sessionqueries.html Session-Queries] | [advanced.html Advanced Configuration] [[Image(../../images/navnext.png,link=advanced.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sessionqueries.html,vertical-align=middle)]] [sessionqueries.html Session-Queries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [advanced.html Advanced Configuration] [[Image(../../images/navnext.png,link=advanced.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

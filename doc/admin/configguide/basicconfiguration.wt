@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=quickstart.html,vertical-align=middle)]] [quickstart.html Quick Start] | [databaseconfiguration.html Database Configuration] [[Image(../../images/navnext.png,link=databaseconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=quickstart.html,vertical-align=middle)]] [quickstart.html Quick Start] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [databaseconfiguration.html Database Configuration] [[Image(../../images/navnext.png,link=databaseconfiguration.html,vertical-align=middle)]]
 
 [=#basic]
 = Basic Configuration =
@@ -21,7 +21,7 @@ The minimal example in [quickstart.html#quick Quick Start] may be sufficient for
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=quickstart.html,vertical-align=middle)]] [quickstart.html Quick Start] | [databaseconfiguration.html Database Configuration] [[Image(../../images/navnext.png,link=databaseconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=quickstart.html,vertical-align=middle)]] [quickstart.html Quick Start] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [databaseconfiguration.html Database Configuration] [[Image(../../images/navnext.png,link=databaseconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

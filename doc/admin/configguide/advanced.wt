@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide]
 
 [[br]][=#advanced]
 = Advanced Configuration =
@@ -13,7 +13,7 @@ The configuration file supports many more attributes and features than the ones 
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide]
 
 {{{#!include ../../contentend.html}}}
 

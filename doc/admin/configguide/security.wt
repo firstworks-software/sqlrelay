@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hafrontendlb.html,vertical-align=middle)]] [hafrontendlb.html Front-End Load Balancing and Failover] | [secfrontend.html Front-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secfrontend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hafrontendlb.html,vertical-align=middle)]] [hafrontendlb.html Front-End Load Balancing and Failover] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [secfrontend.html Front-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secfrontend.html,vertical-align=middle)]]
 
 [[br]][=#security]
 = Security Features =
@@ -22,7 +22,7 @@ SQL Relay offers several features to enhance security.
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hafrontendlb.html,vertical-align=middle)]] [hafrontendlb.html Front-End Load Balancing and Failover] | [secfrontend.html Front-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secfrontend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=hafrontendlb.html,vertical-align=middle)]] [hafrontendlb.html Front-End Load Balancing and Failover] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [secfrontend.html Front-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secfrontend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

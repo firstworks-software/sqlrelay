@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [basicconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=basicconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [basicconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=basicconfiguration.html,vertical-align=middle)]]
 
 [=#quick]
 = Quick Start =
@@ -83,7 +83,7 @@ sqlr-stop
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [basicconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=basicconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [basicconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=basicconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

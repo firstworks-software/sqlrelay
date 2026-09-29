@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=globaltemptables.html,vertical-align=middle)]] [globaltemptables.html globaltemptables] | [debug.html debug] [[Image(../../images/navnext.png,link=debug.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=globaltemptables.html,vertical-align=middle)]] [globaltemptables.html globaltemptables] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [debug.html debug] [[Image(../../images/navnext.png,link=debug.html,vertical-align=middle)]]
 
 [[br]][=#logging]
 = Logging =
@@ -42,7 +42,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=globaltemptables.html,vertical-align=middle)]] [globaltemptables.html globaltemptables] | [debug.html debug] [[Image(../../images/navnext.png,link=debug.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=globaltemptables.html,vertical-align=middle)]] [globaltemptables.html globaltemptables] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [debug.html debug] [[Image(../../images/navnext.png,link=debug.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrcmdgstat.html,vertical-align=middle)]] [sqlrcmdgstat.html sqlrcmdgstat] | [replay.html replay] [[Image(../../images/navnext.png,link=replay.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrcmdgstat.html,vertical-align=middle)]] [sqlrcmdgstat.html sqlrcmdgstat] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [replay.html replay] [[Image(../../images/navnext.png,link=replay.html,vertical-align=middle)]]
 
 [[br]][=#triggers]
 = Triggers =
@@ -57,7 +57,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrcmdgstat.html,vertical-align=middle)]] [sqlrcmdgstat.html sqlrcmdgstat] | [replay.html replay] [[Image(../../images/navnext.png,link=replay.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrcmdgstat.html,vertical-align=middle)]] [sqlrcmdgstat.html sqlrcmdgstat] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [replay.html replay] [[Image(../../images/navnext.png,link=replay.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

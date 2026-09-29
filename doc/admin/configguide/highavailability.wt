@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=multipleprotocols.html,vertical-align=middle)]] [multipleprotocols.html Multiple Protocols] | [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] [[Image(../../images/navnext.png,link=hacluster.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=multipleprotocols.html,vertical-align=middle)]] [multipleprotocols.html Multiple Protocols] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] [[Image(../../images/navnext.png,link=hacluster.html,vertical-align=middle)]]
 
 [[br]][=#ha]
 = High Availability =
@@ -18,7 +18,7 @@ In a high availability environment, SQL Relay can be deployed as a front-end to 
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=multipleprotocols.html,vertical-align=middle)]] [multipleprotocols.html Multiple Protocols] | [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] [[Image(../../images/navnext.png,link=hacluster.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=multipleprotocols.html,vertical-align=middle)]] [multipleprotocols.html Multiple Protocols] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html SQL Relay Configuration Guide] | [hacluster.html Load Balancing and Failover With Replicated Databases or Database Clusters] [[Image(../../images/navnext.png,link=hacluster.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 
