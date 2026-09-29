@@ -54,7 +54,11 @@
 
 <a name="oracleprotocol"/><h1>Oracle Protocol</h1>
 
-<p>SQL Relay can be configured to speak the native Oracle protocol, enabling client programs for Oracle (eg. the sqlplus command line program) to access SQL Relay directly.</p>
+<p>SQL Relay can be configured to speak the native Oracle protocol, enabling client programs for Oracle (eg. the sqlplus command line program) to access SQL Relay directly.
+<blockquote>
+<img src="../../images/sqlrelayoracleprotocol.png"/>
+</blockquote>
+</p>
 
 <p>If an instance speaks the Oracle client-server protocol, then any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and mysql command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
 

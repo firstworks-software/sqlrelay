@@ -10,6 +10,8 @@
 = !MySQL Protocol =
 
 SQL Relay can be configured to speak the native !MySQL protocol, enabling client programs for !MySQL/MariaDB (eg. the mysql command line program and !MySQL Workbench) to access SQL Relay directly.
+ [[Image(../../images/sqlrelaymysqlprotocol.png,nolink)]]
+
 
 If an instance speaks the !MySQL client-server protocol, then any client that wishes to use it must also speak the !MySQL client-server protocol.  This means that most software written using the !MySQL API, or written using a database abstraction layer which loads a driver for !MySQL can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and sqlplus command line programs, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
 

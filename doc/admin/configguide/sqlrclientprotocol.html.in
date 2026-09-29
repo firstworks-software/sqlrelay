@@ -8,7 +8,11 @@
 
 <a name="sqlrclientprotocol"/><h1>SQLRClient Protocol</h1>
 
-<p>SQLRClient is the native SQL Relay protocol, enabled by default.  The example configurations above and throughout most of the rest of the guide configure SQL Relay to speak this protocol.</p>
+<p>SQLRClient is the native SQL Relay protocol, enabled by default.  The example configurations above and throughout most of the rest of the guide configure SQL Relay to speak this protocol.
+<blockquote>
+<img src="../../images/sqlrelaynativeprotocol.png"/>
+</blockquote>
+</p>
 
 <p>If an instance speaks the SQLRClient client-server protocol, then any client that wishes to use it must also speak the SQLRClient client-server protocol.  This means that most software written using the SQL Relay native API, or written using a database abstraction layer which loads a driver for SQL Relay can access this instance.  However, it also means that client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
 

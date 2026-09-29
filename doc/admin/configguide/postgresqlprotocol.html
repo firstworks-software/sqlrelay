@@ -54,7 +54,11 @@
 
 <a name="postgresqlprotocol"/><h1>PostgreSQL Protocol</h1>
 
-<p>SQL Relay can be configured to speak the native PostgreSQL protocol, enabling client programs for PostgreSQL (eg. the psql command line program) to access SQL Relay directly.</p>
+<p>SQL Relay can be configured to speak the native PostgreSQL protocol, enabling client programs for PostgreSQL (eg. the psql command line program) to access SQL Relay directly.
+<blockquote>
+<img src="../../images/sqlrelaypostgresqlprotocol.png"/>
+</blockquote>
+</p>
 
 <p>If an instance speaks the PostgreSQL client-server protocol, then any client that wishes to use it must also speak the PostgreSQL client-server protocol.  This means that most software written using the PostgreSQL API, or written using a database abstraction layer which loads a driver for PostgreSQL can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
 
