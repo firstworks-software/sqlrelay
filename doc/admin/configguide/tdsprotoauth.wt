@@ -13,6 +13,9 @@ When using the TDS protocol, there are several options for controlling which use
 
 * [tdsprotoconnectstringsauth.html Connect Strings Auth]
 * [tdsprotouserlistauth.html User List Auth]
+
+When using the TDS protocol, the following encryption options are available:
+
 * [tdsprototls.html TLS/SSL Encryption and Authentication]
 
 ----

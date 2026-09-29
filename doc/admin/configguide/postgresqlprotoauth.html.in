@@ -14,6 +14,11 @@
   <li><a href="postgresqlprotopasswords.html">Password Method</a></li>
   <li><a href="postgresqlprotoconnectstringsauth.html">Connect Strings Auth</a></li>
   <li><a href="postgresqlprotouserlistauth.html">User List Auth</a></li>
+</ul>
+
+<p>When using the PostgreSQL protocol, the following encryption options are available:</p>
+
+<ul>
   <li><a href="postgresqlprototls.html">TLS/SSL Encryption and Authentication</a></li>
 </ul>
 

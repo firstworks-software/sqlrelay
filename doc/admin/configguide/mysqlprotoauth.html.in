@@ -14,6 +14,11 @@
   <li><a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a></li>
   <li><a href="mysqlprotouserlistauth.html">User List Auth</a></li>
   <li><a href="mysqlprotodbauth.html">Database Auth</a></li>
+</ul>
+
+<p>When using the MySQL protocol, the following encryption options are available:</p>
+
+<ul>
   <li><a href="mysqlprototls.html">TLS/SSL Encryption and Authentication</a></li>
 </ul>
 

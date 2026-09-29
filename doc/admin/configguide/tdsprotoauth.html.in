@@ -13,6 +13,11 @@
 <ul>
   <li><a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a></li>
   <li><a href="tdsprotouserlistauth.html">User List Auth</a></li>
+</ul>
+
+<p>When using the TDS protocol, the following encryption options are available:</p>
+
+<ul>
   <li><a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a></li>
 </ul>
 

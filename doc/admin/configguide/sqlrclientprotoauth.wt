@@ -15,6 +15,9 @@ When using the SQLRClient protocol, there are several options for controlling wh
 * [sqlrclientprotouserlistauth.html User List Auth]
 * [sqlrclientprotodbauth.html Database Auth]
 * [sqlrclientprotoproxiedauth.html Proxied Auth]
+
+When using the SQLRClient protocol, the following encryption options are available:
+
 * [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication]
 * [sqlrclientprototls.html TLS/SSL Encryption and Authentication]
 

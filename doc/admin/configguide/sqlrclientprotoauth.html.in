@@ -15,6 +15,11 @@
   <li><a href="sqlrclientprotouserlistauth.html">User List Auth</a></li>
   <li><a href="sqlrclientprotodbauth.html">Database Auth</a></li>
   <li><a href="sqlrclientprotoproxiedauth.html">Proxied Auth</a></li>
+</ul>
+
+<p>When using the SQLRClient protocol, the following encryption options are available:</p>
+
+<ul>
   <li><a href="sqlrclientprotokrb.html">Kerberos and Active Directory Encryption and Authentication</a></li>
   <li><a href="sqlrclientprototls.html">TLS/SSL Encryption and Authentication</a></li>
 </ul>

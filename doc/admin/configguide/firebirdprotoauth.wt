@@ -9,10 +9,13 @@
 [=#firebirdauth]
 = Authentication/Encryption Options =
 
-When using the Firebird protocol, there are two options for controlling which users are allowed to access an instance of SQL Relay.  There is no //database// auth module for the Firebird protocol.
+When using the Firebird protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
 
 * [firebirdprotoconnectstringsauth.html Connect Strings Auth]
 * [firebirdprotouserlistauth.html User List Auth]
+
+When using the Firebird protocol, the following encryption options are available:
+
 * [firebirdprotowirecrypt.html Wire Encryption]
 
 ----

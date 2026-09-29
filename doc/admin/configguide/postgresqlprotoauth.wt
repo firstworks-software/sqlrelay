@@ -14,6 +14,9 @@ When using the !PostgreSQL protocol, there are several options for controlling w
 * [postgresqlprotopasswords.html Password Method]
 * [postgresqlprotoconnectstringsauth.html Connect Strings Auth]
 * [postgresqlprotouserlistauth.html User List Auth]
+
+When using the !PostgreSQL protocol, the following encryption options are available:
+
 * [postgresqlprototls.html TLS/SSL Encryption and Authentication]
 
 ----

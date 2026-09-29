@@ -14,6 +14,9 @@ When using the !MySQL protocol, there are several options for controlling which 
 * [mysqlprotoconnectstringsauth.html Connect Strings Auth]
 * [mysqlprotouserlistauth.html User List Auth]
 * [mysqlprotodbauth.html Database Auth]
+
+When using the !MySQL protocol, the following encryption options are available:
+
 * [mysqlprototls.html TLS/SSL Encryption and Authentication]
 
 ----
