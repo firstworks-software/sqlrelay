@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [harac.html Already-Load Balanced Databases] [[Image(../../images/navnext.png,link=harac.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [harac.html Already-Load Balanced Databases] [[Image(../../images/navnext.png,link=harac.html,vertical-align=middle)]]
 
 [[br]][=#cluster]
 = Load Balancing and Failover With Replicated Databases or Database Clusters =
@@ -42,7 +42,7 @@ In the example above, 15 is 3 times 5, so 3 times as many connections will be op
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [harac.html Already-Load Balanced Databases] [[Image(../../images/navnext.png,link=harac.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [harac.html Already-Load Balanced Databases] [[Image(../../images/navnext.png,link=harac.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

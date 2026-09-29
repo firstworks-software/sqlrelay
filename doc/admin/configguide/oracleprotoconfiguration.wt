@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotolistener.html Oracle Listener Options] [[Image(../../images/navnext.png,link=oracleprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotolistener.html Oracle Listener Options] [[Image(../../images/navnext.png,link=oracleprotolistener.html,vertical-align=middle)]]
 
 [=#oracleconfiguration]
 = Basic Configuration =
@@ -62,7 +62,7 @@ Since this instance speaks the Oracle client-server protocol, any client that wi
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotolistener.html Oracle Listener Options] [[Image(../../images/navnext.png,link=oracleprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotolistener.html Oracle Listener Options] [[Image(../../images/navnext.png,link=oracleprotolistener.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

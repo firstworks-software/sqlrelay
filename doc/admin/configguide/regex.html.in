@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="routing.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="routing.html">Query and Session Routing</a> | <a href="userlist.html">userlist</a> <a href="userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="routing.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="routing.html">Query and Session Routing</a> | <a href="userlist.html">userlist</a> <a href="userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="regex"/><h1>regex</h1>
 
@@ -225,7 +225,7 @@ changes will be visible.</p>
 
 <hr/>
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="routing.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="routing.html">Query and Session Routing</a> | <a href="userlist.html">userlist</a> <a href="userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="routing.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="routing.html">Query and Session Routing</a> | <a href="userlist.html">userlist</a> <a href="userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

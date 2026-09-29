@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotolistener.html MySQL Listener Options] [[Image(../../images/navnext.png,link=mysqlprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotolistener.html MySQL Listener Options] [[Image(../../images/navnext.png,link=mysqlprotolistener.html,vertical-align=middle)]]
 
 [=#mysqlconfiguration]
 = Basic Configuration =
@@ -66,7 +66,7 @@ Since this instance speaks the !MySQL client-server protocol, any client that wi
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotolistener.html MySQL Listener Options] [[Image(../../images/navnext.png,link=mysqlprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotolistener.html MySQL Listener Options] [[Image(../../images/navnext.png,link=mysqlprotolistener.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

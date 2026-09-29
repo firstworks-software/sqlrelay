@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secpwdenc.html,vertical-align=middle)]] [secpwdenc.html Password Encryption] | [md5.html md5] [[Image(../../images/navnext.png,link=md5.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=secpwdenc.html,vertical-align=middle)]] [secpwdenc.html Password Encryption] | [md5.html md5] [[Image(../../images/navnext.png,link=md5.html,vertical-align=middle)]]
 
 [[br]][=#rot]
 = rot =
@@ -21,7 +21,7 @@ Since the ROT algorithm is two-way, it can be used to encrypt passwords for both
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secpwdenc.html,vertical-align=middle)]] [secpwdenc.html Password Encryption] | [md5.html md5] [[Image(../../images/navnext.png,link=md5.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=secpwdenc.html,vertical-align=middle)]] [secpwdenc.html Password Encryption] | [md5.html md5] [[Image(../../images/navnext.png,link=md5.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

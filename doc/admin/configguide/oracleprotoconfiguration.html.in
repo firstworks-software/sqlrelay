@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotolistener.html">Oracle Listener Options</a> <a href="oracleprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotolistener.html">Oracle Listener Options</a> <a href="oracleprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleconfiguration"/><h1>Basic Configuration</h1>
 
@@ -83,7 +83,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotolistener.html">Oracle Listener Options</a> <a href="oracleprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotolistener.html">Oracle Listener Options</a> <a href="oracleprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

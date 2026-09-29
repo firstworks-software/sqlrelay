@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
 
 [=#tagmoduledata]
 = tag =
@@ -29,7 +29,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=moduledata.html,vertical-align=middle)]] [moduledata.html Module Data] | [querydirectives.html Query Directives] [[Image(../../images/navnext.png,link=querydirectives.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

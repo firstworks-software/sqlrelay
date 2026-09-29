@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [savepoints.html savepoints] [[Image(../../images/navnext.png,link=savepoints.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [savepoints.html savepoints] [[Image(../../images/navnext.png,link=savepoints.html,vertical-align=middle)]]
 
 [=#replay]
 = replay =
@@ -200,7 +200,7 @@ The module also has to do a bit of work to determine whether the insert contains
 
 ----
 
-[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [savepoints.html savepoints] [[Image(../../images/navnext.png,link=savepoints.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [savepoints.html savepoints] [[Image(../../images/navnext.png,link=savepoints.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 
