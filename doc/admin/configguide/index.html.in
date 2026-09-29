@@ -11,43 +11,43 @@
 <p>This guide is split across the pages listed below - start with Quick Start for a minimal setup, or jump directly to the topic you need.</p>
 
 <ul>
-  <li><a href="quickstart.html#quick">Quick Start</a></li>
-  <li><a href="basicconfiguration.html#basic">Basic Configuration</a></li>
+  <li><a href="quickstart.html">Quick Start</a></li>
+  <li><a href="basicconfiguration.html">Basic Configuration</a></li>
   <ul>
-    <li><a href="databaseconfiguration.html#database">Database Configuration</a></li>
+    <li><a href="databaseconfiguration.html">Database Configuration</a></li>
     <ul>
-      <li><a href="oracleconfiguration.html#db-oracle">Oracle</a></li>
-      <li><a href="mssqlodbcconfiguration.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a></li>
-      <li><a href="mssqlfreetdsconfiguration.html#db-mssql-freetds">Microsoft SQL Server (via FreeTDS)</a></li>
-      <li><a href="sapconfiguration.html#db-sap">SAP/Sybase (via the native SAP/Sybase library)</a></li>
-      <li><a href="sapfreetdsconfiguration.html#db-sap-freetds">SAP/Sybase (via FreeTDS)</a></li>
-      <li><a href="db2configuration.html#db-db2">IBM DB2</a></li>
-      <li><a href="informixconfiguration.html#db-informix">Informix</a></li>
-      <li><a href="mysqlconfiguration.html#db-mysql">MySQL/MariaDB</a></li>
-      <li><a href="postgresqlconfiguration.html#db-postgresql">PostgreSQL</a></li>
-      <li><a href="firebirdconfiguration.html#db-firebird">Firebird</a></li>
-      <li><a href="sqliteconfiguration.html#db-sqlite">SQLite</a></li>
-      <li><a href="teradataconfiguration.html#db-odbc-teradata">Teradata (via ODBC)</a></li>
-      <li><a href="exasolconfiguration.html#db-odbc-exasol">Exasol (via ODBC)</a></li>
-      <li><a href="hiveconfiguration.html#db-odbc-hive">Apache Hive (via ODBC)</a></li>
-      <li><a href="impalaconfiguration.html#db-odbc-impala">Apache Impala (via ODBC)</a></li>
-      <li><a href="redshiftodbcconfiguration.html#db-odbc-redshift">Amazon Redshift (via ODBC)</a></li>
-      <li><a href="redshiftpostgresqlconfiguration.html#db-postgresql-redshift">Amazon Redshift (via PostgreSQL)</a></li>
-      <li><a href="athenaconfiguration.html#db-odbc-athena">Amazon Athena (via ODBC)</a></li>
-      <li><a href="odbcconfiguration.html#db-odbc">Generic ODBC</a></li>
+      <li><a href="oracleconfiguration.html">Oracle</a></li>
+      <li><a href="mssqlodbcconfiguration.html">Microsoft SQL Server (via ODBC)</a></li>
+      <li><a href="mssqlfreetdsconfiguration.html">Microsoft SQL Server (via FreeTDS)</a></li>
+      <li><a href="sapconfiguration.html">SAP/Sybase (via the native SAP/Sybase library)</a></li>
+      <li><a href="sapfreetdsconfiguration.html">SAP/Sybase (via FreeTDS)</a></li>
+      <li><a href="db2configuration.html">IBM DB2</a></li>
+      <li><a href="informixconfiguration.html">Informix</a></li>
+      <li><a href="mysqlconfiguration.html">MySQL/MariaDB</a></li>
+      <li><a href="postgresqlconfiguration.html">PostgreSQL</a></li>
+      <li><a href="firebirdconfiguration.html">Firebird</a></li>
+      <li><a href="sqliteconfiguration.html">SQLite</a></li>
+      <li><a href="teradataconfiguration.html">Teradata (via ODBC)</a></li>
+      <li><a href="exasolconfiguration.html">Exasol (via ODBC)</a></li>
+      <li><a href="hiveconfiguration.html">Apache Hive (via ODBC)</a></li>
+      <li><a href="impalaconfiguration.html">Apache Impala (via ODBC)</a></li>
+      <li><a href="redshiftodbcconfiguration.html">Amazon Redshift (via ODBC)</a></li>
+      <li><a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via PostgreSQL)</a></li>
+      <li><a href="athenaconfiguration.html">Amazon Athena (via ODBC)</a></li>
+      <li><a href="odbcconfiguration.html">Generic ODBC</a></li>
     </ul>
 
-    <li><a href="databaseconnectioncount.html#dbconnections">Database Connection Count</a></li>
-    <li><a href="databasecursorcount.html#dbcursors">Database Cursor Count</a></li>
-    <li><a href="dynamicscaling.html#dynamicscaling">Dynamic Scaling</a></li>
-    <li><a href="listenerconfiguration.html#listener">Listener Configuration</a></li>
-    <li><a href="multipleinstances.html#instances">Multiple Instances</a></li>
-    <li><a href="startinginstancesautomatically.html#autostart">Starting Instances Automatically</a></li>
+    <li><a href="databaseconnectioncount.html">Database Connection Count</a></li>
+    <li><a href="databasecursorcount.html">Database Cursor Count</a></li>
+    <li><a href="dynamicscaling.html">Dynamic Scaling</a></li>
+    <li><a href="listenerconfiguration.html">Listener Configuration</a></li>
+    <li><a href="multipleinstances.html">Multiple Instances</a></li>
+    <li><a href="startinginstancesautomatically.html">Starting Instances Automatically</a></li>
   </ul>
 
-  <li><a href="clientprotocoloptions.html#protocoloptions">Client Protocol Options</a></li>
+  <li><a href="clientprotocoloptions.html">Client Protocol Options</a></li>
   <ul>
-    <li><a href="sqlrclientprotocol.html#sqlrclientprotocol">SQLRClient Protocol</a></li>
+    <li><a href="sqlrclientprotocol.html">SQLRClient Protocol</a></li>
     <ul>
       <li><a href="sqlrclientprotocol.html#sqlrclientconfiguration">Basic Configuration</a></li>
       <li><a href="sqlrclientprotocol.html#sqlrclientlistener">Listener Options</a></li>
@@ -64,7 +64,7 @@
       <li><a href="sqlrclientprotocol.html#sqlrclientlimitations">Limitations</a></li>
     </ul>
 
-    <li><a href="mysqlprotocol.html#mysqlprotocol">MySQL Protocol</a></li>
+    <li><a href="mysqlprotocol.html">MySQL Protocol</a></li>
     <ul>
       <li><a href="mysqlprotocol.html#mysqlconfiguration">Basic Configuration</a></li>
       <li><a href="mysqlprotocol.html#mysqllistener">Listener Options</a></li>
@@ -83,7 +83,7 @@
       <li><a href="mysqlprotocol.html#mysqllimitations">Limitations</a></li>
     </ul>
 
-    <li><a href="postgresqlprotocol.html#postgresqlprotocol">PostgreSQL Protocol</a></li>
+    <li><a href="postgresqlprotocol.html">PostgreSQL Protocol</a></li>
     <ul>
       <li><a href="postgresqlprotocol.html#postgresqlconfiguration">Basic Configuration</a></li>
       <li><a href="postgresqlprotocol.html#postgresqllistener">Listener Options</a></li>
@@ -99,7 +99,7 @@
       <li><a href="postgresqlprotocol.html#postgresqllimitations">Limitations</a></li>
     </ul>
 
-    <li><a href="firebirdprotocol.html#firebirdprotocol">Firebird Protocol</a></li>
+    <li><a href="firebirdprotocol.html">Firebird Protocol</a></li>
     <ul>
       <li><a href="firebirdprotocol.html#firebirdconfiguration">Basic Configuration</a></li>
       <li><a href="firebirdprotocol.html#firebirdlistener">Listener Options</a></li>
@@ -115,7 +115,7 @@
       <li><a href="firebirdprotocol.html#firebirdlimitations">Limitations</a></li>
     </ul>
 
-    <li><a href="tdsprotocol.html#tdsprotocol">TDS Protocol</a></li>
+    <li><a href="tdsprotocol.html">TDS Protocol</a></li>
     <ul>
       <li><a href="tdsprotocol.html#tdsconfiguration">Basic Configuration</a></li>
       <li><a href="tdsprotocol.html#tdslistener">Listener Options</a></li>
@@ -132,7 +132,7 @@
       <li><a href="tdsprotocol.html#tdslimitations">Limitations</a></li>
     </ul>
 
-    <li><a href="oracleprotocol.html#oracleprotocol">Oracle Protocol</a></li>
+    <li><a href="oracleprotocol.html">Oracle Protocol</a></li>
     <ul>
       <li><a href="oracleprotocol.html#oracleconfiguration">Basic Configuration</a></li>
       <li><a href="oracleprotocol.html#oraclelistener">Listener Options</a></li>
@@ -153,7 +153,7 @@
       <li><a href="oracleprotocol.html#oraclelimitations">Limitations</a></li>
     </ul>
 
-    <li><a href="multipleprotocols.html#multipleprotocols">Multiple Protocols</a></li>
+    <li><a href="multipleprotocols.html">Multiple Protocols</a></li>
     <ul>
       <li><a href="multipleprotocols.html#multiprotocolconfiguration">Basic Configuration</a></li>
       <li><a href="multipleprotocols.html#multiprotocollistener">Listener Options</a></li>
@@ -162,7 +162,7 @@
 
   </ul>
 
-  <li><a href="highavailability.html#ha">High Availability</a></li>
+  <li><a href="highavailability.html">High Availability</a></li>
   <ul>
     <li><a href="highavailability.html#cluster">Load Balancing and Failover With Replicated Databases or Database Clusters</a></li>
     <li><a href="highavailability.html#rac">Already-Load Balanced Databases</a></li>
@@ -176,7 +176,7 @@
 
   </ul>
 
-  <li><a href="security.html#security">Security Features</a></li>
+  <li><a href="security.html">Security Features</a></li>
   <ul>
     <li><a href="security.html#frontendencryption">Front-End Encryption and Secure Authentication</a></li>
     <li><a href="security.html#backendencryption">Back-End Encryption and Secure Authentication</a></li>
@@ -192,112 +192,112 @@
     <li><a href="security.html#pwdfiles">Password Files</a></li>
     <li><a href="security.html#pwdenc">Password Encryption</a></li>
     <ul>
-      <li><a href="rot.html#rot">rot</a></li>
-      <li><a href="md5.html#md5">md5</a></li>
-      <li><a href="sha1.html#sha1">sha1</a></li>
-      <li><a href="sha256.html#sha256">sha256</a></li>
-      <li><a href="sha512.html#sha512">sha512</a></li>
-      <li><a href="des.html#des">des</a></li>
-      <li><a href="aes128.html#aes128">aes128</a></li>
-      <li><a href="aes192.html#aes192">aes192</a></li>
-      <li><a href="aes256.html#aes256">aes256</a></li>
+      <li><a href="rot.html">rot</a></li>
+      <li><a href="md5.html">md5</a></li>
+      <li><a href="sha1.html">sha1</a></li>
+      <li><a href="sha256.html">sha256</a></li>
+      <li><a href="sha512.html">sha512</a></li>
+      <li><a href="des.html">des</a></li>
+      <li><a href="aes128.html">aes128</a></li>
+      <li><a href="aes192.html">aes192</a></li>
+      <li><a href="aes256.html">aes256</a></li>
     </ul>
 
     <li><a href="security.html#schedules">Connection Schedules</a></li>
     <ul>
-      <li><a href="cron_userlist.html#cron_userlist">cron_userlist</a></li>
+      <li><a href="cron_userlist.html">cron_userlist</a></li>
     </ul>
 
     <li><a href="security.html#filtering">Query Filtering</a></li>
     <ul>
-      <li><a href="filterpatterns.html#filterpatterns">patterns</a></li>
-      <li><a href="filterregex.html#filterregex">regex</a></li>
-      <li><a href="filterstring.html#filterstring">string</a></li>
-      <li><a href="filtertag.html#filtertag">tag</a></li>
+      <li><a href="filterpatterns.html">patterns</a></li>
+      <li><a href="filterregex.html">regex</a></li>
+      <li><a href="filterstring.html">string</a></li>
+      <li><a href="filtertag.html">tag</a></li>
     </ul>
 
   </ul>
 
-  <li><a href="datatranslation.html#translation">Data Translation</a></li>
+  <li><a href="datatranslation.html">Data Translation</a></li>
   <ul>
-    <li><a href="queryparsing.html#queryparsing">Query Parsing</a></li>
-    <li><a href="querytranslation.html#querytranslation">Query Translation</a></li>
+    <li><a href="queryparsing.html">Query Parsing</a></li>
+    <li><a href="querytranslation.html">Query Translation</a></li>
     <ul>
-      <li><a href="normalize.html#normalize">normalize</a></li>
-      <li><a href="patterns.html#patterns">patterns</a></li>
-      <li><a href="listagg_to_string_agg.html#listagg_to_string_agg">listagg_to_string_agg</a></li>
-      <li><a href="sequence_nextval.html#sequence_nextval">sequence_nextval</a></li>
-      <li><a href="keep_dense_rank_to_array_agg.html#keep_dense_rank_to_array_agg">keep_dense_rank_to_array_agg</a></li>
+      <li><a href="normalize.html">normalize</a></li>
+      <li><a href="patterns.html">patterns</a></li>
+      <li><a href="listagg_to_string_agg.html">listagg_to_string_agg</a></li>
+      <li><a href="sequence_nextval.html">sequence_nextval</a></li>
+      <li><a href="keep_dense_rank_to_array_agg.html">keep_dense_rank_to_array_agg</a></li>
     </ul>
 
-    <li><a href="bindvariabletranslation.html#bindvariabletranslation">Bind Variable Translation</a></li>
-    <li><a href="resultsetheadertranslation.html#resultsetheadertranslation">Result Set Header Translation</a></li>
-    <li><a href="resultsettranslation.html#resultsettranslation">Result Set Translation</a></li>
+    <li><a href="bindvariabletranslation.html">Bind Variable Translation</a></li>
+    <li><a href="resultsetheadertranslation.html">Result Set Header Translation</a></li>
+    <li><a href="resultsettranslation.html">Result Set Translation</a></li>
     <ul>
-      <li><a href="reformatdatetime.html#reformatdatetime">reformatdatetime</a></li>
+      <li><a href="reformatdatetime.html">reformatdatetime</a></li>
     </ul>
 
-    <li><a href="resultsetrowtranslation.html#resultsetrowtranslation">Result Set Row Translation</a></li>
-    <li><a href="resultsetrowblocktranslation.html#resultsetrowblocktranslation">Result Set Row Block Translation</a></li>
-    <li><a href="errortranslation.html#errortranslation">Error Translation</a></li>
+    <li><a href="resultsetrowtranslation.html">Result Set Row Translation</a></li>
+    <li><a href="resultsetrowblocktranslation.html">Result Set Row Block Translation</a></li>
+    <li><a href="errortranslation.html">Error Translation</a></li>
     <ul>
-      <li><a href="renumber.html#error-renumber">renumber</a></li>
-      <li><a href="errorpatterns.html#error-patterns">patterns</a></li>
+      <li><a href="renumber.html">renumber</a></li>
+      <li><a href="errorpatterns.html">patterns</a></li>
     </ul>
 
-    <li><a href="moduledata.html#moduledata">Module Data</a></li>
+    <li><a href="moduledata.html">Module Data</a></li>
     <ul>
-      <li><a href="tagmoduledata.html#tagmoduledata">tag</a></li>
+      <li><a href="tagmoduledata.html">tag</a></li>
     </ul>
 
   </ul>
 
-  <li><a href="querydirectives.html#directives">Query Directives</a></li>
+  <li><a href="querydirectives.html">Query Directives</a></li>
   <ul>
-    <li><a href="custom_wf.html#custom_wf">custom_wf</a></li>
-    <li><a href="singlestep.html#singlestep">singlestep</a></li>
+    <li><a href="custom_wf.html">custom_wf</a></li>
+    <li><a href="singlestep.html">singlestep</a></li>
   </ul>
 
-  <li><a href="routing.html#routing">Query and Session Routing</a></li>
+  <li><a href="routing.html">Query and Session Routing</a></li>
   <ul>
-    <li><a href="regex.html#regex">regex</a></li>
-    <li><a href="userlist.html#userlist">userlist</a></li>
-    <li><a href="clientiplist.html#clientiplist">clientiplist</a></li>
-    <li><a href="clientinfolist.html#clientinfolist">clientinfolist</a></li>
-    <li><a href="usedatabase.html#usedatabase">usedatabase</a></li>
+    <li><a href="regex.html">regex</a></li>
+    <li><a href="userlist.html">userlist</a></li>
+    <li><a href="clientiplist.html">clientiplist</a></li>
+    <li><a href="clientinfolist.html">clientinfolist</a></li>
+    <li><a href="usedatabase.html">usedatabase</a></li>
     <li><a href="routing.html#routingquirks">Quirks and Limitations</a></li>
   </ul>
 
-  <li><a href="customqueries.html#queries">Custom Queries</a></li>
+  <li><a href="customqueries.html">Custom Queries</a></li>
   <ul>
-    <li><a href="sqlrcmdcstat.html#sqlrcmdcstat">sqlrcmdcstat</a></li>
-    <li><a href="sqlrcmdgstat.html#sqlrcmdgstat">sqlrcmdgstat</a></li>
+    <li><a href="sqlrcmdcstat.html">sqlrcmdcstat</a></li>
+    <li><a href="sqlrcmdgstat.html">sqlrcmdgstat</a></li>
   </ul>
 
-  <li><a href="triggers.html#triggers">Triggers</a></li>
+  <li><a href="triggers.html">Triggers</a></li>
   <ul>
-    <li><a href="replay.html#replay">replay</a></li>
-    <li><a href="savepoints.html#savepoints">savepoints</a></li>
-    <li><a href="splitmultiinsert.html#splitmultiinsert">splitmultiinsert</a></li>
-    <li><a href="upsert.html#upsert">upsert</a></li>
-    <li><a href="globaltemptables.html#globaltemptables">globaltemptables</a></li>
+    <li><a href="replay.html">replay</a></li>
+    <li><a href="savepoints.html">savepoints</a></li>
+    <li><a href="splitmultiinsert.html">splitmultiinsert</a></li>
+    <li><a href="upsert.html">upsert</a></li>
+    <li><a href="globaltemptables.html">globaltemptables</a></li>
   </ul>
 
-  <li><a href="logging.html#logging">Logging</a></li>
+  <li><a href="logging.html">Logging</a></li>
   <ul>
-    <li><a href="debug.html#debug">debug</a></li>
-    <li><a href="sql.html#sql">sql</a></li>
-    <li><a href="slowqueries.html#slowqueries">slowqueries</a></li>
-    <li><a href="stalecursors.html#stalecursors">stalecursors</a></li>
+    <li><a href="debug.html">debug</a></li>
+    <li><a href="sql.html">sql</a></li>
+    <li><a href="slowqueries.html">slowqueries</a></li>
+    <li><a href="stalecursors.html">stalecursors</a></li>
   </ul>
 
-  <li><a href="notifications.html#notifications">Notifications</a></li>
+  <li><a href="notifications.html">Notifications</a></li>
   <ul>
-    <li><a href="events.html#events">events</a></li>
+    <li><a href="events.html">events</a></li>
   </ul>
 
-  <li><a href="sessionqueries.html#sessionqueries">Session-Queries</a></li>
-  <li><a href="altconfigfile.html#altconfigfile">Alternative Configuration File Options</a></li>
+  <li><a href="sessionqueries.html">Session-Queries</a></li>
+  <li><a href="altconfigfile.html">Alternative Configuration File Options</a></li>
   <ul>
     <li><a href="altconfigfile.html#directory">Configuration Directory</a></li>
     <li><a href="altconfigfile.html#specifying">Specifying Configuration Files</a></li>
@@ -305,7 +305,7 @@
     <li><a href="altconfigfile.html#linkfiles">Link Files</a></li>
   </ul>
 
-  <li><a href="advanced.html#advanced">Advanced Configuration</a></li>
+  <li><a href="advanced.html">Advanced Configuration</a></li>
 </ul>
 
 <hr/>

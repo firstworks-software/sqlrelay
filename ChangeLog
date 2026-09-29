@@ -950,6 +950,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   configuration guide page
 - removed the duplicated debug-attribute paragraph from
   listenerconfiguration and each module-type configuration guide page
+- the configuration guide table of contents links to pages instead of
+  their top heading anchors now
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
