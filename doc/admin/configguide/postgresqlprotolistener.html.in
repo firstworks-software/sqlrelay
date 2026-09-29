@@ -8,7 +8,7 @@
 
 <a name="postgresqllistener"/><h1>Listener Options</h1>
 
-<p>In the example above, the instance is configured to listen on port 5433.  The MySQL/MariaDB database typically listens on port 5432, so port 5433 was chosen to avoid collisions with the database itself.</p>
+<p>In the example above, the instance is configured to listen on port 5433.  The PostgreSQL database typically listens on port 5432, so port 5433 was chosen to avoid collisions with the database itself.</p>
 
 <p>However, if SQL Relay is run on a different server than the database, then it can be configured to run on port 5432.  This is desirable when using SQL Relay as a transparent proxy.</p>
 

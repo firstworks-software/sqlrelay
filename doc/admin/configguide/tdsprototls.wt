@@ -45,7 +45,7 @@ Which of these a client asks for is a client-side setting.  With freetds, for ex
 
 == Mutual Authentication ==
 
-The '''tlsvalidate''' and '''tlsca''' attributes described for the other protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.
+The '''tlsvalidate''' and '''tlsca''' attributes described for the [sqlrclientprototls.html SQLRClient], [mysqlprototls.html MySQL], and [postgresqlprototls.html PostgreSQL] protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.
 
 == Performance Considerations ==
 
