@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]] [firebirdprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotowirecrypt.html Wire Encryption] [[Image(../../images/navnext.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]] [firebirdprotoconnectstringsauth.html Firebird Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotowirecrypt.html Firebird Wire Encryption] [[Image(../../images/navnext.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]]
 
 [=#firebirduserlistauth]
 = User List Auth =
@@ -27,7 +27,7 @@ The //firebird_userlist// module answers each login method - Srp256, Srp, and Le
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]] [firebirdprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotowirecrypt.html Wire Encryption] [[Image(../../images/navnext.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]] [firebirdprotoconnectstringsauth.html Firebird Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotowirecrypt.html Firebird Wire Encryption] [[Image(../../images/navnext.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

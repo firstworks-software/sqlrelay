@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html PostgreSQL Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprototls.html PostgreSQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]
 
 [=#postgresqluserlistauth]
 = User List Auth =
@@ -27,7 +27,7 @@ If the database has a lot of users, or users are added, deleted, or updated regu
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html PostgreSQL Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprototls.html PostgreSQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

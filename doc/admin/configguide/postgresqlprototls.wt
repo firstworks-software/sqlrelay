@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]] [postgresqlprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]] [postgresqlprotouserlistauth.html PostgreSQL User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoforeignbackend.html PostgreSQL Foreign Backend] [[Image(../../images/navnext.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]]
 
 [=#postgresqltls]
 = TLS/SSL Encryption and Authentication =
@@ -160,7 +160,7 @@ Any kind of full session encryption should be used with caution in performance-s
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]] [postgresqlprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]] [postgresqlprotouserlistauth.html PostgreSQL User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoforeignbackend.html PostgreSQL Foreign Backend] [[Image(../../images/navnext.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

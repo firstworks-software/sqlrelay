@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sqlrclientprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotoconfiguration.html">Basic Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoauth.html">Authentication/Encryption Options</a> <a href="sqlrclientprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="sqlrclientprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotoconfiguration.html">SQLRClient Basic Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoauth.html">SQLRClient Authentication/Encryption Options</a> <a href="sqlrclientprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="sqlrclientlistener"/><h1>Listener Options</h1>
 
@@ -81,7 +81,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="sqlrclientprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotoconfiguration.html">Basic Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoauth.html">Authentication/Encryption Options</a> <a href="sqlrclientprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="sqlrclientprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotoconfiguration.html">SQLRClient Basic Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoauth.html">SQLRClient Authentication/Encryption Options</a> <a href="sqlrclientprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

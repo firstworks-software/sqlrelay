@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotolimitations.html,vertical-align=middle)]] [tdsprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=oracleprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotolimitations.html,vertical-align=middle)]] [tdsprotolimitations.html TDS Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconfiguration.html Oracle Basic Configuration] [[Image(../../images/navnext.png,link=oracleprotoconfiguration.html,vertical-align=middle)]]
 
 [=#oracleprotocol]
 = Oracle Protocol =
@@ -34,7 +34,7 @@ The Oracle protocol module is still under development.  Some of the sections bel
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotolimitations.html,vertical-align=middle)]] [tdsprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=oracleprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotolimitations.html,vertical-align=middle)]] [tdsprotolimitations.html TDS Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconfiguration.html Oracle Basic Configuration] [[Image(../../images/navnext.png,link=oracleprotoconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

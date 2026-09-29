@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotoconnectstringsauth.html">Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoforeignbackend.html">Foreign Backend</a> <a href="oracleprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoforeignbackend.html">Oracle Foreign Backend</a> <a href="oracleprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleuserlistauth"/><h1>User List Auth</h1>
 
@@ -48,7 +48,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotoconnectstringsauth.html">Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoforeignbackend.html">Foreign Backend</a> <a href="oracleprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoforeignbackend.html">Oracle Foreign Backend</a> <a href="oracleprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

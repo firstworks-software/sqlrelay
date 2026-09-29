@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]] [mysqlprotospecialpurpose.html Special-Purpose Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]] [mysqlprotospecialpurpose.html MySQL Special-Purpose Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
 
 [=#mysqllimitations]
 = Limitations =
@@ -23,7 +23,7 @@ The implementation of the !MySQL protocol is likely sufficient for most applicat
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]] [mysqlprotospecialpurpose.html Special-Purpose Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]] [mysqlprotospecialpurpose.html MySQL Special-Purpose Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotolistener.html,vertical-align=middle)]] [firebirdprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoauth.html Authentication/Encryption Options] [[Image(../../images/navnext.png,link=firebirdprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotolistener.html,vertical-align=middle)]] [firebirdprotolistener.html Firebird Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoauth.html Firebird Authentication/Encryption Options] [[Image(../../images/navnext.png,link=firebirdprotoauth.html,vertical-align=middle)]]
 
 [=#firebirdprotocolversion]
 = Protocol Version =
@@ -27,7 +27,7 @@ Lowering the maximum below 13 turns off the plugin-based login.  Clients log in 
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotolistener.html,vertical-align=middle)]] [firebirdprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoauth.html Authentication/Encryption Options] [[Image(../../images/navnext.png,link=firebirdprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotolistener.html,vertical-align=middle)]] [firebirdprotolistener.html Firebird Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoauth.html Firebird Authentication/Encryption Options] [[Image(../../images/navnext.png,link=firebirdprotoauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

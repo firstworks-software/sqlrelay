@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotosid.html,vertical-align=middle)]] [oracleprotosid.html SID / Service Name] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoserverversion.html Server Version] [[Image(../../images/navnext.png,link=oracleprotoserverversion.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotosid.html,vertical-align=middle)]] [oracleprotosid.html Oracle SID / Service Name] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoserverversion.html Oracle Server Version] [[Image(../../images/navnext.png,link=oracleprotoserverversion.html,vertical-align=middle)]]
 
 [=#oracleloginattempts]
 = Login Attempts =
@@ -15,7 +15,7 @@ The Oracle protocol module does the same.  After a failed login it sends the err
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotosid.html,vertical-align=middle)]] [oracleprotosid.html SID / Service Name] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoserverversion.html Server Version] [[Image(../../images/navnext.png,link=oracleprotoserverversion.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotosid.html,vertical-align=middle)]] [oracleprotosid.html Oracle SID / Service Name] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoserverversion.html Oracle Server Version] [[Image(../../images/navnext.png,link=oracleprotoserverversion.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

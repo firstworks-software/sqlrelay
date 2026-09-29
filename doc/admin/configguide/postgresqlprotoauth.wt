@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotolistener.html,vertical-align=middle)]] [postgresqlprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotopasswords.html Password Method] [[Image(../../images/navnext.png,link=postgresqlprotopasswords.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotolistener.html,vertical-align=middle)]] [postgresqlprotolistener.html PostgreSQL Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotopasswords.html PostgreSQL Password Method] [[Image(../../images/navnext.png,link=postgresqlprotopasswords.html,vertical-align=middle)]]
 
 [=#postgresqlauth]
 = Authentication/Encryption Options =
@@ -18,7 +18,7 @@ When using the !PostgreSQL protocol, there are several options for controlling w
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotolistener.html,vertical-align=middle)]] [postgresqlprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotopasswords.html Password Method] [[Image(../../images/navnext.png,link=postgresqlprotopasswords.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotolistener.html,vertical-align=middle)]] [postgresqlprotolistener.html PostgreSQL Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotopasswords.html PostgreSQL Password Method] [[Image(../../images/navnext.png,link=postgresqlprotopasswords.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=sqlrclientprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolistener.html SQLRClient Listener Options] [[Image(../../images/navnext.png,link=sqlrclientprotolistener.html,vertical-align=middle)]]
 
 [=#sqlrclientconfiguration]
 = Basic Configuration =
@@ -70,7 +70,7 @@ Since this instance speaks the SQLRClient client-server protocol, any client tha
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=sqlrclientprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolistener.html SQLRClient Listener Options] [[Image(../../images/navnext.png,link=sqlrclientprotolistener.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

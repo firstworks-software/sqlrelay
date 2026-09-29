@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotoconfiguration.html,vertical-align=middle)]] [tdsprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoversion.html TDS Version] [[Image(../../images/navnext.png,link=tdsprotoversion.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotoconfiguration.html,vertical-align=middle)]] [tdsprotoconfiguration.html TDS Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoversion.html TDS Version] [[Image(../../images/navnext.png,link=tdsprotoversion.html,vertical-align=middle)]]
 
 [=#tdslistener]
 = Listener Options =
@@ -35,7 +35,7 @@ If the socket option is specified but the port option is not, then SQL Relay wil
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotoconfiguration.html,vertical-align=middle)]] [tdsprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoversion.html TDS Version] [[Image(../../images/navnext.png,link=tdsprotoversion.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotoconfiguration.html,vertical-align=middle)]] [tdsprotoconfiguration.html TDS Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoversion.html TDS Version] [[Image(../../images/navnext.png,link=tdsprotoversion.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

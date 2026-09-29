@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotolistener.html,vertical-align=middle)]] [sqlrclientprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotolistener.html,vertical-align=middle)]] [sqlrclientprotolistener.html SQLRClient Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoconnectstringsauth.html SQLRClient Connect Strings Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]]
 
 [=#sqlrclientauth]
 = Authentication/Encryption Options =
@@ -20,7 +20,7 @@ When using the SQLRClient protocol, there are several options for controlling wh
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotolistener.html,vertical-align=middle)]] [sqlrclientprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotolistener.html,vertical-align=middle)]] [sqlrclientprotolistener.html SQLRClient Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoconnectstringsauth.html SQLRClient Connect Strings Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

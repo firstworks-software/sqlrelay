@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]] [mysqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=mysqlprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]] [mysqlprotoforeignbackend.html MySQL Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotolimitations.html MySQL Limitations] [[Image(../../images/navnext.png,link=mysqlprotolimitations.html,vertical-align=middle)]]
 
 [=#mysqlspecialpurpose]
 = Special-Purpose Options =
@@ -57,7 +57,7 @@ The //oldmariadbjdbcservercapabilitieshack// option instructs the module to retu
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]] [mysqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=mysqlprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]] [mysqlprotoforeignbackend.html MySQL Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotolimitations.html MySQL Limitations] [[Image(../../images/navnext.png,link=mysqlprotolimitations.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

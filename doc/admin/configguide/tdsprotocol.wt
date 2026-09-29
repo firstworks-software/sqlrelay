@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotolimitations.html,vertical-align=middle)]] [firebirdprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=tdsprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotolimitations.html,vertical-align=middle)]] [firebirdprotolimitations.html Firebird Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoconfiguration.html TDS Basic Configuration] [[Image(../../images/navnext.png,link=tdsprotoconfiguration.html,vertical-align=middle)]]
 
 [=#tdsprotocol]
 = TDS Protocol =
@@ -32,7 +32,7 @@ Compatibility has been verified in SQL Relay's own test suite against !FreeTDS, 
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotolimitations.html,vertical-align=middle)]] [firebirdprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=tdsprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotolimitations.html,vertical-align=middle)]] [firebirdprotolimitations.html Firebird Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoconfiguration.html TDS Basic Configuration] [[Image(../../images/navnext.png,link=tdsprotoconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

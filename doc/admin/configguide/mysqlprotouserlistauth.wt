@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]] [mysqlprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotodbauth.html Database Auth] [[Image(../../images/navnext.png,link=mysqlprotodbauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]] [mysqlprotoconnectstringsauth.html MySQL Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotodbauth.html MySQL Database Auth] [[Image(../../images/navnext.png,link=mysqlprotodbauth.html,vertical-align=middle)]]
 
 [=#mysqluserlistauth]
 = User List Auth =
@@ -25,7 +25,7 @@ When using SQL Relay as a transparent proxy, it is desirable to define the same 
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]] [mysqlprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotodbauth.html Database Auth] [[Image(../../images/navnext.png,link=mysqlprotodbauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]] [mysqlprotoconnectstringsauth.html MySQL Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotodbauth.html MySQL Database Auth] [[Image(../../images/navnext.png,link=mysqlprotodbauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=postgresqlprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolistener.html PostgreSQL Listener Options] [[Image(../../images/navnext.png,link=postgresqlprotolistener.html,vertical-align=middle)]]
 
 [=#postgresqlconfiguration]
 = Basic Configuration =
@@ -62,7 +62,7 @@ Since this instance speaks the !PostgreSQL client-server protocol, any client th
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=postgresqlprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolistener.html PostgreSQL Listener Options] [[Image(../../images/navnext.png,link=postgresqlprotolistener.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

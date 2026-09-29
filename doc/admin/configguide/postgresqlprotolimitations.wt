@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]] [postgresqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]] [postgresqlprotoforeignbackend.html PostgreSQL Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
 
 [=#postgresqllimitations]
 = Limitations =
@@ -20,7 +20,7 @@ The implementation of the !PostgreSQL protocol is likely sufficient for most app
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]] [postgresqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]] [postgresqlprotoforeignbackend.html PostgreSQL Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

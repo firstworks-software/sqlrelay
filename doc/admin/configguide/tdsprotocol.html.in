@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="firebirdprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotolimitations.html">Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoconfiguration.html">Basic Configuration</a> <a href="tdsprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="firebirdprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotolimitations.html">Firebird Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoconfiguration.html">TDS Basic Configuration</a> <a href="tdsprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="tdsprotocol"/><h1>TDS Protocol</h1>
 
@@ -38,7 +38,7 @@
 
 <hr/>
 
-<p><a href="firebirdprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotolimitations.html">Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoconfiguration.html">Basic Configuration</a> <a href="tdsprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="firebirdprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotolimitations.html">Firebird Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoconfiguration.html">TDS Basic Configuration</a> <a href="tdsprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

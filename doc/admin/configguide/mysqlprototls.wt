@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotodbauth.html,vertical-align=middle)]] [mysqlprotodbauth.html Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotodbauth.html,vertical-align=middle)]] [mysqlprotodbauth.html MySQL Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoforeignbackend.html MySQL Foreign Backend] [[Image(../../images/navnext.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]]
 
 [=#mysqltls]
 = TLS/SSL Encryption and Authentication =
@@ -143,7 +143,7 @@ Any kind of full session encryption should be used with caution in performance-s
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotodbauth.html,vertical-align=middle)]] [mysqlprotodbauth.html Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotodbauth.html,vertical-align=middle)]] [mysqlprotodbauth.html MySQL Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoforeignbackend.html MySQL Foreign Backend] [[Image(../../images/navnext.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

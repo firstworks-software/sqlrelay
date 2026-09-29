@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]] [oracleprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]] [oracleprotoconnectstringsauth.html Oracle Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoforeignbackend.html Oracle Foreign Backend] [[Image(../../images/navnext.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]]
 
 [=#oracleuserlistauth]
 = User List Auth =
@@ -29,7 +29,7 @@ There is also an //oracle_database// auth module, structurally similar to //mysq
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]] [oracleprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]] [oracleprotoconnectstringsauth.html Oracle Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoforeignbackend.html Oracle Foreign Backend] [[Image(../../images/navnext.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

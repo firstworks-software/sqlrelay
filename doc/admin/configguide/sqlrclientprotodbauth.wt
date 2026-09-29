@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]] [sqlrclientprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoproxiedauth.html Proxied Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]] [sqlrclientprotouserlistauth.html SQLRClient User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoproxiedauth.html SQLRClient Proxied Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]]
 
 [=#sqlrclientdbauth]
 = Database Auth =
@@ -55,7 +55,7 @@ Though this module is convenient, it has the disadvantage that logging in and ou
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]] [sqlrclientprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoproxiedauth.html Proxied Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]] [sqlrclientprotouserlistauth.html SQLRClient User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoproxiedauth.html SQLRClient Proxied Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

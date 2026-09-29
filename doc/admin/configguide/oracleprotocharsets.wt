@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]] [oracleprotobigchunkclr.html Big Chunk CLR Framing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotodateformat.html Date Format] [[Image(../../images/navnext.png,link=oracleprotodateformat.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]] [oracleprotobigchunkclr.html Oracle Big Chunk CLR Framing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotodateformat.html Oracle Date Format] [[Image(../../images/navnext.png,link=oracleprotodateformat.html,vertical-align=middle)]]
 
 [=#oraclecharsets]
 = Character Set Options =
@@ -43,7 +43,7 @@ Setting either option to 0, or to something that isn't a number, is the same as 
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]] [oracleprotobigchunkclr.html Big Chunk CLR Framing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotodateformat.html Date Format] [[Image(../../images/navnext.png,link=oracleprotodateformat.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]] [oracleprotobigchunkclr.html Oracle Big Chunk CLR Framing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotodateformat.html Oracle Date Format] [[Image(../../images/navnext.png,link=oracleprotodateformat.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

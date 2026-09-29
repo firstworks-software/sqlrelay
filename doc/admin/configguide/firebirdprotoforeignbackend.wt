@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]] [firebirdprotowirecrypt.html Wire Encryption] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=firebirdprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]] [firebirdprotowirecrypt.html Firebird Wire Encryption] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolimitations.html Firebird Limitations] [[Image(../../images/navnext.png,link=firebirdprotolimitations.html,vertical-align=middle)]]
 
 [=#firebirdforeignbackend]
 = Foreign Backend =
@@ -47,7 +47,7 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]] [firebirdprotowirecrypt.html Wire Encryption] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=firebirdprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]] [firebirdprotowirecrypt.html Firebird Wire Encryption] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolimitations.html Firebird Limitations] [[Image(../../images/navnext.png,link=firebirdprotolimitations.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

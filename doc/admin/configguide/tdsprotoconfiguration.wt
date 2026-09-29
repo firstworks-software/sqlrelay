@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=tdsprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolistener.html TDS Listener Options] [[Image(../../images/navnext.png,link=tdsprotolistener.html,vertical-align=middle)]]
 
 [=#tdsconfiguration]
 = Basic Configuration =
@@ -50,7 +50,7 @@ sqlr-stop -id example
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=tdsprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolistener.html TDS Listener Options] [[Image(../../images/navnext.png,link=tdsprotolistener.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

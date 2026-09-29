@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotolimitations.html,vertical-align=middle)]] [postgresqlprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotolimitations.html,vertical-align=middle)]] [postgresqlprotolimitations.html PostgreSQL Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconfiguration.html Firebird Basic Configuration] [[Image(../../images/navnext.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]]
 
 [=#firebirdprotocol]
 = Firebird Protocol =
@@ -31,7 +31,7 @@ The Firebird protocol module has not been proven against production Firebird cli
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotolimitations.html,vertical-align=middle)]] [postgresqlprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconfiguration.html Basic Configuration] [[Image(../../images/navnext.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprotolimitations.html,vertical-align=middle)]] [postgresqlprotolimitations.html PostgreSQL Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconfiguration.html Firebird Basic Configuration] [[Image(../../images/navnext.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

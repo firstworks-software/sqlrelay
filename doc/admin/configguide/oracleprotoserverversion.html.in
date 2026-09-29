@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Login Attempts</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoverifiertype.html">Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Oracle Login Attempts</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoverifiertype.html">Oracle Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleserverversion"/><h1>Server Version</h1>
 
@@ -84,7 +84,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <hr/>
 
-<p><a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Login Attempts</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoverifiertype.html">Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Oracle Login Attempts</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoverifiertype.html">Oracle Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

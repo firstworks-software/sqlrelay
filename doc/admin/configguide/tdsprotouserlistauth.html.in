@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="tdsprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a> <a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="tdsprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoconnectstringsauth.html">TDS Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprototls.html">TDS TLS/SSL Encryption and Authentication</a> <a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="tdsuserlistauth"/><h1>User List Auth</h1>
 
@@ -46,7 +46,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="tdsprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a> <a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="tdsprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoconnectstringsauth.html">TDS Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprototls.html">TDS TLS/SSL Encryption and Authentication</a> <a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

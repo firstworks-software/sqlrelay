@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Login Attempts] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoverifiertype.html Password Verifier Type] [[Image(../../images/navnext.png,link=oracleprotoverifiertype.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Oracle Login Attempts] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoverifiertype.html Oracle Password Verifier Type] [[Image(../../images/navnext.png,link=oracleprotoverifiertype.html,vertical-align=middle)]]
 
 [=#oracleserverversion]
 = Server Version =
@@ -35,7 +35,7 @@ The default serves the three drivers that don't use Oracle's OCI library, so it'
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Login Attempts] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoverifiertype.html Password Verifier Type] [[Image(../../images/navnext.png,link=oracleprotoverifiertype.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotologinattempts.html,vertical-align=middle)]] [oracleprotologinattempts.html Oracle Login Attempts] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoverifiertype.html Oracle Password Verifier Type] [[Image(../../images/navnext.png,link=oracleprotoverifiertype.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]] [sqlrclientprotodbauth.html Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprotokrb.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]] [sqlrclientprotodbauth.html SQLRClient Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotokrb.html SQLRClient Kerberos and Active Directory Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprotokrb.html,vertical-align=middle)]]
 
 [=#sqlrclientproxiedauth]
 = Proxied Auth =
@@ -29,7 +29,7 @@ To enable proxied auth, configure SQL Relay to load the //proxied// auth module 
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]] [sqlrclientprotodbauth.html Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprotokrb.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]] [sqlrclientprotodbauth.html SQLRClient Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotokrb.html SQLRClient Kerberos and Active Directory Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprotokrb.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

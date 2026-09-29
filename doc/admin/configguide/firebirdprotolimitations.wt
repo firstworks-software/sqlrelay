@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]] [firebirdprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotocol.html TDS Protocol] [[Image(../../images/navnext.png,link=tdsprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]] [firebirdprotoforeignbackend.html Firebird Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotocol.html TDS Protocol] [[Image(../../images/navnext.png,link=tdsprotocol.html,vertical-align=middle)]]
 
 [=#firebirdlimitations]
 = Limitations =
@@ -27,7 +27,7 @@ Except for a BLR request that fails to compile, a request that runs into one of 
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]] [firebirdprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotocol.html TDS Protocol] [[Image(../../images/navnext.png,link=tdsprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]] [firebirdprotoforeignbackend.html Firebird Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotocol.html TDS Protocol] [[Image(../../images/navnext.png,link=tdsprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

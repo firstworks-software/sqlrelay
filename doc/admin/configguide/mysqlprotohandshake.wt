@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotolistener.html,vertical-align=middle)]] [mysqlprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoclientflags.html Client Protocol Flags] [[Image(../../images/navnext.png,link=mysqlprotoclientflags.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotolistener.html,vertical-align=middle)]] [mysqlprotolistener.html MySQL Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoclientflags.html MySQL Client Protocol Flags] [[Image(../../images/navnext.png,link=mysqlprotoclientflags.html,vertical-align=middle)]]
 
 [=#mysqlhandshake]
 = Handshake Protocol Version =
@@ -23,7 +23,7 @@ There is normally no reason to set this.  It exists only for a client old enough
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotolistener.html,vertical-align=middle)]] [mysqlprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoclientflags.html Client Protocol Flags] [[Image(../../images/navnext.png,link=mysqlprotoclientflags.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotolistener.html,vertical-align=middle)]] [mysqlprotolistener.html MySQL Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoclientflags.html MySQL Client Protocol Flags] [[Image(../../images/navnext.png,link=mysqlprotoclientflags.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

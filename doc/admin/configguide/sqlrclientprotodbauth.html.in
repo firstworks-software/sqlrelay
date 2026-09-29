@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sqlrclientprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoproxiedauth.html">Proxied Auth</a> <a href="sqlrclientprotoproxiedauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="sqlrclientprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotouserlistauth.html">SQLRClient User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoproxiedauth.html">SQLRClient Proxied Auth</a> <a href="sqlrclientprotoproxiedauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="sqlrclientdbauth"/><h1>Database Auth</h1>
 
@@ -70,7 +70,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="sqlrclientprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoproxiedauth.html">Proxied Auth</a> <a href="sqlrclientprotoproxiedauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="sqlrclientprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotouserlistauth.html">SQLRClient User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoproxiedauth.html">SQLRClient Proxied Auth</a> <a href="sqlrclientprotoproxiedauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprototls.html,vertical-align=middle)]] [postgresqlprototls.html TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=postgresqlprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprototls.html,vertical-align=middle)]] [postgresqlprototls.html PostgreSQL TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolimitations.html PostgreSQL Limitations] [[Image(../../images/navnext.png,link=postgresqlprotolimitations.html,vertical-align=middle)]]
 
 [=#postgresqlforeignbackend]
 = Foreign Backend =
@@ -43,7 +43,7 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprototls.html,vertical-align=middle)]] [postgresqlprototls.html TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=postgresqlprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=postgresqlprototls.html,vertical-align=middle)]] [postgresqlprototls.html PostgreSQL TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolimitations.html PostgreSQL Limitations] [[Image(../../images/navnext.png,link=postgresqlprotolimitations.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

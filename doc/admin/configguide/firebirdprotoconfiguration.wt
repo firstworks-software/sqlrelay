@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=firebirdprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolistener.html Firebird Listener Options] [[Image(../../images/navnext.png,link=firebirdprotolistener.html,vertical-align=middle)]]
 
 [=#firebirdconfiguration]
 = Basic Configuration =
@@ -70,7 +70,7 @@ Note that:
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=firebirdprotolistener.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolistener.html Firebird Listener Options] [[Image(../../images/navnext.png,link=firebirdprotolistener.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

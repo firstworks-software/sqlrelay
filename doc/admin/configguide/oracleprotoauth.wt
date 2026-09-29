@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotodateformat.html,vertical-align=middle)]] [oracleprotodateformat.html Date Format] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotodateformat.html,vertical-align=middle)]] [oracleprotodateformat.html Oracle Date Format] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconnectstringsauth.html Oracle Connect Strings Auth] [[Image(../../images/navnext.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]]
 
 [=#oracleauth]
 = Authentication/Encryption Options =
@@ -16,7 +16,7 @@ When using the Oracle protocol, there are several options for controlling which 
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotodateformat.html,vertical-align=middle)]] [oracleprotodateformat.html Date Format] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotodateformat.html,vertical-align=middle)]] [oracleprotodateformat.html Oracle Date Format] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconnectstringsauth.html Oracle Connect Strings Auth] [[Image(../../images/navnext.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

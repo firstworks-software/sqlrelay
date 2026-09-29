@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]] [firebirdprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoversion.html Protocol Version] [[Image(../../images/navnext.png,link=firebirdprotoversion.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]] [firebirdprotoconfiguration.html Firebird Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoversion.html Firebird Protocol Version] [[Image(../../images/navnext.png,link=firebirdprotoversion.html,vertical-align=middle)]]
 
 [=#firebirdlistener]
 = Listener Options =
@@ -35,7 +35,7 @@ If the socket option is specified but the port option is not, then SQL Relay wil
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]] [firebirdprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoversion.html Protocol Version] [[Image(../../images/navnext.png,link=firebirdprotoversion.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=firebirdprotoconfiguration.html,vertical-align=middle)]] [firebirdprotoconfiguration.html Firebird Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoversion.html Firebird Protocol Version] [[Image(../../images/navnext.png,link=firebirdprotoversion.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

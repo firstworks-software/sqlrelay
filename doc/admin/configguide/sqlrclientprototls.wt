@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotokrb.html,vertical-align=middle)]] [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotokrb.html,vertical-align=middle)]] [sqlrclientprotokrb.html SQLRClient Kerberos and Active Directory Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolimitations.html SQLRClient Limitations] [[Image(../../images/navnext.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]]
 
 [=#sqlrclienttls]
 = TLS/SSL Encryption and Authentication =
@@ -170,7 +170,7 @@ Any kind of full session encryption should be used with caution in performance-s
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotokrb.html,vertical-align=middle)]] [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=sqlrclientprotokrb.html,vertical-align=middle)]] [sqlrclientprotokrb.html SQLRClient Kerberos and Active Directory Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolimitations.html SQLRClient Limitations] [[Image(../../images/navnext.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

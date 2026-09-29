@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotolistener.html,vertical-align=middle)]] [tdsprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotopacketsize.html Packet Size] [[Image(../../images/navnext.png,link=tdsprotopacketsize.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotolistener.html,vertical-align=middle)]] [tdsprotolistener.html TDS Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotopacketsize.html TDS Packet Size] [[Image(../../images/navnext.png,link=tdsprotopacketsize.html,vertical-align=middle)]]
 
 [=#tdsversion]
 = TDS Version =
@@ -27,7 +27,7 @@ So if the back-end's version string can't be mapped, and the client's own defaul
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotolistener.html,vertical-align=middle)]] [tdsprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotopacketsize.html Packet Size] [[Image(../../images/navnext.png,link=tdsprotopacketsize.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=tdsprotolistener.html,vertical-align=middle)]] [tdsprotolistener.html TDS Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotopacketsize.html TDS Packet Size] [[Image(../../images/navnext.png,link=tdsprotopacketsize.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]] [mysqlprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotohandshake.html Handshake Protocol Version] [[Image(../../images/navnext.png,link=mysqlprotohandshake.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]] [mysqlprotoconfiguration.html MySQL Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotohandshake.html MySQL Handshake Protocol Version] [[Image(../../images/navnext.png,link=mysqlprotohandshake.html,vertical-align=middle)]]
 
 [=#mysqllistener]
 = Listener Options =
@@ -43,7 +43,7 @@ If the socket option is specified but the port option is not, then SQL Relay wil
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]] [mysqlprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotohandshake.html Handshake Protocol Version] [[Image(../../images/navnext.png,link=mysqlprotohandshake.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]] [mysqlprotoconfiguration.html MySQL Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotohandshake.html MySQL Handshake Protocol Version] [[Image(../../images/navnext.png,link=mysqlprotohandshake.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

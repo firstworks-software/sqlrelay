@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="mysqlprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotodbauth.html">Database Auth</a> <a href="mysqlprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="mysqlprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotoconnectstringsauth.html">MySQL Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotodbauth.html">MySQL Database Auth</a> <a href="mysqlprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="mysqluserlistauth"/><h1>User List Auth</h1>
 
@@ -44,7 +44,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="mysqlprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotodbauth.html">Database Auth</a> <a href="mysqlprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="mysqlprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotoconnectstringsauth.html">MySQL Connect Strings Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotodbauth.html">MySQL Database Auth</a> <a href="mysqlprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 
