@@ -19,6 +19,12 @@ However, SQL Relay also supports the !MySQL, !PostgreSQL, Firebird, TDS (Microso
 
  [[Image(../../images/sqlrelaypostgresqlprotocol.png,nolink)]]
 
+ [[Image(../../images/sqlrelayfirebirdprotocol.png,nolink)]]
+
+ [[Image(../../images/sqlrelaytdsprotocol.png,nolink)]]
+
+ [[Image(../../images/sqlrelayoracleprotocol.png,nolink)]]
+
 In these configurations, SQL Relay becomes a transparent proxy.  !MySQL/MariaDB or !PostgreSQL apps aimed at SQL Relay still think that they're talking to a !MySQL/MariaDB or !PostgreSQL database, but in fact, are talking to SQL Relay.
 
 * [sqlrclientprotocol.html SQLRClient Protocol]

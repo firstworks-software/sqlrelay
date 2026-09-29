@@ -85,6 +85,15 @@
 <br/>
 <br/>
 <img src="../images/sqlrelaypostgresqlprotocol.png"/>
+<br/>
+<br/>
+<img src="../images/sqlrelayfirebirdprotocol.png"/>
+<br/>
+<br/>
+<img src="../images/sqlrelaytdsprotocol.png"/>
+<br/>
+<br/>
+<img src="../images/sqlrelayoracleprotocol.png"/>
 </blockquote>
 <p>The Firebird, TDS, and Oracle protocol modules work the same way - the app talks to SQL Relay using the same wire protocol it would use to talk to a real Firebird, SAP/Sybase, Microsoft SQL Server, or Oracle server.  This includes apps built on database-specific APIs like Oracle's OCI: rather than porting the app to the SQL Relay API, you can often just point its existing connect descriptor at sqlr-listener.</p>
 

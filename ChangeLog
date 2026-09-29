@@ -958,6 +958,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   database connection count page of the configuration guide
 - documented the default connection and cursor counts on the dynamic
   scaling page of the configuration guide
+- added firebird, tds, and oracle protocol diagrams to the client protocol
+  options and front-end compatibility pages
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

@@ -46,6 +46,15 @@ For example, apps written using the !MySQL/MariaDB or !PostgreSQL client-server 
 [[br]]
 [[br]]
 [[Image(../images/sqlrelaypostgresqlprotocol.png,nolink)]]
+[[br]]
+[[br]]
+[[Image(../images/sqlrelayfirebirdprotocol.png,nolink)]]
+[[br]]
+[[br]]
+[[Image(../images/sqlrelaytdsprotocol.png,nolink)]]
+[[br]]
+[[br]]
+[[Image(../images/sqlrelayoracleprotocol.png,nolink)]]
 }}}
 
 The Firebird, TDS, and Oracle protocol modules work the same way - the app talks to SQL Relay using the same wire protocol it would use to talk to a real Firebird, SAP/Sybase, Microsoft SQL Server, or Oracle server.  This includes apps built on database-specific APIs like Oracle's OCI: rather than porting the app to the SQL Relay API, you can often just point its existing connect descriptor at sqlr-listener.

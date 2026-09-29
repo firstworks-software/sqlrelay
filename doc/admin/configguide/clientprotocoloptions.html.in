@@ -21,6 +21,15 @@
 <blockquote>
 <img src="../../images/sqlrelaypostgresqlprotocol.png"/>
 </blockquote>
+<blockquote>
+<img src="../../images/sqlrelayfirebirdprotocol.png"/>
+</blockquote>
+<blockquote>
+<img src="../../images/sqlrelaytdsprotocol.png"/>
+</blockquote>
+<blockquote>
+<img src="../../images/sqlrelayoracleprotocol.png"/>
+</blockquote>
 <p>In these configurations, SQL Relay becomes a transparent proxy.  MySQL/MariaDB or PostgreSQL apps aimed at SQL Relay still think that they're talking to a MySQL/MariaDB or PostgreSQL database, but in fact, are talking to SQL Relay.</p>
 
 <ul>
