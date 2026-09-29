@@ -56,11 +56,6 @@ Driver=/opt/amazon/redshiftodbc/lib/64/libamazonredshiftodbc64.so
 
 See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
-[[br]][=#debugging]
-== Debugging ==
-
-The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 ----
 
 [[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]

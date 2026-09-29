@@ -38,10 +38,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for other valid PostgreSQL connect string options.</p>
 
-<br/><a name="debugging"/><h2>Debugging</h2>
-
-<p>The connections tag also supports a <i>debug</i> attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see <a href="debug.html#debug">the debug logger module</a>), or otherwise, to standard output.  If debug="no" is configured, or if the <i>debug</i> attribute is omitted, then no debugging information is written.</p>
-
 <hr/>
 
 <p><a href="redshiftodbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftodbcconfiguration.html">Amazon Redshift (via ODBC)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="athenaconfiguration.html">Amazon Athena (via ODBC)</a> <a href="athenaconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>

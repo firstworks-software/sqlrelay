@@ -41,11 +41,6 @@ See the [../configreference.html#sqlite SQL Relay Configuration Reference] for o
 
 See [http://software.firstworks.com/p/getting-started-with-sqlite.html Getting Started With SQLite] for general assistance installing and configuring a SQLite database.
 
-[[br]][=#debugging]
-== Debugging ==
-
-The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 ----
 
 [[Image(../../images/navprev.png,link=firebirdconfiguration.html,vertical-align=middle)]] [firebirdconfiguration.html Firebird] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [teradataconfiguration.html Teradata (via ODBC)] [[Image(../../images/navnext.png,link=teradataconfiguration.html,vertical-align=middle)]]

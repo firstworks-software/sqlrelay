@@ -942,6 +942,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - gave the rot, md5, sha1, sha256, sha512, des, aes128, aes192, and
   aes256 password encryption modules their own configuration guide
   pages
+- removed the duplicated debugging section from each database-specific
+  configuration guide page
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)

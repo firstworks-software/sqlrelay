@@ -71,11 +71,6 @@ UseDateDataForTimeStampParams=0
 
 See the [../configreference.html#odbc SQL Relay Configuration Reference] for other valid ODBC connect string options.
 
-[[br]][=#debugging]
-== Debugging ==
-
-The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 ----
 
 [[Image(../../images/navprev.png,link=sqliteconfiguration.html,vertical-align=middle)]] [sqliteconfiguration.html SQLite] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [exasolconfiguration.html Exasol (via ODBC)] [[Image(../../images/navnext.png,link=exasolconfiguration.html,vertical-align=middle)]]

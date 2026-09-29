@@ -51,11 +51,6 @@ On Windows platforms, the servername option refers to a similar entry created in
 
 See the [../configreference.html#informix SQL Relay Configuration Reference] for other valid Informix connect string options.
 
-[[br]][=#debugging]
-== Debugging ==
-
-The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 ----
 
 [[Image(../../images/navprev.png,link=db2configuration.html,vertical-align=middle)]] [db2configuration.html IBM DB2] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlconfiguration.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=mysqlconfiguration.html,vertical-align=middle)]]

@@ -56,11 +56,6 @@ See the [../configreference.html#odbc SQL Relay Configuration Reference] for oth
 
 See [http://software.firstworks.com/p/getting-started-with-odbc-on-non-ms.html Getting Started With ODBC (on a non-MS platform)] for general assistance installing and configuring ODBC on a non-MS platform.
 
-[[br]][=#debugging]
-== Debugging ==
-
-The connections tag also supports a //debug// attribute.  If debug="yes" is configured in the connections tag (not in an individual connection tag) then debugging information about the connection is written to the destination of the debug logger module (if one is defined, see [debug.html#debug the debug logger module]), or otherwise, to standard output.  If debug="no" is configured, or if the //debug// attribute is omitted, then no debugging information is written.
-
 ----
 
 [[Image(../../images/navprev.png,link=oracleconfiguration.html,vertical-align=middle)]] [oracleconfiguration.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlfreetdsconfiguration.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=mssqlfreetdsconfiguration.html,vertical-align=middle)]]
