@@ -57,8 +57,6 @@ When configured this way, it can be accessed on 192.168.1.50 and 192.168.1.51 bu
 
 If the socket option is specified but port and addresses options are not, then SQL Relay will only listen on the socket.  If addresses/port and socket options are both specified then it listens on both.
 
-Each individual listener tag also has an //enabled// attribute, allowing that listener to be temporarily disabled without removing it from the configuration.  If enabled="no" is configured, then SQL Relay does not open that listener's port or socket at all, and does not count that listener when assigning the other listener tags to their protocol modules.  If set to any other value, or omitted, then the listener is enabled.
-
 ----
 
 [[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]

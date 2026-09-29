@@ -1001,6 +1001,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   configuration guide table of contents
 - removed the note about on-demand cursors from the database cursor count
   page of the configuration guide
+- removed the enabled attribute paragraph from the listener configuration
+  page of the configuration guide
 
 ### Fixed
 - fixed several make install bugs (missing tds protocol module, doc/ on a
