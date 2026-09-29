@@ -23,7 +23,9 @@ To enable user list auth, you must provide a list of user/password combinations,
 
 When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
 
-The //firebird_userlist// module answers each login method - Srp256, Srp, and Legacy_Auth - the same way //firebird_connectstrings// does, deriving what the method needs from the configured password rather than from the connect string.  The same account-name and one-way-password-encryption rules described in [firebirdprotoconnectstringsauth.html Connect Strings Auth] apply here too: testuser, !TestUser and TESTUSER are all the same user, and a password stored with a one-way password encryption module can't be used with any of the three methods.
+( '''NOTE:''' Firebird treats a user name as a SQL identifier, so testuser, !TestUser, and TESTUSER are all the same.)
+
+( '''NOTE:''' The module has to examine the password itself to derive what specific authentication method to use.  As such, if you're using [secpwdenc.html password encryption], you must use a reversible password encryption module.)
 
 ----
 
