@@ -23,8 +23,8 @@ The client offers its encryption level, and the two are negotiated as follows:
 
 * If both sides require or enable encryption, the session is encrypted.
 * If both sides disable encryption, the session is not encrypted.
-* If one side requires encryption and the other disables it, the login is refused.
 * If one side enables encryption and the other disables it, the session is not encrypted.
+* If one side requires encryption and the other disables it, the login is refused.
 
 {{{#!blockquote
 {{{#!code
