@@ -74,16 +74,6 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The number of connections determines how many client applications can access the database simultaneously.  In this example, up to 10, assuming each client only needs one connection.  Additional clients would be queued and would have to wait for one of the first 10 to disconnect before being able to access the database.</p>
 
-<blockquote>
-  <p>( <b>NOTE:</b> Any number of connections may be configured, up to an "absolute max connections" limit defined at compile-time, which defaults to 4096.  To find the limit on your system, run:</p>
-
-  <blockquote>
-    <pre>sqlr-start -abs-max-connections
-</pre>
-
-  </blockquote>
-The command above also returns the "shmmax requirement" for the configuration.  "shmmax" refers to the maximum size of a single shared memory segment, a tunable kernel parameter on most systems.  The default shmmax requirement is about 5mb.  On modern systems, shmmax defaults to at least 32mb, but on older systems it commonly defaulted to 512k.  In any case, if the shmmax requirement exceeds the value of your system's shmmax parameter, then you will have to reconfigure the parameter before SQL Relay will start successfully.   This may be done at runtime on most modern systems, but on older systems you may have to reconfigure and rebuild the kernel, and reboot.)
-</blockquote>
 <h3>For Performance</h3>
 
 <p>In a performance-oriented configuration, a good rule of thumb is to open as many connections as you can.  That number is usually environment-specific, and dictated by database, system and network resources.</p>
@@ -91,6 +81,17 @@ The command above also returns the "shmmax requirement" for the configuration.  
 <h3>For Throttling</h3>
 
 <p>If you intend to <a href="../../features/throttling.html">throttle</a> database access to a particular application, then you may intentionally configure a small number of connections.</p>
+
+<h3>Absolute Maximum Number of Connections</h3>
+
+<p>Any number of connections may be configured, up to an "absolute max connections" limit defined at compile-time, which defaults to 4096.  To find the limit on your system, run:</p>
+
+<blockquote>
+  <pre>sqlr-start -abs-max-connections
+</pre>
+
+</blockquote>
+<p>The command above also returns the "shmmax requirement" for the configuration.  "shmmax" refers to the maximum size of a single shared memory segment, a tunable kernel parameter on most systems.  The default shmmax requirement is about 5mb.  On modern systems, shmmax defaults to at least 32mb, but on older systems it commonly defaulted to 512k.  In any case, if the shmmax requirement exceeds the value of your system's shmmax parameter, then you will have to reconfigure the parameter before SQL Relay will start successfully.   This may be done at runtime on most modern systems, but on older systems you may have to reconfigure and rebuild the kernel, and reboot.</p>
 
 <hr/>
 
