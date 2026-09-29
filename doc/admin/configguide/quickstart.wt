@@ -13,7 +13,7 @@ In order to run, the SQL Relay server requires a configuration file.  However, W
 
 * Unix and Linux
  * Built from source - '''/usr/local/firstworks/etc/sqlrelay.conf''' (unless you specified a non-standard --prefix or --sysconfdir during the build)
- * RPM package - '''/etc/sqlrelay.conf'''
+ * RPM or deb package - '''/etc/sqlrelay.conf'''
  * !FreeBSD package - '''/usr/local/etc/sqlrelay.conf'''
  * !NetBSD package - '''/usr/pkg/etc/sqlrelay.conf'''
  * !OpenBSD package - '''/usr/local/etc/sqlrelay.conf'''
