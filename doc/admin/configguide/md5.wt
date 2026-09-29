@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=rot.html,vertical-align=middle)]] [rot.html rot] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sha1.html sha1] [[Image(../../images/navnext.png,link=sha1.html,vertical-align=middle)]]
+
+[[br]][=#md5]
+= md5 =
+
+The '''md5''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/MD5 MD5] algorithm.  This module has no parameters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-md5.conf@
+}}}
+}}}
+
+Since the MD5 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
+
+----
+
+[[Image(../../images/navprev.png,link=rot.html,vertical-align=middle)]] [rot.html rot] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sha1.html sha1] [[Image(../../images/navnext.png,link=sha1.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

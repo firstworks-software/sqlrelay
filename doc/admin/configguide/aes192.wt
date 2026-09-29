@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=aes128.html,vertical-align=middle)]] [aes128.html aes128] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [aes256.html aes256] [[Image(../../images/navnext.png,link=aes256.html,vertical-align=middle)]]
+
+[[br]][=#aes192]
+= aes192 =
+
+The '''aes192''' module is a two-way encryption module that performs AES192 (CBC) encryption/decryption.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-aes192.conf@
+}}}
+}}}
+
+Since the aes192 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
+
+The key attribute of the passwordencryption element contains a hexidecimal representation of the 192 bit (24 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.
+
+As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.
+
+----
+
+[[Image(../../images/navprev.png,link=aes128.html,vertical-align=middle)]] [aes128.html aes128] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [aes256.html aes256] [[Image(../../images/navnext.png,link=aes256.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

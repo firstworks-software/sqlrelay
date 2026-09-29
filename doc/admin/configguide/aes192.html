@@ -1,0 +1,105 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="aes128.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes128.html">aes128</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="aes256.html">aes256</a> <a href="aes256.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="aes192"/><h1>aes192</h1>
+
+<p>The <b>aes192</b> module is a two-way encryption module that performs AES192 (CBC) encryption/decryption.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;passwordencryptions&gt;</font></b>
+			<b><font color="#0000FF">&lt;passwordencryption</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"aes192"</font> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"aes192enc"</font> <font color="#009900">key</font><font color="#990000">=</font><font color="#FF0000">"000102030405060708090a0b0c0d0e0f1011121314151617"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/passwordencryptions&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"1dbdbd6e27d31b603c340e2c19e9ca9b09662e41b1f8fb23799af3f407be9da9"</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"aes192enc"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"db"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=oracleuser;password=344204e6dab4cd8e64d1003e222aa5d4b657ed34919f25cd97a9b663692dfe50;..."</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"aes192enc"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Since the aes192 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.</p>
+
+<p>The key attribute of the passwordencryption element contains a hexidecimal representation of the 192 bit (24 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.</p>
+
+<p>As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.</p>
+
+<hr/>
+
+<p><a href="aes128.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes128.html">aes128</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="aes256.html">aes256</a> <a href="aes256.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

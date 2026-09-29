@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
 
 [[br]][=#security]
 = Security Features =
@@ -524,152 +524,17 @@ sqlrsh -id example -user sqlruser -password sqlrpassword
 
 Currently, the following password encryption modules are available in the standard SQL Relay distribution:
 
-* rot
-* md5
-* sha1
-* sha256
-* sha512
-* des
+* [rot.html#rot rot]
+* [md5.html#md5 md5]
+* [sha1.html#sha1 sha1]
+* [sha256.html#sha256 sha256]
+* [sha512.html#sha512 sha512]
+* [des.html#des des]
+* [aes128.html#aes128 aes128]
+* [aes192.html#aes192 aes192]
+* [aes256.html#aes256 aes256]
 
 Custom modules may also be developed.  For more information, please contact [mailto:dev@firstworks.com dev@firstworks.com].
-
-
-[[br]][=#rot]
-=== rot ===
-
-The '''rot''' module is a two-way encryption module that performs a character rotation, similar to the popular [http://en.wikipedia.org/wiki/ROT13 ROT13] algorithm, though it can rotate by any amount specified in the //count// attribute, not just 13 and rotates digits as well as upper and lower-case characters.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-rot13.conf@
-}}}
-}}}
-
-Since the ROT algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
-
-
-[[br]][=#md5]
-=== md5 ===
-
-The '''md5''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/MD5 MD5] algorithm.  This module has no parameters.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-md5.conf@
-}}}
-}}}
-
-Since the MD5 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
-
-
-[[br]][=#sha1]
-=== sha1 ===
-
-The '''sha1''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-1 SHA-1] algorithm.  This module has no parameters.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-sha1.conf@
-}}}
-}}}
-
-Since the SHA-1 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
-
-
-[[br]][=#sha256]
-=== sha256 ===
-
-The '''sha256''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-2 SHA-256] algorithm.  This module has no parameters.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-sha256.conf@
-}}}
-}}}
-
-Since the SHA-256 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
-
-
-[[br]][=#sha512]
-=== sha512 ===
-
-The '''sha512''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-2 SHA-512] algorithm.  This module has no parameters.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-sha512.conf@
-}}}
-}}}
-
-Since the SHA-512 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
-
-
-[[br]][=#des]
-=== des ===
-
-The '''des''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/Data_Encryption_Standard DES] algorithm using a salt specified in the //salt// attribute.  The salt is required and must be a 2 digit alphanumeric code.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-des.conf@
-}}}
-}}}
-
-Since the DES algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
-
-
-[[br]][=#aes128]
-=== aes128 ===
-
-The '''aes128''' module is a two-way encryption module that performs AES128 (CBC) encryption/decryption.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-aes128.conf@
-}}}
-}}}
-
-Since the aes128 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
-
-The key attribute of the passwordencryption element contains a hexidecimal representation of the 128 bit (16 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.
-
-Note that multiple runs of sqlr-pwdenc with the same key and password will generate different results each time.  This is the correct behavior.  The first 128 bits (16 bytes) of the encrypted password are the "initialization vector" - a randomly generated string used in conjunction with the key to encrypt/decrypt the password.  This vector is generated each time sqlr-pwdenc is run.  Successive runs of sqlr-pwdenc generate different initialization vectors, and thus different encrypted passwords.
-
-
-[[br]][=#aes192]
-=== aes192 ===
-
-The '''aes192''' module is a two-way encryption module that performs AES192 (CBC) encryption/decryption.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-aes192.conf@
-}}}
-}}}
-
-Since the aes192 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
-
-The key attribute of the passwordencryption element contains a hexidecimal representation of the 192 bit (24 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.
-
-As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.
-
-
-[[br]][=#aes256]
-=== aes256 ===
-
-The '''aes256''' module is a two-way encryption module that performs AES256 (CBC) encryption/decryption.
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-pwdencs-aes256.conf@
-}}}
-}}}
-
-Since the aes256 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
-
-The key attribute of the passwordencryption element contains a hexidecimal representation of the 256 bit (32 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.
-
-As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.
 
 
 [[br]][=#schedules]
@@ -770,7 +635,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sha1.html,vertical-align=middle)]] [sha1.html sha1] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sha512.html sha512] [[Image(../../images/navnext.png,link=sha512.html,vertical-align=middle)]]
+
+[[br]][=#sha256]
+= sha256 =
+
+The '''sha256''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-2 SHA-256] algorithm.  This module has no parameters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-sha256.conf@
+}}}
+}}}
+
+Since the SHA-256 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
+
+----
+
+[[Image(../../images/navprev.png,link=sha1.html,vertical-align=middle)]] [sha1.html sha1] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sha512.html sha512] [[Image(../../images/navnext.png,link=sha512.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

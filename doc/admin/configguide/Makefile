@@ -43,6 +43,15 @@ SRCS = index.wt \
 	multipleprotocols.wt \
 	highavailability.wt \
 	security.wt \
+	rot.wt \
+	md5.wt \
+	sha1.wt \
+	sha256.wt \
+	sha512.wt \
+	des.wt \
+	aes128.wt \
+	aes192.wt \
+	aes256.wt \
 	cron_userlist.wt \
 	filterpatterns.wt \
 	filterregex.wt \
@@ -135,6 +144,15 @@ INS = index.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
+	rot.html.in \
+	md5.html.in \
+	sha1.html.in \
+	sha256.html.in \
+	sha512.html.in \
+	des.html.in \
+	aes128.html.in \
+	aes192.html.in \
+	aes256.html.in \
 	cron_userlist.html.in \
 	filterpatterns.html.in \
 	filterregex.html.in \
@@ -229,6 +247,15 @@ WTOBJS = index.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	security.html.in \
+	rot.html.in \
+	md5.html.in \
+	sha1.html.in \
+	sha256.html.in \
+	sha512.html.in \
+	des.html.in \
+	aes128.html.in \
+	aes192.html.in \
+	aes256.html.in \
 	cron_userlist.html.in \
 	filterpatterns.html.in \
 	filterregex.html.in \
@@ -321,6 +348,15 @@ OBJS = index.html \
 	multipleprotocols.html \
 	highavailability.html \
 	security.html \
+	rot.html \
+	md5.html \
+	sha1.html \
+	sha256.html \
+	sha512.html \
+	des.html \
+	aes128.html \
+	aes192.html \
+	aes256.html \
 	cron_userlist.html \
 	filterpatterns.html \
 	filterregex.html \

@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=aes192.html,vertical-align=middle)]] [aes192.html aes192] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+
+[[br]][=#aes256]
+= aes256 =
+
+The '''aes256''' module is a two-way encryption module that performs AES256 (CBC) encryption/decryption.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-aes256.conf@
+}}}
+}}}
+
+Since the aes256 algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
+
+The key attribute of the passwordencryption element contains a hexidecimal representation of the 256 bit (32 byte) key.  The password attribute of the user element, and password parameter of the string attribute of the connection element contain hexidecimal representations of the encrypted passwords.
+
+As with aes128, the first 128 bits (16 bytes) of the encrypted password are the initialization vector, regenerated each time sqlr-pwdenc is run, so multiple runs with the same key and password will generate different results each time.  This is the correct behavior.
+
+----
+
+[[Image(../../images/navprev.png,link=aes192.html,vertical-align=middle)]] [aes192.html aes192] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

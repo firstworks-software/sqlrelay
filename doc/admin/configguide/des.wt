@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sha512.html,vertical-align=middle)]] [sha512.html sha512] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [aes128.html aes128] [[Image(../../images/navnext.png,link=aes128.html,vertical-align=middle)]]
+
+[[br]][=#des]
+= des =
+
+The '''des''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/Data_Encryption_Standard DES] algorithm using a salt specified in the //salt// attribute.  The salt is required and must be a 2 digit alphanumeric code.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-des.conf@
+}}}
+}}}
+
+Since the DES algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
+
+----
+
+[[Image(../../images/navprev.png,link=sha512.html,vertical-align=middle)]] [sha512.html sha512] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [aes128.html aes128] [[Image(../../images/navnext.png,link=aes128.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

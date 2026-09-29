@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=md5.html,vertical-align=middle)]] [md5.html md5] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sha256.html sha256] [[Image(../../images/navnext.png,link=sha256.html,vertical-align=middle)]]
+
+[[br]][=#sha1]
+= sha1 =
+
+The '''sha1''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-1 SHA-1] algorithm.  This module has no parameters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-sha1.conf@
+}}}
+}}}
+
+Since the SHA-1 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
+
+----
+
+[[Image(../../images/navprev.png,link=md5.html,vertical-align=middle)]] [md5.html md5] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sha256.html sha256] [[Image(../../images/navnext.png,link=sha256.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

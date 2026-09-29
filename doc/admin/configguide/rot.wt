@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [md5.html md5] [[Image(../../images/navnext.png,link=md5.html,vertical-align=middle)]]
+
+[[br]][=#rot]
+= rot =
+
+The '''rot''' module is a two-way encryption module that performs a character rotation, similar to the popular [http://en.wikipedia.org/wiki/ROT13 ROT13] algorithm, though it can rotate by any amount specified in the //count// attribute, not just 13 and rotates digits as well as upper and lower-case characters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-rot13.conf@
+}}}
+}}}
+
+Since the ROT algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.
+
+----
+
+[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [md5.html md5] [[Image(../../images/navnext.png,link=md5.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

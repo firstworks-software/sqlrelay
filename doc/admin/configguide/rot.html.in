@@ -1,0 +1,46 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="security.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="security.html">Security Features</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="md5.html">md5</a> <a href="md5.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<br/><a name="rot"/><h1>rot</h1>
+
+<p>The <b>rot</b> module is a two-way encryption module that performs a character rotation, similar to the popular <a target="_blank" href="http://en.wikipedia.org/wiki/ROT13">ROT13</a> algorithm, though it can rotate by any amount specified in the <i>count</i> attribute, not just 13 and rotates digits as well as upper and lower-case characters.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;passwordencryptions&gt;</font></b>
+			<b><font color="#0000FF">&lt;passwordencryption</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"rot"</font> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"rot13enc"</font> <font color="#009900">count</font><font color="#990000">=</font><font color="#FF0000">"13"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/passwordencryptions&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlruser"</font> <font color="#009900">password</font><font color="#990000">=</font><font color="#FF0000">"fdyecnffjbeq"</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"rot13enc"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"db"</font> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=oracleuser;password=benpyrcnffjbeq;..."</font> <font color="#009900">passwordencryptionid</font><font color="#990000">=</font><font color="#FF0000">"rot13enc"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>Since the ROT algorithm is two-way, it can be used to encrypt passwords for both SQL Relay users and database users.</p>
+
+<hr/>
+
+<p><a href="security.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="security.html">Security Features</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="md5.html">md5</a> <a href="md5.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

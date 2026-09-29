@@ -1,0 +1,28 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sha256.html,vertical-align=middle)]] [sha256.html sha256] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [des.html des] [[Image(../../images/navnext.png,link=des.html,vertical-align=middle)]]
+
+[[br]][=#sha512]
+= sha512 =
+
+The '''sha512''' module is a one-way encryption module that encrypts the password using the [http://en.wikipedia.org/wiki/SHA-2 SHA-512] algorithm.  This module has no parameters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-pwdencs-sha512.conf@
+}}}
+}}}
+
+Since the SHA-512 algorithm is one-way, it can be used to encrypt passwords for SQL Relay users, but not database users.
+
+----
+
+[[Image(../../images/navprev.png,link=sha256.html,vertical-align=middle)]] [sha256.html sha256] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [des.html des] [[Image(../../images/navnext.png,link=des.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

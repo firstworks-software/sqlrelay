@@ -197,15 +197,15 @@
     <li><a href="security.html#pwdfiles">Password Files</a></li>
     <li><a href="security.html#pwdenc">Password Encryption</a></li>
     <ul>
-      <li><a href="security.html#rot">rot</a></li>
-      <li><a href="security.html#md5">md5</a></li>
-      <li><a href="security.html#sha1">sha1</a></li>
-      <li><a href="security.html#sha256">sha256</a></li>
-      <li><a href="security.html#sha512">sha512</a></li>
-      <li><a href="security.html#des">des</a></li>
-      <li><a href="security.html#aes128">aes128</a></li>
-      <li><a href="security.html#aes192">aes192</a></li>
-      <li><a href="security.html#aes256">aes256</a></li>
+      <li><a href="rot.html#rot">rot</a></li>
+      <li><a href="md5.html#md5">md5</a></li>
+      <li><a href="sha1.html#sha1">sha1</a></li>
+      <li><a href="sha256.html#sha256">sha256</a></li>
+      <li><a href="sha512.html#sha512">sha512</a></li>
+      <li><a href="des.html#des">des</a></li>
+      <li><a href="aes128.html#aes128">aes128</a></li>
+      <li><a href="aes192.html#aes192">aes192</a></li>
+      <li><a href="aes256.html#aes256">aes256</a></li>
     </ul>
 
     <li><a href="security.html#schedules">Connection Schedules</a></li>
