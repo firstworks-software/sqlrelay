@@ -12,8 +12,6 @@
 SQL Relay offers features for parsing and translating queries, translating bind variables, translating result sets, and translating errors.
 
  [[Image(../../images/translation-query.png,nolink)]]
- [[Image(../../images/translation-resultset.png,padding-left=40px,nolink)]]
- [[Image(../../images/translation-errors.png,padding-left=40px,nolink)]]
 
 * [queryparsing.html#queryparsing Query Parsing]
 * [querytranslation.html#querytranslation Query Translation]
