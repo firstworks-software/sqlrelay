@@ -56,7 +56,9 @@
 
 <p>Both connections and cursors can be configured to scale dynamically - open on demand and then die off when no longer needed.  This feature is useful if you have spikes in traffic during certain times of day or if your application has a few modules that occasionally need more cursors than usual.</p>
 
-<p>The maxconnections and maxcursors attribute define the upper bounds.</p>
+<p>By default, SQL Relay opens 5 persistent database connections and one cursor per connection, scaling up to 5 cursors as needed.</p>
+
+<p>The connections, maxconnections, cursors, and maxcursors attributes define the lower and upper bounds.</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9

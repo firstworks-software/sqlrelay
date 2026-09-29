@@ -954,6 +954,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   their top heading anchors now
 - moved the absolute max connections note to its own section on the
   database connection count page of the configuration guide
+- documented the default connection and cursor counts on the dynamic
+  scaling page of the configuration guide
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
