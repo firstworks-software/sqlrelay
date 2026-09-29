@@ -52,6 +52,8 @@ This decision is based on the real database module in use, not on a '''dbtype=''
 
 Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.
 
+Note that in this example, the normalize query translation is loaded prior to the globaltemptables trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 The '''trigger''' tag supports the following attributes in addition to the standard '''module''', '''when''', '''enabled''', and '''debug''' attributes:
 
 * none beyond the nested '''alreadyexists''' and '''table''' tags described above

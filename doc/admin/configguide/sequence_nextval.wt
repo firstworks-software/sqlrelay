@@ -55,6 +55,8 @@ Sequence references inside string literals are left alone.
 
 The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the [normalize.html#normalize normalize] translation first helps it match reliably.
 
+Note that in this example, the normalize query translation is loaded prior to the sequence_nextval query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 ----
 
 [[Image(../../images/navprev.png,link=listagg_to_string_agg.html,vertical-align=middle)]] [listagg_to_string_agg.html listagg_to_string_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] [[Image(../../images/navnext.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]]

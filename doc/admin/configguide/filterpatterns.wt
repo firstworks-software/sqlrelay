@@ -43,6 +43,8 @@ But these queries would not be:
 }}}
 }}}
 
+Note that in this example, the normalize query translation is loaded prior to the patterns query filter.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 ----
 
 [[Image(../../images/navprev.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterregex.html regex] [[Image(../../images/navnext.png,link=filterregex.html,vertical-align=middle)]]

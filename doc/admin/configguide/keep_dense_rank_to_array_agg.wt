@@ -46,6 +46,8 @@ The module has no module-specific attributes - only the standard '''module''', '
 
 Note that, in this example, the normalize translation is also configured.  Loading normalize first helps the module identify //keep (dense_rank ...)// calls more reliably, as their syntactic form (the spacing around //keep//, //dense_rank//, //order by//, etc.) is sensitive to whitespace and case.
 
+Note that in this example, the normalize query translation is loaded prior to the keep_dense_rank_to_array_agg query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 === Considerations ===
 
 The module performs the following transformations on each //max(EXPR) keep (dense_rank first|last order by SORT)// or //min(...)// call, where SORT may include an optional //asc// or //desc// direction and an optional //nulls first// or //nulls last// clause:

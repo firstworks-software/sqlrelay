@@ -95,6 +95,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note that the normalize translation is also configured.  This helps the splitmultiinsert and replay triggers parse and rewrite queries more accurately.</p>
 
+<p>Note that in this example, the normalize query translation is loaded prior to the splitmultiinsert and replay triggers.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
+
 <p>In this configuration, if a <i>students</i> table exists like:</p>
 
 <blockquote>

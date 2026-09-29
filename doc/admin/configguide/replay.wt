@@ -29,6 +29,8 @@ If an error code 1213 occurs (a !MySQL deadlock), then the entire transaction is
 
 Note that the normalize translation is also configured.  This helps the trigger parse and rewrite queries more accurately.  See the section on Auto-Increment Columns below for details.
 
+Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a file to log to and a query to run and log the output of, for each condition.  For example:
 
 {{{#!blockquote
@@ -44,6 +46,8 @@ If an error code 1213 occurs (a !MySQL deadlock), then the module logs various b
 If an error code 1205 occurs (a !MySQL lock wait timeout), then the previous query is replayed, but no logging occurs.
 
 In this configuration, the module enables automatic recovery from deadlocks and lock wait timeouts, and the log allows a developer to go back later, examine the queries that caused the deadlocks, and modify them (or the app) to mitigate the problem.
+
+Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
 In addition to the '''module''' and '''when''' attributes, the '''trigger''' tag also supports the following attributes:
 

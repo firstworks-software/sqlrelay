@@ -74,6 +74,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note that the normalize translation is also configured.  This is important - the trigger matches the configured table name, as a whole word, anywhere in the query text, and assumes that text has already been normalized (lowercased, whitespace collapsed, etc.).  Without normalize, a query with unusual capitalization or spacing will not be recognized and the create will not fire.</p>
 
+<p>Note that in this example, the normalize query translation is loaded prior to the globaltemptables trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
+
 <p>The <b>trigger</b> tag supports the following attributes in addition to the standard <b>module</b>, <b>when</b>, <b>enabled</b>, and <b>debug</b> attributes:</p>
 
 <ul>

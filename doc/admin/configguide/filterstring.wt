@@ -42,6 +42,8 @@ But this query would not be:
 }}}
 }}}
 
+Note that in this example, the normalize query translation is loaded prior to the string query filter.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 ----
 
 [[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]

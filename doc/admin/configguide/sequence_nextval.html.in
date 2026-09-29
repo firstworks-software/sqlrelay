@@ -80,6 +80,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The module assumes the query has already been normalized (single spaces between words, single dots in dotted names).  As with the other modules, loading the <a href="normalize.html#normalize">normalize</a> translation first helps it match reliably.</p>
 
+<p>Note that in this example, the normalize query translation is loaded prior to the sequence_nextval query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
+
 <hr/>
 
 <p><a href="listagg_to_string_agg.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listagg_to_string_agg.html">listagg_to_string_agg</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="keep_dense_rank_to_array_agg.html">keep_dense_rank_to_array_agg</a> <a href="keep_dense_rank_to_array_agg.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>

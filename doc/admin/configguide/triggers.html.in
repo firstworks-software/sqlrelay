@@ -43,6 +43,8 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The <i>module</i> attribute specifies which module to load.</p>
 
+<p>Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
+
 <p>Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.</p>
 
 <p>All trigger modules have an <i>enabled</i> attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.</p>

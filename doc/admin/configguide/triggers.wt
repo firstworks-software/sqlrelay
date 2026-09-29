@@ -23,6 +23,8 @@ Triggers are implemented by loadable modules.  The //triggers// section of the c
 
 The //module// attribute specifies which module to load.
 
+Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
+
 Module configurations may have attributes and/or nested tags.  How these are interpreted is module-specific.
 
 All trigger modules have an //enabled// attribute, allowing the module to be temporarily disabled.  If enabled="no" is configured, then the module is disabled.  If set to any other value, or omitted, then the module is enabled.

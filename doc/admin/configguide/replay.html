@@ -94,6 +94,8 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note that the normalize translation is also configured.  This helps the trigger parse and rewrite queries more accurately.  See the section on Auto-Increment Columns below for details.</p>
 
+<p>Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
+
 <p>Deadlocks aren't completely preventable, but if you know which queries caused the deadlock, then you can usually modify them (or the app) to mitigate the problem.  The replay module allows you to specify a file to log to and a query to run and log the output of, for each condition.  For example:</p>
 
 <blockquote>
@@ -135,6 +137,8 @@ http://www.gnu.org/software/src-highlite -->
 <p>If an error code 1205 occurs (a MySQL lock wait timeout), then the previous query is replayed, but no logging occurs.</p>
 
 <p>In this configuration, the module enables automatic recovery from deadlocks and lock wait timeouts, and the log allows a developer to go back later, examine the queries that caused the deadlocks, and modify them (or the app) to mitigate the problem.</p>
+
+<p>Note that in this example, the normalize query translation is loaded prior to the replay trigger.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the <a href="normalize.html#normalize">normalize</a> query translation for more information.</p>
 
 <p>In addition to the <b>module</b> and <b>when</b> attributes, the <b>trigger</b> tag also supports the following attributes:</p>
 
