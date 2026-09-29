@@ -23,7 +23,7 @@ An example configuration:
 
 In this example...
 
-The trigger is configured to run after the query has been executed. This is the only valid configuration for the upsert trigger. If when="before" or when="both" is set then the trigger will be ignored.
+The trigger is configured to run after the query has been executed. This is the only valid configuration for the upsert trigger. If when="beforeExecute" or when="bothExecute" is set then the trigger will be ignored.
 
 If an insert into the table //students// results in an error string containing "ORA-00001" (an Oracle unique constraint violated), then the insert that generated the error will be converted to an update.
 
