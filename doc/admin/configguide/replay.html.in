@@ -224,11 +224,11 @@ Status :
 
 <p>If the log file doesn't already exist, the it is created with rw-r--r-- permissions, and will be owned by the user/group that SQL Relay is running as.  There aren't, currently, attributes to control permissions or ownership.</p>
 
-<h3>Considerations</h3>
+<h2>Considerations</h2>
 
 <p>There are some considerations that are important to take into account when using the replay module.</p>
 
-<h4>Deadlock Response</h4>
+<h3>Deadlock Response</h3>
 
 <p>MySQL/MariaDB respond to a deadlock at the transaction level.  When a deadlock occurs, they roll back all of the queries in the current transaction, and all of these queries must be reexecuted in order to recover.  So, when using the replay module with MySQL/MariaDB and databases which respond similarly, use scope="transaction" in your conditions.</p>
 
@@ -236,17 +236,17 @@ Status :
 
 <p>The replay module has been used extensively with MySQL/MariaDB, but not with other databases.  It should work, but there might be unforseen issues.  For example, the scope="transaction" behavior is modeled after the specific way that MySQL/MariaDB respond to a deadlock.  When a deadlock occurs, they roll back all of the queries in the current transaction.  However, you are still in the same transaction, it's just as if none of the queries had been run.  As such, when replaying a transaction, the module just re-executes the queries that it logged - it doesn't execute a rollback, or begin a new transaction first.  This may not be correct for all databases which handle deadlocks at the transaction level.</p>
 
-<h4>Memory Usage</h4>
+<h3>Memory Usage</h3>
 
 <p>Queries are, currently, just logged to memory.  If your application runs large queries, and/or has long running transactions, then excess memory consumption could become an issue.  The default behavior of not logging or replaying select queries helps, so use caution when disabling that option.</p>
 
-<h4>Retries</h4>
+<h3>Retries</h3>
 
 <p>If, while replaying a query, or transaction, another replay condition is encountered, then the module will retry until the replay succeeds, or until maxretries is reached.</p>
 
 <p>To avoid hammering the system, the module delays between retries.  The delay is initially 10 milliseconds.  This doubles with each retry until the delay reaches 1 second.  Then that doubles until it reaches 10 seconds.  From then on, the delay between retries is 10 seconds.  This algorithm isn't currently configurable.  It also isn't backed by any particular science.  It just seems to work reasonably well.</p>
 
-<a name="replayautoinc"/><h4>Auto-Increment Columns</h4>
+<a name="replayautoinc"/><h3>Auto-Increment Columns</h3>
 
 <p>Auto-increment column values survive rollbacks.  If an insert into a table with an auto-increment column generates the value 300, and that query is rolled back then the row will be removed.  But, if the insert is run again, then it will generate the value 301 instead of 300.</p>
 

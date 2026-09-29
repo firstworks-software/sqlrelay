@@ -19,15 +19,15 @@ By default, SQL Relay opens and maintains a pool of 5 [../../features/connection
 
 The number of connections determines how many client applications can access the database simultaneously.  In this example, up to 10, assuming each client only needs one connection.  Additional clients would be queued and would have to wait for one of the first 10 to disconnect before being able to access the database.
 
-=== For Performance ===
+== For Performance ==
 
 In a performance-oriented configuration, a good rule of thumb is to open as many connections as you can.  That number is usually environment-specific, and dictated by database, system and network resources.
 
-=== For Throttling ===
+== For Throttling ==
 
 If you intend to [../../features/throttling.html throttle] database access to a particular application, then you may intentionally configure a small number of connections.
 
-=== Absolute Maximum Number of Connections ===
+== Absolute Maximum Number of Connections ==
 
 Any number of connections may be configured, up to an "absolute max connections" limit defined at compile-time, which defaults to 4096.  To find the limit on your system, run:
 

@@ -73,7 +73,7 @@ insert into students (id,firstname,lastname,major) values (2,'David','Muse','Com
 }}}
 
 
-=== Considerations ===
+== Considerations ==
 
 The splitmultiinsert trigger imposes a performance penalty.  Not only is there work involved in splitting the original query, but also, a set of individual inserts runs more slowly than a single multi-row insert.
 

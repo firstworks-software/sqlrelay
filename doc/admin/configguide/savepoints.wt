@@ -49,7 +49,7 @@ The '''trigger''' tag supports the following attributes in addition to the stand
  * Prefix used for the auto-generated savepoint names.  Defaults to //sqlrsp//.  Combined with a per-session counter to form names like //sqlrsp0//, //sqlrsp1//, and so on.
 
 
-=== Considerations ===
+== Considerations ==
 
 There is a performance cost.  Every query inside a transaction generates two extra round-trips to the database (savepoint before, release or rollback after).  For workloads with short transactions or high query rates, this overhead can be significant.
 

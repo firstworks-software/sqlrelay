@@ -22,7 +22,7 @@ The '''custom_wf''' module examines the comments preceeding the query and looks 
 * querytimeout
 
 
-=== sqlexecdirect ===
+== sqlexecdirect ==
 
 The sqlexecdirect directive tells SQL Relay to execute the query in a single step, rather than using the standard prepare/execute process.  This is useful for overriding the executedirect=no connection string option (the default) on a case-by-case basis.
 
@@ -36,7 +36,7 @@ Note that (currently) the only database back-end that supports executedirect is 
 
 
 [[br]]
-=== sqlprepare ===
+== sqlprepare ==
 
 The sqlprepare directive tells SQL Relay to prepare/execute the query in a two-step step process, rather than executing the query in a single step.  This is useful for overriding the executedirect=yes connection string option on a case-by-case basis.
 
@@ -50,7 +50,7 @@ Note that (currently) the only database back-end that supports direct execution 
 
 
 [[br]]
-=== querytimeout ===
+== querytimeout ==
 
 The querytimeout directive sets a timeout (in seconds) for the query.  The following example sets a 60 second timeout.
 

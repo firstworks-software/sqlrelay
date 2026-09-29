@@ -133,9 +133,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Custom modules may also be developed.  For more information, please contact <a href="mailto:dev@firstworks.com">dev@firstworks.com</a>.</p>
 
-<a name="routingquirks"/><h3>Quirks and Limitations</h3>
+<a name="routingquirks"/><h2>Quirks and Limitations</h2>
 
-<h4>Stored Procedures</h4>
+<h3>Stored Procedures</h3>
 
 <p>It's possible to use stored procedures with SQL Relay's query routing
 feature.  However, since stored procedures are run on the database, SQL Relay
@@ -143,13 +143,13 @@ can't route the individual queries run inside the stored procedure.  So, the
 stored procedure and all queries run inside of it will be run against whichever
 database it was routed to.</p>
 
-<h4>Metadata/Catalog Introspection</h4>
+<h3>Metadata/Catalog Introspection</h3>
 
 <p>A router-backed instance doesn't implement any of the calls a client uses to list catalogs, schemas, tables, columns, procedures, or keys and indexes (getColumnList(), getTableList(), and similar, in the native client API's).  A client that calls one of them - including sqlrsh's "describe" command, and the metadata calls ODBC and JDBC drivers make - gets a "not implemented" error, rather than being routed to one of the downstream connections.</p>
 
 <p>A router-backed connection also doesn't report some backend-specific feature flags, since which features are actually available depends on which downstream database a given query ends up routed to.  For example, a client speaking the Firebird wire protocol to a router-backed instance won't get the close-and-re-execute handling that the Firebird protocol module otherwise provides for a cursor.</p>
 
-<h4>Parallel Transactions</h4>
+<h3>Parallel Transactions</h3>
 
 <p>Router modules like <b>userlist</b>, <b>clientiplist</b>, and <b>clientinfolist</b>
 route entire sessions to one database or another.  Router modules like

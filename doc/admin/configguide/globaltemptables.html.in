@@ -95,7 +95,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>The body of the <b>table</b> tag may also use the <i>&#91;...filename...]</i> syntax supported elsewhere in the SQL Relay config to read the create statement from an external file - useful for long create statements.</p>
 
-<h3>Considerations</h3>
+<h2>Considerations</h2>
 
 <p>The trigger matches the configured table name as a whole word anywhere in the normalized query text, not just in an insert - so a delete, select, update, or a table name turning up in a join or subquery all cause the table to be created if it hasn't been already.  This can over-fire - a query that only mentions the name inside a string literal or a comment will also trigger an early create - but that's harmless: the table starts out empty either way, and it's only created once per backend session.</p>
 

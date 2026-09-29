@@ -228,15 +228,15 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Note the use of a notification module, as above.</p>
 
-<a name="regexquirks"/><h3>Quirks and Limitations</h3>
+<a name="regexquirks"/><h2>Quirks and Limitations</h2>
 
-<h4>Query Normalization</h4>
+<h3>Query Normalization</h3>
 
 <p>The <b>regex</b> router module matches a query's patterns against the query exactly as the client sent it - the same raw text, in the same case, with whatever whitespace the client used.  It is not normalized or lower-cased first.</p>
 
 <p>So a pattern has to account for whatever case and whitespace the client's queries actually use; "^select ", "^SELECT " and "^Select " are three different patterns.  If a client's case or whitespace can't be relied on, add the <i>normalize</i> query translation module (see <a href="querytranslation.html#querytranslation">Query Translation</a>) ahead of the router, which lower-cases and compresses whitespace in the query the router then sees.  It skips single-quoted string literals, and leaves double-quoted or back-quoted identifiers alone unless its own <i>convertcasedoublequoted</i> or <i>convertcasebackquoted</i> options are set.  It also normalizes the query that's actually run against the database, not just what the router matches against, so it changes what ends up in the database's own query log.</p>
 
-<h4>Perl Compatible Regular Expressions</h4>
+<h3>Perl Compatible Regular Expressions</h3>
 
 <p>SQL Relay is built upon the Rudiments library.  Rudiments can be built with
 or without support for libpcre which provides support for Perl Compatible
@@ -257,7 +257,7 @@ work on the antique machine either.</p>
 <p>The examples above ought to work with PCRE's and all versions of posix
 regular expressions.</p>
 
-<h4>Selects Not Showing Changes</h4>
+<h3>Selects Not Showing Changes</h3>
 
 <p>In the scenario above where DML/DDL is sent to the master database and
 selects are distributed over slaves, an unintuitive thing can happen.</p>

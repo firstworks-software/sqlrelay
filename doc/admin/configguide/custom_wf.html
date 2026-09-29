@@ -80,7 +80,7 @@ http://www.gnu.org/software/src-highlite -->
   <li>querytimeout</li>
 </ul>
 
-<br/><h3>sqlexecdirect</h3>
+<br/><h2>sqlexecdirect</h2>
 
 <p>The sqlexecdirect directive tells SQL Relay to execute the query in a single step, rather than using the standard prepare/execute process.  This is useful for overriding the executedirect=no connection string option (the default) on a case-by-case basis.</p>
 
@@ -96,7 +96,7 @@ select <font color="#990000">*</font> from exampletable
 </blockquote>
 <p>Note that (currently) the only database back-end that supports executedirect is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, this directive can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.</p>
 
-<br/><h3>sqlprepare</h3>
+<br/><h2>sqlprepare</h2>
 
 <p>The sqlprepare directive tells SQL Relay to prepare/execute the query in a two-step step process, rather than executing the query in a single step.  This is useful for overriding the executedirect=yes connection string option on a case-by-case basis.</p>
 
@@ -112,7 +112,7 @@ select <font color="#990000">*</font> from exampletable
 </blockquote>
 <p>Note that (currently) the only database back-end that supports direct execution is ODBC, and the only ODBC driver where it is known to improve performance is the MS SQL Server driver.  In that environment, the executedirect=yes option can yield a noticeable performance improvement for queries without bind variables, and which won't be reexecuted immediately.  If this is the case for most of your queries, then it makes sense to set executedirect=yes and override it using this directive as needed.</p>
 
-<br/><h3>querytimeout</h3>
+<br/><h2>querytimeout</h2>
 
 <p>The querytimeout directive sets a timeout (in seconds) for the query.  The following example sets a 60 second timeout.</p>
 

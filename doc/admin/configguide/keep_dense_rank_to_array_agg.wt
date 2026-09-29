@@ -48,7 +48,7 @@ Normalizing the query first helps the module identify //keep (dense_rank ...)// 
 
 Note that in this example, the normalize query translation is loaded prior to the keep_dense_rank_to_array_agg query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
-=== Considerations ===
+== Considerations ==
 
 The module performs the following transformations on each //max(EXPR) keep (dense_rank first|last order by SORT)// or //min(...)// call, where SORT may include an optional //asc// or //desc// direction and an optional //nulls first// or //nulls last// clause:
 

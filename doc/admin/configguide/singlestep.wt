@@ -29,7 +29,7 @@ The module examines the comments preceeding the query and looks for one or more 
 * singlestep=off
 
 [[br]]
-=== singlestep=on ===
+== singlestep=on ==
 
 If the singlestep=on directive is used, the SQL Relay Server "single-steps" through the rows of the result set of the associated query, fetching one row at a time from the database and sending each row back to the SQL Reay client as it is fetched.
 
@@ -40,7 +40,7 @@ If the singlestep=on directive is used, the SQL Relay Server "single-steps" thro
 }}}
 
 [[br]]
-=== singlestep=off ===
+== singlestep=off ==
 
 If singlestep=off is set, then the SQL Relay Server will fetch and buffer all rows of the result set of the associated query before returning any to the SQL Relay client.
 

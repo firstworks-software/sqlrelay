@@ -28,15 +28,15 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>The number of connections determines how many client applications can access the database simultaneously.  In this example, up to 10, assuming each client only needs one connection.  Additional clients would be queued and would have to wait for one of the first 10 to disconnect before being able to access the database.</p>
 
-<h3>For Performance</h3>
+<h2>For Performance</h2>
 
 <p>In a performance-oriented configuration, a good rule of thumb is to open as many connections as you can.  That number is usually environment-specific, and dictated by database, system and network resources.</p>
 
-<h3>For Throttling</h3>
+<h2>For Throttling</h2>
 
 <p>If you intend to <a href="../../features/throttling.html">throttle</a> database access to a particular application, then you may intentionally configure a small number of connections.</p>
 
-<h3>Absolute Maximum Number of Connections</h3>
+<h2>Absolute Maximum Number of Connections</h2>
 
 <p>Any number of connections may be configured, up to an "absolute max connections" limit defined at compile-time, which defaults to 4096.  To find the limit on your system, run:</p>
 

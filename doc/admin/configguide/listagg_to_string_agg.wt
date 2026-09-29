@@ -43,7 +43,7 @@ Normalizing the query first helps the module identify //listagg()// calls more r
 
 Note that in this example, the normalize query translation is loaded prior to the listagg_to_string_agg query translation.  Pattern matching is substantially more reliable and efficient if the query has been normalized first.  See the [normalize.html#normalize normalize] query translation for more information.
 
-=== Considerations ===
+== Considerations ==
 
 The module performs the following transformations on each //listagg(EXPR, SEP) within group (order by SORT)// call:
 
