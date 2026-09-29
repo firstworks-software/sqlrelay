@@ -48,10 +48,10 @@ http://www.gnu.org/software/src-highlite -->
 			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
 		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
 		<b><font color="#0000FF">&lt;routers&gt;</font></b>
-			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"clientiplist"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"master"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"clientiplist"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;client</font></b> <font color="#009900">ip</font><font color="#990000">=</font><font color="#FF0000">"192.168.*.0-50"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/router&gt;</font></b>
-			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"clientiplist"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"slave"</font><b><font color="#0000FF">&gt;</font></b>
+			<b><font color="#0000FF">&lt;router</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"clientiplist"</font> <font color="#009900">connectionid</font><font color="#990000">=</font><font color="#FF0000">"sap"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;client</font></b> <font color="#009900">ip</font><font color="#990000">=</font><font color="#FF0000">"*"</font><b><font color="#0000FF">/&gt;</font></b>
 			<b><font color="#0000FF">&lt;/router&gt;</font></b>
 		<b><font color="#0000FF">&lt;/routers&gt;</font></b>
