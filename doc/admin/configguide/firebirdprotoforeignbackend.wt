@@ -15,15 +15,11 @@ This is as simple as specifying a different database using the //dbase// attribu
 
 {{{#!blockquote
 {{{#!code
-@parts/sqlrelay-firebirdfesqlite.conf@
+@parts/sqlrelay-firebirdfeoracle.conf@
 }}}
 }}}
 
-In this example, a Firebird front-end provides Firebird applications access to a SQLite back-end database.
-
-Note that the database path check described in [firebirdprotoconfiguration.html Basic Configuration] uses the substitute back-end's own //db// (or //database//) parameter.  In this example, clients have to ask for /var/sqlite/sqlitedb.  If the back-end's connect string has neither parameter, then no check is made.
-
-Also note that isql's SHOW commands look things up in Firebird's own system tables.  The module translates those lookups into queries against the same tables, rather than emulating them, so they only work against a Firebird back-end.
+In this example, a Firebird front-end provides Firebird applications access to an Oracle back-end database.
 
 Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
 
