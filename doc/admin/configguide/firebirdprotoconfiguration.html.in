@@ -79,16 +79,6 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
 
 </blockquote>
-<p>A Firebird client names the database it wants, as a path, when it connects.  SQL Relay checks that path against the <i>db</i> parameter of the string attribute of the connection tag (or the <i>database</i> parameter, if <i>db</i> isn't set), and refuses the login if they don't match.  Before comparing, it strips any host: or host/port: prefix off of the configured value, since a client strips that prefix off of the path before sending it.  (A single letter before the colon is a Windows drive letter rather than a host, and is kept.)  In the example above, clients have to ask for /opt/firebird/firebirddb.gdb.</p>
-
-<p>Note that:</p>
-
-<ul>
-  <li>The comparison is exact.  A real Firebird server resolves the path on its own filesystem and looks up aliases, but SQL Relay can't do either, so an alias, or the same file spelled a different way, is refused with the same "No such file or directory" error that a missing file would get.</li>
-  <li>The path doesn't select a database.  The connection tag already decides which database the instance uses, so the path only confirms that the client asked for that one.</li>
-  <li>If the connect string has no <i>db</i> or <i>database</i> parameter, or the client sends an empty path, then no check is made and any path is accepted.</li>
-</ul>
-
 <p>( <b>NOTE:</b> isql compiles a separate request for each lookup its SHOW commands do, and holds on to all of them until it disconnects - a single SHOW TABLE takes 15.  Each request uses a cursor, so the default <i>maxcursors</i> of 5 is nowhere near enough.  If isql will use the instance, set <i>maxcursors</i> on the instance tag to something larger, 64 for example.)</p>
 
 <hr/>
