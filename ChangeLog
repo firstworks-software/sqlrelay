@@ -319,14 +319,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added the tds_userlist auth module
 - added the firebird_userlist auth module
 - added a sha512 pwdenc module
-- documented the module container tag's own debug attribute in the
-  configuration guide
 - added firebird, tds, and oracle protocol diagrams to the documentation
   images
-- added application cluster diagrams, with and without a load balancer,
-  to the already-load balanced databases page of the configuration guide
-- added protocol-specific encryption diagrams to the client protocol
-  and front-end encryption pages of the configuration guide
 
 ### Changed
 - requires rudiments 2.3.0 or newer
@@ -383,14 +377,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - moved the oracle protocol module's length-prefixed integer read/write
   into sqlrprotocol as readLenPreInt()/writeLenPreInt(), next to
   readBerEncInt()/writeBerEncInt()
-- documented the mysql protocol module's handshake listener attribute in
-  the config guide - the legacy protocol version 9 handshake it
-  switches to, and that any value other than 10 selects it
-- reworked the tds and oracle protocol sections of the config guide to
-  follow the same structure as the mysql and postgresql
-  sections - basic configuration, listener options,
-  authentication/encryption options, foreign backend - and added
-  matching example config files under doc/admin/parts/
 - the sqlrclient protocol now rejects a client-declared protocol version
   it doesn't support (SQLR_ERROR_UNSUPPORTED_PROTOCOL), including
   a client that never declares a version at all, instead of
@@ -794,10 +780,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   a client that doesn't keeps the raw byte framing.  a thin
   driver used to misframe every long value in both directions
   and fail with DPY-5003
-- corrected the oracle protocol section of the config guide, which still
-  said an oci client could never read a query's answer at either
-  serverversion setting; that was fixed for serverversion=11.2
-  by an earlier fix to the module, and the doc never caught up
 - documented that ojdbc uppercases an unquoted username before
   sending it, and that the oracle_userlist auth module compares
   usernames case-sensitively, so a username ojdbc clients will use
@@ -926,8 +908,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   and the postgresql protocol module's passwords attribute, and
   added limitations to both protocols' configuration guide
   sections
-- documented the tds protocol module's pre-tds7, bulk copy and
-  cursor limitations in the configuration guide
 - added a teradata protocol section to the configuration guide and
   reference, with example config files under doc/admin/parts/
 - documented the debug and tlskey listener attributes in the
@@ -939,59 +919,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - split the configuration guide into multiple pages under
   doc/admin/configguide/, fixing the programming api guides' broken
   kerberos and tls links to it in the process
-- moved firebird ahead of tds in the configuration guide
 - added firebird, tds, and oracle listeners to the configuration
   reference's comprehensive example
-- gave the cron_userlist connection schedule module its own
-  configuration guide page
-- gave the tag moduledata module its own configuration guide page
-- gave the patterns, regex, string, and tag query filter modules
-  their own configuration guide pages
-- gave the rot, md5, sha1, sha256, sha512, des, aes128, aes192, and
-  aes256 password encryption modules their own configuration guide
-  pages
-- removed the duplicated debugging section from each database-specific
-  configuration guide page
-- removed the duplicated debug-attribute paragraph from each protocol
-  configuration guide page
-- removed the duplicated debug-attribute paragraph from
-  listenerconfiguration and each module-type configuration guide page
-- the configuration guide table of contents links to pages instead of
-  their top heading anchors now
-- moved the absolute max connections note to its own section on the
-  database connection count page of the configuration guide
-- documented the default connection and cursor counts on the dynamic
-  scaling page of the configuration guide
 - added firebird, tds, and oracle protocol diagrams to the client protocol
   options and front-end compatibility pages
-- reworded the client protocol options page of the configuration guide to
-  cover all native protocols
 - simplified the native protocol text on the front-end compatibility page
 - updated the front-end compatibility card on the home page and its
   diagram to list all native protocols
 - documentation lists Microsoft SQL Server before SAP/Sybase now
 - documentation says SAP/Sybase instead of Sybase alone now
-- the quick start and alternative configuration file pages of the
-  configuration guide mention deb packages now
-- shortened the column metadata note on the Microsoft SQL Server (via
-  FreeTDS) page of the configuration guide
-- reworded the login time sentence on the IBM DB2 page of the
-  configuration guide
-- removed the PostgreSQL version number from the Amazon Redshift (via
-  PostgreSQL) page of the configuration guide
-- the already-load balanced databases page of the configuration guide says
-  churning instead of shuffling now
-- reworded a stale "described above" reference on the master-slave query
-  routing page of the configuration guide
-- updated the front-end encryption paragraphs on the security features
-  page of the configuration guide (firebird wire encryption, oracle
-  paragraph removed, "the client" instead of "the SQL Relay client",
-  separate mysql and postgresql paragraphs, shorter tls/ssl links)
-- split the high availability page of the configuration guide into one
-  page per section
-- split the security features page of the configuration guide into one
-  page per section, and its back-end encryption page into one page per
-  database
+- updated the Configuration Guide
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
@@ -1009,17 +946,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   nine now-inert clear() calls, dead since the query3 and
   fetch response builders stopped deferring rows (#10030)
   (#10056) (#10058)
-- removed teradata protocol documentation from the configuration guide
-- removed the sqlrclient protocol version documentation from the
-  configuration guide
-- removed the file="yes" example from the debug page of the
-  configuration guide
-- removed the for performance and for throttling entries from the
-  configuration guide table of contents
-- removed the note about on-demand cursors from the database cursor count
-  page of the configuration guide
-- removed the enabled attribute paragraph from the listener configuration
-  page of the configuration guide
 
 ### Fixed
 - fixed several make install bugs (missing tds protocol module, doc/ on a
@@ -1061,7 +987,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   packet size clamping, user-defined-variable bind rewriting, and
   several integer underflow/oversized allocation bugs; fixed
   mysql_info reporting
-- fixed assorted config guide doc typos and broken anchors
 - sap connection module: fixed RETURN value/output parameter handling,
   cursor bind styles, image column corruption, binary bind
   character set errors, result set buffering/ordering (added
@@ -3003,9 +2928,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - fixed the oracle protocol module's OCI7 rollback and autocommit replies
 - fixed the oracle protocol module's OCI7 end-to-end sequence number
   being the wrong width and always zero
-- fixed the query and session routing guide section's documented
-  connect string attribute name for the router pseudo-backend
-  (host -> server) and a stale query-normalization claim
 - fixed a malformed closing tag in
   doc/admin/parts/sqlrelay-teradata.conf
 - fixed teradata listeners with no auths tag failing every login with a
