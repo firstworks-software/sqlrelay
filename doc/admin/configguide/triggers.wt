@@ -37,7 +37,7 @@ All trigger modules also have a //when// attribute which controls the phases in 
 * "bothPrepare" - shorthand for "beforePrepare,afterPrepare"
 * "all" - shorthand for "bothPrepare,bothExecute"
 
-For example, //when="all"// runs the trigger before and after both the prepare and execute phases.  Most triggers only need to act at execute time, but some triggers (notably //savepoints//) need to wrap the prepare phase as well, because databases like PostgreSQL parse and resolve references during prepare and fail there rather than at execute time.
+For example, //when="all"// runs the trigger before and after both the prepare and execute phases.  Most triggers only need to act at execute time, but some triggers (notably //savepoints//) need to wrap the prepare phase as well, because databases like !PostgreSQL parse and resolve references during prepare and fail there rather than at execute time.
 
 Trigger modules can be "stacked".  Multiple different modules may be loaded and multiple instances of the same type of module, with different configurations, may also be loaded.
 
