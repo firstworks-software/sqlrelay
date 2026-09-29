@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotohandshake.html,vertical-align=middle)]] [mysqlprotohandshake.html MySQL Handshake Protocol Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoauth.html MySQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=mysqlprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotohandshake.html,vertical-align=middle)]] [mysqlprotohandshake.html MySQL Handshake Protocol Version] | [[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotoauth.html MySQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=mysqlprotoauth.html,vertical-align=middle)]]
 
 [=#mysqlclientprotocol]
 = Client Protocol Flags =
@@ -23,7 +23,7 @@ As with //handshake// (see [mysqlprotohandshake.html Handshake Protocol Version]
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotohandshake.html,vertical-align=middle)]] [mysqlprotohandshake.html MySQL Handshake Protocol Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoauth.html MySQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=mysqlprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotohandshake.html,vertical-align=middle)]] [mysqlprotohandshake.html MySQL Handshake Protocol Version] | [[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotoauth.html MySQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=mysqlprotoauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

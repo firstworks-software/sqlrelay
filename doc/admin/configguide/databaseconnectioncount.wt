@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=odbcconfiguration.html,vertical-align=middle)]] [odbcconfiguration.html Generic ODBC] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [databasecursorcount.html Database Cursor Count] [[Image(../../images/navnext.png,link=databasecursorcount.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=odbcconfiguration.html,vertical-align=middle)]] [odbcconfiguration.html Generic ODBC] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [databasecursorcount.html Database Cursor Count] [[Image(../../images/navnext.png,link=databasecursorcount.html,vertical-align=middle)]]
 
 [=#dbconnections]
 = Database Connection Count =
@@ -41,7 +41,7 @@ The command above also returns the "shmmax requirement" for the configuration.  
 
 ----
 
-[[Image(../../images/navprev.png,link=odbcconfiguration.html,vertical-align=middle)]] [odbcconfiguration.html Generic ODBC] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [databasecursorcount.html Database Cursor Count] [[Image(../../images/navnext.png,link=databasecursorcount.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=odbcconfiguration.html,vertical-align=middle)]] [odbcconfiguration.html Generic ODBC] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [databasecursorcount.html Database Cursor Count] [[Image(../../images/navnext.png,link=databasecursorcount.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

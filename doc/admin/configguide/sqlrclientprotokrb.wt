@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]] [sqlrclientprotoproxiedauth.html SQLRClient Proxied Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprototls.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]] [sqlrclientprotoproxiedauth.html SQLRClient Proxied Auth] | [[Image(../../images/navtop.png,link=sqlrclientprotoauth.html,vertical-align=middle)]] [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] | [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprototls.html,vertical-align=middle)]]
 
 [=#sqlrclientkrb]
 = Kerberos and Active Directory Encryption and Authentication =
@@ -91,7 +91,7 @@ Any kind of full session encryption should be used with caution in performance-s
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]] [sqlrclientprotoproxiedauth.html SQLRClient Proxied Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprototls.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]] [sqlrclientprotoproxiedauth.html SQLRClient Proxied Auth] | [[Image(../../images/navtop.png,link=sqlrclientprotoauth.html,vertical-align=middle)]] [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] | [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprototls.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

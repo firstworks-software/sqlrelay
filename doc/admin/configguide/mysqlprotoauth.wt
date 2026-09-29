@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotoclientflags.html,vertical-align=middle)]] [mysqlprotoclientflags.html MySQL Client Protocol Flags] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoconnectstringsauth.html MySQL Connect Strings Auth] [[Image(../../images/navnext.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotoclientflags.html,vertical-align=middle)]] [mysqlprotoclientflags.html MySQL Client Protocol Flags] | [[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotoconnectstringsauth.html MySQL Connect Strings Auth] [[Image(../../images/navnext.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]]
 
 [=#mysqlauth]
 = Authentication/Encryption Options =
@@ -18,7 +18,7 @@ When using the !MySQL protocol, there are several options for controlling which 
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotoclientflags.html,vertical-align=middle)]] [mysqlprotoclientflags.html MySQL Client Protocol Flags] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoconnectstringsauth.html MySQL Connect Strings Auth] [[Image(../../images/navnext.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotoclientflags.html,vertical-align=middle)]] [mysqlprotoclientflags.html MySQL Client Protocol Flags] | [[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotoconnectstringsauth.html MySQL Connect Strings Auth] [[Image(../../images/navnext.png,link=mysqlprotoconnectstringsauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="aes256.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes256.html">aes256</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="cron_userlist.html">cron_userlist</a> <a href="cron_userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="aes256.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes256.html">aes256</a> | <a href="security.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="security.html">Security Features</a> | <a href="cron_userlist.html">cron_userlist</a> <a href="cron_userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="schedules"/><h1>Connection Schedules</h1>
 
@@ -103,7 +103,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="aes256.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes256.html">aes256</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="cron_userlist.html">cron_userlist</a> <a href="cron_userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="aes256.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="aes256.html">aes256</a> | <a href="security.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="security.html">Security Features</a> | <a href="cron_userlist.html">cron_userlist</a> <a href="cron_userlist.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="des.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="des.html">des</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="aes192.html">aes192</a> <a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="des.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="des.html">des</a> | <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="secpwdenc.html">Password Encryption</a> | <a href="aes192.html">aes192</a> <a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="aes128"/><h1>aes128</h1>
 
@@ -42,7 +42,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="des.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="des.html">des</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="aes192.html">aes192</a> <a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="des.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="des.html">des</a> | <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="secpwdenc.html">Password Encryption</a> | <a href="aes192.html">aes192</a> <a href="aes192.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=replay.html,vertical-align=middle)]] [replay.html replay] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [splitmultiinsert.html splitmultiinsert] [[Image(../../images/navnext.png,link=splitmultiinsert.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=replay.html,vertical-align=middle)]] [replay.html replay] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [splitmultiinsert.html splitmultiinsert] [[Image(../../images/navnext.png,link=splitmultiinsert.html,vertical-align=middle)]]
 
 [=#savepoints]
 = savepoints =
@@ -59,7 +59,7 @@ The trigger only acts inside a transaction.  Failures of queries run in autocomm
 
 ----
 
-[[Image(../../images/navprev.png,link=replay.html,vertical-align=middle)]] [replay.html replay] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [splitmultiinsert.html splitmultiinsert] [[Image(../../images/navnext.png,link=splitmultiinsert.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=replay.html,vertical-align=middle)]] [replay.html replay] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [splitmultiinsert.html splitmultiinsert] [[Image(../../images/navnext.png,link=splitmultiinsert.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

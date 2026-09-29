@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=filterstring.html,vertical-align=middle)]] [filterstring.html string] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filterstring.html,vertical-align=middle)]] [filterstring.html string] | [[Image(../../images/navtop.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
 
 [[br]][=#filtertag]
 = tag =
@@ -25,7 +25,7 @@ Currently, no open source modules make use of the tag filter/moduledata module, 
 
 ----
 
-[[Image(../../images/navprev.png,link=filterstring.html,vertical-align=middle)]] [filterstring.html string] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filterstring.html,vertical-align=middle)]] [filterstring.html string] | [[Image(../../images/navtop.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [datatranslation.html Data Translation] [[Image(../../images/navnext.png,link=datatranslation.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

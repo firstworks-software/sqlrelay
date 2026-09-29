@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secipfiltering.html,vertical-align=middle)]] [secipfiltering.html IP Filtering] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secpwdenc.html Password Encryption] [[Image(../../images/navnext.png,link=secpwdenc.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secipfiltering.html,vertical-align=middle)]] [secipfiltering.html IP Filtering] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secpwdenc.html Password Encryption] [[Image(../../images/navnext.png,link=secpwdenc.html,vertical-align=middle)]]
 
 [[br]][=#pwdfiles]
 = Password Files =
@@ -90,7 +90,7 @@ In this case, the path /usr/local/firstworks/etc will be searched for the files 
 
 ----
 
-[[Image(../../images/navprev.png,link=secipfiltering.html,vertical-align=middle)]] [secipfiltering.html IP Filtering] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secpwdenc.html Password Encryption] [[Image(../../images/navnext.png,link=secpwdenc.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secipfiltering.html,vertical-align=middle)]] [secipfiltering.html IP Filtering] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secpwdenc.html Password Encryption] [[Image(../../images/navnext.png,link=secpwdenc.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

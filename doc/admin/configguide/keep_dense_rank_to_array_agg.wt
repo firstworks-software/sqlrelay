@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sequence_nextval.html,vertical-align=middle)]] [sequence_nextval.html sequence_nextval] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [bindvariabletranslation.html Bind Variable Translation] [[Image(../../images/navnext.png,link=bindvariabletranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sequence_nextval.html,vertical-align=middle)]] [sequence_nextval.html sequence_nextval] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [bindvariabletranslation.html Bind Variable Translation] [[Image(../../images/navnext.png,link=bindvariabletranslation.html,vertical-align=middle)]]
 
 [=#keep_dense_rank_to_array_agg]
 = keep_dense_rank_to_array_agg =
@@ -64,7 +64,7 @@ EXPR appears twice in the rewritten query.  For a plain column reference this ma
 
 ----
 
-[[Image(../../images/navprev.png,link=sequence_nextval.html,vertical-align=middle)]] [sequence_nextval.html sequence_nextval] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [bindvariabletranslation.html Bind Variable Translation] [[Image(../../images/navnext.png,link=bindvariabletranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sequence_nextval.html,vertical-align=middle)]] [sequence_nextval.html sequence_nextval] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [bindvariabletranslation.html Bind Variable Translation] [[Image(../../images/navnext.png,link=bindvariabletranslation.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

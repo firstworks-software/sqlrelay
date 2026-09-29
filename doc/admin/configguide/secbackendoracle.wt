@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=secbackendmssql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=secbackendmssql.html,vertical-align=middle)]]
 
 [[br]][=#backendenc-oracle]
 = Oracle =
@@ -56,7 +56,7 @@ In this case, the database server's certificate is expected to present the disti
 
 ----
 
-[[Image(../../images/navprev.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=secbackendmssql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] [[Image(../../images/navnext.png,link=secbackendmssql.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

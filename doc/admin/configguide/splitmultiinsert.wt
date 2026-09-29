@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=savepoints.html,vertical-align=middle)]] [savepoints.html savepoints] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [upsert.html upsert] [[Image(../../images/navnext.png,link=upsert.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=savepoints.html,vertical-align=middle)]] [savepoints.html savepoints] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [upsert.html upsert] [[Image(../../images/navnext.png,link=upsert.html,vertical-align=middle)]]
 
 [=#splitmultiinsert]
 = splitmultiinsert =
@@ -115,7 +115,7 @@ This will be remedied in the future, but is currently a shortcoming of this modu
 
 ----
 
-[[Image(../../images/navprev.png,link=savepoints.html,vertical-align=middle)]] [savepoints.html savepoints] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [upsert.html upsert] [[Image(../../images/navnext.png,link=upsert.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=savepoints.html,vertical-align=middle)]] [savepoints.html savepoints] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [upsert.html upsert] [[Image(../../images/navnext.png,link=upsert.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

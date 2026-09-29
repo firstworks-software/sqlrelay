@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=renumber.html,vertical-align=middle)]] [renumber.html renumber] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [moduledata.html Module Data] [[Image(../../images/navnext.png,link=moduledata.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=renumber.html,vertical-align=middle)]] [renumber.html renumber] | [[Image(../../images/navtop.png,link=errortranslation.html,vertical-align=middle)]] [errortranslation.html Error Translation] | [moduledata.html Module Data] [[Image(../../images/navnext.png,link=moduledata.html,vertical-align=middle)]]
 
 [=#error-patterns]
 = patterns =
@@ -110,7 +110,7 @@ If no sqlstate section is configured, or if the database supplied no SQLSTATE, t
 
 ----
 
-[[Image(../../images/navprev.png,link=renumber.html,vertical-align=middle)]] [renumber.html renumber] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [moduledata.html Module Data] [[Image(../../images/navnext.png,link=moduledata.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=renumber.html,vertical-align=middle)]] [renumber.html renumber] | [[Image(../../images/navtop.png,link=errortranslation.html,vertical-align=middle)]] [errortranslation.html Error Translation] | [moduledata.html Module Data] [[Image(../../images/navnext.png,link=moduledata.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

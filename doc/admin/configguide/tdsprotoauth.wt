@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotopacketsize.html,vertical-align=middle)]] [tdsprotopacketsize.html TDS Packet Size] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] [[Image(../../images/navnext.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotopacketsize.html,vertical-align=middle)]] [tdsprotopacketsize.html TDS Packet Size] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] [[Image(../../images/navnext.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]]
 
 [=#tdsauth]
 = Authentication/Encryption Options =
@@ -17,7 +17,7 @@ When using the TDS protocol, there are several options for controlling which use
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotopacketsize.html,vertical-align=middle)]] [tdsprotopacketsize.html TDS Packet Size] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] [[Image(../../images/navnext.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotopacketsize.html,vertical-align=middle)]] [tdsprotopacketsize.html TDS Packet Size] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] [[Image(../../images/navnext.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

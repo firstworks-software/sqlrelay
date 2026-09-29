@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="mysqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotolimitations.html">MySQL Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotoconfiguration.html">PostgreSQL Basic Configuration</a> <a href="postgresqlprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="mysqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotolimitations.html">MySQL Limitations</a> | <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="postgresqlprotoconfiguration.html">PostgreSQL Basic Configuration</a> <a href="postgresqlprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="postgresqlprotocol"/><h1>PostgreSQL Protocol</h1>
 
@@ -33,7 +33,7 @@
 
 <hr/>
 
-<p><a href="mysqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotolimitations.html">MySQL Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotoconfiguration.html">PostgreSQL Basic Configuration</a> <a href="postgresqlprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="mysqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotolimitations.html">MySQL Limitations</a> | <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="postgresqlprotoconfiguration.html">PostgreSQL Basic Configuration</a> <a href="postgresqlprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

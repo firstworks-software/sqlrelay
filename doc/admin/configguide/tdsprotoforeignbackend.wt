@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprototls.html,vertical-align=middle)]] [tdsprototls.html TDS TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolimitations.html TDS Limitations] [[Image(../../images/navnext.png,link=tdsprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprototls.html,vertical-align=middle)]] [tdsprototls.html TDS TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [tdsprotolimitations.html TDS Limitations] [[Image(../../images/navnext.png,link=tdsprotolimitations.html,vertical-align=middle)]]
 
 [=#tdsforeignbackend]
 = Foreign Backend =
@@ -43,7 +43,7 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprototls.html,vertical-align=middle)]] [tdsprototls.html TDS TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolimitations.html TDS Limitations] [[Image(../../images/navnext.png,link=tdsprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprototls.html,vertical-align=middle)]] [tdsprototls.html TDS TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [tdsprotolimitations.html TDS Limitations] [[Image(../../images/navnext.png,link=tdsprotolimitations.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

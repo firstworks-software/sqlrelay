@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="databasecursorcount.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databasecursorcount.html">Database Cursor Count</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="listenerconfiguration.html">Listener Configuration</a> <a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="databasecursorcount.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databasecursorcount.html">Database Cursor Count</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="listenerconfiguration.html">Listener Configuration</a> <a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="dynamicscaling"/><h1>Dynamic Scaling</h1>
 
@@ -47,7 +47,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="databasecursorcount.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databasecursorcount.html">Database Cursor Count</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="listenerconfiguration.html">Listener Configuration</a> <a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="databasecursorcount.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="databasecursorcount.html">Database Cursor Count</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="listenerconfiguration.html">Listener Configuration</a> <a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

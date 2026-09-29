@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotolimitations.html">TDS Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoconfiguration.html">Oracle Basic Configuration</a> <a href="oracleprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotolimitations.html">TDS Limitations</a> | <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="oracleprotoconfiguration.html">Oracle Basic Configuration</a> <a href="oracleprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleprotocol"/><h1>Oracle Protocol</h1>
 
@@ -40,7 +40,7 @@
 
 <hr/>
 
-<p><a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotolimitations.html">TDS Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoconfiguration.html">Oracle Basic Configuration</a> <a href="oracleprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotolimitations.html">TDS Limitations</a> | <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="oracleprotoconfiguration.html">Oracle Basic Configuration</a> <a href="oracleprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

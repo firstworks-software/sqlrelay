@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=errorpatterns.html,vertical-align=middle)]] [errorpatterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tagmoduledata.html tag] [[Image(../../images/navnext.png,link=tagmoduledata.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=errorpatterns.html,vertical-align=middle)]] [errorpatterns.html patterns] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [tagmoduledata.html tag] [[Image(../../images/navnext.png,link=tagmoduledata.html,vertical-align=middle)]]
 
 [=#moduledata]
 = Module Data =
@@ -33,7 +33,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=errorpatterns.html,vertical-align=middle)]] [errorpatterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tagmoduledata.html tag] [[Image(../../images/navnext.png,link=tagmoduledata.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=errorpatterns.html,vertical-align=middle)]] [errorpatterns.html patterns] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [tagmoduledata.html tag] [[Image(../../images/navnext.png,link=tagmoduledata.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotocharsets.html,vertical-align=middle)]] [oracleprotocharsets.html Oracle Character Set Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoauth.html Oracle Authentication/Encryption Options] [[Image(../../images/navnext.png,link=oracleprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotocharsets.html,vertical-align=middle)]] [oracleprotocharsets.html Oracle Character Set Options] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotoauth.html Oracle Authentication/Encryption Options] [[Image(../../images/navnext.png,link=oracleprotoauth.html,vertical-align=middle)]]
 
 [=#oracledateformat]
 = Date Format =
@@ -27,7 +27,7 @@ Also note that if the connection's //maxfieldsize// is set small, it truncates t
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotocharsets.html,vertical-align=middle)]] [oracleprotocharsets.html Oracle Character Set Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoauth.html Oracle Authentication/Encryption Options] [[Image(../../images/navnext.png,link=oracleprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotocharsets.html,vertical-align=middle)]] [oracleprotocharsets.html Oracle Character Set Options] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotoauth.html Oracle Authentication/Encryption Options] [[Image(../../images/navnext.png,link=oracleprotoauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

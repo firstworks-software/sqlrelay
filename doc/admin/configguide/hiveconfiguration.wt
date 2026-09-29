@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=exasolconfiguration.html,vertical-align=middle)]] [exasolconfiguration.html Exasol (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [impalaconfiguration.html Apache Impala (via ODBC)] [[Image(../../images/navnext.png,link=impalaconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=exasolconfiguration.html,vertical-align=middle)]] [exasolconfiguration.html Exasol (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [impalaconfiguration.html Apache Impala (via ODBC)] [[Image(../../images/navnext.png,link=impalaconfiguration.html,vertical-align=middle)]]
 
 [=#db-odbc-hive]
 = Apache Hive (via ODBC) =
@@ -49,7 +49,7 @@ See the [../configreference.html#odbc SQL Relay Configuration Reference] for oth
 
 ----
 
-[[Image(../../images/navprev.png,link=exasolconfiguration.html,vertical-align=middle)]] [exasolconfiguration.html Exasol (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [impalaconfiguration.html Apache Impala (via ODBC)] [[Image(../../images/navnext.png,link=impalaconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=exasolconfiguration.html,vertical-align=middle)]] [exasolconfiguration.html Exasol (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [impalaconfiguration.html Apache Impala (via ODBC)] [[Image(../../images/navnext.png,link=impalaconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

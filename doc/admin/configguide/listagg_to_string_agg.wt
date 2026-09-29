@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=patterns.html,vertical-align=middle)]] [patterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sequence_nextval.html sequence_nextval] [[Image(../../images/navnext.png,link=sequence_nextval.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=patterns.html,vertical-align=middle)]] [patterns.html patterns] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [sequence_nextval.html sequence_nextval] [[Image(../../images/navnext.png,link=sequence_nextval.html,vertical-align=middle)]]
 
 [=#listagg_to_string_agg]
 = listagg_to_string_agg =
@@ -58,7 +58,7 @@ The module does not implement the //on overflow truncate// or //on overflow erro
 
 ----
 
-[[Image(../../images/navprev.png,link=patterns.html,vertical-align=middle)]] [patterns.html patterns] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sequence_nextval.html sequence_nextval] [[Image(../../images/navnext.png,link=sequence_nextval.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=patterns.html,vertical-align=middle)]] [patterns.html patterns] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [sequence_nextval.html sequence_nextval] [[Image(../../images/navnext.png,link=sequence_nextval.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

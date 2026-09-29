@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secfrontend.html,vertical-align=middle)]] [secfrontend.html Front-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendoracle.html Oracle] [[Image(../../images/navnext.png,link=secbackendoracle.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secfrontend.html,vertical-align=middle)]] [secfrontend.html Front-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secbackendoracle.html Oracle] [[Image(../../images/navnext.png,link=secbackendoracle.html,vertical-align=middle)]]
 
 [[br]][=#backendencryption]
 = Back-End Encryption and Secure Authentication =
@@ -20,7 +20,7 @@ The configuration details differ between databases.
 
 ----
 
-[[Image(../../images/navprev.png,link=secfrontend.html,vertical-align=middle)]] [secfrontend.html Front-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendoracle.html Oracle] [[Image(../../images/navnext.png,link=secbackendoracle.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secfrontend.html,vertical-align=middle)]] [secfrontend.html Front-End Encryption and Secure Authentication] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secbackendoracle.html Oracle] [[Image(../../images/navnext.png,link=secbackendoracle.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

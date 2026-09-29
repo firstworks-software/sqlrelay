@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=singlestep.html,vertical-align=middle)]] [singlestep.html singlestep] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [regex.html regex] [[Image(../../images/navnext.png,link=regex.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=singlestep.html,vertical-align=middle)]] [singlestep.html singlestep] | [regex.html regex] [[Image(../../images/navnext.png,link=regex.html,vertical-align=middle)]]
 
 [[br]][=#routing]
 = Query and Session Routing =
@@ -111,7 +111,7 @@ Since queries may be routed to different kinds of databases, the router has to e
 
 ----
 
-[[Image(../../images/navprev.png,link=singlestep.html,vertical-align=middle)]] [singlestep.html singlestep] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [regex.html regex] [[Image(../../images/navnext.png,link=regex.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=singlestep.html,vertical-align=middle)]] [singlestep.html singlestep] | [regex.html regex] [[Image(../../images/navnext.png,link=regex.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

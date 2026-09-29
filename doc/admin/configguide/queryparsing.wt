@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querytranslation.html Query Translation] [[Image(../../images/navnext.png,link=querytranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [querytranslation.html Query Translation] [[Image(../../images/navnext.png,link=querytranslation.html,vertical-align=middle)]]
 
 [=#queryparsing]
 = Query Parsing =
@@ -29,7 +29,7 @@ Currently, no open source parser modules are available, however custom modules m
 
 ----
 
-[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [querytranslation.html Query Translation] [[Image(../../images/navnext.png,link=querytranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [querytranslation.html Query Translation] [[Image(../../images/navnext.png,link=querytranslation.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

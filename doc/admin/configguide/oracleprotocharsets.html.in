@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="oracleprotobigchunkclr.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotobigchunkclr.html">Oracle Big Chunk CLR Framing</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotodateformat.html">Oracle Date Format</a> <a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotobigchunkclr.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotobigchunkclr.html">Oracle Big Chunk CLR Framing</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotodateformat.html">Oracle Date Format</a> <a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oraclecharsets"/><h1>Character Set Options</h1>
 
@@ -57,7 +57,7 @@ where <font color="#008080">parameter</font> <b><font color="#000000">in</font><
 
 <hr/>
 
-<p><a href="oracleprotobigchunkclr.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotobigchunkclr.html">Oracle Big Chunk CLR Framing</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotodateformat.html">Oracle Date Format</a> <a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotobigchunkclr.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotobigchunkclr.html">Oracle Big Chunk CLR Framing</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotodateformat.html">Oracle Date Format</a> <a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

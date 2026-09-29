@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [patterns.html patterns] [[Image(../../images/navnext.png,link=patterns.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [patterns.html patterns] [[Image(../../images/navnext.png,link=patterns.html,vertical-align=middle)]]
 
 [=#normalize]
 = normalize =
@@ -105,7 +105,7 @@ The following attributes are currently supported:
 
 ----
 
-[[Image(../../images/navprev.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [patterns.html patterns] [[Image(../../images/navnext.png,link=patterns.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [patterns.html patterns] [[Image(../../images/navnext.png,link=patterns.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

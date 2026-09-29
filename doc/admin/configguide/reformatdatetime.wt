@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=resultsettranslation.html,vertical-align=middle)]] [resultsettranslation.html Result Set Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetrowtranslation.html Result Set Row Translation] [[Image(../../images/navnext.png,link=resultsetrowtranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=resultsettranslation.html,vertical-align=middle)]] [resultsettranslation.html Result Set Translation] | [resultsetrowtranslation.html Result Set Row Translation] [[Image(../../images/navnext.png,link=resultsetrowtranslation.html,vertical-align=middle)]]
 
 [=#reformatdatetime]
 = reformatdatetime =
@@ -65,7 +65,7 @@ Note also that date/time translation in general is especially problematic with M
 
 ----
 
-[[Image(../../images/navprev.png,link=resultsettranslation.html,vertical-align=middle)]] [resultsettranslation.html Result Set Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetrowtranslation.html Result Set Row Translation] [[Image(../../images/navnext.png,link=resultsetrowtranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=resultsettranslation.html,vertical-align=middle)]] [resultsettranslation.html Result Set Translation] | [resultsetrowtranslation.html Result Set Row Translation] [[Image(../../images/navnext.png,link=resultsetrowtranslation.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

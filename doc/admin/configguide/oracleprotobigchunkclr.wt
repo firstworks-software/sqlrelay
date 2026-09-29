@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotoverifiertype.html,vertical-align=middle)]] [oracleprotoverifiertype.html Oracle Password Verifier Type] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocharsets.html Oracle Character Set Options] [[Image(../../images/navnext.png,link=oracleprotocharsets.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoverifiertype.html,vertical-align=middle)]] [oracleprotoverifiertype.html Oracle Password Verifier Type] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotocharsets.html Oracle Character Set Options] [[Image(../../images/navnext.png,link=oracleprotocharsets.html,vertical-align=middle)]]
 
 [=#oraclebigchunkclr]
 = Big Chunk CLR Framing =
@@ -27,7 +27,7 @@ Note that "off" clears the capability bit itself, not just the module's per-sess
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotoverifiertype.html,vertical-align=middle)]] [oracleprotoverifiertype.html Oracle Password Verifier Type] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocharsets.html Oracle Character Set Options] [[Image(../../images/navnext.png,link=oracleprotocharsets.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoverifiertype.html,vertical-align=middle)]] [oracleprotoverifiertype.html Oracle Password Verifier Type] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotocharsets.html Oracle Character Set Options] [[Image(../../images/navnext.png,link=oracleprotocharsets.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

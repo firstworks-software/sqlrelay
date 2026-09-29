@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqliteconfiguration.html">SQLite</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="exasolconfiguration.html">Exasol (via ODBC)</a> <a href="exasolconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqliteconfiguration.html">SQLite</a> | <a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="exasolconfiguration.html">Exasol (via ODBC)</a> <a href="exasolconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="db-odbc-teradata"/><h1>Teradata (via ODBC)</h1>
 
@@ -84,7 +84,7 @@ UseDateDataForTimeStampParams<font color="#990000">=</font><font color="#993399"
 
 <hr/>
 
-<p><a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqliteconfiguration.html">SQLite</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="exasolconfiguration.html">Exasol (via ODBC)</a> <a href="exasolconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sqliteconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqliteconfiguration.html">SQLite</a> | <a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="exasolconfiguration.html">Exasol (via ODBC)</a> <a href="exasolconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

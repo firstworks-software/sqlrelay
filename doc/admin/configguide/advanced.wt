@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options]
 
 [[br]][=#advanced]
 = Advanced Configuration =
@@ -13,7 +13,7 @@ The configuration file supports many more attributes and features than the ones 
 
 ----
 
-[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=altconfigfile.html,vertical-align=middle)]] [altconfigfile.html Alternative Configuration File Options]
 
 {{{#!include ../../contentend.html}}}
 

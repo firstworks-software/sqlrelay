@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [userlist.html userlist] [[Image(../../images/navnext.png,link=userlist.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [userlist.html userlist] [[Image(../../images/navnext.png,link=userlist.html,vertical-align=middle)]]
 
 [=#regex]
 = regex =
@@ -100,7 +100,7 @@ changes will be visible.
 
 ----
 
-[[Image(../../images/navprev.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [userlist.html userlist] [[Image(../../images/navnext.png,link=userlist.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [userlist.html userlist] [[Image(../../images/navnext.png,link=userlist.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="harac.html">Already-Load Balanced Databases</a> <a href="harac.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="harac.html">Already-Load Balanced Databases</a> <a href="harac.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="cluster"/><h1>Load Balancing and Failover With Replicated Databases or Database Clusters</h1>
 
@@ -67,7 +67,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="harac.html">Already-Load Balanced Databases</a> <a href="harac.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="harac.html">Already-Load Balanced Databases</a> <a href="harac.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

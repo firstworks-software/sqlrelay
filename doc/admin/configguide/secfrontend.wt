@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackend.html Back-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secbackend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secbackend.html Back-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secbackend.html,vertical-align=middle)]]
 
 [[br]][=#frontendencryption]
 = Front-End Encryption and Secure Authentication =
@@ -42,7 +42,7 @@ When configured to use the TDS protocol, SQL Relay supports [tdsprototls.html TL
 
 ----
 
-[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackend.html Back-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secbackend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secbackend.html Back-End Encryption and Secure Authentication] [[Image(../../images/navnext.png,link=secbackend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

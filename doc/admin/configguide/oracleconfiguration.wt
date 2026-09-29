@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] [[Image(../../images/navnext.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] [[Image(../../images/navnext.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]]
 
 [=#db-oracle]
 = Oracle =
@@ -60,7 +60,7 @@ See [http://software.firstworks.com/p/getting-started-with-oracle.html Getting S
 
 ----
 
-[[Image(../../images/navprev.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] [[Image(../../images/navnext.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] [[Image(../../images/navnext.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

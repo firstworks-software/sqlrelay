@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotouserlistauth.html,vertical-align=middle)]] [oracleprotouserlistauth.html Oracle User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotolimitations.html Oracle Limitations] [[Image(../../images/navnext.png,link=oracleprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotouserlistauth.html,vertical-align=middle)]] [oracleprotouserlistauth.html Oracle User List Auth] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotolimitations.html Oracle Limitations] [[Image(../../images/navnext.png,link=oracleprotolimitations.html,vertical-align=middle)]]
 
 [=#oracleforeignbackend]
 = Foreign Backend =
@@ -45,7 +45,7 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotouserlistauth.html,vertical-align=middle)]] [oracleprotouserlistauth.html Oracle User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotolimitations.html Oracle Limitations] [[Image(../../images/navnext.png,link=oracleprotolimitations.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotouserlistauth.html,vertical-align=middle)]] [oracleprotouserlistauth.html Oracle User List Auth] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotolimitations.html Oracle Limitations] [[Image(../../images/navnext.png,link=oracleprotolimitations.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="redshiftpostgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via PostgreSQL)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="odbcconfiguration.html">Generic ODBC</a> <a href="odbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="redshiftpostgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via PostgreSQL)</a> | <a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="odbcconfiguration.html">Generic ODBC</a> <a href="odbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="db-odbc-athena"/><h1>Amazon Athena (via ODBC)</h1>
 
@@ -75,7 +75,7 @@ Driver<font color="#990000">=/</font>opt<font color="#990000">/</font>simba<font
 
 <hr/>
 
-<p><a href="redshiftpostgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via PostgreSQL)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="odbcconfiguration.html">Generic ODBC</a> <a href="odbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="redshiftpostgresqlconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="redshiftpostgresqlconfiguration.html">Amazon Redshift (via PostgreSQL)</a> | <a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="odbcconfiguration.html">Generic ODBC</a> <a href="odbcconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

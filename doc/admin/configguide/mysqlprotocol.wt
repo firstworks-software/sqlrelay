@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]] [sqlrclientprotolimitations.html SQLRClient Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoconfiguration.html MySQL Basic Configuration] [[Image(../../images/navnext.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]] [sqlrclientprotolimitations.html SQLRClient Limitations] | [[Image(../../images/navtop.png,link=clientprotocoloptions.html,vertical-align=middle)]] [clientprotocoloptions.html Client Protocol Options] | [mysqlprotoconfiguration.html MySQL Basic Configuration] [[Image(../../images/navnext.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]]
 
 [=#mysqlprotocol]
 = !MySQL Protocol =
@@ -30,7 +30,7 @@ If an instance speaks the !MySQL client-server protocol, then any client that wi
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]] [sqlrclientprotolimitations.html SQLRClient Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotoconfiguration.html MySQL Basic Configuration] [[Image(../../images/navnext.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotolimitations.html,vertical-align=middle)]] [sqlrclientprotolimitations.html SQLRClient Limitations] | [[Image(../../images/navtop.png,link=clientprotocoloptions.html,vertical-align=middle)]] [clientprotocoloptions.html Client Protocol Options] | [mysqlprotoconfiguration.html MySQL Basic Configuration] [[Image(../../images/navnext.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

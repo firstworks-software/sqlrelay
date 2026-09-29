@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]] [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoauth.html PostgreSQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=postgresqlprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]] [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] | [[Image(../../images/navtop.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [postgresqlprotoauth.html PostgreSQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=postgresqlprotoauth.html,vertical-align=middle)]]
 
 [=#postgresqllistener]
 = Listener Options =
@@ -43,7 +43,7 @@ If the socket option is specified but the port option is not, then SQL Relay wil
 
 ----
 
-[[Image(../../images/navprev.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]] [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoauth.html PostgreSQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=postgresqlprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]] [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] | [[Image(../../images/navtop.png,link=postgresqlprotocol.html,vertical-align=middle)]] [postgresqlprotocol.html PostgreSQL Protocol] | [postgresqlprotoauth.html PostgreSQL Authentication/Encryption Options] [[Image(../../images/navnext.png,link=postgresqlprotoauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

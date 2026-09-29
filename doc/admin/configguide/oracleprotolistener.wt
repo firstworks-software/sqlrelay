@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotoconfiguration.html,vertical-align=middle)]] [oracleprotoconfiguration.html Oracle Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotosid.html Oracle SID / Service Name] [[Image(../../images/navnext.png,link=oracleprotosid.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoconfiguration.html,vertical-align=middle)]] [oracleprotoconfiguration.html Oracle Basic Configuration] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotosid.html Oracle SID / Service Name] [[Image(../../images/navnext.png,link=oracleprotosid.html,vertical-align=middle)]]
 
 [=#oraclelistener]
 = Listener Options =
@@ -35,7 +35,7 @@ If the socket option is specified but the port option is not, then SQL Relay wil
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotoconfiguration.html,vertical-align=middle)]] [oracleprotoconfiguration.html Oracle Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotosid.html Oracle SID / Service Name] [[Image(../../images/navnext.png,link=oracleprotosid.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoconfiguration.html,vertical-align=middle)]] [oracleprotoconfiguration.html Oracle Basic Configuration] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotosid.html Oracle SID / Service Name] [[Image(../../images/navnext.png,link=oracleprotosid.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

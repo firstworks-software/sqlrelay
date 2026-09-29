@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotodateformat.html">Oracle Date Format</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> <a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotodateformat.html">Oracle Date Format</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> <a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="oracleauth"/><h1>Authentication/Encryption Options</h1>
 
@@ -17,7 +17,7 @@
 
 <hr/>
 
-<p><a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotodateformat.html">Oracle Date Format</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> <a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="oracleprotodateformat.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotodateformat.html">Oracle Date Format</a> | <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="oracleprotocol.html">Oracle Protocol</a> | <a href="oracleprotoconnectstringsauth.html">Oracle Connect Strings Auth</a> <a href="oracleprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=upsert.html,vertical-align=middle)]] [upsert.html upsert] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [logging.html Logging] [[Image(../../images/navnext.png,link=logging.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=upsert.html,vertical-align=middle)]] [upsert.html upsert] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [logging.html Logging] [[Image(../../images/navnext.png,link=logging.html,vertical-align=middle)]]
 
 [=#globaltemptables]
 = globaltemptables =
@@ -76,7 +76,7 @@ Different sqlr-connection processes in the same instance each maintain their own
 
 ----
 
-[[Image(../../images/navprev.png,link=upsert.html,vertical-align=middle)]] [upsert.html upsert] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [logging.html Logging] [[Image(../../images/navnext.png,link=logging.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=upsert.html,vertical-align=middle)]] [upsert.html upsert] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [logging.html Logging] [[Image(../../images/navnext.png,link=logging.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

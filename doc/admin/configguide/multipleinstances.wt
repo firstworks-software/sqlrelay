@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=listenerconfiguration.html,vertical-align=middle)]] [listenerconfiguration.html Listener Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [startinginstancesautomatically.html Starting Instances Automatically] [[Image(../../images/navnext.png,link=startinginstancesautomatically.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=listenerconfiguration.html,vertical-align=middle)]] [listenerconfiguration.html Listener Configuration] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [startinginstancesautomatically.html Starting Instances Automatically] [[Image(../../images/navnext.png,link=startinginstancesautomatically.html,vertical-align=middle)]]
 
 [=#instances]
 = Multiple Instances =
@@ -45,7 +45,7 @@ sqlrsh -host sqlrserver -port 9002 -user db2inst1 -password db2inst1pass
 
 ----
 
-[[Image(../../images/navprev.png,link=listenerconfiguration.html,vertical-align=middle)]] [listenerconfiguration.html Listener Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [startinginstancesautomatically.html Starting Instances Automatically] [[Image(../../images/navnext.png,link=startinginstancesautomatically.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=listenerconfiguration.html,vertical-align=middle)]] [listenerconfiguration.html Listener Configuration] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [startinginstancesautomatically.html Starting Instances Automatically] [[Image(../../images/navnext.png,link=startinginstancesautomatically.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

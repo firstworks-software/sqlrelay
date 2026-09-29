@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprototls.html,vertical-align=middle)]] [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotospecialpurpose.html MySQL Special-Purpose Options] [[Image(../../images/navnext.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprototls.html,vertical-align=middle)]] [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotospecialpurpose.html MySQL Special-Purpose Options] [[Image(../../images/navnext.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]]
 
 [=#mysqlforeignbackend]
 = Foreign Backend =
@@ -44,7 +44,7 @@ In your app, it might stil be necessary to modify some queries to use the syntax
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprototls.html,vertical-align=middle)]] [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotospecialpurpose.html MySQL Special-Purpose Options] [[Image(../../images/navnext.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprototls.html,vertical-align=middle)]] [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=mysqlprotocol.html,vertical-align=middle)]] [mysqlprotocol.html MySQL Protocol] | [mysqlprotospecialpurpose.html MySQL Special-Purpose Options] [[Image(../../images/navnext.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

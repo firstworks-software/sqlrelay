@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]] [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] [[Image(../../images/navnext.png,link=sapconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]] [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] [[Image(../../images/navnext.png,link=sapconfiguration.html,vertical-align=middle)]]
 
 [=#db-mssql-freetds]
 = Microsoft SQL Server (via !FreeTDS) =
@@ -45,7 +45,7 @@ See the [../configreference.html#freetds SQL Relay Configuration Reference] for 
 
 ----
 
-[[Image(../../images/navprev.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]] [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] [[Image(../../images/navnext.png,link=sapconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mssqlodbcconfiguration.html,vertical-align=middle)]] [mssqlodbcconfiguration.html Microsoft SQL Server (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] [[Image(../../images/navnext.png,link=sapconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

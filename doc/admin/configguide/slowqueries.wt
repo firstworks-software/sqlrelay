@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sql.html,vertical-align=middle)]] [sql.html sql] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [stalecursors.html stalecursors] [[Image(../../images/navnext.png,link=stalecursors.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sql.html,vertical-align=middle)]] [sql.html sql] | [[Image(../../images/navtop.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [stalecursors.html stalecursors] [[Image(../../images/navnext.png,link=stalecursors.html,vertical-align=middle)]]
 
 [=#slowqueries]
 = slowqueries =
@@ -37,7 +37,7 @@ Sample log: [../sqlr-connection-oracletest-querylog.2899.html sqlr-connection-or
 
 ----
 
-[[Image(../../images/navprev.png,link=sql.html,vertical-align=middle)]] [sql.html sql] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [stalecursors.html stalecursors] [[Image(../../images/navnext.png,link=stalecursors.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sql.html,vertical-align=middle)]] [sql.html sql] | [[Image(../../images/navtop.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [stalecursors.html stalecursors] [[Image(../../images/navnext.png,link=stalecursors.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

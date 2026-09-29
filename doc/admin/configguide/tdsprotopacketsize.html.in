@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="tdsprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoversion.html">TDS Version</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoauth.html">TDS Authentication/Encryption Options</a> <a href="tdsprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoversion.html">TDS Version</a> | <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="tdsprotoauth.html">TDS Authentication/Encryption Options</a> <a href="tdsprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="tdspacketsize"/><h1>Packet Size</h1>
 
@@ -37,7 +37,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <hr/>
 
-<p><a href="tdsprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoversion.html">TDS Version</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoauth.html">TDS Authentication/Encryption Options</a> <a href="tdsprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoversion.html">TDS Version</a> | <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="tdsprotoauth.html">TDS Authentication/Encryption Options</a> <a href="tdsprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

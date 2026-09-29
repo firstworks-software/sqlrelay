@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="replay.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="replay.html">replay</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="splitmultiinsert.html">splitmultiinsert</a> <a href="splitmultiinsert.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="replay.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="replay.html">replay</a> | <a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="triggers.html">Triggers</a> | <a href="splitmultiinsert.html">splitmultiinsert</a> <a href="splitmultiinsert.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="savepoints"/><h1>savepoints</h1>
 
@@ -107,7 +107,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="replay.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="replay.html">replay</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="splitmultiinsert.html">splitmultiinsert</a> <a href="splitmultiinsert.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="replay.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="replay.html">replay</a> | <a href="triggers.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="triggers.html">Triggers</a> | <a href="splitmultiinsert.html">splitmultiinsert</a> <a href="splitmultiinsert.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

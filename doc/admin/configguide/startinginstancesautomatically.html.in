@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleinstances.html">Multiple Instances</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="clientprotocoloptions.html">Client Protocol Options</a> <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleinstances.html">Multiple Instances</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="clientprotocoloptions.html">Client Protocol Options</a> <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="autostart"/><h1>Starting Instances Automatically</h1>
 
@@ -96,7 +96,7 @@ sqlrelay_flags=""
 </blockquote>
 <hr/>
 
-<p><a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleinstances.html">Multiple Instances</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="clientprotocoloptions.html">Client Protocol Options</a> <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="multipleinstances.html">Multiple Instances</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="clientprotocoloptions.html">Client Protocol Options</a> <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

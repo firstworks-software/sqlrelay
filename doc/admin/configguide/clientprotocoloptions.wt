@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=startinginstancesautomatically.html,vertical-align=middle)]] [startinginstancesautomatically.html Starting Instances Automatically] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotocol.html SQLRClient Protocol] [[Image(../../images/navnext.png,link=sqlrclientprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=startinginstancesautomatically.html,vertical-align=middle)]] [startinginstancesautomatically.html Starting Instances Automatically] | [sqlrclientprotocol.html SQLRClient Protocol] [[Image(../../images/navnext.png,link=sqlrclientprotocol.html,vertical-align=middle)]]
 
 [=#protocoloptions]
 = Client Protocol Options =
@@ -37,7 +37,7 @@ In these configurations, SQL Relay becomes a transparent proxy.  Applications ai
 
 ----
 
-[[Image(../../images/navprev.png,link=startinginstancesautomatically.html,vertical-align=middle)]] [startinginstancesautomatically.html Starting Instances Automatically] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotocol.html SQLRClient Protocol] [[Image(../../images/navnext.png,link=sqlrclientprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=startinginstancesautomatically.html,vertical-align=middle)]] [startinginstancesautomatically.html Starting Instances Automatically] | [sqlrclientprotocol.html SQLRClient Protocol] [[Image(../../images/navnext.png,link=sqlrclientprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

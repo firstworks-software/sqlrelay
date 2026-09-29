@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="resultsettranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsettranslation.html">Result Set Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="resultsetrowtranslation.html">Result Set Row Translation</a> <a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="resultsettranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsettranslation.html">Result Set Translation</a> | <a href="resultsetrowtranslation.html">Result Set Row Translation</a> <a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="reformatdatetime"/><h1>reformatdatetime</h1>
 
@@ -85,7 +85,7 @@ Jul 10 2015 05:17:55:717PM
 
 <hr/>
 
-<p><a href="resultsettranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsettranslation.html">Result Set Translation</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="resultsetrowtranslation.html">Result Set Row Translation</a> <a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="resultsettranslation.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="resultsettranslation.html">Result Set Translation</a> | <a href="resultsetrowtranslation.html">Result Set Row Translation</a> <a href="resultsetrowtranslation.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

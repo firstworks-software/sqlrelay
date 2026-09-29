@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sha512.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sha512.html">sha512</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="aes128.html">aes128</a> <a href="aes128.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sha512.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sha512.html">sha512</a> | <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="secpwdenc.html">Password Encryption</a> | <a href="aes128.html">aes128</a> <a href="aes128.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="des"/><h1>des</h1>
 
@@ -36,7 +36,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="sha512.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sha512.html">sha512</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="aes128.html">aes128</a> <a href="aes128.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sha512.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sha512.html">sha512</a> | <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="secpwdenc.html">Password Encryption</a> | <a href="aes128.html">aes128</a> <a href="aes128.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

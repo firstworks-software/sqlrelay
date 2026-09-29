@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotoconfiguration.html,vertical-align=middle)]] [sqlrclientprotoconfiguration.html SQLRClient Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] [[Image(../../images/navnext.png,link=sqlrclientprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotoconfiguration.html,vertical-align=middle)]] [sqlrclientprotoconfiguration.html SQLRClient Basic Configuration] | [[Image(../../images/navtop.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] [[Image(../../images/navnext.png,link=sqlrclientprotoauth.html,vertical-align=middle)]]
 
 [=#sqlrclientlistener]
 = Listener Options =
@@ -43,7 +43,7 @@ If the socket option is specified but the port option is not, then SQL Relay wil
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotoconfiguration.html,vertical-align=middle)]] [sqlrclientprotoconfiguration.html SQLRClient Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] [[Image(../../images/navnext.png,link=sqlrclientprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotoconfiguration.html,vertical-align=middle)]] [sqlrclientprotoconfiguration.html SQLRClient Basic Configuration] | [[Image(../../images/navtop.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] [[Image(../../images/navnext.png,link=sqlrclientprotoauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

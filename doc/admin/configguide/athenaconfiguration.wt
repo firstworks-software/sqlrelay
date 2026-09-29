@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]] [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [odbcconfiguration.html Generic ODBC] [[Image(../../images/navnext.png,link=odbcconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]] [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [odbcconfiguration.html Generic ODBC] [[Image(../../images/navnext.png,link=odbcconfiguration.html,vertical-align=middle)]]
 
 [=#db-odbc-athena]
 = Amazon Athena (via ODBC) =
@@ -62,7 +62,7 @@ See the [../configreference.html#odbc SQL Relay Configuration Reference] for oth
 
 ----
 
-[[Image(../../images/navprev.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]] [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [odbcconfiguration.html Generic ODBC] [[Image(../../images/navnext.png,link=odbcconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]] [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [odbcconfiguration.html Generic ODBC] [[Image(../../images/navnext.png,link=odbcconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

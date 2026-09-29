@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sapconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapconfiguration.html">SAP/Sybase (via the native SAP/Sybase library)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="db2configuration.html">IBM DB2</a> <a href="db2configuration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sapconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapconfiguration.html">SAP/Sybase (via the native SAP/Sybase library)</a> | <a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="db2configuration.html">IBM DB2</a> <a href="db2configuration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="db-sap-freetds"/><h1>SAP/Sybase (via FreeTDS)</h1>
 
@@ -56,7 +56,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="sapconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapconfiguration.html">SAP/Sybase (via the native SAP/Sybase library)</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="db2configuration.html">IBM DB2</a> <a href="db2configuration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sapconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sapconfiguration.html">SAP/Sybase (via the native SAP/Sybase library)</a> | <a href="databaseconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="databaseconfiguration.html">Database Configuration</a> | <a href="db2configuration.html">IBM DB2</a> <a href="db2configuration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

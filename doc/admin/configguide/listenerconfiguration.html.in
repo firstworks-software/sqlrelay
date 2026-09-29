@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="dynamicscaling.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="dynamicscaling.html">Dynamic Scaling</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="multipleinstances.html">Multiple Instances</a> <a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="dynamicscaling.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="dynamicscaling.html">Dynamic Scaling</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="multipleinstances.html">Multiple Instances</a> <a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="listener"/><h1>Listener Configuration</h1>
 
@@ -95,7 +95,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="dynamicscaling.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="dynamicscaling.html">Dynamic Scaling</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="multipleinstances.html">Multiple Instances</a> <a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="dynamicscaling.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="dynamicscaling.html">Dynamic Scaling</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="multipleinstances.html">Multiple Instances</a> <a href="multipleinstances.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

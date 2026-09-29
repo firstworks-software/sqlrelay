@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrcmdgstat.html sqlrcmdgstat] [[Image(../../images/navnext.png,link=sqlrcmdgstat.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [sqlrcmdgstat.html sqlrcmdgstat] [[Image(../../images/navnext.png,link=sqlrcmdgstat.html,vertical-align=middle)]]
 
 [=#sqlrcmdcstat]
 = sqlrcmdcstat =
@@ -71,7 +71,7 @@ The columns of the result set are as follows:
 
 ----
 
-[[Image(../../images/navprev.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrcmdgstat.html sqlrcmdgstat] [[Image(../../images/navnext.png,link=sqlrcmdgstat.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [sqlrcmdgstat.html sqlrcmdgstat] [[Image(../../images/navnext.png,link=sqlrcmdgstat.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

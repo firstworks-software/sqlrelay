@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="secipfiltering.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secipfiltering.html">IP Filtering</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secpwdenc.html">Password Encryption</a> <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="secipfiltering.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secipfiltering.html">IP Filtering</a> | <a href="security.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="security.html">Security Features</a> | <a href="secpwdenc.html">Password Encryption</a> <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="pwdfiles"/><h1>Password Files</h1>
 
@@ -121,7 +121,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="secipfiltering.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secipfiltering.html">IP Filtering</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secpwdenc.html">Password Encryption</a> <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="secipfiltering.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secipfiltering.html">IP Filtering</a> | <a href="security.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="security.html">Security Features</a> | <a href="secpwdenc.html">Password Encryption</a> <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

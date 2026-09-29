@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]] [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetheadertranslation.html Result Set Header Translation] [[Image(../../images/navnext.png,link=resultsetheadertranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]] [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [resultsetheadertranslation.html Result Set Header Translation] [[Image(../../images/navnext.png,link=resultsetheadertranslation.html,vertical-align=middle)]]
 
 [=#bindvariabletranslation]
 = Bind Variable Translation =
@@ -33,7 +33,7 @@ Currently, no open source bind variable translation modules are available, howev
 
 ----
 
-[[Image(../../images/navprev.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]] [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetheadertranslation.html Result Set Header Translation] [[Image(../../images/navnext.png,link=resultsetheadertranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]] [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [resultsetheadertranslation.html Result Set Header Translation] [[Image(../../images/navnext.png,link=resultsetheadertranslation.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

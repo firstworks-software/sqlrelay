@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]] [resultsetrowblocktranslation.html Result Set Row Block Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [renumber.html renumber] [[Image(../../images/navnext.png,link=renumber.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]] [resultsetrowblocktranslation.html Result Set Row Block Translation] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [renumber.html renumber] [[Image(../../images/navnext.png,link=renumber.html,vertical-align=middle)]]
 
 [=#errortranslation]
 = Error Translation =
@@ -40,7 +40,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]] [resultsetrowblocktranslation.html Result Set Row Block Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [renumber.html renumber] [[Image(../../images/navnext.png,link=renumber.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]] [resultsetrowblocktranslation.html Result Set Row Block Translation] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [renumber.html renumber] [[Image(../../images/navnext.png,link=renumber.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

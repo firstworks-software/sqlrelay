@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secbackendmysql.html,vertical-align=middle)]] [secbackendmysql.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secrunas.html Run-As User and Group] [[Image(../../images/navnext.png,link=secrunas.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendmysql.html,vertical-align=middle)]] [secbackendmysql.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secrunas.html Run-As User and Group] [[Image(../../images/navnext.png,link=secrunas.html,vertical-align=middle)]]
 
 [[br]][=#backendenc-postgresql]
 = !PostgreSQL =
@@ -87,7 +87,7 @@ Note that the host parameter has been updated to specify a fully qualified domai
 
 ----
 
-[[Image(../../images/navprev.png,link=secbackendmysql.html,vertical-align=middle)]] [secbackendmysql.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secrunas.html Run-As User and Group] [[Image(../../images/navnext.png,link=secrunas.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendmysql.html,vertical-align=middle)]] [secbackendmysql.html MySQL/MariaDB] | [[Image(../../images/navtop.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secrunas.html Run-As User and Group] [[Image(../../images/navnext.png,link=secrunas.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

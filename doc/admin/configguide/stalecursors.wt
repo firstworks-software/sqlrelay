@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=slowqueries.html,vertical-align=middle)]] [slowqueries.html slowqueries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [notifications.html Notifications] [[Image(../../images/navnext.png,link=notifications.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=slowqueries.html,vertical-align=middle)]] [slowqueries.html slowqueries] | [[Image(../../images/navtop.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [notifications.html Notifications] [[Image(../../images/navnext.png,link=notifications.html,vertical-align=middle)]]
 
 [=#stalecursors]
 = stalecursors =
@@ -78,7 +78,7 @@ Note that each connection of an app instance will consume 1 connection of the lo
 
 ----
 
-[[Image(../../images/navprev.png,link=slowqueries.html,vertical-align=middle)]] [slowqueries.html slowqueries] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [notifications.html Notifications] [[Image(../../images/navnext.png,link=notifications.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=slowqueries.html,vertical-align=middle)]] [slowqueries.html slowqueries] | [[Image(../../images/navtop.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [notifications.html Notifications] [[Image(../../images/navnext.png,link=notifications.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

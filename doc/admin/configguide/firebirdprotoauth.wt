@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotoversion.html,vertical-align=middle)]] [firebirdprotoversion.html Firebird Protocol Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconnectstringsauth.html Firebird Connect Strings Auth] [[Image(../../images/navnext.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=firebirdprotoversion.html,vertical-align=middle)]] [firebirdprotoversion.html Firebird Protocol Version] | [[Image(../../images/navtop.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [firebirdprotoconnectstringsauth.html Firebird Connect Strings Auth] [[Image(../../images/navnext.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]]
 
 [=#firebirdauth]
 = Authentication/Encryption Options =
@@ -17,7 +17,7 @@ When using the Firebird protocol, there are two options for controlling which us
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotoversion.html,vertical-align=middle)]] [firebirdprotoversion.html Firebird Protocol Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconnectstringsauth.html Firebird Connect Strings Auth] [[Image(../../images/navnext.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=firebirdprotoversion.html,vertical-align=middle)]] [firebirdprotoversion.html Firebird Protocol Version] | [[Image(../../images/navtop.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [firebirdprotoconnectstringsauth.html Firebird Connect Strings Auth] [[Image(../../images/navnext.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

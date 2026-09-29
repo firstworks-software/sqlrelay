@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sql.html sql] [[Image(../../images/navnext.png,link=sql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [sql.html sql] [[Image(../../images/navnext.png,link=sql.html,vertical-align=middle)]]
 
 [=#debug]
 = debug =
@@ -87,7 +87,7 @@ Actually, it's not even explicitly necessary to include a logger tag for the deb
 
 ----
 
-[[Image(../../images/navprev.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sql.html sql] [[Image(../../images/navnext.png,link=sql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [sql.html sql] [[Image(../../images/navnext.png,link=sql.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

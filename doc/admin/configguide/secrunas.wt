@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secbackendpostgresql.html,vertical-align=middle)]] [secbackendpostgresql.html PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secipfiltering.html IP Filtering] [[Image(../../images/navnext.png,link=secipfiltering.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendpostgresql.html,vertical-align=middle)]] [secbackendpostgresql.html PostgreSQL] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secipfiltering.html IP Filtering] [[Image(../../images/navnext.png,link=secipfiltering.html,vertical-align=middle)]]
 
 [[br]][=#runas]
 = Run-As User and Group =
@@ -31,7 +31,7 @@ There are several important considerations when setting runasuser/runasgroup:
 
 ----
 
-[[Image(../../images/navprev.png,link=secbackendpostgresql.html,vertical-align=middle)]] [secbackendpostgresql.html PostgreSQL] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secipfiltering.html IP Filtering] [[Image(../../images/navnext.png,link=secipfiltering.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendpostgresql.html,vertical-align=middle)]] [secbackendpostgresql.html PostgreSQL] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secipfiltering.html IP Filtering] [[Image(../../images/navnext.png,link=secipfiltering.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

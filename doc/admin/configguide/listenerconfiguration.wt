@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]
 
 [=#listener]
 = Listener Configuration =
@@ -59,7 +59,7 @@ If the socket option is specified but port and addresses options are not, then S
 
 ----
 
-[[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=dynamicscaling.html,vertical-align=middle)]] [dynamicscaling.html Dynamic Scaling] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [multipleinstances.html Multiple Instances] [[Image(../../images/navnext.png,link=multipleinstances.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

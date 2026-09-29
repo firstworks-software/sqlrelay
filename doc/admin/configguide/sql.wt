@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=debug.html,vertical-align=middle)]] [debug.html debug] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [slowqueries.html slowqueries] [[Image(../../images/navnext.png,link=slowqueries.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=debug.html,vertical-align=middle)]] [debug.html debug] | [[Image(../../images/navtop.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [slowqueries.html slowqueries] [[Image(../../images/navnext.png,link=slowqueries.html,vertical-align=middle)]]
 
 [=#sql]
 = sql =
@@ -59,7 +59,7 @@ Process ID changes are logged like:
 
 ----
 
-[[Image(../../images/navprev.png,link=debug.html,vertical-align=middle)]] [debug.html debug] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [slowqueries.html slowqueries] [[Image(../../images/navnext.png,link=slowqueries.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=debug.html,vertical-align=middle)]] [debug.html debug] | [[Image(../../images/navtop.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [slowqueries.html slowqueries] [[Image(../../images/navnext.png,link=slowqueries.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secbackendoracle.html,vertical-align=middle)]] [secbackendoracle.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendmysql.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=secbackendmysql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendoracle.html,vertical-align=middle)]] [secbackendoracle.html Oracle] | [[Image(../../images/navtop.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secbackendmysql.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=secbackendmysql.html,vertical-align=middle)]]
 
 [[br]][=#backendenc-mssql-freetds]
 = Microsoft SQL Server (via !FreeTDS) =
@@ -92,7 +92,7 @@ The SQL Relay configuration is no different than the configuration for an insecu
 
 ----
 
-[[Image(../../images/navprev.png,link=secbackendoracle.html,vertical-align=middle)]] [secbackendoracle.html Oracle] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendmysql.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=secbackendmysql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendoracle.html,vertical-align=middle)]] [secbackendoracle.html Oracle] | [[Image(../../images/navtop.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secbackendmysql.html MySQL/MariaDB] [[Image(../../images/navnext.png,link=secbackendmysql.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

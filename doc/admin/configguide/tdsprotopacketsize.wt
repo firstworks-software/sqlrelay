@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotoversion.html,vertical-align=middle)]] [tdsprotoversion.html TDS Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoauth.html TDS Authentication/Encryption Options] [[Image(../../images/navnext.png,link=tdsprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotoversion.html,vertical-align=middle)]] [tdsprotoversion.html TDS Version] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [tdsprotoauth.html TDS Authentication/Encryption Options] [[Image(../../images/navnext.png,link=tdsprotoauth.html,vertical-align=middle)]]
 
 [=#tdspacketsize]
 = Packet Size =
@@ -25,7 +25,7 @@ A client that asks to negotiate a packet size below 512 bytes is refused; the co
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotoversion.html,vertical-align=middle)]] [tdsprotoversion.html TDS Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoauth.html TDS Authentication/Encryption Options] [[Image(../../images/navnext.png,link=tdsprotoauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotoversion.html,vertical-align=middle)]] [tdsprotoversion.html TDS Version] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [tdsprotoauth.html TDS Authentication/Encryption Options] [[Image(../../images/navnext.png,link=tdsprotoauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

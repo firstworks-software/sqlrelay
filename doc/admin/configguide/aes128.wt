@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=des.html,vertical-align=middle)]] [des.html des] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [aes192.html aes192] [[Image(../../images/navnext.png,link=aes192.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=des.html,vertical-align=middle)]] [des.html des] | [[Image(../../images/navtop.png,link=secpwdenc.html,vertical-align=middle)]] [secpwdenc.html Password Encryption] | [aes192.html aes192] [[Image(../../images/navnext.png,link=aes192.html,vertical-align=middle)]]
 
 [[br]][=#aes128]
 = aes128 =
@@ -25,7 +25,7 @@ Note that multiple runs of sqlr-pwdenc with the same key and password will gener
 
 ----
 
-[[Image(../../images/navprev.png,link=des.html,vertical-align=middle)]] [des.html des] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [aes192.html aes192] [[Image(../../images/navnext.png,link=aes192.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=des.html,vertical-align=middle)]] [des.html des] | [[Image(../../images/navtop.png,link=secpwdenc.html,vertical-align=middle)]] [secpwdenc.html Password Encryption] | [aes192.html aes192] [[Image(../../images/navnext.png,link=aes192.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

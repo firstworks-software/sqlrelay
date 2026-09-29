@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="secschedules.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secschedules.html">Connection Schedules</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secfiltering.html">Query Filtering</a> <a href="secfiltering.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="secschedules.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secschedules.html">Connection Schedules</a> | <a href="secfiltering.html">Query Filtering</a> <a href="secfiltering.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="cron_userlist"/><h1>cron_userlist</h1>
 
@@ -222,7 +222,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="secschedules.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secschedules.html">Connection Schedules</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="secfiltering.html">Query Filtering</a> <a href="secfiltering.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="secschedules.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="secschedules.html">Connection Schedules</a> | <a href="secfiltering.html">Query Filtering</a> <a href="secfiltering.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

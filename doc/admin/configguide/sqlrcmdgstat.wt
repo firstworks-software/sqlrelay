@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrcmdcstat.html,vertical-align=middle)]] [sqlrcmdcstat.html sqlrcmdcstat] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [triggers.html Triggers] [[Image(../../images/navnext.png,link=triggers.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrcmdcstat.html,vertical-align=middle)]] [sqlrcmdcstat.html sqlrcmdcstat] | [[Image(../../images/navtop.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [triggers.html Triggers] [[Image(../../images/navnext.png,link=triggers.html,vertical-align=middle)]]
 
 [=#sqlrcmdgstat]
 = sqlrcmdgstat =
@@ -119,7 +119,7 @@ The result set is a set of key-value pairs, as follows:
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrcmdcstat.html,vertical-align=middle)]] [sqlrcmdcstat.html sqlrcmdcstat] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [triggers.html Triggers] [[Image(../../images/navnext.png,link=triggers.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrcmdcstat.html,vertical-align=middle)]] [sqlrcmdcstat.html sqlrcmdcstat] | [[Image(../../images/navtop.png,link=customqueries.html,vertical-align=middle)]] [customqueries.html Custom Queries] | [triggers.html Triggers] [[Image(../../images/navnext.png,link=triggers.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

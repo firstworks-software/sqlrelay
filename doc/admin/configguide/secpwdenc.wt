@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secpwdfiles.html,vertical-align=middle)]] [secpwdfiles.html Password Files] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secpwdfiles.html,vertical-align=middle)]] [secpwdfiles.html Password Files] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
 
 [[br]][=#pwdenc]
 = Password Encryption =
@@ -111,7 +111,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=secpwdfiles.html,vertical-align=middle)]] [secpwdfiles.html Password Files] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secpwdfiles.html,vertical-align=middle)]] [secpwdfiles.html Password Files] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [rot.html rot] [[Image(../../images/navnext.png,link=rot.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

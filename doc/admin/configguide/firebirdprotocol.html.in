@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="postgresqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotolimitations.html">PostgreSQL Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotoconfiguration.html">Firebird Basic Configuration</a> <a href="firebirdprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="postgresqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotolimitations.html">PostgreSQL Limitations</a> | <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="firebirdprotoconfiguration.html">Firebird Basic Configuration</a> <a href="firebirdprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="firebirdprotocol"/><h1>Firebird Protocol</h1>
 
@@ -37,7 +37,7 @@
 
 <hr/>
 
-<p><a href="postgresqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotolimitations.html">PostgreSQL Limitations</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotoconfiguration.html">Firebird Basic Configuration</a> <a href="firebirdprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="postgresqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotolimitations.html">PostgreSQL Limitations</a> | <a href="clientprotocoloptions.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="clientprotocoloptions.html">Client Protocol Options</a> | <a href="firebirdprotoconfiguration.html">Firebird Basic Configuration</a> <a href="firebirdprotoconfiguration.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

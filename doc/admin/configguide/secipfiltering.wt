@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secrunas.html,vertical-align=middle)]] [secrunas.html Run-As User and Group] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secpwdfiles.html Password Files] [[Image(../../images/navnext.png,link=secpwdfiles.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secrunas.html,vertical-align=middle)]] [secrunas.html Run-As User and Group] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secpwdfiles.html Password Files] [[Image(../../images/navnext.png,link=secpwdfiles.html,vertical-align=middle)]]
 
 [[br]][=#deniedallowedips]
 = IP Filtering =
@@ -26,7 +26,7 @@ For example, to deny all clients except clients connecting from the 192.168.2.0 
 
 ----
 
-[[Image(../../images/navprev.png,link=secrunas.html,vertical-align=middle)]] [secrunas.html Run-As User and Group] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secpwdfiles.html Password Files] [[Image(../../images/navnext.png,link=secpwdfiles.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secrunas.html,vertical-align=middle)]] [secrunas.html Run-As User and Group] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [secpwdfiles.html Password Files] [[Image(../../images/navnext.png,link=secpwdfiles.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

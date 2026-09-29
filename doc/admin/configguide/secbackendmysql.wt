@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=secbackendmssql.html,vertical-align=middle)]] [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendpostgresql.html PostgreSQL] [[Image(../../images/navnext.png,link=secbackendpostgresql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendmssql.html,vertical-align=middle)]] [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secbackendpostgresql.html PostgreSQL] [[Image(../../images/navnext.png,link=secbackendpostgresql.html,vertical-align=middle)]]
 
 [[br]][=#backendenc-mysql]
 = !MySQL/MariaDB =
@@ -77,7 +77,7 @@ Note that the host parameter has been updated to specify a fully qualified domai
 
 ----
 
-[[Image(../../images/navprev.png,link=secbackendmssql.html,vertical-align=middle)]] [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [secbackendpostgresql.html PostgreSQL] [[Image(../../images/navnext.png,link=secbackendpostgresql.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=secbackendmssql.html,vertical-align=middle)]] [secbackendmssql.html Microsoft SQL Server (via FreeTDS)] | [[Image(../../images/navtop.png,link=secbackend.html,vertical-align=middle)]] [secbackend.html Back-End Encryption and Secure Authentication] | [secbackendpostgresql.html PostgreSQL] [[Image(../../images/navnext.png,link=secbackendpostgresql.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

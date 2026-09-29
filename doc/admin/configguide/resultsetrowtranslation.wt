@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=reformatdatetime.html,vertical-align=middle)]] [reformatdatetime.html reformatdatetime] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetrowblocktranslation.html Result Set Row Block Translation] [[Image(../../images/navnext.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=reformatdatetime.html,vertical-align=middle)]] [reformatdatetime.html reformatdatetime] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [resultsetrowblocktranslation.html Result Set Row Block Translation] [[Image(../../images/navnext.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]]
 
 [=#resultsetrowtranslation]
 = Result Set Row Translation =
@@ -23,7 +23,7 @@ Currently, no open source result set row translation modules are available, howe
 
 ----
 
-[[Image(../../images/navprev.png,link=reformatdatetime.html,vertical-align=middle)]] [reformatdatetime.html reformatdatetime] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [resultsetrowblocktranslation.html Result Set Row Block Translation] [[Image(../../images/navnext.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=reformatdatetime.html,vertical-align=middle)]] [reformatdatetime.html reformatdatetime] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [resultsetrowblocktranslation.html Result Set Row Block Translation] [[Image(../../images/navnext.png,link=resultsetrowblocktranslation.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

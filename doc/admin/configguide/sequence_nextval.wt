@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=listagg_to_string_agg.html,vertical-align=middle)]] [listagg_to_string_agg.html listagg_to_string_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] [[Image(../../images/navnext.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=listagg_to_string_agg.html,vertical-align=middle)]] [listagg_to_string_agg.html listagg_to_string_agg] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] [[Image(../../images/navnext.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]]
 
 [=#sequence_nextval]
 = sequence_nextval =
@@ -59,7 +59,7 @@ Note that in this example, the normalize query translation is loaded prior to th
 
 ----
 
-[[Image(../../images/navprev.png,link=listagg_to_string_agg.html,vertical-align=middle)]] [listagg_to_string_agg.html listagg_to_string_agg] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] [[Image(../../images/navnext.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=listagg_to_string_agg.html,vertical-align=middle)]] [listagg_to_string_agg.html listagg_to_string_agg] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [keep_dense_rank_to_array_agg.html keep_dense_rank_to_array_agg] [[Image(../../images/navnext.png,link=keep_dense_rank_to_array_agg.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

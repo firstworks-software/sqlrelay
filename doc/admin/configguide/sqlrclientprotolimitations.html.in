@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sqlrclientprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprototls.html">SQLRClient TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sqlrclientprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprototls.html">SQLRClient TLS/SSL Encryption and Authentication</a> | <a href="sqlrclientprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="sqlrclientprotocol.html">SQLRClient Protocol</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="sqlrclientlimitations"/><h1>Limitations</h1>
 
@@ -12,7 +12,7 @@
 
 <hr/>
 
-<p><a href="sqlrclientprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprototls.html">SQLRClient TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sqlrclientprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprototls.html">SQLRClient TLS/SSL Encryption and Authentication</a> | <a href="sqlrclientprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="sqlrclientprotocol.html">SQLRClient Protocol</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

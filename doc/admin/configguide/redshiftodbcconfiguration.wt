@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]
 
 [=#db-odbc-redshift]
 = Amazon Redshift (via ODBC) =
@@ -58,7 +58,7 @@ See the [../configreference.html#odbc SQL Relay Configuration Reference] for oth
 
 ----
 
-[[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=impalaconfiguration.html,vertical-align=middle)]] [impalaconfiguration.html Apache Impala (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [redshiftpostgresqlconfiguration.html Amazon Redshift (via PostgreSQL)] [[Image(../../images/navnext.png,link=redshiftpostgresqlconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]
 
 [[br]][=#filterstring]
 = string =
@@ -46,7 +46,7 @@ Note that in this example, the normalize query translation is loaded prior to th
 
 ----
 
-[[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=filterregex.html,vertical-align=middle)]] [filterregex.html regex] | [[Image(../../images/navtop.png,link=secfiltering.html,vertical-align=middle)]] [secfiltering.html Query Filtering] | [filtertag.html tag] [[Image(../../images/navnext.png,link=filtertag.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

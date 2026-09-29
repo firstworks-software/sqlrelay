@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprototls.html,vertical-align=middle)]] [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotocol.html MySQL Protocol] [[Image(../../images/navnext.png,link=mysqlprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprototls.html,vertical-align=middle)]] [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [mysqlprotocol.html MySQL Protocol] [[Image(../../images/navnext.png,link=mysqlprotocol.html,vertical-align=middle)]]
 
 [=#sqlrclientlimitations]
 = Limitations =
@@ -13,7 +13,7 @@ The SQLRClient protocol is SQL Relay's own, so it has no notable feature gaps th
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprototls.html,vertical-align=middle)]] [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotocol.html MySQL Protocol] [[Image(../../images/navnext.png,link=mysqlprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprototls.html,vertical-align=middle)]] [sqlrclientprototls.html SQLRClient TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [mysqlprotocol.html MySQL Protocol] [[Image(../../images/navnext.png,link=mysqlprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotouserlistauth.html,vertical-align=middle)]] [tdsprotouserlistauth.html TDS User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoforeignbackend.html TDS Foreign Backend] [[Image(../../images/navnext.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotouserlistauth.html,vertical-align=middle)]] [tdsprotouserlistauth.html TDS User List Auth] | [[Image(../../images/navtop.png,link=tdsprotoauth.html,vertical-align=middle)]] [tdsprotoauth.html TDS Authentication/Encryption Options] | [tdsprotoforeignbackend.html TDS Foreign Backend] [[Image(../../images/navnext.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]]
 
 [=#tdstls]
 = TLS/SSL Encryption and Authentication =
@@ -59,7 +59,7 @@ Any kind of full session encryption should be used with caution in performance-s
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotouserlistauth.html,vertical-align=middle)]] [tdsprotouserlistauth.html TDS User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoforeignbackend.html TDS Foreign Backend] [[Image(../../images/navnext.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotouserlistauth.html,vertical-align=middle)]] [tdsprotouserlistauth.html TDS User List Auth] | [[Image(../../images/navtop.png,link=tdsprotoauth.html,vertical-align=middle)]] [tdsprotoauth.html TDS Authentication/Encryption Options] | [tdsprotoforeignbackend.html TDS Foreign Backend] [[Image(../../images/navnext.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

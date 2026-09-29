@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]] [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprototls.html TDS TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=tdsprototls.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]] [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] | [[Image(../../images/navtop.png,link=tdsprotoauth.html,vertical-align=middle)]] [tdsprotoauth.html TDS Authentication/Encryption Options] | [tdsprototls.html TDS TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=tdsprototls.html,vertical-align=middle)]]
 
 [=#tdsuserlistauth]
 = User List Auth =
@@ -27,7 +27,7 @@ The //tds_userlist// module compares the user and password sent by the client di
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]] [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprototls.html TDS TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=tdsprototls.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]] [tdsprotoconnectstringsauth.html TDS Connect Strings Auth] | [[Image(../../images/navtop.png,link=tdsprotoauth.html,vertical-align=middle)]] [tdsprotoauth.html TDS Authentication/Encryption Options] | [tdsprototls.html TDS TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=tdsprototls.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=regex.html,vertical-align=middle)]] [regex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [clientiplist.html clientiplist] [[Image(../../images/navnext.png,link=clientiplist.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=regex.html,vertical-align=middle)]] [regex.html regex] | [[Image(../../images/navtop.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [clientiplist.html clientiplist] [[Image(../../images/navnext.png,link=clientiplist.html,vertical-align=middle)]]
 
 [=#userlist]
 = userlist =
@@ -41,7 +41,7 @@ The '''string''' attribute in each connection tag provides the parameters necess
 
 ----
 
-[[Image(../../images/navprev.png,link=regex.html,vertical-align=middle)]] [regex.html regex] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [clientiplist.html clientiplist] [[Image(../../images/navnext.png,link=clientiplist.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=regex.html,vertical-align=middle)]] [regex.html regex] | [[Image(../../images/navtop.png,link=routing.html,vertical-align=middle)]] [routing.html Query and Session Routing] | [clientiplist.html clientiplist] [[Image(../../images/navnext.png,link=clientiplist.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=queryparsing.html,vertical-align=middle)]] [queryparsing.html Query Parsing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [normalize.html normalize] [[Image(../../images/navnext.png,link=normalize.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=queryparsing.html,vertical-align=middle)]] [queryparsing.html Query Parsing] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [normalize.html normalize] [[Image(../../images/navnext.png,link=normalize.html,vertical-align=middle)]]
 
 [=#querytranslation]
 = Query Translation =
@@ -43,7 +43,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=queryparsing.html,vertical-align=middle)]] [queryparsing.html Query Parsing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [normalize.html normalize] [[Image(../../images/navnext.png,link=normalize.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=queryparsing.html,vertical-align=middle)]] [queryparsing.html Query Parsing] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [normalize.html normalize] [[Image(../../images/navnext.png,link=normalize.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

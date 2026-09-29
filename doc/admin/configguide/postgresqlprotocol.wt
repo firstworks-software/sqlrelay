@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotolimitations.html,vertical-align=middle)]] [mysqlprotolimitations.html MySQL Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] [[Image(../../images/navnext.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotolimitations.html,vertical-align=middle)]] [mysqlprotolimitations.html MySQL Limitations] | [[Image(../../images/navtop.png,link=clientprotocoloptions.html,vertical-align=middle)]] [clientprotocoloptions.html Client Protocol Options] | [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] [[Image(../../images/navnext.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]]
 
 [=#postgresqlprotocol]
 = !PostgreSQL Protocol =
@@ -27,7 +27,7 @@ If an instance speaks the !PostgreSQL client-server protocol, then any client th
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotolimitations.html,vertical-align=middle)]] [mysqlprotolimitations.html MySQL Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] [[Image(../../images/navnext.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotolimitations.html,vertical-align=middle)]] [mysqlprotolimitations.html MySQL Limitations] | [[Image(../../images/navtop.png,link=clientprotocoloptions.html,vertical-align=middle)]] [clientprotocoloptions.html Client Protocol Options] | [postgresqlprotoconfiguration.html PostgreSQL Basic Configuration] [[Image(../../images/navnext.png,link=postgresqlprotoconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

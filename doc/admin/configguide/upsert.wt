@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=splitmultiinsert.html,vertical-align=middle)]] [splitmultiinsert.html splitmultiinsert] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [globaltemptables.html globaltemptables] [[Image(../../images/navnext.png,link=globaltemptables.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=splitmultiinsert.html,vertical-align=middle)]] [splitmultiinsert.html splitmultiinsert] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [globaltemptables.html globaltemptables] [[Image(../../images/navnext.png,link=globaltemptables.html,vertical-align=middle)]]
 
 [=#upsert]
 = upsert =
@@ -121,7 +121,7 @@ As noted in [triggers.html#triggers Triggers], above, trigger modules run in the
 
 ----
 
-[[Image(../../images/navprev.png,link=splitmultiinsert.html,vertical-align=middle)]] [splitmultiinsert.html splitmultiinsert] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [globaltemptables.html globaltemptables] [[Image(../../images/navnext.png,link=globaltemptables.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=splitmultiinsert.html,vertical-align=middle)]] [splitmultiinsert.html splitmultiinsert] | [[Image(../../images/navtop.png,link=triggers.html,vertical-align=middle)]] [triggers.html Triggers] | [globaltemptables.html globaltemptables] [[Image(../../images/navnext.png,link=globaltemptables.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

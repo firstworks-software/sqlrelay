@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sapconfiguration.html,vertical-align=middle)]] [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [db2configuration.html IBM DB2] [[Image(../../images/navnext.png,link=db2configuration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sapconfiguration.html,vertical-align=middle)]] [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [db2configuration.html IBM DB2] [[Image(../../images/navnext.png,link=db2configuration.html,vertical-align=middle)]]
 
 [=#db-sap-freetds]
 = SAP/Sybase (via !FreeTDS) =
@@ -45,7 +45,7 @@ See [http://software.firstworks.com/p/getting-started-with-sapsybase.html Gettin
 
 ----
 
-[[Image(../../images/navprev.png,link=sapconfiguration.html,vertical-align=middle)]] [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [db2configuration.html IBM DB2] [[Image(../../images/navnext.png,link=db2configuration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sapconfiguration.html,vertical-align=middle)]] [sapconfiguration.html SAP/Sybase (via the native SAP/Sybase library)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [db2configuration.html IBM DB2] [[Image(../../images/navnext.png,link=db2configuration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

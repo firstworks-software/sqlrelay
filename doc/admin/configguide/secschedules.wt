@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=aes256.html,vertical-align=middle)]] [aes256.html aes256] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=aes256.html,vertical-align=middle)]] [aes256.html aes256] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
 
 [[br]][=#schedules]
 = Connection Schedules =
@@ -47,7 +47,7 @@ Custom modules may be developed though.  For more information, please contact [m
 
 ----
 
-[[Image(../../images/navprev.png,link=aes256.html,vertical-align=middle)]] [aes256.html aes256] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=aes256.html,vertical-align=middle)]] [aes256.html aes256] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [cron_userlist.html cron_userlist] [[Image(../../images/navnext.png,link=cron_userlist.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=resultsetheadertranslation.html,vertical-align=middle)]] [resultsetheadertranslation.html Result Set Header Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [reformatdatetime.html reformatdatetime] [[Image(../../images/navnext.png,link=reformatdatetime.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=resultsetheadertranslation.html,vertical-align=middle)]] [resultsetheadertranslation.html Result Set Header Translation] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [reformatdatetime.html reformatdatetime] [[Image(../../images/navnext.png,link=reformatdatetime.html,vertical-align=middle)]]
 
 [=#resultsettranslation]
 = Result Set Translation =
@@ -39,7 +39,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=resultsetheadertranslation.html,vertical-align=middle)]] [resultsetheadertranslation.html Result Set Header Translation] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [reformatdatetime.html reformatdatetime] [[Image(../../images/navnext.png,link=reformatdatetime.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=resultsetheadertranslation.html,vertical-align=middle)]] [resultsetheadertranslation.html Result Set Header Translation] | [[Image(../../images/navtop.png,link=datatranslation.html,vertical-align=middle)]] [datatranslation.html Data Translation] | [reformatdatetime.html reformatdatetime] [[Image(../../images/navnext.png,link=reformatdatetime.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

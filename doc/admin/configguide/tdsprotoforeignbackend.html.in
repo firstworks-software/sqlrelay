@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprototls.html">TDS TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotolimitations.html">TDS Limitations</a> <a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprototls.html">TDS TLS/SSL Encryption and Authentication</a> | <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="tdsprotolimitations.html">TDS Limitations</a> <a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="tdsforeignbackend"/><h1>Foreign Backend</h1>
 
@@ -63,7 +63,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprototls.html">TDS TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotolimitations.html">TDS Limitations</a> <a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprototls.html">TDS TLS/SSL Encryption and Authentication</a> | <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="tdsprotolimitations.html">TDS Limitations</a> <a href="tdsprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

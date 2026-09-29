@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]] [tdsprotoforeignbackend.html TDS Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]] [tdsprotoforeignbackend.html TDS Foreign Backend] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
 
 [=#tdslimitations]
 = Limitations =
@@ -22,7 +22,7 @@ The implementation of the TDS protocol is likely sufficient for most application
 
 ----
 
-[[Image(../../images/navprev.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]] [tdsprotoforeignbackend.html TDS Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]] [tdsprotoforeignbackend.html TDS Foreign Backend] | [[Image(../../images/navtop.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=multipleinstances.html,vertical-align=middle)]] [multipleinstances.html Multiple Instances] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [clientprotocoloptions.html Client Protocol Options] [[Image(../../images/navnext.png,link=clientprotocoloptions.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=multipleinstances.html,vertical-align=middle)]] [multipleinstances.html Multiple Instances] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [clientprotocoloptions.html Client Protocol Options] [[Image(../../images/navnext.png,link=clientprotocoloptions.html,vertical-align=middle)]]
 
 [=#autostart]
 = Starting Instances Automatically =
@@ -71,7 +71,7 @@ sqlrelay_flags=""
 
 ----
 
-[[Image(../../images/navprev.png,link=multipleinstances.html,vertical-align=middle)]] [multipleinstances.html Multiple Instances] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [clientprotocoloptions.html Client Protocol Options] [[Image(../../images/navnext.png,link=clientprotocoloptions.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=multipleinstances.html,vertical-align=middle)]] [multipleinstances.html Multiple Instances] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [clientprotocoloptions.html Client Protocol Options] [[Image(../../images/navnext.png,link=clientprotocoloptions.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=databaseconnectioncount.html,vertical-align=middle)]] [databaseconnectioncount.html Database Connection Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [dynamicscaling.html Dynamic Scaling] [[Image(../../images/navnext.png,link=dynamicscaling.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=databaseconnectioncount.html,vertical-align=middle)]] [databaseconnectioncount.html Database Connection Count] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [dynamicscaling.html Dynamic Scaling] [[Image(../../images/navnext.png,link=dynamicscaling.html,vertical-align=middle)]]
 
 [=#dbcursors]
 = Database Cursor Count =
@@ -23,7 +23,7 @@ Any number of cursors can be opened, up to 65535, which is also the largest valu
 
 ----
 
-[[Image(../../images/navprev.png,link=databaseconnectioncount.html,vertical-align=middle)]] [databaseconnectioncount.html Database Connection Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [dynamicscaling.html Dynamic Scaling] [[Image(../../images/navnext.png,link=dynamicscaling.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=databaseconnectioncount.html,vertical-align=middle)]] [databaseconnectioncount.html Database Connection Count] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [dynamicscaling.html Dynamic Scaling] [[Image(../../images/navnext.png,link=dynamicscaling.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

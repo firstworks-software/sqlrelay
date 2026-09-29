@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdconfiguration.html,vertical-align=middle)]] [firebirdconfiguration.html Firebird] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [teradataconfiguration.html Teradata (via ODBC)] [[Image(../../images/navnext.png,link=teradataconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=firebirdconfiguration.html,vertical-align=middle)]] [firebirdconfiguration.html Firebird] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [teradataconfiguration.html Teradata (via ODBC)] [[Image(../../images/navnext.png,link=teradataconfiguration.html,vertical-align=middle)]]
 
 [=#db-sqlite]
 = SQLite =
@@ -43,7 +43,7 @@ See [http://software.firstworks.com/p/getting-started-with-sqlite.html Getting S
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdconfiguration.html,vertical-align=middle)]] [firebirdconfiguration.html Firebird] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [teradataconfiguration.html Teradata (via ODBC)] [[Image(../../images/navnext.png,link=teradataconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=firebirdconfiguration.html,vertical-align=middle)]] [firebirdconfiguration.html Firebird] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [teradataconfiguration.html Teradata (via ODBC)] [[Image(../../images/navnext.png,link=teradataconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

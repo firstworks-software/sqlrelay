@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=athenaconfiguration.html,vertical-align=middle)]] [athenaconfiguration.html Amazon Athena (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [databaseconnectioncount.html Database Connection Count] [[Image(../../images/navnext.png,link=databaseconnectioncount.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=athenaconfiguration.html,vertical-align=middle)]] [athenaconfiguration.html Amazon Athena (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [databaseconnectioncount.html Database Connection Count] [[Image(../../images/navnext.png,link=databaseconnectioncount.html,vertical-align=middle)]]
 
 [=#db-odbc]
 = Generic ODBC =
@@ -25,7 +25,7 @@ Note that many ODBC drivers have quirks.  Many of the examples on the other [dat
 
 ----
 
-[[Image(../../images/navprev.png,link=athenaconfiguration.html,vertical-align=middle)]] [athenaconfiguration.html Amazon Athena (via ODBC)] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [databaseconnectioncount.html Database Connection Count] [[Image(../../images/navnext.png,link=databaseconnectioncount.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=athenaconfiguration.html,vertical-align=middle)]] [athenaconfiguration.html Amazon Athena (via ODBC)] | [[Image(../../images/navtop.png,link=databaseconfiguration.html,vertical-align=middle)]] [databaseconfiguration.html Database Configuration] | [databaseconnectioncount.html Database Connection Count] [[Image(../../images/navnext.png,link=databaseconnectioncount.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

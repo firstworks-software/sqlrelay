@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listenerconfiguration.html">Listener Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="startinginstancesautomatically.html">Starting Instances Automatically</a> <a href="startinginstancesautomatically.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listenerconfiguration.html">Listener Configuration</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="startinginstancesautomatically.html">Starting Instances Automatically</a> <a href="startinginstancesautomatically.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="instances"/><h1>Multiple Instances</h1>
 
@@ -74,7 +74,7 @@ sqlrsh -host sqlrserver -port 9002 -user db2inst1 -password db2inst1pass
 </blockquote>
 <hr/>
 
-<p><a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listenerconfiguration.html">Listener Configuration</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="startinginstancesautomatically.html">Starting Instances Automatically</a> <a href="startinginstancesautomatically.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="listenerconfiguration.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="listenerconfiguration.html">Listener Configuration</a> | <a href="basicconfiguration.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="basicconfiguration.html">Basic Configuration</a> | <a href="startinginstancesautomatically.html">Starting Instances Automatically</a> <a href="startinginstancesautomatically.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

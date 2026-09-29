@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotolistener.html,vertical-align=middle)]] [oracleprotolistener.html Oracle Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotologinattempts.html Oracle Login Attempts] [[Image(../../images/navnext.png,link=oracleprotologinattempts.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotolistener.html,vertical-align=middle)]] [oracleprotolistener.html Oracle Listener Options] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotologinattempts.html Oracle Login Attempts] [[Image(../../images/navnext.png,link=oracleprotologinattempts.html,vertical-align=middle)]]
 
 [=#oraclesid]
 = SID / Service Name =
@@ -25,7 +25,7 @@ A connect descriptor that names no SID or SERVICE_NAME at all is let through eve
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotolistener.html,vertical-align=middle)]] [oracleprotolistener.html Oracle Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotologinattempts.html Oracle Login Attempts] [[Image(../../images/navnext.png,link=oracleprotologinattempts.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotolistener.html,vertical-align=middle)]] [oracleprotolistener.html Oracle Listener Options] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [oracleprotologinattempts.html Oracle Login Attempts] [[Image(../../images/navnext.png,link=oracleprotologinattempts.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

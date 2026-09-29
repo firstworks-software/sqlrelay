@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=databasecursorcount.html,vertical-align=middle)]] [databasecursorcount.html Database Cursor Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listenerconfiguration.html Listener Configuration] [[Image(../../images/navnext.png,link=listenerconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=databasecursorcount.html,vertical-align=middle)]] [databasecursorcount.html Database Cursor Count] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [listenerconfiguration.html Listener Configuration] [[Image(../../images/navnext.png,link=listenerconfiguration.html,vertical-align=middle)]]
 
 [=#dynamicscaling]
 = Dynamic Scaling =
@@ -36,7 +36,7 @@ See the [../configreference.html SQL Relay Configuration Reference] for more inf
 
 ----
 
-[[Image(../../images/navprev.png,link=databasecursorcount.html,vertical-align=middle)]] [databasecursorcount.html Database Cursor Count] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listenerconfiguration.html Listener Configuration] [[Image(../../images/navnext.png,link=listenerconfiguration.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=databasecursorcount.html,vertical-align=middle)]] [databasecursorcount.html Database Cursor Count] | [[Image(../../images/navtop.png,link=basicconfiguration.html,vertical-align=middle)]] [basicconfiguration.html Basic Configuration] | [listenerconfiguration.html Listener Configuration] [[Image(../../images/navnext.png,link=listenerconfiguration.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

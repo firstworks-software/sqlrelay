@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=sqlrclientprotoauth.html,vertical-align=middle)]] [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotouserlistauth.html SQLRClient User List Auth] [[Image(../../images/navnext.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotoauth.html,vertical-align=middle)]] [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] | [sqlrclientprotouserlistauth.html SQLRClient User List Auth] [[Image(../../images/navnext.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]]
 
 [=#sqlrclientconnectstringsauth]
 = Connect Strings Auth =
@@ -33,7 +33,7 @@ Though it is not necessary, it is possible to explicitly configure SQL Relay to 
 
 ----
 
-[[Image(../../images/navprev.png,link=sqlrclientprotoauth.html,vertical-align=middle)]] [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotouserlistauth.html SQLRClient User List Auth] [[Image(../../images/navnext.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=sqlrclientprotoauth.html,vertical-align=middle)]] [sqlrclientprotoauth.html SQLRClient Authentication/Encryption Options] | [sqlrclientprotouserlistauth.html SQLRClient User List Auth] [[Image(../../images/navnext.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

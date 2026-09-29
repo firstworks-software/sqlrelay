@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=firebirdprotouserlistauth.html,vertical-align=middle)]] [firebirdprotouserlistauth.html Firebird User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoforeignbackend.html Firebird Foreign Backend] [[Image(../../images/navnext.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=firebirdprotouserlistauth.html,vertical-align=middle)]] [firebirdprotouserlistauth.html Firebird User List Auth] | [[Image(../../images/navtop.png,link=firebirdprotoauth.html,vertical-align=middle)]] [firebirdprotoauth.html Firebird Authentication/Encryption Options] | [firebirdprotoforeignbackend.html Firebird Foreign Backend] [[Image(../../images/navnext.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]]
 
 [=#firebirdwirecrypt]
 = Wire Encryption =
@@ -46,7 +46,7 @@ See the [../configreference.html#attributes SQL Relay Configuration Reference] f
 
 ----
 
-[[Image(../../images/navprev.png,link=firebirdprotouserlistauth.html,vertical-align=middle)]] [firebirdprotouserlistauth.html Firebird User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoforeignbackend.html Firebird Foreign Backend] [[Image(../../images/navnext.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=firebirdprotouserlistauth.html,vertical-align=middle)]] [firebirdprotouserlistauth.html Firebird User List Auth] | [[Image(../../images/navtop.png,link=firebirdprotoauth.html,vertical-align=middle)]] [firebirdprotoauth.html Firebird Authentication/Encryption Options] | [firebirdprotoforeignbackend.html Firebird Foreign Backend] [[Image(../../images/navnext.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

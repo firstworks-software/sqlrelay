@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
 
 [[br]][=#filtering]
 = Query Filtering =
@@ -61,7 +61,7 @@ Custom modules may also be developed.  For more information, please contact [mai
 
 ----
 
-[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=cron_userlist.html,vertical-align=middle)]] [cron_userlist.html cron_userlist] | [[Image(../../images/navtop.png,link=security.html,vertical-align=middle)]] [security.html Security Features] | [filterpatterns.html patterns] [[Image(../../images/navnext.png,link=filterpatterns.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

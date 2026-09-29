@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [singlestep.html singlestep] [[Image(../../images/navnext.png,link=singlestep.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [singlestep.html singlestep] [[Image(../../images/navnext.png,link=singlestep.html,vertical-align=middle)]]
 
 [=#custom_wf]
 = custom_wf =
@@ -66,7 +66,7 @@ Note that (currently) the only database back-end that supports query timeouts is
 
 ----
 
-[[Image(../../images/navprev.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [singlestep.html singlestep] [[Image(../../images/navnext.png,link=singlestep.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [singlestep.html singlestep] [[Image(../../images/navnext.png,link=singlestep.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

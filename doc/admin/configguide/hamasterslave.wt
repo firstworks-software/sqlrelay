@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
 
 [[br]][=#masterslave]
 = Master-Slave Query Routing =
@@ -55,7 +55,7 @@ sqlrsh -host sqlrserver -user routeruser -password routerpassword
 
 ----
 
-[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=harac.html,vertical-align=middle)]] [harac.html Already-Load Balanced Databases] | [[Image(../../images/navtop.png,link=highavailability.html,vertical-align=middle)]] [highavailability.html High Availability] | [hafrontendlb.html Front-End Load Balancing and Failover] [[Image(../../images/navnext.png,link=hafrontendlb.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

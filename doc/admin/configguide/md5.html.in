@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="rot.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="rot.html">rot</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sha1.html">sha1</a> <a href="sha1.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="rot.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="rot.html">rot</a> | <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="secpwdenc.html">Password Encryption</a> | <a href="sha1.html">sha1</a> <a href="sha1.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="md5"/><h1>md5</h1>
 
@@ -36,7 +36,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <hr/>
 
-<p><a href="rot.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="rot.html">rot</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sha1.html">sha1</a> <a href="sha1.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="rot.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="rot.html">rot</a> | <a href="secpwdenc.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="secpwdenc.html">Password Encryption</a> | <a href="sha1.html">sha1</a> <a href="sha1.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

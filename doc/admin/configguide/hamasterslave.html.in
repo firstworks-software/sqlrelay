@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <br/><a name="masterslave"/><h1>Master-Slave Query Routing</h1>
 
@@ -115,7 +115,7 @@ sqlr-start -id router
 </blockquote>
 <hr/>
 
-<p><a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="harac.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="harac.html">Already-Load Balanced Databases</a> | <a href="highavailability.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="highavailability.html">High Availability</a> | <a href="hafrontendlb.html">Front-End Load Balancing and Failover</a> <a href="hafrontendlb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

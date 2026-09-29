@@ -4,7 +4,7 @@
 
 <!--#include virtual="../../contentstart.html"-->
 
-<p><a href="sql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sql.html">sql</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="stalecursors.html">stalecursors</a> <a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sql.html">sql</a> | <a href="logging.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="logging.html">Logging</a> | <a href="stalecursors.html">stalecursors</a> <a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <a name="slowqueries"/><h1>slowqueries</h1>
 
@@ -47,7 +47,7 @@ time: 0.000001
 
 <hr/>
 
-<p><a href="sql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sql.html">sql</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="stalecursors.html">stalecursors</a> <a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+<p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="sql.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sql.html">sql</a> | <a href="logging.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="logging.html">Logging</a> | <a href="stalecursors.html">stalecursors</a> <a href="stalecursors.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
 
 <!--#include virtual="../../contentend.html"-->
 

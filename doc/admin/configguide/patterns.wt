@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=normalize.html,vertical-align=middle)]] [normalize.html normalize] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listagg_to_string_agg.html listagg_to_string_agg] [[Image(../../images/navnext.png,link=listagg_to_string_agg.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=normalize.html,vertical-align=middle)]] [normalize.html normalize] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [listagg_to_string_agg.html listagg_to_string_agg] [[Image(../../images/navnext.png,link=listagg_to_string_agg.html,vertical-align=middle)]]
 
 [=#patterns]
 = patterns =
@@ -103,7 +103,7 @@ Note that in this example, the normalize query translation is loaded prior to th
 
 ----
 
-[[Image(../../images/navprev.png,link=normalize.html,vertical-align=middle)]] [normalize.html normalize] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [listagg_to_string_agg.html listagg_to_string_agg] [[Image(../../images/navnext.png,link=listagg_to_string_agg.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=normalize.html,vertical-align=middle)]] [normalize.html normalize] | [[Image(../../images/navtop.png,link=querytranslation.html,vertical-align=middle)]] [querytranslation.html Query Translation] | [listagg_to_string_agg.html listagg_to_string_agg] [[Image(../../images/navnext.png,link=listagg_to_string_agg.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

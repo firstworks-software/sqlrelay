@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=custom_wf.html,vertical-align=middle)]] [custom_wf.html custom_wf] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=custom_wf.html,vertical-align=middle)]] [custom_wf.html custom_wf] | [[Image(../../images/navtop.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
 
 [=#singlestep]
 = singlestep =
@@ -52,7 +52,7 @@ If singlestep=off is set, then the SQL Relay Server will fetch and buffer all ro
 
 ----
 
-[[Image(../../images/navprev.png,link=custom_wf.html,vertical-align=middle)]] [custom_wf.html custom_wf] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=custom_wf.html,vertical-align=middle)]] [custom_wf.html custom_wf] | [[Image(../../images/navtop.png,link=querydirectives.html,vertical-align=middle)]] [querydirectives.html Query Directives] | [routing.html Query and Session Routing] [[Image(../../images/navnext.png,link=routing.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

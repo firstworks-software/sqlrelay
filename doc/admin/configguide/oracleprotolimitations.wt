@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Oracle Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Oracle Foreign Backend] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
 
 [=#oraclelimitations]
 = Limitations =
@@ -26,7 +26,7 @@ The implementation of the Oracle protocol isn't 100% complete.  Some notable lim
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Oracle Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Oracle Foreign Backend] | [[Image(../../images/navtop.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

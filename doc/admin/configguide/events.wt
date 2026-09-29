@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sessionqueries.html Session-Queries] [[Image(../../images/navnext.png,link=sessionqueries.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [sessionqueries.html Session-Queries] [[Image(../../images/navnext.png,link=sessionqueries.html,vertical-align=middle)]]
 
 [=#events]
 = events =
@@ -115,7 +115,7 @@ SQL Relay assumes that the //blat// program is installed, in the PATH of the use
 
 ----
 
-[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sessionqueries.html Session-Queries] [[Image(../../images/navnext.png,link=sessionqueries.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=notifications.html,vertical-align=middle)]] [notifications.html Notifications] | [sessionqueries.html Session-Queries] [[Image(../../images/navnext.png,link=sessionqueries.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

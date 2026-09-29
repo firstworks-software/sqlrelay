@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=mysqlprotouserlistauth.html,vertical-align=middle)]] [mysqlprotouserlistauth.html MySQL User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=mysqlprototls.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotouserlistauth.html,vertical-align=middle)]] [mysqlprotouserlistauth.html MySQL User List Auth] | [[Image(../../images/navtop.png,link=mysqlprotoauth.html,vertical-align=middle)]] [mysqlprotoauth.html MySQL Authentication/Encryption Options] | [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=mysqlprototls.html,vertical-align=middle)]]
 
 [=#mysqldbauth]
 = Database Auth =
@@ -56,7 +56,7 @@ The second disadvantage may or may not be a problem, depending on how secure com
 
 ----
 
-[[Image(../../images/navprev.png,link=mysqlprotouserlistauth.html,vertical-align=middle)]] [mysqlprotouserlistauth.html MySQL User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=mysqlprototls.html,vertical-align=middle)]]
+[[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents]&nbsp;&nbsp;&nbsp;[[Image(../../images/navprev.png,link=mysqlprotouserlistauth.html,vertical-align=middle)]] [mysqlprotouserlistauth.html MySQL User List Auth] | [[Image(../../images/navtop.png,link=mysqlprotoauth.html,vertical-align=middle)]] [mysqlprotoauth.html MySQL Authentication/Encryption Options] | [mysqlprototls.html MySQL TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=mysqlprototls.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 
