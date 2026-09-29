@@ -452,7 +452,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -657,9 +657,9 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
-In Sybase and Microsoft SQL Server, stored procedures return values
+In Microsoft SQL Server and Sybase, stored procedures return values
 through output parameters rather than as return values of the procedure
 itself.
 
@@ -912,7 +912,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -1129,7 +1129,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
 To create the stored procedure, run a query like the following.
 

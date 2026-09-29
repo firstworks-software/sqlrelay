@@ -110,8 +110,8 @@
 <ul>
   <li><a href="#canxxxdb">Can I use SQL Relay to connect to such-and-such database?</a></li>
   <li><a href="#oracle">Why can't I get SQL Relay to connect to Oracle?</a></li>
-  <li><a href="#sqlserver">Why can't I get SQL Relay to connect to SAP/Sybase or Microsoft SQL Server?</a></li>
-  <li><a href="#freetds">I know that SAP/Sybase and MS SQL Server support affected row counts, so why does the FreeTDS connection return -1's for affected rows?</a></li>
+  <li><a href="#sqlserver">Why can't I get SQL Relay to connect to Microsoft SQL Server or SAP/Sybase?</a></li>
+  <li><a href="#freetds">I know that MS SQL Server and SAP/Sybase support affected row counts, so why does the FreeTDS connection return -1's for affected rows?</a></li>
   <li><a href="#pending">How can I keep from getting "Attempt to initiate a new Adaptive Server operation with results pending" errors when using FreeTDS?</a></li>
   <li><a href="#sybasefreetdsdiff">What's the difference between the SAP/Sybase and FreeTDS connections?</a></li>
   <li><a href="#postgresql">How do I get data type names instead of numbers when using PostgreSQL?</a></li>
@@ -192,7 +192,7 @@
 
 <p><b>Notifications</b> - Send notifications when various events occur.<br/></p>
 
-<p><b>Front-End Compatibility</b> - SQL Relay speaks MySQL, PostgreSQL, Firebird, TDS (SAP/Sybase and MS SQL Server), Oracle, and its own SQLRClient front-end protocols.<br/></p>
+<p><b>Front-End Compatibility</b> - SQL Relay speaks MySQL, PostgreSQL, Firebird, TDS (MS SQL Server and SAP/Sybase), Oracle, and its own SQLRClient front-end protocols.<br/></p>
 
 <p><b>Back-End Compatibility</b> - SQL Relay supports most popular commercial and open-source database back-ends.<br/></p>
 
@@ -206,9 +206,9 @@
 
 <p>It is a tool in a chain - another tier in a multi-tiered application - designed to solve specific problems.  It is not a database-enabled application development environment, like a modern equivalent of Access or Delphi.  It's not a reporting gateway, like a modern equivalent of Crystal Reports.  It is not a database itself.</p>
 
-<p>MySQL/MariaDB, PostgreSQL, Firebird, TDS (SAP/Sybase and MS SQL Server), and Oracle protocol support makes SQL Relay a transparent database proxy for those databases.  You can just aim SQL Relay at the database and aim your app at SQL Relay.  The MySQL/MariaDB and PostgreSQL protocol modules are the most mature, having been in production use the longest.  The Firebird, TDS and Oracle protocol modules are newer; TDS is complete for query execution but doesn't yet support TLS, and the Oracle module is still under active development.  All three already cover the common cases and are improving with each release.  For other databases, SQL Relay currently lacks front-end protocol support, so it can't be used as a transparent proxy for them, though efforts are underway to add more.</p>
+<p>MySQL/MariaDB, PostgreSQL, Firebird, TDS (MS SQL Server and SAP/Sybase), and Oracle protocol support makes SQL Relay a transparent database proxy for those databases.  You can just aim SQL Relay at the database and aim your app at SQL Relay.  The MySQL/MariaDB and PostgreSQL protocol modules are the most mature, having been in production use the longest.  The Firebird, TDS and Oracle protocol modules are newer; TDS is complete for query execution but doesn't yet support TLS, and the Oracle module is still under active development.  All three already cover the common cases and are improving with each release.  For other databases, SQL Relay currently lacks front-end protocol support, so it can't be used as a transparent proxy for them, though efforts are underway to add more.</p>
 
-<p>SQL Relay also has it's own client/server protocol and API.  If you are developing an application from scratch, then you can use this API.  If your applicaiton uses a database abstraction layer like PHP PDO, Perl DBI or ODBC, then you can just update the connect string to use the SQL Relay driver.  If your app was written using a database specific API for MySQL/MariaDB, PostgreSQL, Firebird, SAP/Sybase, MS SQL Server, or Oracle, then in most cases you can aim it at SQL Relay unchanged, just by pointing it at whichever of those front-end protocols SQL Relay is configured to speak.  For example, an app written against Oracle's OCI can connect to SQL Relay's Oracle protocol module the same way it would connect to a real Oracle listener, without any code changes.  If your app was written using a database specific API for some other database, then, in order for it to be able to use SQL Relay, you would have to port your app to use the SQL Relay API, or a supported DB abstraction layer first.</p>
+<p>SQL Relay also has it's own client/server protocol and API.  If you are developing an application from scratch, then you can use this API.  If your applicaiton uses a database abstraction layer like PHP PDO, Perl DBI or ODBC, then you can just update the connect string to use the SQL Relay driver.  If your app was written using a database specific API for MySQL/MariaDB, PostgreSQL, Firebird, MS SQL Server, SAP/Sybase, or Oracle, then in most cases you can aim it at SQL Relay unchanged, just by pointing it at whichever of those front-end protocols SQL Relay is configured to speak.  For example, an app written against Oracle's OCI can connect to SQL Relay's Oracle protocol module the same way it would connect to a real Oracle listener, without any code changes.  If your app was written using a database specific API for some other database, then, in order for it to be able to use SQL Relay, you would have to port your app to use the SQL Relay API, or a supported DB abstraction layer first.</p>
 
 <p>SQL Relay can provide a single-point of access for replicated databases but it does not provide replication.  It cannot keep multiple databases in sync.</p>
 
@@ -373,7 +373,7 @@ through the connection maintained by that daemon.</p>
 
 <br/><a name="dropin"/><h3>What happened to the drop-in replacement libraries for MySQL/MariaDB and PostgreSQL?</h3>
 
-<p>As of version 1.6.0, the SQL Relay server supports the MySQL/MariaDB client-server protocol, and as of version 1.7.0 supports the PostgreSQL client-server protocol.  All features of the drop-in replacement libraries are covered, support for the protocols is a server-only solution.  Since then, SQL Relay has added Firebird, TDS (SAP/Sybase and MS SQL Server) and Oracle protocol support as well, so apps written against those databases' native client APIs can also reach SQL Relay unchanged, without a drop-in library.  See <a href="admin/protocoloptions.html">Client Protocol Options</a> in the configuration guide for details about how to configure SQL Relay to speak these protocols.</p>
+<p>As of version 1.6.0, the SQL Relay server supports the MySQL/MariaDB client-server protocol, and as of version 1.7.0 supports the PostgreSQL client-server protocol.  All features of the drop-in replacement libraries are covered, support for the protocols is a server-only solution.  Since then, SQL Relay has added Firebird, TDS (MS SQL Server and SAP/Sybase) and Oracle protocol support as well, so apps written against those databases' native client APIs can also reach SQL Relay unchanged, without a drop-in library.  See <a href="admin/protocoloptions.html">Client Protocol Options</a> in the configuration guide for details about how to configure SQL Relay to speak these protocols.</p>
 
 <p>Until the 2.0.0 release, the drop-in replacement libraries could still be manually enabled in the configure script when building SQL Relay from source.  In version 2.0.0, the drop-in replacement libraries were removed altogether.</p>
 
@@ -453,7 +453,7 @@ chmod o+r tnsnames.ora
 
 <p>The next most common cause is an invalid ORACLE_HOME environment variable (or invalid oracle_home setting in the configuration file) or invalid TNS_ADMIN environment variable (or invalid tns_admin setting in the configuration file).  The ORACLE_SID environment variable (or oracle_sid setting in the configuration file) can either refer to an entry in the tnsnames.ora file or it can just be an fully qualified entry itself.  In the case of the former, the ORACLE_HOME must be set to a valid directory, under which network/admin/tnsnames.ora can be found, or the TNS_ADMIN must be set to a valid directory under which tnsnames.ora can be found.</p>
 
-<br/><a name="sqlserver"/><h3>Why can't I get SQL Relay to connect to SAP/Sybase or Microsoft SQL Server?</h3>
+<br/><a name="sqlserver"/><h3>Why can't I get SQL Relay to connect to Microsoft SQL Server or SAP/Sybase?</h3>
 
 <p>There are a few common causes of this problem...</p>
 
@@ -474,7 +474,7 @@ chmod o+r tnsnames.ora
 <p>The configure script displays a warning that should encourage people to exercise care when compiling FreeTDS and SAP/Sybase connections.  However, even if each connection is compiled against the proper header file, it's possible for either connection to dynamically link against the wrong library at run time.
 Hopefully, one day, FreeTDS will support everything that the native SAP/Sybase libraries support and there will simply be an option to link the SAP/Sybase connection against one or the other.</p>
 
-<br/><a name="freetds"/><h3>I know that SAP/Sybase and MS SQL Server support affected row counts, so why does the FreeTDS connection return -1's for affected rows?</h3>
+<br/><a name="freetds"/><h3>I know that MS SQL Server and SAP/Sybase support affected row counts, so why does the FreeTDS connection return -1's for affected rows?</h3>
 
 <p>You must have built SQL Relay against a really old version of FreeTDS.  Before FreeTDS version 0.53, calling the FreeTDS function to get the number of affected rows would cause a segmentation fault.  SQL Relay detects the FreeTDS at compile time and only enables affected rows if the version of FreeTDS is greater than 0.52.  If you compile against an earlier version of FreeTDS, a -1 is returned for affected rows as if the database didn't support the feature.</p>
 
@@ -496,7 +496,7 @@ Hopefully, one day, FreeTDS will support everything that the native SAP/Sybase l
 
 <p>The sqlrconnection_freetds module is compiled against FreeTDS, an open-source implementation of the TDS protocol and ctlib.</p>
 
-<p>Very old versions of Microsoft SQL Server are compatible with SAP/Sybase ctlib, but modern versions are not.  FreeTDS is compatible with all versions of SAP/Sybase Adaptive Server Enterprise and Microsoft SQL Server.  So, if you want to access a modern version of Microsoft SQL Server, use the FreeTDS connection rather than the SAP/Sybase connection.  You can also access all versions of SAP/Sybase with the FreeTDS connection.</p>
+<p>Very old versions of Microsoft SQL Server are compatible with SAP/Sybase ctlib, but modern versions are not.  FreeTDS is compatible with all versions of Microsoft SQL Server and SAP/Sybase Adaptive Server Enterprise.  So, if you want to access a modern version of Microsoft SQL Server, use the FreeTDS connection rather than the SAP/Sybase connection.  You can also access all versions of SAP/Sybase with the FreeTDS connection.</p>
 
 <p>For Microsoft SQL Server, the ODBC connection is another option, on Windows and on Linux and Unix alike, and it reports column types and sizes more accurately than the FreeTDS connection does.  See <a href="admin/configguide/mssqlodbcconfiguration.html#db-mssql-odbc">Microsoft SQL Server (via ODBC)</a> in the configuration guide.</p>
 
@@ -629,7 +629,7 @@ user=exampleuser;password=examplepass;db=exampledb;mangletypes=no
 
 <p>SQL Relay uses FreeTDS to connect to MS SQL Server.  SQL Relay can also use FreeTDS to connect to SAP/Sybase.</p>
 
-<p>FreeTDS recognizes SAP/Sybase DATE/DATETIME columns and MS SQL Server DATETIME columns as DATETIME types and formats them according to the rules defined in FreeTDS's locales.conf file for the locale of the SQL Relay server.</p>
+<p>FreeTDS recognizes MS SQL Server DATETIME columns and SAP/Sybase DATE/DATETIME columns as DATETIME types and formats them according to the rules defined in FreeTDS's locales.conf file for the locale of the SQL Relay server.</p>
 
 <p>However, FreeTDS doesn't recognizes MS SQL Server DATE columns as DATETIME types.  Rather it recognizes them as CHAR types and formats them in YYYY-MM-DD format universally.</p>
 
@@ -686,7 +686,7 @@ user=exampleuser;password=examplepass;db=exampledb;mangletypes=no
         delete con;
 </pre>
 
-<p>SAP/Sybase/MS SQL Server example:</p>
+<p>MS SQL Server/SAP/Sybase example:</p>
 
 <pre>        sqlrconnection	*con=new sqlrconnection(...);
         sqlrcursor	*cur=new sqlrcursor(cur);

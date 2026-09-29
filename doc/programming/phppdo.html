@@ -192,7 +192,7 @@ http://www.gnu.org/software/src-highlite -->
   <li><b>lazyconnectautocommit</b> - When you call $pdo->getAttribute(PDO::ATTR_AUTOCOMMIT), PDO doesn't query the backend, it just returns a local variable that the driver must keep updated when autocommit it set on or off.  When <b>autocommit</b> is set to <b>-1</b> (leave it up to the backend), the SQL Relay driver generally queries the backend after connect to initialize this local variable.  However, when <b>lazyconnect</b> is set to <b>1</b> (the default), this would force a connection immediately, and defeat lazy connect.  So, when <b>autocommit</b> is set to <b>-1</b> and <b>lazyconnect</b> is set to <b>1</b>, the local variable is initialized to the value of <b>lazyconnectautocommit</b>.  May be set to <b>1</b> or <b>0</b>.  Defaults to <b>1</b>, since most backends autocommit by default.  Has no effect unless <b>autocommit</b> is <b>-1</b> and <b>lazyconnect</b> is <b>1</b>.</li>
   <li><b>transactionmodel</b> - Sets the transaction model that the driver will use, overriding the database's native model.  May be set to <b>native</b> (the database's native transaction model), <b>none</b> (no transactions), <b>implicit</b> (in a transaction when the session begins; commit/rollback implicitly starts a new transaction; autocommit on/off take effect immediately), <b>explicit</b> (not in a transaction when the session begins; begin required to start a new transaction; commit/rollback does not start a new transaction; autocommit on/off take effect immediately), <b>explicit-deferred</b> (like explicit, but while in a begin-initiated transaction, autocommit on takes effect at the next commit/rollback (deferred); while in an autocommit-off-initiated transaction, autocommit on takes effect immediately), or <b>explicit-error</b> (like explicit, but while in a transaction, autocommit on/off throw an error).  If left empty or omitted then the database's native transaction model is used.  Defaults to empty.</li>
   <li><b>bindvariabledelimiters</b> - Specifies which characters are recognized as bind variable delimiters.  Valid delimiters are <b>?</b>, <b>\:</b>, <b>@</b>, and <b>$</b>.  Any combination may be given, with no separator between them.  Defaults to <b>?:@$</b> (all four).</li>
-  <li><b>emulatepreparesunicodestrings</b> - When set to <b>1</b>, and prepares are being emulated (see <a href="#bindvars">Bind Variables</a> below), string and LOB bind values are quoted with a leading <b>N</b> (e.g. N'value'), the syntax some databases such as Sybase and Microsoft SQL Server require for unicode string literals.  When set to <b>0</b>, they're quoted without the leading <b>N</b>.  Defaults to <b>0</b>.</li>
+  <li><b>emulatepreparesunicodestrings</b> - When set to <b>1</b>, and prepares are being emulated (see <a href="#bindvars">Bind Variables</a> below), string and LOB bind values are quoted with a leading <b>N</b> (e.g. N'value'), the syntax some databases such as Microsoft SQL Server and Sybase require for unicode string literals.  When set to <b>0</b>, they're quoted without the leading <b>N</b>.  Defaults to <b>0</b>.</li>
 </ul>
 
 <p>In addition, the following connect string variables can be used to establish Kerberos or Active Directory encryption and authentication with the server:</p>
@@ -542,7 +542,7 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>insert into <font color="#008080">exampletable</font> <b><font color="#000000">values</font></b> <font color="#990000">(:</font><font color="#993399">1</font><font color="#990000">,:</font><font color="#993399">2</font><font color="#990000">,:</font><font color="#993399">3</font><font color="#990000">,:</font><font color="#993399">4</font><font color="#990000">)</font></tt></pre>
 
 </blockquote>
-<p>With Sybase and MS SQL Server:</p>
+<p>With MS SQL Server and Sybase:</p>
 
 <blockquote>
 <!-- Generator: GNU source-highlight 3.1.9
@@ -916,7 +916,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><h4>Sybase and Microsoft SQL Server</h4>
+<br/><h4>Microsoft SQL Server and Sybase</h4>
 
 <p>To create the stored procedure, run a query like the following.</p>
 
@@ -1232,9 +1232,9 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><h4>Sybase and Microsoft SQL Server</h4>
+<br/><h4>Microsoft SQL Server and Sybase</h4>
 
-<p>In Sybase and Microsoft SQL Server, stored procedures return values
+<p>In Microsoft SQL Server and Sybase, stored procedures return values
 through output parameters rather than as return values of the procedure
 itself.</p>
 
@@ -1624,7 +1624,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<br/><h4>Sybase and Microsoft SQL Server</h4>
+<br/><h4>Microsoft SQL Server and Sybase</h4>
 
 <p>To create the stored procedure, run a query like the following.</p>
 
@@ -1912,7 +1912,7 @@ each database that SQL Relay supports.</p>
 
 <p>In Oracle, for a result set to be fetched from a stored procedure, the result set must be bound to an output parameter of type cursor. PDO had a PDO: :PARAM_STMT type that could theoretically be used to get one of these but it is currently unimplemented by any driver, including the SQL Relay driver. Quirks in the implementation of PDO itself make it impossible (or at least very difficult) to implement. Specifically, there's no obvious way of creating an instance of the PDO statement type to set the bound parameter to. Hopefully this will be remedied in a future version of PDO.</p>
 
-<h4>Sybase and Microsoft SQL Server</h4>
+<h4>Microsoft SQL Server and Sybase</h4>
 
 <p>To create the stored procedure, run a query like the following.</p>
 

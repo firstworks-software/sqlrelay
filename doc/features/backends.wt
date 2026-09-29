@@ -7,9 +7,9 @@
 = Back-End Compatibility =
 
 [[Image(../images/oracle.png,nolink)]]
+[[Image(../images/mssql.png,margin-left=10px,nolink)]]
 [[Image(../images/sap.png,margin-left=10px,nolink)]]
 [[Image(../images/db2.png,margin-left=10px,nolink)]]
-[[Image(../images/mssql.png,margin-left=10px,nolink)]]
 [[Image(../images/mysql.png,nolink)]]
 [[Image(../images/postgresql.png,margin-left=10px,nolink)]]
 [[Image(../images/firebird.png,margin-left=10px,nolink)]]

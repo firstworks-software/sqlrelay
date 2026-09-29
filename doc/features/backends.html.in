@@ -7,9 +7,9 @@
 <h1>Back-End Compatibility</h1>
 
 <p><img src="../images/oracle.png"/>
+<img style="margin-left: 10px; " src="../images/mssql.png"/>
 <img style="margin-left: 10px; " src="../images/sap.png"/>
 <img style="margin-left: 10px; " src="../images/db2.png"/>
-<img style="margin-left: 10px; " src="../images/mssql.png"/>
 <img src="../images/mysql.png"/>
 <img style="margin-left: 10px; " src="../images/postgresql.png"/>
 <img style="margin-left: 10px; " src="../images/firebird.png"/>

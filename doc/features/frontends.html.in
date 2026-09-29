@@ -18,14 +18,14 @@
 <blockquote>
 <img src="../images/postgresqlnativeprotocol.png"/>
 </blockquote>
-<p>Firebird, SAP/Sybase, Microsoft SQL Server, and Oracle apps work the same way, each using its own native client-server protocol.</p>
+<p>Firebird, Microsoft SQL Server, SAP/Sybase, and Oracle apps work the same way, each using its own native client-server protocol.</p>
 
 <br/><p>Whether written using the native SQL Relay API or a connector of some sort, SQL Relay apps generally communicate with SQL Relay using the SQL Relay client-server protocol:</p>
 
 <blockquote>
 <img src="../images/sqlrelaynativeprotocol.png"/>
 </blockquote>
-<p>However, SQL Relay also supports the native MySQL/MariaDB, PostgreSQL, Firebird, TDS (SAP/Sybase and Microsoft SQL Server), and Oracle client-server protocols directly.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
+<p>However, SQL Relay also supports the native MySQL/MariaDB, PostgreSQL, Firebird, TDS (Microsoft SQL Server and SAP/Sybase), and Oracle client-server protocols directly.  This allows apps written for those databases to communicate with SQL Relay, rather than directly with the native database, without modification.</p>
 
 <blockquote>
 <img src="../images/sqlrelaymysqlprotocol.png"/>

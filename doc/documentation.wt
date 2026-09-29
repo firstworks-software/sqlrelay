@@ -40,9 +40,9 @@ Getting-started guides for various databases supported by SQL Relay:
 }}}
 {{{#!td
 [[Image(images/oracle.png,nolink,margin-left=260px)]]
+[[Image(images/mssql.png,margin-left=10px,nolink)]]
 [[Image(images/sap.png,margin-left=10px,nolink)]]
-[[Image(images/db2.png,margin-left=10px,nolink)]]
-[[Image(images/mssql.png,margin-left=10px,nolink)]][[br]]
+[[Image(images/db2.png,margin-left=10px,nolink)]][[br]]
 [[Image(images/mysql.png,nolink,margin-left=260px)]]
 [[Image(images/postgresql.png,margin-left=10px,nolink)]]
 [[Image(images/firebird.png,margin-left=10px,nolink)]]

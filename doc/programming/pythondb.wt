@@ -300,7 +300,7 @@ To drop the stored procedure, run a query like the following.
 }}}
 
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
 To create the stored procedure, run a query like the following.
 
@@ -470,9 +470,9 @@ To drop the stored procedure, run a query like the following.
 }}}
 }}}
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
-In Sybase and Microsoft SQL Server, stored procedures return values through output parameters rather than as return values of the procedure itself. However, the SQL Relay Python DB-API driver does not currently support output parameters.
+In Microsoft SQL Server and Sybase, stored procedures return values through output parameters rather than as return values of the procedure itself. However, the SQL Relay Python DB-API driver does not currently support output parameters.
 
 ==== Firebird ====
 
@@ -628,9 +628,9 @@ each database that SQL Relay supports.
 
 In Oracle, stored procedures can return values through output parameters or as return values of the procedure itself. If a procedure needs to return multiple values, it can return one of them as the return value of the procedure itself, but the rest must be returned through output parameters. However, the SQL Relay Python DB-API driver does not currently support output parameters.
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
-In Sybase and Microsoft SQL Server, stored procedures return values through output parameters rather than as return values of the procedure itself. However, the SQL Relay Python DB-API driver does not currently support output parameters.
+In Microsoft SQL Server and Sybase, stored procedures return values through output parameters rather than as return values of the procedure itself. However, the SQL Relay Python DB-API driver does not currently support output parameters.
 
 ==== Firebird ====
 
@@ -760,7 +760,7 @@ each database that SQL Relay supports.
 
 Stored procedures in Oracle can return open cursors as return values or output parameters. A client-side cursor can be bound to this open cursor and rows can be fetched from it. However, the SQL Relay Python DB-API driver does not currently support output parameters.
 
-==== Sybase and Microsoft SQL Server ====
+==== Microsoft SQL Server and Sybase ====
 
 To create the stored procedure, run a query like the following.
 

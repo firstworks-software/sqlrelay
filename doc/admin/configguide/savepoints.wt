@@ -27,7 +27,7 @@ In this example, before every non-transaction-control query that runs inside a t
 
 The trigger should be configured with //when="all"//, since it takes a savepoint before each query and rolls back or releases it after, and needs to wrap both the prepare and execute phases.  Wrapping prepare is essential for PostgreSQL and similar databases that parse and resolve references during prepare - reference-related failures occur at prepare time there, not execute time, and without a savepoint bracketing the prepare the entire transaction is poisoned.  Configurations that omit any of the four phases are honored but may not accomplish anything useful.
 
-The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. SAP/Sybase ASE, Microsoft SQL Server), the syntax templates are configurable:
+The default savepoint, rollback, and release syntax is standard SQL and works for PostgreSQL, MySQL/MariaDB, Oracle, DB2, Firebird, and other databases that follow the SQL standard.  For databases with non-standard savepoint syntax (e.g. Microsoft SQL Server, SAP/Sybase ASE), the syntax templates are configurable:
 
 {{{#!blockquote
 {{{#!code
@@ -44,7 +44,7 @@ The '''trigger''' tag supports the following attributes in addition to the stand
 * '''releasequery'''
  * SQL template for releasing a savepoint.  //%s// is replaced with the generated savepoint name.  Defaults to //release savepoint %s//.
 * '''release'''
- * If set to "yes" (the default), the trigger runs //releasequery// after each successful query, so the savepoint stack doesn't grow without bound for long-running transactions.  Set to "no" for databases that don't support releasing savepoints (e.g. SAP/Sybase, MS SQL Server).
+ * If set to "yes" (the default), the trigger runs //releasequery// after each successful query, so the savepoint stack doesn't grow without bound for long-running transactions.  Set to "no" for databases that don't support releasing savepoints (e.g. MS SQL Server, SAP/Sybase).
 * '''prefix'''
  * Prefix used for the auto-generated savepoint names.  Defaults to //sqlrsp//.  Combined with a per-session counter to form names like //sqlrsp0//, //sqlrsp1//, and so on.
 

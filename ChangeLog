@@ -965,6 +965,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - simplified the native protocol text on the front-end compatibility page
 - updated the front-end compatibility card on the home page to list all
   native protocols
+- documentation lists Microsoft SQL Server before SAP/Sybase now
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
