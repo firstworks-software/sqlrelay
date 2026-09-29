@@ -21,6 +21,7 @@ In this configuration:
 
 * The listener tag instructs SQL Relay to load the //firebird// protocol module, and listen on port 3050, which is the standard Firebird port.
 * The connection tag instructs the instance to log in to the /opt/firebird/firebirddb.gdb database on the Firebird server //firebirdhost// as user //firebirduser// with password //firebirdpassword//.
+* //maxcursors// is set to 64.  The isql client uses a bunch of separate cursors when executing SHOW commands, and holds them until it disconnects.
 
 The instance can be started using:
 
@@ -57,8 +58,6 @@ The instance can be stopped using:
 sqlr-stop -id example
 }}}
 }}}
-
-( '''NOTE:''' isql compiles a separate request for each lookup its SHOW commands do, and holds on to all of them until it disconnects - a single SHOW TABLE takes 15.  Each request uses a cursor, so the default //maxcursors// of 5 is nowhere near enough.  If isql will use the instance, set //maxcursors// on the instance tag to something larger, 64 for example.)
 
 ----
 

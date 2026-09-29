@@ -80,6 +80,7 @@ http://www.gnu.org/software/src-highlite -->
 <ul>
   <li>The listener tag instructs SQL Relay to load the <i>firebird</i> protocol module, and listen on port 3050, which is the standard Firebird port.</li>
   <li>The connection tag instructs the instance to log in to the /opt/firebird/firebirddb.gdb database on the Firebird server <i>firebirdhost</i> as user <i>firebirduser</i> with password <i>firebirdpassword</i>.</li>
+  <li><i>maxcursors</i> is set to 64.  The isql client uses a bunch of separate cursors when executing SHOW commands, and holds them until it disconnects.</li>
 </ul>
 
 <p>The instance can be started using:</p>
@@ -125,8 +126,6 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
 
 </blockquote>
-<p>( <b>NOTE:</b> isql compiles a separate request for each lookup its SHOW commands do, and holds on to all of them until it disconnects - a single SHOW TABLE takes 15.  Each request uses a cursor, so the default <i>maxcursors</i> of 5 is nowhere near enough.  If isql will use the instance, set <i>maxcursors</i> on the instance tag to something larger, 64 for example.)</p>
-
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="firebirdprotocol.html">Firebird Protocol</a> | <a href="firebirdprotolistener.html">Firebird Listener Options</a> <a href="firebirdprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
