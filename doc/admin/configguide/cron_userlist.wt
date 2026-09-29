@@ -21,7 +21,7 @@ An example configuration follows.
 }}}
 }}}
 
-In this example, the module denies access to all users by default, but then allows access to the dmuse, kmuse, imuse, and smuse users during business hours.  In this case, business hours are defined as:
+In this example, the module denies access to all users by default, but then allows access to the bob, sally, joe, and mary users during business hours.  In this case, business hours are defined as:
 
 * every year
 * every month
@@ -37,7 +37,7 @@ Another example configuration follows.
 }}}
 }}}
 
-In this example, the module allows access to all users by default, but then denies access to the dmuse, kmuse, imuse, and smuse users during non-business hours.  In this case, non-business hours are defined as:
+In this example, the module allows access to all users by default, but then denies access to the bob, sally, joe, and mary users during non-business hours.  In this case, non-business hours are defined as:
 
 * every year
 * every month

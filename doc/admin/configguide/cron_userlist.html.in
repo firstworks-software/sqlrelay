@@ -27,10 +27,10 @@ http://www.gnu.org/software/src-highlite -->
 			<i><font color="#9A1900">&lt;!-- allow these users during business hours --&gt;</font></i>
 			<b><font color="#0000FF">&lt;schedule</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"cron_userlist"</font> <font color="#009900">default</font><font color="#990000">=</font><font color="#FF0000">"deny"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;users&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"dmuse"</font><b><font color="#0000FF">/&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"kmuse"</font><b><font color="#0000FF">/&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"imuse"</font><b><font color="#0000FF">/&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"smuse"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"bob"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sally"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"joe"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"mary"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/users&gt;</font></b>
 				<b><font color="#0000FF">&lt;rules&gt;</font></b>
 					<b><font color="#0000FF">&lt;allow</font></b> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"* * * 2-5 8:00-11:59,13:00-16:59"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -43,7 +43,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>In this example, the module denies access to all users by default, but then allows access to the dmuse, kmuse, imuse, and smuse users during business hours.  In this case, business hours are defined as:</p>
+<p>In this example, the module denies access to all users by default, but then allows access to the bob, sally, joe, and mary users during business hours.  In this case, business hours are defined as:</p>
 
 <ul>
   <li>every year</li>
@@ -68,10 +68,10 @@ http://www.gnu.org/software/src-highlite -->
 			<i><font color="#9A1900">&lt;!-- deny these users during non-business hours --&gt;</font></i>
 			<b><font color="#0000FF">&lt;schedule</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"cron_userlist"</font> <font color="#009900">default</font><font color="#990000">=</font><font color="#FF0000">"allow"</font><b><font color="#0000FF">&gt;</font></b>
 				<b><font color="#0000FF">&lt;users&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"dmuse"</font><b><font color="#0000FF">/&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"kmuse"</font><b><font color="#0000FF">/&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"imuse"</font><b><font color="#0000FF">/&gt;</font></b>
-					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"smuse"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"bob"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sally"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"joe"</font><b><font color="#0000FF">/&gt;</font></b>
+					<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"mary"</font><b><font color="#0000FF">/&gt;</font></b>
 				<b><font color="#0000FF">&lt;/users&gt;</font></b>
 				<b><font color="#0000FF">&lt;rules&gt;</font></b>
 					<b><font color="#0000FF">&lt;deny</font></b> <font color="#009900">when</font><font color="#990000">=</font><font color="#FF0000">"* * * 2-5 00:00-7:59,12:00-12:59,17:00-23:59"</font><b><font color="#0000FF">/&gt;</font></b>
@@ -85,7 +85,7 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>In this example, the module allows access to all users by default, but then denies access to the dmuse, kmuse, imuse, and smuse users during non-business hours.  In this case, non-business hours are defined as:</p>
+<p>In this example, the module allows access to all users by default, but then denies access to the bob, sally, joe, and mary users during non-business hours.  In this case, non-business hours are defined as:</p>
 
 <ul>
   <li>every year</li>
