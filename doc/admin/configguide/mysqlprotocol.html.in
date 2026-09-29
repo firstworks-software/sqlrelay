@@ -384,7 +384,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>SQL Relay supports TLS/SSL encryption and authentication between the MySQL/MariaDB client and SQL Relay Server.</p>
 
 <blockquote>
-<img src="../../images/secure-tls-unsecured.png"/>
+<img src="../../images/secure-tls-mysql-unsecured.png"/>
 </blockquote>
 <p>When TLS/SSL encryption and authentication is used:</p>
 

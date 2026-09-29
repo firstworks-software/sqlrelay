@@ -268,6 +268,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>SQL Relay supports TLS/SSL encryption and authentication between the TDS client and SQL Relay server.</p>
 
+<blockquote>
+<img src="../../images/secure-tls-tds-unsecured.png"/>
+</blockquote>
 <p>When TLS/SSL encryption and authentication is used:</p>
 
 <ul>

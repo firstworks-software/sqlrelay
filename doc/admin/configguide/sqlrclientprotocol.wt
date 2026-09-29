@@ -229,7 +229,7 @@ To enable proxied auth, configure SQL Relay to load the //proxied// auth module 
 
 SQL Relay supports Kerberos encryption and authentication between the SQL Relay client and SQL Relay Server.
 
- [[Image(../../images/secure-krb-unsecured.png,nolink)]]
+ [[Image(../../images/secure-krb-sqlrclient-unsecured.png,nolink)]]
 
 When Kerberos encryption and authentication is used:
 
@@ -312,7 +312,7 @@ Any kind of full session encryption should be used with caution in performance-s
 
 SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay Server.
 
- [[Image(../../images/secure-tls-unsecured.png,nolink)]]
+ [[Image(../../images/secure-tls-sqlrclient-unsecured.png,nolink)]]
 
 When TLS/SSL encryption and authentication is used:
 

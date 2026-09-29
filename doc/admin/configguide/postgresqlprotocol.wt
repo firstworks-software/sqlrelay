@@ -169,7 +169,7 @@ If the database has a lot of users, or users are added, deleted, or updated regu
 
 SQL Relay supports TLS/SSL encryption and authentication between the !PostgreSQL client and SQL Relay Server.
 
- [[Image(../../images/secure-tls-unsecured.png,nolink)]]
+ [[Image(../../images/secure-tls-postgresql-unsecured.png,nolink)]]
 
 When TLS/SSL encryption and authentication is used:
 

@@ -312,6 +312,9 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Firebird 3 and later encrypt the traffic between client and server with their own wire encryption, rather than with TLS/SSL, and the Firebird protocol module does the same.  The encryption is negotiated during login, and is keyed from the login itself, so no certificate is involved.</p>
 
+<blockquote>
+<img src="../../images/secure-wire-firebird-unsecured.png"/>
+</blockquote>
 <p>The <i>wirecrypt</i> attribute on the listener tag sets the level of encryption that SQL Relay asks for:</p>
 
 <ul>
