@@ -14,13 +14,13 @@
 
 <p>When configured to use the SQLRClient protocol (the default), SQL Relay supports <a href="sqlrclientprotocol.html#sqlrclientkrb">Kerberos and Active Directory Encryption and Authentication</a> and <a href="sqlrclientprotocol.html#sqlrclienttls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
 
-<p>When configured to use the MySQL protocol, SQL Relay supports TLS/SSL encryption and authentication between the client and SQL Relay server.  See <a href="mysqlprotocol.html#mysqltls">MySQL TLS/SSL Encryption and Authentication</a> for details.</p>
+<p>When configured to use the MySQL protocol, SQL Relay supports <a href="mysqlprotocol.html#mysqltls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
 
-<p>When configured to use the PostgreSQL protocol, SQL Relay supports TLS/SSL encryption and authentication between the client and SQL Relay server.  See <a href="postgresqlprotocol.html#postgresqltls">PostgreSQL TLS/SSL Encryption and Authentication</a> for details.</p>
+<p>When configured to use the PostgreSQL protocol, SQL Relay supports <a href="postgresqlprotocol.html#postgresqltls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
 
 <p>When configured to use the Firebird protocol, SQL Relay supports Firebird <a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a> between the client and SQL Relay server.</p>
 
-<p>When configured to use the TDS protocol, SQL Relay supports TLS/SSL encryption and authentication between the client and SQL Relay server.  See <a href="tdsprotocol.html#tdstls">TDS TLS/SSL Encryption and Authentication</a> for details.</p>
+<p>When configured to use the TDS protocol, SQL Relay supports <a href="tdsprotocol.html#tdstls">TLS/SSL Encryption and Authentication</a> between the client and SQL Relay server.</p>
 
 <br/><a name="backendencryption"/><h2>Back-End Encryption and Secure Authentication</h2>
 

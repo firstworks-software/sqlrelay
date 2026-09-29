@@ -984,7 +984,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - updated the front-end encryption paragraphs on the security features
   page of the configuration guide (firebird wire encryption, oracle
   paragraph removed, "the client" instead of "the SQL Relay client",
-  separate mysql and postgresql paragraphs)
+  separate mysql and postgresql paragraphs, shorter tls/ssl links)
 - split the high availability page of the configuration guide into one
   page per section
 
