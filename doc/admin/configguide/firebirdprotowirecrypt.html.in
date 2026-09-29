@@ -59,8 +59,6 @@ http://www.gnu.org/software/src-highlite -->
   <li>A client that can't encrypt is refused when the level is <i>required</i>.</li>
 </ul>
 
-<p>The generic <i>tls</i> and <i>tlscert</i> listener attributes that the other protocols use are not supported for protocol="firebird".  If tls="yes" is configured on a firebird listener, SQL Relay prints a warning when the instance starts, and nothing is encrypted with TLS/SSL.  Use <i>wirecrypt</i> instead.</p>
-
 <p>See the <a href="../configreference.html#attributes">SQL Relay Configuration Reference</a> for the full description of the <i>wirecrypt</i> option.</p>
 
 <hr/>

@@ -40,8 +40,6 @@ Note that:
 * Only the Arc4 cipher is offered, not !ChaCha or !ChaCha64.  A client picks its cipher from the ones the server offers.
 * A client that can't encrypt is refused when the level is //required//.
 
-The generic //tls// and //tlscert// listener attributes that the other protocols use are not supported for protocol="firebird".  If tls="yes" is configured on a firebird listener, SQL Relay prints a warning when the instance starts, and nothing is encrypted with TLS/SSL.  Use //wirecrypt// instead.
-
 See the [../configreference.html#attributes SQL Relay Configuration Reference] for the full description of the //wirecrypt// option.
 
 ----
