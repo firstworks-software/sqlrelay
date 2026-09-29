@@ -11,6 +11,8 @@
 
 In a typical database cluster or replicated environment, the nodes are identifiable as separate hosts.  However, when the nodes are located behind a load balancing appliance or running on an application cluster, such as Oracle RAC, SQL Relay cannot identity an individual node.
 
+ [[Image(../../images/appcluster.png,nolink)]]
+
 In these environments, if a node goes down, SQL Relay will attempt to re-establish the connection, but rather than failing until the node comes back up, the new connection will more likely just succeed to a different node in the cluster.  Over time, this can lead to disproportionate load balancing, with a bias toward nodes that have never gone down.
 
 SQL Relay manages this by "shuffling" the connections periodically.  Every so often, each database connection is re-established, giving that connection a chance to be re-established to a node that may have gone down but is now back up.
