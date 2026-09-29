@@ -65,7 +65,15 @@ To enable debugging of the sqlr-connection process, include debug="yes" in the c
 }}}
 }}}
 
-To enable debugging of an individual module, include debug="yes" in the tag for an individual module.
+To enable debugging of every module of a given type, include debug="yes" in that type's container tag - for example, the querytranslations tag, to debug every query translation module it contains.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-debug-querytranslations.conf@
+}}}
+}}}
+
+To enable debugging of an individual module, include debug="yes" in the tag for an individual module - this overrides the container tag's own debug attribute, in either direction, for that module alone.
 
 {{{#!blockquote
 {{{#!code

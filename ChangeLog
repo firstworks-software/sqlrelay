@@ -319,6 +319,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - added the tds_userlist auth module
 - added the firebird_userlist auth module
 - added a sha512 pwdenc module
+- documented the module container tag's own debug attribute in the
+  configuration guide
 
 ### Changed
 - requires rudiments 2.3.0 or newer
