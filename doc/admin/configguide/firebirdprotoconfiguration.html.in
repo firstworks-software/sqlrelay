@@ -80,6 +80,8 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
 
 </blockquote>
+<p>Since this instance speaks the Firebird client-server protocol, any client that wishes to use it must also speak the Firebird client-server protocol.  This means that most software written using the Firebird API (fbclient), or written using a database abstraction layer which loads a driver for Firebird can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="firebirdprotocol.html">Firebird Protocol</a> | <a href="firebirdprotolistener.html">Firebird Listener Options</a> <a href="firebirdprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>

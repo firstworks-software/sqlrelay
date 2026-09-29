@@ -114,6 +114,8 @@ http://www.gnu.org/software/src-highlite -->
 <pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
 
 </blockquote>
+<p>Since this instance speaks the TDS client-server protocol, any client that wishes to use it must also speak the TDS client-server protocol.  This means that most software written using the FreeTDS or Microsoft SQL Server APIs, or written using a database abstraction layer which loads a driver for Microsoft SQL Server or SAP/Sybase can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, etc.) cannot access this instance.</p>
+
 <hr/>
 
 <p><a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a>&nbsp;&nbsp;&nbsp;<a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="tdsprotocol.html">TDS Protocol</a> | <a href="tdsprotolistener.html">TDS Listener Options</a> <a href="tdsprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
