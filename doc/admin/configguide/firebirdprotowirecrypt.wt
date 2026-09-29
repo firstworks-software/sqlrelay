@@ -34,10 +34,8 @@ The client offers its encryption level, and the two are negotiated as follows:
 
 Note that:
 
-* Encryption needs protocol version 13 or higher - see [firebirdprotoversion.html Protocol Version].
-* Encryption needs a client that logs in with Srp or Srp256.  The encryption key comes out of that login, so a client that logs in with Legacy_Auth can't encrypt.
-* Only the Arc4 cipher is offered, not !ChaCha or !ChaCha64.  A client picks its cipher from the ones the server offers.
-* A client that can't encrypt is refused when the level is //required//.
+* Wire Encryption requires protocol version 13 or higher - see [firebirdprotoversion.html Protocol Version].
+* Only the Arc4 cipher is currently supported.  !ChaCha and !ChaCha64 are not.
 
 See the [../configreference.html#attributes SQL Relay Configuration Reference] for the full description of the //wirecrypt// option.
 
