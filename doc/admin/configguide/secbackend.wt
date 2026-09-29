@@ -11,7 +11,7 @@
 
 SQL Relay also supports TLS/SSL Encryption and Authentication between the SQL Relay server and some databases.
 
-The configuration details differ between databases though.
+The configuration details differ between databases.
 
 * [secbackendoracle.html Oracle]
 * [secbackendmssql.html Microsoft SQL Server (via FreeTDS)]

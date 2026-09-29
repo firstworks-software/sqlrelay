@@ -10,7 +10,7 @@
 
 <p>SQL Relay also supports TLS/SSL Encryption and Authentication between the SQL Relay server and some databases.</p>
 
-<p>The configuration details differ between databases though.</p>
+<p>The configuration details differ between databases.</p>
 
 <ul>
   <li><a href="secbackendoracle.html">Oracle</a></li>
