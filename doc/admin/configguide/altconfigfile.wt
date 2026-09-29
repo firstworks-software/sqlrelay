@@ -18,7 +18,7 @@ The default SQL Relay configuration directory depends on the platform and on how
 
 * Unix and Linux
  * Built from source - '''/usr/local/firstworks/etc/sqlrelay.conf.d''' (unless you specified a non-standard --prefix or --sysconfdir during the build)
- * RPM package - '''/etc/sqlrelay.conf.d'''
+ * RPM or deb package - '''/etc/sqlrelay.conf.d'''
  * !FreeBSD package - '''/usr/local/etc/sqlrelay.conf.d'''
  * !NetBSD package - '''/usr/pkg/etc/sqlrelay.conf.d'''
  * !OpenBSD package - '''/usr/local/etc/sqlrelay.conf.d'''
