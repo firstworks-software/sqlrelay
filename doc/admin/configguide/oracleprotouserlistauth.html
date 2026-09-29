@@ -90,7 +90,7 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Oracle JDBC (ojdbc) uppercases an unquoted username before it puts it on the wire.  The <i>oracle_userlist</i> module compares usernames case-sensitively, so a user list entry only matches a login sent in the exact same case.  A username that ojdbc clients will use must be configured in the case ojdbc sends it, or configured twice, once in each case, so that both an ojdbc client and a client that sends the username as typed can log in.</p>
 
-<p>There is also an <i>oracle_database</i> auth module, structurally similar to <i>mysql_database</i>, but it only supports the <i>oracle_clear_password</i> method, and no protocol module SQL Relay ships ever selects that method for Oracle-protocol clients - they always authenticate with O5LOGON instead (see <a href="oracleprotolimitations.html">Limitations</a> below).  As a result, database auth isn't currently reachable through the Oracle protocol listener, unlike with the MySQL and PostgreSQL protocols.</p>
+<p>There is also an <i>oracle_database</i> auth module, structurally similar to <i>mysql_database</i>, but it only supports the <i>oracle_clear_password</i> method, and no protocol module SQL Relay ships ever selects that method for Oracle-protocol clients - they always authenticate with O5LOGON instead (see <a href="oracleprotolimitations.html">Limitations</a>).  As a result, database auth isn't currently reachable through the Oracle protocol listener, unlike with the MySQL and PostgreSQL protocols.</p>
 
 <hr/>
 

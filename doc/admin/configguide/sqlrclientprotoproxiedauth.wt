@@ -11,7 +11,7 @@
 
 Another authentication option is //proxied// auth.
 
-When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than database authentication described above.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.
+When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than database authentication described on the [sqlrclientprotodbauth.html Database Auth] page.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.
 
 This is currently only supported with Oracle (version 8i or higher) and requires database configuration.  See [../oraclentier.html this document] for more information including instructions for configuring Oracle.
 

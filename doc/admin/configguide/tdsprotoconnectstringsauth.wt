@@ -13,7 +13,7 @@ The default authentication option is //connect strings// auth.
 
 When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
 
-The basic configuration example above uses this option.  SQL Relay is configured to access the database using example/example credentials, so clients would also use example/example credentials to access SQL Relay.
+The [tdsprotoconfiguration.html Basic Configuration] example uses this option.  SQL Relay is configured to access the database using example/example credentials, so clients would also use example/example credentials to access SQL Relay.
 
 Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //connect strings// auth module as follows:
 

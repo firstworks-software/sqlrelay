@@ -11,7 +11,7 @@
 <p>The implementation of the Firebird protocol isn't 100% complete.  Some notable limitations follow:</p>
 
 <ul>
-  <li>TLS/SSL encryption is not supported.  Firebird's own wire encryption is supported instead.  See <a href="firebirdprotowirecrypt.html">Wire Encryption</a> above.</li>
+  <li>TLS/SSL encryption is not supported.  Firebird's own wire encryption is supported instead.  See <a href="firebirdprotowirecrypt.html">Wire Encryption</a>.</li>
   <li>The Firebird services manager is not implemented.  It is the interface that administration tools such as fbsvcmgr, and gbak and gsec when they go through the services manager, use for backup and restore, user management, database repair, and statistics.  Nothing behind SQL Relay provides any of those, and answering as though something had would let a client believe an operation succeeded when nothing happened.  A client that asks for the services manager in place of attaching to a database, which is how those tools connect, is refused with "Feature is not supported".  One that asks for it later in a session is refused with "Cannot attach to services manager".</li>
   <li>Event notification is not implemented.  In Firebird, a trigger or stored procedure can post an event, and a client that registered for it is notified.  Nothing behind SQL Relay can generate such an event, and SQL Relay has no path to carry one from the database to the client, so a client that registers for events is refused.</li>
   <li>Creating or dropping a database is not supported.  isql's CREATE DATABASE and DROP DATABASE commands, and the isc_create_database() and isc_drop_database() calls they are built on, are refused with "Feature is not supported".</li>
@@ -24,7 +24,7 @@
     <li>values - fields, parameters, null, and integer, text, and boolean literals</li>
   </ul>
 
-  <li>A few other, rarely used operations aren't implemented either, including op_ping, the scrollable cursor operations, reconnecting to a limbo transaction, and the older op_ddl, op_insert, and op_transact requests.  op_ping and the scrollable cursor operations are only available at protocol versions above the default - see <a href="firebirdprotoversion.html">Protocol Version</a> above.</li>
+  <li>A few other, rarely used operations aren't implemented either, including op_ping, the scrollable cursor operations, reconnecting to a limbo transaction, and the older op_ddl, op_insert, and op_transact requests.  op_ping and the scrollable cursor operations are only available at protocol versions above the default - see <a href="firebirdprotoversion.html">Protocol Version</a>.</li>
 </ul>
 
 <p>Except for a BLR request that fails to compile, a request that runs into one of these limitations ends the client's session.  The client is sent an error first, but the rest of the refused request is still unread on the socket at that point, so the connection can't be reused.  A client that treats the error as recoverable and carries on will find the connection closed.</p>

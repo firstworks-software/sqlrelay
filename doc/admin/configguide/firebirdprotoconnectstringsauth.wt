@@ -13,7 +13,7 @@ The default authentication option is //connect strings// auth.
 
 When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
 
-The Basic Configuration example above uses this option, and configures SQL Relay to access the database using firebirduser/firebirdpassword credentials.  In that case, clients would also use firebirduser/firebirdpassword credentials to access SQL Relay.
+The [firebirdprotoconfiguration.html Basic Configuration] example uses this option, and configures SQL Relay to access the database using firebirduser/firebirdpassword credentials.  In that case, clients would also use firebirduser/firebirdpassword credentials to access SQL Relay.
 
 The module answers each of the login methods a Firebird client might use - Srp256, Srp, and Legacy_Auth - by deriving what that method needs from the configured password.  Firebird treats a user name as an SQL identifier, so testuser, !TestUser and TESTUSER are all the same user, and the module applies Firebird's own rules to both the name the client sends and the configured user before comparing them.
 

@@ -19,7 +19,7 @@ Setting //clientprotocol// to "41" (the default) advertises both flags, which is
 }}}
 }}}
 
-As with //handshake//, there is normally no reason to set this.  It exists only for a client old enough to predate the 4.1 protocol.  It has no effect when //handshake// is also set to send the legacy protocol 9 packet, which carries no capability flags at all.
+As with //handshake// (see [mysqlprotohandshake.html Handshake Protocol Version]), there is normally no reason to set this.  It exists only for a client old enough to predate the 4.1 protocol.  It has no effect when //handshake// is also set to send the legacy protocol 9 packet, which carries no capability flags at all.
 
 ----
 

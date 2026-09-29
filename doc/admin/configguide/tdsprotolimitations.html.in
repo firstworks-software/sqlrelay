@@ -11,7 +11,7 @@
 <p>The implementation of the TDS protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:</p>
 
 <ul>
-  <li>TLS/SSL mutual authentication requires a client that can present a client certificate.  The freetds client cannot.  See <a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a> above.</li>
+  <li>TLS/SSL mutual authentication requires a client that can present a client certificate.  The freetds client cannot.  See <a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a>.</li>
   <li>For odbc-backed instances, the connect string needs mars=yes for cursors and positioned updates to work.  Without it, a query sent while another cursor still has rows pending fails with "Connection is busy with results for another command".  See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for the <i>mars</i> option.</li>
   <li>TDS 5.0 is the only pre-TDS7 dialect a client can actually log in with.  A client that declares an older dialect (4.2, 4.6, or 4.9.5) is refused with an error, even though some of those are otherwise legal values for the <i>tdsversion</i> listener option.</li>
   <li>A pre-TDS7 login that declares more than one byte order for integers, floats and datetimes is refused.</li>

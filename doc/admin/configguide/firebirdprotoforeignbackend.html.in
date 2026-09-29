@@ -33,7 +33,7 @@ http://www.gnu.org/software/src-highlite -->
 </blockquote>
 <p>In this example, a Firebird front-end provides Firebird applications access to a SQLite back-end database.</p>
 
-<p>Note that the database path check described in <a href="firebirdprotoconfiguration.html">Basic Configuration</a> above uses the substitute back-end's own <i>db</i> (or <i>database</i>) parameter.  In this example, clients have to ask for /var/sqlite/sqlitedb.  If the back-end's connect string has neither parameter, then no check is made.</p>
+<p>Note that the database path check described in <a href="firebirdprotoconfiguration.html">Basic Configuration</a> uses the substitute back-end's own <i>db</i> (or <i>database</i>) parameter.  In this example, clients have to ask for /var/sqlite/sqlitedb.  If the back-end's connect string has neither parameter, then no check is made.</p>
 
 <p>Also note that isql's SHOW commands look things up in Firebird's own system tables.  The module translates those lookups into queries against the same tables, rather than emulating them, so they only work against a Firebird back-end.</p>
 

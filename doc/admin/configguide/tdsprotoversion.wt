@@ -23,7 +23,7 @@ The //tdsversion// attribute on the listener tag overrides the guess.  It accept
 
 The version matters for more than field widths.  '''Clients such as !FreeTDS only send a PRELOGIN packet - the packet where encryption is negotiated - when using TDS 7.1 or later.'''  Below that, the client skips straight to the login packet, and any encryption settings configured on the client are silently never applied.  That is a property of the client, not of SQL Relay.
 
-So if the back-end's version string can't be mapped, and the client's own default version is low, no PRELOGIN negotiation happens at all.  Setting //tdsversion// to 710 or higher is what makes it happen.  See [tdsprototls.html TLS/SSL Encryption and Authentication] below.
+So if the back-end's version string can't be mapped, and the client's own default version is low, no PRELOGIN negotiation happens at all.  Setting //tdsversion// to 710 or higher is what makes it happen.  See [tdsprototls.html TLS/SSL Encryption and Authentication].
 
 ----
 
