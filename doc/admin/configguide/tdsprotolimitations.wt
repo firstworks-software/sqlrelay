@@ -1,0 +1,29 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]] [tdsprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
+
+[=#tdslimitations]
+= Limitations =
+
+The implementation of the TDS protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:
+
+* TLS/SSL mutual authentication requires a client that can present a client certificate.  The freetds client cannot.  See [tdsprototls.html TLS/SSL Encryption and Authentication] above.
+* For odbc-backed instances, the connect string needs mars=yes for cursors and positioned updates to work.  Without it, a query sent while another cursor still has rows pending fails with "Connection is busy with results for another command".  See the [../configreference.html#odbc SQL Relay Configuration Reference] for the //mars// option.
+* TDS 5.0 is the only pre-TDS7 dialect a client can actually log in with.  A client that declares an older dialect (4.2, 4.6, or 4.9.5) is refused with an error, even though some of those are otherwise legal values for the //tdsversion// listener option.
+* A pre-TDS7 login that declares more than one byte order for integers, floats and datetimes is refused.
+* A TDS-native encrypted login (SEC_LOGPWD/CS_SEC_ENCRYPTION) requires a password cipher that SQL Relay loads from SAP's own libsybcomn64 library on the SQL Relay host; if that library isn't installed, or doesn't provide the cipher, the module refuses the login and asks the client to disable password encryption and log in again.  This is separate from, and unrelated to, TLS/SSL encryption.
+* Bulk copy ("insert bulk") is supported, but not as a true bulk load: each incoming row becomes its own INSERT statement and its own round trip to the back-end database, rather than one round trip for the whole batch.  It is also not supported at all when sent as an RPC, or under the TDS 5.0 (pre-TDS7/ct-lib) dialect.
+* A positioned update or delete issued as a numbered cursor operation (sp_cursor, or the TDS 5.0 curupdate/curdelete tokens) can only see the first 1024 buffered rows of a multi-row fetch.  Positioning past that limit fails with "The cursor is not on a row that can be updated".  This cap doesn't apply to an ordinary WHERE CURRENT OF sent as a plain query, which is handled by the back-end database's own cursor instead.
+* A few TDS 5.0 (pre-TDS7/ct-lib) edge cases aren't implemented: the sp_cursorprepare, sp_cursoropen, sp_cursorexecute, sp_cursorprepexec and sp_cursorfetch numbered cursor procedures sent as RPCs (sp_cursor and sp_cursorclose work normally), the "procname" dynamic-SQL type, and a result set wider than 65535 columns or with more than 65535 bytes of metadata.
+
+----
+
+[[Image(../../images/navprev.png,link=tdsprotoforeignbackend.html,vertical-align=middle)]] [tdsprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotocol.html Oracle Protocol] [[Image(../../images/navnext.png,link=oracleprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

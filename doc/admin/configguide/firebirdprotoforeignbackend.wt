@@ -1,0 +1,54 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]] [firebirdprotowirecrypt.html Wire Encryption] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=firebirdprotolimitations.html,vertical-align=middle)]]
+
+[=#firebirdforeignbackend]
+= Foreign Backend =
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the Firebird database it was originally written to use.
+
+This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfesqlite.conf@
+}}}
+}}}
+
+In this example, a Firebird front-end provides Firebird applications access to a SQLite back-end database.
+
+Note that the database path check described in [firebirdprotoconfiguration.html Basic Configuration] above uses the substitute back-end's own //db// (or //database//) parameter.  In this example, clients have to ask for /var/sqlite/sqlitedb.  If the back-end's connect string has neither parameter, then no check is made.
+
+Also note that isql's SHOW commands look things up in Firebird's own system tables.  The module translates those lookups into queries against the same tables, rather than emulating them, so they only work against a Firebird back-end.
+
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
+
+* In the instance tag:
+ * set translatebindvariables="yes"
+ * set the isolationlevel attribute
+ * set transactionmodel="explicit"
+* In the string attribute of the connection tag:
+ * set autocommit=yes or autocommit=no
+ * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
+ * set the identity parameter to override the database type
+ * set ignorespace=yes
+ * set the overrideschema parameter
+ * set the typemangling and/or tablemangling parameters
+* use [querytranslation.html#querytranslation Query Translation] modules
+* use [resultsettranslation.html#resultsettranslation Result Set Translation] modules
+* use [errortranslation.html#errortranslation Error Translation] modules
+* use [sessionqueries.html#sessionqueries Session Queries]
+
+In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
+
+----
+
+[[Image(../../images/navprev.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]] [firebirdprotowirecrypt.html Wire Encryption] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=firebirdprotolimitations.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

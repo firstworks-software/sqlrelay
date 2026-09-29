@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]] [firebirdprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotowirecrypt.html Wire Encryption] [[Image(../../images/navnext.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]]
+
+[=#firebirduserlistauth]
+= User List Auth =
+
+Another popular authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfeuserlistmultiple.conf@
+}}}
+}}}
+
+When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
+
+The //firebird_userlist// module answers each login method - Srp256, Srp, and Legacy_Auth - the same way //firebird_connectstrings// does, deriving what the method needs from the configured password rather than from the connect string.  The same account-name and one-way-password-encryption rules described in [firebirdprotoconnectstringsauth.html Connect Strings Auth] above apply here too: testuser, !TestUser and TESTUSER are all the same user, and a password stored with a one-way password encryption module can't be used with any of the three methods.
+
+----
+
+[[Image(../../images/navprev.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]] [firebirdprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotowirecrypt.html Wire Encryption] [[Image(../../images/navnext.png,link=firebirdprotowirecrypt.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,77 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=firebirdprotolistener.html,vertical-align=middle)]]
+
+[=#firebirdconfiguration]
+= Basic Configuration =
+
+To enable SQL Relay to speak the Firebird protocol, add the appropriate listener tag:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The listener tag instructs SQL Relay to load the //firebird// protocol module, and listen on port 3050, which is the standard Firebird port.
+* The connection tag instructs the instance to log in to the /opt/firebird/firebirddb.gdb database on the Firebird server //firebirdhost// as user //firebirduser// with password //firebirdpassword//.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+isql -user firebirduser -password firebirdpassword localhost/3050:/opt/firebird/firebirddb.gdb
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
+
+By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{#!code
+isql -user firebirduser -password firebirdpassword sqlrserver/3050:/opt/firebird/firebirddb.gdb
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+A Firebird client names the database it wants, as a path, when it connects.  SQL Relay checks that path against the //db// parameter of the string attribute of the connection tag (or the //database// parameter, if //db// isn't set), and refuses the login if they don't match.  Before comparing, it strips any host: or host/port: prefix off of the configured value, since a client strips that prefix off of the path before sending it.  (A single letter before the colon is a Windows drive letter rather than a host, and is kept.)  In the example above, clients have to ask for /opt/firebird/firebirddb.gdb.
+
+Note that:
+
+* The comparison is exact.  A real Firebird server resolves the path on its own filesystem and looks up aliases, but SQL Relay can't do either, so an alias, or the same file spelled a different way, is refused with the same "No such file or directory" error that a missing file would get.
+* The path doesn't select a database.  The connection tag already decides which database the instance uses, so the path only confirms that the client asked for that one.
+* If the connect string has no //db// or //database// parameter, or the client sends an empty path, then no check is made and any path is accepted.
+
+( '''NOTE:''' isql compiles a separate request for each lookup its SHOW commands do, and holds on to all of them until it disconnects - a single SHOW TABLE takes 15.  Each request uses a cursor, so the default //maxcursors// of 5 is nowhere near enough.  If isql will use the instance, set //maxcursors// on the instance tag to something larger, 64 for example.)
+
+----
+
+[[Image(../../images/navprev.png,link=firebirdprotocol.html,vertical-align=middle)]] [firebirdprotocol.html Firebird Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=firebirdprotolistener.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

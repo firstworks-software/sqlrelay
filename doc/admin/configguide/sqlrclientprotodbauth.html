@@ -1,0 +1,133 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="sqlrclientprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoproxiedauth.html">Proxied Auth</a> <a href="sqlrclientprotoproxiedauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sqlrclientdbauth"/><h1>Database Auth</h1>
+
+<p>Another popular authentication option is <i>database</i> auth.</p>
+
+<p>The <i>sqlrclient_database</i> module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.</p>
+
+<p>SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.</p>
+
+<p>To enable database auth, configure SQL Relay to load the <i>sqlrclient_database</i> auth module as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_database"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> Database authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If database authentication is used for that instance, then authentication will fail.)
+</blockquote>
+<p>In this configuration, SQL Relay initially logs in to the database as <i>scott/tiger</i> as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.</p>
+
+<p>For example, if a client initially connects using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlrsh <font color="#990000">-</font><font color="#008080">host</font> localhost <font color="#990000">-</font><font color="#008080">user</font> scott <font color="#990000">-</font>password tiger</tt></pre>
+
+</blockquote>
+<p>...then SQL Relay doesn't need to log out and log back in.</p>
+
+<p>But if the client then tries to connect using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlrsh <font color="#990000">-</font><font color="#008080">host</font> localhost <font color="#990000">-</font><font color="#008080">user</font> anotheruser <font color="#990000">-</font>password anotherpassword</tt></pre>
+
+</blockquote>
+<p>..then SQL Relay does need to log out and log back in.</p>
+
+<p>A subsequent connection using <i>anotheruser/anotherpassword</i> won't require a re-login, but a subsequent connection using any other user/password will.</p>
+
+<p>Though this module is convenient, it has the disadvantage that logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.</p>
+
+<hr/>
+
+<p><a href="sqlrclientprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotoproxiedauth.html">Proxied Auth</a> <a href="sqlrclientprotoproxiedauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

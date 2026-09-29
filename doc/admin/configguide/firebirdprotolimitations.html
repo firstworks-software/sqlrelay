@@ -1,0 +1,94 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="firebirdprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotoforeignbackend.html">Foreign Backend</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotocol.html">TDS Protocol</a> <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="firebirdlimitations"/><h1>Limitations</h1>
+
+<p>The implementation of the Firebird protocol isn't 100% complete.  Some notable limitations follow:</p>
+
+<ul>
+  <li>TLS/SSL encryption is not supported.  Firebird's own wire encryption is supported instead.  See <a href="firebirdprotowirecrypt.html">Wire Encryption</a> above.</li>
+  <li>The Firebird services manager is not implemented.  It is the interface that administration tools such as fbsvcmgr, and gbak and gsec when they go through the services manager, use for backup and restore, user management, database repair, and statistics.  Nothing behind SQL Relay provides any of those, and answering as though something had would let a client believe an operation succeeded when nothing happened.  A client that asks for the services manager in place of attaching to a database, which is how those tools connect, is refused with "Feature is not supported".  One that asks for it later in a session is refused with "Cannot attach to services manager".</li>
+  <li>Event notification is not implemented.  In Firebird, a trigger or stored procedure can post an event, and a client that registered for it is notified.  Nothing behind SQL Relay can generate such an event, and SQL Relay has no path to carry one from the database to the client, so a client that registers for events is refused.</li>
+  <li>Creating or dropping a database is not supported.  isql's CREATE DATABASE and DROP DATABASE commands, and the isc_create_database() and isc_drop_database() calls they are built on, are refused with "Feature is not supported".</li>
+  <li>Two-phase commit is not supported.  Its first phase, prepare, is a promise that the second phase can't fail, and SQL Relay has no distributed-transaction support to back that promise with, so the prepare is refused.</li>
+  <li>Requests compiled to BLR are only partly supported.  BLR is the binary form Firebird compiles requests to.  Most clients send SQL, but some compile BLR requests themselves - isql does for its SHOW commands.  SQL Relay can only run SQL, so the module translates each BLR request into an equivalent SELECT, and only understands the subset of BLR that isql's SHOW commands use.  Anything else is refused with an error, rather than translated into a query that only half means what it said.  A compiled request can also only be run with the combined start-and-receive operations, not with the separate start, send, and receive operations.  The subset is:</li>
+  <ul>
+    <li>statements - begin, message, send, receive, for (loop over a record selection), and assignment</li>
+    <li>record selections of at most two tables, with a boolean condition, first, sort, and join type clauses</li>
+    <li>conditions - and, or, not, missing (is null), between, and the comparisons =, <>, >, >=, <, <=, like, starting with, and containing</li>
+    <li>values - fields, parameters, null, and integer, text, and boolean literals</li>
+  </ul>
+
+  <li>A few other, rarely used operations aren't implemented either, including op_ping, the scrollable cursor operations, reconnecting to a limbo transaction, and the older op_ddl, op_insert, and op_transact requests.  op_ping and the scrollable cursor operations are only available at protocol versions above the default - see <a href="firebirdprotoversion.html">Protocol Version</a> above.</li>
+</ul>
+
+<p>Except for a BLR request that fails to compile, a request that runs into one of these limitations ends the client's session.  The client is sent an error first, but the rest of the refused request is still unread on the socket at that point, so the connection can't be reused.  A client that treats the error as recoverable and carries on will find the connection closed.</p>
+
+<hr/>
+
+<p><a href="firebirdprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotoforeignbackend.html">Foreign Backend</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotocol.html">TDS Protocol</a> <a href="tdsprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

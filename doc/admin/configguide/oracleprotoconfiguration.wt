@@ -1,0 +1,69 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=oracleprotolistener.html,vertical-align=middle)]]
+
+[=#oracleconfiguration]
+= Basic Configuration =
+
+To enable SQL Relay to speak the Oracle protocol, add the appropriate listener tag:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The connection tag instructs the instance to log in to Oracle as user //scott// with password //tiger//, using the //ora1// database in the Oracle installation under /u01/app/oracle/product/12.1.0.
+* The listener tag instructs SQL Relay to load the //oracle// protocol module, and listen on port 1521, which is the standard Oracle listener port.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+sqlplus scott/tiger@//localhost:1521
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
+
+By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{#!code
+sqlplus scott/tiger@//sqlrserver:1521
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+Since this instance speaks the Oracle client-server protocol, any client that wishes to use it must also speak the Oracle client-server protocol.  This means that most software written using the Oracle API, or written using a database abstraction layer which loads a driver for Oracle can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, and psql command line programs, !MySQL Workbench, SQL Server Management Studio, etc.) cannot access this instance.
+
+----
+
+[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=oracleprotolistener.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

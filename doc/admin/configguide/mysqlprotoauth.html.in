@@ -1,0 +1,27 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="mysqlprotoclientflags.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotoclientflags.html">Client Protocol Flags</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a> <a href="mysqlprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="mysqlauth"/><h1>Authentication/Encryption Options</h1>
+
+<p>When using the MySQL protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
+
+<ul>
+  <li><a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+  <li><a href="mysqlprotouserlistauth.html">User List Auth</a></li>
+  <li><a href="mysqlprotodbauth.html">Database Auth</a></li>
+  <li><a href="mysqlprototls.html">TLS/SSL Encryption and Authentication</a></li>
+</ul>
+
+<hr/>
+
+<p><a href="mysqlprotoclientflags.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotoclientflags.html">Client Protocol Flags</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a> <a href="mysqlprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

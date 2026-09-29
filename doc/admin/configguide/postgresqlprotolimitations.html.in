@@ -1,0 +1,29 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="postgresqlprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotoforeignbackend.html">Foreign Backend</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotocol.html">Firebird Protocol</a> <a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="postgresqllimitations"/><h1>Limitations</h1>
+
+<p>The implementation of the PostgreSQL protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:</p>
+
+<ul>
+  <li>Kerberos authentication and encryption are not supported.</li>
+  <li>Multi-statement queries are not supported.</li>
+  <li>Result sets are always returned in text format, even if a client requests binary format.</li>
+  <li>A binary-format bind parameter isn't supported for every type - date, time, timetz, timestamp, timestamptz, interval and oid are notable gaps, so a driver that binds these in binary (rather than as text) will fail.</li>
+  <li>The COPY sub-protocol (COPY FROM STDIN / COPY TO STDOUT) is not implemented.</li>
+  <li>MOVE and FETCH always report a row count of 0, rather than the number of rows actually moved or fetched.</li>
+</ul>
+
+<hr/>
+
+<p><a href="postgresqlprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotoforeignbackend.html">Foreign Backend</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotocol.html">Firebird Protocol</a> <a href="firebirdprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

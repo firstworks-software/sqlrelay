@@ -35,11 +35,75 @@ SRCS = index.wt \
 	startinginstancesautomatically.wt \
 	clientprotocoloptions.wt \
 	sqlrclientprotocol.wt \
+	sqlrclientprotoconfiguration.wt \
+	sqlrclientprotolistener.wt \
+	sqlrclientprotoauth.wt \
+	sqlrclientprotoconnectstringsauth.wt \
+	sqlrclientprotouserlistauth.wt \
+	sqlrclientprotodbauth.wt \
+	sqlrclientprotoproxiedauth.wt \
+	sqlrclientprotokrb.wt \
+	sqlrclientprototls.wt \
+	sqlrclientprotolimitations.wt \
 	mysqlprotocol.wt \
+	mysqlprotoconfiguration.wt \
+	mysqlprotolistener.wt \
+	mysqlprotohandshake.wt \
+	mysqlprotoclientflags.wt \
+	mysqlprotoauth.wt \
+	mysqlprotoconnectstringsauth.wt \
+	mysqlprotouserlistauth.wt \
+	mysqlprotodbauth.wt \
+	mysqlprototls.wt \
+	mysqlprotoforeignbackend.wt \
+	mysqlprotospecialpurpose.wt \
+	mysqlprotolimitations.wt \
 	postgresqlprotocol.wt \
+	postgresqlprotoconfiguration.wt \
+	postgresqlprotolistener.wt \
+	postgresqlprotoauth.wt \
+	postgresqlprotopasswords.wt \
+	postgresqlprotoconnectstringsauth.wt \
+	postgresqlprotouserlistauth.wt \
+	postgresqlprototls.wt \
+	postgresqlprotoforeignbackend.wt \
+	postgresqlprotolimitations.wt \
 	firebirdprotocol.wt \
+	firebirdprotoconfiguration.wt \
+	firebirdprotolistener.wt \
+	firebirdprotoversion.wt \
+	firebirdprotoauth.wt \
+	firebirdprotoconnectstringsauth.wt \
+	firebirdprotouserlistauth.wt \
+	firebirdprotowirecrypt.wt \
+	firebirdprotoforeignbackend.wt \
+	firebirdprotolimitations.wt \
 	tdsprotocol.wt \
+	tdsprotoconfiguration.wt \
+	tdsprotolistener.wt \
+	tdsprotoversion.wt \
+	tdsprotopacketsize.wt \
+	tdsprotoauth.wt \
+	tdsprotoconnectstringsauth.wt \
+	tdsprotouserlistauth.wt \
+	tdsprototls.wt \
+	tdsprotoforeignbackend.wt \
+	tdsprotolimitations.wt \
 	oracleprotocol.wt \
+	oracleprotoconfiguration.wt \
+	oracleprotolistener.wt \
+	oracleprotosid.wt \
+	oracleprotologinattempts.wt \
+	oracleprotoserverversion.wt \
+	oracleprotoverifiertype.wt \
+	oracleprotobigchunkclr.wt \
+	oracleprotocharsets.wt \
+	oracleprotodateformat.wt \
+	oracleprotoauth.wt \
+	oracleprotoconnectstringsauth.wt \
+	oracleprotouserlistauth.wt \
+	oracleprotoforeignbackend.wt \
+	oracleprotolimitations.wt \
 	multipleprotocols.wt \
 	highavailability.wt \
 	hacluster.wt \
@@ -152,11 +216,75 @@ INS = index.html.in \
 	startinginstancesautomatically.html.in \
 	clientprotocoloptions.html.in \
 	sqlrclientprotocol.html.in \
+	sqlrclientprotoconfiguration.html.in \
+	sqlrclientprotolistener.html.in \
+	sqlrclientprotoauth.html.in \
+	sqlrclientprotoconnectstringsauth.html.in \
+	sqlrclientprotouserlistauth.html.in \
+	sqlrclientprotodbauth.html.in \
+	sqlrclientprotoproxiedauth.html.in \
+	sqlrclientprotokrb.html.in \
+	sqlrclientprototls.html.in \
+	sqlrclientprotolimitations.html.in \
 	mysqlprotocol.html.in \
+	mysqlprotoconfiguration.html.in \
+	mysqlprotolistener.html.in \
+	mysqlprotohandshake.html.in \
+	mysqlprotoclientflags.html.in \
+	mysqlprotoauth.html.in \
+	mysqlprotoconnectstringsauth.html.in \
+	mysqlprotouserlistauth.html.in \
+	mysqlprotodbauth.html.in \
+	mysqlprototls.html.in \
+	mysqlprotoforeignbackend.html.in \
+	mysqlprotospecialpurpose.html.in \
+	mysqlprotolimitations.html.in \
 	postgresqlprotocol.html.in \
+	postgresqlprotoconfiguration.html.in \
+	postgresqlprotolistener.html.in \
+	postgresqlprotoauth.html.in \
+	postgresqlprotopasswords.html.in \
+	postgresqlprotoconnectstringsauth.html.in \
+	postgresqlprotouserlistauth.html.in \
+	postgresqlprototls.html.in \
+	postgresqlprotoforeignbackend.html.in \
+	postgresqlprotolimitations.html.in \
 	firebirdprotocol.html.in \
+	firebirdprotoconfiguration.html.in \
+	firebirdprotolistener.html.in \
+	firebirdprotoversion.html.in \
+	firebirdprotoauth.html.in \
+	firebirdprotoconnectstringsauth.html.in \
+	firebirdprotouserlistauth.html.in \
+	firebirdprotowirecrypt.html.in \
+	firebirdprotoforeignbackend.html.in \
+	firebirdprotolimitations.html.in \
 	tdsprotocol.html.in \
+	tdsprotoconfiguration.html.in \
+	tdsprotolistener.html.in \
+	tdsprotoversion.html.in \
+	tdsprotopacketsize.html.in \
+	tdsprotoauth.html.in \
+	tdsprotoconnectstringsauth.html.in \
+	tdsprotouserlistauth.html.in \
+	tdsprototls.html.in \
+	tdsprotoforeignbackend.html.in \
+	tdsprotolimitations.html.in \
 	oracleprotocol.html.in \
+	oracleprotoconfiguration.html.in \
+	oracleprotolistener.html.in \
+	oracleprotosid.html.in \
+	oracleprotologinattempts.html.in \
+	oracleprotoserverversion.html.in \
+	oracleprotoverifiertype.html.in \
+	oracleprotobigchunkclr.html.in \
+	oracleprotocharsets.html.in \
+	oracleprotodateformat.html.in \
+	oracleprotoauth.html.in \
+	oracleprotoconnectstringsauth.html.in \
+	oracleprotouserlistauth.html.in \
+	oracleprotoforeignbackend.html.in \
+	oracleprotolimitations.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	hacluster.html.in \
@@ -271,11 +399,75 @@ WTOBJS = index.html.in \
 	startinginstancesautomatically.html.in \
 	clientprotocoloptions.html.in \
 	sqlrclientprotocol.html.in \
+	sqlrclientprotoconfiguration.html.in \
+	sqlrclientprotolistener.html.in \
+	sqlrclientprotoauth.html.in \
+	sqlrclientprotoconnectstringsauth.html.in \
+	sqlrclientprotouserlistauth.html.in \
+	sqlrclientprotodbauth.html.in \
+	sqlrclientprotoproxiedauth.html.in \
+	sqlrclientprotokrb.html.in \
+	sqlrclientprototls.html.in \
+	sqlrclientprotolimitations.html.in \
 	mysqlprotocol.html.in \
+	mysqlprotoconfiguration.html.in \
+	mysqlprotolistener.html.in \
+	mysqlprotohandshake.html.in \
+	mysqlprotoclientflags.html.in \
+	mysqlprotoauth.html.in \
+	mysqlprotoconnectstringsauth.html.in \
+	mysqlprotouserlistauth.html.in \
+	mysqlprotodbauth.html.in \
+	mysqlprototls.html.in \
+	mysqlprotoforeignbackend.html.in \
+	mysqlprotospecialpurpose.html.in \
+	mysqlprotolimitations.html.in \
 	postgresqlprotocol.html.in \
+	postgresqlprotoconfiguration.html.in \
+	postgresqlprotolistener.html.in \
+	postgresqlprotoauth.html.in \
+	postgresqlprotopasswords.html.in \
+	postgresqlprotoconnectstringsauth.html.in \
+	postgresqlprotouserlistauth.html.in \
+	postgresqlprototls.html.in \
+	postgresqlprotoforeignbackend.html.in \
+	postgresqlprotolimitations.html.in \
 	firebirdprotocol.html.in \
+	firebirdprotoconfiguration.html.in \
+	firebirdprotolistener.html.in \
+	firebirdprotoversion.html.in \
+	firebirdprotoauth.html.in \
+	firebirdprotoconnectstringsauth.html.in \
+	firebirdprotouserlistauth.html.in \
+	firebirdprotowirecrypt.html.in \
+	firebirdprotoforeignbackend.html.in \
+	firebirdprotolimitations.html.in \
 	tdsprotocol.html.in \
+	tdsprotoconfiguration.html.in \
+	tdsprotolistener.html.in \
+	tdsprotoversion.html.in \
+	tdsprotopacketsize.html.in \
+	tdsprotoauth.html.in \
+	tdsprotoconnectstringsauth.html.in \
+	tdsprotouserlistauth.html.in \
+	tdsprototls.html.in \
+	tdsprotoforeignbackend.html.in \
+	tdsprotolimitations.html.in \
 	oracleprotocol.html.in \
+	oracleprotoconfiguration.html.in \
+	oracleprotolistener.html.in \
+	oracleprotosid.html.in \
+	oracleprotologinattempts.html.in \
+	oracleprotoserverversion.html.in \
+	oracleprotoverifiertype.html.in \
+	oracleprotobigchunkclr.html.in \
+	oracleprotocharsets.html.in \
+	oracleprotodateformat.html.in \
+	oracleprotoauth.html.in \
+	oracleprotoconnectstringsauth.html.in \
+	oracleprotouserlistauth.html.in \
+	oracleprotoforeignbackend.html.in \
+	oracleprotolimitations.html.in \
 	multipleprotocols.html.in \
 	highavailability.html.in \
 	hacluster.html.in \
@@ -388,11 +580,75 @@ OBJS = index.html \
 	startinginstancesautomatically.html \
 	clientprotocoloptions.html \
 	sqlrclientprotocol.html \
+	sqlrclientprotoconfiguration.html \
+	sqlrclientprotolistener.html \
+	sqlrclientprotoauth.html \
+	sqlrclientprotoconnectstringsauth.html \
+	sqlrclientprotouserlistauth.html \
+	sqlrclientprotodbauth.html \
+	sqlrclientprotoproxiedauth.html \
+	sqlrclientprotokrb.html \
+	sqlrclientprototls.html \
+	sqlrclientprotolimitations.html \
 	mysqlprotocol.html \
+	mysqlprotoconfiguration.html \
+	mysqlprotolistener.html \
+	mysqlprotohandshake.html \
+	mysqlprotoclientflags.html \
+	mysqlprotoauth.html \
+	mysqlprotoconnectstringsauth.html \
+	mysqlprotouserlistauth.html \
+	mysqlprotodbauth.html \
+	mysqlprototls.html \
+	mysqlprotoforeignbackend.html \
+	mysqlprotospecialpurpose.html \
+	mysqlprotolimitations.html \
 	postgresqlprotocol.html \
+	postgresqlprotoconfiguration.html \
+	postgresqlprotolistener.html \
+	postgresqlprotoauth.html \
+	postgresqlprotopasswords.html \
+	postgresqlprotoconnectstringsauth.html \
+	postgresqlprotouserlistauth.html \
+	postgresqlprototls.html \
+	postgresqlprotoforeignbackend.html \
+	postgresqlprotolimitations.html \
 	firebirdprotocol.html \
+	firebirdprotoconfiguration.html \
+	firebirdprotolistener.html \
+	firebirdprotoversion.html \
+	firebirdprotoauth.html \
+	firebirdprotoconnectstringsauth.html \
+	firebirdprotouserlistauth.html \
+	firebirdprotowirecrypt.html \
+	firebirdprotoforeignbackend.html \
+	firebirdprotolimitations.html \
 	tdsprotocol.html \
+	tdsprotoconfiguration.html \
+	tdsprotolistener.html \
+	tdsprotoversion.html \
+	tdsprotopacketsize.html \
+	tdsprotoauth.html \
+	tdsprotoconnectstringsauth.html \
+	tdsprotouserlistauth.html \
+	tdsprototls.html \
+	tdsprotoforeignbackend.html \
+	tdsprotolimitations.html \
 	oracleprotocol.html \
+	oracleprotoconfiguration.html \
+	oracleprotolistener.html \
+	oracleprotosid.html \
+	oracleprotologinattempts.html \
+	oracleprotoserverversion.html \
+	oracleprotoverifiertype.html \
+	oracleprotobigchunkclr.html \
+	oracleprotocharsets.html \
+	oracleprotodateformat.html \
+	oracleprotoauth.html \
+	oracleprotoconnectstringsauth.html \
+	oracleprotouserlistauth.html \
+	oracleprotoforeignbackend.html \
+	oracleprotolimitations.html \
 	multipleprotocols.html \
 	highavailability.html \
 	hacluster.html \

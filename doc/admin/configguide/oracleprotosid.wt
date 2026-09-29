@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=oracleprotolistener.html,vertical-align=middle)]] [oracleprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotologinattempts.html Login Attempts] [[Image(../../images/navnext.png,link=oracleprotologinattempts.html,vertical-align=middle)]]
+
+[=#oraclesid]
+= SID / Service Name =
+
+An Oracle client's connect descriptor names a SID or SERVICE_NAME - either is just an alias for the database it wants, taken from its tnsnames.ora entry or built into its connect string.  A real Oracle listener checks that name against the services it knows about and refuses the connection with ORA-12514 if it doesn't recognize it.
+
+The //sid// option gives the Oracle protocol module the same check.  Set it to the SID/SERVICE_NAME (or a comma-separated list of them) this instance should accept; a client naming anything else is refused with ORA-12514 before it gets as far as a login prompt.  Matching is case-insensitive, and either CONNECT_DATA key - SID or SERVICE_NAME - is accepted from the client, since a client only ever sends whichever one its own connect descriptor used.
+
+Leaving //sid// unset accepts any SID/SERVICE_NAME a client asks for, which is the default.
+
+A connect descriptor that names no SID or SERVICE_NAME at all is let through even when //sid// is set, since there's nothing to check it against.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefesid.conf@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=oracleprotolistener.html,vertical-align=middle)]] [oracleprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotologinattempts.html Login Attempts] [[Image(../../images/navnext.png,link=oracleprotologinattempts.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

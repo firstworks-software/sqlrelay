@@ -1,0 +1,26 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="firebirdprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotoversion.html">Protocol Version</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotoconnectstringsauth.html">Connect Strings Auth</a> <a href="firebirdprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="firebirdauth"/><h1>Authentication/Encryption Options</h1>
+
+<p>When using the Firebird protocol, there are two options for controlling which users are allowed to access an instance of SQL Relay.  There is no <i>database</i> auth module for the Firebird protocol.</p>
+
+<ul>
+  <li><a href="firebirdprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+  <li><a href="firebirdprotouserlistauth.html">User List Auth</a></li>
+  <li><a href="firebirdprotowirecrypt.html">Wire Encryption</a></li>
+</ul>
+
+<hr/>
+
+<p><a href="firebirdprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotoversion.html">Protocol Version</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotoconnectstringsauth.html">Connect Strings Auth</a> <a href="firebirdprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

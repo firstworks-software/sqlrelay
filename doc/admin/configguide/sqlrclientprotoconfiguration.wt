@@ -1,0 +1,77 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=sqlrclientprotolistener.html,vertical-align=middle)]]
+
+[=#sqlrclientconfiguration]
+= Basic Configuration =
+
+SQLRClient is the native SQL Relay protocol, no special tags or attributes are required to enable it.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-minimal.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The connection tag instructs the instance to log in to the //ora1// database as user //scott// with password //tiger//.
+* By default, SQL Relay loads the //sqlrclient// protocol module, and listens on port 9000.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+sqlrsh -host localhost -user scott -password tiger
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag. )
+}}}
+
+By default, SQL Relay listens on all available network interfaces, on port 9000, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named //sqlrserver// then it can be accessed from another system using:
+
+{{{#!blockquote
+{{{
+sqlrsh -host sqlrserver -user scott -password tiger
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //sqlrclient// protocol module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-explicit.conf@
+}}}
+}}}
+
+Since this instance speaks the SQLRClient client-server protocol, any client that wishes to use it must also speak the SQLRClient client-server protocol.  This means that software written using the SQL Relay native API, or written using a database abstraction layer which loads a driver for SQL Relay can access this instance.  However, it also means that client programs for other databases (eg. the mysql, psql, and sqlplus command line programs, !MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotocol.html,vertical-align=middle)]] [sqlrclientprotocol.html SQLRClient Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=sqlrclientprotolistener.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

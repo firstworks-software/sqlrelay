@@ -1,0 +1,20 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprototls.html,vertical-align=middle)]] [sqlrclientprototls.html TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotocol.html MySQL Protocol] [[Image(../../images/navnext.png,link=mysqlprotocol.html,vertical-align=middle)]]
+
+[=#sqlrclientlimitations]
+= Limitations =
+
+The SQLRClient protocol is SQL Relay's own, so it has no notable feature gaps the way the emulated protocols do.  The one thing worth knowing about is that a newer client cannot talk to an older server (an older client still works against a newer server), so the server side of any link - including a //router// instance talking to the instances behind it - has to be upgraded first.
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprototls.html,vertical-align=middle)]] [sqlrclientprototls.html TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotocol.html MySQL Protocol] [[Image(../../images/navnext.png,link=mysqlprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

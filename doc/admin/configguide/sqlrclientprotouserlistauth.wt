@@ -1,0 +1,31 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]] [sqlrclientprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotodbauth.html Database Auth] [[Image(../../images/navnext.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]]
+
+[=#sqlrclientuserlistauth]
+= User List Auth =
+
+Another popular authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-auths-users.conf@
+}}}
+}}}
+
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]] [sqlrclientprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotodbauth.html Database Auth] [[Image(../../images/navnext.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

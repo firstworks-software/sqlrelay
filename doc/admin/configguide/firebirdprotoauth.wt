@@ -1,0 +1,24 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=firebirdprotoversion.html,vertical-align=middle)]] [firebirdprotoversion.html Protocol Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]]
+
+[=#firebirdauth]
+= Authentication/Encryption Options =
+
+When using the Firebird protocol, there are two options for controlling which users are allowed to access an instance of SQL Relay.  There is no //database// auth module for the Firebird protocol.
+
+* [firebirdprotoconnectstringsauth.html Connect Strings Auth]
+* [firebirdprotouserlistauth.html User List Auth]
+* [firebirdprotowirecrypt.html Wire Encryption]
+
+----
+
+[[Image(../../images/navprev.png,link=firebirdprotoversion.html,vertical-align=middle)]] [firebirdprotoversion.html Protocol Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=firebirdprotoconnectstringsauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

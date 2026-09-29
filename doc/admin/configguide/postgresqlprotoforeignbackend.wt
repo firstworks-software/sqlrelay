@@ -1,0 +1,50 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlprototls.html,vertical-align=middle)]] [postgresqlprototls.html TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=postgresqlprotolimitations.html,vertical-align=middle)]]
+
+[=#postgresqlforeignbackend]
+= Foreign Backend =
+
+Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the !PostgreSQL database it was originally written to use.
+
+This is as simple as specifying a different database using the //dbase// attribute in the instance tag and specifying the appropriate database connection string in the //string// attribute of the connection tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqlfeoracle.conf@
+}}}
+}}}
+
+In this example, a !PostgreSQL front-end provides !PostgreSQL applications access to an Oracle back-end database.
+
+Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:
+
+* In the instance tag:
+ * set translatebindvariables="yes"
+ * set the isolationlevel attribute
+ * set transactionmodel="explicit"
+* In the string attribute of the connection tag:
+ * set autocommit=yes or autocommit=no
+ * implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter
+ * set the identity parameter to override the database type
+ * set ignorespace=yes
+ * set the overrideschema parameter
+ * set the typemangling and/or tablemangling parameters
+* use [querytranslation.html#querytranslation Query Translation] modules
+* use [resultsettranslation.html#resultsettranslation Result Set Translation] modules
+* use [errortranslation.html#errortranslation Error Translation] modules
+* use [sessionqueries.html#sessionqueries Session Queries]
+
+In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlprototls.html,vertical-align=middle)]] [postgresqlprototls.html TLS/SSL Encryption and Authentication] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=postgresqlprotolimitations.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

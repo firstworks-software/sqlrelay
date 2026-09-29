@@ -1,0 +1,32 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=tdsprotoversion.html,vertical-align=middle)]] [tdsprotoversion.html TDS Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoauth.html Authentication/Encryption Options] [[Image(../../images/navnext.png,link=tdsprotoauth.html,vertical-align=middle)]]
+
+[=#tdspacketsize]
+= Packet Size =
+
+TDS sends data in packets of a fixed size, which the client and server negotiate during login.  Larger packets mean fewer round trips for large result sets, and smaller packets can suit a constrained network or a client that can't handle large ones.
+
+The //packetsize// attribute on the listener tag sets the packet size, in bytes, that SQL Relay uses until a connecting client negotiates a different size.  It defaults to 4096.  It must not exceed //maxpacketsize//; if it does, SQL Relay clamps it.
+
+The //maxpacketsize// attribute sets the largest packet size, in bytes, that a connecting client is allowed to negotiate.  It defaults to 65535, which is also the largest value allowed.  Setting it to 0, or to anything above 65535, is the same as setting it to 65535.
+
+A client that asks to negotiate a packet size below 512 bytes is refused; the connection keeps using whatever packet size was already negotiated.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfepacketsize.conf@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=tdsprotoversion.html,vertical-align=middle)]] [tdsprotoversion.html TDS Version] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoauth.html Authentication/Encryption Options] [[Image(../../images/navnext.png,link=tdsprotoauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

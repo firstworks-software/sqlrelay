@@ -1,0 +1,25 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlprotolistener.html,vertical-align=middle)]] [postgresqlprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotopasswords.html Password Method] [[Image(../../images/navnext.png,link=postgresqlprotopasswords.html,vertical-align=middle)]]
+
+[=#postgresqlauth]
+= Authentication/Encryption Options =
+
+When using the !PostgreSQL protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
+
+* [postgresqlprotopasswords.html Password Method]
+* [postgresqlprotoconnectstringsauth.html Connect Strings Auth]
+* [postgresqlprotouserlistauth.html User List Auth]
+* [postgresqlprototls.html TLS/SSL Encryption and Authentication]
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlprotolistener.html,vertical-align=middle)]] [postgresqlprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotopasswords.html Password Method] [[Image(../../images/navnext.png,link=postgresqlprotopasswords.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

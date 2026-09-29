@@ -1,0 +1,86 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="tdsprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoforeignbackend.html">Foreign Backend</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotocol.html">Oracle Protocol</a> <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="tdslimitations"/><h1>Limitations</h1>
+
+<p>The implementation of the TDS protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:</p>
+
+<ul>
+  <li>TLS/SSL mutual authentication requires a client that can present a client certificate.  The freetds client cannot.  See <a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a> above.</li>
+  <li>For odbc-backed instances, the connect string needs mars=yes for cursors and positioned updates to work.  Without it, a query sent while another cursor still has rows pending fails with "Connection is busy with results for another command".  See the <a href="../configreference.html#odbc">SQL Relay Configuration Reference</a> for the <i>mars</i> option.</li>
+  <li>TDS 5.0 is the only pre-TDS7 dialect a client can actually log in with.  A client that declares an older dialect (4.2, 4.6, or 4.9.5) is refused with an error, even though some of those are otherwise legal values for the <i>tdsversion</i> listener option.</li>
+  <li>A pre-TDS7 login that declares more than one byte order for integers, floats and datetimes is refused.</li>
+  <li>A TDS-native encrypted login (SEC_LOGPWD/CS_SEC_ENCRYPTION) requires a password cipher that SQL Relay loads from SAP's own libsybcomn64 library on the SQL Relay host; if that library isn't installed, or doesn't provide the cipher, the module refuses the login and asks the client to disable password encryption and log in again.  This is separate from, and unrelated to, TLS/SSL encryption.</li>
+  <li>Bulk copy ("insert bulk") is supported, but not as a true bulk load: each incoming row becomes its own INSERT statement and its own round trip to the back-end database, rather than one round trip for the whole batch.  It is also not supported at all when sent as an RPC, or under the TDS 5.0 (pre-TDS7/ct-lib) dialect.</li>
+  <li>A positioned update or delete issued as a numbered cursor operation (sp_cursor, or the TDS 5.0 curupdate/curdelete tokens) can only see the first 1024 buffered rows of a multi-row fetch.  Positioning past that limit fails with "The cursor is not on a row that can be updated".  This cap doesn't apply to an ordinary WHERE CURRENT OF sent as a plain query, which is handled by the back-end database's own cursor instead.</li>
+  <li>A few TDS 5.0 (pre-TDS7/ct-lib) edge cases aren't implemented: the sp_cursorprepare, sp_cursoropen, sp_cursorexecute, sp_cursorprepexec and sp_cursorfetch numbered cursor procedures sent as RPCs (sp_cursor and sp_cursorclose work normally), the "procname" dynamic-SQL type, and a result set wider than 65535 columns or with more than 65535 bytes of metadata.</li>
+</ul>
+
+<hr/>
+
+<p><a href="tdsprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoforeignbackend.html">Foreign Backend</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotocol.html">Oracle Protocol</a> <a href="oracleprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

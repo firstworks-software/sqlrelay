@@ -1,0 +1,48 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sqlrclientprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotodbauth.html">Database Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotokrb.html">Kerberos and Active Directory Encryption and Authentication</a> <a href="sqlrclientprotokrb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sqlrclientproxiedauth"/><h1>Proxied Auth</h1>
+
+<p>Another authentication option is <i>proxied</i> auth.</p>
+
+<p>When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than database authentication described above.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.</p>
+
+<p>This is currently only supported with Oracle (version 8i or higher) and requires database configuration.  See <a href="../oraclentier.html">this document</a> for more information including instructions for configuring Oracle.</p>
+
+<p>To enable proxied auth, configure SQL Relay to load the <i>proxied</i> auth module as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_proxied"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+                        <b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> Proxied authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If proxied authentication is used for that instance, then authentication will fail.)
+</blockquote>
+<hr/>
+
+<p><a href="sqlrclientprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotodbauth.html">Database Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotokrb.html">Kerberos and Active Directory Encryption and Authentication</a> <a href="sqlrclientprotokrb.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

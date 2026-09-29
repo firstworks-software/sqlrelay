@@ -1,0 +1,20 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sqlrclientprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprototls.html">TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sqlrclientlimitations"/><h1>Limitations</h1>
+
+<p>The SQLRClient protocol is SQL Relay's own, so it has no notable feature gaps the way the emulated protocols do.  The one thing worth knowing about is that a newer client cannot talk to an older server (an older client still works against a newer server), so the server side of any link - including a <i>router</i> instance talking to the instances behind it - has to be upgraded first.</p>
+
+<hr/>
+
+<p><a href="sqlrclientprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprototls.html">TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotocol.html">MySQL Protocol</a> <a href="mysqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

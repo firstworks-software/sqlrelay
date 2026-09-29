@@ -1,0 +1,52 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="firebirdprotoauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotoauth.html">Authentication/Encryption Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotouserlistauth.html">User List Auth</a> <a href="firebirdprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="firebirdconnectstringsauth"/><h1>Connect Strings Auth</h1>
+
+<p>The default authentication option is <i>connect strings</i> auth.</p>
+
+<p>When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.</p>
+
+<p>The Basic Configuration example above uses this option, and configures SQL Relay to access the database using firebirduser/firebirdpassword credentials.  In that case, clients would also use firebirduser/firebirdpassword credentials to access SQL Relay.</p>
+
+<p>The module answers each of the login methods a Firebird client might use - Srp256, Srp, and Legacy_Auth - by deriving what that method needs from the configured password.  Firebird treats a user name as an SQL identifier, so testuser, TestUser and TESTUSER are all the same user, and the module applies Firebird's own rules to both the name the client sends and the configured user before comparing them.</p>
+
+<p>( <b>NOTE:</b> Srp, Srp256 and Legacy_Auth all have to derive their answer from the password itself, so a password stored with a one-way <a href="secpwdenc.html">password encryption</a> module can't be used with any of them - only reversible password encryption works.  A client that builds its own login request by hand can ask for a plain password comparison instead, which a one-way module does support, but no client library normally used against SQL Relay does this, so in practice this doesn't apply.)</p>
+
+<p>Though it is not necessary, it is possible to explicitly configure SQL Relay to load the <i>connect strings</i> auth module as follows:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"firebird"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3050"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"firebird_connectstrings"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=firebirduser;password=firebirdpassword;db=firebirdhost:/opt/firebird/firebirddb.gdb"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="firebirdprotoauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="firebirdprotoauth.html">Authentication/Encryption Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="firebirdprotouserlistauth.html">User List Auth</a> <a href="firebirdprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

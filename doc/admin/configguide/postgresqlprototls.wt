@@ -1,0 +1,167 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]] [postgresqlprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]]
+
+[=#postgresqltls]
+= TLS/SSL Encryption and Authentication =
+
+SQL Relay supports TLS/SSL encryption and authentication between the !PostgreSQL client and SQL Relay Server.
+
+ [[Image(../../images/secure-tls-postgresql-unsecured.png,nolink)]]
+
+When TLS/SSL encryption and authentication is used:
+
+* All communications between the !PostgreSQL client and SQL Relay server are encrypted.
+* !PostgreSQL clients and servers may optionally validate each other's certificates and identities.
+
+When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.
+
+{{{#!blockquote
+( '''NOTE:''' Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+}}}
+
+
+== Encryption Only ==
+
+The following configuration enables TLS/SSL encryption for an instance of SQL Relay:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqltls.conf@
+}}}
+}}}
+
+* The '''tls''' attribute enables (or disables) TLS/SSL encryption.
+* The '''tlscert''' attribute specifies the TLS/SSL certificate chain to use.
+ * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [../tlscert.html The tlscert Parameter] for details.)
+ * If the file specified by '''tlscert''' doesn't already include the private key, the '''tlskey''' attribute may be used to specify a separate file containing it.
+* User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.
+
+To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:
+
+{{{#!blockquote
+{{{
+sqlr-start -id example
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' When installed from packages, SQL Relay may have to be started and stopped as root.)
+}}}
+
+The instance may be accessed as follows:
+
+{{{#!blockquote
+{{{
+PGSSLMODE=require psql -h sqlrserver -U sqlruser
+}}}
+}}}
+
+This establishes a TLS/SSL-encrypted session but does not validate the server's certificate or identity.  The session will only continue if the server's certificate is is well-formed and hasn't expired, '''but the client is still vulnerable to various attacks'''.
+
+== Certificate Validation ==
+
+For a more secure session, the client may validate that the server's certificate was signed by a trusted certificate authority, known to the system, as follows:
+
+{{{#!blockquote
+{{{
+PGSSLMODE=verify-ca psql -h sqlrserver -U sqlruser
+}}}
+}}}
+
+If the server's certificate is self-signed, then the certificate authority won't be known to the system, but it's certificate may be specified by the tlsca parameter as follows:
+
+{{{#!blockquote
+{{{
+PGSSLMODE=verify-ca PGSSLROOTCERT=/usr/local/firstworks/etc/myca.pem psql -h sqlrserver -U sqlruser
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlsca.html The tlsca Parameter] for details.)
+
+This establishes a TLS/SSL-encrypted session with the server and validates the server's certificate, but does not validate the server's identity.  The session will only continue if the server's certificate is valid, '''but the client is still vulnerable to various attacks'''.
+
+== Host Name Validation ==
+
+For a more secure session, the client may validate that the host name provided by the server's certificate matches the host name that the client meant to connect to, as follows:
+
+{{{#!blockquote
+{{{
+PGSSLMODE=verify-full PGSSLROOTCERT=/usr/local/firstworks/etc/myca.pem psql -h sqlrserver.firstworks.com -U sqlruser
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlsca.html The tlsca Parameter] for details.)
+
+Note that the fully qualified host name was provided.  Note also the use of the verify-full value for the PGSSLMODE environment variable.  With these parameters, in addition to validating that the server's certificate was signed by a trusted certificate authority, the host name will also be validated.  If the certificate contains Subject Alternative Names, then the host name will be compared to each of them.  If no Subject Alternative Names are provided then the host name will be compared to the certificate's Common Name.  The session will only continue if the sever's certificate and identity are both valid.
+
+The !PostgreSQL client only appears to support fully qualified host name validation.  It does not appear possible to instruct the client to only validate the domain portion of the host name.
+
+== Mutual Authentication ==
+
+For an even more secure session, the server may also request a certificate from the client, validate the certificate, and optionally authenticate the client based on the host name provided by the certificate.
+
+The following configuration enables these checks for an instance of SQL Relay:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqltls-validate.conf@
+}}}
+}}}
+
+* The '''tlsvalidate''' attribute enables (or disables) validation that client's certificate was signed by a trusted certificate authority, known to the system, or as provided by the tlsca attribute.
+* The '''tlsca''' attribute specifies a certificate authority to include when validating the client's certificate.  This is useful when validating self-signed certificates.
+ * (a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See [../tlsca.html The tlsca Parameter] for details.)
+* User list authentication is also used.
+
+Note that no passwords are required in the user list.  In this configuration, the Subject Alternative Names in the client's certificate (or Common Name if no SAN's are present) are authenticated against the list of valid names.
+
+Note also that when '''tlsvalidate''' is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.
+
+To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:
+
+{{{#!blockquote
+{{{
+PGSSLMODE=verify-full PGSSLCERT=/usr/local/firstworks/etc/sqlrclient.pem PGSSLKEY=/usr/local/firstworks/etc/sqlrclient.pem psql -h sqlrserver.firstworks.com -U sqlruser
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlscert.html The tlscert Parameter] for details.)
+
+Note that the PGSSLCERT and PGSSLKEY parameters specify the same file.  psql requires that the client certificate and private key both be specified.  If the certificate file contains the key then the same file may be specified in both environment variables.  If the certificate and key are contained in separate files, then each may be specified individually.
+
+In a more likely use case though, mutual authentication occurs - the client validates the server's certificate and the server validates the client's certificate, as follows:
+
+{{{#!blockquote
+{{{
+PGSSLMODE=verify-full PGSSLCERT=/usr/local/firstworks/etc/sqlrclient.pem PGSSLKEY=/usr/local/firstworks/etc/sqlrclient.pem PGSSLROOTCERT=/usr/local/firstworks/etc/myca.pem psql -h sqlrserver.firstworks.com -U sqlruser
+}}}
+}}}
+
+(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See [../tlscert.html The tlscert Parameter] and [../tlsca.html The tlsca Parameter] for details.)
+
+In this example, the client provides a certificate for the server to validate, validates the host's certificate against the provided certificate authority, and validates the host's identity against the provided host name.
+
+SQL Relay can validate the client's certificate, and reject clients which present invalid certificates, but cannot yet authenticate the user via the Subject Alternative Name or Common Name presented in the certificate in lieu of a !PostgreSQL username.  As such, a username and password must still be supplied for authentication in this configuration.
+
+== Performance Considerations ==
+
+While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:
+
+* When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.
+* Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.
+* Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.
+
+Any kind of full session encryption should be used with caution in performance-sensitive applications.
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]] [postgresqlprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

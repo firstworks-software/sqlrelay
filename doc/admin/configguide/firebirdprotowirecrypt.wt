@@ -1,0 +1,53 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=firebirdprotouserlistauth.html,vertical-align=middle)]] [firebirdprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]]
+
+[=#firebirdwirecrypt]
+= Wire Encryption =
+
+Firebird 3 and later encrypt the traffic between client and server with their own wire encryption, rather than with TLS/SSL, and the Firebird protocol module does the same.  The encryption is negotiated during login, and is keyed from the login itself, so no certificate is involved.
+
+ [[Image(../../images/secure-wire-firebird-unsecured.png,nolink)]]
+
+The //wirecrypt// attribute on the listener tag sets the level of encryption that SQL Relay asks for:
+
+* '''disabled''' - never encrypt.
+* '''enabled''' - encrypt if the client is willing to.  This is the module's default.  (It matches a stock Firebird client's own default; a stock Firebird //server// instead defaults to '''required'''.)
+* '''required''' - refuse any client that won't encrypt.
+
+The client has a level of its own (the !WireCrypt setting in its firebird.conf), and the two are combined:
+
+* If either side requires encryption, and the other side allows it, the session is encrypted.
+* If one side requires encryption and the other has it disabled, the login is refused.
+* Otherwise, the session is encrypted only if both sides have it enabled.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-firebirdfewirecrypt.conf@
+}}}
+}}}
+
+When encryption is required, it is enforced.  Until encryption is actually running, only the requests that turn it on, finish the login, keep the connection alive, or end the session are answered.  Anything else is refused and the session ends, so a client that agrees to encryption and then never turns it on can't carry on in the clear.
+
+Note that:
+
+* Encryption needs protocol version 13 or higher - see [firebirdprotoversion.html Protocol Version] above.
+* Encryption needs a client that logs in with Srp or Srp256.  The encryption key comes out of that login, so a client that logs in with Legacy_Auth can't encrypt.
+* Only the Arc4 cipher is offered, not !ChaCha or !ChaCha64.  A client picks its cipher from the ones the server offers.
+* A client that can't encrypt is refused when the level is //required//.
+
+The generic //tls// and //tlscert// listener attributes that the other protocols use are not supported for protocol="firebird".  If tls="yes" is configured on a firebird listener, SQL Relay prints a warning when the instance starts, and nothing is encrypted with TLS/SSL.  Use //wirecrypt// instead.
+
+See the [../configreference.html#attributes SQL Relay Configuration Reference] for the full description of the //wirecrypt// option.
+
+----
+
+[[Image(../../images/navprev.png,link=firebirdprotouserlistauth.html,vertical-align=middle)]] [firebirdprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotoforeignbackend.html Foreign Backend] [[Image(../../images/navnext.png,link=firebirdprotoforeignbackend.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

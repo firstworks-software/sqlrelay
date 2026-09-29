@@ -1,0 +1,64 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]] [mysqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=mysqlprotolimitations.html,vertical-align=middle)]]
+
+[=#mysqlspecialpurpose]
+= Special-Purpose Options =
+
+== Mapping zero-scale DECIMAL to BIGINT ==
+
+When targeting a foreign back-end...
+
+Some back-end databases, like Oracle, don't have integer types.  An integer type is really just a DECIMAL with a scale of 0.
+
+By default, the !MySQL protocol module maps zero-scale DECIMAL types to the !MySQL DECIMAL type.  Buy you might want to map them to the !MySQL BIGINT type instead.
+
+The //zeroscaledecimaltobigint// option instructs the module to do this mapping.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfezeroscaledecimal.conf@
+}}}
+}}}
+
+== Mapping DATE to DATETIME ==
+
+When targeting a foreign back-end...
+
+Some back-end databases, like Oracle, don't have separate DATE and DATETIME types.  Instead, they just have a DATE type, which can store date and time parts, and which parts are returned depend on a parameter like NLS_DATE_FORMAT.
+
+By default, the !MySQL protocol module maps the DATE type to the !MySQL DATE type.  But, if you are using DATE type fields to store date/times and have the database configured to return date and time parts, then you might want the DATE type mapped to the !MySQL DATETIME type.
+
+The //datetodatetime// option instructs the module to do this mapping.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedatetodatetime.conf@
+}}}
+}}}
+
+== Supporting Older !MariaDB JDBC Drivers ==
+
+Older !MariaDB JDBC drivers had a bug related to fetching the server's capability flags, and would reliably throw a !NullPointerException when attempting to connect.
+
+(I'm not sure exactly what versions this bug is present in.  It's present in version 1.4.6, but fixed by 2.1.1.)
+
+The //oldmariadbjdbcservercapabilitieshack// option instructs the module to return server capability flags that don't upset the old driver.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeoldmariadbjdbc.conf@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=mysqlprotoforeignbackend.html,vertical-align=middle)]] [mysqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotolimitations.html Limitations] [[Image(../../images/navnext.png,link=mysqlprotolimitations.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

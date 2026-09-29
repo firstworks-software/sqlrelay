@@ -1,0 +1,22 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="oracleprotosid.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotosid.html">SID / Service Name</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoserverversion.html">Server Version</a> <a href="oracleprotoserverversion.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="oracleloginattempts"/><h1>Login Attempts</h1>
+
+<p>A real Oracle server lets a client retry a failed login on the same connection - the wrong-password-then-correct-password flow OCI clients and sqlplus expect - up to a limit before it drops the connection.</p>
+
+<p>The Oracle protocol module does the same.  After a failed login it sends the error and waits for another attempt on the same connection, rather than tearing the connection down.  The <i>maxloginattempts</i> option sets how many attempts one connection gets before the module gives up and drops it; it defaults to 3, matching a real server's default SEC_MAX_FAILED_LOGIN_ATTEMPTS.</p>
+
+<hr/>
+
+<p><a href="oracleprotosid.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotosid.html">SID / Service Name</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoserverversion.html">Server Version</a> <a href="oracleprotoserverversion.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

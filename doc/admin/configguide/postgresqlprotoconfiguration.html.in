@@ -1,0 +1,91 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="postgresqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotocol.html">PostgreSQL Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotolistener.html">Listener Options</a> <a href="postgresqlprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="postgresqlconfiguration"/><h1>Basic Configuration</h1>
+
+<p>To enable SQL Relay to speak the PostgreSQL protocol, add the appropriate listener tag:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"5433"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=postgresqluser;password=postgresqlpassword;db=postgresqldb;host=postgresqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this configuration:</p>
+
+<ul>
+  <li>The connection tag instructs the instance to log in to the <i>postgresqldb</i> database on host <i>postgresqlhost</i> as user <i>postgresqluser</i> with password <i>postgresqlpassword</i>.</li>
+  <li>The listener tag instructs SQL Relay to load the <i>postgresql</i> protocol module, and listen on port 5433.</li>
+</ul>
+
+<p>The instance can be started using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>start <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>and accessed from the local machine using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">h</font> localhost <font color="#990000">-</font>p <font color="#993399">5433</font> <font color="#990000">-</font>U sqlruser</tt></pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> By default, the user and password used to access SQL Relay are the same as the user and password that SQL Relay is configured to use to access the database. That is, they are the values of the user and password parameters of the string attribute of the connection tag. ) 
+</blockquote>
+<p>By default, SQL Relay listens on all available network interfaces, and can be accessed remotely by hostname.  For example, if the server running SQL Relay is named <i>sqlrserver</i> then it can be accessed from another system using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>psql <font color="#990000">-</font><font color="#008080">h</font> sqlrserver <font color="#990000">-</font>p <font color="#993399">5433</font> <font color="#990000">-</font>U sqlruser</tt></pre>
+
+</blockquote>
+<p>The instance can be stopped using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>sqlr<font color="#990000">-</font>stop <font color="#990000">-</font>id example</tt></pre>
+
+</blockquote>
+<p>Since this instance speaks the PostgreSQL client-server protocol, any client that wishes to use it must also speak the PostgreSQL client-server protocol.  This means that most software written using the PostgreSQL API, or written using a database abstraction layer which loads a driver for PostgreSQL can access this instance.  However, it also means that SQL Relay's standard sqlrsh client program and client programs for other databases (eg. the mysql, and sqlplus command line programs, MySQL Workbench, Oracle SQL Developer, SQL Server Management Studio, etc.) cannot access this instance.</p>
+
+<hr/>
+
+<p><a href="postgresqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprotocol.html">PostgreSQL Protocol</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotolistener.html">Listener Options</a> <a href="postgresqlprotolistener.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

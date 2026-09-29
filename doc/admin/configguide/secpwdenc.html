@@ -130,7 +130,7 @@ http://www.gnu.org/software/src-highlite -->
 <p>Two protocols are affected, and they choose the method differently:</p>
 
 <ul>
-  <li>For the <b>postgresql</b> protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.  See <a href="postgresqlprotocol.html#postgresqlpasswords">Password Method</a> in the <a href="PostgreSQL">PostgreSQL</a> Protocol section.</li>
+  <li>For the <b>postgresql</b> protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.  See <a href="postgresqlprotopasswords.html">Password Method</a> in the <a href="PostgreSQL">PostgreSQL</a> Protocol section.</li>
   <li>For the <b>firebird</b> protocol, the client chooses, by which item it puts the password in.  fbclient sends the legacy hash, so in practice a one-way module will not authenticate a normal firebird client no matter how the listener is configured.</li>
 </ul>
 

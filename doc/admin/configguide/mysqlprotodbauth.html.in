@@ -1,0 +1,85 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="mysqlprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprototls.html">TLS/SSL Encryption and Authentication</a> <a href="mysqlprototls.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="mysqldbauth"/><h1>Database Auth</h1>
+
+<p>Another popular authentication option is <i>database</i> auth.</p>
+
+<p>The <i>mysql_database</i> module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.</p>
+
+<p>SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.</p>
+
+<p>To enable database auth, configure SQL Relay to load the <i>mysql_database</i> auth module as follows.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3306"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"mysql_database"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this configuration, SQL Relay initially logs in to the database as <i>mysqluser/mysqlpassword</i> as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.</p>
+
+<p>For example, if a client initially connects using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>user<font color="#990000">=</font>mysqluser <font color="#990000">--</font>password<font color="#990000">=</font>mysqlpassword <font color="#990000">--</font><b><font color="#0000FF">default</font></b><font color="#990000">-</font>auth<font color="#990000">=</font>mysql_clear_password</tt></pre>
+
+</blockquote>
+<p>...then SQL Relay doesn't need to log out and log back in.</p>
+
+<p>But if the client then tries to connect using:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt>mysql <font color="#990000">--</font>host<font color="#990000">=</font><font color="#993399">127.0</font><font color="#990000">.</font><font color="#993399">0.1</font> <font color="#990000">--</font>user<font color="#990000">=</font>anotheruser <font color="#990000">--</font>password<font color="#990000">=</font>anotherpassword <font color="#990000">--</font><b><font color="#0000FF">default</font></b><font color="#990000">-</font>auth<font color="#990000">=</font>mysql_clear_password</tt></pre>
+
+</blockquote>
+<p>..then SQL Relay does need to log out and log back in.</p>
+
+<p>A subsequent connection using <i>anotheruser/anotherpassword</i> won't require a re-login, but a subsequent connection using any other user/password will.</p>
+
+<p>Though this module is convenient, it has two disadvantages.</p>
+
+<ul>
+  <li>Logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.</li>
+  <li>The mysql_database module requires that the MySQL/MariaDB client send it an unencrypted password.  In the examples above, the --default-auth=mysql_clear_password option is used to send an unencrypted password from the mysql command line program.</li>
+</ul>
+
+<p>The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  Note that some MySQL and MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of MySQL/MariaDB would have to be installed or built from source.</p>
+
+<hr/>
+
+<p><a href="mysqlprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprototls.html">TLS/SSL Encryption and Authentication</a> <a href="mysqlprototls.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

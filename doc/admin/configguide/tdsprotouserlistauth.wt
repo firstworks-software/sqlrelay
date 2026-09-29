@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]] [tdsprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=tdsprototls.html,vertical-align=middle)]]
+
+[=#tdsuserlistauth]
+= User List Auth =
+
+Another authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfeuserlistmultiple.conf@
+}}}
+}}}
+
+When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
+
+The //tds_userlist// module compares the user and password sent by the client directly against the configured list - there is no challenge/response step to negotiate, unlike the Firebird or Oracle protocols.
+
+----
+
+[[Image(../../images/navprev.png,link=tdsprotoconnectstringsauth.html,vertical-align=middle)]] [tdsprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=tdsprototls.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

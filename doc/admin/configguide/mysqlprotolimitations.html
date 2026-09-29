@@ -1,0 +1,87 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="mysqlprotospecialpurpose.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotospecialpurpose.html">Special-Purpose Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotocol.html">PostgreSQL Protocol</a> <a href="postgresqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="mysqllimitations"/><h1>Limitations</h1>
+
+<p>The implementation of the MySQL protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:</p>
+
+<ul>
+  <li>Only LATIN1_SWEDISH_CI and UTF8_GENERAL_CI character sets are supported.</li>
+  <li>Only the mysql_native_password and mysql_clear_password authentication methods are supported.  Notably, mysql_old_password and authentication_windows_client are not supported.</li>
+  <li>Multi-statement queries are not supported.</li>
+  <li>mysql_change_user() is not supported.</li>
+  <li>mysql_send_long_data() is not supported.</li>
+  <li>mysql_info() will always returns NULL when used with SQL Relay.</li>
+  <li>MYSQL_FIELD.org_name/org_name_length and MYSQL_FIELD.org_table/org_table_length are not supported.</li>
+  <li>LOAD DATA LOCAL INFILE is not supported - the module never advertises CLIENT_LOCAL_FILES, so a client can't ask it to read a local file into a table.  Server-side LOAD DATA INFILE, reading a file already on the database server, works as an ordinary query, but its reply doesn't include the usual "Records: x Deleted: x Skipped: x Warnings: x" summary.</li>
+  <li>Kerberos authentication and encryption are not supported.</li>
+</ul>
+
+<hr/>
+
+<p><a href="mysqlprotospecialpurpose.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotospecialpurpose.html">Special-Purpose Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotocol.html">PostgreSQL Protocol</a> <a href="postgresqlprotocol.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

@@ -1,0 +1,43 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="mysqlprotolistener.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotolistener.html">Listener Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotoclientflags.html">Client Protocol Flags</a> <a href="mysqlprotoclientflags.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="mysqlhandshake"/><h1>Handshake Protocol Version</h1>
+
+<p>Before a connecting client sends anything, the MySQL protocol module speaks first: it sends a handshake packet announcing which version of the wire protocol it supports.  Clients read that packet to decide how to format everything that follows.  Modern clients expect the modern handshake packet, known as protocol version 10.  Only a client too old to have ever supported MySQL 4.1's authentication still expects the legacy handshake packet, protocol version 9.</p>
+
+<p>The <i>handshake</i> attribute on the listener tag chooses which one the module sends.  Setting it to anything other than 10 sends the legacy protocol version 9 handshake instead; 9 is the conventional value to use.  Leaving it out, or setting it to 0 or to something that isn't a number, is the same as setting it to 10.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3306"</font> <font color="#009900">handshake</font><font color="#990000">=</font><font color="#FF0000">"9"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>There is normally no reason to set this.  It exists only for a client old enough to require the legacy handshake, and switching it on for a modern client doesn't degrade gracefully - the client simply fails to understand the packet.</p>
+
+<hr/>
+
+<p><a href="mysqlprotolistener.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotolistener.html">Listener Options</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotoclientflags.html">Client Protocol Flags</a> <a href="mysqlprotoclientflags.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

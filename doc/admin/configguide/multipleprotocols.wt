@@ -4,7 +4,7 @@
 
 {{{#!include ../../contentstart.html}}}
 
-[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [highavailability.html High Availability] [[Image(../../images/navnext.png,link=highavailability.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotolimitations.html,vertical-align=middle)]] [oracleprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [highavailability.html High Availability] [[Image(../../images/navnext.png,link=highavailability.html,vertical-align=middle)]]
 
 [=#multipleprotocols]
 = Multiple Protocols =
@@ -153,7 +153,7 @@ psql -h localhost -U postgresqluser
 
 ----
 
-[[Image(../../images/navprev.png,link=oracleprotocol.html,vertical-align=middle)]] [oracleprotocol.html Oracle Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [highavailability.html High Availability] [[Image(../../images/navnext.png,link=highavailability.html,vertical-align=middle)]]
+[[Image(../../images/navprev.png,link=oracleprotolimitations.html,vertical-align=middle)]] [oracleprotolimitations.html Limitations] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [highavailability.html High Availability] [[Image(../../images/navnext.png,link=highavailability.html,vertical-align=middle)]]
 
 {{{#!include ../../contentend.html}}}
 

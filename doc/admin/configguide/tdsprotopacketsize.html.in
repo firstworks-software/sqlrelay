@@ -1,0 +1,45 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="tdsprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoversion.html">TDS Version</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoauth.html">Authentication/Encryption Options</a> <a href="tdsprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="tdspacketsize"/><h1>Packet Size</h1>
+
+<p>TDS sends data in packets of a fixed size, which the client and server negotiate during login.  Larger packets mean fewer round trips for large result sets, and smaller packets can suit a constrained network or a client that can't handle large ones.</p>
+
+<p>The <i>packetsize</i> attribute on the listener tag sets the packet size, in bytes, that SQL Relay uses until a connecting client negotiates a different size.  It defaults to 4096.  It must not exceed <i>maxpacketsize</i>; if it does, SQL Relay clamps it.</p>
+
+<p>The <i>maxpacketsize</i> attribute sets the largest packet size, in bytes, that a connecting client is allowed to negotiate.  It defaults to 65535, which is also the largest value allowed.  Setting it to 0, or to anything above 65535, is the same as setting it to 65535.</p>
+
+<p>A client that asks to negotiate a packet size below 512 bytes is refused; the connection keeps using whatever packet size was already negotiated.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">packetsize</font><font color="#990000">=</font><font color="#FF0000">"2048"</font> <font color="#009900">maxpacketsize</font><font color="#990000">=</font><font color="#FF0000">"32767"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="tdsprotoversion.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotoversion.html">TDS Version</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoauth.html">Authentication/Encryption Options</a> <a href="tdsprotoauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

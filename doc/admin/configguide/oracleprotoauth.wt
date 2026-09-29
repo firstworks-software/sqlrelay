@@ -1,0 +1,23 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=oracleprotodateformat.html,vertical-align=middle)]] [oracleprotodateformat.html Date Format] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]]
+
+[=#oracleauth]
+= Authentication/Encryption Options =
+
+When using the Oracle protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
+
+* [oracleprotoconnectstringsauth.html Connect Strings Auth]
+* [oracleprotouserlistauth.html User List Auth]
+
+----
+
+[[Image(../../images/navprev.png,link=oracleprotodateformat.html,vertical-align=middle)]] [oracleprotodateformat.html Date Format] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=oracleprotoconnectstringsauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,63 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=mysqlprotouserlistauth.html,vertical-align=middle)]] [mysqlprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=mysqlprototls.html,vertical-align=middle)]]
+
+[=#mysqldbauth]
+= Database Auth =
+
+Another popular authentication option is //database// auth.
+
+The //mysql_database// module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.
+
+SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.
+
+To enable database auth, configure SQL Relay to load the //mysql_database// auth module as follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedatabase.conf@
+}}}
+}}}
+
+In this configuration, SQL Relay initially logs in to the database as //mysqluser/mysqlpassword// as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.
+
+For example, if a client initially connects using:
+
+{{{#!blockquote
+{{{#!code
+mysql --host=127.0.0.1 --user=mysqluser --password=mysqlpassword --default-auth=mysql_clear_password
+}}}
+}}}
+
+...then SQL Relay doesn't need to log out and log back in.
+
+But if the client then tries to connect using:
+
+{{{#!blockquote
+{{{#!code
+mysql --host=127.0.0.1 --user=anotheruser --password=anotherpassword --default-auth=mysql_clear_password
+}}}
+}}}
+
+..then SQL Relay does need to log out and log back in.
+
+A subsequent connection using //anotheruser/anotherpassword// won't require a re-login, but a subsequent connection using any other user/password will.
+
+Though this module is convenient, it has two disadvantages.
+
+* Logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.
+* The mysql_database module requires that the !MySQL/MariaDB client send it an unencrypted password.  In the examples above, the --default-auth=mysql_clear_password option is used to send an unencrypted password from the mysql command line program.
+
+The second disadvantage may or may not be a problem, depending on how secure communications on your network need to be.  Note that some !MySQL and !MariaDB distributions omit the necessary mysql_clear_password module.  For example, the distributions available in the default !CentOS 6 and 7 repositories omit the module.  On these platforms, an alternative distribution of !MySQL/MariaDB would have to be installed or built from source.
+
+----
+
+[[Image(../../images/navprev.png,link=mysqlprotouserlistauth.html,vertical-align=middle)]] [mysqlprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=mysqlprototls.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

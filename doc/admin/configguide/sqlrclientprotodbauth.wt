@@ -1,0 +1,62 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]] [sqlrclientprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoproxiedauth.html Proxied Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]]
+
+[=#sqlrclientdbauth]
+= Database Auth =
+
+Another popular authentication option is //database// auth.
+
+The //sqlrclient_database// module can be used to authentication users directly against the database itself.  This is useful when you want the credentials used to access SQL Relay to be the same as the credentials used to access the database, but it's inconvenient to maintain a duplicate list of users in the configuration file.
+
+SQL Relay authenticates users against the database by checking the provided credentials against the credentials that are currently in use, and then, if they differ, logging out of the database and back in using the provided credentials.
+
+To enable database auth, configure SQL Relay to load the //sqlrclient_database// auth module as follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-auths-database.conf@
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' Database authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If database authentication is used for that instance, then authentication will fail.)
+}}}
+
+In this configuration, SQL Relay initially logs in to the database as //scott/tiger// as specified in the connection tag.  But each time a client connects, SQL Relay logs out and attempts to log back in as the user specified by the client, unless the user/password are the same as the current user.
+
+For example, if a client initially connects using:
+
+{{{#!blockquote
+{{{#!code
+sqlrsh -host localhost -user scott -password tiger
+}}}
+}}}
+
+...then SQL Relay doesn't need to log out and log back in.
+
+But if the client then tries to connect using:
+
+{{{#!blockquote
+{{{#!code
+sqlrsh -host localhost -user anotheruser -password anotherpassword
+}}}
+}}}
+
+..then SQL Relay does need to log out and log back in.
+
+A subsequent connection using //anotheruser/anotherpassword// won't require a re-login, but a subsequent connection using any other user/password will.
+
+Though this module is convenient, it has the disadvantage that logging in and out of the database over and over partially defeats SQL Relay's persistent connection pooling.
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotouserlistauth.html,vertical-align=middle)]] [sqlrclientprotouserlistauth.html User List Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoproxiedauth.html Proxied Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoproxiedauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

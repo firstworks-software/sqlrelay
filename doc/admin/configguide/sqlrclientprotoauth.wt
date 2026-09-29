@@ -1,0 +1,27 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotolistener.html,vertical-align=middle)]] [sqlrclientprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]]
+
+[=#sqlrclientauth]
+= Authentication/Encryption Options =
+
+When using the SQLRClient protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.
+
+* [sqlrclientprotoconnectstringsauth.html Connect Strings Auth]
+* [sqlrclientprotouserlistauth.html User List Auth]
+* [sqlrclientprotodbauth.html Database Auth]
+* [sqlrclientprotoproxiedauth.html Proxied Auth]
+* [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication]
+* [sqlrclientprototls.html TLS/SSL Encryption and Authentication]
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotolistener.html,vertical-align=middle)]] [sqlrclientprotolistener.html Listener Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoconnectstringsauth.html Connect Strings Auth] [[Image(../../images/navnext.png,link=sqlrclientprotoconnectstringsauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

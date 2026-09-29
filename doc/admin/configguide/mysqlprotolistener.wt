@@ -1,0 +1,50 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]] [mysqlprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotohandshake.html Handshake Protocol Version] [[Image(../../images/navnext.png,link=mysqlprotohandshake.html,vertical-align=middle)]]
+
+[=#mysqllistener]
+= Listener Options =
+
+In the example above, the instance is configured to listen on port 3307.  The !MySQL/MariaDB database typically listens on port 3306, so port 3307 was chosen to avoid collisions with the database itself.
+
+However, if SQL Relay is run on a different server than the database, then it can be configured to run on port 3306.  This is desirable when using SQL Relay as a transparent proxy.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfedbport.conf@
+}}}
+}}}
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-mysqlfesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+----
+
+[[Image(../../images/navprev.png,link=mysqlprotoconfiguration.html,vertical-align=middle)]] [mysqlprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [mysqlprotohandshake.html Handshake Protocol Version] [[Image(../../images/navnext.png,link=mysqlprotohandshake.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

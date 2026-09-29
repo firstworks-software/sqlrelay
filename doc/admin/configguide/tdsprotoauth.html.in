@@ -1,0 +1,26 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="tdsprotopacketsize.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotopacketsize.html">Packet Size</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a> <a href="tdsprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="tdsauth"/><h1>Authentication/Encryption Options</h1>
+
+<p>When using the TDS protocol, there are several options for controlling which users are allowed to access an instance of SQL Relay.</p>
+
+<ul>
+  <li><a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+  <li><a href="tdsprotouserlistauth.html">User List Auth</a></li>
+  <li><a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a></li>
+</ul>
+
+<hr/>
+
+<p><a href="tdsprotopacketsize.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotopacketsize.html">Packet Size</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a> <a href="tdsprotoconnectstringsauth.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

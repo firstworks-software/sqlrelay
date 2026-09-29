@@ -1,0 +1,42 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=tdsprotoconfiguration.html,vertical-align=middle)]] [tdsprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoversion.html TDS Version] [[Image(../../images/navnext.png,link=tdsprotoversion.html,vertical-align=middle)]]
+
+[=#tdslistener]
+= Listener Options =
+
+In the example above, the instance is configured to listen on port 1433, which is already the standard Microsoft SQL Server port, so no special port choice is needed.
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfeaddresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfesocket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+----
+
+[[Image(../../images/navprev.png,link=tdsprotoconfiguration.html,vertical-align=middle)]] [tdsprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotoversion.html TDS Version] [[Image(../../images/navnext.png,link=tdsprotoversion.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

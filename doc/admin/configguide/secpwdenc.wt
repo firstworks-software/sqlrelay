@@ -47,7 +47,7 @@ There is a further restriction when a client speaks one of the database protocol
 
 Two protocols are affected, and they choose the method differently:
 
-* For the '''postgresql''' protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.  See [postgresqlprotocol.html#postgresqlpasswords Password Method] in the PostgreSQL Protocol section.
+* For the '''postgresql''' protocol, the listener chooses.  The default is md5, which is challenge/response.  Setting passwords="cleartext" on the listener makes clients send the password itself, which works with either kind of module.  See [postgresqlprotopasswords.html Password Method] in the PostgreSQL Protocol section.
 * For the '''firebird''' protocol, the client chooses, by which item it puts the password in.  fbclient sends the legacy hash, so in practice a one-way module will not authenticate a normal firebird client no matter how the listener is configured.
 
 Use a two-way module for these listeners, or, for postgresql, configure the listener for cleartext passwords.  Note that cleartext sends the password over the network as typed, so it should only be used with TLS or on a trusted network.

@@ -62,7 +62,7 @@ cur<font color="#990000">=</font>con<font color="#990000">.</font><b><font color
 
 <p>In addition to the paramters above, the following named parameters can be used to establish Kerberos or Active Directory encryption and authentication with the server:</p>
 
-<p>See the <a href="../admin/configguide/sqlrclientprotocol.html#sqlrclientkrb">SQL Relay Configuration Guide</a> for more information about Kerberos and Active Directory configurations.  In particular, user and password are not typically used when using Kerberos/AD.</p>
+<p>See the <a href="../admin/configguide/sqlrclientprotokrb.html">SQL Relay Configuration Guide</a> for more information about Kerberos and Active Directory configurations.  In particular, user and password are not typically used when using Kerberos/AD.</p>
 
 <ul>
   <li><b>krb</b> - Set to <b>yes</b> to enable Kerberos/AD encryption/authentication or <b>no</b> to disable it.</li>
@@ -73,7 +73,7 @@ cur<font color="#990000">=</font>con<font color="#990000">.</font><b><font color
 
 <p>In addition to the parameters above, the following named parameters can be used to establish TLS/SSL encryption and authentication with the server:</p>
 
-<p>See the <a href="../admin/configguide/sqlrclientprotocol.html#sqlrclienttls">SQL Relay Configuration Guide</a> for more information about TLS/SSL configurations.</p>
+<p>See the <a href="../admin/configguide/sqlrclientprototls.html">SQL Relay Configuration Guide</a> for more information about TLS/SSL configurations.</p>
 
 <ul>
   <li><b>tls</b> - Set to <b>yes</b> to enable TLS/SSL encryption/authentication or <b>no</b> to disable it.</li>

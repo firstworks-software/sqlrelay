@@ -1,0 +1,186 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="mysqlprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotodbauth.html">Database Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotoforeignbackend.html">Foreign Backend</a> <a href="mysqlprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="mysqltls"/><h1>TLS/SSL Encryption and Authentication</h1>
+
+<p>SQL Relay supports TLS/SSL encryption and authentication between the MySQL/MariaDB client and SQL Relay Server.</p>
+
+<blockquote>
+<img src="../../images/secure-tls-mysql-unsecured.png"/>
+</blockquote>
+<p>When TLS/SSL encryption and authentication is used:</p>
+
+<ul>
+  <li>All communications between the MySQL/MariaDB client and SQL Relay server are encrypted.</li>
+  <li>MySQL/MariaDB clients and servers may optionally validate each other's certificates and identities.</li>
+</ul>
+
+<p>When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.</p>
+
+<blockquote>
+( <b>NOTE:</b> Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+</blockquote>
+<br/><h2>Encryption Only</h2>
+
+<p>The following configuration enables TLS/SSL encryption for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3307"</font> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tls</b> attribute enables (or disables) TLS/SSL encryption.</li>
+  <li>The <b>tlscert</b> attribute specifies the TLS/SSL certificate chain to use.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</li>
+    <li>If the file specified by <b>tlscert</b> doesn't already include the private key, the <b>tlskey</b> attribute may be used to specify a separate file containing it.</li>
+  </ul>
+
+  <li>User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.</li>
+</ul>
+
+<p>To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:</p>
+
+<blockquote>
+  <pre>sqlr-start -id example
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>The instance may be accessed as follows:</p>
+
+<blockquote>
+  <pre>mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl
+</pre>
+
+</blockquote>
+<p>(The "--ssl" option enables SSL/TLS encryption.  As MySQL predates TLS, and originally used SSL, it's various SSL/TLS-related options all still begin with "--ssl".)</p>
+
+<p>This establishes a TLS/SSL-encrypted session but does not validate the server's certificate or identity.  The session will only continue if the server's certificate is is well-formed and hasn't expired, <b>but the client is still vulnerable to various attacks</b>.</p>
+
+<h2>Certificate Validation</h2>
+
+<p>For a more secure session, the client may validate that the server's certificate was signed by a trusted certificate authority, known to the system, as follows:</p>
+
+<blockquote>
+  <pre>mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-verify-server-cert
+</pre>
+
+</blockquote>
+<p>(The --ssl option is not necessary in this invocation, as the --ssl-verify-server-cert option implies it.)</p>
+
+<p>If the server's certificate is self-signed, then the certificate authority won't be known to the system, but it's certificate may be specified by the tlsca parameter as follows:</p>
+
+<blockquote>
+  <pre>mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-verify-server-cert --ssl-ca=/usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>This establishes a TLS/SSL-encrypted session with the server and validates the server's certificate, but does not validate the server's identity.  The session will only continue if the server's certificate is valid, <b>but the client is still vulnerable to various attacks</b>.</p>
+
+<p>Unfortunately, MySQL/MariaDB doesn't currently support host or domain name validation, so at present, the server's certificate can be validated, but the server's identity cannot.</p>
+
+<h2>Mutual Authentication</h2>
+
+<p>For an even more secure session, the server may also request a certificate from the client and validate the certificate.</p>
+
+<p>The following configuration enables these checks for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"mysql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"3307"</font>
+				<font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font>
+				<font color="#009900">tlsvalidate</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">tlsca</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/myca.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=mysqluser;password=mysqlpassword;db=mysqldb;host=mysqlhost"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tlsvalidate</b> attribute enables (or disables) validation that client's certificate was signed by a trusted certificate authority, known to the system, or as provided by the tlsca attribute.</li>
+  <li>The <b>tlsca</b> attribute specifies a certificate authority to include when validating the client's certificate.  This is useful when validating self-signed certificates.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</li>
+  </ul>
+
+</ul>
+
+<p>To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:</p>
+
+<blockquote>
+  <pre>mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-cert=/usr/local/firstworks/etc/sqlrclient.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</p>
+
+<p>In a more likely use case though, mutual authentication occurs - the client validates the server's certificate and the server validates the client's certificate, as follows:</p>
+
+<blockquote>
+  <pre>mysql --host=sqlrserver --user=sqlruser --password=sqlrpassword --ssl-cert=/usr/local/firstworks/etc/sqlrclient.pem --ssl-verify-server-cert --ssl-ca=/usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlscert.html">The tlscert Parameter</a> and <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>In this example, the client provides a certificate for the server to validate, validates the host's certificate against the provided certificate authority, and validates the host's identity against the provided host name.</p>
+
+<p>SQL Relay can validate the client's certificate, and reject clients which present invalid certificates, but cannot yet authenticate the user via the Subject Alternative Name or Common Name presented in the certificate in lieu of a MySQL/MariaDB username.  As such, a username and password must still be supplied for authentication in this configuration.</p>
+
+<h2>Performance Considerations</h2>
+
+<p>While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:</p>
+
+<ul>
+  <li>When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.</li>
+  <li>Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.</li>
+  <li>Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.</li>
+</ul>
+
+<p>Any kind of full session encryption should be used with caution in performance-sensitive applications.</p>
+
+<hr/>
+
+<p><a href="mysqlprotodbauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="mysqlprotodbauth.html">Database Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="mysqlprotoforeignbackend.html">Foreign Backend</a> <a href="mysqlprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

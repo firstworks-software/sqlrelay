@@ -1,0 +1,27 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]] [postgresqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
+
+[=#postgresqllimitations]
+= Limitations =
+
+The implementation of the !PostgreSQL protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:
+
+* Kerberos authentication and encryption are not supported.
+* Multi-statement queries are not supported.
+* Result sets are always returned in text format, even if a client requests binary format.
+* A binary-format bind parameter isn't supported for every type - date, time, timetz, timestamp, timestamptz, interval and oid are notable gaps, so a driver that binds these in binary (rather than as text) will fail.
+* The COPY sub-protocol (COPY FROM STDIN / COPY TO STDOUT) is not implemented.
+* MOVE and FETCH always report a row count of 0, rather than the number of rows actually moved or fetched.
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlprotoforeignbackend.html,vertical-align=middle)]] [postgresqlprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [firebirdprotocol.html Firebird Protocol] [[Image(../../images/navnext.png,link=firebirdprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,33 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+
+[=#oraclelimitations]
+= Limitations =
+
+The implementation of the Oracle protocol isn't 100% complete.  Some notable limitations follow:
+
+* Oracle native network encryption and crypto-checksumming (the Advanced Networking Option) are not supported.  SQL Relay negotiates them off.  Clients work normally with SQLNET.ENCRYPTION_CLIENT and SQLNET.CRYPTO_CHECKSUM_CLIENT set to ACCEPTED (the default), REQUESTED or REJECTED.  A client with either set to REQUIRED will fail to connect, with ORA-12660.
+* The module always authenticates with O5LOGON (or O3LOGON when verifiertype="9i"), Oracle's challenge/response exchanges.  There is no option that requests a cleartext password instead, and no real Oracle client offers one - a challenge/response exchange is mandatory in every client tested against this module.  The //oracle_userlist// and //oracle_database// auth modules also accept an //oracle_clear_password// method, for a protocol module that might need password-based authentication without a challenge/response exchange, but no protocol module SQL Relay ships - including this one and the native SQLRClient protocol - ever selects it, so it is not reachable through any built-in listener.
+* The Oracle protocol module doesn't support TLS/SSL (TCPS) or Kerberos encryption or authentication between the Oracle client and SQL Relay server.  Setting //tls// or //krb// on an Oracle listener still loads the configured certificate or Kerberos credentials (and can print a warning if that fails), but neither is ever actually used on the wire - traffic after login stays in the clear, aside from whatever Oracle's own native network encryption would add, which is also not supported (see above).
+* A LOB value can be bound into an insert or update normally, but once a client has a LOB locator - from a fetched CLOB, BLOB or BFILE column - that locator itself is read-only.  Getting its length, and reading, opening or closing it through the locator all work, but any operation that would change what the locator points to or create a new LOB through it - write, append, trim, erase, creating or freeing a temporary LOB - fails with ORA-03001: unimplemented feature, and the session stays usable afterwards.  Asking whether a locator is currently open (as opposed to a bfile's existence, see below) also fails the same way.  A BFILE's file name, asked for through the locator, fails the same way too, rather than coming back empty; only whether the file exists is answered (faked from whether the LOB has any length at all, since nothing behind SQL Relay actually opens the file to check).
+* A LOB locator is only valid while its row is still the cursor's current row.  A result set containing a LOB column is sent one row per fetch, and the next fetch, a re-execute, or closing the cursor releases the previous row's LOB locators.  Reading a LOB from a released locator afterwards fails with ORA-22275: invalid LOB locator specified.  So an application has to read a row's LOBs before moving on to the next row - fetching an entire result set first and reading LOBs afterwards (for example python-oracledb's fetchall() followed by read(), or a JDBC Clob kept across rs.next()) won't work.  This only applies when the back-end connection is itself Oracle; some other backends send the LOB's value inline in the row instead of handing out a locator, in which case none of this applies.  A legacy OCI7 client (verifiertype="9i") also always gets LOB values inline, even against an Oracle back-end.
+* A bound TIMESTAMP, TIMESTAMP WITH TIME ZONE, or TIMESTAMP WITH LOCAL TIME ZONE value is truncated to a plain DATE on the wire: fractional seconds are dropped and any time zone offset is discarded.
+* A CLOB character above the Basic Multilingual Plane (for example, most emoji) is not converted to a UTF-16 surrogate pair when read, and the read position is also advanced by the wrong amount afterward - so a CLOB read that crosses one of these characters not only garbles it, but can skip some of the text that follows it in the same read.
+* Cancelling a running statement - OCIBreak, Ctrl-C in sqlplus, or a driver's own cancel/interrupt call - does not interrupt it on the back-end.  The module only checks for a break request between calls, so a long-running statement keeps running until it finishes on its own; the cancel is answered afterwards.
+* A few less commonly used operations aren't implemented and get ORA-03001 if a client sends them, including: distributed and two-phase-commit/XA transactions, database startup/shutdown, an explicit TTI-level cancel, and DESCRIBE2.  Setting an end-to-end tracing attribute (module, action, or client identifier) also gets ORA-03001, and since that request arrives piggybacked on the client's next real call, that next call fails too, not just the attribute.  Any other function code the module doesn't recognize is refused the same way.
+* A fetch asking for more than 100,000 rows fails with ORA-20004, and a batch whose total size grows past 32MB fails with ORA-20005, rather than returning a partial result.
+* Legacy OCI7 clients (verifiertype="9i") can only bind NUMBER, VARNUM, CHAR, VARCHAR, LONG and DATE values; binding any other type is refused.
+* The listener's //cursors// and //maxcursors// attributes bound how many statements the module can keep open at once, independent of anything the real Oracle client is told.  A client that keeps several statements cached and open concurrently - for example python-oracledb, whose default client-side statement cache holds up to 20 - needs //maxcursors// set higher than that concurrent count, or a new statement fails with ORA-01000: maximum open cursors exceeded once the pool fills up.
+
+----
+
+[[Image(../../images/navprev.png,link=oracleprotoforeignbackend.html,vertical-align=middle)]] [oracleprotoforeignbackend.html Foreign Backend] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [multipleprotocols.html Multiple Protocols] [[Image(../../images/navnext.png,link=multipleprotocols.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

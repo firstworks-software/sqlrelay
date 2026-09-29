@@ -49,108 +49,108 @@
   <ul>
     <li><a href="sqlrclientprotocol.html">SQLRClient Protocol</a></li>
     <ul>
-      <li><a href="sqlrclientprotocol.html#sqlrclientconfiguration">Basic Configuration</a></li>
-      <li><a href="sqlrclientprotocol.html#sqlrclientlistener">Listener Options</a></li>
-      <li><a href="sqlrclientprotocol.html#sqlrclientauth">Authentication/Encryption Options</a></li>
+      <li><a href="sqlrclientprotoconfiguration.html">Basic Configuration</a></li>
+      <li><a href="sqlrclientprotolistener.html">Listener Options</a></li>
+      <li><a href="sqlrclientprotoauth.html">Authentication/Encryption Options</a></li>
       <ul>
-        <li><a href="sqlrclientprotocol.html#sqlrclientconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="sqlrclientprotocol.html#sqlrclientuserlistauth">User List Auth</a></li>
-        <li><a href="sqlrclientprotocol.html#sqlrclientdbauth">Database Auth</a></li>
-        <li><a href="sqlrclientprotocol.html#sqlrclientproxiedauth">Proxied Auth</a></li>
-        <li><a href="sqlrclientprotocol.html#sqlrclientkrb">Kerberos and Active Directory Encryption and Authentication</a></li>
-        <li><a href="sqlrclientprotocol.html#sqlrclienttls">TLS/SSL Encryption and Authentication</a></li>
+        <li><a href="sqlrclientprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+        <li><a href="sqlrclientprotouserlistauth.html">User List Auth</a></li>
+        <li><a href="sqlrclientprotodbauth.html">Database Auth</a></li>
+        <li><a href="sqlrclientprotoproxiedauth.html">Proxied Auth</a></li>
+        <li><a href="sqlrclientprotokrb.html">Kerberos and Active Directory Encryption and Authentication</a></li>
+        <li><a href="sqlrclientprototls.html">TLS/SSL Encryption and Authentication</a></li>
       </ul>
 
-      <li><a href="sqlrclientprotocol.html#sqlrclientlimitations">Limitations</a></li>
+      <li><a href="sqlrclientprotolimitations.html">Limitations</a></li>
     </ul>
 
     <li><a href="mysqlprotocol.html">MySQL Protocol</a></li>
     <ul>
-      <li><a href="mysqlprotocol.html#mysqlconfiguration">Basic Configuration</a></li>
-      <li><a href="mysqlprotocol.html#mysqllistener">Listener Options</a></li>
-      <li><a href="mysqlprotocol.html#mysqlhandshake">Handshake Protocol Version</a></li>
-      <li><a href="mysqlprotocol.html#mysqlclientprotocol">Client Protocol Flags</a></li>
-      <li><a href="mysqlprotocol.html#mysqlauth">Authentication/Encryption Options</a></li>
+      <li><a href="mysqlprotoconfiguration.html">Basic Configuration</a></li>
+      <li><a href="mysqlprotolistener.html">Listener Options</a></li>
+      <li><a href="mysqlprotohandshake.html">Handshake Protocol Version</a></li>
+      <li><a href="mysqlprotoclientflags.html">Client Protocol Flags</a></li>
+      <li><a href="mysqlprotoauth.html">Authentication/Encryption Options</a></li>
       <ul>
-        <li><a href="mysqlprotocol.html#mysqlconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="mysqlprotocol.html#mysqluserlistauth">User List Auth</a></li>
-        <li><a href="mysqlprotocol.html#mysqldbauth">Database Auth</a></li>
-        <li><a href="mysqlprotocol.html#mysqltls">TLS/SSL Encryption and Authentication</a></li>
+        <li><a href="mysqlprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+        <li><a href="mysqlprotouserlistauth.html">User List Auth</a></li>
+        <li><a href="mysqlprotodbauth.html">Database Auth</a></li>
+        <li><a href="mysqlprototls.html">TLS/SSL Encryption and Authentication</a></li>
       </ul>
 
-      <li><a href="mysqlprotocol.html#mysqlforeignbackend">Foreign Backend</a></li>
-      <li><a href="mysqlprotocol.html#mysqlspecialpurpose">Special-Purpose Options</a></li>
-      <li><a href="mysqlprotocol.html#mysqllimitations">Limitations</a></li>
+      <li><a href="mysqlprotoforeignbackend.html">Foreign Backend</a></li>
+      <li><a href="mysqlprotospecialpurpose.html">Special-Purpose Options</a></li>
+      <li><a href="mysqlprotolimitations.html">Limitations</a></li>
     </ul>
 
     <li><a href="postgresqlprotocol.html">PostgreSQL Protocol</a></li>
     <ul>
-      <li><a href="postgresqlprotocol.html#postgresqlconfiguration">Basic Configuration</a></li>
-      <li><a href="postgresqlprotocol.html#postgresqllistener">Listener Options</a></li>
-      <li><a href="postgresqlprotocol.html#postgresqlauth">Authentication/Encryption Options</a></li>
+      <li><a href="postgresqlprotoconfiguration.html">Basic Configuration</a></li>
+      <li><a href="postgresqlprotolistener.html">Listener Options</a></li>
+      <li><a href="postgresqlprotoauth.html">Authentication/Encryption Options</a></li>
       <ul>
-        <li><a href="postgresqlprotocol.html#postgresqlpasswords">Password Method</a></li>
-        <li><a href="postgresqlprotocol.html#postgresqlconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="postgresqlprotocol.html#postgresqluserlistauth">User List Auth</a></li>
-        <li><a href="postgresqlprotocol.html#postgresqltls">TLS/SSL Encryption and Authentication</a></li>
+        <li><a href="postgresqlprotopasswords.html">Password Method</a></li>
+        <li><a href="postgresqlprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+        <li><a href="postgresqlprotouserlistauth.html">User List Auth</a></li>
+        <li><a href="postgresqlprototls.html">TLS/SSL Encryption and Authentication</a></li>
       </ul>
 
-      <li><a href="postgresqlprotocol.html#postgresqlforeignbackend">Foreign Backend</a></li>
-      <li><a href="postgresqlprotocol.html#postgresqllimitations">Limitations</a></li>
+      <li><a href="postgresqlprotoforeignbackend.html">Foreign Backend</a></li>
+      <li><a href="postgresqlprotolimitations.html">Limitations</a></li>
     </ul>
 
     <li><a href="firebirdprotocol.html">Firebird Protocol</a></li>
     <ul>
-      <li><a href="firebirdprotocol.html#firebirdconfiguration">Basic Configuration</a></li>
-      <li><a href="firebirdprotocol.html#firebirdlistener">Listener Options</a></li>
-      <li><a href="firebirdprotocol.html#firebirdprotocolversion">Protocol Version</a></li>
-      <li><a href="firebirdprotocol.html#firebirdauth">Authentication/Encryption Options</a></li>
+      <li><a href="firebirdprotoconfiguration.html">Basic Configuration</a></li>
+      <li><a href="firebirdprotolistener.html">Listener Options</a></li>
+      <li><a href="firebirdprotoversion.html">Protocol Version</a></li>
+      <li><a href="firebirdprotoauth.html">Authentication/Encryption Options</a></li>
       <ul>
-        <li><a href="firebirdprotocol.html#firebirdconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="firebirdprotocol.html#firebirduserlistauth">User List Auth</a></li>
-        <li><a href="firebirdprotocol.html#firebirdwirecrypt">Wire Encryption</a></li>
+        <li><a href="firebirdprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+        <li><a href="firebirdprotouserlistauth.html">User List Auth</a></li>
+        <li><a href="firebirdprotowirecrypt.html">Wire Encryption</a></li>
       </ul>
 
-      <li><a href="firebirdprotocol.html#firebirdforeignbackend">Foreign Backend</a></li>
-      <li><a href="firebirdprotocol.html#firebirdlimitations">Limitations</a></li>
+      <li><a href="firebirdprotoforeignbackend.html">Foreign Backend</a></li>
+      <li><a href="firebirdprotolimitations.html">Limitations</a></li>
     </ul>
 
     <li><a href="tdsprotocol.html">TDS Protocol</a></li>
     <ul>
-      <li><a href="tdsprotocol.html#tdsconfiguration">Basic Configuration</a></li>
-      <li><a href="tdsprotocol.html#tdslistener">Listener Options</a></li>
-      <li><a href="tdsprotocol.html#tdsversion">TDS Version</a></li>
-      <li><a href="tdsprotocol.html#tdspacketsize">Packet Size</a></li>
-      <li><a href="tdsprotocol.html#tdsauth">Authentication/Encryption Options</a></li>
+      <li><a href="tdsprotoconfiguration.html">Basic Configuration</a></li>
+      <li><a href="tdsprotolistener.html">Listener Options</a></li>
+      <li><a href="tdsprotoversion.html">TDS Version</a></li>
+      <li><a href="tdsprotopacketsize.html">Packet Size</a></li>
+      <li><a href="tdsprotoauth.html">Authentication/Encryption Options</a></li>
       <ul>
-        <li><a href="tdsprotocol.html#tdsconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="tdsprotocol.html#tdsuserlistauth">User List Auth</a></li>
-        <li><a href="tdsprotocol.html#tdstls">TLS/SSL Encryption and Authentication</a></li>
+        <li><a href="tdsprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+        <li><a href="tdsprotouserlistauth.html">User List Auth</a></li>
+        <li><a href="tdsprototls.html">TLS/SSL Encryption and Authentication</a></li>
       </ul>
 
-      <li><a href="tdsprotocol.html#tdsforeignbackend">Foreign Backend</a></li>
-      <li><a href="tdsprotocol.html#tdslimitations">Limitations</a></li>
+      <li><a href="tdsprotoforeignbackend.html">Foreign Backend</a></li>
+      <li><a href="tdsprotolimitations.html">Limitations</a></li>
     </ul>
 
     <li><a href="oracleprotocol.html">Oracle Protocol</a></li>
     <ul>
-      <li><a href="oracleprotocol.html#oracleconfiguration">Basic Configuration</a></li>
-      <li><a href="oracleprotocol.html#oraclelistener">Listener Options</a></li>
-      <li><a href="oracleprotocol.html#oraclesid">SID / Service Name</a></li>
-      <li><a href="oracleprotocol.html#oracleloginattempts">Login Attempts</a></li>
-      <li><a href="oracleprotocol.html#oracleserverversion">Server Version</a></li>
-      <li><a href="oracleprotocol.html#oracleverifiertype">Password Verifier Type</a></li>
-      <li><a href="oracleprotocol.html#oraclebigchunkclr">Big Chunk CLR Framing</a></li>
-      <li><a href="oracleprotocol.html#oraclecharsets">Character Set Options</a></li>
-      <li><a href="oracleprotocol.html#oracledateformat">Date Format</a></li>
-      <li><a href="oracleprotocol.html#oracleauth">Authentication/Encryption Options</a></li>
+      <li><a href="oracleprotoconfiguration.html">Basic Configuration</a></li>
+      <li><a href="oracleprotolistener.html">Listener Options</a></li>
+      <li><a href="oracleprotosid.html">SID / Service Name</a></li>
+      <li><a href="oracleprotologinattempts.html">Login Attempts</a></li>
+      <li><a href="oracleprotoserverversion.html">Server Version</a></li>
+      <li><a href="oracleprotoverifiertype.html">Password Verifier Type</a></li>
+      <li><a href="oracleprotobigchunkclr.html">Big Chunk CLR Framing</a></li>
+      <li><a href="oracleprotocharsets.html">Character Set Options</a></li>
+      <li><a href="oracleprotodateformat.html">Date Format</a></li>
+      <li><a href="oracleprotoauth.html">Authentication/Encryption Options</a></li>
       <ul>
-        <li><a href="oracleprotocol.html#oracleconnectstringsauth">Connect Strings Auth</a></li>
-        <li><a href="oracleprotocol.html#oracleuserlistauth">User List Auth</a></li>
+        <li><a href="oracleprotoconnectstringsauth.html">Connect Strings Auth</a></li>
+        <li><a href="oracleprotouserlistauth.html">User List Auth</a></li>
       </ul>
 
-      <li><a href="oracleprotocol.html#oracleforeignbackend">Foreign Backend</a></li>
-      <li><a href="oracleprotocol.html#oraclelimitations">Limitations</a></li>
+      <li><a href="oracleprotoforeignbackend.html">Foreign Backend</a></li>
+      <li><a href="oracleprotolimitations.html">Limitations</a></li>
     </ul>
 
     <li><a href="multipleprotocols.html">Multiple Protocols</a></li>

@@ -1,0 +1,218 @@
+<!--#include virtual="header.html"-->
+
+<!--#include virtual="projectheader.html"-->
+
+<!--#include virtual="../../contentstart.html"-->
+
+<p><a href="sqlrclientprotokrb.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotokrb.html">Kerberos and Active Directory Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotolimitations.html">Limitations</a> <a href="sqlrclientprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="sqlrclienttls"/><h1>TLS/SSL Encryption and Authentication</h1>
+
+<p>SQL Relay supports TLS/SSL encryption and authentication between the SQL Relay client and SQL Relay Server.</p>
+
+<blockquote>
+<img src="../../images/secure-tls-sqlrclient-unsecured.png"/>
+</blockquote>
+<p>When TLS/SSL encryption and authentication is used:</p>
+
+<ul>
+  <li>All communications between the SQL Relay client and SQL Relay server are encrypted.</li>
+  <li>SQL Relay clients and servers may optionally validate each other's certificates and identities.</li>
+</ul>
+
+<p>When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.</p>
+
+<blockquote>
+( <b>NOTE:</b> Prior to version 2.0.0, the various tls* attributes were specified on the instance tag rather than on individual listener tags, and applied to all listeners.)
+</blockquote>
+<br/><h2>Encryption Only</h2>
+
+<p>The following configuration enables TLS/SSL encryption for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tls</b> attribute enables (or disables) TLS/SSL encryption.</li>
+  <li>The <b>tlscert</b> attribute specifies the TLS/SSL certificate chain to use.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</li>
+    <li>If the file specified by <b>tlscert</b> doesn't already include the private key, the <b>tlskey</b> attribute may be used to specify a separate file containing it.</li>
+  </ul>
+
+  <li>User list authentication is also used.  Other authentication methods are not currently supported with TLS/SSL.</li>
+</ul>
+
+<p>To start the instance on a Linux or Unix system, you must be logged in as a user that can read the file specified by the tlscert attribute.  If that criterium is met then the instance can be started using:</p>
+
+<blockquote>
+  <pre>sqlr-start -id example
+</pre>
+
+</blockquote>
+<blockquote>
+( <b>NOTE:</b> When installed from packages, SQL Relay may have to be started and stopped as root.)
+</blockquote>
+<p>The instance may be accessed as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger -tls -tlsvalidate no
+</pre>
+
+</blockquote>
+<p>This establishes a TLS/SSL-encrypted session but does not validate the server's certificate or identity.  The session will only continue if the server's certificate is is well-formed and hasn't expired, <b>but the client is still vulnerable to various attacks</b>.</p>
+
+<h2>Certificate Validation</h2>
+
+<p>For a more secure session, the client may validate that the server's certificate was signed by a trusted certificate authority, known to the system, as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger -tls -tlsvalidate ca
+</pre>
+
+</blockquote>
+<p>If the server's certificate is self-signed, then the certificate authority won't be known to the system, but it's certificate may be specified by the tlsca parameter as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -user scott -password tiger -tls -tlsvalidate ca -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>This establishes a TLS/SSL-encrypted session with the server and validates the server's certificate, but does not validate the server's identity.  The session will only continue if the server's certificate is valid, <b>but the client is still vulnerable to various attacks</b>.</p>
+
+<h2>Host Name Validation</h2>
+
+<p>For a more secure session, the client may validate that the host name provided by the server's certificate matches the host name that the client meant to connect to, as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver.firstworks.com -user scott -password tiger -tls -tlsvalidate ca+host -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>Note that the fully qualified host name was provided.  Note also the use of the ca+host value for the tlsvalidate parameter.  With these parameters, in addition to validating that the server's certificate was signed by a trusted certificate authority, the host name will also be validated.  If the certificate contains Subject Alternative Names, then the host name will be compared to each of them.  If no Subject Alternative Names are provided then the host name will be compared to the certificate's Common Name.  The session will only continue if the sever's certificate and identity are both valid.</p>
+
+<h2>Domain Name Validation</h2>
+
+<p>Unless self-signed, certificates can be expensive, so certificates are often shared by multiple servers across a domain.  To manage environments like this, the host name validation can be relaxed as follows, to just domain name validation:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver.firstworks.com -user scott -password tiger -tls -tlsvalidate ca+domain -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>Note that the fully qualified host name was provided.  Note also the use of the ca+domain value for the tlsvalidate parameter.  With these parameters, in addition to validating that the server's certificate was signed by a trusted certificate authority, the domain name portion of the host name will also be validated.  If the certificate contains Subject Alternative Names, then the domain name portion of the host name will be compared to the domain name portion of each of them.  If no Subject Alternative Names are provided then the domain name portion of the host name will be compared to the domain name portion of the certificate's Common Name.  The session will only continue if the sever's certificate and domain identity are both valid.</p>
+
+<h2>Mutual Authentication</h2>
+
+<p>For an even more secure session, the server may also request a certificate from the client, validate the certificate, and optionally authenticate the client based on the host name provided by the certificate.</p>
+
+<p>The following configuration enables these checks for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font>
+				<font color="#009900">tlsvalidate</font><font color="#990000">=</font><font color="#FF0000">"yes"</font>
+				<font color="#009900">tlsca</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/myca.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;auths&gt;</font></b>
+			<b><font color="#0000FF">&lt;auth</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient_userlist"</font><b><font color="#0000FF">&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient1.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient2.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient3.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+				<b><font color="#0000FF">&lt;user</font></b> <font color="#009900">user</font><font color="#990000">=</font><font color="#FF0000">"sqlrclient4.firstworks.com"</font><b><font color="#0000FF">/&gt;</font></b>
+			<b><font color="#0000FF">&lt;/auth&gt;</font></b>
+		<b><font color="#0000FF">&lt;/auths&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tlsvalidate</b> attribute enables (or disables) validation that client's certificate was signed by a trusted certificate authority, known to the system, or as provided by the tlsca attribute.</li>
+  <li>The <b>tlsca</b> attribute specifies a certificate authority to include when validating the client's certificate.  This is useful when validating self-signed certificates.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlsca.html">The tlsca Parameter</a> for details.)</li>
+  </ul>
+
+  <li>User list authentication is also used.</li>
+</ul>
+
+<p>Note that no passwords are required in the user list.  In this configuration, the Subject Alternative Names in the client's certificate (or Common Name if no SAN's are present) are authenticate against the list of valid names.</p>
+
+<p>Note also that when <b>tlsvalidate</b> is set to "yes", database and proxied authentication cannot currently be used.  This is because database and proxied authentication both require a user name and password but the client certificate doesn't provide either.</p>
+
+<p>To access the instance, the client must provide, at minimum, a certificate chain file (containing the client's certificate, private key, and signing certificates, as appropriate), as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver -tls -tlsvalidate no -tlscert /usr/local/firstworks/etc/sqlrclient.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</p>
+
+<p>Note the absence of user and password parameters.  Rather than passing a user and password, the client passes the specified certificate to the server.  The server trusts that the client is who they say they are by virtue of having a valid certificate and the name provided by the certificate is authenticated against the list of valid names.</p>
+
+<p>In a more likely use case though, mutual authentication occurs - the client validates the server's certificate and the server validates the client's certificate, as follows:</p>
+
+<blockquote>
+  <pre>sqlrsh -host sqlrserver.firstworks.com -tls -tlscert /usr/local/firstworks/etc/sqlrclient.pem -tlsvalidate ca+host -tlsca /usr/local/firstworks/etc/myca.pem
+</pre>
+
+</blockquote>
+<p>(.pem files are specified in this example, but on Windows systems, .pfx file or Windows Certificate Store references must be used.  See <a href="../tlscert.html">The tlscert Parameter</a> and <a href="../tlsca.html">The tlsca Parameter</a> for details.)</p>
+
+<p>In this example, the client provides a certificate for the server to validate, validates the host's certificate against the provided certificate authority, and validates the host's identity against the provided host name.</p>
+
+<h2>Performance Considerations</h2>
+
+<p>While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:</p>
+
+<ul>
+  <li>When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.</li>
+  <li>Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.</li>
+  <li>Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.</li>
+</ul>
+
+<p>Any kind of full session encryption should be used with caution in performance-sensitive applications.</p>
+
+<hr/>
+
+<p><a href="sqlrclientprotokrb.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="sqlrclientprotokrb.html">Kerberos and Active Directory Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sqlrclientprotolimitations.html">Limitations</a> <a href="sqlrclientprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<!--#include virtual="../../contentend.html"-->
+
+<!--#include virtual="footer.html"-->
+

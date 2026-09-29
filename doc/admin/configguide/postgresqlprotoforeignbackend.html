@@ -1,0 +1,126 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="postgresqlprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprototls.html">TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotolimitations.html">Limitations</a> <a href="postgresqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="postgresqlforeignbackend"/><h1>Foreign Backend</h1>
+
+<p>Since SQL Relay supports a variety of database back-ends, the app can also be redirected to any of these databases, instead of the PostgreSQL database it was originally written to use.</p>
+
+<p>This is as simple as specifying a different database using the <i>dbase</i> attribute in the instance tag and specifying the appropriate database connection string in the <i>string</i> attribute of the connection tag.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"postgresql"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"5432"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<p>In this example, a PostgreSQL front-end provides PostgreSQL applications access to an Oracle back-end database.</p>
+
+<p>Depending on the back-end, it might also be necessary to make some other configuration changes, as well, for example:</p>
+
+<ul>
+  <li>In the instance tag:</li>
+  <ul>
+    <li>set translatebindvariables="yes"</li>
+    <li>set the isolationlevel attribute</li>
+    <li>set transactionmodel="explicit"</li>
+  </ul>
+
+  <li>In the string attribute of the connection tag:</li>
+  <ul>
+    <li>set autocommit=yes or autocommit=no</li>
+    <li>implement a function that returns the last insert id and specify it using the lastinsertidfunction parameter</li>
+    <li>set the identity parameter to override the database type</li>
+    <li>set ignorespace=yes</li>
+    <li>set the overrideschema parameter</li>
+    <li>set the typemangling and/or tablemangling parameters</li>
+  </ul>
+
+  <li>use <a href="querytranslation.html#querytranslation">Query Translation</a> modules</li>
+  <li>use <a href="resultsettranslation.html#resultsettranslation">Result Set Translation</a> modules</li>
+  <li>use <a href="errortranslation.html#errortranslation">Error Translation</a> modules</li>
+  <li>use <a href="sessionqueries.html#sessionqueries">Session Queries</a></li>
+</ul>
+
+<p>In your app, it might stil be necessary to modify some queries to use the syntax of the foreign database, or even update some code, but a full rewrite of the app should not be necessary.</p>
+
+<hr/>
+
+<p><a href="postgresqlprototls.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="postgresqlprototls.html">TLS/SSL Encryption and Authentication</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="postgresqlprotolimitations.html">Limitations</a> <a href="postgresqlprotolimitations.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

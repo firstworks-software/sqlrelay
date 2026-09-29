@@ -1,0 +1,146 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="tdsprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoforeignbackend.html">Foreign Backend</a> <a href="tdsprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="tdstls"/><h1>TLS/SSL Encryption and Authentication</h1>
+
+<p>SQL Relay supports TLS/SSL encryption and authentication between the TDS client and SQL Relay server.</p>
+
+<blockquote>
+<img src="../../images/secure-tls-tds-unsecured.png"/>
+</blockquote>
+<p>When TLS/SSL encryption and authentication is used:</p>
+
+<ul>
+  <li>Communications between the TDS client and SQL Relay server are encrypted.</li>
+  <li>TDS clients may optionally validate the server's certificate and identity.</li>
+</ul>
+
+<p>When using TLS/SSL encryption and authentication, at minimum, the SQL Relay server must be configured to load a certificate.  For highly secure production environments, this certificate should come from a trusted certificate authority.  In other environments the certificate may be self-signed, or even be borrowed from another server.</p>
+
+<h2>Encryption Only</h2>
+
+<p>The following configuration enables TLS/SSL encryption for an instance of SQL Relay:</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"odbc"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"tds"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1433"</font> <font color="#009900">tls</font><font color="#990000">=</font><font color="#FF0000">"yes"</font> <font color="#009900">tlscert</font><font color="#990000">=</font><font color="#FF0000">"/usr/local/firstworks/etc/sqlrserver.pem"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"dsn=mssqlodbc;user=example;password=example;mars=yes"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<ul>
+  <li>The <b>tls</b> attribute enables (or disables) TLS/SSL encryption.</li>
+  <li>The <b>tlscert</b> attribute specifies the TLS/SSL certificate chain to use.</li>
+  <ul>
+    <li>(a .pem file is specified in this example, but on Windows systems, a .pfx file or Windows Certificate Store reference must be used. See <a href="../tlscert.html">The tlscert Parameter</a> for details.)</li>
+    <li>If the file specified by <b>tlscert</b> doesn't already include the private key, the <b>tlskey</b> attribute may be used to specify a separate file containing it.</li>
+  </ul>
+
+</ul>
+
+<p>TDS negotiates encryption in the PRELOGIN exchange, before the login is sent, and the module answers with what the client asked for:</p>
+
+<ul>
+  <li>A client that requires encryption gets the whole session encrypted.</li>
+  <li>A client that is merely willing to encrypt gets only its login encrypted.  The rest of the session runs in the clear.  This is what a Microsoft SQL Server does by default, and what most TDS clients ask for unless they are configured otherwise.</li>
+  <li>A client that says it doesn't support encryption, or that omits the encryption option entirely, isn't pushed into a handshake it never offered.  Its login is refused with a "TLS required" error instead.</li>
+</ul>
+
+<p>Which of these a client asks for is a client-side setting.  With freetds, for example, it is the <i>encryption</i> setting in freetds.conf, and a client that validates the server's certificate also needs a <i>ca file</i> there.</p>
+
+<h2>Mutual Authentication</h2>
+
+<p>The <b>tlsvalidate</b> and <b>tlsca</b> attributes described for the other protocols are honored by the TDS module as well, and enable mutual authentication - the server requests and validates a certificate from the client.  Note, though, that the freetds client cannot present a client certificate, so mutual authentication can only be used with clients that can.</p>
+
+<h2>Performance Considerations</h2>
+
+<p>While TLS/SSL authenticated and encrypted sessions are substantially more secure than standard SQL Relay sessions, several factors contribute to a performance penalty:</p>
+
+<ul>
+  <li>When establishing the secure session, a significant amount of data must be sent back and forth between the client and server over multiple network round-trips.</li>
+  <li>Some TLS/SSL implementations impose a limit on the amount of data that can be sent or received at once, so more round trips may be required when processing queries.</li>
+  <li>Without dedicated encryption hardware and a TLS/SSL implementation that supports it, the computation involved in encrypting and decrypting data can also introduce delays.</li>
+</ul>
+
+<p>Any kind of full session encryption should be used with caution in performance-sensitive applications.</p>
+
+<hr/>
+
+<p><a href="tdsprotouserlistauth.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="tdsprotouserlistauth.html">User List Auth</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="tdsprotoforeignbackend.html">Foreign Backend</a> <a href="tdsprotoforeignbackend.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

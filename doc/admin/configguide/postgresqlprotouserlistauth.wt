@@ -1,0 +1,34 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]
+
+[=#postgresqluserlistauth]
+= User List Auth =
+
+Another popular authentication option is //user list// auth.
+
+When user list authentication is used, a user is authenticated against a static list of user/password combinations, which may be different than the user/password used that SQL Relay uses to access the database.
+
+To enable user list auth, you must provide a list of user/password combinations, as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqlfeuserlistmultiple.conf@
+}}}
+}}}
+
+When using SQL Relay as a transparent proxy, it is desirable to define the same set of users that are defined in the database itself.  While this may sound inconvenient, in practice, most apps use a single user to access the database, and it's not uncommon for multiple apps to share a user.  So, the list is typically short.
+
+If the database has a lot of users, or users are added, deleted, or updated regularly, then it might be inconvenient to maintain a duplicate list of users in the configuration file.  Unfortunately there isn't currently a //postgresql_database// auth module that can be used to auth users directly against the database, so for now this is the only option.
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlprotoconnectstringsauth.html,vertical-align=middle)]] [postgresqlprotoconnectstringsauth.html Connect Strings Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprototls.html TLS/SSL Encryption and Authentication] [[Image(../../images/navnext.png,link=postgresqlprototls.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

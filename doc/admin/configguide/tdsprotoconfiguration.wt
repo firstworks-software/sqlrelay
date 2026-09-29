@@ -1,0 +1,57 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=tdsprotolistener.html,vertical-align=middle)]]
+
+[=#tdsconfiguration]
+= Basic Configuration =
+
+To enable SQL Relay to speak the TDS protocol, add the appropriate listener tag:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-tdsfebasic.conf@
+}}}
+}}}
+
+In this configuration:
+
+* The listener tag instructs SQL Relay to load the //tds// protocol module, and listen on port 1433, which is the standard Microsoft SQL Server port.
+* The connection tag instructs the instance to log in to the //mssqlodbc// ODBC data source as user //example// with password //example//.
+
+Note the mars=yes parameter in the connect string.  See the [../configreference.html#odbc SQL Relay Configuration Reference] for the //mars// option, which instances using the tds protocol typically need.
+
+The instance can be started using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-start -id example
+}}}
+}}}
+
+and accessed from the local machine using:
+
+{{{#!blockquote
+{{{#!code
+tsql -H localhost -p 1433 -U example -P example
+}}}
+}}}
+
+The instance can be stopped using:
+
+{{{#!blockquote
+{{{#!code
+sqlr-stop -id example
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=tdsprotocol.html,vertical-align=middle)]] [tdsprotocol.html TDS Protocol] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [tdsprotolistener.html Listener Options] [[Image(../../images/navnext.png,link=tdsprotolistener.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

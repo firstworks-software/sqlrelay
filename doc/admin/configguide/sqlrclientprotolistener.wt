@@ -1,0 +1,50 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotoconfiguration.html,vertical-align=middle)]] [sqlrclientprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoauth.html Authentication/Encryption Options] [[Image(../../images/navnext.png,link=sqlrclientprotoauth.html,vertical-align=middle)]]
+
+[=#sqlrclientlistener]
+= Listener Options =
+
+By default, SQL Relay listens on port 9000.
+
+However, it can be configured to listen on a different port.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-port.conf@
+}}}
+}}}
+
+If the server has multiple network interfaces, SQL Relay can also be configured to listen on specific IP addresses.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-addresses.conf@
+}}}
+}}}
+
+In the example above, it can be accessed on 192.168.1.50 and 192.168.1.51 but not on 127.0.0.1 (localhost).
+
+It can also be configured to listen on a unix socket by adding a //socket// attribute to the listener tag.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-socket.conf@
+}}}
+}}}
+
+( '''NOTE:''' The user that SQL Relay runs as must be able to read and write to the path of the socket.)
+
+If the socket option is specified but the port option is not, then SQL Relay will only listen on the socket.  If port and socket options are both specified then it listens on both.
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotoconfiguration.html,vertical-align=middle)]] [sqlrclientprotoconfiguration.html Basic Configuration] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotoauth.html Authentication/Encryption Options] [[Image(../../images/navnext.png,link=sqlrclientprotoauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

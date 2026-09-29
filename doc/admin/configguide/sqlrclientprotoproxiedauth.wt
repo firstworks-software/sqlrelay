@@ -1,0 +1,36 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]] [sqlrclientprotodbauth.html Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprotokrb.html,vertical-align=middle)]]
+
+[=#sqlrclientproxiedauth]
+= Proxied Auth =
+
+Another authentication option is //proxied// auth.
+
+When proxied authentication is used, a user is authenticated against the database itself, though in a different manner than database authentication described above.  SQL Relay logs into the database as a user with permissions to proxy other users.  For each client session, SQL Relay checks the provided credentials against the credentials that are currently in use.  If they differ, then it asks the proxy user to switch the user it's proxying to the provided user.
+
+This is currently only supported with Oracle (version 8i or higher) and requires database configuration.  See [../oraclentier.html this document] for more information including instructions for configuring Oracle.
+
+To enable proxied auth, configure SQL Relay to load the //proxied// auth module as follows.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-auths-proxied.conf@
+}}}
+}}}
+
+{{{#!blockquote
+( '''NOTE:''' Proxied authentication should not be used in an instance where dbase="router".  It's OK for the instances that the router routes to to use it, but the router instance itself should not.  If proxied authentication is used for that instance, then authentication will fail.)
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=sqlrclientprotodbauth.html,vertical-align=middle)]] [sqlrclientprotodbauth.html Database Auth] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] [[Image(../../images/navnext.png,link=sqlrclientprotokrb.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

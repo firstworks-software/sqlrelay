@@ -1,0 +1,50 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]] [oracleprotobigchunkclr.html Big Chunk CLR Framing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotodateformat.html Date Format] [[Image(../../images/navnext.png,link=oracleprotodateformat.html,vertical-align=middle)]]
+
+[=#oraclecharsets]
+= Character Set Options =
+
+While negotiating the protocol, the Oracle protocol module tells the client which character sets to expect.  Oracle identifies character sets by number, and the client uses those numbers to choose the codec it decodes the data with.
+
+Note that the module only advertises the character sets.  It doesn't convert anything.  The bytes a client receives are the bytes the back-end database returned, so these options should be set to match what the back-end database actually sends, or the client will decode correct data with the wrong codec.
+
+The //charset// option sets the database character set id.  It defaults to 873, which is AL32UTF8.
+
+A listener with //verifiertype="9i"// defaults to 31 instead, which is WE8ISO8859P1.  That matches a connection with no //nls_lang// in its connect string, which hands back single-byte data.  If the connection's //nls_lang// is AL32UTF8, set //charset// to 873 on that listener.  Otherwise an OCI7 client corrupts its non-ASCII text, both in the rows it fetches and in the values it binds.
+
+The //nationalcharset// option sets the national character set id.  It defaults to 2000, which is AL16UTF16.  That is the only national character set modern Oracle databases use, so there is rarely a reason to set it at all.
+
+Prior to version 2.3.0, SQL Relay always reported character set 1, which is US7ASCII, and some clients take that literally.  python-oracledb, for example, maps character set 1 to Python's ascii codec, which raises an exception on any byte of 0x80 or higher.  Such a client cannot read a result set containing any non-ASCII data at all.
+
+If a client still fails to decode a result set, try setting //charset// to 178, which is WE8MSWIN1252.  Every byte value decodes under cp1252, so decoding never fails, though bytes that aren't really cp1252 will decode to the wrong characters.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-oraclefecharset.conf@
+}}}
+}}}
+
+Any Oracle character set id may be used.  Ids are listed in the Oracle Database Globalization Support Guide, and the id for a given character set name can be looked up in a running Oracle database with the NLS_CHARSET_ID() function.  For example, to get the ids matching a database's own character sets:
+
+{{{#!blockquote
+{{{#!code
+select parameter,value,nls_charset_id(value)
+from nls_database_parameters
+where parameter in ('NLS_CHARACTERSET','NLS_NCHAR_CHARACTERSET');
+}}}
+}}}
+
+Setting either option to 0, or to something that isn't a number, is the same as leaving it out, and the default is used.
+
+----
+
+[[Image(../../images/navprev.png,link=oracleprotobigchunkclr.html,vertical-align=middle)]] [oracleprotobigchunkclr.html Big Chunk CLR Framing] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [oracleprotodateformat.html Date Format] [[Image(../../images/navnext.png,link=oracleprotodateformat.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -1,0 +1,40 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=postgresqlprotopasswords.html,vertical-align=middle)]] [postgresqlprotopasswords.html Password Method] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotouserlistauth.html User List Auth] [[Image(../../images/navnext.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]]
+
+[=#postgresqlconnectstringsauth]
+= Connect Strings Auth =
+
+The default authentication option is //connect strings// auth.
+
+When connect strings authentication is used, a user is authenticated against the set of user/password combinations that SQL Relay is configured to use to access the database.  That is, they are the values of the user and password parameters of the string attribute of the connection tag.
+
+In the following example, SQL Relay is configured to access the database using postgresqlsuer/postgresqlpassword credentials.
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqlfedbport.conf@
+}}}
+}}}
+
+In this case, clients would also use postgresqluser/postgresqlpassword credentials to access SQL Relay.
+
+Though it is not necessary, it is possible to explicitly configure SQL Relay to load the //connect strings// auth module as follows:
+
+{{{#!blockquote
+{{{#!code
+@parts/sqlrelay-postgresqlconnectstrings.conf@
+}}}
+}}}
+
+----
+
+[[Image(../../images/navprev.png,link=postgresqlprotopasswords.html,vertical-align=middle)]] [postgresqlprotopasswords.html Password Method] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotouserlistauth.html User List Auth] [[Image(../../images/navnext.png,link=postgresqlprotouserlistauth.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

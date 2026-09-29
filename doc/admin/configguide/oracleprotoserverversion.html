@@ -1,0 +1,147 @@
+<html>
+<head>
+	<title>firstworks: SQL Relay - sqlrelay persistent database connection pool pooling proxy load balance balancing odbc oracle mysql msql postgresql sybase db2 interbase sqlite access c++ perl DBD DBI python php PDO ruby tcl java jni unix linux persistant</title>
+
+	<link rel="stylesheet" href="../../css/style.css"/>
+	<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-23306117-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+	<script language="Javascript" src="../../js/button.js"></script>
+</head>
+<body onload="setButton();">
+
+
+<div style="position: fixed; top: 0px; left: 0px; width: 100%; z-index: 100;">
+
+<span id="firstworks">a <b><a href="http://www.firstworks.com">firstworks</a></b> project</span>
+
+<div id="projectbox"><a href="../../index.html"><img src="../../images/sqlrelay-icon.png"/><span id="name">SQL Relay</span></a></div>
+
+<table id="projectbuttons">
+<tr>
+<td style="width: 50%;"></td>
+<td class="button nonlastbutton"><a id="button-about" href="../../index.html">About</a></td>
+<td class="button nonlastbutton"><a id="button-documentation" href="../../documentation.html">Documentation</a></td>
+<td class="button nonlastbutton"><a id="button-faq" href="../../faq.html">FAQ</a></td>
+<td class="button nonlastbutton"><a id="button-download" href="../../download.html">Download</a></td>
+<td class="button nonlastbutton"><a id="button-license" href="../../license.html">Licensing</a></td>
+<td class="button nonlastbutton"><a id="button-support" href="../../support.html">Support</a></td>
+<td class="button lastbutton"><a id="button-news" target="_blank" href="http://software.firstworks.com">News</a></td>
+<td style="width: 50%;"></td>
+</tr>
+</table>
+
+</div>
+
+<div style="position: absolute; top: 89px; width: 100%;">
+
+
+<div id="content">
+
+
+<p><a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Login Attempts</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoverifiertype.html">Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+<a name="oracleserverversion"/><h1>Server Version</h1>
+
+<p>An Oracle client works out how to read the server's answers from the version of server it believes it is talking to.  Several parts of the protocol changed at Oracle 12.1, and a client that is told one version and then sent another version's bytes doesn't recover.  It either waits for fields that never arrive, or reads the next message a few bytes out of position.</p>
+
+<p>So the Oracle protocol module imitates one Oracle version, consistently, and the <i>serverversion</i> option chooses which one.  It accepts 11.2 or 12.1, and defaults to 12.1.  Any other value, including a misspelled one, is the same as leaving it out.</p>
+
+<p>The setting moves everything a client picks a reader from, all at once: the TTC field version the module negotiates, the shape of the summary object that ends every response, the server version and SQL version the module reports while authenticating, the version banner and packed version number an OCIServerVersion call gets back, and the default password verifier type described below.  Both settings describe a server that could really exist.  There is no setting that mixes them.</p>
+
+<p><b>This option decides which clients can use the instance at all.</b>  As of SQL Relay 2.3.0, measured against the module:</p>
+
+<table>
+  <tr>
+    <th> Client 
+</th>
+    <th> serverversion="12.1" (the default) 
+</th>
+    <th> serverversion="11.2" 
+</th>
+  </tr>
+  <tr>
+    <td> Oracle JDBC driver (ojdbc) 23.26 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+  </tr>
+  <tr>
+    <td> python-oracledb 4.0.2, thin mode 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+    <td> stops responding partway through the login 
+</td>
+  </tr>
+  <tr>
+    <td> node-oracledb 7.0.1, thin mode 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+    <td> stops responding partway through the login 
+</td>
+  </tr>
+  <tr>
+    <td> Oracle OCI 23.26 
+</td>
+    <td> login fails with ORA-03113 
+</td>
+    <td> logs in, runs queries, reads result sets 
+</td>
+  </tr>
+</table>
+
+<br/><p>The default serves the three drivers that don't use Oracle's OCI library, so it's the one to leave alone unless a client fails to get through the login.  If it does, note the symptom.  python-oracledb and node-oracledb don't support Oracle servers older than 12.1 at all, and against one they wait for data that never comes, rather than reporting an error, so the client simply hangs.  Setting <i>serverversion</i> to 11.2 makes SQL Relay a server they refuse to talk to, and setting it back to 12.1 is the fix.  A client built on Oracle's OCI library goes the other way: it only gets through the login at 11.2, and reports ORA-03113 at the 12.1 default.</p>
+
+<p><i>serverversion</i> is set per listener tag, not per instance, so there is no single listener that serves both an OCI client and a thin-mode client.  If both kinds of client need to connect, add a second listener tag to the instance, one at each <i>serverversion</i>.</p>
+
+<blockquote>
+<!-- Generator: GNU source-highlight 3.1.9
+by Lorenzo Bettini
+http://www.lorenzobettini.it
+http://www.gnu.org/software/src-highlite -->
+<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
+<b><font color="#0000FF">&lt;instances&gt;</font></b>
+	<b><font color="#0000FF">&lt;instance</font></b> <font color="#009900">id</font><font color="#990000">=</font><font color="#FF0000">"example"</font> <font color="#009900">dbase</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font><b><font color="#0000FF">&gt;</font></b>
+		<b><font color="#0000FF">&lt;listeners&gt;</font></b>
+			<b><font color="#0000FF">&lt;listener</font></b> <font color="#009900">protocol</font><font color="#990000">=</font><font color="#FF0000">"oracle"</font> <font color="#009900">port</font><font color="#990000">=</font><font color="#FF0000">"1521"</font> <font color="#009900">serverversion</font><font color="#990000">=</font><font color="#FF0000">"11.2"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/listeners&gt;</font></b>
+		<b><font color="#0000FF">&lt;connections&gt;</font></b>
+			<b><font color="#0000FF">&lt;connection</font></b> <font color="#009900">string</font><font color="#990000">=</font><font color="#FF0000">"user=scott;password=tiger;oracle_home=/u01/app/oracle/product/12.1.0;oracle_sid=ora1"</font><b><font color="#0000FF">/&gt;</font></b>
+		<b><font color="#0000FF">&lt;/connections&gt;</font></b>
+	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
+<b><font color="#0000FF">&lt;/instances&gt;</font></b>
+</tt></pre>
+
+</blockquote>
+<hr/>
+
+<p><a href="oracleprotologinattempts.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="oracleprotologinattempts.html">Login Attempts</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="oracleprotoverifiertype.html">Password Verifier Type</a> <a href="oracleprotoverifiertype.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>
+
+</div> <!-- content -->
+
+
+<div id="copyrightbox">
+Copyright 2026 - David Muse - <a href="mailto:david.muse@firstworks.com">Contact</a>
+</div> <!-- copyrightbox -->
+
+</div>
+
+</body>
+</html>
+
+

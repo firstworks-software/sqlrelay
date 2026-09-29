@@ -1,0 +1,30 @@
+{{{#!include header.html}}}
+
+{{{#!include projectheader.html}}}
+
+{{{#!include ../../contentstart.html}}}
+
+[[Image(../../images/navprev.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]] [mysqlprotospecialpurpose.html Special-Purpose Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
+
+[=#mysqllimitations]
+= Limitations =
+
+The implementation of the !MySQL protocol is likely sufficient for most applications, but it isn't 100% complete.  Some notable limitations follow:
+
+* Only LATIN1_SWEDISH_CI and UTF8_GENERAL_CI character sets are supported.
+* Only the mysql_native_password and mysql_clear_password authentication methods are supported.  Notably, mysql_old_password and authentication_windows_client are not supported.
+* Multi-statement queries are not supported.
+* mysql_change_user() is not supported.
+* mysql_send_long_data() is not supported.
+* mysql_info() will always returns NULL when used with SQL Relay.
+* MYSQL_FIELD.org_name/org_name_length and MYSQL_FIELD.org_table/org_table_length are not supported.
+* LOAD DATA LOCAL INFILE is not supported - the module never advertises CLIENT_LOCAL_FILES, so a client can't ask it to read a local file into a table.  Server-side LOAD DATA INFILE, reading a file already on the database server, works as an ordinary query, but its reply doesn't include the usual "Records: x Deleted: x Skipped: x Warnings: x" summary.
+* Kerberos authentication and encryption are not supported.
+
+----
+
+[[Image(../../images/navprev.png,link=mysqlprotospecialpurpose.html,vertical-align=middle)]] [mysqlprotospecialpurpose.html Special-Purpose Options] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [postgresqlprotocol.html PostgreSQL Protocol] [[Image(../../images/navnext.png,link=postgresqlprotocol.html,vertical-align=middle)]]
+
+{{{#!include ../../contentend.html}}}
+
+{{{#!include footer.html}}}

@@ -9,32 +9,32 @@
 [[br]][=#frontendencryption]
 = Front-End Encryption and Secure Authentication =
 
-When configured to use the SQLRClient protocol (the default), SQL Relay supports [sqlrclientprotocol.html#sqlrclientkrb Kerberos and Active Directory Encryption and Authentication] and [sqlrclientprotocol.html#sqlrclienttls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+When configured to use the SQLRClient protocol (the default), SQL Relay supports [sqlrclientprotokrb.html Kerberos and Active Directory Encryption and Authentication] and [sqlrclientprototls.html TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
 
  [[Image(../../images/secure-krb-sqlrclient-unsecured.png,nolink)]]
  [[Image(../../images/secure-tls-sqlrclient-unsecured.png,padding-left=40px,nolink)]]
 
 [[br]]
 
-When configured to use the !MySQL protocol, SQL Relay supports [mysqlprotocol.html#mysqltls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+When configured to use the !MySQL protocol, SQL Relay supports [mysqlprototls.html TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
 
  [[Image(../../images/secure-tls-mysql-unsecured.png,nolink)]]
 
 [[br]]
 
-When configured to use the !PostgreSQL protocol, SQL Relay supports [postgresqlprotocol.html#postgresqltls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+When configured to use the !PostgreSQL protocol, SQL Relay supports [postgresqlprototls.html TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
 
  [[Image(../../images/secure-tls-postgresql-unsecured.png,nolink)]]
 
 [[br]]
 
-When configured to use the Firebird protocol, SQL Relay supports Firebird [firebirdprotocol.html#firebirdwirecrypt Wire Encryption] between the client and SQL Relay server.
+When configured to use the Firebird protocol, SQL Relay supports Firebird [firebirdprotowirecrypt.html Wire Encryption] between the client and SQL Relay server.
 
  [[Image(../../images/secure-wire-firebird-unsecured.png,nolink)]]
 
 [[br]]
 
-When configured to use the TDS protocol, SQL Relay supports [tdsprotocol.html#tdstls TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
+When configured to use the TDS protocol, SQL Relay supports [tdsprototls.html TLS/SSL Encryption and Authentication] between the client and SQL Relay server.
 
  [[Image(../../images/secure-tls-tds-unsecured.png,nolink)]]
 
