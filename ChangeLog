@@ -971,6 +971,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   configuration guide mention deb packages now
 - shortened the column metadata note on the Microsoft SQL Server (via
   FreeTDS) page of the configuration guide
+- reworded the login time sentence on the IBM DB2 page of the
+  configuration guide
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
