@@ -9,7 +9,7 @@
 [=#db-postgresql-redshift]
 = Amazon Redshift (via !PostgreSQL) =
 
-Amazon Redshift is a cloud-hosted data warehouse service.  Since it is based on !PostgreSQL 8, it is possible to connect to a Redshift instance using the !PostgreSQL client library.
+Amazon Redshift is a cloud-hosted data warehouse service.  Since it is based on !PostgreSQL, it is possible to connect to a Redshift instance using the !PostgreSQL client library.
 
 The dbase attribute of the instance tag specifies which database connection module to load.  In this example, SQL Relay is configured to connect to a Redshift database via !PostgreSQL.
 

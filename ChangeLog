@@ -973,6 +973,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   FreeTDS) page of the configuration guide
 - reworded the login time sentence on the IBM DB2 page of the
   configuration guide
+- removed the PostgreSQL version number from the Amazon Redshift (via
+  PostgreSQL) page of the configuration guide
 
 ### Removed
 - oracle protocol module: deleted cancel() (no wire input can reach it)
