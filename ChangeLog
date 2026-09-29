@@ -323,8 +323,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   configuration guide
 - added firebird, tds, and oracle protocol diagrams to the documentation
   images
-- added an application cluster diagram to the already-load balanced
-  databases page of the configuration guide
+- added application cluster diagrams, with and without a load balancer,
+  to the already-load balanced databases page of the configuration guide
 
 ### Changed
 - requires rudiments 2.3.0 or newer
