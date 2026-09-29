@@ -31,9 +31,9 @@ http://www.gnu.org/software/src-highlite -->
 </tt></pre>
 
 </blockquote>
-<p>Raising the maximum above 13 is opt-in.  Versions 14 through 20 add op_ping, batch operations, op_repl_data, statement timeouts, scrollable cursors (op_fetch_scroll and op_info_cursor), and prepare flags, none of which have been run against a real client yet.  Some of those operations - op_ping and the scrollable cursor operations among them - aren't implemented at all, so a client that negotiates a higher version and then uses one of them has its session ended.  See <a href="firebirdprotolimitations.html">Limitations</a>.</p>
+<p>Version 13 is the earliest version that supports <a href="firebirdprotowirecrypt.html">Wire Encryption</a>.</p>
 
-<p>Lowering the maximum below 13 turns off the plugin-based login.  Clients log in with the older password hash instead, and wire encryption is unavailable, since only version 13 and up has anywhere to carry the encryption key.  See <a href="firebirdprotowirecrypt.html">Wire Encryption</a>.</p>
+<p>Versions 14 through 20 enable untested or unimplemented features.  See <a href="firebirdprotolimitations.html">Limitations</a>.</p>
 
 <hr/>
 
