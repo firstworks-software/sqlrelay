@@ -162,26 +162,6 @@ http://www.gnu.org/software/src-highlite -->
 
 <p>Actually, it's not even explicitly necessary to include a logger tag for the debug module if you just want to log debug output.  If a debug="yes" attribute is included in any valid location in the config file, then the debug module will be implicitly loaded, with both the stdout="yes" and file="yes" options enabled.</p>
 
-<p>Debugging to standard output is handy in a highly constrained dev or QA environemnt, but the SQL Relay server processes normally run as daemons, and a daemonized process's standard output typically isn't going anywhere an admin can see it.  The implicit debug module's file="yes" option covers that case, writing debug output to files in the debug directory as described above.  If you need to debug an environment with multiple, simultaneous client sessions, standard output can also become confusing, since debug from multiple processes all gets sent there, interleved - the files in the debug directory, one per process, avoid that too.  If you'd rather configure the debug module explicitly, for example to turn standard output off and log only to files, use the file="yes" option directly:</p>
-
-<blockquote>
-<!-- Generator: GNU source-highlight 3.1.9
-by Lorenzo Bettini
-http://www.lorenzobettini.it
-http://www.gnu.org/software/src-highlite -->
-<pre><tt><b><font color="#000080">&lt;?xml</font></b> <font color="#009900">version</font><font color="#990000">=</font><font color="#FF0000">"1.0"</font><b><font color="#000080">?&gt;</font></b>
-<b><font color="#0000FF">&lt;instances&gt;</font></b>
-	<b><font color="#0000FF">&lt;instance</font></b> ...<b><font color="#0000FF">&gt;</font></b>
-		...
-		<b><font color="#0000FF">&lt;loggers&gt;</font></b>
-			<b><font color="#0000FF">&lt;logger</font></b> <font color="#009900">module</font><font color="#990000">=</font><font color="#FF0000">"debug"</font> <font color="#009900">file</font><font color="#990000">=</font><font color="#FF0000">"yes"</font><b><font color="#0000FF">/&gt;</font></b>
-		<b><font color="#0000FF">&lt;/loggers&gt;</font></b>
-		...
-	<b><font color="#0000FF">&lt;/instance&gt;</font></b>
-<b><font color="#0000FF">&lt;/instances&gt;</font></b>
-</tt></pre>
-
-</blockquote>
 <hr/>
 
 <p><a href="logging.html"><img style="vertical-align: middle; " src="../../images/navprev.png"/></a> <a href="logging.html">Logging</a> | <a href="index.html"><img style="vertical-align: middle; " src="../../images/navtop.png"/></a> <a href="index.html">Contents</a> | <a href="sql.html">sql</a> <a href="sql.html"><img style="vertical-align: middle; " src="../../images/navnext.png"/></a></p>

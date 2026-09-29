@@ -85,14 +85,6 @@ And so on.
 
 Actually, it's not even explicitly necessary to include a logger tag for the debug module if you just want to log debug output.  If a debug="yes" attribute is included in any valid location in the config file, then the debug module will be implicitly loaded, with both the stdout="yes" and file="yes" options enabled.
 
-Debugging to standard output is handy in a highly constrained dev or QA environemnt, but the SQL Relay server processes normally run as daemons, and a daemonized process's standard output typically isn't going anywhere an admin can see it.  The implicit debug module's file="yes" option covers that case, writing debug output to files in the debug directory as described above.  If you need to debug an environment with multiple, simultaneous client sessions, standard output can also become confusing, since debug from multiple processes all gets sent there, interleved - the files in the debug directory, one per process, avoid that too.  If you'd rather configure the debug module explicitly, for example to turn standard output off and log only to files, use the file="yes" option directly:
-
-{{{#!blockquote
-{{{#!code
-@parts/sqlrelay-debug-file.conf@
-}}}
-}}}
-
 ----
 
 [[Image(../../images/navprev.png,link=logging.html,vertical-align=middle)]] [logging.html Logging] | [[Image(../../images/navtop.png,link=index.html,vertical-align=middle)]] [index.html Contents] | [sql.html sql] [[Image(../../images/navnext.png,link=sql.html,vertical-align=middle)]]
