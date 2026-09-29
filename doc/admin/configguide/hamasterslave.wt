@@ -9,7 +9,7 @@
 [[br]][=#masterslave]
 = Master-Slave Query Routing =
 
-The load balancing scenarios described above all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.
+The load balancing scenarios described on previous pages all assume that master-master replication is being used.  SQL Relay supports master-slave replication as well.
 
 In a master-slave replication environment, SQL Relay can be configured to route DML and DDL queries to the master and distribute selects over the slaves.
 
